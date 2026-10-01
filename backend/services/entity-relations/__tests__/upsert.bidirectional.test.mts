@@ -2,7 +2,7 @@ import { it, expect, describe } from 'vitest'
 import { upsertEntityRelation } from '../upsert.mts'
 import { softDeleteEntityRelation } from '../delete.mts'
 import { entityRelationMetadatum } from '../metadata.mts'
-import { stubUrlGuardsForSuite } from '../test-support.mts'
+import { stubUrlGuardsForSuite } from '@voucha/test-helpers/services/entity-relations/test-support'
 import {
   createTestPost,
   createTestUser,

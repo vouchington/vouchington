@@ -8,7 +8,7 @@ import {
   insertTestTopic,
   insertTopicAliasForTest,
 } from '@voucha/test-helpers'
-import { createCommunityPostFixture } from '../test-support.mts'
+import { createCommunityPostFixture } from '@voucha/test-helpers/services/posts/test-support'
 import { updatePost } from '../update.mts'
 import { archiveCommunity } from '@services/communities/archive'
 import type { PrivateUser } from '@services/users/types'

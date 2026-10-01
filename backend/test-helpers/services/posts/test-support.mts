@@ -1,7 +1,7 @@
 import type { PrivateUser } from '@voucha/types/entities/user'
 import type { PostBroadcast, PostPrivacy, PostType } from '@voucha/types/entities/post'
-import { createPost } from './create.mts'
-import type { Post, CreatePostInput } from './types.mts'
+import { createPost } from '../../../services/posts/create.mts'
+import type { Post, CreatePostInput } from '../../../services/posts/types.mts'
 import {
   createRandomString,
   createTestUser,

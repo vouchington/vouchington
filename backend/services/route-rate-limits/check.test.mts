@@ -4,7 +4,7 @@ import { createTestUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { checkRouteRateLimit } from './check.mts'
 import { routeRateLimitConfig, getAttestedMultiplier } from './config.mts'
-import { createRouteRateLimitKeyCleanup } from './test-support.mts'
+import { createRouteRateLimitKeyCleanup } from '@voucha/test-helpers/services/route-rate-limits/test-support'
 import { rateLimitConfig } from '@services/user-rate-limits/config'
 import type { RateLimitIdentities } from './types.mts'
 import {

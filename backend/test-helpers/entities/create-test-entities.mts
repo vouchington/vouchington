@@ -83,7 +83,7 @@ export async function createTestTopic(options: CreateTestTopicOptions = {}) {
 // so a test-helpers -> @services/posts edge is a workspace cycle). Deliberately does
 // not replicate @services/posts' community/comment authorization, moderation/spam
 // side effects, or entity-listener enqueues — fixtures that assert on that genuine
-// behavior must use the real createTestPost from `@services/posts/test-support`
+// behavior must use the real createTestPost from `@voucha/test-helpers/services/posts/test-support`
 // instead (see docs/development/testing/backend/helpers.md).
 export async function createTestPost(options: CreateTestPostOptions = {}) {
   // null-default-ok: createTestPost treats null user as "create a default user".

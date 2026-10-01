@@ -29,7 +29,7 @@ import { createPostModerationContent } from './content.mts'
 import { getPostModerationInput } from './moderation-input.mts'
 import { getPostImages, setPostImages } from './images.mts'
 import { rollbackPostImages } from './images-rollback.mts'
-import { createPostImageRollbackFixture } from './images.fixtures.mts'
+import { createPostImageRollbackFixture } from '@voucha/test-helpers/services/posts/images.fixtures'
 
 describe('setPostImages clearance rollback', () => {
   afterEach(() => {

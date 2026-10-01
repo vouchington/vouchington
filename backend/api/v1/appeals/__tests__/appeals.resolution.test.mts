@@ -7,7 +7,7 @@ import { parseCreateModerationAppealInput } from '@services/moderation-appeals/p
 import { resolveModerationAppealReduce } from '@services/moderation-appeals/resolve'
 import { approveModerationAppeal } from '@services/moderation-appeals/approve-appeal'
 import { updateModerationAppealDraft } from '@services/moderation-appeals/update-appeal-draft'
-import { deliverModerationAppealForTest } from '@services/moderation-appeals/resolution.fixtures'
+import { deliverModerationAppealForTest } from '@voucha/test-helpers/services/moderation-appeals/resolution.fixtures'
 
 async function createWarningAppeal(appellant: PrivateUser, staff: PrivateUser, reason: string) {
   const warning = await insertTestUserWarning({
