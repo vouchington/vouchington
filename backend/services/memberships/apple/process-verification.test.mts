@@ -93,7 +93,6 @@ describe('Apple membership verification processing', () => {
         fixture,
         `signed-rejected-${randomUUID()}`,
       )
-
       await processMembershipVerification(verification.id, {
         createVerifier: () =>
           transaction
@@ -108,7 +107,6 @@ describe('Apple membership verification processing', () => {
       await expect(getMembershipByUserId(user.id)).resolves.toBeNull()
     },
   )
-
   it('conflicts cross-account direct evidence without granting the second account access', async () => {
     const firstUser = await createTestUser()
     const secondUser = await createTestUser()
@@ -151,7 +149,6 @@ describe('Apple membership verification processing', () => {
     })
     await expect(getMembershipByUserId(secondUser.id)).resolves.toBeNull()
   })
-
   it('rejects a family transaction submitted for a launched direct purchase', async () => {
     const user = await createTestUser()
     const fixture = await createAppleVerificationFixture(user.id)
@@ -171,7 +168,6 @@ describe('Apple membership verification processing', () => {
       reason_code: 'wrong_account',
     })
   })
-
   it('fills a notification-first lineage account token exactly once', async () => {
     const user = await createTestUser()
     const fixture = await createAppleVerificationFixture(user.id)
@@ -204,7 +200,6 @@ describe('Apple membership verification processing', () => {
       status: 'verified',
     })
   })
-
   it('fences a fresh claim and defers a retryable verifier construction failure', async () => {
     const user = await createTestUser()
     const fixture = await createAppleVerificationFixture(user.id)
@@ -258,7 +253,12 @@ async function createAppleVerificationFixture(
     userId,
     membershipProviderProductId: providerProduct.id,
   })
-  return { applicationId, providerProductId, purchaseIntentId }
+  return {
+    applicationId,
+    providerProductId,
+    purchaseIntentId,
+    expiresDate: Date.now() + 30 * 86_400_000,
+  }
 }
 
 async function submitAppleVerification(
@@ -276,7 +276,7 @@ async function submitAppleVerification(
 }
 
 function makeVerifier(
-  fixture: { applicationId: string; providerProductId: string },
+  fixture: Awaited<ReturnType<typeof createAppleVerificationFixture>>,
   overrides: Partial<JWSTransactionDecodedPayload> = {},
   error?: Error,
 ): AppleTransactionVerifier {
@@ -289,7 +289,7 @@ function makeVerifier(
         bundleId: fixture.applicationId,
         productId: fixture.providerProductId,
         purchaseDate: Date.parse('2026-08-01T00:00:00.000Z'),
-        expiresDate: Date.parse('2026-10-01T00:00:00.000Z'),
+        expiresDate: fixture.expiresDate,
         signedDate: Date.parse('2026-09-01T00:00:00.000Z'),
         environment: Environment.SANDBOX,
         inAppOwnershipType: InAppOwnershipType.PURCHASED,
