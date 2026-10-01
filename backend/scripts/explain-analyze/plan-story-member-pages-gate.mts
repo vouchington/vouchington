@@ -40,7 +40,7 @@ function assertSelectorPlan(
   result: ExplainResult,
   { limit, after, excluded }: { limit: number; after: boolean; excluded: boolean },
 ): void {
-  if (!result.name.startsWith('getStoryMemberPagesBatch:'))
+  if (result.name.split(':', 1)[0] !== 'getStoryMemberPagesBatch')
     throw new Error(`${result.name} must capture the production story member selector`)
   const nodes = collectPlanNodes(result.plan)
   const membershipScans = nodes.filter(node =>
