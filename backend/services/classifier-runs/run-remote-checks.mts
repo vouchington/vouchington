@@ -1,10 +1,13 @@
 import type {
-  ClassifierDecisionInputResult,
   ClassifierDecisionScope,
   PersistClassifierDecisionInput,
   PersistedClassifierDecision,
-  PersistedClassifierDecisionResult,
 } from '@services/classifiers/types'
+import {
+  expectedCandidates,
+  matchesExpectedThresholds,
+  resultKey,
+} from './remote-expected-candidates.mts'
 import { capturesCandidates } from './remote-plan.mts'
 import type { ClassifierRunLease, RemotePlan } from './types.mts'
 
@@ -33,55 +36,6 @@ export function hasNoCapturedCandidates<C>(lease: ClassifierRunLease<C>): boolea
   const remote = lease.resolved.remote
   if (remote?.candidateKind === 'story') return lease.capturedStoryCandidates.length === 0
   return capturesCandidates(remote) && lease.capturedTopicIds.length === 0
-}
-
-type ExpectedCandidate = { thresholdId: string | null; lower: number; upper: number } | null
-
-/**
- * The exact candidates a run may ask about, keyed by kind, entity and stored candidate. Pinned
- * topics carry the thresholds the configuration froze. Captured topics, stories, standalone items
- * and community prompts carry none: they have no stored candidate and are judged by the thresholds
- * the decision itself recorded.
- */
-function expectedCandidates<C>(lease: ClassifierRunLease<C>): Map<string, ExpectedCandidate> {
-  const remote = remotePlan(lease)
-  if (remote.candidateKind === 'community_prompt') {
-    return new Map(remote.promptIds.map(promptId => [`community_prompt:${promptId}`, null]))
-  }
-  if (remote.candidateKind === 'story') {
-    return new Map(
-      lease.capturedStoryCandidates.map(candidate => [
-        candidate.kind === 'story'
-          ? `story:${candidate.storyId}`
-          : `rss_feed_item:${candidate.rssFeedItemId}`,
-        null,
-      ]),
-    )
-  }
-  if (remote.capturedCandidates) {
-    return new Map(lease.capturedTopicIds.map(topicId => [`topic:${topicId}:`, null]))
-  }
-  return new Map(
-    remote.candidates.map(candidate => [
-      `topic:${candidate.topicId}:${candidate.candidateId}`,
-      candidate,
-    ]),
-  )
-}
-
-function resultKey(
-  result: ClassifierDecisionInputResult | PersistedClassifierDecisionResult,
-): string {
-  switch (result.candidateKind) {
-    case 'topic':
-      return `topic:${result.topicId}:${result.storedCandidateId ?? ''}`
-    case 'story':
-      return `story:${result.storyId}`
-    case 'rss_feed_item':
-      return `rss_feed_item:${result.rssFeedItemId}`
-    case 'community_prompt':
-      return `community_prompt:${result.communityPromptId}`
-  }
 }
 
 function sameSubject(subject: DecisionSubject, expected: ClassifierRunLease<unknown>['subject']) {
@@ -117,7 +71,7 @@ export function assertRemoteInputCandidates<C>(
   lease: ClassifierRunLease<C>,
   decision: PersistClassifierDecisionInput,
 ): void {
-  const expected = expectedCandidates(lease)
+  const expected = expectedCandidates(lease, remotePlan(lease))
   const results = decision.calls.flatMap(call => call.results)
   if (decision.calls.length !== 1 || results.length !== expected.size) {
     throw new Error('classifier run remote input does not cover its exact reserved candidates')
@@ -147,7 +101,7 @@ export function assertPersistedDecisionMatchesRun<C>(
   ) {
     throw new Error('classifier run remote decision identity does not match its receipt')
   }
-  const expected = expectedCandidates(lease)
+  const expected = expectedCandidates(lease, remote)
   if (decision.results.length !== expected.size || decision.calls.length !== 1) {
     throw new Error('classifier run remote decision does not cover its exact reserved candidates')
   }
@@ -169,16 +123,4 @@ export function assertPersistedDecisionMatchesRun<C>(
     }
     seen.add(key)
   }
-}
-
-function matchesExpectedThresholds(
-  candidate: ExpectedCandidate,
-  result: PersistedClassifierDecision['results'][number],
-): boolean {
-  return (
-    candidate === null ||
-    (result.thresholdId === candidate.thresholdId &&
-      result.effectiveThresholds.lower === candidate.lower &&
-      result.effectiveThresholds.upper === candidate.upper)
-  )
 }
