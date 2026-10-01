@@ -3148,6 +3148,20 @@
         ],
         "type": "object"
       },
+      "CopyrightRepeatInfringerDispositionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "disposition": {
+            "enum": ["abusive", "duplicate", "withdrawn"],
+            "type": "string"
+          },
+          "rationale": {
+            "type": "string"
+          }
+        },
+        "required": ["disposition", "rationale"],
+        "type": "object"
+      },
       "CopyrightRepeatInfringerNoticeAccount": {
         "additionalProperties": false,
         "properties": {
@@ -3181,6 +3195,30 @@
           "operative",
           "termination_in_effect"
         ],
+        "type": "object"
+      },
+      "CopyrightRepeatInfringerOutcomeRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "enum": ["no_action", "restrict", "terminate", "warning"],
+            "type": "string"
+          },
+          "rationale": {
+            "type": "string"
+          }
+        },
+        "required": ["outcome", "rationale"],
+        "type": "object"
+      },
+      "CopyrightRepeatInfringerReinstatementRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "rationale": {
+            "type": "string"
+          }
+        },
+        "required": ["rationale"],
         "type": "object"
       },
       "CopyrightRepeatInfringerReviewDecision": {
@@ -41147,7 +41185,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CopyrightRepeatInfringerReinstatementRequest"
               }
             }
           }
@@ -41203,7 +41241,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CopyrightRepeatInfringerDispositionRequest"
               }
             }
           }
@@ -41256,7 +41294,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CopyrightRepeatInfringerOutcomeRequest"
               }
             }
           }
