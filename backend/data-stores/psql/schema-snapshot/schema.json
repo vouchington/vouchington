@@ -27055,11 +27055,16 @@
     },
     "copyright_notice_email_intakes": {
       "checkConstraints": {
+        "copyright_notice_email_intakes_dkim_verdict_check": "CHECK ((dkim_verdict = ANY (ARRAY['pass'::text, 'fail'::text, 'gray'::text, 'processing_failed'::text, 'unknown'::text])))",
+        "copyright_notice_email_intakes_dmarc_verdict_check": "CHECK ((dmarc_verdict = ANY (ARRAY['pass'::text, 'fail'::text, 'gray'::text, 'processing_failed'::text, 'unknown'::text])))",
         "copyright_notice_email_intakes_raw_byte_size_check": "CHECK ((raw_byte_size >= 0))",
         "copyright_notice_email_intakes_raw_mime_type_check": "CHECK (((char_length(raw_mime_type) >= 1) AND (char_length(raw_mime_type) <= 255)))",
         "copyright_notice_email_intakes_raw_sha256_check": "CHECK ((octet_length(raw_sha256) = 32))",
         "copyright_notice_email_intakes_raw_storage_key_check": "CHECK (((char_length(raw_storage_key) >= 1) AND (char_length(raw_storage_key) <= 1024)))",
-        "copyright_notice_email_intakes_ses_message_id_check": "CHECK (((char_length(ses_message_id) >= 1) AND (char_length(ses_message_id) <= 512)))"
+        "copyright_notice_email_intakes_ses_message_id_check": "CHECK (((char_length(ses_message_id) >= 1) AND (char_length(ses_message_id) <= 512)))",
+        "copyright_notice_email_intakes_spam_verdict_check": "CHECK ((spam_verdict = ANY (ARRAY['pass'::text, 'fail'::text, 'gray'::text, 'processing_failed'::text, 'unknown'::text])))",
+        "copyright_notice_email_intakes_spf_verdict_check": "CHECK ((spf_verdict = ANY (ARRAY['pass'::text, 'fail'::text, 'gray'::text, 'processing_failed'::text, 'unknown'::text])))",
+        "copyright_notice_email_intakes_virus_verdict_check": "CHECK ((virus_verdict = ANY (ARRAY['pass'::text, 'fail'::text, 'gray'::text, 'processing_failed'::text, 'unknown'::text])))"
       },
       "columns": {
         "created_at": {
@@ -27070,8 +27075,30 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
+        },
+        "dkim_verdict": {
+          "collation": null,
+          "comment": "SES DKIM verdict from the amazonses.com Authentication-Results header; pass means a DKIM signature validated, not that the signing domain aligns with the From domain. unknown when SES reported none. Advisory risk signal only.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "text"
+        },
+        "dmarc_verdict": {
+          "collation": null,
+          "comment": "SES DMARC verdict from the amazonses.com Authentication-Results header; unknown when SES reported none. Advisory risk signal only.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "text"
         },
         "id": {
           "collation": null,
@@ -27150,6 +27177,28 @@
           "ordinalPosition": 2,
           "type": "text"
         },
+        "spam_verdict": {
+          "collation": null,
+          "comment": "SES spam verdict from the X-SES-Spam-Verdict header SES added at receipt; unknown when SES reported none. Advisory risk signal only.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11,
+          "type": "text"
+        },
+        "spf_verdict": {
+          "collation": null,
+          "comment": "SES SPF verdict from the amazonses.com Authentication-Results header SES added at receipt; unknown when SES reported none. Advisory risk signal only.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "text"
+        },
         "updated_at": {
           "collation": null,
           "comment": null,
@@ -27158,8 +27207,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
+        },
+        "virus_verdict": {
+          "collation": null,
+          "comment": "SES malware verdict from the X-SES-Virus-Verdict header SES added at receipt; unknown when SES reported none. A fail quarantines the original message so staff cannot download it.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 12,
+          "type": "text"
         }
       },
       "comment": "Immutable, private records for email sent to the designated copyright inbox before a moderator validates it into a legal case.",
