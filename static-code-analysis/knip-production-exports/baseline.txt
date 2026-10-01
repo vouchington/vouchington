@@ -132,7 +132,6 @@ exports backend/services/community-member-vacations/manage.mts getMyCommunityVac
 exports backend/services/contribution-gating/admission.mts canonicalizeAdmissionIntent
 exports backend/services/contribution-gating/limits.mts getContributionLimitActionForPostType
 exports backend/services/conversations-messages/conversations.mts getConversationByCreatedByAndTitle
-exports backend/services/conversations-messages/conversations.mts updateConversationLastResponseId
 exports backend/services/conversations-messages/create.mts createConversationMessage
 exports backend/services/conversations-messages/update-message.mts updateConversationMessageContent
 exports backend/services/copyright-notices/appeal-recommendations.mts copyrightAppealRecommendations

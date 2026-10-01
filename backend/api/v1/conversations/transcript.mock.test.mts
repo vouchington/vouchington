@@ -174,7 +174,12 @@ describe('member transcript contract', () => {
     expect(second.body.results[0].completion.status).toBe('completed')
     expect(second.body.page_info.has_next_page).toBe(false)
     const list = await request.get('/api/v1/my/conversations').expect(200)
-    expect(list.body.results[0]).not.toHaveProperty('last_response_id')
+    expect(Object.keys(list.body.results[0]).sort()).toEqual([
+      'created_at',
+      'id',
+      'title',
+      'updated_at',
+    ])
     const failed = await createConversationMessage(conversation.id, user.id, {
       role: 'assistant',
       content: 'Partial',

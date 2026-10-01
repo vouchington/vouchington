@@ -19285,7 +19285,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         },
         "assigned_mod_id": {
@@ -19296,7 +19296,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 17,
           "type": "uuid"
         },
         "channel_type": {
@@ -19318,7 +19318,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 15,
           "type": "uuid"
         },
         "created_at": {
@@ -19329,7 +19329,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 4,
           "type": "timestamp with time zone"
         },
         "created_by_id": {
@@ -19340,7 +19340,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 5,
           "type": "uuid"
         },
         "deleted_at": {
@@ -19351,7 +19351,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "deleted_by_id": {
@@ -19362,7 +19362,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 9,
           "type": "uuid"
         },
         "id": {
@@ -19376,17 +19376,6 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
-        "last_response_id": {
-          "collation": null,
-          "comment": "The last OpenAI response ID for this conversation, used to chain turns via previous_response_id.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4,
-          "type": "text"
-        },
         "moderation_report_id": {
           "collation": null,
           "comment": "The moderation report this internal mod-discussion thread is about. Set when channel_type is mod_internal and the item is a report. Mutually exclusive with post_id for mod_internal threads.",
@@ -19395,7 +19384,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 14,
           "type": "uuid"
         },
         "participant_add_policy": {
@@ -19406,7 +19395,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 20,
+          "ordinalPosition": 19,
           "type": "conversation_participant_add_policies"
         },
         "post_id": {
@@ -19417,7 +19406,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 12,
           "type": "uuid"
         },
         "resolved_at": {
@@ -19428,7 +19417,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "resolved_by_id": {
@@ -19439,7 +19428,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 11,
           "type": "uuid"
         },
         "rss_feed_item_id": {
@@ -19450,7 +19439,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 13,
           "type": "uuid"
         },
         "subject_user_id": {
@@ -19461,7 +19450,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 16,
           "type": "uuid"
         },
         "title": {
@@ -19483,7 +19472,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "updated_by_id": {
@@ -19494,7 +19483,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 7,
           "type": "uuid"
         }
       },

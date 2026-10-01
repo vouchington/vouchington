@@ -9,7 +9,6 @@ import {
   getConversationById,
   getConversationsByCreatedById,
   getConversationMessagesByConversationId,
-  updateConversationLastResponseId,
 } from '../index.mts'
 
 describe('conversations-messages service (conversations)', () => {
@@ -101,11 +100,10 @@ describe('conversations-messages service (conversations)', () => {
     expect(retrieved.map(m => m.id)).toContain(message2.id)
   })
 
-  it('createClientGeneratedChatTurn clears stale OpenAI response chain state', async () => {
+  it('createClientGeneratedChatTurn stores the user and assistant messages', async () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createSystemUser(`test-user-${random}`)
     const conversation = await createConversation(user.id, 'Local model')
-    await updateConversationLastResponseId(conversation.id, 'response_stale')
 
     const result = await createClientGeneratedChatTurn({
       userMessageId: user.id,
@@ -118,8 +116,6 @@ describe('conversations-messages service (conversations)', () => {
       modelName: 'apple-foundation-system',
     })
 
-    const updated = await getConversationById(conversation.id)
-    expect(updated?.last_response_id).toBeNull()
     expect(result.userMessage.content).toEqual({
       role: 'user',
       content: 'Summarize my rewards profile',
