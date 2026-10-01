@@ -37,8 +37,11 @@ def main() -> None:
         try:
             proc.wait(timeout=10)
         except subprocess.TimeoutExpired:
-            signal_group(proc.pid, signal.SIGKILL)
-            proc.wait()
+            pass
+        # The parent can exit on SIGTERM while a descendant keeps running.
+        # Finish cleaning the group even when waiting for the parent succeeded.
+        signal_group(proc.pid, signal.SIGKILL)
+        proc.wait()
         raise SystemExit(124) from None
 
 
