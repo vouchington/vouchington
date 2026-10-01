@@ -109465,7 +109465,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -109476,7 +109476,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "dispatched_at": {
@@ -109487,7 +109487,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "expires_at": {
@@ -109498,7 +109498,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "failed_at": {
@@ -109509,7 +109509,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -109531,7 +109531,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "text"
         },
         "processing_attempt_id": {
@@ -109542,7 +109542,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "uuid"
         },
         "processing_attempts": {
@@ -109553,7 +109553,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "integer"
         },
         "processing_started_at": {
@@ -109564,7 +109564,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "queued_at": {
@@ -109575,8 +109575,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "timestamp with time zone"
+        },
+        "requested_by_id": {
+          "collation": null,
+          "comment": "The user who requested the export: the subject, or an administrator acting on their behalf. Only the requester may read the request; NULL (requester deleted) is visible to no one.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
         },
         "s3_key": {
           "collation": null,
@@ -109586,7 +109597,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "text"
         },
         "updated_at": {
@@ -109597,12 +109608,12 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "user_id": {
           "collation": null,
-          "comment": "The user who requested the data export.",
+          "comment": "The subject: the user whose data is exported.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -109614,6 +109625,15 @@
       },
       "comment": "Tracks user data export requests with lifecycle from queued through download or expiration. Status is derived from timestamp columns.",
       "foreignKeys": {
+        "user_data_requests_requested_by_id_fkey": {
+          "columns": ["requested_by_id"],
+          "definition": "FOREIGN KEY (requested_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
         "user_data_requests_user_id_fkey": {
           "columns": ["user_id"],
           "definition": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL",
@@ -109626,16 +109646,23 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "idx_user_data_requests__active_per_user": {
+        "idx_user_data_requests__active_per_requester": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_user_data_requests__active_per_user ON public.user_data_requests USING btree (user_id) WHERE ((completed_at IS NULL) AND (failed_at IS NULL))",
+          "definition": "CREATE UNIQUE INDEX idx_user_data_requests__active_per_requester ON public.user_data_requests USING btree (user_id, requested_by_id) WHERE ((completed_at IS NULL) AND (failed_at IS NULL))",
           "includedColumns": [],
           "keys": [
             {
               "column": "user_id",
               "descending": false,
               "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "requested_by_id",
+              "descending": false,
+              "expression": "requested_by_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -109666,16 +109693,43 @@
           "unique": true,
           "valid": true
         },
-        "idx_user_data_requests__user_id": {
+        "idx_user_data_requests__requested_by_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_user_data_requests__user_id ON public.user_data_requests USING btree (user_id, id DESC)",
+          "definition": "CREATE INDEX idx_user_data_requests__requested_by_id ON public.user_data_requests USING btree (requested_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "requested_by_id",
+              "descending": false,
+              "expression": "requested_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_user_data_requests__user_id_requested_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_data_requests__user_id_requested_by_id ON public.user_data_requests USING btree (user_id, requested_by_id, id DESC)",
           "includedColumns": [],
           "keys": [
             {
               "column": "user_id",
               "descending": false,
               "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "requested_by_id",
+              "descending": false,
+              "expression": "requested_by_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             },
