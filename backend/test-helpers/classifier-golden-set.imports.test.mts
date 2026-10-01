@@ -24,7 +24,7 @@ describe('classifier golden regression set import graph', () => {
       expect.arrayContaining([
         'backend/agents/classifiers/prepare-single-call.mts',
         'backend/agents/post-classifier/classifier-input.mts',
-        'backend/agents/autotagger/dispatch-classifier-bindings.mts',
+        'backend/agents/autotagger/classifier-run-bindings.mts',
         'backend/agents/autotagger/content.mts',
       ]),
     )

@@ -17,7 +17,9 @@ supplies only input building:
   (`content.mts`'s `buildPostClassifierState` / `buildRssFeedItemClassifierState`). It never
   searches for candidates, so a retry, lease reclaim or replay asks the same question set. When
   every captured topic has since been hard-deleted it returns no input: the run has no remote work
-  and completes without a provider call or votes.
+  and completes without a provider call or votes. `classifier-run-bindings.mts`
+  (`buildAutotaggerBindings`) is the one place a question is rendered, shared with the credentialed
+  golden regression set so it asks what production asks.
 - `classifier-run-client.mts` (`createAutotaggerClient`) builds the structured-decision client with
   the shared billing hooks; the lifecycle's durable attempt reservation runs in its `beforeAttempt`
   hook. A client that cannot be built ends as the shared `client-unavailable` terminal path.

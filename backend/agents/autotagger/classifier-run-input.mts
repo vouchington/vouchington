@@ -1,14 +1,11 @@
 import type { ClassifierRunRemoteInput } from '@agents/classifier-runs'
-import {
-  renderClassifierCandidateQuestion,
-  type ClassifierSafeText,
-} from '@agents/classifiers/safe-content'
-import type { NoulClassifierBinding } from '@agents/classifiers/types'
+import type { ClassifierSafeText } from '@agents/classifiers/safe-content'
 import {
   readAutotaggerCandidateTopics,
   type AutotaggerRunConfiguration,
 } from '@services/autotagger'
 import type { ClassifierRunLease } from '@services/classifier-runs'
+import { buildAutotaggerBindings } from './classifier-run-bindings.mts'
 
 /**
  * C6's remote input: one yes/no question per topic the run captured when its receipt was reserved,
@@ -25,18 +22,7 @@ export async function buildAutotaggerRunInput(
   if (!remote?.capturedCandidates) throw new Error('tagging run must capture its own candidates')
   if (lease.capturedTopicIds.length === 0) return null
   const topics = await readAutotaggerCandidateTopics(lease.capturedTopicIds)
-  const bindings: NoulClassifierBinding[] = await Promise.all(
-    topics.map(async topic => ({
-      type: 'noul' as const,
-      questionId: topic.topicId,
-      question: await renderClassifierCandidateQuestion(configuration.prompt, topic.name),
-      candidate: {
-        candidateKind: 'topic' as const,
-        topicId: topic.topicId,
-        storedCandidateId: null,
-      },
-    })),
-  )
+  const bindings = await buildAutotaggerBindings(configuration.prompt, topics)
   return {
     classifierId: remote.classifierId,
     promptVersionId: remote.promptVersionId,

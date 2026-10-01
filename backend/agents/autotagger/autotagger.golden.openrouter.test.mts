@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import type { NoulClassifierBinding } from '@agents/classifiers/types'
 import { autotaggerGoldenFixtures } from '@voucha/test-helpers/classifier-golden-fixtures'
 import {
   runClassifierGoldenSet,
@@ -16,12 +15,12 @@ describe('autotagger golden regression set', () => {
       { buildPostClassifierState, buildRssFeedItemClassifierState },
       { getActiveClassifierConfigurationBySlugFromPrimary },
       { prepareSingleCallClassifierDecision },
-      { renderClassifierCandidateQuestion },
+      { buildAutotaggerBindings },
     ] = await Promise.all([
       import('./content.mts'),
       import('@services/classifiers'),
       import('@agents/classifiers/prepare-single-call'),
-      import('@agents/classifiers/safe-content'),
+      import('./classifier-run-bindings.mts'),
     ])
     const configuration = await getActiveClassifierConfigurationBySlugFromPrimary('tagging')
     expect(configuration?.modelProvider).toBe('openrouter')
@@ -53,18 +52,7 @@ describe('autotagger golden regression set', () => {
           topicId: randomUUID(),
           name,
         }))
-        const bindings: NoulClassifierBinding[] = await Promise.all(
-          candidates.map(async candidate => ({
-            type: 'noul' as const,
-            questionId: candidate.topicId,
-            question: await renderClassifierCandidateQuestion(configuration.prompt, candidate.name),
-            candidate: {
-              candidateKind: 'topic' as const,
-              topicId: candidate.topicId,
-              storedCandidateId: null,
-            },
-          })),
-        )
+        const bindings = await buildAutotaggerBindings(configuration.prompt, candidates)
         return {
           fixture,
           decide: async client => {
