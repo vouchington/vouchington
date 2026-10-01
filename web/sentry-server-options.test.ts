@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { createSentryDataCollection } from '@ts-shared/utils/sentry-data-collection'
 import { resolveSentryDsnEnablement } from '@ts-shared/utils/sentry-deployment-gate'
 import { createSentryServerInitOptions } from './sentry-server-options'
 
@@ -31,15 +32,19 @@ describe('createSentryServerInitOptions', () => {
     )
   })
 
-  it('turns off HTTP body capture and gen-AI input and output recording', () => {
-    const expected: ReturnType<typeof createSentryServerInitOptions>['dataCollection'] = {
-      httpBodies: [],
-      genAI: { inputs: false, outputs: false },
-    }
+  it('applies the shared least-data collection policy', () => {
+    const expected: ReturnType<typeof createSentryServerInitOptions>['dataCollection'] =
+      createSentryDataCollection()
+    const dataCollection = createSentryServerInitOptions({ NODE_ENV: 'production' }).dataCollection
 
-    expect(createSentryServerInitOptions({ NODE_ENV: 'production' }).dataCollection).toEqual(
-      expected,
-    )
+    expect(dataCollection).toEqual(expected)
+    expect(dataCollection).toMatchObject({
+      userInfo: false,
+      cookies: false,
+      urlQueryParams: false,
+      databaseQueryData: false,
+      stackFrameVariables: false,
+    })
   })
 
   it('stays disabled outside the deployed-environment allowlist', () => {

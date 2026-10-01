@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { createSentryDataCollection } from '@ts-shared/utils/sentry-data-collection'
 import { createSentryEdgeInitOptions } from './sentry-edge-options'
 
 const scrubSentryError = () => ({ scrubbedError: true }) as never
@@ -21,13 +22,19 @@ describe('createSentryEdgeInitOptions', () => {
     ).toMatchObject({ dsn: 'https://public@example.test/123', enabled: true })
   })
 
-  it('turns off HTTP body capture and gen-AI input and output recording', () => {
-    const expected: ReturnType<typeof createSentryEdgeInitOptions>['dataCollection'] = {
-      httpBodies: [],
-      genAI: { inputs: false, outputs: false },
-    }
+  it('applies the shared least-data collection policy', () => {
+    const expected: ReturnType<typeof createSentryEdgeInitOptions>['dataCollection'] =
+      createSentryDataCollection()
+    const dataCollection = createSentryEdgeInitOptions({ NODE_ENV: 'production' }).dataCollection
 
-    expect(createSentryEdgeInitOptions({ NODE_ENV: 'production' }).dataCollection).toEqual(expected)
+    expect(dataCollection).toEqual(expected)
+    expect(dataCollection).toMatchObject({
+      userInfo: false,
+      cookies: false,
+      urlQueryParams: false,
+      databaseQueryData: false,
+      stackFrameVariables: false,
+    })
   })
 
   it('stays disabled outside the deployed-environment allowlist', () => {

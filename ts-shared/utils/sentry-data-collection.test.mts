@@ -9,9 +9,33 @@ import { scrubSentryEvent, scrubSpanAttributes } from './sentry-event-scrubbing.
 const noticeBody = JSON.stringify({ legalName: 'Claimant', perjuryStatement: true })
 
 describe('createSentryDataCollection', () => {
-  it('turns off HTTP body capture and gen-AI input and output recording', () => {
+  it('pins the least-data collection policy', () => {
     expect(createSentryDataCollection()).toEqual({
+      userInfo: false,
+      cookies: false,
+      httpHeaders: {
+        request: {
+          deny: [
+            'x-client-ip',
+            'x-forwarded-for',
+            'x-forwarded',
+            'forwarded-for',
+            'forwarded',
+            'x-vercel-forwarded-for',
+            'x-real-ip',
+            'x-cluster-client-ip',
+            'true-client-ip',
+            'fastly-client-ip',
+            'fly-client-ip',
+            'cf-connecting-ip',
+            'cf-pseudo-ipv4',
+          ],
+        },
+      },
       httpBodies: [],
+      urlQueryParams: false,
+      databaseQueryData: false,
+      stackFrameVariables: false,
       genAI: { inputs: false, outputs: false },
     })
   })
