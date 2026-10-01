@@ -14,6 +14,9 @@ type GooglePubSubPushEnvelope = {
   message?: { messageId?: string; data?: string }
 }
 
+// Specialized ingress (server-to-server webhook): a Pub/Sub push authenticated by an OIDC bearer.
+// The shared JSON contract adapter is intentionally absent; the envelope is re-serialized as the raw
+// body that `ingestGooglePlayRtdnPush` verifies (401 on failure) before anything is enqueued.
 app.route('/api/v1/memberships/google-play/notifications').post(async (ctx: Context) => {
   const audience = process.env.GOOGLE_PLAY_PUBSUB_AUDIENCE?.trim()
   const serviceAccountEmail = process.env.GOOGLE_PLAY_PUBSUB_SERVICE_ACCOUNT_EMAIL?.trim()

@@ -22,8 +22,16 @@
   "dependencies": {
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
-    "sql-template-strings": "^2.2.2",
-    "uuid": "^14.0.2"
+    "@services/classifier-runs": "workspace:^",
+    "@services/classifiers": "workspace:^",
+    "@services/memberships": "workspace:^",
+    "@services/rss-feed-items": "workspace:^",
+    "@services/topics": "workspace:^",
+    "@services/users": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "sql-template-strings": "^2.2.2"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
 }

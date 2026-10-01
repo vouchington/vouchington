@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { readClassifierRunCandidateTopicIds } from './run-candidates.mts'
 import { lockClassifierRun, type ClassifierRunTarget } from './run-lock.mts'
 import type { ClassifierRunAdapter, ClassifierRunLease } from './types.mts'
 
@@ -42,6 +43,9 @@ export async function claimClassifierRun<C, L, E>(
       superseded_at = NULL
     WHERE id = ${input.runId}
   `)
+  const capturedTopicIds = resolved.remote?.capturedCandidates
+    ? await readClassifierRunCandidateTopicIds(query, input.runId)
+    : []
   await query.commit()
   return {
     kind: row.outcomes_persisted_at ? 'outcomes_ready' : 'claimed',
@@ -52,6 +56,7 @@ export async function claimClassifierRun<C, L, E>(
       resolved,
       leaseToken,
       decisionBatchId: row.decision_batch_id,
+      capturedTopicIds,
     },
   }
 }

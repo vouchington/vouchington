@@ -71,11 +71,13 @@ Downstream systems triggered (all fire-and-forget):
 - If `created_by_id` exists, create the author's +1 vote through
   `@services/elections-votes/post` and bookmark through `@services/bookmarks/upsert`.
 - Always process @mentions through the `post-mentions` queue.
-- For `pending` posts, enqueue `bedrock_embeddings_nova_multimodal_v1_single`,
-  `openai_moderation_omni_single`, and `autotagger` through the `workflows` FlowProducer, and run
-  `spam_detection` before clearance.
-- For `approved` posts, enqueue `bedrock_embeddings_nova_multimodal_v1_single` and `autotagger`
-  through the `workflows` FlowProducer.
+- For `pending` posts, enqueue `bedrock_embeddings_nova_multimodal_v1_single` and
+  `openai_moderation_omni_single` (one attempt, like every other creation-moderation enqueue), and
+  run `spam_detection` before clearance. Approval writes the durable `classifier_run_requests` for
+  the post classifier and the tagging classifier in the approval transaction.
+- For `approved` posts, enqueue `bedrock_embeddings_nova_multimodal_v1_single` and record the
+  tagging request (`requestApprovedPostClassifierRuns`) followed by a stable-id classifier-run
+  dispatcher. The dispatcher waits for the post embedding; the sweep covers the wait.
 - For comments, refresh ancestor metrics through the `entity-metrics-cache-refresh` queue.
 
 > **Note:** Post revisions are tracked synchronously in the `createPost()` / `updatePost()` / `deletePost()` transactions, not via the entity-listeners queue.

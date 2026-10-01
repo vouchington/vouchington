@@ -92,8 +92,3 @@ async function writeBlockerToDisk(
     await dependencies.unlink(tmpPath).catch(onError)
   }
 }
-
-export function resetBlockerForTesting(): void {
-  cachedBlocker = null
-  blockerFetchFailedAt = 0
-}

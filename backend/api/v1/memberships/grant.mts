@@ -1,16 +1,21 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuthAndRateLimit } from '../../response-helpers.mts'
+import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
+import type { ApiUuidContract } from '../../request-contract-types.mts'
 import {
   currentUserCanGrantMembership,
   grantMembership,
   InvalidMembershipGrantSkuError,
   InvalidMembershipGrantUserError,
 } from '@services/memberships'
-import type { MembershipPlanSlug } from '@services/memberships/types'
 import { assertNotSuspended } from '@services/users'
 
-const VALID_PLANS = new Set<string>(['plus', 'pro'])
+type GrantMembershipRequest = {
+  user_id: ApiUuidContract
+  plan: 'plus' | 'pro'
+  sku_id: ApiUuidContract
+  duration_days: number
+}
 
 app.route('/api/v1/membership-grants').post(async (ctx: Context) => {
   const currentUser = await requireAuthAndRateLimit(
@@ -20,17 +25,9 @@ app.route('/api/v1/membership-grants').post(async (ctx: Context) => {
   )
   assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('1mb')) as {
-    user_id: string
-    plan: string
-    sku_id: string
-    duration_days: number
-  }
-  if (body === null) ctx.throw(400, 'Missing user_id')
+  const body = (await ctx.request.json('1mb')) as GrantMembershipRequest
+  validateRequestContract(ctx, 'POST:/api/v1/membership-grants', { body })
 
-  ctx.assert(body.user_id && typeof body.user_id === 'string', 400, 'Missing user_id')
-  ctx.assert(body.plan && VALID_PLANS.has(body.plan), 400, 'Invalid plan')
-  ctx.assert(body.sku_id && typeof body.sku_id === 'string', 400, 'Missing sku_id')
   ctx.assert(
     Number.isInteger(body.duration_days) && body.duration_days >= 1 && body.duration_days <= 3660,
     400,
@@ -41,7 +38,7 @@ app.route('/api/v1/membership-grants').post(async (ctx: Context) => {
     result = await grantMembership(
       currentUser.id,
       body.user_id,
-      body.plan as MembershipPlanSlug,
+      body.plan,
       body.sku_id,
       body.duration_days,
     )

@@ -15,23 +15,22 @@ vi.mock<typeof import('@modules/aws')>(import('@modules/aws'), async importOrigi
   }
 })
 
-import { S3Buckets, S3ImagesClient } from '@modules/aws'
-import {
-  clearArticleMarkdownCacheForTests,
-  getArticleMarkdown,
-  listArticleMarkdownFiles,
-} from './storage.mts'
+let aws: typeof import('@modules/aws')
+let storage: typeof import('./storage.mts')
 
 describe('storage', () => {
-  beforeEach(() => {
+  let mockSend: ReturnType<typeof vi.mocked<typeof aws.S3ImagesClient.send>>
+
+  beforeEach(async () => {
+    vi.resetModules()
+    aws = await import('@modules/aws')
+    storage = await import('./storage.mts')
     vi.clearAllMocks()
-    vi.mocked(S3ImagesClient.send).mockReset()
-    clearArticleMarkdownCacheForTests()
+    mockSend = vi.mocked(aws.S3ImagesClient.send)
+    mockSend.mockReset()
   })
 
   describe('article S3 storage', () => {
-    const mockSend = vi.mocked(S3ImagesClient.send)
-
     function s3Body(markdown: string): { transformToString: () => Promise<string> } {
       return { transformToString: vi.fn<VitestLooseMock>().mockResolvedValue(markdown) }
     }
@@ -55,7 +54,7 @@ describe('storage', () => {
           Contents: [{ Key: 'articles/a.md', ETag: '"etag-a"', Size: 1 }],
         } as never)
 
-      const files = await listArticleMarkdownFiles()
+      const files = await storage.listArticleMarkdownFiles()
 
       expect(files.map(file => file.file)).toEqual(['a.md', 'b.md'])
       expect(files.map(file => file.key)).toEqual(['articles/a.md', 'articles/b.md'])
@@ -64,11 +63,11 @@ describe('storage', () => {
       const firstCommand = mockSend.mock.calls[0]![0] as ListObjectsV2Command
       const secondCommand = mockSend.mock.calls[1]![0] as ListObjectsV2Command
       expect(firstCommand.input).toMatchObject({
-        Bucket: S3Buckets.assets,
+        Bucket: aws.S3Buckets.assets,
         Prefix: 'articles/',
       })
       expect(secondCommand.input).toMatchObject({
-        Bucket: S3Buckets.assets,
+        Bucket: aws.S3Buckets.assets,
         Prefix: 'articles/',
         ContinuationToken: 'page-2',
       })
@@ -79,13 +78,13 @@ describe('storage', () => {
 
       const article = { file: 'cached.md', key: 'articles/cached.md', cacheToken: '"v1"' }
 
-      await expect(getArticleMarkdown(article)).resolves.toBe('# Cached\n')
-      await expect(getArticleMarkdown(article)).resolves.toBe('# Cached\n')
+      await expect(storage.getArticleMarkdown(article)).resolves.toBe('# Cached\n')
+      await expect(storage.getArticleMarkdown(article)).resolves.toBe('# Cached\n')
 
       expect(mockSend).toHaveBeenCalledOnce()
       const command = mockSend.mock.calls[0]![0] as GetObjectCommand
       expect(command.input).toMatchObject({
-        Bucket: S3Buckets.assets,
+        Bucket: aws.S3Buckets.assets,
         Key: 'articles/cached.md',
       })
     })
@@ -96,10 +95,18 @@ describe('storage', () => {
         .mockResolvedValueOnce({ Body: s3Body('# Second\n'), ContentLength: 9 } as never)
 
       await expect(
-        getArticleMarkdown({ file: 'changed.md', key: 'articles/changed.md', cacheToken: '"v1"' }),
+        storage.getArticleMarkdown({
+          file: 'changed.md',
+          key: 'articles/changed.md',
+          cacheToken: '"v1"',
+        }),
       ).resolves.toBe('# First\n')
       await expect(
-        getArticleMarkdown({ file: 'changed.md', key: 'articles/changed.md', cacheToken: '"v2"' }),
+        storage.getArticleMarkdown({
+          file: 'changed.md',
+          key: 'articles/changed.md',
+          cacheToken: '"v2"',
+        }),
       ).resolves.toBe('# Second\n')
 
       expect(mockSend).toHaveBeenCalledTimes(2)
@@ -113,7 +120,11 @@ describe('storage', () => {
       } as never)
 
       await expect(
-        getArticleMarkdown({ file: 'large.md', key: 'articles/large.md', cacheToken: '"large"' }),
+        storage.getArticleMarkdown({
+          file: 'large.md',
+          key: 'articles/large.md',
+          cacheToken: '"large"',
+        }),
       ).rejects.toThrow('Article object from S3 exceeds')
       expect(body.transformToString).not.toHaveBeenCalled()
     })

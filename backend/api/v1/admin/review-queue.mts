@@ -4,6 +4,8 @@ import { isModerationStaff } from '@services/users'
 import { searchPostsForAdminReview } from '@services/post-clearance'
 import { createPaginationParser } from '@modules/pagination'
 import { requireAuthAndRateLimit } from '../../response-helpers.mts'
+import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 
 const parser = createPaginationParser({
   cursor: { type: 'simple' },
@@ -16,9 +18,19 @@ const parser = createPaginationParser({
  * provider-neutral moderation summary and media reveal metadata for review context.
  */
 app.route('/api/v1/posts/review-queue').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/posts/review-queue', parser)
   await requireAuthAndRateLimit(ctx, isModerationStaff, 'GET:/api/v1/posts/review-queue')
 
-  const { limit, after } = parser.parse(ctx.query)
+  const { limit, after } = parseAndValidatePaginatedRequest(
+    ctx,
+    'GET:/api/v1/posts/review-queue',
+    parser,
+  )
 
-  ctx.json(await searchPostsForAdminReview({ limit, after }))
+  ctx.json(
+    apiResponse(
+      'GET:/api/v1/posts/review-queue',
+      await searchPostsForAdminReview({ limit, after }),
+    ),
+  )
 })

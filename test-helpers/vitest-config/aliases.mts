@@ -62,10 +62,6 @@ export function backendAliases({
       replacement: resolve(process.cwd(), 'backend/workers/$1'),
     },
     {
-      find: /^@flows\/(.*)$/,
-      replacement: resolve(process.cwd(), 'backend/flows/$1'),
-    },
-    {
       find: /^@data-stores\/(.*)$/,
       replacement: resolve(process.cwd(), 'backend/data-stores/$1'),
     },

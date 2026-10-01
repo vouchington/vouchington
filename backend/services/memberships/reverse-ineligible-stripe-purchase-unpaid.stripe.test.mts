@@ -8,10 +8,11 @@ import {
 } from '@voucha/test-helpers'
 import { createMembership } from './create.mts'
 import { reconcileRecordedIneligibleStripePurchaseReversal } from './reconcile-recorded-ineligible-stripe-purchase-reversal.mts'
-import {
-  reverseIneligibleStripePurchase,
-  type IneligibleStripePurchaseOperations,
-} from './reverse-ineligible-stripe-purchase.mts'
+import { reverseIneligibleStripePurchase } from './reverse-ineligible-stripe-purchase.mts'
+
+type IneligibleStripePurchaseOperations = NonNullable<
+  Parameters<typeof reverseIneligibleStripePurchase>[0]['operations']
+>
 
 describe('reverseIneligibleStripePurchase unpaid invoice', () => {
   it('cancels an ineligible subscription without recording a terminal refund operation', async () => {

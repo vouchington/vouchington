@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { ActiveClassifierConfiguration } from './types.mts'
 
@@ -54,8 +54,9 @@ export async function getActiveClassifierConfigurationFromPrimary(
  */
 export async function getActiveClassifierConfigurationBySlugFromPrimary(
   slug: string,
+  query: QueryExecutor = write,
 ): Promise<ActiveClassifierConfiguration | null> {
-  const { rows } = await write<ActiveClassifierConfigurationRow>(sql`
+  const { rows } = await query<ActiveClassifierConfigurationRow>(sql`
     /* getActiveClassifierConfigurationBySlugFromPrimary */
     SELECT
       classifier.id AS classifier_id,

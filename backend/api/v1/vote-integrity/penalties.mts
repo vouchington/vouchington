@@ -10,7 +10,7 @@ import {
   revokeVoteWeightPenalty,
   type GetVoteWeightPenaltiesOptions,
 } from '@services/vote-integrity'
-import { requireAuthAndRateLimit } from '../../response-helpers.mts'
+import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 
 const penaltiesParser = createPaginationParser({
   cursor: { type: 'simple' },
@@ -62,6 +62,7 @@ app.route('/api/v1/vote-integrity/penalties/:id').get(async (ctx: Context) => {
     'GET:/api/v1/vote-integrity/penalties/:id',
   )
   ctx.assert(isUUID(ctx.params.id!), 422, 'Invalid penalty ID')
+  validateRequestContract(ctx, 'GET:/api/v1/vote-integrity/penalties/:id', { path: ctx.params })
   const penalty = await getVoteWeightPenaltyByIdFromPrimary(ctx.params.id!)
   ctx.assert(penalty, 404, 'Penalty not found')
   ctx.json({ penalty })
@@ -76,6 +77,7 @@ app.route('/api/v1/vote-integrity/penalties/:id').delete(async (ctx: Context) =>
   )
 
   ctx.assert(isUUID(ctx.params.id!), 422, 'Invalid penalty ID')
+  validateRequestContract(ctx, 'DELETE:/api/v1/vote-integrity/penalties/:id', { path: ctx.params })
 
   const penalty = await revokeVoteWeightPenalty(ctx.params.id!, currentUser.id)
   ctx.json({ penalty })

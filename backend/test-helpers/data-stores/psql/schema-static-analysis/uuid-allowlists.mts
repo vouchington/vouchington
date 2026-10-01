@@ -76,10 +76,6 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'Opaque fencing token rotated on ownership transfer; it intentionally identifies no durable relation.',
   ],
   [
-    'autotagger_receipts.lease_token',
-    'Fencing token identifying the current exclusive claimant, compared only for equality on lease release; it intentionally identifies no durable relation.',
-  ],
-  [
     'classifier_runs.lease_token',
     'Opaque fencing token rotated for the current exclusive claimant; it intentionally identifies no durable relation.',
   ],

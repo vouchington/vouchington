@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { CrawlerNetworkError, CrawlerSsrfError } from '@modules/on-error/errors'
 import {
   getCrawlTestDependencies,
   makeMockBrowser,
@@ -16,19 +15,26 @@ import {
   mockWriteFile,
   resetCrawlMocks,
 } from '@voucha/test-helpers/services/browser-crawl/crawl-fixtures'
-import { getBlocker, resetBlockerForTesting } from './adblocker-cache.mts'
-import { crawlWithBrowser } from './crawl.mts'
-
+let crawl: typeof import('./crawl.mts')
+let blocker: typeof import('./adblocker-cache.mts')
+let errors: typeof import('@modules/on-error/errors')
+async function loadFreshCrawl() {
+  vi.resetModules()
+  errors = await import('@modules/on-error/errors')
+  blocker = await import('./adblocker-cache.mts')
+  crawl = await import('./crawl.mts')
+}
 describe('crawlWithBrowser', () => {
-  beforeEach(() => resetCrawlMocks(resetBlockerForTesting))
-
+  beforeEach(async () => {
+    await loadFreshCrawl()
+    resetCrawlMocks()
+  })
   afterEach(() => {
     delete process.env.LIGHTPANDA_CDP_URL
     delete process.env.LIGHTPANDA_TOKEN
   })
-
   function crawlWithBrowserForTest(url: string) {
-    return crawlWithBrowser(url, getCrawlTestDependencies())
+    return crawl.crawlWithBrowser(url, getCrawlTestDependencies())
   }
 
   it('returns null blocker when fetch times out, sets blockerFetchFailedAt cooldown', async () => {
@@ -77,7 +83,7 @@ describe('crawlWithBrowser', () => {
     mockFromPrebuiltAdsAndTracking.mockReturnValue(new Promise(() => {}))
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    const resultPromise = getBlocker(getCrawlTestDependencies()).then(result => {
+    const resultPromise = blocker.getBlocker(getCrawlTestDependencies()).then(result => {
       expect(result).toBeNull()
       return undefined
     })
@@ -95,9 +101,9 @@ describe('crawlWithBrowser', () => {
 })
 
 describe('crawlWithBrowser — request interception', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await loadFreshCrawl()
     vi.clearAllMocks()
-    resetBlockerForTesting()
     mockReadFile.mockRejectedValue(new Error('ENOENT'))
     mockWriteFile.mockResolvedValue(undefined)
     mockRename.mockResolvedValue(undefined)
@@ -109,7 +115,7 @@ describe('crawlWithBrowser — request interception', () => {
   })
 
   function crawlWithBrowserForTest(url: string) {
-    return crawlWithBrowser(url, getCrawlTestDependencies())
+    return crawl.crawlWithBrowser(url, getCrawlTestDependencies())
   }
 
   async function setupAndGetRouteHandler(blockerEnabled: boolean) {
@@ -204,7 +210,10 @@ describe('crawlWithBrowser — request interception', () => {
   it('rethrows the captured SSRF error from page.goto instead of a generic CrawlerNetworkError', async () => {
     process.env.LIGHTPANDA_CDP_URL = 'wss://uswest.cloud.lightpanda.io/ws'
     process.env.LIGHTPANDA_TOKEN = 'test-token'
-    const ssrfError = new CrawlerSsrfError('http://169.254.169.254/', 'private network address')
+    const ssrfError = new errors.CrawlerSsrfError(
+      'http://169.254.169.254/',
+      'private network address',
+    )
     mockAssertSafeUrlSync.mockImplementation(() => {
       throw ssrfError
     })
@@ -216,7 +225,7 @@ describe('crawlWithBrowser — request interception', () => {
     mockConnectOverCDP.mockResolvedValue(makeMockBrowser(page))
     await expect(crawlWithBrowserForTest('http://169.254.169.254/')).rejects.toBe(ssrfError)
     await expect(crawlWithBrowserForTest('http://169.254.169.254/')).rejects.not.toBeInstanceOf(
-      CrawlerNetworkError,
+      errors.CrawlerNetworkError,
     )
   })
 
@@ -224,7 +233,10 @@ describe('crawlWithBrowser — request interception', () => {
     process.env.LIGHTPANDA_CDP_URL = 'wss://uswest.cloud.lightpanda.io/ws'
     process.env.LIGHTPANDA_TOKEN = 'test-token'
     mockAssertSafeUrlSync.mockImplementation(() => {
-      throw new CrawlerSsrfError('http://169.254.169.254/image.png', 'private network address')
+      throw new errors.CrawlerSsrfError(
+        'http://169.254.169.254/image.png',
+        'private network address',
+      )
     })
     const page = makeMockPage()
     page.goto = vi.fn<VitestLooseMock>().mockImplementation(async () => {
@@ -234,18 +246,18 @@ describe('crawlWithBrowser — request interception', () => {
     })
     mockConnectOverCDP.mockResolvedValue(makeMockBrowser(page))
     await expect(crawlWithBrowserForTest('https://example.com')).rejects.toBeInstanceOf(
-      CrawlerNetworkError,
+      errors.CrawlerNetworkError,
     )
     await expect(crawlWithBrowserForTest('https://example.com')).rejects.not.toBeInstanceOf(
-      CrawlerSsrfError,
+      errors.CrawlerSsrfError,
     )
   })
 })
 
 describe('crawlWithBrowser — browser context', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await loadFreshCrawl()
     vi.clearAllMocks()
-    resetBlockerForTesting()
     mockReadFile.mockRejectedValue(new Error('ENOENT'))
     mockWriteFile.mockResolvedValue(undefined)
     mockRename.mockResolvedValue(undefined)
@@ -260,7 +272,7 @@ describe('crawlWithBrowser — browser context', () => {
   })
 
   function crawlWithBrowserForTest(url: string) {
-    return crawlWithBrowser(url, getCrawlTestDependencies())
+    return crawl.crawlWithBrowser(url, getCrawlTestDependencies())
   }
 
   it('creates a browser context with serviceWorkers: block, then the page from that context', async () => {

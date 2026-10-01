@@ -12,7 +12,7 @@ describe('enqueueCreatePostModeration', () => {
     await openai_moderation_omni_single.obliterate({ force: true })
   })
 
-  it('includes the replacement key in the post moderation deduplication id', async () => {
+  it('enqueues one attempt with the replacement key in the moderation deduplication id', async () => {
     const postId = randomUUID()
     const deduplicationKey = `${'a'.repeat(64)}_123`
 
@@ -24,6 +24,7 @@ describe('enqueueCreatePostModeration', () => {
     )
     expect(job).toBeDefined()
     expect(job!.opts).toMatchObject({
+      attempts: 1,
       priority: 10,
       deduplication: {
         id: `post_moderation_${postId}_${deduplicationKey}`,

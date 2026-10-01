@@ -1,5 +1,6 @@
 import app from '../../app.mts'
 import { apiQuery } from '../../response-contract.mts'
+import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
 import type { Context } from '@jongleberry/api-server'
 import { createPaginationParser } from '@modules/pagination'
@@ -14,8 +15,9 @@ const currenciesParser = createPaginationParser({
 app.route('/api/v1/currencies').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/currencies', currenciesParser)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/currencies')
+  const page = parseAndValidatePaginatedRequest(ctx, 'GET:/api/v1/currencies', currenciesParser)
   if (!currentUser) {
     ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
   }
-  ctx.json(await listCurrencies(currenciesParser.parse(ctx.query)))
+  ctx.json(await listCurrencies(page))
 })

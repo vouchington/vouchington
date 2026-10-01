@@ -288,6 +288,9 @@ importers:
       '@agents/_shared':
         specifier: workspace:^
         version: link:../_shared
+      '@agents/classifier-runs':
+        specifier: workspace:^
+        version: link:../classifier-runs
       '@agents/classifiers':
         specifier: workspace:^
         version: link:../classifiers
@@ -297,43 +300,31 @@ importers:
       '@modules/structured-decisions':
         specifier: workspace:^
         version: link:../../modules/structured-decisions
-      '@services/ai-usage':
-        specifier: workspace:^
-        version: link:../../services/ai-usage
       '@services/autotagger':
         specifier: workspace:^
         version: link:../../services/autotagger
-      '@services/classifiers':
+      '@services/classifier-runs':
         specifier: workspace:^
-        version: link:../../services/classifiers
+        version: link:../../services/classifier-runs
       '@services/posts':
         specifier: workspace:^
         version: link:../../services/posts
       '@services/rss-feed-items':
         specifier: workspace:^
         version: link:../../services/rss-feed-items
-      '@services/topics':
-        specifier: workspace:^
-        version: link:../../services/topics
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
     devDependencies:
-      '@data-stores/valkey':
+      '@services/ai-usage':
         specifier: workspace:^
-        version: link:../../data-stores/valkey
-      '@services/elections-votes':
+        version: link:../../services/ai-usage
+      '@services/classifiers':
         specifier: workspace:^
-        version: link:../../services/elections-votes
-      '@services/rss-feeds':
+        version: link:../../services/classifiers
+      '@ts-shared/utils':
         specifier: workspace:^
-        version: link:../../services/rss-feeds
-      '@services/urls':
-        specifier: workspace:^
-        version: link:../../services/urls
+        version: link:../../../ts-shared/utils
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -2118,34 +2109,6 @@ importers:
       '@workers/vote-weight':
         specifier: workspace:^
         version: link:../../workers/vote-weight
-
-  backend/flows/core:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
-      '@queues/ai-agents':
-        specifier: workspace:^
-        version: link:../../queues/ai-agents
-      '@queues/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../../queues/bedrock-embeddings
-      '@queues/openai-moderation':
-        specifier: workspace:^
-        version: link:../../queues/openai-moderation
-      '@services/analytics':
-        specifier: workspace:^
-        version: link:../../services/analytics
-      glide-mq:
-        specifier: ^0.15.5
-        version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
-    devDependencies:
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
 
   backend/md:
     dependencies:
@@ -4061,12 +4024,34 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
+      '@services/classifier-runs':
+        specifier: workspace:^
+        version: link:../classifier-runs
+      '@services/classifiers':
+        specifier: workspace:^
+        version: link:../classifiers
+      '@services/memberships':
+        specifier: workspace:^
+        version: link:../memberships
+      '@services/rss-feed-items':
+        specifier: workspace:^
+        version: link:../rss-feed-items
+      '@services/topics':
+        specifier: workspace:^
+        version: link:../topics
+      '@services/users':
+        specifier: workspace:^
+        version: link:../users
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
-      uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+    devDependencies:
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
 
   backend/services/availability:
     dependencies:
@@ -7936,9 +7921,6 @@ importers:
       '@services/moderation':
         specifier: workspace:^
         version: link:../moderation
-      '@services/post-publication':
-        specifier: workspace:^
-        version: link:../post-publication
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -8752,6 +8734,9 @@ importers:
       '@services/bedrock-embeddings':
         specifier: workspace:^
         version: link:../bedrock-embeddings
+      '@services/classifier-runs':
+        specifier: workspace:^
+        version: link:../classifier-runs
       '@services/crawls':
         specifier: workspace:^
         version: link:../crawls
@@ -11094,9 +11079,6 @@ importers:
       '@services/feeds':
         specifier: workspace:^
         version: link:../../services/feeds
-      '@services/memberships':
-        specifier: workspace:^
-        version: link:../../services/memberships
       '@services/moderation':
         specifier: workspace:^
         version: link:../../services/moderation
@@ -11152,9 +11134,6 @@ importers:
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../../services/rss-feeds
-      '@services/urls':
-        specifier: workspace:^
-        version: link:../../services/urls
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -11702,9 +11681,6 @@ importers:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
-      '@flows/core':
-        specifier: workspace:^
-        version: link:../../flows/core
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -11759,6 +11735,9 @@ importers:
       '@services/bookmarks':
         specifier: workspace:^
         version: link:../../services/bookmarks
+      '@services/classifier-runs':
+        specifier: workspace:^
+        version: link:../../services/classifier-runs
       '@services/comments':
         specifier: workspace:^
         version: link:../../services/comments
@@ -11804,6 +11783,9 @@ importers:
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
       glide-mq:
         specifier: ^0.15.5
         version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))

@@ -13,15 +13,23 @@ import nativeHouseholdsOwned from '../../../../api-fixtures/v1/responses/native.
 import nativeHouseholdsSingleOwned from '../../../../api-fixtures/v1/responses/native.households.single-owned.json'
 import webMembershipsRefundCompleted from '../../../../api-fixtures/v1/responses/web.memberships.refund.completed.json'
 import webMembershipsRefundReconciling from '../../../../api-fixtures/v1/responses/web.memberships.refund.reconciling.json'
+import webMembershipsRefundableChargesDefault from '../../../../api-fixtures/v1/responses/web.memberships.refundable-charges.default.json'
 import type {
   HouseholdResponseBody,
   ListResponse,
   MembershipRefundResponseBody,
+  RefundableChargesResponseBody,
 } from '@/types/api-responses'
 import type { Household, HouseholdMembership as Membership } from '@/types/my'
 import { defineWebApiFixture, type WebApiFixtureDeclaration } from './declaration'
 
 export const HOUSEHOLDS_AND_MEMBERSHIPS_DECLARATIONS = [
+  defineWebApiFixture<RefundableChargesResponseBody>()(
+    'web.memberships.refundable-charges.default',
+    webMembershipsRefundableChargesDefault,
+    context =>
+      context.client.memberships.fetchRefundableCharges('019fafb8-a44c-73e2-890a-497ff3dd27a6'),
+  ),
   defineWebApiFixture<MembershipRefundResponseBody>()(
     'web.memberships.refund.completed',
     webMembershipsRefundCompleted,

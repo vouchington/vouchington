@@ -1163,7 +1163,6 @@ rules:
         - backend/api/v1
         - backend/data-stores
         - backend/entrypoints
-        - backend/flows
         - backend/modules
         - backend/queues
         - backend/services
@@ -1251,14 +1250,6 @@ rules:
           allowedSubdirs:
             - workers
             - processors
-        - root: backend/flows
-          sourceExtension: .mts
-          allowedRootFiles:
-            - package.json
-            - types.mts
-            - queues.mts
-            - enqueues.mts
-          allowedSubdirs: []
 
   - name: backend agent test coverage
     rule: require-test-per-subdir
@@ -1281,8 +1272,6 @@ rules:
           requiredFiles: [package.json]
           requireAnyOf:
             - [workers.mts, 'workers/*.mts']
-        - root: backend/flows
-          requiredFiles: [package.json, queues.mts, enqueues.mts]
         - root: backend/services
           requiredFiles: [package.json, index.mts]
         - root: backend/agents
@@ -1417,7 +1406,7 @@ rules:
         - .spend-cap-rollover.real-glide.mock
         - .spend-cap
         - .spend-cap-moderation
-        - .spend-cap-autotagger
+        - .autotagger
         - .spend-cap-story-post
         - .spend-cap-mid-loop
         - .mid-loop-breach.mock

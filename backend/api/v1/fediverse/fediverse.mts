@@ -1,7 +1,7 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
-import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
+import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import {
   FEDIVERSE_CURSOR_MAX_LENGTH,
   parseFediverseProviders,
@@ -22,7 +22,10 @@ const fediverseSearchQuery = defineQueryContract({
   q: queryString(),
   providers: queryCsvArray(queryEnum(['peertube', 'mastodon', 'lemmy', 'bluesky'] as const)),
   type: queryEnum(['video', 'post', 'profile', 'instance'] as const),
-  limit: queryInteger({ minimum: 1, maximum: 25, default: 10 }),
+  limit: queryInteger(
+    { minimum: 1, maximum: 100, default: 10 },
+    { description: 'Anonymous callers are capped at 25; larger values are clamped, not rejected.' },
+  ),
   after: queryString(),
 })
 
@@ -34,8 +37,10 @@ app.route('/api/v1/fediverse/search').get(async (ctx: Context) => {
   const q = qRaw ? qRaw.trim() : ''
   const providers = parseFediverseProviders(ctx.query.providers)
   const type = parseFediverseResultType(ctx.query.type)
+  // A malformed or out-of-range limit is clamped rather than rejected, so the contract below checks
+  // the settled integer.
   const parsedLimit = ctx.query.limit !== undefined ? Number(ctx.query.limit) : NaN
-  const rawLimit = Number.isFinite(parsedLimit) ? parsedLimit : undefined
+  const rawLimit = Number.isFinite(parsedLimit) ? Math.trunc(parsedLimit) : undefined
   const limit = currentUser ? clampLimit(rawLimit, 10) : clampAnonLimit(rawLimit ?? 10)
   ctx.assert(!Object.hasOwn(ctx.query, 'cursor'), 400, 'Use after instead of cursor')
   const afterRaw = ctx.query.after
@@ -43,6 +48,16 @@ app.route('/api/v1/fediverse/search').get(async (ctx: Context) => {
   const after = afterRaw ? afterRaw : undefined
   if (after !== undefined && after.length > FEDIVERSE_CURSOR_MAX_LENGTH)
     ctx.throw(400, 'Cursor is too long')
+
+  validateRequestContract(ctx, 'GET:/api/v1/fediverse/search', {
+    query: {
+      ...(qRaw !== undefined && { q: qRaw }),
+      ...(providers && { providers }),
+      ...(type && { type }),
+      limit,
+      ...(after && { after }),
+    },
+  })
 
   const result = await searchFediverse({ q, providers, type, limit, cursor: after })
 

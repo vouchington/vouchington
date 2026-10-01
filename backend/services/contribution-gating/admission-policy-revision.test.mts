@@ -5,7 +5,11 @@ import {
   getContributionAdmissionPolicyRevisionForTest,
   executeTestAdmittedPost,
 } from '@voucha/test-helpers'
-import { runContributionAdmission, type ContributionAdmissionAudit } from './admission.mts'
+import { runContributionAdmission } from './admission.mts'
+
+type ContributionAdmissionAudit = NonNullable<
+  Parameters<typeof runContributionAdmission>[0]['audit']
+>
 
 describe('contribution admission policy revision', () => {
   it('records the current policy revision when retrying a failed admission', async () => {

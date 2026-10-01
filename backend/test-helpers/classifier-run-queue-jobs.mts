@@ -28,11 +28,13 @@ export async function readClassifierRunJobsForTest(runId: string) {
   )
 }
 
-/** The dispatcher jobs (in any state) that carry one post, scoped so shared queue history is ignored. */
-export async function readClassifierRunDispatcherJobsForTest(postId: string) {
-  return (await readAllQueueJobs(ai_agents)).filter(
-    job =>
+/** The dispatcher jobs (in any state) that carry one post or feed item, ignoring shared queue history. */
+export async function readClassifierRunDispatcherJobsForTest(subjectId: string) {
+  return (await readAllQueueJobs(ai_agents)).filter(job => {
+    const data = job.data as Partial<ClassifierRunDispatcherJobData>
+    return (
       job.name === 'classifier-run-dispatcher' &&
-      (job.data as Partial<ClassifierRunDispatcherJobData>).postId === postId,
-  )
+      (data.postId === subjectId || data.rssFeedItemId === subjectId)
+    )
+  })
 }

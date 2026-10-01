@@ -46,6 +46,39 @@ export async function requestClassifierRuns(
   )
 }
 
+/**
+ * Records requests for a batch of just-upserted feed items at their current content digest, in the
+ * upsert transaction. Unlike a re-approval, a re-upsert of the same content never re-arms a request
+ * that already settled; an unsettled request for older content is stale.
+ */
+export async function requestRssFeedItemClassifierRuns(
+  query: QueryExecutor,
+  rssFeedItemIds: readonly string[],
+  classifierSlugs: readonly string[],
+): Promise<void> {
+  if (rssFeedItemIds.length === 0 || classifierSlugs.length === 0) return
+  const ids = [...rssFeedItemIds]
+  const slugs = [...classifierSlugs]
+  await query(sql`/* markStaleRssFeedItemClassifierRunRequests */
+    UPDATE classifier_run_requests request
+    SET stale_at = clock_timestamp()
+    FROM classifiers classifier, rss_feed_items item
+    WHERE classifier.id = request.classifier_id AND classifier.slug = ANY(${slugs}::text[])
+      AND item.id = request.rss_feed_item_id AND item.id = ANY(${ids}::uuid[])
+      AND request.input_sha256 <> item.bedrock_nova_multimodal_v1_content_sha256
+      AND request.run_id IS NULL AND request.no_work_at IS NULL AND request.stale_at IS NULL
+  `)
+  await query(sql`/* insertRssFeedItemClassifierRunRequests */
+    INSERT INTO classifier_run_requests (classifier_id, rss_feed_item_id, input_sha256)
+    SELECT classifier.id, item.id, item.bedrock_nova_multimodal_v1_content_sha256
+    FROM rss_feed_items item
+    CROSS JOIN classifiers classifier
+    WHERE item.id = ANY(${ids}::uuid[]) AND classifier.slug = ANY(${slugs}::text[])
+    ON CONFLICT (classifier_id, rss_feed_item_id, input_sha256)
+      WHERE rss_feed_item_id IS NOT NULL DO NOTHING
+  `)
+}
+
 export type ClassifierRunRequestSettlement =
   | { kind: 'run'; runId: string; inputSha256: Buffer }
   | { kind: 'no-work'; inputSha256: Buffer }

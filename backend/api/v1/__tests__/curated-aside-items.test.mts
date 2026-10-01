@@ -92,16 +92,16 @@ describe('POST /api/v1/curated-aside-items', () => {
       .expect(415)
   })
 
-  it('returns 400 when aside_type is missing', async () => {
+  it('returns 422 when aside_type is missing', async () => {
     const request = createRequest()
     await request.authenticateAs(admin)
-    await request.post('/api/v1/curated-aside-items').send({ entity_id: randomUUID() }).expect(400)
+    await request.post('/api/v1/curated-aside-items').send({ entity_id: randomUUID() }).expect(422)
   })
 
-  it('returns 400 when entity_id is missing', async () => {
+  it('returns 422 when entity_id is missing', async () => {
     const request = createRequest()
     await request.authenticateAs(admin)
-    await request.post('/api/v1/curated-aside-items').send({ aside_type: 'topic' }).expect(400)
+    await request.post('/api/v1/curated-aside-items').send({ aside_type: 'topic' }).expect(422)
   })
 
   it('returns 422 when aside_type is not a valid value', async () => {

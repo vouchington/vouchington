@@ -70,6 +70,16 @@
         "required": ["user_id"],
         "type": "object"
       },
+      "AdminImportTopicsRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "csv": {
+            "type": "string"
+          }
+        },
+        "required": ["csv"],
+        "type": "object"
+      },
       "AdminOAuthClientView": {
         "additionalProperties": false,
         "properties": {
@@ -493,9 +503,15 @@
       "AssignmentBody": {
         "additionalProperties": false,
         "properties": {
-          "category_text": {},
-          "topic_id": {}
+          "category_text": {
+            "type": "string"
+          },
+          "topic_id": {
+            "format": "uuid",
+            "type": "string"
+          }
         },
+        "required": ["category_text", "topic_id"],
         "type": "object"
       },
       "AttributionReferrerBody": {
@@ -846,6 +862,23 @@
         "required": ["__entity_type", "id", "roles"],
         "type": "object"
       },
+      "BatchDisputeAnnotationsRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "post_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 50,
+            "minItems": 0,
+            "type": "array",
+            "uniqueItems": false
+          }
+        },
+        "required": ["post_ids"],
+        "type": "object"
+      },
       "BatchProgress": {
         "additionalProperties": false,
         "properties": {
@@ -916,6 +949,16 @@
         "required": ["expires_at", "flow_id", "redirect_url"],
         "type": "object"
       },
+      "BillingPortalSessionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "return_url": {
+            "type": "string"
+          }
+        },
+        "required": ["return_url"],
+        "type": "object"
+      },
       "BlockHostnameResult": {
         "additionalProperties": false,
         "properties": {
@@ -934,6 +977,17 @@
           "penalized_user_count",
           "soft_deleted_relation_count"
         ],
+        "type": "object"
+      },
+      "BloomFilterRebuildRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "filter": {
+            "enum": ["api-keys", "email-blocklist", "embedding", "entity-cache", "url-blocklist"],
+            "type": "string"
+          }
+        },
+        "required": ["filter"],
         "type": "object"
       },
       "BlueskyAccountInfo": {
@@ -1016,6 +1070,16 @@
             ]
           }
         },
+        "type": "object"
+      },
+      "ClearCacheRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "group": {
+            "type": "string"
+          }
+        },
+        "required": ["group"],
         "type": "object"
       },
       "ClearanceMutationBody": {
@@ -4219,9 +4283,48 @@
           }
         ]
       },
+      "CreateCuratedAsideItemRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "aside_type": {
+            "type": "string"
+          },
+          "entity_id": {
+            "type": "string"
+          },
+          "position": {
+            "type": "number"
+          }
+        },
+        "required": ["aside_type", "entity_id"],
+        "type": "object"
+      },
+      "CreateFediverseInstanceRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "hostname": {
+            "type": "string"
+          }
+        },
+        "required": ["hostname"],
+        "type": "object"
+      },
       "CreateHouseholdBody": {
         "additionalProperties": false,
         "properties": {},
+        "type": "object"
+      },
+      "CreateImageUploadUrlRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "content_length": {
+            "type": "number"
+          },
+          "content_type": {
+            "type": "string"
+          }
+        },
+        "required": ["content_length", "content_type"],
         "type": "object"
       },
       "CreateInstanceResult": {
@@ -4298,6 +4401,70 @@
           }
         },
         "required": ["name"],
+        "type": "object"
+      },
+      "CreateModerationAppealRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "appeal_reason": {
+            "type": "string"
+          },
+          "cf_turnstile_response": {
+            "type": "string"
+          },
+          "post_removal_kind": {
+            "enum": ["community", "platform"],
+            "type": "string"
+          },
+          "target_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "target_type": {
+            "enum": ["ban", "removal", "suspension", "warning"],
+            "type": "string"
+          }
+        },
+        "required": ["appeal_reason", "target_type"],
+        "type": "object"
+      },
+      "CreateModerationReportRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "cf_turnstile_response": {
+            "type": "string"
+          },
+          "entityId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "entityType": {
+            "enum": ["comment", "post", "rss_feed_item", "url_hostname", "user"],
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "reason": {
+            "enum": [
+              "harassment",
+              "illegal_content",
+              "misinformation",
+              "other",
+              "spam",
+              "vote_manipulation"
+            ],
+            "type": "string"
+          }
+        },
+        "required": ["entityId", "entityType", "reason"],
         "type": "object"
       },
       "CreateOAuthAppRequest": {
@@ -4697,6 +4864,37 @@
         "required": ["slug"],
         "type": "object"
       },
+      "CreateReviewDisputeRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "cf_turnstile_response": {
+            "type": "string"
+          },
+          "claim_text": {
+            "type": "string"
+          },
+          "post_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "defamatory",
+              "factually_inaccurate",
+              "impersonation",
+              "other",
+              "privacy_violation"
+            ],
+            "type": "string"
+          },
+          "topic_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["claim_text", "post_id", "reason"],
+        "type": "object"
+      },
       "CreateRewardsProgramStatusRequest": {
         "additionalProperties": false,
         "properties": {
@@ -4947,6 +5145,26 @@
           }
         },
         "required": ["name", "slug"],
+        "type": "object"
+      },
+      "CreateUserModNoteRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "type": "string"
+          },
+          "community_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": ["body"],
         "type": "object"
       },
       "CreateWebPushSubscriptionRequest": {
@@ -6566,6 +6784,28 @@
         "required": ["exact_topic", "pending_recommendations", "similar_topics"],
         "type": "object"
       },
+      "FlushRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "concern": {
+            "enum": [
+              "blooms",
+              "caches",
+              "dynamic-config",
+              "queues",
+              "rate-limiter",
+              "recently-viewed",
+              "sessions"
+            ],
+            "type": "string"
+          },
+          "force": {
+            "type": "boolean"
+          }
+        },
+        "required": ["concern"],
+        "type": "object"
+      },
       "FlushResult": {
         "additionalProperties": false,
         "properties": {
@@ -6942,6 +7182,28 @@
           }
         },
         "required": ["consent_type", "version"],
+        "type": "object"
+      },
+      "GrantMembershipRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "duration_days": {
+            "type": "number"
+          },
+          "plan": {
+            "enum": ["plus", "pro"],
+            "type": "string"
+          },
+          "sku_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["duration_days", "plan", "sku_id", "user_id"],
         "type": "object"
       },
       "GrowthMetrics": {
@@ -7679,6 +7941,55 @@
           "crawler_success_rate",
           "queue_throughput"
         ],
+        "type": "object"
+      },
+      "IssueUserWarningRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "communityId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "publicMessage": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "reportId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resolveReport": {
+            "type": "boolean"
+          },
+          "userId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["reason", "userId"],
         "type": "object"
       },
       "IssuedOAuthApp": {
@@ -8937,9 +9248,11 @@
         "additionalProperties": false,
         "properties": {
           "idempotency_key": {
+            "format": "uuid",
             "type": "string"
           },
           "product_id": {
+            "format": "uuid",
             "type": "string"
           },
           "provider": {
@@ -9069,6 +9382,7 @@
             ]
           },
           "idempotency_key": {
+            "format": "uuid",
             "type": "string"
           },
           "invoice_id": {
@@ -9098,6 +9412,7 @@
             "$ref": "#/components/schemas/MembershipRefundReason"
           },
           "user_id": {
+            "format": "uuid",
             "type": "string"
           }
         },
@@ -9179,12 +9494,14 @@
         "properties": {
           "evidence": {},
           "idempotency_key": {
+            "format": "uuid",
             "type": "string"
           },
           "provider": {
             "$ref": "#/components/schemas/MembershipVerificationProvider"
           },
           "purchase_intent_id": {
+            "format": "uuid",
             "type": "string"
           }
         },
@@ -10410,7 +10727,7 @@
             "type": "string"
           },
           "counts": {
-            "$ref": "#/components/schemas/Partial_Record__remove_____warn_____queue_retry_failed_____approve_____reject_____ban_____lift_ban_____activate_restriction_____lift_restriction_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal_____topic_claim_verify_____topic_claim_reject_____topic_claim_revoke_____report_claim_____report_unclaim_____report_escalate_____report_deescalate_____report_integrity_flag_review_____report_integrity_penalty_apply_____report_integrity_penalty_revoke_____vote_integrity_flag_review_____vote_integrity_penalty_apply_____vote_integrity_penalty_revoke_____vote_weight_set_____vote_weight_reset_____agent_moderation_vote_set_____agent_moderation_vote_delete_____mod_note_delete_____report_judgement_rerun_____appeal_resolution_draft_rerun_____dispute_resolution_draft_rerun_____oauth_client_verify_____oauth_client_unverify_____crawler_create_____crawler_update_____crawler_delete_____rss_category_assign_____rss_category_reject_____rss_category_unreject_____queue_pause_____queue_resume_____scheduled_job_run_____backfill_run_____article_sync_run_____import_batch_create__number"
+            "$ref": "#/components/schemas/Partial_Record__remove_____warn_____reject_____queue_retry_failed_____approve_____ban_____lift_ban_____activate_restriction_____lift_restriction_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal_____topic_claim_verify_____topic_claim_reject_____topic_claim_revoke_____report_claim_____report_unclaim_____report_escalate_____report_deescalate_____report_integrity_flag_review_____report_integrity_penalty_apply_____report_integrity_penalty_revoke_____vote_integrity_flag_review_____vote_integrity_penalty_apply_____vote_integrity_penalty_revoke_____vote_weight_set_____vote_weight_reset_____agent_moderation_vote_set_____agent_moderation_vote_delete_____mod_note_delete_____report_judgement_rerun_____appeal_resolution_draft_rerun_____dispute_resolution_draft_rerun_____oauth_client_verify_____oauth_client_unverify_____crawler_create_____crawler_update_____crawler_delete_____rss_category_assign_____rss_category_reject_____rss_category_unreject_____queue_pause_____queue_resume_____scheduled_job_run_____backfill_run_____article_sync_run_____import_batch_create__number"
           },
           "total": {
             "type": "number"
@@ -12846,7 +13163,7 @@
         },
         "type": "object"
       },
-      "Partial_Record__remove_____warn_____queue_retry_failed_____approve_____reject_____ban_____lift_ban_____activate_restriction_____lift_restriction_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal_____topic_claim_verify_____topic_claim_reject_____topic_claim_revoke_____report_claim_____report_unclaim_____report_escalate_____report_deescalate_____report_integrity_flag_review_____report_integrity_penalty_apply_____report_integrity_penalty_revoke_____vote_integrity_flag_review_____vote_integrity_penalty_apply_____vote_integrity_penalty_revoke_____vote_weight_set_____vote_weight_reset_____agent_moderation_vote_set_____agent_moderation_vote_delete_____mod_note_delete_____report_judgement_rerun_____appeal_resolution_draft_rerun_____dispute_resolution_draft_rerun_____oauth_client_verify_____oauth_client_unverify_____crawler_create_____crawler_update_____crawler_delete_____rss_category_assign_____rss_category_reject_____rss_category_unreject_____queue_pause_____queue_resume_____scheduled_job_run_____backfill_run_____article_sync_run_____import_batch_create__number": {
+      "Partial_Record__remove_____warn_____reject_____queue_retry_failed_____approve_____ban_____lift_ban_____activate_restriction_____lift_restriction_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal_____topic_claim_verify_____topic_claim_reject_____topic_claim_revoke_____report_claim_____report_unclaim_____report_escalate_____report_deescalate_____report_integrity_flag_review_____report_integrity_penalty_apply_____report_integrity_penalty_revoke_____vote_integrity_flag_review_____vote_integrity_penalty_apply_____vote_integrity_penalty_revoke_____vote_weight_set_____vote_weight_reset_____agent_moderation_vote_set_____agent_moderation_vote_delete_____mod_note_delete_____report_judgement_rerun_____appeal_resolution_draft_rerun_____dispute_resolution_draft_rerun_____oauth_client_verify_____oauth_client_unverify_____crawler_create_____crawler_update_____crawler_delete_____rss_category_assign_____rss_category_reject_____rss_category_unreject_____queue_pause_____queue_resume_____scheduled_job_run_____backfill_run_____article_sync_run_____import_batch_create__number": {
         "additionalProperties": false,
         "properties": {
           "activate_restriction": {
@@ -14612,6 +14929,23 @@
         ],
         "type": "string"
       },
+      "PsqlJobRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "enum": [
+              "cleanupPartitions",
+              "createPartitions",
+              "runConfigDriven",
+              "runMigrations",
+              "runViews"
+            ],
+            "type": "string"
+          }
+        },
+        "required": ["type"],
+        "type": "object"
+      },
       "PublicDisplayAccount": {
         "additionalProperties": false,
         "properties": {
@@ -15375,20 +15709,22 @@
           "postId": {
             "anyOf": [
               {
-                "type": "null"
+                "format": "uuid",
+                "type": "string"
               },
               {
-                "type": "string"
+                "type": "null"
               }
             ]
           },
           "reportId": {
             "anyOf": [
               {
-                "type": "null"
+                "format": "uuid",
+                "type": "string"
               },
               {
-                "type": "string"
+                "type": "null"
               }
             ]
           },
@@ -16457,11 +16793,51 @@
         ],
         "type": "object"
       },
+      "RejectTopicClaimRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "rejection_reason": {
+            "type": "string"
+          }
+        },
+        "required": ["rejection_reason"],
+        "type": "object"
+      },
       "RejectionBody": {
         "additionalProperties": false,
         "properties": {
-          "category_text": {}
+          "category_text": {
+            "type": "string"
+          }
         },
+        "required": ["category_text"],
+        "type": "object"
+      },
+      "RemoveDisputeAnnotationRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "annotation_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["annotation_id"],
+        "type": "object"
+      },
+      "ReorderCuratedAsideItemsRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "aside_type": {
+            "type": "string"
+          },
+          "item_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["aside_type", "item_ids"],
         "type": "object"
       },
       "ReorderProfileLinksRequest": {
@@ -16676,6 +17052,63 @@
           "resolved_by_id",
           "rss_feed_item_id"
         ],
+        "type": "object"
+      },
+      "ResolveAppealRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": ["accept", "deny", "reduce"],
+            "type": "string"
+          }
+        },
+        "required": ["action"],
+        "type": "object"
+      },
+      "ResolveDisputeRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": ["annotate", "dismiss", "remove"],
+            "type": "string"
+          },
+          "body_text": {
+            "type": "string"
+          }
+        },
+        "required": ["action"],
+        "type": "object"
+      },
+      "ResolveModerationReportRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "enum": ["dismissed", "reviewed"],
+            "type": "string"
+          }
+        },
+        "required": ["status"],
+        "type": "object"
+      },
+      "ResolveReportIntegrityFlagRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "resolution": {
+            "const": "dismissed"
+          }
+        },
+        "required": ["resolution"],
+        "type": "object"
+      },
+      "ResolveVoteIntegrityFlagRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "resolution": {
+            "enum": ["dismissed", "penalized", "suspended"],
+            "type": "string"
+          }
+        },
+        "required": ["resolution"],
         "type": "object"
       },
       "ResolvedEmbed": {
@@ -17342,6 +17775,16 @@
         ],
         "type": "object"
       },
+      "RevokeMembershipGrantRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": ["reason"],
+        "type": "object"
+      },
       "RevokeReportAbusePenaltyResult": {
         "additionalProperties": false,
         "properties": {
@@ -17356,6 +17799,16 @@
           }
         },
         "required": ["penalty", "penaltyId", "userId"],
+        "type": "object"
+      },
+      "RevokeTopicClaimRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "revocation_reason": {
+            "type": "string"
+          }
+        },
+        "required": ["revocation_reason"],
         "type": "object"
       },
       "RewardsProgramAttributes": {
@@ -18036,6 +18489,17 @@
         "enum": ["noop", "updated"],
         "type": "string"
       },
+      "SetOfficialStoryItemRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "rss_feed_item_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["rss_feed_item_id"],
+        "type": "object"
+      },
       "SetPrimaryEmailAddressRequest": {
         "additionalProperties": false,
         "properties": {
@@ -18044,6 +18508,16 @@
           }
         },
         "required": ["is_primary"],
+        "type": "object"
+      },
+      "SetVoteWeightRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "weight": {
+            "type": "number"
+          }
+        },
+        "required": ["weight"],
         "type": "object"
       },
       "SimilarTopic": {
@@ -18063,6 +18537,23 @@
           }
         },
         "required": ["id", "name", "slug", "topic_type"],
+        "type": "object"
+      },
+      "SourceSyncRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "sourceId": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": ["sourceId"],
         "type": "object"
       },
       "SpendingCategoryAttributes": {
@@ -18470,6 +18961,15 @@
           }
         },
         "required": ["evidence"],
+        "type": "object"
+      },
+      "SuspendUserRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "TerritorialCopyrightAcknowledgment": {
@@ -19284,6 +19784,18 @@
         "required": ["category_text", "item_count", "rejected"],
         "type": "object"
       },
+      "UpdateAppealDraftRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "internal_notes": {
+            "type": "string"
+          },
+          "public_response": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "UpdateCardRequest": {
         "additionalProperties": false,
         "properties": {
@@ -19439,6 +19951,28 @@
             "type": "boolean"
           }
         },
+        "type": "object"
+      },
+      "UpdateDisputeDraftRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "internal_notes": {
+            "type": "string"
+          },
+          "public_response": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateDynamicConfigNamespaceRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "config": {
+            "$ref": "#/components/schemas/Record_string_unknown"
+          }
+        },
+        "required": ["config"],
         "type": "object"
       },
       "UpdateHostnameBody": {
@@ -19897,6 +20431,16 @@
         },
         "type": "object"
       },
+      "UpdateStoryTitleRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["title"],
+        "type": "object"
+      },
       "UpdateUserOptions": {
         "additionalProperties": false,
         "properties": {
@@ -20054,6 +20598,37 @@
           }
         },
         "required": ["position_seconds"],
+        "type": "object"
+      },
+      "UpsertReferralProgramCrawlerRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "content_selectors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "crawler_type": {
+            "enum": ["automation", "fetch"],
+            "type": "string"
+          },
+          "css_selectors_to_remove": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "hostname_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "referral_program_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["hostname_id", "referral_program_id"],
         "type": "object"
       },
       "UrlCrawlHistory": {
@@ -23351,6 +23926,19 @@
     "/api/v1/admin/moderation-analytics": {
       "get": {
         "operationId": "get_api_v1_admin_moderation-analytics",
+        "parameters": [
+          {
+            "description": "Aggregate window; invalid or omitted values use 30d.",
+            "in": "query",
+            "name": "range",
+            "required": false,
+            "schema": {
+              "default": "30d",
+              "enum": ["today", "7d", "30d", "90d", "all"],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -23371,6 +23959,113 @@
     "/api/v1/admin/modlog": {
       "get": {
         "operationId": "get_api_v1_admin_modlog",
+        "parameters": [
+          {
+            "description": "Unknown values are ignored.",
+            "in": "query",
+            "name": "action_type",
+            "required": false,
+            "schema": {
+              "enum": [
+                "remove",
+                "approve",
+                "reject",
+                "ban",
+                "lift_ban",
+                "activate_restriction",
+                "lift_restriction",
+                "warn",
+                "lock",
+                "unlock",
+                "pin",
+                "unpin",
+                "tag",
+                "suspend",
+                "unsuspend",
+                "remove_member",
+                "change_role",
+                "resolve_report",
+                "dismiss_report",
+                "resolve_appeal",
+                "dismiss_appeal",
+                "topic_claim_verify",
+                "topic_claim_reject",
+                "topic_claim_revoke",
+                "report_claim",
+                "report_unclaim",
+                "report_escalate",
+                "report_deescalate",
+                "report_integrity_flag_review",
+                "report_integrity_penalty_apply",
+                "report_integrity_penalty_revoke",
+                "vote_integrity_flag_review",
+                "vote_integrity_penalty_apply",
+                "vote_integrity_penalty_revoke",
+                "vote_weight_set",
+                "vote_weight_reset",
+                "agent_moderation_vote_set",
+                "agent_moderation_vote_delete",
+                "mod_note_delete",
+                "report_judgement_rerun",
+                "appeal_resolution_draft_rerun",
+                "dispute_resolution_draft_rerun",
+                "oauth_client_verify",
+                "oauth_client_unverify",
+                "crawler_create",
+                "crawler_update",
+                "crawler_delete",
+                "rss_category_assign",
+                "rss_category_reject",
+                "rss_category_unreject",
+                "queue_pause",
+                "queue_resume",
+                "queue_retry_failed",
+                "scheduled_job_run",
+                "backfill_run",
+                "article_sync_run",
+                "import_batch_create"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "actor_id",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "community_id",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -23876,11 +24571,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "rejection_reason": {}
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/RejectTopicClaimRequest"
               }
             }
           }
@@ -23926,11 +24617,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "revocation_reason": {}
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/RevokeTopicClaimRequest"
               }
             }
           }
@@ -24166,7 +24853,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/IssueUserWarningRequest"
               }
             }
           }
@@ -24388,6 +25075,47 @@
     "/api/v1/appeals": {
       "get": {
         "operationId": "get_api_v1_appeals",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Only appeals the caller filed; staff otherwise see all.",
+            "in": "query",
+            "name": "mine",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Appeal status; unknown values use pending.",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "default": "pending",
+              "enum": ["pending", "resolved", "dismissed"],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -25456,7 +26184,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateModerationAppealRequest"
               }
             }
           }
@@ -26718,12 +27446,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "internal_notes": {},
-                  "public_response": {}
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/UpdateAppealDraftRequest"
               }
             }
           }
@@ -26843,11 +27566,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "action": {}
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/ResolveAppealRequest"
               }
             }
           }
@@ -29914,7 +30633,9 @@
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {}
+              "schema": {
+                "$ref": "#/components/schemas/SourceSyncRequest"
+              }
             }
           }
         },
@@ -40680,21 +41401,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "content_selectors": {},
-                  "crawler_type": {
-                    "type": "string"
-                  },
-                  "css_selectors_to_remove": {},
-                  "hostname_id": {
-                    "type": "string"
-                  },
-                  "referral_program_id": {
-                    "type": "string"
-                  }
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/UpsertReferralProgramCrawlerRequest"
               }
             }
           }
@@ -41199,7 +41906,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateCuratedAsideItemRequest"
               }
             }
           }
@@ -41235,7 +41942,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/ReorderCuratedAsideItemsRequest"
               }
             }
           }
@@ -41317,6 +42024,47 @@
     "/api/v1/disputes": {
       "get": {
         "operationId": "get_api_v1_disputes",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Only disputes the caller filed.",
+            "in": "query",
+            "name": "mine",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Dispute status; unknown values use pending.",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "default": "pending",
+              "enum": ["pending", "resolved", "dismissed"],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -41927,7 +42675,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateReviewDisputeRequest"
               }
             }
           }
@@ -42784,12 +43532,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "internal_notes": {},
-                  "public_response": {}
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/UpdateDisputeDraftRequest"
               }
             }
           }
@@ -43217,11 +43960,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "annotation_id": {}
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/RemoveDisputeAnnotationRequest"
               }
             }
           }
@@ -44091,12 +44830,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "action": {},
-                  "body_text": {}
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/ResolveDisputeRequest"
               }
             }
           }
@@ -44676,13 +45410,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "config": {
-                    "$ref": "#/components/schemas/Record_string_unknown"
-                  }
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/UpdateDynamicConfigNamespaceRequest"
               }
             }
           }
@@ -45265,14 +45993,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "hostname": {
-                    "type": "string"
-                  }
-                },
-                "required": ["hostname"],
-                "type": "object"
+                "$ref": "#/components/schemas/CreateFediverseInstanceRequest"
               }
             }
           }
@@ -45605,6 +46326,7 @@
                   "additionalProperties": false,
                   "properties": {
                     "integration_status": {
+                      "enum": ["approved", "blocked", "pending"],
                       "type": "string"
                     },
                     "status": {
@@ -45640,12 +46362,13 @@
             }
           },
           {
+            "description": "Anonymous callers are capped at 25; larger values are clamped, not rejected.",
             "in": "query",
             "name": "limit",
             "required": false,
             "schema": {
               "default": 10,
-              "maximum": 25,
+              "maximum": 100,
               "minimum": 1,
               "type": "integer"
             }
@@ -46047,6 +46770,19 @@
     "/api/v1/growth-metrics": {
       "get": {
         "operationId": "get_api_v1_growth-metrics",
+        "parameters": [
+          {
+            "description": "Growth window; invalid or omitted values use 30d.",
+            "in": "query",
+            "name": "range",
+            "required": false,
+            "schema": {
+              "default": "30d",
+              "enum": ["today", "7d", "30d", "90d", "all"],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -47698,7 +48434,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateImageUploadUrlRequest"
               }
             }
           }
@@ -47835,11 +48571,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "csv": {}
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/AdminImportTopicsRequest"
               }
             }
           }
@@ -48720,23 +49452,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "duration_days": {
-                    "type": "number"
-                  },
-                  "plan": {
-                    "type": "string"
-                  },
-                  "sku_id": {
-                    "type": "string"
-                  },
-                  "user_id": {
-                    "type": "string"
-                  }
-                },
-                "required": ["duration_days", "plan", "sku_id", "user_id"],
-                "type": "object"
+                "$ref": "#/components/schemas/GrantMembershipRequest"
               }
             }
           }
@@ -48829,14 +49545,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "reason": {
-                    "type": "string"
-                  }
-                },
-                "required": ["reason"],
-                "type": "object"
+                "$ref": "#/components/schemas/RevokeMembershipGrantRequest"
               }
             }
           }
@@ -49226,13 +49935,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "return_url": {
-                    "type": "string"
-                  }
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/BillingPortalSessionRequest"
               }
             }
           }
@@ -50230,6 +50933,18 @@
     "/api/v1/memberships/refundable-charges": {
       "get": {
         "operationId": "get_api_v1_memberships_refundable-charges",
+        "parameters": [
+          {
+            "description": "The member whose refundable charges are listed.",
+            "in": "query",
+            "name": "user_id",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -57322,11 +58037,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "post_ids": {}
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/BatchDisputeAnnotationsRequest"
               }
             }
           }
@@ -57361,6 +58072,27 @@
     "/api/v1/posts/review-queue": {
       "get": {
         "operationId": "get_api_v1_posts_review-queue",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -58724,7 +59456,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/PsqlJobRequest"
               }
             }
           }
@@ -59844,7 +60576,9 @@
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {}
+              "schema": {
+                "$ref": "#/components/schemas/ResolveReportIntegrityFlagRequest"
+              }
             }
           }
         },
@@ -59990,6 +60724,67 @@
     "/api/v1/reports": {
       "get": {
         "operationId": "get_api_v1_reports",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Opaque cursor for the previous page; exclusive with after.",
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Staff-only entity clustering.",
+            "in": "query",
+            "name": "cluster",
+            "required": false,
+            "schema": {
+              "enum": ["entity"],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Staff sort order (default severity); members always get a created_at order and unknown values use the default.",
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "enum": ["created_at_asc", "created_at_desc", "most_reported", "severity"],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Report status; unknown values use pending.",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "default": "pending",
+              "enum": ["pending", "reviewed", "actioned", "dismissed"],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -60535,7 +61330,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateModerationReportRequest"
               }
             }
           }
@@ -60782,11 +61577,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "status": {}
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/ResolveModerationReportRequest"
               }
             }
           }
@@ -60858,6 +61649,38 @@
     "/api/v1/rss-feed-categories": {
       "get": {
         "operationId": "get_api_v1_rss-feed-categories",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Category status; unknown values use pending.",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "default": "pending",
+              "enum": ["pending", "rejected", "all"],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -62492,7 +63315,7 @@
         }
       },
       "patch": {
-        "operationId": "patch_api_v1_stories_storyId",
+        "operationId": "patch_api_v1_stories_id",
         "parameters": [
           {
             "in": "path",
@@ -62507,13 +63330,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "title": {
-                    "type": "string"
-                  }
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/UpdateStoryTitleRequest"
               }
             }
           }
@@ -62708,13 +63525,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "rss_feed_item_id": {
-                    "type": "string"
-                  }
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/SetOfficialStoryItemRequest"
               }
             }
           }
@@ -62779,7 +63590,57 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateTopicRecommendationInput"
+                "additionalProperties": false,
+                "properties": {
+                  "cf_turnstile_response": {
+                    "type": "string"
+                  },
+                  "example_referral_link": {
+                    "type": "string"
+                  },
+                  "landing_page_urls": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "markdown": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "topic_aliases": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "topic_hostname": {
+                    "type": "string"
+                  },
+                  "topic_hostnames": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "topic_markdown": {
+                    "type": "string"
+                  },
+                  "topic_slug": {
+                    "type": "string"
+                  },
+                  "topic_title": {
+                    "type": "string"
+                  },
+                  "topic_type": {
+                    "enum": ["card", "referral_program", "topic"],
+                    "type": "string"
+                  }
+                },
+                "required": ["markdown", "topic_slug", "topic_title"],
+                "type": "object"
               }
             }
           }
@@ -74635,7 +75496,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateUserModNoteRequest"
               }
             }
           }
@@ -75370,7 +76231,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/SuspendUserRequest"
               }
             }
           }
@@ -75961,7 +76822,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/SetVoteWeightRequest"
               }
             }
           }
@@ -76051,7 +76912,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/BloomFilterRebuildRequest"
               }
             }
           }
@@ -76064,6 +76925,13 @@
                   "additionalProperties": false,
                   "properties": {
                     "filter": {
+                      "enum": [
+                        "api-keys",
+                        "email-blocklist",
+                        "embedding",
+                        "entity-cache",
+                        "url-blocklist"
+                      ],
                       "type": "string"
                     },
                     "success": {
@@ -76120,7 +76988,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/ClearCacheRequest"
               }
             }
           }
@@ -76159,7 +77027,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/FlushRequest"
               }
             }
           }
@@ -76265,7 +77133,9 @@
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {}
+              "schema": {
+                "$ref": "#/components/schemas/ResolveVoteIntegrityFlagRequest"
+              }
             }
           }
         },

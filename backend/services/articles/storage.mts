@@ -70,10 +70,6 @@ export async function getArticleMarkdown(article: ArticleMarkdownFile): Promise<
   return markdown
 }
 
-export function clearArticleMarkdownCacheForTests(): void {
-  markdownCache.clear()
-}
-
 function parseArticleFilename(key: string | undefined): string | null {
   if (!key?.startsWith(ARTICLE_KEY_PREFIX)) return null
 

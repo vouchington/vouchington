@@ -1,10 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-  CrawlerConnectError,
-  CrawlerNetworkError,
-  CrawlerTimeoutError,
-} from '@modules/on-error/errors'
-import {
   getCrawlTestDependencies,
   makeMockBrowser,
   makeMockPage,
@@ -19,11 +14,20 @@ import {
   mockWriteFile,
   resetCrawlMocks,
 } from '@voucha/test-helpers/services/browser-crawl/crawl-fixtures'
-import { resetBlockerForTesting } from './adblocker-cache.mts'
-import { crawlWithBrowser } from './crawl.mts'
+let crawl: typeof import('./crawl.mts')
+let errors: typeof import('@modules/on-error/errors')
+
+async function loadFreshCrawl() {
+  vi.resetModules()
+  errors = await import('@modules/on-error/errors')
+  crawl = await import('./crawl.mts')
+}
 
 describe('crawlWithBrowser', () => {
-  beforeEach(() => resetCrawlMocks(resetBlockerForTesting))
+  beforeEach(async () => {
+    await loadFreshCrawl()
+    resetCrawlMocks()
+  })
 
   afterEach(() => {
     delete process.env.LIGHTPANDA_CDP_URL
@@ -31,7 +35,7 @@ describe('crawlWithBrowser', () => {
   })
 
   function crawlWithBrowserForTest(url: string) {
-    return crawlWithBrowser(url, getCrawlTestDependencies())
+    return crawl.crawlWithBrowser(url, getCrawlTestDependencies())
   }
 
   it('throws Error (not CrawlerNetworkError) when LIGHTPANDA_CDP_URL is not set', async () => {
@@ -40,7 +44,7 @@ describe('crawlWithBrowser', () => {
       'LIGHTPANDA_CDP_URL is not set',
     )
     await expect(crawlWithBrowserForTest('https://example.com')).rejects.not.toBeInstanceOf(
-      CrawlerNetworkError,
+      errors.CrawlerNetworkError,
     )
   })
 
@@ -50,7 +54,7 @@ describe('crawlWithBrowser', () => {
       'LIGHTPANDA_CDP_URL is not a valid URL',
     )
     await expect(crawlWithBrowserForTest('https://example.com')).rejects.not.toBeInstanceOf(
-      CrawlerNetworkError,
+      errors.CrawlerNetworkError,
     )
   })
 
@@ -60,7 +64,7 @@ describe('crawlWithBrowser', () => {
       'LIGHTPANDA_CDP_URL must use ws:// or wss:// protocol',
     )
     await expect(crawlWithBrowserForTest('https://example.com')).rejects.not.toBeInstanceOf(
-      CrawlerNetworkError,
+      errors.CrawlerNetworkError,
     )
   })
 
@@ -71,7 +75,7 @@ describe('crawlWithBrowser', () => {
       'LIGHTPANDA_TOKEN is not set',
     )
     await expect(crawlWithBrowserForTest('https://example.com')).rejects.not.toBeInstanceOf(
-      CrawlerNetworkError,
+      errors.CrawlerNetworkError,
     )
   })
 
@@ -80,7 +84,7 @@ describe('crawlWithBrowser', () => {
     process.env.LIGHTPANDA_TOKEN = 'test-token'
     mockConnectOverCDP.mockRejectedValue(new Error('connection refused'))
     await expect(crawlWithBrowserForTest('https://example.com')).rejects.toBeInstanceOf(
-      CrawlerConnectError,
+      errors.CrawlerConnectError,
     )
   })
 
@@ -94,7 +98,7 @@ describe('crawlWithBrowser', () => {
       .mockRejectedValue(new Error('CDP session closed'))
     mockConnectOverCDP.mockResolvedValue(browser)
     await expect(crawlWithBrowserForTest('https://example.com')).rejects.toBeInstanceOf(
-      CrawlerConnectError,
+      errors.CrawlerConnectError,
     )
     expect(browser.mockContext.close).toHaveBeenCalledOnce()
     expect(browser.close).toHaveBeenCalledOnce()
@@ -114,7 +118,7 @@ describe('crawlWithBrowser', () => {
     } catch (err) {
       caught = err
     }
-    expect(caught).toBeInstanceOf(CrawlerConnectError)
+    expect(caught).toBeInstanceOf(errors.CrawlerConnectError)
     const message = caught instanceof Error ? caught.message : ''
     expect(message).not.toContain('super-secret-token')
     const cause = caught instanceof Error ? caught.cause : undefined
@@ -136,7 +140,7 @@ describe('crawlWithBrowser', () => {
     } catch (err) {
       caught = err
     }
-    expect(caught).toBeInstanceOf(CrawlerConnectError)
+    expect(caught).toBeInstanceOf(errors.CrawlerConnectError)
     const cause = caught instanceof Error ? caught.cause : undefined
     expect(cause instanceof Error ? cause.message : '').not.toContain(encodedToken)
     expect(cause instanceof Error ? cause.message : '').not.toContain(token)
@@ -157,7 +161,7 @@ describe('crawlWithBrowser', () => {
     } catch (err) {
       caught = err
     }
-    expect(caught).toBeInstanceOf(CrawlerConnectError)
+    expect(caught).toBeInstanceOf(errors.CrawlerConnectError)
     const cause = caught instanceof Error ? caught.cause : undefined
     expect(cause).toBeInstanceOf(Error)
     expect(cause instanceof Error ? cause.message : '').toBe('failed to connect')
@@ -178,7 +182,7 @@ describe('crawlWithBrowser', () => {
     page.goto = vi.fn<VitestLooseMock>().mockRejectedValue(timeoutErr)
     mockConnectOverCDP.mockResolvedValue(makeMockBrowser(page))
     await expect(crawlWithBrowserForTest('https://example.com')).rejects.toBeInstanceOf(
-      CrawlerTimeoutError,
+      errors.CrawlerTimeoutError,
     )
   })
 
@@ -190,7 +194,7 @@ describe('crawlWithBrowser', () => {
     page.goto = vi.fn<VitestLooseMock>().mockRejectedValue(new TimeoutError('timeout'))
     mockConnectOverCDP.mockResolvedValue(makeMockBrowser(page))
     await expect(crawlWithBrowserForTest('https://example.com')).rejects.toBeInstanceOf(
-      CrawlerTimeoutError,
+      errors.CrawlerTimeoutError,
     )
   })
 
@@ -201,10 +205,10 @@ describe('crawlWithBrowser', () => {
     page.goto = vi.fn<VitestLooseMock>().mockRejectedValue(new Error('net::ERR_NAME_NOT_RESOLVED'))
     mockConnectOverCDP.mockResolvedValue(makeMockBrowser(page))
     await expect(crawlWithBrowserForTest('https://example.com')).rejects.toBeInstanceOf(
-      CrawlerNetworkError,
+      errors.CrawlerNetworkError,
     )
     await expect(crawlWithBrowserForTest('https://example.com')).rejects.not.toBeInstanceOf(
-      CrawlerConnectError,
+      errors.CrawlerConnectError,
     )
   })
 

@@ -29,8 +29,10 @@ objects expose `can_update` so clients can render the correct read-only or edita
 }
 ```
 
-Updates are validated against the namespace field schema and optional namespace-specific rules.
-No-op updates return `changed: false` and do not create audit rows.
+A body that is not exactly `{ "config": { ... } }` (missing, non-object or array `config`, or an
+unknown top-level key) returns `422` after the namespace lookup and role gate and before any write.
+Updates are then validated against the namespace field schema and optional namespace-specific rules,
+which return `400`. No-op updates return `changed: false` and do not create audit rows.
 
 ## History
 

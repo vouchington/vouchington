@@ -5,6 +5,7 @@ import {
   requireAuth,
   parseJsonBody,
   setAnonymousPublicCacheHeaders,
+  validateRequestContract,
 } from '../../response-helpers.mts'
 import { assertNotSuspended } from '@services/users'
 import { getTopicIds } from '@services/topics'
@@ -33,7 +34,7 @@ import { getBookmarksForEntities } from '@services/bookmarks/get'
 import { getTopicElectionVotesByUser } from '@services/elections-votes/topic'
 import { renderMarkdownBatch } from '@services/markdown/batch-render'
 import { getAdminUserIdsFromEntities } from '@services/markdown/admin-users'
-import { apiRequest, apiResponse } from '../../response-contract.mts'
+import { apiResponse } from '../../response-contract.mts'
 import { classifyFediverseInstance as classifyInstance } from '@services/fediverse-search/adapters/instance-classification'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
@@ -57,6 +58,8 @@ function toPublicFediverseInstanceAttributes(
 }
 
 const INTEGRATION_STATUSES = ['pending', 'approved', 'blocked'] as const
+
+type CreateFediverseInstanceRequest = { hostname: string }
 
 type FediverseInstancesQuery = {
   q?: unknown
@@ -176,14 +179,9 @@ app
     const currentUser = await requireAuth(ctx, 'POST:/api/v1/fediverse/instances')
     assertNotSuspended(currentUser)
 
-    const rawBody = await parseJsonBody<Record<string, unknown>>(ctx)
-    ctx.assert(
-      typeof rawBody.hostname === 'string' && rawBody.hostname.length > 0,
-      422,
-      'hostname must be a non-empty string',
-    )
-    const requestBody = { hostname: rawBody.hostname }
-    const body = apiRequest('POST:/api/v1/fediverse/instances', requestBody)
+    const body = await parseJsonBody<CreateFediverseInstanceRequest>(ctx)
+    validateRequestContract(ctx, 'POST:/api/v1/fediverse/instances', { body })
+    ctx.assert(body.hostname.length > 0, 422, 'hostname must be a non-empty string')
 
     // ast-grep-ignore: no-three-sequential-awaits -- route handler validates auth/input before dependent mutation or response work
     const membershipPlan = await getUserActivePlan(currentUser.id)

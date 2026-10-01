@@ -7,4 +7,3 @@ export {
   updateDynamicConfigNamespace,
 } from './service.mts'
 export { dynamicConfigRegistry, getDynamicConfigRegistryEntry } from './registry.mts'
-export type { DynamicConfigRegistryEntry } from './types.mts'

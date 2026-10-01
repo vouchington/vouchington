@@ -67,6 +67,9 @@ Use `response-helpers.mts` for standard route preambles:
   against the generated contract for `operation` (`'METHOD:/path'`) and throws 422 with the
   registry's redacted message. Read [Request validation](reference-request-validation.md) for the
   required ordering, pure query projection, meaningful-schema, and compiler/HTTP coverage rules.
+  Staff, moderation, membership, image, crawler, and operations routes, and the specialized ingress
+  that stays outside the adapter, are inventoried in
+  [Staff and operations validation](reference-staff-operations-request-validation.md).
 
 Route modification invariants live in [AGENTS.md](../../../backend/api/AGENTS.md).
 
