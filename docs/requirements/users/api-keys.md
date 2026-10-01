@@ -66,9 +66,7 @@ catalogue rather than hard-coding scope strings; see the
 [client parity matrix](../CLIENT-PARITY-MATRIX.md#api-key-and-connected-app-contract-handoff).
 See the [Scopes API](../api/v1/scopes/README.md).
 `financial-profile:*` and `spending:*` require explicit grants; `mcp.user:*` excludes them. `get_my_financial_profile` requires `financial-profile:read`; `get_my_profile` omits financial data. Each write requires its read scope. Pickers describe each permission; consent separates exact grants as sensitive permissions.
-MCP keys are user MCP only. The own-private relation capability is visible as a separate picker permission, not part of Standard
-MCP access. Selecting it also selects its relation write and read prerequisites. The picker explains
-that it lets the credential add relations and tags only to the holder's own private posts.
+MCP keys are user MCP only. The own-private relation capability is visible as a separate picker permission, not part of Standard MCP access. Selecting it also selects its relation write and read prerequisites. The picker explains that it lets the credential add relations and tags only to the holder's own private posts.
 
 ## Endpoints
 
