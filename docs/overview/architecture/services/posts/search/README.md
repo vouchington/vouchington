@@ -30,6 +30,7 @@ Filter Options:
 - `user_id: <UUID>` - filter by `post.created_by_id`
 - `similar_post_id: <UUID>` — find similar posts that are similar to a post based on embeddings
 - `similar_topic_id: <UUID>` — find similar posts that are similar to a topic based on embeddings
+- `similar_rss_feed_item_id: <UUID>` — find posts that are similar to an RSS feed item based on embeddings
 - `related_topic_ids: Array<UUID>` — filter by tagged/category topic relation (AND filter). Used by `categories=` API param.
 - `universal_topic_ids: Array<UUID>` — filter by any topic relationship: tagged OR review-rated OR data-point-for (OR per topic, AND across topics). The query unions reverse-indexed topic candidates and groups by post before joining to `posts`, avoiding correlated probes over the post table. Used by `topics=` API param.
 - `review_topic_ids: Array<UUID>` — filter by reviews for these topic IDs (AND logic — post must have ratings for all specified topics; **NOTE:** if set, `post_type = 'review'` is implied)
@@ -47,6 +48,15 @@ Internal workflow note:
 Notes:
 
 - If both `text_search_query` and `semantic_search_query` are provided, multiple their vectors for a cross ranking
+
+### Semantic search plan
+
+Semantic filtering (`semantic_search_query` and the `similar_*` options) is a distance-threshold predicate, not a nearest-neighbour scan. The pgvector HNSW index serves only `ORDER BY embedding <=> query LIMIT n`, so this query never uses it and `hnsw.iterative_scan` does not apply. REST `GET /api/v1/posts` and MCP `search_posts` share this one query.
+
+- `sort=relevance` with a semantic query (alone or hybrid) computes the distance for every candidate row and sorts by the ranking score; cost grows with the number of embedded posts that pass the other filters.
+- `sort=new`, and `similar_*` requests with either sort, walk `posts.id DESC` and filter on distance until the page fills. `similar_*` requests have no ranking expression, so `sort=relevance` is recency-ordered within the threshold.
+
+The plan evidence, the reasoning, and the open candidate-window decision are in the [search-utils plan notes](../../../backend/modules/search-utils/README.md#semantic-post-search-plan).
 
 ## Get IDs
 
