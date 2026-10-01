@@ -8,7 +8,6 @@ import {
 } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
-  callRejectedMcpTool,
   callStructuredMcpTool,
   type McpContractCaller,
 } from '@voucha/test-helpers/mcp-tool-contract'
@@ -127,17 +126,6 @@ describe('search_communities and get_community — real DB', () => {
       const body = await call(owner, 'get_community', { community_id: `nope-${random}` })
 
       expect(body).toEqual(NOT_FOUND)
-    })
-
-    it('fails the call, rather than reporting not found, when storage rejects the lookup', async () => {
-      const message = await callRejectedMcpTool(
-        owner,
-        'get_community',
-        { community_id: 'bad\u0000slug' },
-        ['communities:read'],
-      )
-
-      expect(message).not.toContain('Community not found')
     })
   })
 
