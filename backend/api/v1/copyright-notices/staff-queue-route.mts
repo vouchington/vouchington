@@ -11,6 +11,7 @@ import { assertNotSuspended } from '@services/users'
 import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
 import { apiQuery, apiResponse } from '../../response-contract.mts'
 import { requireAuth } from '../../response-helpers.mts'
+import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 import {
   createPaginationParser,
   decodeScopedTierPreciseUuidCursor,
@@ -42,7 +43,11 @@ app.route('/api/v1/copyright-notices/review-queue').get(async (ctx: Context) => 
     403,
     'Copyright review staff required',
   )
-  const options = staffQueueParser.parse(ctx.query)
+  const options = parseAndValidatePaginatedRequest(
+    ctx,
+    'GET:/api/v1/copyright-notices/review-queue',
+    staffQueueParser,
+  )
   const after = options.after
     ? decodeScopedTierPreciseUuidCursor(
         options.after,

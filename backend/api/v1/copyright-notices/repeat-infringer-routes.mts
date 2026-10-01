@@ -6,21 +6,36 @@ import {
   recordCopyrightRepeatInfringerReinstatement,
   recordCopyrightRepeatInfringerReviewOutcome,
   recordStaffCopyrightRepeatInfringerDisposition,
-  type CopyrightRepeatInfringerReviewDecision,
 } from '@services/copyright-notices'
 import { boundedString } from '@services/copyright-notices/http-input'
 import { assertNotSuspended } from '@services/users'
-import { requireAuthAndRateLimit, validateUUIDParam } from '../../response-helpers.mts'
+import {
+  requireAuthAndRateLimit,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../response-helpers.mts'
 import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
+import type {
+  CopyrightRepeatInfringerDispositionRequest,
+  CopyrightRepeatInfringerOutcomeRequest,
+  CopyrightRepeatInfringerReinstatementRequest,
+} from './repeat-infringer-request-types.mts'
 
-const reviewDecisions = new Set<CopyrightRepeatInfringerReviewDecision>([
+const reviewDecisions = new Set<CopyrightRepeatInfringerOutcomeRequest['outcome']>([
   'warning',
   'no_action',
   'restrict',
   'terminate',
 ])
-const dispositions = new Set(['withdrawn', 'duplicate', 'abusive'])
+const dispositions = new Set<CopyrightRepeatInfringerDispositionRequest['disposition']>([
+  'withdrawn',
+  'duplicate',
+  'abusive',
+])
 
+// Every handler keeps its admission order (content type, authentication and role, rate limit,
+// suspension, field-named parsers, path id) and adds the generated contract immediately before the
+// first service call.
 app.route('/api/v1/copyright-notices/:id/repeat-infringer-accounts').get(async (ctx: Context) => {
   setPrivateNoStoreCacheHeaders(ctx)
   const currentUser = await requireAuthAndRateLimit(
@@ -29,10 +44,14 @@ app.route('/api/v1/copyright-notices/:id/repeat-infringer-accounts').get(async (
     'GET:/api/v1/copyright-notices/:id/repeat-infringer-accounts',
   )
   assertNotSuspended(currentUser)
+  const noticeId = validateUUIDParam(ctx, 'id')
+  validateRequestContract(ctx, 'GET:/api/v1/copyright-notices/:id/repeat-infringer-accounts', {
+    path: ctx.params,
+  })
   ctx.json({
     copyright_repeat_infringer_accounts: await listCopyrightRepeatInfringerAccountsForNotice(
       currentUser,
-      validateUUIDParam(ctx, 'id'),
+      noticeId,
     ),
   })
 })
@@ -48,18 +67,24 @@ app
       'POST:/api/v1/copyright-repeat-infringer-incidents/:id/dispositions',
     )
     assertNotSuspended(currentUser)
-    const body = (await ctx.request.json('1mb')) as Record<string, unknown>
+    const body = (await ctx.request.json('1mb')) as CopyrightRepeatInfringerDispositionRequest
     ctx.assert(boundedString(body.rationale, 10_000), 422, 'rationale is required')
     ctx.assert(
-      typeof body.disposition === 'string' && dispositions.has(body.disposition),
+      dispositions.has(body.disposition),
       422,
       'disposition must be withdrawn, duplicate, or abusive',
+    )
+    const incidentId = validateUUIDParam(ctx, 'id')
+    validateRequestContract(
+      ctx,
+      'POST:/api/v1/copyright-repeat-infringer-incidents/:id/dispositions',
+      { path: ctx.params, body },
     )
     ctx.json({
       copyright_repeat_infringer_disposition: await recordStaffCopyrightRepeatInfringerDisposition({
         currentUser,
-        incidentId: validateUUIDParam(ctx, 'id'),
-        disposition: body.disposition as 'withdrawn' | 'duplicate' | 'abusive',
+        incidentId,
+        disposition: body.disposition,
         rationale: body.rationale,
         recordedAt: new Date(),
       }),
@@ -75,19 +100,23 @@ app.route('/api/v1/copyright-repeat-infringer-reviews/:id/outcomes').post(async 
     'POST:/api/v1/copyright-repeat-infringer-reviews/:id/outcomes',
   )
   assertNotSuspended(currentUser)
-  const body = (await ctx.request.json('1mb')) as Record<string, unknown>
+  const body = (await ctx.request.json('1mb')) as CopyrightRepeatInfringerOutcomeRequest
   ctx.assert(boundedString(body.rationale, 10_000), 422, 'rationale is required')
   ctx.assert(
-    typeof body.outcome === 'string' &&
-      reviewDecisions.has(body.outcome as CopyrightRepeatInfringerReviewDecision),
+    reviewDecisions.has(body.outcome),
     422,
     'outcome must be warning, no_action, restrict, or terminate',
   )
+  const reviewId = validateUUIDParam(ctx, 'id')
+  validateRequestContract(ctx, 'POST:/api/v1/copyright-repeat-infringer-reviews/:id/outcomes', {
+    path: ctx.params,
+    body,
+  })
   ctx.json({
     copyright_repeat_infringer_review: await recordCopyrightRepeatInfringerReviewOutcome({
       currentUser,
-      reviewId: validateUUIDParam(ctx, 'id'),
-      outcome: body.outcome as CopyrightRepeatInfringerReviewDecision,
+      reviewId,
+      outcome: body.outcome,
       rationale: body.rationale,
       recordedAt: new Date(),
     }),
@@ -105,12 +134,18 @@ app
       'POST:/api/v1/copyright-repeat-infringer-accounts/:accountUserId/reinstatements',
     )
     assertNotSuspended(currentUser)
-    const body = (await ctx.request.json('1mb')) as Record<string, unknown>
+    const body = (await ctx.request.json('1mb')) as CopyrightRepeatInfringerReinstatementRequest
     ctx.assert(boundedString(body.rationale, 10_000), 422, 'rationale is required')
+    const accountUserId = validateUUIDParam(ctx, 'accountUserId')
+    validateRequestContract(
+      ctx,
+      'POST:/api/v1/copyright-repeat-infringer-accounts/:accountUserId/reinstatements',
+      { path: ctx.params, body },
+    )
     ctx.json({
       copyright_repeat_infringer_review: await recordCopyrightRepeatInfringerReinstatement({
         currentUser,
-        accountUserId: validateUUIDParam(ctx, 'accountUserId'),
+        accountUserId,
         rationale: body.rationale,
         recordedAt: new Date(),
       }),

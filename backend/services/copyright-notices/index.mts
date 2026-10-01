@@ -53,7 +53,6 @@ export {
   recordCopyrightRepeatInfringerReviewOutcome,
   recordStaffCopyrightRepeatInfringerDisposition,
 } from './repeat-infringer-outcomes.mts'
-export type { CopyrightRepeatInfringerReviewDecision } from './repeat-infringer-outcomes.mts'
 export { listCopyrightRepeatInfringerAccountsForNotice } from './repeat-infringer-accounts.mts'
 export { appendCopyrightLegalHoldAssessment } from './holds.mts'
 export { resolveCopyrightLegalHold } from './hold-resolution.mts'

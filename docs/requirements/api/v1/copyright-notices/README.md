@@ -109,6 +109,13 @@ Reviewers record incident dispositions and warning or no-action review outcomes.
 record restrict, terminate, and reinstatement. Restrict and terminate suspend the account.
 Reinstatement does not unsuspend it.
 
+The disposition, outcome, and reinstatement bodies are closed: an unknown key is a `422` before any
+service call, and a missing or invalid `rationale`, `disposition`, or `outcome` keeps its field-named
+`422`. The service decides who may record `restrict`, `terminate`, or a reinstatement, so a
+moderator who sends a malformed body to an administrator action sees `422` rather than `403`. The
+staff review queue keeps the pagination parser's `400` for a malformed cursor or `limit`; see
+[request validation](../../reference-copyright-staff-request-validation.md).
+
 Staff issue a one-case guest capability with `POST /api/v1/copyright-notices/:id/guest-capabilities`.
 The expiry must be no more than 30 days after issue, and the token is returned only in that
 response. `GET /api/v1/copyright-notices/:id/guest-capabilities` lists the case's capabilities
