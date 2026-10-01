@@ -13,6 +13,7 @@ import {
 import { checkRouteRateLimit } from '@services/route-rate-limits'
 import { isAdminUser } from '@services/users'
 import { startMcpRequestAudit, unreadMcpCall } from './mcp-audit-helpers.mts'
+import { startMcpUsageMeter } from './mcp-usage-helpers.mts'
 
 // Stateless MCP Streamable HTTP for both MCP routes. The bearer credential (an OAuth access token,
 // or a user MCP API key on the user route only) is the identity, so session cookies are never read.
@@ -35,6 +36,8 @@ export async function dispatchMcpRequest(ctx: Context, config: McpServerConfig):
     ownerId: owner.id,
     credential: authentication,
   })
+  // Registered before any rejection below so every outcome of a verified credential is metered.
+  const usage = startMcpUsageMeter(ctx, config, authentication)
   if (config.audience === 'admin' && !isAdminUser(owner)) {
     await audit?.record([unreadMcpCall('role_denied')])
     ctx.throw(403, 'Administrator role required')
@@ -60,6 +63,13 @@ export async function dispatchMcpRequest(ctx: Context, config: McpServerConfig):
     await audit?.record([unreadMcpCall('rate_limited')])
     ctx.set('Retry-After', String(rateLimitResult.retryAfterSeconds))
     ctx.throw(429, 'Rate limit exceeded')
+  }
+  // The outcome-based usage quota: it counts the requests the API served, not every attempt.
+  const quotaCheck = await usage.checkQuota()
+  if (quotaCheck.limited) {
+    await audit?.record([unreadMcpCall('rate_limited')])
+    ctx.set('Retry-After', String(quotaCheck.retryAfterSeconds))
+    ctx.throw(429, 'Usage quota exceeded')
   }
 
   const parsedBody = await readBody(ctx, audit)

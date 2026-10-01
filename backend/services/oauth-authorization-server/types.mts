@@ -65,6 +65,8 @@ export type OAuthTokenResponse = {
 export type OAuthAccessPrincipal = {
   client_id: string
   expires_at: Date
+  /** The oauth_grants row id the token was issued under, never a credential. */
+  grant_id: string
   resource: string
   scopes: ApiScope[]
   user_id: string

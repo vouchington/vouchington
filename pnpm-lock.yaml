@@ -8623,6 +8623,12 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@modules/scopes':
+        specifier: workspace:^
+        version: link:../../modules/scopes
+      '@services/analytics':
+        specifier: workspace:^
+        version: link:../analytics
       '@services/user-rate-limits':
         specifier: workspace:^
         version: link:../user-rate-limits

@@ -6,11 +6,11 @@
 
 Applies to local JSONL files and is enforced by the existing daily `dataRetentionCleanup` job when the local backend is enabled:
 
-| Tables                                                                                                                                                          | Retention |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| `web_page_view` (non-landing-page)                                                                                                                              | 30 days   |
-| `queue_jobs`, `queue_workers`, `rss_feed_processing`, `valkey_cache_calls`, `ai_calls`, `crawler_requests`, `pg_query_timing`, `pg_pool_stats`, `pg_vote_drift` | 90 days   |
-| `web_page_view` (landing-page), `web_click`, `auth_sessions`                                                                                                    | 1 year    |
+| Tables                                                                                                                                                                       | Retention |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| `web_page_view` (non-landing-page)                                                                                                                                           | 30 days   |
+| `queue_jobs`, `queue_workers`, `rss_feed_processing`, `valkey_cache_calls`, `ai_calls`, `crawler_requests`, `pg_query_timing`, `pg_pool_stats`, `pg_vote_drift`, `api_usage` | 90 days   |
+| `web_page_view` (landing-page), `web_click`, `auth_sessions`                                                                                                                 | 1 year    |
 
 ## Querying with DuckDB
 
