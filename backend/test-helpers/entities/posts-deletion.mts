@@ -1,5 +1,7 @@
-import { read, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { lockPostPublicationPostScopes } from '../../services/post-publication/capture-posts.mts'
+import { getTestPostgresBackendProcessId } from '../postgres-lock-wait.mts'
 
 export async function markTestPostDeletedBy(postId: string, deletedById: string): Promise<void> {
   await write(sql`/* markTestPostDeletedBy */
@@ -10,19 +12,59 @@ export async function markTestPostDeletedBy(postId: string, deletedById: string)
   `)
 }
 
+/**
+ * Hard-deletes posts under the publication post-scope locks. The `posts` delete cascades into
+ * relation rows, so without the scope lock it takes post row -> relation row while a live
+ * vote-stats or publication worker takes relation row -> post row (the FK check), a lock cycle.
+ */
 export async function hardDeleteTestPosts(postIds: readonly string[]): Promise<void> {
   if (postIds.length === 0) return
-  await write(sql`/* hardDeleteTestPosts */
+  await using transaction = await beginTransaction()
+  await lockPostPublicationPostScopes(transaction, postIds)
+  await transaction(sql`/* hardDeleteTestPosts */
     DELETE FROM posts
     WHERE id = ANY(${postIds})
   `)
+  await transaction.commit()
 }
 
 export async function hardDeleteTestPost(postId: string): Promise<void> {
-  await write(sql`/* hardDeleteTestPost */
-    DELETE FROM posts
-    WHERE id = ${postId}
-  `)
+  await hardDeleteTestPosts([postId])
+}
+
+/**
+ * Pauses a vote-stats-worker-shaped transaction: it holds the post scope lock and a topic relation
+ * row lock, then `complete()` retains an identity bridge (an FK key-share check on the post row)
+ * and commits. Against a lock-free post delete that last step is the other half of a lock cycle.
+ */
+export async function startPausedTestPostTopicRelationWriter(
+  postId: string,
+  relationId: string,
+): Promise<{ holderProcessId: number; complete(): Promise<void> }> {
+  const paused = Promise.withResolvers<number>()
+  const resume = Promise.withResolvers<void>()
+  const completed = (async () => {
+    await using transaction = await beginTransaction()
+    await lockPostPublicationPostScopes(transaction, [postId])
+    await transaction(sql`/* startPausedTestPostTopicRelationWriter:relation */
+      SELECT id FROM relation__post__category__topic WHERE id = ${relationId} FOR UPDATE
+    `)
+    paused.resolve(await getTestPostgresBackendProcessId(transaction))
+    await resume.promise
+    await transaction(sql`/* startPausedTestPostTopicRelationWriter:post */
+      SELECT id FROM posts WHERE id = ${postId} FOR KEY SHARE
+    `)
+    await transaction.commit()
+  })()
+  void completed.catch(paused.reject)
+  const holderProcessId = await paused.promise
+  return {
+    holderProcessId,
+    complete: () => {
+      resume.resolve()
+      return completed
+    },
+  }
 }
 
 export async function countTestPostsCreatedBy(userId: string): Promise<number> {
