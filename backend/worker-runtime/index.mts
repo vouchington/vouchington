@@ -1,3 +1,5 @@
+// The published package has named runtime exports; its declaration barrel uses .mts paths.
+// oxlint-disable-next-line import/export
 export * from '@vouchington/worker-runtime'
 export * from './lifecycle.mts'
 export * from './sqs-consumer.mts'

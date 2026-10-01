@@ -1,15 +1,14 @@
 import { act, fireEvent, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import '@/test-helpers/components/comment-tree-fixtures'
-import { CommentTree } from '../comment-tree'
-import { previewMarkdown } from '@/lib/api/client/markdown'
-import { createPost } from '@/lib/api/client/posts'
-import type { User } from '@/types/user'
 import {
   makeComment,
   makeData,
   renderWithAuth,
 } from '@/test-helpers/components/comment-tree-fixtures'
+import { CommentTree } from '../comment-tree'
+import { previewMarkdown } from '@/lib/api/client/markdown'
+import { createPost } from '@/lib/api/client/posts'
+import type { User } from '@/types/user'
 
 describe('comment-tree', () => {
   beforeEach(() => {
