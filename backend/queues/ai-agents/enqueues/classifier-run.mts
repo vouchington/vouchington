@@ -1,7 +1,13 @@
 import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { JobOptions } from 'glide-mq'
 import { trackJobEnqueue } from '@services/analytics'
-import { AI_AGENTS_QUEUE_NAME, AI_AGENTS_DEFAULTS, AGENT_PRIORITY } from '../config.mts'
+import {
+  AI_AGENTS_QUEUE_NAME,
+  AI_AGENTS_DEFAULTS,
+  AGENT_PRIORITY,
+  CLASSIFIER_RUN_ATTEMPTS,
+  CLASSIFIER_RUN_BACKOFF,
+} from '../config.mts'
 import { ai_agents } from '../queues.mts'
 import type { ClassifierRunDispatcherJobData, ClassifierRunJobData } from '../types.mts'
 
@@ -17,6 +23,9 @@ export function classifierRunDispatcherJobId(data: ClassifierRunDispatcherJobDat
 function classifierRunOptions(runId: string): JobOptions {
   return {
     ...AI_AGENTS_DEFAULTS,
+    // Sized for a provider outage of minutes; the same attempt count caps the receipt.
+    attempts: CLASSIFIER_RUN_ATTEMPTS,
+    backoff: CLASSIFIER_RUN_BACKOFF,
     priority: AGENT_PRIORITY['classifier-run'],
     jobId: classifierRunJobId(runId),
     removeOnComplete: true,

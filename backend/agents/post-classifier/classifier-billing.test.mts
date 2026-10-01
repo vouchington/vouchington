@@ -1,21 +1,13 @@
 import { randomUUID } from 'node:crypto'
 import { Response } from 'undici'
-import { afterAll, beforeAll, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { dynamicConfigPrimaryValkeyClient } from '@data-stores/valkey/clients'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import {
-  acquireTestAiUsageDateReservation,
   countAiUsageRecordsForResponseId,
   findAiUsageRecordForPost,
   pollUntilNotNull,
 } from '@voucha/test-helpers'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import {
-  clearDailyAiCostTotalCacheForTesting,
-  getAccountingUncertaintyKey,
-  getAccountingUncertaintySource,
-  OpenAiSpendCapBreachError,
-  openAiSpendCapConfig,
-} from '@services/ai-usage'
+import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
+import { getAccountingUncertaintySource, OpenAiSpendCapBreachError } from '@services/ai-usage'
 import { claimClassifierRun } from '@services/classifier-runs'
 import type { StructuredDecisionFetch } from '@modules/structured-decisions'
 import {
@@ -60,36 +52,6 @@ function createBillingDependencies(
         },
         { apiKey: 'test-key', fetch },
       ),
-  }
-}
-
-async function withReservedAiUsageDay<T>(
-  dailyCapMicrounits: number,
-  fn: (day: string) => Promise<T>,
-): Promise<T> {
-  await openAiSpendCapConfig.waitForInitialization()
-  const reservation = await acquireTestAiUsageDateReservation()
-  let released = false
-  const release = async () => {
-    if (released) return
-    released = true
-    await reservation.release()
-  }
-  onTestFinished(release)
-  vi.useFakeTimers({ toFake: ['Date'] })
-  vi.setSystemTime(new Date(`${reservation.day}T12:00:00.000Z`))
-  clearDailyAiCostTotalCacheForTesting()
-  const restore = overrideDynamicConfigFieldsForTest(openAiSpendCapConfig, {
-    enabled: true,
-    daily_cap_microunits: dailyCapMicrounits,
-  })
-  try {
-    return await fn(reservation.day)
-  } finally {
-    restore()
-    clearDailyAiCostTotalCacheForTesting()
-    vi.useRealTimers()
-    await release()
   }
 }
 
@@ -275,18 +237,13 @@ describe('post classifier billing', () => {
   it('latches an ambiguous billed provider failure', async () => {
     await withReservedAiUsageDay(1_000_000, async day => {
       const input = await createPostClassifierExecutionFixture(true, false)
-      const uncertaintyKey = getAccountingUncertaintyKey(day)
-      try {
-        await expect(
-          executePostClassifierRun(
-            input,
-            createBillingDependencies(input, async () => new Response('', { status: 503 })),
-          ),
-        ).rejects.toMatchObject({ code: 'provider-error' })
-        await expect(getAccountingUncertaintySource(day)).resolves.toBe('unknown_billed_attempt')
-      } finally {
-        await dynamicConfigPrimaryValkeyClient.unlink([uncertaintyKey])
-      }
+      await expect(
+        executePostClassifierRun(
+          input,
+          createBillingDependencies(input, async () => new Response('', { status: 503 })),
+        ),
+      ).rejects.toMatchObject({ code: 'provider-error' })
+      await expect(getAccountingUncertaintySource(day)).resolves.toBe('unknown_billed_attempt')
     })
   })
 })

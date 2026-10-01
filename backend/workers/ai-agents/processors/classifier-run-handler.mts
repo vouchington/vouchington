@@ -1,7 +1,7 @@
 import type { Job } from 'glide-mq'
 import type { ClassifierRunExecution } from '@agents/classifier-runs'
 import { enqueueClassifierRun } from '@queues/ai-agents/enqueues/classifier-run'
-import { AI_AGENTS_DEFAULTS } from '@queues/ai-agents/config'
+import { CLASSIFIER_RUN_ATTEMPTS } from '@queues/ai-agents/config'
 import type { ClassifierRunJobData } from '@queues/ai-agents/types'
 import {
   claimClassifierRun,
@@ -100,7 +100,8 @@ export function createClassifierRunHandler<C, L, E>(
       return { kind: 'stale' }
     }
     const outcome = await registration.execute(claim.lease, {
-      maxAttempts: AI_AGENTS_DEFAULTS.attempts,
+      // The queue's attempt count too: a retry never reserves a provider attempt the receipt refuses.
+      maxAttempts: CLASSIFIER_RUN_ATTEMPTS,
       signal: AbortSignal.timeout(EXECUTION_DEADLINE_MS),
     })
     if (outcome === 'stale') {

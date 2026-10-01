@@ -16,6 +16,18 @@ export type ClassifierRunAlarmContext =
   // The provider client could not be built, so the run's remote half was made terminal and its
   // local outcome kept.
   | { kind: 'client-unavailable'; classifier: string; runId: string; error: string }
+  // The provider permanently rejected the request for a reason an operator must fix (a rejected or
+  // revoked key, exhausted credits, a malformed request, a guardrail block), so the run was made
+  // terminal. Safe fields only: never the provider's message or any content. A moderation block
+  // is about the content, not the deployment, and does not alarm.
+  | {
+      kind: 'provider-rejected'
+      classifier: string
+      runId: string
+      status: number | undefined
+      providerCode: number | string | undefined
+      errorType: string | undefined
+    }
   // The recovery sweep enqueued the run its bounded number of times without completing it, so the
   // run was made terminal.
   | {
@@ -45,8 +57,8 @@ export type ClassifierRunAlarmContext =
 
 /**
  * Record that a fixed-classifier run or request needs an operator: its provider client is
- * unavailable, the recovery sweep gave up on it, or the oldest incomplete run or unreserved request
- * is stale.
+ * unavailable, the provider permanently rejected it, the recovery sweep gave up on it, or the
+ * oldest incomplete run or unreserved request is stale.
  *
  * One fixed message and a per-kind, per-classifier fingerprint group every run of a kind into one
  * Sentry issue (a missing API key alarms once per subject); run ids stay in `extra`. The age
