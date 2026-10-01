@@ -4,9 +4,9 @@ import { join } from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { sessionPersistPath } from '../agent-session-id/persist.mts'
+import { readPersistedSessionId, sessionPersistPath } from '../agent-session-id/persist.mts'
 import { resolveSessionId } from '../agent-session-id/resolve.mts'
-import { resolveHookSessionId } from './session-id.mts'
+import { resolveHookSession } from './session-id.mts'
 import { renderSessionLine } from './session-line.mts'
 
 const testDirs: string[] = []
@@ -18,81 +18,185 @@ async function makeWorktree(): Promise<string> {
   return cwd
 }
 
-describe('resolveHookSessionId', () => {
+async function persist(cwd: string, agent: 'codex' | 'cursor' | 'grok', id: string) {
+  await mkdir(join(cwd, '.local'), { recursive: true })
+  await writeFile(sessionPersistPath(cwd, agent), `${id}\n`, 'utf8')
+}
+
+// What a harness launched from a Claude session inherits, plus a leftover Cursor session file.
+async function leakyWorktree(): Promise<{ cwd: string; env: NodeJS.ProcessEnv }> {
+  const cwd = await makeWorktree()
+  await persist(cwd, 'cursor', 'stale-cursor')
+  return { cwd, env: { CLAUDE_CODE_SESSION_ID: 'inherited-claude' } }
+}
+
+describe('resolveHookSession payload-first resolution', () => {
   afterEach(async () => {
     await Promise.all(testDirs.splice(0).map(dir => rm(dir, { force: true, recursive: true })))
   })
 
-  it('prints the id every other repository tool resolves for a Claude session', async () => {
-    const cwd = await makeWorktree()
-    const payload = { session_id: 'claude-abc' }
-    const hook = resolveHookSessionId({ cwd, env: {}, harnessArg: 'claude', payload })
-    // A Bash tool call in that session sees CLAUDE_CODE_SESSION_ID; the hook payload carries the same id.
-    expect(hook).toBe(resolveSessionId({ cwd, env: { CLAUDE_CODE_SESSION_ID: 'claude-abc' } }))
-    expect(hook).toBe(resolveSessionId({ cwd, env: {}, sessionIdArg: payload.session_id }))
-  })
-
-  it('takes the ambient Claude id when the hook env already has one', async () => {
-    const cwd = await makeWorktree()
-    const env = { CLAUDE_CODE_SESSION_ID: 'claude-env' }
-    expect(resolveHookSessionId({ cwd, env, harnessArg: 'claude', payload: {} })).toBe(
-      resolveSessionId({ cwd, env }),
-    )
-  })
-
-  it('never substitutes a stale persisted Cursor id for a Claude session', async () => {
-    const cwd = await makeWorktree()
-    await mkdir(join(cwd, '.local'))
-    await writeFile(sessionPersistPath(cwd, 'cursor'), 'stale-cursor\n', 'utf8')
-    const hook = resolveHookSessionId({
+  it('prints the payload id for a Claude hook despite a stale Cursor file and a leaked env id', async () => {
+    const { cwd, env } = await leakyWorktree()
+    const session = resolveHookSession({
       cwd,
-      env: {},
+      env: { ...env, CODEX_THREAD_ID: 'inherited-codex' },
       harnessArg: 'claude',
       payload: { session_id: 'claude-fresh' },
     })
-    expect(hook).toBe('claude-fresh')
+    expect(session).toEqual({ runtime: 'claude', sessionId: 'claude-fresh' })
+    expect(session.sessionId).toBe(resolveSessionId({ cwd, env: {}, sessionIdArg: 'claude-fresh' }))
   })
 
-  it('persists and prints the payload thread id for a root Codex session', async () => {
+  it('falls back to the Claude session env only when the payload has no id', async () => {
     const cwd = await makeWorktree()
+    const env = { CLAUDE_CODE_SESSION_ID: 'claude-env' }
+    expect(resolveHookSession({ cwd, env, harnessArg: 'claude', payload: {} }).sessionId).toBe(
+      'claude-env',
+    )
+  })
+
+  it('persists and prints the payload thread id for a root Codex despite leaked state', async () => {
+    const { cwd, env } = await leakyWorktree()
     const payload = { session_id: 'codex-thread-1' }
-    const hook = resolveHookSessionId({ cwd, env: {}, harnessArg: 'codex', payload })
-    expect(hook).toBe('codex-thread-1')
+    const session = resolveHookSession({ cwd, env, harnessArg: 'codex', payload })
+    expect(session).toEqual({ runtime: 'codex', sessionId: 'codex-thread-1' })
     expect((await readFile(sessionPersistPath(cwd, 'codex'), 'utf8')).trim()).toBe('codex-thread-1')
     // Later repository tools resolve the same id through the root-Codex flag.
-    expect(resolveSessionId({ cwd, env: {}, rootCodex: true })).toBe(hook)
+    expect(resolveSessionId({ cwd, env: {}, rootCodex: true })).toBe('codex-thread-1')
+  })
+
+  it('lets CODEX_THREAD_ID beat the payload and a leaked Claude id without persisting', async () => {
+    const { cwd, env } = await leakyWorktree()
+    const session = resolveHookSession({
+      cwd,
+      env: { ...env, CODEX_THREAD_ID: 'codex-child' },
+      harnessArg: 'codex',
+      payload: { session_id: 'other-payload' },
+    })
+    expect(session).toEqual({ runtime: 'codex', sessionId: 'codex-child' })
+    expect(readPersistedSessionId(cwd, 'codex')).toBeUndefined()
   })
 
   it('falls back to the persisted root Codex id when the payload has none', async () => {
     const cwd = await makeWorktree()
-    await mkdir(join(cwd, '.local'))
-    await writeFile(sessionPersistPath(cwd, 'codex'), 'codex-persisted\n', 'utf8')
-    expect(resolveHookSessionId({ cwd, env: {}, harnessArg: 'codex', payload: {} })).toBe(
-      resolveSessionId({ cwd, env: {}, rootCodex: true }),
+    await persist(cwd, 'codex', 'codex-persisted')
+    expect(resolveHookSession({ cwd, env: {}, harnessArg: 'codex', payload: {} }).sessionId).toBe(
+      'codex-persisted',
     )
   })
 
-  it('prints the ambient thread id for a Codex child session', async () => {
+  it('reports a root Codex persistence failure instead of an id', async () => {
     const cwd = await makeWorktree()
-    const env = { CODEX_THREAD_ID: 'codex-child' }
-    const hook = resolveHookSessionId({ cwd, env, harnessArg: 'codex', payload: {} })
-    expect(hook).toBe(resolveSessionId({ cwd, env }))
-    expect(hook).toBe('codex-child')
+    await writeFile(join(cwd, '.local'), 'not a directory\n', 'utf8')
+    const session = resolveHookSession({
+      cwd,
+      env: {},
+      harnessArg: 'codex',
+      payload: { session_id: 'codex-thread-1' },
+    })
+    expect(session.sessionId).toBeUndefined()
+    expect(session.failure).toContain('failed to persist root Codex session id')
+    expect(session.runtime).toBe('codex')
   })
 
-  it('returns nothing when no id exists and rejects ids the repository grammar refuses', async () => {
+  it('prints the payload id with an unknown runtime when no argument or transcript names one', async () => {
+    const { cwd, env } = await leakyWorktree()
+    const session = resolveHookSession({ cwd, env, payload: { session_id: 'codex-thread-2' } })
+    // The leaked Claude id neither names the runtime nor outranks the payload.
+    expect(session).toEqual({ sessionId: 'codex-thread-2' })
+  })
+
+  it('reads a Codex transcript path as the runtime when the main checkout hook has no argument', async () => {
+    const { cwd, env } = await leakyWorktree()
+    const payload = {
+      session_id: 'codex-thread-3',
+      transcript_path: '/Users/someone/.codex/sessions/2026/09/rollout-codex-thread-3.jsonl',
+    }
+    expect(resolveHookSession({ cwd, env, payload })).toEqual({
+      runtime: 'codex',
+      sessionId: 'codex-thread-3',
+    })
+    expect(readPersistedSessionId(cwd, 'codex')).toBe('codex-thread-3')
+  })
+
+  it('uses the only own session env as a last resort when the payload has no id', async () => {
     const cwd = await makeWorktree()
+    const session = resolveHookSession({ cwd, env: { CODEX_THREAD_ID: 'codex-env' }, payload: {} })
+    expect(session).toEqual({ sessionId: 'codex-env' })
+  })
+
+  it('asks for an explicit id when several harness envs are set and the payload has none', async () => {
+    const { cwd, env } = await leakyWorktree()
+    const session = resolveHookSession({
+      cwd,
+      env: { ...env, CODEX_THREAD_ID: 'codex-env' },
+      payload: {},
+    })
+    expect(session.sessionId).toBeUndefined()
+    expect(session.runtime).toBeUndefined()
+    expect(session.failure).toContain('CLAUDE_CODE_SESSION_ID, CODEX_THREAD_ID')
+    expect(session.failure).toContain('--session-id')
+  })
+
+  it('returns nothing for an empty hook and for ids the repository grammar refuses', async () => {
+    const { cwd } = await leakyWorktree()
+    expect(resolveHookSession({ cwd, env: {}, payload: {} })).toEqual({})
+    const refused = resolveHookSession({
+      cwd,
+      env: {},
+      harnessArg: 'claude',
+      payload: { session_id: 'has space/slash' },
+    })
+    expect(refused).toEqual({ runtime: 'claude' })
+  })
+})
+
+describe('resolveHookSession Grok and Cursor hooks', () => {
+  afterEach(async () => {
+    await Promise.all(testDirs.splice(0).map(dir => rm(dir, { force: true, recursive: true })))
+  })
+
+  it('prefers GROK_SESSION_ID, then the payload, over a leaked Claude id and a Cursor file', async () => {
+    const { cwd, env } = await leakyWorktree()
+    const grokEnv = { ...env, GROK_SESSION_ID: 'grok-env', GROK_HOOK_EVENT: 'SessionStart' }
     expect(
-      resolveHookSessionId({ cwd, env: {}, harnessArg: 'claude', payload: {} }),
-    ).toBeUndefined()
+      resolveHookSession({ cwd, env: grokEnv, harnessArg: 'claude', payload: { session_id: 'p' } }),
+    ).toEqual({ runtime: 'grok', sessionId: 'grok-env' })
+    const payloadOnly = { ...env, GROK_HOOK_EVENT: 'SessionStart' }
     expect(
-      resolveHookSessionId({
+      resolveHookSession({
         cwd,
-        env: {},
+        env: payloadOnly,
         harnessArg: 'claude',
-        payload: { session_id: 'has space/slash' },
-      }),
+        payload: { session_id: 'p' },
+      }).sessionId,
+    ).toBe('p')
+  })
+
+  it('reads only the Grok persisted file for a Grok hook without an id', async () => {
+    const { cwd, env } = await leakyWorktree()
+    const grokEnv = { ...env, GROK_HOOK_EVENT: 'SessionStart' }
+    expect(
+      resolveHookSession({ cwd, env: grokEnv, harnessArg: 'claude', payload: {} }).sessionId,
     ).toBeUndefined()
+    await persist(cwd, 'grok', 'grok-file')
+    expect(
+      resolveHookSession({ cwd, env: grokEnv, harnessArg: 'claude', payload: {} }).sessionId,
+    ).toBe('grok-file')
+  })
+
+  it('takes the Cursor conversation id over a leaked Claude id and never reads the Grok file', async () => {
+    const { cwd, env } = await leakyWorktree()
+    await persist(cwd, 'grok', 'stale-grok')
+    const cursorPayload = { cursor_version: '1.0.0', conversation_id: 'cursor-conversation' }
+    expect(resolveHookSession({ cwd, env, harnessArg: 'claude', payload: cursorPayload })).toEqual({
+      runtime: 'cursor',
+      sessionId: 'cursor-conversation',
+    })
+    const idless = { cursor_version: '1.0.0' }
+    expect(resolveHookSession({ cwd, env, harnessArg: 'claude', payload: idless }).sessionId).toBe(
+      'stale-cursor',
+    )
   })
 })
 

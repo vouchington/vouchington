@@ -208,7 +208,8 @@ describe('dev/check-blackboard (hook subprocess)', () => {
     expect(context).toContain('STOP WORK')
     expect(context).toContain('cannot launch')
     expect(context).toContain('./dev/initialize monorepo')
-    expect(context).toContain('then /mcp reconnect')
+    // Resolution cannot load, so no harness is known and the step lists every harness.
+    expect(context).toContain('then /mcp reconnect (Claude Code), restart Codex or Grok')
     expect(context).toContain('Blackboard sessionId: NOT RESOLVED')
     expect(context).not.toContain('assessment failed')
   })
@@ -229,7 +230,7 @@ describe('dev/check-blackboard (hook subprocess)', () => {
     const context = additionalContext(result.stdout)
     expect(context).toContain('STOP WORK')
     expect(context).toContain('node_modules/.bin/vouchington')
-    expect(context).toContain('then restart Codex')
+    expect(context).toContain('restart Codex or Grok')
   })
 
   it('stays silent outside a git repo', async () => {

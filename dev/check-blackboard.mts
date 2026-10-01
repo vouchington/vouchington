@@ -3,7 +3,11 @@ import { execFile as execFileCb } from 'node:child_process'
 import { resolve } from 'node:path'
 import { promisify } from 'node:util'
 
-import { checkMcpLaunch, renderMcpHealthLine } from './check-blackboard/mcp-health.mts'
+import {
+  checkMcpLaunch,
+  renderMcpHealthLine,
+  type McpRuntime,
+} from './check-blackboard/mcp-health.mts'
 import { renderSessionLine } from './check-blackboard/session-line.mts'
 
 const execFileAsync = promisify(execFileCb)
@@ -11,7 +15,8 @@ const execFileAsync = promisify(execFileCb)
 // SessionStart hook: prints the session id agents pass to the vouchington-tooling MCP tools, a
 // static launch-health line, and an advisory probe of the hosted deployment. Compact restarts
 // and CHECK_BLACKBOARD_SKIP skip the probe only; the session id is always re-printed.
-// argv[2] is the harness token (`claude` or `codex`) from the hook command.
+// argv[2] is the harness token (`claude`, `codex` or `grok`) from the hook command. It can be
+// absent: a linked worktree runs the main checkout's hook command, so the payload and env decide.
 
 export async function runCheckBlackboard(options: { env?: NodeJS.ProcessEnv } = {}): Promise<void> {
   const { probeBlackboard } = await import('vouchington-tooling/agent-blackboard')
@@ -56,19 +61,24 @@ function emitContext(message: string): void {
 }
 
 // Resolution loads the workspace resolver lazily: a missing or stale install must still leave
-// the health line (and a "not resolved" line) rather than crash the hook.
-async function sessionLine(payload: Record<string, unknown>, root: string): Promise<string> {
+// the health line (and a "not resolved" line) rather than crash the hook. The resolved runtime
+// picks the health line's tool names and reconnect step; it is unknown when resolution fails.
+async function sessionContext(
+  payload: Record<string, unknown>,
+  root: string,
+): Promise<{ line: string; runtime?: McpRuntime }> {
   try {
-    const { resolveHookSessionId } = await import('./check-blackboard/session-id.mts')
-    const sessionId = resolveHookSessionId({
+    const { resolveHookSession } = await import('./check-blackboard/session-id.mts')
+    const session = resolveHookSession({
       cwd: root,
       env: process.env,
       harnessArg: process.argv[2],
       payload,
     })
-    return renderSessionLine(sessionId)
+    return { line: renderSessionLine(session.sessionId, session.failure), runtime: session.runtime }
   } catch (error) {
-    return renderSessionLine(undefined, error instanceof Error ? error.message : String(error))
+    const cause = error instanceof Error ? error.message : String(error)
+    return { line: renderSessionLine(undefined, cause) }
   }
 }
 
@@ -104,8 +114,9 @@ async function main(): Promise<void> {
   const root = resolve(import.meta.dirname, '..')
   const compact = payload.source === 'compact'
   const health = checkMcpLaunch(root)
-  const lines = [await sessionLine(payload, root)]
-  if (!health.ok || !compact) lines.push(renderMcpHealthLine(health, process.argv[2]))
+  const session = await sessionContext(payload, root)
+  const lines = [session.line]
+  if (!health.ok || !compact) lines.push(renderMcpHealthLine(health, session.runtime))
   // An unlaunchable server is a setup problem that masks the deployment probe.
   if (health.ok && !compact && process.env.CHECK_BLACKBOARD_SKIP !== '1') {
     const probe = await probeLine()

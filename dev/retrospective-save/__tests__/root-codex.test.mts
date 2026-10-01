@@ -107,6 +107,14 @@ describe('runSave root-Codex identity', () => {
     ])
   })
 
+  it('asks for an explicit session id when a Codex child inherits Grok session env', async () => {
+    const dir = await makeTempDir()
+    const env = { ...HOSTED_ENV, CODEX_THREAD_ID: 'codex-id', GROK_SESSION_ID: 'grok-id' }
+    await expect(runSave(['--file', await makeStagedFile(dir)], env, {}, dir)).rejects.toThrow(
+      /ambiguous session id.*--session-id/u,
+    )
+  })
+
   it('rejects an empty parent session id', async () => {
     const dir = await makeTempDir()
     await expect(

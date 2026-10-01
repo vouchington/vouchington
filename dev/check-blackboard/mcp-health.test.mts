@@ -85,22 +85,68 @@ describe('checkMcpLaunch', () => {
 })
 
 describe('renderMcpHealthLine', () => {
+  const failed = { ok: false, reason: 'launcher missing' } as const
+  const passed = { ok: true } as const
+
   it('names ./dev/initialize and the harness-specific reconnect on failure', () => {
-    const failed = { ok: false, reason: 'launcher missing' } as const
     const claude = renderMcpHealthLine(failed, 'claude')
     expect(claude).toContain('STOP WORK')
     expect(claude).toContain('./dev/initialize monorepo')
     expect(claude).toContain('then /mcp reconnect')
     expect(claude).not.toContain('restart Codex')
-    const codex = renderMcpHealthLine(failed, 'codex')
-    expect(codex).toContain('then restart Codex')
-    expect(renderMcpHealthLine(failed)).toContain('/mcp reconnect (Claude Code) or restart Codex')
+    expect(renderMcpHealthLine(failed, 'codex')).toContain('then restart Codex')
+    expect(renderMcpHealthLine(failed, 'grok')).toContain('then restart Grok')
+    expect(renderMcpHealthLine(failed, 'cursor')).toContain(
+      'then approve the server with `cursor-agent mcp enable vouchington-tooling`',
+    )
   })
 
   it('reports a static pass without claiming the harness is connected', () => {
-    const line = renderMcpHealthLine({ ok: true }, 'claude')
+    const line = renderMcpHealthLine(passed, 'claude')
     expect(line).not.toContain('STOP WORK')
     expect(line).toContain('static check')
-    expect(line).toContain('mcp__vouchington-tooling__*')
+    expect(line).toContain('not probed')
+  })
+
+  it('names only the tool form the running harness exposes', () => {
+    const claude = renderMcpHealthLine(passed, 'claude')
+    expect(claude).toContain('mcp__vouchington-tooling__*')
+    expect(claude).not.toContain('mcp__vouchington_tooling__*')
+    const codex = renderMcpHealthLine(passed, 'codex')
+    expect(codex).toContain('mcp__vouchington_tooling__*')
+    expect(codex).not.toContain('mcp__vouchington-tooling__*')
+    const grok = renderMcpHealthLine(passed, 'grok')
+    expect(grok).toContain('vouchington-tooling__*')
+    expect(grok).toContain('search_tool')
+    expect(grok).toContain('use_tool')
+    expect(grok).not.toContain('mcp__')
+    const cursor = renderMcpHealthLine(passed, 'cursor')
+    expect(cursor).toContain('GetDynamicTools')
+    expect(cursor).toContain('CallDynamicTool')
+    expect(cursor).toContain('vouchington-tooling namespace')
+    expect(cursor).not.toContain('mcp__')
+  })
+
+  it('explains the Cursor server approval and the headless flag', () => {
+    const cursor = renderMcpHealthLine(passed, 'cursor')
+    expect(cursor).toContain('cursor-agent mcp enable vouchington-tooling')
+    expect(cursor).toContain('--approve-mcps')
+    expect(renderMcpHealthLine(passed, 'claude')).not.toContain('--approve-mcps')
+  })
+
+  it('names all four forms and the discovery search when the runtime is unknown', () => {
+    const line = renderMcpHealthLine(passed)
+    for (const form of [
+      'mcp__vouchington-tooling__*',
+      'mcp__vouchington_tooling__*',
+      'GetDynamicTools',
+      'vouchington-tooling__* behind search_tool and use_tool',
+      'search for journal_append before concluding the server is missing',
+    ]) {
+      expect(line).toContain(form)
+    }
+    expect(renderMcpHealthLine(failed)).toContain(
+      '/mcp reconnect (Claude Code), restart Codex or Grok',
+    )
   })
 })

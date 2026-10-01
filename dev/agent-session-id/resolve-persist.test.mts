@@ -25,12 +25,33 @@ describe('resolveSessionId persist fallback', () => {
     await Promise.all(testDirs.splice(0).map(dir => rm(dir, { force: true, recursive: true })))
   })
 
-  it('reads the cursor persist file when no session env is set', async () => {
+  it('reads the cursor persist file only when CURSOR_AGENT is set', async () => {
     const cwd = await makeTempDir()
     await mkdir(join(cwd, '.local'), { recursive: true })
     await writeFile(sessionPersistPath(cwd, 'cursor'), 'cursor-file\n', 'utf8')
-    expect(resolveSessionId({ cwd, env: {} })).toBe('cursor-file')
-    expect(defaultBlackboardAgent({}, cwd)).toBe('cursor')
+    expect(resolveSessionId({ cwd, env: {} })).toBeUndefined()
+    expect(defaultBlackboardAgent({}, cwd)).toBeUndefined()
+    expect(resolveSessionId({ cwd, env: { CURSOR_AGENT: '1' } })).toBe('cursor-file')
+    expect(defaultBlackboardAgent({ CURSOR_AGENT: '1' }, cwd)).toBe('cursor')
+  })
+
+  it('reads neither persist file when both agent markers are set', async () => {
+    const cwd = await makeTempDir()
+    await mkdir(join(cwd, '.local'), { recursive: true })
+    await writeFile(sessionPersistPath(cwd, 'cursor'), 'cursor-file\n', 'utf8')
+    await writeFile(sessionPersistPath(cwd, 'grok'), 'grok-file\n', 'utf8')
+    expect(resolveSessionId({ cwd, env: { CURSOR_AGENT: '1', GROK_AGENT: '1' } })).toBeUndefined()
+  })
+
+  it('never hands a leftover persist file to a runtime hint from another harness', async () => {
+    const cwd = await makeTempDir()
+    await mkdir(join(cwd, '.local'), { recursive: true })
+    await writeFile(sessionPersistPath(cwd, 'cursor'), 'cursor-file\n', 'utf8')
+    expect(resolveSessionId({ cwd, env: {}, runtime: 'claude' })).toBeUndefined()
+    expect(resolveSessionId({ cwd, env: {}, runtime: 'codex' })).toBeUndefined()
+    expect(
+      resolveSessionId({ cwd, env: {}, transcriptPath: '/h/.codex/s/r.jsonl' }),
+    ).toBeUndefined()
   })
 
   it('reads the grok persist file only when GROK_AGENT is set', async () => {
