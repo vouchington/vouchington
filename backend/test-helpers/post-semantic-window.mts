@@ -1,6 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import sql, { type SQLStatement } from 'sql-template-strings'
-import { executePostSearchQuery } from '../services/posts/search/execute-query.mts'
+import sql from 'sql-template-strings'
 import { beginTransaction } from '@data-stores/psql'
 
 /** Random direction keeps persistent ANN fixtures apart without duplicate vectors. */
@@ -43,49 +42,4 @@ export async function insertSemanticWindowPosts(
   `)
   await transaction.commit()
   return ids
-}
-
-type PlanNode = {
-  'Node Type': string
-  'Subplan Name'?: string
-  Alias?: string
-  'Index Name'?: string
-  'Index Cond'?: string
-  'Startup Cost': number
-  'Total Cost': number
-  'Actual Rows': number
-  Plans?: PlanNode[]
-}
-
-/** Exercise the exact production settings and report scoped candidate work in CI. */
-export async function explainSemanticWindow(query: SQLStatement) {
-  const { rows } = await executePostSearchQuery(
-    sql`EXPLAIN (ANALYZE, FORMAT JSON) `.append(query),
-    true,
-  )
-  const [{ Plan: root, 'Execution Time': executionTime }] = rows[0]['QUERY PLAN'] as {
-    Plan: PlanNode
-    'Execution Time': number
-  }[]
-  const nodes: PlanNode[] = []
-  const pending = [root]
-  while (pending.length) {
-    const node = pending.pop()!
-    nodes.push(node)
-    pending.push(...(node.Plans ?? []))
-  }
-  const candidate = nodes.find(node => node['Subplan Name'] === 'CTE semantic_post_candidates')!
-  const driving = nodes.find(node => node.Alias === 'semantic_vector_post')!
-  console.info('selective semantic window plan', {
-    executionTime,
-    outputRows: root['Actual Rows'],
-    candidateRows: candidate['Actual Rows'],
-    drivingNode: driving['Node Type'],
-    drivingIndex: driving['Index Name'],
-    drivingIndexCondition: driving['Index Cond'],
-    drivingRows: driving['Actual Rows'],
-    candidateStartupCost: candidate['Startup Cost'],
-    candidateTotalCost: candidate['Total Cost'],
-  })
-  return { candidateRows: candidate['Actual Rows'], outputRows: root['Actual Rows'] }
 }

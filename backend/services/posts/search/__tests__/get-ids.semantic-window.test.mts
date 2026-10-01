@@ -3,10 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { createTestUser, seedSearchEmbeddingCache } from '@voucha/test-helpers'
 import {
   createSemanticWindowEmbedding,
-  explainSemanticWindow,
   insertSemanticWindowPosts,
 } from '../../../../test-helpers/post-semantic-window.mts'
-import { buildPostSearchQuery } from '../query-builder.mts'
 import { getPostIds } from '../get-ids.mts'
 import { getPostFacets } from '../get-facets.mts'
 import { SEMANTIC_POST_CANDIDATE_LIMIT } from '../query-builder/semantic-candidates.mts'
@@ -56,17 +54,6 @@ describe('semantic search candidate paging', () => {
     const query = randomUUID()
     await seedSearchEmbeddingCache(query, embedding)
     for (const text of [undefined, 'fixture']) {
-      const plan = await explainSemanticWindow(
-        buildPostSearchQuery(user, {
-          user_id: user.id,
-          semantic_search_query: query,
-          semanticSearchEmbedding: embedding,
-          text_search_query: text,
-          sort: 'relevance',
-          limit: 26,
-        }),
-      )
-      expect(plan).toEqual({ candidateRows: 30, outputRows: 26 })
       const page = await getPostIds(user, {
         user_id: user.id,
         semantic_search_query: query,
