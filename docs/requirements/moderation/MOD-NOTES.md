@@ -25,4 +25,7 @@ delete a note after a user loses moderation access.
 
 Notes are context for future moderation decisions; they are not penalties and do not alter account state.
 
+Deletion history records the note reference and the deleted-state transition without copying the
+note body into the append-only modlog.
+
 See also: [Community Bans](./COMMUNITY-BANS.md), [User Warnings](./USER-WARNINGS.md).

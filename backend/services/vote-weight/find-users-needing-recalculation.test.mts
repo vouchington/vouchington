@@ -34,7 +34,7 @@ describe('findUsersNeedingVoteWeightRecalculation', () => {
 
   it('excludes a user with vote_weight_admin_set_at set', async () => {
     const user = await createTestUserDirect({ username: randomUsername() })
-    await adminSetVoteWeight(user!.id, 5)
+    await adminSetVoteWeight(user!.id, user!.id, 5)
     const { userIds } = await findUsersNeedingVoteWeightRecalculation(null, 10_000)
     expect(userIds).not.toContain(user!.id)
   }, 60_000)

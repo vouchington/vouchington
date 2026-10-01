@@ -1,3 +1,4 @@
+import { expectStaffOperationHistory } from '@voucha/test-helpers/staff-operation-history'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
@@ -39,6 +40,7 @@ describe('index', () => {
         expect(response.body).toHaveProperty('success', true)
         expect(response.body).toHaveProperty('retried')
         expect(typeof response.body.retried).toBe('number')
+        await expectStaffOperationHistory(admin.id, 'queue_retry_failed')
       })
     })
 

@@ -119,7 +119,7 @@ app.route('/api/v1/admin/oauth-clients/:id/verification').delete(async (ctx: Con
     path: ctx.params,
   })
 
-  const cleared = await unverifyOAuthClient(id)
+  const cleared = await unverifyOAuthClient(currentUser.id, id)
   ctx.assert(cleared, 404, 'OAuth client not found')
   ctx.setStatus(204)
 })

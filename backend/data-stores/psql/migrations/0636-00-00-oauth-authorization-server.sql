@@ -410,3 +410,8 @@ COMMENT ON COLUMN oauth_access_tokens.scopes IS 'Canonical scopes carried by the
 COMMENT ON COLUMN oauth_access_tokens.expires_at IS 'Time after which the access token is invalid.';
 COMMENT ON COLUMN oauth_access_tokens.revoked_at IS 'Time at which the access token was revoked.';
 COMMENT ON COLUMN oauth_access_tokens.last_used_at IS 'Time at which bearer validation last succeeded.';
+
+ALTER TABLE moderator_actions DROP CONSTRAINT IF EXISTS fk_moderator_actions__oauth_client_id;
+ALTER TABLE moderator_actions ADD CONSTRAINT fk_moderator_actions__oauth_client_id
+  FOREIGN KEY (oauth_client_id) REFERENCES oauth_clients (id) ON DELETE SET NULL NOT VALID;
+ALTER TABLE moderator_actions VALIDATE CONSTRAINT fk_moderator_actions__oauth_client_id;

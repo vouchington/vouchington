@@ -7,6 +7,7 @@ import {
   RSS_FEED_AUTO_UPDATER_USERNAME,
 } from '@services/users/constants'
 import sql from 'sql-template-strings'
+import { MODERATION_ANALYTICS_ACTION_TYPES } from './moderation-action-types.mts'
 import type {
   AppealMetrics,
   AutomodPerformanceMetrics,
@@ -147,6 +148,7 @@ async function getQueueVolume(
         COUNT(*)::INT AS count
       FROM moderator_actions ma
       WHERE ma.id >= ${periodStartUuid}::uuid
+        AND ma.action_type = ANY(${MODERATION_ANALYTICS_ACTION_TYPES}::moderator_action_types[])
         AND (${communityId}::uuid IS NULL OR ma.community_id = ${communityId}::uuid)
       GROUP BY day, type
     )
@@ -364,6 +366,7 @@ async function getModeratorWorkload(
       JOIN users u ON u.id = ma.actor_id
       WHERE ma.id >= ${periodStartUuid}::uuid
         AND ma.actor_id IS NOT NULL
+        AND ma.action_type = ANY(${MODERATION_ANALYTICS_ACTION_TYPES}::moderator_action_types[])
         AND (u.username IS NULL OR u.username NOT IN (${MODERATION_SYSTEM_USERNAME}, ${BAN_EVASION_SYSTEM_USERNAME}, ${RSS_FEED_AUTO_UPDATER_USERNAME}))
         AND (${communityId}::uuid IS NULL OR ma.community_id = ${communityId}::uuid)
     ),

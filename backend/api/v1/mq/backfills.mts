@@ -1,3 +1,4 @@
+import { recordStaffOperation } from '@services/moderator-actions'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { currentUserCanAccessQueueStats } from '@services/queue-monitoring'
@@ -14,7 +15,7 @@ app.route('/api/v1/mq/backfills').get(async (ctx: Context) => {
 
 // POST /api/v1/mq/backfills/:id/runs - Manually trigger a backfill
 app.route('/api/v1/mq/backfills/:id/runs').post(async (ctx: Context) => {
-  await requireAuthAndRateLimit(
+  const currentUser = await requireAuthAndRateLimit(
     ctx,
     currentUserCanAccessQueueStats,
     'POST:/api/v1/mq/backfills/:id/runs',
@@ -23,6 +24,10 @@ app.route('/api/v1/mq/backfills/:id/runs').post(async (ctx: Context) => {
   const backfill = BACKFILL_REGISTRY.find(b => b.id === ctx.params.id)
   ctx.assert(backfill, 404, 'Backfill not found')
 
-  await backfill!.trigger()
+  await recordStaffOperation(
+    currentUser.id,
+    { actionType: 'backfill_run', backfillKey: backfill!.id },
+    () => backfill!.trigger(),
+  )
   ctx.json({ success: true })
 })

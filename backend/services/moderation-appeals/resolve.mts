@@ -114,17 +114,16 @@ export async function resolveModerationAppealAccept(
     ),
   ])
   const updated = row
+  await logAppealResolution(
+    staffUserId,
+    'resolve_appeal',
+    appealId,
+    updated.appellant_id,
+    updated.community_id,
+    { query },
+  )
   await query.commit()
-  const postCommitWork: Promise<unknown>[] = [
-    logAppealResolution(
-      staffUserId,
-      'resolve_appeal',
-      appealId,
-      updated.appellant_id,
-      updated.community_id,
-    ),
-    maybeResolveCase(updated.case_id, staffUserId),
-  ]
+  const postCommitWork: Promise<unknown>[] = [maybeResolveCase(updated.case_id, staffUserId)]
   if (updated.user_suspension_id) {
     postCommitWork.push(invalidate.users(updated.appellant_id))
   }

@@ -1,3 +1,4 @@
+import { recordStaffOperation } from '@services/moderator-actions/operation'
 import type { Context } from '@jongleberry/api-server'
 import app from '../../app.mts'
 import { apiResponse } from '../../response-contract.mts'
@@ -24,7 +25,11 @@ app.route('/api/v1/disputes/:id/resolution-drafts').post(async (ctx: Context) =>
   )
   const { enqueueDisputeResolutionAndWait } =
     await import('@queues/ai-agents/enqueues/dispute-resolution')
-  await enqueueDisputeResolutionAndWait(id, currentUser.id)
+  await recordStaffOperation(
+    currentUser.id,
+    { actionType: 'dispute_resolution_draft_rerun', reviewDisputeId: id },
+    () => enqueueDisputeResolutionAndWait(id, currentUser.id),
+  )
 
   ctx.setStatus(202)
   ctx.json(

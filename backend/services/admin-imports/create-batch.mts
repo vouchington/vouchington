@@ -1,3 +1,4 @@
+import { recordModeratorAction } from '@services/moderator-actions'
 import { beginTransaction, write } from '@data-stores/psql'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
@@ -71,6 +72,15 @@ export async function createImportBatch(
 
   const result = { batch, rows, rowIds }
 
+  await recordModeratorAction(
+    creator.id,
+    {
+      actionType: 'import_batch_create',
+      adminImportBatchId: batch.id,
+      metadata: { after: { import_type: importType, total_rows: totalRows } },
+    },
+    { query },
+  )
   await query.commit()
   return result
 }

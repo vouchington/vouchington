@@ -16,6 +16,53 @@ import { getModerationAnalytics } from './get-moderation-analytics.mts'
 import { MODERATION_SYSTEM_USERNAME } from '@services/users/constants'
 
 describe('getModerationAnalytics', () => {
+  it('excludes operational audit phases from daily moderation actions and workload', async () => {
+    const actor = await createTestUser()
+    const suffix = crypto.randomUUID()
+    const community = await insertTestCommunity({
+      createdById: actor.id,
+      name: `Audit analytics ${suffix}`,
+      slug: `audit-analytics-${suffix}`,
+    })
+    const actionTypes = [
+      ...Array.from({ length: 5 }, () => ['queue_pause', 'queue_resume']).flat(),
+      'report_judgement_rerun',
+      'crawler_update',
+      'oauth_client_verify',
+    ]
+    await Promise.all(
+      actionTypes.flatMap(actionType =>
+        ['requested', 'finished'].map(phase =>
+          insertTestModeratorAction({
+            actorId: actor.id,
+            communityId: community.id,
+            actionType,
+            metadata: { phase },
+          }),
+        ),
+      ),
+    )
+    await insertTestModeratorAction({
+      actorId: actor.id,
+      communityId: community.id,
+      actionType: 'approve',
+    })
+    const metrics = await getModerationAnalytics('all', {
+      type: 'community',
+      communityId: community.id,
+    })
+    expect(metrics.moderator_workload.moderators).toEqual([
+      expect.objectContaining({ actor_id: actor.id, total: 1 }),
+    ])
+    expect(metrics.moderator_workload.moderators[0]!.counts).toEqual({ approve: 1 })
+    expect(metrics.moderator_workload.moderators[0]!.weekly_counts).toEqual([
+      expect.objectContaining({ type: 'approve', count: 1 }),
+    ])
+    expect(metrics.queue_volume.moderator_actions_over_time).toEqual([
+      expect.objectContaining({ type: 'approve', count: 1 }),
+    ])
+  })
+
   it('excludes automated system users from moderator workload rankings', async () => {
     const suffix = crypto.randomUUID().slice(0, 8)
     const owner = await createTestUser()

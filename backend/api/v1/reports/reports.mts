@@ -1,3 +1,4 @@
+import { recordStaffOperation } from '@services/moderator-actions/operation'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
@@ -180,11 +181,16 @@ app.route('/api/v1/reports/:id/judgements').post(async (ctx: Context) => {
     await import('@queues/ai-agents/enqueues/report-judgement')
   // Await the enqueue so a queue-write failure surfaces as a 5xx instead of falsely
   // reporting the manual re-run as queued.
-  await enqueueReportJudgementAndWait(
-    report.entity_type,
-    report.entity_id,
-    report.id,
+  await recordStaffOperation(
     currentUser.id,
+    { actionType: 'report_judgement_rerun', reportId: report.id },
+    () =>
+      enqueueReportJudgementAndWait(
+        report.entity_type,
+        report.entity_id,
+        report.id,
+        currentUser.id,
+      ),
   )
 
   ctx.setStatus(202)

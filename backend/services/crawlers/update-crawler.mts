@@ -1,6 +1,8 @@
+import { recordModeratorAction } from '@services/moderator-actions'
+import { crawlerHistorySnapshot } from './history.mts'
 import type { PrivateUser } from '@services/users/types'
 import { isUUID } from '@modules/utils'
-import { write } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { getCrawlerById, toCrawler } from './get.mts'
 import assert from 'http-assert'
@@ -46,6 +48,12 @@ export const updateCrawler = async (
     return crawler
   }
 
+  await using transaction = await beginTransaction()
+  await transaction(
+    sql`/* updateCrawler:lock */ SELECT id FROM crawlers WHERE id = ${crawlerId} AND deleted_at IS NULL FOR UPDATE`,
+  )
+  const previous = await getCrawlerById(crawlerId, { query: transaction })
+  if (!previous) throw createError(404, `Crawler not found: ${crawlerId}`)
   const query = sql`/* updateCrawler */ UPDATE crawlers SET updated_by_id = ${updater.id}`
   if (hostnameId !== undefined) query.append(sql`, hostname_id = ${hostnameId}`)
   if (updates.description !== undefined) query.append(sql`, description = ${updates.description}`)
@@ -75,9 +83,23 @@ export const updateCrawler = async (
       created_at, updated_at, deleted_at
   `)
 
-  const { rows } = await write(query)
+  const { rows } = await write(query, { query: transaction })
   if (rows.length === 0) throw createError(404, `Crawler not found: ${crawlerId}`)
-  return toCrawler(rows[0])
+  const crawler = toCrawler(rows[0])
+  await recordModeratorAction(
+    updater.id,
+    {
+      actionType: 'crawler_update',
+      crawlerId,
+      metadata: {
+        before: crawlerHistorySnapshot(previous),
+        after: crawlerHistorySnapshot(crawler),
+      },
+    },
+    { query: transaction },
+  )
+  await transaction.commit()
+  return crawler
 }
 
 export const updateCrawlerCssSelectorsByHostname = async (

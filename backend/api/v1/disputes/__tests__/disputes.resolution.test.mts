@@ -1,3 +1,4 @@
+import { readStaffActionHistory } from '@voucha/test-helpers/staff-action-history'
 import { describe, it, expect, beforeAll } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -235,6 +236,24 @@ describe('POST /api/v1/disputes/:id/resolution-drafts — staff rerun', () => {
     const request = createRequest()
     await request.authenticateAs(staffUser)
     await request.post(`/api/v1/disputes/${crypto.randomUUID()}/resolution-drafts`).expect(404)
+  })
+
+  it('records a durable request and outcome for a queued rerun', async () => {
+    const { dispute } = await makeDisputeFixture(staffUser.id)
+    const request = createRequest()
+    await request.authenticateAs(staffUser)
+    await request.post(`/api/v1/disputes/${dispute.id}/resolution-drafts`).expect(202)
+    const history = (await readStaffActionHistory(staffUser.id)).filter(
+      row =>
+        row.action_type === 'dispute_resolution_draft_rerun' &&
+        row.review_dispute_id === dispute.id,
+    )
+    expect(history).toHaveLength(2)
+    expect(history[0]).toMatchObject({ metadata: { phase: 'requested' } })
+    expect(history[1]).toMatchObject({
+      operation_request_id: history[0]!.id,
+      metadata: { phase: 'finished', outcome: 'succeeded' },
+    })
   })
 
   it('rejects an approved pending dispute before enqueueing a rerun', async () => {

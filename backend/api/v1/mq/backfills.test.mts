@@ -1,3 +1,4 @@
+import { expectStaffOperationHistory } from '@voucha/test-helpers/staff-operation-history'
 import { describe, it, expect, beforeAll } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
@@ -86,6 +87,7 @@ describe('backfills', () => {
           .expect(200)
 
         expect(response.body).toEqual({ success: true })
+        await expectStaffOperationHistory(admin.id, 'backfill_run')
       })
 
       it('should successfully trigger the images backfill', async () => {
@@ -96,6 +98,7 @@ describe('backfills', () => {
           .expect(200)
 
         expect(response.body).toEqual({ success: true })
+        await expectStaffOperationHistory(admin.id, 'backfill_run')
       })
 
       it('should successfully trigger the report judgements backfill', async () => {
@@ -106,6 +109,7 @@ describe('backfills', () => {
           .expect(200)
 
         expect(response.body).toEqual({ success: true })
+        await expectStaffOperationHistory(admin.id, 'backfill_run')
       })
 
       it('should successfully trigger the report integrity backfill', async () => {
@@ -116,6 +120,7 @@ describe('backfills', () => {
           .expect(200)
 
         expect(response.body).toEqual({ success: true })
+        await expectStaffOperationHistory(admin.id, 'backfill_run')
       })
 
       it('should expose and trigger a read-only post-publication shadow audit', async () => {
@@ -126,6 +131,7 @@ describe('backfills', () => {
           .expect(200)
 
         expect(response.body).toEqual({ success: true })
+        await expectStaffOperationHistory(admin.id, 'backfill_run')
         const jobs = (
           await Promise.all(
             (['waiting', 'active', 'delayed', 'completed', 'failed'] as const).map(state =>

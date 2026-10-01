@@ -1,3 +1,4 @@
+import { recordModeratorAction } from '@services/moderator-actions'
 import { beginTransaction } from '@data-stores/psql'
 import onError from '@modules/on-error'
 import { markJwtStale } from '@services/jwt-session/invalidation'
@@ -62,6 +63,16 @@ export async function revokeReportAbusePenalty(
     `)
 
   const clearedUserId = (cleared.rows[0] as { id: string } | undefined)?.id
+  await recordModeratorAction(
+    currentUserId,
+    {
+      actionType: 'report_integrity_penalty_revoke',
+      reportAbusePenaltyId: penaltyId,
+      targetUserId: penalty.user_id,
+      metadata: { before: { revoked_at: null }, after: { revoked_at: penalty.revoked_at } },
+    },
+    { query },
+  )
   await query.commit()
 
   // Invalidate the JWT so the trust-tier penalty is lifted on next refresh.

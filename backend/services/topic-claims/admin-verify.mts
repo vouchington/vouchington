@@ -1,4 +1,5 @@
-import { write } from '@data-stores/psql'
+import { recordModeratorAction } from '@services/moderator-actions'
+import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { TopicClaim } from './config.mts'
@@ -16,7 +17,8 @@ export async function adminVerifyTopicClaim(
   staffUserId: string,
   claimId: string,
 ): Promise<TopicClaim> {
-  const { rows } = await write(
+  await using transaction = await beginTransaction()
+  const { rows } = await transaction(
     sql`/* adminVerifyTopicClaim */
     UPDATE topic_claims
     SET verification_method = 'manual_admin',
@@ -31,6 +33,12 @@ export async function adminVerifyTopicClaim(
   )
   const updated = rows[0] as TopicClaim | undefined
   assert(updated, 404, 'Claim not found or already resolved')
+  await recordModeratorAction(
+    staffUserId,
+    { actionType: 'topic_claim_verify', topicClaimId: claimId },
+    { query: transaction },
+  )
+  await transaction.commit()
   return updated
 }
 
@@ -40,7 +48,8 @@ export async function rejectTopicClaim(
   rejectionReason: string,
 ): Promise<TopicClaim> {
   assert(rejectionReason.trim().length > 0, 422, 'rejection_reason is required')
-  const { rows } = await write(
+  await using transaction = await beginTransaction()
+  const { rows } = await transaction(
     sql`/* rejectTopicClaim */
     UPDATE topic_claims
     SET rejected_at = NOW(),
@@ -54,5 +63,11 @@ export async function rejectTopicClaim(
   )
   const updated = rows[0] as TopicClaim | undefined
   assert(updated, 404, 'Claim not found or already resolved')
+  await recordModeratorAction(
+    staffUserId,
+    { actionType: 'topic_claim_reject', topicClaimId: claimId, reason: rejectionReason.trim() },
+    { query: transaction },
+  )
+  await transaction.commit()
   return updated
 }
