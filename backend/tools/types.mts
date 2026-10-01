@@ -51,6 +51,9 @@ export type ToolApiEndpoint = {
   path: string
 }
 
+// JSON Schema for a tool's structured result. MCP (2025-06-18) requires an object at the root.
+export type ToolOutputSchema = { type: 'object'; [keyword: string]: unknown }
+
 export type ToolMeta = {
   // Which surfaces this tool is exposed on. Defaults to ['internal'] when absent.
   surfaces: readonly ToolSurface[]
@@ -69,6 +72,10 @@ export type ToolMeta = {
   requiredScopes?: Partial<Record<'mcp' | 'admin_mcp', readonly ApiScope[]>>
   // Equivalent existing REST endpoint(s), or null if none exist.
   api: readonly ToolApiEndpoint[] | null
+  // Declares the result shape. The MCP adapter publishes it as `outputSchema` and returns the
+  // result as `structuredContent`, validated against it. Derive it from the REST twin's
+  // generated response contract (backend/tools/route-response-schema.mts), never hand-write it.
+  outputSchema?: ToolOutputSchema
 }
 
 export type Tool<
