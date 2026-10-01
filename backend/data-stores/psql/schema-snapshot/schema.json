@@ -1815,11 +1815,11 @@
         },
         "agent_moderation_votes_user_agent_id_fkey": {
           "columns": ["user_agent_id"],
-          "definition": "FOREIGN KEY (user_agent_id) REFERENCES vote_user_agents(id) ON DELETE SET NULL",
+          "definition": "FOREIGN KEY (user_agent_id) REFERENCES user_agent_strings(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
-          "referencedTable": "vote_user_agents",
+          "referencedTable": "user_agent_strings",
           "validated": true
         },
         "agent_moderation_votes_user_id_fkey": {
@@ -36179,11 +36179,11 @@
       "foreignKeys": {
         "entity_relation_votes_user_agent_id_fkey": {
           "columns": ["user_agent_id"],
-          "definition": "FOREIGN KEY (user_agent_id) REFERENCES vote_user_agents(id) ON DELETE SET NULL",
+          "definition": "FOREIGN KEY (user_agent_id) REFERENCES user_agent_strings(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
-          "referencedTable": "vote_user_agents",
+          "referencedTable": "user_agent_strings",
           "validated": true
         },
         "entity_relation_votes_user_id_fkey": {
@@ -38268,11 +38268,11 @@
         },
         "hostname_votes_user_agent_id_fkey": {
           "columns": ["user_agent_id"],
-          "definition": "FOREIGN KEY (user_agent_id) REFERENCES vote_user_agents(id) ON DELETE SET NULL",
+          "definition": "FOREIGN KEY (user_agent_id) REFERENCES user_agent_strings(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
-          "referencedTable": "vote_user_agents",
+          "referencedTable": "user_agent_strings",
           "validated": true
         },
         "hostname_votes_user_id_fkey": {
@@ -73223,11 +73223,11 @@
         },
         "post_votes_user_agent_id_fkey": {
           "columns": ["user_agent_id"],
-          "definition": "FOREIGN KEY (user_agent_id) REFERENCES vote_user_agents(id) ON DELETE SET NULL",
+          "definition": "FOREIGN KEY (user_agent_id) REFERENCES user_agent_strings(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
-          "referencedTable": "vote_user_agents",
+          "referencedTable": "user_agent_strings",
           "validated": true
         },
         "post_votes_user_id_fkey": {
@@ -98155,11 +98155,11 @@
         },
         "rss_feed_item_votes_user_agent_id_fkey": {
           "columns": ["user_agent_id"],
-          "definition": "FOREIGN KEY (user_agent_id) REFERENCES vote_user_agents(id) ON DELETE SET NULL",
+          "definition": "FOREIGN KEY (user_agent_id) REFERENCES user_agent_strings(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
-          "referencedTable": "vote_user_agents",
+          "referencedTable": "user_agent_strings",
           "validated": true
         },
         "rss_feed_item_votes_user_id_fkey": {
@@ -104544,11 +104544,11 @@
         },
         "topic_votes_user_agent_id_fkey": {
           "columns": ["user_agent_id"],
-          "definition": "FOREIGN KEY (user_agent_id) REFERENCES vote_user_agents(id) ON DELETE SET NULL",
+          "definition": "FOREIGN KEY (user_agent_id) REFERENCES user_agent_strings(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
-          "referencedTable": "vote_user_agents",
+          "referencedTable": "user_agent_strings",
           "validated": true
         },
         "topic_votes_user_id_fkey": {
@@ -108473,6 +108473,106 @@
         "urls_url_key": {
           "columns": ["url"],
           "definition": "UNIQUE (url)"
+        }
+      }
+    },
+    "user_agent_strings": {
+      "checkConstraints": {
+        "user_agent_strings_user_agent_check": "CHECK ((TRIM(BOTH FROM user_agent) = user_agent))",
+        "user_agent_strings_user_agent_check1": "CHECK ((length(user_agent) <= 1024))"
+      },
+      "columns": {
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "user_agent": {
+          "collation": null,
+          "comment": "The full user agent string, unique and trimmed.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "text"
+        }
+      },
+      "comment": "Insert-only deduplicated lookup table for browser user-agent strings shared by sessions and votes. Empty string represents an unknown session user agent.",
+      "foreignKeys": {},
+      "growth": "unbounded",
+      "indexes": {
+        "uq_user_agent_strings__user_agent": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_user_agent_strings__user_agent ON public.user_agent_strings USING btree (user_agent)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_agent",
+              "descending": false,
+              "expression": "user_agent",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "user_agent_strings_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX user_agent_strings_pkey ON public.user_agent_strings USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {
+        "uq_user_agent_strings__user_agent": {
+          "columns": ["user_agent"],
+          "definition": "UNIQUE (user_agent)"
         }
       }
     },
@@ -115592,11 +115692,11 @@
       "foreignKeys": {
         "user_sessions_user_agent_id_fkey": {
           "columns": ["user_agent_id"],
-          "definition": "FOREIGN KEY (user_agent_id) REFERENCES web_user_agents(id) ON DELETE RESTRICT",
+          "definition": "FOREIGN KEY (user_agent_id) REFERENCES user_agent_strings(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
-          "referencedTable": "web_user_agents",
+          "referencedTable": "user_agent_strings",
           "validated": true
         },
         "user_sessions_user_id_fkey": {
@@ -116449,11 +116549,11 @@
         },
         "user_vouch_votes_user_agent_id_fkey": {
           "columns": ["user_agent_id"],
-          "definition": "FOREIGN KEY (user_agent_id) REFERENCES vote_user_agents(id) ON DELETE SET NULL",
+          "definition": "FOREIGN KEY (user_agent_id) REFERENCES user_agent_strings(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
-          "referencedTable": "vote_user_agents",
+          "referencedTable": "user_agent_strings",
           "validated": true
         },
         "user_vouch_votes_user_id_fkey": {
@@ -120208,119 +120308,6 @@
       },
       "uniqueConstraints": {}
     },
-    "vote_user_agents": {
-      "checkConstraints": {
-        "vote_user_agents_user_agent_check": "CHECK ((TRIM(BOTH FROM user_agent) = user_agent))",
-        "vote_user_agents_user_agent_check1": "CHECK ((length(user_agent) <= 1024))"
-      },
-      "columns": {
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 3,
-          "type": "timestamp with time zone"
-        },
-        "id": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "timestamp with time zone"
-        },
-        "user_agent": {
-          "collation": null,
-          "comment": "The full user agent string, unique and trimmed.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "text"
-        }
-      },
-      "comment": "Deduplicated lookup table for browser user agent strings associated with votes.",
-      "foreignKeys": {},
-      "growth": "unbounded",
-      "indexes": {
-        "uq_vote_user_agents__user_agent": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX uq_vote_user_agents__user_agent ON public.vote_user_agents USING btree (user_agent)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "user_agent",
-              "descending": false,
-              "expression": "user_agent",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "vote_user_agents_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX vote_user_agents_pkey ON public.vote_user_agents USING btree (id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["id"],
-        "definition": "PRIMARY KEY (id)"
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_vote_user_agents_updated_at": "CREATE TRIGGER trigger_vote_user_agents_updated_at BEFORE UPDATE ON public.vote_user_agents FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-      },
-      "uniqueConstraints": {
-        "uq_vote_user_agents__user_agent": {
-          "columns": ["user_agent"],
-          "definition": "UNIQUE (user_agent)"
-        }
-      }
-    },
     "vote_weight_penalties": {
       "checkConstraints": {
         "vote_weight_penalties_penalty_multiplier_check": "CHECK (((penalty_multiplier > (0)::double precision) AND (penalty_multiplier <= (1)::double precision)))"
@@ -121186,119 +121173,6 @@
         "trigger_web_push_subscriptions_updated_at": "CREATE TRIGGER trigger_web_push_subscriptions_updated_at BEFORE UPDATE ON public.web_push_subscriptions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
-    },
-    "web_user_agents": {
-      "checkConstraints": {
-        "web_user_agents_user_agent_check": "CHECK ((TRIM(BOTH FROM user_agent) = user_agent))",
-        "web_user_agents_user_agent_check1": "CHECK ((char_length(user_agent) <= 1024))"
-      },
-      "columns": {
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 3,
-          "type": "timestamp with time zone"
-        },
-        "id": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "timestamp with time zone"
-        },
-        "user_agent": {
-          "collation": null,
-          "comment": "Raw browser user-agent string captured from a web request.",
-          "defaultExpression": "''::text",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "text"
-        }
-      },
-      "comment": "Normalized browser user-agent strings captured by web-facing request flows.",
-      "foreignKeys": {},
-      "growth": "unbounded",
-      "indexes": {
-        "web_user_agents_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX web_user_agents_pkey ON public.web_user_agents USING btree (id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "web_user_agents_user_agent_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX web_user_agents_user_agent_key ON public.web_user_agents USING btree (user_agent)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "user_agent",
-              "descending": false,
-              "expression": "user_agent",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["id"],
-        "definition": "PRIMARY KEY (id)"
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_web_user_agents_updated_at": "CREATE TRIGGER trigger_web_user_agents_updated_at BEFORE UPDATE ON public.web_user_agents FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-      },
-      "uniqueConstraints": {
-        "web_user_agents_user_agent_key": {
-          "columns": ["user_agent"],
-          "definition": "UNIQUE (user_agent)"
-        }
-      }
     },
     "x_accounts": {
       "checkConstraints": {},

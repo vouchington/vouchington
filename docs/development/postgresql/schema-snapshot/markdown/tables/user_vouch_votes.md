@@ -33,7 +33,7 @@ _none_
 **Foreign keys:**
 
 - `user_vouch_votes_target_user_id_fkey`: `FOREIGN KEY (target_user_id) REFERENCES users(id) ON DELETE CASCADE`
-- `user_vouch_votes_user_agent_id_fkey`: `FOREIGN KEY (user_agent_id) REFERENCES vote_user_agents(id) ON DELETE SET NULL`
+- `user_vouch_votes_user_agent_id_fkey`: `FOREIGN KEY (user_agent_id) REFERENCES user_agent_strings(id) ON DELETE SET NULL`
 - `user_vouch_votes_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 **Indexes:**
