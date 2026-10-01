@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { TurnstileField } from '@/components/shared/turnstile-field'
 import { useTurnstileToken } from '@/hooks/use-turnstile-token'
@@ -13,7 +12,8 @@ import { DeclarationCheckbox, LabeledInput, LabeledTextarea } from './copyright-
 import { CopyrightMisrepresentationWarning } from './copyright-misrepresentation-warning'
 import { CopyrightNoticeTargetPicker } from './copyright-notice-target-picker'
 import { useAuth } from '@/lib/auth/context'
-import { userHref } from '@/lib/links/entity-href'
+import { CopyrightFilerDisclosure } from './copyright-filer-disclosure'
+import { CopyrightGuestReceipt } from './copyright-guest-receipt'
 
 export function CopyrightNoticeForm() {
   const router = useRouter()
@@ -30,6 +30,7 @@ export function CopyrightNoticeForm() {
     authorityDeclaration: false,
   })
   const [targets, setTargets] = useState<CopyrightNoticeResolvedTarget[]>([])
+  const [guestReceipt, setGuestReceipt] = useState<{ id: string; duplicate: boolean } | null>(null)
   const set =
     (key: keyof typeof values) =>
     (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -54,6 +55,11 @@ export function CopyrightNoticeForm() {
           })),
           cf_turnstile_response: turnstile.token ?? undefined,
         })
+        if (!currentUser) {
+          // The case list requires sign-in, so a guest gets the receipt here instead.
+          setGuestReceipt({ id: result.copyright_notice.id, duplicate: result.is_duplicate })
+          return
+        }
         onSuccess(
           result.is_duplicate
             ? 'This notice was already received.'
@@ -70,6 +76,15 @@ export function CopyrightNoticeForm() {
     })
   }
 
+  if (guestReceipt)
+    return (
+      <CopyrightGuestReceipt
+        noticeId={guestReceipt.id}
+        email={values.email.trim()}
+        duplicate={guestReceipt.duplicate}
+      />
+    )
+
   return (
     <form
       data-pw='copyright-notice-form'
@@ -83,18 +98,7 @@ export function CopyrightNoticeForm() {
         This US copyright process is not active until the designated agent is registered and
         published.
       </p>
-      {currentUser && (
-        <p className='text-sm text-muted-foreground'>
-          Accepted notices show your current public profile to signed-in members. See your{' '}
-          <Link
-            className='underline'
-            href={userHref(currentUser)}
-          >
-            profile
-          </Link>
-          . Your legal name, contact details, and signature stay private.
-        </p>
-      )}
+      <CopyrightFilerDisclosure currentUser={currentUser} />
       <LabeledInput
         id='copyright-name'
         label='Full legal name'

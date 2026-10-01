@@ -274,6 +274,18 @@ never expose legal claimant or poster identity, email, mailing address, signatur
 evidence artifacts, encrypted fields, moderator rationale, or agent recommendation. A guest or
 erased claimant has no member-visible profile link.
 
+`/copyright/notices/new` is public. A signed-out visitor files with the same Turnstile check,
+statutory fields, and § 512(f) warning as a signed-in member, and the notice is a guest filing as
+described below. The API returns only the case identifier, and a guest has no case read, so after
+filing the form shows an in-page receipt with that identifier in place of the sign-in-only case
+list. The receipt states what a guest can rely on: the receipt email to the address on the notice
+and, only if staff issue one, a capability token for `/copyright/notices/:id/guest`. There is no
+online status view for a guest, and nothing emails a form claimant a review outcome or a request
+for more information, so the receipt promises neither. The hosted
+material field and its lookup error both point to the designated-agent page for a claimant who
+cannot open the image. That copy is the same for every lookup failure, so it never says whether a
+hidden image exists.
+
 The timeline is an audience allowlist decided per event type in
 `backend/services/copyright-notices/timeline-visibility.mts`, and a database-backed test fails when
 a lifecycle event type has no decision. Any signed-in member sees only case-facing events: notice
