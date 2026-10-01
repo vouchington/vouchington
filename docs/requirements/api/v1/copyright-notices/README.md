@@ -29,6 +29,11 @@ equivalent verified App Attest assertion path with the endpoint's action tag; br
 not have that attestation path. The server rejects an incomplete or invalid App Attest attempt
 rather than falling back to CAPTCHA.
 
+The notice, appeal, and counter-notice bodies are closed: an unknown key, or a `cf_turnstile_response`
+that is not a string, is a `422` before any service call, and each statutory declaration must be the
+literal `true`. Existing field-named `422` messages and the `Idempotency-Key` `400` are unchanged;
+see [request validation](../../reference-copyright-submission-request-validation.md).
+
 Signed-in affected posters may submit an informal appeal or a separate statutory counter-notice.
 Both flows require CAPTCHA, exact case targets, and server-verified ownership. Email intake approval
 is staff-only and cannot create a case until a moderator supplies and approves the structured fields. Matched
