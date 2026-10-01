@@ -3377,9 +3377,6 @@ importers:
       '@services/communities':
         specifier: workspace:^
         version: link:../services/communities
-      '@services/contribution-gating':
-        specifier: workspace:^
-        version: link:../services/contribution-gating
       '@services/conversations-messages':
         specifier: workspace:^
         version: link:../services/conversations-messages
@@ -8160,9 +8157,6 @@ importers:
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../rss-feeds
-      '@services/session-advisory-lock':
-        specifier: workspace:^
-        version: link:../session-advisory-lock
       '@services/tag-limits':
         specifier: workspace:^
         version: link:../tag-limits
