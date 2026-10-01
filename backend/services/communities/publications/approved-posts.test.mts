@@ -31,4 +31,33 @@ describe('searchCommunityPosts', () => {
     const result = await searchCommunityPosts(community.id)
     expect(result.results.map(post => post.id)).toEqual([postId])
   })
+
+  it('narrows the page to the posts whose text matches the text search', async () => {
+    const author = await createTestUser()
+    const community = await insertTestCommunity({ createdById: author.id })
+    const token = `needle${createRandomString(10)}`
+    const [matching, other] = await Promise.all(
+      [`About ${token} today`, 'Something else entirely'].map(async title => {
+        const postId = await insertTestPost({
+          communityId: community.id,
+          createdById: author.id,
+          markdown: `${title} body`,
+          slug: `text-search-${createRandomString(8)}`,
+          title,
+        })
+        await insertTestCommunityPostReview({
+          communityId: community.id,
+          postId,
+          submittedById: author.id,
+        })
+        return postId
+      }),
+    )
+
+    const unfiltered = await searchCommunityPosts(community.id)
+    const filtered = await searchCommunityPosts(community.id, { text_search_query: token })
+
+    expect(new Set(unfiltered.results.map(post => post.id))).toEqual(new Set([matching, other]))
+    expect(filtered.results.map(post => post.id)).toEqual([matching])
+  })
 })

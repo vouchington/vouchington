@@ -4500,6 +4500,9 @@ importers:
       '@services/post-publication':
         specifier: workspace:^
         version: link:../post-publication
+      '@services/search-params':
+        specifier: workspace:^
+        version: link:../search-params
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -6544,6 +6547,9 @@ importers:
         specifier: ^3.0.1
         version: 3.0.1(ajv@8.20.0)
     devDependencies:
+      '@services/communities':
+        specifier: workspace:^
+        version: link:../communities
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -10585,6 +10591,9 @@ importers:
       '@services/comments':
         specifier: workspace:^
         version: link:../services/comments
+      '@services/communities':
+        specifier: workspace:^
+        version: link:../services/communities
       '@services/data-points':
         specifier: workspace:^
         version: link:../services/data-points

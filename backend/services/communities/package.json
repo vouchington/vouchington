@@ -49,6 +49,7 @@
     "@services/moderator-actions": "workspace:^",
     "@services/notifications": "workspace:^",
     "@services/post-publication": "workspace:^",
+    "@services/search-params": "workspace:^",
     "@services/users": "workspace:^",
     "@ts-shared/languages": "workspace:^",
     "@ts-shared/utils": "workspace:^",

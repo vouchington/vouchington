@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   shouldExcludeCommunityPinnedPosts,
   shouldIncludeCommunityPinnedPosts,
-} from './posts-pinned-helpers.mts'
+} from './pinned-post-filter.mts'
 
 describe('shouldIncludeCommunityPinnedPosts', () => {
   it('includes pins only on the unfiltered first page', () => {
