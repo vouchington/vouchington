@@ -25,7 +25,8 @@ permissions:
 
 jobs:
   shards:
-    runs-on: ubuntu-latest
+    # Fallback producer of the shared web build; it must share the consumers' runner arch.
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 20
     permissions:
       contents: read
@@ -52,7 +53,8 @@ jobs:
 
   playwright-tests:
     needs: [shards]
-    runs-on: ubuntu-latest
+    # Consumer of the shared web build; its cache key includes runner.arch, so it matches the producer.
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 30
     permissions:
       actions: read
