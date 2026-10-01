@@ -168,14 +168,12 @@ triage session from `main`. It fixes a flaky test in a new PR, files a CI or arc
 comments its analysis on the ejected PR; it never changes that PR. See
 [Auto Harness automation](ci/workflows/reference-harness-automation.md#completion-specific-safeguards).
 
-When the queue removes an entry, GitHub rebuilds every entry behind it on a new
-`gh-readonly-queue/main/pr-<N>-<sha>` branch, and the replaced entry's merge-group runs would keep
-holding runners although that entry can never merge.
-[Cancel Replaced Merge Group Runs](../../.github/workflows/cancel-replaced-merge-group-runs.yml)
-runs when the replacement entry's checks are requested and cancels every still-active merge-group
-run, across all workflows, on an older `pr-<N>-*` branch of the same pull request. It is never a
-required check. `concurrency:` cannot do this because a group key cannot extract the pull-request
-number from the queue branch name.
+A queue entry that is replaced or dequeued leaves merge-group runs that nothing else cancels.
+[Cancel Replaced Merge Group Runs](../../.github/workflows/cancel-replaced-merge-group-runs.yml) and
+[Cancel Dequeued Merge Group Runs](../../.github/workflows/cancel-dequeued-merge-group-runs.yml)
+cancel them; neither is a required check. See
+[merge queue run cancellation](ci/workflows/reference-merge-queue-run-cancellation.md) for why
+`concurrency:` cannot do this and for each workflow's guards.
 
 [`plan-completion.yml`](../../.github/workflows/plan-completion.yml) runs one retained snapshot after
 every `main` push. It paginates current open Plans and their timeline PR candidates, re-reads each
