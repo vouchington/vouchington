@@ -62,7 +62,9 @@ describe('initialize generated DATABASE_URL', () => {
     `,
     })
 
-    expect(output).toBe('export DATABASE_URL=postgres://localhost:15432/voucha-feature-db-url-port')
+    expect(output).toBe(
+      "export DATABASE_URL='postgres://localhost:15432/voucha-feature-db-url-port'",
+    )
   })
 
   it('uses the generated PGPORT DATABASE_URL when creating the database', async () => {
