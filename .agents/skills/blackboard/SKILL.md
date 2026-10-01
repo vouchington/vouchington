@@ -18,8 +18,17 @@ overlay adds only repository policy.
 
 Every harness registers the project MCP server `vouchington-tooling` (`vouchington mcp`, launched
 from this worktree's `node_modules/.bin`) and approves its tools server-wide; see
-[agent-blackboard.md](../../../docs/development/agent-blackboard.md). Call only that server's tools
-(`mcp__vouchington-tooling__*` in Claude Code).
+[agent-blackboard.md](../../../docs/development/agent-blackboard.md). Call only that server's tools.
+Their names differ by harness:
+
+- Claude Code: `mcp__vouchington-tooling__<tool>`.
+- Codex: `mcp__vouchington_tooling__<tool>` (underscores).
+- Grok: `vouchington-tooling__<tool>`, found with `search_tool` and called with `use_tool`.
+- Cursor: the `vouchington-tooling` namespace, deferred behind `GetDynamicTools` and
+  `CallDynamicTool`.
+
+Grok and Cursor load these tools lazily, so search for `journal_append` before concluding the server
+is missing.
 
 - **Never call `mcp__plugin_agent-blackboard_*` tools.** They are the provider plugin's raw tools.
   Its `entry_append` skips the feedback envelope (source identity, outcome, coverage, repository
@@ -27,10 +36,16 @@ from this worktree's `node_modules/.bin`) and approves its tools server-wide; se
   exactly. Vouchington does not enable that plugin; ignore it if a user-level install offers it.
 - **`sessionId` comes from the SessionStart hook.** `dev/check-blackboard.mts` prints
   `Blackboard sessionId: <id>` at every session start, including after compaction. Pass that value
-  verbatim wherever a tool takes `sessionId`. It is the same id `dev/agent-session-id/resolve.mts`
-  gives the repository scripts, including an interactive root Codex session. If the line reads
-  `NOT RESOLVED` or is missing, never guess or reuse another session's id; stop journaling and
-  report it.
+  verbatim wherever a tool takes `sessionId`. It is the id of the harness that ran the hook, and for
+  one running harness it matches `dev/agent-session-id/resolve.mts`, including an interactive root
+  Codex session. If the line reads `NOT RESOLVED` or is missing, never guess or reuse another
+  session's id; stop journaling and report it. The one exception is headless Grok.
+- **Headless Grok has no such line.** `grok --prompt-file ...` injects no SessionStart context. Only
+  Grok, and only when no `Blackboard sessionId:` line is anywhere in context, read
+  `.local/grok-session-id` in the worktree root and use its contents. The Grok SessionStart hook
+  `dev/codex-hooks/persist-session-id.mts` writes it. Two Grok sessions sharing a worktree
+  overwrite each other's file, so treat the value as unresolved when another Grok session may be
+  running there.
 - **`repositories` defaults to `["vouchington/vouchington"]`.** When the note concerns other
   repositories, list each of them, including `vouchington/vouchington` when it also applies.
 - **`mode` is `interactive` for an attended session and `autonomous` for an automation runner.**
@@ -78,8 +93,10 @@ If the `vouchington-tooling` tools are missing or a call reports the server is n
 and report it. Do not fall back to a CLI command, a script, or a provider tool, and do not continue
 work that depends on the journal. The SessionStart hook prints a `STOP WORK` line when the server
 cannot launch from this worktree. The fix is a workspace-setup step, not a deployment outage: run
-`./dev/initialize monorepo` from the worktree root, then reconnect with `/mcp` in Claude Code or
-restart Codex, and start a fresh session.
+`./dev/initialize monorepo` from the worktree root, then take the reconnect step the line names:
+`/mcp` in Claude Code, a restart of Codex or Grok, or `cursor-agent mcp enable vouchington-tooling`
+in Cursor (a headless `cursor-agent -p` run passes `--approve-mcps` instead). Then start a fresh
+session.
 
 ## Recording an entry
 

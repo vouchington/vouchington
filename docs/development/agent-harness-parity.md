@@ -94,7 +94,7 @@ flowchart LR
 | Hook block    | Exit 2; stderr reason shown                                                                                                                       | Exit 2; stderr reason                                                                                                                                                          | Exit 2; shows `Hook denied: <reason>`                                                                                                                                                                                            |
 | Permissions   | `.claude/settings.json` allow/deny                                                                                                                | `.codex/rules/default.rules`                                                                                                                                                   | Reuses Claude permission strings via compat                                                                                                                                                                                      |
 | Sandbox       | On; `excludedCommands` bypass it independently of permission allows                                                                               | `workspace-write` by default; allow prefixes run outside it without a prompt and must fit within Claude exclusions; extra roots include pnpm cache/state and no-mistakes cache | Custom process-wide `workspace-write` in [`.grok/sandbox.toml`](../../.grok/sandbox.toml). Launch `--sandbox workspace-write`. Permission prefixes stay sandboxed; extra roots match Codex (pnpm cache/state, no-mistakes cache) |
-| MCP           | `.mcp.json` enabled in `.claude/settings.json`                                                                                                    | `.codex/config.toml` `[mcp_servers]` with per-tool approvals                                                                                                                   | Native `.grok/config.toml` with the exact `MCPTool(...)` allowlist                                                                                                                                                               |
+| MCP           | `.mcp.json` enabled in `.claude/settings.json`; server-wide `mcp__vouchington-tooling__*`                                                         | `.codex/config.toml` `[mcp_servers.vouchington-tooling]` with server-wide `default_tools_approval_mode = "approve"`; tools are `mcp__vouchington_tooling__*`                   | Native `.grok/config.toml` with server-wide `MCPTool(vouchington-tooling__*)`; tools are `vouchington-tooling__*` behind `search_tool` / `use_tool`                                                                              |
 | Plugins / LSP | `enabledPlugins` marketplace                                                                                                                      | Codex plugins                                                                                                                                                                  | Separate Grok plugin model. Claude marketplace plugins do not load                                                                                                                                                               |
 | Session id    | `CLAUDE_CODE_SESSION_ID`                                                                                                                          | `CODEX_THREAD_ID`                                                                                                                                                              | Hook `GROK_SESSION_ID` plus `.local/grok-session-id`. Main shell uses `GROK_AGENT` to select that persist file; pass `--session-id` for transcripts                                                                              |
 | Merge confirm | Silent `permissionDecision: allow` for one plain merge when attended; empty otherwise                                                             | Empty hook output (best-effort)                                                                                                                                                | Empty confirm (best-effort, not guaranteed)                                                                                                                                                                                      |
@@ -107,7 +107,10 @@ project surfaces:
 Ambient Blackboard identity is owned by
 [`dev/agent-session-id/resolve.mts`](../../dev/agent-session-id/resolve.mts). It consumes the
 policy-neutral environment inspection from `vouchington-tooling`; transcript discovery deliberately
-keeps its separate caller-owned order in `dev/retrospective-transcript-facts/resolve.mts`.
+keeps its separate caller-owned order in `dev/retrospective-transcript-facts/resolve.mts`. The
+SessionStart hook does not use the ambient order: it detects its own harness and reads only that
+harness's payload, env, or persisted id ([SessionStart availability
+check](agent-blackboard.md#sessionstart-availability-check)).
 
 ### Cursor capability surface
 
@@ -189,7 +192,10 @@ not add `.cursor/hooks.json`: Cursor loads it as well, so every hook would doubl
 Native files under [`.cursor/`](harnesses/cursor.md) own everything else:
 
 - `sandbox.json` — Codex-equivalent `workspace_readwrite` extra roots and `networkPolicy.default: allow`
-- `mcp.json` — `vouchington-tooling` MCP registration; `cli.json` / `permissions.json` own its server-wide approval
+- `mcp.json` — `vouchington-tooling` MCP registration; `cli.json` / `permissions.json` own its server-wide
+  tool approval. Tools sit in the `vouchington-tooling` namespace behind `GetDynamicTools` /
+  `CallDynamicTool`, and each user approves loading the server once
+  ([MCP server approval](harnesses/cursor.md#mcp-server-approval))
 - `worktrees.json` — `./dev/initialize monorepo` on Agents Window / `agent --worktree`
   via the generic `setup-worktree` command array. Do not use `setup-worktree-unix` with an
   array: Cursor CLI (`2026.08.11-e8db854`) treats that key as a script path and crashes.

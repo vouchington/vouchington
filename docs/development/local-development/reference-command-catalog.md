@@ -114,8 +114,9 @@ argument contract and the `pending` result.
 
 Retrospective saves remain scripts, and they resolve identity through
 [`agent-session-id/resolve.mts`](../../../dev/agent-session-id/resolve.mts) when `--session-id` is
-absent. Cursor CLI reads `.local/cursor-session-id`; native Grok with `GROK_AGENT` reads
-`.local/grok-session-id`. An interactive root Codex call always passes `--root-codex`, and reuses
+absent. Cursor CLI with `CURSOR_AGENT` reads `.local/cursor-session-id`; native Grok with `GROK_AGENT`
+reads `.local/grok-session-id`; several harnesses exporting different session ids fail with a request
+for `--session-id`. An interactive root Codex call always passes `--root-codex`, and reuses
 `.local/codex-session-id`, which the SessionStart hook already persisted. A real thread id replaces
 it. Only when the hook printed `NOT RESOLVED` does an absent-thread new root session also pass
 `--new-root-codex-session`, exactly once; children and detached processes must not pass either root

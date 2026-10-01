@@ -24,7 +24,8 @@ Plugin installation is local agent state, not a `.codex/config.toml` project set
 plugin is unavailable, the adapter stops rather than applying its overlay alone.
 
 The project `vouchington-tooling` MCP server starts the root-installed `vouchington mcp` launcher.
-Codex approves all of its tools with the server-level `default_tools_approval_mode = "approve"`; see
+Codex approves all of its tools with the server-level `default_tools_approval_mode = "approve"` and
+names them `mcp__vouchington_tooling__*` (underscores); see
 [Agent Blackboard](../docs/development/agent-blackboard.md).
 
 See [Agent Harness Parity](../docs/development/agent-harness-parity.md) for the shared ownership

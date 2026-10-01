@@ -119,8 +119,8 @@ The command:
    identities are only fallbacks. An interactive root Codex session always passes `--root-codex`;
    an absent-thread new root session adds `--new-root-codex-session` exactly once before later calls reuse it;
    children never pass it and remain fail-closed without their own identity.
-   Deterministic direct collisions resolve Codex, Grok, then Cursor;
-   Claude-compat ambiguous sessions need `--session-id` explicitly; a fully detached process needs
+   Several harnesses exporting different session ids, and Claude-compat ambiguous sessions, fail
+   and need `--session-id` explicitly; a fully detached process needs
    both `--session-id` and `--agent`. A real Claude Code
    session (`CLAUDECODE=1`) with no `CLAUDE_CODE_SESSION_ID` of its own fails closed instead of
    inheriting a foreign or persisted id, except for a genuine Grok Claude-compat process, whose

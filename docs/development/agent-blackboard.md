@@ -183,13 +183,25 @@ contract approves the server as a whole rather than tool by tool, using each har
   `enabledMcpjsonServers`.
 - **Codex**: `default_tools_approval_mode = "approve"` on `[mcp_servers.vouchington-tooling]`.
 - **Cursor**: `Mcp(vouchington-tooling:*)` in `cli.json`; `vouchington-tooling:*` in
-  `permissions.json` `mcpAllowlist`.
+  `permissions.json` `mcpAllowlist`. These cover tool calls only: each user also approves loading
+  the server once, see [Cursor configuration](harnesses/cursor.md#mcp-server-approval).
 - **Grok**: `MCPTool(vouchington-tooling__*)` in `permissions.allow`.
 - **OpenCode**: no documented wildcard, so `permission` lists all seven
   `vouchington-tooling_<tool>` names as `allow`.
 
 The policy tests pin that no `PreToolUse` matcher can match an `mcp__` tool name, because the Bash
 gates never see MCP calls, and that approval stays server-wide rather than per tool.
+
+An agent calls the same seven tools under a different name in each harness:
+
+- **Claude**: `mcp__vouchington-tooling__<tool>`.
+- **Codex**: `mcp__vouchington_tooling__<tool>`, with underscores.
+- **Grok**: `vouchington-tooling__<tool>`, discovered with `search_tool` and called with `use_tool`.
+- **Cursor**: the `vouchington-tooling` namespace, deferred behind `GetDynamicTools` and
+  `CallDynamicTool`.
+
+The SessionStart health line names the form for the harness that ran the hook, and lists all four
+with a prompt to search for `journal_append` when it cannot tell which harness that was.
 
 Restart Codex after changing or first receiving the project registration so its native
 `vouchington-tooling` tools are loaded. The Codex server is deliberately not marked as required: a
@@ -202,6 +214,16 @@ checks for an existing retrospective; appends typed provenance; and verifies the
 it back. `journal_append` writes journal entries only and would bypass those repository-owned
 invariants for a retrospective.
 
+### Linked-worktree rollout
+
+Observed with codex-cli 0.159.2 and the current Grok build: a
+linked worktree runs Codex SessionStart hooks from the main checkout's `.codex/config.toml` and
+loads Grok MCP servers from the main checkout, while Codex MCP servers still come from the worktree.
+After this change merges, update the main checkout (a manual step), or those sessions keep running
+the old argv-less hook command and Grok keeps loading the old `agent-blackboard` server. The hook
+resolves the id from its own payload and tolerates a missing harness argument, so such a session
+still prints the right id meanwhile.
+
 ## Child-agent identity
 
 A spawned delegation child (as opposed to a hook child, which receives its identity via hook argv —
@@ -209,9 +231,11 @@ see [Automatic checkpoint journaling](#automatic-checkpoint-journaling)) resolve
 from its runtime environment — Codex's `CODEX_THREAD_ID`, Claude Code's `CLAUDE_CODE_SESSION_ID`, and
 so on — the same way any other Vouchington blackboard consumer does
 (`dev/agent-session-id/resolve.mts`). The resolver keeps one coherent harness, agent label, and
-session selection: explicit Claude wins; Claude-compat recognizes live Grok and Codex-child signals;
-ordinary direct sessions prefer Codex, Grok, then Cursor; persisted files are only the final fallback.
-There is no
+session selection. A harness that exports its own session env is selected by it. When several
+harnesses export different ids (a harness launched from another's shell inherits its env) and the
+caller gave no explicit `--session-id` or runtime, it fails and asks for an explicit id rather than
+pick one. Persisted Cursor and Grok files are read only when exactly one of `CURSOR_AGENT` and
+`GROK_AGENT` is set. There is no
 identity round-trip: the parent passes its own session id in the spawn assignment, and the child
 calls `session_ensure` with its own resolved id, the parent id it was given, its agent name, and
 its version before performing substantive or blackboard-aware work.
@@ -299,21 +323,32 @@ journal notes — see the [`blackboard` skill](../../.agents/skills/blackboard/S
 
 ## SessionStart availability check
 
-`dev/check-blackboard.mts` runs at every SessionStart (`claude` or `codex` argv token, including
-after compaction) and emits three kinds of advisory context; emitting context cannot mechanically
-stop an agent.
+`dev/check-blackboard.mts` runs at every SessionStart (including after compaction) and emits three
+kinds of advisory context; emitting context cannot mechanically stop an agent. Its `claude`,
+`codex` or `grok` argv token is optional, because a linked worktree can run the main checkout's
+older command with no argument.
 
 - **Session id.** A `Blackboard sessionId: <id>` line names the id to pass as `sessionId` to the
-  `vouchington-tooling` tools. It is computed by the shared resolver
-  (`dev/agent-session-id/resolve.mts`) from the hook payload, so it equals the id the repository
-  scripts resolve for the same session, including a root Codex session. When no id resolves it
+  `vouchington-tooling` tools. The hook detects its harness from argv, the payload, or the payload's
+  transcript path, never from an inherited session env, and then uses that harness's own payload or
+  env id (a root Codex id is persisted to `.local/codex-session-id`). No other harness's env or
+  persisted file is read, so a stale `.local/cursor-session-id` or an inherited
+  `CLAUDE_CODE_SESSION_ID` cannot leak in. With no harness detected the payload id wins, and
+  several differing session envs print `NOT RESOLVED` with a request for an explicit session id.
+  It equals the id the repository scripts resolve for the same session. When no id resolves it
   prints `NOT RESOLVED` and tells the agent to stop journaling rather than guess. A child agent
   never reuses this id; it gets its own through `session_ensure`.
+  Headless Grok (`grok --prompt-file ...`) injects no SessionStart context, so it never sees this
+  line; the Grok hook still writes `.local/grok-session-id`, which the
+  [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md) names as that case's only
+  fallback.
 - **Launch health.** A static check confirms `node_modules/.bin/vouchington` exists and that
   `@modelcontextprotocol/sdk` resolves from the `vouchington-tooling` package, the way the launcher
   loads it. It never spawns the server, so it cannot prove the harness connected. A failure prints
-  a `STOP WORK` line naming `./dev/initialize monorepo` and then `/mcp` reconnect in Claude Code or
-  a Codex restart. The line is a workspace-setup diagnosis, not a deployment outage.
+  a `STOP WORK` line naming `./dev/initialize monorepo` and then the reconnect step for the
+  detected harness: `/mcp` in Claude Code, a restart of Codex or Grok, or
+  `cursor-agent mcp enable vouchington-tooling` in Cursor. The line is a workspace-setup diagnosis,
+  not a deployment outage.
 - **Deployment probe.** Unless the launch check failed, the run is a compaction restart, or
   `CHECK_BLACKBOARD_SKIP=1`, the hook makes a bounded `sessions.list({ limit: 1 })` request. A
   sandboxed probe reports unavailable assessment instead of a false deployment outage, because its
