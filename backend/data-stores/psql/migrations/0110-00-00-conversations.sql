@@ -34,7 +34,6 @@ CREATE TABLE IF NOT EXISTS conversations (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   channel_type conversation_channel_types NOT NULL DEFAULT 'chat',
   title TEXT NOT NULL DEFAULT '',
-  last_response_id TEXT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   created_by_id UUID REFERENCES users ON DELETE SET NULL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -134,7 +133,6 @@ ON conversations (id DESC) WHERE resolved_at IS NULL;
 COMMENT ON TABLE conversations IS 'Threaded conversations that can be associated with a post or RSS feed item.';
 COMMENT ON COLUMN conversations.channel_type IS 'Conversation channel: chat for user and agent chat, direct_message, modmail, or mod_internal.';
 COMMENT ON COLUMN conversations.title IS 'User-provided title for the conversation.';
-COMMENT ON COLUMN conversations.last_response_id IS 'The last OpenAI response ID for this conversation, used to chain turns via previous_response_id.';
 COMMENT ON COLUMN conversations.created_by_id IS 'The registered user who started the conversation. NULL if the creating user was hard-deleted (ON DELETE SET NULL).';
 COMMENT ON COLUMN conversations.resolved_at IS 'When set, the conversation is resolved. Derived status: open = NULL, resolved = set.';
 COMMENT ON COLUMN conversations.resolved_by_id IS 'The user who marked this conversation as resolved.';

@@ -24,8 +24,7 @@ async function fetchConversationById(query: typeof read, id: string): Promise<Co
       updated_at,
       updated_by_id,
       deleted_at,
-      deleted_by_id,
-      last_response_id
+      deleted_by_id
     FROM conversations
     WHERE id = ${id}
       AND deleted_at IS NULL
@@ -48,8 +47,7 @@ export async function getConversationByCreatedByAndTitle(
       updated_at,
       updated_by_id,
       deleted_at,
-      deleted_by_id,
-      last_response_id
+      deleted_by_id
     FROM conversations
     WHERE created_by_id = ${createdById}
       AND title = ${title}
@@ -77,8 +75,7 @@ export async function getConversationsByCreatedById(
       updated_at,
       updated_by_id,
       deleted_at,
-      deleted_by_id,
-      last_response_id
+      deleted_by_id
     FROM conversations
     WHERE created_by_id = ${createdById}
       AND channel_type = 'chat'
@@ -121,16 +118,5 @@ export async function softDeleteConversation(
         deleted_by_id = ${deletedById}
     WHERE id = ${conversationId}
       AND deleted_at IS NULL
-  `)
-}
-
-export async function updateConversationLastResponseId(
-  conversationId: string,
-  lastResponseId: string | null,
-): Promise<void> {
-  await write(sql`/* updateConversationLastResponseId */
-    UPDATE conversations
-    SET last_response_id = ${lastResponseId}
-    WHERE id = ${conversationId}
   `)
 }

@@ -8,5 +8,4 @@ export type Conversation = {
   updated_by_id: string | null
   deleted_at: Date | null
   deleted_by_id: string | null
-  last_response_id: string | null
 }

@@ -29,8 +29,8 @@ flowchart TD
 ```
 
 The public transcript DTOs expose conversation identity, title and timestamps, and message identity,
-content, timestamps and completion (`completed`, `incomplete`, or `failed`). They omit provider
-response chaining, execution identities and stored error diagnostics. A submitted turn uses the client's ordered UUIDv7
+content, timestamps and completion (`completed`, `incomplete`, or `failed`). They omit execution
+identities and stored error diagnostics. A submitted turn uses the client's ordered UUIDv7
 `user_message_id` and `assistant_message_id`, scoped to its conversation, as its identity. Clients persist both IDs before sending
 and reuse them with identical text on retries. The existing message primary key and a conversation
 row lock make duplicate submissions return the original pair atomically; changed content or partial

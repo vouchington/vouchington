@@ -79,9 +79,9 @@ export async function createClientGeneratedChatTurn(
   const assistantMessageResult = await query<ConversationMessage>(assistantInsert)
   const assistantMessage = assistantMessageResult.rows[0]!
 
-  await query(sql`/* clearClientGeneratedChatLastResponseId */
+  await query(sql`/* touchClientGeneratedChatConversation */
     UPDATE conversations
-    SET last_response_id = NULL
+    SET updated_at = CURRENT_TIMESTAMP
     WHERE id = ${conversationId}
   `)
 
