@@ -1,7 +1,14 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { verifyGooglePlaySubscription } from './subscription-verifier.mts'
 
 describe('Google Play subscriptionsv2 verification', () => {
+  // Freeze the clock before the fixed expiries so the verifier's default `now` never passes them.
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-09-01T00:00:00Z'))
+  })
+  afterEach(() => vi.useRealTimers())
+
   const expected = {
     membershipProductId: 'membership-product',
     providerProductId: 'plus.monthly',
@@ -232,7 +239,6 @@ describe('Google Play subscriptionsv2 verification', () => {
   })
 
   it('requests acknowledgement only for a purchased, still-entitled term', () => {
-    const now = new Date('2026-09-01T00:00:00.000Z')
     expect(
       verifyGooglePlaySubscription({
         subscription: {
@@ -243,7 +249,6 @@ describe('Google Play subscriptionsv2 verification', () => {
         applicationId: 'ai.voucha.android',
         environment: 'test',
         expectedProduct: expected,
-        now,
       }),
     ).toMatchObject({ accepted: true, acknowledgementPending: false })
     expect(
@@ -257,7 +262,6 @@ describe('Google Play subscriptionsv2 verification', () => {
         applicationId: 'ai.voucha.android',
         environment: 'test',
         expectedProduct: expected,
-        now,
       }),
     ).toEqual({ accepted: false, reasonCode: 'purchase_pending', bindablePending: true })
     expect(
@@ -267,7 +271,6 @@ describe('Google Play subscriptionsv2 verification', () => {
         applicationId: 'ai.voucha.android',
         environment: 'test',
         expectedProduct: expected,
-        now,
       }),
     ).toMatchObject({ accepted: true, acknowledgementPending: true })
     expect(
@@ -280,7 +283,6 @@ describe('Google Play subscriptionsv2 verification', () => {
         applicationId: 'ai.voucha.android',
         environment: 'test',
         expectedProduct: expected,
-        now,
       }),
     ).toMatchObject({ accepted: true, acknowledgementPending: false })
   })

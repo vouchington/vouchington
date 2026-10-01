@@ -1,14 +1,11 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { WorkflowTopology } from 'no-mistakes'
 
 import {
   renderJobsInventoryDoc,
   writeJobsInventoryDoc,
 } from './render-workflow-runner-inventory.mts'
+import { registerGeneratedDocWriteCases } from './test-helpers/generated-doc-writer.mts'
 import { makeCallEdge, makeJob, makeTopology } from './workflow-topology-test-fixtures.mts'
 
 const FIXTURE = [
@@ -156,61 +153,14 @@ describe('workflow job & runner inventory', () => {
     })
   })
 
-  describe('writeJobsInventoryDoc', () => {
-    const paths: string[] = []
-
-    async function tempDocPath(content: string): Promise<string> {
-      const dir = await mkdtemp(join(tmpdir(), 'jobs-inventory-doc-'))
-      const docPath = join(dir, 'JOBS.md')
-      await writeFile(docPath, content)
-      paths.push(docPath)
-      return docPath
-    }
-
-    afterEach(async () => {
-      await Promise.all(
-        paths.splice(0).map(docPath => rm(join(docPath, '..'), { force: true, recursive: true })),
-      )
-    })
-
-    it('writes the regenerated table to docPath', async () => {
-      const docPath = await tempDocPath(FIXTURE)
-
-      await writeJobsInventoryDoc({ docPath, topology })
-
-      const written = await readFile(docPath, 'utf8')
-      expect(written).not.toContain('stale.yml')
-      expect(written).toContain('Some prose that must survive regeneration untouched.')
-    })
-
-    it('resolves without throwing in check mode once the file has been regenerated', async () => {
-      const docPath = await tempDocPath(FIXTURE)
-      await writeJobsInventoryDoc({ docPath, topology })
-
-      await expect(
-        writeJobsInventoryDoc({ check: true, docPath, topology }),
-      ).resolves.toBeUndefined()
-    })
-
-    it('throws naming the stale docPath and the regenerate command when content has drifted', async () => {
-      const docPath = await tempDocPath(FIXTURE)
-
-      await expect(writeJobsInventoryDoc({ check: true, docPath, topology })).rejects.toThrow(
-        docPath,
-      )
-      await expect(writeJobsInventoryDoc({ check: true, docPath, topology })).rejects.toThrow(
-        /render-workflow-runner-inventory\.mts/,
-      )
-    })
-
-    it('does not write the file in check mode, even when it is stale', async () => {
-      const docPath = await tempDocPath(FIXTURE)
-
-      await expect(writeJobsInventoryDoc({ check: true, docPath, topology })).rejects.toThrow(
-        /stale/,
-      )
-      const untouched = await readFile(docPath, 'utf8')
-      expect(untouched).toBe(FIXTURE)
-    })
+  registerGeneratedDocWriteCases({
+    check: docPath => writeJobsInventoryDoc({ check: true, docPath, topology }),
+    commandPattern: /render-workflow-runner-inventory\.mts/,
+    filename: 'JOBS.md',
+    fixture: FIXTURE,
+    staleToken: 'stale.yml',
+    tempPrefix: 'jobs-inventory-doc-',
+    title: 'writeJobsInventoryDoc',
+    write: docPath => writeJobsInventoryDoc({ docPath, topology }),
   })
 })

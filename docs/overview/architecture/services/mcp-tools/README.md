@@ -17,15 +17,53 @@ Implements the MCP (Model Context Protocol) server logic: listing tools, executi
 | `list-tools.mts`                     | Filter registered tools by configured surface and `resolve-tool-call.mts` policy             |
 | `call-tool.mts`                      | Execute a tool call with full authorization enforcement                                      |
 | `serialize-mcp-tool-result.mts`      | Bounded JSON serializer for MCP tool results                                                 |
+| `build-tool-result.mts`              | Build the `tools/call` result; validate and attach `structuredContent` for declared schemas  |
+| `schema-validator.mts`               | The one Ajv setup for tool arguments and output schemas                                      |
 | `handle-request.mts`                 | Stateless per-request MCP transport using `WebStandardStreamableHTTPServerTransport`         |
 | `instructions.mts`                   | Per-surface server `instructions` sent on `initialize`                                       |
 | `index.mts`                          | Barrel: exports request handlers, helpers, and user/admin MCP configs                        |
 | `catalog/build-mcp-catalog.mts`      | Build the `api-fixtures/v1/mcp.json` catalog and find `meta.api` routes missing from OpenAPI |
 | `catalog/agent-tool-catalog.mts`     | Render the agent-tools catalog table and the native-client `manifest.json`                   |
+| `catalog/output-schema-ratchet.mts`  | Frozen list of listed tools that still return text only; it can only shrink                  |
 | `catalog/build-mcp-catalog.test.mts` | Snapshot every generated catalog artifact; `pnpm run mcp:catalog` regenerates them           |
 
 `catalog/find-api-hint-conflicts.mts` finds tools whose MCP hints disagree with the REST operations
 in `meta.api`; see [MCP Metadata](../../agent-tools/README.md#mcp-metadata).
+
+## Structured tool results
+
+A tool declares `meta.outputSchema` (JSON Schema, object root) and `toolToMcpTool` publishes it as
+`outputSchema` in `tools/list` and in the generated `api-fixtures/v1/mcp.json` catalog. For such a
+tool `callMcpTool` delegates to `build-tool-result.mts`, which:
+
+1. serializes the result with the bounded serializer, capped at half the response limit because the
+   JSON goes out twice, then parses it back, so the schema check sees exactly what the client gets
+   (an `undefined` property is gone, a `Date` is its ISO string);
+2. checks that value against the output schema with the same Ajv setup as argument validation;
+3. returns `structuredContent` plus the same JSON in one `text` block;
+4. measures the assembled response against the full 1 MiB bound, so escaping counts.
+
+An oversized response becomes the existing "too large" `isError` text and is not reported. A value
+the schema rejects throws `McpToolOutputMismatchError` (tool name and failing path, never the
+value); the call path reports it through `onError` and returns the generic tool-failure result,
+never `structuredContent`. Tools without an output schema keep the text-only result, held to the same
+whole-response bound (step 4), so JSON escaping counts for them too.
+
+**One source of truth.** A tool never hand-writes its output schema. The generated
+`api-fixtures/v1/request-contracts.json` carries a `responses` map with the response schema of every
+route whose 200 body is a named response type, keyed like `operations`. `route-response-schema.mts`
+in `backend/tools` resolves an entry into a self-contained schema (recursive components stay a
+`$ref` into a root `$defs`). `createGetMyEntityListTool` derives its `{ success, result }` schema
+from its single `meta.api` endpoint this way. A tool that reshapes the REST body, such as
+`get_my_profile`, composes its schema from its REST twins' sections and owns it explicitly, with a
+test that pins each section to what `openapi.json` documents. A route that documents its response
+inline has no contract; give it a named response type, run `pnpm run openapi:generate`, and then
+derive the tool's schema.
+
+**Ratchet.** `catalog/output-schema-ratchet.mts` names the listed tools that still lack a schema.
+Its test compares the list with the generated catalog in both directions and caps its length, so a
+converted tool must leave the list and a tool newly exposed on `mcp` or `admin_mcp` must declare a
+schema instead of joining it.
 
 ## Authorization
 

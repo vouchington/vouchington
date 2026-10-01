@@ -61,6 +61,23 @@ describe('toolToMcpTool', () => {
     expect(result['_meta']).toEqual({ 'voucha/requiredScopes': ['topics:read'] })
   })
 
+  it('publishes the declared output schema', () => {
+    const outputSchema = { type: 'object', properties: { ok: { type: 'boolean' } } } as const
+    const tool = makeToolWithAnnotations({ readOnlyHint: true })
+    const withSchema: Tool = {
+      ...tool,
+      meta: { ...tool.meta!, outputSchema },
+    }
+
+    expect(toolToMcpTool(withSchema).outputSchema).toBe(outputSchema)
+  })
+
+  it('omits the output schema when the tool declares none', () => {
+    const result = toolToMcpTool(makeToolWithAnnotations({ readOnlyHint: true }))
+
+    expect('outputSchema' in result).toBe(false)
+  })
+
   it('omits annotations and title when the tool has no meta', () => {
     const tool: Tool = {
       schema: {

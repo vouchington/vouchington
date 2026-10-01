@@ -31428,6 +31428,245 @@
       }
     }
   },
+  "responses": {
+    "DELETE:/api/v1/report-integrity/penalties/:id": {
+      "$ref": "#/components/schemas/RevokeReportAbusePenaltyResult"
+    },
+    "GET:/api/v1/admin/ai-costs": {
+      "$ref": "#/components/schemas/CommunityAiCostTotalsPage"
+    },
+    "GET:/api/v1/admin/moderation-analytics": {
+      "$ref": "#/components/schemas/ModerationAnalytics"
+    },
+    "GET:/api/v1/admin/users/:userId/landing-pages": {
+      "$ref": "#/components/schemas/LandingPagesPage"
+    },
+    "GET:/api/v1/availability": {
+      "$ref": "#/components/schemas/AvailabilityResult"
+    },
+    "GET:/api/v1/captcha-config": {
+      "$ref": "#/components/schemas/CaptchaConfigResponse"
+    },
+    "GET:/api/v1/communities": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/communities/:idOrSlug/agent-prompts/history": {
+      "$ref": "#/components/schemas/ListCommunityAgentPromptHistoryResult"
+    },
+    "GET:/api/v1/communities/:idOrSlug/applications": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/communities/:idOrSlug/invites": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/communities/:idOrSlug/list-items/counts": {
+      "$ref": "#/components/schemas/CommunityListItemCounts"
+    },
+    "GET:/api/v1/communities/:idOrSlug/list-items/domains": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/communities/:idOrSlug/list-items/posts": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/communities/:idOrSlug/list-items/rss-feeds": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/communities/:idOrSlug/list-items/topics": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/communities/:idOrSlug/list-items/urls": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/communities/:idOrSlug/members": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/communities/:idOrSlug/moderation-analytics": {
+      "$ref": "#/components/schemas/ModerationAnalytics"
+    },
+    "GET:/api/v1/communities/:idOrSlug/moderation-transparency": {
+      "$ref": "#/components/schemas/ModerationTransparency"
+    },
+    "GET:/api/v1/communities/:idOrSlug/moderator-vacation": {
+      "$ref": "#/components/schemas/CommunityMemberVacationSettings"
+    },
+    "GET:/api/v1/communities/:idOrSlug/news": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/communities/:idOrSlug/posts": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/communities/:idOrSlug/posts/:postId/moderation-results": {
+      "$ref": "#/components/schemas/ModerationResultsResponse"
+    },
+    "GET:/api/v1/communities/:idOrSlug/posts/pending": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/copyright-email-intakes/review-queue": {
+      "$ref": "#/components/schemas/CopyrightEmailIntakeQueueResponse"
+    },
+    "GET:/api/v1/copyright-notices/review-queue": {
+      "$ref": "#/components/schemas/CopyrightStaffQueueResponse"
+    },
+    "GET:/api/v1/currencies": {
+      "$ref": "#/components/schemas/CurrencyPage"
+    },
+    "GET:/api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/fediverse/search": {
+      "$ref": "#/components/schemas/FediverseSearchResponse"
+    },
+    "GET:/api/v1/feeds/posts/:feed_type": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/feeds/rss_feed_items/:feed_type": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/growth-metrics": {
+      "$ref": "#/components/schemas/GrowthMetrics"
+    },
+    "GET:/api/v1/localization": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/moderation-transparency": {
+      "$ref": "#/components/schemas/ModerationTransparency"
+    },
+    "GET:/api/v1/my/cards": {
+      "$ref": "#/components/schemas/IndividualCardPage"
+    },
+    "GET:/api/v1/my/import/rss-feeds/:importId": {
+      "$ref": "#/components/schemas/UserRssFeedImport"
+    },
+    "GET:/api/v1/my/notifications/unread": {
+      "$ref": "#/components/schemas/NotificationsUnreadSummaryResponseBody"
+    },
+    "GET:/api/v1/my/rewards-program-point-valuations": {
+      "$ref": "#/components/schemas/IndividualRewardsProgramPointValuationPage"
+    },
+    "GET:/api/v1/my/rewards-program-statuses": {
+      "$ref": "#/components/schemas/IndividualRewardsProgramStatusPage"
+    },
+    "GET:/api/v1/my/spending-categories": {
+      "$ref": "#/components/schemas/HouseholdSpendingCategoryPage"
+    },
+    "GET:/api/v1/platform-stats": {
+      "$ref": "#/components/schemas/PlatformStats"
+    },
+    "GET:/api/v1/posts": {
+      "$ref": "#/components/schemas/StreamJsonObjectInput_PostsResponseBody"
+    },
+    "GET:/api/v1/posts/:idOrSlug": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/posts/:idOrSlug/ancestors": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/posts/:idOrSlug/descendants": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/posts/review-queue": {
+      "$ref": "#/components/schemas/SearchReviewQueueResult"
+    },
+    "GET:/api/v1/psql/migrations": {
+      "$ref": "#/components/schemas/MigrationStatus"
+    },
+    "GET:/api/v1/psql/partitions": {
+      "$ref": "#/components/schemas/PartitionStatus"
+    },
+    "GET:/api/v1/recommended-topics": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/report-integrity/penalties": {
+      "$ref": "#/components/schemas/GetReportAbusePenaltiesResult"
+    },
+    "GET:/api/v1/rss-feed-items": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/rss-feed-items/:id": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/rss-feeds/recommended": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/rss-feeds/trending": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/stories/:id": {
+      "$ref": "#/components/schemas/StoryPageResponse"
+    },
+    "GET:/api/v1/topic-recommendations": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/topic-recommendations/:id": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/topic-recommendations/duplicates": {
+      "$ref": "#/components/schemas/FindTopicRecommendationDuplicatesResult"
+    },
+    "GET:/api/v1/topics": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/topics/:idOrSlug": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/topics/compare": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/trending-communities": {
+      "$ref": "#/components/schemas/TrendingCommunitiesResult"
+    },
+    "GET:/api/v1/trending-posts": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/trending-referral-programs": {
+      "$ref": "#/components/schemas/TrendingReferralProgramsResult"
+    },
+    "GET:/api/v1/trending-topics": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/users/:username/landing-page": {
+      "$ref": "#/components/schemas/PublicLandingPage"
+    },
+    "GET:/api/v1/users/:username/landing-pages/:slug": {
+      "$ref": "#/components/schemas/PublicLandingPage"
+    },
+    "GET:/api/v1/vote-integrity/penalties": {
+      "$ref": "#/components/schemas/GetVoteWeightPenaltiesResult"
+    },
+    "PATCH:/api/v1/hostnames/:id": {
+      "$ref": "#/components/schemas/BlockHostnameResult"
+    },
+    "POST:/api/v1/auth/mfa/passkeys/authentication/verification": {
+      "$ref": "#/components/schemas/MfaVerificationResponseBody"
+    },
+    "POST:/api/v1/auth/mfa/totp/verification": {
+      "$ref": "#/components/schemas/MfaVerificationResponseBody"
+    },
+    "POST:/api/v1/auth/oauth/:provider/authorizations": {
+      "$ref": "#/components/schemas/BeginOAuthAuthorizationResult"
+    },
+    "POST:/api/v1/fediverse/instances": {
+      "$ref": "#/components/schemas/CreateInstanceResult"
+    },
+    "POST:/api/v1/rss-feeds": {
+      "$ref": "#/components/schemas/CreateSourceResult"
+    },
+    "POST:/api/v1/stories/:storyId/discussions": {
+      "$ref": "#/components/schemas/StoryPostResult"
+    },
+    "POST:/api/v1/topics/:idOrSlug/claims/:claimId/verification-token": {
+      "$ref": "#/components/schemas/VerificationTokenResult"
+    },
+    "POST:/api/v1/valkey/flush": {
+      "$ref": "#/components/schemas/FlushResult"
+    },
+    "POST:/api/v1/vote-integrity/flags/:id/penalties": {
+      "$ref": "#/components/schemas/ApplyRingPenaltyResult"
+    },
+    "PUT:/api/v1/communities/:idOrSlug/moderator-vacation": {
+      "$ref": "#/components/schemas/CommunityMemberVacationSettings"
+    }
+  },
   "source": "compiler-extracted-request-contracts",
   "version": 1
 }

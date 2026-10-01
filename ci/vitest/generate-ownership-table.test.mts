@@ -1,11 +1,8 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { describe, expect, it } from 'vitest'
 
-import { afterEach, describe, expect, it } from 'vitest'
-
-import { VITEST_OWNERSHIP } from './project-ownership.mts'
+import { registerGeneratedDocWriteCases } from '../test-helpers/generated-doc-writer.mts'
 import { renderVitestOwnershipDoc, writeVitestOwnershipDoc } from './generate-ownership-table.mts'
+import { VITEST_OWNERSHIP } from './project-ownership.mts'
 
 const FIXTURE = [
   '# Vitest CI Mapping',
@@ -72,54 +69,13 @@ describe('renderVitestOwnershipDoc', () => {
   })
 })
 
-describe('writeVitestOwnershipDoc', () => {
-  const paths: string[] = []
-
-  async function tempDocPath(content: string): Promise<string> {
-    const dir = await mkdtemp(join(tmpdir(), 'vitest-ownership-doc-'))
-    const docPath = join(dir, 'VITEST.md')
-    await writeFile(docPath, content)
-    paths.push(docPath)
-    return docPath
-  }
-
-  afterEach(async () => {
-    await Promise.all(
-      paths.splice(0).map(docPath => rm(join(docPath, '..'), { force: true, recursive: true })),
-    )
-  })
-
-  it('writes the regenerated table to docPath', async () => {
-    const docPath = await tempDocPath(FIXTURE)
-
-    await writeVitestOwnershipDoc({ docPath })
-
-    const written = await readFile(docPath, 'utf8')
-    expect(written).not.toContain('stale-project')
-    expect(written).toContain('Some prose that must survive regeneration untouched.')
-  })
-
-  it('resolves without throwing in check mode once the file has been regenerated', async () => {
-    const docPath = await tempDocPath(FIXTURE)
-    await writeVitestOwnershipDoc({ docPath })
-
-    await expect(writeVitestOwnershipDoc({ check: true, docPath })).resolves.toBeUndefined()
-  })
-
-  it('throws naming the stale docPath and the regenerate command when content has drifted', async () => {
-    const docPath = await tempDocPath(FIXTURE)
-
-    await expect(writeVitestOwnershipDoc({ check: true, docPath })).rejects.toThrow(docPath)
-    await expect(writeVitestOwnershipDoc({ check: true, docPath })).rejects.toThrow(
-      /generate-ownership-table\.mts/,
-    )
-  })
-
-  it('does not write the file in check mode, even when it is stale', async () => {
-    const docPath = await tempDocPath(FIXTURE)
-
-    await expect(writeVitestOwnershipDoc({ check: true, docPath })).rejects.toThrow(/stale/)
-    const untouched = await readFile(docPath, 'utf8')
-    expect(untouched).toBe(FIXTURE)
-  })
+registerGeneratedDocWriteCases({
+  check: docPath => writeVitestOwnershipDoc({ check: true, docPath }),
+  commandPattern: /generate-ownership-table\.mts/,
+  filename: 'VITEST.md',
+  fixture: FIXTURE,
+  staleToken: 'stale-project',
+  tempPrefix: 'vitest-ownership-doc-',
+  title: 'writeVitestOwnershipDoc',
+  write: docPath => writeVitestOwnershipDoc({ docPath }),
 })

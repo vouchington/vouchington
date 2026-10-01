@@ -22,6 +22,7 @@ import type { AppleNotificationReconciliationVerifier } from './notification-ver
 
 describe('Apple notification reconciliation', () => {
   afterEach(() => vi.unstubAllEnvs())
+
   it('keeps independently verified family notification evidence durable until recipients prove distinct receipts', async () => {
     const firstUser = await createTestUser()
     const secondUser = await createTestUser()
@@ -187,7 +188,6 @@ async function createFixture() {
   })
   return {
     applicationId,
-    expiresDate: Date.now() + 30 * 86_400_000,
     membershipProviderProductId: providerProduct.id,
     latestTransaction: `latest-transaction-${randomUUID()}`,
     providerLineageId: `original-transaction-${randomUUID()}`,
@@ -265,7 +265,7 @@ function makeVerifier(
         appAccountToken: undefined,
         bundleId: fixture.applicationId,
         environment: Environment.SANDBOX,
-        expiresDate: fixture.expiresDate,
+        expiresDate: Math.floor(performance.timeOrigin) + 30 * 86_400_000, // per-run, future
         inAppOwnershipType: InAppOwnershipType.FAMILY_SHARED,
         originalTransactionId: fixture.providerLineageId,
         productId: fixture.providerProductId,

@@ -171,6 +171,14 @@ applies this schema.
 Both are emitted in one compiler-backed generation and checked together. The TypeScript request
 contracts remain authoritative: consumers must not reconstruct runtime validation from OpenAPI.
 
+The bundle also carries a top-level `responses` map, a sibling of `operations` so the request
+validator never mistakes it for request coverage. It holds the 200 response schema of each route
+whose JSON body is exactly one named component, keyed like `operations` (`GET:/api/v1/my/cards`),
+and reuses the shipped `components`. MCP tools derive their `outputSchema` from it through
+`backend/tools/route-response-schema.mts`; see
+[Structured tool results](../../../overview/architecture/services/mcp-tools/README.md#structured-tool-results).
+A route with an inline or absent response schema has no entry.
+
 The generated `api-fixtures/v1/openapi.json` combines response contracts with query parameters from
 explicit `apiQuery('METHOD:/route', ...carriers)` markers in backend route handlers. The generator
 uses the TypeScript checker to inspect each carrier's typed `queryContract`; it never imports or

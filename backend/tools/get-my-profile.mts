@@ -1,5 +1,5 @@
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from './types.mts'
+import type { Tool, ToolApiEndpoint, ToolOutputSchema } from './types.mts'
 import {
   getIndividualCards,
   getIndividualRewardsProgramPointValuations,
@@ -13,6 +13,44 @@ import {
 } from '@services/individuals-households'
 import { getUserFinancialProfile } from '@services/user-financial-profiles'
 import { requirePrivateToolUser } from './private-user.mts'
+import {
+  componentSchema,
+  routePropertySchema,
+  routeResponseSchema,
+} from './route-response-schema.mts'
+
+const API = {
+  cards: { method: 'GET', path: '/api/v1/my/cards' },
+  pointValuations: { method: 'GET', path: '/api/v1/my/rewards-program-point-valuations' },
+  statuses: { method: 'GET', path: '/api/v1/my/rewards-program-statuses' },
+  financialProfile: { method: 'GET', path: '/api/v1/my/financial-profile' },
+} as const satisfies Record<string, ToolApiEndpoint>
+
+// This tool reshapes four REST bodies into one flat result, so it owns the result schema. Each
+// section still comes from its REST twin's generated contract, never a hand-written copy. The
+// financial profile route documents its body inline, so that section names the component the
+// route wraps in `anyOf`, which `getUserFinancialProfile` returns or null.
+function buildOutputSchema(): ToolOutputSchema {
+  const cards = routeResponseSchema(API.cards)
+  const pointValuations = routeResponseSchema(API.pointValuations)
+  const statuses = routeResponseSchema(API.statuses)
+  const properties = {
+    success: { const: true },
+    cards: routePropertySchema(cards, 'results'),
+    cards_page_info: routePropertySchema(cards, 'page_info'),
+    point_valuations: routePropertySchema(pointValuations, 'results'),
+    point_valuations_page_info: routePropertySchema(pointValuations, 'page_info'),
+    rewards_program_statuses: routePropertySchema(statuses, 'results'),
+    rewards_program_statuses_page_info: routePropertySchema(statuses, 'page_info'),
+    financial_profile: { anyOf: [componentSchema('UserFinancialProfile'), { type: 'null' }] },
+  }
+  return {
+    type: 'object',
+    properties,
+    required: Object.keys(properties),
+    additionalProperties: false,
+  }
+}
 
 type ToolArgs = {
   cards_after?: string
@@ -77,12 +115,8 @@ const tool: Tool<ToolArgs, ToolResult> = {
     title: 'Get My Profile',
     requiredScopes: { mcp: ['profile:read'] },
     annotations: { readOnlyHint: true },
-    api: [
-      { method: 'GET', path: '/api/v1/my/cards' },
-      { method: 'GET', path: '/api/v1/my/rewards-program-point-valuations' },
-      { method: 'GET', path: '/api/v1/my/rewards-program-statuses' },
-      { method: 'GET', path: '/api/v1/my/financial-profile' },
-    ],
+    api: [API.cards, API.pointValuations, API.statuses, API.financialProfile],
+    outputSchema: buildOutputSchema(),
   },
   function:
     (currentUser: BasicUser) =>
