@@ -67,14 +67,38 @@ describe('copyright email intake client', () => {
     mockPost.mockClear()
     await expectApiWrapperCall({
       mock: mockPost,
-      response: undefined,
-      call: () => rejectCopyrightEmailIntake('intake-1', 'Unrelated.', null, 'No recommendation.'),
+      response: { reply_queued: false },
+      call: () =>
+        rejectCopyrightEmailIntake('intake-1', 'Unrelated.', null, 'No recommendation.', null),
       expectedArgs: [
         '/api/v1/copyright-email-intakes/intake-1/rejections',
         {
           rationale: 'Unrelated.',
           recommendation_id: null,
           manual_fallback_reason: 'No recommendation.',
+          reply_email: null,
+        },
+      ],
+    })
+    mockPost.mockClear()
+    await expectApiWrapperCall({
+      mock: mockPost,
+      response: { reply_queued: true },
+      call: () =>
+        rejectCopyrightEmailIntake(
+          'intake-1',
+          'Unrelated.',
+          null,
+          'No recommendation.',
+          'reporter@example.test',
+        ),
+      expectedArgs: [
+        '/api/v1/copyright-email-intakes/intake-1/rejections',
+        {
+          rationale: 'Unrelated.',
+          recommendation_id: null,
+          manual_fallback_reason: 'No recommendation.',
+          reply_email: 'reporter@example.test',
         },
       ],
     })

@@ -1,5 +1,6 @@
 import type { Context } from '@jongleberry/api-server'
 import { isUUID } from '@modules/utils'
+import { isEmailAddress } from '@ts-shared/utils/validation-core'
 import { boundedString, parseCopyrightTargetIds } from './http-input.mts'
 
 export function parseCopyrightRecommendationId(
@@ -24,6 +25,19 @@ export function parseCopyrightManualFallbackReason(
     value === null || value === undefined || boundedString(value, 10_000),
     422,
     'manual_fallback_reason must be a bounded string or null',
+  )
+  return (value as string | null | undefined) ?? null
+}
+
+export function parseCopyrightReplyEmail(
+  ctx: Context,
+  body: Record<string, unknown>,
+): string | null {
+  const value = body.reply_email
+  ctx.assert(
+    value === null || value === undefined || (boundedString(value, 254) && isEmailAddress(value)),
+    422,
+    'reply_email must be a valid email address or null',
   )
   return (value as string | null | undefined) ?? null
 }

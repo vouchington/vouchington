@@ -79,7 +79,9 @@ server per audience (members and case participants: case-facing events only; sta
 a native client renders only the event types it receives and must not treat an unrecognized type
 as display-safe. Staff guest-capability management (issue, list, revoke, and information requests)
 is web-only staff tooling; its fixtures, including `web.copyright.guest-capabilities.listed`, have
-only the web consumer.
+only the web consumer. Staff email-intake review is web-only staff tooling too: rejecting an
+intake returns `{ reply_queued }` instead of a bare 204 and accepts an optional `reply_email` when
+the intake has no parsed sender, and only the web staff UI consumes that response.
 
 ### Agent tool manifest handoff
 

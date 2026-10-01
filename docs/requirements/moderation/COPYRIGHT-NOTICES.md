@@ -188,6 +188,14 @@ but cannot create a restriction, correspondence, or legal case. A moderator must
 and agent output, then explicitly accept or reject it before a valid email submission can enter the
 case lifecycle, even when the recommendation is `potentially_valid`.
 
+A rejection, or a request for more information, replies to the sender only when there is one. With
+a succeeded parse the reply goes to the parsed sender. With no parse row or a failed parse the
+moderator may type a reply address, validated like the claimant email on approval; without one no
+reply is queued, and the decision response reports `reply_queued: false` so staff see that nothing
+was sent. An address typed beside a parsed sender is refused. A parse that lands after the decision
+sends nothing, because the response is created only at decision time. See the
+[API](../api/v1/copyright-notices/README.md) for the contract.
+
 Email extraction includes the claimant, contact, work, hosted URLs, signature, and both statutory
 declarations, with short source excerpts for moderator verification. Missing declarations remain
 null; the agent cannot infer them. RFC `Message-ID`, `In-Reply-To`, and `References` values are

@@ -47,17 +47,24 @@ export function getCopyrightEmailIntake(id: string) {
     `/api/v1/copyright-email-intakes/${id}`,
   )
 }
+// `replyEmail` is the moderator-typed address for an intake with no parsed sender; the server
+// refuses it beside a parsed sender and queues no reply when it is null and nothing was parsed.
 export function rejectCopyrightEmailIntake(
   id: string,
   rationale: string,
   recommendationId: string | null,
   manualFallbackReason: string | null,
+  replyEmail: string | null,
 ) {
-  return clientApi.post(`/api/v1/copyright-email-intakes/${id}/rejections`, {
-    rationale,
-    recommendation_id: recommendationId,
-    manual_fallback_reason: manualFallbackReason,
-  })
+  return clientApi.post<{ reply_queued: boolean }>(
+    `/api/v1/copyright-email-intakes/${id}/rejections`,
+    {
+      rationale,
+      recommendation_id: recommendationId,
+      manual_fallback_reason: manualFallbackReason,
+      reply_email: replyEmail,
+    },
+  )
 }
 export function approveCopyrightEmailIntake(id: string, input: CopyrightEmailIntakeApprovalInput) {
   return clientApi.post(`/api/v1/copyright-email-intakes/${id}/approvals`, input)
