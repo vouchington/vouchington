@@ -48,7 +48,11 @@ Review the agent sandbox and permission configuration across Claude, Codex, Grok
   assertions. Do **not** add those six families back to Claude `permissions.allow` or Codex
   `prefix_rule`; absence on both review-skip lists is the intended parity after
   jonathanong/filaments PR #9574 and a related change (formerly
-  filed as jonathanong/filaments#9578). Codex still having two-token
+  filed as jonathanong/filaments#9578). Claude's rebase lifecycle rules (`git rebase --continue` /
+  `--skip` / `--abort` and the `git push --force-with-lease=*` lease push) are a separate documented
+  decision that cannot start a rebase
+  ([Claude review-skip for the rebase lifecycle](../../development/agent-sandbox.md#claude-review-skip-for-the-rebase-lifecycle));
+  do not remove them as part of that family. Codex still having two-token
   `["gh","pr"]` while Claude allows only `comment` / `ready` / `edit` / `create --draft` is an
   intentional leftover, not a scheduled-prompt target — do not "fix" it by widening Claude
   `Bash(gh pr *)`. Claude `Bash(./dev/*)` / `Bash(node dev/*)` and their `/../` deny rules are a
