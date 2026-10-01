@@ -263,6 +263,12 @@ Claude Code matching limits these rules
   not from `.claude/settings.json`. A classifier exception for any other command shape goes in
   `~/.claude/settings.json`.
 
+Accepted risk: `git *` already runs outside the OS sandbox, and the lease rule's `*` admits any
+further arguments. A lease push with `--receive-pack=` or `--exec=`, or one to a local repository
+whose hooks the agent wrote, can run arbitrary code without review. That is the same class of risk
+the [dev/ rules](#claude-review-skip-for-dev-commands) accept, and partial deny rules would not
+close it.
+
 Grok reuses these strings with prefix matching, as it already did for `--continue` and `--abort`.
 Codex keeps them on its ordinary review path; `.codex/rules/default.rules` has no `git rebase` or
 `git push` prefix. [`dev/claude-settings-dev-allow.test.mts`](../../dev/claude-settings-dev-allow.test.mts)

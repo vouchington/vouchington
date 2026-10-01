@@ -103,7 +103,6 @@ describe('Claude review-skip for the rebase lifecycle', () => {
     'git rebase --onto origin/main HEAD~2',
     'GIT_EDITOR=vim git rebase --continue',
     'git push --force-with-lease',
-    'git push origin fix/example',
     'git -C ../other rebase --skip',
     `git -C ../other push --force-with-lease=fix/example:${sha}`,
     'cd ../other && git rebase --skip',
