@@ -11,7 +11,10 @@ import sql from 'sql-template-strings'
  */
 export const AUTOTAGGER_AGENT_MAX_CANDIDATES = 10
 
-/** Roles whose follows are staff curation, not a paying reader's interest. */
+/**
+ * Roles whose follows are staff curation, not a paying reader's interest. There is no shared SQL
+ * staff predicate, so this names the site-staff role types (an investor is not staff).
+ */
 const STAFF_ROLE_SLUGS = ['administrator', 'moderator', 'developer']
 
 /**
@@ -22,9 +25,10 @@ const STAFF_ROLE_SLUGS = ['administrator', 'moderator', 'developer']
  * later follow, plan change or tag cannot alter what an existing receipt asks. Null means there is
  * nothing to ask, which settles the request without a provider call.
  *
- * - "Paying" is the membership entitlement source of truth (`view_current_paid_memberships`, plan
- *   plus or pro), restricted to live, non-system, non-staff accounts: a follow by a deleted,
- *   system, administrator, moderator or developer account never adds a topic.
+ * - "Paying" is the membership entitlement source of truth: a row in
+ *   `view_current_paid_memberships`, which holds only a user's current paid (plus or pro) plan,
+ *   restricted to live, non-system, non-staff accounts: a follow by a deleted, system,
+ *   administrator, moderator or developer account never adds a topic.
  * - A deleted or merged-away topic is never a candidate.
  * - A topic the subject has any relation row for is excluded, live or soft-deleted: a deleted tag
  *   was removed on purpose and is not offered again.
@@ -46,8 +50,7 @@ export async function captureAutotaggerAgentCandidateTopicIds(
     WITH paid_followed AS (
       SELECT DISTINCT follow.object_id AS topic_id
       FROM relation__user__follow__topic follow
-      JOIN view_current_paid_memberships membership
-        ON membership.user_id = follow.subject_id AND membership.plan IN ('plus', 'pro')
+      JOIN view_current_paid_memberships membership ON membership.user_id = follow.subject_id
       JOIN users follower
         ON follower.id = follow.subject_id AND follower.deleted_at IS NULL AND follower.is_system = FALSE
       WHERE follow.deleted_at IS NULL
