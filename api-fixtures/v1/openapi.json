@@ -3025,6 +3025,16 @@
         "required": ["copyright_email_intakes", "page_info"],
         "type": "object"
       },
+      "CopyrightEmailLegalProcessRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": ["reason"],
+        "type": "object"
+      },
       "CopyrightEmailSesVerdict": {
         "enum": ["fail", "gray", "pass", "processing_failed", "unknown"],
         "type": "string"
@@ -42758,6 +42768,52 @@
                     }
                   },
                   "required": ["copyright_notice", "is_duplicate"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-email-intakes/{id}/legal-process": {
+      "post": {
+        "operationId": "post_api_v1_copyright-email-intakes_id_legal-process",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyrightEmailLegalProcessRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "decision": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["decision"],
                   "type": "object"
                 }
               }

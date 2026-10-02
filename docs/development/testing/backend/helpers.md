@@ -458,7 +458,8 @@ keyset ordering, but its global query cannot prove fixture ownership from an `af
 Its exact global pagination cases run against fresh disposable databases through
 `test-helpers/vitest-isolated-database-case.mts`; shared-DB calls to this cataloged operation are
 rejected by the test guard. The reply-failure listing runs in the isolated
-`copyright-staff-email-intake-reply-failures` case for the same reason. For notification push intent recovery, pass the test's owned
+`copyright-staff-email-intake-reply-failures` case for the same reason, and so does the check that a
+legal-process intake leaves the queue (`copyright-email-legal-process-queue`). For notification push intent recovery, pass the test's owned
 `notificationIds` on every page, including pages with an `after` cursor. A cursor only advances
 ordering; it does not exclude another fixture's eligible row.
 

@@ -213,7 +213,7 @@ and agent output, then explicitly accept or reject it before a valid email submi
 case lifecycle, even when the recommendation is `potentially_valid`.
 
 On the staff email review page a moderator decides an initial intake with **Approve structured
-intake**, **Request information**, or **Reject email intake**. A request for information carries a
+intake**, **Request information**, **Reject email intake**, or **Record as legal process**. A request for information carries a
 required message (not blank, at most 10,000 characters) that follows the fixed reply text, and like
 a rejection it closes the intake without opening a case. Reply wording is owned by counsel.
 
@@ -226,6 +226,21 @@ sends nothing, because the response is created only at decision time. When that 
 bounces, the intake returns to the email review page with the reason (`reply_failed` or
 `reply_bounced`) and how long it has waited since the failure, so a declined sender who was never
 answered is visible to staff. See the [API](../api/v1/copyright-notices/README.md) for the contract.
+
+An initial intake that is legal process, such as a §512(h) subpoena, is closed with **Record as
+legal process** (`POST /api/v1/copyright-email-intakes/:id/legal-process`), because a rejection
+always replies to a known sender. It needs a short reason (not blank, at most 1,000 characters),
+which may name a legal matter, so it is encrypted like the review rationale and never logged or
+returned in an error. The intake's review row records the decision as `legal_process`, with who
+decided and when; that row is the audit record. Nothing is queued: no reply and no email of any
+kind. It is not an approval or a rejection, so it opens no case and creates no assessment,
+restriction, or claimant-visible event. The intake leaves the email review page and the
+[review-target sweep](#review-target-page), which count only undecided intakes. The decision is
+final: a second decision of any kind on the intake, repeated or different, is a `409`, and so is
+recording legal process on an intake that was already approved or rejected. The action is for
+initial intakes only. A reply to an existing case thread, or one waiting for its root case, is not
+offered it; those are classified as correspondence. The same staff roles as approve and reject may
+use it.
 
 Email extraction includes the claimant, contact, work, hosted URLs, signature, and both statutory
 declarations, with short source excerpts for moderator verification. Missing declarations remain

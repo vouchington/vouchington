@@ -86,7 +86,10 @@ information-request responses (`web.copyright.email-intake-rejection.reply-queue
 `web.copyright.email-intake-information-request.reply-queued` and `.no-reply`) have only the web
 consumer; native clients have no staff email review action, including the
 `copyright_email_intake.ses_verdicts` verdicts and the null `raw_email.download_url` that quarantines
-an email SES flagged for malware. The queue fixture (`web.copyright.email-intake-queue.default`)
+an email SES flagged for malware. Its **Record as legal process** action
+(`POST /api/v1/copyright-email-intakes/:id/legal-process`, response `{ decision: 'legal_process' }`)
+is web-only staff tooling as well: it has no fixture and no native consumer, and it sends no reply.
+The queue fixture (`web.copyright.email-intake-queue.default`)
 also carries `waiting_reason` and `waiting_since`, which list a declined intake whose reply failed
 or bounced; only the web consumer reads them. The
 [request and response contract](api/v1/copyright-notices/README.md) is owned by the API page.

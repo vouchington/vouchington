@@ -39,6 +39,11 @@ const isolatedDatabaseCases = {
     fullName:
       'copyright email intake queue reply failures > lists a declined intake whose reply failed or bounced with its reason and wait, and hides the rest',
   },
+  'copyright-email-legal-process-queue': {
+    file: 'backend/services/copyright-notices/email-legal-process-queue.test.mts',
+    fullName:
+      'copyright email legal process queue > removes a legal-process intake from the staff email queue and keeps the undecided ones',
+  },
   'copyright-email-queue-exact-limit': {
     file: 'backend/api/v1/copyright-notices/email-intake-queue-pagination.test.mts',
     fullName:

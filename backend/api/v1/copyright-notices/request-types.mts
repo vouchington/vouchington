@@ -31,6 +31,10 @@ export type CopyrightAppealRequest = {
   cf_turnstile_response?: string
 }
 
+export type CopyrightEmailLegalProcessRequest = {
+  reason: string
+}
+
 export type CopyrightCounterNoticeRequest = {
   name: string
   address: string

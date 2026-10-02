@@ -162,6 +162,7 @@ export const ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
   },
   'POST:/api/v1/copyright-email-intakes/:id/approvals': { category: 'sensitive' },
   'POST:/api/v1/copyright-email-intakes/:id/rejections': { category: 'sensitive' },
+  'POST:/api/v1/copyright-email-intakes/:id/legal-process': { category: 'sensitive' },
   'POST:/api/v1/copyright-email-intakes/:id/correspondence': { category: 'sensitive' },
   'POST:/api/v1/copyright-email-intakes/:id/correspondence-rejections': {
     category: 'sensitive',

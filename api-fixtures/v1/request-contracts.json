@@ -3008,6 +3008,16 @@
       "required": ["copyright_email_intakes", "page_info"],
       "type": "object"
     },
+    "CopyrightEmailLegalProcessRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": ["reason"],
+      "type": "object"
+    },
     "CopyrightEmailSesVerdict": {
       "enum": ["fail", "gray", "pass", "processing_failed", "unknown"],
       "type": "string"
@@ -30954,6 +30964,20 @@
       }
     },
     "POST:/api/v1/copyright-email-intakes/:id/correspondence-rejections": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-email-intakes/:id/legal-process": {
+      "body": {
+        "$ref": "#/components/schemas/CopyrightEmailLegalProcessRequest"
+      },
       "path": {
         "properties": {
           "id": {

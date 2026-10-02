@@ -146,7 +146,7 @@ describe('copyright email intake persistence', () => {
     // does not send the email to the model once intake is switched back on.
     await expect(readTestPendingCopyrightAgentDispatches(intake.id)).resolves.toEqual([])
     await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.toEqual([
-      { accepted: false, promoted_copyright_notice_id: null },
+      { decision: 'rejected', promoted_copyright_notice_id: null },
     ])
     expect(rejected.responseId).toEqual(expect.any(String))
     expect(duplicate).toEqual({ responseId: null, replyQueued: true })

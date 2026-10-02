@@ -26,7 +26,7 @@ export async function recoverMissingDecisionAssessments(): Promise<void> {
         JOIN copyright_notice_submissions submission
           ON submission.copyright_notice_id = review.promoted_copyright_notice_id
           AND submission.kind = 'notice'
-        WHERE review.accepted
+        WHERE review.decision = 'approved'
       ) durable_decisions
       WHERE NOT EXISTS (
         SELECT 1 FROM copyright_notice_submission_assessments assessment

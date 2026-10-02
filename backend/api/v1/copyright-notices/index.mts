@@ -18,6 +18,7 @@ import {
 // Registers `/api/v1/copyright-email-intakes/review-queue` before moderator-routes registers the
 // `/api/v1/copyright-email-intakes/:id` route that would otherwise capture it.
 import './email-intake-queue-route.mts'
+import './email-intake-legal-process-route.mts'
 import './eu-copyright-routes.mts'
 import './eu-copyright-staff-routes.mts'
 import './guest-capability-list-route.mts'
