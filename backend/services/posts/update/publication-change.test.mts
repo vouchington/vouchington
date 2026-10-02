@@ -14,6 +14,7 @@ import {
   listTestPostPublicationImpactTopicIds,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
+import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   enableQueryCapture,
@@ -61,6 +62,9 @@ describe('post update publication capture', () => {
       title: `Publication topic footprint ${suffix}`,
     })
     if (!post) throw new Error('Expected post')
+    // The author's own like arrives through the post-created listener; its recompute is the
+    // `post_updated` capture, and it is debounced, so wait for it instead of reading too early.
+    await onceElectionVoteStatsCompleted({ electionId: post.id, orderingKey: 'post' })
     const topicIds = await insertTestTopicsAndExplicitPostCategories({
       count: 1_001,
       createdById: administrator.id,

@@ -43,6 +43,7 @@ export type FlushedJobFailure = { name: string; reason: string }
  * now holds. The record is one object per job.
  */
 export function recordOf(job: TestJob): object {
+  // oxlint-disable-next-line no-underscore-dangle -- glide-mq exposes no public identity for a test job
   return (job as unknown as { _record: object })._record
 }
 
