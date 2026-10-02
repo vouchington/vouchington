@@ -61,8 +61,9 @@ describe('bluesky follow propagation enqueue helpers', () => {
     // A debounce add replaces the tracked job while it is still parked (delayed, or prioritized
     // until the scheduler promotes it) and is skipped only once that job is waiting or active.
     // Reconcile jobs carry the default priority, so the first job is replaced by the second.
+    const idOf = (job: unknown) => (job as { id?: string } | null)?.id
     expect(second).not.toBeNull()
-    expect(second?.id).not.toBe(first?.id)
+    expect(idOf(second)).not.toBe(idOf(first))
 
     const queued = await readAllQueueJobs(blueskyFollowPropagation)
     const jobs = queued.filter(
@@ -70,7 +71,7 @@ describe('bluesky follow propagation enqueue helpers', () => {
         (j.data as { followerUserId?: string }).followerUserId === followerUserId &&
         (j.data as { followeeUserId?: string }).followeeUserId === followeeUserId,
     )
-    expect(jobs.map(job => job.id)).toEqual([second?.id])
+    expect(jobs.map(job => job.id)).toEqual([idOf(second)])
   })
 
   it('enqueues the singleton backfill job with throttle deduplication', async () => {

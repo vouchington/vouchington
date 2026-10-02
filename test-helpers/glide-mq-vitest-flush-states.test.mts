@@ -1,4 +1,5 @@
-import { type TestJob, TestWorker } from 'glide-mq/testing'
+import type { Job } from 'glide-mq'
+import { TestWorker } from 'glide-mq/testing'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { addAndFlush, addBulkAndFlush } from './glide-mq-vitest-flush.mts'
 import { getOrCreateQueue } from './glide-mq-vitest-internals.mts'
@@ -58,7 +59,7 @@ describe('GlideMQ test flush across job states', () => {
     workers.push(
       new TestWorker(
         queue,
-        async (job: TestJob) => {
+        async (job: Job) => {
           if (job.name === 'stale') {
             staleStarted.resolve()
             await releaseStale.promise
