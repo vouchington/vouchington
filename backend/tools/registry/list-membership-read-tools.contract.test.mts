@@ -34,6 +34,7 @@ const asCaller = (user: Awaited<ReturnType<typeof createTestUser>>): McpContract
 })
 
 describe('get_my_lists_containing — real DB', () => {
+  let ownerUser: Awaited<ReturnType<typeof createTestUser>>
   let owner: McpContractCaller
   let stranger: McpContractCaller
   let postId: string
@@ -58,9 +59,9 @@ describe('get_my_lists_containing — real DB', () => {
     })
 
   beforeAll(async () => {
-    ;[owner, stranger] = (await Promise.all([createTestUser(), createTestUser()])).map(
-      asCaller,
-    ) as [McpContractCaller, McpContractCaller]
+    const users = await Promise.all([createTestUser(), createTestUser()])
+    ownerUser = users[0]
+    ;[owner, stranger] = users.map(asCaller) as [McpContractCaller, McpContractCaller]
     ;[postId, lonePostId] = await Promise.all([newPost('held'), newPost('lone')])
     const [open, unlisted, hidden, removed, strangers] = await Promise.all([
       makeList(owner, 'public', 'public'),
@@ -94,7 +95,7 @@ describe('get_my_lists_containing — real DB', () => {
 
   it('names the private list too, as REST does, only for the owner with the exact private grant', async () => {
     const request = createRequest()
-    await request.authenticateAs(owner)
+    await request.authenticateAs(ownerUser)
     const rest = await request
       .get('/api/v1/lists/contains')
       .query({ item_type: 'post', entity_id: postId })
@@ -137,7 +138,7 @@ describe('get_my_lists_containing — real DB', () => {
       ),
     ).toEqual(expect.stringContaining('entity_id'))
     expect(
-      await getMyListsContainingTool.function(owner)({
+      await getMyListsContainingTool.function(ownerUser)({
         item_type: 'post',
         entity_id: 'not-a-uuid',
       }),
