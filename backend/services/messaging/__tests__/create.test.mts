@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createTestUser } from '@voucha/test-helpers'
+import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import {
   findOrCreateDirectConversation,
   createGroupConversation,
@@ -76,7 +76,12 @@ describe('createConversationMessage', () => {
     const recipient = await createTestUser()
 
     const conversation = await findOrCreateDirectConversation(sender.id, recipient.id)
-    const message = await createConversationMessage(sender.id, conversation.id, 'Hello!')
+    const message = await createConversationMessage(
+      sender.id,
+      WEB_PROVENANCE,
+      conversation.id,
+      'Hello!',
+    )
 
     expect(message.id).toBeTruthy()
     expect(message.conversation_id).toBe(conversation.id)

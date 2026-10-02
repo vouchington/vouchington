@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
-import { createOpenAIModerationResponse, createTestUser } from '@voucha/test-helpers'
+import {
+  createOpenAIModerationResponse,
+  createTestUser,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createConversation,
@@ -48,7 +52,10 @@ describe('member transcript contract', () => {
     })
     expect(first.body.assistant_message.content).toEqual({ role: 'assistant', content: 'Hi' })
     await expect(getConversationMessagesByConversationId(conversation.id)).resolves.toHaveLength(2)
-    await createConversationMessage(conversation.id, user.id, { role: 'assistant', content: null })
+    await createConversationMessage(conversation.id, user.id, WEB_PROVENANCE, {
+      role: 'assistant',
+      content: null,
+    })
     const retry = await request.post(path).send(body).expect(200)
     expect(retry.body).toEqual(first.body)
     await expect(getConversationMessagesByConversationId(conversation.id)).resolves.toHaveLength(3)
@@ -56,6 +63,7 @@ describe('member transcript contract', () => {
     const storedRetry = await createClientGeneratedChatTurn({
       conversationId: conversation.id,
       createdById: user.id,
+      provenance: WEB_PROVENANCE,
       userMessageId: body.user_message_id,
       assistantMessageId: body.assistant_message_id,
       message: body.message,
@@ -129,7 +137,7 @@ describe('member transcript contract', () => {
   it('scopes message identity to its conversation and never blocks on an incomplete placeholder', async () => {
     const user = await createTestUser()
     const other = await createConversation(user.id, 'Incomplete transcript')
-    const placeholder = await createConversationMessage(other.id, user.id, {
+    const placeholder = await createConversationMessage(other.id, user.id, WEB_PROVENANCE, {
       role: 'assistant',
       content: null,
     })
@@ -160,8 +168,14 @@ describe('member transcript contract', () => {
     const conversation = await createConversation(user.id, 'Transcript')
     const request = createRequest()
     await request.authenticateAs(user)
-    await createConversationMessage(conversation.id, user.id, { role: 'user', content: 'Hello' })
-    await createConversationMessage(conversation.id, user.id, { role: 'assistant', content: null })
+    await createConversationMessage(conversation.id, user.id, WEB_PROVENANCE, {
+      role: 'user',
+      content: 'Hello',
+    })
+    await createConversationMessage(conversation.id, user.id, WEB_PROVENANCE, {
+      role: 'assistant',
+      content: null,
+    })
     const path = `/api/v1/my/conversations/${conversation.id}/messages`
     const first = await request.get(path).query({ limit: '1' }).expect(200)
     expect(first.body.results[0].completion.status).toBe('incomplete')
@@ -180,7 +194,7 @@ describe('member transcript contract', () => {
       'title',
       'updated_at',
     ])
-    const failed = await createConversationMessage(conversation.id, user.id, {
+    const failed = await createConversationMessage(conversation.id, user.id, WEB_PROVENANCE, {
       role: 'assistant',
       content: 'Partial',
       error: 'Interrupted',

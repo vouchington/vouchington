@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createSystemUser } from '@voucha/test-helpers'
+import { createSystemUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import {
   ClientGeneratedTurnIdentityConflictError,
   createClientGeneratedChatTurn,
@@ -71,7 +71,7 @@ describe('conversations-messages service (conversations)', () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createSystemUser(`test-user-${random}`)
     const conversation = await createConversation(user.id, 'Test Conversation')
-    const message = await createConversationMessage(conversation.id, user.id, {
+    const message = await createConversationMessage(conversation.id, user.id, WEB_PROVENANCE, {
       role: 'user',
       content: 'Hello',
     })
@@ -85,11 +85,11 @@ describe('conversations-messages service (conversations)', () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createSystemUser(`test-user-${random}`)
     const conversation = await createConversation(user.id, 'Test Conversation')
-    const message1 = await createConversationMessage(conversation.id, user.id, {
+    const message1 = await createConversationMessage(conversation.id, user.id, WEB_PROVENANCE, {
       role: 'user',
       content: 'Hello',
     })
-    const message2 = await createConversationMessage(conversation.id, user.id, {
+    const message2 = await createConversationMessage(conversation.id, user.id, WEB_PROVENANCE, {
       role: 'user',
       content: 'World',
     })
@@ -110,6 +110,7 @@ describe('conversations-messages service (conversations)', () => {
       assistantMessageId: conversation.id,
       conversationId: conversation.id,
       createdById: user.id,
+      provenance: WEB_PROVENANCE,
       message: 'Summarize my rewards profile',
       assistantContent: 'Use transferable points first.',
       modelProvider: 'apple_foundation',
@@ -168,7 +169,10 @@ describe('conversations-messages service (conversations)', () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createSystemUser(`test-user-${random}`)
     const conversation = await createConversation(user.id, 'Pending placeholder')
-    await createConversationMessage(conversation.id, user.id, { role: 'assistant', content: null })
+    await createConversationMessage(conversation.id, user.id, WEB_PROVENANCE, {
+      role: 'assistant',
+      content: null,
+    })
 
     await createClientGeneratedChatTurn(turnParams(user.id, conversation.id))
 
@@ -205,6 +209,7 @@ function turnParams(userId: string, conversationId: string) {
     assistantMessageId: conversationId,
     conversationId,
     createdById: userId,
+    provenance: WEB_PROVENANCE,
     message: 'Summarize my rewards profile',
     assistantContent: 'Use transferable points first.',
     modelProvider: 'apple_foundation' as const,

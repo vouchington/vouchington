@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { AgentModelProvider } from '@voucha/types/entities/agent-model'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { appendConversationMessageReturning } from './chat-content.mts'
 import type { ConversationMessage } from './types.mts'
 
@@ -21,6 +22,8 @@ type ClientGeneratedChatTurnParams = {
   userMessageId: string
   assistantMessageId: string
   createdById: string
+  /** Recorded on both stored messages; not part of the turn identity, so a retry replays it. */
+  provenance: ContentProvenance
   message: string
   assistantContent: string
   modelProvider: ClientGeneratedChatModelProvider
@@ -38,6 +41,7 @@ export async function createClientGeneratedChatTurn(
     userMessageId,
     assistantMessageId,
     createdById,
+    provenance,
     message,
     assistantContent,
     modelProvider,
@@ -56,8 +60,14 @@ export async function createClientGeneratedChatTurn(
     return replay
   }
   const userInsert = sql`/* createClientGeneratedChatTurnUser */
-    INSERT INTO conversation_messages (id, conversation_id, created_by_id, content)
-    VALUES (${userMessageId}, ${conversationId}, ${createdById}, ${JSON.stringify({ role: 'user', content: message, turn_key: turnKey })})
+    INSERT INTO conversation_messages (
+      id, conversation_id, created_by_id, created_via, created_via_oauth_client_id, content
+    )
+    VALUES (
+      ${userMessageId}, ${conversationId}, ${createdById}, ${provenance.createdVia},
+      ${provenance.oauthClientId},
+      ${JSON.stringify({ role: 'user', content: message, turn_key: turnKey })}
+    )
     RETURNING
   `
   appendConversationMessageReturning(userInsert)
@@ -65,14 +75,20 @@ export async function createClientGeneratedChatTurn(
   const userMessage = userMessageResult.rows[0]!
 
   const assistantInsert = sql`/* createClientGeneratedChatTurnAssistant */
-    INSERT INTO conversation_messages (id, conversation_id, created_by_id, content)
-    VALUES (${assistantMessageId}, ${conversationId}, ${createdById}, ${JSON.stringify({
-      role: 'assistant',
-      content: assistantContent,
-      turn_key: turnKey,
-      model_provider: modelProvider,
-      model_name: modelName,
-    })})
+    INSERT INTO conversation_messages (
+      id, conversation_id, created_by_id, created_via, created_via_oauth_client_id, content
+    )
+    VALUES (
+      ${assistantMessageId}, ${conversationId}, ${createdById}, ${provenance.createdVia},
+      ${provenance.oauthClientId},
+      ${JSON.stringify({
+        role: 'assistant',
+        content: assistantContent,
+        turn_key: turnKey,
+        model_provider: modelProvider,
+        model_name: modelName,
+      })}
+    )
     RETURNING
   `
   appendConversationMessageReturning(assistantInsert)

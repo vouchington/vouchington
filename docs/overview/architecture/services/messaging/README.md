@@ -10,7 +10,7 @@ tables for the `direct_message` channel type.
 
 - `findOrCreateDirectConversation(currentUserId, recipientUserId)` — dedup or create a 1:1 DM
 - `createGroupConversation(currentUserId, recipientUserIds)` — create an N-party DM
-- `createConversationMessage(currentUserId, conversationId, bodyText)` — send a message
+- `createConversationMessage(currentUserId, provenance, conversationId, bodyText)` — send a message, recording the sending request's [content provenance](../../../../requirements/content/content-provenance.md)
 - `getMyDirectConversations(currentUserId, opts)` — list current user's DM threads
 - `getConversationMessages(conversationId, opts)` — list messages in a thread
 - `getConversationParticipants(conversationId)` — list active participants

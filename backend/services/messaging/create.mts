@@ -3,6 +3,7 @@ import sql from 'sql-template-strings'
 import { enqueueOnConversationMessageCreated } from '@queues/entity-listeners/enqueues'
 import type { DirectConversation, DirectMessage } from './types.mts'
 import createHttpError from 'http-errors'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 
 export async function findOrCreateDirectConversation(
   currentUserId: string,
@@ -123,6 +124,7 @@ export async function createGroupConversation(
 
 export async function createConversationMessage(
   currentUserId: string,
+  provenance: ContentProvenance,
   conversationId: string,
   bodyText: string,
 ): Promise<DirectMessage> {
@@ -135,8 +137,11 @@ export async function createConversationMessage(
         AND removed_at IS NULL
     ),
     new_message AS (
-      INSERT INTO conversation_messages (conversation_id, kind, body_text, created_by_id)
-      SELECT ${conversationId}, 'message', ${bodyText}, ${currentUserId}
+      INSERT INTO conversation_messages (
+        conversation_id, kind, body_text, created_by_id, created_via, created_via_oauth_client_id
+      )
+      SELECT ${conversationId}, 'message', ${bodyText}, ${currentUserId},
+        ${provenance.createdVia}, ${provenance.oauthClientId}
       WHERE EXISTS (SELECT 1 FROM participant_check)
       RETURNING id, conversation_id, body_text, created_by_id, created_at, updated_at, deleted_at
     ),

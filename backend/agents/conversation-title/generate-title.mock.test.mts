@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
-import { createTestUser, findAiUsageRecordForAgent, pollUntilNotNull } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  findAiUsageRecordForAgent,
+  pollUntilNotNull,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import {
   createConversation,
   createConversationMessage,
@@ -60,7 +65,7 @@ describe('generateChatTitle', () => {
   it('generates title from messages using OpenAI', async () => {
     const suffix = crypto.randomUUID().slice(0, 8)
     const conv = await createConversation(user.id, `Chat ${suffix}`)
-    await createConversationMessage(conv.id, user.id, {
+    await createConversationMessage(conv.id, user.id, WEB_PROVENANCE, {
       role: 'user',
       content: `Hello, can you help me with something? ${suffix}`,
     })
@@ -81,7 +86,7 @@ describe('generateChatTitle', () => {
   it('passes SYNCHRONOUS_REQUEST_RETRY_POLICY.maxRetries (1) into createOpenAIResponse options', async () => {
     const suffix = crypto.randomUUID().slice(0, 8)
     const conv = await createConversation(user.id, `Retry budget conv ${suffix}`)
-    await createConversationMessage(conv.id, user.id, {
+    await createConversationMessage(conv.id, user.id, WEB_PROVENANCE, {
       role: 'user',
       content: `Hello, can you help me with something? ${suffix}`,
     })
@@ -98,7 +103,7 @@ describe('generateChatTitle', () => {
   it('returns "New Conversation" when createOpenAIResponse returns empty text', async () => {
     const suffix = crypto.randomUUID().slice(0, 8)
     const conv = await createConversation(user.id, `Empty response ${suffix}`)
-    await createConversationMessage(conv.id, user.id, {
+    await createConversationMessage(conv.id, user.id, WEB_PROVENANCE, {
       role: 'user',
       content: `Some message ${suffix}`,
     })
@@ -112,7 +117,7 @@ describe('generateChatTitle', () => {
   it('records a ledger row from an incomplete response before the error propagates', async () => {
     const suffix = crypto.randomUUID().slice(0, 8)
     const conv = await createConversation(user.id, `Incomplete response conv ${suffix}`)
-    await createConversationMessage(conv.id, user.id, {
+    await createConversationMessage(conv.id, user.id, WEB_PROVENANCE, {
       role: 'user',
       content: `Hello, can you help me with something? ${suffix}`,
     })

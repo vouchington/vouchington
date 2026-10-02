@@ -40,8 +40,14 @@ Every user-content table carries two columns:
 
 The tables are `posts` (including comments, stories and topic recommendations), `communities`,
 `topics`, `lists`, `rss_feeds`, `moderation_reports`, `moderation_appeals`,
-`community_applications`, `user_referral_program_links` and `user_rss_feed_import_batches`.
-`conversation_messages` gains the same columns in a later stage, together with its writers.
+`community_applications`, `user_referral_program_links`, `user_rss_feed_import_batches` and
+`conversation_messages`.
+
+`conversation_messages` is the partitioned table behind chat, direct-message, modmail and
+client-generated turns. Every message records the channel of the request that sent it, so the two
+messages of a client-generated turn share one channel, and a retry that replays the turn keeps the
+channel of the request that stored it. The columns stay out of every conversation and message
+response.
 
 `user_rss_feed_import_batches` holds the channel of the request that submitted a user RSS feed
 import. A queue job creates the feeds later, so it reads the batch's stored provenance instead of
@@ -84,13 +90,14 @@ or replacing its redirect URIs clears them. Labels stay generic until the exposu
 
 The enum, columns, checks, indexes and immutability triggers live in the canonical table creators.
 The `0726-00-01` through `0726-00-09` migrations add the cross-file OAuth client foreign keys, and
-`0726-00-11` adds the foreign key and trigger for `user_rss_feed_import_batches`, whose creator
-runs before `oauth_clients` and the immutability function exist.
-`created_via` is `NOT NULL` with no default on all ten tables; fresh-bootstrap seeds explicitly
+`0726-00-11` and `0726-00-12` add the foreign key and trigger for `user_rss_feed_import_batches`
+and `conversation_messages`, whose creators run before `oauth_clients` and the immutability
+function exist.
+`created_via` is `NOT NULL` with no default on all eleven tables; fresh-bootstrap seeds explicitly
 record `system`. See the [prelaunch schema policy](../../development/postgres-schema-rules.md#prelaunch-relational-storage).
 [`schema-content-provenance.test.mts`](../../../backend/data-stores/psql/__tests__/schema-content-provenance.test.mts)
 checks every table's columns, validated constraints, valid index and trigger, the trigger on a real
-`posts` partition row, the OAuth client label columns, and that no view references either
+`posts` partition row and on rows of the partitioned `conversation_messages` table, the OAuth client label columns, and that no view references either
 provenance column.
 
 ## Recording

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestUser } from '@voucha/test-helpers'
+import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   createConversation,
@@ -83,7 +83,7 @@ describe('POST /api/v1/my/conversations/:conversationId/title', () => {
     try {
       const suffix = crypto.randomUUID().slice(0, 8)
       const conv = await createConversation(user.id, '')
-      await createConversationMessage(conv.id, user.id, {
+      await createConversationMessage(conv.id, user.id, WEB_PROVENANCE, {
         role: 'user',
         content: `Hello, what is the weather? ${suffix}`,
       })
@@ -121,7 +121,7 @@ describe('POST /api/v1/my/conversations/:conversationId/title', () => {
     try {
       const suffix = crypto.randomUUID().slice(0, 8)
       const conv = await createConversation(user.id, '')
-      await createConversationMessage(conv.id, user.id, {
+      await createConversationMessage(conv.id, user.id, WEB_PROVENANCE, {
         role: 'user',
         content: `Hello, what is the weather? ${suffix}`,
       })

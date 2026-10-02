@@ -157,6 +157,9 @@ CREATE TABLE IF NOT EXISTS conversation_messages (
   updated_by_id UUID REFERENCES users ON DELETE SET NULL,
   deleted_at TIMESTAMPTZ,
   deleted_by_id UUID REFERENCES users ON DELETE SET NULL,
+  created_via content_creation_channels NOT NULL,
+  created_via_oauth_client_id UUID,
+  CONSTRAINT conversation_messages_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
 
   -- Chat messages use content JSONB; email messages use body_text/body_html
   kind conversation_message_kinds NOT NULL DEFAULT 'chat',
@@ -225,9 +228,15 @@ CREATE INDEX IF NOT EXISTS idx_conv_messages__email_message_id
 ON conversation_messages (email_message_id)
 WHERE email_message_id IS NOT NULL;
 
+CREATE INDEX IF NOT EXISTS idx_conversation_messages__created_via_oauth_client_id
+ON conversation_messages (created_via_oauth_client_id)
+WHERE created_via_oauth_client_id IS NOT NULL;
+
 COMMENT ON TABLE conversation_messages IS 'Individual messages within a conversation, range-partitioned by conversation UUIDv7. Chat messages use content JSONB; email-channel messages use body_text/body_html.';
 COMMENT ON COLUMN conversation_messages.conversation_id IS 'The conversation this message belongs to; also the partition key.';
 COMMENT ON COLUMN conversation_messages.created_by_id IS 'The registered user who sent this message. NULL when the sender is unavailable.';
+COMMENT ON COLUMN conversation_messages.created_via IS 'Immutable channel of the request or job that wrote the message; system for platform-written messages.';
+COMMENT ON COLUMN conversation_messages.created_via_oauth_client_id IS 'Immutable OAuth client that wrote the message through the API or MCP; NULL for session, API-key, and system writes.';
 COMMENT ON COLUMN conversation_messages.kind IS 'Message kind: chat, email, or internal note.';
 COMMENT ON COLUMN conversation_messages.direction IS 'Email/note direction. inbound = external contact, outbound = internal/admin authored.';
 COMMENT ON COLUMN conversation_messages.content IS 'Message content stored as JSONB. Used for chat messages.';

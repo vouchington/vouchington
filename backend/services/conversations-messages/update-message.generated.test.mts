@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createSystemUser } from '@voucha/test-helpers'
+import { createSystemUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import {
   createConversation,
   createConversationMessage,
@@ -13,7 +13,7 @@ describe('updateConversationMessageContent', () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createSystemUser(`test-user-${random}`)
     const conversation = await createConversation(user.id, 'Update Test')
-    const message = await createConversationMessage(conversation.id, user.id, {
+    const message = await createConversationMessage(conversation.id, user.id, WEB_PROVENANCE, {
       role: 'assistant',
       content: null,
     })
@@ -33,7 +33,7 @@ describe('updateConversationMessageContent', () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createSystemUser(`test-user-${random}`)
     const conversation = await createConversation(user.id, 'Error Payload Test')
-    const message = await createConversationMessage(conversation.id, user.id, {
+    const message = await createConversationMessage(conversation.id, user.id, WEB_PROVENANCE, {
       role: 'assistant',
       content: null,
     })
@@ -54,11 +54,11 @@ describe('updateConversationMessageContent', () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createSystemUser(`test-user-${random}`)
     const conversation = await createConversation(user.id, 'Multiple Messages')
-    const message1 = await createConversationMessage(conversation.id, user.id, {
+    const message1 = await createConversationMessage(conversation.id, user.id, WEB_PROVENANCE, {
       role: 'user',
       content: 'First',
     })
-    const message2 = await createConversationMessage(conversation.id, user.id, {
+    const message2 = await createConversationMessage(conversation.id, user.id, WEB_PROVENANCE, {
       role: 'assistant',
       content: null,
     })
@@ -78,8 +78,11 @@ describe('updateConversationMessageContent', () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createSystemUser(`test-user-${random}`)
     const conversation = await createConversation(user.id, 'Pending transitions')
-    await createConversationMessage(conversation.id, user.id, { role: 'user', content: 'First' })
-    const pending = await createConversationMessage(conversation.id, user.id, {
+    await createConversationMessage(conversation.id, user.id, WEB_PROVENANCE, {
+      role: 'user',
+      content: 'First',
+    })
+    const pending = await createConversationMessage(conversation.id, user.id, WEB_PROVENANCE, {
       role: 'assistant',
       content: null,
     })
@@ -89,8 +92,11 @@ describe('updateConversationMessageContent', () => {
       content: null,
       error: 'provider failed',
     })
-    await createConversationMessage(conversation.id, user.id, { role: 'user', content: 'Retry' })
-    const retry = await createConversationMessage(conversation.id, user.id, {
+    await createConversationMessage(conversation.id, user.id, WEB_PROVENANCE, {
+      role: 'user',
+      content: 'Retry',
+    })
+    const retry = await createConversationMessage(conversation.id, user.id, WEB_PROVENANCE, {
       role: 'assistant',
       content: null,
     })

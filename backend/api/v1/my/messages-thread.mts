@@ -9,6 +9,7 @@ import {
 } from '@services/messaging'
 import { assertNotSuspended } from '@services/users'
 import { isUUID } from '@modules/utils'
+import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../response-contract.mts'
 import {
@@ -62,6 +63,7 @@ app.route('/api/v1/my/messages/:conversationId/messages').get(async (ctx: Contex
 // POST /api/v1/my/messages/:conversationId/messages
 app.route('/api/v1/my/messages/:conversationId/messages').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/messages/:conversationId/messages')
+  const provenance = getRequestContentProvenance()
   assertNotSuspended(currentUser)
 
   const conversationId = ctx.params.conversationId!
@@ -77,7 +79,12 @@ app.route('/api/v1/my/messages/:conversationId/messages').post(async (ctx: Conte
   // The schema fixes the type; a whitespace-only message is a semantic rejection.
   ctx.assert(body.text.trim().length > 0, 400, 'text is required')
 
-  const message = await createConversationMessage(currentUser.id, conversationId, body.text)
+  const message = await createConversationMessage(
+    currentUser.id,
+    provenance,
+    conversationId,
+    body.text,
+  )
 
   ctx.setStatus(201)
   ctx.json({ message })

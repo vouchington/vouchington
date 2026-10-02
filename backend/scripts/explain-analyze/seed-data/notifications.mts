@@ -63,10 +63,10 @@ export async function seedConversations(messageCount = 100): Promise<void> {
         const content = JSON.stringify({ text: `Seed message ${idx}` })
         values.push(conversationId, msgCreatedById, content)
         const base = values.length - 2
-        rows.push(`($${base}, $${base + 1}, $${base + 2}::jsonb)`)
+        rows.push(`($${base}, $${base + 1}, 'system', $${base + 2}::jsonb)`)
       }
       await query(
-        `/* seedExplainData */ INSERT INTO conversation_messages (conversation_id, created_by_id, content) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
+        `/* seedExplainData */ INSERT INTO conversation_messages (conversation_id, created_by_id, created_via, content) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
         values,
       )
     }
