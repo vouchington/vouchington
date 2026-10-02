@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { createTestUser, getTopicAliasIdForTest } from '@voucha/test-helpers'
+import { createTestUser, getTopicAliasIdForTest, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { getTopicBySlug } from '@services/topics/get'
 import { createSourceInTransaction } from '../create-source-helpers.mts'
 
@@ -11,6 +11,7 @@ describe('RSS source creation transaction failures', () => {
 
     await expect(
       createSourceInTransaction(
+        WEB_PROVENANCE,
         user.id,
         randomUUID(),
         randomUUID(),
