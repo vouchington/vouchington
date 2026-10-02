@@ -9,17 +9,17 @@ export async function seedPruningProof(): Promise<void> {
   )
   await write(
     `/* seedPruningProofTopics */ INSERT INTO topics
-      (id, name, slug, bedrock_nova_multimodal_v1_content_sha256)
-     VALUES ($1, 'Pruning proof topic', 'pruning-proof-topic', decode(repeat('00', 32), 'hex')),
-            ($2, 'Pruning proof other', 'pruning-proof-other', decode(repeat('01', 32), 'hex'))`,
+      (created_via, id, name, slug, bedrock_nova_multimodal_v1_content_sha256)
+     VALUES ('system', $1, 'Pruning proof topic', 'pruning-proof-topic', decode(repeat('00', 32), 'hex')),
+            ('system', $2, 'Pruning proof other', 'pruning-proof-other', decode(repeat('01', 32), 'hex'))`,
     [fixture.topicId, fixture.otherTopicId],
   )
   for (const [index, postId] of fixture.posts.entries()) {
     await write(
       `/* seedPruningProofPost */ INSERT INTO posts
-        (id, post_type, title, created_by_id,
+        (created_via, id, post_type, title, created_by_id,
          bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256)
-       VALUES ($1, 'review', $2, $3, decode(repeat('02', 32), 'hex'),
+       VALUES ('system', $1, 'review', $2, $3, decode(repeat('02', 32), 'hex'),
                decode(repeat('03', 32), 'hex'))`,
       [postId, `Pruning proof review ${index}`, fixture.userId],
     )

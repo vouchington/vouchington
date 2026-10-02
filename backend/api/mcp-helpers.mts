@@ -1,3 +1,4 @@
+import { runWithCredentialRequestContext } from '@modules/request-client-info'
 import type { Context } from '@jongleberry/api-server'
 import { hasScopeAudience, withScopePrerequisites } from '@modules/scopes'
 import {
@@ -31,83 +32,95 @@ export async function dispatchMcpRequest(ctx: Context, config: McpServerConfig):
     ctx.set('WWW-Authenticate', buildMcpBearerChallenge(config, { error }))
     ctx.throw(401, 'Unauthorized')
   }
-  const { owner, scopes } = authentication
-  const audit = startMcpRequestAudit(ctx, config, {
-    ownerId: owner.id,
-    credential: authentication,
-  })
-  // Registered before any rejection below so every outcome of a verified credential is metered.
-  const usage = startMcpUsageMeter(ctx, config, authentication)
-  if (config.audience === 'admin' && !isAdminUser(owner)) {
-    await audit?.record([unreadMcpCall('role_denied')])
-    ctx.throw(403, 'Administrator role required')
-  }
-  if (config.audience === 'admin' && !hasScopeAudience(scopes, 'admin')) {
-    await audit?.record([unreadMcpCall('insufficient_scope')])
-    ctx.set(
-      'WWW-Authenticate',
-      buildMcpBearerChallenge(config, {
-        error: 'insufficient_scope',
-        scopes: withScopePrerequisites(['mcp.admin:read']),
-      }),
-    )
-    ctx.throw(403, 'Insufficient scope')
-  }
+  return runWithCredentialRequestContext(
+    authentication.credential === 'oauth'
+      ? {
+          interface: 'mcp',
+          credential: 'oauth',
+          client: null,
+          oauthClientId: authentication.oauthClientRowId,
+        }
+      : { interface: 'mcp', credential: 'api_key', client: null, oauthClientId: null },
+    async () => {
+      const { owner, scopes } = authentication
+      const audit = startMcpRequestAudit(ctx, config, {
+        ownerId: owner.id,
+        credential: authentication,
+      })
+      // Registered before any rejection below so every outcome of a verified credential is metered.
+      const usage = startMcpUsageMeter(ctx, config, authentication)
+      if (config.audience === 'admin' && !isAdminUser(owner)) {
+        await audit?.record([unreadMcpCall('role_denied')])
+        ctx.throw(403, 'Administrator role required')
+      }
+      if (config.audience === 'admin' && !hasScopeAudience(scopes, 'admin')) {
+        await audit?.record([unreadMcpCall('insufficient_scope')])
+        ctx.set(
+          'WWW-Authenticate',
+          buildMcpBearerChallenge(config, {
+            error: 'insufficient_scope',
+            scopes: withScopePrerequisites(['mcp.admin:read']),
+          }),
+        )
+        ctx.throw(403, 'Insufficient scope')
+      }
 
-  const rateLimitResult = await checkRouteRateLimit(
-    `POST:${config.routePath}`,
-    { ip: ctx.ip, ...authentication.rateLimitIdentity },
-    owner,
-  )
-  if (rateLimitResult.limited) {
-    await audit?.record([unreadMcpCall('rate_limited')])
-    ctx.set('Retry-After', String(rateLimitResult.retryAfterSeconds))
-    ctx.throw(429, 'Rate limit exceeded')
-  }
-  // The outcome-based usage quota: it counts the requests the API served, not every attempt.
-  const quotaCheck = await usage.checkQuota()
-  if (quotaCheck.limited) {
-    await audit?.record([unreadMcpCall('rate_limited')])
-    ctx.set('Retry-After', String(quotaCheck.retryAfterSeconds))
-    ctx.throw(429, 'Usage quota exceeded')
-  }
-
-  const parsedBody = await readBody(ctx, audit)
-  const user = buildMcpContextUser(owner)
-  if (audit) {
-    if (exceedsMcpAuditBatchLimit(parsedBody)) {
-      await audit.record([unreadMcpCall('invalid_request')])
-      ctx.throw(413, 'Too many JSON-RPC messages')
-    }
-    await audit.record(classifyMcpCalls(parsedBody, user, scopes, config))
-  }
-  // Only OAuth clients can step up, so an API key keeps the in-band JSON-RPC scope error.
-  if (authentication.credential === 'oauth') {
-    const stepUpScopes = findMcpStepUpScopes(parsedBody, user, scopes, config)
-    if (stepUpScopes) {
-      ctx.set(
-        'WWW-Authenticate',
-        buildMcpBearerChallenge(config, { error: 'insufficient_scope', scopes: stepUpScopes }),
+      const rateLimitResult = await checkRouteRateLimit(
+        `POST:${config.routePath}`,
+        { ip: ctx.ip, ...authentication.rateLimitIdentity },
+        owner,
       )
-      ctx.throw(403, 'Insufficient scope')
-    }
-  }
+      if (rateLimitResult.limited) {
+        await audit?.record([unreadMcpCall('rate_limited')])
+        ctx.set('Retry-After', String(rateLimitResult.retryAfterSeconds))
+        ctx.throw(429, 'Rate limit exceeded')
+      }
+      // The outcome-based usage quota: it counts the requests the API served, not every attempt.
+      const quotaCheck = await usage.checkQuota()
+      if (quotaCheck.limited) {
+        await audit?.record([unreadMcpCall('rate_limited')])
+        ctx.set('Retry-After', String(quotaCheck.retryAfterSeconds))
+        ctx.throw(429, 'Usage quota exceeded')
+      }
 
-  return handleMcpHttpRequest({
-    user,
-    permissions: scopes,
-    request: new Request(`http://localhost${config.routePath}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json, text/event-stream',
-      },
-      body: JSON.stringify(parsedBody),
-    }),
-    parsedBody,
-    config,
-    ...(audit ? { onToolError: audit.recordToolError } : {}),
-  })
+      const parsedBody = await readBody(ctx, audit)
+      const user = buildMcpContextUser(owner)
+      if (audit) {
+        if (exceedsMcpAuditBatchLimit(parsedBody)) {
+          await audit.record([unreadMcpCall('invalid_request')])
+          ctx.throw(413, 'Too many JSON-RPC messages')
+        }
+        await audit.record(classifyMcpCalls(parsedBody, user, scopes, config))
+      }
+      // Only OAuth clients can step up, so an API key keeps the in-band JSON-RPC scope error.
+      if (authentication.credential === 'oauth') {
+        const stepUpScopes = findMcpStepUpScopes(parsedBody, user, scopes, config)
+        if (stepUpScopes) {
+          ctx.set(
+            'WWW-Authenticate',
+            buildMcpBearerChallenge(config, { error: 'insufficient_scope', scopes: stepUpScopes }),
+          )
+          ctx.throw(403, 'Insufficient scope')
+        }
+      }
+
+      return handleMcpHttpRequest({
+        user,
+        permissions: scopes,
+        request: new Request(`http://localhost${config.routePath}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json, text/event-stream',
+          },
+          body: JSON.stringify(parsedBody),
+        }),
+        parsedBody,
+        config,
+        ...(audit ? { onToolError: audit.recordToolError } : {}),
+      })
+    },
+  )
 }
 
 // An unreadable or oversized body is still a call from a verified principal, so it is audited

@@ -10,13 +10,13 @@ export async function insertLanguageDetectionPostForTest(params: {
   deleted?: boolean
 }): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* insertLanguageDetectionPostForTest */
-    INSERT INTO posts (
+    INSERT INTO posts (created_via,
       post_type, title, markdown, declared_language, created_by_id, broadcast, privacy, is_anonymous,
       bedrock_nova_multimodal_v1_content_sha256,
       llm_moderation_content_sha256,
       lingua_rs_input_sha256,
       deleted_at
-    ) VALUES (
+    ) VALUES ('system',
       'discussion',
       ${params.title},
       ${params.markdown},
@@ -42,11 +42,11 @@ export async function insertLanguageDetectionCommunityForTest(params: {
   deleted?: boolean
 }): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* insertLanguageDetectionCommunityForTest */
-    INSERT INTO communities (
+    INSERT INTO communities (created_via,
       name, slug, visibility, member_roster_visibility, created_by_id, default_language,
       lingua_rs_input_sha256, deleted_at
     )
-    VALUES (
+    VALUES ('system',
       ${params.name},
       ${params.slug},
       'public',
@@ -96,11 +96,11 @@ export async function insertLanguageDetectionTopicForTest(params: {
   deleted?: boolean
 }): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* insertLanguageDetectionTopicForTest */
-    INSERT INTO topics (
+    INSERT INTO topics (created_via,
       name, slug, created_by_id, topic_type, noindex, allow_reviews,
       bedrock_nova_multimodal_v1_content_sha256, lingua_rs_input_sha256, deleted_at
     )
-    VALUES (
+    VALUES ('system',
       ${params.name},
       ${params.slug},
       ${params.createdById},

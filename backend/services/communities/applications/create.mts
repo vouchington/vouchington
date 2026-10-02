@@ -1,6 +1,7 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { getCommunity } from '../get.mts'
 import { getCommunityMember } from '../members/get.mts'
 import { lockAndAssertNotBanned } from '../bans/lock.mts'
@@ -13,6 +14,7 @@ import type { CommunityApplication } from '../types.mts'
 
 export async function createApplication(
   currentUserId: string,
+  provenance: ContentProvenance,
   communityId: string,
   answers: Record<string, unknown>,
   message?: string,
@@ -40,8 +42,8 @@ export async function createApplication(
 
   const { rows } = await write(
     sql`/* createApplication */
-      INSERT INTO community_applications (community_id, user_id, message)
-      VALUES (${communityId}, ${currentUserId}, ${message ?? null})
+      INSERT INTO community_applications (community_id, user_id, message, created_via, created_via_oauth_client_id)
+      VALUES (${communityId}, ${currentUserId}, ${message ?? null}, ${provenance.createdVia}, ${provenance.oauthClientId})
       RETURNING id`,
     options,
   )

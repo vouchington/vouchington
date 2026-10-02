@@ -20,7 +20,8 @@ export async function insertTestUserReferralProgramLink(opts: {
       url_id,
       label,
       activated_at,
-      parent_link_id
+      parent_link_id,
+      created_via
     )
     VALUES (
       ${opts.userId},
@@ -28,7 +29,8 @@ export async function insertTestUserReferralProgramLink(opts: {
       ${opts.urlId},
       ${opts.label ?? `test-link-${v7()}`},
       CURRENT_TIMESTAMP,
-      ${opts.parentLinkId ?? null}
+      ${opts.parentLinkId ?? null},
+      'system'
     )
     RETURNING id
   `)

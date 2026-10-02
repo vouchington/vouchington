@@ -1330,6 +1330,9 @@ importers:
       '@services/ap-post-likes':
         specifier: workspace:^
         version: link:../services/ap-post-likes
+      '@services/openai-agents':
+        specifier: workspace:^
+        version: link:../services/openai-agents
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
@@ -1342,6 +1345,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../test-helpers
+      '@voucha/tools':
+        specifier: workspace:^
+        version: link:../tools
       node-app-attest:
         specifier: ^1.0.1
         version: 1.0.1
@@ -2244,6 +2250,16 @@ importers:
       '@ts-shared/session-jwt':
         specifier: workspace:^
         version: link:../../../ts-shared/session-jwt
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
+      http-errors:
+        specifier: ^2.0.1
+        version: 2.0.1
+    devDependencies:
+      '@types/http-errors':
+        specifier: ^2.0.5
+        version: 2.0.5
 
   backend/modules/rss-feed-cover-art:
     dependencies:
@@ -3798,6 +3814,9 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
       gray-matter:
         specifier: ^4.0.3
         version: 4.0.3
@@ -5885,6 +5904,9 @@ importers:
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -6364,6 +6386,9 @@ importers:
       '@services/urls-hostnames':
         specifier: workspace:^
         version: link:../urls-hostnames
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
       undici:
         specifier: ^8.11.2
         version: 8.11.2
@@ -7629,6 +7654,9 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -8529,6 +8557,9 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -10780,6 +10811,9 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../modules/pagination
+      '@modules/request-client-info':
+        specifier: workspace:^
+        version: link:../modules/request-client-info
       '@modules/scopes':
         specifier: workspace:^
         version: link:../modules/scopes

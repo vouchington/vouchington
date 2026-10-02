@@ -7,6 +7,7 @@ import {
   insertTestRssFeedItem,
   insertTestTopic,
   insertTestUrlHostname,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { getRssFeedItemElectionVote } from '@services/elections-votes/rss-feed-item'
 import { createRssFeed } from '@services/rss-feeds'
@@ -25,6 +26,7 @@ describe('PUT /api/v1/rss-feed-items/:id/vote Neutral', () => {
     const hostnameId = await insertTestUrlHostname({ hostname: `rss-clear-${suffix}.example.com` })
     await setTopicHostnameLink(topicId, hostnameId)
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://rss-clear-${suffix}.example.com/feed.xml`,
       topic_id: topicId,

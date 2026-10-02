@@ -1,13 +1,13 @@
 import type { PostBroadcast, PostPrivacy, PostType } from '@voucha/types/entities/post'
 
-type ContentCreationChannel = 'web' | 'swift' | 'dotnet' | 'api' | 'mcp' | 'system'
+import type { ContentCreationChannel } from '@voucha/types/entities/content-provenance'
 
 // `INSERT INTO posts ... RETURNING *` reads table `posts`, not `view_posts`.
 // Column nullability follows backend/data-stores/psql/schema-snapshot/markdown/tables/posts.md.
 // node-pg parses timestamptz as Date, bytea as Buffer, xid8/tsvector as text, and vector as number[].
 export type PostsTableRow = {
   id: string
-  created_via: ContentCreationChannel | null
+  created_via: ContentCreationChannel
   created_via_oauth_client_id: string | null
   post_type: PostType
   title: string

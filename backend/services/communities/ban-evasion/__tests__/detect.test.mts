@@ -14,6 +14,7 @@ import {
   insertTestUserReferralProgramLink,
   getTestBanEvasionFlagState,
   getTestModerationReportTransparencyCommunityId,
+  readTestReportProvenanceForUser,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '@services/communities/types'
@@ -211,6 +212,10 @@ describe('detectBanEvasionForMember', () => {
     await expect(getTestModerationReportTransparencyCommunityId(member.id)).resolves.toBe(
       community.id,
     )
+    await expect(readTestReportProvenanceForUser(member.id)).resolves.toEqual({
+      createdVia: 'system',
+      oauthClientId: null,
+    })
   })
 
   it('returns flagged=false when posts exist but no hash or referral match', async () => {

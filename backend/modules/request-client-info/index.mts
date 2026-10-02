@@ -1,9 +1,30 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
-import type { RequestClientInfo } from '@ts-shared/request-client-info'
+import type { ClientFamily, RequestClientInfo } from '@ts-shared/request-client-info'
 import type { IncomingMessage } from 'node:http'
 import type { DeviceTokenPayload } from '@ts-shared/session-jwt'
 
-const requestClientInfoStorage = new AsyncLocalStorage<Readonly<RequestClientInfo>>()
+export type SessionRequestOrigin = {
+  interface: 'rest'
+  credential: 'session'
+  // Null when the request's client information is missing or invalid (observe mode only).
+  client: ClientFamily | null
+  oauthClientId: null
+}
+export type CredentialRequestOrigin =
+  | { interface: 'rest' | 'mcp'; credential: 'api_key'; client: null; oauthClientId: null }
+  // `oauthClientId` is the `oauth_clients.id` row that the access token was issued to.
+  | { interface: 'rest' | 'mcp'; credential: 'oauth'; client: null; oauthClientId: string }
+export type RequestOrigin = SessionRequestOrigin | CredentialRequestOrigin
+
+// The error code both the listener (enforce mode) and content writers return for bad client info.
+export const INVALID_CLIENT_INFO_CODE = 'INVALID_CLIENT_INFO'
+
+type RequestContext = Readonly<{
+  origin: Readonly<RequestOrigin>
+  clientInfo: Readonly<RequestClientInfo> | null
+}>
+
+const requestContextStorage = new AsyncLocalStorage<RequestContext>()
 export type VerifiedDeviceIdentity = Pick<DeviceTokenPayload, 'did' | 'dc'>
 const verifiedDeviceTokens = new WeakMap<
   IncomingMessage,
@@ -11,12 +32,43 @@ const verifiedDeviceTokens = new WeakMap<
 >()
 const bootstrapDeviceIds = new WeakMap<IncomingMessage, string>()
 
-export function runWithRequestClientInfo<T>(value: RequestClientInfo, callback: () => T): T {
-  return requestClientInfoStorage.run(Object.freeze({ ...value }), callback)
+// The session origin's client comes from the validated client information, so the two can't
+// disagree. `null` records a session request whose client information failed validation.
+export function runWithSessionRequestContext<T>(
+  clientInfo: RequestClientInfo | null,
+  callback: () => T,
+): T {
+  const origin: SessionRequestOrigin = {
+    interface: 'rest',
+    credential: 'session',
+    client: clientInfo?.client ?? null,
+    oauthClientId: null,
+  }
+  return requestContextStorage.run(
+    Object.freeze({
+      origin: Object.freeze(origin),
+      clientInfo: clientInfo ? Object.freeze({ ...clientInfo }) : null,
+    }),
+    callback,
+  )
+}
+
+export function runWithCredentialRequestContext<T>(
+  origin: CredentialRequestOrigin,
+  callback: () => T,
+): T {
+  return requestContextStorage.run(
+    Object.freeze({ origin: Object.freeze({ ...origin }), clientInfo: null }),
+    callback,
+  )
+}
+
+export function getOptionalRequestOrigin(): Readonly<RequestOrigin> | undefined {
+  return requestContextStorage.getStore()?.origin
 }
 
 export function getOptionalRequestClientInfo(): Readonly<RequestClientInfo> | undefined {
-  return requestClientInfoStorage.getStore()
+  return requestContextStorage.getStore()?.clientInfo ?? undefined
 }
 
 export function getRequestClientInfo(): Readonly<RequestClientInfo> {

@@ -1,4 +1,5 @@
 import type { PrivateUser } from '@services/users/types'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { Post } from './types.mts'
 import { read, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -22,6 +23,7 @@ export type CreateLinkPostInput = {
  */
 export async function createLinkPost(
   creator: PrivateUser,
+  provenance: ContentProvenance,
   input: CreateLinkPostInput,
   options: { query?: TransactionQuery } = {},
 ): Promise<Post> {
@@ -34,6 +36,7 @@ export async function createLinkPost(
 
   return createPost(
     creator,
+    provenance,
     {
       post_type: 'link',
       url_id,
@@ -48,6 +51,7 @@ export async function createLinkPost(
 
 export async function prepareLinkPost(
   creator: PrivateUser,
+  provenance: ContentProvenance,
   input: CreateLinkPostInput,
   options: { query?: TransactionQuery } = {},
 ) {
@@ -55,6 +59,7 @@ export async function prepareLinkPost(
   const title = input.title?.trim() || (url_id ? await resolveLinkPostTitle(url_id) : null) || ''
   return preparePostWithCommunityReviews(
     creator,
+    provenance,
     { post_type: 'link', url_id, url: url_id ? undefined : url, title, markdown: markdown ?? '' },
     undefined,
     options,

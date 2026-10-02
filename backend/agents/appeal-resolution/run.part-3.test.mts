@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
-import { createTestUser, insertTestUserWarning } from '@voucha/test-helpers'
+import { createTestUser, insertTestUserWarning, WEB_PROVENANCE } from '@voucha/test-helpers'
 import {
   approveModerationAppeal,
   createModerationAppeal,
@@ -27,6 +27,7 @@ describe('runAppealResolutionAgent terminal lifecycle', () => {
     })
     const { appeal } = await createModerationAppeal(
       appellant,
+      WEB_PROVENANCE,
       parseCreateModerationAppealInput({
         target_type: 'warning',
         target_id: warning.id,

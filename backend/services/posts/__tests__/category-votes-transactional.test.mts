@@ -10,6 +10,7 @@ import {
   createTestPost,
   readAllQueueJobs,
   softDeleteUser,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { notifications } from '@queues/notifications/queues'
@@ -23,7 +24,7 @@ describe('transactional post category votes', () => {
     const owner = await createTestUser()
     const editor = await createTestUser({ administrator: true })
     const suffix = Math.random().toString(36).slice(2, 12)
-    const post = await createPost(owner, { title: `No category ${suffix}` })
+    const post = await createPost(owner, WEB_PROVENANCE, { title: `No category ${suffix}` })
     const tag = `editor-${suffix}`
 
     await updatePost(editor, post!, { title: `Edited #${tag} ${suffix}` })
@@ -58,7 +59,7 @@ describe('transactional post category votes', () => {
       insertTestCard({ createdById: owner.id }),
     ])
     const suffix = Math.random().toString(36).slice(2, 12)
-    const post = await createPost(owner, {
+    const post = await createPost(owner, WEB_PROVENANCE, {
       title: `Owner categories ${suffix}`,
       categories: [{ type: 'topic', topic_id: topicA }],
     })

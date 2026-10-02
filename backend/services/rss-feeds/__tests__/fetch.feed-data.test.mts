@@ -16,12 +16,10 @@ import {
 } from '../crawls.mts'
 import { searchRssFeedItems } from '@services/rss-feed-items/search'
 import { createRssFeedItemEmbeddingContent } from '../../rss-feed-items/content.mts'
-import { createTestTopic, insertTestRssFeedItem } from '@voucha/test-helpers'
+import { createTestTopic, insertTestRssFeedItem, WEB_PROVENANCE } from '@voucha/test-helpers'
 
 const mockCrawlerRss = vi.fn<typeof CrawlerRss>()
-
 const mockCheckRssFeedCrawlable = vi.fn<typeof checkRssFeedCrawlable>()
-
 function createMockFeedFixture(label = Math.random().toString(36).slice(2, 15)) {
   const xml = `<rss version="2.0"><channel><title>Mock ${label}</title><item><link>https://example.com/item-${label}</link><guid>guid-${label}</guid><title>Item ${label}</title></item></channel></rss>`
   return [
@@ -29,7 +27,6 @@ function createMockFeedFixture(label = Math.random().toString(36).slice(2, 15)) 
     createHash('sha256').update(xml).digest(),
   ] as const
 }
-
 function fetchRssFeedForTest(...args: Parameters<typeof fetchRssFeed>) {
   const [rssFeedId, ttl, overrideUrl, hopCount, dependencies] = args
   return fetchRssFeed(rssFeedId, ttl, overrideUrl, hopCount, {
@@ -38,7 +35,6 @@ function fetchRssFeedForTest(...args: Parameters<typeof fetchRssFeed>) {
     ...dependencies,
   })
 }
-
 describe('fetch.feed-data', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -51,7 +47,6 @@ describe('fetch.feed-data', () => {
       headers: { etag: null, lastModified: null },
     })
   })
-
   it('parseRssLastModifiedHeader preserves dates with two-digit years and numeric timezones', () => {
     const parsed = parseRssLastModifiedHeader('Sun, 06 Nov 94 08:49:37 +0000')
     expect(parsed?.toISOString()).toBe('1994-11-06T08:49:37.000Z')
@@ -65,6 +60,7 @@ describe('fetch.feed-data', () => {
       hostname: `fetch-mock-${random}.example.com`,
     })
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/feed-${random}.xml`,
       topic_id: topic.id,
@@ -91,6 +87,7 @@ describe('fetch.feed-data', () => {
       hostname: `fetch-chapters-${random}.example.com`,
     })
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/chapters-${random}.xml`,
       topic_id: topic.id,
@@ -164,6 +161,7 @@ describe('fetch.feed-data', () => {
       hostname: `fetch-latest-${random}.example.com`,
     })
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/f-${random}.xml`,
       topic_id: topic.id,
@@ -188,6 +186,7 @@ describe('fetch.feed-data', () => {
       hostname: `fetch-304-${random}.example.com`,
     })
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/304-${random}.xml`,
       topic_id: topic.id,
@@ -236,6 +235,7 @@ describe('fetch.feed-data', () => {
       hostname: `fetch-headers-${random}.example.com`,
     })
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/headers-${random}.xml`,
       topic_id: topic.id,
@@ -270,6 +270,7 @@ describe('fetch.feed-data', () => {
       hostname: `fetch-bad-last-modified-${random}.example.com`,
     })
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/bad-last-modified-${random}.xml`,
       topic_id: topic.id,

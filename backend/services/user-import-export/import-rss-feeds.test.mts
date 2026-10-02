@@ -4,6 +4,7 @@ import {
   createTestUser,
   getRssFeedImportRequestForTest,
   insertTestRssFeedDirect,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { importSingleRssFeed } from './import-rss-feeds.mts'
@@ -25,7 +26,7 @@ describe('importSingleRssFeed', () => {
       rss_feed_id: rssFeed.id,
     })
 
-    const result = await importSingleRssFeed(user, rssFeedUrl, {
+    const result = await importSingleRssFeed(user, WEB_PROVENANCE, rssFeedUrl, {
       createSourceFromUrlImpl,
     })
 
@@ -52,13 +53,14 @@ describe('importSingleRssFeed', () => {
       rss_feed_id: rssFeed.id,
     })
 
-    const result = await importSingleRssFeed(user, youtubeUrl, {
+    const result = await importSingleRssFeed(user, WEB_PROVENANCE, youtubeUrl, {
       createSourceFromUrlImpl,
     })
 
     expect(result).toMatchObject({ input: youtubeUrl, status: 'source_created' })
     expect(createSourceFromUrlImpl).toHaveBeenCalledWith(
       expect.objectContaining({ id: user.id }),
+      WEB_PROVENANCE,
       youtubeUrl,
       expect.any(Object),
     )
@@ -68,7 +70,7 @@ describe('importSingleRssFeed', () => {
     const hostname = `http-https-dedup-${Date.now()}.example.com`
     const rssFeed = await insertTestRssFeedDirect({ rssFeedUrl: `https://${hostname}/feed.xml` })
 
-    const result = await importSingleRssFeed(user, `http://${hostname}/feed.xml`)
+    const result = await importSingleRssFeed(user, WEB_PROVENANCE, `http://${hostname}/feed.xml`)
 
     expect(result).toMatchObject({
       input: `http://${hostname}/feed.xml`,

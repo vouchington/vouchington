@@ -36,7 +36,7 @@ $$;
 
 CREATE TABLE IF NOT EXISTS moderation_appeals (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  created_via content_creation_channels,
+  created_via content_creation_channels NOT NULL,
   created_via_oauth_client_id UUID,
   CONSTRAINT moderation_appeals_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
   appellant_id uuid NOT NULL REFERENCES users (id) ON DELETE CASCADE,

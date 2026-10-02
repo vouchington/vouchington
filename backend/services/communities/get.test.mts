@@ -5,6 +5,7 @@ import {
   insertTestCommunityMember,
   removeTestCommunityMember,
   setCommunityLanguageDetectionFieldsForTest,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import {
@@ -142,7 +143,7 @@ describe('get', () => {
       const inserted = await insertTestCommunity({ createdById: owner.id, visibility: 'private' })
       await insertTestCommunityMember({ communityId: inserted.id, userId: owner.id, role: 'owner' })
       const applicant = await createTestUser()
-      await createApplication(applicant.id, inserted.id, {})
+      await createApplication(applicant.id, WEB_PROVENANCE, inserted.id, {})
       await expect(loadCommunityForViewer(applicant, inserted.id)).rejects.toMatchObject({
         status: 404,
         message: 'Community not found',
@@ -188,7 +189,7 @@ describe('get', () => {
       const inserted = await insertTestCommunity({ createdById: owner.id, visibility: 'private' })
       await insertTestCommunityMember({ communityId: inserted.id, userId: owner.id, role: 'owner' })
       const applicant = await createTestUser()
-      await createApplication(applicant.id, inserted.id, {})
+      await createApplication(applicant.id, WEB_PROVENANCE, inserted.id, {})
       const result = await loadCommunityForViewerOrApplicant(applicant, inserted.id)
       expect(result.community.id).toBe(inserted.id)
       expect(result.membership).toBeNull()

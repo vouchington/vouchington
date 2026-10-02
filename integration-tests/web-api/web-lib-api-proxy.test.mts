@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { randomUUID } from 'node:crypto'
 import http from 'node:http'
 import serverApp from '../../backend/entrypoints/api/index.mts'
-import { listenOnFetchSafeLoopback } from './routes.mts'
+import { createWebApiTestServer, listenOnFetchSafeLoopback } from './routes.mts'
 import { refreshProxySession, recordProxyReferralAttribution } from '@/lib/api/server/proxy'
 import { createTestUser } from '../../backend/test-helpers/index.mts'
 import { createDeviceAndSessionTokens } from '../../backend/services/jwt-session/index.mts'
@@ -18,7 +18,7 @@ describe('web/lib/api/server/proxy — integration', () => {
     previousApiBaseUrl = process.env.API_BASE_URL
     previousPublicApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
 
-    backendServer = http.createServer(serverApp.callback())
+    backendServer = createWebApiTestServer(serverApp.callback())
     backendBaseUrl = await listenOnFetchSafeLoopback(backendServer)
     process.env.API_BASE_URL = backendBaseUrl
     process.env.NEXT_PUBLIC_API_BASE_URL = backendBaseUrl

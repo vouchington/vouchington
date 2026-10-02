@@ -1,6 +1,9 @@
 import Sentry from './sentry.mts'
 import { isExpectedCrawlerOperationalError } from './expected-crawler-operational-error.mts'
-import { getOptionalRequestClientInfo } from '@modules/request-client-info'
+import {
+  getOptionalRequestClientInfo,
+  getOptionalRequestOrigin,
+} from '@modules/request-client-info'
 export { recordClassifierRunAlarm } from './classifier-run-alarm.mts'
 export { recordCopyrightReviewTargetBreach } from './copyright-review-target-breach.mts'
 export { recordOffAllowlistEgress } from './egress-guardrail.mts'
@@ -64,40 +67,39 @@ export default function onError(err: Error) {
   // Check if error should be suppressed from logging (test errors, expected scenarios)
   if (extendedErr.tags && extendedErr.tags.suppressLogging === true) return
 
+  const requestTags = getRequestContextTags()
   const clientInfo = getOptionalRequestClientInfo()
-  if (shouldLogToConsole()) {
-    console.error(
-      err,
-      ...(clientInfo
-        ? [
-            {
-              client: clientInfo.client,
-              client_platform: clientInfo.platform,
-              client_app_version: clientInfo.appVersion,
-              ...(clientInfo.sdkVersion ? { client_sdk_version: clientInfo.sdkVersion } : {}),
-              client_device_id: clientInfo.deviceId,
-              client_ip_address: clientInfo.ipAddress,
-              ...(clientInfo.requestId ? { request_id: clientInfo.requestId } : {}),
-            },
-          ]
-        : []),
-    )
-  }
-
-  const clientTags = clientInfo
-    ? {
-        client: clientInfo.client,
-        client_platform: clientInfo.platform,
-        client_app_version: clientInfo.appVersion,
-        ...(clientInfo.sdkVersion ? { client_sdk_version: clientInfo.sdkVersion } : {}),
-        ...(clientInfo.requestId ? { request_id: clientInfo.requestId } : {}),
-      }
-    : undefined
   const clientExtra = clientInfo
     ? { client_device_id: clientInfo.deviceId, client_ip_address: clientInfo.ipAddress }
     : undefined
+  if (shouldLogToConsole()) {
+    console.error(err, ...(requestTags ? [{ ...requestTags, ...clientExtra }] : []))
+  }
+
   Sentry.captureException(err, {
-    ...((clientTags || extendedErr.tags) && { tags: { ...clientTags, ...extendedErr.tags } }),
+    ...((requestTags || extendedErr.tags) && { tags: { ...requestTags, ...extendedErr.tags } }),
     ...((clientExtra || extendedErr.extra) && { extra: { ...clientExtra, ...extendedErr.extra } }),
   })
+}
+
+// The request's origin always accompanies its client information, so a request without an origin
+// has neither.
+function getRequestContextTags(): Record<string, string> | undefined {
+  const origin = getOptionalRequestOrigin()
+  if (!origin) return undefined
+  const clientInfo = getOptionalRequestClientInfo()
+  return {
+    request_interface: origin.interface,
+    request_credential: origin.credential,
+    ...(origin.oauthClientId ? { oauth_client_id: origin.oauthClientId } : {}),
+    ...(clientInfo
+      ? {
+          client: clientInfo.client,
+          client_platform: clientInfo.platform,
+          client_app_version: clientInfo.appVersion,
+          ...(clientInfo.sdkVersion ? { client_sdk_version: clientInfo.sdkVersion } : {}),
+          ...(clientInfo.requestId ? { request_id: clientInfo.requestId } : {}),
+        }
+      : {}),
+  }
 }

@@ -33,8 +33,8 @@ export async function rejectionCode(run: () => Promise<unknown>): Promise<string
 
 export async function createRelationTestCommunity(createdById: string): Promise<string> {
   const { rows } = await write<{ id: string }>(
-    `/* createRelationTestCommunity */ INSERT INTO communities (name, slug, created_by_id)
-      VALUES ('Relation test', 'relation-' || replace(uuidv7()::text, '-', ''), $1) RETURNING id`,
+    `/* createRelationTestCommunity */ INSERT INTO communities (created_via, name, slug, created_by_id)
+      VALUES ('system', 'Relation test', 'relation-' || replace(uuidv7()::text, '-', ''), $1) RETURNING id`,
     [createdById],
   )
   return rows[0]!.id

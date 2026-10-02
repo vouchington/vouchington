@@ -11,6 +11,7 @@ import {
   getTopicImportRequestByRecommendationForTest,
   insertPendingTopicImportRequestForTest,
   insertTestRssFeedDirect,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { createTopicRecommendation } from '@services/topic-recommendations'
@@ -32,7 +33,12 @@ describe('user import requests', () => {
   it('records pending topic recommendation imports', async () => {
     const topicName = `Imported Pending Topic ${Date.now()}`
 
-    const [result] = await importTopics(user, [topicName], eligibleForTopicRecommendations())
+    const [result] = await importTopics(
+      user,
+      WEB_PROVENANCE,
+      [topicName],
+      eligibleForTopicRecommendations(),
+    )
 
     expect(result).toMatchObject({
       input: topicName,
@@ -55,7 +61,12 @@ describe('user import requests', () => {
   it('records followed topic imports', async () => {
     const topic = await createTestTopic({ user })
 
-    const [result] = await importTopics(user, [topic.name], eligibleForTopicRecommendations())
+    const [result] = await importTopics(
+      user,
+      WEB_PROVENANCE,
+      [topic.name],
+      eligibleForTopicRecommendations(),
+    )
 
     expect(result).toMatchObject({
       input: topic.name,
@@ -75,10 +86,11 @@ describe('user import requests', () => {
   it('batches existing topic imports while preserving input order', async () => {
     const first = await createTestTopic({ user })
     const second = await createTestTopic({ user })
-    await importTopics(user, [first.name], eligibleForTopicRecommendations())
+    await importTopics(user, WEB_PROVENANCE, [first.name], eligibleForTopicRecommendations())
 
     const results = await importTopics(
       user,
+      WEB_PROVENANCE,
       [first.name, second.name, '   '],
       eligibleForTopicRecommendations(),
     )
@@ -99,6 +111,7 @@ describe('user import requests', () => {
 
     const results = await importTopics(
       user,
+      WEB_PROVENANCE,
       [topic.name, topic.name],
       eligibleForTopicRecommendations(),
     )
@@ -110,7 +123,9 @@ describe('user import requests', () => {
   })
 
   it('rejects topic names that cannot produce a slug', async () => {
-    await expect(importTopics(user, ['!!!'], eligibleForTopicRecommendations())).resolves.toEqual([
+    await expect(
+      importTopics(user, WEB_PROVENANCE, ['!!!'], eligibleForTopicRecommendations()),
+    ).resolves.toEqual([
       {
         input: '!!!',
         status: 'error',
@@ -123,7 +138,7 @@ describe('user import requests', () => {
     const topicName = `Rejected Imported Topic ${randomUUID()}`
 
     await expect(
-      importTopics(user, [topicName], {
+      importTopics(user, WEB_PROVENANCE, [topicName], {
         assertCanCreateTopicRecommendations: async () => {
           throw new Error('recommendation rejected')
         },
@@ -135,12 +150,17 @@ describe('user import requests', () => {
   it('follows existing topics while returning missing recommendations as gated errors', async () => {
     const topic = await createTestTopic({ user })
 
-    const results = await importTopics(user, [topic.name, `Gated Missing Topic ${randomUUID()}`], {
-      assertCanCreateTopicRecommendations: async () => {
-        throw new Error('A verified email address is required to contribute.')
+    const results = await importTopics(
+      user,
+      WEB_PROVENANCE,
+      [topic.name, `Gated Missing Topic ${randomUUID()}`],
+      {
+        assertCanCreateTopicRecommendations: async () => {
+          throw new Error('A verified email address is required to contribute.')
+        },
+        importAttemptId: randomUUID(),
       },
-      importAttemptId: randomUUID(),
-    })
+    )
 
     expect(results).toEqual([
       expect.objectContaining({ status: 'followed', entity_id: topic.id }),
@@ -162,7 +182,7 @@ describe('user import requests', () => {
     }
 
     await expect(
-      importTopics(user, [topic.name], {
+      importTopics(user, WEB_PROVENANCE, [topic.name], {
         ...eligibleForTopicRecommendations(),
         recordImportRequests,
       }),
@@ -178,7 +198,7 @@ describe('user import requests', () => {
       rssFeedUrl,
     })
 
-    const result = await importSingleRssFeed(user, rssFeedUrl)
+    const result = await importSingleRssFeed(user, WEB_PROVENANCE, rssFeedUrl)
 
     expect(result).toMatchObject({
       input: rssFeedUrl,
@@ -199,6 +219,7 @@ describe('user import requests', () => {
     const secondUser = await createTestUser()
     const recommendation = await createTopicRecommendation(
       user,
+      WEB_PROVENANCE,
       {
         topic_title: 'Imported Pending Topic',
         topic_slug: `imported-pending-topic-${Date.now()}`,
@@ -239,6 +260,7 @@ describe('user import requests', () => {
   it('does not fail approval when a pending topic import cannot be followed', async () => {
     const recommendation = await createTopicRecommendation(
       user,
+      WEB_PROVENANCE,
       {
         topic_title: 'Imported Missing Topic',
         topic_slug: `imported-missing-topic-${Date.now()}`,

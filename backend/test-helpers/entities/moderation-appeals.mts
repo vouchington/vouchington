@@ -60,7 +60,8 @@ export async function insertTestModerationAppeal(
         appeal_reason,
         public_response,
         case_id,
-        latest_lifecycle_change_id
+        latest_lifecycle_change_id,
+        created_via
       )
       VALUES (
         ${options.appellantId}::uuid,
@@ -70,7 +71,8 @@ export async function insertTestModerationAppeal(
         ${appealReason},
         ${publicResponse},
         ${caseId},
-        (SELECT id FROM lifecycle_id)
+        (SELECT id FROM lifecycle_id),
+        'system'
       )
       RETURNING *
     ),

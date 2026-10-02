@@ -14,6 +14,7 @@ import {
   insertTestTopic,
   softDeleteTopic,
   mergeTopicForTest,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
@@ -33,6 +34,7 @@ describe('createRssFeedSource', () => {
     const { hostnameId, rssFeedUrlId } = await makeSourceArgs(hostname, feedUrl)
 
     const result = await createRssFeedSource({
+      provenance: WEB_PROVENANCE,
       rssFeedUrlId,
       hostnameId,
       topicName: hostname,
@@ -63,6 +65,7 @@ describe('createRssFeedSource', () => {
     )
 
     const result = await createRssFeedSource({
+      provenance: WEB_PROVENANCE,
       rssFeedUrlId,
       hostnameId,
       topicName: hostname,
@@ -82,6 +85,7 @@ describe('createRssFeedSource', () => {
     const { hostnameId, rssFeedUrlId } = await makeSourceArgs(hostname, feedUrl)
 
     const args = {
+      provenance: WEB_PROVENANCE,
       rssFeedUrlId,
       hostnameId,
       topicName: hostname,
@@ -123,6 +127,7 @@ describe('createRssFeedSource', () => {
       await testBloomFilter.ensureExists()
 
       const result = await createRssFeedSource({
+        provenance: WEB_PROVENANCE,
         rssFeedUrlId,
         hostnameId,
         topicName: hostname,
@@ -149,6 +154,7 @@ describe('createRssFeedSource', () => {
     const user = await createTestUserDirect()
 
     const result = await createRssFeedSource({
+      provenance: WEB_PROVENANCE,
       rssFeedUrlId,
       hostnameId,
       topicName: hostname,
@@ -180,6 +186,7 @@ describe('findExistingFeed* — dedup invariant: spans all topic lifecycle state
     const { hostnameId, rssFeedUrlId } = await makeSourceArgs(hostname, feedUrl)
 
     const created = await createRssFeedSource({
+      provenance: WEB_PROVENANCE,
       rssFeedUrlId,
       hostnameId,
       topicName: hostname,
@@ -210,6 +217,7 @@ describe('findExistingFeed* — dedup invariant: spans all topic lifecycle state
     const { hostnameId, rssFeedUrlId } = await makeSourceArgs(hostname, feedUrl)
 
     const created = await createRssFeedSource({
+      provenance: WEB_PROVENANCE,
       rssFeedUrlId,
       hostnameId,
       topicName: hostname,
@@ -245,6 +253,7 @@ describe('findExistingFeedByUrl', () => {
     const { hostnameId, rssFeedUrlId } = await makeSourceArgs(hostname, feedUrl)
 
     const created = await createRssFeedSource({
+      provenance: WEB_PROVENANCE,
       rssFeedUrlId,
       hostnameId,
       topicName: hostname,

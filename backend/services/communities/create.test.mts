@@ -1,5 +1,6 @@
 import { it, expect, beforeAll, describe } from 'vitest'
 import {
+  WEB_PROVENANCE,
   createTestUser,
   insertTestCommunity,
   createTestMembership,
@@ -25,7 +26,7 @@ describe('create', () => {
         insertTestImage(user.id),
         insertTestImage(user.id),
       ])
-      const community = await createCommunity(user.id, {
+      const community = await createCommunity(user.id, WEB_PROVENANCE, {
         name: `Reserved Image Community ${crypto.randomUUID()}`,
         profile_image_id: profileImageId,
         banner_image_id: bannerImageId,
@@ -39,7 +40,7 @@ describe('create', () => {
     })
 
     it('creates a community and makes creator the owner', async () => {
-      const community = await createCommunity(user.id, {
+      const community = await createCommunity(user.id, WEB_PROVENANCE, {
         name: 'Test Community Create',
         slug: `test-community-create-${Date.now()}`,
       })
@@ -52,7 +53,7 @@ describe('create', () => {
 
     it('auto-generates slug from name with a base36 suffix', async () => {
       const ts = Date.now()
-      const community = await createCommunity(user.id, {
+      const community = await createCommunity(user.id, WEB_PROVENANCE, {
         name: `My Auto Slug Community ${ts}`,
       })
 
@@ -63,49 +64,57 @@ describe('create', () => {
     it('two communities with the same name get different slugs', async () => {
       const name = 'Shared Name Community Test'
       const [a, b] = await Promise.all([
-        createCommunity(user.id, { name }),
-        createCommunity(user.id, { name }),
+        createCommunity(user.id, WEB_PROVENANCE, { name }),
+        createCommunity(user.id, WEB_PROVENANCE, { name }),
       ])
       expect(a.slug).not.toBe(b.slug)
     })
 
     it('rejects duplicate slug', async () => {
       const slug = `dup-slug-${Date.now()}`
-      await createCommunity(user.id, { name: 'First Test Community', slug })
+      await createCommunity(user.id, WEB_PROVENANCE, { name: 'First Test Community', slug })
 
       await expect(
-        createCommunity(user.id, { name: 'Second Test Community', slug }),
+        createCommunity(user.id, WEB_PROVENANCE, { name: 'Second Test Community', slug }),
       ).rejects.toMatchObject({ status: 409 })
     })
 
     it('rejects name with leading whitespace', async () => {
-      await expect(createCommunity(user.id, { name: ' Bad Name Again' })).rejects.toMatchObject({
+      await expect(
+        createCommunity(user.id, WEB_PROVENANCE, { name: ' Bad Name Again' }),
+      ).rejects.toMatchObject({
         status: 422,
       })
     })
 
     it('rejects empty name', async () => {
-      await expect(createCommunity(user.id, { name: '' })).rejects.toMatchObject({
+      await expect(createCommunity(user.id, WEB_PROVENANCE, { name: '' })).rejects.toMatchObject({
         status: 422,
       })
     })
 
     it('rejects a name with fewer than 3 words', async () => {
-      await expect(createCommunity(user.id, { name: 'Only Two' })).rejects.toMatchObject({
+      await expect(
+        createCommunity(user.id, WEB_PROVENANCE, { name: 'Only Two' }),
+      ).rejects.toMatchObject({
         status: 422,
         message: 'Community name must have at least 3 words',
       })
     })
 
     it('rejects a single-word name', async () => {
-      await expect(createCommunity(user.id, { name: 'OneWord' })).rejects.toMatchObject({
+      await expect(
+        createCommunity(user.id, WEB_PROVENANCE, { name: 'OneWord' }),
+      ).rejects.toMatchObject({
         status: 422,
       })
     })
 
     it('accepts a name with exactly 3 words', async () => {
       const ts = Date.now()
-      const community = await createCommunity(user.id, { name: `Exactly Three Words ${ts}` })
+      const community = await createCommunity(user.id, WEB_PROVENANCE, {
+        name: `Exactly Three Words ${ts}`,
+      })
       expect(community.name).toBe(`Exactly Three Words ${ts}`)
     })
 
@@ -113,8 +122,8 @@ describe('create', () => {
       const freeUser = await createTestUser()
       const ts = Date.now()
       const [c1, c2] = await Promise.all([
-        createCommunity(freeUser.id, { name: `Free Limit First ${ts}` }),
-        createCommunity(freeUser.id, { name: `Free Limit Second ${ts}` }),
+        createCommunity(freeUser.id, WEB_PROVENANCE, { name: `Free Limit First ${ts}` }),
+        createCommunity(freeUser.id, WEB_PROVENANCE, { name: `Free Limit Second ${ts}` }),
       ])
       expect(c1.created_by_id).toBe(freeUser.id)
       expect(c2.created_by_id).toBe(freeUser.id)

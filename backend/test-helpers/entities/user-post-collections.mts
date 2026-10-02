@@ -54,11 +54,12 @@ export async function insertTestSavedPostCollection(options: {
       INSERT INTO posts (
         id, post_type, title, markdown, created_by_id,
         bedrock_nova_multimodal_v1_content_sha256,
-        llm_moderation_content_sha256
+        llm_moderation_content_sha256,
+        created_via
       )
       SELECT id, (CASE WHEN id = ANY(${filteredPostIds}::uuid[]) THEN 'topic_recommendation' ELSE 'discussion' END)::post_types,
         title, markdown, ${options.ownerId}::uuid,
-        ${`\\x${'0'.repeat(64)}`}, ${`\\x${'0'.repeat(64)}`}
+        ${`\\x${'0'.repeat(64)}`}, ${`\\x${'0'.repeat(64)}`}, 'system'
       FROM source
       RETURNING id
     ), clearance AS (

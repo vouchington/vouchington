@@ -54,11 +54,12 @@ export async function insertTestCommunityMembershipsForUser(
 ): Promise<void> {
   await write(sql`/* insertTestCommunityMembershipsForUser */
     WITH inserted_communities AS (
-      INSERT INTO communities (name, slug, created_by_id)
+      INSERT INTO communities (name, slug, created_by_id, created_via)
       SELECT
         'Membership plan ' || uuidv7()::text,
         'membership-plan-' || uuidv7()::text,
-        ${createdById}
+        ${createdById},
+        'system'
       FROM generate_series(1, ${count})
       RETURNING id
     )

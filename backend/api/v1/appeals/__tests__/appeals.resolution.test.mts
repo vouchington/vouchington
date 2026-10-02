@@ -1,7 +1,7 @@
 import { readStaffActionHistory } from '@voucha/test-helpers/staff-action-history'
 import { describe, it, expect, beforeAll } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestUser, insertTestUserWarning } from '@voucha/test-helpers'
+import { createTestUser, insertTestUserWarning, WEB_PROVENANCE } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { createModerationAppeal } from '@services/moderation-appeals/create'
 import { parseCreateModerationAppealInput } from '@services/moderation-appeals/parse'
@@ -21,7 +21,7 @@ async function createWarningAppeal(appellant: PrivateUser, staff: PrivateUser, r
     target_id: warning.id,
     appeal_reason: reason,
   })
-  const { appeal } = await createModerationAppeal(appellant, input)
+  const { appeal } = await createModerationAppeal(appellant, WEB_PROVENANCE, input)
   return appeal
 }
 

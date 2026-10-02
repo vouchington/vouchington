@@ -27,7 +27,6 @@ export {
   addRssFeedTopicPublisherTypeWithScore,
   setRssFeedOwningTopicVoteScore,
 }
-
 // Raw-primitive substitute for @services/rss-feeds' createRssFeed, for callers that only need an
 // rss_feeds row to exist (as incidental fixture setup for an unrelated entity/behavior under test)
 // and don't need createRssFeed's real validation or its enqueueBulkFetchRssFeeds /
@@ -145,13 +144,15 @@ export async function insertTestRssFeedWithUrlId(data: {
       rss_feed_url_id,
       topic_id,
       title,
-      feed_type
+      feed_type,
+      created_via
     )
     VALUES (
       ${rssFeedUrlObj!.id},
       ${data.topicId},
       ${data.title},
-      ${data.feedType ?? 'article'}
+      ${data.feedType ?? 'article'},
+      'system'
     )
     RETURNING id
   `)

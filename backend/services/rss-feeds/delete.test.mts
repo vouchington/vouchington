@@ -27,6 +27,7 @@ import {
   insertTestUrlDirect,
   listTestPostPublicationImpactTopicIds,
   listTestPostPublicationImpactPostIds,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createRssFeed } from './create.mts'
 import type { PrivateUser } from '@services/users/types'
@@ -44,6 +45,7 @@ describe('delete', () => {
     const random = Math.random().toString(36).slice(2, 15)
     const topic = await createTestTopic({ hostname: `delete-test-${label}-${random}.example.com` })
     return createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://delete-test-${label}-${random}.example.com/feed.xml`,
       topic_id: topic.id,

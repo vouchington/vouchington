@@ -9,6 +9,7 @@ import {
   insertTestRssFeedItem,
   createTestUrlWithHostname,
   insertTestStory,
+  readTestContentProvenance,
   setTestItemStoryId,
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
@@ -87,6 +88,19 @@ describe('story posts', () => {
     expect(await canViewPost(testUser, result.post)).toBe(true)
     expect(await canViewPost(otherUser, result.post)).toBe(true)
     expect(await canViewPost(null, result.post)).toBe(true)
+  })
+
+  it('createStoryPost — records the platform, not the requesting user, as the channel', async () => {
+    const story = await insertTestStory({ title: 'Provenance Test' })
+    await insertItem(story.id)
+    await insertItem(story.id)
+
+    const result = await createStoryPost(story.id, testUser)
+
+    await expect(readTestContentProvenance('posts', result.post.id)).resolves.toEqual({
+      createdVia: 'system',
+      oauthClientId: null,
+    })
   })
 
   it('createStoryPost — ai_summary_markdown is empty (agent has not run)', async () => {

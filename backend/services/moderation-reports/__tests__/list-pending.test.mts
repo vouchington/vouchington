@@ -8,6 +8,7 @@ import {
   insertTestReportJudgement,
   reviewPendingTestModerationReportsByPostSlugPrefixes,
   reviewTestModerationReports,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { createModerationReport } from '../create.mts'
@@ -88,6 +89,7 @@ describe('listPendingModerationReports', () => {
       const distinctReporter = await createTestUser()
       await createModerationReport(
         distinctReporter.id,
+        WEB_PROVENANCE,
         parseCreateModerationReportInput({
           entityType: 'post',
           entityId: pid,
@@ -113,6 +115,7 @@ describe('listPendingModerationReports', () => {
     const cursorReporter = await createTestUser()
     const { report } = await createModerationReport(
       cursorReporter.id,
+      WEB_PROVENANCE,
       parseCreateModerationReportInput({
         entityType: 'post',
         entityId: pid,

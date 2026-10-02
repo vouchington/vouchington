@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { createTestUser, createTestTopic } from '@voucha/test-helpers'
+import { createTestUser, createTestTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
 import type { BasicUser } from '@voucha/types/entities/user'
 import { createTopicRecommendation } from '../create-topic-recommendation.mts'
 import { DUPLICATE_RECOMMENDATION, DUPLICATE_TOPIC } from '@modules/on-error/error-codes'
@@ -18,6 +18,7 @@ describe('createTopicRecommendation duplicate detection', () => {
     // Create the first recommendation successfully
     await createTopicRecommendation(
       user,
+      WEB_PROVENANCE,
       {
         markdown: 'Initial rationale.',
         topic_title: `Dup Rec Topic ${random}`,
@@ -31,6 +32,7 @@ describe('createTopicRecommendation duplicate detection', () => {
     await expect(
       createTopicRecommendation(
         user,
+        WEB_PROVENANCE,
         {
           markdown: 'Duplicate rationale.',
           topic_title: `Dup Rec Topic Again ${random}`,
@@ -51,6 +53,7 @@ describe('createTopicRecommendation duplicate detection', () => {
     await expect(
       createTopicRecommendation(
         user,
+        WEB_PROVENANCE,
         {
           markdown: 'Topic already exists.',
           topic_title: topic.name,

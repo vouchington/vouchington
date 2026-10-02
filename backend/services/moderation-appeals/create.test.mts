@@ -8,6 +8,7 @@ import {
   insertTestCommunityPostReview,
   appendTestPlatformRejectionNote,
   updateTestCommunityPostReviewState,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { createModerationAppeal } from './create.mts'
@@ -22,7 +23,6 @@ describe('createModerationAppeal', () => {
     staff = await createTestUser()
     appellant = await createTestUser()
   })
-
   describe('post removal target', () => {
     it('creates an appeal for own rejected post', async () => {
       const internalRemovalNote = `Internal removal note ${crypto.randomUUID()}`
@@ -39,8 +39,7 @@ describe('createModerationAppeal', () => {
         target_id: postId,
         appeal_reason: 'My post was wrongly removed.',
       })
-      const { appeal, isDuplicate } = await createModerationAppeal(appellant, input)
-
+      const { appeal, isDuplicate } = await createModerationAppeal(appellant, WEB_PROVENANCE, input)
       expect(isDuplicate).toBe(false)
       expect(appeal.post_id).toBe(postId)
       expect(appeal.status).toBe('pending')
@@ -65,7 +64,6 @@ describe('createModerationAppeal', () => {
         profile_image_id: null,
       })
     })
-
     it('returns the same appeal when removal submissions race', async () => {
       const postId = await insertTestPost({
         title: `Appeal Removal Race ${crypto.randomUUID().slice(0, 8)}`,
@@ -79,16 +77,13 @@ describe('createModerationAppeal', () => {
         target_id: postId,
         appeal_reason: 'Please review this removal.',
       })
-
       const results = await Promise.all([
-        createModerationAppeal(appellant, input),
-        createModerationAppeal(appellant, input),
+        createModerationAppeal(appellant, WEB_PROVENANCE, input),
+        createModerationAppeal(appellant, WEB_PROVENANCE, input),
       ])
-
       expect(new Set(results.map(result => result.appeal.id)).size).toBe(1)
       expect(results.filter(result => result.isDuplicate)).toHaveLength(1)
     })
-
     it('stores requested community removal kind when platform rejection also exists', async () => {
       const community = await insertTestCommunity({
         name: `Appeal Both Removal ${crypto.randomUUID().slice(0, 8)}`,
@@ -114,8 +109,7 @@ describe('createModerationAppeal', () => {
         post_removal_kind: 'community',
         appeal_reason: 'My community removal was wrongly removed.',
       })
-      const { appeal, isDuplicate } = await createModerationAppeal(appellant, input)
-
+      const { appeal, isDuplicate } = await createModerationAppeal(appellant, WEB_PROVENANCE, input)
       expect(isDuplicate).toBe(false)
       expect(appeal.post_id).toBe(postId)
       expect(appeal.post_removal_kind).toBe('community')
@@ -135,7 +129,6 @@ describe('createModerationAppeal', () => {
       expect(appeal.staff_context).toBeDefined()
       expect(appeal.staff_context!.original_decision.actor).toBeNull()
     })
-
     it('allows separate pending appeals for different removal kinds on the same post', async () => {
       const community = await insertTestCommunity({
         name: `DupKind Community ${crypto.randomUUID().slice(0, 8)}`,
@@ -155,16 +148,18 @@ describe('createModerationAppeal', () => {
         postId,
         unpublishedAt: new Date(),
       })
-
       // File platform removal appeal (rejected_at → default kind = platform)
       const platformInput = parseCreateModerationAppealInput({
         target_type: 'removal',
         target_id: postId,
         appeal_reason: 'Platform removal was wrong.',
       })
-      const { isDuplicate: dup1 } = await createModerationAppeal(appellant, platformInput)
+      const { isDuplicate: dup1 } = await createModerationAppeal(
+        appellant,
+        WEB_PROVENANCE,
+        platformInput,
+      )
       expect(dup1).toBe(false)
-
       // File community removal appeal (explicit kind = community)
       const communityInput = parseCreateModerationAppealInput({
         target_type: 'removal',
@@ -172,14 +167,20 @@ describe('createModerationAppeal', () => {
         post_removal_kind: 'community',
         appeal_reason: 'Community removal was wrong.',
       })
-      const { isDuplicate: dup2 } = await createModerationAppeal(appellant, communityInput)
+      const { isDuplicate: dup2 } = await createModerationAppeal(
+        appellant,
+        WEB_PROVENANCE,
+        communityInput,
+      )
       expect(dup2).toBe(false)
-
       // Filing community kind again returns isDuplicate
-      const { isDuplicate: dup3 } = await createModerationAppeal(appellant, communityInput)
+      const { isDuplicate: dup3 } = await createModerationAppeal(
+        appellant,
+        WEB_PROVENANCE,
+        communityInput,
+      )
       expect(dup3).toBe(true)
     })
-
     it('throws 422 when post has not been removed', async () => {
       const postId = await insertTestPost({
         title: `Active Post ${crypto.randomUUID().slice(0, 8)}`,
@@ -193,7 +194,9 @@ describe('createModerationAppeal', () => {
         target_id: postId,
         appeal_reason: 'Trying to appeal non-removed post.',
       })
-      await expect(createModerationAppeal(appellant, input)).rejects.toMatchObject({ status: 422 })
+      await expect(createModerationAppeal(appellant, WEB_PROVENANCE, input)).rejects.toMatchObject({
+        status: 422,
+      })
     })
 
     it('throws 403 when appealing another user post removal', async () => {
@@ -210,7 +213,9 @@ describe('createModerationAppeal', () => {
         target_id: postId,
         appeal_reason: 'Not my post.',
       })
-      await expect(createModerationAppeal(appellant, input)).rejects.toMatchObject({ status: 403 })
+      await expect(createModerationAppeal(appellant, WEB_PROVENANCE, input)).rejects.toMatchObject({
+        status: 403,
+      })
     })
   })
 
@@ -243,6 +248,7 @@ describe('createModerationAppeal', () => {
 
     await createModerationAppeal(
       listAppellant,
+      WEB_PROVENANCE,
       parseCreateModerationAppealInput({
         target_type: 'warning',
         target_id: warning.id,
@@ -251,6 +257,7 @@ describe('createModerationAppeal', () => {
     )
     await createModerationAppeal(
       listAppellant,
+      WEB_PROVENANCE,
       parseCreateModerationAppealInput({
         target_type: 'ban',
         target_id: ban.id,
@@ -259,6 +266,7 @@ describe('createModerationAppeal', () => {
     )
     await createModerationAppeal(
       listAppellant,
+      WEB_PROVENANCE,
       parseCreateModerationAppealInput({
         target_type: 'removal',
         target_id: postId,

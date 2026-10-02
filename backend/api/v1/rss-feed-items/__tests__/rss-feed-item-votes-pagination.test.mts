@@ -1,6 +1,11 @@
 import { describe } from 'vitest'
 import { createHash } from 'node:crypto'
-import { insertTestRssFeedItem, insertTestTopic, insertTestUrlHostname } from '@voucha/test-helpers'
+import {
+  insertTestRssFeedItem,
+  insertTestTopic,
+  insertTestUrlHostname,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import { addUrls } from '@services/urls'
 import { createRssFeed } from '@services/rss-feeds'
 import { getRssFeedItemById } from '@services/rss-feed-items/get'
@@ -25,6 +30,7 @@ async function createTestRssFeedItemForVoting(creator: string) {
   const random = crypto.randomUUID().slice(0, 8)
   const topicId = await createLinkedTopicId(creator)
   const rssFeed = await createRssFeed({
+    provenance: WEB_PROVENANCE,
     skipRemoteValidation: true,
     rss_feed_url: `https://example.com/votes-pagination-feed-${random}.xml`,
     topic_id: topicId,

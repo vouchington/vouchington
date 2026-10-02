@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import type { PrivateUser } from '@services/users/types'
-import { createTestUser, getRssFeedTypeForTest } from '@voucha/test-helpers'
+import { createTestUser, getRssFeedTypeForTest, WEB_PROVENANCE } from '@voucha/test-helpers'
 import type { FeedClassification } from '../validate.mts'
 import { createSourceFromUrl } from '../create-source.mts'
 import { generateSourceDetails } from '../create-source-helpers.mts'
@@ -37,6 +37,7 @@ describe('create-source', () => {
 
       const result = await createSourceFromUrl(
         user,
+        WEB_PROVENANCE,
         `https://create-source-${random}.example.com/feed.xml`,
         { fetchAndClassifyFeedImpl },
       )
@@ -59,10 +60,14 @@ describe('create-source', () => {
         }),
       )
 
-      const first = await createSourceFromUrl(user, feedUrl, { fetchAndClassifyFeedImpl })
+      const first = await createSourceFromUrl(user, WEB_PROVENANCE, feedUrl, {
+        fetchAndClassifyFeedImpl,
+      })
       expect(first.status).toBe('created')
 
-      const second = await createSourceFromUrl(user, feedUrl, { fetchAndClassifyFeedImpl })
+      const second = await createSourceFromUrl(user, WEB_PROVENANCE, feedUrl, {
+        fetchAndClassifyFeedImpl,
+      })
       expect(second.status).toBe('upvoted')
       expect(second.rss_feed_id).toBe(first.rss_feed_id)
       expect(second.topic_id).toBe(first.topic_id)
@@ -77,11 +82,13 @@ describe('create-source', () => {
 
       const first = await createSourceFromUrl(
         user,
+        WEB_PROVENANCE,
         `https://slug-collision-${random}.example.com/feed.a`,
         { fetchAndClassifyFeedImpl },
       )
       const second = await createSourceFromUrl(
         user,
+        WEB_PROVENANCE,
         `https://slug-collision-${random}.example.com/feed/a`,
         { fetchAndClassifyFeedImpl },
       )
@@ -102,7 +109,9 @@ describe('create-source', () => {
         }),
       )
 
-      const result = await createSourceFromUrl(user, feedUrl, { fetchAndClassifyFeedImpl })
+      const result = await createSourceFromUrl(user, WEB_PROVENANCE, feedUrl, {
+        fetchAndClassifyFeedImpl,
+      })
 
       expect(result.status).toBe('created')
       expect(result.topic_slug).toContain(`untitled-source-${random}`)
@@ -110,19 +119,23 @@ describe('create-source', () => {
     })
 
     it('throws 422 for an invalid URL', async () => {
-      await expect(createSourceFromUrl(user, 'not-a-url')).rejects.toMatchObject({ status: 422 })
+      await expect(createSourceFromUrl(user, WEB_PROVENANCE, 'not-a-url')).rejects.toMatchObject({
+        status: 422,
+      })
     })
 
     it('throws 422 for a URL fragment', async () => {
       await expect(
-        createSourceFromUrl(user, 'https://example.com/feed.xml#section'),
+        createSourceFromUrl(user, WEB_PROVENANCE, 'https://example.com/feed.xml#section'),
       ).rejects.toMatchObject({
         status: 422,
       })
     })
 
     it('throws 422 for non-public feed URL hostnames', async () => {
-      await expect(createSourceFromUrl(user, 'https://localhost/feed.xml')).rejects.toMatchObject({
+      await expect(
+        createSourceFromUrl(user, WEB_PROVENANCE, 'https://localhost/feed.xml'),
+      ).rejects.toMatchObject({
         status: 422,
         message: 'rss_feed_url must be a valid URL',
       })
@@ -144,7 +157,9 @@ describe('create-source', () => {
         },
       )
 
-      const result = await createSourceFromUrl(user, httpUrl, { fetchAndClassifyFeedImpl })
+      const result = await createSourceFromUrl(user, WEB_PROVENANCE, httpUrl, {
+        fetchAndClassifyFeedImpl,
+      })
 
       expect(result.status).toBe('created')
       expect(result.topic_slug).toContain(`http-to-https-${random}`)
@@ -169,7 +184,9 @@ describe('create-source', () => {
         },
       )
 
-      const result = await createSourceFromUrl(user, httpUrl, { fetchAndClassifyFeedImpl })
+      const result = await createSourceFromUrl(user, WEB_PROVENANCE, httpUrl, {
+        fetchAndClassifyFeedImpl,
+      })
 
       expect(result.status).toBe('created')
       expect(result.topic_slug).toContain(`http-fallback-${random}`)
@@ -199,7 +216,9 @@ describe('create-source', () => {
         },
       )
 
-      const result = await createSourceFromUrl(user, httpUrl, { fetchAndClassifyFeedImpl })
+      const result = await createSourceFromUrl(user, WEB_PROVENANCE, httpUrl, {
+        fetchAndClassifyFeedImpl,
+      })
 
       expect(result.status).toBe('created')
       expect(result.topic_slug).toContain(`https-to-http-redirect-${random}`)
@@ -220,10 +239,14 @@ describe('create-source', () => {
         },
       )
 
-      const first = await createSourceFromUrl(user, httpsUrl, { fetchAndClassifyFeedImpl })
+      const first = await createSourceFromUrl(user, WEB_PROVENANCE, httpsUrl, {
+        fetchAndClassifyFeedImpl,
+      })
       expect(first.status).toBe('created')
 
-      const second = await createSourceFromUrl(user, httpUrl, { fetchAndClassifyFeedImpl })
+      const second = await createSourceFromUrl(user, WEB_PROVENANCE, httpUrl, {
+        fetchAndClassifyFeedImpl,
+      })
       expect(second.status).toBe('upvoted')
       expect(second.rss_feed_id).toBe(first.rss_feed_id)
       expect(second.topic_id).toBe(first.topic_id)
@@ -241,6 +264,7 @@ describe('create-source', () => {
 
       const result = await createSourceFromUrl(
         user,
+        WEB_PROVENANCE,
         `https://podcast-feed-type-${random}.example.com/feed.xml`,
         { fetchAndClassifyFeedImpl },
       )

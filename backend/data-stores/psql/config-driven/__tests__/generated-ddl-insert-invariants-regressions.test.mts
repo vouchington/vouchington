@@ -81,7 +81,7 @@ END $$;`),
       // A guard on one CTE's own INSERT must not mask an unguarded INSERT in a
       // sibling CTE of the same compound statement.
       findFirstUnguardedInsertViolation(`WITH a AS (
-  INSERT INTO topics (slug) VALUES ('a') ON CONFLICT DO NOTHING RETURNING id
+  INSERT INTO topics (created_via, slug) VALUES ('system', 'a') ON CONFLICT DO NOTHING RETURNING id
 ), b AS (
   INSERT INTO topic_aliases (topic_id, alias) SELECT id, 'a' FROM a
 )
@@ -90,7 +90,7 @@ SELECT id FROM a;`),
     expect(
       // Both CTEs guard their own INSERT, so no violation.
       findFirstUnguardedInsertViolation(`WITH a AS (
-  INSERT INTO topics (slug) VALUES ('a') ON CONFLICT DO NOTHING RETURNING id
+  INSERT INTO topics (created_via, slug) VALUES ('system', 'a') ON CONFLICT DO NOTHING RETURNING id
 ), b AS (
   INSERT INTO topic_aliases (topic_id, alias) SELECT id, 'a' FROM a WHERE NOT EXISTS (SELECT 1)
 )
@@ -152,7 +152,7 @@ END $$;`,
       // wrongly rejected just because its sibling "seed" CTE uses ON CONFLICT.
       findFirstUnguardedInsertViolation(
         `WITH "seed" AS (
-  INSERT INTO topics (slug) VALUES ('a') ON CONFLICT DO NOTHING RETURNING id
+  INSERT INTO topics (created_via, slug) VALUES ('system', 'a') ON CONFLICT DO NOTHING RETURNING id
 ), "copy" AS (
   INSERT INTO topic_aliases (topic_id, alias) SELECT id, 'a' FROM "seed" ` +
           `WHERE NOT EXISTS (SELECT 1 FROM topic_aliases WHERE topic_id = id)

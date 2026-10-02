@@ -9,6 +9,7 @@ import {
   ensureTestAdmittedPostIdentity,
   executeTestAdmittedPost,
   setContributionAdmissionExpiryForTest,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { runContributionAdmission } from './admission.mts'
 import { preparePostWithCommunityReviews } from '../posts/create.mts'
@@ -166,6 +167,7 @@ describe('contribution admission finalization', () => {
           executePreparedContribution(query, () =>
             preparePostWithCommunityReviews(
               user,
+              WEB_PROVENANCE,
               {
                 title: `Initial admission post ${suffix}`,
                 categories: [{ type: 'topic', topic_id: topicId }],
@@ -207,6 +209,7 @@ describe('contribution admission finalization', () => {
         (
           await preparePostWithCommunityReviews(
             user,
+            WEB_PROVENANCE,
             {
               title: `Admission replay post ${suffix}`,
               categories: [{ type: 'topic', topic_id: topicId }],

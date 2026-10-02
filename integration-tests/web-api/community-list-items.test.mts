@@ -2,7 +2,12 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { randomUUID } from 'node:crypto'
 import http from 'node:http'
 import serverApp from '../../backend/entrypoints/api/index.mts'
-import { createWebApiTestCookieHeader, listenOnFetchSafeLoopback } from './routes.mts'
+import {
+  createWebApiTestServer,
+  buildWebApiTestProxyHeaders,
+  createWebApiTestCookieHeader,
+  listenOnFetchSafeLoopback,
+} from './routes.mts'
 import * as clientRoutes from '@/lib/api/client'
 import * as serverRoutes from '@/lib/api/server'
 import {
@@ -46,7 +51,7 @@ describe('community-list-items', () => {
     previousApiBaseUrl = process.env.API_BASE_URL
     previousPublicApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
 
-    backendServer = http.createServer(serverApp.callback())
+    backendServer = createWebApiTestServer(serverApp.callback())
     backendBaseUrl = await listenOnFetchSafeLoopback(backendServer)
     process.env.API_BASE_URL = backendBaseUrl
     process.env.NEXT_PUBLIC_API_BASE_URL = backendBaseUrl
@@ -59,7 +64,7 @@ describe('community-list-items', () => {
         return previousFetch(input, init)
       }
 
-      const headers = new Headers(init?.headers)
+      const headers = buildWebApiTestProxyHeaders(init?.headers)
       if (clientCookieValue) {
         headers.set('Cookie', clientCookieValue)
         if (process.env.CF_WORKER_SECRET) {

@@ -1,3 +1,4 @@
+import { runWithCredentialRequestContext } from '../modules/request-client-info/index.mts'
 import { expect } from 'vitest'
 import type { ApiScope } from '../modules/scopes/index.mts'
 import { callMcpTool } from '../services/mcp-tools/call-tool.mts'
@@ -17,7 +18,10 @@ export async function callRejectedMcpTool(
   args: Record<string, unknown>,
   scopes: readonly ApiScope[],
 ): Promise<string> {
-  const outcome = await callMcpTool(name, args, caller, scopes, USER_MCP_SERVER_CONFIG).then(
+  const outcome = await runWithCredentialRequestContext(
+    { interface: 'mcp', credential: 'api_key', client: null, oauthClientId: null },
+    () => callMcpTool(name, args, caller, scopes, USER_MCP_SERVER_CONFIG),
+  ).then(
     result => result,
     (error: unknown) => error,
   )
@@ -39,7 +43,10 @@ export async function callStructuredMcpTool(
   args: Record<string, unknown>,
   scopes: readonly ApiScope[],
 ): Promise<Record<string, unknown>> {
-  const result = await callMcpTool(name, args, caller, scopes, USER_MCP_SERVER_CONFIG)
+  const result = await runWithCredentialRequestContext(
+    { interface: 'mcp', credential: 'api_key', client: null, oauthClientId: null },
+    () => callMcpTool(name, args, caller, scopes, USER_MCP_SERVER_CONFIG),
+  )
   expect(result.isError).toBeUndefined()
   const [block] = result.content as [{ type: 'text'; text: string }]
   expect(result.structuredContent).toEqual(JSON.parse(block.text))

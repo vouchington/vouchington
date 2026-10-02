@@ -39,6 +39,7 @@ type CreateRssFeedBody = {
   rss_feed_url: string
   follow?: boolean
 }
+import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 
 const rssFeedsPaginationParser = createPaginationParser({
   cursor: { type: 'simple' },
@@ -130,13 +131,14 @@ app
   .post(async (ctx: Context) => {
     apiRequestContract<'POST:/api/v1/rss-feeds', CreateRssFeedBody>('POST:/api/v1/rss-feeds')
     const currentUser = await requireAuth(ctx, 'POST:/api/v1/rss-feeds')
+    const provenance = getRequestContentProvenance()
     assertNotSuspended(currentUser)
 
     const rawBody = (await ctx.request.json('1mb')) as CreateRssFeedBody
     validateRequestContract(ctx, 'POST:/api/v1/rss-feeds', { body: rawBody })
     const body = parseCreateSourceBody(rawBody)
     const membershipPlan = await getUserActivePlan(currentUser.id)
-    const result = await createSourceFromUrl(currentUser, body.rss_feed_url, {
+    const result = await createSourceFromUrl(currentUser, provenance, body.rss_feed_url, {
       assertContributionLimit: () =>
         assertWithinContributionActionLimit(currentUser, membershipPlan, 'rss_feed'),
       follow: body.follow,

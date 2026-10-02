@@ -1,3 +1,4 @@
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import type { TopicRecommendationPost } from './types.mts'
 import { beginTransaction } from '@data-stores/psql'
@@ -19,6 +20,7 @@ export type { TopicRecommendationApprovalTransactionResult } from './approve-top
 
 export async function approveTopicRecommendationInTransaction(
   currentUser: PrivateUser,
+  provenance: ContentProvenance,
   recommendationId: string,
   options: { query: NonNullable<QueryOptions['query']> },
 ): Promise<TopicRecommendationApprovalTransactionResult> {
@@ -26,6 +28,7 @@ export async function approveTopicRecommendationInTransaction(
 
   const topic = await createTopic(
     currentUser,
+    provenance,
     {
       name: lockedRecommendation.topic_title,
       slug: lockedRecommendation.topic_slug,
@@ -98,6 +101,7 @@ export async function approveTopicRecommendationInTransaction(
 
 export async function approveTopicRecommendation(
   currentUser: PrivateUser,
+  provenance: ContentProvenance,
   recommendation: TopicRecommendationPost,
 ): Promise<{
   recommendation: TopicRecommendationPost
@@ -116,6 +120,7 @@ export async function approveTopicRecommendation(
     await using query = await beginTransaction()
     const transactionResult = await approveTopicRecommendationInTransaction(
       currentUser,
+      provenance,
       recommendation.id,
       { query },
     )

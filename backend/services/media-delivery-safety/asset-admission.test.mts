@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  WEB_PROVENANCE,
   beginTransaction,
   createTestUserDirect,
   insertTestImage,
@@ -155,7 +156,7 @@ describe('asset admission root domain', () => {
               imageId,
               owner,
             )
-          : createCommunity(user.id, {
+          : createCommunity(user.id, WEB_PROVENANCE, {
               name: `Admission barrier community ${crypto.randomUUID()}`,
               profile_image_id: imageId,
             })

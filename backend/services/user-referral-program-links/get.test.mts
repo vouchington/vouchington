@@ -5,6 +5,7 @@ import {
   insertTestUserReferralProgramLink,
   mergeTopicForTest,
   softDeleteTopic,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createReferralProgramFixture } from '@voucha/test-helpers/entities/referral-programs'
 import { addUserRole } from '@services/users/roles-permissions'
@@ -43,7 +44,7 @@ describe('get', () => {
   })
   describe('getUserReferralLinks', () => {
     it('uses default options when options are omitted', async () => {
-      const link = await createUserReferralLink(regularUser, {
+      const link = await createUserReferralLink(regularUser, WEB_PROVENANCE, {
         user_id: regularUser!.id,
         referral_program_id: referralProgramId!,
         url: `https://${testHostname}/ref/default-options-${Date.now()}`,
@@ -55,7 +56,7 @@ describe('get', () => {
     })
 
     it('returns links for owner', async () => {
-      const link = await createUserReferralLink(regularUser, {
+      const link = await createUserReferralLink(regularUser, WEB_PROVENANCE, {
         user_id: regularUser!.id,
         referral_program_id: referralProgramId!,
         url: `https://${testHostname}/ref/owner-${Date.now()}`,
@@ -67,7 +68,7 @@ describe('get', () => {
     })
 
     it('allows admin to read another user links', async () => {
-      const link = await createUserReferralLink(regularUser, {
+      const link = await createUserReferralLink(regularUser, WEB_PROVENANCE, {
         user_id: regularUser!.id,
         referral_program_id: referralProgramId!,
         url: `https://${testHostname}/ref/admin-${Date.now()}`,
@@ -108,7 +109,7 @@ describe('get', () => {
       const base = Date.now()
       const createdIds = new Set<string>()
       for (let i = 0; i < 3; i++) {
-        const link = await createUserReferralLink(regularUser, {
+        const link = await createUserReferralLink(regularUser, WEB_PROVENANCE, {
           user_id: regularUser!.id,
           referral_program_id: referralProgramId!,
           url: `https://${testHostname}/ref/cursor-${base}-${i}`,
@@ -161,13 +162,13 @@ describe('get', () => {
 
     it('filters by referral_program_id', async () => {
       const base = Date.now()
-      const first = await createUserReferralLink(regularUser, {
+      const first = await createUserReferralLink(regularUser, WEB_PROVENANCE, {
         user_id: regularUser!.id,
         referral_program_id: referralProgramId!,
         url: `https://${testHostname}/ref/filter-main-${base}`,
         label: 'main-program-link',
       })
-      const second = await createUserReferralLink(regularUser, {
+      const second = await createUserReferralLink(regularUser, WEB_PROVENANCE, {
         user_id: regularUser!.id,
         referral_program_id: otherReferralProgramId!,
         url: `https://${otherReferralHostname!}/ref/filter-alt-${base}`,
@@ -183,7 +184,7 @@ describe('get', () => {
     })
 
     it('excludes child links (parent_link_id set) from the owner management list', async () => {
-      const parent = await createUserReferralLink(regularUser, {
+      const parent = await createUserReferralLink(regularUser, WEB_PROVENANCE, {
         user_id: regularUser!.id,
         referral_program_id: referralProgramId!,
         url: `https://${testHostname}/ref/parent-${Date.now()}`,
@@ -220,17 +221,17 @@ describe('get', () => {
         randomSuffix: `${suffix}deleted`,
       })
       const activeUrl = `https://${activeProgram.hostname}/ref/active-${suffix}`
-      const activeLink = await createUserReferralLink(owner, {
+      const activeLink = await createUserReferralLink(owner, WEB_PROVENANCE, {
         user_id: owner.id,
         referral_program_id: activeProgram.referralProgramId,
         url: activeUrl,
       })
-      await createUserReferralLink(owner, {
+      await createUserReferralLink(owner, WEB_PROVENANCE, {
         user_id: owner.id,
         referral_program_id: mergedProgram.referralProgramId,
         url: `https://${mergedProgram.hostname}/ref/merged-${suffix}`,
       })
-      await createUserReferralLink(owner, {
+      await createUserReferralLink(owner, WEB_PROVENANCE, {
         user_id: owner.id,
         referral_program_id: deletedProgram.referralProgramId,
         url: `https://${deletedProgram.hostname}/ref/deleted-${suffix}`,
@@ -265,7 +266,7 @@ describe('get', () => {
 
   describe('getUserReferralLink', () => {
     it('returns link for valid id and null for unknown id', async () => {
-      const link = await createUserReferralLink(regularUser, {
+      const link = await createUserReferralLink(regularUser, WEB_PROVENANCE, {
         user_id: regularUser!.id,
         referral_program_id: referralProgramId!,
         url: `https://${testHostname}/ref/single-${Date.now()}`,

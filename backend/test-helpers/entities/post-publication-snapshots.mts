@@ -132,8 +132,8 @@ export async function insertTestPublicationFeedFanout(
       INSERT INTO urls (url, hostname_id, pathname, search_params)
       SELECT 'https://publication-' || ${postId}::text || '.example.com/feed-' || ordinal,
         ${url.hostname.id}, '/feed-' || ordinal, '{}'::jsonb FROM source RETURNING id, pathname)
-    INSERT INTO rss_feeds (rss_feed_url_id, topic_id, title)
-    SELECT urls_inserted.id, source.topic_id, 'Publication fixture feed' FROM urls_inserted
+    INSERT INTO rss_feeds (created_via, rss_feed_url_id, topic_id, title)
+    SELECT 'system', urls_inserted.id, source.topic_id, 'Publication fixture feed' FROM urls_inserted
     JOIN source ON urls_inserted.pathname = '/feed-' || source.ordinal RETURNING id`)
   const feedIds = rows.map(row => row.id)
   const story = await insertTestStory()

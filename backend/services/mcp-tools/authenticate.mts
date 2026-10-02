@@ -20,6 +20,7 @@ type McpVerifiedCredential =
       credential: 'oauth'
       oauthClientId: string
       oauthGrantId: string
+      oauthClientRowId: string
       rateLimitIdentity: { userId: string }
     }
 
@@ -61,6 +62,7 @@ async function verifyMcpBearerToken(
         credential: 'oauth',
         oauthClientId: principal.client_id,
         oauthGrantId: principal.grant_id,
+        oauthClientRowId: principal.oauth_client_id,
         rateLimitIdentity: { userId: principal.user_id },
       },
       scopes: principal.scopes,

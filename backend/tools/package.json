@@ -17,6 +17,7 @@
     "@jongleberry/vurst-prompt": "^0.4.3",
     "@modules/on-error": "workspace:^",
     "@modules/pagination": "workspace:^",
+    "@modules/request-client-info": "workspace:^",
     "@modules/scopes": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/elections": "workspace:^",

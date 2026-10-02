@@ -12,6 +12,7 @@ import {
   getOfficialReferralLinks,
   currentUserCanManageOfficialReferralLink,
 } from '@services/official-referral-program-links'
+import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 
 // GET /api/v1/referral-programs/:id/official-referral-links
 app.route('/api/v1/referral-programs/:id/official-referral-links').get(async (ctx: Context) => {
@@ -44,7 +45,8 @@ app.route('/api/v1/referral-programs/:id/official-referral-links').post(async (c
     body,
   })
   ctx.assert(typeof body.url === 'string' && body.url.trim(), 422, 'url is required')
-  const link = await createOfficialReferralLink(currentUser, {
+  const provenance = getRequestContentProvenance()
+  const link = await createOfficialReferralLink(currentUser, provenance, {
     referral_program_id,
     url: body.url.trim(),
     label: body.label,

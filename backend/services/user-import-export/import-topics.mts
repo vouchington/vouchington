@@ -1,3 +1,4 @@
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { BasicUser } from '@services/users/types'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
@@ -35,6 +36,7 @@ const followTopicRelation = getEntityRelationMetadataOrThrow({
 
 export async function importTopics(
   currentUser: BasicUser,
+  provenance: ContentProvenance,
   names: string[],
   options: {
     assertCanCreateTopicRecommendations: () => Promise<void>
@@ -79,6 +81,7 @@ export async function importTopics(
       // oxlint-disable-next-line no-await-in-loop -- preserve per-input contribution checks and ordered result attribution
       const admission = await admitImportedTopicRecommendation(
         currentUser,
+        provenance,
         input,
         options.membershipPlan ?? null,
         options.importAttemptId,

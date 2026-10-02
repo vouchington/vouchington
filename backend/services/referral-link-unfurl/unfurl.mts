@@ -16,6 +16,7 @@ import {
   markReferralLinkUnfurlFailed,
 } from '@services/user-referral-program-links'
 import { getAmexCardSlugCatalog, constructChildUrls } from './construct-amex-children.mts'
+import { SYSTEM_PROVENANCE } from '@voucha/types/entities/content-provenance'
 
 type ReferralLinkUnfurlDependencies = {
   crawlWithBrowser?: typeof crawlWithBrowser
@@ -124,6 +125,7 @@ export async function runReferralLinkUnfurl(
       // oxlint-disable-next-line no-await-in-loop
       const child = await createChildReferralLink(
         parent.user_id,
+        SYSTEM_PROVENANCE,
         {
           userId: parent.user_id,
           referralProgramId,

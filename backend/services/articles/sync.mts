@@ -13,6 +13,7 @@ import type { PrivateUser } from '@services/users/types'
 import { parseFrontmatter, extractTitleFromMarkdown } from './parse.mts'
 import { rewriteRelativeArticleLinks } from './relative-links.mts'
 import { getArticleMarkdown, listArticleMarkdownFiles } from './storage.mts'
+import { SYSTEM_PROVENANCE } from '@voucha/types/entities/content-provenance'
 
 const ALLOWED_POST_TYPES: ReadonlySet<PostType> = new Set(['article', 'blog_post'])
 
@@ -141,8 +142,9 @@ async function syncArticleFiles<T extends ArticleSyncFile>(
           }
         }
       } else {
+        // Articles are platform-authored from the repository, whichever job or script syncs them.
         // oxlint-disable-next-line no-await-in-loop -- duplicate slugs require creation to finish before processing the next file
-        const post = await createPost(currentUser, {
+        const post = await createPost(currentUser, SYSTEM_PROVENANCE, {
           post_type: postType,
           title,
           markdown: body,

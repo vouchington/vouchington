@@ -12,6 +12,7 @@ import {
   hardDeleteTestTopics,
   insertTestTopicsAndExplicitPostCategories,
   listTestPostPublicationImpactTopicIds,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import {
@@ -24,7 +25,7 @@ describe('post update publication capture', () => {
   it('defers archive capture to the final composite-update publication write', async () => {
     const author = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     if (!author) throw new Error('Expected author')
-    const post = await createPost(author, {
+    const post = await createPost(author, WEB_PROVENANCE, {
       post_type: 'discussion',
       title: `Publication archive ordering ${createRandomString(10)}`,
     })
@@ -55,7 +56,7 @@ describe('post update publication capture', () => {
     const author = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     if (!administrator || !author) throw new Error('Expected administrator and author')
     const suffix = createRandomString(10)
-    const post = await createPost(author, {
+    const post = await createPost(author, WEB_PROVENANCE, {
       post_type: 'discussion',
       title: `Publication topic footprint ${suffix}`,
     })
@@ -110,7 +111,7 @@ describe('post update publication capture', () => {
       name: `Relation-only topic ${suffix}`,
     })
     const aliasId = await createTopHashtagAliasForTest(topic.id, `relation-only-${suffix}`)
-    const post = await createPost(author, {
+    const post = await createPost(author, WEB_PROVENANCE, {
       post_type: 'discussion',
       title: `Publication relation-only membership ${suffix}`,
     })

@@ -48,9 +48,10 @@ export async function insertTestReview(data: {
     INSERT INTO posts (
       id, post_type, title, markdown, created_by_id,
       bedrock_nova_multimodal_v1_content_sha256,
-      llm_moderation_content_sha256
+      llm_moderation_content_sha256,
+      created_via
     )
-    VALUES (COALESCE(${id}::uuid, uuidv7()), 'review', ${data.title || 'Test Review'}, ${data.markdown || ''}, ${data.userId}, ${sha256}, ${sha256})
+    VALUES (COALESCE(${id}::uuid, uuidv7()), 'review', ${data.title || 'Test Review'}, ${data.markdown || ''}, ${data.userId}, ${sha256}, ${sha256}, 'system')
     RETURNING id
   `)
   const postId = postRows[0].id
