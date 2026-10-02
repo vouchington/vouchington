@@ -10,13 +10,20 @@ import {
 
 const createAuthor = async () => ({ ...(await createTestUser()), membership_plan: 'plus' as const })
 
+// The post-created job gives the author's own upvote to the post, which moves its score. A worker
+// that handled it between two pages would move a post past the cursor, so these posts skip it.
 async function submit(author: Awaited<ReturnType<typeof createAuthor>>) {
   const suffix = createRandomString(8).toLowerCase()
-  return createTopicRecommendation(author, WEB_PROVENANCE, {
-    markdown: `Why ${suffix}`,
-    topic_title: `Search topic ${suffix}`,
-    topic_slug: `search-topic-${suffix}`,
-  })
+  return createTopicRecommendation(
+    author,
+    WEB_PROVENANCE,
+    {
+      markdown: `Why ${suffix}`,
+      topic_title: `Search topic ${suffix}`,
+      topic_slug: `search-topic-${suffix}`,
+    },
+    { skipCreatedEvents: true },
+  )
 }
 
 describe('searchTopicRecommendations', () => {
