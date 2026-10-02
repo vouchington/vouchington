@@ -6,14 +6,13 @@ Moderator-specific configuration extending the agents table.
 
 Not partitioned — growth: unbounded.
 
-| Column           | Type                       | Nullable | Default                            | Identity | Generated | Collation | Comment                                                                                                                                      |
-| ---------------- | -------------------------- | -------- | ---------------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `agent_id`       | `uuid`                     | no       |                                    |          |           |           | The agent this moderator config extends (PK, 1:1 with agents).                                                                               |
-| `slug`           | `text`                     | no       |                                    |          |           |           | Unique lowercase identifier for this moderator (e.g. spam-filter).                                                                           |
-| `on_flag_action` | `moderator_on_flag_action` | no       | `'none'::moderator_on_flag_action` |          |           |           | Action taken when a moderator flags content: none (record only, the default; every seeded moderator) or review_queue (move to review queue). |
-| `is_baseline`    | `boolean`                  | no       | `false`                            |          |           |           | When true, this moderator runs on every approved post regardless of community opt-in (baseline safety net).                                  |
-| `created_at`     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`                |          |           |           |                                                                                                                                              |
-| `updated_at`     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`                |          |           |           |                                                                                                                                              |
+| Column        | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                     |
+| ------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------- |
+| `agent_id`    | `uuid`                     | no       |                     |          |           |           | The agent this moderator config extends (PK, 1:1 with agents).                                              |
+| `slug`        | `text`                     | no       |                     |          |           |           | Unique lowercase identifier for this moderator (e.g. spam-filter).                                          |
+| `is_baseline` | `boolean`                  | no       | `false`             |          |           |           | When true, this moderator runs on every approved post regardless of community opt-in (baseline safety net). |
+| `created_at`  | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                             |
+| `updated_at`  | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                             |
 
 **Primary key:** `PRIMARY KEY (agent_id)`
 

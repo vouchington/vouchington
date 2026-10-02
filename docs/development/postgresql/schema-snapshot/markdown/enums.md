@@ -517,11 +517,6 @@
 - `preservation_hold_place`
 - `preservation_hold_release`
 
-## `moderator_on_flag_action`
-
-- `none`
-- `review_queue`
-
 ## `notification_delete_reasons`
 
 - `system_pruned`
