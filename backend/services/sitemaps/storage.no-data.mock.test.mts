@@ -4,19 +4,16 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Readable } from 'node:stream'
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  mockSend: vi.fn<VitestLooseMock>(),
+  mockSend: vi.fn<typeof import('@aws-sdk/client-s3').S3Client.prototype.send>(),
 }))
 
-vi.mock<typeof import('@modules/aws')>(import('@modules/aws'), async importOriginal => {
-  return {
-    ...(await importOriginal<typeof import('@modules/aws')>()),
-    S3ImagesClient: {
-      send: mocks.mockSend,
-    } as unknown as typeof import('@modules/aws').S3ImagesClient,
-  }
+vi.mock<typeof import('@aws-sdk/client-s3')>(import('@aws-sdk/client-s3'), async importOriginal => {
+  const sdk = await importOriginal()
+  vi.spyOn(sdk.S3Client.prototype, 'send').mockImplementation(mocks.mockSend)
+  return sdk
 })
 
 import {
@@ -29,6 +26,31 @@ import { S3Buckets } from '@modules/aws'
 describe('sitemap storage', () => {
   beforeEach(() => {
     mocks.mockSend.mockReset()
+  })
+
+  afterAll(() => {
+    vi.restoreAllMocks()
+  })
+
+  it.each([
+    Object.assign(new Error('missing object'), { name: 'NoSuchKey' }),
+    Object.assign(new Error('missing object'), { $metadata: { httpStatusCode: 404 } }),
+  ])('treats a missing family manifest as empty storage', async missing => {
+    mocks.mockSend.mockRejectedValueOnce(missing)
+
+    await expect(getSitemapFamilyManifest('topics')).resolves.toBeNull()
+    expect(mocks.mockSend).toHaveBeenCalledOnce()
+  })
+
+  it('propagates access denial without treating it as a missing manifest', async () => {
+    const failure = Object.assign(new Error('access denied'), {
+      name: 'AccessDenied',
+      $metadata: { httpStatusCode: 403 },
+    })
+    mocks.mockSend.mockRejectedValueOnce(failure)
+
+    await expect(getSitemapFamilyManifest('topics')).rejects.toBe(failure)
+    expect(mocks.mockSend).toHaveBeenCalledOnce()
   })
 
   it('loads family manifests from the family meta key as JSON', async () => {

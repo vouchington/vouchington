@@ -1,8 +1,32 @@
 import { describe, expect, it } from 'vitest'
 import { Readable } from 'node:stream'
 import { parseSesInboundMime, SesInboundTerminalError } from './mime.mts'
+import { boundedBodyStream } from './s3-streams.mts'
 
 describe('SES inbound MIME parsing', () => {
+  it('rejects oversized raw email and closes the upstream object iterator', async () => {
+    let sourceClosed = false
+    async function* oversizedBody(): AsyncGenerator<Buffer> {
+      try {
+        yield Buffer.alloc(40 * 1024 * 1024)
+        yield Buffer.from('x')
+      } finally {
+        sourceClosed = true
+      }
+    }
+    const stream = boundedBodyStream(oversizedBody())
+    const consume = async () => {
+      for await (const chunk of stream) {
+        expect(chunk).toBeInstanceOf(Buffer)
+        // Consume the bounded S3 object exactly as the MIME parser would.
+      }
+    }
+
+    await expect(consume()).rejects.toBeInstanceOf(SesInboundTerminalError)
+    expect(stream.destroyed).toBe(true)
+    expect(sourceClosed).toBe(true)
+  })
+
   it('extracts sender, subject, body, and reply references', async () => {
     const raw = Buffer.from(
       [

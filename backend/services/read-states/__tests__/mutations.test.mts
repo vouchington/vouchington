@@ -11,6 +11,7 @@ import {
 import type { PrivateUser } from '@services/users/types'
 import { markRead, markUnread } from '../mutations.mts'
 import type { ReadStateEntityType } from '../types.mts'
+import { randomUUID } from 'node:crypto'
 
 describe('read-state mutations', () => {
   let user: PrivateUser
@@ -99,4 +100,17 @@ describe('read-state mutations', () => {
       ).rejects.toThrow('Unknown read state entity type: unsupported')
     })
   })
+
+  it.each(['rss_feed_item', 'post'] as const)(
+    'returns 404 without creating a read state for a missing %s',
+    async type => {
+      const missingId = randomUUID()
+
+      await expect(markRead(user.id, type, missingId)).rejects.toMatchObject({
+        status: 404,
+        message: 'Target entity not found',
+      })
+      expect(await readStateExists(user.id, type, missingId)).toBe(false)
+    },
+  )
 })

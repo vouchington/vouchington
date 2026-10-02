@@ -212,6 +212,24 @@ describe('fetchRemoteActorDocument', () => {
     ).rejects.toBeInstanceOf(RemoteActorFetchAvailabilityError)
   })
 
+  it('preserves unexpected response-body stream errors by identity', async () => {
+    const streamError = new Error('actor response stream failed')
+    const response = new Response(
+      new ReadableStream<Uint8Array>({
+        pull(controller) {
+          controller.error(streamError)
+        },
+      }),
+      { status: 200 },
+    )
+    fetchWithTimeout.mockResolvedValueOnce(fetchWithTimeoutResult(response))
+
+    await expect(
+      fetchRemoteActorDocument(VALID_ACTOR_URI, { fetchWithTimeout, validateUrl }),
+    ).rejects.toBe(streamError)
+    expect(response.body?.locked).toBe(false)
+  })
+
   it('keeps an oversize response body fail-closed, not availability-failed', async () => {
     const oversizeBytes = new Uint8Array(1_000_001)
     const stream = new ReadableStream<Uint8Array>({

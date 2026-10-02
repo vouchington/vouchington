@@ -50,4 +50,25 @@ describe('readResponseBody response compatibility', () => {
     await expect(readPromise).rejects.toThrow('stop reading')
     expect(cancelReason).toBe(reason)
   })
+
+  it('preserves unexpected body-stream errors and releases the Undici reader', async () => {
+    const streamError = new Error('response stream failed')
+    const response = new UndiciResponse(
+      new ReadableStream<Uint8Array>({
+        pull(controller) {
+          controller.error(streamError)
+        },
+      }),
+    )
+
+    await expect(
+      readResponseBody({
+        response,
+        url: 'https://example.com',
+        maxSizeBytes: 1000,
+      }),
+    ).rejects.toBe(streamError)
+
+    expect(response.body?.locked).toBe(false)
+  })
 })
