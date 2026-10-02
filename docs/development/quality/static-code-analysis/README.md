@@ -438,7 +438,7 @@ type-aware TypeScript rules are active. The full lint command is `pnpm run oxlin
 
 `unicorn/prefer-import-meta-properties` is enforced wherever the root configuration is inherited, including backend and tooling workspaces. Use native `import.meta.dirname` and `import.meta.filename` rather than reconstructing them from `import.meta.url`.
 
-Clean import safety rules remain errors; module-style rules deliberately allow named exports, namespace and parent imports, Node builtins, framework default exports, and side-effect imports. The small import correctness backlog is staged in [#1696](https://github.com/vouchington/vouchington/issues/1696). Resolving imports also exposes canonical package and service entrypoint barrels to `oxc/no-barrel-file`; that rule stays off because `index.mts` barrels are the backend module contract.
+Clean import safety rules remain errors; module-style rules deliberately allow named exports, namespace and parent imports, Node builtins, framework default exports, and side-effect imports. Export consistency, duplicate imports, and dependency cycles are enforced; computed namespace lookups remain allowed for registries. SDK and CommonJS-compatible default export shapes remain permitted. Two resolver limitations use narrow documented export suppressions. Resolving imports also exposes canonical package and service entrypoint barrels to `oxc/no-barrel-file`; that rule stays off because `index.mts` barrels are the backend module contract.
 
 Each selected area coverage job consumes only its own full-LCOV artifacts and runs
 `ci/coverage-artifacts.sh area-check`; a missing full LCOV is a producer failure, not an optional

@@ -1,7 +1,6 @@
 export * from './capture.mts'
 export * from './capture-topic-alias.mts'
 export * from './dirty-work.mts'
-export { lockPostPublication, lockTopicRssFeedAttachmentLifecycle } from './lock.mts'
 export * from './types.mts'
 export * from './reconcile.mts'
 export * from './receipts.mts'

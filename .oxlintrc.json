@@ -64,13 +64,13 @@
     "import/prefer-default-export": "off", // Policy: Named exports remain valid for modules with one declaration.
     "import/unambiguous": "off", // Policy: Types-only and configuration files need not contain runtime module syntax.
     "import/no-unassigned-import": "off", // Policy: Side-effect imports intentionally install initialization and styles.
-    "import/export": "off", // Staged #1696: 8 findings; scan 2026-10-01.
-    "import/namespace": "off", // Staged #1696: 9 findings; scan 2026-10-01.
-    "import/no-anonymous-default-export": "off", // Staged #1696: 7 findings; scan 2026-10-01.
-    "import/no-cycle": "off", // Staged #1696: 4 findings; scan 2026-10-01.
-    "import/no-duplicates": "off", // Staged #1696: 3 findings; scan 2026-10-01.
-    "import/no-named-as-default": "off", // Staged #1696: 3 findings; scan 2026-10-01.
-    "import/no-named-as-default-member": "off", // Staged #1696: 15 findings; scan 2026-10-01.
+    "import/export": "error",
+    "import/namespace": ["error", { "allowComputed": true }], // Policy: Worker and Storybook registries use computed namespace access.
+    "import/no-anonymous-default-export": "off", // Policy: Config objects, client instances, and migration factories may be default exports.
+    "import/no-cycle": "error",
+    "import/no-duplicates": "error",
+    "import/no-named-as-default": "off", // Policy: SDK default exports can legitimately share a named export, including Stripe.
+    "import/no-named-as-default-member": "off", // Policy: CommonJS-compatible pg, pgvector, and nodemailer default APIs expose members.
     "import/no-dynamic-require": "error",
     "import/no-named-default": "error",
     "import/no-webpack-loader-syntax": "error",

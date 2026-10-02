@@ -2,7 +2,7 @@ import {
   CI_SECTION_HEADER,
   GROUP_STATUS_ERRORS,
   TRANSCRIPT_FACTS_HEADER,
-} from './retrospective-validate.mts'
+} from './retrospective-validate-grammar.mts'
 
 export function ciFailureSectionErrors(state: {
   failureGroupSources: Set<string>

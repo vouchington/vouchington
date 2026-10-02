@@ -9,7 +9,7 @@ import {
   ROOT_DIAGNOSTIC_LINE,
   SECTION_HEADER,
   TRANSCRIPT_FACTS_HEADER,
-} from './retrospective-validate.mts'
+} from './retrospective-validate-grammar.mts'
 
 export function validateCiFailureSection(lines: string[]): string[] {
   let inside = false

@@ -8,6 +8,8 @@ export {
   setScoredPostTopicCategoryRelationScore,
   softDeleteScoredPostTopicCategoryRelation,
 } from './entities/entity-relations-posts.mts'
+// The import resolver misses the named function in this await-using helper.
+// oxlint-disable-next-line import/export
 export * from './entities/membership-source-rebinding.mts'
 export * from './types.mts'
 export * from './data.mts'
