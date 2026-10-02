@@ -829,18 +829,6 @@
                     }
                   ],
                   "description": "A short label for the link, or null for none."
-                },
-                "user_id": {
-                  "anyOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string",
-                      "format": "uuid"
-                    }
-                  ],
-                  "description": "The account the link belongs to. Leave it out for your own; only an administrator can use another account."
                 }
               },
               "required": ["referral_program_id", "url"],

@@ -3,6 +3,7 @@ import { getPostByAnyCached } from '@services/entity-fetch'
 import { asTopicRecommendationPost } from '@services/topic-recommendations'
 import { componentSchema } from './route-response-schema.mts'
 import { successSchema, type JsonSchema } from './output-schema-shapes.mts'
+import { pruneToSchema } from './prune-to-schema.mts'
 
 export type TopicRecommendationIdArgs = { id: string }
 
@@ -43,6 +44,15 @@ export const TOPIC_RECOMMENDATION_POST_SCHEMA: JsonSchema = {
   },
   required: [...POST.required, 'topic_recommendation'].toSorted(),
 }
+
+/**
+ * The post the tool returns: the service post reduced to what the documented `Post` declares. The
+ * service post also carries internal columns, such as a moderation flag, and user fields the REST
+ * document does not list. The result schema is closed, so they stay out of the result instead of
+ * failing a call after the change was already made.
+ */
+export const toDocumentedRecommendationPost = <TPost extends object>(post: TPost): TPost =>
+  pruneToSchema(TOPIC_RECOMMENDATION_POST_SCHEMA, post) as TPost
 
 export const TOPIC_RECOMMENDATION_RESULT_SCHEMA = successSchema({
   post: TOPIC_RECOMMENDATION_POST_SCHEMA,

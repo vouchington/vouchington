@@ -21,6 +21,8 @@ import withdrawTopicRecommendationTool from './withdraw-topic-recommendation.mts
 
 const SCOPES = ['topic-recommendations:read', 'topic-recommendations:write'] as const
 
+const INTERNAL_POST_COLUMN = 'openai_omni_moderation_flagged'
+
 type Caller = Awaited<ReturnType<typeof createCaller>>
 
 async function createCaller(plan: 'plus' | null = 'plus') {
@@ -65,12 +67,16 @@ describe('topic recommendation write tools contract — real DB', () => {
     )
 
     const post = result.post as TopicRecommendationPost
-    expect(Object.keys(post).toSorted()).toEqual(Object.keys(rest.body.post).toSorted())
+    // The route sends the service post as it is, internal moderation column included. The tool
+    // sends the documented properties only.
+    const restKeys = Object.keys(rest.body.post).filter(key => key !== INTERNAL_POST_COLUMN)
+    expect(Object.keys(rest.body.post)).toContain(INTERNAL_POST_COLUMN)
+    expect(Object.keys(post).toSorted()).toEqual(restKeys.toSorted())
     expect(post.topic_recommendation).toMatchObject({
       topic_title: 'Renamed topic',
       topic_slug: recommendation.topic_recommendation.topic_slug,
       topic_markdown: 'From REST',
-      aliases: ['Alias One'],
+      aliases: ['alias one'],
       status: 'pending',
     })
     expect(await storedTitle(recommendation.id)).toBe('Renamed topic')
@@ -203,6 +209,9 @@ describe('topic recommendation write tools contract — real DB', () => {
       { id: recommendation.id },
       SCOPES,
     )
+    await expect(
+      withdrawTopicRecommendationTool.function(caller)({ id: recommendation.id }),
+    ).rejects.toMatchObject({ status: 403, message: 'Your account has been suspended' })
 
     expect(await storedTitle(recommendation.id)).toBe(
       recommendation.topic_recommendation.topic_title,

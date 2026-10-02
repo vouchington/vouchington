@@ -9,8 +9,10 @@ import {
   unsuspendTestUser,
 } from '@voucha/test-helpers'
 import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
+import type { ApiScope } from '@modules/scopes'
 import { createPost } from '@services/posts'
 import { HASHTAG_IN_POST_TEXT_MESSAGE } from '@services/posts/update/hashtag-intent'
+import removeEntityRelationTool from './remove-entity-relation.mts'
 
 const SCOPES = ['entity-relations:read', 'entity-relations:write'] as const
 const PRIVATE_SCOPES = [...SCOPES, 'post-relations.owned-private:write'] as const
@@ -21,8 +23,30 @@ async function createCaller(plan: 'plus' | null = 'plus') {
   return { ...(await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)), membership_plan: plan }
 }
 
-const removeArgs = (post_id: string, tag: string) => ({ action: 'remove_tag', post_id, tag })
+const removeArgs = (post_id: string, tag: string) => ({
+  action: 'remove_tag' as const,
+  post_id,
+  tag,
+})
 const suffixed = () => createRandomString(8).toLowerCase()
+
+/**
+ * The call path reduces an error the tool throws to one generic failure text, so a refusal is
+ * checked twice: the call is refused, and the tool function throws the status and message the
+ * REST route sends.
+ */
+async function expectRefused(
+  caller: Owner,
+  args: ReturnType<typeof removeArgs>,
+  scopes: readonly ApiScope[],
+  expected: { status: number; message: string },
+) {
+  const invocation = { credentialOwnerId: caller.id, grantedScopes: scopes }
+  await callRejectedMcpTool(caller, 'remove_entity_relation', args, scopes)
+  await expect(removeEntityRelationTool.function(caller)(args, invocation)).rejects.toMatchObject(
+    expected,
+  )
+}
 
 describe('remove_entity_relation contract — real DB', () => {
   const suspendedUserIds: string[] = []
@@ -81,14 +105,11 @@ describe('remove_entity_relation contract — real DB', () => {
     })
     const before = await getPostHashtagSourcesForTest(post.id)
 
-    const message = await callRejectedMcpTool(
-      owner,
-      'remove_entity_relation',
-      removeArgs(post.id, `#inline-${suffix}`),
-      SCOPES,
-    )
+    await expectRefused(owner, removeArgs(post.id, `#inline-${suffix}`), SCOPES, {
+      status: 422,
+      message: HASHTAG_IN_POST_TEXT_MESSAGE,
+    })
 
-    expect(message).toContain(HASHTAG_IN_POST_TEXT_MESSAGE)
     expect(await getPostHashtagSourcesForTest(post.id)).toEqual(before)
   })
 
@@ -97,8 +118,7 @@ describe('remove_entity_relation contract — real DB', () => {
     const post = await postWithTag(suffix, { broadcast: 'users', privacy: 'private' })
     const args = removeArgs(post.id, `#drop-${suffix}`)
 
-    const denied = await callRejectedMcpTool(owner, 'remove_entity_relation', args, SCOPES)
-    expect(denied).toContain('Forbidden')
+    await expectRefused(owner, args, SCOPES, { status: 403, message: 'Forbidden' })
     expect(await getPostHashtagSourcesForTest(post.id)).toHaveLength(1)
 
     const allowed = await callStructuredMcpTool(
@@ -112,14 +132,10 @@ describe('remove_entity_relation contract — real DB', () => {
 
     const stranger = await createCaller()
     const hidden = await postWithTag(suffix, { broadcast: 'users', privacy: 'private' })
-    const foreign = await callRejectedMcpTool(
-      stranger,
-      'remove_entity_relation',
-      removeArgs(hidden.id, `#drop-${suffix}`),
-      PRIVATE_SCOPES,
-    )
-    expect(foreign).toContain('Post not found')
-    expect(foreign).not.toContain(hidden.id)
+    await expectRefused(stranger, removeArgs(hidden.id, `#drop-${suffix}`), PRIVATE_SCOPES, {
+      status: 404,
+      message: 'Post not found',
+    })
     expect(await getPostHashtagSourcesForTest(hidden.id)).toHaveLength(1)
   })
 
@@ -129,22 +145,14 @@ describe('remove_entity_relation contract — real DB', () => {
     await approveTestPost(post.id)
     const caller = await createCaller()
 
-    expect(
-      await callRejectedMcpTool(
-        caller,
-        'remove_entity_relation',
-        removeArgs(post.id, `#drop-${suffix}`),
-        SCOPES,
-      ),
-    ).toContain('Forbidden')
-    expect(
-      await callRejectedMcpTool(
-        caller,
-        'remove_entity_relation',
-        removeArgs(crypto.randomUUID(), `#drop-${suffix}`),
-        SCOPES,
-      ),
-    ).toContain('Post not found')
+    await expectRefused(caller, removeArgs(post.id, `#drop-${suffix}`), SCOPES, {
+      status: 403,
+      message: 'Forbidden',
+    })
+    await expectRefused(caller, removeArgs(crypto.randomUUID(), `#drop-${suffix}`), SCOPES, {
+      status: 404,
+      message: 'Post not found',
+    })
     expect(await getPostHashtagSourcesForTest(post.id)).toHaveLength(1)
   })
 
@@ -173,14 +181,10 @@ describe('remove_entity_relation contract — real DB', () => {
     await suspendTestUser(author.id)
     suspendedUserIds.push(author.id)
 
-    expect(
-      await callRejectedMcpTool(
-        author,
-        'remove_entity_relation',
-        removeArgs(post.id, `#drop-${suffix}`),
-        SCOPES,
-      ),
-    ).toContain('Your account has been suspended')
+    await expectRefused(author, removeArgs(post.id, `#drop-${suffix}`), SCOPES, {
+      status: 403,
+      message: 'Your account has been suspended',
+    })
     expect(await getPostHashtagSourcesForTest(post.id)).toHaveLength(1)
   })
 

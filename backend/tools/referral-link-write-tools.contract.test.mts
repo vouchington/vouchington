@@ -8,10 +8,12 @@ import {
   unsuspendTestUser,
 } from '@voucha/test-helpers'
 import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
+import { OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN } from '@modules/on-error/error-codes'
 import { getTopicBySlug } from '@services/topics/get'
 import { getUserReferralLink, type UserReferralLink } from '@services/user-referral-program-links'
 import { addUserRole } from '@services/users/roles-permissions'
 import deleteReferralLinkTool from './delete-referral-link.mts'
+import { getRegisteredToolByName } from './registry/index.mts'
 import updateReferralLinkTool from './update-referral-link.mts'
 
 const SCOPES = ['referral-links:read', 'referral-links:write'] as const
@@ -22,6 +24,17 @@ type LinkResult = { referral_link: UserReferralLink }
 async function createCaller(plan: 'plus' | null = 'plus') {
   return { ...(await createTestUser()), membership_plan: plan }
 }
+
+/**
+ * The refusal the tool throws itself. The call path reduces a thrown error to one generic failure
+ * text, so the status and message are asserted on the tool function and the refusal on the call.
+ */
+const expectToolThrows = (
+  caller: Caller,
+  name: string,
+  args: Record<string, unknown>,
+  expected: { status?: number; message?: string; code?: string },
+) => expect(getRegisteredToolByName(name)!.function(caller)(args)).rejects.toMatchObject(expected)
 
 const unique = () => crypto.randomUUID().slice(0, 8)
 
@@ -154,16 +167,9 @@ describe('referral link write tools contract — real DB', () => {
     const { id } = await createLink(owner, { label: 'Owner link' })
 
     for (const [name, args] of linkCalls(id)) {
-      expect(await callRejectedMcpTool(caller, name, args, SCOPES)).toContain('Forbidden')
+      await callRejectedMcpTool(caller, name, args, SCOPES)
+      await expectToolThrows(caller, name, args, { status: 403 })
     }
-    expect(
-      await callRejectedMcpTool(
-        caller,
-        'create_referral_link',
-        createArgs({ user_id: owner.id }),
-        SCOPES,
-      ),
-    ).toContain('Forbidden')
     await expect(
       updateReferralLinkTool.function(caller)({ link_id: crypto.randomUUID(), label: 'x' }),
     ).rejects.toMatchObject({ status: 404 })
@@ -174,22 +180,28 @@ describe('referral link write tools contract — real DB', () => {
     })
   })
 
-  it('keeps the REST policy: an administrator may manage another user’s link', async () => {
+  it('keeps the REST policy: an administrator is an official account that cannot create or edit a link but may switch or delete another user’s', async () => {
     const admin = await createCaller()
     await addUserRole(admin.id, 'administrator')
     const owner = await createCaller()
-    const { id } = await createLink(owner)
+    const { id } = await createLink(owner, { label: 'Owner link' })
+    const official = { status: 403, code: OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN }
 
-    const created = await createLink(admin, { user_id: owner.id })
-    const updated = await callStructuredMcpTool(
+    await expectToolThrows(admin, 'create_referral_link', createArgs(), official)
+    await expectToolThrows(
       admin,
       'update_referral_link',
       { link_id: id, label: 'Staff label' },
-      SCOPES,
+      official,
     )
+    const call = (name: string) => callStructuredMcpTool(admin, name, { link_id: id }, SCOPES)
+    const off = (await call('deactivate_referral_link')) as LinkResult
+    const on = (await call('activate_referral_link')) as LinkResult
+    expect(off.referral_link.deactivated_at).toEqual(expect.any(String))
+    expect(on.referral_link).toMatchObject({ id, label: 'Owner link', deactivated_at: null })
 
-    expect(created.user_id).toBe(owner.id)
-    expect((updated as LinkResult).referral_link).toMatchObject({ id, label: 'Staff label' })
+    expect(await call('delete_referral_link')).toEqual({ success: true })
+    expect(await getUserReferralLink(id)).toBeNull()
   })
 
   it('request_referral_link_unfurl marks the Amex link of a paid owner as requested', async () => {
@@ -217,9 +229,13 @@ describe('referral link write tools contract — real DB', () => {
     const caller = await createCaller()
     const { id } = await createLink(caller)
 
-    expect(
-      await callRejectedMcpTool(caller, 'request_referral_link_unfurl', { link_id: id }, SCOPES),
-    ).toContain('Only Amex all-cards referral links can be unfurled')
+    await callRejectedMcpTool(caller, 'request_referral_link_unfurl', { link_id: id }, SCOPES)
+    await expectToolThrows(
+      caller,
+      'request_referral_link_unfurl',
+      { link_id: id },
+      { message: 'Only Amex all-cards referral links can be unfurled' },
+    )
     expect((await getUserReferralLink(id))?.unfurl_requested_at).toBeNull()
   })
 
@@ -249,22 +265,23 @@ describe('referral link write tools contract — real DB', () => {
     const calls = [['create_referral_link', createArgs()], ...linkCalls(id)] as const
 
     for (const [name, args] of calls) {
-      expect(await callRejectedMcpTool(caller, name, args, SCOPES)).toContain(
-        'Your account has been suspended',
-      )
+      await callRejectedMcpTool(caller, name, args, SCOPES)
+      await expectToolThrows(caller, name, args, {
+        status: 403,
+        message: 'Your account has been suspended',
+      })
     }
 
     expect(await getUserReferralLink(id)).toMatchObject({ label: 'Frozen', deactivated_at: null })
   })
 
+  const validCreate = { referral_program_id: crypto.randomUUID(), url: 'https://e.com/' }
   it.each([
     ['create_referral_link', {}],
     ['create_referral_link', { referral_program_id: 'nope', url: 'https://example.com/x' }],
     ['create_referral_link', { referral_program_id: crypto.randomUUID(), url: '' }],
-    [
-      'create_referral_link',
-      { referral_program_id: crypto.randomUUID(), url: 'https://e.com/', x: 1 },
-    ],
+    ['create_referral_link', { ...validCreate, x: 1 }],
+    ['create_referral_link', { ...validCreate, user_id: crypto.randomUUID() }],
     ['update_referral_link', { link_id: 'nope', label: 'x' }],
     ['update_referral_link', { link_id: crypto.randomUUID(), label: 7 }],
     ['delete_referral_link', {}],

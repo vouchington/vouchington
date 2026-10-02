@@ -8,23 +8,28 @@ pair, and a read-only grant never satisfies the write scope. The per-call MCP au
 call. The generated [tool catalog](catalog.md) holds each description, hint and scope; the
 [agent tools overview](README.md) covers metadata and plan gating.
 
-| Tool                            | REST twin                                           | Notes                                                                                |
-| ------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `remove_entity_relation`        | `PATCH /api/v1/posts/:idOrSlug` (categories)        | `action: remove_tag`; scopes `entity-relations:read/write`                           |
-| `create_referral_link`          | `POST /api/v1/referral-links`                       | Re-adding a link reactivates it and keeps its label; `user_id` is for administrators |
-| `update_referral_link`          | `PATCH /api/v1/referral-links/:linkId`              | Changes the label; a null label clears it                                            |
-| `delete_referral_link`          | `DELETE /api/v1/referral-links/:linkId`             | Deleting a deleted link is not found; returns `{ success: true }`                    |
-| `activate_referral_link`        | `POST /api/v1/referral-links/:linkId/activations`   | Child links follow their parent and are refused                                      |
-| `deactivate_referral_link`      | `DELETE /api/v1/referral-links/:linkId/activations` | Idempotent                                                                           |
-| `request_referral_link_unfurl`  | `POST /api/v1/referral-links/:linkId/unfurls`       | Amex all-cards links of a paid owner only; the work runs in the background           |
-| `update_topic_recommendation`   | `PATCH /api/v1/topic-recommendations/:id`           | Pending only; omitted fields are kept                                                |
-| `withdraw_topic_recommendation` | `DELETE /api/v1/topic-recommendations/:id`          | Pending only; withdrawing a withdrawn one is not found                               |
+| Tool                            | REST twin                                           | Notes                                                                      |
+| ------------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------- |
+| `remove_entity_relation`        | `PATCH /api/v1/posts/:idOrSlug` (categories)        | `action: remove_tag`; scopes `entity-relations:read/write`                 |
+| `create_referral_link`          | `POST /api/v1/referral-links`                       | Always for the caller; re-adding a link reactivates it and keeps its label |
+| `update_referral_link`          | `PATCH /api/v1/referral-links/:linkId`              | Changes the label; a null label clears it                                  |
+| `delete_referral_link`          | `DELETE /api/v1/referral-links/:linkId`             | Deleting a deleted link is not found; returns `{ success: true }`          |
+| `activate_referral_link`        | `POST /api/v1/referral-links/:linkId/activations`   | Child links follow their parent and are refused                            |
+| `deactivate_referral_link`      | `DELETE /api/v1/referral-links/:linkId/activations` | Idempotent                                                                 |
+| `request_referral_link_unfurl`  | `POST /api/v1/referral-links/:linkId/unfurls`       | Amex all-cards links of a paid owner only; the work runs in the background |
+| `update_topic_recommendation`   | `PATCH /api/v1/topic-recommendations/:id`           | Pending only; omitted fields are kept                                      |
+| `withdraw_topic_recommendation` | `DELETE /api/v1/topic-recommendations/:id`          | Pending only; withdrawing a withdrawn one is not found                     |
 
 Referral link tools use `referral-links:read` and `referral-links:write`; recommendation tools use
 `topic-recommendations:read` and `topic-recommendations:write`. The recommendation read scope has
 no read tool yet. Every tool refuses a suspended account before any change, and validates its
 arguments (a closed schema, so unknown fields fail) before it runs. Ownership and the domain checks
-stay in the service commands, so the caller gets the same `403` and `404` message the route sends.
+stay in the service commands and throw the status and message the route sends. Official accounts,
+administrators included, cannot create or edit a personal referral link, as on REST, so
+`create_referral_link` takes no `user_id`; an administrator can still activate, deactivate and delete
+another user's link. The MCP call path
+reports a thrown error and returns its generic `Tool execution failed. Please try again.` text, as
+for every other write tool, while scope, plan and argument refusals keep their own messages.
 
 ## Tags: add, remove and the hidden curry
 
@@ -49,6 +54,12 @@ from a feed, not a change to a submitted recommendation. It stays REST-only, as
 [Bookmark and List Write Tools](bookmark-list-write-tools.md) decided, and `set_bookmark` rejects it.
 The tag tools and the recommendation tools do not overlap: one edits a post's hashtags, the other
 edits the proposed-topic extension of a `topic_recommendation` post.
+
+`update_topic_recommendation` returns the post the PATCH route documents. The service post also
+holds fields the documented `Post` does not list (an internal moderation flag, and display fields on
+the author stubs), and the REST route sends them as they are. The result schema is closed, so the
+tool prunes the post to the documented properties with `pruneToSchema`, rather than failing a call
+whose change was already made.
 
 ## REST write inventory
 

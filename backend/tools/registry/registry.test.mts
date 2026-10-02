@@ -24,6 +24,7 @@ const NON_TOOL_FILES = new Set([
   'output-schema-shapes.mts',
   'paged-search.mts',
   'private-user.mts',
+  'prune-to-schema.mts',
   'read-tool-output-schema.mts',
   'referral-link-tool-support.mts',
   'resolve-topic.mts',

@@ -11,7 +11,6 @@ type CreateReferralLinkArgs = {
   referral_program_id: string
   url: string
   label?: string | null
-  user_id?: string | null
 }
 
 const tool: Tool<CreateReferralLinkArgs, { success: true; referral_link: UserReferralLink }> = {
@@ -33,11 +32,6 @@ const tool: Tool<CreateReferralLinkArgs, { success: true; referral_link: UserRef
           anyOf: [{ type: 'null' }, { type: 'string' }],
           description: 'A short label for the link, or null for none.',
         },
-        user_id: {
-          anyOf: [{ type: 'null' }, { type: 'string', format: 'uuid' }],
-          description:
-            'The account the link belongs to. Leave it out for your own; only an administrator can use another account.',
-        },
       },
       required: ['referral_program_id', 'url'],
       additionalProperties: false,
@@ -56,7 +50,7 @@ const tool: Tool<CreateReferralLinkArgs, { success: true; referral_link: UserRef
   function: (currentUser: BasicUser) => async (args: CreateReferralLinkArgs) => {
     const user = await requireActiveToolUser(currentUser)
     const referral_link = await createUserReferralLink(user, {
-      user_id: args.user_id || user.id,
+      user_id: user.id,
       referral_program_id: args.referral_program_id,
       url: args.url,
       label: args.label,
