@@ -6,18 +6,26 @@ import {
   type ClassifierRunAdapter,
 } from '../../../../services/classifier-runs/index.mts'
 
-/** Every post id the C6 sweep dispatches now, drained across pages. */
-export const sweepableAutotaggerPostIds = () => sweepablePostIds(createAutotaggerRunAdapter())
-
-/** Every post id an adapter's sweep dispatches now, drained across pages. */
-export async function sweepablePostIds<C, L, E>(
+async function sweepableSubjectIds<C, L, E>(
   adapter: ClassifierRunAdapter<C, L, E>,
+  subjectId: (item: { postId: string | null; rssFeedItemId: string | null }) => string | null,
   after: string | null = null,
 ): Promise<string[]> {
   const page = await listPendingClassifierRunRequests(adapter, after)
-  const ids = page.items.flatMap(item => (item.postId ? [item.postId] : []))
-  return page.next ? [...ids, ...(await sweepablePostIds(adapter, page.next))] : ids
+  const ids = page.items.flatMap(item => subjectId(item) ?? [])
+  return page.next ? [...ids, ...(await sweepableSubjectIds(adapter, subjectId, page.next))] : ids
 }
+
+/** Every post id an adapter's sweep dispatches now, drained across pages. */
+export const sweepablePostIds = <C, L, E>(adapter: ClassifierRunAdapter<C, L, E>) =>
+  sweepableSubjectIds(adapter, item => item.postId)
+
+/** Every feed item id an adapter's sweep dispatches now, drained across pages. */
+export const sweepableFeedItemIds = <C, L, E>(adapter: ClassifierRunAdapter<C, L, E>) =>
+  sweepableSubjectIds(adapter, item => item.rssFeedItemId)
+
+/** Every post id the C6 sweep dispatches now, drained across pages. */
+export const sweepableAutotaggerPostIds = () => sweepablePostIds(createAutotaggerRunAdapter())
 
 /**
  * The adapter whose sweep eligibility also waits on a prerequisite the test controls, as C6 waits

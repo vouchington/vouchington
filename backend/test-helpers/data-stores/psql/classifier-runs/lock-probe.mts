@@ -39,25 +39,33 @@ export async function probeClassifierSubjectLockWhileHeld<C, L, E>(
 }
 
 /**
- * The adapter with every candidate search preceded by a lock probe. `observed` collects what each
- * search saw, and `afterCapture` runs once the search returns, to model the subject changing while
- * the search was in flight.
+ * The adapter with every candidate search (topics or stories, whichever it captures) preceded by a
+ * lock probe. `observed` collects what each search saw, and `afterCapture` runs once the search
+ * returns, to model the subject changing while the search was in flight.
  */
 export function observeCandidateCaptureLock<C, L, E>(
   adapter: ClassifierRunAdapter<C, L, E>,
   observed: Array<'free' | 'held'>,
   afterCapture?: (subject: ClassifierRunSubject) => Promise<void>,
 ): ClassifierRunAdapter<C, L, E> {
-  if (!adapter.captureCandidates) {
+  const { captureCandidates, captureStoryCandidates } = adapter
+  if (!captureCandidates && !captureStoryCandidates) {
     throw new Error('observed classifier does not capture candidates')
   }
-  return {
-    ...adapter,
-    async captureCandidates(query, subject, current) {
-      observed.push(await probeClassifierSubjectLock(adapter, subject))
-      const topicIds = (await adapter.captureCandidates?.(query, subject, current)) ?? null
-      await afterCapture?.(subject)
-      return topicIds
-    },
+  const observe = async <T,>(subject: ClassifierRunSubject, search: () => Promise<T>) => {
+    observed.push(await probeClassifierSubjectLock(adapter, subject))
+    const found = await search()
+    await afterCapture?.(subject)
+    return found
   }
+  const observing: ClassifierRunAdapter<C, L, E> = { ...adapter }
+  if (captureCandidates) {
+    observing.captureCandidates = (query, subject, current) =>
+      observe(subject, () => captureCandidates.call(adapter, query, subject, current))
+  }
+  if (captureStoryCandidates) {
+    observing.captureStoryCandidates = (query, subject, current) =>
+      observe(subject, () => captureStoryCandidates.call(adapter, query, subject, current))
+  }
+  return observing
 }
