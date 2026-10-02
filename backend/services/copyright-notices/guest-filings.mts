@@ -3,6 +3,7 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
 import { encryptSecret, hashToken } from '@modules/token-secrets'
+import { recordClaimantMisuseEvent } from './claimant-misuse-ledger.mts'
 import { copyrightGuestCapabilityPurpose } from './guest-capabilities.mts'
 import { revokeCopyrightGuestCapabilitiesForWithdrawal } from './guest-capability-withdrawal.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
@@ -85,6 +86,11 @@ export async function appendCopyrightGuestFiling(input: {
     `)
   }
   if (input.kind === 'withdrawal') {
+    await recordClaimantMisuseEvent(transaction, {
+      noticeId: input.noticeId,
+      recordedAt: input.now,
+      event: { outcome: 'notice_withdrawn', submissionId: submission.id },
+    })
     await revokeCopyrightGuestCapabilitiesForWithdrawal(transaction, {
       noticeId: input.noticeId,
       revokedAt: input.now,

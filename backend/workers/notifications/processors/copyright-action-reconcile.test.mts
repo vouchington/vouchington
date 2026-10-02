@@ -17,6 +17,7 @@ function page(results: string[], endCursor: string | null): CopyrightSweepIdPage
 type SweepPages = {
   formReviews?: CopyrightSweepIdPage[]
   pendingEnforcement?: CopyrightSweepIdPage[]
+  suspendedClaimants?: CopyrightSweepIdPage[]
   blockedHoldRestorations?: CopyrightSweepIdPage[]
   dueRestorations?: CopyrightSweepIdPage[]
   actionIntents?: CopyrightSweepIdPage[]
@@ -48,6 +49,14 @@ function reconcileDeps(pages: SweepPages = {}) {
     enforceAssessment: vi.fn<Deps['enforceAssessment']>(async id => {
       log.push(`enforce assessment ${id}`)
     }),
+    searchSuspendedClaimantRestrictions: vi.fn<Deps['searchSuspendedClaimantRestrictions']>(
+      sweep(log, 'suspended claimants', pages.suspendedClaimants),
+    ),
+    liftSuspendedClaimantRestrictions: vi.fn<Deps['liftSuspendedClaimantRestrictions']>(
+      async id => {
+        log.push(`lift suspended claimant ${id}`)
+      },
+    ),
     searchDueRestorations: vi.fn<Deps['searchDueRestorations']>(
       sweep(log, 'due restorations', pages.dueRestorations),
     ),
@@ -81,6 +90,10 @@ describe('processReconcileCopyrightActionIntents', () => {
         page(['assessment-1'], 'assessment-cursor'),
         page(['assessment-2'], null),
       ],
+      suspendedClaimants: [
+        page(['claimant-notice-1'], 'claimant-cursor'),
+        page(['claimant-notice-2'], null),
+      ],
       blockedHoldRestorations: [page(['notice-1'], 'notice-cursor'), page(['notice-2'], null)],
       dueRestorations: [page(['deadline-1'], 'deadline-cursor'), page(['deadline-2'], null)],
       actionIntents: [page(['intent-1', 'intent-2'], 'intent-cursor'), page(['intent-3'], null)],
@@ -98,6 +111,10 @@ describe('processReconcileCopyrightActionIntents', () => {
       'enforce assessment assessment-1',
       'search pending enforcement',
       'enforce assessment assessment-2',
+      'search suspended claimants',
+      'lift suspended claimant claimant-notice-1',
+      'search suspended claimants',
+      'lift suspended claimant claimant-notice-2',
       'search blocked hold restorations',
       'recover blocked hold restorations notice-1',
       'search blocked hold restorations',
@@ -116,6 +133,14 @@ describe('processReconcileCopyrightActionIntents', () => {
     expect(deps.searchPendingEnforcement.mock.calls).toEqual([
       [{}],
       [{ after: 'assessment-cursor' }],
+    ])
+    expect(deps.searchSuspendedClaimantRestrictions.mock.calls).toEqual([
+      [{}],
+      [{ after: 'claimant-cursor' }],
+    ])
+    expect(deps.liftSuspendedClaimantRestrictions.mock.calls).toEqual([
+      ['claimant-notice-1', NOW],
+      ['claimant-notice-2', NOW],
     ])
     expect(deps.searchDueRestorations.mock.calls).toEqual([
       [{ now: NOW }],
@@ -170,16 +195,19 @@ describe('processReconcileCopyrightActionIntents', () => {
     const { deps } = reconcileDeps({
       formReviews: [page(['failing-review', 'same-page-review'], null)],
       pendingEnforcement: [page(['assessment'], null)],
+      suspendedClaimants: [page(['failing-claimant', 'same-page-claimant'], null)],
       blockedHoldRestorations: [page(['failing-notice', 'same-page-notice'], null)],
       actionIntents: [page(['failing-intent', 'same-page-intent'], null)],
     })
     const reviewFailure = new Error('form review recovery failed')
     const recoveryFailure = new Error('decision recovery failed')
+    const liftFailure = new Error('suspended claimant lift failed')
     const dueSearchFailure = new Error('due restoration search failed')
     const holdFailure = new Error('blocked hold restoration recovery failed')
     const enqueueFailure = new Error('enqueue failed')
     deps.recoverFormReview.mockRejectedValueOnce(reviewFailure)
     deps.recoverDecisionAssessments.mockRejectedValueOnce(recoveryFailure)
+    deps.liftSuspendedClaimantRestrictions.mockRejectedValueOnce(liftFailure)
     deps.searchDueRestorations.mockRejectedValueOnce(dueSearchFailure)
     deps.recoverBlockedHoldRestorations.mockRejectedValueOnce(holdFailure)
     deps.enqueueApplyCopyrightAction.mockRejectedValueOnce(enqueueFailure)
@@ -193,12 +221,14 @@ describe('processReconcileCopyrightActionIntents', () => {
     expect((failure as AggregateError).errors).toEqual([
       reviewFailure,
       recoveryFailure,
+      liftFailure,
       holdFailure,
       dueSearchFailure,
       enqueueFailure,
     ])
     expect(deps.recoverFormReview).toHaveBeenCalledWith('same-page-review')
     expect(deps.enforceAssessment).toHaveBeenCalledWith('assessment')
+    expect(deps.liftSuspendedClaimantRestrictions).toHaveBeenCalledWith('same-page-claimant', NOW)
     expect(deps.recoverBlockedHoldRestorations).toHaveBeenCalledWith('same-page-notice', NOW)
     expect(deps.enqueueApplyCopyrightAction).toHaveBeenCalledWith('same-page-intent')
   })

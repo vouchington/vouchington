@@ -34,5 +34,33 @@ export const copyrightRegistryEntry = defineDynamicConfigNamespace({
       description:
         'Hash media a moderator confirmed as infringing and send later uploads of the same or a near-identical image to staff review. Never blocks, hides or delays an upload. Off until counsel decides Voucha is an online content-sharing service provider; read the copyright runbook before enabling.',
     },
+    automaticWithholdingMinTrustTier: {
+      description:
+        'Lowest claimant trust tier whose clear-screened notice may be withheld automatically. -1 means unset: every gate must be set before any automatic withholding happens, and an unset gate sends the notice to a moderator.',
+      min_value: -1,
+      max_value: 5,
+      integer: true,
+    },
+    automaticWithholdingMinAccountAgeDays: {
+      description:
+        'Days a claimant account must exist before its clear-screened notice may be withheld automatically. -1 means unset: automatic withholding is refused and the notice goes to a moderator.',
+      min_value: -1,
+      max_value: 3650,
+      integer: true,
+    },
+    automaticWithholdingClaimantDailyCap: {
+      description:
+        'Most notices per claimant in a rolling 24 hours that may be withheld automatically. Notices over the cap go to a moderator and are never dropped. -1 means unset: automatic withholding is refused.',
+      min_value: -1,
+      max_value: 10_000,
+      integer: true,
+    },
+    automaticWithholdingPosterDailyCap: {
+      description:
+        'Most automatic withholdings against one poster in a rolling 24 hours, so one account cannot be taken down by a burst of notices. Notices over the cap go to a moderator and are never dropped. -1 means unset: automatic withholding is refused.',
+      min_value: -1,
+      max_value: 10_000,
+      integer: true,
+    },
   },
 })

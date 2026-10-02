@@ -11,6 +11,7 @@ import {
   enableAutomaticProvisionalWithholdingForTest,
   useAutomaticProvisionalWithholding,
 } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
+import { readTestAutomaticWithholdingOutcome } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding-reads'
 import { createClearScreenedForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import {
@@ -50,6 +51,17 @@ async function findInReviewQueue(
 
 async function isListedInReviewQueue(request: StaffRequest, noticeId: string): Promise<boolean> {
   return (await findInReviewQueue(request, noticeId)) !== undefined
+}
+
+/** A clear-screened form received two years ago, before the switch-on the test helper records. */
+async function createFormReceivedBeforeSwitchOn() {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000)
+  try {
+    return await createClearScreenedForm()
+  } finally {
+    vi.useRealTimers()
+  }
 }
 
 function reviewFormIntake(request: StaffRequest, intakeId: string) {
@@ -165,6 +177,80 @@ describe('moderator-first copyright withholding', () => {
         true,
       )
       await reviewFormIntake(staff, notice.intake.id).expect(422)
+    })
+
+    it('enforces an automated assessment left pending from the current on-period', async () => {
+      const { notice, screeningId } = await createClearScreenedForm()
+      const automated = await appendCopyrightSubmissionAssessment({
+        submissionId: notice.intake.copyright_notice_submission_id,
+        assessedAt: new Date(),
+        currentUser: null,
+        substantiallyCompliant: true,
+        copyrightFormScreeningId: screeningId,
+      })
+
+      await expect(
+        readTestOwnedCopyrightSweepIds(
+          searchPendingCopyrightEnforcementAssessmentIds,
+          automated.id,
+        ),
+      ).resolves.toEqual([automated.id])
+      await enforceCopyrightAssessment(automated.id)
+      await expect(
+        countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
+      ).resolves.toBe(1)
+    })
+
+    it('does not enforce an automated assessment left pending from before the switch-on, and shows moderators', async () => {
+      // Sign in first: the helper moves the clock back, and a session minted then is already expired.
+      const staff = await createStaffRequest()
+      const { notice, screeningId } = await createFormReceivedBeforeSwitchOn()
+      const automated = await appendCopyrightSubmissionAssessment({
+        submissionId: notice.intake.copyright_notice_submission_id,
+        assessedAt: new Date(),
+        currentUser: null,
+        substantiallyCompliant: true,
+        copyrightFormScreeningId: screeningId,
+      })
+
+      await enforceCopyrightAssessment(automated.id)
+
+      await expect(
+        readTestOwnedCopyrightSweepIds(
+          searchPendingCopyrightEnforcementAssessmentIds,
+          automated.id,
+        ),
+      ).resolves.toEqual([])
+      await expect(
+        countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
+      ).resolves.toBe(0)
+      await expect(
+        findInReviewQueue(staff, notice.intake.copyright_notice_id),
+      ).resolves.toMatchObject({ reasons: expect.arrayContaining(['enforcement_pending']) })
+      await reviewFormIntake(staff, notice.intake.id).expect(200)
+      await expect(
+        countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
+      ).resolves.toBe(1)
+    })
+
+    it('refuses a notice received before the switch-on and lets a moderator accept it', async () => {
+      const staff = await createStaffRequest()
+      const { notice } = await createFormReceivedBeforeSwitchOn()
+
+      await applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id)
+
+      await expect(readTestAutomaticWithholdingOutcome(notice)).resolves.toEqual({
+        refusal: 'received_before_switch_on',
+        assessments: 0,
+        restrictions: 0,
+      })
+      await expect(isListedInReviewQueue(staff, notice.intake.copyright_notice_id)).resolves.toBe(
+        true,
+      )
+      await reviewFormIntake(staff, notice.intake.id).expect(200)
+      await expect(
+        countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
+      ).resolves.toBe(1)
     })
   })
 })

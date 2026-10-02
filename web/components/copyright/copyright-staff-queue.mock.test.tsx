@@ -124,7 +124,7 @@ function makeNotice(): CopyrightStaffQueueItem {
     id: 'case-123',
     jurisdiction: 'us_dmca',
     received_at: '2026-01-01T00:00:00.000Z',
-    claimant: { display_name: 'Claimant', contact: 'claimant@example.test' },
+    claimant: { display_name: 'Claimant', contact: 'claimant@example.test', misuse: null },
     work_description: 'Original photograph.',
     targets: [],
     evidence: [],

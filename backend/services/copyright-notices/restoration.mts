@@ -3,6 +3,7 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { getImagePlacementForCopyright, getImagePlacementKey } from '@services/images/placements'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
+import { recordCounterNoticeRestoration } from './claimant-misuse-ledger.mts'
 import { noticeHasUnassessedCourtOrCcbFiling } from './court-hold-assessment-gate.mts'
 import type { CopyrightActionIntentRecord, CopyrightLegalHoldAssessmentRecord } from './types.mts'
 
@@ -190,6 +191,7 @@ export async function createEligibleCopyrightRestoreIntent(input: {
     INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, copyright_notice_action_intent_id)
     VALUES (${input.noticeId}, 'restoration_intent_created', ${intent.id})
   `)
+  await recordCounterNoticeRestoration(transaction, input)
   await transaction.commit()
   void enqueueApplyCopyrightAction(intent.id)
   return intent

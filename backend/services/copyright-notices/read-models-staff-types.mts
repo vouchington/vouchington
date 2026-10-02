@@ -1,10 +1,16 @@
+import type { ClaimantMisuseSummary } from './claimant-misuse-summary.mts'
 import type { CopyrightFormGuidance } from './form-screening-guidance.mts'
 
 export type CopyrightStaffCase = {
   id: string
   received_at: Date
   jurisdiction: 'us_dmca'
-  claimant: { display_name: string | null; contact: string }
+  claimant: {
+    display_name: string | null
+    contact: string
+    /** The claimant account's misuse ledger, or null when no account filed the notice. */
+    misuse: ClaimantMisuseSummary | null
+  }
   work_description: string
   targets: Array<{
     id: string

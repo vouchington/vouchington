@@ -163,7 +163,7 @@ stateDiagram-v2
   Received --> NeedsInformation: incomplete or invalid
   NeedsInformation --> Received: supplemental submission
   Accepted --> PendingAction: guest/email/staff review, or any signed-in form at launch
-  Accepted --> ProvisionallyRestricted: clear signed-in screen, once automatic withholding is on
+  Accepted --> ProvisionallyRestricted: clear signed-in screen, once automatic withholding is on and every abuse gate passes
   PendingAction --> ProvisionallyRestricted: staff approves restriction
   ProvisionallyRestricted --> HumanConfirmed: human confirms
   ProvisionallyRestricted --> HumanModified: human narrows scope
@@ -429,15 +429,42 @@ off:
   and
 - restrictions that already exist are unchanged and still need their own human decision.
 
-Keep the switch off until both prerequisites ship:
+Keep the switch off until the GDPR Article 22 automated-decision disclosure
+([#1230](https://github.com/vouchington/vouchington/issues/1230)) ships and an operator has set every
+abuse gate below.
 
-- claimant abuse controls ([#1209](https://github.com/vouchington/vouchington/issues/1209)); and
-- the GDPR Article 22 automated-decision disclosure
-  ([#1230](https://github.com/vouchington/vouchington/issues/1230)).
+### Claimant abuse controls
 
-Turning the switch on releases the backlog. The next sweep withholds every clear-screened signed-in
-intake that still lacks a moderator review and enforces every pending automated request. Clear the
-queue first, and follow the [runbook](../../runbooks/copyright-notices.md#automatic-provisional-withholding).
+The misuse ledger records whatever the switch says. The gates apply only while it is on, and each
+must pass before an automated assessment may withhold:
+
+- **Ledger.** `copyright_claimant_misuse_events` records a notice withdrawn, a notice a moderator
+  rejects on form review or compliance assessment, and a restriction reversed by counter-notice
+  restoration or appeal (DSA Article 23 and 17 U.S.C. 512(f) evidence). The staff case shows the
+  claimant's counts per outcome. Nothing reads the ledger to act: a warned suspension of a notifier
+  is a moderator action through the existing user suspension path.
+- **Gates.** The claimant's account must be live, not suspended, at least
+  `automaticWithholdingMinAccountAgeDays` old, and at trust tier `automaticWithholdingMinTrustTier`
+  or higher. In a rolling 24 hours, no claimant may have more than `automaticWithholdingClaimantDailyCap`
+  notices, and no poster more than `automaticWithholdingPosterDailyCap`, withheld automatically.
+- **No invented defaults.** The four thresholds are audited `copyright` fields that launch unset
+  (-1). While any is unset, or the switch has no audited off-to-on change on record, automatic
+  withholding is refused. Zero is a real value; a cap of zero refuses everything.
+- **Fallback.** A refused or over-cap notice is never dropped. A sticky
+  `copyright_automatic_withholding_refusals` row keeps it in the staff queue for a moderator, who
+  may accept it as any other form intake. A later cap clearing does not retry it.
+- **Suspension.** When a claimant is suspended, the five-minute reconcile reverses their pending
+  automatic restrictions (no moderator has reviewed them) through the ordinary reversal path, as the
+  suspending administrator, and marks each in `copyright_claimant_suspension_reversals`. A
+  moderator-confirmed restriction stays. This holds with the switch off too.
+- **Stale requests.** Automation acts only on a submission received since the latest audited
+  off-to-on change of the switch. An automated assessment left pending while the switch was off, or
+  a notice received before it went on, is not enforced when the switch flips on. It stays in the
+  staff queue as `enforcement_pending` until a moderator decides. Turning the switch on therefore
+  does not release a backlog.
+
+Follow the [runbook](../../runbooks/copyright-notices.md#automatic-provisional-withholding): set
+the thresholds before flipping the switch.
 
 ## Staydown matching
 

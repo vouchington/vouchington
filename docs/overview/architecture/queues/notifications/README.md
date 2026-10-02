@@ -29,7 +29,9 @@ Glide Queue system for reconciling notifications and delivering browser push mes
   authoritative image placement and active blockers, then applies a reversible withhold or restore.
 - `processReconcileCopyrightActionIntents` runs every five minutes. In order, it replays rejected
   form reviews, recreates lost decision assessments, enforces every compliant assessment that still
-  owes an unrestricted target, materializes due statutory restore intents, then re-enqueues pending
+  owes an unrestricted target, reverses a suspended claimant's unreviewed automatic restrictions
+  (whatever the automatic-withholding switch says), materializes due statutory restore intents,
+  then re-enqueues pending
   or expired-claim action intents. Each sweep walks every UUID-keyset page, so no backlog is starved
   by a fixed batch. A failed item or stage does not stop the rest; the job then fails with an
   `AggregateError` of every failure so the queue retries it.

@@ -5,6 +5,7 @@ import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
+import { recordClaimantMisuseEvent } from './claimant-misuse-ledger.mts'
 import { calculateUsCounterNoticeRestorationWindow } from './deadlines.mts'
 import { createCounterNoticeForwardingInTransaction } from './counter-notice-forwarding.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
@@ -196,6 +197,12 @@ export async function reviewCopyrightAppeal(input: {
       transaction,
     )
     reversalIntentIds.push(intent.id)
+    // oxlint-disable-next-line no-await-in-loop -- the ledger event follows its restriction's saga on one transaction client.
+    await recordClaimantMisuseEvent(transaction, {
+      noticeId: appeal.copyright_notice_id,
+      recordedAt: reviewedAt,
+      event: { outcome: 'restriction_reversed_by_appeal', restrictionId },
+    })
   }
   await transaction.commit()
   for (const intentId of reversalIntentIds) {

@@ -33,7 +33,16 @@ export const nativeCopyrightApiFixtureCases: ApiFixtureCase[] = [
           id: noticeId,
           received_at: '2026-07-01T12:00:00.000Z',
           jurisdiction: 'us_dmca',
-          claimant: { display_name: 'Claimant', contact: 'claimant@example.test' },
+          claimant: {
+            display_name: 'Claimant',
+            contact: 'claimant@example.test',
+            misuse: {
+              notice_withdrawn: 1,
+              notice_rejected: 2,
+              restriction_reversed_by_counter_notice: 0,
+              restriction_reversed_by_appeal: 1,
+            },
+          },
           work_description: 'Original photograph.',
           targets: [],
           evidence: [],

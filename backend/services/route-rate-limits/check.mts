@@ -29,7 +29,7 @@ const routeRateLimiters: Record<RouteRateLimitCategory, RateLimiter> = {
  * - Anonymous: DynamicConfig anon thresholds × route multiplier
  * - API key: IP + apikey keys, no user/session tracking
  *
- * Fails open on Valkey errors.
+ * Fails open on Valkey errors, except for routes whose registry entry sets `failClosed`.
  */
 export async function checkRouteRateLimit(
   routeKey: string,
@@ -85,6 +85,9 @@ export async function checkRouteRateLimit(
     }
   } catch (err) {
     onError(err instanceof Error ? err : new Error(String(err)))
+    if (routeEntry.failClosed) {
+      return { limited: true, retryAfterSeconds: ttl, limit: threshold, remaining: 0 }
+    }
     return { limited: false, retryAfterSeconds: 0, limit: threshold, remaining: threshold }
   }
 }

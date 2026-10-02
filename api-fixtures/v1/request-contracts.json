@@ -1110,6 +1110,30 @@
       },
       "type": "object"
     },
+    "ClaimantMisuseSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "notice_rejected": {
+          "type": "number"
+        },
+        "notice_withdrawn": {
+          "type": "number"
+        },
+        "restriction_reversed_by_appeal": {
+          "type": "number"
+        },
+        "restriction_reversed_by_counter_notice": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "notice_rejected",
+        "notice_withdrawn",
+        "restriction_reversed_by_appeal",
+        "restriction_reversed_by_counter_notice"
+      ],
+      "type": "object"
+    },
     "ClassifierCandidateKind": {
       "enum": ["community_prompt", "story", "topic"],
       "type": "string"

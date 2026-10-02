@@ -5,7 +5,7 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { appendCopyrightSubmissionAssessmentInTransaction } from './compliance.mts'
-import { isAutomaticProvisionalWithholdingEnabled } from './config.mts'
+import { getAutomaticEnforcementSince } from './automatic-withholding-since.mts'
 import { enforceCopyrightAssessment } from './enforce-assessment.mts'
 import { reverseAutomatedCopyrightRestrictions } from './form-reviews-reversal.mts'
 
@@ -17,7 +17,7 @@ export async function reviewCopyrightFormIntake(input: {
 }): Promise<{ noticeId: string; submissionId: string; accepted: boolean }> {
   assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
   assert(input.rationale.trim() && input.rationale.length <= 10_000, 422, 'rationale is required')
-  const automaticWithholding = await isAutomaticProvisionalWithholdingEnabled()
+  const automationSince = await getAutomaticEnforcementSince()
   await using transaction = await beginTransaction()
   await transaction(sql`/* reviewCopyrightFormIntake:lock */
     SELECT pg_advisory_xact_lock(hashtextextended(${`copyright-form-review:${input.intakeId}`}, 0))
@@ -27,13 +27,18 @@ export async function reviewCopyrightFormIntake(input: {
     submission_id: string
     source_kind: string
     current_screening_authority: boolean
+    received_at: Date
+    automatic_withholding_refused: boolean
   }>(sql`/* reviewCopyrightFormIntake:intake */
     SELECT intake.copyright_notice_id AS notice_id,
       intake.copyright_notice_submission_id AS submission_id, submission.source_kind,
+      submission.received_at,
       EXISTS (SELECT 1 FROM copyright_notice_form_screening_executions execution
         WHERE execution.copyright_notice_form_intake_id = intake.id
           AND fn_current_copyright_form_screening(submission.id,
-            execution.copyright_notice_form_screening_id)) AS current_screening_authority
+            execution.copyright_notice_form_screening_id)) AS current_screening_authority,
+      EXISTS (SELECT 1 FROM copyright_automatic_withholding_refusals refusal
+        WHERE refusal.copyright_notice_submission_id = submission.id) AS automatic_withholding_refused
     FROM copyright_notice_form_intakes intake
     JOIN copyright_notice_submissions submission
       ON submission.id = intake.copyright_notice_submission_id
@@ -52,7 +57,11 @@ export async function reviewCopyrightFormIntake(input: {
     assert(
       intake.source_kind === 'guest_form' ||
         (intake.source_kind === 'signed_in_form' &&
-          (!input.accepted || !automaticWithholding || !intake.current_screening_authority)),
+          (!input.accepted ||
+            !automationSince ||
+            intake.received_at < automationSince ||
+            !intake.current_screening_authority ||
+            intake.automatic_withholding_refused)),
       422,
       'Only guest forms and signed-in forms without a clear anti-spam result require moderator review',
     )

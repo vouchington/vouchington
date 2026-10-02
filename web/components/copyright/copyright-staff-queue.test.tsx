@@ -41,7 +41,16 @@ describe('CopyrightStaffQueue', () => {
                 id: 'case-123',
                 jurisdiction: 'us_dmca',
                 received_at: '2026-01-01T00:00:00.000Z',
-                claimant: { display_name: 'Claimant', contact: 'claimant@example.test' },
+                claimant: {
+                  display_name: 'Claimant',
+                  contact: 'claimant@example.test',
+                  misuse: {
+                    notice_withdrawn: 1,
+                    notice_rejected: 2,
+                    restriction_reversed_by_counter_notice: 0,
+                    restriction_reversed_by_appeal: 0,
+                  },
+                },
                 work_description: 'Original photograph.',
                 targets: [
                   {
@@ -163,6 +172,10 @@ describe('CopyrightStaffQueue', () => {
         state === 'completed' ? 1 : 0,
       )
       expect(screen.getByText(/Claimant.*claimant@example\.test/)).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: 'Notifier history' })).toBeInTheDocument()
+      expect(screen.getByText('1 notice withdrawn by the notifier')).toBeInTheDocument()
+      expect(screen.getByText('2 notices rejected on staff review')).toBeInTheDocument()
+      expect(screen.queryByText(/restored after a counter-notice/)).not.toBeInTheDocument()
       expect(screen.getByText(/SHA-256/)).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Approve intake' })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Confirm restriction' })).toBeInTheDocument()
@@ -193,7 +206,11 @@ describe('CopyrightStaffQueue', () => {
                 id: 'case-456',
                 jurisdiction: 'us_dmca',
                 received_at: '2026-01-01T00:00:00.000Z',
-                claimant: { display_name: 'Claimant', contact: 'claimant@example.test' },
+                claimant: {
+                  display_name: 'Claimant',
+                  contact: 'claimant@example.test',
+                  misuse: null,
+                },
                 work_description: 'Original photograph.',
                 targets: [],
                 evidence: [],
@@ -238,6 +255,7 @@ describe('CopyrightStaffQueue', () => {
       expect(screen.getByRole('region', { name: 'AI guidance — not a decision' })).toBeVisible()
       expect(screen.getByText('Claims an unlicensed copy of a photograph.')).toBeVisible()
       expect(screen.queryByText('Pending form review')).not.toBeInTheDocument()
+      expect(screen.getByText('No account is linked to this notifier.')).toBeVisible()
       expect(screen.queryByRole('button', { name: 'Approve intake' })).not.toBeInTheDocument()
       expect(screen.queryByRole('button', { name: 'Reject intake' })).not.toBeInTheDocument()
     },

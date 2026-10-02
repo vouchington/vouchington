@@ -4,6 +4,7 @@ import { countDynamicConfigAuditRows, createTestUser } from '@voucha/test-helper
 import { persistDynamicConfigTestBaseline } from '@voucha/test-helpers/dynamic-config'
 import {
   copyrightConfig,
+  getAutomaticWithholdingThresholds,
   getCopyrightEvidenceRetentionDays,
   getCopyrightReviewTargetMinutes,
   isCopyrightEvidenceRetentionDeletionEnabled,
@@ -70,7 +71,7 @@ describe('copyright dynamic-config namespace', () => {
       .expect(400)
   })
 
-  it('launches with automatic provisional withholding off and audits a developer enabling it', async () => {
+  it('launches with automatic provisional withholding off and every abuse gate unset', async () => {
     const [developer, moderator] = await Promise.all([
       createTestUser({ extraRoles: ['developer'] }),
       createTestUser({ extraRoles: ['moderator'] }),
@@ -84,34 +85,58 @@ describe('copyright dynamic-config namespace', () => {
       evidenceRetentionDeletion: false,
       evidenceRetentionDays: 0,
       staydownMatching: false,
+      automaticWithholdingMinTrustTier: -1,
+      automaticWithholdingMinAccountAgeDays: -1,
+      automaticWithholdingClaimantDailyCap: -1,
+      automaticWithholdingPosterDailyCap: -1,
     })
+    expect(await getAutomaticWithholdingThresholds()).toBeNull()
     const moderatorRequest = createRequest()
     await moderatorRequest.authenticateAs(moderator)
     await moderatorRequest
       .patch(path)
       .send({ config: { automaticProvisionalWithholding: true } })
       .expect(403)
+    await moderatorRequest
+      .patch(path)
+      .send({ config: { automaticWithholdingPosterDailyCap: 3 } })
+      .expect(403)
+  })
+
+  it('audits a developer setting an abuse gate and rejects an out-of-range value', async () => {
+    const developer = await createTestUser({ extraRoles: ['developer'] })
+    const request = createRequest()
+    await request.authenticateAs(developer)
     const auditRows = await countDynamicConfigAuditRows('copyright')
+    await request
+      .patch(path)
+      .send({ config: { automaticWithholdingClaimantDailyCap: -2 } })
+      .expect(400)
+    expect(await countDynamicConfigAuditRows('copyright')).toBe(auditRows)
 
     try {
       const updated = await request
         .patch(path)
-        .send({ config: { automaticProvisionalWithholding: true } })
+        .send({ config: { automaticWithholdingPosterDailyCap: 3 } })
         .expect(200)
 
       expect(updated.body).toMatchObject({
         changed: true,
-        namespace: { config: { automaticProvisionalWithholding: true } },
+        namespace: { config: { automaticWithholdingPosterDailyCap: 3 } },
       })
-      expect(await countDynamicConfigAuditRows('copyright')).toBe(auditRows + 1)
       const history = await request.get(`${path}/history`).expect(200)
-      expect(history.body.history[0]).toMatchObject({
+      expect(
+        history.body.history.find(
+          (entry: { changed_by: { id: string } | null }) => entry.changed_by?.id === developer.id,
+        ),
+      ).toMatchObject({
         namespace: 'copyright',
-        changed_by: { id: developer.id },
-        changed_fields: { automaticProvisionalWithholding: { previous: false, next: true } },
+        changed_fields: { automaticWithholdingPosterDailyCap: { previous: -1, next: 3 } },
       })
+      // One gate set is not enough: the rest are still unset, so automation still fails closed.
+      expect(await getAutomaticWithholdingThresholds()).toBeNull()
     } finally {
-      // The route persisted the switch to the shared test Valkey; put the launch default back.
+      // The route persisted the gate to the shared test Valkey; put the launch default back.
       await persistDynamicConfigTestBaseline(copyrightConfig)
     }
   })

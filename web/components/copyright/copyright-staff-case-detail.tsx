@@ -5,6 +5,7 @@ import {
   reviewCopyrightCounterNotice,
 } from '@/lib/api/client/copyright-notices'
 import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
+import { CopyrightStaffClaimantMisuse } from './copyright-staff-claimant-misuse'
 import {
   ReviewButtons,
   type SubmitRecovery,
@@ -78,6 +79,7 @@ export function CopyrightStaffComplaint({ notice }: { notice: CopyrightStaffQueu
           {notice.claimant.display_name ?? 'No display name'} · {notice.claimant.contact}
         </p>
       </section>
+      <CopyrightStaffClaimantMisuse misuse={notice.claimant.misuse} />
       <section>
         <h3 className='font-medium'>Targets</h3>
         <ul className='text-sm'>

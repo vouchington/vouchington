@@ -6,6 +6,8 @@ export type RouteRateLimitEntry = {
   category: RouteRateLimitCategory
   multiplier?: number
   ttlSeconds?: number
+  /** Reject the request when the limiter cannot be consulted, instead of failing open. */
+  failClosed?: boolean
 }
 
 export type RateLimitIdentities = {
