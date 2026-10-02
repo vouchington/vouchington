@@ -21,7 +21,7 @@ All keys follow `voucha_<type>_<32 hex random>_<16 hex HMAC checksum>`, for exam
 - **Checksum**: first 16 hex chars of `HMAC-SHA256(API_KEY_CHECKSUM_SECRET, "voucha_<type>_<random>")`
 - **Display prefix**: `voucha_${type}_${random.slice(0, 4)}` (e.g. `voucha_rss_a1b2`)
 
-Keys are stored as SHA-256 hashes and cannot be recovered after creation. The raw key is shown exactly once at creation time.
+Keys are stored as SHA-256 hashes and cannot be recovered. The raw key is returned once when created or rotated. See [lifetimes, rotation and reminders](reference-api-key-lifecycle.md).
 
 ## Permissions
 
@@ -71,11 +71,12 @@ MCP keys are user MCP only. The own-private relation capability is visible as a 
 
 ### Management (authenticated via session)
 
-| Method   | Path                      | Description          |
-| -------- | ------------------------- | -------------------- |
-| `GET`    | `/api/v1/my/api-keys`     | List your API keys   |
-| `POST`   | `/api/v1/my/api-keys`     | Create a new API key |
-| `DELETE` | `/api/v1/my/api-keys/:id` | Revoke an API key    |
+| Method   | Path                             | Description          |
+| -------- | -------------------------------- | -------------------- |
+| `GET`    | `/api/v1/my/api-keys`            | List your API keys   |
+| `POST`   | `/api/v1/my/api-keys`            | Create a new API key |
+| `DELETE` | `/api/v1/my/api-keys/:id`        | Revoke an API key    |
+| `POST`   | `/api/v1/my/api-keys/:id/rotate` | Rotate an API key    |
 
 ### OAuth apps and connected apps
 

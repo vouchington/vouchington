@@ -24,6 +24,27 @@ describe('parseEmailJob', () => {
     expect(() => parseEmailJob('missingJob', {})).toThrow(/unknown job missingJob/)
   })
 
+  it('accepts only a durable UUID for API-key expiry jobs', () => {
+    const apiKeyId = '00000000-0000-7000-8000-000000000042'
+    expect(parseEmailJob('processSendApiKeyExpiryReminder', { apiKeyId })).toEqual({
+      kind: 'api-key-expiry',
+      apiKeyId,
+    })
+    expect(() => parseEmailJob('processSendApiKeyExpiryReminder', {})).toThrow(/must be a UUID/)
+    expect(() => parseEmailJob('processSendApiKeyExpiryReminder', { apiKeyId: 42 })).toThrow(
+      /must be a UUID/,
+    )
+    expect(() =>
+      parseEmailJob('processSendApiKeyExpiryReminder', { apiKeyId: 'not-a-uuid' }),
+    ).toThrow(/must be a UUID/)
+    expect(() =>
+      parseEmailJob('processSendApiKeyExpiryReminder', { apiKeyId, rawKey: 'secret' }),
+    ).toThrow(/unexpected property rawKey/)
+    expect(() => parseEmailJob('dispatchApiKeyExpiryReminders', { apiKeyId })).toThrow(
+      /unexpected property apiKeyId/,
+    )
+  })
+
   it('accepts exactly one copyright delivery intent identifier', () => {
     expect(parseEmailJob('processSendCopyrightNoticeEmail', { intentId: 'intent' })).toEqual({
       kind: 'copyright',

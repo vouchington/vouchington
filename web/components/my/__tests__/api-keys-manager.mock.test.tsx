@@ -32,6 +32,7 @@ vi.mock(
 vi.mock(import('@/lib/api/client/api-keys'), () => ({
   createApiKey: vi.fn<VitestLooseMock>(),
   getApiKeys: vi.fn<VitestLooseMock>(),
+  rotateApiKey: vi.fn<VitestLooseMock>(),
   revokeApiKey: vi.fn<VitestLooseMock>(),
 }))
 
@@ -56,6 +57,9 @@ const initialApiKeys: ApiKey[] = [
     updated_at: '2023-01-01T00:00:00Z',
     last_used_at: null,
     revoked_at: null,
+    expires_at: null,
+    replaced_by_api_key_id: null,
+    expiry_reminder_sent_at: null,
   },
   {
     id: 'key-2',
@@ -67,6 +71,9 @@ const initialApiKeys: ApiKey[] = [
     updated_at: '2022-01-01T00:00:00Z',
     last_used_at: '2022-06-01T00:00:00Z',
     revoked_at: '2022-12-31T00:00:00Z',
+    expires_at: null,
+    replaced_by_api_key_id: null,
+    expiry_reminder_sent_at: null,
   },
 ]
 
@@ -105,6 +112,9 @@ describe('ApiKeysManager Integration Flow', () => {
         updated_at: '2026-05-22T04:00:00Z',
         last_used_at: null,
         revoked_at: null,
+        expires_at: null,
+        replaced_by_api_key_id: null,
+        expiry_reminder_sent_at: null,
       },
     })
 
@@ -173,7 +183,7 @@ describe('ApiKeysManager Integration Flow', () => {
     })
 
     await waitFor(() => {
-      expect(mockCreate).toHaveBeenCalledWith('New RSS Reader', 'rss', ['rss:read'])
+      expect(mockCreate).toHaveBeenCalledWith('New RSS Reader', 'rss', ['rss:read'], 90)
       expect(screen.getByText('New RSS Reader')).toBeInTheDocument()
       expect(screen.getByText('Save your API key - it will only be shown once')).toBeInTheDocument()
     })

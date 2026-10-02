@@ -4,6 +4,8 @@ import {
   createApiKey,
   searchApiKeys,
   revokeApiKey,
+  rotateApiKey,
+  type ApiKeyLifetimeDays,
   API_KEY_TYPES,
   validateApiKeyCreationPermissions,
 } from '@services/api-keys'
@@ -15,6 +17,14 @@ import {
   decodeScopedUuidCursor,
   encodeScopedUuidCursor,
 } from '@modules/pagination'
+import { assertNotSuspended } from '@services/users'
+
+interface CreateApiKeyBody {
+  label: string
+  permissions: string[]
+  type?: 'rss' | 'mcp'
+  lifetime_days?: ApiKeyLifetimeDays
+}
 
 const apiKeysParser = createPaginationParser({
   cursor: { type: 'simple' },
@@ -52,8 +62,9 @@ app.route('/api/v1/my/api-keys').get(async (ctx: Context) => {
 // POST /api/v1/my/api-keys — create new API key
 app.route('/api/v1/my/api-keys').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/api-keys')
+  assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('10kb')) as Record<string, unknown>
+  const body = (await ctx.request.json('10kb')) as CreateApiKeyBody
   validateRequestContract(ctx, 'POST:/api/v1/my/api-keys', { body })
 
   ctx.assert(
@@ -87,7 +98,20 @@ app.route('/api/v1/my/api-keys').post(async (ctx: Context) => {
   const permissionError = validateApiKeyCreationPermissions(type, permissions)
   ctx.assert(permissionError == null, 400, permissionError ?? 'invalid permissions')
 
-  const { apiKey, rawKey } = await createApiKey(currentUser.id, type, label, permissions)
+  ctx.assert(
+    body.lifetime_days === undefined ||
+      body.lifetime_days === null ||
+      [30, 90, 365].includes(body.lifetime_days),
+    400,
+    'Invalid API key lifetime',
+  )
+  const { apiKey, rawKey } = await createApiKey(
+    currentUser.id,
+    type,
+    label,
+    permissions,
+    body.lifetime_days,
+  )
 
   ctx.setStatus(201)
   ctx.json({ api_key: apiKey, raw_key: rawKey })
@@ -96,6 +120,7 @@ app.route('/api/v1/my/api-keys').post(async (ctx: Context) => {
 // DELETE /api/v1/my/api-keys/:id — revoke an API key
 app.route('/api/v1/my/api-keys/:id').delete(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/my/api-keys/:id')
+  assertNotSuspended(currentUser)
 
   const id = validateUUIDParam(ctx, 'id')
   validateRequestContract(ctx, 'DELETE:/api/v1/my/api-keys/:id', { path: ctx.params })
@@ -104,4 +129,14 @@ app.route('/api/v1/my/api-keys/:id').delete(async (ctx: Context) => {
   ctx.assert(revoked, 404, 'API key not found')
 
   ctx.setStatus(204)
+})
+
+app.route('/api/v1/my/api-keys/:id/rotate').post(async (ctx: Context) => {
+  const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/api-keys/:id/rotate')
+  assertNotSuspended(currentUser)
+  const id = validateUUIDParam(ctx, 'id')
+  validateRequestContract(ctx, 'POST:/api/v1/my/api-keys/:id/rotate', { path: ctx.params })
+  const { apiKey, rawKey } = await rotateApiKey(currentUser.id, id)
+  ctx.setStatus(201)
+  ctx.json({ api_key: apiKey, raw_key: rawKey })
 })

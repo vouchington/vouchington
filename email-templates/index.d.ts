@@ -69,3 +69,6 @@ export declare function renderRenewalPriceIncreaseEmail(
   props: RenewalPriceIncreaseEmailProps,
 ): EmailRenderResultPromise
 export declare function renderWelcomeEmail(props: WelcomeEmailProps): EmailRenderResultPromise
+export declare function renderApiKeyExpiryEmail(
+  props: import('./types.mts').ApiKeyExpiryEmailProps,
+): import('./types.mts').EmailRenderResultPromise

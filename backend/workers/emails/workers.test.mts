@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { afterAll, describe, expect, it, vi } from 'vitest'
 import type { Job } from 'glide-mq'
 import {
@@ -12,6 +13,7 @@ describe('emails worker router', () => {
   })
 
   it('identifies dispatcher jobs', () => {
+    expect(isDispatcherJob('dispatchApiKeyExpiryReminders')).toBe(true)
     expect(isDispatcherJob('dispatchEngagementEmails')).toBe(true)
     expect(isDispatcherJob('dispatchCommunityModerationSummaryEmails')).toBe(true)
     expect(isDispatcherJob('processSendFollowTopicsEmail')).toBe(false)
@@ -22,7 +24,9 @@ describe('emails worker router', () => {
     const dispatchCommunityModerationSummaryEmails = vi.fn<() => Promise<void>>(() =>
       Promise.resolve(),
     )
+    const dispatchApiKeyExpiryReminders = vi.fn<() => Promise<void>>(() => Promise.resolve())
     const dispatchers = {
+      dispatchApiKeyExpiryReminders,
       dispatchEngagementEmails,
       dispatchCommunityModerationSummaryEmails,
     }
@@ -33,6 +37,10 @@ describe('emails worker router', () => {
     await expect(
       processEmailJob({ name: 'dispatchCommunityModerationSummaryEmails' } as Job, dispatchers),
     ).resolves.toBeUndefined()
+    await expect(
+      processEmailJob({ name: 'dispatchApiKeyExpiryReminders', data: {} } as Job, dispatchers),
+    ).resolves.toBeUndefined()
+    expect(dispatchApiKeyExpiryReminders).toHaveBeenCalledOnce()
     expect(dispatchEngagementEmails).toHaveBeenCalledOnce()
     expect(dispatchCommunityModerationSummaryEmails).toHaveBeenCalledOnce()
   })
@@ -49,7 +57,11 @@ describe('emails worker router', () => {
           name: 'dispatchEngagementEmails',
           data: { input: { userId: 'user' }, variables: { token: 'secret' } },
         } as Job,
-        { dispatchEngagementEmails, dispatchCommunityModerationSummaryEmails },
+        {
+          dispatchEngagementEmails,
+          dispatchCommunityModerationSummaryEmails,
+          dispatchApiKeyExpiryReminders: vi.fn<() => Promise<void>>(() => Promise.resolve()),
+        },
       ),
     ).rejects.toBeInstanceOf(JobPayloadError)
     expect(dispatchEngagementEmails).not.toHaveBeenCalled()
@@ -78,6 +90,19 @@ describe('emails worker router', () => {
 
   it('keeps the email payload contract aligned with the enqueue types', () => {
     expect(emailJobContractCoversCanonicalTypes()).toBe(true)
+  })
+
+  it('routes a missing API key to the no-delivery result and rejects leaked secrets', async () => {
+    const apiKeyId = randomUUID()
+    await expect(
+      processEmailJob({ name: 'processSendApiKeyExpiryReminder', data: { apiKeyId } } as Job),
+    ).resolves.toBeNull()
+    await expect(
+      processEmailJob({
+        name: 'processSendApiKeyExpiryReminder',
+        data: { apiKeyId, rawKey: 'secret' },
+      } as Job),
+    ).rejects.toBeInstanceOf(JobPayloadError)
   })
 
   it('routes copyright notice email jobs to the copyright processor', async () => {

@@ -9,6 +9,7 @@ import { bloomFilterConfig } from '@services/bloom-filter-config'
 import type { ApiKey } from './types.mts'
 import { hasScope, hasScopeAudience, type ApiScope } from '@modules/scopes'
 import { validateApiKeyScopeSet } from './permissions.mts'
+import { apiKeyIsValidSql } from './lifetime.mts'
 
 export async function validateApiKey(
   rawKey: string,
@@ -41,12 +42,13 @@ export async function validateApiKey(
   }
 
   // Step 5: Fire-and-forget update last_used_at
-  write(sql`/* validateApiKey */
+  write(
+    sql`/* validateApiKey */
     UPDATE api_keys
     SET last_used_at = NOW()
     WHERE key_hash = ${keyHash}
-      AND revoked_at IS NULL
-  `).catch((err: unknown) => {
+      AND `.append(apiKeyIsValidSql()),
+  ).catch((err: unknown) => {
     onError(err instanceof Error ? err : new Error(String(err)))
   })
 
@@ -78,10 +80,11 @@ export async function validateApiKeyForUserMcp(rawKey: string): Promise<{
     return { valid: false }
   }
 
-  write(sql`/* validateApiKeyForUserMcp */
+  write(
+    sql`/* validateApiKeyForUserMcp */
     UPDATE api_keys SET last_used_at = NOW()
-    WHERE key_hash = ${keyHash} AND revoked_at IS NULL
-  `).catch((err: unknown) => {
+    WHERE key_hash = ${keyHash} AND `.append(apiKeyIsValidSql()),
+  ).catch((err: unknown) => {
     /* c8 ignore next -- fire-and-forget usage timestamp failures are reported asynchronously. */
     onError(err instanceof Error ? err : new Error(String(err)))
   })

@@ -6,29 +6,40 @@ import {
   SEMANTIC_POST_SEARCH_SETTINGS,
 } from '@services/posts/search/execute-query'
 import { runAndCapture, seedUser } from '../run-support.mts'
+import { inspectSemanticPostSeed, recordSemanticPostFailure } from './semantic-post-diagnostics.mts'
 
 const embedding = [1, ...Array<number>(1023).fill(0)]
 
 export async function runSemanticPostSearchScenarios(): Promise<void> {
   for (const sort of ['new', 'relevance'] as const) {
     for (const hybrid of [false, true]) {
-      await runAndCapture(
-        `post-search-${hybrid ? 'hybrid' : 'semantic'}-${sort}`,
-        () =>
-          executePostSearchQuery(
-            buildPostSearchQuery(seedUser, {
-              semantic_search_query: 'seed',
-              semanticSearchEmbedding: embedding,
-              ...(hybrid ? { text_search_query: 'seed' } : {}),
-              sort,
-              limit: 26,
-            }),
-            true,
-          ),
-        undefined,
-        'buildPostSearchQuery',
-        { localSettings: SEMANTIC_POST_SEARCH_SETTINGS },
-      )
+      const scenario = `post-search-${hybrid ? 'hybrid' : 'semantic'}-${sort}`
+      const options = {
+        semantic_search_query: 'seed',
+        semanticSearchEmbedding: embedding,
+        ...(hybrid ? { text_search_query: 'seed' } : {}),
+        sort,
+        limit: 26,
+      }
+      const seed = await inspectSemanticPostSeed(options)
+      console.log(`${scenario}: exact eligible seed rows=${seed.eligible_count}`)
+      try {
+        if (seed.eligible_count === 0) throw new Error(`${scenario}: no exact eligible seed rows`)
+        await runAndCapture(
+          scenario,
+          () => executePostSearchQuery(buildPostSearchQuery(seedUser, options), true),
+          undefined,
+          'buildPostSearchQuery',
+          { localSettings: SEMANTIC_POST_SEARCH_SETTINGS },
+        )
+      } catch (error) {
+        try {
+          await recordSemanticPostFailure(scenario, options, seed)
+        } catch (diagnosticError) {
+          console.error(`${scenario}: secondary diagnostic failure`, diagnosticError)
+        }
+        throw error
+      }
     }
   }
 }

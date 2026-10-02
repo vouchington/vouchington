@@ -112,10 +112,12 @@ export type EmailSendJobs =
   | 'processSendCommunityRoleChangeEmail'
   | 'processSendCommunityOwnershipTransferEmail'
   | 'processSendCopyrightNoticeEmail'
+  | 'processSendApiKeyExpiryReminder'
 
 export type EmailDispatcherJobs =
   | 'dispatchEngagementEmails'
   | 'dispatchCommunityModerationSummaryEmails'
+  | 'dispatchApiKeyExpiryReminders'
 
 export type EmailJobs = EmailSendJobs | EmailDispatcherJobs
 
@@ -135,8 +137,10 @@ type EmailTemplateVariables = {
 }
 
 export type EmailJobsTemplates = {
-  [JobName in Exclude<EmailSendJobs, 'processSendCopyrightNoticeEmail'>]: (
-    input: EmailTemplateInput,
-    variables: EmailTemplateVariables[JobName],
-  ) => Promise<unknown>
+  [
+    JobName in Exclude<
+      EmailSendJobs,
+      'processSendCopyrightNoticeEmail' | 'processSendApiKeyExpiryReminder'
+    >
+  ]: (input: EmailTemplateInput, variables: EmailTemplateVariables[JobName]) => Promise<unknown>
 }

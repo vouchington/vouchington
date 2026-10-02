@@ -9,6 +9,9 @@ import { ScopePicker } from './scope-picker'
 import type { ApiKeyScopeSelection } from './use-api-key-scope-selection'
 
 interface CreateApiKeyFormProps {
+  isAdministrator: boolean
+  lifetimeDays: 30 | 90 | 365 | null
+  setLifetimeDays: (days: 30 | 90 | 365 | null) => void
   label: string
   selection: ApiKeyScopeSelection
   submitting: boolean
@@ -19,6 +22,9 @@ interface CreateApiKeyFormProps {
 
 export function CreateApiKeyForm({
   label,
+  isAdministrator,
+  lifetimeDays,
+  setLifetimeDays,
   selection,
   submitting,
   onCancel,
@@ -80,6 +86,32 @@ export function CreateApiKeyForm({
           data-pw='api-keys-create-label-input'
         />
       </div>
+      <ChoiceRadioGroup
+        idPrefix='api-key-lifetime'
+        legend={t('settings.apiKeys.expiry')}
+        value={lifetimeDays === null ? 'none' : String(lifetimeDays)}
+        onChange={value =>
+          setLifetimeDays(value === 'none' ? null : (Number(value) as 30 | 90 | 365))
+        }
+        options={[
+          { value: '30', label: t('settings.apiKeys.days30'), dataPw: 'api-keys-lifetime-30' },
+          { value: '90', label: t('settings.apiKeys.days90'), dataPw: 'api-keys-lifetime-90' },
+          ...(!isAdministrator
+            ? [
+                {
+                  value: '365',
+                  label: t('settings.apiKeys.year1'),
+                  dataPw: 'api-keys-lifetime-365',
+                },
+                {
+                  value: 'none',
+                  label: t('settings.apiKeys.noExpiry'),
+                  dataPw: 'api-keys-lifetime-none',
+                },
+              ]
+            : []),
+        ]}
+      />
       <div className='flex gap-2'>
         <Button
           type='submit'

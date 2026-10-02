@@ -26,6 +26,7 @@ vi.mock(
 vi.mock(import('@/lib/api/client/api-keys'), () => ({
   createApiKey: vi.fn<VitestLooseMock>(),
   getApiKeys: vi.fn<VitestLooseMock>(),
+  rotateApiKey: vi.fn<VitestLooseMock>(),
   revokeApiKey: vi.fn<VitestLooseMock>(),
 }))
 
@@ -45,6 +46,9 @@ function makeApiKey(overrides: Partial<ApiKey> = {}): ApiKey {
     updated_at: '2026-01-01T00:00:00Z',
     last_used_at: null,
     revoked_at: null,
+    expires_at: null,
+    replaced_by_api_key_id: null,
+    expiry_reminder_sent_at: null,
     ...overrides,
   }
 }

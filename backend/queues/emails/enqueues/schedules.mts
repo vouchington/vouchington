@@ -5,6 +5,7 @@ import {
 } from '@modules/scheduled-job-manifest'
 import { PRIORITY_DISPATCHER, QUEUE_NAME } from '../config.mts'
 import { emails } from '../queues.mts'
+import { enqueueDispatchApiKeyExpiryReminders } from './api-key-expiry.mts'
 import {
   enqueueDispatchCommunityModerationSummaryEmails,
   enqueueDispatchEngagementEmails,
@@ -19,6 +20,20 @@ const SCHEDULE_OPTS = {
 } satisfies JobOptions
 
 export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
+  {
+    schedulerId: 'dispatchApiKeyExpiryReminders',
+    repeat: { pattern: '0 * * * *' },
+    template: { name: 'dispatchApiKeyExpiryReminders', data: {}, opts: { ...SCHEDULE_OPTS } },
+    operatorSurfaces: [
+      {
+        kind: 'scheduled-jobs',
+        id: 'dispatchApiKeyExpiryReminders',
+        schedule: '0 * * * *',
+        description: 'Dispatch API key expiry reminders',
+        trigger: enqueueDispatchApiKeyExpiryReminders,
+      },
+    ],
+  },
   {
     schedulerId: 'dispatchEngagementEmails',
     repeat: { pattern: '0 * * * *' },

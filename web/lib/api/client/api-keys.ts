@@ -16,14 +16,20 @@ export function createApiKey(
   label: string,
   type: string,
   permissions: string[],
+  lifetimeDays?: 30 | 90 | 365 | null,
 ): Promise<{ api_key: ApiKey; raw_key: string }> {
   return clientApi.post<{ api_key: ApiKey; raw_key: string }>('/api/v1/my/api-keys', {
     label,
     type,
     permissions,
+    lifetime_days: lifetimeDays,
   })
 }
 
 export function revokeApiKey(id: string): Promise<void> {
   return clientApi.delete(`/api/v1/my/api-keys/${id}`)
+}
+
+export function rotateApiKey(id: string): Promise<{ api_key: ApiKey; raw_key: string }> {
+  return clientApi.post(`/api/v1/my/api-keys/${id}/rotate`)
 }

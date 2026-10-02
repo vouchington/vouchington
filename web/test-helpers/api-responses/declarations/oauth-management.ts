@@ -1,3 +1,4 @@
+import nativeMyApiKeysRotate from '../../../../api-fixtures/v1/responses/native.my.api-keys.rotate.json'
 import nativeMyApiKeysCreate from '../../../../api-fixtures/v1/responses/native.my.api-keys.create.json'
 import nativeMyOAuthGrantsPaginated from '../../../../api-fixtures/v1/responses/native.my.oauth-grants.paginated.json'
 import nativeMyOAuthGrantsRevoke from '../../../../api-fixtures/v1/responses/native.my.oauth-grants.revoke.json'
@@ -36,6 +37,11 @@ export const OAUTH_MANAGEMENT_DECLARATIONS = [
     'native.my.api-keys.create',
     nativeMyApiKeysCreate,
     context => context.client.apiKeys.createApiKey('Coding agent', 'mcp', scopes),
+  ),
+  defineWebApiFixture<{ api_key: ApiKey; raw_key: string }>()(
+    'native.my.api-keys.rotate',
+    nativeMyApiKeysRotate,
+    context => context.client.apiKeys.rotateApiKey('00000000-0000-7000-8000-000000000701'),
   ),
   defineWebApiFixture<ListResponse<OAuthGrant>>()(
     'native.my.oauth-grants.paginated',

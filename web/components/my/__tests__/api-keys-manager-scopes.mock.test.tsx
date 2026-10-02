@@ -5,6 +5,9 @@ import type { ReactNode } from 'react'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthProvider } from '@/lib/auth/auth-provider'
 import type { ScopeCatalogEntry, ScopeCatalogResponse } from '@/types/scopes'
+import { toast } from 'sonner'
+import issuedApiKey from '../../../../api-fixtures/v1/responses/native.my.api-keys.create.json'
+import rotatedApiKey from '../../../../api-fixtures/v1/responses/native.my.api-keys.rotate.json'
 import { ApiKeysManager } from '../api-keys-manager'
 import scopeCatalogFixture from '../../../../api-fixtures/v1/responses/shared.scopes.catalog.json'
 
@@ -28,10 +31,11 @@ vi.mock(
 vi.mock(import('@/lib/api/client/api-keys'), () => ({
   createApiKey: vi.fn<VitestLooseMock>(),
   getApiKeys: vi.fn<VitestLooseMock>(),
+  rotateApiKey: vi.fn<VitestLooseMock>(),
   revokeApiKey: vi.fn<VitestLooseMock>(),
 }))
 
-import { createApiKey, getApiKeys } from '@/lib/api/client/api-keys'
+import { createApiKey, getApiKeys, rotateApiKey } from '@/lib/api/client/api-keys'
 
 const mockCreate = vi.mocked(createApiKey)
 const mockGet = vi.mocked(getApiKeys)
@@ -106,6 +110,9 @@ describe('ApiKeysManager scope selection', () => {
         updated_at: '2026-05-22T04:00:00Z',
         last_used_at: null,
         revoked_at: null,
+        expires_at: null,
+        replaced_by_api_key_id: null,
+        expiry_reminder_sent_at: null,
       },
     })
   })
@@ -118,6 +125,57 @@ describe('ApiKeysManager scope selection', () => {
     expect(screen.getByText(/Add, update or remove your spending categories/)).toBeInTheDocument()
   })
 
+  it('keeps the raw replacement and success state when the list refresh fails', async () => {
+    const old = { ...issuedApiKey.api_key, expires_at: null }
+    vi.mocked(rotateApiKey).mockResolvedValue(rotatedApiKey)
+    mockGet.mockRejectedValue(new Error('List refresh failed'))
+    render(
+      <ApiKeysManager
+        scopeCatalog={scopeCatalog}
+        initialData={{
+          results: [old],
+          page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
+        }}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Rotate' }))
+    await waitFor(() =>
+      expect(screen.getByLabelText('New API key')).toHaveValue(rotatedApiKey.raw_key),
+    )
+    await waitFor(() => expect(mockGet).toHaveBeenCalled())
+    expect(toast.error).not.toHaveBeenCalled()
+    expect(screen.getByText('Replaced')).toBeVisible()
+    expect(rotateApiKey).toHaveBeenCalledOnce()
+  })
+
+  it('keeps a later-page key replaced when the refreshed first page omits it', async () => {
+    const old = { ...issuedApiKey.api_key, expires_at: null }
+    mockGet
+      .mockResolvedValueOnce({
+        results: [old],
+        page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
+      })
+      .mockResolvedValueOnce({
+        results: [rotatedApiKey.api_key],
+        page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
+      })
+    vi.mocked(rotateApiKey).mockResolvedValue(rotatedApiKey)
+    render(
+      <ApiKeysManager
+        scopeCatalog={scopeCatalog}
+        initialData={{
+          results: [],
+          page_info: { has_next_page: true, end_cursor: 'later-page', start_cursor: null },
+        }}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Load more/i }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Rotate' }))
+    await waitFor(() => expect(mockGet).toHaveBeenCalledTimes(2))
+    expect(await screen.findByText('Replaced')).toBeVisible()
+    expect(screen.getAllByRole('button', { name: 'Rotate' })).toHaveLength(1)
+  })
+
   it('creates a user MCP key with a write scope and its required read scope', async () => {
     await openMcpForm()
 
@@ -126,10 +184,12 @@ describe('ApiKeysManager scope selection', () => {
     await createWithLabel('Agent key')
 
     await waitFor(() => {
-      expect(mockCreate).toHaveBeenCalledWith('Agent key', 'mcp', [
-        'mcp.user:read',
-        'mcp.user:write',
-      ])
+      expect(mockCreate).toHaveBeenCalledWith(
+        'Agent key',
+        'mcp',
+        ['mcp.user:read', 'mcp.user:write'],
+        90,
+      )
     })
   })
 
@@ -147,11 +207,12 @@ describe('ApiKeysManager scope selection', () => {
     await createWithLabel('Private relation key')
 
     await waitFor(() => {
-      expect(mockCreate).toHaveBeenCalledWith('Private relation key', 'mcp', [
-        'entity-relations:read',
-        'entity-relations:write',
-        'post-relations.owned-private:write',
-      ])
+      expect(mockCreate).toHaveBeenCalledWith(
+        'Private relation key',
+        'mcp',
+        ['entity-relations:read', 'entity-relations:write', 'post-relations.owned-private:write'],
+        90,
+      )
     })
   })
 

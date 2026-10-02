@@ -9,15 +9,21 @@ import type { Job } from 'glide-mq'
 import { dispatchEngagementEmails } from '@services/engagement-emails/dispatch-engagement-emails'
 import { dispatchCommunityModerationSummaryEmails } from '@services/communities/moderation-summary-emails'
 import { processSendCopyrightNoticeEmail } from './processors/copyright-notice.mts'
+import {
+  dispatchApiKeyExpiryReminders,
+  processSendApiKeyExpiryReminder,
+} from './processors/api-key-expiry.mts'
 
 type EmailWorkerDispatchers = {
   dispatchEngagementEmails: typeof dispatchEngagementEmails
   dispatchCommunityModerationSummaryEmails: typeof dispatchCommunityModerationSummaryEmails
+  dispatchApiKeyExpiryReminders: typeof dispatchApiKeyExpiryReminders
 }
 
 const defaultDispatchers: EmailWorkerDispatchers = {
   dispatchEngagementEmails,
   dispatchCommunityModerationSummaryEmails,
+  dispatchApiKeyExpiryReminders,
 }
 
 export const emails = createWorker(QUEUE_NAME, (job: Job) => processEmailJob(job), {
@@ -30,6 +36,8 @@ export async function processEmailJob(
 ): Promise<unknown> {
   const parsed = parseEmailJob(job.name, job.data)
   switch (parsed.kind) {
+    case 'api-key-expiry':
+      return processSendApiKeyExpiryReminder(parsed.apiKeyId)
     case 'copyright':
       return processSendCopyrightNoticeEmail(parsed.data)
     case 'dispatcher':
@@ -41,7 +49,9 @@ export async function processEmailJob(
 
 export function isDispatcherJob(jobName: EmailJobs): jobName is EmailDispatcherJobs {
   return (
-    jobName === 'dispatchEngagementEmails' || jobName === 'dispatchCommunityModerationSummaryEmails'
+    jobName === 'dispatchEngagementEmails' ||
+    jobName === 'dispatchCommunityModerationSummaryEmails' ||
+    jobName === 'dispatchApiKeyExpiryReminders'
   )
 }
 
@@ -50,6 +60,8 @@ function processEmailDispatcherJob(
   dispatchers: EmailWorkerDispatchers,
 ): Promise<void> {
   switch (jobName) {
+    case 'dispatchApiKeyExpiryReminders':
+      return dispatchers.dispatchApiKeyExpiryReminders()
     case 'dispatchEngagementEmails':
       return dispatchers.dispatchEngagementEmails()
     case 'dispatchCommunityModerationSummaryEmails':

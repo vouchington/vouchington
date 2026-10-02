@@ -28,3 +28,4 @@ export type {
   RenewalPriceIncreaseEmailProps,
   WelcomeEmailProps,
 } from './types.mts'
+export { renderApiKeyExpiryEmail } from './api-key-expiry-renderer.mts'

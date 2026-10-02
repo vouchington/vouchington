@@ -1,10 +1,22 @@
 import { randomUUID } from 'node:crypto'
 import { expect, test } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { loginAsUser } from '../../helpers/auth.mts'
+import { requireTestValue } from '../../helpers/assertions.mts'
+import { createTestUser } from '../../../backend/test-helpers/index.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
 
+let ordinaryOwnerId = ''
+
 test.describe('My API Keys Page', () => {
+  test.beforeAll(async () => {
+    ordinaryOwnerId = requireTestValue(
+      await createTestUser(),
+      'Failed to create API-key lifetime owner',
+    ).id
+  })
+
   test.use({ storageState: AUTH_STATE })
 
   test.beforeEach(async ({ page }) => {
@@ -35,6 +47,20 @@ test.describe('My API Keys Page', () => {
     await expect(page.getByTestId('api-keys-create-confirm-button')).toBeVisible()
     await expect(page.getByTestId('api-keys-create-cancel-button')).toBeVisible()
     await expect(page.getByTestId('api-keys-create-label-input')).toBeVisible()
+    await expect(page.getByTestId('api-keys-lifetime-30')).toBeChecked()
+    await expect(page.getByTestId('api-keys-lifetime-90')).toBeVisible()
+    await expect(page.getByTestId('api-keys-lifetime-365')).toHaveCount(0)
+    await expect(page.getByTestId('api-keys-lifetime-none')).toHaveCount(0)
+  })
+
+  test('ordinary owners default to 90 days and can select no expiry', async ({ page }) => {
+    await loginAsUser(page, ordinaryOwnerId)
+    await navigateTo(page, '/my/api-keys')
+    await page.getByTestId('api-keys-create-button').click()
+    await expect(page.getByTestId('api-keys-lifetime-90')).toBeChecked()
+    await expect(page.getByTestId('api-keys-lifetime-365')).toBeVisible()
+    await page.getByTestId('api-keys-lifetime-none').click()
+    await expect(page.getByTestId('api-keys-lifetime-none')).toBeChecked()
   })
 
   test('Create button is disabled when label is empty', async ({ page }) => {
@@ -55,6 +81,26 @@ test.describe('My API Keys Page', () => {
     await page.getByTestId('api-keys-create-cancel-button').click()
     await expect(page.getByTestId('api-keys-create-button')).toBeVisible()
     await expect(page.getByTestId('api-keys-create-label-input')).toBeHidden()
+  })
+
+  test('selects expiry and rotates while showing the replacement once', async ({ page }) => {
+    const label = `Playwright rotation ${randomUUID()}`
+    await page.getByTestId('api-keys-create-button').click()
+    await page.getByTestId('api-keys-lifetime-30').click()
+    await page.getByTestId('api-keys-create-label-input').pressSequentially(label)
+    await page.getByTestId('api-keys-create-confirm-button').click()
+    const rawInput = page.getByTestId('api-keys-created-raw-key-input')
+    await expect(rawInput).toBeVisible()
+    const original = await rawInput.inputValue()
+    await page.getByTestId('api-keys-dismiss-raw-key-button').click()
+    const row = page.getByTestId('api-key-active-row').filter({ hasText: label })
+    await row.getByTestId('api-key-rotate').click()
+    await expect(rawInput).toBeVisible()
+    await expect(rawInput).not.toHaveValue(original)
+    await expect(row).toHaveCount(2)
+    await expect(row.filter({ hasText: 'Replaced' })).toHaveCount(1)
+    await page.getByTestId('api-keys-dismiss-raw-key-button').click()
+    await expect(rawInput).toBeHidden()
   })
 
   test('created API key is shown once and can be revoked', async ({ page }) => {
