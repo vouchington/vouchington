@@ -8,7 +8,11 @@ import {
   validateTopicDecision,
   type ExpectedTopicClassifierBinding,
 } from './topic-decision-validation.mts'
-import { lockActiveTopicIds, readActiveSubjectTopicRelations } from './topic-relation-facts.mts'
+import {
+  lockActiveTopicIds,
+  readActiveSubjectTopicRelations,
+  readRelatedSubjectTopicIds,
+} from './topic-relation-facts.mts'
 import { castSubjectTopicRelationVotes } from './topic-relation-votes.mts'
 import { mapClassifierProbabilityToTopicVoteScore } from './topic-vote-mapper.mts'
 import type { PersistedClassifierDecision } from './types.mts'
@@ -19,6 +23,12 @@ export type ApplyTopicClassifierDecisionRelationsInput = {
   subject: PersistedClassifierDecision['subject']
   sharedActorId: string
   expectedBindings: readonly ExpectedTopicClassifierBinding[]
+  /**
+   * Only add: act on a positive result for a topic the subject has no relation row for at all, and
+   * never vote -1 or 0, never vote on, change or resurrect a relation that already exists. A
+   * second-stage classifier that must not override the first one's tags uses it.
+   */
+  addOnly?: boolean
 }
 
 export type ApplyTopicClassifierDecisionRelationsResult = {
@@ -36,7 +46,8 @@ export type ApplyTopicClassifierDecisionRelationsResult = {
  * never resurrected, and an existing relation keeps its creator); every result then votes -1, 0 or
  * +1 on the subject's live relation for that topic. Negative and neutral results never create a
  * relation, so a revision that stops matching can still flip the classifier's own earlier vote
- * without adding invisible rows. Deleted or merged topics are skipped.
+ * without adding invisible rows. Deleted or merged topics are skipped. With `addOnly` only the
+ * positive results for topics the subject has no relation row for are applied, each with a +1 vote.
  */
 export async function applyTopicClassifierDecisionRelations(
   input: ApplyTopicClassifierDecisionRelationsInput,
@@ -70,6 +81,14 @@ export async function applyTopicClassifierDecisionRelations(
         result.topicId,
         mapClassifierProbabilityToTopicVoteScore(result.probability, result.effectiveThresholds),
       )
+    }
+  }
+  if (input.addOnly) {
+    const related = await readRelatedSubjectTopicIds(query, relation.table_name, subjectId, [
+      ...scores.keys(),
+    ])
+    for (const [topicId, score] of scores) {
+      if (score !== 1 || related.has(topicId)) scores.delete(topicId)
     }
   }
   const positiveTopicIds = [...scores].flatMap(([topicId, score]) => (score === 1 ? [topicId] : []))

@@ -6,6 +6,7 @@ import {
   type StructuredDecisionFetch,
 } from '@modules/structured-decisions'
 import type { ClassifierModelProvider } from '@voucha/types'
+import { AUTOTAGGER_AGENT_SLUG } from '@voucha/types/entities/autotagger-agent'
 
 type AutotaggerProviderAttemptHook = NonNullable<StructuredDecisionAttemptHooks['beforeAttempt']>
 
@@ -16,16 +17,40 @@ type AutotaggerClientOptions = {
   apiKey?: string
 }
 
+type AutotaggerClientInput = {
+  postId: string | null
+  modelProvider: ClassifierModelProvider
+  beforeAttempt: AutotaggerProviderAttemptHook
+}
+
 /**
- * The seeded `tagging` classifier is always `openrouter`. An operator reconfiguring it to another
- * provider gets no key source, so building the client throws and the run ends through the shared
- * client-unavailable path instead of spending or looping. An unset key is rejected by the client.
+ * The seeded `tagging` and `autotagger-agent` classifiers are always `openrouter`. An operator
+ * reconfiguring one to another provider gets no key source, so building the client throws and the
+ * run ends through the shared client-unavailable path instead of spending or looping. An unset key
+ * is rejected by the client.
  */
 function resolveApiKey(provider: ClassifierModelProvider, options: AutotaggerClientOptions) {
   if (provider !== 'openrouter') {
     throw new Error(`Autotagger classifier has no API key source for provider '${provider}'`)
   }
   return options.apiKey ?? process.env.OPENROUTER_API_KEY ?? ''
+}
+
+function createTopicClassifierClient(
+  workload: string,
+  input: AutotaggerClientInput,
+  options: AutotaggerClientOptions,
+): StructuredDecisionClient {
+  return createStructuredDecisionClient({
+    transport: input.modelProvider,
+    apiKey: resolveApiKey(input.modelProvider, options),
+    fetch: options.fetch,
+    hooks: createStructuredDecisionBillingHooks({
+      workload,
+      postId: input.postId,
+      beforeAttempt: input.beforeAttempt,
+    }),
+  })
 }
 
 /**
@@ -36,21 +61,20 @@ function resolveApiKey(provider: ClassifierModelProvider, options: AutotaggerCli
  * and the outcomes being persisted can still spend again, within that cap.
  */
 export function createAutotaggerClient(
-  input: {
-    postId: string | null
-    modelProvider: ClassifierModelProvider
-    beforeAttempt: AutotaggerProviderAttemptHook
-  },
+  input: AutotaggerClientInput,
   options: AutotaggerClientOptions = {},
 ): StructuredDecisionClient {
-  return createStructuredDecisionClient({
-    transport: input.modelProvider,
-    apiKey: resolveApiKey(input.modelProvider, options),
-    fetch: options.fetch,
-    hooks: createStructuredDecisionBillingHooks({
-      workload: 'autotagger',
-      postId: input.postId,
-      beforeAttempt: input.beforeAttempt,
-    }),
-  })
+  return createTopicClassifierClient('autotagger', input, options)
+}
+
+/**
+ * The same client for the scoped reasoning autotagger (C7), with the same admission, reservation
+ * and replay guarantees. Its usage is recorded under its own `autotagger-agent` workload, so its
+ * spend is never attributed to the first stage; the global spend cap still applies to both.
+ */
+export function createAutotaggerAgentClient(
+  input: AutotaggerClientInput,
+  options: AutotaggerClientOptions = {},
+): StructuredDecisionClient {
+  return createTopicClassifierClient(AUTOTAGGER_AGENT_SLUG, input, options)
 }

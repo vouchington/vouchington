@@ -26,6 +26,34 @@ export async function lockActiveTopicIds(
   return new Set(rows.map(row => row.id))
 }
 
+/**
+ * The given topics the subject already has a relation row for, live or soft-deleted. A deleted row
+ * counts: someone removed that tag on purpose, so a later classifier must not bring it back.
+ */
+export async function readRelatedSubjectTopicIds(
+  query: QueryExecutor,
+  relationTable: string,
+  subjectId: string,
+  topicIds: readonly string[],
+): Promise<ReadonlySet<string>> {
+  const statement = sql`/* readRelatedClassifierSubjectTopics */
+    SELECT DISTINCT relation.object_id AS topic_id
+    FROM `
+  statement.append(
+    assertWhitelistedSqlIdentifier(
+      relationTable,
+      entityRelationElectionTables,
+      'entityRelationTable',
+    ),
+  )
+  statement.append(sql` relation
+    WHERE relation.subject_id = ${subjectId}::uuid
+      AND relation.object_id = ANY(${[...topicIds]}::uuid[])
+  `)
+  const { rows } = await query<{ topic_id: string }>(statement)
+  return new Set(rows.map(row => row.topic_id))
+}
+
 /** The subject's live topic relations among the given topics, with their current net votes. */
 export async function readActiveSubjectTopicRelations(
   query: QueryExecutor,

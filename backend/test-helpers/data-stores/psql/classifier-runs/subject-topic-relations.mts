@@ -139,6 +139,7 @@ export function applyDecisionRelationsForTest(
   sharedActorId: string,
   topicIds: readonly string[],
   subject: TopicRelationSubject = decision.subject,
+  options: { addOnly?: boolean } = {},
 ) {
   return runClassifierBorrowedTestTransaction(
     transaction =>
@@ -148,6 +149,7 @@ export function applyDecisionRelationsForTest(
           subject,
           sharedActorId,
           expectedBindings: runtimeBindings(topicIds),
+          ...options,
         },
         transaction,
       ),
