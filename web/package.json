@@ -71,7 +71,7 @@
     "input-otp": "^1.5.0",
     "isbot": "^5.2.2",
     "lucide-react": "^1.48.0",
-    "next": "^16.3.6",
+    "next": "^16.3.7",
     "parse5": "^8.0.1",
     "qrcode.react": "^4.2.0",
     "react": "^19.3.0",
