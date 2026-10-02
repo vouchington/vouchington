@@ -5,6 +5,7 @@ import {
   insertTestCommunity,
   insertTestCommunityMember,
   insertTestPost,
+  readAllQueueJobs,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '@services/communities/types'
@@ -40,7 +41,7 @@ describe('processPostCreated ban-evasion detection', () => {
 
     await processPostCreated({ id: postId })
 
-    const waiting = await ban_evasion.getJobs('waiting')
+    const waiting = await readAllQueueJobs(ban_evasion)
     expect(
       waiting.some(j => {
         const data = j.data as { communityId: string; userId: string; postId?: string }

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { KagiFeedJobData } from './types.mts'
 import { enqueueBulkProcessKagiFeeds, enqueueKagiSmallWebSync } from './enqueues.mts'
 import { kagiSmallWeb } from './queues.mts'
+import { readAllQueueJobs } from '@voucha/test-helpers'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 
@@ -16,7 +17,7 @@ describe('enqueueKagiSmallWebSync', () => {
 
     await enqueueKagiSmallWebSync({ deduplicationId })
 
-    const waiting = await kagiSmallWeb.getJobs('waiting')
+    const waiting = await readAllQueueJobs(kagiSmallWeb)
     const jobs = waiting.filter(j => j.opts.deduplication?.id === deduplicationId)
     expect(jobs).toHaveLength(1)
     expect(jobs[0]?.name).toBe('sync')
@@ -37,7 +38,7 @@ describe('enqueueBulkProcessKagiFeeds', () => {
     ]
     await enqueueBulkProcessKagiFeeds(entries)
 
-    const waiting = await kagiSmallWeb.getJobs('waiting')
+    const waiting = await readAllQueueJobs(kagiSmallWeb)
     const jobs = waiting.filter(j => (j.data as KagiFeedJobData).feedUrl === feedUrl)
     expect(jobs).toHaveLength(1)
   })

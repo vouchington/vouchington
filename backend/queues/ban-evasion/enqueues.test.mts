@@ -6,6 +6,7 @@ import {
   enqueueBulkDetectBanEvasionAfterPostEmbeddings,
 } from './enqueues.mts'
 import { ban_evasion } from './queues.mts'
+import { readAllQueueJobs } from '@voucha/test-helpers'
 
 describe('ban-evasion enqueues', () => {
   beforeEach(async () => {
@@ -21,7 +22,7 @@ describe('ban-evasion enqueues', () => {
     await enqueueDetectBanEvasion(communityId, userId, postId)
     await enqueueDetectBanEvasionAfterPostEmbedding(communityId, userId, postId, inputSha256Hex)
 
-    const waiting = await ban_evasion.getJobs('waiting')
+    const waiting = await readAllQueueJobs(ban_evasion)
     const jobs = waiting.filter(
       job =>
         (job.data as { communityId?: string; userId?: string }).communityId === communityId &&
@@ -51,7 +52,7 @@ describe('ban-evasion enqueues', () => {
       { communityId, userId, postId, inputSha256Hex },
     ])
 
-    const waiting = await ban_evasion.getJobs('waiting')
+    const waiting = await readAllQueueJobs(ban_evasion)
     const job = waiting.find(
       item =>
         (item.data as { communityId?: string; userId?: string }).communityId === communityId &&

@@ -1,6 +1,11 @@
 import { it, beforeAll, describe } from 'vitest'
 import assert from 'node:assert/strict'
-import { createTestUser, createReferralProgramFixture, WEB_PROVENANCE } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  createReferralProgramFixture,
+  WEB_PROVENANCE,
+  readAllQueueJobs,
+} from '@voucha/test-helpers'
 import {
   getReferralLinkCrawlStatus,
   setReferralLinkLastCrawlSuccessAtRecent,
@@ -146,7 +151,7 @@ describe('dispatch', () => {
     assert.equal(await isReferralLinkDispatchable(targetLink.id), true)
 
     const enqueueError = new Error(`sentinel dispatcher enqueue failure ${suffix}`)
-    const jobsBefore = await crawlReferralLinksQueue.getJobs('waiting')
+    const jobsBefore = await readAllQueueJobs(crawlReferralLinksQueue)
     const matchingJobsBefore = jobsBefore.filter(
       job => (job.data as { linkId?: string } | null | undefined)?.linkId === targetLink.id,
     )
@@ -185,7 +190,7 @@ describe('dispatch', () => {
     assert.equal(computeCount, 1)
     assert.equal(enqueueCount, 1)
 
-    const jobsAfter = await crawlReferralLinksQueue.getJobs('waiting')
+    const jobsAfter = await readAllQueueJobs(crawlReferralLinksQueue)
     const matchingJobsAfter = jobsAfter.filter(
       job => (job.data as { linkId?: string } | null | undefined)?.linkId === targetLink.id,
     )
@@ -219,7 +224,7 @@ describe('dispatch', () => {
     const url = await getUrlById(link.url_id)
     assert.ok(url)
     await setHostnameAsValidForCrawlSearch(url.hostname.id)
-    const jobsBefore = await crawlReferralLinksQueue.getJobs('waiting')
+    const jobsBefore = await readAllQueueJobs(crawlReferralLinksQueue)
     const matchingJobsBefore = jobsBefore.filter(
       job => (job.data as { linkId?: string } | null | undefined)?.linkId === link.id,
     )
@@ -258,7 +263,7 @@ describe('dispatch', () => {
     assert.equal(computeCount, 1)
     assert.equal(enqueueCount, 1)
 
-    const jobsAfter = await crawlReferralLinksQueue.getJobs('waiting')
+    const jobsAfter = await readAllQueueJobs(crawlReferralLinksQueue)
     const matchingJobsAfter = jobsAfter.filter(
       job => (job.data as { linkId?: string } | null | undefined)?.linkId === link.id,
     )

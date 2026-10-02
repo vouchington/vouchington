@@ -7,6 +7,7 @@ import {
   createTopHashtagAliasForTest,
   createTopHashtagPostSourceForTest,
   getEntityRelation,
+  readAllQueueJobs,
 } from '@voucha/test-helpers'
 import { enqueueReconcileNotificationsForPostCategoryVotes } from './enqueue-reconcile-post-topic-notifications.mts'
 
@@ -39,7 +40,7 @@ describe('enqueueReconcileNotificationsForPostCategoryVotes', () => {
 
     await expect
       .poll(async () => {
-        const jobs = await notifications.getJobs('waiting')
+        const jobs = await readAllQueueJobs(notifications)
         return jobs.filter(
           job =>
             job.name === 'processReconcilePostNotifications' &&

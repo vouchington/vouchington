@@ -14,7 +14,7 @@ import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
 import type { DeliverActivityData } from '@queues/activitypub-delivery/enqueues'
 import { getOrFetchRemoteActorByKeyId, type RemoteActorRow } from '@services/remote-actors'
 import { updateUserFields } from '@services/users'
-import { createTestUserDirect } from '@voucha/test-helpers'
+import { createTestUserDirect, readAllQueueJobs } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 
 const VALID_REMOTE_ACTOR_PUBLIC_KEY_PEM = generateRsaSha256KeyPair().publicKeyPem
@@ -68,12 +68,12 @@ export async function waitForDeliverActivityJobs(
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
     // oxlint-disable-next-line no-await-in-loop -- each bounded poll must observe the latest state before deciding whether to stop
-    const jobs = await activitypubDelivery.getJobs('waiting', 0, 100)
+    const jobs = await readAllQueueJobs(activitypubDelivery)
     if (predicate(jobs)) return jobs
     // oxlint-disable-next-line no-await-in-loop -- yields between reads within the bounded poll
     await new Promise<void>(resolve => setImmediate(resolve))
   }
-  return activitypubDelivery.getJobs('waiting', 0, 100)
+  return readAllQueueJobs(activitypubDelivery)
 }
 
 export function acceptJobsFor(

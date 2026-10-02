@@ -8880,6 +8880,9 @@ importers:
         specifier: ^14.0.2
         version: 14.0.2
     devDependencies:
+      '@queues/elections':
+        specifier: workspace:^
+        version: link:../../queues/elections
       '@services/read-states':
         specifier: workspace:^
         version: link:../read-states

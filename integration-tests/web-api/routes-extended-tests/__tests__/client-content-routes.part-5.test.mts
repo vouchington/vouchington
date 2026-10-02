@@ -55,11 +55,11 @@ describe('client-content-routes', () => {
       // enqueueRunViews() actually ran — reading the queue directly is what proves a
       // job was really dispatched, not just that the route didn't throw. Diff against
       // a snapshot of existing job ids (rather than asserting on an empty-before state)
-      // so this is unaffected by jobs left over from other test runs. A priority job with
-      // no explicit delay lands directly in the waiting priority list, not the delayed
-      // ZSet (that's reserved for jobs with a future runAt).
+      // so this is unaffected by jobs left over from other test runs. `searchJobs` scans every
+      // state: a `priority > 0` job is `prioritized` until a worker or the scheduler promotes
+      // it, and `getJobs('waiting')` omits it.
       const beforeIds = new Set(
-        (await psqlQueue.getJobs('waiting', 0, -1, { excludeData: true })).map(job => job.id),
+        (await psqlQueue.searchJobs({ name: 'runViews' })).map(job => job.id),
       )
 
       const result = await harness.withClientRuntime(
@@ -68,10 +68,8 @@ describe('client-content-routes', () => {
       )
       expect(result).toMatchObject({ success: true })
 
-      const afterJobs = await psqlQueue.getJobs('waiting', 0, -1, { excludeData: true })
-      const newRunViewsJob = afterJobs.find(
-        job => !beforeIds.has(job.id) && job.name === 'runViews',
-      )
+      const afterJobs = await psqlQueue.searchJobs({ name: 'runViews' })
+      const newRunViewsJob = afterJobs.find(job => !beforeIds.has(job.id))
       expect(newRunViewsJob).toBeDefined()
     })
   })

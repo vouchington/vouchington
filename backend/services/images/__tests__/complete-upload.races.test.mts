@@ -71,9 +71,7 @@ describe('completeImageUpload - duplicate recovery and races', () => {
     expect(deleteFromS3Spy).toHaveBeenCalledWith(expect.objectContaining({ id: failedImageId }))
     expect(deleteFromS3Spy).toHaveBeenCalledWith(expect.objectContaining({ id: retryImageId }))
     expect(s3Module.deleteImageDeliveryAliasFromS3).toHaveBeenCalledWith(failedImageId)
-    const replacementJobs = (await imagesQueue.getJobs('waiting')).filter(
-      job => (job.data as { id?: string }).id === retryImageId,
-    )
+    const replacementJobs = await imagesQueue.searchJobs({ data: { id: retryImageId } })
     expect(replacementJobs).toHaveLength(1)
   })
 

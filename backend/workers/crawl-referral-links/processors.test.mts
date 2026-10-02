@@ -63,17 +63,12 @@ describe('crawl referral links processor', () => {
       }),
     )
 
-    const waiting = await crawlBrowserQueue.getJobs('waiting')
-    expect(
-      waiting.some(
-        job =>
-          job.name === 'crawl_browser' &&
-          (job.data as { linkId?: string; urlId?: string; crawlerId?: string }).linkId === linkId &&
-          (job.data as { linkId?: string; urlId?: string; crawlerId?: string }).urlId === url.id &&
-          (job.data as { linkId?: string; urlId?: string; crawlerId?: string }).crawlerId ===
-            crawler.id,
-      ),
-    ).toBe(true)
+    // `searchJobs` scans every state: a `priority > 0` crawl is `prioritized`, not `waiting`.
+    const enqueued = await crawlBrowserQueue.searchJobs({
+      name: 'crawl_browser',
+      data: { linkId, urlId: url.id, crawlerId: crawler.id },
+    })
+    expect(enqueued).toHaveLength(1)
   })
 
   it('rejects malformed referral-link jobs', async () => {
@@ -200,19 +195,11 @@ describe('crawl referral links processor', () => {
       }),
     )
 
-    const waiting = await crawlBrowserQueue.getJobs('waiting')
-    expect(
-      waiting.some(
-        job =>
-          job.name === 'crawl_browser' &&
-          (job.data as { linkId?: string; urlId?: string; crawlerId?: string }).linkId ===
-            csr.linkId &&
-          (job.data as { linkId?: string; urlId?: string; crawlerId?: string }).urlId ===
-            csr.url.id &&
-          (job.data as { linkId?: string; urlId?: string; crawlerId?: string }).crawlerId ===
-            csrCrawler.id,
-      ),
-    ).toBe(true)
+    const enqueued = await crawlBrowserQueue.searchJobs({
+      name: 'crawl_browser',
+      data: { linkId: csr.linkId, urlId: csr.url.id, crawlerId: csrCrawler.id },
+    })
+    expect(enqueued).toHaveLength(1)
   })
 })
 

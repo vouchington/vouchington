@@ -54,7 +54,7 @@ describe('openai moderation single worker', () => {
     expect(moderation.openai_omni_moderation_created_at).toBeInstanceOf(Date)
     expect(moderation.openai_omni_moderation_flagged).toBe(false)
 
-    const notificationJobs = await notifications.getJobs('waiting')
+    const notificationJobs = await readAllQueueJobs(notifications)
     expect(
       notificationJobs.some(
         job =>
@@ -110,7 +110,7 @@ describe('openai moderation single worker', () => {
     expect(postResult.enqueued).toBeGreaterThanOrEqual(1)
     expect(imageResult.enqueued).toBeGreaterThanOrEqual(1)
 
-    const waitingJobs = await openai_moderation_omni_single.getJobs('waiting')
+    const waitingJobs = await readAllQueueJobs(openai_moderation_omni_single)
     expect(
       waitingJobs.some(job => job.name === 'post' && (job.data as { id?: string }).id === postId),
     ).toBe(true)

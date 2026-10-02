@@ -75,9 +75,9 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
       .poll(async () => {
         const [embeddingJobs, aiAgentJobs, notificationJobs, languageDetectionJobs] =
           await Promise.all([
-            bedrock_embeddings_nova_multimodal_v1_single.getJobs('waiting'),
+            readAllQueueJobs(bedrock_embeddings_nova_multimodal_v1_single),
             readAllQueueJobs(ai_agents),
-            notifications.getJobs('waiting'),
+            readAllQueueJobs(notifications),
             readAllQueueJobs(language_detection),
           ])
 
@@ -123,7 +123,7 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
     await expect
       .poll(async () => {
         const [notificationJobs, languageDetectionJobs] = await Promise.all([
-          notifications.getJobs('waiting'),
+          readAllQueueJobs(notifications),
           readAllQueueJobs(language_detection),
         ])
 
@@ -159,7 +159,7 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
     await expect
       .poll(async () => {
         const [notificationJobs, languageDetectionJobs] = await Promise.all([
-          notifications.getJobs('waiting'),
+          readAllQueueJobs(notifications),
           readAllQueueJobs(language_detection),
         ])
 

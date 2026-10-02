@@ -37,12 +37,13 @@ describe('createSessionReferralAttribution', () => {
   // end-to-end notification delivery, matching
   // backend/services/rss-feed-items/upsert-enqueues.test.mts.
   async function referralClickJobWasEnqueued(landingUrl: string): Promise<boolean> {
-    const jobs = await notifications.getJobs('waiting')
-    return jobs.some(
-      job =>
-        job.name === 'processReferralClickNotification' &&
-        (job.data as { referrerId?: string; landingUrl?: string }).landingUrl === landingUrl,
-    )
+    // `searchJobs` scans every state: a `priority > 0` notification is `prioritized`, which
+    // `getJobs('waiting')` omits.
+    const jobs = await notifications.searchJobs({
+      name: 'processReferralClickNotification',
+      data: { landingUrl },
+    })
+    return jobs.length > 0
   }
 
   it('creates a new attribution row for a new (session, referrer) pair and notifies the referrer', async () => {

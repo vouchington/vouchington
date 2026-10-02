@@ -168,8 +168,9 @@ async function hasCrawlUrlJob(urlId: string): Promise<boolean> {
 }
 
 async function hasPostNotificationJob(postId: string): Promise<boolean> {
+  // No `state` key: a `priority > 0` notification is `prioritized`, not `waiting`, until a worker
+  // promotes it, so a `'waiting'` filter misses it.
   const jobs = await notifications.searchJobs({
-    state: 'waiting',
     name: 'processReconcilePostNotifications',
     data: { postId },
   })

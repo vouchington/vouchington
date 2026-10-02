@@ -39,7 +39,7 @@ describe('post entity listener creation dispatch', () => {
 
     await processPostCreated({ id: postId })
 
-    const spamJobs = await spam_detection.getJobs('waiting')
+    const spamJobs = await readAllQueueJobs(spam_detection)
     expect(spamJobs.some(job => (job.data as { id?: string }).id === postId)).toBe(false)
   })
 
@@ -54,7 +54,7 @@ describe('post entity listener creation dispatch', () => {
     })
     const recoveryError = new Error('recovery unavailable')
     const recoverPostCreatedEffects = vi.fn<(post: { id: string }) => Promise<void>>(async () => {
-      const mentionJobs = await postMentions.getJobs('waiting')
+      const mentionJobs = await readAllQueueJobs(postMentions)
       expect(mentionJobs.some(job => (job.data as { postId?: string }).postId === postId)).toBe(
         true,
       )
@@ -83,7 +83,7 @@ describe('post entity listener creation dispatch', () => {
 
     const post = (await getPostByAny(postId)) as Post
     const { content_sha256 } = createPostModerationContent(post)
-    const spamJobs = await spam_detection.getJobs('waiting')
+    const spamJobs = await readAllQueueJobs(spam_detection)
     const spamJob = spamJobs.find(
       job => job.name === 'post' && (job.data as { id?: string }).id === postId,
     )
@@ -236,7 +236,7 @@ describe('post entity listener creation dispatch', () => {
 
     await processPostUpdated({ id: postId, contentChanged: true })
 
-    const spamJobs = await spam_detection.getJobs('waiting')
+    const spamJobs = await readAllQueueJobs(spam_detection)
     const spamJob = spamJobs.find(
       job => job.name === 'post' && (job.data as { id?: string }).id === postId,
     )

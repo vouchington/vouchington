@@ -13,6 +13,7 @@ import {
   type DisconnectRequestedData,
 } from './enqueues.mts'
 import { blueskyFollowPropagation } from './queues.mts'
+import { readAllQueueJobs } from '@voucha/test-helpers'
 
 const actualGlideMq = createRequire(import.meta.url)('glide-mq') as typeof import('glide-mq')
 
@@ -25,7 +26,7 @@ describe('bluesky follow propagation enqueue helpers', () => {
 
     await enqueueReconcileBlueskyFollow(followerUserId, followeeUserId)
 
-    const waiting = await blueskyFollowPropagation.getJobs('waiting')
+    const waiting = await readAllQueueJobs(blueskyFollowPropagation)
     const jobs = waiting.filter(
       j =>
         (j.data as { followerUserId?: string }).followerUserId === followerUserId &&
@@ -61,7 +62,7 @@ describe('bluesky follow propagation enqueue helpers', () => {
     // state-gating, skips the second enqueue outright rather than creating a second job.
     expect(second).toBeNull()
 
-    const waiting = await blueskyFollowPropagation.getJobs('waiting')
+    const waiting = await readAllQueueJobs(blueskyFollowPropagation)
     const jobs = waiting.filter(
       j =>
         (j.data as { followerUserId?: string }).followerUserId === followerUserId &&
@@ -73,7 +74,7 @@ describe('bluesky follow propagation enqueue helpers', () => {
   it('enqueues the singleton backfill job with throttle deduplication', async () => {
     await enqueueBackfillBlueskyFollowPropagation()
 
-    const waiting = await blueskyFollowPropagation.getJobs('waiting')
+    const waiting = await readAllQueueJobs(blueskyFollowPropagation)
     const job = waiting.find(
       j =>
         (j.opts as { deduplication?: { id?: string } }).deduplication?.id ===

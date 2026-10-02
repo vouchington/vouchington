@@ -38,7 +38,7 @@ describe('enqueueUndoFollowSideEffects', () => {
     await flushPendingTasks()
 
     expect(await readAllQueueJobs(activitypubDelivery)).toEqual([])
-    expect(await blueskyFollowPropagation.getJobs('waiting', 0, 100)).toEqual([])
+    expect(await readAllQueueJobs(blueskyFollowPropagation)).toEqual([])
   })
 
   it('does not enqueue for an empty Follow deletion result', async () => {
@@ -46,7 +46,7 @@ describe('enqueueUndoFollowSideEffects', () => {
     await flushPendingTasks()
 
     expect(await readAllQueueJobs(activitypubDelivery)).toEqual([])
-    expect(await blueskyFollowPropagation.getJobs('waiting', 0, 100)).toEqual([])
+    expect(await readAllQueueJobs(blueskyFollowPropagation)).toEqual([])
   })
 
   it('enqueues matching ActivityPub UndoFollow and Bluesky reconciliation jobs', async () => {

@@ -16,7 +16,7 @@ describe('scheduled job template validation', () => {
   it.each(SCHEDULED_JOB_MANIFESTS.map(manifest => [manifest.queueName, manifest] as const))(
     'registers every %s template with glide-mq',
     async (queueName, manifest) => {
-      const queue = new Queue(`template-validation:${queueName}`)
+      const queue = new Queue(`template-validation:${queueName}`, {})
       queues.push(queue)
 
       await upsertScheduledJobManifest(queue, manifest, { nodeEnv: 'production' })

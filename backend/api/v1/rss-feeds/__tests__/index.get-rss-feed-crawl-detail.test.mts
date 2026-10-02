@@ -8,6 +8,7 @@ import {
   createTestUser,
   createTestMembership,
   updateTestMembershipExpiresAt,
+  readAllQueueJobs,
 } from '@voucha/test-helpers'
 
 describe('index', () => {
@@ -56,7 +57,7 @@ describe('index', () => {
           rss_feed_id: feedId,
           force: false,
         })
-        const jobs = await rss_feeds.getJobs('waiting')
+        const jobs = await readAllQueueJobs(rss_feeds)
         expect(jobs).toHaveLength(1)
         expect(jobs[0]?.name).toBe('fetchRssFeed')
         expect(jobs[0]?.data).toMatchObject({ rssFeedId: feedId, ttl: 60_000 })
@@ -82,7 +83,7 @@ describe('index', () => {
           .expect(200)
 
         expect(response.body.force).toBe(true)
-        const jobs = await rss_feeds.getJobs('waiting')
+        const jobs = await readAllQueueJobs(rss_feeds)
         expect(jobs).toHaveLength(1)
         expect(jobs[0]?.data).toMatchObject({ rssFeedId: feedId, ttl: 0 })
       })

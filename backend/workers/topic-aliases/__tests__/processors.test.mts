@@ -5,6 +5,7 @@ import {
   createTopHashtagPostSourceForTest,
   insertTestRssFeed,
   insertTestTopic,
+  readAllQueueJobs,
 } from '@voucha/test-helpers'
 import {
   getRssFeedItemCategories,
@@ -143,7 +144,7 @@ describe('topic-aliases processors', () => {
     await expect(
       processInvalidatePostsForTopicAliases({ topicAliasIds: [alias!.id] }),
     ).resolves.toEqual({ hasMore: true, lastPostId: expect.any(String) })
-    const continuation = (await topicAliases.getJobs('waiting')).find(
+    const continuation = (await readAllQueueJobs(topicAliases)).find(
       job =>
         job.name === 'processInvalidatePostsForTopicAliases' &&
         (job.data as { topicAliasIds?: string[] }).topicAliasIds?.includes(alias!.id),

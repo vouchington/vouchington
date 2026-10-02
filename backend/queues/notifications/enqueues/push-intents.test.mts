@@ -6,6 +6,7 @@ import {
 } from './push-intents.mts'
 import { notifications } from '../queues.mts'
 import { NOTIFICATIONS_DEDUPLICATION_TTL_MS, PRIORITY_DEFAULT } from '../config.mts'
+import { readAllQueueJobs } from '@voucha/test-helpers'
 
 describe('notification push intent queue wiring', () => {
   it('enqueues a debounced delivery job for one durable intent', async () => {
@@ -15,7 +16,7 @@ describe('notification push intent queue wiring', () => {
 
     await enqueueDeliverNotificationPushIntent(userId, notificationId)
 
-    const job = (await notifications.getJobs('waiting')).find(
+    const job = (await readAllQueueJobs(notifications)).find(
       candidate =>
         candidate.name === 'processDeliverNotificationPushIntent' &&
         (candidate.data as { userId?: string }).userId === userId,
@@ -34,7 +35,7 @@ describe('notification push intent queue wiring', () => {
   it('throttles periodic intent reconciliation to one five-minute schedule', async () => {
     await enqueueReconcileNotificationPushIntents()
 
-    const job = (await notifications.getJobs('waiting')).find(
+    const job = (await readAllQueueJobs(notifications)).find(
       candidate => candidate.name === 'processReconcileNotificationPushIntents',
     )
     expect(job?.data).toEqual({})

@@ -1,59 +1,18 @@
 import { elections as electionsWorker } from '../workers/elections/workers.mts'
-import { elections as electionsQueue } from '../queues/elections/queues.mts'
 import type { ElectionsJobData } from '../queues/elections/types.mts'
 import onError from '../modules/on-error/index.mts'
+import {
+  type ElectionJob,
+  findSettledElectionJobs,
+  matchesElectionJob,
+  startPromotingElectionJobs,
+} from './election-vote-stats-jobs.mts'
 
 // Attach an error handler so unhandled 'error' events don't crash the process: this test-support
 // context never goes through the worker bootstrap that normally does this (mirrors
 // backend/test-helpers/workers/entity-listeners/test-support.mts:10). Guarded so importing this module from many
 // test files doesn't accumulate one listener per import.
 if (electionsWorker.listenerCount('error') === 0) electionsWorker.on('error', onError)
-
-const JOB_NAME = 'processUpdateElectionVoteStats'
-
-type ElectionJob = {
-  id?: string
-  name: string
-  data: ElectionsJobData['data']
-  failedReason?: string
-}
-
-type ElectionQueueSearch = {
-  searchJobs(opts: {
-    name?: string
-    state?: string
-    data?: Record<string, unknown>
-  }): Promise<ElectionJob[]>
-}
-
-function matchesElectionJob(job: ElectionJob, target: ElectionsJobData['data']): boolean {
-  return (
-    job.name === JOB_NAME &&
-    job.data.electionId === target.electionId &&
-    job.data.orderingKey === target.orderingKey &&
-    job.data.relationTable === target.relationTable
-  )
-}
-
-type SettledElectionJobs = { completed: ElectionJob[]; failed: ElectionJob[] }
-
-// Pre-scans both terminal states: a job that already failed before this call's listeners
-// registered must be surfaced too, or the caller waits out the full timeout instead of rejecting.
-async function findSettledElectionJobs(
-  target: ElectionsJobData['data'],
-): Promise<SettledElectionJobs> {
-  const search = electionsQueue as unknown as ElectionQueueSearch
-  const matches = (job: ElectionJob) => matchesElectionJob(job, target)
-  const [completed, failed] = await Promise.all([
-    search.searchJobs({
-      name: JOB_NAME,
-      state: 'completed',
-      data: { electionId: target.electionId },
-    }),
-    search.searchJobs({ name: JOB_NAME, state: 'failed', data: { electionId: target.electionId } }),
-  ])
-  return { completed: completed.filter(matches), failed: failed.filter(matches) }
-}
 
 // Consumed job ids persist across separate calls, not just within one: without this, a second
 // wait for the same election (e.g. voting twice against one post) could resolve or reject off a
@@ -127,6 +86,7 @@ export async function onceElectionVoteStatsCompleted(
 
   return new Promise<void>((resolve, reject) => {
     let settled = false
+    const stopPromoting = startPromotingElectionJobs(target)
 
     const timer = setTimeout(() => {
       cleanup()
@@ -142,6 +102,7 @@ export async function onceElectionVoteStatsCompleted(
       worker.off('completed', onCompleted)
       worker.off('failed', onFailed)
       clearTimeout(timer)
+      stopPromoting()
     }
 
     // False for a job id this or an earlier call already consumed, so callers skip re-acting on it.

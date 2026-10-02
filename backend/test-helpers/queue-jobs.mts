@@ -9,7 +9,10 @@
  *
  * State-independent by design: a queue's `waiting` list empties the moment any worker attaches and
  * drains a job in the same fork (`isolate: false` shares queue state across every file). Reading the
- * job back by id works whether it is waiting, active, or already completed.
+ * job back by id works whether it is waiting, active, or already completed. A `priority > 0` job is
+ * also absent from `getJobs('waiting')`: `glide-mq` keeps it `prioritized` (reported under
+ * `delayed`) until a worker promotes it, so `searchJobs` by name or data, or the by-id read, is the
+ * lookup that holds.
  *
  * `readAllQueueJobs` below covers the other shape: an INDIRECT assertion with no job handle to read
  * back by id (the job is a side effect of a service/HTTP call), or a bulk enqueue whose return value
@@ -91,4 +94,43 @@ export async function readAllQueueJobs<T extends { id: string; timestamp: number
   return jobsByState
     .flat()
     .toSorted((a, b) => a.timestamp - b.timestamp || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+}
+
+export type DelayedJobSearch = {
+  searchJobs: (opts: {
+    name?: string
+    state?: 'delayed'
+    data?: Record<string, unknown>
+  }) => Promise<Array<{ getState: () => Promise<string>; promote: () => Promise<void> }>>
+}
+
+/**
+ * Releases the jobs a test queue has parked by the `delay` option, so a test never waits out real
+ * time. `glide-mq` 0.16's test queue honors `delay` with a real timer, and a debounce such as the
+ * elections recompute (`ELECTIONS_DEFAULTS.recomputeDelayMs`, 6s) would otherwise outlast a poll.
+ *
+ * A prioritized job also reports under `delayed` but is not parked: its worker promotes it, and
+ * `promote()` rejects it, so only jobs whose state is exactly `delayed` are promoted. Returns the
+ * number released. Enqueues are often fire-and-forget, so a caller that may run before the job
+ * exists must call this again until its own condition holds.
+ */
+export async function promoteDelayedJobs(
+  queue: DelayedJobSearch,
+  filter: { name?: string; data?: Record<string, unknown> } = {},
+): Promise<number> {
+  const candidates = await queue.searchJobs({ ...filter, state: 'delayed' })
+  const outcomes = await Promise.all(
+    candidates.map(async job => {
+      if ((await job.getState()) !== 'delayed') return 0
+      // The delay timer can fire between the state read and this call; the job is then already out.
+      return job.promote().then(
+        () => 1,
+        (err: unknown) => {
+          if (!/not_delayed|not_found/.test(String(err))) throw err
+          return 0
+        },
+      )
+    }),
+  )
+  return outcomes.reduce<number>((total, released) => total + released, 0)
 }
