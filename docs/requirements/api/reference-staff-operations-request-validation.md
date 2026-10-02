@@ -175,6 +175,9 @@ nothing, then that a valid one still works:
   (`dynamic-config/request-validation.test.mts`).
 - `POST /memberships/refunds` with a blank `invoice_id` calls no Stripe API and writes no refund
   (`memberships/refund.test.mts`).
+- `PUT /admin/classifiers/:classifierId/candidates/:candidateId/threshold` and its `/rollback`
+  answer a malformed body with `422` and write no revision, so the active threshold and the
+  revision history stay as they were (`admin/classifiers/thresholds.test.mts`).
 
 The other cases in the matrix (blacklist, `mq`, URL crawl path checks, and the rest) assert the
 status and the absent diagnostic, not the absent side effect.

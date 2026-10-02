@@ -6,6 +6,19 @@ import { getBackendProgramBuildCount, getBackendProgramEntryCount } from './back
 
 const expectedParameters = {
   'GET:/api/v1/admin/ai-costs': ['after', 'limit'],
+  'GET:/api/v1/admin/classifiers': ['after', 'limit'],
+  'GET:/api/v1/admin/classifiers/:classifierId/candidates': ['after', 'community_id', 'limit'],
+  'GET:/api/v1/admin/classifiers/:classifierId/candidates/:candidateId/thresholds': [
+    'after',
+    'limit',
+  ],
+  'GET:/api/v1/admin/classifiers/:classifierId/human-vote-comparison': [
+    'community_id',
+    'from',
+    'post_id',
+    'rss_feed_item_id',
+    'to',
+  ],
   'GET:/api/v1/admin/moderation-analytics': ['range'],
   'GET:/api/v1/admin/modlog': ['action_type', 'actor_id', 'after', 'community_id', 'limit'],
   'GET:/api/v1/admin/oauth-clients': ['after', 'limit', 'verification'],

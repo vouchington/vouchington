@@ -213,6 +213,17 @@ the server cursor without decoder changes. Hybrid results can omit matches outsi
 clients must not describe these search results or counts as exhaustive. Similar-item searches
 retain their current behavior.
 
+## Classifier threshold management handoff
+
+#224 adds staff-only endpoints under `/api/v1/admin/classifiers` to list classifiers and their
+candidates, set, clear and roll back a candidate's threshold override, and read an aggregate
+comparison of classifier probabilities against human votes. They are administrator and site
+moderator tools with no user-facing surface, so there is no native consumer and no native work:
+the `engineering.admin.classifiers.*` fixtures declare `consumers: []`, and the web client keeps
+only a static manifest entry. The repository does not yet have a web admin page for them; the
+endpoints are reachable by API and a web admin page is future work. Staff mutation
+controls stay web-only, as in the staff action history handoff below.
+
 ## Staff action history handoff
 
 Issue #635 extends the shared moderator-action catalog and transcript of staff actions with typed

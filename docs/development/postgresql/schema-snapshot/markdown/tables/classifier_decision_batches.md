@@ -45,7 +45,7 @@ Not partitioned — growth: unbounded.
 **Indexes:**
 
 - `classifier_decision_batches_pkey`: `CREATE UNIQUE INDEX classifier_decision_batches_pkey ON public.classifier_decision_batches USING btree (id)`
-- `idx_classifier_decision_batches__classifier`: `CREATE INDEX idx_classifier_decision_batches__classifier ON public.classifier_decision_batches USING btree (classifier_id)`
+- `idx_classifier_decision_batches__classifier`: `CREATE INDEX idx_classifier_decision_batches__classifier ON public.classifier_decision_batches USING btree (classifier_id, id)`
 - `idx_classifier_decision_batches__post`: `CREATE INDEX idx_classifier_decision_batches__post ON public.classifier_decision_batches USING btree (post_id, id)`
 - `idx_classifier_decision_batches__prompt_classifier`: `CREATE INDEX idx_classifier_decision_batches__prompt_classifier ON public.classifier_decision_batches USING btree (prompt_version_id, classifier_id)`
 - `idx_classifier_decision_batches__rss_feed_item`: `CREATE INDEX idx_classifier_decision_batches__rss_feed_item ON public.classifier_decision_batches USING btree (rss_feed_item_id, id)`

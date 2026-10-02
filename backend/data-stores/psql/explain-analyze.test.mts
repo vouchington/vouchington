@@ -56,6 +56,37 @@ describe('buildExplainAnalyzeText', () => {
     }
   }, 30_000)
 
+  it('applies local planner settings to the call that passes them and no other', async () => {
+    const table = `explain_random_page_cost_${randomUUID().replaceAll('-', '')}`
+    try {
+      await write(`/* explainRandomPageCostTest */
+        CREATE TABLE ${table} AS
+        SELECT CASE WHEN value = 100000 THEN 2 ELSE 1 END AS lookup_key
+        FROM generate_series(1, 100000) value`)
+      await write(`/* explainRandomPageCostTest */ CREATE INDEX ON ${table} (lookup_key)`)
+      await write(`/* explainRandomPageCostTest */ ANALYZE ${table}`)
+
+      const query = `/* explainRandomPageCostTest */ SELECT count(*) FROM ${table} WHERE lookup_key = $1`
+      const planCacheMode = 'force_custom_plan'
+      const scanType = (plan: unknown) =>
+        collectPlanNodes(plan).find(node => node['Relation Name'] === table)?.['Node Type']
+
+      const stock = await explainAnalyze('stock', query, [2], { planCacheMode })
+      const priced = await explainAnalyze('priced', query, [2], {
+        planCacheMode,
+        localSettings: { random_page_cost: '1000000' },
+      })
+      // The setting is transaction-local, so a later call on the pool plans with stock costs.
+      const after = await explainAnalyze('after', query, [2], { planCacheMode })
+
+      expect(scanType(stock.plan)).toBe('Index Only Scan')
+      expect(scanType(priced.plan)).toBe('Seq Scan')
+      expect(scanType(after.plan)).toBe('Index Only Scan')
+    } finally {
+      await write(`/* explainRandomPageCostTest */ DROP TABLE IF EXISTS ${table}`)
+    }
+  }, 30_000)
+
   it('deallocates the prepared target after an EXPLAIN execution error', async () => {
     await expect(
       explainAnalyze('failing-target', '/* failingExplainTarget */ SELECT 1 / $1::integer', [0]),

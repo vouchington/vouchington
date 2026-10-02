@@ -1,0 +1,55 @@
+{
+  "batches_examined": 42,
+  "cells": [
+    {
+      "classifier_vote": 1,
+      "decisions": 30,
+      "effective_lower_threshold": {
+        "max": 0.3,
+        "min": 0.3
+      },
+      "effective_upper_threshold": {
+        "max": 0.8,
+        "min": 0.8
+      },
+      "human": {
+        "down": 1,
+        "neutral": 3,
+        "up": 20
+      },
+      "human_decisions": 24,
+      "human_voters": 22,
+      "mean_probability": 0.85,
+      "probability_lower": 0.8,
+      "probability_upper": 0.9
+    },
+    {
+      "classifier_vote": 0,
+      "decisions": 5,
+      "effective_lower_threshold": {
+        "max": 0.3,
+        "min": 0.3
+      },
+      "effective_upper_threshold": {
+        "max": 0.8,
+        "min": 0.8
+      },
+      "human": null,
+      "human_decisions": 2,
+      "human_voters": 2,
+      "mean_probability": 0.45,
+      "probability_lower": 0.4,
+      "probability_upper": 0.5
+    }
+  ],
+  "classifier_id": "00000000-0000-7000-8000-000000000901",
+  "community_id": "00000000-0000-7000-8000-000000000905",
+  "min_human_cohort": 20,
+  "post_id": null,
+  "rss_feed_item_id": null,
+  "truncated": false,
+  "window": {
+    "from": "2026-09-01T00:00:00.000Z",
+    "to": "2026-09-15T00:00:00.000Z"
+  }
+}

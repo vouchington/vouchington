@@ -24,6 +24,7 @@ disputes, review queues, or integrity queues; see the
 | Community API             | `GET /api/v1/communities/:idOrSlug/moderation-analytics`              | Community modlog-authorized moderators                                                                            |
 | Paid transparency         | `GET /api/v1/moderation-transparency?range=30d`                       | Administrators and active/past-due Plus or Pro members                                                            |
 | Community AI transparency | `GET /api/v1/communities/:idOrSlug/moderation-transparency?range=30d` | Community owners/moderators and administrators at any tier; active/past-due Plus or Pro members of that community |
+| Classifier comparison     | `GET /api/v1/admin/classifiers/:classifierId/human-vote-comparison`   | Administrators and site moderators                                                                                |
 
 ## Date Ranges
 
@@ -90,6 +91,33 @@ nearest-five rounding; private daily cohorts never combine to become releasable 
 The release boundary accepts only safe integer counts. SQL `COUNT(*)` aggregates satisfy that
 contract; fractional, non-finite, negative, and unsafe values fail closed rather than being
 rounded. Nearest-five rounding therefore applies only to integer aggregates.
+
+## Classifier Human-Vote Comparison
+
+Staff tune a topic classifier's thresholds against evidence, so a separate read-only report
+compares the classifier's stored probabilities and effective thresholds with what humans later
+voted on the same decisions. It is not part of the dashboards above and does not use the paid
+transparency release boundary: it is a staff view that never returns individual votes, voters, or
+content.
+
+- **Filters.** `from` and `to` (an ISO 8601 window of at most 31 days) and the classifier in the
+  path are required. `community_id`, `post_id`, and `rss_feed_item_id` narrow it; a post and an RSS
+  feed item cannot be combined. Only topic classifiers can be compared.
+- **Humans only.** A classifier's own actor and any system account are never counted as a human
+  vote. Each human counts once, through their newest ballot; a cleared ballot counts as none and a
+  `0` ballot as neutral.
+- **Cells.** Decisions are grouped by probability tenth and by the vote the stored effective
+  thresholds produced (`-1`, `0`, `+1`), with the threshold range and mean probability of the cell.
+  A cell reports `human_decisions` and `human_voters`, and its `up`, `down` and `neutral` split only
+  when at least 20 distinct humans voted on its decisions; otherwise `human` is `null`.
+- **Bound.** The window is a batch-id range read through an index that starts with the filter, over
+  completed batches only, newest first and capped at 1000 batches (`truncated` says when the window
+  held more). See the
+  [classifier service](../../overview/architecture/services/classifiers/README.md#human-vote-comparison).
+
+Thresholds are changed separately and only by administrators, through audited revisions; see
+[threshold management](../../overview/architecture/services/classifiers/README.md#threshold-management).
+Nothing in this report or in those endpoints changes a threshold automatically.
 
 ## Related
 
