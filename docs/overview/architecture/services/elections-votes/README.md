@@ -126,10 +126,10 @@ read-after-write. A `PUT`/`DELETE` vote enqueues the recompute fire-and-forget
 (`void options.enqueueElectionStats(entityIds)` in `shared/entity-service.mts`) and returns `204`
 before it runs; the recompute itself is deliberately scheduled
 `ELECTIONS_DEFAULTS.recomputeDelayMs` (6s in production) after the vote so it lands outside normal
-request latency and reads the **replica** rather than the primary (#7352). (The Vitest glide-mq shim
-ignores `delay`, so the recompute lands inside request latency in tests only — which is why tests
-need the waiter below and production needs no change.) Callers and tests must not assume a `GET`
-immediately after a vote reflects that vote.
+request latency and reads the **replica** rather than the primary (#7352). (The Vitest glide-mq test
+queue honors `delay` with a real timer, so tests would otherwise wait out the 6s; the waiter below
+releases the parked job at once, and production needs no change.) Callers and tests must not assume a
+`GET` immediately after a vote reflects that vote.
 
 Each aggregate carries the PostgreSQL MVCC snapshot marker captured by the same SQL statement:
 the epoch-aware snapshot `xmax` and the number of transactions still in progress below it. Entity
