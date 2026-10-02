@@ -319,11 +319,13 @@ request count and the ledger rows as well as the report. The scope files add C5'
 (zero calls), C8's rule edit (one re-classification), an edited post (a new content version) and
 that an unpublish is neither billed nor applied twice.
 
-**Running it against an environment.** From a checkout with the target environment's PostgreSQL
-connection set, as for the other operational scripts:
+**Running it against an environment.** From a checkout, as for the other operational scripts. The
+report only reads. `--env-file=.env` loads the local `.env` (`source .env && node ...` reads the
+same values); for a deployed environment export that environment's `DATABASE_URL` in the shell and
+drop the flag:
 
 ```sh
-node backend/scripts/classifier-call-efficiency.mts --from <ISO time> [--to <ISO time>] [--json]
+node --env-file=.env backend/scripts/classifier-call-efficiency.mts --from <ISO time> [--to <ISO time>] [--json]
 ```
 
 It prints one block per classifier: the KPI verdict, calls per content version, retries,

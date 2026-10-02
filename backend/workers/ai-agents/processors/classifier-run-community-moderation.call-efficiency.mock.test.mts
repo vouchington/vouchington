@@ -98,7 +98,7 @@ describe('C8 community moderation content and rule versions (real PG, determinis
     })
   })
 
-  it('unpublishes once: a replay, a re-trigger or a restored post is never billed or unpublished again', async () => {
+  it('unpublishes once: a redelivery, a re-trigger or a restored post is never billed or unpublished again', async () => {
     const provider = installEfficiencyProvider()
     const window = efficiencyWindow()
     const fixture = await createCommunityModerationFixture({ automodAction: 'unpublish' })
