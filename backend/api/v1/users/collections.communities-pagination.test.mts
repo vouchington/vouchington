@@ -84,7 +84,7 @@ describe('GET /api/v1/users/:idOrSlug/communities/:listType pagination (non-memb
       communityB.id,
       tieDate,
     )
-    const expectedOrder = [communityA.id, communityB.id].sort().reverse()
+    const expectedOrder = [communityA.id, communityB.id].toSorted().reverse()
 
     const request = createRequest()
     await request.authenticateAs(owner)

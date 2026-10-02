@@ -51,7 +51,7 @@ describe('getCommunityAiCostTotals', () => {
     const tiedIds = communities
       .slice(0, 2)
       .map(community => community.id)
-      .sort()
+      .toSorted()
     const afterFirstTied = encodeCursor({
       total_cost_microunits: tiedCost,
       id: tiedIds[0],

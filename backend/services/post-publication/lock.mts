@@ -84,7 +84,7 @@ export async function withPostPublicationReconciliationLocks<Result>(
   operation: () => Promise<Result>,
 ): Promise<Result> {
   const keys = [...new Set(postIds)]
-    .sort()
+    .toSorted()
     .map(postId => postPublicationScopeLockKey({ type: 'post', postId }))
   if (keys.length === 0) return operation()
   const client = await advisoryLockPool.connect()

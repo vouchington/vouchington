@@ -121,7 +121,7 @@ describe('GET /api/v1/appeals — list behavior', () => {
     const enrichedAppeal = response.body.appeals.find(
       (appeal: { id: string }) => appeal.id === enrichedAppealId,
     )
-    expect(Object.keys(enrichedAppeal.target_context).sort()).toEqual([
+    expect(Object.keys(enrichedAppeal.target_context).toSorted()).toEqual([
       'community',
       'created_at',
       'id',

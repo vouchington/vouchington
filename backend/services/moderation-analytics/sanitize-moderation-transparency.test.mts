@@ -126,6 +126,6 @@ describe('sanitizeModerationTransparency', () => {
 
   it('does not carry raw AI output, prompts, identities, or community scopes into the projection', () => {
     const result = sanitizeModerationTransparency([bucket('2026-08-14T12:00:00.000Z', 20)], now)[0]!
-    expect(Object.keys(result).sort()).toEqual(['category', 'count', 'date', 'metric'])
+    expect(Object.keys(result).toSorted()).toEqual(['category', 'count', 'date', 'metric'])
   })
 })

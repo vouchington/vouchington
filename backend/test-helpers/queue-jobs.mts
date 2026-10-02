@@ -90,5 +90,5 @@ export async function readAllQueueJobs<T extends { id: string; timestamp: number
   const jobsByState = await Promise.all(QUEUE_JOB_STATES.map(state => queue.getJobs(state)))
   return jobsByState
     .flat()
-    .sort((a, b) => a.timestamp - b.timestamp || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+    .toSorted((a, b) => a.timestamp - b.timestamp || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 }

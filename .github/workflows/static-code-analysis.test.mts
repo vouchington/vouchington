@@ -35,7 +35,7 @@ describe('static-code-analysis workflow', () => {
   it("runs only when called or dispatched, under its caller's concurrency", () => {
     const parsed = load(workflow) as { on: Record<string, unknown>; concurrency?: unknown }
 
-    expect(Object.keys(parsed.on).sort()).toEqual(['workflow_call', 'workflow_dispatch'])
+    expect(Object.keys(parsed.on).toSorted()).toEqual(['workflow_call', 'workflow_dispatch'])
     expect(parsed.concurrency).toBeUndefined()
   })
 

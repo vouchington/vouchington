@@ -67,7 +67,7 @@ export async function syncLocalArticles(
   const files = await readdir(articlesDir)
   const mdFiles = files
     .filter(file => file.endsWith('.md') && file !== 'README.md')
-    .sort()
+    .toSorted()
     .map(file => ({ file }))
 
   return syncArticleFiles(currentUser, mdFiles, article =>

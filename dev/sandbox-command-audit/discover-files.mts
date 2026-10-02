@@ -58,7 +58,7 @@ function statAndSort(paths: string[], cutoffMs: number | undefined): StatEntry[]
   }
   const inWindow =
     cutoffMs === undefined ? entries : entries.filter(entry => entry.mtimeMs >= cutoffMs)
-  return inWindow.sort((a, b) => b.mtimeMs - a.mtimeMs)
+  return inWindow.toSorted((a, b) => b.mtimeMs - a.mtimeMs)
 }
 
 type SelectResult = { files: string[]; skippedOtherRepo: number; skippedUnknownCwd: number }

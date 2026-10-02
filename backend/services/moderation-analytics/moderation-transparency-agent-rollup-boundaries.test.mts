@@ -30,7 +30,9 @@ describe('moderation transparency agent rollup boundaries', () => {
       fn_moderation_transparency_appeals_delete_rollup: 'deleted_appeals',
       fn_moderation_transparency_clearance_delete_rollup: 'deleted_clearance_changes',
     }
-    expect(Object.keys(definitions).sort()).toEqual(Object.keys(expectedTransitionTables).sort())
+    expect(Object.keys(definitions).toSorted()).toEqual(
+      Object.keys(expectedTransitionTables).toSorted(),
+    )
     for (const [name, transitionTable] of Object.entries(expectedTransitionTables)) {
       const definition = definitions[name]!
       expect(definition).toContain(`FROM ${transitionTable}`)

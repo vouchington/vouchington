@@ -71,7 +71,7 @@ describe('application answers', () => {
       [
         { question_id: short!.id, value: 'text' },
         { question_id: long!.id, value: null },
-      ].sort((a, b) => a.question_id.localeCompare(b.question_id)),
+      ].toSorted((a, b) => a.question_id.localeCompare(b.question_id)),
     )
     expect(application.answers).not.toHaveProperty(skipped!.id)
 

@@ -431,7 +431,7 @@ The root and nested plugin lists enable the configured TypeScript, Unicorn, and 
 checks every concrete tracked config against the installed analyzer, including inherited rules and
 overrides and disabled rule declarations, so another missing builtin plugin fails CI.
 Staged Unicorn entries record rule-specific scan counts and link their remediation issues; permanent
-opt-outs state their repository policy beside the rule. Catch bindings prefer `err`; string literals
+opt-outs state their repository policy beside the rule. Array ordering uses non-mutating `toSorted()` with existing comparators; `unicorn/no-array-sort` rejects mutating array sort calls. Catch bindings prefer `err`; string literals
 use the simplest readable form rather than requiring `String.raw`. Meanwhile, [`typescript-plugin-oxlint.test.mts`](../../../../static-code-analysis/oxlint-plugin/typescript-plugin-oxlint.test.mts) runs
 the installed analyzer with the real root and backend-agent configurations to prove syntax and
 type-aware TypeScript rules are active. The full lint command is `pnpm run oxlint`.

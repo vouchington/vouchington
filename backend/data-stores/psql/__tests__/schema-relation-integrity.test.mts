@@ -49,8 +49,8 @@ describe('PostgreSQL relation schema integrity', () => {
 
     for (const metadata of electionRelations) {
       const targetRows = rows.filter(row => row.target_table === metadata.table_name)
-      expect(targetRows.map(row => row.source_table).sort()).toEqual(
-        [getEntityRelationVoteTableName(metadata), 'vote_integrity_flags'].sort(),
+      expect(targetRows.map(row => row.source_table).toSorted()).toEqual(
+        [getEntityRelationVoteTableName(metadata), 'vote_integrity_flags'].toSorted(),
       )
       for (const row of targetRows) {
         expect(row.definition).toContain('FOREIGN KEY (')

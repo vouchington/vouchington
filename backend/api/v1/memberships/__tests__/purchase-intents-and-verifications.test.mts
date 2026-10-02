@@ -174,7 +174,7 @@ describe('membership purchase intents and verifications', () => {
         })
       }
       const responses = await Promise.all([createIntent(), createIntent()])
-      expect(responses.map(response => response.status).sort()).toEqual([201, 409])
+      expect(responses.map(response => response.status).toSorted()).toEqual([201, 409])
       expect(responses.find(response => response.status === 409)?.body).toMatchObject({
         code: 'CONFLICT',
         eligible_at: expect.any(String),

@@ -106,8 +106,8 @@ describe('official-links', () => {
         'url_id',
         'user_id',
       ]
-      expect(Object.keys(res.body.official_referral_link).sort()).toEqual(expectedKeys)
-      expect(Object.keys(listedLink).sort()).toEqual(expectedKeys)
+      expect(Object.keys(res.body.official_referral_link).toSorted()).toEqual(expectedKeys)
+      expect(Object.keys(listedLink).toSorted()).toEqual(expectedKeys)
     })
 
     it('POST /api/v1/referral-programs/:id/official-referral-links returns 409 on duplicate URL', async () => {

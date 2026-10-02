@@ -10,7 +10,7 @@ export const CONTENT_LANGUAGE_SELECT_OPTIONS: ContentLanguageSelectOption[] = LI
     value: language.iso6391,
     label: language.englishName,
   }),
-).sort((left, right) => left.label.localeCompare(right.label))
+).toSorted((left, right) => left.label.localeCompare(right.label))
 
 export const CONTENT_LANGUAGE_CODE_SET = new Set<string>(
   LINGUA_LANGUAGES.map(language => language.iso6391),

@@ -19,7 +19,7 @@ describe('retained key native conflict ordering', () => {
     const postId = crypto.randomUUID()
     const communityIds = Array.from({ length: POST_PUBLICATION_DIRTY_WORK_KEY_BATCH_SIZE }, () =>
       crypto.randomUUID(),
-    ).sort()
+    ).toSorted()
     await using setup = await beginTransaction()
     const work = await recordPostPublicationChange(setup, {
       scope: { type: 'post', postId },

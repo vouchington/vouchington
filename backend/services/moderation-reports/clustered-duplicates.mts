@@ -25,7 +25,7 @@ export async function buildDuplicateClusters(
         makeDuplicateCluster(
           `embeddings:${members
             .map(member => member.entity_id)
-            .sort()
+            .toSorted()
             .join(':')}`,
           'embeddings_similarity',
           members,

@@ -81,7 +81,7 @@ describe('sendRssFeedItemToFollowers', () => {
             ? [notification.delivery_type]
             : [],
         )
-        .sort(),
+        .toSorted(),
     ).toEqual(['manual_send', 'subscription'])
   })
 

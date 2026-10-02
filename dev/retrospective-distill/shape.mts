@@ -148,6 +148,6 @@ export function classifySession(
     ...(duplicateEntryCount ? { duplicateEntryCount } : {}),
     ...(reasons.length === 0
       ? {}
-      : { quarantine: { entryCount: reasons.length, reasons: [...new Set(reasons)].sort() } }),
+      : { quarantine: { entryCount: reasons.length, reasons: [...new Set(reasons)].toSorted() } }),
   }
 }

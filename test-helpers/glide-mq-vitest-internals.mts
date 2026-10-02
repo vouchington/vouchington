@@ -49,7 +49,7 @@ export function getUnexpectedAttachedTestWorkerQueueNames(
       if (!baseline.has(worker)) names.add(queueName)
     }
   }
-  return [...names].sort()
+  return [...names].toSorted()
 }
 
 export function getOrCreateQueue(name: string): TestQueue {

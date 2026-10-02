@@ -63,7 +63,7 @@ describe('bounded publication identity snapshots', () => {
       expect(page.posts.find(post => post.id === candidate.id)?.identity_snapshot_id).toBe(firstId)
     }
     expect(page.hasIncompleteSnapshots).toBe(false)
-    expect(page.posts.map(post => post.id)).toEqual([candidate.id, second.id].sort())
+    expect(page.posts.map(post => post.id)).toEqual([candidate.id, second.id].toSorted())
     expect(page.posts.every(post => post.identity_snapshot_id !== undefined)).toBe(true)
   })
   it('pages actual 1001 topic, slug and feed sources with exact eventual membership', async () => {
@@ -105,8 +105,8 @@ describe('bounded publication identity snapshots', () => {
       stored.keys
         .filter(key => key.kind === 'topic')
         .map(key => key.value)
-        .sort(),
-    ).toEqual(fixtures.topicIds.sort())
+        .toSorted(),
+    ).toEqual(fixtures.topicIds.toSorted())
     expect(stored.keys.filter(key => key.kind === 'post_slug').map(key => key.value)).toEqual(
       expect.arrayContaining(fixtures.slugs),
     )
@@ -114,8 +114,8 @@ describe('bounded publication identity snapshots', () => {
       stored.keys
         .filter(key => key.kind === 'rss_feed')
         .map(key => key.value)
-        .sort(),
-    ).toEqual(feedIds.sort())
+        .toSorted(),
+    ).toEqual(feedIds.toSorted())
     expect(await materializePostPublicationIdentitySnapshot(work, candidate, 100)).toEqual({
       snapshotId,
       complete: true,

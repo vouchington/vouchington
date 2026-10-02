@@ -38,7 +38,7 @@ export async function getCommentAncestorPage({
   const rawRows = rows.map(row => row as CommentRow & { depth: number; is_root: boolean })
   const root = rawRows.find(row => row.is_root)
   if (!root) throw new Error('Comment ancestor page root is missing')
-  const windowRows = rawRows.filter(row => !row.is_root).sort((a, b) => b.depth - a.depth)
+  const windowRows = rawRows.filter(row => !row.is_root).toSorted((a, b) => b.depth - a.depth)
   if (startId && windowRows.length === 0) throw createError(400, 'Invalid ancestor cursor')
   const returnedRows = windowRows.filter(row => row.depth <= maxReturnedDepth)
   const sentinel = windowRows.find(row => row.depth === maxReturnedDepth + 1)

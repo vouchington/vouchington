@@ -37,7 +37,7 @@ const ADAPTER_NAMES = Object.keys(ADAPTERS) as Array<keyof typeof ADAPTERS>
 
 describe('Vouchington workflow skill adapters', () => {
   it('keeps the cross-runtime canonical adapters installed by their approved plugins', async () => {
-    const approved = [...ADAPTER_NAMES].sort()
+    const approved = [...ADAPTER_NAMES].toSorted()
     const canonicalAdapters = readdirSync(resolve(repoRoot, '.agents/skills'), {
       withFileTypes: true,
     })
@@ -46,7 +46,7 @@ describe('Vouchington workflow skill adapters', () => {
       .filter(name =>
         read(`.agents/skills/${name}/SKILL.md`).includes('## Canonical skill (required)'),
       )
-      .sort()
+      .toSorted()
     const installedSkillsRoot = resolve(repoRoot, 'node_modules/vouchington-tooling/skills')
     const manifest = await readSkillManifest(installedSkillsRoot)
 

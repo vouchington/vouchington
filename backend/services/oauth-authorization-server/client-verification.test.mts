@@ -188,7 +188,9 @@ describe('staff OAuth client verification', () => {
     const second = await registerTestClient()
     await verifyOAuthClient(admin.id, first.id, first.reviewed)
     await verifyOAuthClient(admin.id, second.id, second.reviewed)
-    const [newer, older] = [first, second].sort((left, right) => right.id.localeCompare(left.id))
+    const [newer, older] = [first, second].toSorted((left, right) =>
+      right.id.localeCompare(left.id),
+    )
     const next = await listOAuthClientsForVerification({
       verification: 'verified',
       limit: 1000,

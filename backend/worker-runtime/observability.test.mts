@@ -154,7 +154,7 @@ describe('worker observability', () => {
 
     const manyKeys = Object.fromEntries(Array.from({ length: 33 }, (_, i) => [`k${i}`, i]))
     emitFailed(manyKeys, 'job-keys')
-    const expectedKeys = Object.keys(manyKeys).sort().slice(0, 32)
+    const expectedKeys = Object.keys(manyKeys).toSorted().slice(0, 32)
     expect(capturedExtra()?.job_data).toEqual(
       Object.fromEntries(expectedKeys.map(key => [key, manyKeys[key]])),
     )

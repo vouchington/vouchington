@@ -58,7 +58,7 @@ export async function getPostClassifierSeedState() {
     prompt: active[0]?.prompt ?? null,
     modelName: active[0]?.model_name ?? null,
     candidates: candidateRows
-      .sort((a, b) => order.indexOf(a.topic_slug) - order.indexOf(b.topic_slug))
+      .toSorted((a, b) => order.indexOf(a.topic_slug) - order.indexOf(b.topic_slug))
       .map(row => ({
         candidateId: row.candidate_id,
         topicSlug: row.topic_slug,

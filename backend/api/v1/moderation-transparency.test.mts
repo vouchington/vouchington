@@ -80,7 +80,7 @@ describe('GET /api/v1/moderation-transparency', () => {
     const request = createRequest()
     await request.authenticateAs(activePlus)
     const response = await request.get('/api/v1/moderation-transparency').expect(200)
-    expect(Object.keys(response.body).sort()).toEqual(['buckets', 'range'])
+    expect(Object.keys(response.body).toSorted()).toEqual(['buckets', 'range'])
     expect(response.body.buckets).toEqual(expect.any(Array))
   })
 

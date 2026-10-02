@@ -187,7 +187,7 @@ describe('classifier run recovery sweep: incomplete runs', () => {
     await sweep({ phase: 'incomplete' }, {}, 1)
 
     expect(paged).toMatchObject({ kind: 'incomplete', enqueued: 1, hasNext: true })
-    const [firstId, secondId] = [first.runId, second.runId].sort()
+    const [firstId, secondId] = [first.runId, second.runId].toSorted()
     const chained = (await readAllQueueJobs(ai_agents)).filter(
       job => job.id === `reconcile_classifier_runs_incomplete_all_${firstId}`,
     )

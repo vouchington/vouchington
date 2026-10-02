@@ -32,7 +32,7 @@ export async function invalidateSearchCache(prefix: string): Promise<void> {
 export function stableSerialize(options: object): string {
   const entries = Object.entries(options as Record<string, unknown>)
     .filter(([, v]) => v !== undefined)
-    .sort(([a], [b]) => a.localeCompare(b))
+    .toSorted(([a], [b]) => a.localeCompare(b))
   return createHash('sha256')
     .update(JSON.stringify(Object.fromEntries(entries)))
     .digest('hex')

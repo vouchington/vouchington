@@ -96,7 +96,7 @@ describe('resolveRepoRoots', () => {
         join('/elsewhere', 'outside-worktree'),
       ],
     })
-    expect(roots.sort()).toEqual(['/elsewhere/outside-worktree', '/repo'].sort())
+    expect(roots.toSorted()).toEqual(['/elsewhere/outside-worktree', '/repo'].toSorted())
   })
 
   it('resolves a relative explicit root against cwd, not the process cwd', async () => {

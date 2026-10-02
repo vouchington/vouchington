@@ -79,7 +79,7 @@ describe('native publication identity page progress', () => {
     }
     expect(complete).toBe(true)
     expect(keys).toHaveLength(feedIds.length + 11)
-    expect([...new Set(keys)].sort()).toEqual([...feedIds].sort())
+    expect([...new Set(keys)].toSorted()).toEqual([...feedIds].toSorted())
   })
   it('advances source rows with null mappings without ending or omitting later branches', async () => {
     const { candidate, user } = await createTestPublicationSnapshotWork()

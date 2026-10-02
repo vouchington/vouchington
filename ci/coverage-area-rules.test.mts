@@ -15,7 +15,7 @@ describe('coverage-area-rules', () => {
   it('gives every positive repository rule exactly one known owning area', () => {
     expect(() => assertRuleOwners(repoRules)).not.toThrow()
     const owners = new Set(repoRules.rules.flatMap(rule => (rule.area ? [rule.area] : [])))
-    expect([...owners].sort()).toEqual([...coverageAreas].sort())
+    expect([...owners].toSorted()).toEqual([...coverageAreas].toSorted())
   })
 
   it.each(coverageAreas)('keeps only %s-owned thresholds, in first-match order', area => {

@@ -86,7 +86,7 @@ export const MODERATION_REPORT_REASON_SEVERITY_RANK = {
 
 export const MODERATION_REPORT_REASON_SEVERITY_ORDER: ReadonlyArray<ModerationReportReason> =
   Object.entries(MODERATION_REPORT_REASON_SEVERITY_RANK)
-    .sort((a, b) => {
+    .toSorted((a, b) => {
       const rankDelta = b[1] - a[1]
       if (rankDelta !== 0) return rankDelta
       return (

@@ -43,7 +43,7 @@ export function normalizePodcastChapters(payload: unknown): PodcastChapter[] {
     ]
   })
 
-  const sorted = normalized.sort((left, right) => left.start_seconds - right.start_seconds)
+  const sorted = normalized.toSorted((left, right) => left.start_seconds - right.start_seconds)
   return sorted.slice(0, CHAPTERS_MAX_COUNT).map((chapter, index) => ({
     ...chapter,
     end_seconds: chapter.end_seconds ?? sorted[index + 1]?.start_seconds ?? null,

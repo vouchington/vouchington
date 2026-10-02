@@ -40,8 +40,8 @@ describe('locale catalog parity', () => {
   for (const { name, catalog } of LOCALES) {
     it(`${name} has exactly the same key paths as en (no missing, no extra)`, () => {
       const localePaths = new Set(collectKeyEntries(catalog).map(entry => entry.path))
-      const missing = [...enPaths].filter(path => !localePaths.has(path)).sort()
-      const extra = [...localePaths].filter(path => !enPaths.has(path)).sort()
+      const missing = [...enPaths].filter(path => !localePaths.has(path)).toSorted()
+      const extra = [...localePaths].filter(path => !enPaths.has(path)).toSorted()
       expect(missing).toEqual([])
       expect(extra).toEqual([])
     })

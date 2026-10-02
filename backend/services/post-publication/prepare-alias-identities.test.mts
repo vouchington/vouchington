@@ -30,7 +30,7 @@ describe('transaction-private alias identity preparation', () => {
     const user = await createTestUser()
     if (!user) throw new Error('Expected alias preparation author')
     const topics = await Promise.all([createTestTopic({ user }), createTestTopic({ user })])
-    const posts = (await insertTestPostBatch(user.id, 2)).sort()
+    const posts = (await insertTestPostBatch(user.id, 2)).toSorted()
     const aliasTexts = Array.from({ length: 4 }, () => `prepare-${randomUUID()}`)
     const aliases = await Promise.all(
       aliasTexts.map(text => createTopHashtagAliasForTest(topics[0]!.id, text)),

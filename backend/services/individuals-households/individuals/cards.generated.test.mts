@@ -99,7 +99,7 @@ describe('cards.generated', () => {
     })
     const ids = [...first.results, ...second.results].map(card => card.id)
 
-    expect(ids).toEqual(created.map(card => card.id).sort())
+    expect(ids).toEqual(created.map(card => card.id).toSorted())
     expect(new Set(ids).size).toBe(ids.length)
     expect(second.page_info.has_next_page).toBe(false)
     expect(second.page_info.end_cursor).toBeNull()

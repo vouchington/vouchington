@@ -75,7 +75,7 @@ describe('GET /api/v1/users/:idOrSlug/urls/:listType pagination', () => {
     const urlB = await saveTestUrl(owner.id, `urls-page-tie-b-${owner.id}`)
     await updateTestEntityRelationCreatedAt('relation__user__save__url', owner.id, urlA.id, tieDate)
     await updateTestEntityRelationCreatedAt('relation__user__save__url', owner.id, urlB.id, tieDate)
-    const expectedOrder = [urlA.id, urlB.id].sort().reverse()
+    const expectedOrder = [urlA.id, urlB.id].toSorted().reverse()
 
     const request = createRequest()
     await request.authenticateAs(owner)

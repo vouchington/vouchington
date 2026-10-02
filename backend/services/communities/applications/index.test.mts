@@ -105,7 +105,7 @@ describe('index', () => {
       expect(app.community_id).toBe(community.id)
       expect(app.approved_at).toBeNull()
       expect(app.rejected_at).toBeNull()
-      expect(Object.keys(app).sort()).toEqual(applicationKeys)
+      expect(Object.keys(app).toSorted()).toEqual(applicationKeys)
     })
 
     it('rejects application for a public community', async () => {
@@ -153,7 +153,7 @@ describe('index', () => {
 
       const result = await searchApplications(community.id)
       expect(result.results.length).toBeGreaterThan(0)
-      expect(Object.keys(result.results[0]!).sort()).toEqual(applicationKeys)
+      expect(Object.keys(result.results[0]!).toSorted()).toEqual(applicationKeys)
     })
   })
 })

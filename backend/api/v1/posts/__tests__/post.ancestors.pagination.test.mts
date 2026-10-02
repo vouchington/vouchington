@@ -67,8 +67,8 @@ describe('post.ancestors pagination', () => {
       ...ids.slice(0, 2),
     ])
     expect(second.body.page_info).toMatchObject({ has_next_page: false, end_cursor: null })
-    expect(Object.keys(second.body.posts).sort()).toEqual(
-      second.body.results.map((result: { id: string }) => result.id).sort(),
+    expect(Object.keys(second.body.posts).toSorted()).toEqual(
+      second.body.results.map((result: { id: string }) => result.id).toSorted(),
     )
     expect([
       first.body.results[0].id,

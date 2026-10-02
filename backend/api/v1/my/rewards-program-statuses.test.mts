@@ -49,7 +49,7 @@ describe('GET /api/v1/my/rewards-program-statuses', () => {
 
     const first = await request.get('/api/v1/my/rewards-program-statuses?limit=2').expect(200)
     expect(first.body.results.map((result: { id: string }) => result.id)).toEqual(
-      [...first.body.results.map((result: { id: string }) => result.id)].sort(),
+      [...first.body.results.map((result: { id: string }) => result.id)].toSorted(),
     )
     expect(first.body.results).toHaveLength(2)
     expect(first.body.page_info.has_next_page).toBe(true)
@@ -63,7 +63,7 @@ describe('GET /api/v1/my/rewards-program-statuses', () => {
     expect(second.body.page_info.has_next_page).toBe(false)
     expect(
       [...first.body.results, ...second.body.results].map((result: { id: string }) => result.id),
-    ).toEqual([...created].sort())
+    ).toEqual([...created].toSorted())
 
     const partial = await request.get('/api/v1/my/rewards-program-statuses?limit=10').expect(200)
     expect(partial.body.results).toHaveLength(4)

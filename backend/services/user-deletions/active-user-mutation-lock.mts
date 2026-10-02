@@ -5,7 +5,7 @@ export async function lockActiveUserSubjectsForMutation(
   query: TransactionQuery,
   userIds: readonly string[],
 ): Promise<void> {
-  const distinctUserIds = [...new Set(userIds)].sort((left, right) => left.localeCompare(right))
+  const distinctUserIds = [...new Set(userIds)].toSorted((left, right) => left.localeCompare(right))
   if (distinctUserIds.length === 0) return
 
   await query(sql`/* lockActiveUserSubjectsForMutation */

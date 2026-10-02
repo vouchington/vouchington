@@ -15,7 +15,7 @@ export async function findOrCreateDirectConversation(
   await using transaction = await beginTransaction()
   async function findOrCreateConversationInTransaction(query: typeof transaction) {
     // Serialize concurrent creates on the same user pair via an advisory transaction lock.
-    const lockKey = [currentUserId, recipientUserId].sort().join(':')
+    const lockKey = [currentUserId, recipientUserId].toSorted().join(':')
     await query(
       sql`/* findOrCreateDirectConversation:lock */ SELECT pg_advisory_xact_lock(hashtext(${lockKey})::bigint)`,
     )

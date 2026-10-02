@@ -32,7 +32,7 @@ export type SeedCsvsResult = {
 export function readSeedCsvRows(): Record<string, string>[] {
   const csvFiles = readdirSync(SEED_DIR)
     .filter(f => f.endsWith('-topics.csv'))
-    .sort()
+    .toSorted()
 
   const allRows: Record<string, string>[] = []
   for (const file of csvFiles) {

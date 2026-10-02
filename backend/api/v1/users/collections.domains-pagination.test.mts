@@ -86,7 +86,7 @@ describe('GET /api/v1/users/:idOrSlug/domains/:listType pagination', () => {
       hostnameB,
       tieDate,
     )
-    const expectedOrder = [hostnameA, hostnameB].sort().reverse()
+    const expectedOrder = [hostnameA, hostnameB].toSorted().reverse()
 
     const request = createRequest()
     await request.authenticateAs(owner)

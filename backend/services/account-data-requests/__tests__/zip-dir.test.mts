@@ -54,7 +54,7 @@ describe('zipDir', () => {
       expect(stats.size).toBeGreaterThan(0)
 
       const { entries, files } = await readZip(destPath)
-      expect(entries.sort()).toEqual(['posts.csv', 'profile.csv'])
+      expect(entries.toSorted()).toEqual(['posts.csv', 'profile.csv'])
       expect(files['profile.csv']).toBe('id,name\n1,alice\n')
       expect(files['posts.csv']).toBe('id,title\n1,hello\n')
     } finally {
@@ -76,7 +76,7 @@ describe('zipDir', () => {
       await zipDir(sourceDir, destPath)
 
       const { entries, files } = await readZip(destPath)
-      expect(entries.sort()).toEqual(['nested/inner.txt', 'top.txt'])
+      expect(entries.toSorted()).toEqual(['nested/inner.txt', 'top.txt'])
       expect(files['nested/inner.txt']).toBe('nested\n')
     } finally {
       await rm(parent, { recursive: true, force: true })
@@ -96,7 +96,7 @@ describe('zipDir', () => {
       await zipDir(sourceDir, destPath)
 
       const { entries } = await readZip(destPath)
-      expect(entries.sort()).toEqual(['sub/foo.txt'])
+      expect(entries.toSorted()).toEqual(['sub/foo.txt'])
     } finally {
       await rm(parent, { recursive: true, force: true })
     }

@@ -12,7 +12,7 @@ export async function prepareTopicAliasPublicationIdentityBridges(
   query: TransactionQuery,
   aliasIds: readonly string[],
 ): Promise<void> {
-  const aliases = [...new Set(aliasIds.map(id => id.toLowerCase()))].sort()
+  const aliases = [...new Set(aliasIds.map(id => id.toLowerCase()))].toSorted()
   if (!aliases.length) return
   await lockTopicAliasPublicationScopes(query, aliases)
   const table = `pub_alias_posts_${randomUUID().replaceAll('-', '')}`

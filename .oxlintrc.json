@@ -101,7 +101,7 @@
     "unicorn/no-array-method-this-argument": "error",
     "unicorn/no-array-reduce": "off", // Policy: typed reducers are allowed for aggregation.
     "unicorn/no-array-reverse": "off", // Staged #1692: 35 findings / 29 files; scan 2026-10-01.
-    "unicorn/no-array-sort": "off", // Staged #1693: 313 findings / 212 files; scan 2026-10-01.
+    "unicorn/no-array-sort": "error",
     "unicorn/no-await-expression-member": "off", // Policy: accessing a property on an awaited result is allowed.
     "unicorn/no-console-spaces": "error",
     "unicorn/no-document-cookie": "off", // Policy: browser cookie owner modules require document.cookie.

@@ -27,7 +27,7 @@ function readCsv(filename: string): Record<string, string>[] {
 
 const topicFiles = readdirSync(SEED_DIR)
   .filter(f => f.endsWith('-topics.csv'))
-  .sort()
+  .toSorted()
 
 const allTopics = new Map<string, { file: string; rows: Record<string, string>[] }>()
 

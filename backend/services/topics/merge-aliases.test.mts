@@ -43,7 +43,7 @@ describe('mergeTopicAliases', () => {
     expect(revision?.changes).toEqual({
       topic_aliases: {
         before: [destinationAlias],
-        after: [destinationAlias, source.slug, sourceAlias].sort(),
+        after: [destinationAlias, source.slug, sourceAlias].toSorted(),
       },
     })
   })

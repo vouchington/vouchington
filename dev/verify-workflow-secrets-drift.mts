@@ -40,10 +40,10 @@ export function diffAgainstInventory(
     else if (entry.provisioned && !liveNames.has(name)) notActuallyProvisioned.push(name)
   }
   return {
-    newlyProvisioned: newlyProvisioned.sort(),
-    notActuallyProvisioned: notActuallyProvisioned.sort(),
-    accidentallyProvisioned: accidentallyProvisioned.sort(),
-    unreferenced: [...liveNames].filter(name => !Object.hasOwn(inventory, name)).sort(),
+    newlyProvisioned: newlyProvisioned.toSorted(),
+    notActuallyProvisioned: notActuallyProvisioned.toSorted(),
+    accidentallyProvisioned: accidentallyProvisioned.toSorted(),
+    unreferenced: [...liveNames].filter(name => !Object.hasOwn(inventory, name)).toSorted(),
     warnings: [...warnings],
   }
 }

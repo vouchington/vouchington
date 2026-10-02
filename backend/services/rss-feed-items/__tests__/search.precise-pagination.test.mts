@@ -20,7 +20,7 @@ describe('RSS recency precise pagination', () => {
       }),
     )
     const expected = [items[0].id, items[1].id]
-      .sort()
+      .toSorted()
       .reverse()
       .concat(items.slice(2).map(item => item.id))
     const seen: string[] = []

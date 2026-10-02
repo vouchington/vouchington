@@ -13,7 +13,7 @@ export async function regularSnapshotFiles(root: string): Promise<string[]> {
     }
   }
   await visit('')
-  return result.sort()
+  return result.toSorted()
 }
 
 export async function assertSafeSnapshotDestination(root: string, relative: string): Promise<void> {

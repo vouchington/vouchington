@@ -85,13 +85,13 @@ describe('getRssFeedItemFeedIds eligibility regressions', () => {
         feed_type: entry.feed_type,
         min_score_follow_rss_feeds: entry.min_score_follow_rss_feeds,
         min_score_follow_topics: entry.min_score_follow_topics,
-        ids: page.results.map(row => row.entity_id).sort(),
+        ids: page.results.map(row => row.entity_id).toSorted(),
         has_next_page: page.page_info.has_next_page,
       }).toEqual({
         feed_type: entry.feed_type,
         min_score_follow_rss_feeds: entry.min_score_follow_rss_feeds,
         min_score_follow_topics: entry.min_score_follow_topics,
-        ids: [...entry.included].sort(),
+        ids: [...entry.included].toSorted(),
         has_next_page: false,
       })
     }

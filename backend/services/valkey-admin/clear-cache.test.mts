@@ -46,7 +46,7 @@ describe('getCacheGroups', () => {
 
   it('covers every production entity cache exactly once', () => {
     expect(new Set(CACHE_FLUSH_PREFIXES).size).toBe(CACHE_FLUSH_PREFIXES.length)
-    expect([...CACHE_FLUSH_PREFIXES].sort()).toEqual(Object.keys(caches).sort())
+    expect([...CACHE_FLUSH_PREFIXES].toSorted()).toEqual(Object.keys(caches).toSorted())
   })
 })
 

@@ -184,7 +184,7 @@ describe('createInstanceFromHostname', () => {
       createInstanceFromHostname(user, WEB_PROVENANCE, hostname),
     ])
 
-    expect([a.status, b.status].sort()).toEqual(['created', 'upvoted'])
+    expect([a.status, b.status].toSorted()).toEqual(['created', 'upvoted'])
     expect(a.topic_id).toBe(b.topic_id)
   })
 

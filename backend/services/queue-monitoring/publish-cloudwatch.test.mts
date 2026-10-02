@@ -10,8 +10,8 @@ import {
 
 describe('publishAggregatedQueueStats', () => {
   it('partitions every policy-managed GlideMQ queue into exactly one metric class', () => {
-    expect(Object.values(GLIDE_MQ_QUEUE_NAMES_BY_CLASS).flat().sort()).toEqual(
-      policyManagedGlideQueueNames().sort(),
+    expect(Object.values(GLIDE_MQ_QUEUE_NAMES_BY_CLASS).flat().toSorted()).toEqual(
+      policyManagedGlideQueueNames().toSorted(),
     )
   })
 

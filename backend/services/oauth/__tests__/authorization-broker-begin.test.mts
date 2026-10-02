@@ -169,7 +169,7 @@ describe('OAuth authorization broker begin', () => {
     cleanup.authorizationIds.push(...results.map(result => result.flow_id))
 
     const rows = await Promise.all(results.map(result => getTestOAuthAuthorization(result.flow_id)))
-    expect(rows.map(row => row?.status).sort()).toEqual(['pending', 'rejected'])
+    expect(rows.map(row => row?.status).toSorted()).toEqual(['pending', 'rejected'])
     expect(rows.find(row => row?.status === 'rejected')).toMatchObject({
       callback_error: 'authorization_superseded',
     })

@@ -106,7 +106,7 @@ describe('POST /api/v1/admin/mcp tool calls', () => {
       return tools
         .map(tool => tool.name)
         .filter(name => name.startsWith('admin_audit_fixture_'))
-        .sort()
+        .toSorted()
     }
 
     expect(await names(readOnly.token)).toEqual([FAIL_TOOL, READ_TOOL])
@@ -228,7 +228,7 @@ describe('POST /api/v1/admin/mcp tool calls', () => {
     const headerIds = responses.map(response => response.headers['x-correlation-id'] as string)
     expect(new Set(headerIds).size).toBe(8)
     const events = await readTestMcpCallAuditEvents(user.id)
-    expect(events.map(event => event.correlation_id).sort()).toEqual([...headerIds].sort())
+    expect(events.map(event => event.correlation_id).toSorted()).toEqual([...headerIds].toSorted())
     expect(events.every(event => event.outcome === 'accepted')).toBe(true)
   })
 

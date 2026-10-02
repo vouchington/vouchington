@@ -10,7 +10,7 @@ export type CategoryTopicMutation = {
 }
 
 export async function insertMissingHashtagAliases(aliases: string[]): Promise<void> {
-  const uniqueAliases = [...new Set(aliases)].sort((left, right) => left.localeCompare(right))
+  const uniqueAliases = [...new Set(aliases)].toSorted((left, right) => left.localeCompare(right))
   if (uniqueAliases.length === 0) return
 
   await write(
@@ -111,7 +111,7 @@ function orderedCategoryChunks<T extends { rss_feed_item_id: string }>(rows: rea
   }
   const chunks: T[][] = []
   let chunk: T[] = []
-  for (const [, itemRows] of [...rowsByItemId].sort(([left], [right]) =>
+  for (const [, itemRows] of [...rowsByItemId].toSorted(([left], [right]) =>
     left.localeCompare(right),
   )) {
     if (

@@ -175,7 +175,7 @@ describe('post publication capture', () => {
     })
 
     await expect(listTestPostPublicationImpactPostIds(work.id)).resolves.toEqual(
-      [...impactedPostIds].sort(),
+      [...impactedPostIds].toSorted(),
     )
     await expect(getTestPostPublicationDirtyWork(work.id)).resolves.toMatchObject({
       generation: '1',

@@ -97,7 +97,7 @@ describe('scrubJobData', () => {
   it('caps object keys at 32, sorted, and arrays at 10 items with a remainder marker', () => {
     const manyKeys = Object.fromEntries(Array.from({ length: 40 }, (_, i) => [`k${i}`, i]))
     const scrubbed = scrubJobData(manyKeys) as Record<string, unknown>
-    expect(Object.keys(scrubbed)).toEqual(Object.keys(manyKeys).sort().slice(0, 32))
+    expect(Object.keys(scrubbed)).toEqual(Object.keys(manyKeys).toSorted().slice(0, 32))
 
     const scrubbedArray = scrubJobData({ items: Array.from({ length: 15 }, (_, i) => i) })
     expect(scrubbedArray).toEqual({

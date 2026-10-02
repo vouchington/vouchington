@@ -164,7 +164,7 @@ describe('Auto Harness caller secret forwarding', () => {
     const textualCallerPaths = workflowFiles.filter(
       path => path !== workflowPath && readFileSync(path, 'utf8').includes(`uses: ${calleeRef}`),
     )
-    expect(harnessCallerPaths.sort()).toEqual(textualCallerPaths.sort())
+    expect(harnessCallerPaths.toSorted()).toEqual(textualCallerPaths.toSorted())
     expect(harnessCallerPaths.flatMap(callerJobs)).toHaveLength(7)
   })
 

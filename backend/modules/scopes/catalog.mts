@@ -22,7 +22,7 @@ export type ScopeCatalogEntry = {
 }
 
 export function listScopeCatalog(): ScopeCatalogEntry[] {
-  return (Object.keys(SCOPE_DEFINITIONS) as ApiScope[]).sort().map(scope => {
+  return (Object.keys(SCOPE_DEFINITIONS) as ApiScope[]).toSorted().map(scope => {
     const definition = SCOPE_DEFINITIONS[scope]
     return {
       scope,

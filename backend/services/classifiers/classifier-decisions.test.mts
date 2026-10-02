@@ -168,7 +168,7 @@ describe('persistClassifierDecision', () => {
       persistClassifierDecision(input),
     ])
 
-    expect(decisions.map(result => result.replayed).sort()).toEqual([false, true])
+    expect(decisions.map(result => result.replayed).toSorted()).toEqual([false, true])
     expect(decisions[0].decision).toEqual(decisions[1].decision)
     await expect(fixture.getDecisionPersistenceFacts(input.batchId)).resolves.toMatchObject({
       batches: 1,

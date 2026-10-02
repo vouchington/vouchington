@@ -82,7 +82,7 @@ describe('get', () => {
         'updated_at',
         'visibility',
       ]
-      expect(communities.map(community => Object.keys(community!).sort())).toEqual([
+      expect(communities.map(community => Object.keys(community!).toSorted())).toEqual([
         expectedKeys,
         expectedKeys,
         expectedKeys,

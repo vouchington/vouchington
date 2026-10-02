@@ -11,7 +11,7 @@ const gitAndPrs = readFileSync('.agents/skills/agent-workflow/git-and-prs.md', '
 const skillMarkdownPaths = readdirSync('.agents/skills', { recursive: true })
   .map(path => join('.agents/skills', String(path)))
   .filter(path => path.endsWith('.md'))
-  .sort()
+  .toSorted()
 
 describe('ready-and-shepherd activation boundary', () => {
   it('fails closed before generic GitHub mutations when Harness dispatch is disabled', () => {

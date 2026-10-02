@@ -116,7 +116,7 @@ async function getQueueMetricStats(name: string): Promise<QueueMetricStats> {
 // Get statistics for all queues
 export async function getAllQueueStats(queueNames: readonly string[]): Promise<QueueStats[]> {
   const results = await Promise.all(queueNames.map(name => getQueueStats(name)))
-  return results.sort((a, b) => a.name.localeCompare(b.name))
+  return results.toSorted((a, b) => a.name.localeCompare(b.name))
 }
 
 export interface AggregatedQueueStats {

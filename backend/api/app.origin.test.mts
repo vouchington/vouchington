@@ -12,7 +12,7 @@ describe('API origin guards', () => {
   // Every exempt path is a caller that cannot supply the CF worker secret — see
   // docs/overview/architecture/event-ingress.md. This must stay flat, never silently grow.
   it('keeps the worker-secret exempt path list to its known, reviewed entries', () => {
-    expect([...WORKER_SECRET_EXEMPT_PATHS].sort()).toEqual(['/infra/ping'])
+    expect([...WORKER_SECRET_EXEMPT_PATHS].toSorted()).toEqual(['/infra/ping'])
   })
 
   it('rejects requests without the CF worker secret', async () => {

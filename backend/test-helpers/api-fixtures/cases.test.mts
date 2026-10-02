@@ -24,7 +24,7 @@ describe('saved image fixture identities', () => {
         placement_revision: expect.any(Number),
       })
     }
-    expect([...surfaces].sort()).toEqual([
+    expect([...surfaces].toSorted()).toEqual([
       'banner_image_placement',
       'hero_image_placement',
       'image_placement',

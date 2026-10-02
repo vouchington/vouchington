@@ -16,7 +16,7 @@ export function readOptionalUnreliableStatusCodes(
     )
     return status as number
   })
-  return Array.from(new Set(statuses)).sort((a, b) => a - b)
+  return Array.from(new Set(statuses)).toSorted((a, b) => a - b)
 }
 
 function assertValidUnreliableStatusCodes(condition: boolean, message: string): asserts condition {

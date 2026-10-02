@@ -8,7 +8,7 @@ export function sortMergedReports(
   rows: PendingModerationReport[],
   sort: ModerationReportSort,
 ): PendingModerationReport[] {
-  return rows.slice().sort((a, b) => {
+  return rows.toSorted((a, b) => {
     if (sort === 'severity') {
       if (b.cursor_severity_rank !== a.cursor_severity_rank)
         return b.cursor_severity_rank - a.cursor_severity_rank

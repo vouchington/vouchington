@@ -114,7 +114,7 @@ export function validateNativeConsumerUsage(
 
   if (problems.length > 0) {
     throw new Error(
-      `Native consumer manifest does not match product usage:\n${problems.sort().join('\n')}`,
+      `Native consumer manifest does not match product usage:\n${problems.toSorted().join('\n')}`,
     )
   }
 }

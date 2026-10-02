@@ -203,8 +203,8 @@ exit 0
 
     expect(result.error).toBeUndefined()
     expect(result.status).toBe(0)
-    expect(result.stdout.trim().split('\n').filter(Boolean).sort()).toEqual(
-      [...unexcludedUrls].sort(),
+    expect(result.stdout.trim().split('\n').filter(Boolean).toSorted()).toEqual(
+      [...unexcludedUrls].toSorted(),
     )
   })
 

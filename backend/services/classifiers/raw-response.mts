@@ -14,7 +14,7 @@ function normalizeJsonValue(value: unknown): unknown {
   if (typeof value === 'object') {
     return Object.fromEntries(
       Object.entries(value as Record<string, unknown>)
-        .sort(([left], [right]) => left.localeCompare(right))
+        .toSorted(([left], [right]) => left.localeCompare(right))
         .map(([key, child]) => [key, normalizeJsonValue(child)]),
     )
   }

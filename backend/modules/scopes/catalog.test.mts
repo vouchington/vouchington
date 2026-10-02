@@ -6,7 +6,7 @@ import { withScopePrerequisites } from './authorization.mts'
 describe('listScopeCatalog', () => {
   it('lists every canonical scope once, in sorted order', () => {
     const scopes = listScopeCatalog().map(entry => entry.scope)
-    expect(scopes).toEqual(Object.keys(SCOPE_DEFINITIONS).sort())
+    expect(scopes).toEqual(Object.keys(SCOPE_DEFINITIONS).toSorted())
   })
 
   it('projects prerequisites and surfaces without sharing the definition arrays', () => {

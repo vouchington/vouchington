@@ -17,7 +17,7 @@ function findIndexShapeCollisions(
   }
   return [...byShapeKey.values()]
     .filter(({ names }) => names.size > 1)
-    .map(({ table, names }) => `${table}: ${[...names].sort().join(' vs ')}`)
+    .map(({ table, names }) => `${table}: ${[...names].toSorted().join(' vs ')}`)
 }
 
 describe('0000-00-01b-entity-relation-indexes', () => {

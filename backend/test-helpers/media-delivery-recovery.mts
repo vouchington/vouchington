@@ -44,7 +44,7 @@ export async function withTestMediaRecoveryBacklog<T>(
       stageImagePlacementDeliveryRecord({ ...placement, state: 'withheld' }),
     ),
   )
-  const deliveryKeys = records.map(record => record.deliveryKey).sort()
+  const deliveryKeys = records.map(record => record.deliveryKey).toSorted()
   return run({
     deliveryKeys,
     placements,

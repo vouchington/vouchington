@@ -78,7 +78,7 @@ describe('ActivityPub distribution progress', () => {
     const sourceUser = await createTestUserDirect()
     const activityId = uuidv7()
     const candidates = Array.from({ length: 501 }, () => uuidv7())
-      .sort()
+      .toSorted()
       .map((remoteActorId, index) => ({
         remoteActorId,
         inboxUrl: `https://candidate-${index}.example/inbox`,
@@ -166,7 +166,7 @@ describe('ActivityPub distribution progress', () => {
       commitActivityDistributionPage(activityId, sourceUser.id, null, null, true),
     ])
 
-    expect(commits.sort()).toEqual([false, true])
+    expect(commits.toSorted()).toEqual([false, true])
     await expect(prepareActivityDistributionPage(activityId, sourceUser.id)).resolves.toEqual({
       status: 'completed',
     })
@@ -189,7 +189,7 @@ describe('ActivityPub distribution progress', () => {
     const activityId = uuidv7()
     const cursorActorId = uuidv7()
     const nextActorId = uuidv7()
-    const ordered = [cursorActorId, nextActorId].sort()
+    const ordered = [cursorActorId, nextActorId].toSorted()
     const listAfterRemovedCursor = async (
       _sourceUserId: string,
       afterRemoteActorId: string | null,
@@ -270,7 +270,7 @@ describe('ActivityPub distribution progress', () => {
     const sourceUser = await createTestUserDirect()
     const first = await createFollowingRemoteActor(sourceUser.id)
     const second = await createFollowingRemoteActor(sourceUser.id)
-    const ordered = [first, second].sort((a, b) => a.id.localeCompare(b.id))
+    const ordered = [first, second].toSorted((a, b) => a.id.localeCompare(b.id))
     const activityId = uuidv7()
 
     const firstPage = await prepareActivityDistributionPage(activityId, sourceUser.id)

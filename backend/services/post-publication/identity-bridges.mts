@@ -67,7 +67,7 @@ export async function retainPublicationIdentityBridges(
 ): Promise<void> {
   if (!ids.length) return
   const { table, liveTable, liveColumn } = PUBLICATION_IDENTITY_BRIDGES[family]
-  const ordered = [...new Set(ids.map(id => id.toLowerCase()))].sort()
+  const ordered = [...new Set(ids.map(id => id.toLowerCase()))].toSorted()
   await query(
     `/* fencePublicationIdentityBridgeCapture */
     SELECT pg_advisory_xact_lock_shared(hashtextextended('publication-identity:' || $1 || ':' || input.id::text, 0))

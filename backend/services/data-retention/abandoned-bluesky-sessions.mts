@@ -131,13 +131,15 @@ async function lockAuthorizationOwners(
   targets: ExpiredAuthorization[],
   query: TransactionQuery,
 ): Promise<void> {
-  const userIds = [...new Set(targets.map(target => target.user_id))].sort()
+  const userIds = [...new Set(targets.map(target => target.user_id))].toSorted()
   await query(sql`/* expireBlueskyAuthorizations:lockUsers */
     WITH ordered_users AS MATERIALIZED (
       SELECT user_id FROM unnest(${userIds}::uuid[]) AS user_id ORDER BY user_id
     )
     SELECT pg_advisory_xact_lock(hashtextextended(user_id::text, 0)) FROM ordered_users`)
-  const dids = targets.flatMap(target => (target.claimed_did ? [target.claimed_did] : [])).sort()
+  const dids = targets
+    .flatMap(target => (target.claimed_did ? [target.claimed_did] : []))
+    .toSorted()
   if (dids.length > 0) {
     await query(sql`/* expireBlueskyAuthorizations:lockDids */
       WITH ordered_dids AS MATERIALIZED (

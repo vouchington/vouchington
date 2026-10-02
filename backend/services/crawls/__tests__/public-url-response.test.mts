@@ -58,7 +58,7 @@ describe('public-url-response', () => {
       lang: crawl.lang,
     })
 
-    expect(Object.keys(detail).sort()).toEqual(
+    expect(Object.keys(detail).toSorted()).toEqual(
       [
         '__entity_type',
         'completed_at',
@@ -67,7 +67,7 @@ describe('public-url-response', () => {
         'lang',
         'response_status_code',
         'title',
-      ].sort(),
+      ].toSorted(),
     )
   })
 })

@@ -68,7 +68,7 @@ function getFlaggedCategories(results: PersistableOpenAIModerationResults): stri
       if (flagged === true) categories.add(name)
     }
   }
-  return [...categories].sort().slice(0, 100)
+  return [...categories].toSorted().slice(0, 100)
 }
 
 function asResultObjects(results: PersistableOpenAIModerationResults): Record<string, unknown>[] {

@@ -22,7 +22,7 @@ export function toSortedPrefixCounts(counts: Map<string, number>): PrefixCount[]
   for (const [prefix, count] of counts) {
     if (prefix !== UNRESOLVED_PREFIX) entries.push({ prefix, count })
   }
-  return entries.sort((a, b) => b.count - a.count || a.prefix.localeCompare(b.prefix))
+  return entries.toSorted((a, b) => b.count - a.count || a.prefix.localeCompare(b.prefix))
 }
 
 export function unresolvedCount(counts: Map<string, number>): number {

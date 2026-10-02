@@ -19,7 +19,7 @@ export async function persistRssFeedItemCategorySnapshotReconciliations(
     ...new Map(snapshots.map(snapshot => [snapshot.rss_feed_item_id, snapshot])),
   ]
     .map(([, snapshot]) => snapshot)
-    .sort((left, right) => left.rss_feed_item_id.localeCompare(right.rss_feed_item_id))
+    .toSorted((left, right) => left.rss_feed_item_id.localeCompare(right.rss_feed_item_id))
   await query(
     `/* persistRssFeedItemSourceCategorySnapshots */
       INSERT INTO rss_feed_item_source_category_snapshots
@@ -59,7 +59,9 @@ export async function markRssFeedItemCategorySnapshotsForReconciliation(
   rssFeedItemIds: readonly string[],
 ): Promise<void> {
   if (rssFeedItemIds.length === 0) return
-  const orderedIds = [...new Set(rssFeedItemIds)].sort((left, right) => left.localeCompare(right))
+  const orderedIds = [...new Set(rssFeedItemIds)].toSorted((left, right) =>
+    left.localeCompare(right),
+  )
   await query(
     `/* markRssFeedItemCategorySnapshotsForReconciliation */
       INSERT INTO rss_feed_item_category_snapshot_reconciliations

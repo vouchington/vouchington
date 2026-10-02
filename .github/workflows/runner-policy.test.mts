@@ -144,7 +144,7 @@ describe('workflow runner policy (real workflows)', () => {
     const armJobs = allJobEntries()
       .filter(({ job }) => typeof job['runs-on'] === 'string' && armLabels.includes(job['runs-on']))
       .map(({ file, jobName }) => `${file}#${jobName}`)
-      .sort()
+      .toSorted()
 
     expect(armJobs).toEqual([
       'checks-static.yml#static-web',

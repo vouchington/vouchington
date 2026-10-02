@@ -75,6 +75,6 @@ describe('REST usage metering for an anonymous caller', () => {
 
     const rows = await waitForAnonymousUsageRows(before.length + 2)
 
-    expect(statuses(rows)).toEqual([...before, 202, 200].sort((a, b) => a - b))
+    expect(statuses(rows)).toEqual([...before, 202, 200].toSorted((a, b) => a - b))
   })
 })

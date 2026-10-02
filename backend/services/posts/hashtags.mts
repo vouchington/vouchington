@@ -117,7 +117,7 @@ export function getOrderedHashtagAliasClaims(
       firstOccurrenceByKey.set(occurrence.key, occurrence)
     }
   }
-  return [...firstOccurrenceByKey.values()].sort((left, right) =>
+  return [...firstOccurrenceByKey.values()].toSorted((left, right) =>
     compareHashtagKeys(left.key, right.key),
   )
 }

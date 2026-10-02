@@ -27,7 +27,7 @@ describe('findUsersNeedingVoteWeightRecalculation', () => {
     // within the same ms is by random bits, not insertion order).
     const u1 = await createTestUserDirect({ username: randomUsername() })
     const u2 = await createTestUserDirect({ username: randomUsername() })
-    const [earlier, later] = [u1!, u2!].sort((a, b) => (a.id < b.id ? -1 : 1))
+    const [earlier, later] = [u1!, u2!].toSorted((a, b) => (a.id < b.id ? -1 : 1))
     const { userIds } = await findUsersNeedingVoteWeightRecalculation(earlier.id, 10_000)
     expect(userIds).toContain(later.id)
   }, 60_000)
@@ -193,7 +193,7 @@ describe('findUsersNeedingVoteWeightRecalculation', () => {
     const u2 = await createTestUserDirect({ username: randomUsername() })
     // Sort by id so the cursor is the earlier (smaller) id regardless of insertion order
     // within the same millisecond (UUIDv7 has random sub-ms bits, not strictly sequential).
-    const [earlier, later] = [u1!, u2!].sort((a, b) => (a.id < b.id ? -1 : 1))
+    const [earlier, later] = [u1!, u2!].toSorted((a, b) => (a.id < b.id ? -1 : 1))
     const { userIds } = await findUsersNeedingVoteWeightRecalculation(earlier.id, 10_000)
     expect(userIds).not.toContain(earlier.id)
     expect(userIds).toContain(later.id)

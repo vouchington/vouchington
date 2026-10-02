@@ -9,7 +9,7 @@ import { SCHEDULED_JOB_MANIFESTS } from '@services/queue-monitoring/scheduled-jo
 const repoRoot = fileURLToPath(new URL('../../../../', import.meta.url))
 const schedulePaths = globSync('backend/queues/*/enqueues/schedules.mts', {
   cwd: repoRoot,
-}).sort()
+}).toSorted()
 
 type ScheduleModule = {
   scheduledJobManifest: ScheduledJobManifest

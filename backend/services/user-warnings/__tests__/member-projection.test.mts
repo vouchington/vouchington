@@ -17,7 +17,7 @@ describe('listReceivedUserWarnings member projection', () => {
     const received = warnings.find(item => item.id === warning.id)
 
     expect(received?.revoked_at).toBeInstanceOf(Date)
-    expect(Object.keys(received!).sort()).toEqual([
+    expect(Object.keys(received!).toSorted()).toEqual([
       'community_id',
       'community_slug',
       'created_at',

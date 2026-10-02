@@ -13,9 +13,9 @@ describe('worker queue policy', () => {
     expect(
       [...WORKER_DEFINITIONS, ...SQS_CONSUMER_DEFINITIONS]
         .map(definition => definition.queueName)
-        .sort(),
-    ).toEqual(allWorkerQueueNames().sort())
-    expect(SQS_CONSUMER_DEFINITIONS.map(definition => definition.queueName).sort()).toEqual(
+        .toSorted(),
+    ).toEqual(allWorkerQueueNames().toSorted())
+    expect(SQS_CONSUMER_DEFINITIONS.map(definition => definition.queueName).toSorted()).toEqual(
       SQS_CONSUMER_QUEUE_NAMES.toSorted(),
     )
   })
@@ -24,12 +24,12 @@ describe('worker queue policy', () => {
     expect(
       [...IO_WORKER_DEFINITIONS, ...IO_SQS_CONSUMER_DEFINITIONS]
         .map(definition => definition.queueName)
-        .sort(),
+        .toSorted(),
     ).toEqual(workerQueuePolicy.ioCapableQueues.toSorted())
-    expect(IO_SQS_CONSUMER_DEFINITIONS.map(definition => definition.queueName).sort()).toEqual(
+    expect(IO_SQS_CONSUMER_DEFINITIONS.map(definition => definition.queueName).toSorted()).toEqual(
       SQS_CONSUMER_QUEUE_NAMES.toSorted(),
     )
-    expect(CPU_ONLY_WORKER_DEFINITIONS.map(definition => definition.queueName).sort()).toEqual(
+    expect(CPU_ONLY_WORKER_DEFINITIONS.map(definition => definition.queueName).toSorted()).toEqual(
       workerQueuePolicy.cpuOnlyQueues.toSorted(),
     )
   })

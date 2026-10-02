@@ -51,7 +51,7 @@ describe('native moderation fixtures', () => {
     const userCluster = body.results.find(cluster => cluster.entity_type === 'user')!
 
     expect(body).not.toHaveProperty('clusters')
-    expect(Object.keys(body.page_info).sort()).toEqual([
+    expect(Object.keys(body.page_info).toSorted()).toEqual([
       'end_cursor',
       'has_next_page',
       'has_previous_page',

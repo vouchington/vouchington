@@ -32,7 +32,7 @@ export async function lockPostCategoryMutationUsers(
         SELECT created_by_id FROM posts WHERE id = ${postId}`)
     : { rows: [] as Array<{ created_by_id: string | null }> }
   const ownerId = rows[0]?.created_by_id ?? null
-  const userIds = [...new Set([editorId, ...(ownerId ? [ownerId] : [])])].sort((a, b) =>
+  const userIds = [...new Set([editorId, ...(ownerId ? [ownerId] : [])])].toSorted((a, b) =>
     a.localeCompare(b),
   )
   await query(sql`/* lockPostCategoryMutationUsers */
