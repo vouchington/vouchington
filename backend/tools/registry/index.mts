@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { adminEditorialStoryTools } from '../admin/editorial-stories.mts'
 import { adminEditorialImportTools } from '../admin/editorial-imports.mts'
 import { adminEditorialCategoryTools } from '../admin/editorial-categories.mts'
