@@ -31,13 +31,20 @@ without including ID values. It records known billed usage without a response ke
 ID is available. A successful keyless ledger write does not set the accounting-uncertainty latch;
 an actual ledger failure still requires the record-or-latch settlement barrier.
 
+A classifier client also sets two optional columns. `classifier_run_id` names the
+[classifier run](../classifier-runs/README.md#usage-report) whose reserved provider attempt made the
+call, a foreign key that is `ON DELETE SET NULL` so deleting a run never deletes billing history.
+`latency_ms` is the time from the request leaving to the billed response being read. Both are null
+for every other agent. A duplicate response keeps its first attribution, so a replay never moves a
+row to another run or counts a call twice.
+
 **Not covered:** the moderations endpoint (`moderate.mts`) returns no `usage`/`service_tier` and
 stays on the existing `trackAIModerationCall` analytics path — by design, not a gap.
 
 ## Functions
 
 - `recordAiUsage(options: RecordAiUsageOptions)` — inserts a cost record from
-  `{ responseId?, communityId?, postId?, agentSlug, model, serviceTier, usage }` and returns
+  `{ responseId?, communityId?, postId?, classifierRunId?, latencyMs?, agentSlug, model, serviceTier, usage }` and returns
   `recorded` or `already-recorded`. Computes
   `cost_microunits`/`pricing_status` via `calcCostMicrounits` (`@modules/openai-utils`) and
   persists `cached_input_tokens` so historical cost figures are reproducible from their own

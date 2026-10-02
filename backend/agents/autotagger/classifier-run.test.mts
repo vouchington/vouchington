@@ -143,6 +143,7 @@ describe('executeAutotaggerRun (real PG)', () => {
             {
               postId: fixture.post.id,
               modelProvider: 'openrouter',
+              classifierRunId: hooks.classifierRunId,
               beforeAttempt: hooks.beforeAttempt,
             },
             { fetch, apiKey: 'test-key' },

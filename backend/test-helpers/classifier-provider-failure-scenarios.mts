@@ -73,16 +73,37 @@ export function failing(status: number, error: object, headers?: Record<string, 
   )
 }
 
-/** A billed, decodable provider answer for every question the request asked. */
-export function billed(responseId: string) {
+/** What every billed answer in these scenarios reports: 12 in, 3 out, 2000 millionths of a dollar. */
+export const BILLED_USAGE = { inputTokens: 12, outputTokens: 3, costMicrounits: '2000' }
+
+/**
+ * A billed, decodable provider answer for every question the request asked. `latencyMs` moves the
+ * faked clock while the provider "answers", so the measured latency is exactly that long.
+ */
+export function billed(responseId: string, latencyMs = 0) {
   return vi.fn<StructuredDecisionFetch>(async (_url, init) => {
     const body = JSON.parse(stringFromUnknown(init?.body)) as { questions: Record<string, unknown> }
+    if (latencyMs > 0) vi.setSystemTime(Date.now() + latencyMs)
     return Response.json({
       id: responseId,
       model: 'typesafe/jev-1.13-20260917',
       provider: 'TypeSafe',
       usage: { input_tokens: 12, output_tokens: 3, cost: 0.002 },
       answers: Object.keys(body.questions).map(id => ({ id, type: 'noul', noul: 0.9 })),
+    })
+  })
+}
+
+/** A 2xx the provider billed but whose answers cannot be decoded, so the decision itself fails. */
+export function billedUndecodable(responseId: string, latencyMs = 0) {
+  return vi.fn<StructuredDecisionFetch>(async () => {
+    if (latencyMs > 0) vi.setSystemTime(Date.now() + latencyMs)
+    return Response.json({
+      id: responseId,
+      model: 'typesafe/jev-1.13-20260917',
+      provider: 'TypeSafe',
+      usage: { input_tokens: 12, output_tokens: 3, cost: 0.002 },
+      answers: 'unreadable',
     })
   })
 }

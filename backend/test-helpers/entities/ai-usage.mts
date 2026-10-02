@@ -4,6 +4,8 @@ import sql from 'sql-template-strings'
 type InsertTestAiUsageRecordOptions = {
   communityId?: string | null
   postId?: string | null
+  classifierRunId?: string | null
+  latencyMs?: number | null
   agentSlug?: string
   model?: string
   serviceTier?: string
@@ -23,10 +25,12 @@ type InsertTestAiUsageRecordOptions = {
 
 export async function insertTestAiUsageRecord(
   options: InsertTestAiUsageRecordOptions = {},
-): Promise<void> {
+): Promise<string> {
   const {
     communityId = null,
     postId = null,
+    classifierRunId = null,
+    latencyMs = null,
     agentSlug = 'test-moderator',
     model = 'gpt-5.4-nano',
     serviceTier = 'flex',
@@ -41,17 +45,20 @@ export async function insertTestAiUsageRecord(
   // unpriced -- both or neither, per the real recordAiUsage convention.
   const resolvedCostMicrounits = pricingStatus === 'unpriced' ? null : costMicrounits
   const resolvedCurrencyCode = pricingStatus === 'unpriced' ? null : 'usd'
-  await write(sql`
+  const { rows } = await write<{ id: string }>(sql`/* insertTestAiUsageRecord */
     INSERT INTO ai_usage_records (
-      id, community_id, post_id, agent_slug, model, service_tier, input_tokens, cached_input_tokens,
-      output_tokens, pricing_status, cost_microunits, currency_code
+      id, community_id, post_id, classifier_run_id, latency_ms, agent_slug, model, service_tier,
+      input_tokens, cached_input_tokens, output_tokens, pricing_status, cost_microunits,
+      currency_code
     )
     VALUES (
-      COALESCE(${id ?? null}, uuidv7()), ${communityId}, ${postId}, ${agentSlug}, ${model},
-      ${serviceTier}, ${inputTokens}, ${cachedInputTokens}, ${outputTokens}, ${pricingStatus},
-      ${resolvedCostMicrounits}, ${resolvedCurrencyCode}
+      COALESCE(${id ?? null}, uuidv7()), ${communityId}, ${postId}, ${classifierRunId},
+      ${latencyMs}, ${agentSlug}, ${model}, ${serviceTier}, ${inputTokens}, ${cachedInputTokens},
+      ${outputTokens}, ${pricingStatus}, ${resolvedCostMicrounits}, ${resolvedCurrencyCode}
     )
+    RETURNING id
   `)
+  return rows[0]!.id
 }
 
 export type TestAiUsageRecordRow = {
@@ -147,4 +154,41 @@ export async function countAiUsageOpenAIResponseKeys(responseId: string): Promis
     WHERE response_id = ${responseId}
   `)
   return Number(rows[0]?.count ?? 0)
+}
+
+export type TestClassifierRunUsageRow = {
+  classifier_run_id: string
+  agent_slug: string
+  input_tokens: number
+  output_tokens: number
+  pricing_status: string
+  cost_microunits: string | null
+  latency_ms: number | null
+}
+
+/** Every ledger row the classifier clients attributed to one run, oldest first. */
+export async function listAiUsageRecordsForClassifierRun(
+  runId: string,
+): Promise<TestClassifierRunUsageRow[]> {
+  const { rows } =
+    await read<TestClassifierRunUsageRow>(sql`/* listAiUsageRecordsForClassifierRun */
+    SELECT classifier_run_id, agent_slug, input_tokens, output_tokens, pricing_status,
+      cost_microunits, latency_ms
+    FROM ai_usage_records
+    WHERE classifier_run_id = ${runId}
+    ORDER BY id
+  `)
+  return rows
+}
+
+/** One ledger row by its id (a partition-pruned read), or null when it does not exist. */
+export async function findAiUsageRecordById(
+  id: string,
+): Promise<Pick<TestClassifierRunUsageRow, 'classifier_run_id' | 'latency_ms'> | null> {
+  const { rows } = await read<Pick<TestClassifierRunUsageRow, 'classifier_run_id' | 'latency_ms'>>(
+    sql`/* findAiUsageRecordById */
+      SELECT classifier_run_id, latency_ms FROM ai_usage_records WHERE id = ${id}
+    `,
+  )
+  return rows[0] ?? null
 }

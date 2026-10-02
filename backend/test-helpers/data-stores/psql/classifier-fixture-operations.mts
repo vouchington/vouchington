@@ -4,6 +4,19 @@ import type { ClassifierFixtureData } from './classifier-fixture-data.mts'
 
 type BatchOptions = { communityId?: string; shardOrdinal?: number }
 
+/** Another decision call (shard) under an existing batch. */
+export async function createClassifierDecisionCall(
+  batchId: string,
+  shardOrdinal: number,
+): Promise<string> {
+  const { rows } = await write<{ id: string }>(sql`
+    /* createClassifierFixtureCall */
+    INSERT INTO classifier_decision_calls (batch_id, shard_ordinal)
+    VALUES (${batchId}, ${shardOrdinal}) RETURNING id
+  `)
+  return rows[0]!.id
+}
+
 export function buildClassifierFixtureOperations(data: ClassifierFixtureData) {
   async function captureBatchCandidate(
     query: TransactionQuery,
@@ -34,15 +47,6 @@ export function buildClassifierFixtureOperations(data: ClassifierFixtureData) {
     if (capture.rowCount !== 1) {
       throw new Error('classifier batch candidate capture requires exactly one active threshold')
     }
-  }
-
-  async function createAdditionalCall(batchId: string, shardOrdinal: number): Promise<string> {
-    const { rows } = await write<{ id: string }>(sql`
-      /* createClassifierFixtureCall */
-      INSERT INTO classifier_decision_calls (batch_id, shard_ordinal)
-      VALUES (${batchId}, ${shardOrdinal}) RETURNING id
-    `)
-    return rows[0]!.id
   }
 
   async function activateClassifierConfigurations(): Promise<void> {
@@ -157,7 +161,7 @@ export function buildClassifierFixtureOperations(data: ClassifierFixtureData) {
     activateClassifierConfigurations,
     createTopicBatch,
     createStoryBatch,
-    createAdditionalCall,
+    createAdditionalCall: createClassifierDecisionCall,
     rejectBatchMutation: (batchId: string) =>
       write(sql`/* rejectClassifierFixtureBatchMutation */
         UPDATE classifier_decision_batches SET scope_category = 'community_ai',

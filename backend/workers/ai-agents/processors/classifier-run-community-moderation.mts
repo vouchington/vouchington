@@ -32,6 +32,7 @@ export function createCommunityModerationRegistration(): ClassifierRunRegistrati
               postId: current.subject.postId,
               communityId: current.resolved.configuration.communityId,
               modelProvider: current.resolved.configuration.modelProvider,
+              classifierRunId: hooks.classifierRunId,
               beforeAttempt: hooks.beforeAttempt,
             }),
         },

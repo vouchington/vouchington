@@ -5,9 +5,11 @@ import type { StructuredDecisionFetch } from '@modules/structured-decisions'
 import { openAiSpendCapConfig, OpenAiSpendCapBreachError } from '@services/ai-usage'
 import { findAiUsageRecordForPost, pollUntilNotNull } from '@voucha/test-helpers'
 import { createAutotaggerPostFixture } from '@voucha/test-helpers/data-stores/psql/classifier-runs/autotagger-fixture'
+import { listAiUsageRecordsForClassifierRun } from '@voucha/test-helpers/entities/ai-usage'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
+import { reserveSyntheticRunId } from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-run'
 import { createAutotaggerAgentClient, createAutotaggerClient } from './classifier-run-client.mts'
 
 const request = {
@@ -32,7 +34,9 @@ function provider(calls: string[]) {
 
 describe('createAutotaggerClient', () => {
   let restoreSpendCap: (() => void) | undefined
+  let classifierRunId: string
   beforeAll(async () => {
+    classifierRunId = await reserveSyntheticRunId()
     await openAiSpendCapConfig.waitForInitialization()
     restoreSpendCap = overrideDynamicConfigFieldsForTest(openAiSpendCapConfig, { enabled: false })
   })
@@ -43,7 +47,7 @@ describe('createAutotaggerClient', () => {
     const fetch = provider(calls)
     const beforeAttempt = vi.fn<() => Promise<void>>(async () => void calls.push('reserve'))
     const client = createAutotaggerClient(
-      { postId: null, modelProvider: 'openrouter', beforeAttempt },
+      { classifierRunId, postId: null, modelProvider: 'openrouter', beforeAttempt },
       { fetch, apiKey: 'test-provider-key' },
     )
 
@@ -56,8 +60,14 @@ describe('createAutotaggerClient', () => {
 
   it('records the reasoning pass under its own workload, never the first stage’s', async () => {
     const { post } = await createAutotaggerPostFixture({ topicCount: 0 })
+    const runId = await reserveSyntheticRunId()
     const client = createAutotaggerAgentClient(
-      { postId: post.id, modelProvider: 'openrouter', beforeAttempt: async () => {} },
+      {
+        classifierRunId: runId,
+        postId: post.id,
+        modelProvider: 'openrouter',
+        beforeAttempt: async () => {},
+      },
       { fetch: provider([]), apiKey: 'test-provider-key' },
     )
 
@@ -67,6 +77,9 @@ describe('createAutotaggerClient', () => {
       pollUntilNotNull(() => findAiUsageRecordForPost(post.id, 'autotagger-agent')),
     ).resolves.toMatchObject({ input_tokens: 5 })
     expect(await findAiUsageRecordForPost(post.id, 'autotagger')).toBeNull()
+    expect(await listAiUsageRecordsForClassifierRun(runId)).toMatchObject([
+      { classifier_run_id: runId, agent_slug: 'autotagger-agent', input_tokens: 5 },
+    ])
   })
 
   it('reserves the reasoning pass’s attempt once, before its single physical request', async () => {
@@ -74,7 +87,7 @@ describe('createAutotaggerClient', () => {
     const fetch = provider(calls)
     const beforeAttempt = vi.fn<() => Promise<void>>(async () => void calls.push('reserve'))
     const client = createAutotaggerAgentClient(
-      { postId: null, modelProvider: 'openrouter', beforeAttempt },
+      { classifierRunId, postId: null, modelProvider: 'openrouter', beforeAttempt },
       { fetch, apiKey: 'test-provider-key' },
     )
 
@@ -88,7 +101,7 @@ describe('createAutotaggerClient', () => {
       const fetch = provider([])
       const beforeAttempt = vi.fn<() => Promise<void>>(async () => {})
       const client = createAutotaggerAgentClient(
-        { postId: null, modelProvider: 'openrouter', beforeAttempt },
+        { classifierRunId, postId: null, modelProvider: 'openrouter', beforeAttempt },
         { fetch, apiKey: 'test-provider-key' },
       )
 
@@ -105,7 +118,7 @@ describe('createAutotaggerClient', () => {
       throw new Error('attempt cap reached')
     })
     const client = createAutotaggerClient(
-      { postId: null, modelProvider: 'openrouter', beforeAttempt },
+      { classifierRunId, postId: null, modelProvider: 'openrouter', beforeAttempt },
       { fetch, apiKey: 'test-provider-key' },
     )
 
@@ -117,7 +130,7 @@ describe('createAutotaggerClient', () => {
   it('cannot be built for a provider it has no key source for', () => {
     expect(() =>
       createAutotaggerClient(
-        { postId: null, modelProvider: 'typesafe', beforeAttempt: async () => {} },
+        { classifierRunId, postId: null, modelProvider: 'typesafe', beforeAttempt: async () => {} },
         { apiKey: 'test-provider-key' },
       ),
     ).toThrow("no API key source for provider 'typesafe'")
@@ -128,6 +141,7 @@ describe('createAutotaggerClient', () => {
 
     expect(() =>
       createAutotaggerClient({
+        classifierRunId,
         postId: null,
         modelProvider: 'openrouter',
         beforeAttempt: async () => {},

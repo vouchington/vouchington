@@ -121,6 +121,20 @@ CREATE INDEX IF NOT EXISTS idx_classifier_runs__recoverable
   ON classifier_runs (id)
   WHERE completed_at IS NULL AND superseded_at IS NULL AND terminal_failed_at IS NULL;
 
+-- The usage ledger (0490) is created earlier, so add and validate its run attribution FK here. A
+-- deleted run leaves its cost rows in place: the ledger is a financial record, not run state.
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'fk_ai_usage_records__classifier_run'
+  ) THEN
+    ALTER TABLE ai_usage_records
+      ADD CONSTRAINT fk_ai_usage_records__classifier_run
+      FOREIGN KEY (classifier_run_id) REFERENCES classifier_runs (id)
+      ON DELETE SET NULL NOT VALID;
+  END IF;
+END $$;
+ALTER TABLE ai_usage_records VALIDATE CONSTRAINT fk_ai_usage_records__classifier_run;
+
 CREATE TABLE IF NOT EXISTS classifier_run_requests (
   id UUID NOT NULL DEFAULT uuidv7(),
   classifier_id UUID NOT NULL REFERENCES classifiers (id) ON DELETE RESTRICT,

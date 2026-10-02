@@ -13,6 +13,14 @@ export interface RecordAiUsageOptions {
   /** The community this call is scoped to, if any. Most non-moderation agents have none. */
   communityId?: string | null
   postId?: string | null
+  /**
+   * The classifier run whose reserved provider attempt made this call. Only classifier clients set
+   * it; the per-run usage report (`@services/classifier-runs`) joins on it. Recording stays
+   * idempotent by response id, so a duplicate response never re-attributes the first row.
+   */
+  classifierRunId?: string | null
+  /** Milliseconds from the request leaving to the response body being read, when measured. */
+  latencyMs?: number | null
   agentSlug: string
   /** The model OpenAI actually served (`response.model`), not the requested alias. */
   model: string
@@ -39,8 +47,18 @@ export type RecordAiUsageResult = 'recorded' | 'already-recorded'
 type RecordedRow = { recorded: boolean }
 
 export async function recordAiUsage(options: RecordAiUsageOptions): Promise<RecordAiUsageResult> {
-  const { responseId, communityId, postId, agentSlug, model, serviceTier, usage, createdAt } =
-    options
+  const {
+    responseId,
+    communityId,
+    postId,
+    classifierRunId,
+    latencyMs,
+    agentSlug,
+    model,
+    serviceTier,
+    usage,
+    createdAt,
+  } = options
   const run = options.query ?? write
   const costMicrounits =
     getExplicitCostMicrounits(usage) ?? calcCostMicrounits(model, serviceTier, usage)
@@ -61,12 +79,14 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
           id,
           community_id,
           post_id,
+          classifier_run_id,
           agent_slug,
           model,
           service_tier,
           input_tokens,
           cached_input_tokens,
           output_tokens,
+          latency_ms,
           pricing_status,
           cost_microunits,
           currency_code
@@ -75,12 +95,14 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
           ai_usage_record_id,
           ${communityId ?? null},
           ${postId ?? null},
+          ${classifierRunId ?? null},
           ${agentSlug},
           ${model},
           ${serviceTier},
           ${usage.input_tokens},
           ${cachedInputTokens},
           ${usage.output_tokens},
+          ${latencyMs ?? null},
           ${costMicrounits === null ? 'unpriced' : 'priced'},
           ${costMicrounits},
           ${costMicrounits === null ? null : 'usd'}
@@ -99,12 +121,14 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
       id,
       community_id,
       post_id,
+      classifier_run_id,
       agent_slug,
       model,
       service_tier,
       input_tokens,
       cached_input_tokens,
       output_tokens,
+      latency_ms,
       pricing_status,
       cost_microunits,
       currency_code
@@ -113,12 +137,14 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
       uuidv7(COALESCE(${createdAt ?? null}::timestamptz - clock_timestamp(), INTERVAL '0')),
       ${communityId ?? null},
       ${postId ?? null},
+      ${classifierRunId ?? null},
       ${agentSlug},
       ${model},
       ${serviceTier},
       ${usage.input_tokens},
       ${cachedInputTokens},
       ${usage.output_tokens},
+      ${latencyMs ?? null},
       ${costMicrounits === null ? 'unpriced' : 'priced'},
       ${costMicrounits},
       ${costMicrounits === null ? null : 'usd'}

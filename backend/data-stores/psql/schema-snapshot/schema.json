@@ -3491,6 +3491,7 @@
         "ai_usage_records_check": "CHECK ((((pricing_status = 'priced'::text) AND (cost_microunits IS NOT NULL) AND (currency_code IS NOT NULL)) OR ((pricing_status = 'unpriced'::text) AND (cost_microunits IS NULL) AND (currency_code IS NULL))))",
         "ai_usage_records_cost_microunits_check": "CHECK (((cost_microunits >= 0) AND (cost_microunits <= '9007199254740991'::bigint)))",
         "ai_usage_records_input_tokens_check": "CHECK ((input_tokens >= 0))",
+        "ai_usage_records_latency_ms_check": "CHECK ((latency_ms >= 0))",
         "ai_usage_records_output_tokens_check": "CHECK ((output_tokens >= 0))",
         "ai_usage_records_pricing_status_check": "CHECK ((pricing_status = ANY (ARRAY['priced'::text, 'unpriced'::text])))"
       },
@@ -3503,7 +3504,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "text"
         },
         "cached_input_tokens": {
@@ -3514,8 +3515,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "integer"
+        },
+        "classifier_run_id": {
+          "collation": null,
+          "comment": "The classifier run whose provider attempt made this call; NULL for every other agent, and after the run receipt is deleted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
         },
         "community_id": {
           "collation": null,
@@ -3536,7 +3548,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 13,
           "type": "bigint"
         },
         "created_at": {
@@ -3547,7 +3559,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "currency_code": {
@@ -3558,7 +3570,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 14,
           "type": "text"
         },
         "id": {
@@ -3580,7 +3592,18 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
+          "type": "integer"
+        },
+        "latency_ms": {
+          "collation": null,
+          "comment": "Milliseconds from the request leaving to the provider response body being read; NULL when the caller did not measure it.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
           "type": "integer"
         },
         "model": {
@@ -3591,7 +3614,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "text"
         },
         "output_tokens": {
@@ -3602,7 +3625,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "integer"
         },
         "post_id": {
@@ -3624,7 +3647,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 12,
           "type": "text"
         },
         "service_tier": {
@@ -3635,7 +3658,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "text"
         }
       },
@@ -3666,6 +3689,15 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "posts",
+          "validated": true
+        },
+        "fk_ai_usage_records__classifier_run": {
+          "columns": ["classifier_run_id"],
+          "definition": "FOREIGN KEY (classifier_run_id) REFERENCES classifier_runs(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "classifier_runs",
           "validated": true
         }
       },
@@ -3716,6 +3748,26 @@
           "primary": true,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_ai_usage_records__classifier_run_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_ai_usage_records__classifier_run_id ON ONLY public.ai_usage_records USING btree (classifier_run_id) WHERE (classifier_run_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "classifier_run_id",
+              "descending": false,
+              "expression": "classifier_run_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(classifier_run_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_ai_usage_records__currency_code": {

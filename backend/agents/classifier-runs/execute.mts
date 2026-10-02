@@ -21,7 +21,11 @@ export type ClassifierRunRemoteInput = Omit<
   'batchId' | 'client' | 'signal'
 >
 
-export type ClassifierRunProviderHooks = { beforeAttempt: () => Promise<void> }
+export type ClassifierRunProviderHooks = {
+  /** The run the client is built for, so every billed response is attributed to it in the ledger. */
+  classifierRunId: string
+  beforeAttempt: () => Promise<void>
+}
 
 /** The per-classifier input building; everything else about running a leased run is shared. */
 export type ClassifierRunInputs<C, L> = {
@@ -71,6 +75,7 @@ export async function executeClassifierRun<C, L, E>(
     let baseClient: StructuredDecisionClient
     try {
       baseClient = inputs.createClient({
+        classifierRunId: lease.runId,
         beforeAttempt: async () => {
           const attempt = await startClassifierProviderAttempt(adapter, {
             lease,

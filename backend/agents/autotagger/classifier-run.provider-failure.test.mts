@@ -31,6 +31,7 @@ describe('autotagger provider failures (real receipts, real client)', () => {
                   {
                     postId: fixture.post.id,
                     modelProvider: 'openrouter',
+                    classifierRunId: hooks.classifierRunId,
                     beforeAttempt: hooks.beforeAttempt,
                   },
                   { fetch, apiKey: apiKey ?? 'test-key' },

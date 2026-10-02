@@ -3,6 +3,7 @@ import { Response } from 'undici'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { StructuredDecisionFetch } from '@modules/structured-decisions'
 import { openAiSpendCapConfig } from '@services/ai-usage'
+import { reserveSyntheticRunId } from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-run'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import { createStoryClusteringClient } from './client.mts'
@@ -39,7 +40,9 @@ function provider(calls: string[]) {
 
 describe('createStoryClusteringClient', () => {
   let restoreSpendCap: (() => void) | undefined
+  let classifierRunId: string
   beforeAll(async () => {
+    classifierRunId = await reserveSyntheticRunId()
     await openAiSpendCapConfig.waitForInitialization()
     restoreSpendCap = overrideDynamicConfigFieldsForTest(openAiSpendCapConfig, { enabled: false })
   })
@@ -50,7 +53,7 @@ describe('createStoryClusteringClient', () => {
     const fetch = provider(calls)
     const beforeAttempt = vi.fn<() => Promise<void>>(async () => void calls.push('reserve'))
     const client = createStoryClusteringClient(
-      { modelProvider: 'openrouter', beforeAttempt },
+      { classifierRunId, modelProvider: 'openrouter', beforeAttempt },
       { fetch, apiKey: 'test-provider-key' },
     )
 
@@ -68,7 +71,7 @@ describe('createStoryClusteringClient', () => {
       throw new Error('attempt cap reached')
     })
     const client = createStoryClusteringClient(
-      { modelProvider: 'openrouter', beforeAttempt },
+      { classifierRunId, modelProvider: 'openrouter', beforeAttempt },
       { fetch, apiKey: 'test-provider-key' },
     )
 
@@ -97,7 +100,7 @@ describe('createStoryClusteringClient', () => {
       })
     })
     const client = createStoryClusteringClient(
-      { modelProvider: 'openrouter', beforeAttempt: async () => {} },
+      { classifierRunId, modelProvider: 'openrouter', beforeAttempt: async () => {} },
       { fetch, apiKey: 'test-provider-key' },
     )
 
@@ -107,7 +110,7 @@ describe('createStoryClusteringClient', () => {
   it('cannot be built for a provider it has no key source for', () => {
     expect(() =>
       createStoryClusteringClient(
-        { modelProvider: 'typesafe', beforeAttempt: async () => {} },
+        { classifierRunId, modelProvider: 'typesafe', beforeAttempt: async () => {} },
         { apiKey: 'test-provider-key' },
       ),
     ).toThrow("no API key source for provider 'typesafe'")
@@ -117,7 +120,11 @@ describe('createStoryClusteringClient', () => {
     vi.stubEnv('OPENROUTER_API_KEY', '')
 
     expect(() =>
-      createStoryClusteringClient({ modelProvider: 'openrouter', beforeAttempt: async () => {} }),
+      createStoryClusteringClient({
+        classifierRunId,
+        modelProvider: 'openrouter',
+        beforeAttempt: async () => {},
+      }),
     ).toThrow('API key is required')
 
     vi.unstubAllEnvs()

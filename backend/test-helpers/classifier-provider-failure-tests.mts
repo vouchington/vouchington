@@ -14,6 +14,7 @@ import {
   OUTAGE,
   TRANSIENT,
 } from './classifier-provider-failure-scenarios.mts'
+import { describeClassifierUsageLedger } from './classifier-usage-ledger-tests.mts'
 import { countAiUsageRecordsForResponseId } from './entities/ai-usage.mts'
 import { sentryCaptureMessageMock } from './vitest.setup.sentry-mock.mts'
 import { withReservedAiUsageDay } from './with-reserved-ai-usage-day.mts'
@@ -27,6 +28,7 @@ export function describeClassifierProviderFailures(driver: ClassifierFailureDriv
   const { slug } = driver
 
   describeClassifierPermanentFailures(driver)
+  describeClassifierUsageLedger(driver)
 
   describe(`${slug} transient provider failures`, () => {
     it.each(TRANSIENT)(

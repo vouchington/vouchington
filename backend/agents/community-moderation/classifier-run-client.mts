@@ -42,6 +42,7 @@ function resolveApiKey(
  */
 export function createCommunityModerationClient(
   input: {
+    classifierRunId: string
     postId: string | null
     communityId: string
     modelProvider: ClassifierModelProvider
@@ -55,6 +56,7 @@ export function createCommunityModerationClient(
     fetch: options.fetch,
     hooks: createStructuredDecisionBillingHooks({
       workload: COMMUNITY_MODERATION_CLASSIFIER_SLUG,
+      classifierRunId: input.classifierRunId,
       postId: input.postId,
       communityId: input.communityId,
       beforeAttempt: input.beforeAttempt,

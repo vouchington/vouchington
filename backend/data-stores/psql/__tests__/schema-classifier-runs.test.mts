@@ -1,9 +1,16 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, afterEach, describe, expect, it } from 'vitest'
+import {
+  findAiUsageRecordById,
+  insertTestAiUsageRecord,
+} from '../../../test-helpers/entities/ai-usage.mts'
 import { createClassifierFixture } from '../../../test-helpers/data-stores/psql/classifiers.mts'
 import { getPartitionRows } from '../../../test-helpers/data-stores/psql/election-schema.mts'
 import { createClassifierRunSchemaFixture } from '../../../test-helpers/data-stores/psql/classifier-runs/schema-fixture.mts'
-import { deletePostForSchemaTest } from '../../../test-helpers/data-stores/psql/classifier-runs/schema-satellites.mts'
+import {
+  deleteClassifierRunForSchemaTest,
+  deletePostForSchemaTest,
+} from '../../../test-helpers/data-stores/psql/classifier-runs/schema-satellites.mts'
 import { onGracefulShutdown } from '../index.mts'
 
 describe('classifier run schema', () => {
@@ -235,5 +242,31 @@ describe('classifier run schema', () => {
     ).rejects.toMatchObject({ code: '23514' })
     await fixture.update({ superseded_at: null })
     expect((await fixture.read())?.superseded_at).toBeNull()
+  })
+
+  it('keeps a usage ledger row when its run is deleted, dropping only the attribution', async () => {
+    const { classifierId } = await createClassifierFixture()
+    const fixture = await createFixture({ classifierId })
+    const ledgerId = await insertTestAiUsageRecord({ classifierRunId: fixture.id, latencyMs: 40 })
+
+    await expect(findAiUsageRecordById(ledgerId)).resolves.toEqual({
+      classifier_run_id: fixture.id,
+      latency_ms: 40,
+    })
+    await deleteClassifierRunForSchemaTest(fixture.id)
+
+    await expect(findAiUsageRecordById(ledgerId)).resolves.toEqual({
+      classifier_run_id: null,
+      latency_ms: 40,
+    })
+  })
+
+  it('rejects a usage ledger row that names no run or a negative latency', async () => {
+    await expect(insertTestAiUsageRecord({ classifierRunId: randomUUID() })).rejects.toMatchObject({
+      code: '23503',
+    })
+    await expect(insertTestAiUsageRecord({ latencyMs: -1 })).rejects.toMatchObject({
+      code: '23514',
+    })
   })
 })

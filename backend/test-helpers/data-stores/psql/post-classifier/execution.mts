@@ -43,11 +43,19 @@ export function requestPostClassifierRun(post: { id: string }, inputSha256: Buff
   })
 }
 
-/** An approved community post whose moderation content hash is current, with no run or request yet. */
-export async function createApprovedClassifierPost(remote = true, local = true) {
+/**
+ * An approved community post whose moderation content hash is current, with no run or request yet.
+ * `remote` is `true` for the one self-promotion question, or the primary toggles to enable, so a
+ * run can ask the provider several questions in its one call.
+ */
+export async function createApprovedClassifierPost(
+  remote: boolean | readonly string[] = true,
+  local = true,
+) {
   const user = await createTestUser()
   const community = await insertTestCommunity({ createdById: user.id })
-  if (remote) await setPostClassifierToggleForTest(community.id, 'self-promotion', true)
+  const remoteToggles = remote === true ? ['self-promotion'] : remote || []
+  for (const slug of remoteToggles) await setPostClassifierToggleForTest(community.id, slug, true)
   if (!local) await setPostClassifierToggleForTest(community.id, 'ai-generated', false)
   const post = await createTestPost({ user, community_id: community.id })
   const inputSha256 = createPostModerationContent(post).content_sha256
@@ -56,7 +64,10 @@ export async function createApprovedClassifierPost(remote = true, local = true) 
 }
 
 /** An approved post whose C5 run is reserved through the shared lifecycle and then claimed. */
-export async function createPostClassifierExecutionFixture(remote = true, local = true) {
+export async function createPostClassifierExecutionFixture(
+  remote: boolean | readonly string[] = true,
+  local = true,
+) {
   const { community, post, inputSha256 } = await createApprovedClassifierPost(remote, local)
   const adapter = createTestPostClassifierAdapter()
   const subject = { postId: post.id, rssFeedItemId: null } as const

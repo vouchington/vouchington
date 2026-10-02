@@ -10,6 +10,12 @@ export interface BackgroundResponseRegistration {
   lease: OwnedBackgroundResponseLease | undefined
 }
 
+/** Which classifier run's provider attempt made a call, and how long the response took. */
+export interface ClassifierUsageAttribution {
+  runId: string
+  latencyMs: number
+}
+
 interface ClaimRegisteredResponseUsageParams {
   responseId?: string
   usage: OpenAIUsage
@@ -19,6 +25,8 @@ interface ClaimRegisteredResponseUsageParams {
   communityId?: string | null
   postId?: string | null
   registration?: BackgroundResponseRegistration
+  /** Set only by classifier clients, which never register a background response. */
+  classifier?: ClassifierUsageAttribution
   createdAt?: Date
 }
 
@@ -32,10 +40,17 @@ export async function claimRegisteredResponseUsage({
   registration,
   responseId,
   createdAt,
+  classifier,
   ...usage
 }: ClaimRegisteredResponseUsageParams): Promise<void> {
   if (!registration?.lease) {
-    await recordAiUsage({ responseId, createdAt, ...usage })
+    await recordAiUsage({
+      responseId,
+      createdAt,
+      classifierRunId: classifier?.runId,
+      latencyMs: classifier?.latencyMs,
+      ...usage,
+    })
     return
   }
 

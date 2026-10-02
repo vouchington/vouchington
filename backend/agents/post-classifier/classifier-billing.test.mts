@@ -48,6 +48,7 @@ function createBillingDependencies(
         {
           postId: input.post.id,
           communityId: input.community.id,
+          classifierRunId: hooks.classifierRunId,
           beforeAttempt: hooks.beforeAttempt,
         },
         { apiKey: 'test-key', fetch },
