@@ -1,7 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
-import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
+import { decryptCopyrightText } from './erased-ciphertext.mts'
 import { copyrightFormSecretPurpose } from './form-intakes.mts'
 import {
   selectStaffAppeals,
@@ -81,7 +81,7 @@ export async function getPendingCopyrightStaffCase(
     jurisdiction: notice.jurisdiction,
     claimant: {
       display_name: notice.claimant_display_name,
-      contact: decryptSecret(notice.claimant_contact_ciphertext, contactPurpose),
+      contact: decryptCopyrightText(notice.claimant_contact_ciphertext, contactPurpose),
     },
     work_description: notice.work_description,
     targets,

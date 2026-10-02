@@ -2054,6 +2054,39 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Erase evidence and personal data of copyright cases past retention; no-op while off",
+        "id": "copyright-evidence-retention",
+        "kind": "scheduled-jobs",
+        "schedule": "17 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "notifications",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "17 * * * *",
+    },
+    "schedulerId": "copyright-evidence-retention",
+    "template": {
+      "data": {},
+      "name": "processSweepCopyrightEvidenceRetention",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Re-enqueue pending browser-push intents after a worker or queue failure",
         "id": "notification-push-intent-recovery",
         "kind": "scheduled-jobs",
@@ -3019,6 +3052,14 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "notifications",
     "schedule": "*/5 * * * *",
     "triggerName": "enqueueCheckCopyrightReviewTarget",
+  },
+  {
+    "description": "Erase evidence and personal data of copyright cases past retention; no-op while off",
+    "id": "copyright-evidence-retention",
+    "job_name": "processSweepCopyrightEvidenceRetention",
+    "queue_name": "notifications",
+    "schedule": "17 * * * *",
+    "triggerName": "enqueueSweepCopyrightEvidenceRetention",
   },
   {
     "description": "Dispatch RSS feed fetching",

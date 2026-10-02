@@ -70,6 +70,7 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'copyright_notice_legal_hold_assessment_targets',
   'copyright_notice_legal_hold_resolutions',
   'copyright_notice_lifecycle_events',
+  'copyright_notice_retention_erasures',
   'copyright_notice_delivery_intents',
   'copyright_notice_delivery_recipients',
   'copyright_notice_submission_assessments',

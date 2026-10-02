@@ -98,6 +98,24 @@ CREATE OR REPLACE FUNCTION public.fn_classifier_audit_actor_was_deleted(actor_id
  LANGUAGE sql
 ```
 
+## `fn_copyright_retention_erasable_columns(table_name text)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasable_columns(table_name text)
+ RETURNS text[]
+ LANGUAGE sql
+ IMMUTABLE PARALLEL SAFE
+```
+
+## `fn_copyright_retention_erasure_permitted(table_name text, old_row jsonb, new_row jsonb)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasure_permitted(table_name text, old_row jsonb, new_row jsonb)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE
+```
+
 ## `fn_create_topic_metrics_on_insert`
 
 ```sql

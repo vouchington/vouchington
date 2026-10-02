@@ -7,6 +7,7 @@ import { assertNotSuspended } from '@services/users'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import type { CopyrightEmailSesVerdict, CopyrightEmailSesVerdicts } from './email-ses-verdicts.mts'
+import { liveCopyrightCiphertext } from './erased-ciphertext.mts'
 import {
   copyrightTimelineEventTypesFor,
   type CopyrightTimelineAudience,
@@ -79,6 +80,15 @@ export async function getCopyrightStaffEmailIntake(
   const row = rows[0]
   if (!row) return null
   const purpose = copyrightEmailIntakePurpose(row.ses_message_id)
+  const decryptLive = (ciphertext: string | null) => {
+    const live = liveCopyrightCiphertext(ciphertext)
+    return live ? decryptSecret(live, purpose) : null
+  }
+  const senderEmail = decryptLive(row.sender_email_ciphertext)
+  const subject = decryptLive(row.subject_ciphertext)
+  const bodyText = decryptLive(row.body_ciphertext)
+  const parserError = decryptLive(row.error_ciphertext)
+  const structuredOutput = decryptLive(row.structured_output_ciphertext)
   const reviewPath =
     row.link_kind === 'thread'
       ? 'matched_thread'
@@ -107,22 +117,17 @@ export async function getCopyrightStaffEmailIntake(
       spam: row.spam_verdict,
       virus: row.virus_verdict,
     },
+    // An erased column reads as absent, the way a parse that never landed does.
     parsed_email:
-      row.sender_email_ciphertext && row.subject_ciphertext && row.body_ciphertext
-        ? {
-            sender_email: decryptSecret(row.sender_email_ciphertext, purpose),
-            subject: decryptSecret(row.subject_ciphertext, purpose),
-            body_text: decryptSecret(row.body_ciphertext, purpose),
-          }
+      senderEmail !== null && subject !== null && bodyText !== null
+        ? { sender_email: senderEmail, subject, body_text: bodyText }
         : null,
-    parser_error: row.error_ciphertext ? decryptSecret(row.error_ciphertext, purpose) : null,
+    parser_error: parserError,
     recommendation:
-      row.recommendation_id && row.structured_output_ciphertext
+      row.recommendation_id && structuredOutput !== null
         ? {
             id: row.recommendation_id,
-            structured_output: JSON.parse(
-              decryptSecret(row.structured_output_ciphertext, purpose),
-            ) as Record<string, unknown>,
+            structured_output: JSON.parse(structuredOutput) as Record<string, unknown>,
           }
         : null,
   }

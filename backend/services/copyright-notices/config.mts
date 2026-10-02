@@ -9,11 +9,17 @@ export const copyrightConfig = new DynamicConfig({
   fieldTypes: {
     automaticProvisionalWithholding: 'boolean',
     reviewTargetMinutes: 'number',
+    evidenceRetentionDeletion: 'boolean',
+    evidenceRetentionDays: 'number',
   },
   defaultFields: {
     automaticProvisionalWithholding: false,
     // 0 means unset: no review-target page until an operator records an approved target.
     reviewTargetMinutes: 0,
+    evidenceRetentionDeletion: false,
+    // 0 means unset: nothing is deleted until counsel approves a retention period, even when the
+    // switch is on.
+    evidenceRetentionDays: 0,
   },
 })
 
@@ -34,4 +40,20 @@ export async function getCopyrightReviewTargetMinutes(): Promise<number | null> 
   await copyrightConfig.waitForInitialization()
   const minutes = copyrightConfig.getFields().reviewTargetMinutes
   return typeof minutes === 'number' && minutes > 0 ? minutes : null
+}
+
+/** Whether the evidence retention-deletion sweep may run. Off by default; read the runbook first. */
+export async function isCopyrightEvidenceRetentionDeletionEnabled(): Promise<boolean> {
+  await copyrightConfig.waitForInitialization()
+  return copyrightConfig.getFields().evidenceRetentionDeletion === true
+}
+
+/**
+ * The counsel-approved days a case's evidence is kept after its last lifecycle event before the
+ * retention sweep may delete it, or null while the period is unset (0).
+ */
+export async function getCopyrightEvidenceRetentionDays(): Promise<number | null> {
+  await copyrightConfig.waitForInitialization()
+  const days = copyrightConfig.getFields().evidenceRetentionDays
+  return typeof days === 'number' && Number.isInteger(days) && days > 0 ? days : null
 }

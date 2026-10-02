@@ -12,6 +12,7 @@ import {
   enqueueReconcileCopyrightDeliveryIntents,
   enqueueReconcileMediaDeliveryRegistry,
   enqueueReconcileNotificationPushIntents,
+  enqueueSweepCopyrightEvidenceRetention,
 } from '../enqueues.mts'
 
 export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
@@ -108,6 +109,31 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
         schedule: '*/5 * * * *',
         description: 'Page Sentry when copyright cases wait past the review target or deadlines',
         trigger: enqueueCheckCopyrightReviewTarget,
+      },
+    ],
+  },
+  {
+    schedulerId: 'copyright-evidence-retention',
+    repeat: { pattern: '17 * * * *' },
+    template: {
+      name: 'processSweepCopyrightEvidenceRetention',
+      data: {},
+      opts: {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+        removeOnComplete: 100,
+        removeOnFail: 100,
+        priority: PRIORITY_DEFAULT,
+      } satisfies JobOptions,
+    },
+    operatorSurfaces: [
+      {
+        kind: 'scheduled-jobs',
+        id: 'copyright-evidence-retention',
+        schedule: '17 * * * *',
+        description:
+          'Erase evidence and personal data of copyright cases past retention; no-op while off',
+        trigger: enqueueSweepCopyrightEvidenceRetention,
       },
     ],
   },

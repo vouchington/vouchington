@@ -110,6 +110,7 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | notifications                                | processFollowNotification                      | —                                        | 10               |
 | notifications                                | processReferralSignupNotification              | —                                        | 10               |
 | notifications                                | processReferralClickNotification               | —                                        | 10               |
+| notifications                                | processSweepCopyrightEvidenceRetention         | —                                        | 10               |
 | notifications                                | processCommunityActivityDigestScheduleTick     | —                                        | 10               |
 | notifications                                | processCommunityActivityDigestDispatch         | —                                        | 10               |
 | notifications                                | processCommunityActivityDigestBatch            | —                                        | 10               |
