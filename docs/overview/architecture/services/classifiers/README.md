@@ -73,6 +73,11 @@ the values already in force writes nothing and reports `unchanged`. Neither call
 version, its defaults or any past decision: a batch keeps the thresholds it snapshotted. Nothing in
 the service changes a threshold on its own.
 
+The two writers are imported by module path
+(`@services/classifiers/change-classifier-candidate-threshold`), not from the package entry point.
+Decision-time code and the classifier golden regression set import the entry point, and keeping the
+writers off it means their import graph can never reach a threshold write.
+
 ## Human-vote comparison
 
 `getClassifierHumanVoteComparison` reports how a topic classifier's stored decisions compare with

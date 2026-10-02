@@ -26,6 +26,13 @@ const WINDOW = { from: seedMoment(-6), to: seedMoment(6) }
 const PLAN_MODES = ['force_custom_plan', 'force_generic_plan'] as const
 const { classifier, community, post, rssFeedItem } = COMPARISON_BATCH_INDEXES
 const FILTERS = ['classifier', 'community', 'post', 'rssFeedItem'] as const
+// The fixture is a few thousand rows, where stock planner costs rightly pick a sequential or
+// bitmap-then-sort plan, and the choice flips with the size of the table around it. The skew also
+// breaks the planner's independence assumption between the post and classifier filters (it
+// estimates a few hundred rows where the post holds the classifier's whole window). Pricing index
+// probes below a sequential read makes the id-bounded walk the decisive choice, so the verdict is
+// stable. It pins determinism; it does not show which plan production's stock costs pick.
+const PLAN_SETTINGS = { random_page_cost: '0.1' } as const
 const ALLOWED_INDEXES = {
   classifier: [classifier],
   community: [community, classifier],
@@ -91,6 +98,7 @@ describe('classifier human vote comparison query plan', () => {
         captured[filter],
         planCacheMode,
         analyzeClassifierComparisonPlanTables,
+        PLAN_SETTINGS,
       )
 
       const scans = summarizeComparisonBatchScans(plan)

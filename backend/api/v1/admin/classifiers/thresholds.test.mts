@@ -8,7 +8,7 @@ import {
   supersedeActivePromptVersion,
 } from '@voucha/test-helpers/data-stores/psql/classifier-threshold-management'
 import { createClassifierFixture } from '@voucha/test-helpers/data-stores/psql/classifiers'
-import { setClassifierCandidateThreshold } from '@services/classifiers'
+import { setClassifierCandidateThreshold } from '@services/classifiers/change-classifier-candidate-threshold'
 import type { PrivateUser } from '@services/users/types'
 
 type ThresholdCase = Awaited<ReturnType<typeof createThresholdManagementCase>>

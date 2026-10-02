@@ -11,7 +11,7 @@ import {
   seedGlobalDecision,
   seedMoment,
 } from '@voucha/test-helpers/data-stores/psql/classifier-comparison-seeding'
-import { setClassifierCandidateThreshold } from '@services/classifiers'
+import { setClassifierCandidateThreshold } from '@services/classifiers/change-classifier-candidate-threshold'
 import { addUserRole } from '@services/users/roles-permissions'
 import { getPrivateUserByAny } from '@services/users/get'
 import type { PrivateUser } from '@services/users/types'

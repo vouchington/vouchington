@@ -1,11 +1,13 @@
 import app from '../../../app.mts'
 import type { Context } from '@jongleberry/api-server'
+import type {
+  ClassifierThresholdChangeResult,
+  ClassifierThresholdRevision,
+} from '@services/classifiers'
 import {
   rollbackClassifierCandidateThreshold,
   setClassifierCandidateThreshold,
-  type ClassifierThresholdChangeResult,
-  type ClassifierThresholdRevision,
-} from '@services/classifiers'
+} from '@services/classifiers/change-classifier-candidate-threshold'
 import { assertNotSuspended, isAdminUser } from '@services/users'
 import {
   requireAuthAndRateLimit,

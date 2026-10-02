@@ -18,9 +18,11 @@ export async function explainCapturedTestQuery(
   query: CapturedTestQuery,
   planCacheMode: ExplainPlanCacheMode,
   analyzeTables: PlanStatisticsRefresh,
+  localSettings?: Readonly<Record<string, string>>,
 ): Promise<unknown> {
   await analyzeTables()
-  return (await explainAnalyze(name, query.text, query.values, { planCacheMode })).plan
+  return (await explainAnalyze(name, query.text, query.values, { planCacheMode, localSettings }))
+    .plan
 }
 
 export function planIndexNames(plan: unknown): string[] {
