@@ -204,8 +204,20 @@ describe('ROBOTS_DISALLOW_PREFIXES', () => {
     )
   })
 
-  it('does not disallow /md/ because llms.txt advertises it to agents', () => {
-    expect(ROBOTS_DISALLOW_PREFIXES.some(prefix => '/md/'.startsWith(prefix))).toBe(false)
+  it('does not disallow /md/ routes because llms.txt advertises them to agents', () => {
+    const matchesRobotsPattern = (pattern: string, path: string) => {
+      const anchored = pattern.endsWith('$')
+      const body = (anchored ? pattern.slice(0, -1) : pattern)
+        .split('*')
+        .map(part => part.replace(/[.+?^${}()|[\]\\]/g, '\\$&'))
+        .join('.*')
+      return new RegExp(`^${body}${anchored ? '$' : ''}`).test(path)
+    }
+    const advertised = ['/md/', '/md/posts', '/md/topics', '/md/users/example']
+    const blocked = advertised.filter(path =>
+      ROBOTS_DISALLOW_PREFIXES.some(prefix => matchesRobotsPattern(prefix, path)),
+    )
+    expect(blocked).toEqual([])
   })
 
   it('every robots disallow prefix is covered by the private path classifier', () => {
