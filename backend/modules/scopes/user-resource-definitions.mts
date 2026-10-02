@@ -8,6 +8,7 @@ const USER_RESOURCE_SCOPES = {
   'domain-ratings': ['read'],
   'entity-relations': ['read', 'write'],
   'financial-profile': ['read', 'write'],
+  hostnames: ['read'],
   lists: ['read', 'write'],
   notifications: ['read', 'write'],
   'point-valuations': ['read', 'write'],
@@ -20,6 +21,7 @@ const USER_RESOURCE_SCOPES = {
   spending: ['read', 'write'],
   'topic-recommendations': ['read', 'write'],
   topics: ['read'],
+  users: ['read'],
 } as const
 
 const SENSITIVE_DESCRIPTIONS: Record<string, ScopeDescriptionKey> = {
