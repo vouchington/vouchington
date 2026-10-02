@@ -2,11 +2,18 @@
 
 ## Branch and commit
 
-- Default to one coherent PR against `main`. Split independent work into separate PRs; use
-  [native stacks](../stacked-prs/SKILL.md) only for real dependencies. Do not invent source issues
-  just to satisfy a PR workflow. Keep each PR's accepted scope explicit.
+- Default to one coherent PR against `main`. Split independent work into separate PRs. Do not
+  invent source issues just to satisfy a PR workflow. Keep each PR's accepted scope explicit.
+- Stack PRs that depend on or conflict with each other in a [native stack](../stacked-prs/SKILL.md).
+  Two open PRs conflict when they edit the same files, including generated fixtures, schema
+  snapshots, registries, and docs, or when one changes a contract that the other's new code uses.
+  Conflicting PRs opened separately against `main` go dirty when either lands, so each landing
+  forces another rebase, regeneration, and CI run. A contract conflict fails only in the merge
+  queue. Before opening a PR, compare its changed files and contracts with open PRs. On overlap,
+  add the work as the next layer of that stack. Otherwise, rebase it onto the open PR and run
+  `gh stack link <lower> <upper>` before either PR is enqueued.
 - The PR helper flags about 5,000 added or 20,000 deleted lines for a split decision. Split only
-  along independently reviewable boundaries; real dependencies determine whether to use a stack.
+  along independently reviewable boundaries; dependencies and conflicts determine whether to stack.
   Disclose the 150-file automated-review limit for larger atomic changes. Verified CI-generated
   schema snapshots stay with their source when the handwritten diff fits those budgets; verify
   publisher provenance and schema intent, report generated versus total scope, and use

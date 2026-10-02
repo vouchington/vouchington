@@ -140,7 +140,8 @@ One worker per native stack. That worker implements the stack and runs its sheph
 does not run `pnpm exec pr-shepherd`. The parent reconciles open stacks, starts a worker when the
 stack's first owned pull request exists, and asks the human each merge question.
 
-Independent stacks run at the same time, one worker each. Dependent unmerged work is the next layer
+Independent stacks run at the same time, one worker each. Dependent or
+[conflicting](../agent-workflow/git-and-prs.md#branch-and-commit) unmerged work is the next layer
 of the same stack (`gh stack add`), in the same worktree. A second stack whose base is an unmerged
 head is not a stack this procedure can drain.
 
