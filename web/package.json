@@ -85,9 +85,9 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
-    "@storybook/addon-a11y": "^10.6.0",
-    "@storybook/addon-vitest": "^10.6.0",
-    "@storybook/nextjs-vite": "^10.6.0",
+    "@storybook/addon-a11y": "^10.6.1",
+    "@storybook/addon-vitest": "^10.6.1",
+    "@storybook/nextjs-vite": "^10.6.1",
     "@tailwindcss/postcss": "^4",
     "@tailwindcss/typography": "^0.5.20",
     "@testing-library/jest-dom": "^7.0.1",
@@ -98,7 +98,7 @@
     "@typescript/native": "npm:typescript@^7.0.2",
     "babel-plugin-react-compiler": "^1.0.0",
     "jsdom": "^30.1.1",
-    "storybook": "^10.6.0",
+    "storybook": "^10.6.1",
     "tailwindcss": "^4",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vite": "^8.3.1"
