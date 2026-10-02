@@ -167,10 +167,13 @@ export async function createContentProvenanceListFixture(): Promise<ContentProve
     renameList: listId =>
       write(sql`/* renameContentProvenanceList */
         UPDATE lists SET name = 'Renamed provenance list' WHERE id = ${listId}`),
-    deleteOAuthClient: () =>
-      write(sql`/* deleteContentProvenanceOAuthClient */
-        DELETE FROM oauth_clients WHERE id = ${oauthClientId}`),
+    deleteOAuthClient: () => deleteContentProvenanceOAuthClient(oauthClientId),
   }
+}
+
+export function deleteContentProvenanceOAuthClient(oauthClientId: string) {
+  return write(sql`/* deleteContentProvenanceOAuthClient */
+    DELETE FROM oauth_clients WHERE id = ${oauthClientId}`)
 }
 
 export async function insertListWithoutContentProvenance(): Promise<void> {

@@ -1,6 +1,10 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestUser } from '@voucha/test-helpers'
+import {
+  countRssFeedImportBatchesForTest,
+  createTestUser,
+  readTestContentProvenance,
+} from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 
 const UUID = '00000000-0000-7000-8000-000000000001'
@@ -66,5 +70,46 @@ describe('RSS feed import status and line-list parsing', () => {
     await request.authenticateAs(user)
     const urls = Array.from({ length: 501 }, feedUrl)
     await request.post('/api/v1/my/import/rss-feeds').send({ urls }).expect(400)
+  })
+})
+
+describe('RSS feed import provenance', () => {
+  async function signedInAs(clientHeaders: Record<string, string>) {
+    const importer = await createTestUser()
+    const request = createRequest()
+    request.setClientInfo(clientHeaders)
+    await request.authenticateAs(importer)
+    return { importer, request }
+  }
+
+  it.each([
+    ['web', {}],
+    ['swift', { 'x-voucha-client': 'swift', 'x-voucha-platform': 'ios' }],
+  ])('stores the %s client that submitted the import on its batch', async (client, headers) => {
+    const { request } = await signedInAs(headers)
+
+    const created = await request
+      .post('/api/v1/my/import/rss-feeds')
+      .send({ urls: [feedUrl()] })
+      .expect(201)
+
+    await expect(
+      readTestContentProvenance('user_rss_feed_import_batches', created.body.import.id),
+    ).resolves.toEqual({ createdVia: client, oauthClientId: null })
+    expect(JSON.stringify(created.body)).not.toContain('created_via')
+    const status = await request.get(created.body.status_url).expect(200)
+    expect(JSON.stringify(status.body)).not.toContain('created_via')
+  })
+
+  it('rejects a submission whose client information is invalid and stores nothing', async () => {
+    const { importer, request } = await signedInAs({ 'x-voucha-client': 'unclassified-client' })
+
+    const response = await request
+      .post('/api/v1/my/import/rss-feeds')
+      .send({ urls: [feedUrl()] })
+      .expect(400)
+
+    expect(response.body.code).toBe('INVALID_CLIENT_INFO')
+    await expect(countRssFeedImportBatchesForTest(importer.id)).resolves.toBe(0)
   })
 })

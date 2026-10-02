@@ -6,17 +6,19 @@ Tracks user-submitted RSS feed import batches processed asynchronously.
 
 Not partitioned — growth: unbounded.
 
-| Column           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                      |
-| ---------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------- |
-| `id`             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                              |
-| `user_id`        | `uuid`                     | no       |                              |          |           |           | The user who submitted the RSS feed import.                                  |
-| `follow`         | `boolean`                  | no       | `true`                       |          |           |           | Whether successful imported feeds should be followed by the submitting user. |
-| `total_rows`     | `integer`                  | no       |                              |          |           |           | Total number of URLs in this import batch.                                   |
-| `completed_rows` | `integer`                  | no       | `0`                          |          |           |           | Number of rows that completed with a non-error outcome.                      |
-| `failed_rows`    | `integer`                  | no       | `0`                          |          |           |           | Number of rows that reached a terminal error outcome.                        |
-| `completed_at`   | `timestamp with time zone` | yes      |                              |          |           |           | When every row reached a terminal success or error outcome.                  |
-| `created_at`     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                              |
-| `updated_at`     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                              |
+| Column                        | Type                        | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                            |
+| ----------------------------- | --------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------ |
+| `id`                          | `uuid`                      | no       | `uuidv7()`                   |          |           |           |                                                                                                                    |
+| `user_id`                     | `uuid`                      | no       |                              |          |           |           | The user who submitted the RSS feed import.                                                                        |
+| `created_via`                 | `content_creation_channels` | no       |                              |          |           |           | Immutable channel of the request that submitted the import; every feed the import creates carries it.              |
+| `created_via_oauth_client_id` | `uuid`                      | yes      |                              |          |           |           | Immutable OAuth client that submitted the import through the API or MCP; NULL for session and API-key submissions. |
+| `follow`                      | `boolean`                   | no       | `true`                       |          |           |           | Whether successful imported feeds should be followed by the submitting user.                                       |
+| `total_rows`                  | `integer`                   | no       |                              |          |           |           | Total number of URLs in this import batch.                                                                         |
+| `completed_rows`              | `integer`                   | no       | `0`                          |          |           |           | Number of rows that completed with a non-error outcome.                                                            |
+| `failed_rows`                 | `integer`                   | no       | `0`                          |          |           |           | Number of rows that reached a terminal error outcome.                                                              |
+| `completed_at`                | `timestamp with time zone`  | yes      |                              |          |           |           | When every row reached a terminal success or error outcome.                                                        |
+| `created_at`                  | `timestamp with time zone`  | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                    |
+| `updated_at`                  | `timestamp with time zone`  | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                    |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -27,15 +29,18 @@ _none_
 
 - `chk_user_rss_feed_import_batches__lifecycle`: `CHECK ((((completed_rows + failed_rows) <= total_rows) AND ((completed_at IS NOT NULL) = ((completed_rows + failed_rows) = total_rows))))`
 - `user_rss_feed_import_batches_completed_rows_check`: `CHECK ((completed_rows >= 0))`
+- `user_rss_feed_import_batches_created_via_oauth_client_id_check`: `CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))`
 - `user_rss_feed_import_batches_failed_rows_check`: `CHECK ((failed_rows >= 0))`
 - `user_rss_feed_import_batches_total_rows_check`: `CHECK (((total_rows > 0) AND (total_rows <= 500)))`
 
 **Foreign keys:**
 
+- `user_rss_feed_import_batches_created_via_oauth_client_id_fkey`: `FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT`
 - `user_rss_feed_import_batches_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 **Indexes:**
 
+- `idx_user_rss_feed_import_batches__created_via_oauth_client_id`: `CREATE INDEX idx_user_rss_feed_import_batches__created_via_oauth_client_id ON public.user_rss_feed_import_batches USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)`
 - `idx_user_rss_feed_import_batches__user_id__id_desc`: `CREATE INDEX idx_user_rss_feed_import_batches__user_id__id_desc ON public.user_rss_feed_import_batches USING btree (user_id, id DESC)`
 - `user_rss_feed_import_batches_pkey`: `CREATE UNIQUE INDEX user_rss_feed_import_batches_pkey ON public.user_rss_feed_import_batches USING btree (id)`
 
@@ -43,3 +48,4 @@ _none_
 
 - `trigger_user_rss_feed_import_batches_guard_terminal_lifecycle`: `CREATE TRIGGER trigger_user_rss_feed_import_batches_guard_terminal_lifecycle BEFORE UPDATE ON public.user_rss_feed_import_batches FOR EACH ROW EXECUTE FUNCTION fn_guard_terminal_lifecycle('completed_at')`
 - `trigger_user_rss_feed_import_batches_updated_at`: `CREATE TRIGGER trigger_user_rss_feed_import_batches_updated_at BEFORE UPDATE ON public.user_rss_feed_import_batches FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `user_rss_feed_import_batches_content_provenance_immutable`: `CREATE TRIGGER user_rss_feed_import_batches_content_provenance_immutable AFTER UPDATE ON public.user_rss_feed_import_batches FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()`

@@ -12,6 +12,7 @@ import { enqueueBulkUserRssFeedImportRows } from '@queues/user-rss-feed-imports/
 import { isUUID } from '@modules/utils'
 import { isAdminUser } from '@services/users'
 import { apiResponse } from '../../response-contract.mts'
+import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 
 const MAX_IMPORT_ITEMS = 500
 // Two MiB prevents abusive buffering before the 500-row cap can reject the import.
@@ -41,6 +42,7 @@ function parseImportUrls(ctx: Context, body: ImportRssFeedsRequest): string[] {
 
 app.route('/api/v1/my/import/rss-feeds').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/import/rss-feeds')
+  const provenance = getRequestContentProvenance()
   assertNotSuspended(currentUser)
 
   const body = await parseJsonBody<ImportRssFeedsRequest>(ctx, MAX_OPML_IMPORT_BYTES)
@@ -52,7 +54,7 @@ app.route('/api/v1/my/import/rss-feeds').post(async (ctx: Context) => {
   ctx.assert(urls.length > 0, 400, 'At least one URL is required')
   ctx.assert(urls.length <= MAX_IMPORT_ITEMS, 400, `Maximum ${MAX_IMPORT_ITEMS} URLs per import`)
 
-  const submitted = await submitRssFeedImport(currentUser, urls, { follow })
+  const submitted = await submitRssFeedImport(currentUser, provenance, urls, { follow })
   await enqueueBulkUserRssFeedImportRows(
     submitted.rowIds.map(rowId => ({ importId: submitted.import.id, rowId })),
   )

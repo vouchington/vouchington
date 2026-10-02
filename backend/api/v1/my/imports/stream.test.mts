@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestUser } from '@voucha/test-helpers'
+import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
 import { createImportBatch } from '@services/admin-imports/create-batch'
 import { updateRowCompleted } from '@services/admin-imports/update-row-status'
@@ -113,6 +113,7 @@ describe('GET /api/v1/imports/:batchId/stream', () => {
   it('streams progress for async user RSS import IDs', async () => {
     const submitted = await submitRssFeedImport(
       user,
+      WEB_PROVENANCE,
       ['https://user-rss-stream-test.example.com/rss'],
       { follow: true },
     )
@@ -162,6 +163,7 @@ describe('GET /api/v1/imports/:batchId/stream', () => {
     const rssFeed = await createTestRssFeed({})
     const submitted = await submitRssFeedImport(
       user,
+      WEB_PROVENANCE,
       ['https://completed-user-rss-stream-test.example.com/rss'],
       { follow: true },
     )

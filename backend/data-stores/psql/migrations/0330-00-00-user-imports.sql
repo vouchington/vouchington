@@ -93,6 +93,9 @@ END $$;
 CREATE TABLE IF NOT EXISTS user_rss_feed_import_batches (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_via content_creation_channels NOT NULL,
+  created_via_oauth_client_id UUID,
+  CONSTRAINT user_rss_feed_import_batches_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
   follow BOOLEAN NOT NULL DEFAULT TRUE,
   total_rows INT NOT NULL CHECK (total_rows > 0 AND total_rows <= 500),
   completed_rows INT NOT NULL DEFAULT 0 CHECK (completed_rows >= 0),
@@ -118,6 +121,10 @@ EXECUTE FUNCTION fn_guard_terminal_lifecycle('completed_at');
 
 CREATE INDEX IF NOT EXISTS idx_user_rss_feed_import_batches__user_id__id_desc
 ON user_rss_feed_import_batches (user_id, id DESC);
+
+CREATE INDEX IF NOT EXISTS idx_user_rss_feed_import_batches__created_via_oauth_client_id
+ON user_rss_feed_import_batches (created_via_oauth_client_id)
+WHERE created_via_oauth_client_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS user_rss_feed_import_rows (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -168,6 +175,8 @@ ON user_rss_feed_import_rows (batch_id, row_index);
 
 COMMENT ON TABLE user_rss_feed_import_batches IS 'Tracks user-submitted RSS feed import batches processed asynchronously.';
 COMMENT ON COLUMN user_rss_feed_import_batches.user_id IS 'The user who submitted the RSS feed import.';
+COMMENT ON COLUMN user_rss_feed_import_batches.created_via IS 'Immutable channel of the request that submitted the import; every feed the import creates carries it.';
+COMMENT ON COLUMN user_rss_feed_import_batches.created_via_oauth_client_id IS 'Immutable OAuth client that submitted the import through the API or MCP; NULL for session and API-key submissions.';
 COMMENT ON COLUMN user_rss_feed_import_batches.follow IS 'Whether successful imported feeds should be followed by the submitting user.';
 COMMENT ON COLUMN user_rss_feed_import_batches.total_rows IS 'Total number of URLs in this import batch.';
 COMMENT ON COLUMN user_rss_feed_import_batches.completed_rows IS 'Number of rows that completed with a non-error outcome.';

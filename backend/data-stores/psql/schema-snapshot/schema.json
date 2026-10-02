@@ -119369,6 +119369,7 @@
       "checkConstraints": {
         "chk_user_rss_feed_import_batches__lifecycle": "CHECK ((((completed_rows + failed_rows) <= total_rows) AND ((completed_at IS NOT NULL) = ((completed_rows + failed_rows) = total_rows))))",
         "user_rss_feed_import_batches_completed_rows_check": "CHECK ((completed_rows >= 0))",
+        "user_rss_feed_import_batches_created_via_oauth_client_id_check": "CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))",
         "user_rss_feed_import_batches_failed_rows_check": "CHECK ((failed_rows >= 0))",
         "user_rss_feed_import_batches_total_rows_check": "CHECK (((total_rows > 0) AND (total_rows <= 500)))"
       },
@@ -119381,7 +119382,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "completed_rows": {
@@ -119392,7 +119393,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 7,
           "type": "integer"
         },
         "created_at": {
@@ -119403,8 +119404,30 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
+        },
+        "created_via": {
+          "collation": null,
+          "comment": "Immutable channel of the request that submitted the import; every feed the import creates carries it.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "content_creation_channels"
+        },
+        "created_via_oauth_client_id": {
+          "collation": null,
+          "comment": "Immutable OAuth client that submitted the import through the API or MCP; NULL for session and API-key submissions.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
         },
         "failed_rows": {
           "collation": null,
@@ -119414,7 +119437,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 8,
           "type": "integer"
         },
         "follow": {
@@ -119425,7 +119448,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 5,
           "type": "boolean"
         },
         "id": {
@@ -119447,7 +119470,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 6,
           "type": "integer"
         },
         "updated_at": {
@@ -119458,7 +119481,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -119475,6 +119498,15 @@
       },
       "comment": "Tracks user-submitted RSS feed import batches processed asynchronously.",
       "foreignKeys": {
+        "user_rss_feed_import_batches_created_via_oauth_client_id_fkey": {
+          "columns": ["created_via_oauth_client_id"],
+          "definition": "FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "oauth_clients",
+          "validated": true
+        },
         "user_rss_feed_import_batches_user_id_fkey": {
           "columns": ["user_id"],
           "definition": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE",
@@ -119487,6 +119519,26 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_user_rss_feed_import_batches__created_via_oauth_client_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_rss_feed_import_batches__created_via_oauth_client_id ON public.user_rss_feed_import_batches USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_via_oauth_client_id",
+              "descending": false,
+              "expression": "created_via_oauth_client_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_via_oauth_client_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_user_rss_feed_import_batches__user_id__id_desc": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -119544,7 +119596,8 @@
       "relationKind": "table",
       "triggers": {
         "trigger_user_rss_feed_import_batches_guard_terminal_lifecycle": "CREATE TRIGGER trigger_user_rss_feed_import_batches_guard_terminal_lifecycle BEFORE UPDATE ON public.user_rss_feed_import_batches FOR EACH ROW EXECUTE FUNCTION fn_guard_terminal_lifecycle('completed_at')",
-        "trigger_user_rss_feed_import_batches_updated_at": "CREATE TRIGGER trigger_user_rss_feed_import_batches_updated_at BEFORE UPDATE ON public.user_rss_feed_import_batches FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_user_rss_feed_import_batches_updated_at": "CREATE TRIGGER trigger_user_rss_feed_import_batches_updated_at BEFORE UPDATE ON public.user_rss_feed_import_batches FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
+        "user_rss_feed_import_batches_content_provenance_immutable": "CREATE TRIGGER user_rss_feed_import_batches_content_provenance_immutable AFTER UPDATE ON public.user_rss_feed_import_batches FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()"
       },
       "uniqueConstraints": {}
     },

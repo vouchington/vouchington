@@ -24,6 +24,7 @@ const CONTENT_TABLES = [
   'rss_feeds',
   'topics',
   'user_referral_program_links',
+  'user_rss_feed_import_batches',
 ]
 
 describe('content provenance schema', () => {

@@ -21,6 +21,7 @@ const CONTENT_PROVENANCE_TABLES = {
   rss_feeds: () => sql`rss_feeds`,
   topics: () => sql`topics`,
   user_referral_program_links: () => sql`user_referral_program_links`,
+  user_rss_feed_import_batches: () => sql`user_rss_feed_import_batches`,
 } satisfies Record<string, () => SQLStatement>
 
 export type ContentProvenanceTable = keyof typeof CONTENT_PROVENANCE_TABLES

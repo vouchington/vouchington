@@ -1,5 +1,5 @@
 import type { BasicUser } from '@services/users/types'
-import { SYSTEM_PROVENANCE } from '@voucha/types/entities/content-provenance'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { getPrivateUserByAny } from '@services/users/get'
 import { UnrecoverableError } from '@modules/queue-errors'
 import {
@@ -13,7 +13,7 @@ import {
   updateRssFeedImportRowCompleted,
   updateRssFeedImportRowFailed,
 } from './rss-feed-import-row-updates.mts'
-import type { CreateUserRssFeedImportResult } from './rss-feed-import-types.mts'
+import { getBatchProvenance, type CreateUserRssFeedImportResult } from './rss-feed-import-types.mts'
 import { validateRssFeedUrl } from './validate-rss-feed-url.mts'
 import { getUserActivePlan } from '@services/memberships'
 import { assertWithinContributionDailyLimit } from '@services/contribution-gating/limits'
@@ -24,6 +24,7 @@ export { getRssFeedImport } from './rss-feed-import-records.mts'
 
 export async function submitRssFeedImport(
   currentUser: BasicUser,
+  provenance: ContentProvenance,
   urls: string[],
   options: { follow?: boolean } = {},
 ): Promise<CreateUserRssFeedImportResult> {
@@ -39,7 +40,7 @@ export async function submitRssFeedImport(
 
   const follow = options.follow !== false
 
-  return createRssFeedImport(currentUser.id, trimmedUrls, follow)
+  return createRssFeedImport(currentUser.id, provenance, trimmedUrls, follow)
 }
 
 export async function processRssFeedImportRow(
@@ -78,8 +79,9 @@ export async function processRssFeedImportRow(
   try {
     // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
     const membershipPlan = await getUserActivePlan(user.id)
-    // User RSS feed imports run in the user-rss-feed-imports queue job, not in the submitting request.
-    const result = await importSingleRssFeed(user, SYSTEM_PROVENANCE, row.input_url, {
+    // The queue job is not the submitting request, so the feeds carry the channel and OAuth client
+    // that the batch stored when the request submitted the import.
+    const result = await importSingleRssFeed(user, getBatchProvenance(batch), row.input_url, {
       assertRssFeedLimit: () =>
         assertWithinContributionDailyLimit(user, membershipPlan, 'rss_feed'),
       follow: batch.follow,
