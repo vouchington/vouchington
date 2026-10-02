@@ -28,7 +28,7 @@
     "@services/urls": "workspace:^",
     "@services/urls-domains-robots": "workspace:^",
     "@voucha/config": "workspace:^",
-    "glide-mq": "^0.15.5",
+    "glide-mq": "^0.16.0",
     "ssrf-guard": "^1.0.0"
   },
   "devDependencies": {

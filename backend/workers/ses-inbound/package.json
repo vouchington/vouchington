@@ -24,7 +24,7 @@
     "@queues/ses-inbound": "workspace:^",
     "@services/copyright-notices": "workspace:^",
     "@ts-shared/ses-inbound-contract": "workspace:^",
-    "glide-mq": "^0.15.5",
+    "glide-mq": "^0.16.0",
     "mailparser": "^3.9.30"
   },
   "devDependencies": {

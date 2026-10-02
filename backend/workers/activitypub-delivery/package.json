@@ -30,7 +30,7 @@
     "@services/activitypub-delivery": "workspace:^",
     "@services/ap-actor-keys": "workspace:^",
     "@services/users": "workspace:^",
-    "glide-mq": "^0.15.5"
+    "glide-mq": "^0.16.0"
   },
   "devDependencies": {
     "@modules/http-signatures": "workspace:^",

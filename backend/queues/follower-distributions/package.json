@@ -19,7 +19,7 @@
   "dependencies": {
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@voucha/types": "workspace:^",
-    "glide-mq": "^0.15.5"
+    "glide-mq": "^0.16.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

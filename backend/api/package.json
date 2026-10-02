@@ -244,7 +244,7 @@
     "@ts-shared/utm": "workspace:^",
     "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",
-    "glide-mq": "^0.15.5",
+    "glide-mq": "^0.16.0",
     "http-errors": "^2.0.1",
     "jose": "^6.2.12",
     "otpauth": "^9.5.2",

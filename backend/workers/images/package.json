@@ -30,7 +30,7 @@
     "@services/images": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
     "@vouchington/media": "^0.2.0",
-    "glide-mq": "^0.15.5",
+    "glide-mq": "^0.16.0",
     "http-errors": "^2.0.1",
     "sharp": "^0.35.5"
   },
