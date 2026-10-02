@@ -9374,13 +9374,20 @@
         "idx_classifier_decision_batches__classifier": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_classifier_decision_batches__classifier ON public.classifier_decision_batches USING btree (classifier_id)",
+          "definition": "CREATE INDEX idx_classifier_decision_batches__classifier ON public.classifier_decision_batches USING btree (classifier_id, id)",
           "includedColumns": [],
           "keys": [
             {
               "column": "classifier_id",
               "descending": false,
               "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
