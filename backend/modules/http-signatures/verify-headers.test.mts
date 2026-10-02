@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeDigest } from './digest.mts'
+import { computeDigest } from '@vouchington/utils/http-signatures'
 import { generateRsaSha256KeyPair } from './keys.mts'
 import { extractSignatureKeyId, verifySignature } from './verify.mts'
 import {

@@ -9,8 +9,11 @@ import {
   overrideDynamicConfigFieldsForTest,
   closeScopedDynamicConfigContext,
 } from '@voucha/test-helpers/dynamic-config'
-import { bedrockEmbeddingsBatchConfig } from '@services/bedrock-embeddings/batch/config'
-import { getBatchCreationLimits, getRateLimitConfig } from './rate-limits.mts'
+import {
+  bedrockEmbeddingsBatchConfig,
+  getRateLimitConfig,
+} from '@services/bedrock-embeddings/batch/config'
+import { getBatchCreationLimits } from './rate-limits.mts'
 
 const createdBatchIds: string[] = []
 const batchIdPrefix = 'rate-limit-test-'

@@ -5,11 +5,8 @@ import { createTestUserDirect } from '@voucha/test-helpers'
 import { updateUserFields } from '@services/users'
 import { getEntityRelations } from '@services/entity-relations'
 import { getActorUri } from '@modules/activitypub-uris'
-import {
-  buildSignatureHeaders,
-  computeDigest,
-  generateRsaSha256KeyPair,
-} from '@modules/http-signatures'
+import { buildSignatureHeaders, generateRsaSha256KeyPair } from '@modules/http-signatures'
+import { computeDigest } from '@vouchington/utils/http-signatures'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   isActivityPubInboxSenderRateLimited,

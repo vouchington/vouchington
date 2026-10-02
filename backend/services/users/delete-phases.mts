@@ -48,8 +48,6 @@ export const processUserDeletionPhaseBatch: UserDeletionPhaseProcessor = async i
   }
 }
 
-export { processUserDeletionExternalWork } from './delete-phase-external-work.mts'
-
 async function processPosts(userId: string, requestId: string, batchSize: number) {
   return withUserDeletionTransaction(userId, async query => {
     const { rows } = await query<{

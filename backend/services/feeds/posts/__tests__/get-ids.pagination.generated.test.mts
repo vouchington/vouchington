@@ -2,8 +2,10 @@ import { it, expect, describe } from 'vitest'
 import { getPostFeedIds } from '../get-ids.mts'
 import { decodeCursor, encodeCursor, isTimestampCursor } from '@modules/pagination'
 import { followUser, createTestUser, createTestPost } from '@voucha/test-helpers'
-import { processFollowerDistributionChunk } from '@services/follower-distributions'
-import { sharePostWithFollowers } from '../../share-actions.mts'
+import {
+  processFollowerDistributionChunk,
+  sharePostWithFollowers,
+} from '@services/follower-distributions'
 
 describe('getPostFeedIds (pagination)', () => {
   it('pagination works with end_cursor', async () => {

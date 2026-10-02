@@ -9,10 +9,6 @@ import type {
 } from './types.mts'
 import type { StripeMembershipSourceIdentity } from './create-types.mts'
 export {
-  getActivePlans,
-  getActivePlansCached,
-  getSkuByStripePriceId,
-  getSkuByStripePriceIdCached,
   getSkuByStripePriceIdForLifecycle,
   invalidateMembershipProductCaches,
 } from './get-catalog.mts'

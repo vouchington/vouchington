@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { generateRsaSha256KeyPair } from './keys.mts'
 import { buildSignatureHeaders, withSignatureHeaders } from './sign.mts'
 import { verifySignature } from './verify.mts'
-import { computeDigest, verifyDigest } from './digest.mts'
+import { verifyDigest } from './digest.mts'
+import { computeDigest } from '@vouchington/utils/http-signatures'
 
 const KEY_ID = 'https://alice.example.com/ap/users/alice#main-key'
 

@@ -12,12 +12,8 @@ import {
   safeUsername,
 } from '@voucha/test-helpers'
 
-import {
-  approvePendingPostClearance,
-  checkPostClearance,
-  resetPostClearance,
-  updateClearanceStatus,
-} from '../index.mts'
+import { checkPostClearance, resetPostClearance, updateClearanceStatus } from '../index.mts'
+import { approvePendingPostClearance } from '../approve-pending.mts'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 

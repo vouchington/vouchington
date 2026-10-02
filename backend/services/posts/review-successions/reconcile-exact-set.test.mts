@@ -9,7 +9,8 @@ import {
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { REVIEW_SUCCESSION_CANDIDATE_PAGE_SIZE } from './candidates.mts'
-import { listReviewSuccessionsForPostIds, reconcileReviewSuccessionsForPostIds } from './index.mts'
+import { reconcileReviewSuccessionsForPostIds } from './index.mts'
+import { listReviewSuccessionsForPostIds } from './list.mts'
 
 describe('review succession exact-topic routing', () => {
   let administrator: PrivateUser

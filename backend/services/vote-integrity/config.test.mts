@@ -2,16 +2,13 @@ import { describe, expect, it } from 'vitest'
 import {
   INTEGRITY_FLAG_STATUSES as SHARED_INTEGRITY_FLAG_STATUSES,
   VOTE_INTEGRITY_FLAG_TYPES as SHARED_VOTE_INTEGRITY_FLAG_TYPES,
+  VOTE_INTEGRITY_FLAG_TYPES,
 } from '@ts-shared/utils/moderation-catalogs'
 import {
   VOTE_ENTITY_ID_COLUMN_IDENTIFIERS,
   VOTE_TABLE_IDENTIFIERS,
 } from '@data-stores/psql/config-driven/utils/election-sql-identifiers'
-import {
-  ENTITY_VOTE_TABLES,
-  INTEGRITY_FLAG_STATUSES,
-  VOTE_INTEGRITY_FLAG_TYPES,
-} from './config.mts'
+import { ENTITY_VOTE_TABLES, INTEGRITY_FLAG_STATUSES } from './config.mts'
 
 describe('vote integrity config', () => {
   it('re-exports shared moderation catalogs', () => {

@@ -2,8 +2,6 @@ import { DynamicConfig } from '@data-stores/valkey'
 import type { RouteRateLimitCategory, RouteRateLimitEntry } from './types.mts'
 import { ROUTE_REGISTRY } from './registry.mts'
 
-export { ROUTE_REGISTRY } from './registry.mts'
-
 export const ANON_ROUTE_RATE_LIMIT_DEFAULTS = {
   thresholds: {
     read: 180,

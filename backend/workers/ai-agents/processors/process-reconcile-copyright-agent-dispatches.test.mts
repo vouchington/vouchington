@@ -1,8 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import type {
-  CopyrightAgentDispatch,
-  CopyrightAgentDispatchPage,
-} from '@services/copyright-notices'
+import type { CopyrightAgentDispatch } from '@services/copyright-notices'
+import type { CopyrightAgentDispatchPage } from '@services/copyright-notices/reconcile-agent-dispatches'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import {
   processReconcileCopyrightAgentDispatches,

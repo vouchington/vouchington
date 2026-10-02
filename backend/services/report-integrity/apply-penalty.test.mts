@@ -14,7 +14,7 @@ import { applyReportAbusePenalty } from './apply-penalty.mts'
 import { revokeReportAbusePenalty } from './revoke-penalty.mts'
 import { resolveReportIntegrityFlag } from './resolve-flag.mts'
 import type { PrivateUser } from '@services/users/types'
-import { isJwtStale } from '@services/jwt-session/invalidation'
+import { isJwtStale } from '@data-stores/valkey/jwt-stale'
 
 describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
   const randomUsername = () => `test-ri-penalty-${randomBytes(4).toString('hex')}`

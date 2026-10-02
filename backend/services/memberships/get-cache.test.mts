@@ -10,12 +10,12 @@ import {
   serializeMembershipProductCacheKey,
   type MembershipProductCacheKey,
 } from './cache-schema.mts'
-import type { StripeCatalogContext } from './get-catalog.mts'
 import {
+  type StripeCatalogContext,
   getActivePlansCached,
   getSkuByStripePriceIdCached,
-  invalidateMembershipProductCaches,
-} from './get.mts'
+} from './get-catalog.mts'
+import { invalidateMembershipProductCaches } from './get.mts'
 
 const ONE_MINUTE_IN_SECONDS = 60
 

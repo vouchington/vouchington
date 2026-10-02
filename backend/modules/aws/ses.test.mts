@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { buildRawEmailMessage, getBccAddresses, resolveBccAddress } from './ses.mts'
+import { getBccAddresses, resolveBccAddress } from './ses.mts'
+import { buildRawEmailMessage } from './ses-mime.mts'
 
 describe('buildRawEmailMessage', () => {
   it('preserves Gmail one-click unsubscribe headers in multipart email', () => {

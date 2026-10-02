@@ -18,11 +18,7 @@ import {
 import { buildPostSitemapUrl, buildSitemapUrl } from './url-builder.mts'
 import { buildUrlEntryXml, iterateSitemapIndexXml, iterateUrlsetXml } from './xml-builder.mts'
 import type { SitemapPostType, SitemapPostWithId } from './types.mts'
-export {
-  generatePostTypeIndex,
-  generateRootIndex,
-  indexGenerationDependencies,
-} from './index-generation.mts'
+export { generatePostTypeIndex, generateRootIndex } from './index-generation.mts'
 
 export async function generatePostDaySitemapFiles(
   postType: SitemapPostType,

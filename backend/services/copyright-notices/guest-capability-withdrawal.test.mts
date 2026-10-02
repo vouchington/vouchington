@@ -10,10 +10,10 @@ import {
 import { describe, expect, it } from 'vitest'
 import {
   appendCopyrightGuestFiling,
-  authorizeCopyrightGuestCapability,
   issueCopyrightGuestCapability,
   revokeCopyrightGuestCapability,
 } from './index.mts'
+import { authorizeCopyrightGuestCapability } from './guest-capabilities.mts'
 
 const dayMs = 24 * 60 * 60 * 1000
 

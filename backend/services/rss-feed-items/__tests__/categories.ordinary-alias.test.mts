@@ -9,11 +9,8 @@ import {
   insertTestRssFeedDirect,
   listTestPostPublicationImpactTopicIds,
 } from '@voucha/test-helpers'
-import {
-  getRssFeedItemCategories,
-  getRssFeedItemMappedTopics,
-  upsertRssFeedItemCategories,
-} from '../categories.mts'
+import { getRssFeedItemCategories, upsertRssFeedItemCategories } from '../categories.mts'
+import { getRssFeedItemMappedTopics } from '../category-relations.mts'
 import { upsertRssFeedItems } from '../upsert.mts'
 
 describe('RSS feed item ordinary category aliases', () => {

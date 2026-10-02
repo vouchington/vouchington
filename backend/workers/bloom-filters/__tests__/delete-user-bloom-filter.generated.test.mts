@@ -2,10 +2,10 @@ import { it, expect, describe } from 'vitest'
 import { deleteUser } from '@services/users/delete'
 import {
   backfillUserBookmarkBloomFilter,
-  checkBookmarkBloomCandidates,
   deleteUserBookmarkBloomFilter,
   getUserBookmarkRelationsForEntityType,
 } from '@services/bookmarks/bloom-filter'
+import { checkBookmarkBloomCandidates } from '@services/bookmarks/bloom-filter-candidates'
 import { bookmarkEntity } from '@services/bookmarks/upsert'
 import { bloomFilterConfig } from '@services/bloom-filter-config'
 import {

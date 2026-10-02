@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { getReadStateStorageConfig, readStateStorageCatalog } from '../catalog.mts'
+import {
+  getReadStateStorageConfig,
+  readStateStorageCatalog,
+} from '@voucha/types/entities/read-state'
 
 describe('readStateStorageCatalog', () => {
   it('has entries for all expected entity types', () => {

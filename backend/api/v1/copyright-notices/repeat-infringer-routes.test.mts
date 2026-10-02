@@ -1,9 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import {
-  getCopyrightRepeatInfringerAccount,
-  listCopyrightRepeatInfringerAccountsForNotice,
-} from '@services/copyright-notices'
+import { listCopyrightRepeatInfringerAccountsForNotice } from '@services/copyright-notices'
+import { getCopyrightRepeatInfringerAccount } from '@services/copyright-notices/repeat-infringer-incidents'
 import { createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { confirmTestRepeatInfringerNotice } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'

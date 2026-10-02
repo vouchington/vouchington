@@ -7,13 +7,14 @@ import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 import type { QueryExecutor, QueryInput } from '../types.mts'
 import { loadSqlParserModule } from './sql-statements.mts'
+import { runViews } from './views.mts'
 import {
   buildDropViewStatement,
   buildDropViewsStatement,
   extractViewDeclarations,
   extractViewNames,
-  runViews,
-} from './views.mts'
+} from './view-sql.mts'
+
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 describe('migration runner views', () => {

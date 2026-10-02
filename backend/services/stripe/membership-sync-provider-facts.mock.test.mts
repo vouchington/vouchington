@@ -17,7 +17,8 @@ import {
   getStripeMembershipSourceIdentity,
   type StripeMembershipApplicationContext,
 } from '@services/memberships/create-types'
-import { getStripeEventByStripeEventId, insertStripeEvent } from './events.mts'
+import { getStripeEventByStripeEventId } from './events.mts'
+import { insertStripeEvent } from './insert-event.mts'
 vi.mock<typeof import('@modules/stripe/subscriptions')>(
   import('@modules/stripe/subscriptions'),
   async importOriginal => ({
@@ -50,7 +51,6 @@ describe('Stripe membership sync provider facts', () => {
     mockGetStripeSubscription.mockResolvedValue(
       makeSubscription(subscriptionId, sku.stripe_price_id),
     )
-
     await expect(
       syncMembershipFromStripeSubscription(
         `evt_missing_receipt_${randomUUID()}`,

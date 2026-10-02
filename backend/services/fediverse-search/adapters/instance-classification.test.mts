@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { findNodeInfoSchema2Link, mapNodeInfoDocument } from './instance-classification.mts'
+import { findNodeInfoSchema2Link, mapNodeInfoDocument } from './instance-classification-mappers.mts'
 
 const SCHEMA_2_0_HREF = 'https://mastodon.example/nodeinfo/2.0'
 

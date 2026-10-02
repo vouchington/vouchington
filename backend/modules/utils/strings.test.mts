@@ -1,5 +1,5 @@
 import { it, expect, describe } from 'vitest'
-import { stripControlCharacters } from './strings.mts'
+import { stripControlCharacters } from '@vouchington/utils/strings'
 
 describe('stripControlCharacters', () => {
   it('removes NUL bytes', () => {

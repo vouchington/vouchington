@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { closeDynamicConfigValkeySubscriptionClient } from '@data-stores/valkey/clients'
-import { dynamicConfigs, type DynamicConfig } from '@data-stores/valkey/dynamic-config'
+import type { DynamicConfig } from '@data-stores/valkey/dynamic-config'
+import { dynamicConfigs } from 'valkyries/dynamic-config'
 
 const TEST_DYNAMIC_CONFIG_PREFIX = 'dynamic-config:test-'
 const TEST_DYNAMIC_CONFIG_KEY_PREFIX = 'test-'

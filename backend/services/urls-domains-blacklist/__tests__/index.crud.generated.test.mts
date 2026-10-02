@@ -6,8 +6,8 @@ import {
   getBlacklistSourceById,
   getSourceCacheHeaders,
   updateSourceCacheHeaders,
-  BLACKLISTS,
 } from '../index.mts'
+import { BLACKLISTS } from '../sources-constants.mts'
 import { addDomainsToBloomFilter } from '../bloom-filter.mts'
 import {
   beginTransaction,

@@ -2,8 +2,6 @@ export { assertCopyrightIntakeEnabled, isCopyrightIntakeEnabled } from './activa
 export { resolveCopyrightImagePlacement } from './placement-resolution.mts'
 export { createCopyrightFormIntake, createCopyrightGuestIdentity } from './form-intakes.mts'
 export {
-  authorizeCopyrightGuestCapability,
-  copyrightGuestCapabilityMaxLifetimeMs,
   issueCopyrightGuestCapability,
   revokeCopyrightGuestCapability,
 } from './guest-capabilities.mts'
@@ -43,10 +41,7 @@ export { appendCopyrightNoticeSubmission } from './submission-appending.mts'
 export { appendCopyrightSubmissionAssessment } from './compliance.mts'
 export { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 export { completeCopyrightMandatoryHumanReview } from './human-review.mts'
-export {
-  getCopyrightRepeatInfringerAccount,
-  recordCopyrightRepeatInfringerDisposition,
-} from './repeat-infringer-incidents.mts'
+
 export {
   recordCopyrightRepeatInfringerReinstatement,
   recordCopyrightRepeatInfringerReviewOutcome,
@@ -83,10 +78,8 @@ export { reviewCopyrightAppeal, reviewCopyrightCounterNotice } from './submissio
 export {
   getPendingCopyrightAgentDispatches,
   type CopyrightAgentDispatch,
-  type CopyrightAgentDispatchPage,
 } from './reconcile-agent-dispatches.mts'
 export {
-  claimCopyrightDeliveryIntent,
   createCopyrightDeliveryIntent,
   markCopyrightDeliveryIntentFailed,
   markCopyrightDeliveryIntentSent,
@@ -110,10 +103,7 @@ export { recordEuCopyrightStatementOfReasons } from './eu-reasons.mts'
 export { recordEuCopyrightRedressDecision, submitEuCopyrightRedress } from './eu-redress.mts'
 export { compileEuCopyrightTransparencyReport } from './eu-reporting.mts'
 export { recordEuCopyrightSupervisedComplaint } from './eu-supervised-complaint.mts'
-export {
-  readCopyrightReviewTargetBreaches,
-  type CopyrightReviewTargetBreaches,
-} from './review-target-breaches.mts'
+export { readCopyrightReviewTargetBreaches } from './review-target-breaches.mts'
 export { getCopyrightReviewTargetMinutes } from './config.mts'
 export {
   currentUserCanApproveCopyrightTerritorialPolicy,

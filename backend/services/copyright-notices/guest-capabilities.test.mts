@@ -16,12 +16,15 @@ import {
 import { describe, expect, it } from 'vitest'
 import {
   appendCopyrightGuestFiling,
-  authorizeCopyrightGuestCapability,
-  copyrightGuestCapabilityMaxLifetimeMs,
   issueCopyrightGuestCapability,
   requestCopyrightGuestInformation,
   revokeCopyrightGuestCapability,
 } from './index.mts'
+import {
+  authorizeCopyrightGuestCapability,
+  copyrightGuestCapabilityMaxLifetimeMs,
+} from './guest-capabilities.mts'
+
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 

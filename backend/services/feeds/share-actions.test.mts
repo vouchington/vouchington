@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { createTestPost, createTestUser, followUser } from '@voucha/test-helpers'
 import { getPostFeedIds } from './posts/get-ids.mts'
-import { sharePostWithFollowers } from './share-actions.mts'
+import {
+  sharePostWithFollowers,
+  processFollowerDistributionChunk,
+} from '@services/follower-distributions'
 import { getPostByAny } from '@services/posts/get'
 import { updatePost } from '@services/posts/update'
-import { processFollowerDistributionChunk } from '@services/follower-distributions'
 
 describe('share-actions', () => {
   it('fans out post shares only to followers present at share time', async () => {

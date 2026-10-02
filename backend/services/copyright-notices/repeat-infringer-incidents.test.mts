@@ -6,7 +6,7 @@ import type { PrivateUser } from '@services/users/types'
 import {
   getCopyrightRepeatInfringerAccount,
   recordCopyrightRepeatInfringerDisposition,
-} from './index.mts'
+} from './repeat-infringer-incidents.mts'
 
 describe('copyright repeat-infringer incidents', () => {
   it('opens one review at the second confirmed notice and does not suspend the account', async () => {

@@ -17,7 +17,7 @@ import {
   getStripeMembershipSourceIdentity,
   type StripeMembershipApplicationContext,
 } from '@services/memberships/create-types'
-import { insertStripeEvent } from './events.mts'
+import { insertStripeEvent } from './insert-event.mts'
 
 vi.mock<typeof import('@modules/stripe/customers')>(
   import('@modules/stripe/customers'),

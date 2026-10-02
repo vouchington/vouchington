@@ -11,7 +11,7 @@ const CHAPTERS_MAX_REDIRECT_HOPS = 5
 const CHAPTERS_MAX_SIZE_BYTES = 256 * 1024
 const CHAPTERS_CONTENT_TYPES = 'application/json, application/*+json;q=0.9, */*;q=0.1'
 
-export { normalizePodcastChapters, type PodcastChapter } from './chapters-normalize.mts'
+export { type PodcastChapter } from './chapters-normalize.mts'
 
 export type ChaptersSafeFetch = (
   initialUrl: Parameters<typeof safeFetch>[0],

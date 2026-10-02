@@ -10,7 +10,7 @@ import {
 import type { BasicUser } from '@services/users/types'
 import { canViewPost } from '../check-privacy-access.mts'
 import { getPostByAny } from '../get.mts'
-import { buildPrivacyFilter } from '../privacy-filter.mts'
+import { buildPrivacyFilter } from '@modules/feed-query-builders/privacy-filter'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 

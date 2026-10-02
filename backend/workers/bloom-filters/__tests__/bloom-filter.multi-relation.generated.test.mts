@@ -4,10 +4,10 @@ import { bookmarkEntity } from '@services/bookmarks/upsert'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
 import {
   backfillUserBookmarkBloomFilter,
-  checkBookmarkBloomCandidates,
   checkBookmarkBloomCandidatesByRelations,
   deleteUserBookmarkBloomFilter,
 } from '@services/bookmarks/bloom-filter'
+import { checkBookmarkBloomCandidates } from '@services/bookmarks/bloom-filter-candidates'
 import { insertTestTopic, insertTestRssFeed, insertTestRssFeedItem } from '@voucha/test-helpers'
 import { addUrl } from '@services/urls'
 import { createHash } from 'node:crypto'

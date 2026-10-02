@@ -3,7 +3,8 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { describe, it, expect } from 'vitest'
-import { mergeCsvFiles, writeLineWithBackpressure } from '../export.mts'
+import { mergeCsvFiles } from '../export-merge.mts'
+import { writeLineWithBackpressure } from '../export-utils.mts'
 
 type TestWritableStream = EventEmitter & {
   writes: string[]

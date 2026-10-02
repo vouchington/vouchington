@@ -1,9 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  generatePostTypeIndex,
-  generateRootIndex,
-  indexGenerationDependencies,
-} from './generation.mts'
+import { generatePostTypeIndex, generateRootIndex } from './generation.mts'
+import { indexGenerationDependencies } from './index-generation.mts'
 import { buildPostTypeIndexEntries, buildRootIndexEntries } from './index-entries.mts'
 import type { PostDayManifest } from './storage.mts'
 

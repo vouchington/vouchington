@@ -11,8 +11,10 @@ import {
   insertTestProxyMuteCommunity,
   insertScoredPostTopicCategoryRelation,
 } from '@voucha/test-helpers'
-import { processFollowerDistributionChunk } from '@services/follower-distributions'
-import { sharePostWithFollowers } from '../../share-actions.mts'
+import {
+  processFollowerDistributionChunk,
+  sharePostWithFollowers,
+} from '@services/follower-distributions'
 
 describe('getPostFeedIds', () => {
   it('places shared posts ahead of older direct rows using share time', async () => {

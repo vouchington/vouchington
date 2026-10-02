@@ -16,8 +16,8 @@ import {
   exchangeOAuthRefreshToken,
   listUserOAuthGrants,
   revokeUserOAuthGrant,
-  validateOAuthAccessToken,
 } from './index.mts'
+import { validateOAuthAccessToken } from './access-tokens.mts'
 
 type TestUser = Awaited<ReturnType<typeof createTestUserDirect>>
 

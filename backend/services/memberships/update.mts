@@ -176,5 +176,3 @@ export async function updateMembershipFromEvent(
   else await dispatchEffects()
   return membership
 }
-
-export { cancelMembership } from './update-cancellation.mts'

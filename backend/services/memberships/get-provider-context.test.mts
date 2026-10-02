@@ -8,13 +8,12 @@ import {
   observeTestPostgresQueryPools,
 } from '@voucha/test-helpers'
 import {
-  getActivePlans,
   getMembershipByUserId,
   getMembershipByStripeSubscriptionId,
   getRetainedDirectMembershipSourceByStripeIdentity,
-  getSkuByStripePriceId,
   getSkuByStripePriceIdForLifecycle,
 } from './get.mts'
+import { getActivePlans, getSkuByStripePriceId } from './get-catalog.mts'
 
 describe('membership provider context lookups', () => {
   it('uses one test-mode context for active catalog and lifecycle lookup', async () => {

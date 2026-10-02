@@ -11,8 +11,6 @@ import {
 import { buildMastodonBucket, readMastodonOffset } from './mastodon-cursor.mts'
 import { type MastodonAccount, mapMastodonAccount } from './mastodon-mappers.mts'
 
-export { mapMastodonAccount } from './mastodon-mappers.mts'
-
 type MastodonSearchResponse = {
   accounts: MastodonAccount[]
 }

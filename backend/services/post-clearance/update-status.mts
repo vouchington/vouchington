@@ -12,7 +12,6 @@ import { CLEARANCE_MODLOG_ACTIONS } from './status-constants.mts'
 import { getClearanceTrainingLabel } from './training-label.mts'
 import type { ClearanceStatus } from './types.mts'
 
-export { approvePendingPostClearance } from './approve-pending.mts'
 export {
   restorePostClearanceStatus,
   setPostClearanceStatus,

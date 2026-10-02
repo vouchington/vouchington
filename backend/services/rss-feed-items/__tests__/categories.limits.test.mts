@@ -1,9 +1,6 @@
 import { it, expect, beforeEach, describe } from 'vitest'
-import {
-  buildRssFeedItemCategorySqlBatches,
-  upsertRssFeedItemCategories,
-  getRssFeedItemCategories,
-} from '../categories.mts'
+import { upsertRssFeedItemCategories, getRssFeedItemCategories } from '../categories.mts'
+import { buildRssFeedItemCategorySqlBatches } from '../category-batches.mts'
 import { backfillCategoriesForTopicAliases } from '../backfill-categories-for-topic-aliases.mts'
 import { upsertRssFeedItems } from '../upsert.mts'
 import { v4 as uuid } from 'uuid'

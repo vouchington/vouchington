@@ -13,8 +13,10 @@ import {
   setRssFeedItemMediaType,
 } from '@voucha/test-helpers'
 import { addUrl } from '@services/urls'
-import { processFollowerDistributionChunk } from '@services/follower-distributions'
-import { shareRssFeedItemWithFollowers } from '../../share-actions.mts'
+import {
+  processFollowerDistributionChunk,
+  shareRssFeedItemWithFollowers,
+} from '@services/follower-distributions'
 
 describe('getRssFeedItemFeedIds filter branches', () => {
   it('media_types filter includes only items matching the requested media type', async () => {

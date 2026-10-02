@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { MODERATOR_CONFIGS, isBaselineModeratorSlug } from './moderator-configs.mts'
+import { isBaselineModeratorSlug } from './moderator-configs.mts'
+import { MODERATOR_CONFIGS } from '@voucha/types/entities/moderator-configs'
 
 describe('moderator configs', () => {
   it('includes all 7 moderators', () => {

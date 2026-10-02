@@ -4,8 +4,6 @@ import {
 } from '@services/bedrock-embeddings/batch/orchestrator/poll-queries'
 import { getRateLimitConfig } from '@services/bedrock-embeddings/batch/config'
 
-export { getRateLimitConfig } from '@services/bedrock-embeddings/batch/config'
-
 export async function getBatchCreationLimits(): Promise<
   | {
       allowed: true

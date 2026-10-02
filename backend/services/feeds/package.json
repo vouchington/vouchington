@@ -40,6 +40,7 @@
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
+    "@services/rss-feed-items": "workspace:^",
     "@services/rss-feeds": "workspace:^",
     "@services/urls": "workspace:^",
     "@types/http-errors": "^2.0.5",

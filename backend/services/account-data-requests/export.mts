@@ -19,8 +19,7 @@ import { streamFollowedRssFeeds } from './stream-followed-rss-feeds.mts'
 import { streamFollowedTopics } from './stream-followed-topics.mts'
 import { streamCopyrightExports } from './stream-copyright.mts'
 import { mergeCsvFiles } from './export-merge.mts'
-export { mergeCsvFiles } from './export-merge.mts'
-export { writeLineWithBackpressure } from './export-utils.mts'
+
 import { endWriteStream } from './export-utils.mts'
 export { zipDir } from './export-zip.mts'
 

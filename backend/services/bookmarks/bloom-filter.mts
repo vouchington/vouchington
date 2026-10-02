@@ -22,10 +22,7 @@ import {
   getBookmarkBloomReadyKey,
   getUserBookmarkRelationByTableNameOrThrow,
 } from './bloom-filter-utils.mts'
-export {
-  checkBookmarkBloomCandidates,
-  checkBookmarkBloomCandidatesByRelations,
-} from './bloom-filter-candidates.mts'
+export { checkBookmarkBloomCandidatesByRelations } from './bloom-filter-candidates.mts'
 
 export function isBookmarkBloomFilterEnabled(): boolean {
   return bloomFilterConfig.fields.get('bookmarkBloomFilterEnabled') !== false

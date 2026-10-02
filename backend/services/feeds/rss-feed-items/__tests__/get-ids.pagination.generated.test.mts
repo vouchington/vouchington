@@ -18,8 +18,10 @@ import {
   setRssFeedItemShareSortAtForTest,
 } from '@voucha/test-helpers'
 import { updateRssFeedById } from '@services/rss-feeds'
-import { processFollowerDistributionChunk } from '@services/follower-distributions'
-import { shareRssFeedItemWithFollowers } from '../../share-actions.mts'
+import {
+  processFollowerDistributionChunk,
+  shareRssFeedItemWithFollowers,
+} from '@services/follower-distributions'
 
 describe('getRssFeedItemFeedIds', () => {
   it('pagination across direct and shared items returns no duplicates', async () => {
@@ -114,7 +116,6 @@ describe('getRssFeedItemFeedIds', () => {
     const item = await createTestRssFeedItemWithUrl(feedId)
 
     const result = await getRssFeedItemFeedIds(user, { feed_type: 'follow_rss_feeds', limit: 100 })
-
     expect(result.results.some(r => r.id === item.id)).toBe(true)
   })
 

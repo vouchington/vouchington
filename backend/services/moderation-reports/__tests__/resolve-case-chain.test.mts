@@ -10,7 +10,8 @@
 import { describe, expect, it, beforeAll } from 'vitest'
 import { createTestUser, insertTestModerationReport } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
-import { openOrGetOpenCase, findOpenCaseForEntity, getCaseById } from '@services/moderation-cases'
+import { openOrGetOpenCase, findOpenCaseForEntity } from '@services/moderation-cases'
+import { getCaseById } from '@services/moderation-cases/get'
 import { resolveModerationReport } from '../resolve.mts'
 
 describe('moderation case chain (report resolution)', () => {

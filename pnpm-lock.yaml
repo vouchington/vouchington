@@ -1348,6 +1348,9 @@ importers:
       '@voucha/tools':
         specifier: workspace:^
         version: link:../tools
+      '@vouchington/utils':
+        specifier: ^0.5.3
+        version: 0.5.3
       node-app-attest:
         specifier: ^1.0.1
         version: 1.0.1
@@ -6012,6 +6015,9 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
     devDependencies:
+      '@services/rss-feed-items':
+        specifier: workspace:^
+        version: link:../rss-feed-items
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../rss-feeds
@@ -8149,6 +8155,9 @@ importers:
       '@services/comments':
         specifier: workspace:^
         version: link:../comments
+      '@services/entity-listener-reconciliation':
+        specifier: workspace:^
+        version: link:../entity-listener-reconciliation
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
@@ -8696,6 +8705,9 @@ importers:
         specifier: ^14.0.2
         version: 14.0.2
     devDependencies:
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
@@ -9978,6 +9990,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      valkyries:
+        specifier: ^0.8.1
+        version: 0.8.1
 
   backend/services/urls-domains-blacklist-sync:
     dependencies:
@@ -10777,6 +10792,9 @@ importers:
       uuid:
         specifier: ^14.0.2
         version: 14.0.2
+      valkyries:
+        specifier: ^0.8.1
+        version: 0.8.1
       vouchington-tooling:
         specifier: ^0.27.0
         version: 0.27.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)

@@ -26,8 +26,6 @@ import {
   mapLemmyCommunity,
 } from './lemmy-mappers.mts'
 
-export { mapLemmyPost, mapLemmyPerson, mapLemmyCommunity } from './lemmy-mappers.mts'
-
 type LemmySearchResponse = {
   posts?: LemmyPostView[]
   communities?: LemmyCommunityView[]

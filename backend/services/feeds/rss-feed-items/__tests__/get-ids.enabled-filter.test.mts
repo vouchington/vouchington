@@ -13,8 +13,10 @@ import {
 } from '@voucha/test-helpers'
 import { setRssFeedEnablementAsSystem } from '@services/rss-feeds/discoverability'
 import { softDeleteRssFeedById } from '@services/rss-feeds/delete'
-import { processFollowerDistributionChunk } from '@services/follower-distributions'
-import { shareRssFeedItemWithFollowers } from '../../share-actions.mts'
+import {
+  processFollowerDistributionChunk,
+  shareRssFeedItemWithFollowers,
+} from '@services/follower-distributions'
 
 describe('getRssFeedItemFeedIds enabled-feed filtering', () => {
   it('excludes items from disabled feed in direct feed', async () => {

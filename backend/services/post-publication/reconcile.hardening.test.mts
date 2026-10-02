@@ -11,11 +11,12 @@ import {
   reconcilePostPublicationDirtyWork,
   recordPostPublicationChange,
 } from './public.mts'
+import { retainPostPublicationImpactKeys } from './capture-keys.mts'
 import {
-  retainPostPublicationImpactKeys,
   retainPostPublicationKeys,
   type PostPublicationRetainedKey,
-} from './capture-keys.mts'
+} from './retained-key-writes.mts'
+
 import type { TransactionQuery } from '@data-stores/psql'
 
 describe('post publication orphan-receipt reconciliation', () => {

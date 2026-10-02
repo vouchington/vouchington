@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { extractPodcastChaptersReference } from './chapters-reference.mts'
-import { normalizePodcastChapters } from './chapters.mts'
+import { normalizePodcastChapters } from './chapters-normalize.mts'
 
 // The bounded RSS item builder's "persists chapter references" tests live in
 // @services/crawler-rss/clean.build-items.chapters.test.mts (not here): rss-feed-items must

@@ -15,10 +15,8 @@ import { softDeleteEntityRelation } from '@services/entity-relations/delete'
 import type { PrivateUser } from '@services/users/types'
 import { createStoryPost } from '../story-posts.mts'
 import { refreshStoryPostForStory } from '../refresh-story-post.mts'
-import {
-  reconcileStoryPostRelatedUrlProjection,
-  STORY_POST_RELATED_URL_PROJECTION_PAGE_SIZE,
-} from '../story-post-related-url-projection.mts'
+import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
+import { STORY_POST_RELATED_URL_PROJECTION_PAGE_SIZE } from '../story-post-related-url-projection-source.mts'
 
 let testUser: PrivateUser
 

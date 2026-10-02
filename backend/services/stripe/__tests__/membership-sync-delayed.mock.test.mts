@@ -7,8 +7,8 @@ import {
   getMembershipHistory,
 } from '@services/memberships'
 import { getStripeMembershipSourceIdentity } from '@services/memberships/create-types'
-import { insertStripeEvent } from '../events.mts'
-import { makeStripeSubscriptionEvent } from '../../../test-helpers/services/stripe/membership-sync-event.mts'
+import { insertStripeEvent } from '../insert-event.mts'
+import { makeStripeSubscriptionEvent } from '@voucha/test-helpers/services/stripe/membership-sync-event'
 
 vi.mock<typeof import('@modules/stripe/customers')>(
   import('@modules/stripe/customers'),

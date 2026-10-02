@@ -16,8 +16,6 @@ import {
   mapPeerTubeVideo,
 } from './peertube-mappers.mts'
 
-export { mapPeerTubeChannel, mapPeerTubeVideo } from './peertube-mappers.mts'
-
 type PeerTubeVideoSearchResponse = {
   total: number
   data: PeerTubeVideo[]

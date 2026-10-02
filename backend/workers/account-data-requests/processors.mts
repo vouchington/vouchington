@@ -25,8 +25,6 @@ import { enqueueSendDataExportReadyEmail } from '@queues/emails/enqueues'
 import { DATA_EXPORT_EXPIRY_DAYS } from '@queues/account-data-requests/config'
 import { publishTerminalStatus } from './processors/publish-terminal-status.mts'
 
-export { publishTerminalStatus } from './processors/publish-terminal-status.mts'
-
 type ExportRequestDependencies = {
   deleteExportFromS3: typeof deleteExportFromS3
   enqueueSendDataExportReadyEmail: typeof enqueueSendDataExportReadyEmail

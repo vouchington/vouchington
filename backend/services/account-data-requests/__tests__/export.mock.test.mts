@@ -45,7 +45,7 @@ describe('mergeCsvFiles', () => {
     }
 
     createWriteStreamMock.mockReturnValue(stream)
-    const { mergeCsvFiles } = await import('../export.mts')
+    const { mergeCsvFiles } = await import('../export-merge.mts')
 
     await expect(
       mergeCsvFiles('/tmp/out.csv', [], 'object_id,predicate,created_at\n'),

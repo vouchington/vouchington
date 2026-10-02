@@ -4,7 +4,10 @@ import {
   callRecordingAgentResponseUsage,
   recordAgentResponseUsage,
 } from '../record-response-usage.mts'
-import { getBackgroundResponseHooks, getOpenAIResponseAttemptHooks } from '../create-response.mts'
+import {
+  getBackgroundResponseHooks,
+  getOpenAIResponseAttemptHooks,
+} from '@modules/openai-utils/create-response'
 
 function response() {
   return {

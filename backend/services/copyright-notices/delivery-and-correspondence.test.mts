@@ -10,7 +10,6 @@ import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/co
 import {
   appendCopyrightNoticeSubmission,
   appendCopyrightSubmissionAssessment,
-  claimCopyrightDeliveryIntent,
   createCopyrightDeliveryIntent,
   deliverCopyrightInAppNotification,
   prepareCopyrightEmailDelivery,
@@ -20,6 +19,7 @@ import {
   markCopyrightDeliveryIntentSent,
   searchRecoverableCopyrightDeliveryIntentIds,
 } from './index.mts'
+import { claimCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { resolveCopyrightEmailRecipient } from './delivery-transport.mts'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'

@@ -4,7 +4,5 @@
 export {
   markJwtStale,
   markJwtStaleBatch,
-  isJwtStale,
-  clearJwtStale,
   clearJwtStaleIfCurrent,
 } from '@data-stores/valkey/jwt-stale'

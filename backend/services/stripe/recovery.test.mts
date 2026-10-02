@@ -4,11 +4,11 @@ import type Stripe from 'stripe'
 import { makeStripeEventRecoverableForTest } from '@voucha/test-helpers'
 import {
   getStripeEventById,
-  insertStripeEvent,
   markStripeEventCompleted,
   markStripeEventFailed,
   markStripeEventProcessing,
 } from './events.mts'
+import { insertStripeEvent } from './insert-event.mts'
 import { claimRecoverableStripeEvents } from './recovery.mts'
 
 describe('Stripe event recovery', () => {

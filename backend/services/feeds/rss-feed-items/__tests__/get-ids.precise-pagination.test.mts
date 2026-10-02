@@ -11,9 +11,11 @@ import {
   setRssFeedItemShareSortAtForTest,
 } from '@voucha/test-helpers'
 import { getRssFeedItemFeedIds } from '../get-ids.mts'
-import { upsertRssFeedItems } from '../../../rss-feed-items/upsert.mts'
-import { processFollowerDistributionChunk } from '@services/follower-distributions'
-import { shareRssFeedItemWithFollowers } from '../../share-actions.mts'
+import { upsertRssFeedItems } from '@services/rss-feed-items/upsert'
+import {
+  processFollowerDistributionChunk,
+  shareRssFeedItemWithFollowers,
+} from '@services/follower-distributions'
 
 describe('RSS feed precise pagination', () => {
   it('traverses exact publication ties without gaps', async () => {

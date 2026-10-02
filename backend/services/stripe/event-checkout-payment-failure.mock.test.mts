@@ -6,7 +6,7 @@ import {
   createTestUser,
   getTestMembershipRaw,
 } from '@voucha/test-helpers'
-import { insertStripeEvent } from './events.mts'
+import { insertStripeEvent } from './insert-event.mts'
 
 vi.mock<typeof import('@modules/stripe/subscriptions')>(
   import('@modules/stripe/subscriptions'),
@@ -18,7 +18,7 @@ vi.mock<typeof import('@modules/stripe/subscriptions')>(
 
 import { getStripeSubscription } from '@modules/stripe/subscriptions'
 import { handleCheckoutSessionPaymentFailure } from './event-subscription-handlers.mts'
-import { makeStripeSubscriptionEvent } from '../../test-helpers/services/stripe/membership-sync-event.mts'
+import { makeStripeSubscriptionEvent } from '@voucha/test-helpers/services/stripe/membership-sync-event'
 
 describe('handleCheckoutSessionPaymentFailure', () => {
   it('synchronizes the subscription in the supplied application context', async () => {

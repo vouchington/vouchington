@@ -36,7 +36,6 @@ export {
   decryptOAuthAuthorizationPkceVerifier,
   receiveOAuthAuthorizationCallback,
 } from './authorization-callback.mts'
-export { buildProviderAuthorizationUrl } from './authorization-provider-url.mts'
 
 export async function beginOAuthAuthorization(
   options: {

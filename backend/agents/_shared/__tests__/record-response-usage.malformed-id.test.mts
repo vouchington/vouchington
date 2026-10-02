@@ -15,8 +15,8 @@ import {
 } from '@services/ai-usage'
 import { clearDailyAiCostTotalCacheForTesting } from '@services/ai-usage/daily-total'
 import { deleteBackgroundResponseRegistration } from '@services/openai-background-responses'
-import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
-import { getBackgroundResponseHooks } from '../create-response.mts'
+import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
+import { getBackgroundResponseHooks } from '@modules/openai-utils/create-response'
 import {
   callRecordingAgentResponseUsage,
   recordAgentResponseUsage,

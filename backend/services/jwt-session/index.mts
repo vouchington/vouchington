@@ -18,12 +18,7 @@ export * from './invalidation.mts'
 export * from './revocation.mts'
 export * from './logout-cleanup-lease.mts'
 export * from './enrich.mts'
-export {
-  listActiveUserSessions,
-  registerAuthenticatedSession,
-  touchAuthenticatedSession,
-  upsertAuthenticatedSession,
-} from './user-sessions.mts'
+export { listActiveUserSessions, registerAuthenticatedSession } from './user-sessions.mts'
 export {
   revokeAllAuthenticatedSessions,
   revokeAuthenticatedSession,

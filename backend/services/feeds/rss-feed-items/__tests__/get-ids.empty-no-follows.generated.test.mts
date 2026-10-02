@@ -19,9 +19,10 @@ import {
   createTopHashtagRssSourceForTest,
 } from '@voucha/test-helpers'
 
-import { shareRssFeedItemWithFollowers } from '../../share-actions.mts'
-
-import { processFollowerDistributionChunk } from '@services/follower-distributions'
+import {
+  shareRssFeedItemWithFollowers,
+  processFollowerDistributionChunk,
+} from '@services/follower-distributions'
 
 import { addUrl } from '@services/urls'
 

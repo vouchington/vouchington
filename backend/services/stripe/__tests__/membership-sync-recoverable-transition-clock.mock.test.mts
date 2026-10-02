@@ -9,7 +9,8 @@ import {
   setStripeEventReceivedAtForTest,
 } from '@voucha/test-helpers'
 import { grantMembership } from '@services/memberships'
-import { getStripeEventByStripeEventId, insertStripeEvent } from '../events.mts'
+import { getStripeEventByStripeEventId } from '../events.mts'
+import { insertStripeEvent } from '../insert-event.mts'
 
 vi.mock<typeof import('@modules/stripe/customers')>(
   import('@modules/stripe/customers'),
