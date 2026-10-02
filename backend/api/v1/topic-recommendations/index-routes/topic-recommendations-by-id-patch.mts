@@ -1,5 +1,6 @@
 import type { Context } from '@jongleberry/api-server'
 import { getPostByAnyCached } from '@services/entity-fetch'
+import { assertNotSuspended } from '@services/users/suspension'
 import {
   asTopicRecommendationPost,
   currentUserCanEditTopicRecommendation,
@@ -11,6 +12,7 @@ import { requireAuth, validateRequestContract } from '../../../response-helpers.
 
 app.route('/api/v1/topic-recommendations/:id').patch(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/topic-recommendations/:id')
+  assertNotSuspended(currentUser)
 
   const post = asTopicRecommendationPost(await getPostByAnyCached(ctx.params.id!))
   ctx.assert(post, 404, 'Recommendation not found')

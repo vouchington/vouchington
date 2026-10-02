@@ -88,6 +88,10 @@ Approval creates the type-specific extension row (`topics__referral_programs` or
 - Any logged-in user can vote on pending recommendations through the shared post-election endpoints
 - Creator or admin can edit while the recommendation is `pending`
 - Creator or admin can withdraw while the recommendation is `pending`
+- Edit and withdraw (`PATCH`/`DELETE /api/v1/topic-recommendations/:id`) also require a
+  non-suspended account. A suspended caller gets `403` with `ACCOUNT_SUSPENDED` right after
+  authentication, before the recommendation is loaded or the body is parsed, so nothing changes.
+  Reads stay available.
 - Only admins can approve or reject
 - Generic `/api/v1/posts` and generic tools do not expose this post type
 - Embedding content for these posts includes the recommendation rationale plus proposed topic details so similarity search can use the full request

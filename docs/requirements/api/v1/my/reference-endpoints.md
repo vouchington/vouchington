@@ -7,6 +7,14 @@ authentication and ownership checks. Malformed input is `422`; see
 [Request Validation](reference-request-validation.md) for the ordering and the routes that skip a
 carrier.
 
+A suspended account gets `403` with `ACCOUNT_SUSPENDED` right after authentication, before the
+body is parsed or any state changes, from `PATCH /api/v1/my/profile`, every profile-link mutation
+(`POST /api/v1/my/profile/links`, `PUT /api/v1/my/profile/links/order`,
+`PATCH`/`DELETE /api/v1/my/profile/links/:id`), `POST /api/v1/my/notifications/read-all`,
+`PATCH`/`DELETE /api/v1/my/notifications/:id`, and `PATCH /api/v1/my/email-preferences`. Reads stay
+available. The signed-token one-click `POST /api/v1/email-unsubscribe` is not an authenticated
+`/my` route and still works for a suspended account.
+
 ### Identity & Email
 
 | Method | Route                                      | Authentication | Description                                             |

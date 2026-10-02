@@ -80,7 +80,8 @@ describe('OfficialReferralLinkForm', () => {
         label: null,
       })
     })
-    expect(screen.getByText('https://example.com/ref/new')).toBeInTheDocument()
+    // The new row is added after the awaited create resolves, so it lands after the call is observed.
+    expect(await screen.findByText('https://example.com/ref/new')).toBeInTheDocument()
   })
 
   it('delete handler calls deleteOfficialReferralLink', async () => {
@@ -102,6 +103,9 @@ describe('OfficialReferralLinkForm', () => {
     await waitFor(() => {
       expect(mockDelete).toHaveBeenCalledWith('link-1')
     })
-    expect(screen.queryByText('https://example.com/ref/1')).not.toBeInTheDocument()
+    // The row is removed after the awaited delete resolves, so it disappears after the call is observed.
+    await waitFor(() => {
+      expect(screen.queryByText('https://example.com/ref/1')).not.toBeInTheDocument()
+    })
   })
 })

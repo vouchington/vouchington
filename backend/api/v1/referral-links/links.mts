@@ -137,6 +137,7 @@ app
 // POST /api/v1/referral-links/:linkId/activations - activate a referral link
 app.route('/api/v1/referral-links/:linkId/activations').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/referral-links/:linkId/activations')
+  assertNotSuspended(currentUser)
   validateRequestContract(ctx, 'POST:/api/v1/referral-links/:linkId/activations', {
     path: ctx.params,
   })
@@ -150,6 +151,7 @@ app.route('/api/v1/referral-links/:linkId/activations').post(async (ctx: Context
 // DELETE /api/v1/referral-links/:linkId/activations - deactivate a referral link
 app.route('/api/v1/referral-links/:linkId/activations').delete(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/referral-links/:linkId/activations')
+  assertNotSuspended(currentUser)
   validateRequestContract(ctx, 'DELETE:/api/v1/referral-links/:linkId/activations', {
     path: ctx.params,
   })
