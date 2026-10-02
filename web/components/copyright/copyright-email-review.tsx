@@ -2,9 +2,7 @@
 
 import { useState } from 'react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
-import { TimeAgo } from '@/components/shared/time-ago'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
 import type {
   CopyrightEmailIntakeQueueItem,
@@ -16,7 +14,7 @@ import {
   type CopyrightEmailCorrespondenceDraft,
 } from './copyright-email-correspondence-model'
 import { CopyrightEmailLegalProcessAction } from './copyright-email-legal-process-action'
-import { CopyrightEmailReplyRetry } from './copyright-email-reply-retry'
+import { CopyrightEmailQueueItem } from './copyright-email-queue-item'
 import { CopyrightEmailReviewDetail } from './copyright-email-review-detail'
 import {
   listCopyrightEmailIntakes,
@@ -116,45 +114,15 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
             >
               <ul className='space-y-1'>
                 {items.map(item => (
-                  <li key={item.id}>
-                    <Button
-                      disabled={loading}
-                      onClick={() => selectIntake(item.id)}
-                      variant='link'
-                    >
-                      {item.review_path === 'matched_thread'
-                        ? 'Matched correspondence'
-                        : item.review_path === 'unresolved_thread'
-                          ? 'Unresolved reply'
-                          : 'Initial intake'}{' '}
-                      {item.id}
-                    </Button>
-                    <p className='text-xs text-muted-foreground'>
-                      Received <TimeAgo date={item.received_at} />
-                    </p>
-                    {item.waiting_reason !== 'awaiting_review' && (
-                      <p className='text-xs text-destructive'>
-                        {item.waiting_reason === 'reply_bounced'
-                          ? 'Reply to the sender bounced'
-                          : 'Reply to the sender could not be sent'}
-                        , waiting <TimeAgo date={item.waiting_since} />
-                      </p>
-                    )}
-                    {item.waiting_reason === 'reply_failed' && (
-                      <CopyrightEmailReplyRetry
-                        intakeId={item.id}
-                        disabled={loading}
-                        resetQueue={page => resetToFirstPage?.(page)}
-                        setError={setError}
-                        setSuccess={setSuccess}
-                      />
-                    )}
-                    {item.parse_status !== 'succeeded' && (
-                      <p className='text-xs text-destructive'>
-                        {item.parse_status === 'failed' ? 'Parse failed' : 'No parse recorded'}
-                      </p>
-                    )}
-                  </li>
+                  <CopyrightEmailQueueItem
+                    key={item.id}
+                    item={item}
+                    disabled={loading}
+                    onSelect={selectIntake}
+                    resetQueue={page => resetToFirstPage?.(page)}
+                    setError={setError}
+                    setSuccess={setSuccess}
+                  />
                 ))}
               </ul>
             </InfiniteScroll>
