@@ -31,7 +31,10 @@ credential cannot reach the username, consents, federation, or financial-data vi
 ## No tool
 
 These stay REST-only. Anything a leaked delegated credential could use to take over, lock out, or
-destroy an account, or to widen what the account exposes, is excluded by default.
+destroy an account, or to change its legal or credential state, is excluded by default.
+`update_my_preferences` is the exception in spirit: it can loosen follower, like, and message
+visibility and the default post privacy, exactly as the web can, so a key with `mcp.user:write`
+or the `preferences` grants can change what the account shows others.
 
 | REST write                                                        | Reason                                                                                     |
 | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
@@ -62,8 +65,12 @@ Support and CRM surfaces are never tools.
   avatar, in the route's order. A refused avatar after a changed display-name source leaves the
   source changed, exactly as the route does.
 - **Suspension.** Every tool rejects a suspended caller before any change. The REST routes behind
-  the profile, link-order, notification, and email-preference tools do not check suspension yet,
-  so the tools are stricter than their twins until that gap is closed.
+  the profile, profile-link, notification, and email-preference tools do not check suspension yet,
+  so those tools are stricter than their twins until [#1762](https://github.com/vouchington/vouchington/issues/1762)
+  closes the gap.
+- **Reads.** The write tools need `notifications:read` and `preferences:read`, but no tool reads
+  the caller's own bio, links, notifications, or settings yet; [#1763](https://github.com/vouchington/vouchington/issues/1763)
+  tracks those read tools.
 - **Scope coupling.** `profile:write` requires `profile:read`, which also authorizes
   `get_my_profile`. Granting profile writes therefore also grants reading that profile.
 - **Ownership.** Notification and link tools act only on rows the caller owns; another user's id

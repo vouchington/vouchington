@@ -11,3 +11,8 @@ The body is a closed object: an unknown field or a wrong type returns `422` (`In
 The check runs after authentication and the suspension check but before the service resolves the
 target user, so a malformed body from a caller who may not edit the target is also `422`. See the
 [request validation decisions](../../reference-content-routes-request-validation.md#status-decisions).
+
+The `update_my_preferences` MCP tool runs this route's command for the caller only, with an allow-listed
+subset of the body: visibility, messaging, post defaults, country, locale, and Hacker News discussions. It
+needs the `preferences:read` and `preferences:write` scopes and a Plus plan. See
+[Profile, Notification, and Preference Write Tools](../../../../overview/architecture/agent-tools/profile-notification-write-tools.md).
