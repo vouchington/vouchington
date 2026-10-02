@@ -1,6 +1,5 @@
 import '@data-stores/valkey-core/app-integration'
 
-export * from './events.mts'
 export * from './cache.mts'
 export * from './bloom-filter.mts'
 export * from './dynamic-config.mts'
