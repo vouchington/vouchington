@@ -68,6 +68,22 @@
       ],
       "hash": "fbd669c4e61cfc0e0c00f91522f1eb9c0a0b38635a7b6ea7ec4865680892fbef"
     },
+    "GET:/api/v1/admin/classifiers": {
+      "fixtureIds": ["engineering.admin.classifiers.list"],
+      "hash": "002aae751fcbcb0cdfd092450d755c9d66423c553d3ab4ec619a1e841f51cd37"
+    },
+    "GET:/api/v1/admin/classifiers/:classifierId/candidates": {
+      "fixtureIds": ["engineering.admin.classifiers.candidates"],
+      "hash": "ef3b0969789b1b4c767315a3c2434b10b441787687a7cc26b0c494cc38e52193"
+    },
+    "GET:/api/v1/admin/classifiers/:classifierId/candidates/:candidateId/thresholds": {
+      "fixtureIds": ["engineering.admin.classifiers.thresholds"],
+      "hash": "6eb734ebf5d260332808ed5528490cb3c26b0a0e1e6d569e4ecdd1c1bf581613"
+    },
+    "GET:/api/v1/admin/classifiers/:classifierId/human-vote-comparison": {
+      "fixtureIds": ["engineering.admin.classifiers.human-vote-comparison"],
+      "hash": "b550c18dcd0f2da22ed6015ab08dd3265a9bc3f15dace47b1703a61ce0a49572"
+    },
     "GET:/api/v1/admin/landing-pages/:pageId/analytics": {
       "fixtureIds": ["native.admin-landing-page-analytics.default"],
       "hash": "24ebcda04fe68d42d11d8a9ef30ba0babbe90c88b7ed57a16e762119cc4bb4e9"
@@ -954,6 +970,10 @@
       ],
       "hash": "1c19c73ae54847be2523fa31bc0d2e7283a2d7e9571916f4aeed2ef3da7565e8"
     },
+    "POST:/api/v1/admin/classifiers/:classifierId/candidates/:candidateId/threshold/rollback": {
+      "fixtureIds": ["engineering.admin.classifiers.threshold.rollback"],
+      "hash": "7d247018572d3a3be7fe803845eb62c498fffa208bd502c55ab3129e1fd5e9f2"
+    },
     "POST:/api/v1/admin/users/:userId/identity-verification-attempts": {
       "fixtureIds": ["native.identity-verification-attempts.grant.default"],
       "hash": "d4a724d2d08a6ca968bee74bd43d7adb7997f8f24aa5416888a828ea34fbcf23"
@@ -1287,6 +1307,10 @@
       "fixtureIds": ["native.moderation.vote-integrity.penalty"],
       "hash": "b15ae76c05e4434db016e89a4379b563a188d9b8bf2dd6b28108092c997a571e"
     },
+    "PUT:/api/v1/admin/classifiers/:classifierId/candidates/:candidateId/threshold": {
+      "fixtureIds": ["engineering.admin.classifiers.threshold.set"],
+      "hash": "7d247018572d3a3be7fe803845eb62c498fffa208bd502c55ab3129e1fd5e9f2"
+    },
     "PUT:/api/v1/admin/oauth-clients/:id/verification": {
       "fixtureIds": ["web.admin.oauth-clients.verify"],
       "hash": "4b65e296e5e87306946d95d22be5a3863f64b9d6dcda79676bd0a3aaff744b50"
@@ -1305,6 +1329,30 @@
     }
   },
   "schemas": {
+    "engineering.admin.classifiers.candidates": {
+      "fixtureIds": ["engineering.admin.classifiers.candidates"],
+      "hash": "a4fb29e16d93d5e2aa1aea3181ff746f1daa1587b78524b39fc21bad410ae819"
+    },
+    "engineering.admin.classifiers.human-vote-comparison": {
+      "fixtureIds": ["engineering.admin.classifiers.human-vote-comparison"],
+      "hash": "f57cbff48e8a3a3a18d1529e0f13e0f9319591a534d04ff89997e400554b283f"
+    },
+    "engineering.admin.classifiers.list": {
+      "fixtureIds": ["engineering.admin.classifiers.list"],
+      "hash": "3852fbb7dee824a2c502ed8ca7b96a9af2138beae9d7151e9c4acfd4e8d930d8"
+    },
+    "engineering.admin.classifiers.threshold.rollback": {
+      "fixtureIds": ["engineering.admin.classifiers.threshold.rollback"],
+      "hash": "35e63e172a6d3aef17907bcaf0d07b4c3dfbc449cc598b36fa8c0413ee85a00d"
+    },
+    "engineering.admin.classifiers.threshold.set": {
+      "fixtureIds": ["engineering.admin.classifiers.threshold.set"],
+      "hash": "35e63e172a6d3aef17907bcaf0d07b4c3dfbc449cc598b36fa8c0413ee85a00d"
+    },
+    "engineering.admin.classifiers.thresholds": {
+      "fixtureIds": ["engineering.admin.classifiers.thresholds"],
+      "hash": "d7a6ac509a3093c309eb3b2b681640d8ab9dd8321e288b5e2658e642a843215d"
+    },
     "native.admin-ai-costs.default": {
       "fixtureIds": ["native.admin-ai-costs.default"],
       "hash": "ac66f8b66c99a89826b968de973d4ad16275f753c732793229a09e6b622b61ed"

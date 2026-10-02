@@ -1,0 +1,30 @@
+{
+  "page_info": {
+    "end_cursor": "fixture-admin-classifier-end-cursor",
+    "has_next_page": false,
+    "start_cursor": "fixture-admin-classifier-start-cursor"
+  },
+  "results": [
+    {
+      "active_threshold": {
+        "activated_at": "2026-09-20T12:00:00.000Z",
+        "candidate_id": "00000000-0000-7000-8000-000000000903",
+        "created_by_id": "00000000-0000-7000-8000-000000000002",
+        "deactivated_at": null,
+        "deactivated_by_id": null,
+        "effective_lower_threshold": 0.2,
+        "effective_upper_threshold": 0.8,
+        "id": "00000000-0000-7000-8000-000000000906",
+        "is_active": true,
+        "lower_threshold_override": 0.2,
+        "prompt_version_id": "00000000-0000-7000-8000-000000000902",
+        "upper_threshold_override": null
+      },
+      "candidate_kind": "topic",
+      "community_id": "00000000-0000-7000-8000-000000000905",
+      "id": "00000000-0000-7000-8000-000000000903",
+      "story_id": null,
+      "topic_id": "00000000-0000-7000-8000-000000000904"
+    }
+  ]
+}

@@ -32,6 +32,18 @@ const MALFORMED: Array<[string, Method, string, unknown]> = [
   ['valkey bloom rebuild', 'post', '/api/v1/valkey/bloom-filters/rebuild', { filter: 'nope' }],
   ['valkey cache clear', 'post', '/api/v1/valkey/caches/clear', {}],
   ['valkey flush', 'post', '/api/v1/valkey/flush', { concern: 'everything' }],
+  [
+    'classifier threshold override',
+    'put',
+    `/api/v1/admin/classifiers/${ID}/candidates/${ID}/threshold`,
+    { lower_threshold_override: 'low' },
+  ],
+  [
+    'classifier threshold rollback',
+    'post',
+    `/api/v1/admin/classifiers/${ID}/candidates/${ID}/threshold/rollback`,
+    {},
+  ],
 ]
 
 describe('staff route request contract ordering', () => {

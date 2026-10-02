@@ -1,0 +1,25 @@
+{
+  "page_info": {
+    "end_cursor": "fixture-admin-classifier-end-cursor",
+    "has_next_page": false,
+    "start_cursor": "fixture-admin-classifier-start-cursor"
+  },
+  "results": [
+    {
+      "activated_at": "2026-09-20T12:00:00.000Z",
+      "active_prompt_version": {
+        "activated_at": "2026-09-20T12:00:00.000Z",
+        "default_lower_threshold": 0.3,
+        "default_upper_threshold": 0.8,
+        "id": "00000000-0000-7000-8000-000000000902",
+        "model_name": "fixture-model",
+        "model_provider": "openrouter"
+      },
+      "candidate_kind": "topic",
+      "deactivated_at": null,
+      "id": "00000000-0000-7000-8000-000000000901",
+      "primitive": "choice",
+      "slug": "post-topic"
+    }
+  ]
+}

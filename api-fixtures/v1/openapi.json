@@ -445,6 +445,19 @@
         "required": ["id", "user_id"],
         "type": "object"
       },
+      "AppliedThresholdChange": {
+        "additionalProperties": false,
+        "properties": {
+          "changed": {
+            "type": "boolean"
+          },
+          "threshold": {
+            "$ref": "#/components/schemas/ClassifierThresholdRevision"
+          }
+        },
+        "required": ["changed", "threshold"],
+        "type": "object"
+      },
       "ApplyReportAbusePenaltyResult": {
         "additionalProperties": false,
         "properties": {
@@ -1079,6 +1092,259 @@
             ]
           }
         },
+        "type": "object"
+      },
+      "ClassifierCandidateKind": {
+        "enum": ["community_prompt", "story", "topic"],
+        "type": "string"
+      },
+      "ClassifierComparisonCell": {
+        "additionalProperties": false,
+        "properties": {
+          "classifier_vote": {
+            "$ref": "#/components/schemas/ClassifierComparisonVote"
+          },
+          "decisions": {
+            "type": "number"
+          },
+          "effective_lower_threshold": {
+            "$ref": "#/components/schemas/ClassifierComparisonRange"
+          },
+          "effective_upper_threshold": {
+            "$ref": "#/components/schemas/ClassifierComparisonRange"
+          },
+          "human": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Record_ClassifierHumanOutcome_number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "human_decisions": {
+            "type": "number"
+          },
+          "human_voters": {
+            "type": "number"
+          },
+          "mean_probability": {
+            "type": "number"
+          },
+          "probability_lower": {
+            "type": "number"
+          },
+          "probability_upper": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "classifier_vote",
+          "decisions",
+          "effective_lower_threshold",
+          "effective_upper_threshold",
+          "human",
+          "human_decisions",
+          "human_voters",
+          "mean_probability",
+          "probability_lower",
+          "probability_upper"
+        ],
+        "type": "object"
+      },
+      "ClassifierComparisonRange": {
+        "additionalProperties": false,
+        "properties": {
+          "max": {
+            "type": "number"
+          },
+          "min": {
+            "type": "number"
+          }
+        },
+        "required": ["max", "min"],
+        "type": "object"
+      },
+      "ClassifierComparisonVote": {
+        "enum": [-1, 0, 1],
+        "type": "number"
+      },
+      "ClassifierHumanVoteComparison": {
+        "additionalProperties": false,
+        "properties": {
+          "batches_examined": {
+            "type": "number"
+          },
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/ClassifierComparisonCell"
+            },
+            "type": "array"
+          },
+          "classifier_id": {
+            "type": "string"
+          },
+          "community_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "min_human_cohort": {
+            "type": "number"
+          },
+          "post_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "rss_feed_item_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "truncated": {
+            "type": "boolean"
+          },
+          "window": {
+            "additionalProperties": false,
+            "properties": {
+              "from": {
+                "type": "string"
+              },
+              "to": {
+                "type": "string"
+              }
+            },
+            "required": ["from", "to"],
+            "type": "object"
+          }
+        },
+        "required": [
+          "batches_examined",
+          "cells",
+          "classifier_id",
+          "community_id",
+          "min_human_cohort",
+          "post_id",
+          "rss_feed_item_id",
+          "truncated",
+          "window"
+        ],
+        "type": "object"
+      },
+      "ClassifierModelProvider": {
+        "enum": ["openrouter", "typesafe"],
+        "type": "string"
+      },
+      "ClassifierPrimitive": {
+        "enum": ["choice", "noul", "score"],
+        "type": "string"
+      },
+      "ClassifierThresholdRevision": {
+        "additionalProperties": false,
+        "properties": {
+          "activated_at": {
+            "type": "string"
+          },
+          "candidate_id": {
+            "type": "string"
+          },
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "deactivated_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "deactivated_by_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "effective_lower_threshold": {
+            "type": "number"
+          },
+          "effective_upper_threshold": {
+            "type": "number"
+          },
+          "id": {
+            "type": "string"
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "lower_threshold_override": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "prompt_version_id": {
+            "type": "string"
+          },
+          "upper_threshold_override": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "required": [
+          "activated_at",
+          "candidate_id",
+          "created_by_id",
+          "deactivated_at",
+          "deactivated_by_id",
+          "effective_lower_threshold",
+          "effective_upper_threshold",
+          "id",
+          "is_active",
+          "lower_threshold_override",
+          "prompt_version_id",
+          "upper_threshold_override"
+        ],
         "type": "object"
       },
       "ClearCacheRequest": {
@@ -15761,6 +16027,22 @@
         "required": ["surface"],
         "type": "object"
       },
+      "Record_ClassifierHumanOutcome_number": {
+        "additionalProperties": false,
+        "properties": {
+          "down": {
+            "type": "number"
+          },
+          "neutral": {
+            "type": "number"
+          },
+          "up": {
+            "type": "number"
+          }
+        },
+        "required": ["down", "neutral", "up"],
+        "type": "object"
+      },
       "Record_MembershipBenefitPlan_MembershipBenefitValue": {
         "additionalProperties": false,
         "properties": {
@@ -17904,6 +18186,17 @@
         "required": ["id", "name", "slug"],
         "type": "object"
       },
+      "RollbackClassifierCandidateThresholdRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "revision_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["revision_id"],
+        "type": "object"
+      },
       "RowValidationResult": {
         "additionalProperties": false,
         "properties": {
@@ -18542,6 +18835,33 @@
         "required": ["payload", "token"],
         "type": "object"
       },
+      "SetClassifierCandidateThresholdRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "lower_threshold_override": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "upper_threshold_override": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "required": ["lower_threshold_override", "upper_threshold_override"],
+        "type": "object"
+      },
       "SetIntegrationStatusResult": {
         "enum": ["noop", "updated"],
         "type": "string"
@@ -18624,6 +18944,159 @@
             "type": "boolean"
           }
         },
+        "type": "object"
+      },
+      "StaffClassifierCandidate": {
+        "additionalProperties": false,
+        "properties": {
+          "active_threshold": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClassifierThresholdRevision"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "candidate_kind": {
+            "$ref": "#/components/schemas/ClassifierCandidateKind"
+          },
+          "community_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "story_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "topic_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "active_threshold",
+          "candidate_kind",
+          "community_id",
+          "id",
+          "story_id",
+          "topic_id"
+        ],
+        "type": "object"
+      },
+      "StaffClassifierSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "activated_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "active_prompt_version": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "activated_at": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "default_lower_threshold": {
+                    "type": "number"
+                  },
+                  "default_upper_threshold": {
+                    "type": "number"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "model_name": {
+                    "type": "string"
+                  },
+                  "model_provider": {
+                    "$ref": "#/components/schemas/ClassifierModelProvider"
+                  }
+                },
+                "required": [
+                  "activated_at",
+                  "default_lower_threshold",
+                  "default_upper_threshold",
+                  "id",
+                  "model_name",
+                  "model_provider"
+                ],
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "candidate_kind": {
+            "$ref": "#/components/schemas/ClassifierCandidateKind"
+          },
+          "deactivated_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "primitive": {
+            "$ref": "#/components/schemas/ClassifierPrimitive"
+          },
+          "slug": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "activated_at",
+          "active_prompt_version",
+          "candidate_kind",
+          "deactivated_at",
+          "id",
+          "primitive",
+          "slug"
+        ],
         "type": "object"
       },
       "StaffClearanceDecision": {
@@ -23851,6 +24324,374 @@
         },
         "x-schema-unavailable": true,
         "x-schema-unavailable-reason": "SSE event payload sequence is not statically extracted"
+      }
+    },
+    "/api/v1/admin/classifiers": {
+      "get": {
+        "operationId": "get_api_v1_admin_classifiers",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "page_info": {
+                      "$ref": "#/components/schemas/PageInfo"
+                    },
+                    "results": {
+                      "items": {
+                        "$ref": "#/components/schemas/StaffClassifierSummary"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["page_info", "results"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/classifiers/{classifierId}/candidates": {
+      "get": {
+        "operationId": "get_api_v1_admin_classifiers_classifierId_candidates",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "classifierId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "List this community-owned candidates; omitted lists the global candidates.",
+            "in": "query",
+            "name": "community_id",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "page_info": {
+                      "$ref": "#/components/schemas/PageInfo"
+                    },
+                    "results": {
+                      "items": {
+                        "$ref": "#/components/schemas/StaffClassifierCandidate"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["page_info", "results"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/classifiers/{classifierId}/candidates/{candidateId}/threshold": {
+      "put": {
+        "operationId": "put_api_v1_admin_classifiers_classifierId_candidates_candidateId_threshold",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "classifierId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "candidateId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetClassifierCandidateThresholdRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppliedThresholdChange"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/classifiers/{classifierId}/candidates/{candidateId}/threshold/rollback": {
+      "post": {
+        "operationId": "post_api_v1_admin_classifiers_classifierId_candidates_candidateId_threshold_rollback",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "classifierId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "candidateId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RollbackClassifierCandidateThresholdRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppliedThresholdChange"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/classifiers/{classifierId}/candidates/{candidateId}/thresholds": {
+      "get": {
+        "operationId": "get_api_v1_admin_classifiers_classifierId_candidates_candidateId_thresholds",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "classifierId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "candidateId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "page_info": {
+                      "$ref": "#/components/schemas/PageInfo"
+                    },
+                    "results": {
+                      "items": {
+                        "$ref": "#/components/schemas/ClassifierThresholdRevision"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["page_info", "results"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/classifiers/{classifierId}/human-vote-comparison": {
+      "get": {
+        "operationId": "get_api_v1_admin_classifiers_classifierId_human-vote-comparison",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "classifierId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only decisions evaluated under this community scope; omitted covers every scope.",
+            "in": "query",
+            "name": "community_id",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Required. Inclusive window start as an ISO 8601 timestamp with an offset.",
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only decisions made for this post.",
+            "in": "query",
+            "name": "post_id",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only decisions made for this RSS feed item.",
+            "in": "query",
+            "name": "rss_feed_item_id",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Required. Exclusive window end as an ISO 8601 timestamp with an offset, after `from` by at most 31 days.",
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassifierHumanVoteComparison"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
       }
     },
     "/api/v1/admin/landing-pages/{pageId}/analytics": {

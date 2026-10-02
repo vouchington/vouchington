@@ -24,6 +24,12 @@ await getModerationAnalytics('30d', { type: 'community', communityId })
 
 Supported ranges: `today`, `7d`, `30d`, `90d`, `all`.
 
+The classifier comparison of probabilities and thresholds against human votes is not computed
+here: `@services/classifiers` owns it (see
+[its human-vote comparison](../classifiers/README.md#human-vote-comparison)), and
+[Moderation Analytics](../../../../requirements/moderation/MODERATION-ANALYTICS.md#classifier-human-vote-comparison)
+describes its filters and privacy bounds.
+
 ## Query Notes
 
 UUIDv7-backed tables use UUID lower-bound predicates for selected date ranges. Timestamp-backed tables, including moderation reports and appeal resolution timestamps, use timestamp predicates.

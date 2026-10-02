@@ -17,6 +17,7 @@ import { nativeCommentThreadApiFixtureCases } from './native-comment-thread-case
 import { nativeCommentAncestorPaginationApiFixtureCases } from './native-comment-ancestor-pagination-cases.mts'
 import { nativeLandingPageApiFixtureCases } from './native-landing-page-cases.mts'
 import { nativeListApiFixtureCases } from './native-list-cases.mts'
+import { classifierThresholdApiFixtureCases } from './classifier-threshold-cases.mts'
 import { nativeAiCostApiFixtureCases } from './native-ai-cost-cases.mts'
 import { nativeMessageApiFixtureCases } from './native-message-cases.mts'
 import { nativeMembershipApiFixtureCases } from './native-membership-cases.mts'
@@ -57,6 +58,10 @@ export const apiFixtureCases: ResolvedApiFixtureCase[] = [
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/native-ai-cost-cases.mts',
     nativeAiCostApiFixtureCases,
+  ),
+  ...fromCaseFile(
+    'backend/test-helpers/api-fixtures/classifier-threshold-cases.mts',
+    classifierThresholdApiFixtureCases,
   ),
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/native-oauth-broker-cases.mts',

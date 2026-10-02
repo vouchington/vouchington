@@ -28,6 +28,22 @@ Most endpoints require administrator access (`isAdminUser`). The growth metrics 
 | POST   | `/api/v1/article-syncs`                                      | Enqueue article sync job (returns jobId)      |
 | GET    | `/api/v1/article-syncs/:jobId`                               | Poll article sync job status                  |
 
+Classifier threshold management and the human-vote comparison report live under
+`/api/v1/admin/classifiers`. Reads are open to moderation staff (administrators and site
+moderators); changing a threshold requires an administrator who is not suspended. Every change is
+a new audited revision and nothing changes a threshold automatically. See the
+[classifier service](../../../../overview/architecture/services/classifiers/README.md#threshold-management)
+and the [comparison report](../../../moderation/MODERATION-ANALYTICS.md#classifier-human-vote-comparison).
+
+| Method | Route                                                                                | Description                                                |
+| ------ | ------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
+| GET    | `/api/v1/admin/classifiers`                                                          | List classifiers with the active prompt version's defaults |
+| GET    | `/api/v1/admin/classifiers/:classifierId/candidates`                                 | List one scope's candidates with effective thresholds      |
+| GET    | `/api/v1/admin/classifiers/:classifierId/candidates/:candidateId/thresholds`         | List a candidate's threshold revisions, newest first       |
+| PUT    | `/api/v1/admin/classifiers/:classifierId/candidates/:candidateId/threshold`          | Set or clear a candidate override (administrators)         |
+| POST   | `/api/v1/admin/classifiers/:classifierId/candidates/:candidateId/threshold/rollback` | Re-apply an earlier revision as a new one (administrators) |
+| GET    | `/api/v1/admin/classifiers/:classifierId/human-vote-comparison`                      | Aggregate probabilities and thresholds against human votes |
+
 For import endpoints, see [imports/README.md](./imports/README.md).
 For growth metrics details, see [growth-metrics/README.md](./growth-metrics/README.md).
 
@@ -75,6 +91,17 @@ limited), and `503` (the audit row could not be stored, so the call did not run)
 | GET /api/v1/growth-metrics                                      | 2           | None         | 2 phases: auth + 1 parallel batch (5 PostgreSQL + 4 analytics queries) |
 | POST /api/v1/article-syncs                                      | 2           | None (write) | Auth, enqueue to Valkey (throttle dedup rate-limits re-triggers)       |
 | GET /api/v1/article-syncs/:jobId                                | 2           | None         | Auth, read job state from Valkey queue                                 |
+
+The classifier routes read from the primary, so a staff member sees the revision they just wrote.
+
+| Endpoint                                                                       | Round Trips | Caching      | Notes                                                                                 |
+| ------------------------------------------------------------------------------ | ----------- | ------------ | ------------------------------------------------------------------------------------- |
+| GET /api/v1/admin/classifiers                                                  | 2           | None         | Auth, one cursor-paginated query                                                      |
+| GET /api/v1/admin/classifiers/:classifierId/candidates                         | 3           | None         | Auth, one transaction: classifier check, candidate page, active revisions of the page |
+| GET /api/v1/admin/classifiers/:classifierId/candidates/:candidateId/thresholds | 2           | None         | Auth, revision page (one more existence check only when the page is empty)            |
+| PUT .../candidates/:candidateId/threshold                                      | 3           | None (write) | Auth, one transaction: candidate lock, validation, deactivate prior, insert new       |
+| POST .../candidates/:candidateId/threshold/rollback                            | 3           | None (write) | Same transaction as PUT, plus a read of the revision to restore                       |
+| GET /api/v1/admin/classifiers/:classifierId/human-vote-comparison              | 3           | None         | Auth, classifier kind check, one bounded aggregate (at most 1000 batches, 31 days)    |
 
 ## Related
 
