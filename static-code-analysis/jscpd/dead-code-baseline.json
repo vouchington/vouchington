@@ -122,30 +122,6 @@
       "count": 1
     },
     {
-      "category": "unused-export",
-      "path": "web/storybook/mocks/image-url.ts",
-      "parent": "",
-      "name": "getImageUrl",
-      "symbolKind": "function",
-      "count": 1
-    },
-    {
-      "category": "unused-export",
-      "path": "web/storybook/mocks/webauthn.ts",
-      "parent": "",
-      "name": "startAuthentication",
-      "symbolKind": "function",
-      "count": 1
-    },
-    {
-      "category": "unused-export",
-      "path": "web/storybook/mocks/webauthn.ts",
-      "parent": "",
-      "name": "startRegistration",
-      "symbolKind": "function",
-      "count": 1
-    },
-    {
       "category": "unused-file",
       "path": "backend/data-stores/valkey/cache-metrics.mts",
       "parent": "",
@@ -239,62 +215,6 @@
       "parent": "",
       "name": "timeAgoCases",
       "symbolKind": "function",
-      "count": 1
-    },
-    {
-      "category": "unused-symbol",
-      "path": "web/storybook/mocks/follow-button.tsx",
-      "parent": "",
-      "name": "FollowButtonProps",
-      "symbolKind": "interface",
-      "count": 1
-    },
-    {
-      "category": "unused-symbol",
-      "path": "web/storybook/mocks/image-url.ts",
-      "parent": "",
-      "name": "storyImage",
-      "symbolKind": "variable",
-      "count": 1
-    },
-    {
-      "category": "unused-symbol",
-      "path": "web/storybook/mocks/oauth-provider-auth.ts",
-      "parent": "",
-      "name": "codeVerifier",
-      "symbolKind": "variable",
-      "count": 1
-    },
-    {
-      "category": "unused-symbol",
-      "path": "web/storybook/mocks/oauth-provider-auth.ts",
-      "parent": "",
-      "name": "readyAuth",
-      "symbolKind": "function",
-      "count": 1
-    },
-    {
-      "category": "unused-symbol",
-      "path": "web/storybook/mocks/oauth-provider-auth.ts",
-      "parent": "",
-      "name": "redirectUri",
-      "symbolKind": "variable",
-      "count": 1
-    },
-    {
-      "category": "unused-symbol",
-      "path": "web/storybook/mocks/trending-topics-aside.tsx",
-      "parent": "",
-      "name": "trendingTopics",
-      "symbolKind": "variable",
-      "count": 1
-    },
-    {
-      "category": "unused-symbol",
-      "path": "web/storybook/mocks/webauthn.ts",
-      "parent": "",
-      "name": "credentialId",
-      "symbolKind": "variable",
       "count": 1
     }
   ]

@@ -22,6 +22,8 @@ describe('released jscpd dead-code invocation', () => {
       await writeFile(join(repo, 'main.test.mts'), "import './test-only.mts'\n")
       await mkdir(join(repo, 'test-helpers'))
       await writeFile(join(repo, 'test-helpers', 'orphan.mts'), 'export const helper = 4\n')
+      await mkdir(join(repo, 'web', 'storybook'), { recursive: true })
+      await writeFile(join(repo, 'web', 'storybook', 'mock.mts'), 'export const mock = 5\n')
       await writeFile(
         join(repo, '.jscpd.json'),
         JSON.stringify({
@@ -45,6 +47,9 @@ describe('released jscpd dead-code invocation', () => {
       expect(report.findings).toContainEqual(
         expect.objectContaining({ path: 'test-only.mts', reasons: ['used-only-by-tests'] }),
       )
+      expect(report.findings).toContainEqual(
+        expect.objectContaining({ path: 'web/storybook/mock.mts' }),
+      )
       expect(rows).toContainEqual({
         category: 'unused-file',
         path: 'orphan.mts',
@@ -55,6 +60,7 @@ describe('released jscpd dead-code invocation', () => {
       })
       expect(rows.some(row => row.path === 'test-only.mts')).toBe(false)
       expect(rows.some(row => row.path === 'test-helpers/orphan.mts')).toBe(false)
+      expect(rows.some(row => row.path === 'web/storybook/mock.mts')).toBe(false)
     } finally {
       await rm(directory, { recursive: true, force: true })
     }

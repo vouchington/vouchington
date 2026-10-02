@@ -16,7 +16,7 @@ which could otherwise change reachability. It rejects symlinks outside the repos
 confidence. It runs in `pnpm run lint`, the Static Analysis workflow, and `ci-local static`.
 The native scan reads the full tracked graph. The guard then excludes `unused-file` findings that
 jscpd labels `used-only-by-tests` and findings located in `.test`/`.spec` files, `test-helpers`,
-`__tests__`, or `integration-tests`. This keeps an unimported source file visible while leaving
+`__tests__`, `integration-tests`, or `web/storybook`. This keeps an unimported source file visible while leaving
 test-only code outside this gate; the clone-size scan has its own unchanged scope.
 
 The guard consumes jscpd's native JSON report, fails when the analyzer fails, analyzes no files,
@@ -26,8 +26,8 @@ fails even when another finding disappears. Line numbers and message wording do 
 identity.
 
 The checked-in [`dead-code-baseline.json`](../../../../../static-code-analysis/jscpd/dead-code-baseline.json)
-temporarily records reviewed findings, including framework and Storybook symbols jscpd cannot
-recognize. Removing a finding makes the baseline stale and fails
+temporarily records reviewed findings, including framework symbols jscpd cannot recognize.
+Removing a finding makes the baseline stale and fails
 the regular check. After verifying a cleanup, run `pnpm run jscpd:dead-code:update` to remove
 only stale findings; it refuses new or increased findings. `--seed` creates an initial baseline only
 when no baseline exists. Review baseline changes as code changes, rather than changing the minimum

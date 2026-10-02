@@ -82,6 +82,7 @@ function includeFinding(finding: FindingIdentity, raw: Record<string, unknown>):
     return false
   const segments = finding.path.split('/')
   if (
+    finding.path.startsWith('web/storybook/') ||
     segments.some(
       part => part === 'test-helpers' || part === '__tests__' || part === 'integration-tests',
     )
