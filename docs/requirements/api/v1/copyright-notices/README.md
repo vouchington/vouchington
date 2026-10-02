@@ -162,6 +162,12 @@ moderator who sends a malformed body to an administrator action sees `422` rathe
 staff review queue keeps the pagination parser's `400` for a malformed cursor or `limit`; see
 [request validation](../../reference-copyright-staff-request-validation.md).
 
+The staff submission review bodies, `POST /api/v1/copyright-submissions/:id/appeal-reviews`,
+`.../counter-notice-reviews`, and `.../legal-hold-assessments`, are closed: an unknown key is a `422`
+before any service call. Every field-named `422`, the unknown-submission `404`, and every appeal,
+counter-notice, and legal-hold outcome is unchanged; see
+[request validation](../../reference-copyright-submission-review-request-validation.md).
+
 Staff issue a one-case guest capability with `POST /api/v1/copyright-notices/:id/guest-capabilities`.
 The expiry must be no more than 30 days after issue, and the token is returned only in that
 response. `GET /api/v1/copyright-notices/:id/guest-capabilities` lists the case's capabilities

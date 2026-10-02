@@ -2959,6 +2959,61 @@
         "required": ["reason", "target_ids"],
         "type": "object"
       },
+      "CopyrightAppealReviewDecisionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": ["confirm", "reverse"],
+            "type": "string"
+          },
+          "restriction_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["action", "restriction_id"],
+        "type": "object"
+      },
+      "CopyrightAppealReviewRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "decisions": {
+            "items": {
+              "$ref": "#/components/schemas/CopyrightAppealReviewDecisionRequest"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": false
+          },
+          "manual_fallback_reason": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "recommendation_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": ["decisions", "rationale"],
+        "type": "object"
+      },
       "CopyrightCounterNoticeRequest": {
         "additionalProperties": false,
         "properties": {
@@ -3007,6 +3062,19 @@
           "target_ids",
           "telephone"
         ],
+        "type": "object"
+      },
+      "CopyrightCounterNoticeReviewRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "accepted": {
+            "type": "boolean"
+          },
+          "rationale": {
+            "type": "string"
+          }
+        },
+        "required": ["accepted", "rationale"],
         "type": "object"
       },
       "CopyrightEmailApprovalRequest": {
@@ -3542,6 +3610,78 @@
           "same_material",
           "target_ids"
         ],
+        "type": "object"
+      },
+      "CopyrightLegalHoldAssessmentRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "ccb_claim_kind": {
+            "anyOf": [
+              {
+                "const": "claim"
+              },
+              {
+                "const": "counterclaim"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "commenced_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "from_original_claimant": {
+            "type": "boolean"
+          },
+          "proceeding_kind": {
+            "anyOf": [
+              {
+                "const": "ccb"
+              },
+              {
+                "const": "federal_court"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "received_by_designated_agent_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "same_material": {
+            "type": "boolean"
+          },
+          "target_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          }
+        },
+        "required": ["from_original_claimant", "rationale", "same_material", "target_ids"],
         "type": "object"
       },
       "CopyrightLegalHoldResolutionRecord": {
@@ -45922,6 +46062,15 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyrightAppealReviewRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {
@@ -45972,6 +46121,15 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyrightCounterNoticeReviewRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {
@@ -46029,6 +46187,15 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyrightLegalHoldAssessmentRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "content": {
