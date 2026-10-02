@@ -10,7 +10,7 @@ import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgr
 import {
   dynamicConfigRegistry,
   type getDynamicConfigRegistryEntry,
-} from '@services/dynamic-config-admin'
+} from '@services/dynamic-config-admin/registry'
 
 describe('PATCH /api/v1/dynamic-config/namespaces/:namespace audit failure', () => {
   it('returns a server error without changing the config when its audit insert fails', async () => {
