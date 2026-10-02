@@ -57,7 +57,39 @@ describe('direct message provenance', () => {
     const messages = await getConversationMessages(conversation.id)
 
     expect(messages.map(row => row.id)).toEqual([message.id])
-    expect(JSON.stringify({ message, messages })).not.toMatch(/created_via|oauth/)
+    expect(JSON.stringify({ message, messages })).not.toMatch(/created_?via|oauth/i)
+  })
+
+  it('selects only the public columns when creating and listing messages', async () => {
+    const { sender, conversation } = await newConversation()
+
+    const message = await createConversationMessage(
+      sender.id,
+      { createdVia: 'api', oauthClientId },
+      conversation.id,
+      'Hello!',
+    )
+    const [listed] = await getConversationMessages(conversation.id)
+
+    expect(Object.keys(message).toSorted()).toEqual([
+      'body_text',
+      'conversation_id',
+      'created_at',
+      'created_by_id',
+      'deleted_at',
+      'id',
+      'updated_at',
+    ])
+    expect(Object.keys(listed!).toSorted()).toEqual([
+      'body_text',
+      'conversation_id',
+      'created_at',
+      'created_by_id',
+      'deleted_at',
+      'id',
+      'sender_username',
+      'updated_at',
+    ])
   })
 
   it('records each message with its own sender channel in one conversation', async () => {

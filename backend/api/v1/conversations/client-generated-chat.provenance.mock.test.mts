@@ -60,7 +60,7 @@ describe('POST /api/v1/conversations/:conversationId/client-generated-chat prove
           oauthClientId: null,
         })
       }
-      expect(JSON.stringify(response.body)).not.toMatch(/created_via|oauth/)
+      expect(JSON.stringify(response.body)).not.toMatch(/created_?via|oauth/i)
     },
   )
 

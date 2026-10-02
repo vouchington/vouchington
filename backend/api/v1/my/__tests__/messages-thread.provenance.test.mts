@@ -43,12 +43,12 @@ describe('POST /api/v1/my/messages/:conversationId/messages provenance', () => {
     await expect(
       readTestContentProvenance('conversation_messages', sent.body.message.id),
     ).resolves.toEqual({ createdVia: client, oauthClientId: null })
-    expect(JSON.stringify(sent.body)).not.toMatch(/created_via|oauth/)
+    expect(JSON.stringify(sent.body)).not.toMatch(/created_?via|oauth/i)
     const listed = await request.get(path).expect(200)
     expect(listed.body.results.map((message: { id: string }) => message.id)).toEqual([
       sent.body.message.id,
     ])
-    expect(JSON.stringify(listed.body)).not.toMatch(/created_via|oauth/)
+    expect(JSON.stringify(listed.body)).not.toMatch(/created_?via|oauth/i)
   })
 
   it('rejects a message whose client information is invalid and stores nothing', async () => {

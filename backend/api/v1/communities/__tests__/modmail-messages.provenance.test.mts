@@ -67,9 +67,9 @@ describe('POST /api/v1/communities/:idOrSlug/modmail/:conversationId/messages pr
     const listed = await modRequest.get(path).expect(200)
     expect(listed.body.results).toHaveLength(2)
     expect(JSON.stringify({ fromMember: fromMember.body, fromMod: fromMod.body })).not.toMatch(
-      /created_via|oauth/,
+      /created_?via|oauth/i,
     )
-    expect(JSON.stringify(listed.body)).not.toMatch(/created_via|oauth/)
+    expect(JSON.stringify(listed.body)).not.toMatch(/created_?via|oauth/i)
   })
 
   it('rejects a message whose client information is invalid and stores nothing', async () => {

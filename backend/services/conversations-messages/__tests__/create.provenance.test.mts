@@ -15,6 +15,18 @@ import {
   getConversationMessagesByConversationId,
 } from '../index.mts'
 
+const PUBLIC_MESSAGE_COLUMNS = [
+  'content',
+  'conversation_id',
+  'created_at',
+  'created_by_id',
+  'deleted_at',
+  'deleted_by_id',
+  'id',
+  'updated_at',
+  'updated_by_id',
+]
+
 describe('conversation message provenance', () => {
   let oauthClientId: string
 
@@ -112,8 +124,31 @@ describe('conversation message provenance', () => {
 
     expect(listed).toHaveLength(3)
     expect(JSON.stringify({ chat, created, replay, replayRead, listed })).not.toMatch(
-      /created_via|oauth/,
+      /created_?via|oauth/i,
     )
+  })
+
+  it('selects only the public columns on every message read path', async () => {
+    const { user, conversation } = await newConversation()
+    const params = turn(user.id, conversation.id, { createdVia: 'api', oauthClientId })
+    const chat = await createConversationMessage(conversation.id, user.id, params.provenance, {
+      role: 'user',
+      content: 'Hello',
+    })
+    const created = await createClientGeneratedChatTurn(params)
+    const replay = await createClientGeneratedChatTurn(params)
+    const listed = await getConversationMessagesByConversationId(conversation.id)
+
+    const messages = [
+      chat,
+      created.userMessage,
+      created.assistantMessage,
+      replay.userMessage,
+      ...listed,
+    ]
+    for (const message of messages) {
+      expect(Object.keys(message).toSorted()).toEqual(PUBLIC_MESSAGE_COLUMNS)
+    }
   })
 
   it('rejects an OAuth client on a channel that cannot name one', async () => {
