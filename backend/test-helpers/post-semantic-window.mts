@@ -43,7 +43,7 @@ export async function insertSemanticWindowPosts(
   `)
   const { rows: ordered } = await transaction<{ id: string }>(sql`/* insertSemanticWindowPosts */
     SELECT id FROM posts WHERE id = ANY(${ids}::uuid[])
-    ORDER BY bedrock_nova_multimodal_v1_embedding <=> ${pgvector.toSql(embedding)}::vector, id
+    ORDER BY bedrock_nova_multimodal_v1_embedding <=> ${pgvector.toSql(embedding)}::vector, id DESC
   `)
   await transaction.commit()
   return ordered.map(row => row.id)
