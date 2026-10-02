@@ -432,7 +432,6 @@
     }
   },
   "sandbox": {
-    "enabled": true,
     "excludedCommands": [
       "docker *",
       "gh *",
@@ -520,7 +519,6 @@
     "network": {
       "allowedDomains": ["registry.npmjs.org", "github.com"]
     },
-    "failIfUnavailable": true,
     "credentials": {
       "envVars": [
         {
