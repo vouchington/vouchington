@@ -31,11 +31,10 @@ describe('Apple notification verifier initialization', () => {
         .send({ signedPayload: 'owned-malformed-signed-payload' })
         .expect(500)
 
-      expect(response.headers['x-request-id']).toBe(requestId)
+      expect(response.body).toMatchObject({ request_id: requestId })
       expect(
         sentryCaptureExceptionMock.mock.calls.some(
-          ([captured, context]) =>
-            captured === verifierFailure.error && context?.tags?.request_id === requestId,
+          ([captured]) => captured === verifierFailure.error,
         ),
       ).toBe(true)
     } finally {

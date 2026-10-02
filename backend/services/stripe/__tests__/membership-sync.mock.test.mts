@@ -224,7 +224,12 @@ describe('ensureMembershipFromStripeSubscription provider transaction failures',
         () =>
           ensureMembershipFromStripeSubscription(eventId, subscriptionId, customerId, {
             applicationId,
-          }).catch((err: unknown) => err),
+          }).catch((err: unknown) => {
+            if (!(err instanceof Error))
+              throw new Error('Provider threw a non-Error', { cause: err })
+            if (!('code' in err) || err.code !== '25P02') throw err
+            return err
+          }),
         { command: 'SELECT' },
       )
       expect(error).toMatchObject({ code: '25P02' })
