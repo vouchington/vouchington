@@ -3,13 +3,7 @@ import {
   defineScheduledJobManifest,
   upsertScheduledJobManifest,
 } from '@modules/scheduled-job-manifest'
-import {
-  CATEGORY_SNAPSHOT_RECOVERY_DEDUPLICATION_ID,
-  CATEGORY_SNAPSHOT_RECOVERY_DEDUPLICATION_TTL_MS,
-  PRIORITY_RECOVERY,
-  QUEUE_NAME,
-  RSS_FEED_ITEM_CATEGORY_ORDERING,
-} from '../config.mts'
+import { PRIORITY_RECOVERY, QUEUE_NAME, RSS_FEED_ITEM_CATEGORY_ORDERING } from '../config.mts'
 import { enqueueReconcileRssFeedItemCategorySnapshots } from '../enqueues.mts'
 import { rssFeedItemCategories } from '../queues.mts'
 import type { RssFeedItemCategoriesJobs } from '../types.mts'
@@ -29,11 +23,6 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
         ...ENQUEUE_BASE_DEFAULTS,
         priority: PRIORITY_RECOVERY,
         ordering: RSS_FEED_ITEM_CATEGORY_ORDERING.snapshot_reconciliation,
-        deduplication: {
-          id: CATEGORY_SNAPSHOT_RECOVERY_DEDUPLICATION_ID,
-          mode: 'throttle',
-          ttl: CATEGORY_SNAPSHOT_RECOVERY_DEDUPLICATION_TTL_MS,
-        },
       },
     },
     operatorSurfaces: [

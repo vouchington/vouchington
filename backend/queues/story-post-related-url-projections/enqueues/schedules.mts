@@ -6,8 +6,6 @@ import {
 import {
   PRIORITY_RECOVERY,
   QUEUE_NAME,
-  RECOVERY_DEDUPLICATION_ID,
-  RECOVERY_DEDUPLICATION_TTL_MS,
   STORY_POST_RELATED_URL_PROJECTION_ORDERING,
 } from '../config.mts'
 import { enqueueReconcileStoryPostRelatedUrlProjections } from '../enqueues.mts'
@@ -29,11 +27,6 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
         ...ENQUEUE_BASE_DEFAULTS,
         priority: PRIORITY_RECOVERY,
         ordering: STORY_POST_RELATED_URL_PROJECTION_ORDERING.reconciliation,
-        deduplication: {
-          id: RECOVERY_DEDUPLICATION_ID,
-          mode: 'throttle',
-          ttl: RECOVERY_DEDUPLICATION_TTL_MS,
-        },
       },
     },
     operatorSurfaces: [

@@ -4,12 +4,7 @@ import {
   upsertScheduledJobManifest,
 } from '@modules/scheduled-job-manifest'
 import type { JobOptions } from 'glide-mq'
-import {
-  IMAGE_QUARANTINE_RECONCILIATION_DEDUPLICATION_ID,
-  POST_MODERATION_RECONCILIATION_DEDUPLICATION_ID,
-  MODERATION_OMNI_SINGLE_QUEUE_NAME,
-  PRIORITY_RECONCILIATION,
-} from '../config.mts'
+import { MODERATION_OMNI_SINGLE_QUEUE_NAME, PRIORITY_RECONCILIATION } from '../config.mts'
 import { enqueueReconcileImageQuarantines, enqueueReconcilePostModeration } from '../enqueues.mts'
 import { openai_moderation_omni_single } from '../queues.mts'
 
@@ -25,11 +20,6 @@ export const scheduledJobManifest = defineScheduledJobManifest(MODERATION_OMNI_S
         ...ENQUEUE_BASE_DEFAULTS,
         attempts: 1,
         priority: PRIORITY_RECONCILIATION,
-        deduplication: {
-          id: IMAGE_QUARANTINE_RECONCILIATION_DEDUPLICATION_ID,
-          mode: 'throttle',
-          ttl: 60_000,
-        },
       } satisfies JobOptions,
     },
     operatorSurfaces: [
@@ -53,11 +43,6 @@ export const scheduledJobManifest = defineScheduledJobManifest(MODERATION_OMNI_S
         ...ENQUEUE_BASE_DEFAULTS,
         attempts: 1,
         priority: PRIORITY_RECONCILIATION,
-        deduplication: {
-          id: POST_MODERATION_RECONCILIATION_DEDUPLICATION_ID,
-          mode: 'throttle',
-          ttl: 60_000,
-        },
       } satisfies JobOptions,
     },
     operatorSurfaces: [

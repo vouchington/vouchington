@@ -294,11 +294,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "jitter": 0.5,
           "type": "exponential",
         },
-        "deduplication": {
-          "id": "bedrock-embedding-reconciliation:copy:topics",
-          "mode": "throttle",
-          "ttl": 60000,
-        },
         "ordering": {
           "concurrency": 1,
           "key": "reconciliation",
@@ -337,11 +332,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "delay": 5000,
           "jitter": 0.5,
           "type": "exponential",
-        },
-        "deduplication": {
-          "id": "bedrock-embedding-reconciliation:copy:posts",
-          "mode": "throttle",
-          "ttl": 60000,
         },
         "ordering": {
           "concurrency": 1,
@@ -382,11 +372,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "jitter": 0.5,
           "type": "exponential",
         },
-        "deduplication": {
-          "id": "bedrock-embedding-reconciliation:copy:rss_feed_items",
-          "mode": "throttle",
-          "ttl": 60000,
-        },
         "ordering": {
           "concurrency": 1,
           "key": "reconciliation",
@@ -423,11 +408,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "delay": 5000,
           "jitter": 0.5,
           "type": "exponential",
-        },
-        "deduplication": {
-          "id": "bedrock-embedding-reconciliation:post-trigger",
-          "mode": "throttle",
-          "ttl": 60000,
         },
         "ordering": {
           "concurrency": 1,
@@ -617,10 +597,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "jitter": 0.5,
           "type": "exponential",
         },
-        "deduplication": {
-          "id": "processRebuildBloomFilter__url-blocklist",
-          "mode": "simple",
-        },
         "ordering": {
           "concurrency": 1,
           "key": "url-blocklist",
@@ -657,10 +633,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "jitter": 0.5,
           "type": "exponential",
         },
-        "deduplication": {
-          "id": "processRebuildBloomFilter__email-blocklist",
-          "mode": "simple",
-        },
         "ordering": {
           "concurrency": 1,
           "key": "email-blocklist",
@@ -694,10 +666,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "delay": 1000,
           "jitter": 0.5,
           "type": "exponential",
-        },
-        "deduplication": {
-          "id": "bloom-filter__openai-text-embedding-3-small",
-          "mode": "simple",
         },
         "ordering": {
           "concurrency": 1,
@@ -734,10 +702,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "delay": 1000,
           "jitter": 0.5,
           "type": "exponential",
-        },
-        "deduplication": {
-          "id": "processRebuildBloomFilter__api-keys",
-          "mode": "simple",
         },
         "ordering": {
           "concurrency": 1,
@@ -779,10 +743,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "jitter": 0.5,
           "type": "exponential",
         },
-        "deduplication": {
-          "id": "processBackfillBloomFilter__posts",
-          "mode": "simple",
-        },
         "ordering": {
           "concurrency": 1,
           "key": "entity-cache:posts",
@@ -822,10 +782,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "delay": 1000,
           "jitter": 0.5,
           "type": "exponential",
-        },
-        "deduplication": {
-          "id": "processBackfillBloomFilter__topics",
-          "mode": "simple",
         },
         "ordering": {
           "concurrency": 1,
@@ -867,10 +823,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "jitter": 0.5,
           "type": "exponential",
         },
-        "deduplication": {
-          "id": "processBackfillBloomFilter__users",
-          "mode": "simple",
-        },
         "ordering": {
           "concurrency": 1,
           "key": "entity-cache:users",
@@ -906,10 +858,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "delay": 1000,
           "jitter": 0.5,
           "type": "exponential",
-        },
-        "deduplication": {
-          "id": "processBackfillBloomFilter__communities",
-          "mode": "simple",
         },
         "ordering": {
           "concurrency": 1,
@@ -950,10 +898,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "delay": 1000,
           "jitter": 0.5,
           "type": "exponential",
-        },
-        "deduplication": {
-          "id": "processBackfillBloomFilter__rss_feed_items",
-          "mode": "simple",
         },
         "ordering": {
           "concurrency": 1,
@@ -2176,11 +2120,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "jitter": 0.5,
           "type": "exponential",
         },
-        "deduplication": {
-          "id": "openai-moderation:reconcile-image-quarantines",
-          "mode": "throttle",
-          "ttl": 60000,
-        },
         "priority": 100,
         "removeOnComplete": 100,
         "removeOnFail": 100,
@@ -2213,11 +2152,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "delay": 1000,
           "jitter": 0.5,
           "type": "exponential",
-        },
-        "deduplication": {
-          "id": "openai-moderation:reconcile-post-moderation",
-          "mode": "throttle",
-          "ttl": 60000,
         },
         "priority": 100,
         "removeOnComplete": 100,
@@ -2284,11 +2218,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "delay": 1000,
           "jitter": 0.5,
           "type": "exponential",
-        },
-        "deduplication": {
-          "id": "post-publication:reconcile",
-          "mode": "throttle",
-          "ttl": 60000,
         },
         "ordering": {
           "concurrency": 1,
@@ -2568,11 +2497,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "jitter": 0.5,
           "type": "exponential",
         },
-        "deduplication": {
-          "id": "rss-feed-item-categories:reconcile-snapshots",
-          "mode": "throttle",
-          "ttl": 60000,
-        },
         "ordering": {
           "concurrency": 1,
           "key": "snapshot-reconciliation",
@@ -2771,11 +2695,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "jitter": 0.5,
           "type": "exponential",
         },
-        "deduplication": {
-          "id": "story-post-related-url-projections:reconcile",
-          "mode": "throttle",
-          "ttl": 60000,
-        },
         "ordering": {
           "concurrency": 1,
           "key": "story-post-related-url-projections",
@@ -2812,11 +2731,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "delay": 1000,
           "jitter": 0.5,
           "type": "exponential",
-        },
-        "deduplication": {
-          "id": "topic-aliases:reconcile-category-mappings",
-          "mode": "throttle",
-          "ttl": 60000,
         },
         "ordering": {
           "concurrency": 1,
