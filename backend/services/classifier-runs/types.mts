@@ -145,6 +145,14 @@ export type ClassifierRunAdapter<C, L = never, E = void> = {
   ): Promise<boolean>
   /** SQL over `request` (classifier_run_requests) selecting only requests the sweep may dispatch. */
   requestEligibility(): SQLStatement
+  /**
+   * True when every producer requests this classifier for every live feed item that passes
+   * `requestEligibility`, so a feed item with no request and no run is a lost request, which the
+   * health check reports. Leave it unset when producers cover only part of the population: a
+   * subject kind with a path that deliberately writes no request (a post approved by staff after
+   * review, or created already approved) would otherwise be reported forever.
+   */
+  requestsEveryEligibleFeedItem?: boolean
   /** Throws unless `local` is present exactly when the configuration asks for one. */
   validateLocal?(configuration: C, local: L | undefined): void
   persistLocal?(query: OwnedTransaction, lease: ClassifierRunLease<C>, local: L): Promise<void>

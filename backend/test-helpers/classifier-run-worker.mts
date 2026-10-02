@@ -3,6 +3,7 @@ import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
 import type { ClassifierRunJobData } from '../queues/ai-agents/types.mts'
 import {
   listIncompleteClassifierRuns,
+  type ClassifierRunHealth,
   type IncompleteClassifierRun,
 } from '../services/classifier-runs/index.mts'
 import {
@@ -60,10 +61,23 @@ export async function dispatchApprovedClassifierPost(remote: boolean) {
   return { ...setup, runId: run.id, data }
 }
 
+/** A classifier with nothing unfinished, nothing recently failed and nothing unrequested. */
+export function createHealthyClassifierRunHealth(classifier: string): ClassifierRunHealth {
+  return {
+    classifier,
+    oldestIncompleteRun: null,
+    oldestPendingRequest: null,
+    terminal: { completed: 0, superseded: 0, incomplete: 0, failed: {}, failedTotal: 0 },
+    unrequestedFeedItems: null,
+  }
+}
+
 /**
- * The sweep is global by design, and it counts, gives up on and ages every incomplete run it lists.
+ * The sweep is global by design, and it counts and gives up on every incomplete run it lists.
  * Parallel test files share one database, so this scopes both discovery queries to the posts and
  * runs a test made: their counters, terminal state and alarms never depend on (or disturb) others.
+ * Receipt health is global per classifier too, so it reads as healthy unless a test supplies its
+ * own `readHealth`.
  */
 export function createClassifierRunSweepScope(realHandler: ClassifierRunHandler) {
   const postIds = new Set<string>()
@@ -128,6 +142,7 @@ export function createClassifierRunSweepScope(realHandler: ClassifierRunHandler)
         listIncomplete: incomplete(pageSize),
         handlers: () => [handler],
         handlerFor: () => handler,
+        readHealth: async healthHandler => createHealthyClassifierRunHealth(healthHandler.slug),
         evaluateSpendCap: async () => null,
         ...overrides,
       }

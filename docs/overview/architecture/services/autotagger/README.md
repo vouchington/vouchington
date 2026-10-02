@@ -62,8 +62,8 @@ per-classifier input building and outcome application that lifecycle asks for:
 ## C7 scoped reasoning autotagger
 
 `agent/` holds the C7 adapter (`createAutotaggerAgentRunAdapter`, slug `autotagger-agent`). It
-reads the same locked subject input as C6, so a subject is eligible for it exactly when it is for C6,
-and differs only in these hooks:
+reads the same locked subject input as C6, so the same subjects can be input, but a C7 run is ready
+only once that subject's C6 run has completed. It differs only in these hooks:
 
 - **Readiness** (`agent/readiness.mts`) — `hasCompletedFirstStage` gates reservation on a completed,
   non-superseded C6 run at the current content hash; `autotaggerAgentRequestEligibility` puts the

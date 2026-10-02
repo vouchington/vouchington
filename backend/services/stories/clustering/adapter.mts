@@ -38,6 +38,7 @@ export function createStoryClusteringRunAdapter(): StoryClusteringRunAdapter {
     captureStoryCandidates: captureStoryClusteringCandidates,
     ready: hasCurrentStoryClusteringEmbedding,
     requestEligibility: storyClusteringRequestEligibility,
+    requestsEveryEligibleFeedItem: true,
     applyEffects: applyStoryClusteringEffects,
   }
 }

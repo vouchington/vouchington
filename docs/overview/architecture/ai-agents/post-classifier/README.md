@@ -21,7 +21,8 @@ The provider client is built inside the recorded failure path. A missing `OPENRO
 any other construction failure ends the run's remote half as terminal `client-unavailable`,
 persists the local detector outcome in the same write, and raises one `classifier_run_alarm` Sentry
 message instead of throwing into the queue retry loop; the recovery sweep then leaves the run
-alone. Remote-side alarms and run-health alarms are owned going forward by C12 (#225).
+alone. Run-health alarms (stuck runs and requests, terminal failures) are shared across classifiers;
+see [receipt health](../../services/classifier-runs/README.md#receipt-health).
 
 A provider failure after a reserved attempt is classified by the shared executor, not here. A
 transient outage (a 429, a 5xx, a connection error, or an OpenRouter 403 with no moderation or

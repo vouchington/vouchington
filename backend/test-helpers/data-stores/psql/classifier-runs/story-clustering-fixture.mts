@@ -92,6 +92,18 @@ export function requestStoryClusteringRun(item: StoryClusteringItem) {
   })
 }
 
+/** The durable request for a feed item's current content, for any classifiers a test names. */
+export function requestFeedItemClassifierRuns(
+  item: StoryClusteringItem,
+  classifierSlugs: readonly string[],
+) {
+  return requestClassifierRuns(write, {
+    subject: item.subject,
+    inputSha256: item.inputSha256,
+    classifierSlugs,
+  })
+}
+
 /** The upsert's request write for feed items, as the RSS upsert transaction makes it. */
 export function requestStoryClusteringFeedItems(itemIds: readonly string[]) {
   return requestRssFeedItemClassifierRuns(write, itemIds, [STORY_CLUSTERING_CLASSIFIER_SLUG])

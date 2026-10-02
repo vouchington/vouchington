@@ -188,9 +188,57 @@ Each failure mode below names its durable state and recovery, then the idempoten
 - **Sweep bound**: only jobs actually added count; at the bound, with the job gone, the run is
   given up and alarms. The counter never decreases.
 
-The oldest incomplete run or pending request older than 26 hours (longer than spend-cap parking)
-raises a throttled `run-age` or `request-age` alarm through `recordClassifierRunAlarm`
-(`@modules/on-error`, Sentry message `classifier_run_alarm`, grouped by `alarm_kind`).
+## Receipt health
+
+`readClassifierRunHealth(adapter, now, scope?)` is the one read every classifier's alarms come
+from, so a new classifier is monitored by registering its adapter and adds no query. It returns, per
+classifier:
+
+- **The oldest incomplete run and the oldest pending request**, each with its age and the count
+  behind it. A run is incomplete until it is complete, superseded or terminal. The request age
+  ignores the adapter's eligibility predicate on purpose: a subject that waits only for its
+  embedding stays pending, so a request that is old is old whatever it waits for. This is the
+  signal for a Valkey enqueue that was lost after the request committed.
+- **Terminal counts over a recent window**, by outcome (completed, superseded, incomplete, failed)
+  and by failure kind. A missing provider key ends a run as `client-unavailable`, so it is counted
+  under its own kind. The window is a lower bound on the run's time-ordered id, so the query is an
+  index range and never a scan.
+- **Eligible feed items with no request or run for their current content**, with a count and the
+  oldest age. This is the lost-write case (#1069): a producer that never wrote the request leaves
+  nothing for the two queries above to find. An adapter opts in with
+  `requestsEveryEligibleFeedItem` only when its RSS upsert producer requests every eligible item (C6
+  and C9); a post is requested only when it is approved or reviewed, so the post classifier is not
+  asked and reports `null`. An item is counted only after a grace period, so one that is still being
+  written is not reported, and the lookback is bounded so the anti-join never walks the whole table.
+
+The worker evaluates this once on the scheduled root tick, before the spend-cap check so a parked
+backlog is still seen, and never on the chained sweep pages, so one tick alarms once. A failed read
+for one classifier is reported and never stops the other classifiers or the recovery sweep that
+follows. Each threshold is a named constant in
+[`health-thresholds.mts`](../../../../../backend/services/classifier-runs/health-thresholds.mts);
+the age thresholds are set longer than the longest spend-cap parking window, so a parked run does
+not alarm.
+
+The alarm kinds are:
+
+- `run-age`: the oldest incomplete run is older than its threshold. Throttled to once per hour.
+- `request-age`: the oldest pending request is older than its threshold. Throttled to once per hour.
+- `subject-unrequested`: any eligible feed item past the grace period has no request or run.
+  Throttled to once per hour.
+- `terminal-failures`: failed terminal runs in the window reach the threshold. Throttled to once per
+  hour.
+- `client-unavailable`: the provider client cannot be built, which is a missing or unusable key. Not
+  throttled; it alarms at once.
+- `provider-rejected`: the provider permanently rejects a run. Not throttled.
+- `sweep-bound-exceeded`: a run is given up at the sweep bound, which is the re-enqueue loop alarm.
+  Not throttled.
+
+Every alarm goes through `recordClassifierRunAlarm` (`@modules/on-error`, Sentry message
+`classifier_run_alarm`, fingerprinted by alarm kind and classifier so each pair is one issue). The
+payload is an allowlist of identifiers, counts, ages, window lengths and failure kinds; a field
+outside the allowlist is dropped before it reaches Sentry, so no prompt text, private content, API
+key or raw token can ride along. The `client-unavailable` alarm carries the error name and never
+the error message, which a client factory may build from its configuration.
 
 ## Adding a classifier
 

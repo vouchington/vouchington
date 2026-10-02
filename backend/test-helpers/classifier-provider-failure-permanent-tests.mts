@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { getAccountingUncertaintySource } from '../services/ai-usage/index.mts'
+import { getClassifierRunHandler } from '../workers/ai-agents/processors/classifier-run-registry.mts'
 import {
   type ClassifierFailureDriver,
   DAILY_CAP_MICROUNITS,
@@ -87,8 +88,11 @@ export function describeClassifierPermanentFailures(driver: ClassifierFailureDri
       })
       expectAlarm(slug, 'client-unavailable', {
         runId: run.runId,
-        error: expect.stringContaining('API key is required'),
+        errorName: 'StructuredDecisionError',
       })
+      // The terminal counts show the missing key under its own kind, which the health check alarms on.
+      const { terminal } = await getClassifierRunHandler(slug).health(new Date())
+      expect(terminal.failed['client-unavailable']).toBeGreaterThanOrEqual(1)
       await expect(run.claim()).resolves.toBe('terminal')
     })
   })

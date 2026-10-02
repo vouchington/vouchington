@@ -1,3 +1,6 @@
+export * from './health.mts'
+export * from './health-thresholds.mts'
+export type { ClassifierRunHealthScope } from './health-unrequested.mts'
 export * from './run-attempt.mts'
 export * from './run-candidates.mts'
 export * from './run-claim.mts'

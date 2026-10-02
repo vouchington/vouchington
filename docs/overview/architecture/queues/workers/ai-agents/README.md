@@ -22,13 +22,15 @@ job is counted, and a run whose tenth counted job has vanished is given up (see 
 [recovery transitions](../../../services/classifier-runs/README.md#recovery-transitions)). The
 second lists each classifier's pending requests, including subjects that never got a run, and
 dispatches them. A spend-cap breach (`evaluateOpenAiSpendCapBreach`) ends the sweep before either
-phase enqueues anything. The sweep alarms through `recordClassifierRunAlarm` (`@modules/on-error`,
-message `classifier_run_alarm`, grouped by `alarm_kind` and `classifier`) when a run is given up,
-when the provider client cannot be built, when the provider permanently rejects a run (kind
-`provider-rejected`: a rejected key, exhausted credits, a malformed request or a guardrail block),
-when the oldest in-flight run is older than 26 hours
-(past the longest spend-cap parking window; throttled to once per hour), and when the oldest
-pending request is that old. C12 (#225) owns run-health alarms going forward.
+phase enqueues anything. The root tick also reads each classifier's receipt health before the
+spend-cap check, so a parked backlog is still seen, and the chained pages never read it. It alarms
+through `recordClassifierRunAlarm` (`@modules/on-error`, message `classifier_run_alarm`, grouped by
+`alarm_kind` and `classifier`) on a stuck run or request, a lost enqueue for an eligible feed item,
+a run of terminal failures, a run given up at the sweep bound, a provider client that cannot be
+built and a permanent provider rejection (kind `provider-rejected`: a rejected key, exhausted
+credits, a malformed request or a guardrail block). A failed health read is reported and never stops
+the sweep. The reads and thresholds are described in
+[receipt health](../../../services/classifier-runs/README.md#receipt-health).
 
 ## Classifier-run backoff
 

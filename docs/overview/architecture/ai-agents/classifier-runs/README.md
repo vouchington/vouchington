@@ -24,7 +24,8 @@ specific to a classifier; a classifier supplies only `ClassifierRunInputs`:
   hooks fire once per reserved attempt.
 - **Recorded failure, never a crash.** A `createClient` throw (for example a missing
   `OPENROUTER_API_KEY`) ends the remote half as terminal `client-unavailable`, keeps the local
-  outcome and raises one `classifier_run_alarm` Sentry message. `provider-error` and
+  outcome and raises one `classifier_run_alarm` Sentry message that names the error class and never
+  its message, which a client factory may build from configuration. `provider-error` and
   `invalid-result` failures after a reserved attempt are recorded and retried while attempts remain.
   A spend-cap rejection before the reservation releases the lease without consuming an attempt.
 - **A provider failure is classified once, here.** `classifyFailure`
