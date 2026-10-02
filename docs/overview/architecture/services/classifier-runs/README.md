@@ -249,8 +249,9 @@ classifier. It adds no metrics path: provider figures come from the
 counted). For each run reserved in a half-open window it returns the classifier, primitive,
 provider, model, prompt version, scope, batch id, shard count, retained candidate count, outcome,
 attempts, retries, sweep enqueues, provider calls, tokens, priced and unpriced calls, provider cost
-and latency. The same rows are summed per classifier, prompt version and scope, next to a count of
-durable requests per classifier.
+and latency. The same rows are summed per classifier, prompt version and scope, per content version
+and per classifier for [call efficiency](#call-efficiency-d3-kpi), next to a count of durable
+requests per classifier.
 
 - **Window.** Runs are selected by reservation time, an index range on the run `id`. A ledger row is
   joined with only a lower bound, because a retry is billed after its run was reserved and can land
@@ -279,8 +280,58 @@ durable requests per classifier.
   consumer's, from two windows of measured runs, and a figure with no measured baseline is reported
   as unmeasured.
 
-The report is read-only. Its first consumer is the Epic C KPI check (#223); until that check lands
-the function has no production caller.
+The report is read-only. Its consumer is the Epic C call-efficiency check below.
+
+### Call efficiency (D3 KPI)
+
+The Epic C KPI is at most one billed provider call per receipt: a classifier's run for one subject at
+one content version under one configuration, whatever the rules, topics, neighbors or toggled
+questions it asks about. The report answers it from the same rows, with no second metrics path:
+
+- **Content versions.** `contentVersions` sums a classifier's runs for one subject at one input
+  digest (and community publication) with `runs`, `billedRuns`, `providerCalls`,
+  `persistedDecisionCalls`, `retries`, cost and latency. `efficiency` sums them per classifier.
+- **The verdict is per receipt.** The KPI holds while `maxProviderCallsPerRun` is at most one and
+  `runsOverOneCall` is zero. Calls come from `classifier_runs.provider_attempts_started` and the
+  ledger rows, never queue jobs. A retry whose earlier attempt the provider refused still shows one
+  call, with the refused attempt in `attemptsWithoutRecordedResponse` and `retries`.
+- **Re-classification is a configuration change.** An unchanged content digest under an unchanged
+  configuration digest resolves to the same receipt, so a retrigger, a redelivery, a lease expiry
+  after persisting and a changed C6 candidate set all replay it without a call. A second billed run
+  of the same content means the configuration changed (a C8 rule edit, a new prompt version): it is
+  counted in `reclassifications` and read next to the KPI, never as a breach, because each receipt
+  was still allowed one call.
+- **The one case that can exceed it.** A crash or lease loss after the provider billed but before
+  the outcomes persist can spend another attempt within the attempt cap. That appears as
+  `runsOverOneCall` above zero with `persistedDecisionCalls` of one.
+- **Replays have no counter.** A replay bills nothing and writes nothing, so the evidence that
+  replays did not bill is the KPI staying at one while `requests` and `sweepEnqueues`, which are
+  diagnostic only, count the repeats.
+- **Local detection is apart.** C5's local detector appears as `localDetectorRuns` and never as a
+  call.
+
+**Fixture evidence.** `describeClassifierCallEfficiency` (in `backend/test-helpers`) runs the same
+four scenarios for C5, C6, C8 and C9 through the real worker path with a deterministic provider that
+bills a fixed cost: one call for a content version at one and at the scope's largest fan-out, no
+second call across a lease expiry after persisting, a redelivery and a retrigger, one billed call
+after a refused attempt, and no call after the candidate set changed. Each asserts the provider's own
+request count and the ledger rows as well as the report. The scope files add C5's local-only run
+(zero calls), C8's rule edit (one re-classification), an edited post (a new content version) and
+that an unpublish is neither billed nor applied twice.
+
+**Running it against an environment.** From a checkout with the target environment's PostgreSQL
+connection set, as for the other operational scripts:
+
+```sh
+node backend/scripts/classifier-call-efficiency.mts --from <ISO time> [--to <ISO time>] [--json]
+```
+
+It prints one block per classifier: the KPI verdict, calls per content version, retries,
+re-classifications, cost and latency, then the content versions over one call or re-classified.
+`--json` prints the whole report. Choose `--from` at the cutover and read windows no larger than the
+run cap, since a window past it is refused. Recording the measured post-cutover figures for the
+[Epic C](https://github.com/vouchington/vouchington/issues/177) close-out is a follow-up that needs
+a deployed environment; this page states the method and no figures.
 
 ## Adding a classifier
 
