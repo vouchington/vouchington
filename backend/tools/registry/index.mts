@@ -92,6 +92,7 @@ import updateReferralLinkTool from '../update-referral-link.mts'
 import updateTopicRecommendationTool from '../update-topic-recommendation.mts'
 import withdrawTopicRecommendationTool from '../withdraw-topic-recommendation.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
+import { searchReferenceReadTools } from './search-reference-read-tools.mts'
 
 export const ALL_TOOLS: readonly Tool[] = [
   ...adminEditorialStoryTools,
@@ -117,6 +118,7 @@ export const ALL_TOOLS: readonly Tool[] = [
   ...adminAppealsLifecycleTools,
   ...adminDisputesLifecycleTools,
   ...adminSiteOperationsTools,
+  ...searchReferenceReadTools,
   resolveModerationAppealTool,
   resolveReviewDisputeTool,
   activateReferralLinkTool,

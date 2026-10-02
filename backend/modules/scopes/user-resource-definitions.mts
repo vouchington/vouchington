@@ -16,12 +16,14 @@ const USER_RESOURCE_SCOPES = {
   preferences: ['read', 'write'],
   profile: ['read', 'write'],
   recommendations: ['read'],
+  'reference-data': ['read'],
   'referral-links': ['read', 'write'],
   'rewards-statuses': ['read', 'write'],
   spending: ['read', 'write'],
   'topic-recommendations': ['read', 'write'],
   topics: ['read'],
   users: ['read'],
+  'web-search': ['read'],
 } as const
 
 const SENSITIVE_DESCRIPTIONS: Record<string, ScopeDescriptionKey> = {

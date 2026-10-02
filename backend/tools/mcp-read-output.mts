@@ -6,6 +6,12 @@ import { closedObject, pickProperties } from './read-tool-output-schema.mts'
 export type McpPageLimit = { readonly min: number; readonly max: number; readonly default: number }
 
 /**
+ * The trending tools page like the signed-out REST routes: 25 at most where the authenticated
+ * routes allow 50, with the REST default of 10.
+ */
+export const TRENDING_PAGE_LIMIT: McpPageLimit = { min: 1, max: 25, default: 10 }
+
+/**
  * Free text from another user, as an MCP client receives it: sanitized, then fenced as external.
  * Missing or empty text is `null`, so a client never reads an empty fence as content.
  */

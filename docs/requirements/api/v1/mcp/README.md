@@ -137,6 +137,12 @@ id, is the same `{ success: false, error: "List not found" }`. `get_my_lists` le
 out without the grant, and `get_list_items` leaves out any post `get_post` would refuse, so a page
 can hold fewer than `limit` items while `has_next_page` is true. The paged tools take `limit` (1 to 25) and `after`; a malformed cursor returns `{ success: false, error: "Invalid cursor" }`.
 
+The [trending, referral, search and reference read tools](../../../../overview/architecture/agent-tools/search-reference-read-tools.md)
+(`get_trending_communities`, `get_trending_referral_programs`, `get_topic_referral_program`,
+`get_my_referral_links`, `search_web`, `list_countries`, `list_currencies`, `get_platform_stats`)
+read public data as a signed-out reader would, so a private community never appears.
+`get_my_referral_links` returns only the caller's own links. Web snippets are external content.
+
 ### Paged results
 
 `search_posts`, `search_topics`, `get_trending_posts` and `get_trending_topics` take the `after` and
