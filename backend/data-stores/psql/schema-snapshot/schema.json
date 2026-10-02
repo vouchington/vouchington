@@ -26194,20 +26194,10 @@
     "copyright_notice_email_intake_reviews": {
       "checkConstraints": {
         "copyright_notice_email_intake_review_rationale_ciphertext_check": "CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))",
-        "copyright_notice_email_intake_reviews_check": "CHECK (((accepted AND (promoted_copyright_notice_id IS NOT NULL)) OR ((NOT accepted) AND (promoted_copyright_notice_id IS NULL))))"
+        "copyright_notice_email_intake_reviews_check": "CHECK (((decision = 'approved'::text) = (promoted_copyright_notice_id IS NOT NULL)))",
+        "copyright_notice_email_intake_reviews_decision_check": "CHECK ((decision = ANY (ARRAY['approved'::text, 'rejected'::text, 'legal_process'::text])))"
       },
       "columns": {
-        "accepted": {
-          "collation": null,
-          "comment": "Whether the moderator accepted the structured intake.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
-          "type": "boolean"
-        },
         "copyright_notice_email_intake_id": {
           "collation": null,
           "comment": "Email intake reviewed by a moderator.",
@@ -26241,6 +26231,17 @@
           "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
+        "decision": {
+          "collation": null,
+          "comment": "Staff decision: approved opened a case, rejected declined the email as a copyright notice and may have queued a reply, legal_process closed it as legal process such as a subpoena with no reply, case, or claimant-visible event.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "text"
+        },
         "id": {
           "collation": null,
           "comment": null,
@@ -26254,7 +26255,7 @@
         },
         "promoted_copyright_notice_id": {
           "collation": null,
-          "comment": "Legal case created by an accepted review, if any.",
+          "comment": "Legal case created by an approved review; null for every other decision.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -26265,7 +26266,7 @@
         },
         "rationale_ciphertext": {
           "collation": null,
-          "comment": "Encrypted moderator rationale.",
+          "comment": "Encrypted staff rationale, or for legal_process the encrypted reason; it can name a legal matter and is never logged or returned.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -26287,7 +26288,7 @@
         },
         "reviewed_by_id": {
           "collation": null,
-          "comment": "Moderator who approved or rejected the intake; erased on account deletion.",
+          "comment": "Staff member who decided the intake; erased on account deletion.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -26308,7 +26309,7 @@
           "type": "timestamp with time zone"
         }
       },
-      "comment": "Append-only moderator approval or rejection of an email extraction. A moderator must review before an email can create or affect a copyright case.",
+      "comment": "Append-only staff decision on an email intake: approval into a case, rejection, or closure as legal process with no reply. This row is the audit record of the decision. A moderator must review before an email can create or affect a copyright case.",
       "foreignKeys": {
         "copyright_notice_email_intak_copyright_notice_email_intak_fkey3": {
           "columns": ["copyright_notice_email_intake_id"],
