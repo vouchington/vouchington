@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto'
+import { withTruncatedHttpResponseForTest } from '../../../test-helpers/truncated-http-response.mts'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchRobotsTxt, fetchRobotsTxtCached, isUrlCrawlable } from '../index.mts'
 import { ValkeyCache } from '@data-stores/valkey/cache'
@@ -178,5 +180,21 @@ describe('fetchRobotsTxt', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+})
+
+describe('real terminated robots response bodies', () => {
+  it('retries real terminated response bodies before allowing the owned domain', async () => {
+    const domain = `robots-${randomUUID()}.example.com`
+    await withTruncatedHttpResponseForTest(
+      `https://${domain}/robots.txt`,
+      async (transport, requestCount) => {
+        const result = await fetchRobotsTxt(domain, {
+          fetchWithTimeoutSimple: url => transport(url),
+        })
+        expect(result).toBe('User-agent: *\nAllow: /')
+        expect(requestCount()).toBe(3)
+      },
+    )
   })
 })

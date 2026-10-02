@@ -261,6 +261,11 @@ For a borrowed-query service that needs a healthy transaction first,
 `withPostgresTransactionForTest(operation)` waits for the operation, then rolls back its owned
 transaction on disposal. Keep this operation inside the fault helper's callback when injecting a
 later statement failure.
+`withPostgresAdvisoryLockQueryFailureForTest` scopes a fault to an owned advisory-pool client.
+It runs actual transaction-aborting SQL immediately before the exact original release query;
+the service owns `release(true)`, which closes that session and releases only its locks. The
+helper restores properties and waits for the actual bounded client-close event, retaining both
+processing and cleanup errors if closure fails.
 
 For a statement executed by the global read/write pool rather than an owned transaction, use
 `withPostgresPoolQueryFailureForTest` from `@voucha/test-helpers/postgres-pool-query-failure` with
@@ -282,8 +287,14 @@ For owned blacklist fixtures, `deleteTestBlacklistSource(sourceId)` removes the 
 its foreign-key-owned entries. Never clear the shared Bloom filter; use a fresh random hostname.
 `getTestGooglePlayVerificationRetryState(id)` reads the owned verification's claim and retry
 metadata when asserting that a real processing failure releases its lease and records retry state.
+`getTestPostModerationAttemptStateForPost(postId, source)` reads the latest attempt and its work
+lease for one owned post/source when asserting durable worker failure and retry state.
 `provider-http` supplies actual Undici `MockAgent` HTTP parsing for injected provider fetches;
 its default-export fetch observer restores the external SDK method even when processing throws.
+`withTruncatedHttpResponseForTest` owns a loopback HTTP server and Undici dispatcher. It verifies
+the expected synthetic provider URL, returns actual response headers, then terminates only that
+response socket to exercise production body-reader and network-error classification. Its callback
+receives the real transport and request count; server and dispatcher close after the callback.
 
 ## Notification Push Recovery Backlogs
 
