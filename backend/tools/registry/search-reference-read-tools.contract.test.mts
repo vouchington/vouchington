@@ -93,7 +93,8 @@ describe('search_web — real DB', () => {
     expect(Object.keys(match.url.hostname!).toSorted()).toEqual(['hostname', 'id', 'topic_id'])
     expect(match.url.hostname).toMatchObject({ hostname: contentHost, topic_id: null })
     // The snippet is text from another website: it comes back fenced, never as bare text.
-    expect(match.snippet).toContain(token)
+    // Highlighting may split a hex token at digit/letter boundaries, so compare the unmarked text.
+    expect(match.snippet!.replaceAll(/⟦\/?MARK⟧/g, '')).toContain(token)
     expect(match.snippet).toMatch(
       /^<external-content source="web_search"[\s\S]*<\/external-content>/,
     )
