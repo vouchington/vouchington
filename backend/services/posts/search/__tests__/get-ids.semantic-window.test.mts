@@ -1,3 +1,5 @@
+import { runIsolatedDatabaseCase } from '../../../../../test-helpers/vitest-isolated-database-case.mts'
+import { getIsolatedDatabaseCaseMode } from '../../../../../test-helpers/vitest-isolated-database-cases.mts'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { createTestUser, seedSearchEmbeddingCache } from '@voucha/test-helpers'
@@ -11,6 +13,10 @@ import { SEMANTIC_POST_CANDIDATE_LIMIT } from '../query-builder/semantic-candida
 
 describe('semantic search candidate paging', () => {
   it('ends pagination at the fixed window and counts the same candidates', async () => {
+    if (getIsolatedDatabaseCaseMode('semantic-post-window-cap') === 'parent') {
+      await runIsolatedDatabaseCase('semantic-post-window-cap')
+      return
+    }
     const user = await createTestUser()
     const embedding = createSemanticWindowEmbedding()
     const ids = await insertSemanticWindowPosts(
@@ -46,6 +52,10 @@ describe('semantic search candidate paging', () => {
   })
 
   it('fills a selective page and preserves distance ranking for semantic and hybrid queries', async () => {
+    if (getIsolatedDatabaseCaseMode('semantic-post-window-selective') === 'parent') {
+      await runIsolatedDatabaseCase('semantic-post-window-selective')
+      return
+    }
     const other = await createTestUser()
     const embedding = createSemanticWindowEmbedding()
     await insertSemanticWindowPosts(other.id, 100, embedding)

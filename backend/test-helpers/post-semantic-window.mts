@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import sql from 'sql-template-strings'
+import pgvector from 'pgvector'
 import { beginTransaction } from '@data-stores/psql'
 
 /** Random direction keeps persistent ANN fixtures apart without duplicate vectors. */
@@ -40,6 +41,10 @@ export async function insertSemanticWindowPosts(
     UPDATE posts SET latest_clearance_change_id = changes.id, approved_at = changes.created_at
     FROM changes WHERE posts.id = changes.post_id
   `)
+  const { rows: ordered } = await transaction<{ id: string }>(sql`/* insertSemanticWindowPosts */
+    SELECT id FROM posts WHERE id = ANY(${ids}::uuid[])
+    ORDER BY bedrock_nova_multimodal_v1_embedding <=> ${pgvector.toSql(embedding)}::vector, id
+  `)
   await transaction.commit()
-  return ids
+  return ordered.map(row => row.id)
 }

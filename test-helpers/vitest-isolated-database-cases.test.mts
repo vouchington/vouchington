@@ -91,6 +91,19 @@ describe('isolated database case selection', () => {
     expect(() => getIsolatedDatabaseCase('other')).toThrow('Unknown isolated database case')
   })
 
+  it('runs each semantic search regression only in its selected disposable child', () => {
+    for (const caseId of ['semantic-post-window-cap', 'semantic-post-window-selective'] as const) {
+      const selected = getIsolatedDatabaseCase(caseId)
+      const pattern = new RegExp(isolatedTestNamePattern(caseId))
+      expect(pattern.test(selected.fullName)).toBe(true)
+      expect(pattern.test(`${selected.fullName} extra`)).toBe(false)
+      expect(getIsolatedDatabaseCaseMode(caseId, {})).toBe('parent')
+      const env = { ...childEnv, VITEST_ISOLATED_DATABASE_CASE: caseId }
+      expect(getIsolatedDatabaseCaseMode(caseId, env)).toBe('child')
+      expect(getIsolatedDatabaseChildCase(env)).toEqual(selected)
+    }
+  })
+
   it('anchors the selected test name instead of matching a prefix or sibling', () => {
     const { fullName } = getIsolatedDatabaseCase('activitypub-expiry')
     const pattern = new RegExp(isolatedTestNamePattern('activitypub-expiry'))
