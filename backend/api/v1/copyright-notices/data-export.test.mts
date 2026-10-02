@@ -1,11 +1,6 @@
-import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CloudFrontClient, type CreateInvalidationCommandOutput } from '@aws-sdk/client-cloudfront'
 import { DynamoDBClient, type PutItemCommandOutput } from '@aws-sdk/client-dynamodb'
-import { parseCsvRows } from '@modules/csv'
-import { writeExportFiles } from '@services/account-data-requests/export'
 import { COPYRIGHT_CASE_TIMELINE_EVENT_TYPES } from '@services/account-data-requests/stream-copyright-cases'
 import { getCopyrightPublicNoticeDetail } from '@services/copyright-notices/read-models'
 import {
@@ -19,6 +14,7 @@ import { createCopyrightFormFixture } from '@services/copyright-notices/route-te
 import { createTestUser, hardDeleteTestUser } from '@voucha/test-helpers'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
+import { readAccountExport } from '@voucha/test-helpers/services/copyright-notices/read-account-export'
 
 const COPYRIGHT_FILES = [
   'copyright-notices-filed.csv',
@@ -28,11 +24,6 @@ const COPYRIGHT_FILES = [
   'copyright-repeat-infringer-incidents.csv',
   'copyright-repeat-infringer-reviews.csv',
 ]
-
-type ExportView = {
-  rows: (file: string) => Record<string, string>[]
-  serialized: string
-}
 
 describe('copyright records in the account data export', () => {
   useCopyrightIntakeEnvironment()
@@ -54,8 +45,8 @@ describe('copyright records in the account data export', () => {
 
   it('gives each party their own filings in full and the other side only as the in-app projection', async () => {
     const scene = await createBothRolesScene()
-    const claimantExport = await readExport(scene.claimant.id)
-    const posterExport = await readExport(scene.poster.id)
+    const claimantExport = await readAccountExport(scene.claimant.id)
+    const posterExport = await readAccountExport(scene.poster.id)
 
     const [filed] = claimantExport.rows('copyright-notices-filed.csv')
     expect(filed).toMatchObject({
@@ -123,7 +114,7 @@ describe('copyright records in the account data export', () => {
     expect(aggregate?.lifecycleEvents.length).toBeGreaterThan(detail.timeline.length)
 
     for (const user of [scene.claimant, scene.poster]) {
-      const [row] = (await readExport(user.id)).rows('copyright-cases.csv')
+      const [row] = (await readAccountExport(user.id)).rows('copyright-cases.csv')
       expect(row).toMatchObject({
         notice_id: detail.id,
         jurisdiction: detail.jurisdiction,
@@ -156,7 +147,7 @@ describe('copyright records in the account data export', () => {
 
   it('lists a repeat-infringer incident for the poster without any claimant identity', async () => {
     const scene = await createBothRolesScene()
-    const incidents = (await readExport(scene.poster.id)).rows(
+    const incidents = (await readAccountExport(scene.poster.id)).rows(
       'copyright-repeat-infringer-incidents.csv',
     )
 
@@ -172,7 +163,7 @@ describe('copyright records in the account data export', () => {
       'disposition_recorded_at',
     ])
     expect(JSON.stringify(incidents)).not.toContain(scene.claimant.id)
-    expect((await readExport(scene.claimant.id)).rows(COPYRIGHT_FILES[4]!)).toEqual([])
+    expect((await readAccountExport(scene.claimant.id)).rows(COPYRIGHT_FILES[4]!)).toEqual([])
   }, 60_000)
 
   it('has no copyright records for an erased account, and the other side loses the attribution', async () => {
@@ -180,11 +171,11 @@ describe('copyright records in the account data export', () => {
     // An operative repeat-infringer incident blocks erasing the poster, so only the claimant erases.
     await hardDeleteTestUser(scene.claimant.id)
 
-    const erased = await readExport(scene.claimant.id)
+    const erased = await readAccountExport(scene.claimant.id)
     for (const file of COPYRIGHT_FILES) expect(erased.rows(file)).toEqual([])
     for (const secret of scene.claimantSecrets) expect(erased.serialized).not.toContain(secret)
 
-    const posterExport = await readExport(scene.poster.id)
+    const posterExport = await readAccountExport(scene.poster.id)
     expect(posterExport.rows('copyright-cases.csv')).toEqual([
       expect.objectContaining({ viewer_role: 'poster', claimant_user_id: '' }),
     ])
@@ -270,26 +261,5 @@ async function createBothRolesScene() {
     posterPii,
     claimantSecrets: Object.values(claimantPii),
     posterSecrets: Object.values(posterPii),
-  }
-}
-
-async function readExport(userId: string): Promise<ExportView> {
-  const parentDir = await mkdtemp(join(tmpdir(), 'voucha-copyright-export-test-'))
-  const exportDir = join(parentDir, 'export')
-  try {
-    await writeExportFiles(userId, exportDir)
-    const names = await readdir(exportDir)
-    const contents = await Promise.all(names.map(name => readFile(join(exportDir, name), 'utf8')))
-    const files = new Map(names.map((name, index) => [name, contents[index]!]))
-    return {
-      rows: file => {
-        const csv = files.get(file)
-        if (csv === undefined) throw new Error(`${file} missing from the export`)
-        return parseCsvRows(csv)
-      },
-      serialized: [...files.values()].join('\n'),
-    }
-  } finally {
-    await rm(parentDir, { recursive: true, force: true })
   }
 }

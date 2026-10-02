@@ -84,6 +84,14 @@ work in [#1230](https://github.com/vouchington/vouchington/issues/1230).
   and court or CCB filings are not exported; no signed-in court or CCB filing exists yet.
 - **Erased accounts** have no copyright records: their claimant and submitter links are cleared, and
   the other party's case view loses the attribution.
+- **Erased cases.** When the [retention sweep](../moderation/COPYRIGHT-NOTICES.md#evidence-retention)
+  erases a case, it clears the claimant, requester and submitter links in the same transaction, so
+  the filings drop out of the exports of the accounts that made them. The poster's
+  `copyright-cases.csv` row stays, with `erased_by_retention_at` set to the time of erasure (empty
+  before) and no claimant attribution. The export never fails on erased text: a filed notice,
+  appeal or counter-notice that still reaches an erased column reads `[erased by the retention policy]`
+  in each erased cell, and a ciphertext that is neither erased nor decryptable still fails the
+  export.
 
 ## Data Request Lifecycle
 

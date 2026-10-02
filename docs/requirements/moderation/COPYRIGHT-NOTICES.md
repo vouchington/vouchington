@@ -689,6 +689,11 @@ confirms the rule under [#1230](https://github.com/vouchington/vouchington/issue
   and are not exported. EU and UK redress records and court or CCB filings are not exported, and
   claimants who only used email have no account, so they use a manual request.
 - An erased account's export has no copyright records.
+- A case the [retention sweep](#evidence-retention) has erased never fails the export. The
+  sweep clears the claimant, requester and submitter links with the text, so the account that filed
+  or posted loses that case's own filings from its export. The other party's `copyright-cases.csv`
+  row stays, with `erased_by_retention_at` set and no claimant attribution. Any erased text that is
+  still reachable reads `[erased by the retention policy]` rather than failing to decrypt.
 
 See [account data export](../users/ACCOUNT-DATA-EXPORT.md#copyright-records) for the files.
 
@@ -770,8 +775,9 @@ period.
 [Enabling it](../../runbooks/copyright-notices.md#evidence-retention-deletion) needs a
 counsel-approved period
 ([#1230](https://github.com/vouchington/vouchington/issues/1230)), the evidence-bucket delete
-permission ([#1229](https://github.com/vouchington/vouchington/issues/1229)), and an account data
-export that tolerates erased rows ([#1754](https://github.com/vouchington/vouchington/issues/1754)).
+permission ([#1229](https://github.com/vouchington/vouchington/issues/1229)), and a check that the
+account data export of an erased case completes ([#1754](https://github.com/vouchington/vouchington/issues/1754);
+[data export](#data-export)).
 
 ## Review-target page
 
