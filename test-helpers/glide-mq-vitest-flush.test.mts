@@ -176,18 +176,17 @@ describe('GlideMQ test drain', () => {
     }
   })
 
-  it('shares one completed listener across concurrent flushes', async () => {
+  it('shares one set of queue listeners across concurrent flushes', async () => {
     const queue = getOrCreateQueue(uniqueQueueName('shared-listener'))
-    const worker = new TestWorker(queue, async (job: { data: unknown }) => job.data)
-    workers.push(worker)
+    workers.push(new TestWorker(queue, async (job: { data: unknown }) => job.data))
+    const listenersBefore = queue.listenerCount('completed')
 
     const jobs = await Promise.all(
       Array.from({ length: 12 }, (_, index) => addAndFlush(queue, 'n', { index })),
     )
     expect(jobs).toHaveLength(12)
-    expect(
-      (worker as { listenerCount: (event: string) => number }).listenerCount('completed'),
-    ).toBe(1)
+    expect(queue.listenerCount('completed')).toBe(listenersBefore)
+    expect(queue.settleWaiters.size).toBe(0)
   })
 
   it('throws TestQueueFlushTimeoutError for a hung processor', async () => {

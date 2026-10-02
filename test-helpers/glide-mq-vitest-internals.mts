@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
-import { TestJob, TestQueue, TestWorker } from 'glide-mq/testing'
+import { type TestJob, TestQueue, type TestWorker } from 'glide-mq/testing'
 
 const testWorkerProcessorContext = new AsyncLocalStorage<true>()
 
@@ -17,15 +17,67 @@ export function wrapTestWorkerProcessor<R>(
 ): (job: any) => Promise<R> {
   return job => runInsideTestWorkerProcessor(() => Promise.resolve(processor(job)))
 }
-type DeadLetterSourceJob = {
-  id: string
-  name: string
-  data: unknown
-  attemptsMade?: number
-  failedReason?: string
-}
+
 export const deadLetterQueueNames = new Map<string, string>()
-const queues = new Map<string, TestQueue>()
+
+/**
+ * glide-mq's in-memory queue plus the two behaviours the shim layers on top of it:
+ *
+ * - A retryable failure parks the job in `delayed` for its backoff (glide-mq 0.16). Tests run in
+ *   real time, so the `retrying` hook promotes it straight back instead of sleeping through the
+ *   backoff. A RateLimitError also emits `retrying`; the worker still honours its own rate-limit
+ *   pause before it dispatches the promoted job again.
+ * - A terminal failure (`failed`) is forwarded to the configured dead-letter queue, which test mode
+ *   does not implement. Production only forwards after attempts are exhausted, as `failed` does.
+ *   It is also recorded for any flush that is watching, because `removeOnFail: true` deletes the job
+ *   record before the event fires and a flush that only read records would miss the failure.
+ *
+ * `TestQueue.close()` removes every listener, so the hooks are re-installed afterwards: the shim
+ * keeps handing out the same queue after a test closes it.
+ */
+export type FlushedJobFailure = { name: string; reason: string }
+
+export class ShimTestQueue<D = any, R = any> extends TestQueue<D, R> {
+  /** Flush waiters, woken whenever any job on this queue completes or fails. */
+  readonly settleWaiters = new Set<() => void>()
+  /** Terminal failures by job id, filled for as long as a flush holds its map in this set. */
+  readonly failureWatchers = new Set<Map<string, FlushedJobFailure>>()
+  readonly #recordFailure = (job: TestJob, err: unknown) => {
+    const failure = {
+      name: job.name,
+      reason: job.failedReason ?? (err instanceof Error ? err.message : String(err)),
+    }
+    for (const watcher of this.failureWatchers) watcher.set(job.id, failure)
+  }
+  readonly #notifySettleWaiters = () => {
+    for (const waiter of [...this.settleWaiters]) waiter()
+  }
+
+  constructor(name: string) {
+    super(name)
+    this.#installHooks()
+  }
+
+  override async close(): Promise<void> {
+    await super.close()
+    this.#installHooks()
+  }
+
+  #installHooks(): void {
+    this.on('retrying', promoteRetriedJob)
+    this.on('failed', (job: TestJob) => forwardToDeadLetterQueue(this.name, job))
+    this.on('failed', this.#recordFailure)
+    this.on('failed', this.#notifySettleWaiters)
+    this.on('completed', this.#notifySettleWaiters)
+  }
+}
+
+/** A concurrent change (the job was removed or already promoted) leaves nothing to promote. */
+function promoteRetriedJob(job: TestJob): void {
+  job.promote().catch(() => undefined)
+}
+
+const queues = new Map<string, ShimTestQueue>()
 
 /** Snapshot every TestWorker currently attached through the in-memory queue shim. */
 export function captureAttachedTestWorkers(): ReadonlySet<TestWorker> {
@@ -52,13 +104,14 @@ export function getUnexpectedAttachedTestWorkerQueueNames(
   return [...names].toSorted()
 }
 
-export function getOrCreateQueue(name: string): TestQueue {
+export function getOrCreateQueue(name: string): ShimTestQueue {
   const existing = queues.get(name)
   if (existing) return existing
-  const queue = new TestQueue(name, { dedup: false })
+  const queue = new ShimTestQueue(name)
   queues.set(name, queue)
   return queue
 }
+
 export function configureDeadLetterQueue(
   queueName: string,
   deadLetterQueue?: { name: string },
@@ -66,108 +119,72 @@ export function configureDeadLetterQueue(
   if (deadLetterQueue?.name) deadLetterQueueNames.set(queueName, deadLetterQueue.name)
 }
 
-export function kickQueue(queue: TestQueue): void {
-  for (const worker of queue.workers as Set<any>) {
-    if (typeof worker.processAvailable === 'function') worker.processAvailable()
-    else if (typeof worker.onJobAdded === 'function') worker.onJobAdded()
-  }
-}
-/** Move one failed TestQueue job back to waiting, matching TestQueue.retryJobs. */
-export function retryFailedTestJob(queue: TestQueue, jobId: string): void {
-  const record = queue.jobs.get(jobId)
-  if (!record || record.state !== 'failed') return
-  record.state = 'waiting'
-  record.attemptsMade = 0
-  record.failedReason = undefined
-  record.finishedOn = undefined
-  queue.waitingQueue.push(record)
-  kickQueue(queue)
-}
-export function attachTestJobRetry(queue: TestQueue, job: TestJob | null) {
-  if (!job) return null
-  const withRetry = job as TestJob & { retry: () => Promise<void> }
-  withRetry.retry = async () => retryFailedTestJob(queue, job.id)
-  return withRetry
-}
 const MAX_TEST_WORKER_CONCURRENCY = 15
+
 /** Clamp a requested worker concurrency to the in-memory test worker cap. */
 export function clampTestWorkerConcurrency(concurrency?: number): number {
   return concurrency != null
     ? Math.min(concurrency, MAX_TEST_WORKER_CONCURRENCY)
     : MAX_TEST_WORKER_CONCURRENCY
 }
-/** Wire a TestWorker's 'failed' listener to forward jobs into the configured dead-letter queue. */
-export function wireDeadLetterQueue(
-  worker: TestWorker,
-  queueName: string,
-  deadLetterQueue?: { name: string },
-): void {
-  if (!deadLetterQueue?.name) return
-  const dlqName = deadLetterQueue.name
-  worker.on('failed', job => {
-    addDeadLetterJob(queueName, dlqName, job).catch(() => undefined)
-  })
+
+function forwardToDeadLetterQueue(queueName: string, job: TestJob): void {
+  const dlqName = deadLetterQueueNames.get(queueName)
+  if (!dlqName) return
+  getOrCreateQueue(dlqName)
+    .add(job.name, {
+      originalQueue: queueName,
+      originalJobId: job.id,
+      data: job.data,
+      failedReason: job.failedReason,
+      // The job copy was taken at dispatch, before the worker counted the failing attempt.
+      attemptsMade: job.attemptsMade + 1,
+    })
+    .catch(() => undefined)
 }
+
 export async function getDeadLetterJobs(queueName: string, start = 0, end = -1) {
   const dlqName = deadLetterQueueNames.get(queueName)
   if (!dlqName) return []
-  const existingJobs = await getQueueJobs(dlqName)
-  return existingJobs.slice(start, end === -1 ? undefined : end + 1)
+  const jobs = await getOrCreateQueue(dlqName).searchJobs({})
+  return jobs.slice(start, end === -1 ? undefined : end + 1)
 }
+
 export function getDeadLetterJob(queueName: string, jobId: string) {
   const dlqName = deadLetterQueueNames.get(queueName)
   if (!dlqName) return null
   return getOrCreateQueue(dlqName).getJob(jobId)
 }
-export function removeDeadLetterJob(queueName: string, jobId: string): Promise<boolean> {
-  const dlqName = deadLetterQueueNames.get(queueName)
-  if (!dlqName) return Promise.resolve(false)
-  return Promise.resolve(getOrCreateQueue(dlqName).jobs.delete(jobId))
+
+export async function removeDeadLetterJob(queueName: string, jobId: string): Promise<boolean> {
+  const job = await getDeadLetterJob(queueName, jobId)
+  if (!job) return false
+  await job.remove()
+  return true
 }
+
 export async function replayDeadLetterJob(queueName: string, jobId: string) {
   const dlqJob = await getDeadLetterJob(queueName, jobId)
   if (!dlqJob) return null
   const envelope = dlqJob.data as { data?: unknown; originalJobId?: string; originalQueue?: string }
   if (!envelope?.originalQueue) throw new Error('DLQ entry is missing originalQueue metadata')
   const originalQueue = getOrCreateQueue(envelope.originalQueue)
-  const originalRecord =
-    envelope.originalJobId && originalQueue.jobs.get(envelope.originalJobId)
-      ? originalQueue.jobs.get(envelope.originalJobId)
-      : undefined
-  const opts = originalRecord?.opts
-    ? omitReplayUnsafeOptions(originalRecord.opts as Record<string, unknown>)
-    : undefined
-  const replayed = await originalQueue.add(dlqJob.name, envelope.data ?? null, opts as any)
+  const originalJob = envelope.originalJobId
+    ? await originalQueue.getJob(envelope.originalJobId)
+    : null
+  const opts = originalJob ? omitReplayUnsafeOptions(originalJob.opts) : undefined
+  const replayed = await originalQueue.add(dlqJob.name, envelope.data ?? null, opts)
   await removeDeadLetterJob(queueName, jobId)
-  kickQueue(originalQueue)
   return replayed
 }
-function omitReplayUnsafeOptions(opts: Record<string, unknown>): Record<string, unknown> {
+
+function omitReplayUnsafeOptions(opts: object): Record<string, unknown> {
   const {
     jobId: _jobId,
     delay: _delay,
     deduplication: _deduplication,
     parent: _parent,
     ...safeOpts
-  } = opts
+  } = opts as Record<string, unknown>
   return safeOpts
-}
-async function addDeadLetterJob(
-  originalQueue: string,
-  deadLetterQueue: string,
-  job: DeadLetterSourceJob,
-): Promise<void> {
-  const dlq = getOrCreateQueue(deadLetterQueue)
-  await dlq.add(job.name, {
-    originalQueue,
-    originalJobId: job.id,
-    data: job.data,
-    failedReason: job.failedReason,
-    attemptsMade: job.attemptsMade ?? 0,
-  })
-}
-async function getQueueJobs(queueName: string) {
-  const queue = getOrCreateQueue(queueName)
-  const jobs = await Promise.all(Array.from(queue.jobs.keys()).map(id => queue.getJob(id)))
-  return jobs.filter(job => job !== null)
 }
