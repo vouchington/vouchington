@@ -19,6 +19,19 @@ export async function reviseStoryClusteringItem(itemId: string): Promise<Buffer>
   return inputSha256
 }
 
+/**
+ * Moves the item to new content and rebuilds its embedding at that content, as a re-upsert followed
+ * by the embedder does, so the item is ready to cluster again at the new digest.
+ */
+export async function reviseAndEmbedStoryClusteringItem(itemId: string): Promise<Buffer> {
+  const inputSha256 = await reviseStoryClusteringItem(itemId)
+  await write(sql`/* embedRevisedStoryClusteringItemForTest */
+    UPDATE rss_feed_items
+    SET bedrock_nova_multimodal_v1_input_sha256 = bedrock_nova_multimodal_v1_content_sha256
+    WHERE id = ${itemId}`)
+  return inputSha256
+}
+
 /** Pins an admin's official item on the story, the lock no agent may override. */
 export async function lockStoryOfficialItemForTest(storyId: string, itemId: string): Promise<void> {
   await write(sql`/* lockStoryOfficialItemForTest */

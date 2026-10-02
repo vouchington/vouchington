@@ -2,12 +2,17 @@ import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
 import { reserveClassifierDecisionBatch } from '@services/classifiers/write-decision-lineage'
 import { retainPublicationIdentityBridges } from '@services/post-publication/identity-bridges'
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { pinnedStoredCandidateIds } from './remote-plan.mts'
-import { captureRunCandidates } from './run-capture.mts'
 import {
   insertClassifierRunCandidates,
   insertClassifierRunStoryCandidates,
 } from './run-candidates.mts'
+import { pinnedStoredCandidateIds } from './remote-plan.mts'
+import {
+  PREPARE_AGAIN,
+  attemptWithPreparedCandidates,
+  captureRunCandidates,
+  type PreparedClassifierCandidates,
+} from './run-capture.mts'
 import { settleClassifierRunRequest } from './run-requests.mts'
 import type {
   ClassifierRunAdapter,
@@ -32,24 +37,53 @@ export type ReserveClassifierRunResult =
  * Persists the run intent before its job is enqueued and settles the subject's request in the same
  * transaction. The receipt snapshot is the only configuration a later worker may claim, so a
  * changed candidate set, retry or replay can never create a second receipt for the same identity.
+ *
+ * A new receipt's candidates are chosen before the subject lock is taken, so the vector search and
+ * its lookups never hold the lock. The locked transaction keeps only what correctness needs: the
+ * current content and configuration are re-read, and the prepared candidates are used only when
+ * both still match. When the subject changed meanwhile it prepares again, a bounded number of times.
  */
 export async function reserveClassifierRun<C, L, E>(
   adapter: ClassifierRunAdapter<C, L, E>,
   subject: ClassifierRunSubject,
 ): Promise<ReserveClassifierRunResult> {
+  return attemptWithPreparedCandidates(
+    adapter,
+    subject,
+    prepared => reserveOnce(adapter, subject, prepared),
+    { kind: 'not-ready' },
+  )
+}
+
+async function reserveOnce<C, L, E>(
+  adapter: ClassifierRunAdapter<C, L, E>,
+  subject: ClassifierRunSubject,
+  prepared: PreparedClassifierCandidates | null,
+): Promise<ReserveClassifierRunResult | typeof PREPARE_AGAIN> {
   await using query = await beginTransaction()
-  const current = await adapter.lockCurrent(query, subject)
-  const result = await reserveLockedClassifierRun(adapter, query, subject, current)
-  await query.commit()
+  const result = await lockAndReserve(adapter, query, subject, prepared)
+  if (result !== PREPARE_AGAIN) await query.commit()
   return result
 }
 
+async function lockAndReserve<C, L, E>(
+  adapter: ClassifierRunAdapter<C, L, E>,
+  query: OwnedTransaction,
+  subject: ClassifierRunSubject,
+  prepared: PreparedClassifierCandidates | null,
+): Promise<ReserveClassifierRunResult | typeof PREPARE_AGAIN> {
+  const current = await adapter.lockCurrent(query, subject)
+  return reserveLockedClassifierRun(adapter, query, subject, current, prepared)
+}
+
+/** The locked reservation, or a request to prepare again because the subject changed under it. */
 export async function reserveLockedClassifierRun<C, L, E>(
   adapter: ClassifierRunAdapter<C, L, E>,
   query: OwnedTransaction,
   subject: ClassifierRunSubject,
   current: CurrentClassifierRunInput | null,
-): Promise<ReserveClassifierRunResult> {
+  prepared: PreparedClassifierCandidates | null,
+): Promise<ReserveClassifierRunResult | typeof PREPARE_AGAIN> {
   if (!current) {
     await settleClassifierRunRequest(query, adapter.slug, subject, { kind: 'stale' })
     return { kind: 'stale' }
@@ -57,8 +91,9 @@ export async function reserveLockedClassifierRun<C, L, E>(
   if (adapter.ready && !(await adapter.ready(query, subject))) return { kind: 'not-ready' }
   const resolved = await adapter.resolve(subject, current, query)
   const captured = resolved
-    ? await captureRunCandidates(adapter, query, subject, current, resolved)
+    ? await captureRunCandidates(adapter, query, subject, current, resolved, prepared)
     : null
+  if (captured === PREPARE_AGAIN) return PREPARE_AGAIN
   if (!resolved || !captured) {
     await settleClassifierRunRequest(query, adapter.slug, subject, {
       kind: 'no-work',

@@ -5,6 +5,7 @@ import sql from 'sql-template-strings'
 import {
   claimClassifierRun,
   requestClassifierRuns,
+  requestRssFeedItemClassifierRuns,
   reserveClassifierRun,
   type ClassifierRunLease,
 } from '../../../../services/classifier-runs/index.mts'
@@ -89,6 +90,11 @@ export function requestStoryClusteringRun(item: StoryClusteringItem) {
     inputSha256: item.inputSha256,
     classifierSlugs: [STORY_CLUSTERING_CLASSIFIER_SLUG],
   })
+}
+
+/** The upsert's request write for feed items, as the RSS upsert transaction makes it. */
+export function requestStoryClusteringFeedItems(itemIds: readonly string[]) {
+  return requestRssFeedItemClassifierRuns(write, itemIds, [STORY_CLUSTERING_CLASSIFIER_SLUG])
 }
 
 /** The request, then the reservation a dispatcher makes (which captures the candidates). */

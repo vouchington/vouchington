@@ -7,6 +7,17 @@ export function capturesCandidates(
   return remote?.candidateKind === 'topic' && remote.capturedCandidates
 }
 
+/**
+ * Which candidates the run chooses when its receipt is reserved: topics for a plan that does not
+ * pin them, always stories for story clustering, none for a pinned or prompt-only plan.
+ */
+export function capturedCandidateKind(
+  remote: RemotePlan | null | undefined,
+): 'topic' | 'story' | null {
+  if (remote?.candidateKind === 'story') return 'story'
+  return capturesCandidates(remote) ? 'topic' : null
+}
+
 /** The stored candidate rows the decision batch pins at reservation; only topic plans have any. */
 export function pinnedStoredCandidateIds(remote: RemotePlan): readonly string[] {
   return remote.candidateKind === 'topic'

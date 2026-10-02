@@ -47,9 +47,32 @@ export async function requestClassifierRuns(
 }
 
 /**
+ * Returns the requests the sweep retired as stale at this content version to the sweep, in the
+ * caller's transaction, when the subject is live at that content again (a post approved again after
+ * the sweep retired its requests while it was not approved). It only revives: it never creates a
+ * request, never widens the classifiers a producer asked for, and never re-arms one settled by a run
+ * or as no work.
+ */
+export async function reviveClassifierRunRequests(
+  query: QueryExecutor,
+  input: { subject: ClassifierRunSubject; inputSha256: Buffer },
+): Promise<void> {
+  await query(
+    sql`/* reviveClassifierRunRequests */
+    UPDATE classifier_run_requests request
+    SET stale_at = NULL
+    WHERE request.input_sha256 = ${input.inputSha256}
+      AND request.run_id IS NULL AND request.no_work_at IS NULL AND request.stale_at IS NOT NULL
+      AND `.append(requestSubject(input.subject)),
+  )
+}
+
+/**
  * Records requests for a batch of just-upserted feed items at their current content digest, in the
  * upsert transaction. Unlike a re-approval, a re-upsert of the same content never re-arms a request
- * that already settled; an unsettled request for older content is stale.
+ * that settled with a run or as no work; an unsettled request for older content is stale. A request
+ * the sweep retired as stale (the item was deleted, or its content moved on) is re-armed, because
+ * the item is live at that content again.
  */
 export async function requestRssFeedItemClassifierRuns(
   query: QueryExecutor,
@@ -75,14 +98,16 @@ export async function requestRssFeedItemClassifierRuns(
     CROSS JOIN classifiers classifier
     WHERE item.id = ANY(${ids}::uuid[]) AND classifier.slug = ANY(${slugs}::text[])
     ON CONFLICT (classifier_id, rss_feed_item_id, input_sha256)
-      WHERE rss_feed_item_id IS NOT NULL DO NOTHING
+      WHERE rss_feed_item_id IS NOT NULL
+      DO UPDATE SET stale_at = NULL WHERE classifier_run_requests.stale_at IS NOT NULL
   `)
 }
 
 export type ClassifierRunRequestSettlement =
   | { kind: 'run'; runId: string; inputSha256: Buffer }
   | { kind: 'no-work'; inputSha256: Buffer }
-  | { kind: 'stale' }
+  /** Settles every unsettled request of the subject, or only the one for `inputSha256` when given. */
+  | { kind: 'stale'; inputSha256?: Buffer }
 
 /** Settles the subject's request in the transaction that decided its outcome. */
 export async function settleClassifierRunRequest(
@@ -92,10 +117,14 @@ export async function settleClassifierRunRequest(
   settlement: ClassifierRunRequestSettlement,
 ): Promise<void> {
   const runId = settlement.kind === 'run' ? settlement.runId : null
+  const unsettled = sql` AND request.run_id IS NULL AND request.no_work_at IS NULL
+      AND request.stale_at IS NULL`
   const scope =
-    settlement.kind === 'stale'
-      ? sql` AND request.run_id IS NULL AND request.no_work_at IS NULL AND request.stale_at IS NULL`
-      : sql` AND request.input_sha256 = ${settlement.inputSha256}`
+    settlement.kind !== 'stale'
+      ? sql` AND request.input_sha256 = ${settlement.inputSha256}`
+      : settlement.inputSha256
+        ? unsettled.append(sql` AND request.input_sha256 = ${settlement.inputSha256}`)
+        : unsettled
   await query(
     sql`/* settleClassifierRunRequest */
     UPDATE classifier_run_requests request
