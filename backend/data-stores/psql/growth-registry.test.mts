@@ -168,7 +168,7 @@ describe('schema growth registry', () => {
     })
     expect(PARTITION_POLICIES.get('story_classifier_results')).toMatchObject({
       strategy: 'RANGE',
-      key: 'story_id',
+      key: 'batch_id',
       children: 'default',
     })
     expect(PARTITION_POLICIES.get('community_prompt_classifier_results')).toMatchObject({

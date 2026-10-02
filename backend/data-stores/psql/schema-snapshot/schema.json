@@ -10225,23 +10225,35 @@
     },
     "classifier_run_candidates": {
       "checkConstraints": {
+        "ck_classifier_run_candidates__one_candidate": "CHECK ((num_nonnulls(topic_id, story_id, rss_feed_item_id) = 1))",
         "classifier_run_candidates_ordinal_check": "CHECK ((ordinal >= 0))"
       },
       "columns": {
         "ordinal": {
           "collation": null,
-          "comment": "Zero-based position of the topic in the captured candidate order, preserved for deterministic question order.",
+          "comment": "Zero-based position of the candidate in the captured candidate order, preserved for deterministic question order.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 5,
           "type": "integer"
+        },
+        "rss_feed_item_id": {
+          "collation": null,
+          "comment": "Standalone RSS item candidate asked about in the run's single provider call; an item removed from the platform leaves the set with it. Exactly one candidate column is set.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
         },
         "run_id": {
           "collation": null,
-          "comment": "Run whose remote decision covers exactly these topics; the set is removed with the run.",
+          "comment": "Run whose remote decision covers exactly these candidates; the set is removed with the run.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -10250,20 +10262,40 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
-        "topic_id": {
+        "story_id": {
           "collation": null,
-          "comment": "Topic asked about in the run's single provider call; a topic removed from the platform leaves the set with it.",
+          "comment": "Story candidate asked about in the run's single provider call; a story removed from the platform leaves the set with it. Exactly one candidate column is set.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": false,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "topic_id": {
+          "collation": null,
+          "comment": "Topic candidate asked about in the run's single provider call; a topic removed from the platform leaves the set with it. Exactly one candidate column is set.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
           "ordinalPosition": 2,
           "type": "uuid"
         }
       },
-      "comment": "Insert-only topic candidate set a run captured when it was reserved; outside the run identity, so a changed search result never creates a second receipt.",
+      "comment": "Insert-only candidate set a run captured when it was reserved (topics, or stories and standalone RSS items); outside the run identity, so a changed search result never creates a second receipt.",
       "foreignKeys": {
+        "classifier_run_candidates_rss_feed_item_id_fkey": {
+          "columns": ["rss_feed_item_id"],
+          "definition": "FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "rss_feed_items",
+          "validated": true
+        },
         "classifier_run_candidates_run_id_fkey": {
           "columns": ["run_id"],
           "definition": "FOREIGN KEY (run_id) REFERENCES classifier_runs(id) ON DELETE CASCADE",
@@ -10271,6 +10303,15 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "classifier_runs",
+          "validated": true
+        },
+        "classifier_run_candidates_story_id_fkey": {
+          "columns": ["story_id"],
+          "definition": "FOREIGN KEY (story_id) REFERENCES stories(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "stories",
           "validated": true
         },
         "classifier_run_candidates_topic_id_fkey": {
@@ -10285,10 +10326,64 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_classifier_run_candidates__rss_feed_item": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_run_candidates__rss_feed_item ON public.classifier_run_candidates USING btree (rss_feed_item_id, run_id) WHERE (rss_feed_item_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "rss_feed_item_id",
+              "descending": false,
+              "expression": "rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "run_id",
+              "descending": false,
+              "expression": "run_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(rss_feed_item_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_run_candidates__story": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_run_candidates__story ON public.classifier_run_candidates USING btree (story_id, run_id) WHERE (story_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "story_id",
+              "descending": false,
+              "expression": "story_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "run_id",
+              "descending": false,
+              "expression": "run_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(story_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_classifier_run_candidates__topic": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_classifier_run_candidates__topic ON public.classifier_run_candidates USING btree (topic_id, run_id)",
+          "definition": "CREATE INDEX idx_classifier_run_candidates__topic ON public.classifier_run_candidates USING btree (topic_id, run_id) WHERE (topic_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -10306,7 +10401,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": null,
+          "predicate": "(topic_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -10315,34 +10410,7 @@
         "pk_classifier_run_candidates": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX pk_classifier_run_candidates ON public.classifier_run_candidates USING btree (run_id, topic_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "run_id",
-              "descending": false,
-              "expression": "run_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "topic_id",
-              "descending": false,
-              "expression": "topic_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "uq_classifier_run_candidates__ordinal": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX uq_classifier_run_candidates__ordinal ON public.classifier_run_candidates USING btree (run_id, ordinal)",
+          "definition": "CREATE UNIQUE INDEX pk_classifier_run_candidates ON public.classifier_run_candidates USING btree (run_id, ordinal)",
           "includedColumns": [],
           "keys": [
             {
@@ -10361,6 +10429,87 @@
             }
           ],
           "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_classifier_run_candidates__rss_feed_item": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX uq_classifier_run_candidates__rss_feed_item ON public.classifier_run_candidates USING btree (run_id, rss_feed_item_id) WHERE (rss_feed_item_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "run_id",
+              "descending": false,
+              "expression": "run_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "rss_feed_item_id",
+              "descending": false,
+              "expression": "rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(rss_feed_item_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_classifier_run_candidates__story": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX uq_classifier_run_candidates__story ON public.classifier_run_candidates USING btree (run_id, story_id) WHERE (story_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "run_id",
+              "descending": false,
+              "expression": "run_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "story_id",
+              "descending": false,
+              "expression": "story_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(story_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_classifier_run_candidates__topic": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX uq_classifier_run_candidates__topic ON public.classifier_run_candidates USING btree (run_id, topic_id) WHERE (topic_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "run_id",
+              "descending": false,
+              "expression": "run_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(topic_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": true,
@@ -10370,19 +10519,14 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["run_id", "topic_id"],
-        "definition": "PRIMARY KEY (run_id, topic_id)"
+        "columns": ["run_id", "ordinal"],
+        "definition": "PRIMARY KEY (run_id, ordinal)"
       },
       "relationKind": "table",
       "triggers": {
         "classifier_run_candidates_append_only": "CREATE TRIGGER classifier_run_candidates_append_only BEFORE UPDATE ON public.classifier_run_candidates FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update()"
       },
-      "uniqueConstraints": {
-        "uq_classifier_run_candidates__ordinal": {
-          "columns": ["run_id", "ordinal"],
-          "definition": "UNIQUE (run_id, ordinal)"
-        }
-      }
+      "uniqueConstraints": {}
     },
     "classifier_run_requests": {
       "checkConstraints": {
@@ -103273,7 +103417,6 @@
         "rss_feed_items_lingua_rs_content_sha256_check": "CHECK (((lingua_rs_content_sha256 IS NULL) OR (length(lingua_rs_content_sha256) = 32)))",
         "rss_feed_items_lingua_rs_detected_language_check": "CHECK (((lingua_rs_detected_language IS NULL) OR ((lingua_rs_detected_language = lower(lingua_rs_detected_language)) AND (length(lingua_rs_detected_language) <= 10))))",
         "rss_feed_items_lingua_rs_input_sha256_check": "CHECK (((lingua_rs_input_sha256 IS NULL) OR (length(lingua_rs_input_sha256) = 32)))",
-        "rss_feed_items_story_clustering_embedding_input_sha256_length": "CHECK (((story_clustering_embedding_input_sha256 IS NULL) OR (octet_length(story_clustering_embedding_input_sha256) = 32)))",
         "rss_feed_items_thumbnail_url_check": "CHECK (((thumbnail_url IS NULL) OR (char_length(thumbnail_url) <= 2048)))",
         "rss_feed_items_video_id_check": "CHECK (((video_id IS NULL) OR (char_length(video_id) <= 255)))",
         "rss_feed_items_video_platform_check": "CHECK (((video_platform IS NULL) OR (char_length(video_platform) <= 64)))"
@@ -103342,7 +103485,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         },
         "data": {
@@ -103364,7 +103507,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "duration_seconds": {
@@ -103375,7 +103518,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 25,
           "type": "integer"
         },
         "enclosure_length": {
@@ -103386,7 +103529,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 24,
           "type": "bigint"
         },
         "enclosure_type": {
@@ -103397,7 +103540,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 23,
           "type": "text"
         },
         "enclosure_url": {
@@ -103408,7 +103551,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 22,
           "type": "text"
         },
         "id": {
@@ -103430,7 +103573,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 30,
           "type": "bytea"
         },
         "lingua_rs_detected_at": {
@@ -103441,7 +103584,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34,
+          "ordinalPosition": 33,
           "type": "timestamp with time zone"
         },
         "lingua_rs_detected_language": {
@@ -103452,7 +103595,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 29,
           "type": "text"
         },
         "lingua_rs_input_sha256": {
@@ -103463,7 +103606,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32,
+          "ordinalPosition": 31,
           "type": "bytea"
         },
         "lingua_rs_results": {
@@ -103474,7 +103617,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33,
+          "ordinalPosition": 32,
           "type": "jsonb"
         },
         "media_type": {
@@ -103485,7 +103628,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 22,
+          "ordinalPosition": 21,
           "type": "rss_feed_item_media_types"
         },
         "published_at": {
@@ -103496,7 +103639,7 @@
           "generatedExpression": "LEAST(COALESCE(fn_text_to_timestamptz((data ->> 'isoDate'::text)), 'infinity'::timestamp with time zone), COALESCE(fn_text_to_timestamptz((data ->> 'pubDate'::text)), 'infinity'::timestamp with time zone), uuid_extract_timestamp(id))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 39,
+          "ordinalPosition": 38,
           "type": "timestamp with time zone"
         },
         "search_vector": {
@@ -103507,19 +103650,8 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
-          "type": "tsvector"
-        },
-        "story_clustering_embedding_input_sha256": {
-          "collation": null,
-          "comment": "Exact current embedding input SHA-256 for which story-clustering enqueue was accepted. NULL means delivery is pending; this marker does not indicate clustering completed.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
           "ordinalPosition": 17,
-          "type": "bytea"
+          "type": "tsvector"
         },
         "story_id": {
           "collation": null,
@@ -103529,7 +103661,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 35,
+          "ordinalPosition": 34,
           "type": "uuid"
         },
         "story_locked_at": {
@@ -103540,7 +103672,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36,
+          "ordinalPosition": 35,
           "type": "timestamp with time zone"
         },
         "thumbnail_url": {
@@ -103551,7 +103683,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 26,
           "type": "text"
         },
         "updated_at": {
@@ -103562,7 +103694,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "url_id": {
@@ -103584,7 +103716,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 27,
           "type": "text"
         },
         "video_platform": {
@@ -103595,7 +103727,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 28,
           "type": "text"
         },
         "votes_count_down": {
@@ -103694,7 +103826,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 38,
+          "ordinalPosition": 37,
           "type": "integer"
         },
         "votes_snapshot_xmax": {
@@ -103705,7 +103837,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37,
+          "ordinalPosition": 36,
           "type": "xid8"
         }
       },
@@ -103913,26 +104045,6 @@
             }
           ],
           "predicate": "(deleted_at IS NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_rss_feed_items__story_clustering_embedding_pending": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_items__story_clustering_embedding_pending ON ONLY public.rss_feed_items USING btree (id) WHERE ((deleted_at IS NULL) AND (bedrock_nova_multimodal_v1_embedding IS NOT NULL) AND (bedrock_nova_multimodal_v1_embedding_created_at IS NOT NULL) AND (bedrock_nova_multimodal_v1_input_sha256 = bedrock_nova_multimodal_v1_content_sha256) AND ((story_clustering_embedding_input_sha256 IS NULL) OR (story_clustering_embedding_input_sha256 <> bedrock_nova_multimodal_v1_input_sha256)))",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "((deleted_at IS NULL) AND (bedrock_nova_multimodal_v1_embedding IS NOT NULL) AND (bedrock_nova_multimodal_v1_embedding_created_at IS NOT NULL) AND (bedrock_nova_multimodal_v1_input_sha256 = bedrock_nova_multimodal_v1_content_sha256) AND ((story_clustering_embedding_input_sha256 IS NULL) OR (story_clustering_embedding_input_sha256 <> bedrock_nova_multimodal_v1_input_sha256)))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -105779,7 +105891,9 @@
     "story_classifier_results": {
       "checkConstraints": {
         "chk_story_classifier_results__effective_thresholds": "CHECK (((effective_lower_threshold >= (0)::numeric) AND (effective_upper_threshold <= (1)::numeric) AND (effective_lower_threshold < effective_upper_threshold)))",
+        "chk_story_classifier_results__one_entity": "CHECK ((num_nonnulls(story_id, rss_feed_item_id) = 1))",
         "chk_story_classifier_results__scope": "CHECK ((((scope_category = 'global'::text) AND (scope_community_id IS NULL)) OR ((scope_category = 'community_ai'::text) AND (scope_community_id IS NOT NULL))))",
+        "chk_story_classifier_results__stored_candidate_story": "CHECK (((candidate_id IS NULL) OR (story_id IS NOT NULL)))",
         "chk_story_classifier_results__stored_configuration": "CHECK ((((candidate_id IS NULL) AND (threshold_id IS NULL)) OR ((candidate_id IS NOT NULL) AND (threshold_id IS NOT NULL))))",
         "story_classifier_results_candidate_kind_check": "CHECK ((candidate_kind = 'story'::classifier_candidate_kind))",
         "story_classifier_results_probability_check": "CHECK (((probability >= (0)::numeric) AND (probability <= (1)::numeric)))"
@@ -105787,24 +105901,24 @@
       "columns": {
         "batch_id": {
           "collation": null,
-          "comment": "Logical decision batch that produced this result.",
+          "comment": "Logical decision batch that produced this result and the partition key.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "uuid"
         },
         "candidate_id": {
           "collation": null,
-          "comment": "Stored story candidate scored by this result, or NULL for a runtime-prefiltered candidate.",
+          "comment": "Stored story candidate scored by this result, or NULL for a runtime-prefiltered candidate; only a story candidate can be stored.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "uuid"
         },
         "candidate_kind": {
@@ -105815,7 +105929,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "classifier_candidate_kind"
         },
         "classifier_id": {
@@ -105826,7 +105940,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "uuid"
         },
         "created_at": {
@@ -105837,7 +105951,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 17,
           "type": "timestamp with time zone"
         },
         "decision_call_id": {
@@ -105848,7 +105962,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "uuid"
         },
         "effective_lower_threshold": {
@@ -105859,7 +105973,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "numeric(5,4)"
         },
         "effective_upper_threshold": {
@@ -105870,7 +105984,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "numeric(5,4)"
         },
         "id": {
@@ -105881,7 +105995,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "uuid"
         },
         "probability": {
@@ -105892,7 +106006,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "numeric"
         },
         "prompt_version_id": {
@@ -105903,7 +106017,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "uuid"
         },
         "raw_response": {
@@ -105914,8 +106028,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "jsonb"
+        },
+        "rss_feed_item_id": {
+          "collation": null,
+          "comment": "Standalone RSS item candidate scored by this result; mutually exclusive with story_id.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "uuid"
         },
         "scope_category": {
           "collation": null,
@@ -105925,7 +106050,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "text"
         },
         "scope_community_id": {
@@ -105936,17 +106061,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 16,
           "type": "uuid"
         },
         "story_id": {
           "collation": null,
-          "comment": "Story candidate scored by this result and the partition key.",
+          "comment": "Story candidate scored by this result; mutually exclusive with rss_feed_item_id.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": false,
+          "nullable": true,
           "ordinalPosition": 1,
           "type": "uuid"
         },
@@ -105958,7 +106083,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "uuid"
         },
         "updated_at": {
@@ -105969,11 +106094,11 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 17,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         }
       },
-      "comment": "Per-candidate classifier results for story candidates, RANGE-partitioned by story_id.",
+      "comment": "Per-candidate classifier results for story-family candidates (a clustered story or a standalone RSS item), RANGE-partitioned by batch_id.",
       "foreignKeys": {
         "fk_story_classifier_results__batch_candidate": {
           "columns": [
@@ -106063,6 +106188,15 @@
           "referencedTable": "classifier_candidate_thresholds",
           "validated": true
         },
+        "story_classifier_results_rss_feed_item_id_fkey": {
+          "columns": ["rss_feed_item_id"],
+          "definition": "FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "rss_feed_items",
+          "validated": true
+        },
         "story_classifier_results_story_id_fkey": {
           "columns": ["story_id"],
           "definition": "FOREIGN KEY (story_id) REFERENCES stories(id) ON DELETE CASCADE",
@@ -106075,33 +106209,6 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "idx_story_classifier_results__batch": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_story_classifier_results__batch ON ONLY public.story_classifier_results USING btree (batch_id, story_id DESC)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "batch_id",
-              "descending": false,
-              "expression": "batch_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "story_id",
-              "descending": true,
-              "expression": "story_id",
-              "nullsFirst": true,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_story_classifier_results__call_batch": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -106132,7 +106239,7 @@
         "idx_story_classifier_results__candidate_probability": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_story_classifier_results__candidate_probability ON ONLY public.story_classifier_results USING btree (candidate_id, probability, story_id DESC)",
+          "definition": "CREATE INDEX idx_story_classifier_results__candidate_probability ON ONLY public.story_classifier_results USING btree (candidate_id, probability, story_id DESC) WHERE (candidate_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -106157,7 +106264,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": null,
+          "predicate": "(candidate_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -106190,10 +106297,37 @@
           "unique": false,
           "valid": true
         },
+        "idx_story_classifier_results__rss_feed_item_batch": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_story_classifier_results__rss_feed_item_batch ON ONLY public.story_classifier_results USING btree (rss_feed_item_id, batch_id) WHERE (rss_feed_item_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "rss_feed_item_id",
+              "descending": false,
+              "expression": "rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "batch_id",
+              "descending": false,
+              "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(rss_feed_item_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "idx_story_classifier_results__story_batch": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_story_classifier_results__story_batch ON ONLY public.story_classifier_results USING btree (story_id, batch_id)",
+          "definition": "CREATE UNIQUE INDEX idx_story_classifier_results__story_batch ON ONLY public.story_classifier_results USING btree (story_id, batch_id) WHERE (story_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -106211,7 +106345,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": null,
+          "predicate": "(story_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": true,
@@ -106247,13 +106381,13 @@
         "story_classifier_results_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX story_classifier_results_pkey ON ONLY public.story_classifier_results USING btree (story_id, id)",
+          "definition": "CREATE UNIQUE INDEX story_classifier_results_pkey ON ONLY public.story_classifier_results USING btree (batch_id, id)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "story_id",
+              "column": "batch_id",
               "descending": false,
-              "expression": "story_id",
+              "expression": "batch_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             },
@@ -106275,17 +106409,17 @@
       "partition": {
         "accessClass": "target-scoped",
         "children": "default",
-        "key": "story_id",
+        "key": "batch_id",
         "retentionOwner": null,
         "strategy": "RANGE"
       },
       "physicalPartition": {
-        "key": "RANGE (story_id)",
+        "key": "RANGE (batch_id)",
         "strategy": "range"
       },
       "primaryKey": {
-        "columns": ["story_id", "id"],
-        "definition": "PRIMARY KEY (story_id, id)"
+        "columns": ["batch_id", "id"],
+        "definition": "PRIMARY KEY (batch_id, id)"
       },
       "relationKind": "partitioned table",
       "triggers": {

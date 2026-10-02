@@ -157,18 +157,34 @@ CREATE INDEX IF NOT EXISTS idx_classifier_run_requests__pending
   ON classifier_run_requests (id)
   WHERE run_id IS NULL AND no_work_at IS NULL AND stale_at IS NULL;
 
--- C6's topic candidate set, captured once when the run is reserved. The set is deliberately outside
--- the run identity, so a later search that finds different topics can only reuse this receipt.
+-- The candidate set a run captured once when it was reserved: C6's topics, or C9's stories and
+-- standalone RSS items. The set is deliberately outside the run identity, so a later search that
+-- finds different candidates can only reuse this receipt. One nullable foreign key per candidate
+-- kind keeps every id a real relation; exactly one is set per row.
 CREATE TABLE IF NOT EXISTS classifier_run_candidates (
   run_id UUID NOT NULL REFERENCES classifier_runs (id) ON DELETE CASCADE,
-  topic_id UUID NOT NULL REFERENCES topics (id) ON DELETE CASCADE,
+  topic_id UUID REFERENCES topics (id) ON DELETE CASCADE,
+  story_id UUID REFERENCES stories (id) ON DELETE CASCADE,
+  rss_feed_item_id UUID REFERENCES rss_feed_items (id) ON DELETE CASCADE,
   ordinal INTEGER NOT NULL CHECK (ordinal >= 0),
-  CONSTRAINT pk_classifier_run_candidates PRIMARY KEY (run_id, topic_id),
-  CONSTRAINT uq_classifier_run_candidates__ordinal UNIQUE (run_id, ordinal)
+  CONSTRAINT pk_classifier_run_candidates PRIMARY KEY (run_id, ordinal),
+  CONSTRAINT ck_classifier_run_candidates__one_candidate
+    CHECK (num_nonnulls(topic_id, story_id, rss_feed_item_id) = 1)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS uq_classifier_run_candidates__topic
+  ON classifier_run_candidates (run_id, topic_id) WHERE topic_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_classifier_run_candidates__story
+  ON classifier_run_candidates (run_id, story_id) WHERE story_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_classifier_run_candidates__rss_feed_item
+  ON classifier_run_candidates (run_id, rss_feed_item_id) WHERE rss_feed_item_id IS NOT NULL;
+
 CREATE INDEX IF NOT EXISTS idx_classifier_run_candidates__topic
-  ON classifier_run_candidates (topic_id, run_id);
+  ON classifier_run_candidates (topic_id, run_id) WHERE topic_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_classifier_run_candidates__story
+  ON classifier_run_candidates (story_id, run_id) WHERE story_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_classifier_run_candidates__rss_feed_item
+  ON classifier_run_candidates (rss_feed_item_id, run_id) WHERE rss_feed_item_id IS NOT NULL;
 
 -- C5's local detector outcome, retained once per run so every terminal kind can keep it.
 CREATE TABLE IF NOT EXISTS post_classifier_local_outcomes (
@@ -246,13 +262,17 @@ COMMENT ON COLUMN classifier_run_requests.stale_at IS
   'Time the request was superseded by a newer content version of the same subject.';
 
 COMMENT ON TABLE classifier_run_candidates IS
-  'Insert-only topic candidate set a run captured when it was reserved; outside the run identity, so a changed search result never creates a second receipt.';
+  'Insert-only candidate set a run captured when it was reserved (topics, or stories and standalone RSS items); outside the run identity, so a changed search result never creates a second receipt.';
 COMMENT ON COLUMN classifier_run_candidates.run_id IS
-  'Run whose remote decision covers exactly these topics; the set is removed with the run.';
+  'Run whose remote decision covers exactly these candidates; the set is removed with the run.';
 COMMENT ON COLUMN classifier_run_candidates.topic_id IS
-  'Topic asked about in the run''s single provider call; a topic removed from the platform leaves the set with it.';
+  'Topic candidate asked about in the run''s single provider call; a topic removed from the platform leaves the set with it. Exactly one candidate column is set.';
+COMMENT ON COLUMN classifier_run_candidates.story_id IS
+  'Story candidate asked about in the run''s single provider call; a story removed from the platform leaves the set with it. Exactly one candidate column is set.';
+COMMENT ON COLUMN classifier_run_candidates.rss_feed_item_id IS
+  'Standalone RSS item candidate asked about in the run''s single provider call; an item removed from the platform leaves the set with it. Exactly one candidate column is set.';
 COMMENT ON COLUMN classifier_run_candidates.ordinal IS
-  'Zero-based position of the topic in the captured candidate order, preserved for deterministic question order.';
+  'Zero-based position of the candidate in the captured candidate order, preserved for deterministic question order.';
 
 COMMENT ON TABLE post_classifier_local_outcomes IS
   'Insert-only C5 local detector outcome retained once per run, including runs that ended terminal before their remote outcomes became durable.';

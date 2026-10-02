@@ -2,6 +2,7 @@ import type { ActiveClassifierConfiguration } from '@services/classifiers'
 import {
   candidatesForBinding,
   classifierCandidateEntityId,
+  classifierCandidateFamily,
   classifierCandidateKey,
 } from './bindings.mts'
 import { assertChoiceBinding } from './validate-choice-binding.mts'
@@ -40,8 +41,13 @@ function assertBindingSet(
     questionIds.add(binding.questionId)
     for (const candidate of candidatesForBinding(binding)) {
       assertCandidateIdentity(candidate)
-      if (candidate.candidateKind !== configuration.candidateKind)
+      if (classifierCandidateFamily(candidate) !== configuration.candidateKind)
         throw new Error('Classifier decision cannot mix candidate kinds')
+      if (
+        candidate.candidateKind === 'rss_feed_item' &&
+        candidate.rssFeedItemId === input.subject.rssFeedItemId
+      )
+        throw new Error('A classifier candidate cannot be its own RSS feed item subject')
       const key = classifierCandidateKey(candidate)
       if (candidateKeys.has(key))
         throw new Error('Classifier decision cannot duplicate concrete candidates')

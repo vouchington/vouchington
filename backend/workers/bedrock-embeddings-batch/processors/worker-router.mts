@@ -18,7 +18,6 @@ import {
   processStaleCleanupDispatcher,
   processExistingEmbeddingReconciliation,
   processPostEmbeddingTriggerRecovery,
-  processRssStoryTriggerRecovery,
 } from '../processors.mts'
 import { Worker, type Job } from 'glide-mq'
 import { handleBedrockRateLimit, UnrecoverableError } from '@modules/queue-errors'
@@ -94,10 +93,6 @@ export const processBedrockEmbeddingsBatchJob = async (
           case 'post_trigger_recovery': {
             const data = assertReconciliationPayload(job.data, [], ['after'])
             return await processPostEmbeddingTriggerRecovery(data.after as string | undefined)
-          }
-          case 'rss_story_trigger_recovery': {
-            const data = assertReconciliationPayload(job.data, [], ['after'])
-            return await processRssStoryTriggerRecovery(data.after as string | undefined)
           }
           default:
             throw new UnrecoverableError(`Unknown reconciliation job type: ${job.name}`)

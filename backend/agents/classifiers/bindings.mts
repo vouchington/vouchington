@@ -3,7 +3,11 @@ import type {
   NoulQuestion,
   StructuredDecisionQuestion,
 } from '@modules/structured-decisions'
-import type { ClassifierDecisionInputResult } from '@services/classifiers'
+import {
+  classifierCandidateKindFamily,
+  type ActiveClassifierConfiguration,
+  type ClassifierDecisionInputResult,
+} from '@services/classifiers'
 import type { ClassifierDecisionCandidate, ClassifierQuestionBinding } from './types.mts'
 
 export function toClassifierQuestions(
@@ -42,9 +46,18 @@ export function classifierCandidateEntityId(
       return candidate.topicId
     case 'story':
       return candidate.storyId
+    case 'rss_feed_item':
+      return candidate.rssFeedItemId
     case 'community_prompt':
       return candidate.communityPromptId
   }
+}
+
+/** The persisted classifier candidate kind a concrete candidate belongs to. */
+export function classifierCandidateFamily(
+  candidate: ClassifierDecisionCandidate,
+): ActiveClassifierConfiguration['candidateKind'] {
+  return classifierCandidateKindFamily(candidate.candidateKind)
 }
 
 export function classifierCandidateKey(

@@ -3,7 +3,7 @@
 **Related code:** `web/app/(posts)/stories/page.tsx`, `web/components/posts/post-list-page.tsx`
 **Component rules:** [docs/requirements/navigation/COMPONENTS.md](../navigation/COMPONENTS.md) — Page Header and Search Input primitives apply to this page.
 
-Stories are first-class entities that group RSS feed items covering the same news event. When multiple outlets publish articles about the same story, the `@story-teller` agent clusters them into a single story with a title, event timestamp, and official source.
+Stories are first-class entities that group RSS feed items covering the same news event. When multiple outlets publish articles about the same story, the story-clustering Choice classifier clusters them into a single story with a title and event timestamp; an admin can set the official source.
 
 ## Contents
 

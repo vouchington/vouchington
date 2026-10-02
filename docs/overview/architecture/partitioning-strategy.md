@@ -94,7 +94,7 @@ This block is rendered from the typed registry, and its normalized rows are chec
 | `rss_feed_item_votes`                                   | RANGE    | `rss_feed_item_id`    | default  | none              | target-scoped    |
 | `rss_feed_items`                                        | RANGE    | `id`                  | default  | none              | target-scoped    |
 | `session_referral_attributions`                         | RANGE    | `id`                  | default  | none              | target-scoped    |
-| `story_classifier_results`                              | RANGE    | `story_id`            | default  | none              | target-scoped    |
+| `story_classifier_results`                              | RANGE    | `batch_id`            | default  | none              | target-scoped    |
 | `topic_classifier_results`                              | RANGE    | `topic_id`            | default  | none              | target-scoped    |
 | `topic_votes`                                           | RANGE    | `topic_id`            | default  | none              | target-scoped    |
 | `user_sessions`                                         | RANGE    | `id`                  | default  | none              | target-scoped    |

@@ -22,7 +22,6 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | admin-imports                                | processImportRow                               | —                                        | 10               |
 | user-rss-feed-imports                        | processImportRow                               | —                                        | 10               |
 | ai_agents                                    | chat                                           | —                                        | 1                |
-| ai_agents                                    | story-clustering                               | —                                        | 15               |
 | ai_agents                                    | autotagger-post                                | —                                        | 20               |
 | ai_agents                                    | classifier-run-dispatcher                      | `classifier_run_dispatcher_<class>_<id>` | 8                |
 | ai_agents                                    | classifier-run                                 | `classifier_run_<runId>`                 | 3                |
@@ -123,7 +122,6 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | bedrock-embeddings-batch                     | poll_batch                                     | polling                                  | 10               |
 | bedrock-embeddings-batch                     | reconcile_existing                             | reconciliation                           | 10               |
 | bedrock-embeddings-batch                     | post_trigger_recovery                          | reconciliation                           | 10               |
-| bedrock-embeddings-batch                     | rss_story_trigger_recovery                     | reconciliation                           | 10               |
 | bedrock_embeddings_nova_multimodal_v1_single | post                                           | —                                        | 10               |
 | bedrock_embeddings_nova_multimodal_v1_single | topic                                          | —                                        | 10               |
 | bedrock_embeddings_nova_multimodal_v1_single | rss_feed_item                                  | —                                        | 10               |

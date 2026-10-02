@@ -7,7 +7,7 @@ import { getRssFeedItemById } from '@services/rss-feed-items'
 import { getPostByAny } from '@services/posts/get'
 import { Worker, type Job } from 'glide-mq'
 import { handleBedrockRateLimit } from '@modules/queue-errors'
-import { triggerStoryClusteringForCurrentEmbeddings } from '@services/stories/embedding-trigger'
+import { dispatchStoryClusteringForEmbeddedItems } from '@services/stories/clustering/dispatch'
 import { enqueueBanEvasionDetectionForEmbeddedFirstCommunityPosts } from '@services/communities/ban-evasion'
 
 export async function processBedrockNovaMultimodalV1SingleJob(
@@ -38,7 +38,7 @@ export async function processBedrockNovaMultimodalV1SingleJob(
         const rssFeedItem = await getRssFeedItemById(job.data.rss_feed_item_id)
         if (!rssFeedItem) return null
         await upsertRssFeedItemEmbedding(rssFeedItem)
-        await triggerStoryClusteringForCurrentEmbeddings([job.data.rss_feed_item_id])
+        await dispatchStoryClusteringForEmbeddedItems([job.data.rss_feed_item_id])
         return { success: true }
       }
       default:

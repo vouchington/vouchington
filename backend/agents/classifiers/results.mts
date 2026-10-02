@@ -97,30 +97,35 @@ function resultForCandidate(
 ): ClassifierDecisionInputResult {
   if (!Number.isFinite(probability) || probability < 0 || probability > 1)
     throw new Error('Structured-decision answer produced an invalid probability')
+  const shared = { probability, rawResponse }
   switch (candidate.candidateKind) {
     case 'topic':
       return {
         candidateKind: 'topic',
         topicId: candidate.topicId,
         storedCandidateId: candidate.storedCandidateId,
-        probability,
-        rawResponse,
+        ...shared,
       }
     case 'story':
       return {
         candidateKind: 'story',
         storyId: candidate.storyId,
         storedCandidateId: candidate.storedCandidateId,
-        probability,
-        rawResponse,
+        ...shared,
+      }
+    case 'rss_feed_item':
+      return {
+        candidateKind: 'rss_feed_item',
+        rssFeedItemId: candidate.rssFeedItemId,
+        storedCandidateId: null,
+        ...shared,
       }
     case 'community_prompt':
       return {
         candidateKind: 'community_prompt',
         communityPromptId: candidate.communityPromptId,
         storedCandidateId: null,
-        probability,
-        rawResponse,
+        ...shared,
       }
   }
 }

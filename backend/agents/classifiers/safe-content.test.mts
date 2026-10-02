@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest'
 import {
   classifierChoiceKey,
   classifierPrompt,
+  classifierStructuralText,
+  joinClassifierSafeText,
   renderClassifierCandidateQuestion,
+  renderClassifierChoiceQuestion,
   renderFixedClassifierRequest,
   sanitizeClassifierExternalContent,
 } from './safe-content.mts'
@@ -72,4 +75,26 @@ describe('renderClassifierCandidateQuestion', () => {
       expect(rendered).toBe(expected)
     },
   )
+})
+
+describe('Choice request composition', () => {
+  it('brands a placeholder-free Choice question and rejects a per-candidate placeholder', () => {
+    expect(renderClassifierChoiceQuestion('Pick the best match.')).toBe('Pick the best match.')
+    expect(() => renderClassifierChoiceQuestion('Is {{candidate}} a match?')).toThrow(
+      'must not contain a {{candidate}} placeholder',
+    )
+  })
+
+  it('joins structural lines and sanitized content without re-sanitizing either', async () => {
+    const sanitized = await sanitizeClassifierExternalContent('A bakery review.', {
+      source: 'rss_feed_item',
+      contentType: 'title',
+    })
+    const structural = classifierStructuralText('Candidate key: story:abc\n')
+
+    expect(joinClassifierSafeText([structural, sanitized], '')).toBe(
+      `Candidate key: story:abc\n${sanitized}`,
+    )
+    expect(joinClassifierSafeText([], '\n')).toBe('')
+  })
 })

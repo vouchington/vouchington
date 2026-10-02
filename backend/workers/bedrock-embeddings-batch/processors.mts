@@ -54,7 +54,6 @@ import { getBacklogThreshold, getStaleTtlHours } from '@services/bedrock-embeddi
 export {
   processExistingEmbeddingReconciliation,
   processPostEmbeddingTriggerRecovery,
-  processRssStoryTriggerRecovery,
 } from './processors/reconciliation.mts'
 
 export const processTopicBatchCreation = (): Promise<CreateBatchResult> =>

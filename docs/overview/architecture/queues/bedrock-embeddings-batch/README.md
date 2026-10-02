@@ -22,10 +22,9 @@ For the dedup contract, centralized table semantics, race outcomes, and bloom fi
 | `stale_cleanup_dispatcher`                         | `0 * * * *`   | Finds batches stuck in `Submitted`/`InProgress` past `stale_ttl_hours` (default 24h, Dynamic Config); reconciles terminal-state batches or force-stops and cancels them |
 | `reconcile_existing_{topics,posts,rss_feed_items}` | `* * * * *`   | Copy reusable text embeddings from the centralized table in bounded pages, independent of Bedrock capacity                                                              |
 | `post_trigger_recovery`                            | `* * * * *`   | Retry ban-evasion queue delivery for current first-community-post embeddings                                                                                            |
-| `rss_story_trigger_recovery`                       | `* * * * *`   | Retry story-clustering queue delivery for current RSS embeddings                                                                                                        |
 
-The five reconciliation roots run every minute in production and are clamped to hourly on staging.
-The admin backfill `bedrock-embedding-reconciliation` starts all five roots. Each root is throttled
+The four reconciliation roots run every minute in production and are clamped to hourly on staging.
+The admin backfill `bedrock-embedding-reconciliation` starts all four roots. Each root is throttled
 for 60 seconds by its flow and entity. A full page enqueues one cursor continuation with simple
 deduplication by flow, entity, and opaque cursor; pending or active copies of that page coalesce.
 Continuations have no throttle TTL or fixed job ID, so a later operator replay can start again.
@@ -47,30 +46,31 @@ The `backlog_dispatcher` exists so that very large single-embedding backlogs (e.
 
 ## Processors
 
-| Job Name                     | Lane             | Description                                                                                            |
-| ---------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------ |
-| `creation_dispatcher`        | `dispatcher`     | Dispatches creation jobs for all entity types every 5 minutes                                          |
-| `poll_dispatcher`            | `dispatcher`     | Dispatches polling jobs for all pending batches every minute                                           |
-| `backlog_dispatcher`         | `dispatcher`     | Triggers `creation_dispatcher` early when single-queue backlog exceeds the threshold                   |
-| `stale_cleanup_dispatcher`   | `dispatcher`     | Hourly: reconciles or force-cancels batches stuck past `stale_ttl_hours` (default 24h, Dynamic Config) |
-| `topics`                     | `creation`       | Streams pending topics, builds batch file, submits to Bedrock                                          |
-| `posts`                      | `creation`       | Streams pending posts, builds batch file, submits to Bedrock                                           |
-| `rss_feed_items`             | `creation`       | Streams pending RSS feed items, builds batch file, submits to Bedrock                                  |
-| `crawl_chunks`               | `creation`       | Streams pending crawl chunks, builds batch file, submits to Bedrock                                    |
-| `images`                     | `creation`       | Streams moderated non-flagged images, builds image batch records, submits to Bedrock                   |
-| `poll_batch`                 | `polling`        | Polls a single batch by Bedrock Batch ID; on completion calls `applyBatchUpdates`                      |
-| `reconcile_existing`         | `reconciliation` | Scans one bounded topic, post, or RSS item candidate page and copies cache hits                        |
-| `post_trigger_recovery`      | `reconciliation` | Scans one pending post-delivery page and queues ban-evasion detection                                  |
-| `rss_story_trigger_recovery` | `reconciliation` | Scans one pending RSS-delivery page and queues story clustering                                        |
+| Job Name                   | Lane             | Description                                                                                            |
+| -------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------ |
+| `creation_dispatcher`      | `dispatcher`     | Dispatches creation jobs for all entity types every 5 minutes                                          |
+| `poll_dispatcher`          | `dispatcher`     | Dispatches polling jobs for all pending batches every minute                                           |
+| `backlog_dispatcher`       | `dispatcher`     | Triggers `creation_dispatcher` early when single-queue backlog exceeds the threshold                   |
+| `stale_cleanup_dispatcher` | `dispatcher`     | Hourly: reconciles or force-cancels batches stuck past `stale_ttl_hours` (default 24h, Dynamic Config) |
+| `topics`                   | `creation`       | Streams pending topics, builds batch file, submits to Bedrock                                          |
+| `posts`                    | `creation`       | Streams pending posts, builds batch file, submits to Bedrock                                           |
+| `rss_feed_items`           | `creation`       | Streams pending RSS feed items, builds batch file, submits to Bedrock                                  |
+| `crawl_chunks`             | `creation`       | Streams pending crawl chunks, builds batch file, submits to Bedrock                                    |
+| `images`                   | `creation`       | Streams moderated non-flagged images, builds image batch records, submits to Bedrock                   |
+| `poll_batch`               | `polling`        | Polls a single batch by Bedrock Batch ID; on completion calls `applyBatchUpdates`                      |
+| `reconcile_existing`       | `reconciliation` | Scans one bounded topic, post, or RSS item candidate page and copies cache hits                        |
+| `post_trigger_recovery`    | `reconciliation` | Scans one pending post-delivery page and queues ban-evasion detection                                  |
 
 `applyBatchUpdates` writes results to the centralized table with `INSERT ... ON CONFLICT DO NOTHING`, updates entity rows guarded by `content_sha256`, then deletes the lock from `bedrock_embeddings_batch_entities`. Completed batches keep entity locks when result download fails before any result file exists; once result processing starts, locks and the temporary result file are cleaned up even if applying results fails.
 
 Image batch creation logs per-image preprocessing failures. If pending images were seen but none could be added to the batch input, the creation job returns an explicit failed result instead of a silent no-op.
 
 **Post-write side effects for RSS feed items:** single, batch-result, and reusable-copy paths call
-the strict story-clustering enqueue boundary. The exact-input marker advances only for accepted
-jobs whose input is still current; skipped or failed acceptance remains pending for scheduled
-recovery. The marker records queue acceptance, not clustering completion.
+`dispatchStoryClusteringForEmbeddedItems`, a best-effort enqueue of the stable-id
+`classifier-run-dispatcher` job on `ai_agents` for the story-clustering classifier. A failed or
+deduplicated enqueue is reported without failing the embedding job; the RSS item's durable run
+request is recovered by the `reconcile-classifier-runs` sweep, so this queue has no RSS delivery
+marker or recovery job.
 
 ## Bedrock Batch Limits
 

@@ -20,10 +20,3 @@ export type PostStory = {
   initiated_by_id: string
   created_at: Date
 }
-
-export type StoryClusterCandidateRow = {
-  id: string
-  story_id: string | null
-  story_published_at: Date | null
-  distance: number
-}

@@ -21,5 +21,5 @@ version can select its canonical Windows identity during client-first rollout an
 There is no hosted fallback: `client-generated-chat` rejects hosted providers with 400 and the SSE
 `/chat` endpoint no longer exists.
 
-Agents that remain (autotagger, moderation, story clustering and story post) are single-call or
+Agents that remain (autotagger, moderation and story post) are single-call or
 non-streaming `runToolLoop` agents; see [Agent Patterns](ai-agents/reference-agent-patterns.md).

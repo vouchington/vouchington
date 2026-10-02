@@ -73,7 +73,7 @@ import { parseLLMJsonResponse } from '@agents/_shared'
 const parsed = parseLLMJsonResponse<{ title: string; summary: string }>(responseText)
 ```
 
-Use this in single-call agents (story-post, story-clustering) that expect structured JSON responses.
+Use this in single-call agents (story-post) that expect structured JSON responses.
 
 ### `runToolLoop(config): Promise<RunToolLoopResult>`
 

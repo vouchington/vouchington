@@ -2,8 +2,12 @@ import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
 import { reserveClassifierDecisionBatch } from '@services/classifiers/write-decision-lineage'
 import { retainPublicationIdentityBridges } from '@services/post-publication/identity-bridges'
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { insertClassifierRunCandidates } from './run-candidates.mts'
-import { capturesCandidates, pinnedStoredCandidateIds } from './remote-plan.mts'
+import { pinnedStoredCandidateIds } from './remote-plan.mts'
+import { captureRunCandidates } from './run-capture.mts'
+import {
+  insertClassifierRunCandidates,
+  insertClassifierRunStoryCandidates,
+} from './run-candidates.mts'
 import { settleClassifierRunRequest } from './run-requests.mts'
 import type {
   ClassifierRunAdapter,
@@ -52,10 +56,10 @@ export async function reserveLockedClassifierRun<C, L, E>(
   }
   if (adapter.ready && !(await adapter.ready(query, subject))) return { kind: 'not-ready' }
   const resolved = await adapter.resolve(subject, current, query)
-  const capturedTopicIds = resolved
+  const captured = resolved
     ? await captureRunCandidates(adapter, query, subject, current, resolved)
     : null
-  if (!resolved || !capturedTopicIds) {
+  if (!resolved || !captured) {
     await settleClassifierRunRequest(query, adapter.slug, subject, {
       kind: 'no-work',
       inputSha256: current.inputSha256,
@@ -69,8 +73,11 @@ export async function reserveLockedClassifierRun<C, L, E>(
     current,
     resolved,
   )
-  if (inserted && capturedTopicIds.length > 0) {
-    await insertClassifierRunCandidates(query, run.runId, capturedTopicIds)
+  if (inserted && captured.topicIds.length > 0) {
+    await insertClassifierRunCandidates(query, run.runId, captured.topicIds)
+  }
+  if (inserted && captured.storyCandidates.length > 0) {
+    await insertClassifierRunStoryCandidates(query, run.runId, captured.storyCandidates)
   }
   await settleClassifierRunRequest(query, adapter.slug, subject, {
     kind: 'run',
@@ -78,38 +85,6 @@ export async function reserveLockedClassifierRun<C, L, E>(
     inputSha256: current.inputSha256,
   })
   return { kind: 'reserved', run }
-}
-
-/**
- * The topic candidates a new receipt captures, or null when the classifier finds none. An identity
- * that already has a receipt keeps the set it captured, so the search never runs a second time and
- * a changed result can never change what the run asks. Pinned-candidate runs capture nothing.
- */
-async function captureRunCandidates<C, L, E>(
-  adapter: ClassifierRunAdapter<C, L, E>,
-  query: OwnedTransaction,
-  subject: ClassifierRunSubject,
-  current: CurrentClassifierRunInput,
-  resolved: ResolvedClassifierRun<C>,
-): Promise<readonly string[] | null> {
-  if (!capturesCandidates(resolved.remote)) return []
-  if (!adapter.captureCandidates) {
-    throw new Error(`Classifier ${adapter.slug} captures candidates without a capture hook`)
-  }
-  const subjectMatch =
-    subject.postId !== null
-      ? sql`post_id = ${subject.postId}`
-      : sql`rss_feed_item_id = ${subject.rssFeedItemId}`
-  const { rows } = await query(
-    sql`/* reserveClassifierRun.existing */
-    SELECT 1 FROM classifier_runs
-    WHERE classifier_id = (SELECT id FROM classifiers WHERE slug = ${adapter.slug})
-      AND input_sha256 = ${current.inputSha256}
-      AND configuration_sha256 = ${resolved.configurationSha256} AND `.append(subjectMatch),
-  )
-  if (rows.length > 0) return []
-  const topicIds = await adapter.captureCandidates(query, subject, current)
-  return topicIds && topicIds.length > 0 ? [...new Set(topicIds)] : null
 }
 
 async function insertClassifierRun<C>(

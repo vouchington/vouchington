@@ -123,12 +123,6 @@ describe('bedrock embeddings batch worker processor', () => {
         {} as Worker,
       ),
     ).rejects.toThrow(UnrecoverableError)
-    await expect(
-      processBedrockEmbeddingsBatchJob(
-        makeJob('rss_story_trigger_recovery', { after: '' }, 'reconciliation'),
-        {} as Worker,
-      ),
-    ).rejects.toThrow(UnrecoverableError)
   })
   it.each([['topics'], ['posts'], ['rss_feed_items'], ['crawl_chunks'], ['images']] as const)(
     'routes %s creation jobs through the real batch processors',

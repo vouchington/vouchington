@@ -32,14 +32,8 @@ describe('embedding reconciliation enqueues', () => {
     }
   })
 
-  it('uses distinct 60-second throttles for all five roots without retained job IDs', () => {
-    const flows = [
-      'copy:topics',
-      'copy:posts',
-      'copy:rss_feed_items',
-      'post-trigger',
-      'rss-story-trigger',
-    ] as const
+  it('uses distinct 60-second throttles for all four roots without retained job IDs', () => {
+    const flows = ['copy:topics', 'copy:posts', 'copy:rss_feed_items', 'post-trigger'] as const
     for (const flow of flows) {
       const options = reconciliationJobOptions(flow)
       expect(options).toMatchObject({

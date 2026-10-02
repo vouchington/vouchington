@@ -738,7 +738,8 @@ CREATE OR REPLACE TRIGGER trigger_classifier_topic_vote_applications_updated_at
   FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE TABLE IF NOT EXISTS story_classifier_results (
-  story_id UUID NOT NULL REFERENCES stories ON DELETE CASCADE,
+  story_id UUID REFERENCES stories ON DELETE CASCADE,
+  rss_feed_item_id UUID REFERENCES rss_feed_items ON DELETE CASCADE,
   id UUID NOT NULL DEFAULT uuidv7(),
   batch_id UUID NOT NULL,
   decision_call_id UUID NOT NULL,
@@ -756,7 +757,13 @@ CREATE TABLE IF NOT EXISTS story_classifier_results (
   scope_community_id UUID,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (story_id, id),
+  PRIMARY KEY (batch_id, id),
+  CONSTRAINT chk_story_classifier_results__one_entity CHECK (
+    num_nonnulls(story_id, rss_feed_item_id) = 1
+  ),
+  CONSTRAINT chk_story_classifier_results__stored_candidate_story CHECK (
+    candidate_id IS NULL OR story_id IS NOT NULL
+  ),
   CONSTRAINT chk_story_classifier_results__scope CHECK (
     (scope_category = 'global' AND scope_community_id IS NULL)
     OR (scope_category = 'community_ai' AND scope_community_id IS NOT NULL)
@@ -800,14 +807,15 @@ CREATE TABLE IF NOT EXISTS story_classifier_results (
   CONSTRAINT fk_story_classifier_results__call_batch
     FOREIGN KEY (decision_call_id, batch_id)
     REFERENCES classifier_decision_calls (id, batch_id) ON DELETE CASCADE
-) PARTITION BY RANGE (story_id);
+) PARTITION BY RANGE (batch_id);
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_story_classifier_results__story_batch
-  ON story_classifier_results (story_id, batch_id);
+  ON story_classifier_results (story_id, batch_id) WHERE story_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_story_classifier_results__rss_feed_item_batch
+  ON story_classifier_results (rss_feed_item_id, batch_id) WHERE rss_feed_item_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_story_classifier_results__candidate_probability
-  ON story_classifier_results (candidate_id, probability, story_id DESC);
-CREATE INDEX IF NOT EXISTS idx_story_classifier_results__batch
-  ON story_classifier_results (batch_id, story_id DESC);
+  ON story_classifier_results (candidate_id, probability, story_id DESC)
+  WHERE candidate_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_story_classifier_results__call_batch
   ON story_classifier_results (decision_call_id, batch_id);
 CREATE INDEX IF NOT EXISTS idx_story_classifier_results__classifier_kind
@@ -982,7 +990,7 @@ COMMENT ON COLUMN classifier_decision_batch_candidates.effective_upper_threshold
 COMMENT ON TABLE classifier_decision_batches IS 'One classified post or RSS item decision, including scope provenance and prompt revision.';
 COMMENT ON TABLE classifier_decision_calls IS 'Ordered shards for one classifier decision batch.';
 COMMENT ON TABLE topic_classifier_results IS 'Per-candidate classifier results for topic candidates, RANGE-partitioned by topic_id.';
-COMMENT ON TABLE story_classifier_results IS 'Per-candidate classifier results for story candidates, RANGE-partitioned by story_id.';
+COMMENT ON TABLE story_classifier_results IS 'Per-candidate classifier results for story-family candidates (a clustered story or a standalone RSS item), RANGE-partitioned by batch_id.';
 COMMENT ON TABLE community_prompt_classifier_results IS 'Per-prompt classifier results for community moderation prompts, RANGE-partitioned by batch_id.';
 
 COMMENT ON COLUMN classifiers.slug IS 'Stable machine-readable classifier identifier.';
@@ -1058,12 +1066,13 @@ COMMENT ON COLUMN classifier_topic_vote_applications.prompt_version_id IS 'Promp
 COMMENT ON COLUMN classifier_topic_vote_applications.batch_id IS 'Newest applied decision batch for this actor, topic, and subject fence.';
 COMMENT ON COLUMN classifier_topic_vote_applications.result_id IS 'Exact topic classifier result that produced the applied vote.';
 
-COMMENT ON COLUMN story_classifier_results.story_id IS 'Story candidate scored by this result and the partition key.';
-COMMENT ON COLUMN story_classifier_results.batch_id IS 'Logical decision batch that produced this result.';
+COMMENT ON COLUMN story_classifier_results.story_id IS 'Story candidate scored by this result; mutually exclusive with rss_feed_item_id.';
+COMMENT ON COLUMN story_classifier_results.rss_feed_item_id IS 'Standalone RSS item candidate scored by this result; mutually exclusive with story_id.';
+COMMENT ON COLUMN story_classifier_results.batch_id IS 'Logical decision batch that produced this result and the partition key.';
 COMMENT ON COLUMN story_classifier_results.decision_call_id IS 'Specific provider call or shard that produced this result.';
 COMMENT ON COLUMN story_classifier_results.classifier_id IS 'Classifier copied from the owning batch for relational enforcement.';
 COMMENT ON COLUMN story_classifier_results.candidate_kind IS 'Fixed story discriminator used only for the classifier-kind foreign key.';
-COMMENT ON COLUMN story_classifier_results.candidate_id IS 'Stored story candidate scored by this result, or NULL for a runtime-prefiltered candidate.';
+COMMENT ON COLUMN story_classifier_results.candidate_id IS 'Stored story candidate scored by this result, or NULL for a runtime-prefiltered candidate; only a story candidate can be stored.';
 COMMENT ON COLUMN story_classifier_results.threshold_id IS 'Exact stored-candidate threshold revision used, or NULL for a runtime-prefiltered candidate without stored configuration.';
 COMMENT ON COLUMN story_classifier_results.prompt_version_id IS 'Prompt revision copied from the owning batch for relational enforcement.';
 COMMENT ON COLUMN story_classifier_results.probability IS 'Native per-candidate probability preserved without threshold mapping.';

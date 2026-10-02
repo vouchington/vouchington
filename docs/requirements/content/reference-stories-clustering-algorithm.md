@@ -4,27 +4,54 @@
 
 ## Clustering Algorithm
 
-Agent-driven clustering triggered after each RSS feed item embedding is written, regardless of which pipeline delivers it:
+Clustering is a Choice classifier run (`story-clustering-classifier`) on the shared classifier-run
+lifecycle, started after each RSS feed item embedding is written, regardless of which pipeline
+delivers it:
 
-1. After embedding, a `story_clustering` job is enqueued
-2. The job finds up to 5 candidate similar items using pgvector's HNSW index (`<=>` cosine distance operator)
-3. If 0 candidates are found, no agent call is made — the item remains standalone
-4. If candidates exist, the `@story-teller` agent (LLM) decides whether to cluster using heuristics:
+1. An RSS upsert records a durable run request for the item's content. Once the item's embedding is
+   current, the run is dispatched (see Trigger Sources).
+2. When the run's receipt is first reserved, up to 5 candidates are chosen using pgvector's HNSW index
+   (`<=>` cosine distance operator) and stored with the receipt. Each distinct story among the
+   neighbors is one candidate, represented by its nearest member; each standalone neighbor is one
+   candidate.
+3. If there are 0 candidates, no model call is made and the item remains standalone.
+4. If candidates exist, one model call asks a single Choice question: which candidate, if any, covers
+   the same specific event as the incoming item. The prompt's editorial heuristics are:
    - Only groups articles about the **same specific event** (not just the same topic)
    - Rumors, leaks, and speculation are **not** the same story as official announcements
    - Product reviews are **not** the same story as product launches
    - Follow-up developments can be the same story if they reference the same event
-5. If the agent decides to cluster, it also provides: title, `published_at` (event date), and the official source article
+5. The item joins a candidate only when that candidate's probability reaches the stored lower
+   threshold (seed `0.65`). `none`, a low-confidence answer, and a missing, malformed or partial answer
+   all leave the item standalone.
+
+The classifier decides membership only. It does not produce a title, a `published_at` or an official
+item; see Story `published_at` and Official Items below. Storage and run lifecycle are described in the
+[story clustering classifier](../../overview/architecture/ai-agents/story-clustering/README.md) and
+[classifier runs](../../overview/architecture/services/classifier-runs/README.md) pages.
+
+### One Call Per Content Version
+
+A run is identified by `(classifier, item, content SHA-256, configuration SHA-256)`. The candidate set
+is captured once with the receipt and is not part of that identity, so a changed neighbor set, a retry,
+lease expiry or a replay never creates a second receipt or a second model call. Unchanged content under
+an unchanged prompt, model and actor is never re-classified, and one item version costs at most one
+model call however many candidates the search finds.
 
 ### Trigger Sources
 
-A `story_clustering` job is enqueued from three places — all use the same debounce dedup key (`story_clustering_${id}`, 60 s TTL) so rapid re-enqueues coalesce:
+The run request is written when the RSS item is upserted. The dispatcher is enqueued (best effort, with
+the stable job id `classifier_run_dispatcher_story-clustering-classifier_<itemId>`) from three places
+once the embedding is current:
 
 1. **Single-path worker** — immediately after `upsertRssFeedItemEmbedding` writes the vector (real-time pipeline).
 2. **Batch-path save** (`applyRssFeedItemBatchUpdates`) — for each item updated when a Bedrock batch API result is applied.
 3. **Batch-path copy-existing** (`copyExistingRssFeedItemEmbeddings`) — for each item hydrated from the centralized `bedrock_nova_multimodal_v1_embeddings` table.
 
-If clustering fires before the embedding row is visible (narrow timing gap), the processor re-enqueues with a 5 s delay, up to 10 retries — mirroring the autotagger retry pattern.
+A failed enqueue never fails the embedding job. The `reconcile-classifier-runs` sweep dispatches any
+pending request whose item is live at the requested content with a current embedding, so recovery needs
+no story-specific marker, retry processor or scheduled job. A dispatcher that runs before the embedding
+is current leaves the request pending for the sweep.
 
 ### Parameters
 
@@ -32,7 +59,8 @@ If clustering fires before the embedding row is visible (narrow timing gap), the
 | ----------------------------- | ------- | ------------------- | -------------------------------------------------------------------------------------- |
 | Distance cutoff               | 0.35    | —                   | Cosine distance threshold for candidate search                                         |
 | Time window                   | 4 days  | `STORY_WINDOW_DAYS` | Forward from story `published_at`. Max 14.                                             |
-| Candidate limit               | 5       | —                   | Max candidates sent to agent (controls LLM token budget)                               |
+| Candidate limit               | 5       | —                   | Max candidates in the one question (controls model token budget)                       |
+| Join threshold                | 0.65    | —                   | Lower threshold of the active prompt version; a candidate must reach it to be joined   |
 | Clustering source eligibility | —       | —                   | Items are excluded from clustering when ALL of their source feeds are not discoverable |
 
 ### Clustering Source Eligibility
@@ -55,19 +83,30 @@ The candidate search returns items **both with and without existing stories**. T
 
 ### What Happens When Candidates Span Multiple Stories
 
-If the up to 5 nearest neighbors happen to belong to two different existing stories, the agent is instructed to pick the best single match (or none). The agent's prompt says: _"If candidates belong to different stories, pick the best match (or none)"_.
-
-If the agent returns `cluster_item_ids` that still span multiple stories (e.g. agent error or ambiguous content), the code picks the **closest-distance candidate's story** using `find()` over candidates ordered by distance ascending. The new item joins that story; the other story is unaffected.
+If the nearest neighbors belong to different existing stories, each story is one candidate and the
+question asks for the single best match (or `none`). Because a Choice answer's probabilities sum to 1
+and the join threshold is above 0.5, at most one candidate can reach it. If an out-of-band decision
+ever had two, the highest probability wins, then the smallest candidate key. The other stories are
+unaffected.
 
 Items with `story_locked_at` are excluded from the candidate search entirely, so admin-locked stories are never affected by auto-clustering.
 
 ### Race Condition Handling
 
-The clustering uses `UPDATE ... WHERE story_id IS NULL RETURNING id` — if the RETURNING is empty, the item was already assigned by a concurrent job. The current job terminates, and a subsequent job run will correctly handle the already-clustered item.
+The decision is applied inside the transaction that completes the run, with the incoming and chosen
+items re-read under row locks and assigned with
+`UPDATE ... WHERE story_id IS NULL AND story_locked_at IS NULL RETURNING id`. An item that left,
+was locked or already joined a story is skipped, never joined wrongly. If the chosen standalone item has
+meanwhile joined a story, the incoming item joins that story. A new story needs both founding members to
+be assigned or neither is.
 
 ## Story `published_at`
 
-Each story has a `published_at` timestamp representing when the event actually occurred. This is determined by the `@story-teller` agent (typically the earliest credible report date). It is distinct from `created_at` (when the story row was created).
+Each story has a `published_at` timestamp representing when the event actually occurred. When
+clustering founds a story from two standalone items it is the earlier of the two members'
+`published_at`, and the title is the chosen member's cleaned title (the story stores NULL and readers
+fall back to the item's title when it is empty). `cluster_reason` is a fixed opaque string that no
+reader parses. All three are distinct from `created_at` (when the story row was created).
 
 ## Official Items
 
@@ -75,12 +114,13 @@ Each story can have one "official" item — the canonical source (e.g., a compan
 
 **Automatic selection:**
 
-- The `@story-teller` agent picks an official item during clustering based on article content (e.g., prefers primary announcements over coverage)
+- Clustering is membership-only and never sets the official item, so a clustered story has none
+  until an admin sets it. Readers fall back to the highest-voted member.
 
 **Admin override:**
 
 - Admins can manually set the official item via `PUT /api/v1/stories/:storyId/official`
-- This sets `official_locked_at`, preventing agents from overriding the choice
+- This sets `official_locked_at`; clustering never writes the official item, so it cannot override the choice
 
 ## Story Posts
 

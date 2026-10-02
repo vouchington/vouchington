@@ -2,11 +2,9 @@ import { copyExistingTopicEmbeddings } from '@services/bedrock-embeddings-batch/
 import { copyExistingPostEmbeddings } from '@services/bedrock-embeddings-batch/entities/posts'
 import { copyExistingRssFeedItemEmbeddings } from '@services/bedrock-embeddings-batch/entities/rss-feed-items'
 import { enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts } from '@services/communities/ban-evasion'
-import { reconcilePendingStoryClusteringEmbeddingTriggers } from '@services/stories/embedding-trigger'
 import {
   enqueuePostEmbeddingTriggerRecovery,
   enqueueReconcileExistingEmbeddings,
-  enqueueRssStoryTriggerRecovery,
 } from '@queues/bedrock-embeddings-batch/enqueues'
 import type { ReconciliationEntityType } from '@queues/bedrock-embeddings-batch/types'
 
@@ -48,16 +46,5 @@ export function processPostEmbeddingTriggerRecovery(after?: string): Promise<Rec
         cursor === undefined ? {} : { after: cursor },
       ),
     enqueuePostEmbeddingTriggerRecovery,
-  )
-}
-
-export function processRssStoryTriggerRecovery(after?: string): Promise<ReconciliationPage> {
-  return processReconciliationPage(
-    after,
-    cursor =>
-      reconcilePendingStoryClusteringEmbeddingTriggers(
-        cursor === undefined ? {} : { after: cursor },
-      ),
-    enqueueRssStoryTriggerRecovery,
   )
 }

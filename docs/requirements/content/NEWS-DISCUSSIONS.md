@@ -132,7 +132,7 @@ Shared news rows are standalone feed items in personalized feeds:
 
 ## Story Clustering
 
-RSS feed items are grouped into **stories** — first-class entities that represent a single news event. The `@story-teller` agent decides whether to cluster using heuristics (rumors ≠ announcements, reviews ≠ launches).
+RSS feed items are grouped into **stories** — first-class entities that represent a single news event. The story-clustering Choice classifier decides whether to cluster using heuristics (rumors ≠ announcements, reviews ≠ launches).
 
 - Items in the same story are deduplicated in feeds — one item shown per story (official or highest-voted)
 - Each story can have one story post (`post_type='story'`), created by the `@story-teller` system user via API with auto-linked URLs and forwarded category topics. The post is linked via the `post__stories` junction table. Any user can initiate creation.

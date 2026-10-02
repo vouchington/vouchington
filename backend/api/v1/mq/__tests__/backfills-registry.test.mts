@@ -34,19 +34,18 @@ const EXPECTED_EXISTING_DISPATCHER_BACKFILL_IDS = new Set([
 ])
 
 describe('BACKFILL_REGISTRY', () => {
-  it('starts all five embedding reconciliation roots from its operator entry', async () => {
+  it('starts all four embedding reconciliation roots from its operator entry', async () => {
     const entry = BACKFILL_REGISTRY.find(
       candidate => candidate.id === 'bedrock-embedding-reconciliation',
     )
     if (!entry) throw new Error('Embedding reconciliation backfill missing')
     const enqueued = await entry.trigger()
-    if (!Array.isArray(enqueued)) throw new Error('Expected all five root enqueues')
+    if (!Array.isArray(enqueued)) throw new Error('Expected all four root enqueues')
     const expected = [
       { name: 'reconcile_existing', data: { entityType: 'topics' } },
       { name: 'reconcile_existing', data: { entityType: 'posts' } },
       { name: 'reconcile_existing', data: { entityType: 'rss_feed_items' } },
       { name: 'post_trigger_recovery', data: {} },
-      { name: 'rss_story_trigger_recovery', data: {} },
     ]
     expect(enqueued).toHaveLength(expected.length)
     expect(
