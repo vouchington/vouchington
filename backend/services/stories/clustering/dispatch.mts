@@ -23,7 +23,7 @@ export async function dispatchStoryClusteringForEmbeddedItems(
         rssFeedItemId,
       })),
     )
-  } catch (error) {
-    report(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    report(err instanceof Error ? err : new Error(String(err)))
   }
 }
