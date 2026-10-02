@@ -47,7 +47,7 @@ describe('bluesky follow propagation enqueue helpers', () => {
     })
   })
 
-  it('debounce-collapses a repeated enqueue for the same pair into the first job', async () => {
+  it('debounce-replaces a repeated enqueue for the same pair, leaving one job', async () => {
     const followerUserId = `user-${randomUUID()}`
     const followeeUserId = `user-${randomUUID()}`
 
@@ -58,17 +58,19 @@ describe('bluesky follow propagation enqueue helpers', () => {
     expect((first as { opts?: { deduplication?: { id?: string } } })?.opts?.deduplication?.id).toBe(
       expectedDedupId,
     )
-    // The referenced job is still waiting, so the shim's dedup, faithful to production's debounce
-    // state-gating, skips the second enqueue outright rather than creating a second job.
-    expect(second).toBeNull()
+    // A debounce add replaces the tracked job while it is still parked (delayed, or prioritized
+    // until the scheduler promotes it) and is skipped only once that job is waiting or active.
+    // Reconcile jobs carry the default priority, so the first job is replaced by the second.
+    expect(second).not.toBeNull()
+    expect(second?.id).not.toBe(first?.id)
 
-    const waiting = await readAllQueueJobs(blueskyFollowPropagation)
-    const jobs = waiting.filter(
+    const queued = await readAllQueueJobs(blueskyFollowPropagation)
+    const jobs = queued.filter(
       j =>
         (j.data as { followerUserId?: string }).followerUserId === followerUserId &&
         (j.data as { followeeUserId?: string }).followeeUserId === followeeUserId,
     )
-    expect(jobs).toHaveLength(1)
+    expect(jobs.map(job => job.id)).toEqual([second?.id])
   })
 
   it('enqueues the singleton backfill job with throttle deduplication', async () => {

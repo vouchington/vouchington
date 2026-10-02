@@ -31,7 +31,9 @@ describe('Google Play membership enqueues', () => {
         ordering: { key: `google-play-token:test:${purchaseTokenLookupSha256}`, concurrency: 1 },
       },
     })
-    expect(JSON.stringify(await queuedJobs())).not.toContain(purchaseToken)
+    // Serialize the payloads only: a live test job references its queue, which references the job.
+    const payloads = (await queuedJobs()).map(job => ({ data: job.data, opts: job.opts }))
+    expect(JSON.stringify(payloads)).not.toContain(purchaseToken)
   })
 
   it('deduplicates acknowledgement and source reconciliation by stable identity', async () => {
