@@ -3319,6 +3319,9 @@ importers:
       '@vouchington/rss-parser':
         specifier: ^0.1.0
         version: 0.1.0
+      pgvector:
+        specifier: ^0.3.0
+        version: 0.3.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -10831,12 +10834,12 @@ importers:
       '@services/individuals-households':
         specifier: workspace:^
         version: link:../services/individuals-households
-      '@services/lists':
-        specifier: workspace:^
-        version: link:../services/lists
       '@services/landing-page-analytics':
         specifier: workspace:^
         version: link:../services/landing-page-analytics
+      '@services/lists':
+        specifier: workspace:^
+        version: link:../services/lists
       '@services/moderation-analytics':
         specifier: workspace:^
         version: link:../services/moderation-analytics
