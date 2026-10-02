@@ -85,6 +85,13 @@ export async function countBlacklistEntriesBySource(
   return result.rows[0].count
 }
 
+/** Delete only an owned source; its foreign key cascades to that source's entries. */
+export async function deleteTestBlacklistSource(sourceId: DomainBlacklistSourceId): Promise<void> {
+  await write(sql`/* deleteTestBlacklistSource */
+    DELETE FROM domain_blacklist_sources WHERE id = ${sourceId}
+  `)
+}
+
 /**
  * List blacklist entries for a source.
  */

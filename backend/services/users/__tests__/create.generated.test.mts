@@ -2,12 +2,15 @@ import {
   createRandomEmailAddress,
   createRandomPhoneNumber,
   getLatestEmailAddressLoginTokenHash,
+  insertTestOAuthAccount,
 } from '@voucha/test-helpers'
 import { it, expect, describe } from 'vitest'
 import { createHash } from 'node:crypto'
 import { upsertUser } from '../create.mts'
 import { getPrivateUserByAny } from '../get.mts'
 import { v7 } from 'uuid'
+import { withPostgresQueryFailureForTest } from '@voucha/test-helpers/postgres-query-failure'
+import { getOAuthAccountByProviderUserId } from '@services/oauth-accounts'
 import {
   createEmailAddressLoginToken,
   createPhoneNumberLoginToken,
@@ -16,6 +19,41 @@ import {
 } from '../authentication.mts'
 
 describe('create.generated', () => {
+  it('preserves an unlinked OAuth identity when connecting an existing user fails', async () => {
+    const emailAddress = createRandomEmailAddress()
+    const user = await upsertUser({ emailAddress, sessionId: v7(), deviceId: v7() })
+    const providerUserId = `test-facebook-${v7()}`
+    const account = await insertTestOAuthAccount('facebook', providerUserId, emailAddress)
+    const options = {
+      oauthAccount: { provider: 'facebook' as const, account },
+      sessionId: v7(),
+      deviceId: v7(),
+    }
+    let failure: unknown
+    const { error } = await withPostgresQueryFailureForTest(
+      '/* connectOAuthAccountToUser */',
+      async () => {
+        try {
+          await upsertUser(options)
+        } catch (err) {
+          failure = err
+        }
+      },
+    )
+    expect(error).toMatchObject({ code: '25P02' })
+    expect(failure).toBe(error)
+    await expect(
+      getOAuthAccountByProviderUserId('facebook', providerUserId),
+    ).resolves.toMatchObject({ user_id: null })
+    await expect(getPrivateUserByAny(user.id, { readOnly: false })).resolves.toMatchObject({
+      facebook_account: null,
+    })
+    const retry = await upsertUser(options)
+    expect(retry.id).toBe(user.id)
+    await expect(
+      getOAuthAccountByProviderUserId('facebook', providerUserId),
+    ).resolves.toMatchObject({ user_id: user.id })
+  })
   it('Sign up with Email Address', async () => {
     const email_address = createRandomEmailAddress()
     const { emailAddress, token } = await createEmailAddressLoginToken(email_address)

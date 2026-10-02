@@ -247,7 +247,8 @@ expect(observed.pools).toEqual(['write'])
 Use `withPostgresQueryFailureForTest(queryMarker, operation, { command })` from
 `@voucha/test-helpers/postgres-query-failure` to verify an owned transaction's storage-error
 propagation and rollback. It shares the pool observer's serialization queue, instruments only
-clients acquired in the callback's async context, and restores their properties before release.
+clients acquired in the callback's async context (or its explicit owned HTTP request ID), and
+restores their properties before release.
 The exact leading SQL annotation selects one statement; `command` distinguishes statements that
 share an annotation. After the owner sends `BEGIN`, the helper runs actual division-by-zero SQL
 directly on that client, then forwards the service's original statement unchanged. The returned
@@ -256,6 +257,10 @@ assert identity as well as persisted state. Matching statements must use the ada
 Promise API; callback pool queries and other async contexts are forwarded untouched. Do not nest
 this helper and a pool observation. Use the borrowed aborted-transaction helper above when the
 service already accepts a transaction query.
+For a borrowed-query service that needs a healthy transaction first,
+`withPostgresTransactionForTest(operation)` waits for the operation, then rolls back its owned
+transaction on disposal. Keep this operation inside the fault helper's callback when injecting a
+later statement failure.
 
 For a statement executed by the global read/write pool rather than an owned transaction, use
 `withPostgresPoolQueryFailureForTest` from `@voucha/test-helpers/postgres-pool-query-failure` with
@@ -268,10 +273,17 @@ wrapper would give two owners responsibility for the same release, so the test-o
 scoped manual-transaction lint exception.
 
 Real HTTP requests do not inherit the test callback's async context. For those tests, pass a fresh
-UUID as `requestId` and the same `x-request-id` header. The helper matches the production request
+UUID as `requestId` and the same `x-request-id` header. Both fault helpers match the production request
 context exactly, in addition to the SQL annotation; never use a global marker-only interception.
 Assert the response's request ID and verify a different request ID remains healthy while the fault
 is installed. Direct service/tool calls use the default async-context scope.
+
+For owned blacklist fixtures, `deleteTestBlacklistSource(sourceId)` removes the exact source and
+its foreign-key-owned entries. Never clear the shared Bloom filter; use a fresh random hostname.
+`getTestGooglePlayVerificationRetryState(id)` reads the owned verification's claim and retry
+metadata when asserting that a real processing failure releases its lease and records retry state.
+`provider-http` supplies actual Undici `MockAgent` HTTP parsing for injected provider fetches;
+its default-export fetch observer restores the external SDK method even when processing throws.
 
 ## Notification Push Recovery Backlogs
 
