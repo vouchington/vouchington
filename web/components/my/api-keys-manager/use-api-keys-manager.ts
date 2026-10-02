@@ -119,8 +119,10 @@ export function useApiKeysManager(
       if (page) {
         setCreatedKeys(prev => [
           result.api_key,
-          ...page.results,
-          ...prev.filter(key => key.id !== id),
+          ...page.results.filter(key => key.id !== result.api_key.id),
+          ...prev.filter(
+            key => key.id !== result.api_key.id && !page.results.some(row => row.id === key.id),
+          ),
         ])
         setClientFirstPage(page)
       }

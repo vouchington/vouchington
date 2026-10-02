@@ -148,6 +148,34 @@ describe('ApiKeysManager scope selection', () => {
     expect(rotateApiKey).toHaveBeenCalledOnce()
   })
 
+  it('keeps a later-page key replaced when the refreshed first page omits it', async () => {
+    const old = { ...issuedApiKey.api_key, expires_at: null }
+    mockGet
+      .mockResolvedValueOnce({
+        results: [old],
+        page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
+      })
+      .mockResolvedValueOnce({
+        results: [rotatedApiKey.api_key],
+        page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
+      })
+    vi.mocked(rotateApiKey).mockResolvedValue(rotatedApiKey)
+    render(
+      <ApiKeysManager
+        scopeCatalog={scopeCatalog}
+        initialData={{
+          results: [],
+          page_info: { has_next_page: true, end_cursor: 'later-page', start_cursor: null },
+        }}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Load more/i }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Rotate' }))
+    await waitFor(() => expect(mockGet).toHaveBeenCalledTimes(2))
+    expect(await screen.findByText('Replaced')).toBeVisible()
+    expect(screen.getAllByRole('button', { name: 'Rotate' })).toHaveLength(1)
+  })
+
   it('creates a user MCP key with a write scope and its required read scope', async () => {
     await openMcpForm()
 

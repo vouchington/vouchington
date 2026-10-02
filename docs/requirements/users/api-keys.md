@@ -71,11 +71,12 @@ MCP keys are user MCP only. The own-private relation capability is visible as a 
 
 ### Management (authenticated via session)
 
-| Method   | Path                      | Description          |
-| -------- | ------------------------- | -------------------- |
-| `GET`    | `/api/v1/my/api-keys`     | List your API keys   |
-| `POST`   | `/api/v1/my/api-keys`     | Create a new API key |
-| `DELETE` | `/api/v1/my/api-keys/:id` | Revoke an API key    |
+| Method   | Path                             | Description          |
+| -------- | -------------------------------- | -------------------- |
+| `GET`    | `/api/v1/my/api-keys`            | List your API keys   |
+| `POST`   | `/api/v1/my/api-keys`            | Create a new API key |
+| `DELETE` | `/api/v1/my/api-keys/:id`        | Revoke an API key    |
+| `POST`   | `/api/v1/my/api-keys/:id/rotate` | Rotate an API key    |
 
 ### OAuth apps and connected apps
 
