@@ -1,5 +1,8 @@
 import { createClassifierDecisionCall } from '@voucha/test-helpers/data-stores/psql/classifier-fixture-operations'
-import { createSyntheticFixture } from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-classifier'
+import {
+  createSyntheticFixture,
+  reviseSyntheticPost,
+} from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-classifier'
 import {
   overNewSyntheticPost,
   requestSyntheticRun,
@@ -22,6 +25,7 @@ import {
 import { localOutcomeFor } from '@voucha/test-helpers/data-stores/psql/post-classifier/outcomes'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { startClassifierProviderAttempt } from './run-attempt.mts'
+import { supersedeStaleClassifierRun } from './run-supersession.mts'
 import { readClassifierRunUsage } from './usage-report-runs.mts'
 import { readClassifierUsageReport } from './usage-report.mts'
 
@@ -64,7 +68,7 @@ describe('classifier usage report: remote runs (real PG)', () => {
       attemptsStarted: 1,
       retries: 0,
       providerCalls: 1,
-      unbilledAttempts: 0,
+      attemptsWithoutRecordedResponse: 0,
       shardCount: 1,
       candidateCount: questionCount(setup),
       inputTokens: 12,
@@ -79,7 +83,7 @@ describe('classifier usage report: remote runs (real PG)', () => {
     })
   })
 
-  it('counts the billed retry once and the attempt that returned nothing as unbilled', async () => {
+  it('counts the billed retry once and the attempt with no recorded response once', async () => {
     const setup = await createPostClassifierExecutionFixture(true, false)
     await startProviderAttempts(setup, 2)
     await recordBilledCall(setup, { latencyMs: 90 })
@@ -89,7 +93,7 @@ describe('classifier usage report: remote runs (real PG)', () => {
       attemptsStarted: 2,
       retries: 1,
       providerCalls: 1,
-      unbilledAttempts: 1,
+      attemptsWithoutRecordedResponse: 1,
       localDetector: null,
     })
   })
@@ -105,7 +109,7 @@ describe('classifier usage report: remote runs (real PG)', () => {
       shardCount: 0,
       candidateCount: 0,
       providerCalls: 2,
-      unbilledAttempts: 0,
+      attemptsWithoutRecordedResponse: 0,
       pricedCalls: 1,
       unpricedCalls: 1,
       inputTokens: 24,
@@ -149,7 +153,7 @@ describe('classifier usage report: remote runs (real PG)', () => {
       outcome: 'failed:attempts-exhausted',
       attemptsStarted: 1,
       providerCalls: 0,
-      unbilledAttempts: 1,
+      attemptsWithoutRecordedResponse: 1,
       costMicrounits: '0',
       latencyMsMax: null,
       latencySamples: 0,
@@ -244,5 +248,21 @@ describe('classifier usage report: one classifier over many runs (real PG)', () 
         localCostMicrounits: '0',
       }),
     ])
+  })
+
+  it('reports a superseded run under its own outcome, not as a failure', async () => {
+    const setup = await createSyntheticFixture()
+    await requestSyntheticRun(setup)
+    const replaced = await reserveSyntheticRun(setup)
+    await requestSyntheticRun(setup, await reviseSyntheticPost(setup.post.id))
+    await supersedeStaleClassifierRun(setup.adapter, replaced)
+
+    const report = await readClassifierUsageReport(windowAroundNow())
+
+    expect(report.runs.find(run => run.runId === replaced.runId)?.outcome).toBe('superseded')
+    expect(report.groups.find(group => group.classifier === setup.slug)?.outcomes).toEqual({
+      superseded: 1,
+      incomplete: 1,
+    })
   })
 })

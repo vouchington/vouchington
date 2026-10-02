@@ -45,7 +45,7 @@ function emptyGroup(run: ClassifierRunUsage): ClassifierUsageGroup {
     retries: 0,
     sweepEnqueues: 0,
     providerCalls: 0,
-    unbilledAttempts: 0,
+    attemptsWithoutRecordedResponse: 0,
     shards: 0,
     candidates: 0,
     inputTokens: 0,
@@ -69,7 +69,7 @@ function addRun(group: ClassifierUsageGroup, run: ClassifierRunUsage): void {
   group.retries += run.retries
   group.sweepEnqueues += run.sweepEnqueues
   group.providerCalls += run.providerCalls
-  group.unbilledAttempts += run.unbilledAttempts
+  group.attemptsWithoutRecordedResponse += run.attemptsWithoutRecordedResponse
   group.shards += run.shardCount
   group.candidates += run.candidateCount
   group.inputTokens += run.inputTokens

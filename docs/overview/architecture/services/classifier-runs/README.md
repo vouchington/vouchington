@@ -260,9 +260,11 @@ durable requests per classifier.
 - **Provider calls versus local detection.** A provider call is a ledger row. A local detector (C5)
   writes no ledger row and costs nothing, so it is counted apart as a detector run with a cost of
   zero.
-- **Unbilled attempts.** A request that returned no billed response (a network failure or a non-2xx
-  status) writes no ledger row. It is counted as an attempt with no provider call, and it has no
-  latency, because nothing is billed or measured for it.
+- **Attempts without a recorded response.** A request that returned no 2xx response (a network
+  failure or a non-2xx status) writes no ledger row. It is counted as an attempt with no provider
+  call, and it has no latency, because nothing is recorded or measured for it. The count does not
+  say the attempt cost nothing: an ambiguous failure may have billed, which latches the day's
+  accounting uncertainty (see [ai-usage](../ai-usage/README.md)) instead of adding a row here.
 - **Shards.** The executor makes one provider call per run, so a run has one shard today. The shard
   count is the number of decision calls persisted under the batch, and a sharded run would show one
   provider call per shard under one batch.

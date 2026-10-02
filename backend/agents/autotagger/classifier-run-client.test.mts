@@ -5,6 +5,7 @@ import type { StructuredDecisionFetch } from '@modules/structured-decisions'
 import { openAiSpendCapConfig, OpenAiSpendCapBreachError } from '@services/ai-usage'
 import { findAiUsageRecordForPost, pollUntilNotNull } from '@voucha/test-helpers'
 import { createAutotaggerPostFixture } from '@voucha/test-helpers/data-stores/psql/classifier-runs/autotagger-fixture'
+import { listAiUsageRecordsForClassifierRun } from '@voucha/test-helpers/entities/ai-usage'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
@@ -59,9 +60,10 @@ describe('createAutotaggerClient', () => {
 
   it('records the reasoning pass under its own workload, never the first stage’s', async () => {
     const { post } = await createAutotaggerPostFixture({ topicCount: 0 })
+    const runId = await reserveSyntheticRunId()
     const client = createAutotaggerAgentClient(
       {
-        classifierRunId,
+        classifierRunId: runId,
         postId: post.id,
         modelProvider: 'openrouter',
         beforeAttempt: async () => {},
@@ -75,6 +77,9 @@ describe('createAutotaggerClient', () => {
       pollUntilNotNull(() => findAiUsageRecordForPost(post.id, 'autotagger-agent')),
     ).resolves.toMatchObject({ input_tokens: 5 })
     expect(await findAiUsageRecordForPost(post.id, 'autotagger')).toBeNull()
+    expect(await listAiUsageRecordsForClassifierRun(runId)).toMatchObject([
+      { classifier_run_id: runId, agent_slug: 'autotagger-agent', input_tokens: 5 },
+    ])
   })
 
   it('reserves the reasoning pass’s attempt once, before its single physical request', async () => {

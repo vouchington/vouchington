@@ -5,7 +5,9 @@ export type ClassifierUsageWindow = { from: Date; to: Date }
  * What one classifier run cost and how it fanned out. Provider figures come from the ai-usage
  * ledger rows attributed to the run (`ai_usage_records.classifier_run_id`), so a response that
  * failed strict decoding but was billed is counted. A provider call that returned no 2xx response
- * (a network or 5xx failure) writes no ledger row; it shows up only as `unbilledAttempts`.
+ * (a network or 5xx failure) writes no ledger row, so it shows up only as
+ * `attemptsWithoutRecordedResponse`. That does not mean it was free: an ambiguous failure may have
+ * billed, which latches the day's accounting uncertainty rather than being recorded here.
  */
 export type ClassifierRunUsage = {
   runId: string
@@ -33,8 +35,8 @@ export type ClassifierRunUsage = {
   sweepEnqueues: number
   /** Billed provider responses recorded in the ledger, including failed and incomplete ones. */
   providerCalls: number
-  /** Reserved attempts with no ledger row (the request never produced a billed response). */
-  unbilledAttempts: number
+  /** Reserved attempts with no ledger row: nothing was recorded for them, billed or not. */
+  attemptsWithoutRecordedResponse: number
   inputTokens: number
   cachedInputTokens: number
   outputTokens: number
@@ -64,7 +66,7 @@ export type ClassifierUsageGroup = {
   retries: number
   sweepEnqueues: number
   providerCalls: number
-  unbilledAttempts: number
+  attemptsWithoutRecordedResponse: number
   shards: number
   candidates: number
   inputTokens: number

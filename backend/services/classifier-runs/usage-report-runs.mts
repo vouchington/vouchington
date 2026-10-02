@@ -150,7 +150,7 @@ function toRunUsage(row: RunRow): ClassifierRunUsage {
     retries: Math.max(row.attempts_started - 1, 0),
     sweepEnqueues: row.sweep_enqueues,
     providerCalls: row.provider_calls,
-    unbilledAttempts: Math.max(row.attempts_started - row.provider_calls, 0),
+    attemptsWithoutRecordedResponse: Math.max(row.attempts_started - row.provider_calls, 0),
     inputTokens: row.input_tokens,
     cachedInputTokens: row.cached_input_tokens,
     outputTokens: row.output_tokens,
