@@ -24,7 +24,9 @@
       "@voucha/scripts/seed": ["../backend/scripts/seed/index.mts"],
       "@services/bedrock-embeddings": ["../backend/services/bedrock-embeddings/index.mts"],
       "@services/urls-domains-blacklist": ["../backend/services/urls-domains-blacklist/index.mts"],
-      "@services/dynamic-config-admin": ["../backend/services/dynamic-config-admin/index.mts"],
+      "@services/dynamic-config-admin/registry": [
+        "../backend/services/dynamic-config-admin/registry.mts"
+      ],
       "@services/queue-monitoring/queue-inventory": [
         "../backend/services/queue-monitoring/queue-inventory.mts"
       ],
