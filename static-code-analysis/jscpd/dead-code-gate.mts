@@ -1,11 +1,15 @@
+import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { glob, mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
-import { reconcileBaseline } from './dead-code-baseline.mts'
+import {
+  reconcileBaseline,
+  rowsFromReport,
+  type BaselineRow,
+  type FindingIdentity,
+} from './dead-code-baseline.mts'
 import { copyTrackedWorkingTree } from './tracked-snapshot.mts'
-import { validateDeadCodeConfig } from './dead-code-scope.mts'
-import { scanDeadCode } from './dead-code-scan.mts'
 
 const repoRoot = resolve(import.meta.dirname, '../..')
 const baselinePath = join(import.meta.dirname, 'dead-code-baseline.json')
@@ -18,13 +22,73 @@ function mode(args: string[]): 'check' | 'seed' | 'update' {
 }
 
 async function validateEntryRoots(snapshotRoot: string): Promise<void> {
-  const config = JSON.parse(await readFile(join(snapshotRoot, '.jscpd.json'), 'utf8')) as unknown
-  const entries = validateDeadCodeConfig(config)
+  const config = JSON.parse(await readFile(join(snapshotRoot, '.jscpd.json'), 'utf8')) as {
+    deadCode?: { entry?: unknown }
+  }
+  const entries = config?.deadCode?.entry
+  if (!Array.isArray(entries) || entries.length === 0) {
+    throw new Error('jscpd deadCode.entry must contain at least one root')
+  }
   for (const entry of entries) {
+    if (
+      typeof entry !== 'string' ||
+      entry.length === 0 ||
+      entry.startsWith('/') ||
+      entry.includes('\\') ||
+      entry.split('/').includes('..')
+    ) {
+      throw new Error(`Invalid dead-code entry root: ${String(entry)}`)
+    }
     let matches = 0
     for await (const _ of glob(entry, { cwd: snapshotRoot })) matches += 1
     if (matches === 0) throw new Error(`Stale dead-code entry root: ${entry}`)
   }
+}
+
+export async function scanDeadCode(
+  snapshotRoot: string,
+  reportRoot: string,
+  binary: string,
+): Promise<BaselineRow[]> {
+  execFileSync(
+    binary,
+    [
+      '--dead-code',
+      '--no-gitignore',
+      '--config',
+      '.jscpd.json',
+      '--reporters',
+      'json',
+      '--output',
+      reportRoot,
+      '--exit-code',
+      '0',
+      '.',
+    ],
+    { cwd: snapshotRoot, stdio: 'pipe', maxBuffer: 8 * 1024 * 1024 },
+  )
+  const report = JSON.parse(
+    await readFile(join(reportRoot, 'basta-report.json'), 'utf8'),
+  ) as unknown
+  return rowsFromReport(report, includeFinding)
+}
+
+function includeFinding(finding: FindingIdentity, raw: Record<string, unknown>): boolean {
+  if (
+    finding.category === 'unused-file' &&
+    Array.isArray(raw['reasons']) &&
+    raw['reasons'].includes('used-only-by-tests')
+  )
+    return false
+  const segments = finding.path.split('/')
+  if (
+    segments.some(
+      part => part === 'test-helpers' || part === '__tests__' || part === 'integration-tests',
+    )
+  ) {
+    return false
+  }
+  return !/\.(test|spec)\.[^/]+$/.test(finding.path)
 }
 
 async function prepareSnapshot(snapshotRoot: string): Promise<number> {
@@ -71,7 +135,9 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch(error => {
-  console.error(error instanceof Error ? error.message : String(error))
-  process.exitCode = 1
-})
+if (process.argv[1] && resolve(process.argv[1]) === import.meta.filename) {
+  main().catch(error => {
+    console.error(error instanceof Error ? error.message : String(error))
+    process.exitCode = 1
+  })
+}

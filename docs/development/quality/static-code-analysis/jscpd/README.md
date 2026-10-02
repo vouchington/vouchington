@@ -12,20 +12,26 @@ which could otherwise change reachability. It rejects symlinks outside the repos
 
 ## Dead-Code Baseline
 
-`pnpm run jscpd:dead-code` checks all five categories in `.jscpd.json` at its configured minimum
+`pnpm run jscpd:dead-code` scans all five categories in `.jscpd.json` at its configured minimum
 confidence. It runs in `pnpm run lint`, the Static Analysis workflow, and `ci-local static`.
+The native scan reads the full tracked graph. The guard then excludes `unused-file` findings that
+jscpd labels `used-only-by-tests` and findings located in `.test`/`.spec` files, `test-helpers`,
+`__tests__`, or `integration-tests`. This keeps an unimported source file visible while leaving
+test-only code outside this gate; the clone-size scan has its own unchanged scope.
+
 The guard consumes jscpd's native JSON report, fails when the analyzer fails, analyzes no files,
-or leaves unparsed files, and compares every finding by category, path, parent, name, and symbol
-kind. Repeated findings share an identity with a count, so a new or increased finding fails even
-when another finding disappears. Line numbers and message wording do not affect that identity.
+or leaves unparsed files, and compares every retained finding by category, path, parent, name,
+and symbol kind. Repeated findings share an identity with a count, so a new or increased finding
+fails even when another finding disappears. Line numbers and message wording do not affect that
+identity.
 
 The checked-in [`dead-code-baseline.json`](../../../../../static-code-analysis/jscpd/dead-code-baseline.json)
-temporarily records reviewed findings, including helpers used only by tests and framework or
-Storybook symbols jscpd cannot recognize. Removing a finding makes the baseline stale and fails
+temporarily records reviewed findings, including framework and Storybook symbols jscpd cannot
+recognize. Removing a finding makes the baseline stale and fails
 the regular check. After verifying a cleanup, run `pnpm run jscpd:dead-code:update` to remove
 only stale findings; it refuses new or increased findings. `--seed` creates an initial baseline only
 when no baseline exists. Review baseline changes as code changes, rather than changing the minimum
-confidence or broadly ignoring tests.
+confidence or widening the test-only exclusion without review.
 
 The explicit `deadCode.entry` roots are runtime, CLI, generator, or configuration loader targets.
 They are kept narrow so ordinary helpers still require consumers. The entries are:
@@ -40,11 +46,10 @@ They are kept narrow so ordinary helpers still require consumers. The entries ar
 | Web generation and Storybook aliases | `web/generate-membership-benefit-catalog.ts`, `web/storybook/mocks/contribute-cta-aside.tsx`, `web/storybook/mocks/get-resolved-ui-locale.ts`, `web/storybook/mocks/get-translations.ts`, `web/storybook/mocks/languages.ts`, `web/storybook/mocks/load-server-messages.ts`, `web/storybook/mocks/upgrade-membership-aside.tsx` |
 | Vitest setup                         | `web/test-helpers/vitest.setup.fake-timer-guard.mts`, `web/test-helpers/vitest.setup.storybook-browser-guard.mts`                                                                                                                                                                                                               |
 
-The [scope contract](../../../../../static-code-analysis/jscpd/dead-code-scope.mts) pins these
-entries and the scanner's formats, exclusions, categories, and confidence floor; scope changes
-need an explicit policy edit. Every configured entry must match a file in the tracked snapshot,
-or the guard fails. The RSS
-source-publication backfill remains an explicit CLI root; its cleanup is a separate change.
+The [jscpd configuration](../../../../../.jscpd.json) owns the entries, formats, exclusions,
+categories, and confidence floor. Review scope changes there. Every configured entry must match
+a file in the tracked snapshot, or the guard fails. The RSS source-publication backfill remains
+an explicit CLI root; its cleanup is a separate change.
 
 The clone-size gate is the plain [jscpd](https://github.com/kucherenko/jscpd) CLI, `jscpd .`, configured by
 [`.jscpd.json`](../../../../../.jscpd.json); no wrapper sits in between. CI runs `pnpm exec jscpd .` in

@@ -53,7 +53,10 @@ function sortedRows(rows: readonly BaselineRow[]): BaselineRow[] {
   return [...rows].sort((a, b) => key(a).localeCompare(key(b), 'en'))
 }
 
-export function rowsFromReport(value: unknown): BaselineRow[] {
+export function rowsFromReport(
+  value: unknown,
+  include: (finding: FindingIdentity, raw: Record<string, unknown>) => boolean = () => true,
+): BaselineRow[] {
   const report = record(value)
   const statistics = record(report['statistics'])
   if (!Number.isInteger(statistics['files']) || (statistics['files'] as number) <= 0) {
@@ -66,6 +69,7 @@ export function rowsFromReport(value: unknown): BaselineRow[] {
   const counts = new Map<string, BaselineRow>()
   for (const value of report['findings']) {
     const found = identity(value)
+    if (!include(found, record(value))) continue
     const id = key(found)
     const existing = counts.get(id)
     counts.set(id, { ...found, count: (existing?.count ?? 0) + 1 })

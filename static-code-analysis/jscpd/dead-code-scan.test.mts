@@ -1,9 +1,9 @@
 import { execFileSync } from 'node:child_process'
-import { chmod, mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
+import { chmod, mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { scanDeadCode } from './dead-code-scan.mts'
+import { scanDeadCode } from './dead-code-gate.mts'
 import { copyTrackedWorkingTree } from './tracked-snapshot.mts'
 
 const jscpd = resolve('node_modules/.bin/jscpd')
@@ -18,6 +18,10 @@ describe('released jscpd dead-code invocation', () => {
       execFileSync('git', ['init', '-q'], { cwd: repo })
       await writeFile(join(repo, 'main.mts'), 'export const live = 1\n')
       await writeFile(join(repo, 'orphan.mts'), 'export const orphan = 2\n')
+      await writeFile(join(repo, 'test-only.mts'), 'export const helper = 3\n')
+      await writeFile(join(repo, 'main.test.mts'), "import './test-only.mts'\n")
+      await mkdir(join(repo, 'test-helpers'))
+      await writeFile(join(repo, 'test-helpers', 'orphan.mts'), 'export const helper = 4\n')
       await writeFile(
         join(repo, '.jscpd.json'),
         JSON.stringify({
@@ -29,11 +33,18 @@ describe('released jscpd dead-code invocation', () => {
           },
         }),
       )
-      execFileSync('git', ['add', 'main.mts', 'orphan.mts', '.jscpd.json'], { cwd: repo })
+      execFileSync('git', ['add', '.'], { cwd: repo })
       await writeFile(join(repo, 'importer.mts'), "import './orphan.mts'\n")
       await writeFile(join(repo, '.gitignore'), 'orphan.mts\n')
       await copyTrackedWorkingTree(repo, snapshot)
-      const rows = await scanDeadCode(snapshot, join(directory, 'report'), jscpd)
+      const reportRoot = join(directory, 'report')
+      const rows = await scanDeadCode(snapshot, reportRoot, jscpd)
+      const report = JSON.parse(await readFile(join(reportRoot, 'basta-report.json'), 'utf8')) as {
+        findings: { category: string; path: string; reasons?: string[] }[]
+      }
+      expect(report.findings).toContainEqual(
+        expect.objectContaining({ path: 'test-only.mts', reasons: ['used-only-by-tests'] }),
+      )
       expect(rows).toContainEqual({
         category: 'unused-file',
         path: 'orphan.mts',
@@ -42,6 +53,8 @@ describe('released jscpd dead-code invocation', () => {
         symbolKind: '',
         count: 1,
       })
+      expect(rows.some(row => row.path === 'test-only.mts')).toBe(false)
+      expect(rows.some(row => row.path === 'test-helpers/orphan.mts')).toBe(false)
     } finally {
       await rm(directory, { recursive: true, force: true })
     }
