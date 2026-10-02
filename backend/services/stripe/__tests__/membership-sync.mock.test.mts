@@ -219,7 +219,6 @@ describe('ensureMembershipFromStripeSubscription provider transaction failures',
       request: null,
       type: 'customer.subscription.updated',
     } satisfies Stripe.Event
-    await insertStripeEvent(event)
     agent
       .get('https://api.stripe.com')
       .intercept({
@@ -236,6 +235,7 @@ describe('ensureMembershipFromStripeSubscription provider transaction failures',
       })
       .reply(200, subscription)
     try {
+      await insertStripeEvent(event)
       const { result, error } = await withPostgresQueryFailureForTest(
         '/* recordStripeMembershipProviderFacts: lock user before source state */',
         () =>
