@@ -4,6 +4,7 @@ import { buildPageInfo, decodeUuidCursor, isSimpleCursor } from '@modules/pagina
 import type { PageInfo } from '@voucha/types/pagination'
 import assert from 'http-assert'
 import { clampLimit } from '@modules/search-utils'
+import { escapeLikePattern } from '@services/topics/search/query-builder-utils'
 import type { ViewUrl } from './types.mts'
 
 export type SearchUrlsOptions = {
@@ -24,7 +25,7 @@ function buildUrlFilters(options: SearchUrlsOptions): SQLStatement[] {
     assert(normalizedQuery.length >= 3, 400, 'URL search query must be at least 3 characters')
     // NOTE: idx_urls__url_trgm accelerates this pattern for queries with at least
     // 3 characters. Shorter queries may still fall back to a sequential scan.
-    filters.push(sql`urls.url ILIKE ${`%${normalizedQuery}%`}`)
+    filters.push(sql`urls.url ILIKE ${`%${escapeLikePattern(normalizedQuery)}%`} ESCAPE '\\'`)
   }
 
   if (hostnameId) {
