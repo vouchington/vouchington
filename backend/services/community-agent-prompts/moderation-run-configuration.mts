@@ -1,11 +1,10 @@
 import { createHash } from 'node:crypto'
 import { write, type QueryExecutor } from '@data-stores/psql'
 import type { ResolvedClassifierRun } from '@services/classifier-runs'
-import { getActiveClassifierConfigurationBySlugFromPrimary } from '@services/classifiers'
 import { getModerationSystemUserId } from '@services/users/system-users'
 import type { ClassifierModelProvider } from '@voucha/types'
-import { COMMUNITY_MODERATION_CLASSIFIER_SLUG } from '@voucha/types/entities/community-moderation-classifier'
 import sql from 'sql-template-strings'
+import { getActiveCommunityModerationClassifier } from './active-community-moderation-classifier.mts'
 import { getActiveCommunityAgentPrompts } from './get-active-prompts.mts'
 
 /** Per-call bounds of the single-call path: a fail-safe, not a product limit; slot caps are unchanged. */
@@ -72,18 +71,7 @@ export async function resolveCommunityModerationRunConfiguration(
     })),
   )
   if (prompts.length === 0) return null
-  const classifier = await getActiveClassifierConfigurationBySlugFromPrimary(
-    COMMUNITY_MODERATION_CLASSIFIER_SLUG,
-    query,
-  )
-  if (!classifier) {
-    throw new Error(
-      `Classifier configuration for slug '${COMMUNITY_MODERATION_CLASSIFIER_SLUG}' not found`,
-    )
-  }
-  if (classifier.candidateKind !== 'community_prompt') {
-    throw new Error('Community moderation classifier must use community prompt candidates')
-  }
+  const classifier = await getActiveCommunityModerationClassifier(query)
   const actorId = await getModerationSystemUserId()
   const configuration: CommunityModerationRunConfiguration = {
     revision: 1,

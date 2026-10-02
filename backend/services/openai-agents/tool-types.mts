@@ -26,7 +26,7 @@ export type ToolInvocationContext = {
   grantedScopes: readonly ApiScope[]
 }
 
-// Structural twin of OpenAIFunctionCallOutput — decouples the Tool contract from @services/openai-agents
+// The Responses API function_call_output item a tool's formatResult returns.
 export type ToolCallOutput = { type: 'function_call_output'; call_id: string; output: string }
 
 export type ToolSurface = 'internal' | 'mcp' | 'admin_mcp' | 'client'

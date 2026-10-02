@@ -29,9 +29,7 @@
     "@modules/openrouter-utils": "workspace:^",
     "@modules/structured-decisions": "workspace:^",
     "@services/ai-usage": "workspace:^",
-    "@services/openai-agents": "workspace:^",
     "@services/openai-background-responses": "workspace:^",
-    "@services/users": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "openai": "^7.23.0"
   },

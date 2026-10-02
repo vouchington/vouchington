@@ -48,7 +48,7 @@ stays on the existing `trackAIModerationCall` analytics path — by design, not 
   `recorded` or `already-recorded`. Computes
   `cost_microunits`/`pricing_status` via `calcCostMicrounits` (`@modules/openai-utils`) and
   persists `cached_input_tokens` so historical cost figures are reproducible from their own
-  inputs. Every shared tool-loop and direct `createOpenAIResponse` caller awaits a record-or-latch
+  inputs. Every direct `createOpenAIResponse` caller awaits a record-or-latch
   settlement barrier: a successful ledger write proceeds normally, while a failed write must
   durably set that request day's accounting-uncertainty latch before the caller can continue.
   Losing the background-response lease (`lost-race`) is also unsettled until

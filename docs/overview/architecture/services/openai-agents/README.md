@@ -2,14 +2,15 @@
 
 Source entrypoint: [backend/services/openai-agents/README.md](../../../../../backend/services/openai-agents/README.md)
 
-OpenAI Responses API tool-call handling — parses function calls from API output, formats results, and dispatches tool executions.
+The `Tool` contract shared by the MCP tool catalog and `backend/tools`.
 
 ## Key exports
 
-- `getFunctionCallsFromOutput(output)` — extracts `function_call` items from a Responses API output array
-- `formatToolResult(callId, result)` — formats a tool result object for submission back to the Responses API
-- `executeToolCalls(params)` — dispatches tool calls in **parallel** via `Promise.all`; use in `runToolLoop` and other non-streaming callers
-- `streamingExecuteToolCalls(params)` — dispatches tool calls **sequentially** as an async generator, re-yielding executor events; it has no production caller since the chat orchestrator was removed
+- `@services/openai-agents/tool-types` — the `Tool`, `ToolInvocationContext`, `ToolSurface`, `ToolMeta` and related types every tool definition and the MCP adapter share. Import by direct path; the package `index.mts` only re-exports these types for the package-shape rule.
+
+The package no longer executes tool calls. The OpenAI Responses tool-call executor, the role
+guard and the shared tool loop were removed with the scoring agents; MCP dispatch lives in
+[`@services/mcp-tools`](../../../../../backend/services/mcp-tools/README.md).
 
 ## Related
 

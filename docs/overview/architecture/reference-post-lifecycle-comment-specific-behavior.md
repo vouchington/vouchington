@@ -17,7 +17,7 @@ Comments use the same `createPost()` path with `post_type='comment'`. Key differ
 | `handleCommentAction` | Refreshes metrics for ALL ancestor posts (up the chain) |
 
 Comments also use the same post-classifier dispatch after clearance approval, so label classifiers
-such as `politics-averse` run on comments without a separate comment-only pipeline.
+such as the `politics-averse` label run on comments without a separate comment-only pipeline.
 
 ---
 

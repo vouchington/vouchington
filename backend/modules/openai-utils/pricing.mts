@@ -28,12 +28,6 @@ const SUPPORTED_MODEL_TIERS = {
 } as const satisfies Record<string, Record<string, TokenPrices>>
 
 export type SupportedModel = keyof typeof SUPPORTED_MODEL_TIERS
-export type SupportedServiceTier = {
-  [Model in SupportedModel]: keyof (typeof SUPPORTED_MODEL_TIERS)[Model]
-}[SupportedModel]
-
-/** The request-side tier for background/batch-tolerant agents — half the standard price. */
-export const FLEX_SERVICE_TIER: SupportedServiceTier = 'flex'
 
 /**
  * OpenAI's returned `response.model` is a dated snapshot (e.g. `gpt-5.4-nano-2026-03-17`), not

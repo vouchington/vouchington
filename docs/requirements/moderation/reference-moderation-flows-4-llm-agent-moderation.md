@@ -50,9 +50,9 @@ tags after clearance approval.
 Automated review-queue moves are attributed to `automod` in `post_clearance_changes`. They do not create modlog rows because `in_review` is a triage state, not a terminal action.
 
 **AI cost tracking:** Token usage and estimated cost for each OpenAI flex-tier moderation call are
-recorded in `ai_usage_ledger` per community. Multi-call paths (politics-averse) and local-model
-paths (ai-generated) do not record usage. Administrators can view per-community cost totals at
-`/admin/ai-costs` (GET `/api/v1/admin/ai-costs`). The response represents each unbounded scale-six
+recorded in `ai_usage_ledger` per community. Local-model paths (ai-generated) do not record usage. The prompt test and automod simulate dry
+runs record theirs under the `community-moderation-dry-run` workload. Administrators can view
+per-community cost totals at `/admin/ai-costs` (GET `/api/v1/admin/ai-costs`). The response represents each unbounded scale-six
 `total_cost.amount` as a canonical integer string so same-community sums remain exact beyond the
 JSON-safe range.
 

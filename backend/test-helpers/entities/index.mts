@@ -178,6 +178,7 @@ export * from './moderation-queue-claims.mts'
 export * from './moderation-exposure.mts'
 export * from './community-member-vacations.mts'
 export * from './ai-usage.mts'
+export * from './ai-usage-response-id.mts'
 export {
   acquireTestAiUsageDateReservation,
   type TestAiUsageDateReservation,

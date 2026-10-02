@@ -91,8 +91,7 @@ consumption, not a decorative ceiling: `processAIAgentWorkerJob` wraps each job'
 `processAIAgent(job)` call in `runWithJobTokenAccumulator`
 (`backend/agents/_shared/token-accumulator.mts`), an `AsyncLocalStorage`-scoped accumulator.
 `recordAgentResponseUsage` (`backend/agents/_shared/record-response-usage.mts`) — the single choke
-point every OpenAI call already flows through, direct calls, the tool loop, and the streaming tool
-loop alike — feeds it on every call. Once the job settles (success or throw), the summed total is
+point every OpenAI call already flows through — feeds it on every call. Once the job settles (success or throw), the summed total is
 reported with one `job.reportTokens()` call; `glide-mq` only accepts the last call per job, so
 per-call reporting would silently discard everything but the final response's tokens. See
 [`@agents/_shared` exports](../../../ai-agents/_shared/reference-exports.md) (`runWithJobTokenAccumulator`)

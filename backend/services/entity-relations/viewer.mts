@@ -16,6 +16,7 @@ export type EntityRelationViewer =
     }
 
 export const ANONYMOUS_ENTITY_RELATION_VIEWER: EntityRelationViewer = { kind: 'anonymous' }
+/** @public the trusted-reader seam; the relation suites and test helpers read as the system viewer */
 export const SYSTEM_ENTITY_RELATION_VIEWER: EntityRelationViewer = { kind: 'system' }
 
 /** Post access for the viewer, or null when the viewer bypasses post visibility. */

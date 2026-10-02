@@ -196,7 +196,6 @@ exports backend/services/oauth-authorization-server/access-tokens.mts validateOA
 exports backend/services/oauth-authorization-server/authorization.mts beginOAuthAuthorizationRequest
 exports backend/services/oauth-authorization-server/resources.mts getOAuthResourceMetadataUrl
 exports backend/services/oauth-google/index.mts getGoogleAccountByGoogleUserId
-exports backend/services/openai-agents/execute-tool-calls.mts streamingExecuteToolCalls
 exports backend/services/openai-moderation/stored-results.mts getStoredPostOpenAIModeration
 exports backend/services/post-clearance/approve-pending.mts approvePendingPostClearance
 exports backend/services/post-publication/retain-stored-identities.mts retainStoredPublicationIdentities

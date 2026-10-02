@@ -1,226 +1,238 @@
 import { randomUUID } from 'node:crypto'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { simulateCommunityPromptOnPosts } from './simulate.mts'
-import type { CommunityAgentPrompt } from '@services/community-agent-prompts'
-import type { CommunityAgentPromptSimulationPost } from '@services/community-agent-prompts/simulations'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { createTestUser, getPostLLMModerations, insertTestCommunity } from '@voucha/test-helpers'
+import { createCommunityModerationFixture } from '@voucha/test-helpers/data-stores/psql/classifier-runs/community-moderation-fixture'
 import {
-  createTestUser,
-  insertTestCommunity,
-  findAiUsageRecordForAgent,
-  pollUntilNotNull,
-} from '@voucha/test-helpers'
-import type { Response } from 'openai/resources/responses/responses'
-import { OpenAIResponseNotCompletedError } from '@agents/_shared'
+  answerCommunityQuestions,
+  stallUntilAborted,
+} from '@voucha/test-helpers/data-stores/psql/classifier-runs/community-moderation-provider'
+import {
+  getClassifierRunFacts,
+  getClassifierRunRequestFacts,
+} from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
+import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
+import type { StructuredDecisionFetch } from '@modules/structured-decisions'
+import { OpenAiSpendCapBreachError } from '@services/ai-usage'
+import type {
+  CommunityAgentPromptSimulationPost,
+  CommunityPromptDryRunConfiguration,
+} from '@services/community-agent-prompts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
+import { simulateCommunityPromptOnPosts } from './simulate.mts'
 
-const createResponse = vi.fn<VitestLooseMock>()
+const configuration: CommunityPromptDryRunConfiguration = {
+  questionTemplate: 'Does the post break this community rule: {{candidate}}',
+  modelName: 'typesafe/jev-1.13',
+  modelProvider: 'openrouter',
+  thresholds: { lower: 0.2, upper: 0.8 },
+}
 
-describe('simulateCommunityPromptOnPosts', () => {
-  beforeEach(() => {
-    createResponse.mockReset()
-  })
-
-  it('returns parsed results and calls OpenAI once for the sampled posts', async () => {
-    createResponse.mockResolvedValueOnce(
-      makeTextResponse(
-        JSON.stringify({
-          results: [
-            { post_id: 'post-1', flagged: true, reason: 'Matches rule' },
-            { post_id: 'post-2', flagged: false, reason: '' },
-          ],
-        }),
-      ) as never,
-    )
-
-    const results = await simulateCommunityPromptOnPosts(makePrompt(), makePosts(), {
-      currentUserId: 'user-1',
-      promptOverride: 'Custom prompt',
-      createResponse,
-    })
-
-    expect(results).toEqual([
-      { post_id: 'post-1', flagged: true, reason: 'Matches rule' },
-      { post_id: 'post-2', flagged: false, reason: '' },
-    ])
-    expect(createResponse).toHaveBeenCalledOnce()
-    const call = createResponse.mock.calls[0][0] as Record<string, unknown>
-    expect(call.model).toBe('gpt-5.4-nano')
-    expect(call.safety_identifier).toBe('user-1')
-    expect(call.instructions).toContain('Custom prompt')
-    expect(String(call.input)).toContain('post-1')
-  })
-
-  it('returns empty results without calling OpenAI when there is no sample', async () => {
-    const results = await simulateCommunityPromptOnPosts(makePrompt(), [], {
-      currentUserId: 'user-1',
-      createResponse,
-    })
-
-    expect(results).toEqual([])
-    expect(createResponse).not.toHaveBeenCalled()
-  })
-
-  it('caps each sampled post input before batching the simulation request', async () => {
-    createResponse.mockResolvedValueOnce(
-      makeTextResponse(
-        JSON.stringify({ results: [{ post_id: 'post-long', flagged: false, reason: '' }] }),
-      ) as never,
-    )
-    const posts: CommunityAgentPromptSimulationPost[] = [
-      {
-        ...makePosts()[0],
-        id: 'post-long',
-        markdown: `${'x'.repeat(5000)}tail-marker`,
-      },
-    ]
-
-    await simulateCommunityPromptOnPosts(makePrompt(), posts, {
-      currentUserId: 'user-1',
-      createResponse,
-    })
-
-    const call = createResponse.mock.calls[0][0] as { input: string }
-    const parsed = JSON.parse(call.input) as { posts: Array<{ content: string }> }
-    expect(parsed.posts[0].content.length).toBeLessThanOrEqual(4000)
-    expect(parsed.posts[0].content).not.toContain('tail-marker')
-  })
-
-  it('throws when the model omits a sampled post result', async () => {
-    createResponse.mockResolvedValueOnce(
-      makeTextResponse(
-        JSON.stringify({ results: [{ post_id: 'post-1', flagged: true, reason: '' }] }),
-      ) as never,
-    )
-
-    await expect(
-      simulateCommunityPromptOnPosts(makePrompt(), makePosts(), {
-        currentUserId: 'user-1',
-        createResponse,
-      }),
-    ).rejects.toThrow('one result per post')
-  })
-
-  it('throws when the model returns an invalid sampled post result', async () => {
-    createResponse.mockResolvedValueOnce(
-      makeTextResponse(
-        JSON.stringify({ results: [{ post_id: 'unknown-post', flagged: true, reason: '' }] }),
-      ) as never,
-    )
-
-    await expect(
-      simulateCommunityPromptOnPosts(makePrompt(), makePosts(), {
-        currentUserId: 'user-1',
-        createResponse,
-      }),
-    ).rejects.toThrow('Invalid community prompt simulation result')
-  })
-
-  it('throws a structured error when the model returns null JSON', async () => {
-    createResponse.mockResolvedValueOnce(makeTextResponse('null') as never)
-
-    await expect(
-      simulateCommunityPromptOnPosts(makePrompt(), makePosts(), {
-        currentUserId: 'user-1',
-        createResponse,
-      }),
-    ).rejects.toThrow('Invalid community prompt simulation results')
-  })
-
-  it('records usage from a failed/incomplete response before rethrowing', async () => {
-    // A moderator's retry after this failure is the only chance to attribute the charge -- the
-    // call-site catch block must record from the thrown OpenAIResponseNotCompletedError, not
-    // just from a successful response.
-    const random = randomUUID().slice(0, 8)
-    const user = await createTestUser()
-    const community = await insertTestCommunity({
-      createdById: user.id,
-      slug: `sim-cost-track-${random}`,
-    })
-    const prompt: CommunityAgentPrompt = {
-      ...makePrompt(),
-      id: `prompt-${random}`,
-      community_id: community.id,
-    }
-
-    createResponse.mockRejectedValueOnce(
-      new OpenAIResponseNotCompletedError('OpenAI response incomplete: max_output_tokens', {
-        status: 'incomplete',
-        model: 'gpt-5.4-nano-2026-03-17',
-        service_tier: 'flex',
-        usage: { input_tokens: 210, output_tokens: 33 },
-        incomplete_details: { reason: 'max_output_tokens' },
-      } as Response),
-    )
-
-    await expect(
-      simulateCommunityPromptOnPosts(prompt, makePosts(), {
-        currentUserId: 'user-1',
-        createResponse,
-      }),
-    ).rejects.toThrow('OpenAI response incomplete: max_output_tokens')
-
-    const row = await pollUntilNotNull(() =>
-      findAiUsageRecordForAgent(`community-prompt-${prompt.id}`, {
-        inputTokens: 210,
-        outputTokens: 33,
-      }),
-    )
-    if (!row) throw new Error('ai_usage_records row was not written for the failed response')
-    expect(row.model).toBe('gpt-5.4-nano-2026-03-17')
-    expect(row.service_tier).toBe('flex')
-    expect(row.community_id).toBe(community.id)
-    expect(row.pricing_status).toBe('priced')
-  })
+const post = (
+  id: string,
+  overrides: Partial<CommunityAgentPromptSimulationPost> = {},
+): CommunityAgentPromptSimulationPost => ({
+  id,
+  title: `Title ${id}`,
+  markdown: `Body ${id}`,
+  declared_language: null,
+  lingua_rs_detected_language: null,
+  post_type: 'text',
+  created_by_id: null,
+  approved_at: new Date(),
+  content_excerpt: '',
+  ...overrides,
 })
 
-function makePrompt(): CommunityAgentPrompt {
-  return {
-    id: 'prompt-1',
-    community_id: 'community-1',
-    created_by_id: 'user-1',
-    agent_id: 'agent-1',
-    prompt: 'Flag spam',
-    model_name: 'gpt-5.4-nano',
-    model_provider: 'openai',
-    slot_allocated: false,
-    activated_at: null,
-    deactivated_at: null,
-    created_at: new Date('2026-01-01T00:00:00Z'),
-    updated_at: new Date('2026-01-01T00:00:00Z'),
-    deleted_at: null,
-    deleted_by_id: null,
-  }
-}
+const stateOf = (init: RequestInit | undefined): string =>
+  (JSON.parse(stringFromUnknown(init?.body)) as { state: string }).state
 
-function makePosts(): CommunityAgentPromptSimulationPost[] {
-  return [
-    {
-      id: 'post-1',
-      title: 'First post',
-      declared_language: null,
-      lingua_rs_detected_language: null,
-      markdown: 'First body',
-      post_type: 'discussion',
-      created_by_id: 'user-1',
-      approved_at: new Date('2026-01-02T00:00:00Z'),
-      content_excerpt: 'First post First body',
-    },
-    {
-      id: 'post-2',
-      title: 'Second post',
-      declared_language: null,
-      lingua_rs_detected_language: null,
-      markdown: 'Second body',
-      post_type: 'discussion',
-      created_by_id: 'user-2',
-      approved_at: new Date('2026-01-03T00:00:00Z'),
-      content_excerpt: 'Second post Second body',
-    },
-  ]
-}
+describe('simulateCommunityPromptOnPosts', () => {
+  let rule: { id: string; community_id: string; prompt: string }
+  beforeAll(async () => {
+    const owner = await createTestUser()
+    const community = await insertTestCommunity({ createdById: owner.id })
+    rule = { id: randomUUID(), community_id: community.id, prompt: 'No spam' }
+  })
 
-function makeTextResponse(text: string) {
-  return {
-    id: 'resp-1',
-    output: [{ type: 'message', status: 'completed', content: [{ type: 'output_text', text }] }],
-  }
-}
+  const options = (fetch: StructuredDecisionFetch, extra: { callTimeoutMs?: number } = {}) => ({
+    getConfiguration: async () => configuration,
+    fetch,
+    apiKey: 'test-key',
+    ...extra,
+  })
+  const stalls = (signals: AbortSignal[] = []) =>
+    vi.fn<StructuredDecisionFetch>(stallUntilAborted(signals))
+
+  it('makes no call and loads nothing for an empty sample', async () => {
+    const fetch = vi.fn<StructuredDecisionFetch>()
+    const getConfiguration = vi.fn<() => Promise<CommunityPromptDryRunConfiguration>>(
+      async () => configuration,
+    )
+
+    await expect(
+      simulateCommunityPromptOnPosts(rule, [], { ...options(fetch), getConfiguration }),
+    ).resolves.toEqual([])
+    expect(fetch).not.toHaveBeenCalled()
+    expect(getConfiguration).not.toHaveBeenCalled()
+  })
+
+  it('asks one question per post and keeps results in sample order with no reason', async () => {
+    await withReservedAiUsageDay(1_000_000, async () => {
+      const asked: string[][] = []
+      const fetch = vi.fn<StructuredDecisionFetch>(async (_url, init) =>
+        answerCommunityQuestions(init, {
+          asked,
+          probability: stateOf(init).includes('SPAMMY') ? 0.97 : 0.01,
+        }),
+      )
+      const posts = [post('a'), post('b', { title: 'SPAMMY title' }), post('c')]
+
+      await expect(simulateCommunityPromptOnPosts(rule, posts, options(fetch))).resolves.toEqual([
+        { post_id: 'a', flagged: false, reason: '' },
+        { post_id: 'b', flagged: true, reason: '' },
+        { post_id: 'c', flagged: false, reason: '' },
+      ])
+      expect(asked).toEqual([[rule.id], [rule.id], [rule.id]])
+    })
+  })
+
+  it('classifies a full 50-post sample with at most 8 calls in flight', async () => {
+    await withReservedAiUsageDay(1_000_000, async () => {
+      let inFlight = 0
+      let peak = 0
+      let saturate = () => {}
+      const saturated = new Promise<void>(resolve => (saturate = resolve))
+      let release = () => {}
+      const released = new Promise<void>(resolve => (release = resolve))
+      const fetch = vi.fn<StructuredDecisionFetch>(async (_url, init) => {
+        peak = Math.max(peak, ++inFlight)
+        if (inFlight === 8) saturate()
+        await released
+        inFlight--
+        return answerCommunityQuestions(init)
+      })
+      const posts = Array.from({ length: 50 }, (_, index) => post(`p${index}`))
+
+      const pending = simulateCommunityPromptOnPosts(rule, posts, options(fetch))
+      await saturated
+      // Give a ninth call every chance to start while the first eight are held open.
+      for (let turn = 0; turn < 20; turn++) await new Promise(resolve => setImmediate(resolve))
+      expect(inFlight).toBe(8)
+      expect(fetch).toHaveBeenCalledTimes(8)
+      release()
+      const results = await pending
+
+      expect(results.map(result => result.post_id)).toEqual(posts.map(sample => sample.id))
+      expect(fetch).toHaveBeenCalledTimes(50)
+      expect(peak).toBe(8)
+    })
+  })
+
+  it('previews the override text instead of the stored rule', async () => {
+    await withReservedAiUsageDay(1_000_000, async () => {
+      const questions: string[] = []
+      const fetch = vi.fn<StructuredDecisionFetch>(async (_url, init) => {
+        questions.push(stringFromUnknown(init?.body))
+        return answerCommunityQuestions(init)
+      })
+
+      await simulateCommunityPromptOnPosts(rule, [post('a')], {
+        ...options(fetch),
+        promptOverride: 'No crypto giveaways',
+      })
+
+      expect(questions[0]).toContain('No crypto giveaways')
+      expect(questions[0]).not.toContain('No spam')
+    })
+  })
+
+  it('reads at most 4000 characters of a post, title first', async () => {
+    await withReservedAiUsageDay(1_000_000, async () => {
+      const states: string[] = []
+      const fetch = vi.fn<StructuredDecisionFetch>(async (_url, init) => {
+        states.push(stateOf(init))
+        return answerCommunityQuestions(init)
+      })
+      const long = (head: string, tail: string) => `${head} ${'filler '.repeat(1000)}${tail}`
+
+      await simulateCommunityPromptOnPosts(
+        rule,
+        [
+          post('body', { markdown: long('BODY_HEAD', 'BODY_TAIL') }),
+          post('title', { title: long('TITLE_HEAD', 'TITLE_TAIL'), markdown: 'BODY_AFTER_TITLE' }),
+          post('empty', { title: ' ', markdown: ' ' }),
+        ],
+        options(fetch),
+      )
+
+      // Calls run concurrently, so the states arrive in no fixed order.
+      const bodyState = states.find(state => state.includes('BODY_HEAD'))
+      const titleState = states.find(state => state.includes('TITLE_HEAD'))
+      expect(bodyState).toBeDefined()
+      expect(bodyState).not.toContain('BODY_TAIL')
+      expect(titleState).toBeDefined()
+      expect(titleState).not.toContain('TITLE_TAIL')
+      expect(titleState).not.toContain('BODY_AFTER_TITLE')
+      expect(states).toHaveLength(3)
+    })
+  })
+
+  it('fails the preview on the first failed call and cancels the calls still in flight', async () => {
+    await withReservedAiUsageDay(1_000_000, async () => {
+      const signals: AbortSignal[] = []
+      const hangs = stalls(signals)
+      const fetch = vi.fn<StructuredDecisionFetch>(async (url, init) => {
+        if (fetch.mock.calls.length === 1) return new Response('', { status: 400 })
+        return hangs(url, init)
+      })
+      const posts = Array.from({ length: 12 }, (_, index) => post(`p${index}`))
+
+      await expect(
+        simulateCommunityPromptOnPosts(rule, posts, options(fetch)),
+      ).rejects.toMatchObject({ code: 'provider-error' })
+
+      expect(fetch.mock.calls.length).toBeLessThan(12)
+      expect(signals.length).toBeGreaterThan(0)
+      expect(signals.every(signal => signal.aborted)).toBe(true)
+    })
+  })
+
+  it('fails the preview when a call exceeds the per-call deadline', async () => {
+    await withReservedAiUsageDay(1_000_000, async () => {
+      await expect(
+        simulateCommunityPromptOnPosts(rule, [post('a')], options(stalls(), { callTimeoutMs: 20 })),
+      ).rejects.toMatchObject({ name: 'TimeoutError' })
+    })
+  })
+
+  it('makes no request once the daily spend cap is breached', async () => {
+    await withReservedAiUsageDay(0, async () => {
+      const fetch = vi.fn<StructuredDecisionFetch>()
+
+      await expect(
+        simulateCommunityPromptOnPosts(rule, [post('a'), post('b')], options(fetch)),
+      ).rejects.toBeInstanceOf(OpenAiSpendCapBreachError)
+      expect(fetch).not.toHaveBeenCalled()
+    })
+  })
+
+  it('persists no classifier run, request or moderation for the posts it previews', async () => {
+    await withReservedAiUsageDay(1_000_000, async () => {
+      const fixture = await createCommunityModerationFixture()
+      const fetch = vi.fn<StructuredDecisionFetch>(async (_url, init) =>
+        answerCommunityQuestions(init, { probability: 0.97 }),
+      )
+
+      const results = await simulateCommunityPromptOnPosts(
+        fixture.prompts[0]!,
+        [post(fixture.postId)],
+        { fetch, apiKey: 'test-key' },
+      )
+
+      expect(results).toEqual([{ post_id: fixture.postId, flagged: true, reason: '' }])
+      expect(await getClassifierRunFacts(fixture.postId)).toEqual([])
+      expect(await getClassifierRunRequestFacts(fixture.postId)).toEqual([])
+      expect(await getPostLLMModerations(fixture.postId)).toEqual([])
+    })
+  })
+})

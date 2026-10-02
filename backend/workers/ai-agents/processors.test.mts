@@ -64,6 +64,19 @@ describe('processAIAgent routing', () => {
     },
   )
 
+  it.each([
+    'moderation-dispatcher',
+    'moderation-prompt',
+    'community-moderation-dispatcher',
+    'community-moderation-prompt',
+    'story-clustering',
+    'autotagger-post',
+  ])('rejects the removed scoring-agent job name %s through the unknown-job path', name => {
+    expect(() => processAIAgent({ name, data: {} } as Job<AIAgentJobData>)).toThrow(
+      `Unknown AI agent job: ${name}`,
+    )
+  })
+
   it('treats missing copyright jobs as successful idempotent queue replays', async () => {
     const missing = '00000000-0000-7000-8000-000000000091'
 

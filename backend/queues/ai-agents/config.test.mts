@@ -21,6 +21,18 @@ describe('config', () => {
     }
   })
 
+  it.each([
+    'moderation-dispatcher',
+    'moderation-prompt',
+    'community-moderation-dispatcher',
+    'community-moderation-prompt',
+    'story-clustering',
+    'autotagger-post',
+  ])('keeps the retired scoring-agent job %s out of the job registries', name => {
+    expect(AGENT_PRIORITY).not.toHaveProperty(name)
+    expect(AI_AGENT_JOB_PRODUCES_SPEND).not.toHaveProperty(name)
+  })
+
   it('the collaborative-only RSS autotagger job never calls a model, so it is spend-free', () => {
     expect(AI_AGENT_JOB_PRODUCES_SPEND['autotagger-rss-feed-item']).toBe(false)
   })

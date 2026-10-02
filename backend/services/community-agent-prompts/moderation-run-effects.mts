@@ -1,10 +1,10 @@
 import { write, type OwnedTransaction } from '@data-stores/psql'
 import type { ClassifierRunLease, ClassifierRunOutcomes } from '@services/classifier-runs'
-import { mapClassifierProbabilityToTopicVoteScore } from '@services/classifiers/topic-vote-mapper'
 import { unpublishPostForAutomodFlag } from '@services/communities/publications/agent-moderate'
 import { flagPostForAutomodReview } from '@services/communities/publications/automod-flag'
 import type { CommunityAutomodAction } from '@voucha/types'
 import sql from 'sql-template-strings'
+import { isCommunityPromptFlagged } from './community-prompt-flagged.mts'
 import type { CommunityModerationRunConfiguration } from './moderation-run-configuration.mts'
 
 export type CommunityModerationEffects = {
@@ -58,9 +58,7 @@ function readPromptResults(outcomes: ClassifierRunOutcomes<never>): PromptResult
     }
     results.push({
       promptId: result.communityPromptId,
-      flagged:
-        mapClassifierProbabilityToTopicVoteScore(result.probability, result.effectiveThresholds) ===
-        1,
+      flagged: isCommunityPromptFlagged(result.probability, result.effectiveThresholds),
       probability: result.probability,
       upper: result.effectiveThresholds.upper,
     })

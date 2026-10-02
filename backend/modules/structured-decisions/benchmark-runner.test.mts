@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { POST_CLASSIFIER_REMOTE_QUESTIONS } from '@voucha/types/entities/post-classifier'
 import { loadBenchmarkConfig } from './benchmark-config.mts'
 import { runBenchmark } from './benchmark-runner.mts'
 import type {
@@ -64,7 +65,7 @@ describe('runBenchmark', () => {
       candidateCount: 3,
     })
     expect(report.series.map(entry => [entry.name, entry.candidateCount])).toEqual([
-      ['moderation-fixed-six', 6],
+      ['post-classifier-catalog', POST_CLASSIFIER_REMOTE_QUESTIONS.length],
       ['community-custom-ten', 10],
       ['dynamic-tagging-2', 2],
       ['dynamic-tagging-3', 3],
