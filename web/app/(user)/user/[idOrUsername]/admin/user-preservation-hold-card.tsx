@@ -37,12 +37,12 @@ export function UserPreservationHoldCard({ userId }: { userId: string }) {
       .then(data => {
         if (!cancelled) setState({ status: 'loaded', holds: data.holds })
       })
-      .catch((error: unknown) => {
+      .catch((err: unknown) => {
         if (cancelled) return
         setState({ status: 'error' })
         toast.error(
-          error instanceof Error
-            ? error.message
+          err instanceof Error
+            ? err.message
             : t('extracted.admin.userPreservationHoldCard.failedToLoadPreservationHolds_946c1dfa'),
         )
       })
@@ -65,10 +65,10 @@ export function UserPreservationHoldCard({ userId }: { userId: string }) {
       setState({ status: 'loaded', holds: [hold, ...holds] })
       setReference('')
       toast.success(t('extracted.admin.userPreservationHoldCard.preservationHoldPlaced_e9e2c131'))
-    } catch (error) {
+    } catch (err) {
       toast.error(
-        error instanceof Error
-          ? error.message
+        err instanceof Error
+          ? err.message
           : t('extracted.admin.userPreservationHoldCard.failedToPlacePreservationHold_516c14a6'),
       )
     } finally {
@@ -82,10 +82,10 @@ export function UserPreservationHoldCard({ userId }: { userId: string }) {
       const { hold } = await releaseUserPreservationHold(userId)
       setState({ status: 'loaded', holds: holds.map(item => (item.id === hold.id ? hold : item)) })
       toast.success(t('extracted.admin.userPreservationHoldCard.preservationHoldReleased_1077a4b9'))
-    } catch (error) {
+    } catch (err) {
       toast.error(
-        error instanceof Error
-          ? error.message
+        err instanceof Error
+          ? err.message
           : t('extracted.admin.userPreservationHoldCard.failedToReleasePreservationHold_e2e095b7'),
       )
     } finally {

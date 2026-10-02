@@ -38,8 +38,8 @@ export function CommunityAutomodActionForm({ community }: CommunityAutomodAction
       await updateCommunityAutomodSettings(community.slug, { automod_action: action })
       onSuccess(t('extracted.communities.communityAutomodActionForm.automodActionSaved_5a7127b1'))
       startNavigation(() => router.refresh())
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t(
           'extracted.communities.communityAutomodActionForm.couldNotSaveTheAutomodAction_d095dea5',
         ),

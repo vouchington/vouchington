@@ -55,10 +55,10 @@ export async function upsertBookmarkAction(
       predicate as EntityRelationPredicateType,
       postMutationGuard ? { postMutationGuard } : undefined,
     )
-  } catch (error: unknown) {
+  } catch (err: unknown) {
     // FK violation: the entity does not exist.
-    if ((error as { code?: string }).code === '23503') assert(false, 404, 'Entity not found')
-    throw error
+    if ((err as { code?: string }).code === '23503') assert(false, 404, 'Entity not found')
+    throw err
   }
 }
 

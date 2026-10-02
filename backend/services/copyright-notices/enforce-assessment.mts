@@ -39,11 +39,11 @@ async function imposeOwedTargets(
       imposedAt: new Date(),
       imposedById: target.imposed_by_id,
     })
-  } catch (error) {
+  } catch (err) {
     // A concurrent caller restricting the target, or a decision that superseded this assessment,
     // settles it without a failure. Anything else leaves the target owed, so it is retried.
     const stillOwed = await readFirstOwedTarget(assessmentId, automaticWithholding)
-    if (stillOwed?.target_id === target.target_id) throw error
+    if (stillOwed?.target_id === target.target_id) throw err
   }
   await imposeOwedTargets(assessmentId, automaticWithholding, imposeRestriction)
 }
