@@ -4,6 +4,7 @@ import {
   createTestUser,
   insertTestBlock,
   setTestUserDirectMessagesAudience,
+  suspendTestUser,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { encodeCursor } from '@modules/pagination'
@@ -85,6 +86,14 @@ describe('messages API', () => {
   })
 
   describe('POST /api/v1/my/messages', () => {
+    it('returns 403 for a suspended user', async () => {
+      const suspended = await createTestUser()
+      await suspendTestUser(suspended.id)
+      const request = createRequest()
+      await request.authenticateAs(suspended)
+      await request.post('/api/v1/my/messages').send({ user_id: otherUser.id }).expect(403)
+    })
+
     it('returns 401 when not authenticated', async () => {
       const request = createRequest()
       await request.post('/api/v1/my/messages').send({ user_id: otherUser.id }).expect(401)
