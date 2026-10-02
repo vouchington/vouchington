@@ -736,6 +736,242 @@
         },
         {
           "tool": {
+            "name": "add_entity_relation",
+            "title": "Add Entity Relation",
+            "description": "Add a relation between existing entities or add a hashtag to your own post.",
+            "inputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "action": {
+                      "const": "add_relation"
+                    },
+                    "entity_type": {
+                      "type": "string"
+                    },
+                    "entity_id": {
+                      "type": "string"
+                    },
+                    "predicate": {
+                      "type": "string"
+                    },
+                    "object_type": {
+                      "type": "string"
+                    },
+                    "object_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "action",
+                    "entity_type",
+                    "entity_id",
+                    "predicate",
+                    "object_type",
+                    "object_id"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "action": {
+                      "const": "add_tag"
+                    },
+                    "post_id": {
+                      "type": "string"
+                    },
+                    "tag": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["action", "post_id", "tag"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "relation_id": {
+                      "type": "string"
+                    },
+                    "subject_type": {
+                      "type": "string"
+                    },
+                    "subject_id": {
+                      "type": "string"
+                    },
+                    "predicate": {
+                      "type": "string"
+                    },
+                    "object_type": {
+                      "type": "string"
+                    },
+                    "object_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "subject_type",
+                    "subject_id",
+                    "predicate",
+                    "object_type",
+                    "object_id"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "post_id": {
+                      "type": "string"
+                    },
+                    "tag": {
+                      "type": "string"
+                    },
+                    "topic_alias_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["post_id", "tag", "topic_alias_id"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["entity-relations:read", "entity-relations:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType"
+            },
+            {
+              "method": "PATCH",
+              "path": "/api/v1/posts/:idOrSlug"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "remove_entity_relation",
+            "title": "Remove Entity Relation",
+            "description": "Remove a hashtag you added to your own post. A hashtag written in the post title or text cannot be removed here; edit the text instead. Removing a hashtag the post does not carry changes nothing and reports removed false.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": ["remove_tag"],
+                  "description": "What to remove. Only hashtags on a post can be removed for now."
+                },
+                "post_id": {
+                  "type": "string",
+                  "description": "The ID or slug of the post."
+                },
+                "tag": {
+                  "type": "string",
+                  "description": "The hashtag, for example #travel-tips."
+                }
+              },
+              "required": ["action", "post_id", "tag"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "post_id": {
+                  "type": "string"
+                },
+                "tag": {
+                  "type": "string"
+                },
+                "removed": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["post_id", "tag", "removed"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["entity-relations:read", "entity-relations:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "PATCH",
+              "path": "/api/v1/posts/:idOrSlug"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "withdraw_entity_relation_vote",
+            "title": "Withdraw Entity Relation Vote",
+            "description": "Withdraw the current user's own confirm or dispute vote on an entity relation, such as a tag or a user tag. Withdrawing a vote the user never cast, or already withdrew, changes nothing and still succeeds. An unknown relation fails as not found. This only removes the caller's own vote: it never casts or changes one, and it never touches anyone else's vote.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The ID of the entity relation."
+                }
+              },
+              "required": ["id"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                }
+              },
+              "required": ["success"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["entity-relations:read", "entity-relations:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "DELETE",
+              "path": "/api/v1/entity-relations/:id/vote"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "get_my_bio",
             "title": "Get My Bio",
             "description": "Get the current user's own profile bio: their user id and the bio Markdown, exactly as stored (an empty string when there is none), so it can be edited and sent back with update_my_bio. It is the user's own text and is not sanitized. Profile links are read with get_my_profile_links, and get_my_profile reads the wallet profile instead.",
@@ -4177,138 +4413,6 @@
             {
               "method": "POST",
               "path": "/api/v1/referral-links/:linkId/activations"
-            }
-          ]
-        },
-        {
-          "tool": {
-            "name": "add_entity_relation",
-            "title": "Add Entity Relation",
-            "description": "Add a relation between existing entities or add a hashtag to your own post.",
-            "inputSchema": {
-              "type": "object",
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "action": {
-                      "const": "add_relation"
-                    },
-                    "entity_type": {
-                      "type": "string"
-                    },
-                    "entity_id": {
-                      "type": "string"
-                    },
-                    "predicate": {
-                      "type": "string"
-                    },
-                    "object_type": {
-                      "type": "string"
-                    },
-                    "object_id": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "action",
-                    "entity_type",
-                    "entity_id",
-                    "predicate",
-                    "object_type",
-                    "object_id"
-                  ],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "action": {
-                      "const": "add_tag"
-                    },
-                    "post_id": {
-                      "type": "string"
-                    },
-                    "tag": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["action", "post_id", "tag"],
-                  "additionalProperties": false
-                }
-              ]
-            },
-            "outputSchema": {
-              "type": "object",
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "relation_id": {
-                      "type": "string"
-                    },
-                    "subject_type": {
-                      "type": "string"
-                    },
-                    "subject_id": {
-                      "type": "string"
-                    },
-                    "predicate": {
-                      "type": "string"
-                    },
-                    "object_type": {
-                      "type": "string"
-                    },
-                    "object_id": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "subject_type",
-                    "subject_id",
-                    "predicate",
-                    "object_type",
-                    "object_id"
-                  ],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "post_id": {
-                      "type": "string"
-                    },
-                    "tag": {
-                      "type": "string"
-                    },
-                    "topic_alias_id": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["post_id", "tag", "topic_alias_id"],
-                  "additionalProperties": false
-                }
-              ]
-            },
-            "annotations": {
-              "readOnlyHint": false,
-              "destructiveHint": false,
-              "idempotentHint": false
-            },
-            "_meta": {
-              "voucha/requiredScopes": ["entity-relations:read", "entity-relations:write"]
-            }
-          },
-          "plan": "plus",
-          "roles": null,
-          "api": [
-            {
-              "method": "POST",
-              "path": "/api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType"
-            },
-            {
-              "method": "PATCH",
-              "path": "/api/v1/posts/:idOrSlug"
             }
           ]
         },
@@ -11133,65 +11237,6 @@
             {
               "method": "DELETE",
               "path": "/api/v1/bookmarks/:entityType/:entityId/:predicate"
-            }
-          ]
-        },
-        {
-          "tool": {
-            "name": "remove_entity_relation",
-            "title": "Remove Entity Relation",
-            "description": "Remove a hashtag you added to your own post. A hashtag written in the post title or text cannot be removed here; edit the text instead. Removing a hashtag the post does not carry changes nothing and reports removed false.",
-            "inputSchema": {
-              "type": "object",
-              "properties": {
-                "action": {
-                  "type": "string",
-                  "enum": ["remove_tag"],
-                  "description": "What to remove. Only hashtags on a post can be removed for now."
-                },
-                "post_id": {
-                  "type": "string",
-                  "description": "The ID or slug of the post."
-                },
-                "tag": {
-                  "type": "string",
-                  "description": "The hashtag, for example #travel-tips."
-                }
-              },
-              "required": ["action", "post_id", "tag"],
-              "additionalProperties": false
-            },
-            "outputSchema": {
-              "type": "object",
-              "properties": {
-                "post_id": {
-                  "type": "string"
-                },
-                "tag": {
-                  "type": "string"
-                },
-                "removed": {
-                  "type": "boolean"
-                }
-              },
-              "required": ["post_id", "tag", "removed"],
-              "additionalProperties": false
-            },
-            "annotations": {
-              "readOnlyHint": false,
-              "destructiveHint": true,
-              "idempotentHint": false
-            },
-            "_meta": {
-              "voucha/requiredScopes": ["entity-relations:read", "entity-relations:write"]
-            }
-          },
-          "plan": "plus",
-          "roles": null,
-          "api": [
-            {
-              "method": "PATCH",
-              "path": "/api/v1/posts/:idOrSlug"
             }
           ]
         },

@@ -1,5 +1,4 @@
 import app from '../../app.mts'
-import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
 import type { Context } from '@jongleberry/api-server'
 import {
   createVoteClearHandler,
@@ -11,22 +10,18 @@ import {
   getEntityRelationElectionVotesByElectionId,
   getEntityRelationElectionVotesByUserForEntity,
   getEntityRelationElectionVote,
+  refreshUserTagVoteStats,
+  refreshVoteStatsAfterNoop,
   resolveEntityRelationElectionTargetById,
-  upsertEntityRelationElectionVotes,
+  upsertEntityRelationVotesById,
 } from '@services/elections-votes/entity-relation'
 import { getUserTagRelationById } from '@services/entity-relations/user-tags'
 import { assertNotSuspended, isAdminUser } from '@services/users'
 import { isUUID } from '@modules/utils'
 import { createPaginationParser } from '@modules/pagination'
-import onError from '@modules/on-error'
 import { requireAuth } from '../../response-helpers.mts'
 import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 import { assertUserTagAllowed } from '@services/entity-relation-actions'
-import {
-  refreshEntityRelationVoteStatsById,
-  refreshEntityRelationVoteStatsFromPrimaryWithFallback,
-} from '@services/elections-votes/entity-relation/refresh-stats'
-import { createEntityRelationElectionTarget } from '@services/elections-votes/entity-relation/target'
 import {
   apiNoContent,
   apiNoRequestBody,
@@ -46,14 +41,6 @@ async function getEntityRelationElectionForRoute(id: string) {
   return election ?? null
 }
 
-async function refreshUserTagVoteStats(relationId: string): Promise<void> {
-  if (await getUserTagRelationById(relationId)) {
-    await refreshEntityRelationVoteStatsFromPrimaryWithFallback(
-      createEntityRelationElectionTarget(relationId, 'relation__user__category__topic'),
-    )
-  }
-}
-
 const entityRelationVoteOptions: CreateVoteHandlerOptions = {
   rateLimitPrefix: 'entity-relation-election-vote',
   routeKey: 'PUT:/api/v1/entity-relations/:id/vote',
@@ -63,16 +50,7 @@ const entityRelationVoteOptions: CreateVoteHandlerOptions = {
   entityNotFoundMessage: 'Entity relation not found',
   votePolicy: 'relation',
   getCurrentVote: getEntityRelationElectionVote,
-  upsertVotes: async (userId, votes, context) => {
-    const target = await resolveEntityRelationElectionTargetById(votes[0]!.entityId)
-    const metadata = entityRelationMetadatum.find(item => item.table_name === target?.relationTable)
-    if (!metadata) return []
-    const isUserTagVote =
-      votes.length === 1 && Boolean(await getUserTagRelationById(votes[0]!.entityId))
-    return upsertEntityRelationElectionVotes(userId, votes, context, metadata, {
-      enqueueVoteStats: !isUserTagVote,
-    })
-  },
+  upsertVotes: upsertEntityRelationVotesById,
   shouldAllowOfficialAccount: async (currentUser, entity) => {
     const userTagRelation = await getUserTagRelationById((entity as { id: string }).id)
     return !userTagRelation || isAdminUser(currentUser)
@@ -89,9 +67,7 @@ const entityRelationVoteOptions: CreateVoteHandlerOptions = {
   },
   assertClearAccess: (_ctx, currentUser) => assertNotSuspended(currentUser),
   onVote: async (_currentUser, relationId) => refreshUserTagVoteStats(relationId),
-  onNoop: (_currentUser, relationId) => {
-    void refreshEntityRelationVoteStatsById(relationId).catch(onError)
-  },
+  onNoop: (_currentUser, relationId) => refreshVoteStatsAfterNoop(relationId),
 }
 
 const entityRelationVoteHandler = createVoteHandler(entityRelationVoteOptions)

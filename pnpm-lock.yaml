@@ -5366,6 +5366,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../../modules/on-error
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination

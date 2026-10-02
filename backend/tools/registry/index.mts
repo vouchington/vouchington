@@ -24,7 +24,6 @@ import { adminSiteOperationsTools } from '../admin/site-operations.mts'
 import { resolveModerationAppealTool } from '../admin/appeals-resolution.mts'
 import { resolveReviewDisputeTool } from '../admin/disputes-resolution.mts'
 import activateReferralLinkTool from '../activate-referral-link.mts'
-import addEntityRelationTool from '../add-entity-relation.mts'
 import addListItemTool from '../add-list-item.mts'
 import addMyProfileLinkTool from '../add-my-profile-link.mts'
 import compareTopicsTool from '../compare-topics.mts'
@@ -69,7 +68,6 @@ import manageMySpendingTool from '../manage-my-spending.mts'
 import markAllNotificationsReadTool from '../mark-all-notifications-read.mts'
 import markNotificationReadTool from '../mark-notification-read.mts'
 import removeBookmarkTool from '../remove-bookmark.mts'
-import removeEntityRelationTool from '../remove-entity-relation.mts'
 import removeListItemTool from '../remove-list-item.mts'
 import reorderMyProfileLinksTool from '../reorder-my-profile-links.mts'
 import requestReferralLinkUnfurlTool from '../request-referral-link-unfurl.mts'
@@ -93,6 +91,7 @@ import updateTopicRecommendationTool from '../update-topic-recommendation.mts'
 import withdrawTopicRecommendationTool from '../withdraw-topic-recommendation.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { communityListMembershipReadTools } from './community-list-membership-read-tools.mts'
+import { entityRelationWriteTools } from './entity-relation-write-tools.mts'
 import { ownDataReadTools } from './own-data-read-tools.mts'
 import { searchReferenceReadTools } from './search-reference-read-tools.mts'
 
@@ -121,12 +120,12 @@ export const ALL_TOOLS: readonly Tool[] = [
   ...adminDisputesLifecycleTools,
   ...adminSiteOperationsTools,
   ...communityListMembershipReadTools,
+  ...entityRelationWriteTools,
   ...ownDataReadTools,
   ...searchReferenceReadTools,
   resolveModerationAppealTool,
   resolveReviewDisputeTool,
   activateReferralLinkTool,
-  addEntityRelationTool,
   addListItemTool,
   addMyProfileLinkTool,
   compareTopicsTool,
@@ -171,7 +170,6 @@ export const ALL_TOOLS: readonly Tool[] = [
   markAllNotificationsReadTool,
   markNotificationReadTool,
   removeBookmarkTool,
-  removeEntityRelationTool,
   removeListItemTool,
   reorderMyProfileLinksTool,
   requestReferralLinkUnfurlTool,
