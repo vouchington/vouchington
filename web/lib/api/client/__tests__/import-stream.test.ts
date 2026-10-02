@@ -108,11 +108,31 @@ describe('streamImportProgress', () => {
     await expect(promiseRejection).resolves.toMatchObject({ name: 'AbortError' })
   })
 
-  it('rejects when an interval poll fails', async () => {
+  it('rides out transient poll failures and completes', async () => {
     vi.useFakeTimers()
     const mockFetch = vi
       .fn<VitestLooseMock>()
       .mockResolvedValueOnce(importResponse({ completed: 0, total: 1, done: false }))
+      .mockResolvedValueOnce(new Response('bad gateway', { status: 502 }))
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValueOnce(importResponse({ completed: 1, total: 1, done: true }))
+    vi.stubGlobal('fetch', mockFetch)
+
+    const promise = streamImportProgress('import-1', () => {})
+    await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1))
+    await vi.advanceTimersByTimeAsync(6000)
+    await promise
+
+    expect(mockFetch).toHaveBeenCalledTimes(4)
+  })
+
+  it('rejects when an interval poll fails repeatedly', async () => {
+    vi.useFakeTimers()
+    const mockFetch = vi
+      .fn<VitestLooseMock>()
+      .mockResolvedValueOnce(importResponse({ completed: 0, total: 1, done: false }))
+      .mockResolvedValueOnce(new Response('server error', { status: 503 }))
+      .mockResolvedValueOnce(new Response('server error', { status: 503 }))
       .mockResolvedValueOnce(new Response('server error', { status: 503 }))
     vi.stubGlobal('fetch', mockFetch)
 
@@ -123,12 +143,29 @@ describe('streamImportProgress', () => {
     })
     await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1))
 
-    await vi.advanceTimersByTimeAsync(2000)
+    await vi.advanceTimersByTimeAsync(6000)
     await handledPromise
 
+    expect(mockFetch).toHaveBeenCalledTimes(4)
     expect(caughtError).toMatchObject({
       name: 'ApiError',
       status: 503,
     } satisfies Partial<ApiError>)
+  })
+
+  it('rejects immediately on a non-transient poll failure', async () => {
+    vi.useFakeTimers()
+    const mockFetch = vi
+      .fn<VitestLooseMock>()
+      .mockResolvedValueOnce(importResponse({ completed: 0, total: 1, done: false }))
+      .mockResolvedValueOnce(new Response('gone', { status: 404 }))
+    vi.stubGlobal('fetch', mockFetch)
+
+    const promise = streamImportProgress('import-1', () => {})
+    const handled = promise.catch((err: unknown) => err)
+    await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1))
+    await vi.advanceTimersByTimeAsync(2000)
+
+    await expect(handled).resolves.toMatchObject({ status: 404 })
   })
 })

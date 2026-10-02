@@ -11,12 +11,20 @@ export interface ImportProgress {
   done: boolean
 }
 
+/** Consecutive transient poll failures tolerated while a task is replaced (Spot, deploy). */
+export const IMPORT_POLL_MAX_TRANSIENT_ERRORS = 3
+
+function isTransientPollError(err: unknown): boolean {
+  if (err instanceof ApiError) return err.status >= 500 || err.status === 429
+  return err instanceof TypeError
+}
+
 export async function streamImportProgress(
   importId: string,
   onProgress: (progress: ImportProgress) => void,
   signal?: AbortSignal,
 ): Promise<void> {
-  const poll = async () => {
+  const fetchProgress = async () => {
     const response = await fetch(`/api/v1/my/import/rss-feeds/${encodeURIComponent(importId)}`, {
       credentials: 'include',
       signal,
@@ -50,6 +58,20 @@ export async function streamImportProgress(
     }
     onProgress(progress)
     return progress.done
+  }
+
+  let transientErrors = 0
+  const poll = async (): Promise<boolean> => {
+    try {
+      const done = await fetchProgress()
+      transientErrors = 0
+      return done
+    } catch (err) {
+      if (!isTransientPollError(err)) throw err
+      transientErrors += 1
+      if (transientErrors >= IMPORT_POLL_MAX_TRANSIENT_ERRORS) throw err
+      return false
+    }
   }
 
   if (signal?.aborted || (await poll())) return
