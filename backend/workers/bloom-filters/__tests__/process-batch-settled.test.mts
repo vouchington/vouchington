@@ -1,6 +1,6 @@
 import { BatchError, Queue, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
-import { processBatchSettled } from '../process-batch-settled.mts'
+import { processBatchSettled } from '../processors/process-batch-settled.mts'
 
 function fakeJob(name: string): Job {
   return { name, data: {} } as Job

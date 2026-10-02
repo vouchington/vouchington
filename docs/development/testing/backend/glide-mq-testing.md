@@ -14,17 +14,15 @@ upstream lacks.
 
 ## What the Shim Adds
 
-| Shim code                                  | Why it exists                                                                                                                                                                                                  |
-| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `add`/`addBulk` wait for the job to settle | Production `add` returns on accept; tests need the worker's side effects. Native `addAndWait` is not used: it rejects `removeOnComplete`/`removeOnFail`, waits on one id and throws on a deduplicated add.     |
-| A failed flushed job throws                | Native `Job.waitUntilFinished` resolves `'failed'` instead of throwing and polls every 500ms. A `removeOnFail: true` job is deleted before its `failed` event, so the shim records the failure from the event. |
-| Settled by events, not `Worker.drain()`    | `Worker.drain()` closes the worker, and every file in an `isolate: false` fork shares these workers.                                                                                                           |
-| Retries are promoted at once               | A retryable failure parks as `delayed` for its backoff; the shim promotes it on the queue's `retrying` event so a test does not wait out the backoff.                                                          |
-| Dead-letter queue wiring                   | glide-mq's testing mode has no DLQ: `deadLetterQueue`, `getDeadLetter*`, and the obliterate cascade are local.                                                                                                 |
-| `addBulk` keeps a skipped add as `null`    | Production `addBulk` keeps the order and length of its input; the shim adds sequentially so a deduplicated add lands `null` at its own index.                                                                  |
-| Nested enqueue detection                   | An `AsyncLocalStorage` marks processor scope so a nested `add` is not flushed.                                                                                                                                 |
-| Worker-attachment guard                    | Fails a file that leaves an unexpected live worker attached on an `isolate: false` fork.                                                                                                                       |
-| Flush timeout diagnostics                  | `TestQueueFlushTimeoutError` reports worker concurrency, active counts and the stuck job's state.                                                                                                              |
+- **`add`/`addBulk` wait for the job to settle.** Production `add` returns on accept; tests need the worker's side effects. Native `addAndWait` is not used: it rejects `removeOnComplete`/`removeOnFail`, waits on one id and throws on a deduplicated add.
+- **A failed flushed job throws.** Native `Job.waitUntilFinished` resolves `'failed'` instead of throwing and polls every 500ms. A `removeOnFail: true` job is deleted before its `failed` event, so the shim records the failure from the event.
+- **Settled by events, not `Worker.drain()`.** `Worker.drain()` closes the worker, and every file in an `isolate: false` fork shares these workers.
+- **Retries are promoted at once.** A retryable failure parks as `delayed` for its backoff; the shim promotes it on the queue's `retrying` event so a test does not wait out the backoff.
+- **Dead-letter queue wiring.** glide-mq's testing mode has no DLQ: `deadLetterQueue`, `getDeadLetter*`, and the obliterate cascade are local.
+- **`addBulk` keeps a skipped add as `null`.** Production `addBulk` keeps the order and length of its input; the shim adds sequentially so a deduplicated add lands `null` at its own index.
+- **Nested enqueue detection.** An `AsyncLocalStorage` marks processor scope so a nested `add` is not flushed.
+- **Worker-attachment guard.** Fails a file that leaves an unexpected live worker attached on an `isolate: false` fork.
+- **Flush timeout diagnostics.** `TestQueueFlushTimeoutError` reports worker concurrency, active counts and the stuck job's state.
 
 The shim reads these private fields of `glide-mq/testing`, verified against 0.16.0: `queue.jobs` (record
 state), `queue.workers`, and, for diagnostics only, `queue.waitingQueue` and `worker.concurrency`. Re-check
@@ -150,7 +148,7 @@ describe('Embedding Processor', () => {
 
 A batch worker takes `batch: { size, timeout }` and a processor over `Job[]`. Throw `BatchError` with one
 result per job to retry or fail only the jobs that threw
-(`backend/workers/bloom-filters/process-batch-settled.mts`).
+(`backend/workers/bloom-filters/processors/process-batch-settled.mts`).
 
 ### Bulk Operations
 

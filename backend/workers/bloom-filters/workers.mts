@@ -7,7 +7,7 @@ import {
 } from '@queues/bloom-filters/config'
 import type { BloomFilterProcessorJobs } from '@queues/bloom-filters/types'
 import { Worker, type Job } from 'glide-mq'
-import { processBatchSettled } from './process-batch-settled.mts'
+import { processBatchSettled } from './processors/process-batch-settled.mts'
 import * as processors from './processors.mts'
 
 function runOne(job: Job): Promise<void> {
