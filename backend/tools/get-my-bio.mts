@@ -1,12 +1,12 @@
+import assert from 'http-assert'
 import { getProfile } from '@services/my/profile'
 import type { Tool } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
-import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
+import { requirePrivateToolUser } from './private-user.mts'
+import { successSchema } from './output-schema-shapes.mts'
 import { componentSchema } from './route-response-schema.mts'
 
-type ToolResult =
-  | { success: true; profile: { id: string; markdown: string } }
-  | { success: false; error: 'Profile not found' }
+type ToolResult = { success: true; profile: { id: string; markdown: string } }
 
 const tool: Tool<Record<string, never>, ToolResult> = {
   schema: {
@@ -23,11 +23,14 @@ const tool: Tool<Record<string, never>, ToolResult> = {
     requiredScopes: { mcp: ['profile:read'] },
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/my/profile' }],
-    outputSchema: foundOrNotFoundSchema({ profile: componentSchema('UserProfile') }),
+    outputSchema: successSchema({ profile: componentSchema('UserProfile') }),
   },
   function: (currentUser: BasicUser) => async (): Promise<ToolResult> => {
-    const profile = await getProfile(currentUser.id)
-    return profile ? { success: true, profile } : { success: false, error: 'Profile not found' }
+    const user = await requirePrivateToolUser(currentUser)
+    const profile = await getProfile(user.id)
+    // The account was found a moment ago, so a missing profile means it was deleted since.
+    assert(profile, 401, 'Tool current user not found')
+    return { success: true, profile }
   },
 }
 

@@ -12,8 +12,14 @@ type NotificationCommunity = { id: string; name: string; slug: string }
 
 type DatedFields = 'read_at' | 'pushed_at' | 'created_at' | 'updated_at'
 
-/** A notification as an MCP client reads it: its timestamps are ISO strings, its text is clean. */
-export type McpNotification = Omit<Notification, DatedFields> & {
+type JsonSchema = Record<string, unknown>
+
+/**
+ * A notification as an MCP client reads it: its timestamps are ISO strings, its text is clean and
+ * it has no `target_path`. That field is a frontend route; what a notification is about comes as
+ * the structured `target_entity`, `target_intent` and the ids of the records it points at.
+ */
+export type McpNotification = Omit<Notification, DatedFields | 'target_path'> & {
   read_at: string | null
   pushed_at: string | null
   created_at: string
@@ -46,8 +52,9 @@ async function toMcpNotification(notification: Notification): Promise<McpNotific
     externalText(notification.body, 'notification', 'notification_body'),
     notification.actor_label === null ? null : sanitizedTitle(notification.actor_label),
   ])
+  const { target_path: _frontendRoute, ...structured } = notification
   return {
-    ...notification,
+    ...structured,
     title,
     body: body ?? '',
     actor_label: actorLabel,
@@ -91,15 +98,30 @@ export async function toMcpNotificationBody(
   }
 }
 
+/** The documented record map with `target_path` dropped from each notification, as `toMcpNotification` does. */
+function withoutTargetPath(notifications: JsonSchema): JsonSchema {
+  const item = notifications['additionalProperties'] as JsonSchema
+  const keep = ([key]: [string, unknown]) => key !== 'target_path'
+  return {
+    ...notifications,
+    additionalProperties: {
+      ...item,
+      properties: Object.fromEntries(Object.entries(item['properties'] as JsonSchema).filter(keep)),
+      required: (item['required'] as string[]).filter(key => key !== 'target_path'),
+    },
+  }
+}
+
 /**
  * The output properties both notification tools share, from the unread summary's generated
- * contract. The list route documents the same three inline, and a test pins them to it.
+ * contract. The list route documents the same three inline, and a test pins them to it, apart from
+ * the `target_path` each notification leaves out.
  */
 export function notificationOutputProperties() {
   const summary = routeResponseSchema(UNREAD_SUMMARY)
   return {
     results: routePropertySchema(summary, 'results'),
-    notifications: routePropertySchema(summary, 'notifications'),
+    notifications: withoutTargetPath(routePropertySchema(summary, 'notifications')),
     communities: routePropertySchema(summary, 'communities'),
   }
 }

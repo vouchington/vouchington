@@ -746,44 +746,26 @@
             },
             "outputSchema": {
               "type": "object",
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "const": true
-                    },
-                    "profile": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        },
-                        "markdown": {
-                          "type": "string"
-                        }
-                      },
-                      "required": ["id", "markdown"],
-                      "type": "object"
-                    }
-                  },
-                  "required": ["success", "profile"],
-                  "additionalProperties": false
+              "properties": {
+                "success": {
+                  "const": true
                 },
-                {
-                  "type": "object",
+                "profile": {
+                  "additionalProperties": false,
                   "properties": {
-                    "success": {
-                      "const": false
+                    "id": {
+                      "type": "string"
                     },
-                    "error": {
+                    "markdown": {
                       "type": "string"
                     }
                   },
-                  "required": ["success", "error"],
-                  "additionalProperties": false
+                  "required": ["id", "markdown"],
+                  "type": "object"
                 }
-              ]
+              },
+              "required": ["success", "profile"],
+              "additionalProperties": false
             },
             "annotations": {
               "readOnlyHint": true,
@@ -896,7 +878,7 @@
           "tool": {
             "name": "get_my_notifications",
             "title": "Get My Notifications",
-            "description": "List the current user's own notifications, newest first, with whether each is read. results lists the notification ids in order; notifications holds each one by id (its entity_type, title, body, actor_label, target_path, read_at and the ids of what it is about) and communities holds the communities they mention. Titles, actor labels and community names are sanitized and a body is fenced as external content, because they can quote other users; an empty body is an empty string. Returns at most 100 notifications per page (default 25) and page_info.end_cursor; pass it as after for the next page. A malformed cursor returns { success: false, error: \"Invalid cursor\" }. get_my_unread_notifications gives just the unread ones with their count. Reading never marks a notification read.",
+            "description": "List the current user's own notifications, newest first, with whether each is read. results lists the notification ids in order; notifications holds each one by id (its entity_type, title, body, actor_label, read_at, target_entity, target_intent and the ids of what it is about) and communities holds the communities they mention. Titles, actor labels and community names are sanitized and a body is fenced as external content, because they can quote other users; an empty body is an empty string. Returns at most 100 notifications per page (default 25) and page_info.end_cursor; pass it as after for the next page. A malformed cursor returns { success: false, error: \"Invalid cursor\" }. get_my_unread_notifications gives just the unread ones with their count. Reading never marks a notification read.",
             "inputSchema": {
               "type": "object",
               "properties": {
@@ -1135,16 +1117,6 @@
                               }
                             ]
                           },
-                          "target_path": {
-                            "anyOf": [
-                              {
-                                "type": "null"
-                              },
-                              {
-                                "type": "string"
-                              }
-                            ]
-                          },
                           "title": {
                             "type": "string"
                           },
@@ -1185,7 +1157,6 @@
                           "rss_feed_item_id",
                           "target_entity",
                           "target_intent",
-                          "target_path",
                           "title",
                           "updated_at",
                           "user_id",
@@ -1562,7 +1533,7 @@
           "tool": {
             "name": "get_my_unread_notifications",
             "title": "Get My Unread Notifications",
-            "description": "Get the current user's unread notifications: unread_count is how many there are in all, and the newest 10 come back in results (their ids, newest first), notifications (each one by id, with its entity_type, title, body, actor_label, target_path and the ids of what it is about) and communities (the communities they mention). Titles, actor labels and community names are sanitized and a body is fenced as external content, because they can quote other users; an empty body is an empty string. Use get_my_notifications to page through every notification, read or not. Reading never marks a notification read.",
+            "description": "Get the current user's unread notifications: unread_count is how many there are in all, and the newest 10 come back in results (their ids, newest first), notifications (each one by id, with its entity_type, title, body, actor_label, target_entity, target_intent and the ids of what it is about) and communities (the communities they mention). Titles, actor labels and community names are sanitized and a body is fenced as external content, because they can quote other users; an empty body is an empty string. Use get_my_notifications to page through every notification, read or not. Reading never marks a notification read.",
             "inputSchema": {
               "type": "object",
               "properties": {},
@@ -1790,16 +1761,6 @@
                           }
                         ]
                       },
-                      "target_path": {
-                        "anyOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "string"
-                          }
-                        ]
-                      },
                       "title": {
                         "type": "string"
                       },
@@ -1840,7 +1801,6 @@
                       "rss_feed_item_id",
                       "target_entity",
                       "target_intent",
-                      "target_path",
                       "title",
                       "updated_at",
                       "user_id",

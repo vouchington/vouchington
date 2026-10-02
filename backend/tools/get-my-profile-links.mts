@@ -1,6 +1,7 @@
 import { listProfileLinks } from '@services/my/profile-links'
 import type { Tool } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
+import { requirePrivateToolUser } from './private-user.mts'
 import { PROFILE_LINKS_RESULT_SCHEMA } from './profile-tool-support.mts'
 
 type ToolResult = { success: true; results: Awaited<ReturnType<typeof listProfileLinks>> }
@@ -22,10 +23,10 @@ const tool: Tool<Record<string, never>, ToolResult> = {
     api: [{ method: 'GET', path: '/api/v1/my/profile/links' }],
     outputSchema: PROFILE_LINKS_RESULT_SCHEMA,
   },
-  function: (currentUser: BasicUser) => async (): Promise<ToolResult> => ({
-    success: true,
-    results: await listProfileLinks(currentUser.id),
-  }),
+  function: (currentUser: BasicUser) => async (): Promise<ToolResult> => {
+    const user = await requirePrivateToolUser(currentUser)
+    return { success: true, results: await listProfileLinks(user.id) }
+  },
 }
 
 export default tool

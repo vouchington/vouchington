@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import { markNotificationRead, createFollowNotification } from '@services/notifications'
 import { createProfileLink } from '@services/my/profile-links'
 import { createTestUser, setUserMarkdown } from '@voucha/test-helpers'
@@ -27,11 +26,13 @@ const asCaller = (user: TestUser, plan: 'plus' | null = null): McpContractCaller
   ...user,
   membership_plan: plan,
 })
+// The sanitized text differs from REST by design, and `target_path` is a frontend route the tools omit.
 const withoutText = (notification: unknown) => ({
   ...(notification as Body),
   title: undefined,
   body: undefined,
   actor_label: undefined,
+  target_path: undefined,
 })
 
 describe('own-data read tools — real DB', () => {
@@ -209,15 +210,6 @@ describe('own-data read tools — real DB', () => {
       expect(await call('get_my_bio', PROFILE, {}, writer)).toEqual({
         success: true,
         profile: { id: writer.id, markdown: 'New *bio*' },
-      })
-    })
-
-    it('reports a missing profile', async () => {
-      const missing = asCaller({ ...ownerUser, id: randomUUID() })
-
-      expect(await call('get_my_bio', PROFILE, {}, missing)).toEqual({
-        success: false,
-        error: 'Profile not found',
       })
     })
   })

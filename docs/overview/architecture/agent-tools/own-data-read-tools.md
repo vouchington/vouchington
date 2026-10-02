@@ -18,9 +18,11 @@ generated [tool catalog](catalog.md) holds each tool's description and scopes; t
 | `get_my_preferences`          | `GET /api/v1/users/:idOrSlug` (own record) | `preferences:read`   | none             |
 
 No scope is new, and `mcp.user:read` already covers all three. Every tool acts on the credential's
-own account and takes no user id, so another user's data cannot be asked for. Each owns a closed
-output schema built from the generated REST contracts, and a test pins every property to the
-documented response.
+own account and takes no user id, so another user's data cannot be asked for. Each re-reads that
+account from the primary database before it reads anything, so an account deleted after the
+credential was issued is refused with `401` instead of still returning the rows that outlive it.
+Each owns a closed output schema built from the generated REST contracts, and a test pins every
+property to the documented response.
 
 ## Notifications
 
@@ -28,22 +30,23 @@ documented response.
 (default 25), the REST bounds. `results` lists the notification ids in order, `notifications`
 holds each one by id and `communities` holds the public communities, or the caller's own, they
 mention. `page_info.end_cursor` is the REST cursor, so it round-trips with the route; a malformed
-cursor returns `{ success: false, error: "Invalid cursor" }`.
+cursor, an empty one included, returns `{ success: false, error: "Invalid cursor" }`.
 
 `get_my_unread_notifications` returns `unread_count`, the total, and the newest 10 unread
 notifications in the same three records.
 
 A notification's `title`, `actor_label` and a community's `name` can quote other users, so they are
 sanitized as titles. The `body` is sanitized and fenced as `external-content` from `notification`.
-An empty body, as a direct message has, stays an empty string, the REST type. Reading never marks
+An empty body, as a direct message has, stays an empty string, the REST type. A notification has no
+`target_path`: that is a frontend route, and the tools return what it is about as `target_entity`,
+`target_intent` and the ids of the records it points at. Reading never marks
 a notification read; `mark_notification_read` and `mark_all_notifications_read` do that.
 
 ## Profile
 
 `get_my_bio` returns `{ id, markdown }` exactly as stored, an empty string when there is no bio.
 It is the account's own text, so it is neither sanitized nor fenced, and what it returns can be
-edited and sent back to `update_my_bio` unchanged. A missing or deleted account returns
-`{ success: false, error: "Profile not found" }`. `get_my_profile` reads the wallet profile
+edited and sent back to `update_my_bio` unchanged. `get_my_profile` reads the wallet profile
 instead.
 
 `get_my_profile_links` returns the links in display order with the fields REST returns. There are

@@ -2,6 +2,7 @@ import { getEmailPreferences } from '@services/users'
 import type { Tool } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
 import { EMAIL_PREFERENCES_RESULT_SCHEMA } from './preference-tool-support.mts'
+import { requirePrivateToolUser } from './private-user.mts'
 
 type ToolResult = {
   success: true
@@ -25,10 +26,10 @@ const tool: Tool<Record<string, never>, ToolResult> = {
     api: [{ method: 'GET', path: '/api/v1/my/email-preferences' }],
     outputSchema: EMAIL_PREFERENCES_RESULT_SCHEMA,
   },
-  function: (currentUser: BasicUser) => async (): Promise<ToolResult> => ({
-    success: true,
-    email_preferences: await getEmailPreferences(currentUser.id),
-  }),
+  function: (currentUser: BasicUser) => async (): Promise<ToolResult> => {
+    const user = await requirePrivateToolUser(currentUser)
+    return { success: true, email_preferences: await getEmailPreferences(user.id) }
+  },
 }
 
 export default tool

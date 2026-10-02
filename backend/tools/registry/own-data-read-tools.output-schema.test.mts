@@ -21,11 +21,9 @@ const properties = (schema: unknown): Record<string, unknown> => {
 describe('own-data read tool output schemas stay pinned to the documented REST twins', () => {
   it.each([
     [getMyNotificationsTool, 'get', '/api/v1/my/notifications', 'results'],
-    [getMyNotificationsTool, 'get', '/api/v1/my/notifications', 'notifications'],
     [getMyNotificationsTool, 'get', '/api/v1/my/notifications', 'communities'],
     [getMyUnreadNotificationsTool, 'get', '/api/v1/my/notifications/unread', 'unread_count'],
     [getMyUnreadNotificationsTool, 'get', '/api/v1/my/notifications/unread', 'results'],
-    [getMyUnreadNotificationsTool, 'get', '/api/v1/my/notifications/unread', 'notifications'],
     [getMyUnreadNotificationsTool, 'get', '/api/v1/my/notifications/unread', 'communities'],
     [getMyBioTool, 'get', '/api/v1/my/profile', 'profile'],
     [getMyProfileLinksTool, 'get', '/api/v1/my/profile/links', 'results'],
@@ -35,6 +33,33 @@ describe('own-data read tool output schemas stay pinned to the documented REST t
       documentedResponseProperty(method, path, '200', key),
     )
   })
+
+  // A notification keeps every field the REST contract documents except `target_path`, a frontend
+  // route MCP clients get as the structured target_entity, target_intent and ids instead.
+  it.each([
+    [getMyNotificationsTool, '/api/v1/my/notifications'],
+    [getMyUnreadNotificationsTool, '/api/v1/my/notifications/unread'],
+  ] as const)(
+    'takes %# notification records from the documented body, without target_path',
+    (tool, path) => {
+      type NotificationRecord = { properties: Record<string, unknown>; required: string[] }
+      const documented = documentedResponseProperty('get', path, '200', 'notifications') as {
+        additionalProperties: NotificationRecord
+      }
+      const record = documented.additionalProperties
+      const kept = Object.entries(record.properties).filter(([field]) => field !== 'target_path')
+
+      expect(Object.keys(record.properties)).toContain('target_path')
+      expect(properties(tool.meta?.outputSchema)['notifications']).toEqual({
+        ...documented,
+        additionalProperties: {
+          ...record,
+          properties: Object.fromEntries(kept),
+          required: record.required.filter(field => field !== 'target_path'),
+        },
+      })
+    },
+  )
 
   it('pages notifications with the page_info the list route documents', () => {
     const sorted = (schema: unknown) => {
