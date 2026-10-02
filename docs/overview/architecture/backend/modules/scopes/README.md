@@ -44,6 +44,12 @@ scope exposes a blocked hostname or a private profile field, and `mcp.user:read`
 every other user read scope. `lists:read` also covers the list read tools; it never reads a private
 list on its own.
 
+`web-search:read` and `reference-data:read` are user-audience resource scopes for the `search_web`
+tool and the country, currency and platform statistics tools; both read the public data the
+signed-out REST routes return, and `mcp.user:read` covers them. The trending, referral program and
+own referral link read tools reuse `communities:read`, `topics:read` and `referral-links:read`. See
+[Trending, Referral, Search and Reference Read Tools](../../../agent-tools/search-reference-read-tools.md).
+
 `post-relations.owned-private:write` is an exact, non-inheritable user capability. It requires
 `entity-relations:write` (and therefore read) for API keys and OAuth grants, but broad
 `mcp.user:write` never covers it. The `set_bookmark` and `add_list_item` MCP tools check the same

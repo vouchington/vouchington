@@ -392,6 +392,15 @@
       "audience": "user",
       "description_key": null,
       "requires": null,
+      "resource": "reference-data",
+      "scope": "reference-data:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
+      "description_key": null,
+      "requires": null,
       "resource": "referral-links",
       "scope": "referral-links:read",
       "surfaces": ["api-key", "oauth"]
@@ -520,6 +529,15 @@
       "requires": null,
       "resource": "users",
       "scope": "users:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
+      "description_key": null,
+      "requires": null,
+      "resource": "web-search",
+      "scope": "web-search:read",
       "surfaces": ["api-key", "oauth"]
     }
   ]
