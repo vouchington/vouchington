@@ -1,7 +1,7 @@
 import { updateUser } from '@services/users'
 import type { BasicUser } from '@services/users/types'
 import {
-  SETTING_FIELDS,
+  pickSettings,
   SETTINGS_PARAMETERS,
   SETTINGS_RESULT_SCHEMA,
   type SettingsToolArgs,
@@ -9,10 +9,7 @@ import {
 import { requireActiveToolUser, requirePrivateToolUser } from './private-user.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
 
-type UpdateMyPreferencesResult = {
-  success: true
-  settings: Record<(typeof SETTING_FIELDS)[number], unknown>
-}
+type UpdateMyPreferencesResult = { success: true; settings: ReturnType<typeof pickSettings> }
 
 const tool: Tool<SettingsToolArgs, UpdateMyPreferencesResult> = {
   schema: {
@@ -36,13 +33,7 @@ const tool: Tool<SettingsToolArgs, UpdateMyPreferencesResult> = {
     const user = await requireActiveToolUser(currentUser)
     // The same command, with the same authorization policy, as PATCH /api/v1/users/:idOrSlug.
     await updateUser(user, user.id, args)
-    const updated: Record<string, unknown> = { ...(await requirePrivateToolUser(currentUser)) }
-    return {
-      success: true,
-      settings: Object.fromEntries(
-        SETTING_FIELDS.map(field => [field, updated[field] ?? null]),
-      ) as UpdateMyPreferencesResult['settings'],
-    }
+    return { success: true, settings: pickSettings(await requirePrivateToolUser(currentUser)) }
   },
 }
 

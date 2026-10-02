@@ -68,9 +68,9 @@ Support and CRM surfaces are never tools.
   the profile, profile-link, notification, and email-preference tools do not check suspension yet,
   so those tools are stricter than their twins until [#1762](https://github.com/vouchington/vouchington/issues/1762)
   closes the gap.
-- **Reads.** The write tools need `notifications:read` and `preferences:read`, but no tool reads
-  the caller's own bio, links, notifications, or settings yet; [#1763](https://github.com/vouchington/vouchington/issues/1763)
-  tracks those read tools.
+- **Reads.** The write tools need `notifications:read` and `preferences:read`; the
+  [own-data read tools](own-data-read-tools.md) read the caller's bio, links, notifications, and
+  settings back under those scopes.
 - **Scope coupling.** `profile:write` requires `profile:read`, which also authorizes
   `get_my_profile`. Granting profile writes therefore also grants reading that profile.
 - **Ownership.** Notification and link tools act only on rows the caller owns; another user's id

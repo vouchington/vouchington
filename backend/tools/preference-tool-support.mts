@@ -78,6 +78,15 @@ export const SETTING_FIELDS = [
 export type SettingField = (typeof SETTING_FIELDS)[number]
 export type SettingsToolArgs = Pick<UpdateUserOptions, SettingField>
 
+/** The settings the preferences tools expose, read from the account's own private user view. */
+export function pickSettings(user: object): Record<SettingField, unknown> {
+  const fields: Record<string, unknown> = { ...user }
+  return Object.fromEntries(SETTING_FIELDS.map(field => [field, fields[field] ?? null])) as Record<
+    SettingField,
+    unknown
+  >
+}
+
 const setting = (field: SettingField) => componentPropertySchema('UpdateUserOptions', field)
 const audience = (what: string) => ({ ...setting('follows_visibility'), description: what })
 

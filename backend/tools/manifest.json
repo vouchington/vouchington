@@ -65,6 +65,78 @@
       "requiredScopes": ["lists:read"]
     },
     {
+      "name": "get_my_bio",
+      "description": "Get the current user's own profile bio: their user id and the bio Markdown, exactly as stored (an empty string when there is none), so it can be edited and sent back with update_my_bio. It is the user's own text and is not sanitized. Profile links are read with get_my_profile_links, and get_my_profile reads the wallet profile instead.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/my/profile"
+        }
+      ],
+      "requiredScopes": ["profile:read"]
+    },
+    {
+      "name": "get_my_email_preferences",
+      "description": "Get which emails the current user receives and when: setup recommendations, the news and community digests, and community moderation summaries with their cadence, weekdays, time of day and time zone. Email addresses and sign-in settings are not included. Change them with update_my_email_preferences.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/my/email-preferences"
+        }
+      ],
+      "requiredScopes": ["preferences:read"]
+    },
+    {
+      "name": "get_my_notifications",
+      "description": "List the current user's own notifications, newest first, with whether each is read. results lists the notification ids in order; notifications holds each one by id (its entity_type, title, body, actor_label, target_path, read_at and the ids of what it is about) and communities holds the communities they mention. Titles, actor labels and community names are sanitized and a body is fenced as external content, because they can quote other users; an empty body is an empty string. Returns at most 100 notifications per page (default 25) and page_info.end_cursor; pass it as after for the next page. A malformed cursor returns { success: false, error: \"Invalid cursor\" }. get_my_unread_notifications gives just the unread ones with their count. Reading never marks a notification read.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/my/notifications"
+        }
+      ],
+      "requiredScopes": ["notifications:read"]
+    },
+    {
+      "name": "get_my_preferences",
+      "description": "Get the current user's own privacy and posting settings: who can see their follows, followers, likes and community memberships, who can message them, the default audience and privacy of new posts, country, interface locale and Hacker News discussions. These are the settings update_my_preferences changes. Financial-data visibility, consents, federation, email addresses, sign-in settings and the username are not included.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/users/:idOrSlug"
+        }
+      ],
+      "requiredScopes": ["preferences:read"]
+    },
+    {
+      "name": "get_my_profile_links",
+      "description": "List the current user's own profile links in display order: each link's id, link_type, url, handle, name, image_id and sort_order. There are at most 20, so the list is not paged. They are the user's own text and are not sanitized. Use the ids with update_my_profile_link, delete_my_profile_link and reorder_my_profile_links, and read the bio with get_my_bio.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/my/profile/links"
+        }
+      ],
+      "requiredScopes": ["profile:read"]
+    },
+    {
+      "name": "get_my_unread_notifications",
+      "description": "Get the current user's unread notifications: unread_count is how many there are in all, and the newest 10 come back in results (their ids, newest first), notifications (each one by id, with its entity_type, title, body, actor_label, target_path and the ids of what it is about) and communities (the communities they mention). Titles, actor labels and community names are sanitized and a body is fenced as external content, because they can quote other users; an empty body is an empty string. Use get_my_notifications to page through every notification, read or not. Reading never marks a notification read.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/my/notifications/unread"
+        }
+      ],
+      "requiredScopes": ["notifications:read"]
+    },
+    {
       "name": "get_my_referral_links",
       "description": "List the current user's own referral links, newest first: each one's id, program, url, label and whether it is active. It never returns another user's links; use get_referral_links for the links under a program. Pass referral_program_id to see only the links under one program. Returns at most 25 links per page and page_info.end_cursor; pass it as after to get the next page. A malformed cursor returns { success: false, error: \"Invalid cursor\" }.",
       "parameters": null,

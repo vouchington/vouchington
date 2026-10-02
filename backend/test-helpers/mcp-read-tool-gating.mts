@@ -12,6 +12,10 @@ const INVALID_PARAMS = -32602
 
 type McpUser = PrivateUser & { membership_plan: 'plus' | 'pro' | null }
 
+// Scopes no family tool needs, for a credential that holds nothing the family reads. A family that
+// owns one of them is tested with the others.
+const UNRELATED_SCOPES: readonly ApiScope[] = ['profile:read', 'cards:read', 'hostnames:read']
+
 type McpReadToolGatingSuite = {
   /** Every scope that unlocks a tool of the family. */
   scopes: readonly ApiScope[]
@@ -32,6 +36,7 @@ type McpReadToolGatingSuite = {
 export function registerMcpReadToolGatingTests(suite: McpReadToolGatingSuite): void {
   const { scopes: familyScopes, tools, pagedTools, requiredArguments } = suite
   const paged = tools.filter(([name]) => pagedTools.includes(name))
+  const unrelated = UNRELATED_SCOPES.filter(scope => !familyScopes.includes(scope)).slice(0, 2)
 
   describe('gating', () => {
     let users: Record<string, McpUser>
@@ -69,18 +74,14 @@ export function registerMcpReadToolGatingTests(suite: McpReadToolGatingSuite): v
 
     it.each(tools)('lists %s only for a credential holding %s', (name, scope) => {
       const withScope = listMcpToolsForUser(users['free']!, [scope], USER_MCP_SERVER_CONFIG)
-      const withoutScope = listMcpToolsForUser(
-        users['free']!,
-        ['profile:read', 'cards:read'] as ApiScope[],
-        USER_MCP_SERVER_CONFIG,
-      )
+      const withoutScope = listMcpToolsForUser(users['free']!, unrelated, USER_MCP_SERVER_CONFIG)
 
       expect(withScope.map(tool => tool.name)).toContain(name)
       expect(withoutScope.map(tool => tool.name)).not.toContain(name)
     })
 
     it.each(tools)('refuses %s without the %s scope', async (name, scope, args) => {
-      await expect(call(name, args, ['profile:read'])).rejects.toMatchObject({
+      await expect(call(name, args, unrelated)).rejects.toMatchObject({
         code: INVALID_REQUEST,
         message: expect.stringContaining(scope),
       })
