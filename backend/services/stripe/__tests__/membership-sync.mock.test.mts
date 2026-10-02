@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import Stripe from 'stripe'
 import { describe, expect, it, vi } from 'vitest'
-import { getStripeClient } from '@modules/stripe/client'
+import { getStripeSubscription } from '@modules/stripe/subscriptions'
+import { getStripeCustomer } from '@modules/stripe/customers'
 import { MockAgent, createMockAgentFetchForTest } from '@voucha/test-helpers/provider-http'
 import {
   createTestSku,
@@ -15,11 +16,24 @@ import { createMembership } from '@services/memberships'
 import { insertStripeEvent } from '../events.mts'
 import { ensureMembershipFromStripeSubscription } from '../membership-sync.mts'
 
-vi.mock<typeof import('@modules/stripe/client')>(
-  import('@modules/stripe/client'),
+vi.mock<typeof import('@modules/stripe/subscriptions')>(
+  import('@modules/stripe/subscriptions'),
   async original => {
     const actual = await original()
-    return { ...actual, getStripeClient: vi.fn<typeof getStripeClient>(actual.getStripeClient) }
+    return {
+      ...actual,
+      getStripeSubscription: vi.fn<typeof getStripeSubscription>(actual.getStripeSubscription),
+    }
+  },
+)
+vi.mock<typeof import('@modules/stripe/customers')>(
+  import('@modules/stripe/customers'),
+  async original => {
+    const actual = await original()
+    return {
+      ...actual,
+      getStripeCustomer: vi.fn<typeof getStripeCustomer>(actual.getStripeCustomer),
+    }
   },
 )
 
@@ -48,7 +62,10 @@ describe('ensureMembershipFromStripeSubscription provider transaction failures',
       httpClient: Stripe.createFetchHttpClient(createMockAgentFetchForTest(agent)),
       maxNetworkRetries: 0,
     })
-    vi.mocked(getStripeClient).mockReturnValue(client)
+    vi.mocked(getStripeCustomer).mockImplementation(id => client.customers.retrieve(id))
+    vi.mocked(getStripeSubscription).mockImplementation(id =>
+      client.subscriptions.retrieve(id, { expand: ['schedule.phases.items.price'] }),
+    )
     const created = 1_800_000_000
     const customer = {
       id: customerId,
@@ -239,7 +256,8 @@ describe('ensureMembershipFromStripeSubscription provider transaction failures',
       await expect(getTestMembershipProviderEvidenceId(membership.id)).resolves.toBe(evidenceBefore)
       agent.assertNoPendingInterceptors()
     } finally {
-      vi.mocked(getStripeClient).mockReset()
+      vi.mocked(getStripeCustomer).mockReset()
+      vi.mocked(getStripeSubscription).mockReset()
       await agent.close()
     }
   })
