@@ -10,6 +10,7 @@ import { assertNotSuspended } from '@services/users'
 import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
 import { apiQuery, apiResponse } from '../../response-contract.mts'
 import { requireAuthAndRateLimit } from '../../response-helpers.mts'
+import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 import {
   createPaginationParser,
   decodeScopedPreciseTimestampCursor,
@@ -39,7 +40,11 @@ app.route('/api/v1/copyright-email-intakes/review-queue').get(async (ctx: Contex
     'GET:/api/v1/copyright-email-intakes/review-queue',
   )
   assertNotSuspended(currentUser)
-  const options = emailIntakeQueueParser.parse(ctx.query)
+  const options = parseAndValidatePaginatedRequest(
+    ctx,
+    'GET:/api/v1/copyright-email-intakes/review-queue',
+    emailIntakeQueueParser,
+  )
   const after = options.after
     ? decodeScopedPreciseTimestampCursor(
         options.after,

@@ -51,6 +51,11 @@ describe('copyright email intake queue pagination', () => {
     const first = await getPage(request, { limit: 3, after })
     expect(first.copyright_email_intakes.map(intake => intake.id)).toEqual(ids.slice(0, 3))
     expect(first.copyright_email_intakes[0]).toMatchObject({ review_path: 'initial' })
+    // The request contract declares only `limit` and `after`; any other query key is ignored.
+    const ignoredKey = await request
+      .get(`${queuePath}?limit=3&after=${encodeURIComponent(after)}&injected=1`)
+      .expect(200)
+    expect(ignoredKey.body).toEqual(first)
     const second = await getPage(request, { limit: 3, after: first.page_info.end_cursor! })
     expect(second.copyright_email_intakes.map(intake => intake.id)).toEqual(ids.slice(3))
     expect(second.page_info.has_next_page).toBe(false)

@@ -35,9 +35,19 @@ import {
   parseCopyrightTargetIds,
 } from '@services/copyright-notices/http-input'
 import { assertNotSuspended } from '@services/users'
-import { requireAuthAndRateLimit, validateUUIDParam } from '../../response-helpers.mts'
+import {
+  requireAuthAndRateLimit,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../response-helpers.mts'
 import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
-import { apiOpenApiRawResponse } from '../../response-contract.mts'
+import { apiOpenApiRawResponse, apiRequestContract } from '../../response-contract.mts'
+import type {
+  CopyrightEmailApprovalRequest,
+  CopyrightEmailCorrespondenceRejectionRequest,
+  CopyrightEmailCorrespondenceRequest,
+  CopyrightEmailRejectionRequest,
+} from './email-intake-request-types.mts'
 import {
   parseCopyrightCorrespondenceSubmission,
   parseCopyrightManualFallbackReason,
@@ -56,7 +66,9 @@ app.route('/api/v1/copyright-email-intakes/:id').get(async (ctx: Context) => {
     'GET:/api/v1/copyright-email-intakes/:id',
   )
   assertNotSuspended(currentUser)
-  const intake = await getCopyrightStaffEmailIntake(validateUUIDParam(ctx, 'id'), currentUser)
+  const intakeId = validateUUIDParam(ctx, 'id')
+  validateRequestContract(ctx, 'GET:/api/v1/copyright-email-intakes/:id', { path: ctx.params })
+  const intake = await getCopyrightStaffEmailIntake(intakeId, currentUser)
   ctx.assert(intake, 404, 'Copyright email intake not found')
   ctx.json({ copyright_email_intake: intake })
 })
@@ -69,7 +81,9 @@ app.route('/api/v1/copyright-email-intakes/:id/raw').get(async (ctx: Context) =>
     'GET:/api/v1/copyright-email-intakes/:id/raw',
   )
   assertNotSuspended(currentUser)
-  const evidence = await loadCopyrightEmailRawEvidence(validateUUIDParam(ctx, 'id'), currentUser)
+  const intakeId = validateUUIDParam(ctx, 'id')
+  validateRequestContract(ctx, 'GET:/api/v1/copyright-email-intakes/:id/raw', { path: ctx.params })
+  const evidence = await loadCopyrightEmailRawEvidence(intakeId, currentUser)
   ctx.assert(evidence, 404, 'Copyright email intake not found')
   ctx.set('Content-Type', 'message/rfc822')
   ctx.set('Content-Disposition', 'attachment; filename="original-email.eml"')
@@ -217,6 +231,10 @@ app.route('/api/v1/copyright-media-delivery/replays').post(async (ctx: Context) 
 })
 
 app.route('/api/v1/copyright-email-intakes/:id/approvals').post(async (ctx: Context) => {
+  apiRequestContract<
+    'POST:/api/v1/copyright-email-intakes/:id/approvals',
+    CopyrightEmailApprovalRequest
+  >('POST:/api/v1/copyright-email-intakes/:id/approvals')
   // Approving an email creates a new notice, so it follows the intake kill switch like the notice
   // forms. Rejections and in-case correspondence decisions stay available while intake is off.
   setPrivateNoStoreCacheHeaders(ctx)
@@ -226,14 +244,20 @@ app.route('/api/v1/copyright-email-intakes/:id/approvals').post(async (ctx: Cont
     'POST:/api/v1/copyright-email-intakes/:id/approvals',
   )
   const input = parseCopyrightNoticeForm(body)
+  const recommendationId = parseCopyrightRecommendationId(ctx, body)
+  const manualFallbackReason = parseCopyrightManualFallbackReason(ctx, body)
+  validateRequestContract(ctx, 'POST:/api/v1/copyright-email-intakes/:id/approvals', {
+    path: ctx.params,
+    body,
+  })
   const targets = await Promise.all(
     input.targets.map(target => resolveCopyrightImagePlacement(target)),
   )
   const promoted = await promoteCopyrightEmailIntake({
     currentUser,
     intakeId,
-    recommendationId: parseCopyrightRecommendationId(ctx, body),
-    manualFallbackReason: parseCopyrightManualFallbackReason(ctx, body),
+    recommendationId,
+    manualFallbackReason,
     jurisdiction: input.jurisdiction,
     claimantDisplayName: input.claimantDisplayName,
     claimantContact: input.claimantContact,
@@ -272,6 +296,10 @@ app.route('/api/v1/copyright-form-intakes/:id/reviews').post(async (ctx: Context
 })
 
 app.route('/api/v1/copyright-email-intakes/:id/rejections').post(async (ctx: Context) => {
+  apiRequestContract<
+    'POST:/api/v1/copyright-email-intakes/:id/rejections',
+    CopyrightEmailRejectionRequest
+  >('POST:/api/v1/copyright-email-intakes/:id/rejections')
   const { currentUser, intakeId, body } = await parseCopyrightReviewRequest(
     ctx,
     'POST:/api/v1/copyright-email-intakes/:id/rejections',
@@ -283,13 +311,20 @@ app.route('/api/v1/copyright-email-intakes/:id/rejections').post(async (ctx: Con
     422,
     'response_kind must be rejected or needs_information',
   )
+  const recommendationId = parseCopyrightRecommendationId(ctx, body)
+  const manualFallbackReason = parseCopyrightManualFallbackReason(ctx, body)
+  const replyEmail = parseCopyrightReplyEmail(ctx, body)
+  validateRequestContract(ctx, 'POST:/api/v1/copyright-email-intakes/:id/rejections', {
+    path: ctx.params,
+    body,
+  })
   const rejected = await rejectCopyrightEmailIntake({
     currentUser,
     intakeId,
-    recommendationId: parseCopyrightRecommendationId(ctx, body),
-    manualFallbackReason: parseCopyrightManualFallbackReason(ctx, body),
+    recommendationId,
+    manualFallbackReason,
     rationale: body.rationale as string,
-    replyEmail: parseCopyrightReplyEmail(ctx, body),
+    replyEmail,
     responseKind: body.response_kind as 'rejected' | 'needs_information' | undefined,
     responseMessage: typeof body.response_message === 'string' ? body.response_message : null,
   })
@@ -459,6 +494,10 @@ app.route('/api/v1/copyright-legal-hold-assessments/:id/resolutions').post(async
 })
 
 app.route('/api/v1/copyright-email-intakes/:id/correspondence').post(async (ctx: Context) => {
+  apiRequestContract<
+    'POST:/api/v1/copyright-email-intakes/:id/correspondence',
+    CopyrightEmailCorrespondenceRequest
+  >('POST:/api/v1/copyright-email-intakes/:id/correspondence')
   const { currentUser, intakeId, body } = await parseCopyrightReviewRequest(
     ctx,
     'POST:/api/v1/copyright-email-intakes/:id/correspondence',
@@ -475,18 +514,26 @@ app.route('/api/v1/copyright-email-intakes/:id/correspondence').post(async (ctx:
     422,
     'Invalid correspondence kind',
   )
+  const targetIds =
+    body.kind === 'appeal' || body.kind === 'counter_notice'
+      ? parseCopyrightTargetIds(body.target_ids)
+      : []
+  const structuredSubmission = parseCopyrightCorrespondenceSubmission(ctx, body)
+  const recommendationId = parseCopyrightRecommendationId(ctx, body)
+  const manualFallbackReason = parseCopyrightManualFallbackReason(ctx, body)
+  validateRequestContract(ctx, 'POST:/api/v1/copyright-email-intakes/:id/correspondence', {
+    path: ctx.params,
+    body,
+  })
   const admitted = await admitCopyrightEmailCorrespondence({
     currentUser,
     intakeId,
     kind: body.kind as (typeof kinds)[number],
-    targetIds:
-      body.kind === 'appeal' || body.kind === 'counter_notice'
-        ? parseCopyrightTargetIds(body.target_ids)
-        : [],
-    structuredSubmission: parseCopyrightCorrespondenceSubmission(ctx, body),
+    targetIds,
+    structuredSubmission,
     rationale: body.rationale as string,
-    recommendationId: parseCopyrightRecommendationId(ctx, body),
-    manualFallbackReason: parseCopyrightManualFallbackReason(ctx, body),
+    recommendationId,
+    manualFallbackReason,
   })
   ctx.setStatus(admitted.isDuplicate ? 200 : 201)
   ctx.json({
@@ -500,6 +547,10 @@ app.route('/api/v1/copyright-email-intakes/:id/correspondence').post(async (ctx:
 app
   .route('/api/v1/copyright-email-intakes/:id/correspondence-rejections')
   .post(async (ctx: Context) => {
+    apiRequestContract<
+      'POST:/api/v1/copyright-email-intakes/:id/correspondence-rejections',
+      CopyrightEmailCorrespondenceRejectionRequest
+    >('POST:/api/v1/copyright-email-intakes/:id/correspondence-rejections')
     const { currentUser, intakeId, body } = await parseCopyrightReviewRequest(
       ctx,
       'POST:/api/v1/copyright-email-intakes/:id/correspondence-rejections',
@@ -516,13 +567,20 @@ app
       422,
       'Invalid correspondence kind',
     )
+    const recommendationId = parseCopyrightRecommendationId(ctx, body)
+    const manualFallbackReason = parseCopyrightManualFallbackReason(ctx, body)
+    validateRequestContract(
+      ctx,
+      'POST:/api/v1/copyright-email-intakes/:id/correspondence-rejections',
+      { path: ctx.params, body },
+    )
     const rejected = await rejectCopyrightEmailCorrespondence({
       currentUser,
       intakeId,
       kind: body.kind as (typeof kinds)[number],
       rationale: body.rationale as string,
-      recommendationId: parseCopyrightRecommendationId(ctx, body),
-      manualFallbackReason: parseCopyrightManualFallbackReason(ctx, body),
+      recommendationId,
+      manualFallbackReason,
     })
     ctx.setStatus(rejected.isDuplicate ? 200 : 201)
     ctx.json({
