@@ -21,7 +21,7 @@ async function createRequestFor(options?: Parameters<typeof createTestUser>[0]) 
 }
 
 describe('POST /api/v1/copyright-email-intakes/:id/reply/replays', () => {
-  it('replays a failed reply once and names the staff actor in the audit', async () => {
+  it('replays a failed reply, audits the staff actor, and finds nothing failed on a second click', async () => {
     const declined = await declineTestCopyrightEmailIntake()
     await failTestCopyrightDeliveryIntent(declined.intentId)
     const { request, user } = await createRequestFor({ extraRoles: ['moderator'] })
