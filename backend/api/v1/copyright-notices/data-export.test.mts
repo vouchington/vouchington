@@ -211,7 +211,7 @@ async function createBothRolesScene() {
   }
   const hostedUseUrl = fixture.form.targets[0]!.target_url
   const intake = await createCopyrightFormIntake({
-    requesterUserId: fixture.claimant.id,
+    currentUser: fixture.claimant,
     requesterIdentity: `user:${fixture.claimant.id}`,
     idempotencyKey: crypto.randomUUID(),
     request: {

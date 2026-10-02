@@ -127,7 +127,7 @@ async function createScreeningForm(
   const imageId = await insertTestImage(user.id)
   await insertTestPostImage({ postId, imageId })
   return createCopyrightFormIntake({
-    requesterUserId: user.id,
+    currentUser: user,
     requesterIdentity: `user:${user.id}`,
     idempotencyKey: crypto.randomUUID(),
     request: {

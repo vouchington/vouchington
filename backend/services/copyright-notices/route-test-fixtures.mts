@@ -1,24 +1,16 @@
 // Route fixtures belong in the copyright service test support, outside route registration.
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
-  createTestUser,
-  insertTestImage,
-  insertTestPost,
-  insertTestPostImage,
-} from '@voucha/test-helpers'
+  createHostedImagePost,
+  type HostedPostAudience,
+} from '@voucha/test-helpers/services/copyright-notices/hosted-post-audience'
 
-export async function createCopyrightFormFixture() {
-  const [claimant, poster] = await Promise.all([createTestUser(), createTestUser()])
-  const [postId, imageId] = await Promise.all([
-    insertTestPost({
-      title: `Copyright route test ${crypto.randomUUID()}`,
-      slug: `copyright-route-test-${crypto.randomUUID()}`,
-      createdById: poster.id,
-      markdown: 'Hosted image for a copyright-notice route test.',
-    }),
-    insertTestImage(poster.id),
-  ])
-  await insertTestPostImage({ postId, imageId })
+/** A claimant, a poster, and a form naming the poster's hosted image, shared to `audience`. */
+export async function createCopyrightFormFixture(
+  audience: HostedPostAudience = 'public',
+  access: { claimantHasAccess?: boolean } = {},
+) {
+  const { claimant, poster, postId, imageId } = await createHostedImagePost(audience, access)
   return {
     claimant,
     poster,

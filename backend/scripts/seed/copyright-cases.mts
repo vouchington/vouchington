@@ -86,7 +86,7 @@ async function seedCopyrightFormCase(
   media: CopyrightSeedMedia,
 ): Promise<CopyrightSeedCase> {
   const { intake } = await createCopyrightFormIntake({
-    requesterUserId: null,
+    currentUser: null,
     requesterIdentity: createCopyrightGuestIdentity(seed.ipAddress),
     idempotencyKey: seed.idempotencyKey,
     request: {

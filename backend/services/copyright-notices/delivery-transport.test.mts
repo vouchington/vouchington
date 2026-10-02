@@ -26,7 +26,7 @@ async function createRestrictedNotice(poster: Awaited<ReturnType<typeof createTe
   const imageId = await insertTestImage(poster.id)
   await insertTestPostImage({ postId, imageId })
   const intake = await createCopyrightFormIntake({
-    requesterUserId: claimant.id,
+    currentUser: claimant,
     requesterIdentity: `user:${claimant.id}`,
     idempotencyKey: crypto.randomUUID(),
     request: {

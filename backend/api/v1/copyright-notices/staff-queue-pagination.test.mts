@@ -38,7 +38,7 @@ describe('copyright staff queue pagination', () => {
     const created = await Promise.all(
       Array.from({ length: 102 }, async () => {
         const { intake } = await createCopyrightFormIntake({
-          requesterUserId: null,
+          currentUser: null,
           requesterIdentity: `guest:${crypto.randomUUID()}`,
           idempotencyKey: crypto.randomUUID(),
           request: {
@@ -131,7 +131,7 @@ describe('copyright staff queue pagination', () => {
     try {
       const create = () =>
         createCopyrightFormIntake({
-          requesterUserId: null,
+          currentUser: null,
           requesterIdentity: `guest:${crypto.randomUUID()}`,
           idempotencyKey: crypto.randomUUID(),
           request: {

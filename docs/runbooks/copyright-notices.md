@@ -35,7 +35,11 @@ intake queue shows each message's wait age.
 2. For email, compare the structured extraction with the inert original and correct it before
    accepting the case. Verify each extracted declaration against its recorded source excerpt. If no
    recommendation exists, use the explicit manual-fallback reason; never silently bypass the agent.
-3. Confirm the target is an exact Voucha-hosted placement and preserve its captured revision.
+3. Confirm the target is an exact Voucha-hosted placement and preserve its captured revision. Staff
+   approval resolves any existing placement, whatever its audience (signed-in-only, followers-only,
+   private-community, draft, or archived). A claimant form reaches you only with targets that claimant
+   could open directly at submission; any other target was refused with the same 422 as a missing one
+   and nothing was recorded, so a rightsholder who cannot see the material needs the email path.
 4. Record missing elements as an assessment and request information. Do not silently reject a
    substantially compliant notice for failing to match Voucha's form wording. For a form-filed
    case, send the request from the case's Guest access section (issue access, then Request

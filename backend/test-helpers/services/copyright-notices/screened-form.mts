@@ -60,7 +60,7 @@ export async function createSignedInCopyrightForm(targetCount = 1) {
   )
   await Promise.all(imageIds.map(imageId => insertTestPostImage({ postId, imageId })))
   return createCopyrightFormIntake({
-    requesterUserId: claimant.id,
+    currentUser: claimant,
     requesterIdentity: `user:${claimant.id}`,
     idempotencyKey: crypto.randomUUID(),
     request: {

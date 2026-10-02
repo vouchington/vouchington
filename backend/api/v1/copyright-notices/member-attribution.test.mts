@@ -120,7 +120,7 @@ describe('copyright notice member claimant attribution', () => {
   it('returns null claimant attribution for guest notices without exposing private form fields', async () => {
     const fixture = await createCopyrightFormFixture()
     const guest = await createCopyrightFormIntake({
-      requesterUserId: null,
+      currentUser: null,
       requesterIdentity: `guest:${crypto.randomUUID()}`,
       idempotencyKey: crypto.randomUUID(),
       request: {

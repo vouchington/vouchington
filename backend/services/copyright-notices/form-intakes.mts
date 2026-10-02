@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret, hashToken } from '@modules/token-secrets'
+import { canViewPostsBatch } from '@services/posts'
+import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { createCopyrightNoticeAggregateInTransaction } from './create.mts'
@@ -11,7 +13,7 @@ import { resolveCopyrightImagePlacement } from './placement-resolution.mts'
 import { assertStructuredNoticeStatutoryFields } from './form-input-validation.mts'
 
 export type CreateCopyrightFormIntakeInput = {
-  requesterUserId: string | null
+  currentUser: PrivateUser | null
   requesterIdentity: string
   idempotencyKey: string
   request: {
@@ -66,6 +68,7 @@ export async function createCopyrightFormIntake(
   const purpose = copyrightFormSecretPurpose(input.idempotencyKey)
   const now = new Date()
   const targets: CopyrightNoticeTargetInput[] = []
+  await assertClaimantCanViewTargets(input.currentUser, input.request.claimantTargets, transaction)
   for (const target of input.request.claimantTargets) {
     // oxlint-disable-next-line no-await-in-loop -- one transaction owns the idempotency lock and authoritative target snapshot.
     targets.push(await resolveCopyrightImagePlacement(target, transaction))
@@ -74,7 +77,7 @@ export async function createCopyrightFormIntake(
     {
       jurisdiction: input.request.jurisdiction,
       receivedAt: now,
-      claimantUserId: input.requesterUserId,
+      claimantUserId: input.currentUser?.id ?? null,
       claimantDisplayName: input.request.claimantDisplayName,
       claimantContactCiphertext: encryptSecret(input.request.claimantContact, purpose),
       workDescription: input.request.workDescription,
@@ -82,7 +85,7 @@ export async function createCopyrightFormIntake(
       targets,
       initialSubmission: {
         kind: 'notice',
-        sourceKind: input.requesterUserId ? 'signed_in_form' : 'guest_form',
+        sourceKind: input.currentUser ? 'signed_in_form' : 'guest_form',
         bodyCiphertext: encryptSecret(
           JSON.stringify({
             good_faith_belief: input.request.goodFaithBelief,
@@ -111,7 +114,7 @@ export async function createCopyrightFormIntake(
       requester_identity_sha256, idempotency_key, request_sha256, good_faith_belief,
       accuracy_authority_under_penalty_of_perjury, electronic_signature_ciphertext
     ) VALUES (
-      ${notice.id}, ${submission.id}, ${input.requesterUserId}, ${requesterIdentitySha256},
+      ${notice.id}, ${submission.id}, ${input.currentUser?.id ?? null}, ${requesterIdentitySha256},
       ${input.idempotencyKey}, ${requestSha256}, ${input.request.goodFaithBelief},
       ${input.request.accuracyAuthorityUnderPenaltyOfPerjury},
       ${encryptSecret(input.request.electronicSignature, purpose)}
@@ -133,13 +136,13 @@ export async function createCopyrightFormIntake(
     },
     transaction,
   )
-  if (input.requesterUserId) {
+  if (input.currentUser) {
     await createCopyrightDeliveryIntent(
       {
         noticeId: notice.id,
         submissionId: submission.id,
         correspondenceId: null,
-        recipientUserId: input.requesterUserId,
+        recipientUserId: input.currentUser.id,
         recipientRole: 'claimant',
         deliveryKind: 'claimant_receipt',
         channel: 'in_app',
@@ -150,6 +153,27 @@ export async function createCopyrightFormIntake(
   }
   await transaction.commit()
   return { intake, isDuplicate: false }
+}
+
+/**
+ * A claimant may name only posts they can view right now. Staff approval and email intakes resolve
+ * any existing target; this gate runs first so a hidden target answers like a missing one.
+ */
+async function assertClaimantCanViewTargets(
+  currentUser: PrivateUser | null,
+  targets: Array<{ postId: string }>,
+  transaction: Awaited<ReturnType<typeof beginTransaction>>,
+): Promise<void> {
+  const viewable = await canViewPostsBatch(
+    currentUser,
+    targets.map(target => ({ id: target.postId })),
+    { query: transaction },
+  )
+  assert(
+    targets.every(target => viewable.get(target.postId)),
+    422,
+    'Hosted image placement was not found',
+  )
 }
 
 export function copyrightFormSecretPurpose(idempotencyKey: string): string {

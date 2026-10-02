@@ -193,7 +193,7 @@ describe('copyright notice routes', () => {
       .expect(404)
     const guestTarget = fixture.form.targets[0]!
     const guestIntake = await createCopyrightFormIntake({
-      requesterUserId: null,
+      currentUser: null,
       requesterIdentity: `guest:${crypto.randomUUID()}`,
       idempotencyKey: crypto.randomUUID(),
       request: {

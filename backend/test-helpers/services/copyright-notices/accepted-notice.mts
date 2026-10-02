@@ -13,7 +13,7 @@ export async function createAcceptedCopyrightNotice(
   fixture: Awaited<ReturnType<typeof createCopyrightFormFixture>>,
 ): Promise<string> {
   const intake = await createCopyrightFormIntake({
-    requesterUserId: fixture.claimant.id,
+    currentUser: fixture.claimant,
     requesterIdentity: `user:${fixture.claimant.id}`,
     idempotencyKey: crypto.randomUUID(),
     request: {

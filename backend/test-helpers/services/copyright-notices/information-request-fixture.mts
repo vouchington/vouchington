@@ -27,7 +27,7 @@ export async function fileTestCopyrightFormNotice(signedIn: boolean): Promise<{
   const imageId = await insertTestImage(filer.id)
   await insertTestPostImage({ postId, imageId })
   const { intake } = await createCopyrightFormIntake({
-    requesterUserId: signedIn ? filer.id : null,
+    currentUser: signedIn ? filer : null,
     requesterIdentity: signedIn ? `user:${filer.id}` : `guest:${crypto.randomUUID()}`,
     idempotencyKey: crypto.randomUUID(),
     request: {
