@@ -57,6 +57,7 @@
     "@services/user-warnings": "workspace:^",
     "@services/users": "workspace:^",
     "@ts-shared/utils": "workspace:^",
+    "@voucha/types": "workspace:^",
     "glide-mq": "^0.15.5",
     "openai": "^7.23.0",
     "p-map": "^7.0.8"

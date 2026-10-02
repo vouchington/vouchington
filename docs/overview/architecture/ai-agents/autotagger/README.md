@@ -35,12 +35,44 @@ category relation on the post or feed item that was classified, voted under the 
 `getAutotaggerClassifierSystemUserId()` actor, not the legacy `autotagger` system user; it never
 writes that actor's global topic election vote.
 
-No LLM tool-call loop is involved: candidate search, classifier dispatch, and vote application are
-plain function calls, not tools an agent invokes. A provider failure is classified once, in the shared
+No LLM tool-call loop is involved in either stage: candidate search, classifier dispatch, and vote
+application are plain function calls, not tools an agent invokes. A provider failure is classified once, in the shared
 [classifier run executor](../classifier-runs/README.md): a transient one releases the lease and
 propagates to the worker for a retry on the minutes-scale `classifier-run` backoff, and a permanent
 one ends the run terminal without a retry. Any other dispatch error propagates uncaught to the
 worker as a queue job failure; a stuck or expired lease is cheap and safe to retry from scratch.
+
+### C7 scoped reasoning autotagger
+
+C7 is the second stage on the same lifecycle: a scoped reasoning pass for the topics that paying
+users follow. It runs only after C6 has completed for the subject's current content, and it is
+bounded and add-only. `agent-run.mts` (`executeAutotaggerAgentRun`) shares `topic-run.mts` (the
+revision check and shared executor call) with C6; `agent-run-input.mts` renders one question per
+topic the run captured, over the same sanitized subject state plus the topics C6 already applied.
+It is one structured provider call per subject and content version, not a tool loop.
+
+- **Universe and bound:** the candidates are the topics followed by at least one paying user
+  (`view_current_paid_memberships`, Plus or Pro; staff, system and deleted accounts and removed
+  follows add nothing), minus every topic the subject already has a relation for (live or deleted),
+  excluding deleted and merged topics. They are ranked by distance to the subject and cut to
+  `AUTOTAGGER_AGENT_MAX_CANDIDATES` (10). It never scans the embedding-miss universe; when nothing
+  is left the request settles as no work with no provider call.
+- **Gating:** C6's completion transaction writes C7's durable request, so a crash cannot strand it
+  and a replayed C6 never schedules it twice. C6's `afterCompleted` then enqueues the C7 dispatcher
+  (awaited, so a failed enqueue fails the job for a queue retry), and the sweep recovers any request
+  whose enqueue was lost. C6 no-work (kill switch, free-tier author, nothing to ask) or a terminal C6
+  failure never completes, so C7 does not run for that content version. A paid follow added later
+  affects only later content versions; there is no backfill.
+- **Effects:** an accepted topic is applied through the same relation write path as C6 in `addOnly`
+  mode, so it only adds relations for topics the subject has no relation row for. It never re-adds,
+  removes or overrides what C6 or a person applied, and it never clears or unpublishes content
+  (`APPROVAL_CLASSIFIER_SLUGS` excludes it).
+- **Identity and spend:** it runs under the `autotagger-agent` classifier slug, billing workload
+  and its own system actor (`getAutotaggerAgentSystemUserId()`), apart from C6, and shares C6's
+  spend cap and operator kill switch (`getAutotaggerPaidLimitsFields().enabled`). Spend and retry
+  guarantees are C6's: one receipt per subject and content version, persisted outcomes short-circuit
+  replays, and a crash between the provider returning and persistence can spend again within the
+  attempt cap.
 
 ### Triggers
 

@@ -8,6 +8,8 @@ export const DELETED_USER_ID = '00000000-0000-7000-8000-000000000000'
 export const BAN_EVASION_SYSTEM_USERNAME = 'ban-evasion'
 export const MODERATION_SYSTEM_USERNAME = 'automod'
 export const AUTOTAGGER_CLASSIFIER_SYSTEM_USERNAME = 'autotagger-classifier'
+/** The scoped reasoning autotagger's (C7) actor: the reserved `autotagger` system account. */
+export const AUTOTAGGER_AGENT_SYSTEM_USERNAME = 'autotagger'
 export const POST_CLASSIFIER_SYSTEM_USERNAME = 'post-classifier'
 export const STORY_CLUSTERING_CLASSIFIER_SYSTEM_USERNAME = 'story-clustering-classifier'
 export const RSS_FEED_AUTO_UPDATER_USERNAME = 'rss-feed-auto-updater'

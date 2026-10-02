@@ -2,7 +2,7 @@
 
 Source entrypoint: [backend/services/classifier-runs/README.md](../../../../../backend/services/classifier-runs/README.md)
 
-`@services/classifier-runs` is the one lifecycle every fixed classifier (C5, C6, C8 and C9)
+`@services/classifier-runs` is the one lifecycle every fixed classifier (C5, C6, C7, C8 and C9)
 runs on. A classifier supplies a `ClassifierRunAdapter`: how to lock and read a subject's
 current content, how to resolve its configuration, and how to turn durable outcomes into effects.
 Receipt, lease, reclaim, provider-attempt reservation and cap, terminal failure, completion,
@@ -58,6 +58,15 @@ creates a second receipt.
 | `classifier_run_candidates`      | Insert-only, ordered candidates a run captured at reservation: topics (C5, C6) or stories and standalone RSS items (C9), one nullable foreign key per kind with an exact-one `CHECK`. Not part of the identity; a replay reads them and never searches again. |
 | `post_classifier_local_outcomes` | Insert-only C5 local detector outcome, one row per run, written on every terminal kind that has one.                                                                                                                                                          |
 
+A classifier that runs after another is requested by the first one: `requestFollowOnClassifierRun`
+writes the follow-on's request in the first classifier's completion transaction (C6 requests C7), so
+it commits or rolls back with the first result and never exists for a run that did not finish. It
+never re-arms a settled request, so a replayed or reconfigured first run cannot schedule the
+follow-on twice; it only revives one the sweep retired as stale for that content. The follow-on's
+`requestEligibility` and `ready` require a completed, non-superseded first run at the same content
+hash (`followsCompletedClassifierRun`, `hasCompletedClassifierRun`), so a first run that is waiting
+or ended terminal never unlocks it.
+
 A request is settled by exactly one of: a run, `no_work_at`, or `stale_at`. Requesting a
 subject again re-arms a settled or stale request for its content hash, and a feed-item re-upsert
 re-arms a stale one. Deleting a run returns its request to the sweep.
@@ -91,7 +100,7 @@ the resolved current state means the run is obsolete and is superseded, never re
    skipped when the identity already has a receipt, whose set is reused instead of searching
    again), with no subject lock held, so the vector search and its lookups never block a writer of
    the subject. It then locks the subject, checks the adapter's optional `ready` gate (C6, C9: the
-   subject's embedding was built from its current content), resolves configuration, and
+   subject's embedding was built from its current content; C7: C6 completed at this content), resolves configuration, and
    re-validates only what correctness needs: the prepared candidates are used only while the locked
    content hash and configuration hash still equal the ones they were chosen for. Otherwise the
    transaction rolls back and the reservation prepares again, at most
@@ -100,7 +109,9 @@ the resolved current state means the run is obsolete and is superseded, never re
    `no-work`, `stale` and `not-ready`. A missing or unresolvable configuration never blocks
    approval: the request stays for the sweep. An adapter that resolves no configuration (the C6
    kill switch) or captures no candidates settles the request as no work. The capture hooks and
-   `ready` take any `QueryExecutor` and must be pure reads, because they also run outside the lock.
+   `ready` take any `QueryExecutor` and must be pure reads, because they also run outside the lock;
+   `ready` also receives the locked current input, so a follow-on classifier can gate on the first
+   classifier's result for exactly that content hash.
 3. **Claim.** `claimClassifierRun` takes a 60-second fenced lease. Order of checks: completed,
    terminal, live lease, then reclaim. A superseded run whose identity is current again is
    revived.
@@ -183,16 +194,16 @@ raises a throttled `run-age` or `request-age` alarm through `recordClassifierRun
 
 ## Adding a classifier
 
-C5, C6, C8 and C9 are the adapters registered today. A new classifier adds a `classifiers` row, an
+C5, C6, C7, C8 and C9 are the adapters registered today. A new classifier adds a `classifiers` row, an
 adapter, an input builder for `@agents/classifier-runs`, and a registration in the worker's
 classifier-run registry (a registration may add an idempotent `afterCompleted` hook for post-commit
-work, as C9's story refresh does). It adds no lifecycle code, queue, table or sweep.
+work, as C9's story refresh does and as C6 does to dispatch C7). It adds no lifecycle code, queue, table or sweep.
 
 ## Related
 
 - [Classifier runs agent executor](../../ai-agents/classifier-runs/README.md)
 - [Post classifier service (C5 adapter)](../post-classifier/README.md)
-- [Autotagger service (C6 adapter)](../autotagger/README.md)
+- [Autotagger service (C6 and C7 adapters)](../autotagger/README.md)
 - [Stories service (C9 adapter)](../stories/README.md)
 - [Classifier persistence service](../classifiers/README.md)
 - [AI agents queue](../../queues/ai-agents/README.md)

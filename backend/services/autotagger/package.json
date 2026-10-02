@@ -24,6 +24,8 @@
     "@data-stores/valkey": "workspace:^",
     "@services/classifier-runs": "workspace:^",
     "@services/classifiers": "workspace:^",
+    "@services/elections-votes": "workspace:^",
+    "@services/entity-relations": "workspace:^",
     "@services/memberships": "workspace:^",
     "@services/rss-feed-items": "workspace:^",
     "@services/topics": "workspace:^",

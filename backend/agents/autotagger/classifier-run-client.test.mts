@@ -2,10 +2,13 @@ import { randomUUID } from 'node:crypto'
 import { Response } from 'undici'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { StructuredDecisionFetch } from '@modules/structured-decisions'
-import { openAiSpendCapConfig } from '@services/ai-usage'
+import { openAiSpendCapConfig, OpenAiSpendCapBreachError } from '@services/ai-usage'
+import { findAiUsageRecordForPost, pollUntilNotNull } from '@voucha/test-helpers'
+import { createAutotaggerPostFixture } from '@voucha/test-helpers/data-stores/psql/classifier-runs/autotagger-fixture'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
-import { createAutotaggerClient } from './classifier-run-client.mts'
+import { createAutotaggerAgentClient, createAutotaggerClient } from './classifier-run-client.mts'
 
 const request = {
   state: 'a post',
@@ -49,6 +52,51 @@ describe('createAutotaggerClient', () => {
     expect(calls).toEqual(['reserve', 'fetch'])
     expect(beforeAttempt).toHaveBeenCalledTimes(1)
     expect(fetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('records the reasoning pass under its own workload, never the first stage’s', async () => {
+    const { post } = await createAutotaggerPostFixture({ topicCount: 0 })
+    const client = createAutotaggerAgentClient(
+      { postId: post.id, modelProvider: 'openrouter', beforeAttempt: async () => {} },
+      { fetch: provider([]), apiKey: 'test-provider-key' },
+    )
+
+    await client.decide(request)
+
+    await expect(
+      pollUntilNotNull(() => findAiUsageRecordForPost(post.id, 'autotagger-agent')),
+    ).resolves.toMatchObject({ input_tokens: 5 })
+    expect(await findAiUsageRecordForPost(post.id, 'autotagger')).toBeNull()
+  })
+
+  it('reserves the reasoning pass’s attempt once, before its single physical request', async () => {
+    const calls: string[] = []
+    const fetch = provider(calls)
+    const beforeAttempt = vi.fn<() => Promise<void>>(async () => void calls.push('reserve'))
+    const client = createAutotaggerAgentClient(
+      { postId: null, modelProvider: 'openrouter', beforeAttempt },
+      { fetch, apiKey: 'test-provider-key' },
+    )
+
+    await client.decide(request)
+
+    expect(calls).toEqual(['reserve', 'fetch'])
+  })
+
+  it('sends nothing and reserves no attempt once the daily spend cap is reached', async () => {
+    await withReservedAiUsageDay(0, async () => {
+      const fetch = provider([])
+      const beforeAttempt = vi.fn<() => Promise<void>>(async () => {})
+      const client = createAutotaggerAgentClient(
+        { postId: null, modelProvider: 'openrouter', beforeAttempt },
+        { fetch, apiKey: 'test-provider-key' },
+      )
+
+      await expect(client.decide(request)).rejects.toBeInstanceOf(OpenAiSpendCapBreachError)
+
+      expect(fetch).not.toHaveBeenCalled()
+      expect(beforeAttempt).not.toHaveBeenCalled()
+    })
   })
 
   it('sends nothing when the durable reservation refuses the attempt', async () => {

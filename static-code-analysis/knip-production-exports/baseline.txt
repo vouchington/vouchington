@@ -1,6 +1,5 @@
 exports backend/agents/classifiers/execute-single-call.mts executeSingleCallClassifierDecision
 exports backend/agents/classifiers/execute.mts executeClassifierDecision
-exports backend/agents/classifiers/safe-content.mts classifierPrompt
 exports backend/agents/classifiers/safe-content.mts sanitizeClassifierExternalContent
 exports backend/agents/conversation-title/generate-title.mts generateChatTitle
 exports backend/data-stores/analytics/backend-firehose.mts setFirehoseRecordBatchSenderForTest

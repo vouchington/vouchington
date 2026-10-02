@@ -19,6 +19,7 @@ import {
   createAutotaggerPostFixture,
   embedAutotaggerFeedItem,
   reviseAutotaggerFeedItem,
+  TAGGING_CLASSIFIER_SLUG,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/autotagger-fixture'
 import {
   expireClassifierRunLeaseForTest,
@@ -167,9 +168,9 @@ describe('executeAutotaggerRun (real PG)', () => {
           lease_token: null,
         },
       ])
-      expect(await getSubjectClassifierRunRequestFacts(fixture.subject)).toMatchObject([
-        { run_id: first.runId, no_work_at: null, stale_at: null },
-      ])
+      expect(
+        await getSubjectClassifierRunRequestFacts(fixture.subject, TAGGING_CLASSIFIER_SLUG),
+      ).toMatchObject([{ run_id: first.runId, no_work_at: null, stale_at: null }])
       const incomplete: string[] = []
       let after: string | null = null
       do {

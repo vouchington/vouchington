@@ -3892,6 +3892,12 @@ importers:
       '@services/classifiers':
         specifier: workspace:^
         version: link:../classifiers
+      '@services/elections-votes':
+        specifier: workspace:^
+        version: link:../elections-votes
+      '@services/entity-relations':
+        specifier: workspace:^
+        version: link:../entity-relations
       '@services/memberships':
         specifier: workspace:^
         version: link:../memberships
@@ -11370,6 +11376,9 @@ importers:
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
       glide-mq:
         specifier: ^0.15.5
         version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))

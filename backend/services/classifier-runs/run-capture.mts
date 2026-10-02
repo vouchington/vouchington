@@ -71,7 +71,7 @@ async function prepareClassifierRunCandidates<C, L, E>(
   if (!adapter.captureCandidates && !adapter.captureStoryCandidates) return null
   const current = await readCurrentInput(adapter, subject)
   if (!current) return null
-  if (adapter.ready && !(await adapter.ready(write, subject))) return null
+  if (adapter.ready && !(await adapter.ready(write, subject, current))) return null
   const resolved = await adapter.resolve(subject, current, write)
   const kind = capturedCandidateKind(resolved?.remote)
   if (!resolved || !kind) return null

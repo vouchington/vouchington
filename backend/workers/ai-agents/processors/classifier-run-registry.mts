@@ -1,3 +1,4 @@
+import { createAutotaggerAgentRegistration } from './classifier-run-autotagger-agent.mts'
 import { createAutotaggerRegistration } from './classifier-run-autotagger.mts'
 import { createCommunityModerationRegistration } from './classifier-run-community-moderation.mts'
 import { createClassifierRunHandler, type ClassifierRunHandler } from './classifier-run-handler.mts'
@@ -11,6 +12,7 @@ import { createStoryClusteringRegistration } from './classifier-run-story-cluste
 const handlers: readonly ClassifierRunHandler[] = [
   createClassifierRunHandler(createPostClassifierRegistration()),
   createClassifierRunHandler(createAutotaggerRegistration()),
+  createClassifierRunHandler(createAutotaggerAgentRegistration()),
   createClassifierRunHandler(createCommunityModerationRegistration()),
   createClassifierRunHandler(createStoryClusteringRegistration()),
 ]

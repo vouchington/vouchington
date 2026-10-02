@@ -135,9 +135,14 @@ export type ClassifierRunAdapter<C, L = never, E = void> = {
   ): Promise<readonly StoryRunCandidate[] | null>
   /**
    * Reservation-time prerequisite (for example an embedding); false leaves the request unsettled.
-   * It runs both before and under the subject lock, so it must be a pure read.
+   * It runs both before and under the subject lock, so it must be a pure read. `current` is the
+   * content the run would be keyed on, for a prerequisite that is specific to that content version.
    */
-  ready?(query: QueryExecutor, subject: ClassifierRunSubject): Promise<boolean>
+  ready?(
+    query: QueryExecutor,
+    subject: ClassifierRunSubject,
+    current: CurrentClassifierRunInput,
+  ): Promise<boolean>
   /** SQL over `request` (classifier_run_requests) selecting only requests the sweep may dispatch. */
   requestEligibility(): SQLStatement
   /** Throws unless `local` is present exactly when the configuration asks for one. */

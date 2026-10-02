@@ -71,16 +71,18 @@ export function createClassifierRunSweepScope(realHandler: ClassifierRunHandler)
   const runIds = new Set<string>()
   const handler: ClassifierRunHandler = {
     ...realHandler,
-    pendingRequests: async after => {
+    // Pending requests are paged by random request id, so a test's own request can sit on any page
+    // of the shared database's global pool: keep reading until a page holds one of this scope's.
+    pendingRequests: async function scopedPendingRequests(
+      after: string | null,
+    ): ReturnType<ClassifierRunHandler['pendingRequests']> {
       const page = await realHandler.pendingRequests(after)
-      return {
-        ...page,
-        items: page.items.filter(item =>
-          item.postId !== null
-            ? postIds.has(item.postId)
-            : item.rssFeedItemId !== null && rssFeedItemIds.has(item.rssFeedItemId),
-        ),
-      }
+      const items = page.items.filter(item =>
+        item.postId !== null
+          ? postIds.has(item.postId)
+          : item.rssFeedItemId !== null && rssFeedItemIds.has(item.rssFeedItemId),
+      )
+      return items.length > 0 || !page.next ? { ...page, items } : scopedPendingRequests(page.next)
     },
   }
 

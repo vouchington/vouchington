@@ -88,7 +88,9 @@ export async function reserveLockedClassifierRun<C, L, E>(
     await settleClassifierRunRequest(query, adapter.slug, subject, { kind: 'stale' })
     return { kind: 'stale' }
   }
-  if (adapter.ready && !(await adapter.ready(query, subject))) return { kind: 'not-ready' }
+  if (adapter.ready && !(await adapter.ready(query, subject, current))) {
+    return { kind: 'not-ready' }
+  }
   const resolved = await adapter.resolve(subject, current, query)
   const captured = resolved
     ? await captureRunCandidates(adapter, query, subject, current, resolved, prepared)

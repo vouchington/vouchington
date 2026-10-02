@@ -2,8 +2,8 @@
 
 Source entrypoint: [backend/services/autotagger/README.md](../../../../../backend/services/autotagger/README.md)
 
-The C6 tagging-classifier adapter for the shared classifier-run lifecycle, plus the paid-tier
-topic-count limits that gate it.
+The C6 tagging-classifier adapter and the C7 scoped reasoning adapter for the shared
+classifier-run lifecycle, plus the paid-tier topic-count limits that gate them.
 
 ## Overview
 
@@ -59,6 +59,29 @@ per-classifier input building and outcome application that lifecycle asks for:
 - **Candidate topic reads** (`read-candidate-topics.mts`) — the topic names and descriptions the
   question set is built from.
 
+## C7 scoped reasoning autotagger
+
+`agent/` holds the C7 adapter (`createAutotaggerAgentRunAdapter`, slug `autotagger-agent`). It
+reads the same locked subject input as C6, so a subject is eligible for it exactly when it is for C6,
+and differs only in these hooks:
+
+- **Readiness** (`agent/readiness.mts`) — `hasCompletedFirstStage` gates reservation on a completed,
+  non-superseded C6 run at the current content hash; `autotaggerAgentRequestEligibility` puts the
+  same predicate in the sweep query. A C6 run that is still waiting or ended terminal leaves the
+  request unsettled (C7 never runs without it).
+- **Candidate capture** (`agent/candidates.mts`) — `captureAutotaggerAgentCandidateTopicIds` chooses
+  the topics paying users follow, minus every topic the subject has any relation row for, ranked by
+  distance and cut to `AUTOTAGGER_AGENT_MAX_CANDIDATES` (10). Null settles the request as no work.
+  It runs once at reservation, after C6 completed, and the ids are stored with the receipt; the set
+  is not part of run identity, so one subject and content version costs one run.
+- **Configuration** (`agent/configuration.mts`) — the active `autotagger-agent` classifier and its
+  distinct system actor; the shared operator kill switch returns null (no work).
+- **Effects** (`agent/effects.mts`) — applies accepted topics with `applyTopicClassifierDecisionRelations`
+  in `addOnly` mode, voted by the C7 actor; relations C6 or a person wrote are never touched.
+- **Follow-on request** — C6's `applyAutotaggerEffects` calls `requestFollowOnClassifierRun` in the
+  completion transaction, which writes C7's pending request for that content hash (it never re-arms
+  a settled request).
+
 ## Key Files
 
 - `adapter.mts` — `createAutotaggerRunAdapter`, `AutotaggerRunAdapter`
@@ -66,6 +89,7 @@ per-classifier input building and outcome application that lifecycle asks for:
 - `candidates.mts` — `captureAutotaggerCandidateTopicIds`
 - `readiness.mts` — `hasCurrentAutotaggerEmbedding`, `autotaggerRequestEligibility`
 - `effects.mts` — `applyAutotaggerEffects`, `AutotaggerEffects`
+- `agent/adapter.mts` — `createAutotaggerAgentRunAdapter` (C7), with `agent/{candidates,readiness,configuration,effects}.mts`
 - `limits-config.mts` — `autotaggerPaidLimitsConfig`, `getAutotaggerPaidLimitsFields`,
   `AutotaggerPaidLimitsFields`
 
