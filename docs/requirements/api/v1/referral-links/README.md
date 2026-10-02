@@ -55,6 +55,11 @@ Manage referral links and their validation rules.
 `label` and validation `user_help_text` accept `null` to clear their values. Authorization and
 resource preflights occur before detailed request validation; see [Route Helpers](../../README.md#route-helpers).
 
+Every owner mutation (create, update, delete, activate, deactivate and unfurl) requires an
+unsuspended account. A suspended caller gets `403` with `ACCOUNT_SUSPENDED` right after
+authentication, before the body is parsed or the link is loaded, so no link state changes. Reads
+stay available.
+
 ## MCP tools
 
 Six MCP-only tools (`create_referral_link`, `update_referral_link`, `delete_referral_link`,

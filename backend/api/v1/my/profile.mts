@@ -1,6 +1,7 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { getProfile, updateProfileMarkdown } from '@services/my/profile'
+import { assertNotSuspended } from '@services/users/suspension'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import type { ApiArrayContract } from '../../response-contract.mts'
 import type { ApiUuidContract } from '../../request-contract-types.mts'
@@ -43,6 +44,7 @@ app.route('/api/v1/my/profile').get(async (ctx: Context) => {
 // PATCH /api/v1/my/profile
 app.route('/api/v1/my/profile').patch(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/my/profile')
+  assertNotSuspended(currentUser)
 
   const body = (await ctx.request.json('100kb')) as UpdateProfileRequest
   validateRequestContract(ctx, 'PATCH:/api/v1/my/profile', { body })
@@ -64,6 +66,7 @@ app.route('/api/v1/my/profile/links').get(async (ctx: Context) => {
 // POST /api/v1/my/profile/links
 app.route('/api/v1/my/profile/links').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/profile/links')
+  assertNotSuspended(currentUser)
 
   const body = (await ctx.request.json('10kb')) as CreateProfileLinkRequest
   validateRequestContract(ctx, 'POST:/api/v1/my/profile/links', { body })
@@ -77,6 +80,7 @@ app.route('/api/v1/my/profile/links').post(async (ctx: Context) => {
 // PUT /api/v1/my/profile/links/order — must be before /:id routes
 app.route('/api/v1/my/profile/links/order').put(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'PUT:/api/v1/my/profile/links/order')
+  assertNotSuspended(currentUser)
 
   const body = (await ctx.request.json('50kb')) as ReorderProfileLinksRequest
   validateRequestContract(ctx, 'PUT:/api/v1/my/profile/links/order', { body })
@@ -90,6 +94,7 @@ app.route('/api/v1/my/profile/links/order').put(async (ctx: Context) => {
 // PATCH /api/v1/my/profile/links/:id
 app.route('/api/v1/my/profile/links/:id').patch(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/my/profile/links/:id')
+  assertNotSuspended(currentUser)
 
   const body = (await ctx.request.json('10kb')) as UpdateProfileLinkRequest
   validateRequestContract(ctx, 'PATCH:/api/v1/my/profile/links/:id', { path: ctx.params, body })
@@ -102,6 +107,7 @@ app.route('/api/v1/my/profile/links/:id').patch(async (ctx: Context) => {
 // DELETE /api/v1/my/profile/links/:id
 app.route('/api/v1/my/profile/links/:id').delete(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/my/profile/links/:id')
+  assertNotSuspended(currentUser)
   validateRequestContract(ctx, 'DELETE:/api/v1/my/profile/links/:id', { path: ctx.params })
 
   await deleteProfileLink(currentUser.id, ctx.params.id!)

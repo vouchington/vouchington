@@ -5,6 +5,7 @@ import { createPaginationParser } from '@modules/pagination'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../response-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
+import { assertNotSuspended } from '@services/users/suspension'
 import {
   hasNotification,
   getUnreadNotificationsSummary,
@@ -72,6 +73,7 @@ app.route('/api/v1/my/notifications/:id/redirect-target').get(async (ctx: Contex
 
 app.route('/api/v1/my/notifications/read-all').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/notifications/read-all')
+  assertNotSuspended(currentUser)
 
   await markAllNotificationsRead(currentUser.id)
   ctx.setStatus(204)
@@ -81,6 +83,7 @@ app
   .route('/api/v1/my/notifications/:id')
   .patch(async (ctx: Context) => {
     const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/my/notifications/:id')
+    assertNotSuspended(currentUser)
     validateRequestContract(ctx, 'PATCH:/api/v1/my/notifications/:id', { path: ctx.params })
 
     const updated = await markNotificationRead(currentUser.id, ctx.params.id!)
@@ -89,6 +92,7 @@ app
   })
   .delete(async (ctx: Context) => {
     const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/my/notifications/:id')
+    assertNotSuspended(currentUser)
     validateRequestContract(ctx, 'DELETE:/api/v1/my/notifications/:id', { path: ctx.params })
 
     const exists = await hasNotification(currentUser.id, ctx.params.id!)
