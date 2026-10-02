@@ -135,7 +135,7 @@ async function main(): Promise<void> {
   }
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === import.meta.filename) {
+if (import.meta.main) {
   main().catch(error => {
     console.error(error instanceof Error ? error.message : String(error))
     process.exitCode = 1
