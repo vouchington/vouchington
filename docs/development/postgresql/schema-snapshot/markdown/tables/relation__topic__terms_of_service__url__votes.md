@@ -34,7 +34,7 @@ _none_
 
 **Foreign keys:**
 
-- `relation__topic__terms_of_ser_subject_id_entity_relation_i_fkey`: `FOREIGN KEY (subject_id, entity_relation_id) REFERENCES relation__topic__terms_of_service__url(subject_id, id) ON DELETE CASCADE`
+- `fk_rela__topi__term_of_serv__url__vote__subject_entity_relation`: `FOREIGN KEY (subject_id, entity_relation_id) REFERENCES relation__topic__terms_of_service__url(subject_id, id) ON DELETE CASCADE`
 - `relation__topic__terms_of_service__url__vote_user_agent_id_fkey`: `FOREIGN KEY (user_agent_id) REFERENCES user_agent_strings(id) ON DELETE SET NULL`
 - `relation__topic__terms_of_service__url__votes_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
