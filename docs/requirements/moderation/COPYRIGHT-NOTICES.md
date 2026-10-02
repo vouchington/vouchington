@@ -217,6 +217,13 @@ intake**, **Request information**, **Reject email intake**, or **Record as legal
 required message (not blank, at most 10,000 characters) that follows the fixed reply text, and like
 a rejection it closes the intake without opening a case. Reply wording is owned by counsel.
 
+The page shows a parsed email's sender, subject, and body as labelled text, with the body
+preformatted so its newlines are real. A failed parse shows `Parse failed:` with the parser error,
+and a parse that was never recorded shows `No parsed email`; either way the page tells staff to
+download the original email and enter the statutory fields by hand (unless SES withheld it). A
+missing agent recommendation shows `No agent recommendation yet`. Sender, subject, body, and parser
+error are untrusted claimant input and render only as inert text, never HTML or markdown.
+
 A rejection, or a request for more information, replies to the sender only when there is one. With
 a succeeded parse the reply goes to the parsed sender. With no parse row or a failed parse the
 moderator may type a reply address, validated like the claimant email on approval; without one no

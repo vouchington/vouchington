@@ -362,7 +362,11 @@ has no claimant, poster, work, correspondence, sender, subject, or body fields. 
 the staff queue by notice ID and triage it as described in [Queue triage](#queue-triage). Open each
 email from the email-review queue by intake ID. A `failed` or `unparsed` email has no parsed fields
 or agent recommendation, so review the original MIME object and record a manual-fallback reason
-with the decision. It also has no parsed sender, so rejecting it queues no reply unless you type
+with the decision. The page says so: `Parse failed: <error>` for a `failed` parse, `No parsed
+email` for an `unparsed` one, and `No agent recommendation yet` while no recommendation exists.
+Download the original from the same page (unless SES withheld it, see
+[Quarantined originals](#quarantined-originals)) and enter the statutory fields by hand. It also
+has no parsed sender, so rejecting it queues no reply unless you type
 one (see [Queue triage](#queue-triage)). An email is `unparsed` for a moment while the SES worker runs. One that stays
 `unparsed` for more than a few minutes means the worker keeps failing before it records a parse,
 or copyright intake was switched off mid-flight: check the worker's errors. Treat a missed

@@ -85,7 +85,8 @@ failed, or bounced) comes from `delivery_intents` entries whose `delivery_kind` 
 information-request responses (`web.copyright.email-intake-rejection.reply-queued` and `.no-reply`,
 `web.copyright.email-intake-information-request.reply-queued` and `.no-reply`) have only the web
 consumer; native clients have no staff email review action, including the
-`copyright_email_intake.ses_verdicts` verdicts and the null `raw_email.download_url` that quarantines
+`copyright_email_intake.ses_verdicts` verdicts, the `copyright_email_intake.parser_error` text and
+parsed-email or recommendation empty states, and the null `raw_email.download_url` that quarantines
 an email SES flagged for malware. Its **Record as legal process** action
 (`POST /api/v1/copyright-email-intakes/:id/legal-process`, response `{ decision: 'legal_process' }`)
 is web-only staff tooling as well: it has no fixture and no native consumer, and it sends no reply.
