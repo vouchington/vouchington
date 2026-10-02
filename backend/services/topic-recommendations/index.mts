@@ -1,4 +1,5 @@
 export * from './types.mts'
+export * from './as-topic-recommendation-post.mts'
 export * from './create-topic-recommendation.mts'
 export * from './find-topic-recommendation-duplicates.mts'
 export * from './delete-pending-recommendation.mts'

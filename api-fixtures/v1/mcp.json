@@ -7,6 +7,219 @@
       "tools": [
         {
           "tool": {
+            "name": "activate_referral_link",
+            "title": "Activate Referral Link",
+            "description": "Turn a referral link you own back on so it is shown again. Links the system derived from another link follow their parent and cannot be turned on by themselves.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "link_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The ID of a referral link the current user owns."
+                }
+              },
+              "required": ["link_id"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "referral_link": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "activated_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "consecutive_crawl_failures": {
+                      "type": "number"
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "deactivated_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "deleted_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "last_crawl_failure_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "last_crawl_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "last_crawl_success_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "parent_link_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "referral_program_id": {
+                      "type": "string"
+                    },
+                    "unfurl_completed_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "unfurl_failed_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "unfurl_last_error": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "unfurl_requested_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "updated_at": {
+                      "type": "string"
+                    },
+                    "url_id": {
+                      "type": "string"
+                    },
+                    "user_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "activated_at",
+                    "consecutive_crawl_failures",
+                    "created_at",
+                    "deactivated_at",
+                    "deleted_at",
+                    "id",
+                    "label",
+                    "last_crawl_failure_at",
+                    "last_crawl_id",
+                    "last_crawl_success_at",
+                    "parent_link_id",
+                    "referral_program_id",
+                    "unfurl_completed_at",
+                    "unfurl_failed_at",
+                    "unfurl_last_error",
+                    "unfurl_requested_at",
+                    "updated_at",
+                    "url_id",
+                    "user_id"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": ["success", "referral_link"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["referral-links:read", "referral-links:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/referral-links/:linkId/activations"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "add_entity_relation",
             "title": "Add Entity Relation",
             "description": "Add a relation between existing entities or add a hashtag to your own post.",
@@ -590,6 +803,235 @@
         },
         {
           "tool": {
+            "name": "create_referral_link",
+            "title": "Create Referral Link",
+            "description": "Add a referral link of your own to a referral program. The URL has to be a valid link for that program. Adding a link you already have for the program reactivates it and keeps its label unless you send a new one.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "referral_program_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The ID of the referral program topic the link belongs to."
+                },
+                "url": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "The referral link URL."
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ],
+                  "description": "A short label for the link, or null for none."
+                }
+              },
+              "required": ["referral_program_id", "url"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "referral_link": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "activated_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "consecutive_crawl_failures": {
+                      "type": "number"
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "deactivated_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "deleted_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "last_crawl_failure_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "last_crawl_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "last_crawl_success_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "parent_link_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "referral_program_id": {
+                      "type": "string"
+                    },
+                    "unfurl_completed_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "unfurl_failed_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "unfurl_last_error": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "unfurl_requested_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "updated_at": {
+                      "type": "string"
+                    },
+                    "url_id": {
+                      "type": "string"
+                    },
+                    "user_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "activated_at",
+                    "consecutive_crawl_failures",
+                    "created_at",
+                    "deactivated_at",
+                    "deleted_at",
+                    "id",
+                    "label",
+                    "last_crawl_failure_at",
+                    "last_crawl_id",
+                    "last_crawl_success_at",
+                    "parent_link_id",
+                    "referral_program_id",
+                    "unfurl_completed_at",
+                    "unfurl_failed_at",
+                    "unfurl_last_error",
+                    "unfurl_requested_at",
+                    "updated_at",
+                    "url_id",
+                    "user_id"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": ["success", "referral_link"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["referral-links:read", "referral-links:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/referral-links"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "delete_list",
             "title": "Delete List",
             "description": "Delete a list the current user owns, along with its items. Deleting a list that is already deleted fails as not found, and another user's list cannot be deleted.",
@@ -630,6 +1072,264 @@
             {
               "method": "DELETE",
               "path": "/api/v1/lists/:id"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "deactivate_referral_link",
+            "title": "Deactivate Referral Link",
+            "description": "Turn a referral link you own off so it is no longer shown, without deleting it. Links the system derived from another link follow their parent and cannot be turned off by themselves.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "link_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The ID of a referral link the current user owns."
+                }
+              },
+              "required": ["link_id"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "referral_link": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "activated_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "consecutive_crawl_failures": {
+                      "type": "number"
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "deactivated_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "deleted_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "last_crawl_failure_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "last_crawl_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "last_crawl_success_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "parent_link_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "referral_program_id": {
+                      "type": "string"
+                    },
+                    "unfurl_completed_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "unfurl_failed_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "unfurl_last_error": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "unfurl_requested_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "updated_at": {
+                      "type": "string"
+                    },
+                    "url_id": {
+                      "type": "string"
+                    },
+                    "user_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "activated_at",
+                    "consecutive_crawl_failures",
+                    "created_at",
+                    "deactivated_at",
+                    "deleted_at",
+                    "id",
+                    "label",
+                    "last_crawl_failure_at",
+                    "last_crawl_id",
+                    "last_crawl_success_at",
+                    "parent_link_id",
+                    "referral_program_id",
+                    "unfurl_completed_at",
+                    "unfurl_failed_at",
+                    "unfurl_last_error",
+                    "unfurl_requested_at",
+                    "updated_at",
+                    "url_id",
+                    "user_id"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": ["success", "referral_link"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["referral-links:read", "referral-links:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "DELETE",
+              "path": "/api/v1/referral-links/:linkId/activations"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "delete_referral_link",
+            "title": "Delete Referral Link",
+            "description": "Delete a referral link you own, along with the links the system derived from it. Deleting a link that is already deleted fails as not found.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "link_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The ID of a referral link the current user owns."
+                }
+              },
+              "required": ["link_id"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                }
+              },
+              "required": ["success"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["referral-links:read", "referral-links:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "DELETE",
+              "path": "/api/v1/referral-links/:linkId"
             }
           ]
         },
@@ -5388,6 +6088,65 @@
         },
         {
           "tool": {
+            "name": "remove_entity_relation",
+            "title": "Remove Entity Relation",
+            "description": "Remove a hashtag you added to your own post. A hashtag written in the post title or text cannot be removed here; edit the text instead. Removing a hashtag the post does not carry changes nothing and reports removed false.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": ["remove_tag"],
+                  "description": "What to remove. Only hashtags on a post can be removed for now."
+                },
+                "post_id": {
+                  "type": "string",
+                  "description": "The ID or slug of the post."
+                },
+                "tag": {
+                  "type": "string",
+                  "description": "The hashtag, for example #travel-tips."
+                }
+              },
+              "required": ["action", "post_id", "tag"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "post_id": {
+                  "type": "string"
+                },
+                "tag": {
+                  "type": "string"
+                },
+                "removed": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["post_id", "tag", "removed"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["entity-relations:read", "entity-relations:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "PATCH",
+              "path": "/api/v1/posts/:idOrSlug"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "remove_list_item",
             "title": "Remove List Item",
             "description": "Remove a post or an RSS feed item from a list the current user owns. Removing an item that is not on the list fails as not found, and another user's list cannot be changed.",
@@ -5442,6 +6201,220 @@
             {
               "method": "DELETE",
               "path": "/api/v1/lists/:id/items/rss-feed-items/:entityId"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "request_referral_link_unfurl",
+            "title": "Request Referral Link Unfurl",
+            "description": "Ask for the per-card links of an Amex all-cards referral link you own to be derived. The work runs in the background; the returned link shows when it was requested. Only a link of the Amex all-cards program whose owner has a paid membership can be unfurled.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "link_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The ID of a referral link the current user owns."
+                }
+              },
+              "required": ["link_id"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "referral_link": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "activated_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "consecutive_crawl_failures": {
+                      "type": "number"
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "deactivated_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "deleted_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "last_crawl_failure_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "last_crawl_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "last_crawl_success_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "parent_link_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "referral_program_id": {
+                      "type": "string"
+                    },
+                    "unfurl_completed_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "unfurl_failed_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "unfurl_last_error": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "unfurl_requested_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "updated_at": {
+                      "type": "string"
+                    },
+                    "url_id": {
+                      "type": "string"
+                    },
+                    "user_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "activated_at",
+                    "consecutive_crawl_failures",
+                    "created_at",
+                    "deactivated_at",
+                    "deleted_at",
+                    "id",
+                    "label",
+                    "last_crawl_failure_at",
+                    "last_crawl_id",
+                    "last_crawl_success_at",
+                    "parent_link_id",
+                    "referral_program_id",
+                    "unfurl_completed_at",
+                    "unfurl_failed_at",
+                    "unfurl_last_error",
+                    "unfurl_requested_at",
+                    "updated_at",
+                    "url_id",
+                    "user_id"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": ["success", "referral_link"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": false,
+              "openWorldHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["referral-links:read", "referral-links:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/referral-links/:linkId/unfurls"
             }
           ]
         },
@@ -6613,6 +7586,1388 @@
             {
               "method": "PUT",
               "path": "/api/v1/my/financial-profile"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "update_referral_link",
+            "title": "Update Referral Link",
+            "description": "Change the label of a referral link you own. Send a null label to clear it. Links the system derived from another link are managed through their parent and cannot be changed.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "link_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The ID of a referral link the current user owns."
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ],
+                  "description": "The new label, or null for none."
+                }
+              },
+              "required": ["link_id"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "referral_link": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "activated_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "consecutive_crawl_failures": {
+                      "type": "number"
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "deactivated_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "deleted_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "last_crawl_failure_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "last_crawl_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "last_crawl_success_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "parent_link_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "referral_program_id": {
+                      "type": "string"
+                    },
+                    "unfurl_completed_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "unfurl_failed_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "unfurl_last_error": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "unfurl_requested_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "updated_at": {
+                      "type": "string"
+                    },
+                    "url_id": {
+                      "type": "string"
+                    },
+                    "user_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "activated_at",
+                    "consecutive_crawl_failures",
+                    "created_at",
+                    "deactivated_at",
+                    "deleted_at",
+                    "id",
+                    "label",
+                    "last_crawl_failure_at",
+                    "last_crawl_id",
+                    "last_crawl_success_at",
+                    "parent_link_id",
+                    "referral_program_id",
+                    "unfurl_completed_at",
+                    "unfurl_failed_at",
+                    "unfurl_last_error",
+                    "unfurl_requested_at",
+                    "updated_at",
+                    "url_id",
+                    "user_id"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": ["success", "referral_link"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["referral-links:read", "referral-links:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "PATCH",
+              "path": "/api/v1/referral-links/:linkId"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "update_topic_recommendation",
+            "title": "Update Topic Recommendation",
+            "description": "Edit a topic recommendation you submitted while it is still pending. Send only the fields to change. A recommendation that was approved, rejected or withdrawn can no longer be edited. This does not approve it; a moderator does that.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "The ID of a topic recommendation you submitted (a post ID or slug)."
+                },
+                "title": {
+                  "type": "string",
+                  "description": "The recommendation title."
+                },
+                "markdown": {
+                  "type": "string",
+                  "description": "The reason for the recommendation, as Markdown."
+                },
+                "topic_title": {
+                  "type": "string",
+                  "description": "The title of the topic being recommended."
+                },
+                "topic_slug": {
+                  "type": "string",
+                  "description": "The slug of the topic being recommended."
+                },
+                "topic_markdown": {
+                  "type": "string",
+                  "description": "The description of the topic, as Markdown."
+                },
+                "topic_hostname": {
+                  "type": "string",
+                  "description": "The primary hostname of the topic."
+                },
+                "topic_hostnames": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Every hostname of the topic."
+                },
+                "topic_aliases": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Other names the topic goes by."
+                },
+                "topic_type": {
+                  "type": "string",
+                  "enum": ["card", "referral_program", "topic"],
+                  "description": "What kind of topic is being recommended."
+                },
+                "example_referral_link": {
+                  "type": "string",
+                  "description": "An example referral link for the topic."
+                },
+                "landing_page_urls": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Landing page URLs for the topic."
+                }
+              },
+              "required": ["id"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "post": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "__entity_type": {
+                      "const": "post"
+                    },
+                    "ai_summary_markdown": {
+                      "type": "string"
+                    },
+                    "approved_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "archived_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "archived_by_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "broadcast": {
+                      "enum": ["everyone", "followers", "mutual_followers", "users"],
+                      "type": "string"
+                    },
+                    "can_edit_content": {
+                      "type": "boolean"
+                    },
+                    "clearance_reason": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "clearance_status": {
+                      "enum": ["approved", "in_review", "pending", "rejected"],
+                      "type": "string"
+                    },
+                    "clearance_updated_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "community_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "created_by": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "__entity_type": {
+                              "const": "user"
+                            },
+                            "id": {
+                              "type": "string"
+                            },
+                            "individual_id": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "is_agent": {
+                              "type": "boolean"
+                            },
+                            "markdown": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "profile_image_id": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "profile_image_placement": {
+                              "anyOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "image_id": {
+                                      "type": "string"
+                                    },
+                                    "placement_id": {
+                                      "type": "string"
+                                    },
+                                    "placement_revision": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": ["image_id", "placement_id", "placement_revision"],
+                                  "type": "object"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "roles": {
+                              "items": {
+                                "type": "string"
+                              },
+                              "type": "array"
+                            },
+                            "use_display_name_from": {
+                              "anyOf": [
+                                {
+                                  "const": "apple"
+                                },
+                                {
+                                  "const": "facebook"
+                                },
+                                {
+                                  "const": "github"
+                                },
+                                {
+                                  "const": "google"
+                                },
+                                {
+                                  "const": "linkedin"
+                                },
+                                {
+                                  "const": "microsoft"
+                                },
+                                {
+                                  "const": "username"
+                                },
+                                {
+                                  "const": "x"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "username": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "verification_status": {
+                              "anyOf": [
+                                {
+                                  "const": "duplicate_id"
+                                },
+                                {
+                                  "const": "failed"
+                                },
+                                {
+                                  "const": "identity_pending"
+                                },
+                                {
+                                  "const": "payment_pending"
+                                },
+                                {
+                                  "const": "unverified"
+                                },
+                                {
+                                  "const": "verified"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "verified_badge_visible": {
+                              "anyOf": [
+                                {
+                                  "const": false
+                                },
+                                {
+                                  "const": true
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "verified_display_name": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "required": ["__entity_type", "id", "roles"],
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "created_by_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "data_point_vertical": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "declared_language": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "deleted_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "deleted_by_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "html": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "images": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "caption": {
+                            "type": "string"
+                          },
+                          "image_id": {
+                            "type": "string"
+                          },
+                          "order_index": {
+                            "type": "number"
+                          },
+                          "placement_id": {
+                            "type": "string"
+                          },
+                          "placement_revision": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "caption",
+                          "image_id",
+                          "order_index",
+                          "placement_id",
+                          "placement_revision"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "in_review_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "is_anonymous": {
+                      "type": "boolean"
+                    },
+                    "lingua_rs_detected_language": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "locked_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "locked_by_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "markdown": {
+                      "type": "string"
+                    },
+                    "parent_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "post_explicit_categories": {
+                      "items": {
+                        "anyOf": [
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "hashtag": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "const": "hashtag"
+                              }
+                            },
+                            "required": ["hashtag", "type"],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "topic_id": {
+                                "type": "string"
+                              },
+                              "topic_name": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "const": "topic"
+                              }
+                            },
+                            "required": ["topic_id", "topic_name", "type"],
+                            "type": "object"
+                          }
+                        ]
+                      },
+                      "type": "array"
+                    },
+                    "post_hashtags": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "display_token": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "topic_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "required": ["display_token", "id", "key", "topic_id"],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "post_related_topics": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "__entity_type": {
+                            "const": "topic"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "topic_type": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["__entity_type", "id", "name", "slug", "topic_type"],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "post_type": {
+                      "const": "topic_recommendation"
+                    },
+                    "privacy": {
+                      "enum": ["private", "public"],
+                      "type": "string"
+                    },
+                    "rejected_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "review_topic_ratings": {
+                      "anyOf": [
+                        {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "category_slug": {
+                                "anyOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "order_index": {
+                                "type": "number"
+                              },
+                              "rating": {
+                                "type": "number"
+                              },
+                              "topic": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "__entity_type": {
+                                    "const": "topic"
+                                  },
+                                  "created_at": {
+                                    "type": "string"
+                                  },
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "markdown": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "slug": {
+                                    "type": "string"
+                                  },
+                                  "topic_type": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "__entity_type",
+                                  "created_at",
+                                  "id",
+                                  "markdown",
+                                  "name",
+                                  "slug",
+                                  "topic_type"
+                                ],
+                                "type": "object"
+                              },
+                              "topic_id": {
+                                "type": "string"
+                              },
+                              "updated_at": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["order_index", "rating", "topic_id", "updated_at"],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "root_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "slug": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "structured_data": {},
+                    "title": {
+                      "type": "string"
+                    },
+                    "topic_recommendation": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "aliases": {
+                          "items": {
+                            "type": "string"
+                          },
+                          "type": "array"
+                        },
+                        "approval_error_message": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "created_topic_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "created_topic_slug": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "example_referral_link": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "hostname": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "__entity_type": {
+                                  "const": "hostname"
+                                },
+                                "hostname": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["__entity_type", "hostname", "id"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "hostname_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "hostnames": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "__entity_type": {
+                                "const": "hostname"
+                              },
+                              "hostname": {
+                                "type": "string"
+                              },
+                              "id": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["__entity_type", "hostname", "id"],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "landing_page_urls": {
+                          "items": {
+                            "type": "string"
+                          },
+                          "type": "array"
+                        },
+                        "post_id": {
+                          "type": "string"
+                        },
+                        "rejection_reason": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "reviewed_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "reviewed_by_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "status": {
+                          "enum": ["approved", "pending", "rejected"],
+                          "type": "string"
+                        },
+                        "topic_markdown": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "topic_slug": {
+                          "type": "string"
+                        },
+                        "topic_title": {
+                          "type": "string"
+                        },
+                        "topic_type": {
+                          "enum": ["card", "referral_program", "topic"],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "aliases",
+                        "approval_error_message",
+                        "created_topic_id",
+                        "example_referral_link",
+                        "hostname",
+                        "hostname_id",
+                        "hostnames",
+                        "landing_page_urls",
+                        "post_id",
+                        "rejection_reason",
+                        "reviewed_at",
+                        "reviewed_by_id",
+                        "status",
+                        "topic_markdown",
+                        "topic_slug",
+                        "topic_title",
+                        "topic_type"
+                      ],
+                      "type": "object"
+                    },
+                    "updated_at": {
+                      "type": "string"
+                    },
+                    "updated_by": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "__entity_type": {
+                              "const": "user"
+                            },
+                            "id": {
+                              "type": "string"
+                            },
+                            "individual_id": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "is_agent": {
+                              "type": "boolean"
+                            },
+                            "markdown": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "profile_image_id": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "profile_image_placement": {
+                              "anyOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "image_id": {
+                                      "type": "string"
+                                    },
+                                    "placement_id": {
+                                      "type": "string"
+                                    },
+                                    "placement_revision": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": ["image_id", "placement_id", "placement_revision"],
+                                  "type": "object"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "roles": {
+                              "items": {
+                                "type": "string"
+                              },
+                              "type": "array"
+                            },
+                            "use_display_name_from": {
+                              "anyOf": [
+                                {
+                                  "const": "apple"
+                                },
+                                {
+                                  "const": "facebook"
+                                },
+                                {
+                                  "const": "github"
+                                },
+                                {
+                                  "const": "google"
+                                },
+                                {
+                                  "const": "linkedin"
+                                },
+                                {
+                                  "const": "microsoft"
+                                },
+                                {
+                                  "const": "username"
+                                },
+                                {
+                                  "const": "x"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "username": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "verification_status": {
+                              "anyOf": [
+                                {
+                                  "const": "duplicate_id"
+                                },
+                                {
+                                  "const": "failed"
+                                },
+                                {
+                                  "const": "identity_pending"
+                                },
+                                {
+                                  "const": "payment_pending"
+                                },
+                                {
+                                  "const": "unverified"
+                                },
+                                {
+                                  "const": "verified"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "verified_badge_visible": {
+                              "anyOf": [
+                                {
+                                  "const": false
+                                },
+                                {
+                                  "const": true
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "verified_display_name": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "required": ["__entity_type", "id", "roles"],
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "updated_by_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "url_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "__entity_type",
+                    "ai_summary_markdown",
+                    "approved_at",
+                    "archived_at",
+                    "archived_by_id",
+                    "broadcast",
+                    "clearance_reason",
+                    "clearance_status",
+                    "clearance_updated_at",
+                    "community_id",
+                    "created_at",
+                    "created_by_id",
+                    "deleted_at",
+                    "deleted_by_id",
+                    "id",
+                    "in_review_at",
+                    "is_anonymous",
+                    "locked_at",
+                    "locked_by_id",
+                    "markdown",
+                    "post_type",
+                    "privacy",
+                    "rejected_at",
+                    "root_id",
+                    "title",
+                    "topic_recommendation",
+                    "updated_at",
+                    "updated_by_id"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": ["success", "post"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["topic-recommendations:read", "topic-recommendations:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "PATCH",
+              "path": "/api/v1/topic-recommendations/:id"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "withdraw_topic_recommendation",
+            "title": "Withdraw Topic Recommendation",
+            "description": "Withdraw a topic recommendation you submitted while it is still pending. It is removed and can no longer be edited. A recommendation that was already approved or rejected cannot be withdrawn.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "The ID of a topic recommendation you submitted (a post ID or slug)."
+                }
+              },
+              "required": ["id"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                }
+              },
+              "required": ["success"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["topic-recommendations:read", "topic-recommendations:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "DELETE",
+              "path": "/api/v1/topic-recommendations/:id"
             }
           ]
         }

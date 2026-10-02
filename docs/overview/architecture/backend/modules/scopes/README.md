@@ -34,7 +34,12 @@ other user read scope.
 `post-relations.owned-private:write` is an exact, non-inheritable user capability. It requires
 `entity-relations:write` (and therefore read) for API keys and OAuth grants, but broad
 `mcp.user:write` never covers it. The `set_bookmark` and `add_list_item` MCP tools check the same
-grant before they touch an own private post; `bookmarks:write` and `lists:write` never imply it.
+grant before they touch an own private post, as does `remove_entity_relation`; `bookmarks:write` and
+`lists:write` never imply it.
+
+`referral-links` and `topic-recommendations` are ordinary user read/write resources (write requires
+read). `topic-recommendations:read` has no read tool yet: it exists as the prerequisite the write
+tools declare, so a credential that carries only it can list nothing.
 
 The same coverage rule (`hasEveryScope`) decides whether an OAuth client's registered scopes cover
 a requested scope. `listScopesForAudience` feeds OAuth discovery metadata, and

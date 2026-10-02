@@ -16,18 +16,27 @@ type McpUser = PrivateUser & { membership_plan: 'plus' | 'pro' | null }
 // backend/tools/registry/registry.test.mts ('every user-mcp mutating tool declares a plus or
 // pro plan').
 const PLUS_GATED_WRITE_TOOL_NAMES = [
+  'activate_referral_link',
   'add_list_item',
   'create_list',
+  'create_referral_link',
+  'deactivate_referral_link',
   'delete_list',
+  'delete_referral_link',
   'manage_my_cards',
   'manage_my_point_valuations',
   'manage_my_rewards_statuses',
   'manage_my_spending',
   'remove_bookmark',
+  'remove_entity_relation',
   'remove_list_item',
+  'request_referral_link_unfurl',
   'set_bookmark',
   'update_list',
   'update_my_financial_profile',
+  'update_referral_link',
+  'update_topic_recommendation',
+  'withdraw_topic_recommendation',
 ]
 
 // Union of every scope required by the tools above, so a listing call is never denied by the
@@ -47,6 +56,12 @@ const PLUS_GATED_WRITE_SCOPES: ApiScope[] = [
   'spending:write',
   'financial-profile:read',
   'financial-profile:write',
+  'entity-relations:read',
+  'entity-relations:write',
+  'referral-links:read',
+  'referral-links:write',
+  'topic-recommendations:read',
+  'topic-recommendations:write',
 ]
 
 describe('user-mcp write tool plan gating', () => {

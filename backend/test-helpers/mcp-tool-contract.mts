@@ -4,8 +4,33 @@ import type { ApiScope } from '../modules/scopes/index.mts'
 import { callMcpTool } from '../services/mcp-tools/call-tool.mts'
 import { USER_MCP_SERVER_CONFIG } from '../services/mcp-tools/config.mts'
 import type { BasicUser } from '../services/users/types.mts'
+import { getRegisteredToolByName } from '../tools/registry/index.mts'
 
 export type McpContractCaller = BasicUser & { membership_plan: 'plus' | 'pro' | null }
+
+const MCP_API_KEY_ORIGIN = {
+  interface: 'mcp',
+  credential: 'api_key',
+  client: null,
+  oauthClientId: null,
+} as const
+
+/**
+ * Expects the tool's own function to throw an error with these fields. The call path reduces a
+ * thrown error to one generic failure text, so the status, code and message are asserted here. The
+ * function runs inside an MCP request context, which content provenance is read from.
+ */
+export const expectMcpToolFunctionThrows = (
+  caller: McpContractCaller,
+  name: string,
+  args: Record<string, unknown>,
+  expected: { status?: number; message?: string; code?: string },
+) =>
+  expect(
+    runWithCredentialRequestContext(MCP_API_KEY_ORIGIN, () =>
+      getRegisteredToolByName(name)!.function(caller)(args),
+    ),
+  ).rejects.toMatchObject(expected)
 
 /**
  * Calls a user-surface MCP tool through the real call path and expects it to be refused. Arguments
@@ -18,9 +43,8 @@ export async function callRejectedMcpTool(
   args: Record<string, unknown>,
   scopes: readonly ApiScope[],
 ): Promise<string> {
-  const outcome = await runWithCredentialRequestContext(
-    { interface: 'mcp', credential: 'api_key', client: null, oauthClientId: null },
-    () => callMcpTool(name, args, caller, scopes, USER_MCP_SERVER_CONFIG),
+  const outcome = await runWithCredentialRequestContext(MCP_API_KEY_ORIGIN, () =>
+    callMcpTool(name, args, caller, scopes, USER_MCP_SERVER_CONFIG),
   ).then(
     result => result,
     (error: unknown) => error,
@@ -43,9 +67,8 @@ export async function callStructuredMcpTool(
   args: Record<string, unknown>,
   scopes: readonly ApiScope[],
 ): Promise<Record<string, unknown>> {
-  const result = await runWithCredentialRequestContext(
-    { interface: 'mcp', credential: 'api_key', client: null, oauthClientId: null },
-    () => callMcpTool(name, args, caller, scopes, USER_MCP_SERVER_CONFIG),
+  const result = await runWithCredentialRequestContext(MCP_API_KEY_ORIGIN, () =>
+    callMcpTool(name, args, caller, scopes, USER_MCP_SERVER_CONFIG),
   )
   expect(result.isError).toBeUndefined()
   const [block] = result.content as [{ type: 'text'; text: string }]

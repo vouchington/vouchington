@@ -20,6 +20,12 @@ The posts service is the core content creation system. It handles multiple post 
   and uses the existing category synchronization and transactional vote application. Delegated
   own-private restrictions reuse the lower entity-relation post-access guard; the result reads
   the canonical alias identifier from the primary after commit.
+- `remove-hashtag.mts` — Authored post hashtag removal, the inverse of `add-hashtag.mts`. It
+  passes the same admission (`hashtag-mutation-access.mts`: suspension, visibility, author and
+  edit window, hashtag form, delegated own-private authority) and a remove intent into
+  `updatePost()`. A hashtag the title or text writes is refused with `422` before any write, and
+  a hashtag the post does not carry returns `removed: false` without one. The intent types and
+  the locked retain/union logic live in `update/hashtag-intent.mts`.
 - `delete.mts` — Soft deletion
 - `types.mts` — `Post`, `PostMetrics`, `PostElection`, `CreatePostInput` types
 - `posts-table-row.mts` — Base `posts` row for `INSERT ... RETURNING *`, distinct from view `Post`

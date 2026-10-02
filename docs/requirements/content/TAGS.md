@@ -66,6 +66,12 @@ category-vote path as a category PATCH. Public posts need ordinary relation scop
 private post also needs the exact `post-relations.owned-private:write` grant and ownership of its
 candidate and effective root; a broad MCP write grant does not imply that consent.
 
+The MCP-only `remove_entity_relation` tool (`action: remove_tag`) removes one explicit `#tag` from
+the same posts, through the same category PATCH path and the same grants. A tag the post's title
+or text writes is not an explicit category, so removing it is refused with `422` before any write;
+edit the text instead. Removing a tag the post does not carry changes nothing and returns
+`removed: false`. Retracting a vote or a non-tag relation has no MCP tool yet.
+
 ### Viewing Tags
 
 On each page, show all entities grouped by relation sorted by the election sort score, regardless of the net vote score.

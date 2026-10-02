@@ -4,19 +4,19 @@ import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/acti
 import type { UpdatePostChanges } from './types.mts'
 import {
   lockPostUpdatePublicationScopes,
-  type AdditiveHashtagIntent,
-} from './update/additive-hashtag.mts'
+  type PostHashtagIntent,
+} from './update/hashtag-intent.mts'
 
 export function postUpdateMayAffectCategories(
   changes: UpdatePostChanges,
-  hasAdditiveIntent: boolean,
+  hasHashtagIntent: boolean,
 ): boolean {
   return (
     changes.title !== undefined ||
     changes.markdown !== undefined ||
     changes.categories !== undefined ||
     changes.structured_data !== undefined ||
-    hasAdditiveIntent
+    hasHashtagIntent
   )
 }
 
@@ -54,14 +54,14 @@ export async function lockPostUpdateMutationScopes(
   postId: string,
   editorId: string,
   changes: UpdatePostChanges,
-  additiveIntent?: AdditiveHashtagIntent,
+  hashtagIntent?: PostHashtagIntent,
 ): Promise<string | null> {
   const ownerId = await lockPostCategoryMutationUsers(
     query,
     postId,
     editorId,
-    postUpdateMayAffectCategories(changes, !!additiveIntent),
+    postUpdateMayAffectCategories(changes, !!hashtagIntent),
   )
-  await lockPostUpdatePublicationScopes(query, postId, additiveIntent)
+  await lockPostUpdatePublicationScopes(query, postId, hashtagIntent)
   return ownerId
 }

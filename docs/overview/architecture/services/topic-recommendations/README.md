@@ -41,6 +41,10 @@ Conditional-required validation is enforced in `normalizeTopicRecommendationValu
 - creator or admin can edit pending recommendations
 - creator or admin can withdraw pending recommendations
 - only admins can approve or reject
+- `asTopicRecommendationPost` decides whether a loaded post is a topic recommendation. The
+  `/api/v1/topic-recommendations/:id` routes and the `update_topic_recommendation` and
+  `withdraw_topic_recommendation` MCP tools share it, so a post that is missing or is not a
+  recommendation is "not found" in both, and the commands above stay the only permission rules
 
 ## Approval Behavior
 

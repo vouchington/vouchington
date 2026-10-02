@@ -343,6 +343,15 @@
       "surfaces": ["api-key", "oauth"]
     },
     {
+      "action": "write",
+      "audience": "user",
+      "description_key": null,
+      "requires": "referral-links:read",
+      "resource": "referral-links",
+      "scope": "referral-links:write",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
       "action": "read",
       "audience": "user",
       "description_key": null,
@@ -421,6 +430,24 @@
       "requires": "spending:read",
       "resource": "spending",
       "scope": "spending:write",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
+      "description_key": null,
+      "requires": null,
+      "resource": "topic-recommendations",
+      "scope": "topic-recommendations:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "user",
+      "description_key": null,
+      "requires": "topic-recommendations:read",
+      "resource": "topic-recommendations",
+      "scope": "topic-recommendations:write",
       "surfaces": ["api-key", "oauth"]
     },
     {

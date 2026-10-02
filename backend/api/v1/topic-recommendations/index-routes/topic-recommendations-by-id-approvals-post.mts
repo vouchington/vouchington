@@ -1,14 +1,13 @@
 import type { Context } from '@jongleberry/api-server'
+import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 import { getPostByAnyCached } from '@services/entity-fetch'
 import {
   approveTopicRecommendation,
+  asTopicRecommendationPost,
   currentUserCanManageRecommendations,
 } from '@services/topic-recommendations'
 import app from '../../../app.mts'
 import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
-
-import { assertTopicRecommendationPost } from './shared.mts'
-import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 
 app.route('/api/v1/topic-recommendations/:id/approvals').post(async (ctx: Context) => {
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
@@ -19,7 +18,7 @@ app.route('/api/v1/topic-recommendations/:id/approvals').post(async (ctx: Contex
     path: ctx.params,
   })
 
-  const post = assertTopicRecommendationPost(await getPostByAnyCached(ctx.params.id!))
+  const post = asTopicRecommendationPost(await getPostByAnyCached(ctx.params.id!))
   ctx.assert(post, 404, 'Recommendation not found')
 
   const result = await approveTopicRecommendation(currentUser, provenance, post)
