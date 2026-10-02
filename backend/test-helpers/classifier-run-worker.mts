@@ -73,16 +73,16 @@ export function createClassifierRunSweepScope(realHandler: ClassifierRunHandler)
     ...realHandler,
     // Pending requests are paged by random request id, so a test's own request can sit on any page
     // of the shared database's global pool: keep reading until a page holds one of this scope's.
-    pendingRequests: async function scopedPendingRequests(after) {
+    pendingRequests: async function scopedPendingRequests(
+      after: string | null,
+    ): ReturnType<ClassifierRunHandler['pendingRequests']> {
       const page = await realHandler.pendingRequests(after)
       const items = page.items.filter(item =>
         item.postId !== null
           ? postIds.has(item.postId)
           : item.rssFeedItemId !== null && rssFeedItemIds.has(item.rssFeedItemId),
       )
-      return items.length > 0 || !page.next
-        ? { ...page, items }
-        : await scopedPendingRequests(page.next)
+      return items.length > 0 || !page.next ? { ...page, items } : scopedPendingRequests(page.next)
     },
   }
 
