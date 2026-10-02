@@ -510,7 +510,8 @@ failure, the same attempt bound used for copyright delivery, and that fifth fail
 Success does not invent a response deadline.
 
 A statement of reasons, UK review, and redress decision exist only when an identified staff user
-supplies the text. `automation_disclosure` is `human`. The staff disposition on redress is
+supplies the text. The EU statement of reasons (DSA Art. 17) and the UK review are the same kind of
+stored decision, told apart by jurisdiction. `automation_disclosure` is `human`. The staff disposition on redress is
 `maintain` or `revoke` as selected by that user. The service does not choose it and does not
 withhold media. A supervised complaint records an external authority reference and escalates that
 record. Transparency reporting counts facts bound to the current EU approval inside a period the

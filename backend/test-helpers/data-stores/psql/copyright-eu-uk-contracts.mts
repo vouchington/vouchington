@@ -28,14 +28,18 @@ export async function readCopyrightTerritorialContractShape(
         WHERE target.copyright_notice_id = notice.id) AS target_count,
       (SELECT count(*)::integer FROM copyright_notice_lifecycle_events event
         WHERE event.copyright_notice_id = notice.id) AS lifecycle_event_count,
-      (SELECT count(*)::integer FROM copyright_eu_notice_receipts receipt
-        WHERE receipt.copyright_notice_id = notice.id) AS eu_receipt_count,
-      (SELECT count(*)::integer FROM copyright_uk_notice_receipts receipt
-        WHERE receipt.copyright_notice_id = notice.id) AS uk_receipt_count,
-      (SELECT count(*)::integer FROM copyright_eu_statements_of_reasons statement
-        WHERE statement.copyright_notice_id = notice.id) AS eu_statement_count,
-      (SELECT count(*)::integer FROM copyright_uk_reviews review
-        WHERE review.copyright_notice_id = notice.id) AS uk_review_count
+      (SELECT count(*)::integer FROM copyright_territorial_notice_receipts receipt
+        WHERE receipt.copyright_notice_id = notice.id
+          AND receipt.jurisdiction = 'eu_dsa') AS eu_receipt_count,
+      (SELECT count(*)::integer FROM copyright_territorial_notice_receipts receipt
+        WHERE receipt.copyright_notice_id = notice.id
+          AND receipt.jurisdiction = 'uk') AS uk_receipt_count,
+      (SELECT count(*)::integer FROM copyright_territorial_decisions statement
+        WHERE statement.copyright_notice_id = notice.id
+          AND statement.jurisdiction = 'eu_dsa') AS eu_statement_count,
+      (SELECT count(*)::integer FROM copyright_territorial_decisions review
+        WHERE review.copyright_notice_id = notice.id
+          AND review.jurisdiction = 'uk') AS uk_review_count
     FROM copyright_notices notice
     WHERE notice.id = ${noticeId}
   `,
@@ -53,8 +57,7 @@ export async function readTerritorialClockColumnNames(): Promise<string[]> {
       AND (
         table_name LIKE 'copyright_eu_%'
         OR table_name LIKE 'copyright_uk_%'
-        OR table_name = 'copyright_territorial_policy_approvals'
-        OR table_name = 'copyright_territorial_policy_withdrawals'
+        OR table_name LIKE 'copyright_territorial_%'
       )
       AND column_name IN (
         'earliest_restoration_at',
@@ -66,23 +69,21 @@ export async function readTerritorialClockColumnNames(): Promise<string[]> {
   return rows.map(row => row.column_name)
 }
 
-export async function countTerritorialContractTables(): Promise<number> {
-  const { rows } = await read<{ count: number }>(sql`/* countTerritorialContractTables */
-    SELECT count(*)::integer AS count
+/** Every table of the territorial contract: the shared copyright_territorial tables and the
+ * EU-only supervised complaints and transparency reports. No per-jurisdiction twin of a shared
+ * table may remain. */
+export async function readTerritorialContractTableNames(): Promise<string[]> {
+  const { rows } = await read<{ table_name: string }>(sql`/* readTerritorialContractTableNames */
+    SELECT table_name
     FROM information_schema.tables
-    WHERE table_schema = 'public' AND table_name IN (
-      'copyright_territorial_policy_approvals',
-      'copyright_eu_notice_receipts',
-      'copyright_eu_statements_of_reasons',
-      'copyright_eu_redress_requests',
-      'copyright_eu_supervised_complaints',
-      'copyright_eu_transparency_reports',
-      'copyright_uk_notice_receipts',
-      'copyright_uk_reviews',
-      'copyright_uk_redress_requests'
+    WHERE table_schema = 'public' AND (
+      table_name LIKE 'copyright_eu_%'
+      OR table_name LIKE 'copyright_uk_%'
+      OR table_name LIKE 'copyright_territorial_%'
     )
+    ORDER BY table_name
   `)
-  return rows[0]?.count ?? 0
+  return rows.map(row => row.table_name)
 }
 
 export async function rejectUsTerritorialPolicyApproval(): Promise<void> {
@@ -122,11 +123,11 @@ export async function rejectEuReceiptForUsNotice(): Promise<void> {
   const fixture = rows[0]
   if (!fixture) throw new Error('missing US notice fixture')
   await write(sql`/* rejectEuReceiptForUsNotice */
-    INSERT INTO copyright_eu_notice_receipts (
-      copyright_notice_id, copyright_territorial_policy_approval_id, requester_user_id,
-      idempotency_key, request_sha256, hosted_use_url, grounds_ciphertext
+    INSERT INTO copyright_territorial_notice_receipts (
+      copyright_notice_id, jurisdiction, copyright_territorial_policy_approval_id,
+      requester_user_id, idempotency_key, request_sha256, hosted_use_url, grounds_ciphertext
     ) VALUES (
-      ${fixture.notice_id}, ${fixture.approval_id}, ${fixture.user_id}, ${randomUUID()},
+      ${fixture.notice_id}, 'eu_dsa', ${fixture.approval_id}, ${fixture.user_id}, ${randomUUID()},
       ${randomBytes(32)}, 'https://example.test/us', 'grounds'
     )
   `)

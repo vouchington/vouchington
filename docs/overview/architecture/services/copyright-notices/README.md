@@ -106,18 +106,18 @@ review through the existing partial unique index. Reversals preserve an open rev
 disposition; restrict and terminate recheck the operative threshold at decision time.
 
 EU and UK contracts live in migration `0737-00-00-copyright-eu-uk-contracts.sql`. They record
-receipt, routing, reasons or review, redress, escalation, and EU reporting facts, and they fail
-closed until a separate territorial policy approval exists. They do not use the US restoration
-clock or decide legal merits. [`eu-notice-receipt.mts`](../../../../../backend/services/copyright-notices/eu-notice-receipt.mts) and
-[`uk-notice-receipt.mts`](../../../../../backend/services/copyright-notices/uk-notice-receipt.mts) are wrappers around the shared receipt flow in
-[`territorial-notice-receipt.mts`](../../../../../backend/services/copyright-notices/territorial-notice-receipt.mts) and
-[`territorial-notice-receipt-sql.mts`](../../../../../backend/services/copyright-notices/territorial-notice-receipt-sql.mts). Each wrapper keeps its
-jurisdiction, storage tables, encryption purpose, and failure label.
-[`eu-redress.mts`](../../../../../backend/services/copyright-notices/eu-redress.mts) and
-[`uk-redress.mts`](../../../../../backend/services/copyright-notices/uk-redress.mts) are wrappers around the shared redress flow in
-[`territorial-redress.mts`](../../../../../backend/services/copyright-notices/territorial-redress.mts) and
-[`territorial-redress-sql.mts`](../../../../../backend/services/copyright-notices/territorial-redress-sql.mts). Each wrapper keeps its
-policy key, encryption purpose, and error text. Table and column identifiers stay in static SQL.
+receipt, routing, a staff decision (the EU statement of reasons under DSA Art. 17, or the UK
+review), redress, escalation, and EU reporting facts, and they fail closed until a separate
+territorial policy approval exists. They do not use the US restoration clock or decide legal
+merits. Seven `copyright_territorial_*` tables hold both jurisdictions; only supervised complaints
+and transparency reports are EU-only. Each notice-child row carries `jurisdiction` and a composite
+foreign key to `copyright_notices (id, jurisdiction)`, a redress request references the decision on
+its own notice, and an escalation names exactly one source. The `eu-*` and `uk-*` files are
+wrappers that pass the jurisdiction as a value to the shared flows in
+[`territorial-notice-receipt.mts`](../../../../../backend/services/copyright-notices/territorial-notice-receipt.mts),
+[`territorial-decision.mts`](../../../../../backend/services/copyright-notices/territorial-decision.mts), and
+[`territorial-redress.mts`](../../../../../backend/services/copyright-notices/territorial-redress.mts).
+Their SQL is static, and per-jurisdiction error text and encryption purposes live in `territorial-labels.mts`.
 
 ```mermaid
 flowchart TD

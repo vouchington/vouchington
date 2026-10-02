@@ -10,17 +10,16 @@ import {
   assertIdempotencyKey,
   sameSha256,
   territorialRequestSha256,
+  type TerritorialCopyrightJurisdiction,
   type TerritorialNoticeRequest,
 } from './territorial-fields.mts'
+import { territorialLabels } from './territorial-labels.mts'
 import {
   existingReceiptQuery,
   insertAcknowledgmentQuery,
   insertReceiptQuery,
   insertRoutingQuery,
-  type TerritorialNoticeReceiptContract,
 } from './territorial-notice-receipt-sql.mts'
-
-export type { TerritorialNoticeReceiptContract }
 
 export type TerritorialCopyrightNoticeReceipt = {
   notice_id: string
@@ -34,26 +33,16 @@ type TerritorialReceiptRow = Omit<TerritorialCopyrightNoticeReceipt, 'is_duplica
   request_sha256: Uint8Array
 }
 
-const RECEIPT_FAILURES = {
-  EU: 'Failed to record EU copyright notice',
-  UK: 'Failed to record UK copyright notice',
-} as const
-
-const RECEIPT_PURPOSES = {
-  'copyright-eu-notice': 'copyright-eu-notice',
-  'copyright-uk-notice': 'copyright-uk-notice',
-} as const
-
 export async function receiveTerritorialCopyrightNotice(
   actor: PrivateUser,
-  contract: TerritorialNoticeReceiptContract,
+  jurisdiction: TerritorialCopyrightJurisdiction,
   idempotencyKey: string,
   request: TerritorialNoticeRequest,
 ): Promise<TerritorialCopyrightNoticeReceipt> {
   await using transaction = await beginTransaction()
   const receipt = await receiveTerritorialCopyrightNoticeInTransaction(
     actor,
-    contract,
+    jurisdiction,
     idempotencyKey,
     request,
     transaction,
@@ -64,7 +53,7 @@ export async function receiveTerritorialCopyrightNotice(
 
 export async function receiveTerritorialCopyrightNoticeInTransaction(
   actor: PrivateUser,
-  contract: TerritorialNoticeReceiptContract,
+  jurisdiction: TerritorialCopyrightJurisdiction,
   idempotencyKey: string,
   request: TerritorialNoticeRequest,
   transaction: TransactionQuery,
@@ -76,7 +65,7 @@ export async function receiveTerritorialCopyrightNoticeInTransaction(
     SELECT pg_advisory_xact_lock(hashtextextended(${`${actor.id}:${idempotencyKey}`}, 0))
   `)
   const { rows: existingRows } = await transaction<TerritorialReceiptRow>(
-    existingReceiptQuery(contract, actor.id, idempotencyKey),
+    existingReceiptQuery(jurisdiction, actor.id, idempotencyKey),
   )
   const existing = existingRows[0]
   if (existing) {
@@ -93,16 +82,17 @@ export async function receiveTerritorialCopyrightNoticeInTransaction(
       is_duplicate: true,
     }
   }
-  const approval = await lockCurrentCopyrightTerritorialPolicy(contract.jurisdiction, transaction)
-  const purpose = receiptPurpose(contract.purposePrefix, idempotencyKey)
-  const failure = receiptFailure(contract.label)
+  const approval = await lockCurrentCopyrightTerritorialPolicy(jurisdiction, transaction)
+  const labels = territorialLabels(jurisdiction)
+  const purpose = `${labels.noticePurpose}:${idempotencyKey}`
+  const failure = labels.noticeFailed
   const { rows: notices } = await transaction<{ id: string }>(
     sql`/* receiveTerritorialCopyrightNotice:notice */
     INSERT INTO copyright_notices (
       jurisdiction, legal_basis, received_at, claimant_user_id, claimant_contact_ciphertext,
       work_description, policy_version
     ) VALUES (
-      ${contract.jurisdiction}, 'copyright', CURRENT_TIMESTAMP, ${actor.id},
+      ${jurisdiction}, 'copyright', CURRENT_TIMESTAMP, ${actor.id},
       ${encryptSecret(fields.contact, `${purpose}:contact`)},
       ${fields.contentDescription}, ${approval.policy_version}
     )
@@ -113,7 +103,7 @@ export async function receiveTerritorialCopyrightNoticeInTransaction(
   assert(notice, 500, failure)
   const { rows: receipts } = await transaction<{ id: string }>(
     insertReceiptQuery(
-      contract,
+      jurisdiction,
       notice.id,
       approval.id,
       actor.id,
@@ -125,9 +115,9 @@ export async function receiveTerritorialCopyrightNoticeInTransaction(
   )
   const receipt = receipts[0]
   assert(receipt, 500, failure)
-  await transaction(insertRoutingQuery(contract, receipt.id))
+  await transaction(insertRoutingQuery(receipt.id))
   const { rows: acknowledgments } = await transaction<{ id: string }>(
-    insertAcknowledgmentQuery(contract, receipt.id),
+    insertAcknowledgmentQuery(receipt.id),
   )
   const acknowledgment = acknowledgments[0]
   assert(acknowledgment, 500, failure)
@@ -151,19 +141,4 @@ function noticeFields(request: TerritorialNoticeRequest): TerritorialNoticeReque
     grounds: assertBoundedText(request.grounds, 50_000, 'grounds are required'),
     hostedUseUrl: assertBoundedText(request.hostedUseUrl, 2048, 'hosted_use_url is required'),
   }
-}
-
-function receiptFailure(label: TerritorialNoticeReceiptContract['label']): string {
-  const failure = RECEIPT_FAILURES[label]
-  assert(failure, 500, 'Failed to record copyright notice')
-  return failure
-}
-
-function receiptPurpose(
-  prefix: TerritorialNoticeReceiptContract['purposePrefix'],
-  idempotencyKey: string,
-): string {
-  const purposePrefix = RECEIPT_PURPOSES[prefix]
-  assert(purposePrefix === prefix, 500, 'Failed to record copyright notice')
-  return `${purposePrefix}:${idempotencyKey}`
 }

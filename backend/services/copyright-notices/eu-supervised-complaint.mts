@@ -7,6 +7,8 @@ import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { assertBoundedText } from './territorial-fields.mts'
 import { lockCurrentCopyrightTerritorialPolicy } from './territorial-policy.mts'
 
+const JURISDICTION = 'eu_dsa'
+
 export type EuCopyrightSupervisedComplaint = {
   id: string
   escalation_id: string
@@ -26,8 +28,8 @@ export async function recordEuCopyrightSupervisedComplaint(
   await using transaction = await beginTransaction()
   const { rows: receipts } = await transaction<{ requester_user_id: string | null }>(
     sql`/* recordEuCopyrightSupervisedComplaint:receipt */
-    SELECT requester_user_id FROM copyright_eu_notice_receipts
-    WHERE copyright_notice_id = ${noticeId}
+    SELECT requester_user_id FROM copyright_territorial_notice_receipts
+    WHERE copyright_notice_id = ${noticeId} AND jurisdiction = ${JURISDICTION}
   `,
   )
   const receipt = receipts[0]
@@ -40,17 +42,19 @@ export async function recordEuCopyrightSupervisedComplaint(
   const { rows: existing } = await transaction<{ id: string }>(
     sql`/* recordEuCopyrightSupervisedComplaint:existing */
     SELECT id FROM copyright_eu_supervised_complaints
-    WHERE copyright_notice_id = ${noticeId} AND authority_reference = ${authorityReference}
+    WHERE copyright_notice_id = ${noticeId} AND jurisdiction = ${JURISDICTION}
+      AND authority_reference = ${authorityReference}
   `,
   )
   assert(!existing[0], 409, 'That supervised complaint is already recorded')
-  await lockCurrentCopyrightTerritorialPolicy('eu_dsa', transaction)
+  await lockCurrentCopyrightTerritorialPolicy(JURISDICTION, transaction)
   const { rows: complaints } = await transaction<{ id: string }>(
     sql`/* recordEuCopyrightSupervisedComplaint */
     INSERT INTO copyright_eu_supervised_complaints (
-      copyright_notice_id, recorded_by_id, authority_reference, explanation_ciphertext
+      copyright_notice_id, jurisdiction, recorded_by_id, authority_reference,
+      explanation_ciphertext
     ) VALUES (
-      ${noticeId}, ${actor.id}, ${authorityReference},
+      ${noticeId}, ${JURISDICTION}, ${actor.id}, ${authorityReference},
       ${encryptSecret(explanation, `copyright-eu-supervised:${noticeId}:${authorityReference}`)}
     )
     RETURNING id
@@ -60,9 +64,9 @@ export async function recordEuCopyrightSupervisedComplaint(
   assert(complaint, 500, 'Failed to record EU supervised complaint')
   const { rows: escalations } = await transaction<{ id: string }>(
     sql`/* recordEuCopyrightSupervisedComplaint:escalation */
-    INSERT INTO copyright_eu_escalations (
-      copyright_notice_id, copyright_eu_supervised_complaint_id
-    ) VALUES (${noticeId}, ${complaint.id})
+    INSERT INTO copyright_territorial_escalations (
+      copyright_notice_id, jurisdiction, copyright_eu_supervised_complaint_id
+    ) VALUES (${noticeId}, ${JURISDICTION}, ${complaint.id})
     RETURNING id
   `,
   )

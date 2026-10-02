@@ -16,6 +16,8 @@ CREATE TABLE copyright_notices (
   policy_version text NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  -- Composite-foreign-key target: EU/UK territorial rows pin their notice to its jurisdiction.
+  CONSTRAINT uq_copyright_notices__id_jurisdiction UNIQUE (id, jurisdiction),
   CHECK (accepted_at IS NULL OR accepted_at >= received_at),
   CHECK (provisional_withholding_at IS NULL OR (accepted_at IS NOT NULL AND provisional_withholding_at >= accepted_at))
 );
