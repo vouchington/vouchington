@@ -33,18 +33,18 @@ export async function copyTrackedWorkingTree(
         let sourceParent: string
         try {
           sourceParent = await realpath(dirname(source))
-        } catch (error) {
-          if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false // tracked deletion
-          throw error
+        } catch (err) {
+          if ((err as NodeJS.ErrnoException).code === 'ENOENT') return false // tracked deletion
+          throw err
         }
         if (!within(root, sourceParent))
           throw new Error(`Tracked path escapes the repository: ${path}`)
         let info
         try {
           info = await lstat(source)
-        } catch (error) {
-          if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false // tracked deletion
-          throw error
+        } catch (err) {
+          if ((err as NodeJS.ErrnoException).code === 'ENOENT') return false // tracked deletion
+          throw err
         }
         await mkdir(dirname(target), { recursive: true })
         const resolved = await realpath(source)

@@ -50,7 +50,7 @@ function key(row: FindingIdentity): string {
 }
 
 function sortedRows(rows: readonly BaselineRow[]): BaselineRow[] {
-  return [...rows].sort((a, b) => key(a).localeCompare(key(b), 'en'))
+  return rows.toSorted((a, b) => key(a).localeCompare(key(b), 'en'))
 }
 
 export function rowsFromReport(
