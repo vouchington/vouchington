@@ -20,7 +20,7 @@
     "@modules/utils": "workspace:^",
     "@services/entity-cache": "workspace:^",
     "@ts-shared/languages": "workspace:^",
-    "lingua-rs": "^0.2.1",
+    "lingua-rs": "^0.2.2",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {

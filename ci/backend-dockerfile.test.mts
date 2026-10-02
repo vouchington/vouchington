@@ -113,6 +113,22 @@ describe('backend Dockerfile dependency install', () => {
     expect(dockerfile.match(/pnpm rebuild --pending/g)).toHaveLength(1)
   })
 
+  it('fails image builds when lingua-rs cannot install its native binding', () => {
+    const builderInstructions = getStageInstructions('builder')
+    const strictInstallIndex = builderInstructions.indexOf('ENV LINGUA_RS_STRICT_INSTALL=1')
+    const installIndex = builderInstructions.findIndex(
+      instruction =>
+        instruction.startsWith('RUN ') && instruction.includes('pnpm install --frozen-lockfile'),
+    )
+
+    expect(strictInstallIndex).toBeGreaterThan(-1)
+    expect(strictInstallIndex).toBeLessThan(installIndex)
+    // `pnpm deploy` re-runs lifecycle scripts, so the deploy stages must inherit the variable.
+    for (const stageName of ['deploy-api', 'deploy-worker-cpu', 'deploy-worker-io']) {
+      expect(getStageHeader(stageName)).toBe(`FROM builder AS ${stageName}`)
+    }
+  })
+
   it('copies every dependency manifest before the filtered install layer', () => {
     const rootManifestCopy = dockerfile.indexOf(
       'COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./',

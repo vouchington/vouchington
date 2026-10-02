@@ -23,6 +23,10 @@ detection safely).
 1. **Declared language** — user-supplied (`posts.declared_language`, `communities.default_language`, `rss_feeds.declared_language`, `crawls.lang`) — no N-API call
 2. **lingua-rs** — all 75 languages via the `lingua-rs` npm package (dynamic import with graceful fallback when unavailable)
 
+The package downloads its native binding in a postinstall script. Backend image builds set
+`LINGUA_RS_STRICT_INSTALL=1` in `backend/Dockerfile`, so a failed download fails the build instead
+of shipping an image without the binding; local installs stay best-effort.
+
 ## Raw result schema (JSONB `lingua_rs_results`)
 
 Results differ by source. For `source: 'lingua'` (full detection):
