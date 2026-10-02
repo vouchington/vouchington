@@ -156,7 +156,7 @@ describe('posts', () => {
           postId,
           promptId,
           agentId: agent.id,
-          results: { flagged: false, reason: 'Looks clean' },
+          results: { flagged: false },
           flagged: false,
         })
 

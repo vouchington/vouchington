@@ -39,7 +39,7 @@ describe('moderations', () => {
       postId,
       promptId: prompt.id,
       agentId: prompt.agent_id,
-      results: { flagged: true, reason: 'spam detected' },
+      results: { flagged: true, confidence_score: 0.93, confidence_threshold: 0.8 },
       flagged: true,
     })
   }, 30_000)
@@ -54,7 +54,11 @@ describe('moderations', () => {
       expect(r.post_id).toBe(postId)
       expect(r.community_prompt_id).toBe(prompt.id)
       expect(r.flagged).toBe(true)
-      expect(r.results.reason).toBe('spam detected')
+      expect(r.results).toEqual({
+        flagged: true,
+        confidence_score: 0.93,
+        confidence_threshold: 0.8,
+      })
     })
 
     it('returns empty array for post with no moderations in community', async () => {

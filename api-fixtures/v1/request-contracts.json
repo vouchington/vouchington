@@ -233,12 +233,9 @@
         },
         "flagged": {
           "type": "boolean"
-        },
-        "reason": {
-          "type": "string"
         }
       },
-      "required": ["flagged", "reason"],
+      "required": ["flagged"],
       "type": "object"
     },
     "AggregatedQueueStats": {
@@ -16004,16 +16001,6 @@
         "post_type": {
           "type": "string"
         },
-        "reason": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
         "source_key": {
           "type": "string"
         },
@@ -16043,7 +16030,6 @@
         "post_href",
         "post_id",
         "post_type",
-        "reason",
         "source_key",
         "source_type",
         "title"
@@ -30314,9 +30300,6 @@
         "properties": {
           "expected_flagged": {
             "type": "boolean"
-          },
-          "expected_reason": {
-            "type": "string"
           },
           "save_for_training": {
             "type": "boolean"

@@ -5,7 +5,6 @@
 /** Shared fixture for AI-generated moderation results used across tests. */
 export const mockAiGeneratedModerationResults = {
   flagged: true,
-  reason: 'Detected as AI-generated (99.1% confidence; threshold 95.0%).',
   confidence_score: 0.991,
   confidence_threshold: 0.95,
   classification: 'ai' as const,
@@ -25,14 +24,14 @@ export async function insertTestAgentModeration(options: {
   postId: string
   promptId: string
   agentId: string
-  results?: Record<string, unknown> & { flagged: boolean; reason: string }
+  results?: Record<string, unknown> & { flagged: boolean }
   flagged?: boolean
   inputSha256?: Buffer
   occurredAt?: Date
   occurredAtSequence?: number
   deletedAt?: Date | null
 }): Promise<string> {
-  const results = options.results ?? { flagged: false, reason: 'Test moderation' }
+  const results = options.results ?? { flagged: false }
   const flagged = options.flagged ?? false
   const deletedAt = options.deletedAt === undefined ? null : options.deletedAt
   const inputSha256 =

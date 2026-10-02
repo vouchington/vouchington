@@ -16,14 +16,12 @@
       "markdown_preview": "Hello from the community.",
       "model_output": {
         "confidence_score": 0.82,
-        "flagged": true,
-        "reason": "Low quality"
+        "flagged": true
       },
       "moderator_slug": "self-promotion",
       "post_href": "/discussion/fixture-post",
       "post_id": "post-1",
       "post_type": "discussion",
-      "reason": "Low quality",
       "source_key": "agent_moderation:post-1",
       "source_type": "agent_moderation",
       "title": "Fixture post"

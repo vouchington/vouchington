@@ -63,7 +63,6 @@ describe('Community automod recent action routes', () => {
       flagged: true,
       results: {
         flagged: true,
-        reason: 'Low quality',
         confidence_score: 0.41,
       },
     })
@@ -79,7 +78,6 @@ describe('Community automod recent action routes', () => {
     expect(action).toMatchObject({
       source_type: 'agent_moderation',
       current_state: 'rejected',
-      reason: 'Low quality',
       post_href: `/discussion/${post.id}`,
       authored_title: `Automod route candidate ${random}`,
       declared_language: null,

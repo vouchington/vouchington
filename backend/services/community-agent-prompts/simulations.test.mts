@@ -171,7 +171,7 @@ describe('community agent prompt simulations', () => {
       promptId: prompt.id,
       agentId: prompt.agent_id,
       flagged: true,
-      results: { flagged: true, reason: 'Approved after flag' },
+      results: { flagged: true },
     })
 
     const pendingFlaggedPostId = await insertCommunityPost(`pending-flagged-${suffix}`)
@@ -185,7 +185,7 @@ describe('community agent prompt simulations', () => {
       promptId: prompt.id,
       agentId: prompt.agent_id,
       flagged: true,
-      results: { flagged: true, reason: 'Still pending' },
+      results: { flagged: true },
     })
 
     const globallyPendingFlaggedPostId = await insertCommunityPost(
@@ -202,7 +202,7 @@ describe('community agent prompt simulations', () => {
       promptId: prompt.id,
       agentId: prompt.agent_id,
       flagged: true,
-      results: { flagged: true, reason: 'Community approved but globally pending' },
+      results: { flagged: true },
     })
 
     const estimate = await getCommunityAgentPromptFalsePositiveEstimate(community.id, prompt.id)

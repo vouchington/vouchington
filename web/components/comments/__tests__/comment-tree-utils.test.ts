@@ -55,7 +55,7 @@ describe('comment-tree-utils', () => {
       agent_id: 'agent-1',
       moderator_slug: 'moderator',
       flagged: true,
-      results: { reason: 'flagged' },
+      results: { flagged: true },
       input_sha256: 'sha',
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z',

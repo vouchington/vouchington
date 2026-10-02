@@ -81,7 +81,6 @@ async function recordAgentModerations(
     flagged: result.flagged,
     results: {
       flagged: result.flagged,
-      reason: '',
       confidence_score: result.probability,
       confidence_threshold: result.upper,
     },

@@ -102,7 +102,6 @@ describe('moderation-training feedback', () => {
       flagged: true,
       results: {
         flagged: true,
-        reason: 'Possible spam',
         confidence_score: 0.33,
       },
     })
@@ -121,7 +120,6 @@ describe('moderation-training feedback', () => {
       flagged: true,
       results: {
         flagged: true,
-        reason: 'Possible spam',
         confidence_score: 0.44,
       },
     })
@@ -140,7 +138,6 @@ describe('moderation-training feedback', () => {
       flagged: true,
       results: {
         flagged: true,
-        reason: 'Possible spam',
         confidence_score: 0.11,
       },
     })
@@ -157,7 +154,6 @@ describe('moderation-training feedback', () => {
       source_type: 'agent_moderation',
       current_state: 'rejected',
       confidence_score: 0.33,
-      reason: 'Possible spam',
       post_href: `/discussion/${postId}`,
     })
     expect(actions.actions.map(item => item.post_id)).not.toContain(deletedPostId)

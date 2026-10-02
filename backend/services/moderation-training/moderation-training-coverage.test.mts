@@ -35,7 +35,6 @@ describe('moderation-training feedback coverage', () => {
       action_at: actionAt,
       confidence_score: 'not-a-number',
       flagged: true,
-      reason: null,
       categories: ['spam', 123, 'abuse'],
       model_output: null,
       current_state: 'rejected',

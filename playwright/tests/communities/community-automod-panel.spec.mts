@@ -72,7 +72,6 @@ test.beforeAll(async () => {
     flagged: true,
     results: {
       flagged: true,
-      reason: 'Low quality',
       confidence_score: 0.35,
     },
   })
@@ -153,7 +152,6 @@ test.describe('Community automod review panel', () => {
       flagged: true,
       results: {
         flagged: true,
-        reason: 'Possible spam',
         confidence_score: 0.3,
       },
     })

@@ -43,7 +43,6 @@ const action: CommunityAutomodAction = {
   action_at: '2026-05-11T18:05:00.000Z',
   confidence_score: 0.64,
   flagged: true,
-  reason: 'Referral link without a personal data point',
   categories: ['referral', 'promotional'],
   model_output: null,
   current_state: 'rejected',

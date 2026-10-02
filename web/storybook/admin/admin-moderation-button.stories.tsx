@@ -17,8 +17,6 @@ const flaggedReview: AgentModeration = {
   flagged: true,
   results: {
     flagged: true,
-    reason:
-      'The Sapphire Reserve review repeats a referral code and never mentions the annual fee or restaurant category.',
     confidence_score: 0.91,
     confidence_threshold: 0.8,
     detector: 'voucha-spam',

@@ -83,7 +83,6 @@ describe('moderation-training feedback coverage', () => {
         action_at: new Date(),
         confidence_score: null,
         flagged: true,
-        reason: null,
         categories: [],
         model_output: null,
         current_state: 'rejected',
@@ -233,7 +232,7 @@ describe('moderation-training feedback coverage', () => {
       agentId: moderator.id,
       promptId,
       flagged: true,
-      results: { flagged: true, reason: 'Needs review', confidence_score: 'bad-score' },
+      results: { flagged: true, confidence_score: 'bad-score' },
     })
     const moderations = (await getPostLLMModerations(inReviewPostId)) as Array<{ id: string }>
     const moderationId = moderations[0]?.id

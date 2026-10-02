@@ -33,7 +33,6 @@ export function buildRecentAutomodActionsQuery(
           ELSE NULL
         END AS confidence_score,
         am.flagged,
-        NULLIF(am.results->>'reason', '') AS reason,
         CASE
           WHEN jsonb_typeof(am.results->'categories') = 'array' THEN am.results->'categories'
           ELSE '[]'::jsonb
@@ -98,7 +97,6 @@ export function buildRecentAutomodActionsQuery(
           ELSE NULL
         END AS confidence_score,
         am.flagged,
-        NULLIF(am.results->>'reason', '') AS reason,
         CASE
           WHEN jsonb_typeof(am.results->'categories') = 'array' THEN am.results->'categories'
           ELSE '[]'::jsonb
@@ -158,7 +156,6 @@ export function buildRecentAutomodActionsQuery(
         p.rejected_at AS action_at,
         NULL::double precision AS confidence_score,
         TRUE AS flagged,
-        NULL::text AS reason,
         '[]'::jsonb AS categories,
         disposition.evidence AS model_output,
         'rejected'::text AS current_state,
@@ -211,7 +208,6 @@ export function buildRecentAutomodActionsQuery(
         p.rejected_at AS action_at,
         NULLIF(disposition.evidence->>'composite_score', '')::double precision AS confidence_score,
         TRUE AS flagged,
-        NULL::text AS reason,
         '[]'::jsonb AS categories,
         disposition.evidence AS model_output,
         'rejected'::text AS current_state,

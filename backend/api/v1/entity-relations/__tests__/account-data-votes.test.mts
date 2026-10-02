@@ -48,7 +48,7 @@ describe('account-data vote export', () => {
       promptId,
       agentId: agent.id,
       flagged: false,
-      results: { flagged: false, reason: 'Legacy binary vote export fixture.' },
+      results: { flagged: false },
     })
 
     await upsertEntityRelationElectionVotes(

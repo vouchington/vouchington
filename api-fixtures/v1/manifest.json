@@ -7420,7 +7420,7 @@
     },
     "GET:/api/v1/communities/:communitySlug/automod/recent-actions": {
       "bodyKind": "content",
-      "hash": "d5d2d4d604fedfdc8f0505b31405aaf455d8c2834e0b98397b52fc185fbd85a3",
+      "hash": "c8dd6bbd6c6d6c34bb07c6aff99b72bad2d3c656084ccd5e753d0dbdd3832dd8",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -7638,20 +7638,6 @@
                 "required": true,
                 "schema": {
                   "type": "string"
-                }
-              },
-              "reason": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
                 }
               },
               "source_key": {
@@ -10917,7 +10903,7 @@
     },
     "GET:/api/v1/communities/:communitySlug/posts/:postId/moderation-results": {
       "bodyKind": "content",
-      "hash": "bf3ed7c94a5242e5185c56fbbb98efaa80abebddf34fe2057c3e3a69a5a68e7b",
+      "hash": "20dafb0dbbbe3865766aec796f58046870b1ed12899ad69414beba1be6d96a87",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -10980,12 +10966,6 @@
                 "required": true,
                 "schema": {
                   "type": "boolean"
-                }
-              },
-              "reason": {
-                "required": true,
-                "schema": {
-                  "type": "string"
                 }
               }
             },
@@ -32762,7 +32742,7 @@
     },
     "GET:/api/v1/posts": {
       "bodyKind": "content",
-      "hash": "b231228abb00c9d0e5ac093173ae3c514b31320266994842c6aa17a468a8e40e",
+      "hash": "0a63cf96f549d695bfabf91d2012229cf364ffcf005de78957ea1876bee88400",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -32900,12 +32880,6 @@
                 "required": true,
                 "schema": {
                   "type": "boolean"
-                }
-              },
-              "reason": {
-                "required": true,
-                "schema": {
-                  "type": "string"
                 }
               }
             },
@@ -83212,7 +83186,7 @@
         "window": "24h"
       },
       "responseSchema": {
-        "hash": "440e03e8e8cef49e5e09fcc55ca1c041e6526895a55764e9b9261c80eba35b2b",
+        "hash": "53a4387c93e87b78601dfd163ffd6ed9e358c6858ffa62ba5d88af246b9c8e60",
         "key": "web.communities.automod-recent-actions.default"
       },
       "route": {
