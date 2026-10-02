@@ -17,6 +17,7 @@ import { getUtcDayFromDate } from '@ts-shared/utils/dates'
 import {
   claimRegisteredResponseUsage,
   type BackgroundResponseRegistration,
+  type ClassifierUsageAttribution,
 } from './record-response-usage-ledger.mts'
 import { isStorableResponseId } from './response-id-storage-key.mts'
 
@@ -32,6 +33,7 @@ interface RecordAgentResponseUsageParams {
   // a foreground request that never registers a response -- there is no sweeper race to guard
   // there, so recording falls straight through to recordAiUsage.
   registration?: BackgroundResponseRegistration
+  classifier?: ClassifierUsageAttribution
   // The request's start time, for a foreground request recorded after its request day
   // (see RecordAiUsageOptions.createdAt in @services/ai-usage/record.mts). Ignored when
   // `registration.lease` is set -- the lease's own createdAt is the more authoritative request
@@ -68,6 +70,7 @@ export async function recordAgentResponseUsage(
     communityId,
     postId,
     registration,
+    classifier,
     createdAt,
   }: RecordAgentResponseUsageParams,
   deps: Partial<RecordAgentResponseUsageDeps> = {},
@@ -102,6 +105,7 @@ export async function recordAgentResponseUsage(
       communityId,
       postId,
       registration,
+      classifier,
       createdAt,
     })
   } catch (err) {
@@ -115,7 +119,7 @@ export async function recordAgentResponseUsage(
 
 type CallRecordingAgentResponseUsageParams = Omit<
   RecordAgentResponseUsageParams,
-  'response' | 'registration'
+  'response' | 'registration' | 'classifier'
 > & {
   /** OpenRouter has no compatible retrieve/cancel lifecycle, so it settles foreground usage directly. */
   responseProvider?: 'openai' | 'openrouter'

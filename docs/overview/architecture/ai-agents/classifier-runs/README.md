@@ -21,7 +21,9 @@ specific to a classifier; a classifier supplies only `ClassifierRunInputs`:
 - **One reserved attempt per model call.** The client's `beforeAttempt` hook runs the shared spend
   admission, then `startClassifierProviderAttempt` reserves the counted attempt in Postgres before
   the request leaves. At the attempt cap the run ends terminal `attempts-exhausted`. The billing
-  hooks fire once per reserved attempt.
+  hooks fire once per reserved attempt, and each billed response is recorded in the usage ledger
+  against the run (`classifierRunId`) with its latency, which is what the
+  [usage report](../../services/classifier-runs/README.md#usage-report) reads.
 - **Recorded failure, never a crash.** A `createClient` throw (for example a missing
   `OPENROUTER_API_KEY`) ends the remote half as terminal `client-unavailable`, keeps the local
   outcome and raises one `classifier_run_alarm` Sentry message that names the error class and never

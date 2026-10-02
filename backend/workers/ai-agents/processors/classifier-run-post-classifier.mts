@@ -41,6 +41,7 @@ export function createPostClassifierRegistration(
             createPostClassifierOpenRouterClient({
               postId: post.id,
               communityId: post.community_id,
+              classifierRunId: hooks.classifierRunId,
               beforeAttempt: hooks.beforeAttempt,
             }),
         },

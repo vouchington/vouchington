@@ -13,6 +13,8 @@ import { recordAgentResponseUsage } from './record-response-usage.mts'
 
 export type StructuredDecisionBillingSubject = {
   workload: string
+  /** The classifier run this client serves; every billed response is attributed to it. */
+  classifierRunId: string
   postId?: string | null
   communityId?: string | null
   beforeAttempt?: StructuredDecisionAttemptHooks['beforeAttempt']
@@ -69,6 +71,11 @@ async function recordStructuredDecisionUsage(
     agentSlug: subject.workload,
     postId: subject.postId,
     communityId: subject.communityId,
+    classifier: {
+      runId: subject.classifierRunId,
+      // The body has been read by now: from request start to here is the provider's latency.
+      latencyMs: Math.max(0, Date.now() - response.requestStartedAt.getTime()),
+    },
     createdAt: response.requestStartedAt,
   })
 }

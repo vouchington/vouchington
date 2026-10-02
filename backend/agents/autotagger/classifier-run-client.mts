@@ -18,6 +18,7 @@ type AutotaggerClientOptions = {
 }
 
 type AutotaggerClientInput = {
+  classifierRunId: string
   postId: string | null
   modelProvider: ClassifierModelProvider
   beforeAttempt: AutotaggerProviderAttemptHook
@@ -47,6 +48,7 @@ function createTopicClassifierClient(
     fetch: options.fetch,
     hooks: createStructuredDecisionBillingHooks({
       workload,
+      classifierRunId: input.classifierRunId,
       postId: input.postId,
       beforeAttempt: input.beforeAttempt,
     }),

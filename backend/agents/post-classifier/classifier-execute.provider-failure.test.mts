@@ -30,11 +30,12 @@ function dependencies(input: Fixture, fetch: StructuredDecisionFetch, apiKey = '
       detector: 'test-detector',
       detector_model_version: 'test-model',
     }),
-    createClient: (hooks: { beforeAttempt: () => Promise<void> }) =>
+    createClient: (hooks: { classifierRunId: string; beforeAttempt: () => Promise<void> }) =>
       createPostClassifierOpenRouterClient(
         {
           postId: input.post.id,
           communityId: input.community.id,
+          classifierRunId: hooks.classifierRunId,
           beforeAttempt: hooks.beforeAttempt,
         },
         { apiKey, fetch },

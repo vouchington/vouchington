@@ -240,6 +240,43 @@ outside the allowlist is dropped before it reaches Sentry, so no prompt text, pr
 key or raw token can ride along. The `client-unavailable` alarm carries the error name and never
 the error message, which a client factory may build from its configuration.
 
+## Usage report
+
+`readClassifierUsageReport(window)` is the one cost, latency and fan-out read for every fixed
+classifier. It adds no metrics path: provider figures come from the
+[ai-usage ledger](../ai-usage/README.md), whose rows carry `classifier_run_id` and `latency_ms`
+(set by the structured-decision billing hooks, so a billed response that failed strict decoding is
+counted). For each run reserved in a half-open window it returns the classifier, primitive,
+provider, model, prompt version, scope, batch id, shard count, retained candidate count, outcome,
+attempts, retries, sweep enqueues, provider calls, tokens, priced and unpriced calls, provider cost
+and latency. The same rows are summed per classifier, prompt version and scope, next to a count of
+durable requests per classifier.
+
+- **Window.** Runs are selected by reservation time, an index range on the run `id`. A ledger row is
+  joined with only a lower bound, because a retry is billed after its run was reserved and can land
+  after the window ends. The read refuses a window with more runs than
+  [`CLASSIFIER_USAGE_REPORT_MAX_RUNS`](../../../../../backend/services/classifier-runs/usage-report-runs.mts)
+  instead of cutting it short.
+- **Provider calls versus local detection.** A provider call is a ledger row. A local detector (C5)
+  writes no ledger row and costs nothing, so it is counted apart as a detector run with a cost of
+  zero.
+- **Unbilled attempts.** A request that returned no billed response (a network failure or a non-2xx
+  status) writes no ledger row. It is counted as an attempt with no provider call, and it has no
+  latency, because nothing is billed or measured for it.
+- **Shards.** The executor makes one provider call per run, so a run has one shard today. The shard
+  count is the number of decision calls persisted under the batch, and a sharded run would show one
+  provider call per shard under one batch.
+- **Candidates.** The candidate count is the number of results the batch retained, so a run that
+  never decided retains none.
+- **Diagnostic counters.** Request, sweep-enqueue and attempt counts describe work, not value, and
+  are never a KPI. Queue job counts in Valkey are not durable and are not measured here.
+- **No savings.** The report computes none. A before and after comparison of fan-out is the
+  consumer's, from two windows of measured runs, and a figure with no measured baseline is reported
+  as unmeasured.
+
+The report is read-only. Its first consumer is the Epic C KPI check (#223); until that check lands
+the function has no production caller.
+
 ## Adding a classifier
 
 C5, C6, C7, C8 and C9 are the adapters registered today. A new classifier adds a `classifiers` row, an

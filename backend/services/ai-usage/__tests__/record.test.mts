@@ -8,7 +8,9 @@ import {
   createTestUser,
   findAiUsageRecordForPost,
   insertTestCommunity,
+  listAiUsageRecordsForClassifierRun,
 } from '@voucha/test-helpers'
+import { reserveSyntheticRunId } from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-run'
 import type { PrivateUser } from '@services/users/types'
 import { hasRecordedAiUsageResponseId, recordAiUsage } from '../record.mts'
 import { getCommunityAiCostTotals } from '../totals.mts'
@@ -163,6 +165,47 @@ describe('recordAiUsage', () => {
     expect(outcomes.filter(outcome => outcome === 'already-recorded')).toHaveLength(7)
     await expect(countAiUsageOpenAIResponseKeys(responseId)).resolves.toBe(1)
     await expect(countAiUsageRecordsForResponseId(responseId)).resolves.toBe(1)
+  })
+
+  it('keeps the first classifier run attribution when another run records the same response', async () => {
+    const firstRunId = await reserveSyntheticRunId()
+    const secondRunId = await reserveSyntheticRunId()
+    const options = {
+      responseId: `decision-${randomUUID()}`,
+      agentSlug: 'test-classifier-attribution',
+      model: 'gpt-5.4-nano',
+      serviceTier: 'flex',
+      usage: { input_tokens: 11, output_tokens: 7, cost: 0.002 },
+    }
+
+    await expect(
+      recordAiUsage({ ...options, classifierRunId: firstRunId, latencyMs: 120 }),
+    ).resolves.toBe('recorded')
+    await expect(
+      recordAiUsage({ ...options, classifierRunId: secondRunId, latencyMs: 900 }),
+    ).resolves.toBe('already-recorded')
+
+    expect(await listAiUsageRecordsForClassifierRun(firstRunId)).toEqual([
+      expect.objectContaining({ latency_ms: 120, input_tokens: 11, cost_microunits: '2000' }),
+    ])
+    expect(await listAiUsageRecordsForClassifierRun(secondRunId)).toEqual([])
+  })
+
+  it('attributes usage recorded without a response id to its run as well', async () => {
+    const runId = await reserveSyntheticRunId()
+
+    await recordAiUsage({
+      agentSlug: 'test-classifier-attribution',
+      model: 'gpt-5.4-nano',
+      serviceTier: 'flex',
+      usage: { input_tokens: 5, output_tokens: 2 },
+      classifierRunId: runId,
+      latencyMs: 30,
+    })
+
+    expect(await listAiUsageRecordsForClassifierRun(runId)).toEqual([
+      expect.objectContaining({ latency_ms: 30, input_tokens: 5, output_tokens: 2 }),
+    ])
   })
 
   it('does not leave an idempotency key when the ledger insert fails', async () => {

@@ -35,6 +35,7 @@ function resolveApiKey(provider: ClassifierModelProvider, options: StoryClusteri
  */
 export function createStoryClusteringClient(
   input: {
+    classifierRunId: string
     modelProvider: ClassifierModelProvider
     beforeAttempt: NonNullable<StructuredDecisionAttemptHooks['beforeAttempt']>
   },
@@ -46,6 +47,7 @@ export function createStoryClusteringClient(
     fetch: options.fetch,
     hooks: createStructuredDecisionBillingHooks({
       workload: 'story-clustering',
+      classifierRunId: input.classifierRunId,
       postId: null,
       beforeAttempt: input.beforeAttempt,
     }),

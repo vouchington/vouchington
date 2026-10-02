@@ -9,6 +9,7 @@ import {
 } from '../../../../services/classifier-runs/index.mts'
 import { markClassifierRunTerminalForTest } from './run-facts.mts'
 import {
+  createSyntheticFixture,
   createSyntheticPost,
   type SyntheticFixture,
   type SyntheticPost,
@@ -30,6 +31,14 @@ export async function reserveSyntheticRun(setup: SyntheticFixture): Promise<Rese
   const reserved = await reserveClassifierRun(setup.adapter, setup.subject)
   if (reserved.kind !== 'reserved') throw new Error(`Unexpected reservation: ${reserved.kind}`)
   return reserved.run
+}
+
+/**
+ * A real reserved run's id, for a test that builds a classifier client outside the executor and
+ * needs the usage ledger's run foreign key to resolve.
+ */
+export async function reserveSyntheticRunId(): Promise<string> {
+  return (await reserveSyntheticRun(await createSyntheticFixture())).runId
 }
 
 export function claimSyntheticRun(

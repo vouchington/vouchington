@@ -26,6 +26,7 @@ type PostClassifierClientOptions = {
  */
 export function createPostClassifierOpenRouterClient(
   input: {
+    classifierRunId: string
     postId: string
     communityId: string | null
     beforeAttempt: PostClassifierProviderAttemptHook
@@ -38,6 +39,7 @@ export function createPostClassifierOpenRouterClient(
     fetch: options.fetch,
     hooks: createStructuredDecisionBillingHooks({
       workload: POST_CLASSIFIER_SLUG,
+      classifierRunId: input.classifierRunId,
       postId: input.postId,
       communityId: input.communityId,
       beforeAttempt: input.beforeAttempt,
