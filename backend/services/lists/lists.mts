@@ -130,7 +130,7 @@ export async function softDeleteList(currentUserId: string, listId: string): Pro
 
 export async function searchUserLists(
   ownerUserId: string,
-  options: { limit?: number; after?: string } = {},
+  options: { limit?: number; after?: string; includePrivate?: boolean } = {},
 ): Promise<{ results: List[]; page_info: PageInfo }> {
   const limit = options.limit ?? 20
   assert(Number.isInteger(limit), 422, 'limit must be an integer')
@@ -143,6 +143,9 @@ export async function searchUserLists(
     WHERE owner_user_id = $1
       AND removed_at IS NULL
   `
+  // Private lists are included unless the caller leaves them out; the filter runs in SQL so the
+  // page, its size and its cursor are all computed over the lists the caller may read.
+  if (options.includePrivate === false) sql += `  AND visibility <> 'private'\n`
 
   if (options.after) {
     const cursor = decodeUuidCursor(

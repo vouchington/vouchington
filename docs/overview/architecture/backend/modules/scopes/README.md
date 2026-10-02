@@ -38,11 +38,18 @@ already authorized `get_my_profile`, so a profile write grant also lets the cred
 profile. See
 [Profile, Notification, and Preference Write Tools](../../../agent-tools/profile-notification-write-tools.md).
 
+`hostnames:read` and `users:read` are user-audience resource scopes for the hostname and user MCP
+read tools. Both tools read as a signed-out reader whatever the credential owner's role, so neither
+scope exposes a blocked hostname or a private profile field, and `mcp.user:read` covers them like
+every other user read scope. `lists:read` also covers the list read tools; it never reads a private
+list on its own.
+
 `post-relations.owned-private:write` is an exact, non-inheritable user capability. It requires
 `entity-relations:write` (and therefore read) for API keys and OAuth grants, but broad
 `mcp.user:write` never covers it. The `set_bookmark` and `add_list_item` MCP tools check the same
-grant before they touch an own private post, as does `remove_entity_relation`; `bookmarks:write` and
-`lists:write` never imply it.
+grant before they touch an own private post, as does `remove_entity_relation`, and `get_my_lists`,
+`get_list` and `get_list_items` check it before they return an own private list; `bookmarks:write`,
+`lists:write` and `lists:read` never imply it.
 
 `referral-links` and `topic-recommendations` are ordinary user read/write resources (write requires
 read). `topic-recommendations:read` has no read tool yet: it exists as the prerequisite the write

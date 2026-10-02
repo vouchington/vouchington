@@ -7,7 +7,9 @@ a news story. Each requires the `posts:read` scope, is read-only, names its REST
 and sits on the `internal`, `mcp` and `client` surfaces like the other post tools. `search_posts`
 is not one of them but follows their [privacy rule](#privacy). The
 [community read tools](#community-read-tools) follow the same shape with the `communities:read`
-scope.
+scope. The hostname, list and user read tools share
+this shape and are described in
+[Hostname, List and User Read Tools](../../agent-tools/hostname-list-user-read-tools.md).
 
 | Tool                   | REST twin                                 | Arguments                                              |
 | ---------------------- | ----------------------------------------- | ------------------------------------------------------ |

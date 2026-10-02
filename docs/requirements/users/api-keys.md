@@ -32,12 +32,12 @@ API keys use a permission-based access control system. Each key has a `permissio
 - `rss:read` — Access RSS feed endpoints (`/rss/posts`, `/rss/news`)
 - `topics:read` — Read topic and recommendation MCP tools
 - `posts:read` — Read post MCP tools
-- `communities:read` — Read public community MCP tools
+- `communities:read`, `hostnames:read`, `users:read` — Read public community, hostname and public user profile MCP tools
 - `cards:read/write` — Read or manage cards; write requires read
 - `entity-relations:read/write` — Read or add relations, add or remove tags; write requires read
 - `bookmarks:read/write`, `lists:read/write` — Set bookmarks or manage lists and items; write requires read
 - `referral-links:read/write`, `topic-recommendations:read/write` — Manage own referral links; edit or withdraw own pending topic recommendations; write requires read
-- `post-relations.owned-private:write` — Add relations, tags, bookmarks, or list items for owned private posts only
+- `post-relations.owned-private:write` — Add relations, tags, bookmarks, or list items for owned private posts, and read own private lists
 - `financial-profile:read/write` — Credit score, income, credit limit and history; exact grants
 - `spending:read/write` — Spending categories, amounts, frequency and notes; exact grants
 - `mcp.user:read/write` — User MCP access excluding exact-grant permissions
@@ -64,7 +64,7 @@ catalogue rather than hard-coding scope strings; see the
 [client parity matrix](../CLIENT-PARITY-MATRIX.md#api-key-and-connected-app-contract-handoff).
 See the [Scopes API](../api/v1/scopes/README.md).
 `financial-profile:*` and `spending:*` require explicit grants; `mcp.user:*` excludes them. `get_my_financial_profile` requires `financial-profile:read`; `get_my_profile` omits financial data. `profile`, `notifications` and `preferences` have read and write scopes for the own-account write tools; `profile:read` also reads the profile. Each write requires its read scope. Pickers describe each permission; consent separates exact grants as sensitive permissions.
-MCP keys are user MCP only. The own-private relation capability is visible as a separate picker permission, not part of Standard MCP access. Selecting it also selects its relation write and read prerequisites. The picker explains that it lets the credential add relations and tags only to the holder's own private posts.
+MCP keys are user MCP only. The own-private relation capability is visible as a separate picker permission, not part of Standard MCP access. Selecting it also selects its relation write and read prerequisites. The picker explains that it lets the credential add relations and tags only to the holder's own private posts. It also lets the credential read the holder's own private lists. `hostnames:read` and `users:read` read the public hostname and user profile MCP tools.
 
 ## Endpoints
 

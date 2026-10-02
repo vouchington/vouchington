@@ -163,5 +163,37 @@ describe('lists service', () => {
       const found = results.find(l => l.id === list.id)
       expect(found).toBeUndefined()
     })
+
+    it('leaves private lists out of the page and its cursor when includePrivate is false', async () => {
+      const listUser = await createTestUser()
+      const visibilities = ['public', 'private', 'unlisted', 'private', 'public'] as const
+      const lists = []
+      for (const visibility of visibilities) {
+        lists.push(
+          await createList(listUser.id, WEB_PROVENANCE, {
+            name: `Visible ${createRandomString(8)}`,
+            visibility,
+          }),
+        )
+      }
+      const readable = lists.filter(list => list.visibility !== 'private').map(list => list.id)
+
+      const all = await searchUserLists(listUser.id)
+      const first = await searchUserLists(listUser.id, { includePrivate: false, limit: 2 })
+      const second = await searchUserLists(listUser.id, {
+        includePrivate: false,
+        limit: 2,
+        after: first.page_info.end_cursor!,
+      })
+
+      expect(all.results).toHaveLength(5)
+      expect([...first.results, ...second.results].map(list => list.id).toReversed()).toEqual(
+        readable,
+      )
+      expect(first.page_info.has_next_page).toBe(true)
+      expect(second.page_info.has_next_page).toBe(false)
+      const explicit = await searchUserLists(listUser.id, { includePrivate: true })
+      expect(explicit.results).toHaveLength(5)
+    })
   })
 })
