@@ -24,11 +24,14 @@ app.route('/api/v1/copyright-notices/review-queue').get(async (ctx: Context) => 
   ctx.json(
     apiResponse(
       'GET:/api/v1/copyright-notices/review-queue',
-      await listCopyrightStaffQueuePage(currentUser, parseAndValidatePaginatedRequest(
-        ctx,
-        'GET:/api/v1/copyright-notices/review-queue',
-        copyrightStaffQueueParser,
-      )),
+      await listCopyrightStaffQueuePage(
+        currentUser,
+        parseAndValidatePaginatedRequest(
+          ctx,
+          'GET:/api/v1/copyright-notices/review-queue',
+          copyrightStaffQueueParser,
+        ),
+      ),
     ),
   )
 })

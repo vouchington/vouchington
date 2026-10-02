@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { encodeScopedTierPreciseUuidCursor } from '@modules/pagination'
-import { copyrightStaffQueueCursorScope } from '@services/copyright-notices'
+import { copyrightStaffQueueCursorScope } from '@services/copyright-notices/read-models-staff'
 import { createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { confirmTestRepeatInfringerNotice } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
