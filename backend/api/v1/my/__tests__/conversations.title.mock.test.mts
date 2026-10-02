@@ -6,7 +6,7 @@ import {
   createConversation,
   createConversationMessage,
 } from '@services/conversations-messages/create'
-import { openAiSpendCapConfig } from '@services/ai-usage'
+import { spendCapConfig } from '@services/ai-usage'
 import type { PrivateUser } from '@services/users/types'
 
 vi.mock<typeof import('@modules/openai-utils/create-response')>(
@@ -78,8 +78,8 @@ describe('POST /api/v1/my/conversations/:conversationId/title', () => {
     // enabled: false bypasses the real spend-cap DB read (spend-cap-guard.mts's own
     // short-circuit), so this success path can't flake on unrelated ai_usage_records rows from
     // other tests sharing today's UTC window.
-    await openAiSpendCapConfig.waitForInitialization()
-    const restore = overrideDynamicConfigFieldsForTest(openAiSpendCapConfig, { enabled: false })
+    await spendCapConfig.waitForInitialization()
+    const restore = overrideDynamicConfigFieldsForTest(spendCapConfig, { enabled: false })
     try {
       const suffix = crypto.randomUUID().slice(0, 8)
       const conv = await createConversation(user.id, '')
@@ -112,10 +112,10 @@ describe('POST /api/v1/my/conversations/:conversationId/title', () => {
   })
 
   it('returns 429 and does not call OpenAI when the daily spend cap is breached', async () => {
-    await openAiSpendCapConfig.waitForInitialization()
+    await spendCapConfig.waitForInitialization()
     // 0 is the true kill-switch value (#8773 review round 4): totalMicrounits is never negative, so
     // this breaches on the very first call regardless of what other tests have written today.
-    const restore = overrideDynamicConfigFieldsForTest(openAiSpendCapConfig, {
+    const restore = overrideDynamicConfigFieldsForTest(spendCapConfig, {
       daily_cap_microunits: 0,
     })
     try {
@@ -139,8 +139,8 @@ describe('POST /api/v1/my/conversations/:conversationId/title', () => {
   it('returns 200 with the local "New Conversation" fallback for an empty conversation even when the spend cap is breached', async () => {
     // Reproduces #8773 Finding 3: generateChatTitle's no-messages path never calls OpenAI, so the
     // spend cap must not gate it -- a breached cap should never turn this free fallback into a 429.
-    await openAiSpendCapConfig.waitForInitialization()
-    const restore = overrideDynamicConfigFieldsForTest(openAiSpendCapConfig, {
+    await spendCapConfig.waitForInitialization()
+    const restore = overrideDynamicConfigFieldsForTest(spendCapConfig, {
       daily_cap_microunits: 0,
     })
     try {

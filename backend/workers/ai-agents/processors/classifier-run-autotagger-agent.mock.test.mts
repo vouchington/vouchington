@@ -4,7 +4,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { fetchStructuredDecisionProvider } from '@modules/structured-decisions/transport'
 import { CLASSIFIER_RUN_ATTEMPTS } from '@queues/ai-agents/config'
 import { ai_agents } from '@queues/ai-agents/queues'
-import { openAiSpendCapConfig } from '@services/ai-usage'
+import { spendCapConfig } from '@services/ai-usage'
 import type { ClassifierRunSubject } from '@services/classifier-runs'
 import { findAiUsageRecordForPost, pollUntilNotNull } from '@voucha/test-helpers'
 import {
@@ -131,8 +131,8 @@ const agentRuns = (fixture: Fixture) =>
 describe('C7 reasoning autotagger through the shared lifecycle (real PG, mocked provider)', () => {
   let restoreSpendCap: (() => void) | undefined
   beforeAll(async () => {
-    await openAiSpendCapConfig.waitForInitialization()
-    restoreSpendCap = overrideDynamicConfigFieldsForTest(openAiSpendCapConfig, { enabled: false })
+    await spendCapConfig.waitForInitialization()
+    restoreSpendCap = overrideDynamicConfigFieldsForTest(spendCapConfig, { enabled: false })
   })
   beforeEach(() => {
     askedQuestionSets = []

@@ -1,6 +1,6 @@
 export const AI_AGENTS_QUEUE_NAME = 'ai_agents'
-export const OPENAI_SPEND_CAP_RECHECKS_QUEUE_NAME = 'openai-spend-cap-rechecks'
-export const OPENAI_SPEND_CAP_RECHECK_JOB_NAME = 'recheck' as const
+export const SPEND_CAP_RECHECKS_QUEUE_NAME = 'ai-spend-cap-rechecks'
+export const SPEND_CAP_RECHECK_JOB_NAME = 'recheck' as const
 export const AI_AGENTS_DEFAULTS = {
   attempts: 3,
   backoff: { type: 'exponential' as const, delay: 1000, jitter: 0.5 },
@@ -65,7 +65,7 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
   'reconcile-copyright-agent-dispatches': 100,
 }
 
-// Which job types can incur billed OpenAI generation spend, and are therefore subject to the
+// Which job types can incur billed provider generation spend, and are therefore subject to the
 // daily spend-ceiling check (#8773, `backend/workers/ai-agents/workers/core.mts`). The three
 // `reconcile-*` job types only sweep/cancel/re-enqueue existing work -- none call OpenAI to
 // generate new content -- so they must keep running through a cap breach. In particular,

@@ -1,11 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import {
-  OPENAI_SPEND_CAP_MAX_VALUES,
-  OPENAI_SPEND_CAP_MIN_VALUES,
-} from '@services/ai-usage/spend-cap-config'
+import { SPEND_CAP_MAX_VALUES, SPEND_CAP_MIN_VALUES } from '@services/ai-usage/spend-cap-config'
 import { validateAutotaggerPaidLimitsConfig } from './autotagger-paid-limits-validation.mts'
 import { DynamicConfigValidationError } from './namespace.mts'
-import { validateOpenAiSpendCapConfig } from './registry-ai-usage-validators.mts'
+import { validateSpendCapConfig } from './registry-ai-usage-validators.mts'
 import { validateRequestSigningModeConfig } from './registry-validators.mts'
 
 describe('validateRequestSigningModeConfig', () => {
@@ -50,39 +47,39 @@ describe('validateAutotaggerPaidLimitsConfig', () => {
   })
 })
 
-describe('validateOpenAiSpendCapConfig', () => {
+describe('validateSpendCapConfig', () => {
   it('accepts a value within bounds', () => {
-    expect(() => validateOpenAiSpendCapConfig({ daily_cap_microunits: 10_000_000 })).not.toThrow()
+    expect(() => validateSpendCapConfig({ daily_cap_microunits: 10_000_000 })).not.toThrow()
   })
 
   it('accepts zero -- the true kill switch, distinct from enabled: false', () => {
-    expect(() => validateOpenAiSpendCapConfig({ daily_cap_microunits: 0 })).not.toThrow()
+    expect(() => validateSpendCapConfig({ daily_cap_microunits: 0 })).not.toThrow()
   })
 
   it('rejects a negative value', () => {
-    expect(() => validateOpenAiSpendCapConfig({ daily_cap_microunits: -1 })).toThrow(
+    expect(() => validateSpendCapConfig({ daily_cap_microunits: -1 })).toThrow(
       DynamicConfigValidationError,
     )
   })
 
   it('rejects below the floor', () => {
     expect(() =>
-      validateOpenAiSpendCapConfig({
-        daily_cap_microunits: OPENAI_SPEND_CAP_MIN_VALUES.daily_cap_microunits - 1,
+      validateSpendCapConfig({
+        daily_cap_microunits: SPEND_CAP_MIN_VALUES.daily_cap_microunits - 1,
       }),
     ).toThrow(DynamicConfigValidationError)
   })
 
   it('rejects above the ceiling', () => {
     expect(() =>
-      validateOpenAiSpendCapConfig({
-        daily_cap_microunits: OPENAI_SPEND_CAP_MAX_VALUES.daily_cap_microunits + 1,
+      validateSpendCapConfig({
+        daily_cap_microunits: SPEND_CAP_MAX_VALUES.daily_cap_microunits + 1,
       }),
     ).toThrow(DynamicConfigValidationError)
   })
 
   it('rejects a non-integer', () => {
-    expect(() => validateOpenAiSpendCapConfig({ daily_cap_microunits: 1.5 })).toThrow(
+    expect(() => validateSpendCapConfig({ daily_cap_microunits: 1.5 })).toThrow(
       DynamicConfigValidationError,
     )
   })

@@ -16,8 +16,8 @@ function makeJob(): Job<AIAgentJobData> {
 // (core.spend-cap.test.mts) -- disable it so 'rate-limits on OpenAI 429' below stays a pure unit
 // test, with no dependency on live Valkey/Postgres state.
 const spendCapDisabled = {
-  waitForOpenAiSpendCapConfig: () => Promise.resolve(),
-  getOpenAiSpendCapFields: () => ({ enabled: false, daily_cap_microunits: 0 }),
+  waitForSpendCapConfig: () => Promise.resolve(),
+  getSpendCapFields: () => ({ enabled: false, daily_cap_microunits: 0 }),
 }
 
 describe('ai-agents workers', () => {

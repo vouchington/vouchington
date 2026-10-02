@@ -1,6 +1,6 @@
 import { prepareCommunityPromptDryRun } from '@agents/community-moderation'
 import type { Context } from '@jongleberry/api-server'
-import { assertOpenAiSpendCapNotBreached } from '@services/ai-usage'
+import { assertDailySpendCapNotBreached } from '@services/ai-usage'
 import { currentUserCanModerateCommunity, getCommunityMember } from '@services/communities'
 import { getCommunityAgentPrompt } from '@services/community-agent-prompts'
 import { recordModerationTrainingFeedback } from '@services/moderation-training'
@@ -49,13 +49,13 @@ app
     )
     ctx.assert(typeof body.text === 'string' && body.text, 422, 'text is required')
 
-    const spendCapBreach = await assertOpenAiSpendCapNotBreached('agent-prompt-test-run-moderation')
-    ctx.assert(!spendCapBreach, 429, 'Daily OpenAI spend cap reached, try again after UTC midnight')
+    const spendCapBreach = await assertDailySpendCapNotBreached('agent-prompt-test-run-moderation')
+    ctx.assert(!spendCapBreach, 429, 'Daily AI spend cap reached, try again after UTC midnight')
 
     // A no-persist classifier dry run: the same question, model and threshold as a real run, with
     // no receipt, attempt or moderation row. It records its own usage against the cost ledger, so
     // recording it again here would double-count every test run in /admin/ai-costs. A cap breach
-    // after the pre-check is an `OpenAiSpendCapBreachError`, which carries status 429.
+    // after the pre-check is a `SpendCapBreachError`, which carries status 429.
     const dryRun = await prepareCommunityPromptDryRun({
       communityId: community.id,
       prompt: { id: prompt.id, text: prompt.prompt },

@@ -6,9 +6,9 @@ import {
   type StructuredDecisionFetch,
 } from '@modules/structured-decisions'
 import {
-  assertOpenAiSpendCapNotBreached,
+  assertDailySpendCapNotBreached,
   latchAccountingUncertainty,
-  OpenAiSpendCapBreachError,
+  SpendCapBreachError,
 } from '@services/ai-usage'
 import { getUtcDayFromDate } from '@ts-shared/utils/dates'
 import type { ClassifierModelProvider } from '@voucha/types'
@@ -52,8 +52,8 @@ function resolveApiKey(
 function createDryRunBillingHooks(communityId: string): StructuredDecisionAttemptHooks {
   return {
     beforeAttempt: async () => {
-      const breach = await assertOpenAiSpendCapNotBreached(DRY_RUN_WORKLOAD)
-      if (breach) throw new OpenAiSpendCapBreachError(breach)
+      const breach = await assertDailySpendCapNotBreached(DRY_RUN_WORKLOAD)
+      if (breach) throw new SpendCapBreachError(breach)
     },
     onBilledResponse: async response => {
       await recordAgentResponseUsage({

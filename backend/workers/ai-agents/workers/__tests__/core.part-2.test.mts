@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DelayedError, type Job, type Worker } from 'glide-mq'
-import type { OpenAiSpendCapBreachContext } from '@modules/on-error/openai-spend-cap-breach'
+import type { SpendCapBreachContext } from '@modules/on-error/spend-cap-breach'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import { getDayBounds } from '@ts-shared/utils/dates'
 import { processAIAgentWorkerJob } from '../core.mts'
@@ -35,16 +35,16 @@ describe('processAIAgentWorkerJob accounting uncertainty', () => {
     const getAccountingUncertaintySource = vi
       .fn<(requestDay: string) => Promise<'ledger_write_failed' | null>>()
       .mockResolvedValue('ledger_write_failed')
-    const recordOpenAiSpendCapBreach = vi.fn<(context: OpenAiSpendCapBreachContext) => void>()
+    const recordSpendCapBreach = vi.fn<(context: SpendCapBreachContext) => void>()
     const processAIAgent = vi.fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
 
     await expect(
       processAIAgentWorkerJob(delayedJob, worker, {
-        waitForOpenAiSpendCapConfig: () => Promise.resolve(),
-        getOpenAiSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1_000_000 }),
+        waitForSpendCapConfig: () => Promise.resolve(),
+        getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1_000_000 }),
         getAccountingUncertaintySource,
         getDailyAiCostTotalMicrounits,
-        recordOpenAiSpendCapBreach,
+        recordSpendCapBreach,
         processAIAgent,
       }),
     ).rejects.toThrow(DelayedError)
@@ -52,7 +52,7 @@ describe('processAIAgentWorkerJob accounting uncertainty', () => {
     expect(delayedJob.moveToDelayed).toHaveBeenCalledExactlyOnceWith(getDayBounds(day).endMs)
     expect(processAIAgent).not.toHaveBeenCalled()
     expect(getDailyAiCostTotalMicrounits).not.toHaveBeenCalled()
-    expect(recordOpenAiSpendCapBreach).toHaveBeenCalledExactlyOnceWith({
+    expect(recordSpendCapBreach).toHaveBeenCalledExactlyOnceWith({
       agentJobName: 'report-judgement',
       dailyTotalMicrounits: null,
       dailyCapMicrounits: 1_000_000,

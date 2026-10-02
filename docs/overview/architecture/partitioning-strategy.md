@@ -215,7 +215,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   Pending intents remain durable recovery work. Delivered and suppressed intents are deleted after
   90 days in locked batches using their terminal timestamp, and generation receipts cascade with
   the parent intent; this bounds retained terminal delivery evidence without touching pending work.
-- Global idempotency keys: `ai_usage_openai_response_keys`. Partitioning cannot preserve the
+- Global idempotency keys: `ai_usage_provider_response_keys`. Partitioning cannot preserve the
   response-ID primary key's global uniqueness; reconsider only if the replacement enforces that
   invariant across every ledger partition.
 - Work queue (drains to empty): `ap_inbox_deliveries`. Rows are deleted on success and rejection.

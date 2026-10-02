@@ -4,7 +4,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { createAutotaggerClient, executeAutotaggerRun } from '@agents/autotagger'
 import { fetchStructuredDecisionProvider } from '@modules/structured-decisions/transport'
 import { CLASSIFIER_RUN_ATTEMPTS } from '@queues/ai-agents/config'
-import { openAiSpendCapConfig } from '@services/ai-usage'
+import { spendCapConfig } from '@services/ai-usage'
 import { createAutotaggerRunAdapter } from '@services/autotagger'
 import { claimClassifierRun } from '@services/classifier-runs'
 import { classifierRunJobFor } from '@voucha/test-helpers/classifier-run-worker'
@@ -85,8 +85,8 @@ async function drain(attempt: () => Promise<string>, times: number): Promise<str
 describe('C6 classifier run through the shared lifecycle (real PG, mocked provider)', () => {
   let restoreSpendCap: (() => void) | undefined
   beforeAll(async () => {
-    await openAiSpendCapConfig.waitForInitialization()
-    restoreSpendCap = overrideDynamicConfigFieldsForTest(openAiSpendCapConfig, { enabled: false })
+    await spendCapConfig.waitForInitialization()
+    restoreSpendCap = overrideDynamicConfigFieldsForTest(spendCapConfig, { enabled: false })
   })
   beforeEach(() => {
     askedQuestionSets = []

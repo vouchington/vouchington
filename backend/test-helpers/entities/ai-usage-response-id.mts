@@ -20,7 +20,7 @@ export async function findAiUsageRecordForResponseId(
       record.model, record.service_tier, record.input_tokens, record.cached_input_tokens,
       record.output_tokens, record.pricing_status, record.cost_microunits, record.community_id,
       record.agent_slug, record.post_id
-    FROM ai_usage_openai_response_keys key
+    FROM ai_usage_provider_response_keys key
     INNER JOIN ai_usage_records record ON record.id = key.ai_usage_record_id
     WHERE key.response_id = ${responseId}
     LIMIT 1

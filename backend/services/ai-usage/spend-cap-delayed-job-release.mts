@@ -6,7 +6,7 @@ import {
   workerQueuePrefix,
 } from '@data-stores/valkey-glide-mq'
 import { loadScript } from '@data-stores/valkey/scripts'
-import { openAiSpendCapDelayedRegistryKey } from './spend-cap-delayed-jobs.mts'
+import { spendCapDelayedRegistryKey } from './spend-cap-delayed-jobs.mts'
 import pMap from 'p-map'
 
 const RELEASE_BATCH_SIZE = 100
@@ -28,40 +28,40 @@ const completeReleaseScript = registerWorkerQueueScript(
 )
 
 type RegistryClient = Pick<typeof workerQueueCommandClient, 'hlen' | 'hscan' | 'invokeScript'>
-type SpendCapDelayData = { openAiSpendCapDelayedDay?: string }
+type SpendCapDelayData = { spendCapDelayedDay?: string }
 type AgentQueue = Pick<Queue<SpendCapDelayData>, 'getJob' | 'name'>
 type ReleaseAction =
   | { kind: 'delete'; field: string; phase: string }
   | { kind: 'promote'; field: string; jobId: string }
   | undefined
-export type OpenAiSpendCapReleaseResult = {
+export type SpendCapReleaseResult = {
   released: number
   hasPending: boolean
   cursor: string
 }
 
-export async function beginOpenAiSpendCapDelayedJobRelease(
+export async function beginSpendCapDelayedJobRelease(
   day: string,
   generation: string,
   registry: RegistryClient = workerQueueCommandClient,
 ): Promise<string | undefined> {
   const lease = randomUUID()
   const started = await registry.invokeScript(beginReleaseScript, {
-    keys: [openAiSpendCapDelayedRegistryKey(day)],
+    keys: [spendCapDelayedRegistryKey(day)],
     args: [generation, lease],
   })
   return Number(started) === 1 ? lease : undefined
 }
 
-export async function releaseOpenAiSpendCapDelayedJobs(
+export async function releaseSpendCapDelayedJobs(
   day: string,
   lease: string,
   queue: AgentQueue,
   registry: RegistryClient = workerQueueCommandClient,
   cursor = '0',
   dayHasEnded = false,
-): Promise<OpenAiSpendCapReleaseResult> {
-  const key = openAiSpendCapDelayedRegistryKey(day)
+): Promise<SpendCapReleaseResult> {
+  const key = spendCapDelayedRegistryKey(day)
   const [nextCursor, fields] = await registry.hscan(key, cursor, { count: RELEASE_BATCH_SIZE })
   const entries = registryEntries(fields)
   const actions = await pMap(
@@ -97,11 +97,11 @@ async function classifyReleaseEntry(
   const naturallyReleased = inactiveNaturallyReleased || state === 'active'
   if (!job || state === 'completed' || state === 'failed') {
     return { kind: 'delete', field, phase }
-  } else if (job.data.openAiSpendCapDelayedDay === day && state === 'delayed') {
+  } else if (job.data.spendCapDelayedDay === day && state === 'delayed') {
     return { kind: 'promote', field, jobId: job.id }
   } else if (
     (phase === MARKED &&
-      (job.data.openAiSpendCapDelayedDay !== day || (dayHasEnded && naturallyReleased))) ||
+      (job.data.spendCapDelayedDay !== day || (dayHasEnded && naturallyReleased))) ||
     (phase === REGISTERING && dayHasEnded && inactiveNaturallyReleased)
   ) {
     return { kind: 'delete', field, phase }
@@ -109,14 +109,14 @@ async function classifyReleaseEntry(
   return undefined
 }
 
-export async function completeOpenAiSpendCapDelayedJobRelease(
+export async function completeSpendCapDelayedJobRelease(
   day: string,
   generation: string,
   lease: string,
   registry: RegistryClient = workerQueueCommandClient,
 ): Promise<boolean> {
   const completed = await registry.invokeScript(completeReleaseScript, {
-    keys: [openAiSpendCapDelayedRegistryKey(day)],
+    keys: [spendCapDelayedRegistryKey(day)],
     args: [generation, lease],
   })
   return Number(completed) === 1

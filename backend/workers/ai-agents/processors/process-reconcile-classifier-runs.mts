@@ -6,7 +6,7 @@ import {
 } from '@queues/ai-agents/enqueues/classifier-run'
 import { enqueueReconcileClassifierRunsPage } from '@queues/ai-agents/enqueues/reconcile-classifier-runs'
 import type { ReconcileClassifierRunsJobData } from '@queues/ai-agents/types'
-import { evaluateOpenAiSpendCapBreach } from '@services/ai-usage'
+import { evaluateSpendCapBreach } from '@services/ai-usage'
 import {
   CLASSIFIER_RUN_SWEEP_ENQUEUE_BOUND,
   abandonClassifierRunSweep,
@@ -25,7 +25,7 @@ export interface ReconcileClassifierRunsDependencies {
   handlerFor: (classifier: string) => ClassifierRunHandler
   /** Lets a test scope each classifier's health read to its own rows. */
   readHealth: ReadClassifierRunHealth
-  evaluateSpendCap: typeof evaluateOpenAiSpendCapBreach
+  evaluateSpendCap: typeof evaluateSpendCapBreach
 }
 
 export type ReconcileClassifierRunsResult =
@@ -38,7 +38,7 @@ const defaultDependencies: ReconcileClassifierRunsDependencies = {
   handlers: listClassifierRunHandlers,
   handlerFor: getClassifierRunHandler,
   readHealth: (handler, now) => handler.health(now),
-  evaluateSpendCap: evaluateOpenAiSpendCapBreach,
+  evaluateSpendCap: evaluateSpendCapBreach,
 }
 
 /**

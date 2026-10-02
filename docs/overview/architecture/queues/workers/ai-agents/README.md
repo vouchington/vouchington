@@ -21,7 +21,7 @@ Postgres and re-enqueues those whose stable-id job is gone; only an enqueue that
 job is counted, and a run whose tenth counted job has vanished is given up (see the
 [recovery transitions](../../../services/classifier-runs/README.md#recovery-transitions)). The
 second lists each classifier's pending requests, including subjects that never got a run, and
-dispatches them. A spend-cap breach (`evaluateOpenAiSpendCapBreach`) ends the sweep before either
+dispatches them. A spend-cap breach (`evaluateSpendCapBreach`) ends the sweep before either
 phase enqueues anything. The root tick also reads each classifier's receipt health before the
 spend-cap check, so a parked backlog is still seen, and the chained pages never read it. It alarms
 through `recordClassifierRunAlarm` (`@modules/on-error`, message `classifier_run_alarm`, grouped by
@@ -106,23 +106,23 @@ that worker to accumulate or report.
 
 ## Daily spend cap
 
-`evaluateOpenAiSpendCapBreach()` (`@services/ai-usage/spend-cap-guard.mts`) is the single decision
-point behind the `openai-spend-cap` `DynamicConfig`: it checks `getOpenAiSpendCapFields()` and, if
+`evaluateSpendCapBreach()` (`@services/ai-usage/spend-cap-guard.mts`) is the single decision
+point behind the `ai-spend-cap` `DynamicConfig`: it checks `getSpendCapFields()` and, if
 enabled, the current request-day accounting-uncertainty latch before
 `getDailyAiCostTotalMicrounits(day)`, and returns either `null` (proceed) or a breach. Every
-call site that can incur billed OpenAI spend goes through it — not just this worker. Synchronous,
+call site that can incur billed provider spend goes through it — not just this worker. Synchronous,
 non-queue routes that call a model provider directly (`generateChatTitleFromInput` from
 `@agents/conversation-title` in `POST /api/v1/my/conversations/:conversationId/title`, and the
 community-moderation classifier dry runs behind
 `POST /api/v1/communities/:idOrSlug/agent-prompts/:promptId/test-runs` and
 `POST /api/v1/communities/:idOrSlug/automod/simulate`) call the
-`assertOpenAiSpendCapNotBreached()` wrapper and reject with 429 on breach; otherwise the cap would
+`assertDailySpendCapNotBreached()` wrapper and reject with 429 on breach; otherwise the cap would
 only ever block `ai_agents` queue jobs while these routes kept generating billed spend after the
 ceiling was nominally reached.
 
-`processAIAgentWorkerJob` (`workers/core.mts`) calls `evaluateOpenAiSpendCapBreach()` before every
-dispatch, ahead of the token-limiter wiring above — but only when `jobProducesOpenAiSpend(job)`
-(`workers/core.mts`) says the job actually incurs billed OpenAI generation spend. That helper reads
+`processAIAgentWorkerJob` (`workers/core.mts`) calls `evaluateSpendCapBreach()` before every
+dispatch, ahead of the token-limiter wiring above — but only when `jobProducesSpend(job)`
+(`workers/core.mts`) says the job actually incurs billed provider generation spend. That helper reads
 `AI_AGENT_JOB_PRODUCES_SPEND`
 (`@queues/ai-agents/config`), which marks two cases exempt: the four `reconcile-*` job types always
 dispatch (they only sweep/cancel/re-enqueue existing work, and in particular
@@ -148,9 +148,9 @@ the cap, an unpriced row, or uncertain accounting after a ledger/latch-read fail
 `getDailyAiCostTotalMicrounits()` already queried, not a fresh `new Date()` read — the wall clock
 can advance past midnight during the async DB round-trip, in which case the target lands in the
 past; glide-mq's promotion function clamps that to `now`, so the job promotes on the scheduler's
-next tick instead of erroring) and persists `openAiSpendCapDelayedDay` as exact provenance. It also
+next tick instead of erroring) and persists `spendCapDelayedDay` as exact provenance. It also
 registers the exact job ID in a per-day Valkey hash before parking. One generation-deduplicated
-coordinator on the separate `openai-spend-cap-rechecks` queue re-runs a persistent breach once per
+coordinator on the separate `ai-spend-cap-rechecks` queue re-runs a persistent breach once per
 minute without the `ai_agents` RPM/token limit. When the breach clears, an atomic `releasing` gate
 rejects stale admissions, then the coordinator promotes registered delayed jobs in cursor pages of
 100, re-checking each job's stored delay day so a midnight re-park onto a newer day's registry
@@ -174,7 +174,7 @@ per minute for the registry's full two-day TTL; registered jobs retain their mid
 throughout. During a rolling deploy, old workers cannot consume the new
 coordinator job because it is on a separately selected queue; jobs wait durably until a new worker
 revision is present. The worker records an alert via
-`recordOpenAiSpendCapBreach`
+`recordSpendCapBreach`
 (`@modules/on-error`) tagged with
 `breach_reason: 'cap_exceeded' | 'unpriced_rows' | 'accounting_uncertain'` and the uncertainty
 source when applicable. Setting

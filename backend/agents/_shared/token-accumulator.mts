@@ -14,7 +14,7 @@ const tokenAccumulatorStorage = new AsyncLocalStorage<TokenAccumulatorStore>()
  * processAIAgentWorkerJob (backend/workers/ai-agents/workers/core.mts), so glide-mq's
  * tokenLimiter there sees real per-job TPM consumption instead of staying permanently at zero
  * (#8836) -- recordAgentResponseUsage is the single choke point every call site (direct calls
- * and the tool loop) already flows through.
+ * and the structured-decision hooks) already flows through.
  *
  * onSettled runs in a finally, so tokens accumulated up to the point of a failure are still
  * reported even when fn throws; the throw itself still propagates unchanged. onSettled's own

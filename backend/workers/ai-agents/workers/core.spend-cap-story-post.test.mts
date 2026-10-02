@@ -12,12 +12,12 @@ import type { DailyAiCostTotal } from '@services/ai-usage'
 import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
 import { upsertSystemAdministrator } from '@services/users/system-users'
 import { createStoryPost } from '@services/stories/story-posts'
-import type { OpenAiSpendCapBreachContext } from '@modules/on-error/openai-spend-cap-breach'
+import type { SpendCapBreachContext } from '@modules/on-error/spend-cap-breach'
 import type { AIAgentJobData, StoryPostJobData } from '@queues/ai-agents/types'
 import { processAIAgentWorkerJob } from './core.mts'
 
 // #8773 round-15 finding: `story-post` is spend-producing by default (AI_AGENT_JOB_PRODUCES_SPEND),
-// so unlike the exemptions in core.spend-cap-moderation.test.mts, evaluateOpenAiSpendCapBreach
+// so unlike the exemptions in core.spend-cap-moderation.test.mts, evaluateSpendCapBreach
 // always runs for this job type. What varies per job is whether the breach actually defers it --
 // only a job that would reach callStoryPostAgent (wouldStoryPostCallOpenAI) does. A non-force retry
 // against a post that already has a summary only runs the spend-free moderation/spam/embedding
@@ -107,20 +107,20 @@ describe('processAIAgentWorkerJob -- story-post spend-cap recovery exemption', (
     const processAIAgent = vi
       .fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
       .mockResolvedValue('ok')
-    const recordOpenAiSpendCapBreach = vi.fn<(context: OpenAiSpendCapBreachContext) => void>()
+    const recordSpendCapBreach = vi.fn<(context: SpendCapBreachContext) => void>()
 
     const result2 = await processAIAgentWorkerJob(job, worker, {
-      waitForOpenAiSpendCapConfig: () => Promise.resolve(),
-      getOpenAiSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1_000_000 }),
+      waitForSpendCapConfig: () => Promise.resolve(),
+      getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1_000_000 }),
       getDailyAiCostTotalMicrounits: createDailyTotalLoader(5_000_000),
-      recordOpenAiSpendCapBreach,
+      recordSpendCapBreach,
       processAIAgent,
     })
 
     expect(result2).toBe('ok')
     expect(processAIAgent).toHaveBeenCalledOnce()
     expect(job.moveToDelayed).not.toHaveBeenCalled()
-    expect(recordOpenAiSpendCapBreach).not.toHaveBeenCalled()
+    expect(recordSpendCapBreach).not.toHaveBeenCalled()
   })
 
   it('defers an eligible (would call OpenAI) unsummarized post during a breach', async () => {
@@ -130,23 +130,23 @@ describe('processAIAgentWorkerJob -- story-post spend-cap recovery exemption', (
     const job = mockJob(result.post.id)
     const worker = mockWorker()
     const processAIAgent = vi.fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
-    const recordOpenAiSpendCapBreach = vi.fn<(context: OpenAiSpendCapBreachContext) => void>()
-    const registerOpenAiSpendCapRecheck = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
+    const recordSpendCapBreach = vi.fn<(context: SpendCapBreachContext) => void>()
+    const registerSpendCapRecheck = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
 
     await expect(
       processAIAgentWorkerJob(job, worker, {
-        waitForOpenAiSpendCapConfig: () => Promise.resolve(),
-        getOpenAiSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1_000_000 }),
+        waitForSpendCapConfig: () => Promise.resolve(),
+        getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1_000_000 }),
         getDailyAiCostTotalMicrounits: createDailyTotalLoader(5_000_000),
-        recordOpenAiSpendCapBreach,
-        registerOpenAiSpendCapRecheck,
+        recordSpendCapBreach,
+        registerSpendCapRecheck,
         processAIAgent,
       }),
     ).rejects.toThrow(DelayedError)
 
     expect(processAIAgent).not.toHaveBeenCalled()
     expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(expect.any(Number))
-    expect(recordOpenAiSpendCapBreach).toHaveBeenCalledExactlyOnceWith({
+    expect(recordSpendCapBreach).toHaveBeenCalledExactlyOnceWith({
       agentJobName: 'story-post',
       dailyTotalMicrounits: 5_000_000,
       dailyCapMicrounits: 1_000_000,
@@ -163,16 +163,16 @@ describe('processAIAgentWorkerJob -- story-post spend-cap recovery exemption', (
     const job = mockJob(result.post.id, true)
     const worker = mockWorker()
     const processAIAgent = vi.fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
-    const recordOpenAiSpendCapBreach = vi.fn<(context: OpenAiSpendCapBreachContext) => void>()
-    const registerOpenAiSpendCapRecheck = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
+    const recordSpendCapBreach = vi.fn<(context: SpendCapBreachContext) => void>()
+    const registerSpendCapRecheck = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
 
     await expect(
       processAIAgentWorkerJob(job, worker, {
-        waitForOpenAiSpendCapConfig: () => Promise.resolve(),
-        getOpenAiSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1_000_000 }),
+        waitForSpendCapConfig: () => Promise.resolve(),
+        getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1_000_000 }),
         getDailyAiCostTotalMicrounits: createDailyTotalLoader(5_000_000),
-        recordOpenAiSpendCapBreach,
-        registerOpenAiSpendCapRecheck,
+        recordSpendCapBreach,
+        registerSpendCapRecheck,
         processAIAgent,
       }),
     ).rejects.toThrow(DelayedError)

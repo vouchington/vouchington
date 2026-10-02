@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { Response } from 'undici'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { StructuredDecisionFetch } from '@modules/structured-decisions'
-import { openAiSpendCapConfig } from '@services/ai-usage'
+import { spendCapConfig } from '@services/ai-usage'
 import { reserveSyntheticRunId } from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-run'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
@@ -43,8 +43,8 @@ describe('createStoryClusteringClient', () => {
   let classifierRunId: string
   beforeAll(async () => {
     classifierRunId = await reserveSyntheticRunId()
-    await openAiSpendCapConfig.waitForInitialization()
-    restoreSpendCap = overrideDynamicConfigFieldsForTest(openAiSpendCapConfig, { enabled: false })
+    await spendCapConfig.waitForInitialization()
+    restoreSpendCap = overrideDynamicConfigFieldsForTest(spendCapConfig, { enabled: false })
   })
   afterAll(() => restoreSpendCap?.())
 

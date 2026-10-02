@@ -11,12 +11,12 @@ import {
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import * as communityModeration from '@agents/community-moderation'
-import { OpenAiSpendCapBreachError, openAiSpendCapConfig } from '@services/ai-usage'
+import { SpendCapBreachError, spendCapConfig } from '@services/ai-usage'
 
 describe('POST /api/v1/communities/:slug/automod/simulate spend cap during the run', () => {
   it('returns 429 when the daily spend cap is breached after the pre-check passed', async () => {
-    await openAiSpendCapConfig.waitForInitialization()
-    const restoreConfig = overrideDynamicConfigFieldsForTest(openAiSpendCapConfig, {
+    await spendCapConfig.waitForInitialization()
+    const restoreConfig = overrideDynamicConfigFieldsForTest(spendCapConfig, {
       enabled: false,
     })
     // The sample is many calls, so the cap can be reached between the route's one pre-check and a
@@ -24,7 +24,7 @@ describe('POST /api/v1/communities/:slug/automod/simulate spend cap during the r
     const simulateSpy = vi
       .spyOn(communityModeration, 'simulateCommunityPromptOnPosts')
       .mockRejectedValue(
-        new OpenAiSpendCapBreachError({
+        new SpendCapBreachError({
           reason: 'cap_exceeded',
           dailyCapMicrounits: 1,
           totalMicrounits: 2,

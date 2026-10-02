@@ -1,20 +1,20 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Job, Worker } from 'glide-mq'
-import type { AIAgentJobData, OpenAiSpendCapRecheckJobData } from '@queues/ai-agents/types'
+import type { AIAgentJobData, SpendCapRecheckJobData } from '@queues/ai-agents/types'
 import {
-  enqueueOpenAiSpendCapRecheck,
-  openAiSpendCapRecheckDeduplicationId,
-  OPENAI_SPEND_CAP_RECHECK_MAX_ATTEMPTS,
-  OPENAI_SPEND_CAP_RECHECK_RETRY_DELAY_MS,
+  enqueueSpendCapRecheck,
+  spendCapRecheckDeduplicationId,
+  SPEND_CAP_RECHECK_MAX_ATTEMPTS,
+  SPEND_CAP_RECHECK_RETRY_DELAY_MS,
 } from '@queues/ai-agents/enqueues/spend-cap-recheck'
-import { registerOpenAiSpendCapDelayedJob as registerDelayedJob } from '@services/ai-usage'
+import { registerSpendCapDelayedJob as registerDelayedJob } from '@services/ai-usage'
 import { getDayBounds } from '@ts-shared/utils/dates'
 import { processAIAgentWorkerJob } from './core.mts'
 import {
-  getOpenAiSpendCapRecheckAt,
-  processOpenAiSpendCapRecheckJob,
-  registerOpenAiSpendCapRecheck,
+  getSpendCapRecheckAt,
+  processSpendCapRecheckJob,
+  registerSpendCapRecheck,
 } from '../processors/spend-cap-recheck.mts'
 
 function delayedJob<T>(name: string, data: T): Job<T> {
@@ -36,25 +36,21 @@ function mockWorker(): Worker {
 
 function clearRecheckDependencies() {
   return {
-    waitForOpenAiSpendCapConfig: () => Promise.resolve(),
-    getOpenAiSpendCapFields: () => ({ enabled: false, daily_cap_microunits: 1 }),
+    waitForSpendCapConfig: () => Promise.resolve(),
+    getSpendCapFields: () => ({ enabled: false, daily_cap_microunits: 1 }),
     getDailyAiCostTotalMicrounits: vi.fn<() => Promise<never>>(),
-    beginOpenAiSpendCapDelayedJobRelease: vi
+    beginSpendCapDelayedJobRelease: vi
       .fn<() => Promise<string | undefined>>()
       .mockResolvedValue('lease-a'),
-    reopenOpenAiSpendCapDelayedJobRegistration: vi
-      .fn<() => Promise<boolean>>()
-      .mockResolvedValue(true),
-    releaseOpenAiSpendCapDelayedJobs: vi
+    reopenSpendCapDelayedJobRegistration: vi.fn<() => Promise<boolean>>().mockResolvedValue(true),
+    releaseSpendCapDelayedJobs: vi
       .fn<() => Promise<{ released: number; hasPending: boolean; cursor: string }>>()
       .mockResolvedValue({ released: 1, hasPending: false, cursor: '0' }),
-    completeOpenAiSpendCapDelayedJobRelease: vi
-      .fn<() => Promise<boolean>>()
-      .mockResolvedValue(true),
+    completeSpendCapDelayedJobRelease: vi.fn<() => Promise<boolean>>().mockResolvedValue(true),
   }
 }
 
-describe('OpenAI spend-cap coordinated rechecks', () => {
+describe('AI spend-cap coordinated rechecks', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date('2026-08-16T12:00:00.000Z'))
@@ -64,47 +60,47 @@ describe('OpenAI spend-cap coordinated rechecks', () => {
   it('parks a registered breached job at the queried day end', async () => {
     const day = '2026-08-16'
     const job = delayedJob('report-judgement', {} as AIAgentJobData)
-    const registerOpenAiSpendCapRecheck = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
+    const registerSpendCapRecheck = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
 
     await expect(
       processAIAgentWorkerJob(job, mockWorker(), {
-        waitForOpenAiSpendCapConfig: () => Promise.resolve(),
-        getOpenAiSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
+        waitForSpendCapConfig: () => Promise.resolve(),
+        getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
         getDailyAiCostTotalMicrounits: () =>
           Promise.resolve({ totalMicrounits: 1, hasUnpricedRows: false, day }),
-        registerOpenAiSpendCapRecheck,
+        registerSpendCapRecheck,
       }),
     ).rejects.toThrow('delayed')
 
-    expect(registerOpenAiSpendCapRecheck).toHaveBeenCalledExactlyOnceWith(job, day)
+    expect(registerSpendCapRecheck).toHaveBeenCalledExactlyOnceWith(job, day)
     expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(getDayBounds(day).endMs)
   })
 
   it('keeps a registered breach accepted when its coordinator enqueue rejects', async () => {
     const day = '2026-08-16'
     const job = delayedJob('report-judgement', {} as AIAgentJobData)
-    const registerOpenAiSpendCapDelayedJob = vi
+    const registerSpendCapDelayedJob = vi
       .fn<typeof registerDelayedJob>()
       .mockResolvedValue({ accepted: true, generation: 'generation-a' })
     const enqueueCoordinator = vi
-      .fn<typeof enqueueOpenAiSpendCapRecheck>()
+      .fn<typeof enqueueSpendCapRecheck>()
       .mockRejectedValue(new Error('coordinator unavailable'))
 
     await expect(
       processAIAgentWorkerJob(job, mockWorker(), {
-        waitForOpenAiSpendCapConfig: () => Promise.resolve(),
-        getOpenAiSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
+        waitForSpendCapConfig: () => Promise.resolve(),
+        getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
         getDailyAiCostTotalMicrounits: () =>
           Promise.resolve({ totalMicrounits: 1, hasUnpricedRows: false, day }),
-        registerOpenAiSpendCapRecheck: (registeredJob, registeredDay) =>
-          registerOpenAiSpendCapRecheck(registeredJob, registeredDay, Date.now(), {
-            registerOpenAiSpendCapDelayedJob,
-            enqueueOpenAiSpendCapRecheck: enqueueCoordinator,
+        registerSpendCapRecheck: (registeredJob, registeredDay) =>
+          registerSpendCapRecheck(registeredJob, registeredDay, Date.now(), {
+            registerSpendCapDelayedJob,
+            enqueueSpendCapRecheck: enqueueCoordinator,
           }),
       }),
     ).rejects.toThrow('delayed')
 
-    expect(registerOpenAiSpendCapDelayedJob).toHaveBeenCalledExactlyOnceWith(job, day)
+    expect(registerSpendCapDelayedJob).toHaveBeenCalledExactlyOnceWith(job, day)
     expect(enqueueCoordinator).toHaveBeenCalledExactlyOnceWith(day, 'generation-a', 60_000)
     expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(getDayBounds(day).endMs)
   })
@@ -112,30 +108,28 @@ describe('OpenAI spend-cap coordinated rechecks', () => {
   it('keeps a registered breach accepted when its coordinator enqueue throws synchronously', async () => {
     const day = '2026-08-16'
     const job = delayedJob('report-judgement', {} as AIAgentJobData)
-    const registerOpenAiSpendCapDelayedJob = vi
+    const registerSpendCapDelayedJob = vi
       .fn<typeof registerDelayedJob>()
       .mockResolvedValue({ accepted: true, generation: 'generation-a' })
-    const enqueueCoordinator = vi
-      .fn<typeof enqueueOpenAiSpendCapRecheck>()
-      .mockImplementation(() => {
-        throw new Error('coordinator unavailable')
-      })
+    const enqueueCoordinator = vi.fn<typeof enqueueSpendCapRecheck>().mockImplementation(() => {
+      throw new Error('coordinator unavailable')
+    })
 
     await expect(
       processAIAgentWorkerJob(job, mockWorker(), {
-        waitForOpenAiSpendCapConfig: () => Promise.resolve(),
-        getOpenAiSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
+        waitForSpendCapConfig: () => Promise.resolve(),
+        getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
         getDailyAiCostTotalMicrounits: () =>
           Promise.resolve({ totalMicrounits: 1, hasUnpricedRows: false, day }),
-        registerOpenAiSpendCapRecheck: (registeredJob, registeredDay) =>
-          registerOpenAiSpendCapRecheck(registeredJob, registeredDay, Date.now(), {
-            registerOpenAiSpendCapDelayedJob,
-            enqueueOpenAiSpendCapRecheck: enqueueCoordinator,
+        registerSpendCapRecheck: (registeredJob, registeredDay) =>
+          registerSpendCapRecheck(registeredJob, registeredDay, Date.now(), {
+            registerSpendCapDelayedJob,
+            enqueueSpendCapRecheck: enqueueCoordinator,
           }),
       }),
     ).rejects.toThrow('delayed')
 
-    expect(registerOpenAiSpendCapDelayedJob).toHaveBeenCalledExactlyOnceWith(job, day)
+    expect(registerSpendCapDelayedJob).toHaveBeenCalledExactlyOnceWith(job, day)
     expect(enqueueCoordinator).toHaveBeenCalledExactlyOnceWith(day, 'generation-a', 60_000)
     expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(getDayBounds(day).endMs)
   })
@@ -146,11 +140,11 @@ describe('OpenAI spend-cap coordinated rechecks', () => {
 
     await expect(
       processAIAgentWorkerJob(job, mockWorker(), {
-        waitForOpenAiSpendCapConfig: () => Promise.resolve(),
-        getOpenAiSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
+        waitForSpendCapConfig: () => Promise.resolve(),
+        getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
         getDailyAiCostTotalMicrounits: () =>
           Promise.resolve({ totalMicrounits: 1, hasUnpricedRows: false, day }),
-        registerOpenAiSpendCapRecheck: () => Promise.resolve(false),
+        registerSpendCapRecheck: () => Promise.resolve(false),
       }),
     ).rejects.toThrow('delayed')
 
@@ -164,8 +158,8 @@ describe('OpenAI spend-cap coordinated rechecks', () => {
     const day = '2026-08-16'
     const job = delayedJob('report-judgement', {} as AIAgentJobData)
     const registrationError = new Error('registration unavailable')
-    const reportOpenAiSpendCapRegistrationFailure = vi.fn<(error: Error) => void>()
-    const registerOpenAiSpendCapRecheck = sync
+    const reportSpendCapRegistrationFailure = vi.fn<(error: Error) => void>()
+    const registerSpendCapRecheck = sync
       ? () => {
           throw registrationError
         }
@@ -173,24 +167,22 @@ describe('OpenAI spend-cap coordinated rechecks', () => {
 
     await expect(
       processAIAgentWorkerJob(job, mockWorker(), {
-        waitForOpenAiSpendCapConfig: () => Promise.resolve(),
-        getOpenAiSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
+        waitForSpendCapConfig: () => Promise.resolve(),
+        getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
         getDailyAiCostTotalMicrounits: () =>
           Promise.resolve({ totalMicrounits: 1, hasUnpricedRows: false, day }),
-        registerOpenAiSpendCapRecheck,
-        reportOpenAiSpendCapRegistrationFailure,
+        registerSpendCapRecheck,
+        reportSpendCapRegistrationFailure,
       }),
     ).rejects.toThrow('delayed')
 
-    expect(reportOpenAiSpendCapRegistrationFailure).toHaveBeenCalledExactlyOnceWith(
-      registrationError,
-    )
+    expect(reportSpendCapRegistrationFailure).toHaveBeenCalledExactlyOnceWith(registrationError)
     expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(getDayBounds(day).endMs)
   })
 
   it('re-delays only the dedicated coordinator while a breach persists', async () => {
     const day = '2026-08-16'
-    const job = delayedJob<OpenAiSpendCapRecheckJobData>('recheck', {
+    const job = delayedJob<SpendCapRecheckJobData>('recheck', {
       day,
       generation: 'generation-a',
     })
@@ -198,13 +190,13 @@ describe('OpenAI spend-cap coordinated rechecks', () => {
     const reopen = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
 
     await expect(
-      processOpenAiSpendCapRecheckJob(job, {
-        waitForOpenAiSpendCapConfig: () => Promise.resolve(),
-        getOpenAiSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
+      processSpendCapRecheckJob(job, {
+        waitForSpendCapConfig: () => Promise.resolve(),
+        getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
         getDailyAiCostTotalMicrounits: () =>
           Promise.resolve({ totalMicrounits: 1, hasUnpricedRows: false, day }),
-        beginOpenAiSpendCapDelayedJobRelease: begin,
-        reopenOpenAiSpendCapDelayedJobRegistration: reopen,
+        beginSpendCapDelayedJobRelease: begin,
+        reopenSpendCapDelayedJobRegistration: reopen,
       }),
     ).rejects.toThrow('delayed')
 
@@ -215,29 +207,29 @@ describe('OpenAI spend-cap coordinated rechecks', () => {
   })
 
   it('stops when a persisted release lease cannot be acquired', async () => {
-    const job = delayedJob<OpenAiSpendCapRecheckJobData>('recheck', {
+    const job = delayedJob<SpendCapRecheckJobData>('recheck', {
       day: '2026-08-16',
       generation: 'generation-a',
     })
     const dependencies = clearRecheckDependencies()
-    dependencies.beginOpenAiSpendCapDelayedJobRelease.mockResolvedValue(undefined)
+    dependencies.beginSpendCapDelayedJobRelease.mockResolvedValue(undefined)
 
-    await expect(processOpenAiSpendCapRecheckJob(job, dependencies)).resolves.toBeUndefined()
+    await expect(processSpendCapRecheckJob(job, dependencies)).resolves.toBeUndefined()
 
-    expect(dependencies.releaseOpenAiSpendCapDelayedJobs).not.toHaveBeenCalled()
-    expect(dependencies.completeOpenAiSpendCapDelayedJobRelease).not.toHaveBeenCalled()
+    expect(dependencies.releaseSpendCapDelayedJobs).not.toHaveBeenCalled()
+    expect(dependencies.completeSpendCapDelayedJobRelease).not.toHaveBeenCalled()
   })
 
   it('invokes configuration initialization through the production default dependency', async () => {
-    const job = delayedJob<OpenAiSpendCapRecheckJobData>('recheck', {
+    const job = delayedJob<SpendCapRecheckJobData>('recheck', {
       day: '2026-08-16',
       generation: 'generation-a',
     })
 
     await expect(
-      processOpenAiSpendCapRecheckJob(job, {
-        getOpenAiSpendCapFields: () => ({ enabled: false, daily_cap_microunits: 1 }),
-        beginOpenAiSpendCapDelayedJobRelease: () => Promise.resolve(undefined),
+      processSpendCapRecheckJob(job, {
+        getSpendCapFields: () => ({ enabled: false, daily_cap_microunits: 1 }),
+        beginSpendCapDelayedJobRelease: () => Promise.resolve(undefined),
       }),
     ).resolves.toBeUndefined()
 
@@ -245,54 +237,54 @@ describe('OpenAI spend-cap coordinated rechecks', () => {
   })
 
   it('keeps draining bounded pages until no registered jobs remain', async () => {
-    const job = delayedJob<OpenAiSpendCapRecheckJobData>('recheck', {
+    const job = delayedJob<SpendCapRecheckJobData>('recheck', {
       day: '2026-08-16',
       generation: 'generation-a',
     })
     const dependencies = clearRecheckDependencies()
-    dependencies.releaseOpenAiSpendCapDelayedJobs.mockResolvedValue({
+    dependencies.releaseSpendCapDelayedJobs.mockResolvedValue({
       released: 100,
       hasPending: true,
       cursor: '42',
     })
 
-    await expect(processOpenAiSpendCapRecheckJob(job, dependencies)).rejects.toThrow('delayed')
+    await expect(processSpendCapRecheckJob(job, dependencies)).rejects.toThrow('delayed')
     expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(Date.now() + 1_000)
     expect(job.updateData).toHaveBeenCalledExactlyOnceWith({
       day: '2026-08-16',
       generation: 'generation-a',
       cursor: '42',
     })
-    expect(dependencies.completeOpenAiSpendCapDelayedJobRelease).not.toHaveBeenCalled()
+    expect(dependencies.completeSpendCapDelayedJobRelease).not.toHaveBeenCalled()
   })
 
   it('completes after atomically closing an empty releasing registry', async () => {
-    const job = delayedJob<OpenAiSpendCapRecheckJobData>('recheck', {
+    const job = delayedJob<SpendCapRecheckJobData>('recheck', {
       day: '2026-08-16',
       generation: 'generation-a',
     })
     const dependencies = clearRecheckDependencies()
 
-    await expect(processOpenAiSpendCapRecheckJob(job, dependencies)).resolves.toBeUndefined()
-    expect(dependencies.beginOpenAiSpendCapDelayedJobRelease).toHaveBeenCalledOnce()
-    expect(dependencies.completeOpenAiSpendCapDelayedJobRelease).toHaveBeenCalledOnce()
+    await expect(processSpendCapRecheckJob(job, dependencies)).resolves.toBeUndefined()
+    expect(dependencies.beginSpendCapDelayedJobRelease).toHaveBeenCalledOnce()
+    expect(dependencies.completeSpendCapDelayedJobRelease).toHaveBeenCalledOnce()
     expect(job.moveToDelayed).not.toHaveBeenCalled()
   })
 
   it('bounds rechecks at the queried UTC day end', () => {
     const day = '2026-08-16'
     const now = Date.parse('2026-08-16T23:59:30.000Z')
-    expect(getOpenAiSpendCapRecheckAt(day, now)).toBe(getDayBounds(day).endMs)
-    expect(getOpenAiSpendCapRecheckAt('2026-08-15')).toBe(getDayBounds('2026-08-15').endMs)
+    expect(getSpendCapRecheckAt(day, now)).toBe(getDayBounds(day).endMs)
+    expect(getSpendCapRecheckAt('2026-08-15')).toBe(getDayBounds('2026-08-15').endMs)
   })
 
   it('uses generation-scoped deduplication across the full registry recovery window', () => {
-    expect(openAiSpendCapRecheckDeduplicationId('2026-08-16', 'a')).not.toBe(
-      openAiSpendCapRecheckDeduplicationId('2026-08-16', 'b'),
+    expect(spendCapRecheckDeduplicationId('2026-08-16', 'a')).not.toBe(
+      spendCapRecheckDeduplicationId('2026-08-16', 'b'),
     )
-    expect(OPENAI_SPEND_CAP_RECHECK_MAX_ATTEMPTS).toBe(2 * 24 * 60)
-    expect(OPENAI_SPEND_CAP_RECHECK_RETRY_DELAY_MS).toBe(60_000)
-    expect(OPENAI_SPEND_CAP_RECHECK_MAX_ATTEMPTS * OPENAI_SPEND_CAP_RECHECK_RETRY_DELAY_MS).toBe(
+    expect(SPEND_CAP_RECHECK_MAX_ATTEMPTS).toBe(2 * 24 * 60)
+    expect(SPEND_CAP_RECHECK_RETRY_DELAY_MS).toBe(60_000)
+    expect(SPEND_CAP_RECHECK_MAX_ATTEMPTS * SPEND_CAP_RECHECK_RETRY_DELAY_MS).toBe(
       2 * 24 * 60 * 60_000,
     )
   })

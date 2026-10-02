@@ -27,7 +27,7 @@ call with no tools, called synchronously by
 - The route calls `getConversationTitleGenerationInput()` first so a `null` result skips the model
   call, and the spend-cap check that only gates it, and falls back to the local `New Conversation`
   title.
-- For a non-null input the route calls `assertOpenAiSpendCapNotBreached('chat-generate-title')`
+- For a non-null input the route calls `assertDailySpendCapNotBreached('chat-generate-title')`
   before `generateChatTitleFromInput()`. See
   [the daily spend cap](../../queues/workers/ai-agents/README.md#daily-spend-cap).
 - The model call records its ledger row through `callRecordingAgentResponseUsage()` for both

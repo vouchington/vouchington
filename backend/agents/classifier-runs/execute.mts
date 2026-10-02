@@ -2,7 +2,7 @@ import { prepareSingleCallClassifierDecision } from '@agents/classifiers/prepare
 import type { ExecuteSingleCallClassifierDecisionInput } from '@agents/classifiers/types'
 import { recordClassifierRunAlarm } from '@modules/on-error'
 import type { StructuredDecisionClient } from '@modules/structured-decisions'
-import { OpenAiSpendCapBreachError } from '@services/ai-usage'
+import { SpendCapBreachError } from '@services/ai-usage'
 import {
   failClassifierClientUnavailable,
   failClassifierRunAttempt,
@@ -117,7 +117,7 @@ export async function executeClassifierRun<C, L, E>(
       })
     } catch (err) {
       if (err instanceof AttemptStopped) return err.outcome
-      if (!phase.reserved && err instanceof OpenAiSpendCapBreachError)
+      if (!phase.reserved && err instanceof SpendCapBreachError)
         await releaseClassifierRunLease(adapter, lease)
       const classified = classifyFailure(err, phase, signal)
       if (classified) {

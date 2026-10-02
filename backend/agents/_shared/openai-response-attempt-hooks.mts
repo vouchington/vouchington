@@ -1,7 +1,7 @@
 import {
-  assertOpenAiSpendCapNotBreached,
+  assertDailySpendCapNotBreached,
   latchAccountingUncertainty,
-  OpenAiSpendCapBreachError,
+  SpendCapBreachError,
 } from '@services/ai-usage'
 import { getUtcDayFromDate } from '@ts-shared/utils/dates'
 import type { OpenAIResponseAttemptHooks } from './create-response.mts'
@@ -9,7 +9,7 @@ import type { OpenAIResponseAttemptHooks } from './create-response.mts'
 export type { OpenAIResponseAttemptHooks } from './create-response.mts'
 
 interface OpenAIResponseAttemptHookDeps {
-  assertOpenAiSpendCapNotBreached?: typeof assertOpenAiSpendCapNotBreached
+  assertDailySpendCapNotBreached?: typeof assertDailySpendCapNotBreached
   latchAccountingUncertainty?: typeof latchAccountingUncertainty
 }
 
@@ -22,13 +22,13 @@ export function createOpenAIResponseAttemptHooks(
   agentSlug: string,
   deps: OpenAIResponseAttemptHookDeps = {},
 ): OpenAIResponseAttemptHooks {
-  const checkSpendCap = deps.assertOpenAiSpendCapNotBreached ?? assertOpenAiSpendCapNotBreached
+  const checkSpendCap = deps.assertDailySpendCapNotBreached ?? assertDailySpendCapNotBreached
   const latchUncertainty = deps.latchAccountingUncertainty ?? latchAccountingUncertainty
   return {
     beforeAttempt: async ({ attempt }) => {
       if (attempt === 1) return
       const breach = await checkSpendCap(agentSlug)
-      if (breach) throw new OpenAiSpendCapBreachError(breach)
+      if (breach) throw new SpendCapBreachError(breach)
     },
     onUnknownBilledAttempt: async ({ requestStartedAt }) => {
       await latchUncertainty({

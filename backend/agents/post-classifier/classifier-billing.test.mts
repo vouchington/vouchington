@@ -7,7 +7,7 @@ import {
   pollUntilNotNull,
 } from '@voucha/test-helpers'
 import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
-import { getAccountingUncertaintySource, OpenAiSpendCapBreachError } from '@services/ai-usage'
+import { getAccountingUncertaintySource, SpendCapBreachError } from '@services/ai-usage'
 import { claimClassifierRun } from '@services/classifier-runs'
 import type { StructuredDecisionFetch } from '@modules/structured-decisions'
 import {
@@ -72,7 +72,7 @@ describe('post classifier billing', () => {
 
       await expect(
         executePostClassifierRun(input, createBillingDependencies(input, fetch)),
-      ).rejects.toBeInstanceOf(OpenAiSpendCapBreachError)
+      ).rejects.toBeInstanceOf(SpendCapBreachError)
       expect(fetch).not.toHaveBeenCalled()
       expect((await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SLUG))[0]).toMatchObject({
         provider_attempts_started: 0,

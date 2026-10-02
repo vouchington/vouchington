@@ -16,9 +16,9 @@ describe('worker-cpu CPU_ONLY_WORKER_DEFINITIONS load functions', () => {
     expect(WORKER_DEFINITIONS).toEqual([...CPU_ONLY_WORKER_DEFINITIONS, ...IO_WORKER_DEFINITIONS])
   })
 
-  it('loads and closes the dedicated OpenAI spend-cap recheck worker', async () => {
+  it('loads and closes the dedicated AI spend-cap recheck worker', async () => {
     const definition = CPU_ONLY_WORKER_DEFINITIONS.find(
-      definition => definition.queueName === 'openai-spend-cap-rechecks',
+      definition => definition.queueName === 'ai-spend-cap-rechecks',
     )!
     const worker = await definition.load()
 
@@ -52,9 +52,9 @@ describe('worker-cpu CPU_ONLY_WORKER_DEFINITIONS load functions', () => {
       ['images', '/backend/workers/images/workers.mts', 'images'],
       ['ai_agents', '/backend/workers/ai-agents/workers.mts', 'ai_agents'],
       [
-        'openai-spend-cap-rechecks',
+        'ai-spend-cap-rechecks',
         '/backend/workers/ai-agents/workers/spend-cap-recheck.mts',
-        'openAiSpendCapRechecks',
+        'spendCapRechecks',
       ],
       [
         'bedrock_embeddings_nova_multimodal_v1_single',

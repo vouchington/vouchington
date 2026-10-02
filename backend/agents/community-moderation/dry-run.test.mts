@@ -13,7 +13,7 @@ import {
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/community-moderation-provider'
 import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import type { StructuredDecisionFetch } from '@modules/structured-decisions'
-import { getAccountingUncertaintySource, OpenAiSpendCapBreachError } from '@services/ai-usage'
+import { getAccountingUncertaintySource, SpendCapBreachError } from '@services/ai-usage'
 import type { CommunityPromptDryRunConfiguration } from '@services/community-agent-prompts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import { prepareCommunityPromptDryRun } from './dry-run.mts'
@@ -139,7 +139,7 @@ describe('community prompt dry run', () => {
       const fetch = vi.fn<StructuredDecisionFetch>()
       const { dryRun } = await prepare(fetch)
 
-      await expect(dryRun.classify(parts)).rejects.toBeInstanceOf(OpenAiSpendCapBreachError)
+      await expect(dryRun.classify(parts)).rejects.toBeInstanceOf(SpendCapBreachError)
       expect(fetch).not.toHaveBeenCalled()
     })
   })

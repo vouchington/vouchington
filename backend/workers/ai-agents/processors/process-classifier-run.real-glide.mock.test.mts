@@ -15,7 +15,7 @@ import { notifications } from '@queues/notifications/queues'
 import type { ClassifierRunJobData } from '@queues/ai-agents/types'
 import { claimClassifierRun, startClassifierProviderAttempt } from '@services/classifier-runs'
 import { createPostClassifierRunAdapter } from '@services/post-classifier'
-import { openAiSpendCapConfig } from '@services/ai-usage'
+import { spendCapConfig } from '@services/ai-usage'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 import {
   classifierRunJobFor,
@@ -120,8 +120,8 @@ describe('classifier run processor (real GlideMQ)', () => {
 
   it('releases an exhausted queue identity and executes all remote topics exactly once on recovery', async () => {
     vi.stubEnv('OPENROUTER_API_KEY', 'test-provider-key')
-    await openAiSpendCapConfig.waitForInitialization()
-    const restore = overrideDynamicConfigFieldsForTest(openAiSpendCapConfig, { enabled: false })
+    await spendCapConfig.waitForInitialization()
+    const restore = overrideDynamicConfigFieldsForTest(spendCapConfig, { enabled: false })
     const setup = await createApprovedClassifierPost(true, false)
     for (const slug of REMOTE_TOPICS) {
       await setPostClassifierToggleForTest(setup.community.id, slug, true)

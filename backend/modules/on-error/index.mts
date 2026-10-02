@@ -10,7 +10,7 @@ export { recordCopyrightReviewTargetBreach } from './copyright-review-target-bre
 export { recordOffAllowlistEgress } from './egress-guardrail.mts'
 export { recordOpenAiFlexFallback } from './openai-flex-fallback.mts'
 export type { OpenAiFlexFallbackContext } from './openai-flex-fallback.mts'
-export { recordOpenAiSpendCapBreach } from './openai-spend-cap-breach.mts'
+export { recordSpendCapBreach } from './spend-cap-breach.mts'
 export { recordScheduledJobConfigMissing } from './scheduled-job-config-missing.mts'
 export { recordSqsConsumerConfigMissing } from './sqs-consumer-config-missing.mts'
 export { recordValkeySaturation } from './valkey-saturation.mts'

@@ -1,9 +1,9 @@
 import { createWorker } from '@data-stores/valkey-glide-mq'
-import { OPENAI_SPEND_CAP_RECHECKS_QUEUE_NAME } from '@queues/ai-agents/config'
-import { processOpenAiSpendCapRecheckJob } from '../processors/spend-cap-recheck.mts'
+import { SPEND_CAP_RECHECKS_QUEUE_NAME } from '@queues/ai-agents/config'
+import { processSpendCapRecheckJob } from '../processors/spend-cap-recheck.mts'
 
-export const openAiSpendCapRechecks = createWorker(
-  OPENAI_SPEND_CAP_RECHECKS_QUEUE_NAME,
-  processOpenAiSpendCapRecheckJob,
+export const spendCapRechecks = createWorker(
+  SPEND_CAP_RECHECKS_QUEUE_NAME,
+  processSpendCapRecheckJob,
   { concurrency: 1 },
 )

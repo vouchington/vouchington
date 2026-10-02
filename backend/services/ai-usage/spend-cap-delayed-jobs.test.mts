@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { workerQueueCommandClient } from '@data-stores/valkey-glide-mq'
 import {
-  openAiSpendCapDelayedRegistryKey,
-  reopenOpenAiSpendCapDelayedJobRegistration,
+  spendCapDelayedRegistryKey,
+  reopenSpendCapDelayedJobRegistration,
 } from './spend-cap-delayed-jobs.mts'
 
-describe('reopenOpenAiSpendCapDelayedJobRegistration', () => {
+describe('reopenSpendCapDelayedJobRegistration', () => {
   it.each([
     [1, true],
     [0, false],
@@ -17,11 +17,11 @@ describe('reopenOpenAiSpendCapDelayedJobRegistration', () => {
     const hset = vi.fn<Pick<typeof workerQueueCommandClient, 'hset'>['hset']>()
 
     await expect(
-      reopenOpenAiSpendCapDelayedJobRegistration(day, 'generation-a', { invokeScript, hset }),
+      reopenSpendCapDelayedJobRegistration(day, 'generation-a', { invokeScript, hset }),
     ).resolves.toBe(expected)
 
     expect(invokeScript).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
-      keys: [openAiSpendCapDelayedRegistryKey(day)],
+      keys: [spendCapDelayedRegistryKey(day)],
       args: ['generation-a'],
     })
   })

@@ -3,12 +3,12 @@
 Source entrypoint: [backend/services/ai-usage/README.md](../../../../../backend/services/ai-usage/README.md)
 
 Records and aggregates token usage and cost across **every** agent call site, not only
-per-community moderation. Despite the OpenAI-branded names throughout this service
-(`OpenAiSpendCapBreachError`, `getOpenAiSpendCapFields`, ...), the same ledger and daily cap also
-cover the C6 tagging autotagger's OpenRouter/Jev spend: `@modules/structured-decisions` never
-imports this service, so `@agents/_shared/structured-decision-billing-hooks.mts` wires the
+per-community moderation. The ledger and the daily cap are provider-neutral
+(`SpendCapBreachError`, `getSpendCapFields`, the `ai-spend-cap` `DynamicConfig`) and cover OpenAI
+and OpenRouter spend alike, including the C6 tagging autotagger's OpenRouter/Jev spend:
+`@modules/structured-decisions` never imports this service, so `@agents/_shared/structured-decision-billing-hooks.mts` wires the
 client's `beforeAttempt`/`onBilledResponse`/`onUnknownBilledAttempt` hooks to
-`assertOpenAiSpendCapNotBreached`/`recordAgentResponseUsage`/`latchAccountingUncertainty` from the
+`assertDailySpendCapNotBreached`/`recordAgentResponseUsage`/`latchAccountingUncertainty` from the
 agent layer instead (issue #616). The full pricing matrix, the production forecast, and the
 statement of what this ledger does and doesn't cover live in the private
 `vouchington/vouchington-docs` repository.
@@ -22,7 +22,7 @@ outside any community or post. `agent_slug` identifies any agent workload, not o
 `response.service_tier`), not the requested alias/tier — see the cost-model doc's "Verified: flex
 tier is honored" section for why that distinction matters.
 
-`ai_usage_openai_response_keys` maps each OpenAI Responses API `response_id` to exactly one
+`ai_usage_provider_response_keys` maps each provider response or decision `response_id` to exactly one
 ledger row. It remains non-partitioned because the UUIDv7-range-partitioned ledger cannot enforce
 global uniqueness for a key that does not include its partition key. A response ID is reserved and
 its ledger row inserted in one SQL statement; a replay returns `already-recorded` without adding a
@@ -69,14 +69,14 @@ stays on the existing `trackAIModerationCall` analytics path — by design, not 
   while coalescing concurrent primary-Postgres refreshes for release-race decisions. Backs the
   daily spend-ceiling check in the `ai_agents` worker; see
   [Daily spend cap](../../queues/workers/ai-agents/README.md#daily-spend-cap).
-- `getOpenAiSpendCapFields()` — reads the `openai-spend-cap` `DynamicConfig`
+- `getSpendCapFields()` — reads the `ai-spend-cap` `DynamicConfig`
   (`spend-cap-config.mts`): `{ enabled, daily_cap_microunits }`, defaulting to
   `{ enabled: true, daily_cap_microunits: 10_000_000 }` ($10/day). Valkey-backed and adjustable
-  from the dynamic-config admin UI without a deploy. `evaluateOpenAiSpendCapBreach` restarts when
+  from the dynamic-config admin UI without a deploy. `evaluateSpendCapBreach` restarts when
   the UTC day changes during its async reads so an admission decision never uses yesterday's latch
   or ledger total.
-- `registerOpenAiSpendCapDelayedJob()` / `beginOpenAiSpendCapDelayedJobRelease()` /
-  `releaseOpenAiSpendCapDelayedJobs()` — maintain the per-UTC-day worker-queue Valkey registry used
+- `registerSpendCapDelayedJob()` / `beginSpendCapDelayedJobRelease()` /
+  `releaseSpendCapDelayedJobs()` — maintain the per-UTC-day worker-queue Valkey registry used
   for early cap relaxation. Lua scripts atomically reject registration after release begins,
   atomically reopen and reserve a rejected job after a fresh re-breach, promote only jobs whose
   stored delay day still matches the draining registry, and delete only that

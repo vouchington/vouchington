@@ -11,7 +11,7 @@ import {
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import * as communityModeration from '@agents/community-moderation'
-import { openAiSpendCapConfig } from '@services/ai-usage'
+import { spendCapConfig } from '@services/ai-usage'
 
 describe('POST /api/v1/communities/:slug/automod/simulate', () => {
   it('returns 401 for unauthenticated users', async () => {
@@ -146,10 +146,10 @@ describe('POST /api/v1/communities/:slug/automod/simulate', () => {
   })
 
   it('returns 429 and does not call the agent when the daily spend cap is breached', async () => {
-    await openAiSpendCapConfig.waitForInitialization()
+    await spendCapConfig.waitForInitialization()
     // 0 is the true kill-switch value (#8773 review round 4): totalMicrounits is never negative, so
     // this breaches on the very first call regardless of what other tests have written today.
-    const restoreConfig = overrideDynamicConfigFieldsForTest(openAiSpendCapConfig, {
+    const restoreConfig = overrideDynamicConfigFieldsForTest(spendCapConfig, {
       daily_cap_microunits: 0,
     })
     // Mocked (not spied-through): if the posts.length guard ever regresses, this must fail the
@@ -204,11 +204,11 @@ describe('POST /api/v1/communities/:slug/automod/simulate', () => {
   })
 
   it('returns 200 for an empty simulation even when the daily spend cap is breached', async () => {
-    await openAiSpendCapConfig.waitForInitialization()
+    await spendCapConfig.waitForInitialization()
     // No posts means simulateCommunityPromptOnPosts() never calls OpenAI (simulate.mts:54), so the
     // cap check must be skipped entirely -- a breached cap must not 429 a request that would never
     // have incurred any spend.
-    const restoreConfig = overrideDynamicConfigFieldsForTest(openAiSpendCapConfig, {
+    const restoreConfig = overrideDynamicConfigFieldsForTest(spendCapConfig, {
       daily_cap_microunits: 0,
     })
     try {

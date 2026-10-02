@@ -1,7 +1,7 @@
 import {
-  assertOpenAiSpendCapNotBreached,
+  assertDailySpendCapNotBreached,
   latchAccountingUncertainty,
-  OpenAiSpendCapBreachError,
+  SpendCapBreachError,
 } from '@services/ai-usage'
 import { getUtcDayFromDate } from '@ts-shared/utils/dates'
 import type {
@@ -21,7 +21,7 @@ export type StructuredDecisionBillingSubject = {
 }
 
 interface StructuredDecisionBillingHooksDeps {
-  assertOpenAiSpendCapNotBreached?: typeof assertOpenAiSpendCapNotBreached
+  assertDailySpendCapNotBreached?: typeof assertDailySpendCapNotBreached
   latchAccountingUncertainty?: typeof latchAccountingUncertainty
   recordAgentResponseUsage?: typeof recordAgentResponseUsage
 }
@@ -38,13 +38,13 @@ export function createStructuredDecisionBillingHooks(
   subject: StructuredDecisionBillingSubject,
   deps: StructuredDecisionBillingHooksDeps = {},
 ): StructuredDecisionAttemptHooks {
-  const checkSpendCap = deps.assertOpenAiSpendCapNotBreached ?? assertOpenAiSpendCapNotBreached
+  const checkSpendCap = deps.assertDailySpendCapNotBreached ?? assertDailySpendCapNotBreached
   const latchUncertainty = deps.latchAccountingUncertainty ?? latchAccountingUncertainty
   const recordUsage = deps.recordAgentResponseUsage ?? recordAgentResponseUsage
   return {
     beforeAttempt: async attempt => {
       const breach = await checkSpendCap(subject.workload)
-      if (breach) throw new OpenAiSpendCapBreachError(breach)
+      if (breach) throw new SpendCapBreachError(breach)
       await subject.beforeAttempt?.(attempt)
     },
     onBilledResponse: async response => {

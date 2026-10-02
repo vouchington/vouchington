@@ -8,7 +8,7 @@ import {
 import type { OpenAIUsage } from '@modules/openai-utils/create-response'
 
 export interface RecordAiUsageOptions {
-  /** OpenAI Responses API id. When present, repeated recording is an idempotent no-op. */
+  /** Provider response or decision id. When present, repeated recording is an idempotent no-op. */
   responseId?: string
   /** The community this call is scoped to, if any. Most non-moderation agents have none. */
   communityId?: string | null
@@ -66,7 +66,7 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
   if (responseId !== undefined) {
     const { rows } = await run<RecordedRow>(sql`/* recordAiUsage */
       WITH claimed_response AS (
-        INSERT INTO ai_usage_openai_response_keys (response_id, ai_usage_record_id)
+        INSERT INTO ai_usage_provider_response_keys (response_id, ai_usage_record_id)
         VALUES (
           ${responseId},
           uuidv7(COALESCE(${createdAt ?? null}::timestamptz - clock_timestamp(), INTERVAL '0'))
@@ -153,12 +153,12 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
   return 'recorded'
 }
 
-/** True when `ai_usage_openai_response_keys` already reserves this Responses API id. */
+/** True when `ai_usage_provider_response_keys` already reserves this provider response id. */
 export async function hasRecordedAiUsageResponseId(responseId: string): Promise<boolean> {
   const { rows } = await write<{ exists: boolean }>(sql`/* hasRecordedAiUsageResponseId */
     SELECT EXISTS (
       SELECT 1
-      FROM ai_usage_openai_response_keys
+      FROM ai_usage_provider_response_keys
       WHERE response_id = ${responseId}
     ) AS exists
   `)

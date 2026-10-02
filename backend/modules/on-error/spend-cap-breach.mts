@@ -12,7 +12,7 @@ function shouldLogToConsole(): boolean {
 const spendCapBreachThrottleMs = 60_000
 let lastSpendCapBreachReportedAt: number | undefined
 
-export type OpenAiSpendCapBreachContext = {
+export type SpendCapBreachContext = {
   agentJobName: string
   dailyTotalMicrounits: number | null
   dailyCapMicrounits: number
@@ -26,22 +26,22 @@ export type OpenAiSpendCapBreachContext = {
 }
 
 /**
- * Record that the daily OpenAI spend cap (`backend/services/ai-usage/spend-cap-config.mts`) was
+ * Record that the daily AI spend cap (`backend/services/ai-usage/spend-cap-config.mts`) was
  * breached and the breaching job was deferred for a bounded recheck via `job.moveToDelayed()`
  * (`backend/workers/ai-agents/workers/core.mts`).
  *
  * Several jobs can independently breach around the same time, so Sentry reporting is throttled to
  * once per minute — console/dev logging stays unthrottled since it is low-volume there.
  */
-export function recordOpenAiSpendCapBreach(context: OpenAiSpendCapBreachContext): void {
+export function recordSpendCapBreach(context: SpendCapBreachContext): void {
   if (shouldLogToConsole()) {
-    console.warn('[ai-usage] daily OpenAI spend cap breached', context)
+    console.warn('[ai-usage] daily AI spend cap breached', context)
   }
   if (!shouldCaptureSentryMessage()) return
-  Sentry.captureMessage('openai_spend_cap_breach', {
+  Sentry.captureMessage('ai_spend_cap_breach', {
     level: 'warning',
     tags: {
-      reason: 'openai_spend_cap_breach',
+      reason: 'ai_spend_cap_breach',
       agent_job_name: context.agentJobName,
       breach_reason: context.reason,
       ...(context.uncertaintySource && { uncertainty_source: context.uncertaintySource }),

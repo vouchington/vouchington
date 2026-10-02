@@ -12,12 +12,12 @@ import {
 import { setTestCommunityAutomodAction } from '@voucha/test-helpers/data-stores/psql/classifier-runs/community-moderation-fixture'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import * as communityModeration from '@agents/community-moderation'
-import { openAiSpendCapConfig } from '@services/ai-usage'
+import { spendCapConfig } from '@services/ai-usage'
 
 describe('POST /api/v1/communities/:slug/automod/simulate community action', () => {
   it('states the community action and simulates the whole sample once', async () => {
-    await openAiSpendCapConfig.waitForInitialization()
-    const restoreConfig = overrideDynamicConfigFieldsForTest(openAiSpendCapConfig, {
+    await spendCapConfig.waitForInitialization()
+    const restoreConfig = overrideDynamicConfigFieldsForTest(spendCapConfig, {
       enabled: false,
     })
     const simulateSpy = vi

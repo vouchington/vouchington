@@ -7,9 +7,9 @@ import {
 } from '@data-stores/valkey-glide-mq'
 import { loadScript } from '@data-stores/valkey/scripts'
 import {
-  abortOpenAiSpendCapDelayedJobRegistration,
-  normalizeOpenAiSpendCapRegistration,
-  type OpenAiSpendCapRegistration,
+  abortSpendCapDelayedJobRegistration,
+  normalizeSpendCapRegistration,
+  type SpendCapRegistration,
 } from './spend-cap-delayed-job-registration.mts'
 
 const MARKED = 'marked'
@@ -22,24 +22,24 @@ const reopenRegistrationScript = registerWorkerQueueScript(
 )
 
 type RegistryClient = Pick<typeof workerQueueCommandClient, 'hset' | 'invokeScript'>
-type SpendCapDelayData = { openAiSpendCapDelayedDay?: string }
-export function openAiSpendCapDelayedRegistryKey(day: string): string {
-  return `${workerQueuePrefix ?? 'glide'}:{ai_agents}:openai-spend-cap-delayed:${day}`
+type SpendCapDelayData = { spendCapDelayedDay?: string }
+export function spendCapDelayedRegistryKey(day: string): string {
+  return `${workerQueuePrefix ?? 'glide'}:{ai_agents}:ai-spend-cap-delayed:${day}`
 }
 
-export function registerOpenAiSpendCapDelayedJob<T extends SpendCapDelayData>(
+export function registerSpendCapDelayedJob<T extends SpendCapDelayData>(
   job: Job<T>,
   day: string,
   registry: RegistryClient = workerQueueCommandClient,
-): Promise<OpenAiSpendCapRegistration> {
+): Promise<SpendCapRegistration> {
   return registerDelayedJob(job, day, false, registry)
 }
 
-export function registerOpenAiSpendCapDelayedJobAfterFreshBreach<T extends SpendCapDelayData>(
+export function registerSpendCapDelayedJobAfterFreshBreach<T extends SpendCapDelayData>(
   job: Job<T>,
   day: string,
   registry: RegistryClient = workerQueueCommandClient,
-): Promise<OpenAiSpendCapRegistration> {
+): Promise<SpendCapRegistration> {
   return registerDelayedJob(job, day, true, registry)
 }
 
@@ -48,38 +48,32 @@ async function registerDelayedJob<T extends SpendCapDelayData>(
   day: string,
   reopenReleasing: boolean,
   registry: RegistryClient,
-): Promise<OpenAiSpendCapRegistration> {
-  const key = openAiSpendCapDelayedRegistryKey(day)
+): Promise<SpendCapRegistration> {
+  const key = spendCapDelayedRegistryKey(day)
   const field = jobField(job.id)
   const accepted = await registry.invokeScript(registerDelayedJobScript, {
     keys: [key],
     args: [field, randomUUID(), String(REGISTER_TTL_MS), reopenReleasing ? '1' : '0'],
   })
-  const registration = normalizeOpenAiSpendCapRegistration(accepted)
+  const registration = normalizeSpendCapRegistration(accepted)
   if (!registration.accepted || registration.alreadyMarked) return registration
 
   try {
-    await job.updateData({ ...job.data, openAiSpendCapDelayedDay: day })
+    await job.updateData({ ...job.data, spendCapDelayedDay: day })
     await registry.hset(key, { [field]: MARKED })
   } catch (err) {
-    await abortOpenAiSpendCapDelayedJobRegistration(
-      key,
-      field,
-      registration.generation,
-      registry,
-      err,
-    )
+    await abortSpendCapDelayedJobRegistration(key, field, registration.generation, registry, err)
   }
   return registration
 }
 
-export async function reopenOpenAiSpendCapDelayedJobRegistration(
+export async function reopenSpendCapDelayedJobRegistration(
   day: string,
   generation: string,
   registry: RegistryClient = workerQueueCommandClient,
 ): Promise<boolean> {
   const reopened = await registry.invokeScript(reopenRegistrationScript, {
-    keys: [openAiSpendCapDelayedRegistryKey(day)],
+    keys: [spendCapDelayedRegistryKey(day)],
     args: [generation],
   })
   return Number(reopened) === 1

@@ -2,7 +2,7 @@ import { onTestFinished, vi } from 'vitest'
 import {
   clearDailyAiCostTotalCacheForTesting,
   getAccountingUncertaintyKey,
-  openAiSpendCapConfig,
+  spendCapConfig,
 } from '../services/ai-usage/index.mts'
 import { unlinkTestAiUsageUncertaintyKey } from './ai-usage-uncertainty-key.mts'
 import { overrideDynamicConfigFieldsForTest } from './dynamic-config.mts'
@@ -18,7 +18,7 @@ export async function withReservedAiUsageDay<T>(
   dailyCapMicrounits: number,
   fn: (day: string) => Promise<T>,
 ): Promise<T> {
-  await openAiSpendCapConfig.waitForInitialization()
+  await spendCapConfig.waitForInitialization()
   const reservation = await acquireTestAiUsageDateReservation()
   let released = false
   const release = async () => {
@@ -30,7 +30,7 @@ export async function withReservedAiUsageDay<T>(
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(new Date(`${reservation.day}T12:00:00.000Z`))
   clearDailyAiCostTotalCacheForTesting()
-  const restore = overrideDynamicConfigFieldsForTest(openAiSpendCapConfig, {
+  const restore = overrideDynamicConfigFieldsForTest(spendCapConfig, {
     enabled: true,
     daily_cap_microunits: dailyCapMicrounits,
   })

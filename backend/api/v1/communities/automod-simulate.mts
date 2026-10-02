@@ -1,7 +1,7 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
-import { assertOpenAiSpendCapNotBreached } from '@services/ai-usage'
+import { assertDailySpendCapNotBreached } from '@services/ai-usage'
 import {
   currentUserCanModerateCommunity,
   getCommunityMember,
@@ -63,11 +63,11 @@ app.route('/api/v1/communities/:idOrSlug/automod/simulate').post(async (ctx: Con
       : Promise.resolve(null),
   ])
   if (posts.length > 0) {
-    const spendCapBreach = await assertOpenAiSpendCapNotBreached('automod-simulate')
-    ctx.assert(!spendCapBreach, 429, 'Daily OpenAI spend cap reached, try again after UTC midnight')
+    const spendCapBreach = await assertDailySpendCapNotBreached('automod-simulate')
+    ctx.assert(!spendCapBreach, 429, 'Daily AI spend cap reached, try again after UTC midnight')
   }
 
-  // A cap breach after the pre-check (the sample is many calls) is an `OpenAiSpendCapBreachError`,
+  // A cap breach after the pre-check (the sample is many calls) is a `SpendCapBreachError`,
   // which carries status 429 and so answers the same way.
   const simulationResults = await simulateCommunityPromptOnPosts(prompt, posts, { promptOverride })
   const results = createAutomodSimulationResults(posts, simulationResults)

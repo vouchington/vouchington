@@ -12,7 +12,7 @@ import {
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
 import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import type { StructuredDecisionFetch } from '@modules/structured-decisions'
-import { OpenAiSpendCapBreachError } from '@services/ai-usage'
+import { SpendCapBreachError } from '@services/ai-usage'
 import type {
   CommunityAgentPromptSimulationPost,
   CommunityPromptDryRunConfiguration,
@@ -211,7 +211,7 @@ describe('simulateCommunityPromptOnPosts', () => {
 
       await expect(
         simulateCommunityPromptOnPosts(rule, [post('a'), post('b')], options(fetch)),
-      ).rejects.toBeInstanceOf(OpenAiSpendCapBreachError)
+      ).rejects.toBeInstanceOf(SpendCapBreachError)
       expect(fetch).not.toHaveBeenCalled()
     })
   })

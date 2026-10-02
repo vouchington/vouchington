@@ -112,7 +112,7 @@ describe('recordAiUsage', () => {
       usage: { input_tokens: 10, output_tokens: 5 },
       // Backdated off today's UTC day on purpose (#8773 Finding 2): getCommunityAiCostTotals below
       // has no time predicate, so this row's day is otherwise free to pick, and
-      // assertOpenAiSpendCapNotBreached fails closed on ANY unpriced row in *today's*
+      // assertDailySpendCapNotBreached fails closed on ANY unpriced row in *today's*
       // getDailyAiCostTotalMicrounits window -- an unpriced row landing on the real current day
       // would flakily 429 every other guarded-route test in this parallel Vitest project
       // (e.g. contact-drafts.test.mts's success cases) depending on commit order.
