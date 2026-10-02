@@ -111,9 +111,11 @@ point behind the `openai-spend-cap` `DynamicConfig`: it checks `getOpenAiSpendCa
 enabled, the current request-day accounting-uncertainty latch before
 `getDailyAiCostTotalMicrounits(day)`, and returns either `null` (proceed) or a breach. Every
 call site that can incur billed OpenAI spend goes through it — not just this worker. Synchronous,
-non-queue routes that call OpenAI directly (`generateChatTitleFromInput` from
-`@agents/conversation-title` in `POST /api/v1/my/conversations/:conversationId/title`, and the moderation call in
-`POST /api/v1/communities/:idOrSlug/agent-prompts/:promptId/test-runs`) call the
+non-queue routes that call a model provider directly (`generateChatTitleFromInput` from
+`@agents/conversation-title` in `POST /api/v1/my/conversations/:conversationId/title`, and the
+community-moderation classifier dry runs behind
+`POST /api/v1/communities/:idOrSlug/agent-prompts/:promptId/test-runs` and
+`POST /api/v1/communities/:idOrSlug/automod/simulate`) call the
 `assertOpenAiSpendCapNotBreached()` wrapper and reject with 429 on breach; otherwise the cap would
 only ever block `ai_agents` queue jobs while these routes kept generating billed spend after the
 ceiling was nominally reached.
