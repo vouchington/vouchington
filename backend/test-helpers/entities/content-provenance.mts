@@ -14,6 +14,7 @@ export const WEB_PROVENANCE: ContentProvenance = Object.freeze({
 const CONTENT_PROVENANCE_TABLES = {
   communities: () => sql`communities`,
   community_applications: () => sql`community_applications`,
+  conversation_messages: () => sql`conversation_messages`,
   lists: () => sql`lists`,
   moderation_appeals: () => sql`moderation_appeals`,
   moderation_reports: () => sql`moderation_reports`,

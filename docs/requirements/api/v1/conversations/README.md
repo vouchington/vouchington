@@ -55,6 +55,8 @@ Constraints:
 
 **Response:** `200 OK` with transcript `user_message`, `assistant_message`, and `turn` containing their two message IDs. Messages include `completion.status` (`completed`, `incomplete`, or `failed`); generation/run identities are omitted. Duplicate submissions and retries return the same saved pair. Reusing either ID with different text, a different `model_provider` or `model_name`, or an incomplete identity pair returns 409 without inserting messages. An incomplete assistant placeholder elsewhere in the conversation never blocks a new turn.
 
+Both stored messages record the requesting client as private [content provenance](../../../content/content-provenance.md) (a retry keeps the original), and no response returns it. Unclassified client information returns 400 `INVALID_CLIENT_INFO` before anything is stored.
+
 Conversation DTOs expose only `id`, `title`, `created_at`, and `updated_at`. History remains durable and paginated, including incomplete assistant placeholders. See [the transcript identity contract](../../../../overview/architecture/conversations.md#native-client-flow).
 
 **Authorization:** The authenticated user must own the conversation. Returns 403 otherwise.

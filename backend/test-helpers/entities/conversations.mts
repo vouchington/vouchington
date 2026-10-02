@@ -44,8 +44,8 @@ type CreateTestDirectMessageOptions = {
 
 export async function createTestDirectMessage(options: CreateTestDirectMessageOptions) {
   const { rows } = await write(sql`/* createTestDirectMessage */
-    INSERT INTO conversation_messages (conversation_id, kind, body_text, created_by_id)
-    VALUES (${options.conversationId}, 'message', ${options.bodyText}, ${options.createdById})
+    INSERT INTO conversation_messages (conversation_id, kind, body_text, created_by_id, created_via)
+    VALUES (${options.conversationId}, 'message', ${options.bodyText}, ${options.createdById}, 'system')
     RETURNING id
   `)
   return { id: rows[0].id as string }
@@ -119,8 +119,10 @@ export async function createTestModmailThread(options: CreateTestModmailThreadOp
 
 export async function createTestConversationMessage(options: CreateTestConversationMessageOptions) {
   const { rows } = await write(sql`
-    INSERT INTO conversation_messages (conversation_id, created_by_id, content)
-    VALUES (${options.conversationId}, ${options.createdById}, ${JSON.stringify(options.content)})
+    INSERT INTO conversation_messages (conversation_id, created_by_id, created_via, content)
+    VALUES (
+      ${options.conversationId}, ${options.createdById}, 'system', ${JSON.stringify(options.content)}
+    )
     RETURNING id
   `)
   return { id: rows[0].id as string }

@@ -11,12 +11,14 @@ import {
   readViewsReferencingContentProvenance,
   type ContentProvenanceColumns,
 } from '../../../test-helpers/data-stores/psql/content-provenance.mts'
+import { createContentProvenanceConversationMessageFixture } from '../../../test-helpers/data-stores/psql/content-provenance-conversation-message.mts'
 import { createTestUser } from '../../../test-helpers/entities/users.mts'
 import { beginTransaction, onGracefulShutdown } from '../index.mts'
 
 const CONTENT_TABLES = [
   'communities',
   'community_applications',
+  'conversation_messages',
   'lists',
   'moderation_appeals',
   'moderation_reports',
@@ -135,6 +137,27 @@ describe('content provenance schema', () => {
     )
     await expect(
       post.updateProvenance({ createdVia: 'system', oauthClientId: null }),
+    ).resolves.toMatchObject({ rowCount: 1 })
+  })
+
+  it('enforces provenance on rows of the partitioned conversation_messages table', async () => {
+    const { oauthClientId } = await createContentProvenanceListFixture()
+    const message = await createContentProvenanceConversationMessageFixture()
+
+    await expect(
+      message.updateProvenance({ createdVia: null, oauthClientId }),
+    ).rejects.toMatchObject({ code: '23502' })
+    await expect(
+      message.updateProvenance({ createdVia: 'web', oauthClientId }),
+    ).rejects.toMatchObject({ code: '23514' })
+    await expect(
+      message.updateProvenance({ createdVia: 'mcp', oauthClientId: randomUUID() }),
+    ).rejects.toMatchObject({ code: '23503' })
+    await expect(
+      message.updateProvenance({ createdVia: 'web', oauthClientId: null }),
+    ).rejects.toThrow('content provenance is immutable')
+    await expect(
+      message.updateProvenance({ createdVia: 'system', oauthClientId: null }),
     ).resolves.toMatchObject({ rowCount: 1 })
   })
 

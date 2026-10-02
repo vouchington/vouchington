@@ -20,8 +20,8 @@ and prevent gaps or duplicates.
 ## Key exports
 
 - `createConversation(createdById, title?)` — starts a new conversation
-- `createConversationMessage(conversationId, createdById, content)` — validates and stores the `{ role, content, error }` chat envelope as JSON in `conversation_messages.content`
-- `createClientGeneratedChatTurn(params)` — atomically stores a native user/assistant pair under a conversation row lock; an identical retry replays it, and changed text or model or reused partial identity throws `ClientGeneratedTurnIdentityConflictError`
+- `createConversationMessage(conversationId, createdById, provenance, content)` — validates and stores the `{ role, content, error }` chat envelope as JSON in `conversation_messages.content`, with the writing request's [content provenance](../../../../requirements/content/content-provenance.md)
+- `createClientGeneratedChatTurn(params)` — atomically stores a native user/assistant pair under a conversation row lock, both messages recording `params.provenance`; an identical retry replays the stored pair and its original provenance (provenance is not part of the turn identity), and changed text or model or reused partial identity throws `ClientGeneratedTurnIdentityConflictError`
 - `getConversationById(id)` / `getConversationByIdForMutation(id)` / `getConversationsByCreatedById(userId, options)` — conversation retrieval
 - `getConversationMessagesByConversationId(conversationId)` — message list
 - `currentUserCanViewConversation(currentUser, conversation)` / `currentUserCanUpdateConversation(...)` — authorization checks

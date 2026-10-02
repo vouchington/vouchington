@@ -6700,6 +6700,9 @@ importers:
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1

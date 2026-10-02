@@ -9,6 +9,7 @@ import {
   normalizeFixedClientGeneratedChatModelName,
   parseClientGeneratedChatModelProvider,
 } from '@services/agents/model-providers'
+import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 import { currentUserCanUpdateConversation } from '@services/conversations-messages/authorization'
 import { getConversationByIdForMutation } from '@services/conversations-messages/conversations'
 import {
@@ -55,6 +56,7 @@ app
       )
       return
     }
+    const provenance = getRequestContentProvenance()
     assertNotSuspended(currentUser)
 
     const conversationId = validateUUIDParam(ctx, 'conversationId')
@@ -149,6 +151,7 @@ app
       userMessageId,
       assistantMessageId,
       createdById: currentUser.id,
+      provenance,
       message,
       assistantContent,
       modelProvider,

@@ -1,6 +1,7 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { isUUID } from '@modules/utils'
+import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { assertNotSuspended } from '@services/users'
 import { getCommunityOrThrow } from '@services/communities/get'
@@ -78,6 +79,7 @@ app
       ctx,
       'POST:/api/v1/communities/:idOrSlug/modmail/:conversationId/messages',
     )
+    const provenance = getRequestContentProvenance()
     assertNotSuspended(currentUser)
 
     const { idOrSlug, conversationId } = ctx.params as {
@@ -123,6 +125,7 @@ app
 
     const message = await createConversationMessage(
       currentUser.id,
+      provenance,
       conversationId,
       body.text as string,
     )

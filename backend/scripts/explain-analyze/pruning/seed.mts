@@ -37,8 +37,8 @@ export async function seedPruningProof(): Promise<void> {
     )
     await write(
       `/* seedPruningProofMessage */ INSERT INTO conversation_messages
-        (conversation_id, created_by_id, content)
-       VALUES ($1, $2, $3::jsonb)`,
+        (conversation_id, created_by_id, created_via, content)
+       VALUES ($1, $2, 'system', $3::jsonb)`,
       [conversationId, fixture.userId, JSON.stringify({ role: 'user', content: 'proof' })],
     )
   }

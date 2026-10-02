@@ -137,8 +137,8 @@ export async function insertChatMessageWithoutContent(
 ): Promise<unknown> {
   return write(
     `/* insertChatMessageWithoutContent */ INSERT INTO conversation_messages
-      (conversation_id, created_by_id)
-      VALUES ($1, $2)`,
+      (conversation_id, created_by_id, created_via)
+      VALUES ($1, $2, 'system')`,
     [conversationId, createdById],
   )
 }
