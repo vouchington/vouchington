@@ -7,6 +7,735 @@
       "tools": [
         {
           "tool": {
+            "name": "get_community_list_item_counts",
+            "title": "Get Community List Item Counts",
+            "description": "Count the entries on a public community's curated list, by its UUID or slug, for each item_type: topic, rss_feed, post, url_hostname and url. The counts are what a signed-out reader sees, so post leaves out a post the public cannot see, and they match what get_community_list_items pages through. A private, deleted or unknown community returns { success: false, error: \"Community not found\" }.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "community_id": {
+                  "type": "string",
+                  "description": "Community UUID or slug"
+                }
+              },
+              "required": ["community_id"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "topic": {
+                      "type": "number"
+                    },
+                    "rss_feed": {
+                      "type": "number"
+                    },
+                    "post": {
+                      "type": "number"
+                    },
+                    "url_hostname": {
+                      "type": "number"
+                    },
+                    "url": {
+                      "type": "number"
+                    }
+                  },
+                  "required": ["success", "topic", "rss_feed", "post", "url_hostname", "url"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["communities:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/communities/:idOrSlug/list-items/counts"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_community_list_items",
+            "title": "Get Community List Items",
+            "description": "List the entries of a public community's curated list of one item_type, by the community's UUID or slug, in list order, as a signed-out reader sees them: topic, rss_feed, post, url_hostname or url. Each entry has an id, the item_type, the entity_id it points at, its order_index and created_at. label names the entity where no other tool reads it by id: the hostname for url_hostname, the page URL for url and the feed title for rss_feed (null if the entity can no longer be read). Read a topic with get_topic_details and a post with get_post (their label is null). A post the public cannot see (a private or deleted one, say) is left out of the page and of the counts. Returns at most 25 entries per page and page_info.end_cursor; pass it as after to get the next page. A private, deleted or unknown community returns { success: false, error: \"Community not found\" }. A malformed cursor returns { success: false, error: \"Invalid cursor\" }. get_community_list_item_counts gives the totals.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "community_id": {
+                  "type": "string",
+                  "description": "Community UUID or slug"
+                },
+                "item_type": {
+                  "type": "string",
+                  "enum": ["topic", "rss_feed", "post", "url_hostname", "url"],
+                  "description": "The kind of entry to list"
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 25,
+                  "description": "Entries per page, from 1 to 25 (default: 20)"
+                },
+                "after": {
+                  "type": "string",
+                  "description": "Opaque cursor from the previous page_info.end_cursor, for the next page."
+                }
+              },
+              "required": ["community_id", "item_type"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "item_type": {
+                            "enum": ["post", "rss_feed", "topic", "url_hostname", "url"],
+                            "type": "string"
+                          },
+                          "entity_id": {
+                            "type": "string"
+                          },
+                          "order_index": {
+                            "type": "number"
+                          },
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "item_type",
+                          "entity_id",
+                          "order_index",
+                          "created_at",
+                          "label"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page_info": {
+                      "type": "object",
+                      "properties": {
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["has_next_page", "start_cursor", "end_cursor"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "results", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["communities:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/communities/:idOrSlug/list-items/topics"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/communities/:idOrSlug/list-items/rss-feeds"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/communities/:idOrSlug/list-items/posts"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/communities/:idOrSlug/list-items/domains"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/communities/:idOrSlug/list-items/urls"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_membership_plans",
+            "title": "Get Membership Plans",
+            "description": "List the membership plans Voucha sells and what each plan includes. products are the purchasable plans (free is not sold): each has a plan (plus or pro), a billing interval and, per store that sells it, the store product reference and its price (an amount in minor units and a currency, or null when none is set). benefit_catalog is the versioned list of benefits by group, with the value each plan gets (an access level, a yes or no, a quantity or a tier), for comparing plans. This is the same public catalog a signed-out visitor sees. It says nothing about the current user: it is not their plan, entitlements or billing.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "products": {
+                  "type": "array",
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "interval": {
+                        "enum": ["monthly", "yearly"],
+                        "type": "string"
+                      },
+                      "plan": {
+                        "enum": ["plus", "pro"],
+                        "type": "string"
+                      },
+                      "providers": {
+                        "items": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "application_id": {
+                              "type": "string"
+                            },
+                            "base_plan_id": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "environment": {
+                              "enum": ["production", "test"],
+                              "type": "string"
+                            },
+                            "offer_id": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "price": {
+                              "anyOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "amount": {
+                                      "maximum": 9007199254740991,
+                                      "minimum": 0,
+                                      "type": "integer"
+                                    },
+                                    "currency": {
+                                      "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["amount", "currency"],
+                                  "type": "object"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "product_id": {
+                              "type": "string"
+                            },
+                            "provider": {
+                              "enum": [
+                                "apple_app_store",
+                                "google_play",
+                                "microsoft_store",
+                                "stripe"
+                              ],
+                              "type": "string"
+                            },
+                            "sku_id": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "application_id",
+                            "base_plan_id",
+                            "environment",
+                            "offer_id",
+                            "price",
+                            "product_id",
+                            "provider",
+                            "sku_id"
+                          ],
+                          "type": "object"
+                        },
+                        "type": "array"
+                      }
+                    },
+                    "required": ["id", "interval", "plan", "providers"],
+                    "type": "object"
+                  }
+                },
+                "benefit_catalog": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "groups": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "benefits": {
+                            "items": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "id": {
+                                  "enum": [
+                                    "amex_card_link_expansion",
+                                    "api_allowance_boost",
+                                    "automatic_post_topics",
+                                    "community_agent_rules",
+                                    "contribution_capacity",
+                                    "manual_topic_tags",
+                                    "public_contribution_access",
+                                    "research_agent_requests",
+                                    "support_service_level",
+                                    "ugc_downvote_counts",
+                                    "url_crawl_history"
+                                  ],
+                                  "type": "string"
+                                },
+                                "placements": {
+                                  "items": {
+                                    "enum": ["card", "comparison"],
+                                    "type": "string"
+                                  },
+                                  "type": "array"
+                                },
+                                "values": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "free": {
+                                      "anyOf": [
+                                        {
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "access": {
+                                              "enum": ["after_wait", "immediate"],
+                                              "type": "string"
+                                            },
+                                            "kind": {
+                                              "const": "access"
+                                            }
+                                          },
+                                          "required": ["access", "kind"],
+                                          "type": "object"
+                                        },
+                                        {
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "included": {
+                                              "type": "boolean"
+                                            },
+                                            "kind": {
+                                              "const": "availability"
+                                            }
+                                          },
+                                          "required": ["included", "kind"],
+                                          "type": "object"
+                                        },
+                                        {
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "kind": {
+                                              "const": "level"
+                                            },
+                                            "level": {
+                                              "enum": [
+                                                "higher",
+                                                "highest_priority",
+                                                "more",
+                                                "most",
+                                                "none",
+                                                "priority",
+                                                "standard"
+                                              ],
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": ["kind", "level"],
+                                          "type": "object"
+                                        },
+                                        {
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "kind": {
+                                              "const": "quantity"
+                                            },
+                                            "quantity": {
+                                              "type": "number"
+                                            }
+                                          },
+                                          "required": ["kind", "quantity"],
+                                          "type": "object"
+                                        }
+                                      ]
+                                    },
+                                    "plus": {
+                                      "anyOf": [
+                                        {
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "access": {
+                                              "enum": ["after_wait", "immediate"],
+                                              "type": "string"
+                                            },
+                                            "kind": {
+                                              "const": "access"
+                                            }
+                                          },
+                                          "required": ["access", "kind"],
+                                          "type": "object"
+                                        },
+                                        {
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "included": {
+                                              "type": "boolean"
+                                            },
+                                            "kind": {
+                                              "const": "availability"
+                                            }
+                                          },
+                                          "required": ["included", "kind"],
+                                          "type": "object"
+                                        },
+                                        {
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "kind": {
+                                              "const": "level"
+                                            },
+                                            "level": {
+                                              "enum": [
+                                                "higher",
+                                                "highest_priority",
+                                                "more",
+                                                "most",
+                                                "none",
+                                                "priority",
+                                                "standard"
+                                              ],
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": ["kind", "level"],
+                                          "type": "object"
+                                        },
+                                        {
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "kind": {
+                                              "const": "quantity"
+                                            },
+                                            "quantity": {
+                                              "type": "number"
+                                            }
+                                          },
+                                          "required": ["kind", "quantity"],
+                                          "type": "object"
+                                        }
+                                      ]
+                                    },
+                                    "pro": {
+                                      "anyOf": [
+                                        {
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "access": {
+                                              "enum": ["after_wait", "immediate"],
+                                              "type": "string"
+                                            },
+                                            "kind": {
+                                              "const": "access"
+                                            }
+                                          },
+                                          "required": ["access", "kind"],
+                                          "type": "object"
+                                        },
+                                        {
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "included": {
+                                              "type": "boolean"
+                                            },
+                                            "kind": {
+                                              "const": "availability"
+                                            }
+                                          },
+                                          "required": ["included", "kind"],
+                                          "type": "object"
+                                        },
+                                        {
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "kind": {
+                                              "const": "level"
+                                            },
+                                            "level": {
+                                              "enum": [
+                                                "higher",
+                                                "highest_priority",
+                                                "more",
+                                                "most",
+                                                "none",
+                                                "priority",
+                                                "standard"
+                                              ],
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": ["kind", "level"],
+                                          "type": "object"
+                                        },
+                                        {
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "kind": {
+                                              "const": "quantity"
+                                            },
+                                            "quantity": {
+                                              "type": "number"
+                                            }
+                                          },
+                                          "required": ["kind", "quantity"],
+                                          "type": "object"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": ["free", "plus", "pro"],
+                                  "type": "object"
+                                }
+                              },
+                              "required": ["id", "placements", "values"],
+                              "type": "object"
+                            },
+                            "type": "array"
+                          },
+                          "id": {
+                            "enum": [
+                              "communities",
+                              "contribute",
+                              "referrals",
+                              "research",
+                              "support"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": ["benefits", "id"],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "version": {
+                      "const": 1
+                    }
+                  },
+                  "required": ["groups", "version"],
+                  "type": "object"
+                }
+              },
+              "required": ["success", "products", "benefit_catalog"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["reference-data:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/memberships/plans"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_my_lists_containing",
+            "title": "Get My Lists Containing",
+            "description": "Find which of the current user's own lists hold a post or an RSS feed item, newest list first: the list_ids to read with get_list. Only the credential owner's lists are searched, never another user's. Public and unlisted lists are always searched. Private lists are searched only when the credential holds the post-relations.owned-private:write private-data consent scope (the mcp.user:write scope does not include it); without it they are left out as if they did not exist. A removed list never appears. An entity on no list returns an empty list_ids. An entity_id that is not a UUID returns { success: false, error: \"Invalid entity_id\" }.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "item_type": {
+                  "type": "string",
+                  "enum": ["post", "rss_feed_item"],
+                  "description": "What entity_id is: a post or an RSS feed item"
+                },
+                "entity_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The ID of the post or item"
+                }
+              },
+              "required": ["item_type", "entity_id"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "list_ids": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": ["success", "list_ids"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["lists:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/lists/contains"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "get_my_referral_links",
             "title": "Get My Referral Links",
             "description": "List the current user's own referral links, newest first: each one's id, program, url, label and whether it is active. It never returns another user's links; use get_referral_links for the links under a program. Pass referral_program_id to see only the links under one program. Returns at most 25 links per page and page_info.end_cursor; pass it as after to get the next page. A malformed cursor returns { success: false, error: \"Invalid cursor\" }.",

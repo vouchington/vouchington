@@ -10934,6 +10934,9 @@ importers:
       '@services/lists':
         specifier: workspace:^
         version: link:../services/lists
+      '@services/memberships':
+        specifier: workspace:^
+        version: link:../services/memberships
       '@services/moderation-analytics':
         specifier: workspace:^
         version: link:../services/moderation-analytics
@@ -11012,6 +11015,9 @@ importers:
       '@services/trending-topics':
         specifier: workspace:^
         version: link:../services/trending-topics
+      '@services/urls':
+        specifier: workspace:^
+        version: link:../services/urls
       '@services/urls-hostnames':
         specifier: workspace:^
         version: link:../services/urls-hostnames
@@ -11048,6 +11054,9 @@ importers:
       '@ts-shared/money':
         specifier: workspace:^
         version: link:../../ts-shared/money
+      '@ts-shared/utils':
+        specifier: workspace:^
+        version: link:../../ts-shared/utils
       '@voucha/api-fixtures':
         specifier: workspace:^
         version: link:../../api-fixtures

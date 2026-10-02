@@ -18,6 +18,7 @@ const NON_TOOL_FILES = new Set([
   'get-domain-ratings-output-schema.mts',
   'list-read-access.mts',
   'list-tool-support.mts',
+  'mcp-community-list-item-output.mts',
   'mcp-community-output.mts',
   'mcp-hostname-output.mts',
   'mcp-list-output.mts',

@@ -77,5 +77,5 @@ database slightly. All three read the same public data the signed-out REST route
 - `/availability`: a signed-in check of whether a username or slug is free, for forms.
 - The official referral links of a program: only people who manage official links can list them.
 - `GET /api/v1/scopes`: the catalog the API key and OAuth pickers render when a credential is made.
-- Community list items, `GET /api/v1/lists/contains` and `/memberships/plans`: deferred to a
-  follow-up read-tool issue under the MCP tools parent.
+- Community list items, `GET /api/v1/lists/contains` and `GET /api/v1/memberships/plans`: see
+  [Community List, List Membership and Membership Plan Read Tools](community-list-membership-read-tools.md).

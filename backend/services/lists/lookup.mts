@@ -6,8 +6,11 @@ export async function getListsContainingEntity(
   ownerUserId: string,
   itemType: ListItemType,
   entityId: string,
+  options: { includePrivate?: boolean } = {},
 ): Promise<string[]> {
   const { table, entityColumn } = getListItemStorageConfig(itemType)
+  // Private lists are included unless the caller leaves them out; the filter runs in SQL.
+  const privateFilter = options.includePrivate === false ? `AND l.visibility <> 'private'` : ''
 
   const { rows } = await read(
     `/* getListsContainingEntity */
@@ -16,6 +19,7 @@ export async function getListsContainingEntity(
     JOIN ${table} li ON li.list_id = l.id
     WHERE l.owner_user_id = $1
       AND l.removed_at IS NULL
+      ${privateFilter}
       AND li.${entityColumn} = $2
       AND li.removed_at IS NULL
     ORDER BY l.created_at DESC

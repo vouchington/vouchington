@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import {
   createTestUser,
   createRandomString,
+  insertTestList,
   insertTestPost,
   insertTestTopic,
   createTestRssFeedItemWithUrl,
@@ -70,5 +71,35 @@ describe('getListsContainingEntity', () => {
     const otherUser = await createTestUser()
     const listIds = await getListsContainingEntity(otherUser.id, 'post', postId)
     expect(listIds).not.toContain(listId)
+  })
+
+  it('leaves private lists out when the caller asks, and keeps the order and the others', async () => {
+    const owner = await createTestUser()
+    const entity = await insertTestPost({
+      title: `Lookup Private ${createRandomString(8)}`,
+      slug: `lookup-private-${createRandomString(8)}`,
+      createdById: owner.id,
+      markdown: 'test',
+    })
+    const unlisted = await insertTestList({
+      ownerUserId: owner.id,
+      name: 'Unlisted',
+      visibility: 'unlisted',
+    })
+    const hidden = await insertTestList({ ownerUserId: owner.id, name: 'Hidden' })
+    const open = await insertTestList({
+      ownerUserId: owner.id,
+      name: 'Open',
+      visibility: 'public',
+    })
+    for (const list of [unlisted, hidden, open]) await addListItem(list.id, 'post', entity)
+
+    const everything = await getListsContainingEntity(owner.id, 'post', entity)
+    const withoutPrivate = await getListsContainingEntity(owner.id, 'post', entity, {
+      includePrivate: false,
+    })
+
+    expect(everything.toSorted()).toEqual([unlisted.id, hidden.id, open.id].toSorted())
+    expect(withoutPrivate).toEqual(everything.filter(id => id !== hidden.id))
   })
 })
