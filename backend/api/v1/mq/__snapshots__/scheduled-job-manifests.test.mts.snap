@@ -443,48 +443,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Recover story-clustering delivery for current RSS item embeddings",
-        "id": "rss_story_trigger_recovery",
-        "kind": "scheduled-jobs",
-        "schedule": "* * * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "bedrock-embeddings-batch",
-    "registration": "sequential",
-    "repeat": {
-      "pattern": "* * * * *",
-    },
-    "schedulerId": "rss_story_trigger_recovery",
-    "template": {
-      "data": {},
-      "name": "rss_story_trigger_recovery",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "deduplication": {
-          "id": "bedrock-embedding-reconciliation:rss-story-trigger",
-          "mode": "throttle",
-          "ttl": 60000,
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "reconciliation",
-        },
-        "priority": 10,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
         "description": "Poll Bedrock batch embeddings status",
         "id": "poll_dispatcher",
         "kind": "scheduled-jobs",
@@ -3364,14 +3322,6 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "bedrock-embeddings-batch",
     "schedule": "* * * * *",
     "triggerName": "enqueuePostEmbeddingTriggerRecovery",
-  },
-  {
-    "description": "Recover story-clustering delivery for current RSS item embeddings",
-    "id": "rss_story_trigger_recovery",
-    "job_name": "rss_story_trigger_recovery",
-    "queue_name": "bedrock-embeddings-batch",
-    "schedule": "* * * * *",
-    "triggerName": "enqueueRssStoryTriggerRecovery",
   },
   {
     "description": "Dispatch hostname crawl jobs (daily)",

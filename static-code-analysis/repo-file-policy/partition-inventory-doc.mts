@@ -29,7 +29,7 @@ const NON_TABLE_PARTITION_REFERENCES = new Set([
   'month',
   'pk',
   'range',
-  'relation_table',
+  'entity_relation',
   'sk',
   'time',
   'timestamp',

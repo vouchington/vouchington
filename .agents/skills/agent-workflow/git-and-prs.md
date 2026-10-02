@@ -14,11 +14,13 @@
 - Use conventional commit and PR titles; follow the [commit checklist](../../../docs/checklists/commit.md).
   Do not amend, bypass hooks, create merge commits, or use raw force pushes.
 - Before rebasing, inspect `git diff --name-only origin/main...HEAD`; for a stack also inspect the
-  layer against its parent. Rebase an unstacked PR only with `./dev/rebase-onto-main`; for a stack
-  use `./dev/rebase-onto-main --stack` (add `--upstack` when upper layers must move) or `gh stack
+  layer against its parent. Prefer `./dev/rebase-onto-main` for an unstacked PR; for a stack
+  prefer `./dev/rebase-onto-main --stack` (add `--upstack` when upper layers must move) or `gh stack
 sync` when there are no local stack commits. Re-derive stack topology from GitHub first. The
-  helper fetches `origin/main`, then rebases. Do not chain raw `git fetch` with `git
-rebase`, use `git pull --rebase`/`-r`, or rebase a mid-stack branch directly onto `origin/main`.
+  helpers fetch and rebase for convenience; they are not required wrappers. An explicit Git
+  rebase is allowed after verifying current refs, stack topology, and the intended commit range.
+  Fetch separately before rebasing so those checks use current refs. Do not use
+  `git pull --rebase`/`-r` or rebase a mid-stack branch directly onto `origin/main`.
   Resolve conflicts semantically, never with blanket ours/theirs. Continue with
   `GIT_EDITOR=true git rebase --continue`.
 - Use `git -C <worktree-root>` for commands with repo-relative paths. After rebase, push with a
@@ -30,7 +32,7 @@ rebase`, use `git pull --rebase`/`-r`, or rebase a mid-stack branch directly ont
 
 ### Reading the four refs
 
-Before `./dev/rebase-onto-main` or a lease push, name the four refs and read how they differ. Publish this branch. Do not open a replacement pull request.
+Before any rebase or a lease push, name the four refs and read how they differ. Publish this branch. Do not open a replacement pull request.
 
 Run `git fetch origin main <branch>` as its own command. Do not chain that fetch with rebase, reset, or merge. A missing `.stack` field means membership is unknown, not unstacked. HEAD must be the branch being updated. `gh stack checkout` leaves the top layer checked out, so check out the layer first.
 

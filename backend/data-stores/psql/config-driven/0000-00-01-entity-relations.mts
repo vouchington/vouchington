@@ -5,6 +5,10 @@ import {
   type EntityRelationMetadata,
 } from '@voucha/types/entities/entity-relations-metadata'
 import type { EntityRelationEntityType } from '@voucha/types/entities/entity-relations-config'
+import {
+  createVoteDefaultPartitionSql,
+  createVoteIndexesSql,
+} from './utils/election-vote-table-sql.mts'
 import { createEntityRelationVoteIntegrityTargets } from './utils/entity-relation-vote-integrity-targets.mts'
 import { createRetainedEntityRelationImpacts } from './utils/retained-entity-relation-impacts.mts'
 
@@ -12,14 +16,14 @@ import { createRetainedEntityRelationImpacts } from './utils/retained-entity-rel
 export default () => {
   const tableCreation = entityRelationMetadatum.map(createEntityRelationTable).join('\n\n')
   const electionRelations = entityRelationMetadatum.filter(metadata => metadata.election)
-  const relationVoteParent = createEntityRelationVoteParentTable()
+  const relationVoteView = createEntityRelationVoteView(electionRelations)
   const relationVoteTables = electionRelations.map(createEntityRelationVoteTable).join('\n\n')
   const integrityTargets = createEntityRelationVoteIntegrityTargets(electionRelations)
   const retainedImpacts = createRetainedEntityRelationImpacts(electionRelations)
   return [
     tableCreation,
-    relationVoteParent,
     relationVoteTables,
+    relationVoteView,
     integrityTargets,
     retainedImpacts,
   ].join('\n\n')
@@ -101,40 +105,56 @@ function createEntityRelationTable(metadata: EntityRelationMetadata) {
 
 function createEntityRelationVoteTable(metadata: EntityRelationMetadata): string {
   const voteTable = getEntityRelationVoteTableName(metadata)
-  return `CREATE TABLE IF NOT EXISTS ${voteTable}
-PARTITION OF entity_relation_votes (
-  FOREIGN KEY (subject_id, entity_relation_id) REFERENCES ${metadata.table_name} (subject_id, id) ON DELETE CASCADE
-)
-FOR VALUES IN ('${metadata.table_name}')
-PARTITION BY RANGE (entity_relation_id);
-
-CREATE TABLE IF NOT EXISTS ${voteTable}__default
-PARTITION OF ${voteTable} DEFAULT;`
-}
-
-function createEntityRelationVoteParentTable(): string {
-  return `CREATE TABLE IF NOT EXISTS entity_relation_votes (
-  relation_table TEXT NOT NULL,
+  return `-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS ${voteTable} (
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
   subject_id UUID NOT NULL,
   entity_relation_id UUID NOT NULL,
   id UUID DEFAULT uuidv7() NOT NULL,
-  score SMALLINT,
-  CONSTRAINT chk_entity_relation_votes_score_domain CHECK (score IS NULL OR score IN (-1, 0, 1)),
+  score SMALLINT CHECK (score IS NULL OR score IN (-1, 0, 1)),
+  score_is_neutral BOOLEAN NOT NULL DEFAULT FALSE CHECK (NOT score_is_neutral OR score IS NOT DISTINCT FROM 0),
+  score_is_semantic BOOLEAN NOT NULL DEFAULT FALSE CHECK (NOT score_is_semantic OR score IS NOT NULL),
   ip_address INET,
   device_id UUID,
   session_id UUID,
   user_agent_id UUID REFERENCES user_agent_strings ON DELETE SET NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  PRIMARY KEY (relation_table, entity_relation_id, id)
-) PARTITION BY LIST (relation_table);
+  PRIMARY KEY (entity_relation_id, id),
+  FOREIGN KEY (subject_id, entity_relation_id) REFERENCES ${metadata.table_name} (subject_id, id) ON DELETE CASCADE
+) PARTITION BY RANGE (entity_relation_id);
 
-CREATE INDEX IF NOT EXISTS idx_entity_relation_votes__relation__user__id
-ON entity_relation_votes (entity_relation_id, user_id, id DESC);
+${createVoteDefaultPartitionSql(voteTable)}
 
-CREATE INDEX IF NOT EXISTS idx_entity_relation_votes__relation__id
-ON entity_relation_votes (entity_relation_id, id);
+${createVoteIndexesSql(voteTable, 'entity_relation_id')}
 
-CREATE INDEX IF NOT EXISTS idx_entity_relation_votes__user__relation__id
-ON entity_relation_votes (user_id, entity_relation_id, id DESC);`
+COMMENT ON TABLE ${voteTable} IS 'Append-only votes for the concrete ${metadata.table_name} elected relation.';
+COMMENT ON COLUMN ${voteTable}.score_is_neutral IS 'Explicit neutral provenance; binary relation vote producers leave this false.';
+COMMENT ON COLUMN ${voteTable}.score_is_semantic IS 'Explicit semantic score provenance; binary relation vote producers leave this false.';
+COMMENT ON COLUMN ${voteTable}.score IS 'Binary relation ballot or retained clear event; nullable events clear the current ballot.';
+COMMENT ON COLUMN ${voteTable}.ip_address IS 'Audit IP address captured with this ballot event.';
+COMMENT ON COLUMN ${voteTable}.device_id IS 'Opaque client device token with no durable owner row.';
+COMMENT ON COLUMN ${voteTable}.session_id IS 'Opaque client session token with no durable owner row.';
+COMMENT ON COLUMN ${voteTable}.user_agent_id IS 'Shared bounded user-agent string captured with this ballot event.';
+COMMENT ON COLUMN ${voteTable}.subject_id IS 'Authoritative subject paired with the concrete elected relation identifier.';
+COMMENT ON COLUMN ${voteTable}.entity_relation_id IS 'Concrete elected relation identifier and UUIDv7 partition key.';`
+}
+
+function createEntityRelationVoteView(relations: EntityRelationMetadata[]): string {
+  return `DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'elected_entity_relations') THEN
+    CREATE TYPE elected_entity_relations AS ENUM (${relations.map(metadata => `'${metadata.table_name}'`).join(', ')});
+  END IF;
+END $$;
+
+CREATE OR REPLACE VIEW view_entity_relation_votes AS
+${relations
+  .map(
+    metadata => `SELECT '${metadata.table_name}'::elected_entity_relations AS entity_relation,
+  user_id, subject_id, entity_relation_id, id, score, score_is_neutral, score_is_semantic, ip_address, device_id, session_id, user_agent_id, created_at
+FROM ${getEntityRelationVoteTableName(metadata)}`,
+  )
+  .join('\nUNION ALL\n')};
+
+COMMENT ON VIEW view_entity_relation_votes IS 'Current concrete relation vote ledgers combined for cross-family reads; writes target each concrete table.';`
 }

@@ -51,3 +51,5 @@ behavior.
 - [Copyright EU, UK, and territorial policy routes](reference-copyright-territorial-request-validation.md)
   record the closed bodies, the one explicit-null `cf_turnstile_response` acceptance change, and the
   rejections the service still decides (ownership and territorial availability `403`, `404`, `409`).
+- [Copyright repeat-infringer and staff queue routes](reference-copyright-staff-request-validation.md)
+  record their handler order, kept statuses, and the administrator-action ordering note.

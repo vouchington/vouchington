@@ -114,7 +114,8 @@ then format and compile.
   `localization/catalog/routes.json` maps each pattern to the exact aliases it renders. A selector
   ID changes only when that selector's aliases change. `static-code-analysis/i18n-extract/route-selector-map.mts` regenerates both
   artifacts from no-mistakes dependency closures, which already follow dynamic imports (including
-  `next/dynamic`) recursively, then a quoted-only lexical scan of alias-shaped literals. Quoted
+  `next/dynamic`) recursively, then a quoted-only lexical scan of alias-shaped literals (a first
+  segment from the scanner's list of web catalog namespaces). Quoted
   tokens that are not web catalog aliases fail generate/`--check`. Reachable `t()` template
   interpolation or concatenation, production `as MessageKey` casts, unresolved reachable
   local imports, and computed `import()`/`require()` rows also fail. Package specifiers stay

@@ -134,6 +134,41 @@ export async function renderClassifierCandidateQuestion(
   return template.replace(CANDIDATE_PLACEHOLDER, () => sanitizedName) as ClassifierSafeText
 }
 
+/**
+ * Brands a classifier's DB-owned Choice question template. A Choice question is asked once per
+ * decision (the criteria stand in for per-candidate substitution, and the state carries each
+ * candidate's content), so the template must have no `{{candidate}}` placeholder. The template is
+ * trusted operator-authored text, not external content, so this never wraps it.
+ */
+export function renderClassifierChoiceQuestion(template: string): ClassifierSafeText {
+  if (template.includes(CANDIDATE_PLACEHOLDER)) {
+    throw new Error(
+      `Classifier Choice question template must not contain a ${CANDIDATE_PLACEHOLDER} placeholder`,
+    )
+  }
+  return template as ClassifierSafeText
+}
+
+/**
+ * Joins already-branded pieces (for example one sanitized block per candidate) into one value. Every
+ * piece is already sanitized, so this only concatenates and keeps call sites free of bare casts.
+ */
+export function joinClassifierSafeText(
+  parts: readonly ClassifierSafeText[],
+  separator: string,
+): ClassifierSafeText {
+  return parts.join(separator) as ClassifierSafeText
+}
+
+/**
+ * Brands trusted, non-attacker-influenceable structural text (a DB-generated id, a criterion key,
+ * an ISO timestamp) for composing a decision's state next to sanitized content blocks. Never pass
+ * content that came from a feed, post or any other external source through this.
+ */
+export function classifierStructuralText(value: string): ClassifierSafeText {
+  return value as ClassifierSafeText
+}
+
 export function classifierPrompt(
   strings: TemplateStringsArray,
   ...externalValues: readonly ClassifierSafeText[]

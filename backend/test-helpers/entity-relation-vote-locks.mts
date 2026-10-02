@@ -14,7 +14,7 @@ export async function holdTestEntityRelationVoteLock(
     const query = transaction
     await query(sql`
         SELECT pg_advisory_xact_lock(
-          hashtextextended('entity_relation_votes:' || ${userId}::text || ':' || ${relationId}::text, 0)
+          hashtextextended('relation__rss_feed_item__category__topic__votes:' || ${userId}::text || ':' || ${relationId}::text, 0)
         )
       `)
     ready.resolve()

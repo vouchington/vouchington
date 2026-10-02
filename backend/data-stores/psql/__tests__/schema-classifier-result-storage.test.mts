@@ -152,7 +152,7 @@ describe('classifier result storage', () => {
       {
         parent: 'story_classifier_results',
         child: 'story_classifier_results__default',
-        strategy: 'RANGE (story_id)',
+        strategy: 'RANGE (batch_id)',
         bound: 'DEFAULT',
       },
       {

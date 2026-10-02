@@ -32,11 +32,10 @@ export async function runPartitionPruningScenarios(): Promise<void> {
     read(
       `/* getExplainEntityRelationVotesByTarget */
        SELECT user_id
-       FROM entity_relation_votes
-       WHERE relation_table = $1
-         AND entity_relation_id = $2`,
+       FROM relation__post__category__topic__votes
+       WHERE entity_relation_id = $1`,
       // Matches seedEntityRelations' first-inserted relation (postIndex=0, relationIndex=0).
-      ['relation__post__category__topic', seedRelationIdAfterPost(0, 0)],
+      [seedRelationIdAfterPost(0, 0)],
     ),
   )
 }

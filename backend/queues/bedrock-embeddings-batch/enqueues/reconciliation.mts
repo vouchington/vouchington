@@ -55,16 +55,6 @@ const enqueuePostTriggerRecoveryJob = createEnqueueFunction<
   defaults,
 })
 
-const enqueueRssStoryTriggerRecoveryJob = createEnqueueFunction<
-  { after?: string },
-  ReconciliationJobName
->({
-  queue: bedrock_embeddings_batch,
-  queueName: QUEUE_NAME,
-  jobName: 'rss_story_trigger_recovery',
-  defaults,
-})
-
 export function enqueueReconcileExistingEmbeddings(
   entityType: ReconciliationEntityType,
   after?: string,
@@ -78,20 +68,11 @@ export function enqueuePostEmbeddingTriggerRecovery(after?: string): EnqueueRetu
   return enqueuePostTriggerRecoveryJob(data, reconciliationJobOptions('post-trigger', after))
 }
 
-export function enqueueRssStoryTriggerRecovery(after?: string): EnqueueReturnType {
-  const data = after === undefined ? {} : { after }
-  return enqueueRssStoryTriggerRecoveryJob(
-    data,
-    reconciliationJobOptions('rss-story-trigger', after),
-  )
-}
-
 export async function enqueueAllEmbeddingReconciliationRoots(): Promise<unknown[]> {
   return Promise.all([
     enqueueReconcileExistingEmbeddings('topics'),
     enqueueReconcileExistingEmbeddings('posts'),
     enqueueReconcileExistingEmbeddings('rss_feed_items'),
     enqueuePostEmbeddingTriggerRecovery(),
-    enqueueRssStoryTriggerRecovery(),
   ])
 }

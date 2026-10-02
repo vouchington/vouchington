@@ -46,7 +46,8 @@ checks guard that request-selection contract instead of catalog content:
 - `static-code-analysis/i18n-extract/route-bounds.test.mts` — compiles the real catalog, caches
   package-runtime responses per selector, checks every generated route's combined copy in English,
   Spanish, French, and Portuguese against selector, message, and serialized payload limits, and
-  compares representative routes against direct combined requests.
+  compares representative routes against direct combined requests, including that the moderation
+  transparency panel's routes deliver every staff action label.
 - `playwright/tests/routes/localization-availability.spec.mts` — renders login, admin AI costs,
   and the dynamically loaded growth dashboard in English against the backend, with the browser
   error monitor enabled.
@@ -78,8 +79,10 @@ checks guard that request-selection contract instead of catalog content:
   root, or `@/` aliases) and on computed `import()`/`require()` rows, except an explicit reviewed
   exclusion list (empty until an entry is justified). Package specifiers stay external. The
   generator also fails computed `import()` lexically, along with unbounded `t()` assembly and
-  production `as MessageKey` casts. It then matches quoted alias-shaped literals and fails when a quoted
-  token is not a web catalog alias. It does not parse `t()` with an AST, and
+  production `as MessageKey` casts. It then matches quoted alias-shaped literals (first segment is a web
+  catalog namespace listed in `route-source-scan.mts`; `route-source-scan.test.mts` fails when the
+  catalog gains a namespace missing from that list) and fails when a quoted token is not a web
+  catalog alias. It does not parse `t()` with an AST, and
   `dynamic-import-closure.mts` does not exist. Finite registries of quoted aliases must live in a
   module the route/layout/chrome graph can reach. Add `--diagnostics` for stderr-only phase timings
   and a computed-closure count. The local `--check` is optional; CI owns this costly freshness

@@ -99,6 +99,14 @@ function appendUserFilter(
     user_id: string
   },
 ): void {
-  filters.push(sql`posts.created_by_id = ${user_id}`)
+  filters.push(buildPostSearchAuthorFilter(user_id))
   if (!isAdmin && currentUser?.id !== user_id) filters.push(sql`posts.is_anonymous IS NOT TRUE`)
+}
+
+/** Static aliases keep the same bound author scope visible to candidate planning. */
+export function buildPostSearchAuthorFilter(
+  userId: string,
+  postAlias: 'posts' | 'semantic_vector_post' = 'posts',
+): SQLStatement {
+  return sql``.append(postAlias).append(sql`.created_by_id = ${userId}`)
 }

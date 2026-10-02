@@ -3136,6 +3136,20 @@
       ],
       "type": "object"
     },
+    "CopyrightRepeatInfringerDispositionRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "disposition": {
+          "enum": ["abusive", "duplicate", "withdrawn"],
+          "type": "string"
+        },
+        "rationale": {
+          "type": "string"
+        }
+      },
+      "required": ["disposition", "rationale"],
+      "type": "object"
+    },
     "CopyrightRepeatInfringerNoticeAccount": {
       "additionalProperties": false,
       "properties": {
@@ -3169,6 +3183,30 @@
         "operative",
         "termination_in_effect"
       ],
+      "type": "object"
+    },
+    "CopyrightRepeatInfringerOutcomeRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "outcome": {
+          "enum": ["no_action", "restrict", "terminate", "warning"],
+          "type": "string"
+        },
+        "rationale": {
+          "type": "string"
+        }
+      },
+      "required": ["outcome", "rationale"],
+      "type": "object"
+    },
+    "CopyrightRepeatInfringerReinstatementRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "rationale": {
+          "type": "string"
+        }
+      },
+      "required": ["rationale"],
       "type": "object"
     },
     "CopyrightRepeatInfringerReviewDecision": {
@@ -30866,7 +30904,7 @@
     },
     "POST:/api/v1/copyright-repeat-infringer-accounts/:accountUserId/reinstatements": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CopyrightRepeatInfringerReinstatementRequest"
       },
       "path": {
         "properties": {
@@ -30880,7 +30918,7 @@
     },
     "POST:/api/v1/copyright-repeat-infringer-incidents/:id/dispositions": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CopyrightRepeatInfringerDispositionRequest"
       },
       "path": {
         "properties": {
@@ -30894,7 +30932,7 @@
     },
     "POST:/api/v1/copyright-repeat-infringer-reviews/:id/outcomes": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CopyrightRepeatInfringerOutcomeRequest"
       },
       "path": {
         "properties": {

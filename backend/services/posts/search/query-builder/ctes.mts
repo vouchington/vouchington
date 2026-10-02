@@ -75,7 +75,7 @@ function buildCanonicalUrlsCte(urlId: string): SQLStatement {
 
 function buildTextSearchCte(textSearchQuery: string): SQLStatement {
   return sql`
-      text_search_tsquery AS (
+      text_search_tsquery AS NOT MATERIALIZED (
         SELECT websearch_to_tsquery('voucha_english', ${textSearchQuery.trim()}) AS tsquery
       )
     `

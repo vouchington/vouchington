@@ -2,7 +2,6 @@ import type { Job } from 'glide-mq'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import type { AIAgentJobName } from '@queues/ai-agents/config'
 import { processAutotaggerRssFeedItem } from './processors/process-autotagger.mts'
-import { processStoryClustering } from './processors/process-misc.mts'
 import { processStoryPost } from './processors/process-story-post.mts'
 import { processReportJudgement } from './processors/process-report-judgement.mts'
 import { processDisputeResolution } from './processors/process-dispute-resolution.mts'
@@ -40,10 +39,6 @@ export function processAIAgent(job: Job<AIAgentJobData>): Promise<unknown> {
     case 'reconcile-classifier-runs':
       return processReconcileClassifierRuns(
         job.data as import('@queues/ai-agents/types').ReconcileClassifierRunsJobData,
-      )
-    case 'story-clustering':
-      return processStoryClustering(
-        job as Job<import('@queues/ai-agents/types').StoryClusteringJobData>,
       )
     case 'story-post':
       return processStoryPost(job as Job<import('@queues/ai-agents/types').StoryPostJobData>)

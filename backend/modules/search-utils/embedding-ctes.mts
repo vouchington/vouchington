@@ -18,8 +18,9 @@ export function buildEmbeddingCtes(options: {
   const ctes: SQLStatement[] = []
 
   if (options.semanticSearchEmbeddingVector) {
+    // Repeated references must still expose this immutable parameter to vector index planning.
     ctes.push(
-      sql`semantic_search_embedding AS (SELECT ${options.semanticSearchEmbeddingVector}::vector AS embedding)`,
+      sql`semantic_search_embedding AS NOT MATERIALIZED (SELECT ${options.semanticSearchEmbeddingVector}::vector AS embedding)`,
     )
   }
 

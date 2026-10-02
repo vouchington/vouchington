@@ -17,8 +17,9 @@ only defines query-writing and verification rules.
   graph once explicit range children exist. Re-evaluate those plans before attaching ranges; the
   default-only launch layout keeps one graph.
 - `crawl_chunks` must constrain `crawl_id` whenever `crawls.id` is already known or bounded.
-- Entity-relation votes need both `relation_table` and `entity_relation_id` for full LIST then RANGE
-  pruning. Ordinary votes need their configured target column.
+- Entity-relation votes select the concrete vote parent and constrain `entity_relation_id` for
+  RANGE pruning. Cross-family readers use the generated union view; ordinary votes constrain
+  their configured target column.
 - Voter-only deletion/export has no target key and intentionally scans each range. Preserve the
   per-child `user_id` indexes and keep explicit partition counts modest.
 - `session_referral_attributions` reads bound `session_id`, `referrer_id`, or `user_id` — none of

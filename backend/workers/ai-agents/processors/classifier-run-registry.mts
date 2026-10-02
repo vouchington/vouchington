@@ -2,15 +2,17 @@ import { createAutotaggerRegistration } from './classifier-run-autotagger.mts'
 import { createCommunityModerationRegistration } from './classifier-run-community-moderation.mts'
 import { createClassifierRunHandler, type ClassifierRunHandler } from './classifier-run-handler.mts'
 import { createPostClassifierRegistration } from './classifier-run-post-classifier.mts'
+import { createStoryClusteringRegistration } from './classifier-run-story-clustering.mts'
 
 /**
  * Every classifier served by the shared lifecycle. Adding one is a registration here plus its
- * adapter and input building; C9 registers the same way.
+ * adapter and input building.
  */
 const handlers: readonly ClassifierRunHandler[] = [
   createClassifierRunHandler(createPostClassifierRegistration()),
   createClassifierRunHandler(createAutotaggerRegistration()),
   createClassifierRunHandler(createCommunityModerationRegistration()),
+  createClassifierRunHandler(createStoryClusteringRegistration()),
 ]
 
 export function listClassifierRunHandlers(): readonly ClassifierRunHandler[] {

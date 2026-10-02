@@ -21,7 +21,7 @@ export const EXISTING_CORE_DISPATCHER_BACKFILLS: BackfillEntry[] = [
     id: 'bedrock-embedding-reconciliation',
     queue_name: 'bedrock-embeddings-batch',
     job_name: 'reconcile_existing',
-    description: 'Start all five embedding copy and downstream delivery reconciliation roots',
+    description: 'Start all four embedding copy and downstream delivery reconciliation roots',
     source_table: 'topics, posts, rss_feed_items',
     trigger: enqueueAllEmbeddingReconciliationRoots,
   },

@@ -1,3 +1,4 @@
+import { getEntityRelationVoteTableIdentifier } from '@data-stores/psql/config-driven/utils/election-sql-identifiers'
 import {
   assertWhitelistedSqlIdentifier,
   beginTransaction,
@@ -131,9 +132,9 @@ async function refreshChunk(
     WITH target_ids AS (SELECT unnest(${relationIds}::uuid[]) AS id),
     current_votes AS (
       SELECT DISTINCT ON (vote.entity_relation_id, vote.user_id) vote.entity_relation_id, vote.user_id, vote.score
-      FROM entity_relation_votes vote JOIN target_ids target ON target.id = vote.entity_relation_id
-      WHERE vote.relation_table = ${relationTable}
-        AND vote.entity_relation_id = ANY(${relationIds}::uuid[])
+      FROM `.append(getEntityRelationVoteTableIdentifier(relationTable))
+    .append(sql` vote JOIN target_ids target ON target.id = vote.entity_relation_id
+      WHERE vote.entity_relation_id = ANY(${relationIds}::uuid[])
         AND vote.entity_relation_id >= ${lowerRelationId}
         AND vote.entity_relation_id <= ${upperRelationId}
       ORDER BY vote.entity_relation_id, vote.user_id, vote.id DESC
@@ -158,7 +159,7 @@ async function refreshChunk(
       FROM target_ids target LEFT JOIN aggregated ON aggregated.entity_relation_id = target.id
     ), current AS MATERIALIZED (
       SELECT relation.id, relation.votes_score_net AS prior_votes_score_net
-      FROM `
+      FROM `)
   query.append(table)
   query.append(sql` relation JOIN stats ON stats.id = relation.id
       ORDER BY relation.id

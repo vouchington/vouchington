@@ -2,7 +2,6 @@ import type { ScheduledJobDefinition } from '../../../modules/scheduled-job-mani
 import {
   enqueuePostEmbeddingTriggerRecovery,
   enqueueReconcileExistingEmbeddings,
-  enqueueRssStoryTriggerRecovery,
   reconciliationJobOptions,
 } from '../enqueues.mts'
 
@@ -81,25 +80,6 @@ export const reconciliationScheduleEntries = [
         schedule: '* * * * *',
         description: 'Recover ban-evasion delivery for current first-community-post embeddings',
         trigger: enqueuePostEmbeddingTriggerRecovery,
-      },
-    ],
-  },
-  {
-    schedulerId: 'rss_story_trigger_recovery',
-    registration: 'sequential',
-    repeat: { pattern: '* * * * *' },
-    template: {
-      name: 'rss_story_trigger_recovery',
-      data: {},
-      opts: reconciliationJobOptions('rss-story-trigger'),
-    },
-    operatorSurfaces: [
-      {
-        kind: 'scheduled-jobs',
-        id: 'rss_story_trigger_recovery',
-        schedule: '* * * * *',
-        description: 'Recover story-clustering delivery for current RSS item embeddings',
-        trigger: enqueueRssStoryTriggerRecovery,
       },
     ],
   },

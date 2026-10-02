@@ -6,7 +6,7 @@
 
 One LLM call, no tool loop. Use `createOpenAIResponse` directly, optionally with `parseLLMJsonResponse` for structured JSON.
 
-**Used by:** `moderation`, `story-clustering`, `story-post`
+**Used by:** `moderation`, `story-post`
 
 ```typescript
 import { createOpenAIResponse, parseLLMJsonResponse } from '@agents/_shared'

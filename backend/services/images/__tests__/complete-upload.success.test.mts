@@ -204,6 +204,7 @@ describe('completeImageUpload - success path', () => {
       data: { id: image_id },
       opts: {
         priority: 5,
+        jobId: `extract-image-metadata-${image_id}`,
         deduplication: {
           id: `extract-image-metadata-${image_id}`,
           mode: 'simple',

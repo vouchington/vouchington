@@ -57,9 +57,12 @@ The dispatcher, run and sweep jobs that call the executor live on the `ai_agents
 
 ## Classifiers
 
-| Classifier | Input builder                                             |
-| ---------- | --------------------------------------------------------- |
-| C5         | [`@agents/post-classifier`](../post-classifier/README.md) |
-| C6         | [`@agents/autotagger`](../autotagger/README.md)           |
+| Classifier | Input builder                                                       |
+| ---------- | ------------------------------------------------------------------- |
+| C5         | [`@agents/post-classifier`](../post-classifier/README.md)           |
+| C6         | [`@agents/autotagger`](../autotagger/README.md)                     |
+| C8         | [`@agents/community-moderation`](../community-moderation/README.md) |
+| C9         | [`@agents/story-clustering`](../story-clustering/README.md)         |
 
-C8 and C9 add an input builder of this shape and register with the worker; nothing here changes.
+A new classifier adds an input builder of this shape and registers with the worker; nothing here
+changes.

@@ -380,9 +380,8 @@ token/cursor/protocol id; a sole UUID primary key without a generator or target 
 primary UUID. Reviewed opaque/provider/protocol/replay JSON is recorded for freshness only: a JSON
 column is not a defect, and structured documents, data points, and change history stay JSON. A
 catalog entry whose column no longer needs the exception is stale, and unresolved domain types are
-rejected before classification. The guard recognizes composite and proven partition FKs, and a
-generated alias also needs its exact `num_nonnulls(...) = 1` check. The partition proof loads the
-target checkout's entity-relation generator. It cannot infer whether arbitrary content in an
+rejected before classification. The guard recognizes composite foreign keys recorded in the snapshot, and a
+generated alias also needs its exact `num_nonnulls(...) = 1` check. It cannot infer whether arbitrary content in an
 allowed document is application-owned; reviewers must inspect producers and consumers under the
 [prelaunch relational storage policy](../../postgres-schema-rules.md#prelaunch-relational-storage),
 which defines the reviewed id categories.

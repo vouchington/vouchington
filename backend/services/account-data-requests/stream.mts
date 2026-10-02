@@ -86,7 +86,7 @@ export function streamVotes(userId: string) {
       AND (score IN (-2, 2) AND NOT score_is_semantic) IS NOT TRUE
     UNION ALL
     SELECT 'entity_relation' AS entity_type, entity_relation_id AS entity_id, CASE WHEN score IS NULL OR score = 0 THEN 'clear' WHEN score = 1 THEN 'confirm' ELSE 'dispute' END AS choice, created_at
-    FROM entity_relation_votes WHERE user_id = ${userId}
+    FROM view_entity_relation_votes WHERE user_id = ${userId}
     UNION ALL
     SELECT 'agent_moderation' AS entity_type, agent_moderation_id AS entity_id, CASE WHEN score IS NULL OR score = 0 THEN 'clear' WHEN score = 1 THEN 'accurate' ELSE 'inaccurate' END AS choice, created_at
     FROM agent_moderation_votes WHERE user_id = ${userId}

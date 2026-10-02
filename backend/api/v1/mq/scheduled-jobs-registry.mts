@@ -55,7 +55,6 @@ export const SCHEDULED_JOB_API_ORDER = [
   'reconcile_existing_posts',
   'reconcile_existing_rss_feed_items',
   'post_trigger_recovery',
-  'rss_story_trigger_recovery',
   'crawl_hostnames_dispatcher',
   'crawl_tier1_dispatcher',
   'crawl_cleanup',

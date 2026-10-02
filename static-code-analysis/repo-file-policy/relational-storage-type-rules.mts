@@ -2,7 +2,6 @@ import type { SchemaTableSnapshot } from '@vouchington/postgres/pg-schema-snapsh
 
 export type RelationalStorageOptions = {
   enforceCatalogFreshness?: boolean
-  verifiedPartitionForeignKeys?: ReadonlySet<string>
 }
 
 export type ObservedRelationalColumns = {

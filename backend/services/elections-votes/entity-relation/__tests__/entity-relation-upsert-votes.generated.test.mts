@@ -10,6 +10,7 @@ import {
   hardDeleteEntityRelationTest,
   readAllQueueJobs,
 } from '@voucha/test-helpers'
+import { insertTestEntityRelationVote } from '../../../../test-helpers/entities/entity-relation-votes.mts'
 import { elections } from '@queues/elections/queues'
 import { getEntityRelationElectionVote } from '../votes-get.mts'
 import { upsertEntityRelationElectionVotes } from '../votes-upsert.mts'
@@ -172,6 +173,27 @@ describe('upsert.generated (votes)', () => {
     const vote = await getEntityRelationElectionVote(user!.id, relations[0].id!)
     expect(vote).not.toBeNull()
     expect(vote!.choice).toBe('confirm')
+  })
+
+  it('rejects a vote pairing a relation id with another subject', async () => {
+    const user = await createTestUser()
+    const topic = await createTestTopic({ user })
+    const otherTopic = await createTestTopic({ user })
+    const post = await createTestPost({ user })
+    const metadata = entityRelationMetadatum.find(
+      item => item.table_name === 'relation__topic__related__post',
+    )!
+    const [relation] = await upsertEntityRelation(user, metadata, topic, [post], { vote: false })
+    await expect(
+      insertTestEntityRelationVote({
+        relationTable: metadata.table_name,
+        relationId: relation.id!,
+        subjectId: otherTopic.id,
+        userId: user.id,
+        score: 1,
+      }),
+    ).rejects.toMatchObject({ code: '23503' })
+    await expect(getEntityRelationElectionVote(user.id, relation.id!)).resolves.toBeNull()
   })
 
   it('routes one vote batch across concrete relation tables and cascades hard deletes', async () => {

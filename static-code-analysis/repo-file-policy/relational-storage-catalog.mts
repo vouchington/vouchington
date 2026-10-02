@@ -76,13 +76,6 @@ export const ALLOWED_NONRELATION_UUID = new Set([
   'user_deletion_requests.processing_attempt_id',
 ])
 
-// The parent table cannot carry a single FK to differently named relation tables. Each generated
-// LIST partition has the concrete composite FK; partition-foreign-key-proof.mts verifies them all.
-export const PARTITION_FOREIGN_KEY_COLUMNS = new Set([
-  'entity_relation_votes.entity_relation_id',
-  'entity_relation_votes.subject_id',
-])
-
 // Sole UUID primary keys without a generator are shared identities unless listed here. Retained
 // roots, publication bridges that mint their own id, and the session JWT sid are their own identity.
 // Extension tables such as user_metrics.id must keep the target FK instead of joining this set.

@@ -31,7 +31,6 @@ const EXPECTED_SCHEDULED_JOBS = [
   'bedrock-embeddings-batch/reconcile_existing_posts',
   'bedrock-embeddings-batch/reconcile_existing_rss_feed_items',
   'bedrock-embeddings-batch/post_trigger_recovery',
-  'bedrock-embeddings-batch/rss_story_trigger_recovery',
   'bloom-filters/backfillEntityCacheBloomFilter_communities',
   'bloom-filters/backfillEntityCacheBloomFilter_posts',
   'bloom-filters/backfillEntityCacheBloomFilter_rss_feed_items',
@@ -151,7 +150,7 @@ describe('scheduled job manifest catalog', () => {
   })
 
   it('projects every scheduled API surface', () => {
-    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(65)
+    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(64)
     expect(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).toEqual(SCHEDULED_JOB_API_ORDER)
     expect(new Set(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).size).toBe(
       SCHEDULED_JOBS_REGISTRY.length,
