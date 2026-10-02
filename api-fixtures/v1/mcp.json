@@ -459,6 +459,215 @@
         },
         {
           "tool": {
+            "name": "add_my_profile_link",
+            "title": "Add My Profile Link",
+            "description": "Add a link to the current user's profile, after the links already there. A url link needs a url; a platform link takes a handle. A profile holds at most 20 links, and links to blocked domains are refused.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "link_type": {
+                  "enum": [
+                    "facebook",
+                    "github",
+                    "instagram",
+                    "linkedin",
+                    "tiktok",
+                    "twitter",
+                    "url",
+                    "youtube"
+                  ],
+                  "type": "string",
+                  "description": "The kind of link: a plain url or a social platform."
+                },
+                "url": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ],
+                  "description": "An http or https URL without a fragment. Required for a url link; null clears it on a platform link."
+                },
+                "handle": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string",
+                      "maxLength": 255
+                    }
+                  ],
+                  "description": "The account handle on a platform link: letters, numbers, underscores and hyphens only. Null clears it."
+                },
+                "name": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string",
+                      "maxLength": 255
+                    }
+                  ],
+                  "description": "A label shown for the link, or null for none."
+                }
+              },
+              "required": ["link_type"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "profile_link": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "handle": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "image_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "image_placement": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "image_id": {
+                              "type": "string"
+                            },
+                            "placement_id": {
+                              "type": "string"
+                            },
+                            "placement_revision": {
+                              "type": "number"
+                            }
+                          },
+                          "required": ["image_id", "placement_id", "placement_revision"],
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "link_type": {
+                      "enum": [
+                        "facebook",
+                        "github",
+                        "instagram",
+                        "linkedin",
+                        "tiktok",
+                        "twitter",
+                        "url",
+                        "youtube"
+                      ],
+                      "type": "string"
+                    },
+                    "name": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "sort_order": {
+                      "type": "number"
+                    },
+                    "updated_at": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "url_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "user_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "created_at",
+                    "handle",
+                    "id",
+                    "image_id",
+                    "link_type",
+                    "name",
+                    "sort_order",
+                    "updated_at",
+                    "url",
+                    "url_id",
+                    "user_id"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": ["success", "profile_link"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["profile:read", "profile:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/my/profile/links"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "compare_topics",
             "title": "Compare Topics",
             "description": "Compare data point statistics side-by-side for two topics (cards, bank accounts, etc.). Useful for answering questions like \"which card has a better approval rate?\"",
@@ -1285,6 +1494,96 @@
             {
               "method": "DELETE",
               "path": "/api/v1/referral-links/:linkId/activations"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "delete_my_profile_link",
+            "title": "Delete My Profile Link",
+            "description": "Delete one of the current user's profile links. Deleting a link that is already gone fails as not found, and another user's link cannot be deleted.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "link_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The ID of one of the current user’s profile links."
+                }
+              },
+              "required": ["link_id"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                }
+              },
+              "required": ["success"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["profile:read", "profile:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "DELETE",
+              "path": "/api/v1/my/profile/links/:id"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "delete_notification",
+            "title": "Delete Notification",
+            "description": "Delete one of the current user's notifications. The deletion is queued and completes shortly after the call returns. A notification that is missing, already deleted or another user's fails as not found.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "notification_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The ID of one of the current user’s notifications."
+                }
+              },
+              "required": ["notification_id"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                }
+              },
+              "required": ["success"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["notifications:read", "notifications:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "DELETE",
+              "path": "/api/v1/my/notifications/:id"
             }
           ]
         },
@@ -6024,6 +6323,93 @@
         },
         {
           "tool": {
+            "name": "mark_all_notifications_read",
+            "title": "Mark All Notifications Read",
+            "description": "Mark all of the current user's unread notifications as read, and report how many changed. Notifications that are already read or deleted are left alone.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "marked_read": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": ["success", "marked_read"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["notifications:read", "notifications:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/my/notifications/read-all"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "mark_notification_read",
+            "title": "Mark Notification Read",
+            "description": "Mark one of the current user's notifications as read. Marking one that is already read changes nothing; a notification that is missing, deleted or another user's fails as not found.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "notification_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The ID of one of the current user’s notifications."
+                }
+              },
+              "required": ["notification_id"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                }
+              },
+              "required": ["success"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["notifications:read", "notifications:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "PATCH",
+              "path": "/api/v1/my/notifications/:id"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "remove_bookmark",
             "title": "Remove Bookmark",
             "description": "Remove a saved, followed, muted, or blocked relation the current user set on an entity. Removing a relation that is not set changes nothing, and the entity does not have to be visible any more.",
@@ -6201,6 +6587,181 @@
             {
               "method": "DELETE",
               "path": "/api/v1/lists/:id/items/rss-feed-items/:entityId"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "reorder_my_profile_links",
+            "title": "Reorder My Profile Links",
+            "description": "Set the order of the current user's profile links. Send every link ID exactly once, in the order to show them; a partial list or an ID that is not the user's own is refused. A profile holds at most 20 links, so the whole ordered list is returned.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "The ID of one of the current user’s profile links."
+                  },
+                  "minItems": 1,
+                  "maxItems": 20,
+                  "uniqueItems": true,
+                  "description": "Every one of the current user’s profile link IDs, in the order to show them."
+                }
+              },
+              "required": ["ids"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "created_at": {
+                        "type": "string"
+                      },
+                      "handle": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "image_id": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "image_placement": {
+                        "anyOf": [
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "image_id": {
+                                "type": "string"
+                              },
+                              "placement_id": {
+                                "type": "string"
+                              },
+                              "placement_revision": {
+                                "type": "number"
+                              }
+                            },
+                            "required": ["image_id", "placement_id", "placement_revision"],
+                            "type": "object"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "link_type": {
+                        "enum": [
+                          "facebook",
+                          "github",
+                          "instagram",
+                          "linkedin",
+                          "tiktok",
+                          "twitter",
+                          "url",
+                          "youtube"
+                        ],
+                        "type": "string"
+                      },
+                      "name": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "sort_order": {
+                        "type": "number"
+                      },
+                      "updated_at": {
+                        "type": "string"
+                      },
+                      "url": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "url_id": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "user_id": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "created_at",
+                      "handle",
+                      "id",
+                      "image_id",
+                      "link_type",
+                      "name",
+                      "sort_order",
+                      "updated_at",
+                      "url",
+                      "url_id",
+                      "user_id"
+                    ],
+                    "type": "object"
+                  }
+                }
+              },
+              "required": ["success", "results"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["profile:read", "profile:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "PUT",
+              "path": "/api/v1/my/profile/links/order"
             }
           ]
         },
@@ -7319,6 +7880,316 @@
         },
         {
           "tool": {
+            "name": "update_my_bio",
+            "title": "Update My Bio",
+            "description": "Replace the current user's profile bio with new Markdown, up to 10,000 characters. The whole bio is overwritten, so include any text to keep. Links to blocked domains are refused.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "markdown": {
+                  "type": "string",
+                  "maxLength": 10000,
+                  "description": "The new bio, in Markdown, up to 10,000 characters. It replaces the whole bio; send an empty string to clear it."
+                }
+              },
+              "required": ["markdown"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "profile": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "markdown": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id", "markdown"],
+                  "type": "object"
+                }
+              },
+              "required": ["success", "profile"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["profile:read", "profile:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "PATCH",
+              "path": "/api/v1/my/profile"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "update_my_display_identity",
+            "title": "Update My Display Identity",
+            "description": "Change where the current user's display name comes from (the username or a connected sign-in account) and the avatar image. Only the fields sent change. The username itself cannot be changed here, and an avatar must be an image the user uploaded.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "use_display_name_from": {
+                  "enum": [
+                    "apple",
+                    "facebook",
+                    "github",
+                    "google",
+                    "linkedin",
+                    "microsoft",
+                    "username",
+                    "x"
+                  ],
+                  "type": "string",
+                  "description": "Where the display name comes from: the username, or a connected sign-in account."
+                },
+                "profile_image_id": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  ],
+                  "description": "The ID of an image the current user uploaded, to use as the avatar, or null to remove it."
+                }
+              },
+              "minProperties": 1,
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "identity": {
+                  "type": "object",
+                  "properties": {
+                    "use_display_name_from": {
+                      "anyOf": [
+                        {
+                          "const": "apple"
+                        },
+                        {
+                          "const": "facebook"
+                        },
+                        {
+                          "const": "github"
+                        },
+                        {
+                          "const": "google"
+                        },
+                        {
+                          "const": "linkedin"
+                        },
+                        {
+                          "const": "microsoft"
+                        },
+                        {
+                          "const": "username"
+                        },
+                        {
+                          "const": "x"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "profile_image_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["use_display_name_from", "profile_image_id"],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["success", "identity"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["profile:read", "profile:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "PATCH",
+              "path": "/api/v1/my/identity"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "update_my_email_preferences",
+            "title": "Update My Email Preferences",
+            "description": "Change which emails the current user receives and when: setup recommendations, the news and community digests, and community moderation summaries. Only the fields sent change. Email addresses and sign-in settings cannot be changed here.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "engagement_emails_enabled": {
+                  "type": "boolean",
+                  "description": "Whether to receive setup recommendation emails."
+                },
+                "news_digest_frequency": {
+                  "type": "string",
+                  "enum": ["none", "daily", "weekly"],
+                  "description": "How often to receive the news digest."
+                },
+                "moderation_emails_enabled": {
+                  "type": "boolean",
+                  "description": "Whether to receive community moderation summary emails."
+                },
+                "community_digest_frequency": {
+                  "type": "string",
+                  "enum": ["none", "daily", "weekly"],
+                  "description": "How often to receive the community digest."
+                },
+                "moderation_email_cadence": {
+                  "type": "string",
+                  "enum": ["daily", "selected_days", "weekly"],
+                  "description": "How often to receive moderation summaries."
+                },
+                "moderation_email_days_of_week": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 7
+                  },
+                  "minItems": 1,
+                  "maxItems": 7,
+                  "description": "The weekdays for moderation summaries, from 1 to 7. Used by selected_days."
+                },
+                "moderation_email_time_of_day": {
+                  "type": "string",
+                  "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+                  "description": "The time of day for moderation summaries, as HH:MM."
+                },
+                "moderation_email_timezone": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64,
+                  "description": "An IANA time zone name for the time of day, such as America/New_York."
+                }
+              },
+              "minProperties": 1,
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "email_preferences": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "community_digest_frequency": {
+                      "enum": ["daily", "none", "weekly"],
+                      "type": "string"
+                    },
+                    "engagement_emails_enabled": {
+                      "type": "boolean"
+                    },
+                    "moderation_email_cadence": {
+                      "enum": ["daily", "selected_days", "weekly"],
+                      "type": "string"
+                    },
+                    "moderation_email_days_of_week": {
+                      "items": {
+                        "type": "number"
+                      },
+                      "type": "array"
+                    },
+                    "moderation_email_time_of_day": {
+                      "type": "string"
+                    },
+                    "moderation_email_timezone": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "moderation_emails_enabled": {
+                      "type": "boolean"
+                    },
+                    "news_digest_frequency": {
+                      "enum": ["daily", "none", "weekly"],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "community_digest_frequency",
+                    "engagement_emails_enabled",
+                    "moderation_email_cadence",
+                    "moderation_email_days_of_week",
+                    "moderation_email_time_of_day",
+                    "moderation_email_timezone",
+                    "moderation_emails_enabled",
+                    "news_digest_frequency"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": ["success", "email_preferences"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["preferences:read", "preferences:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "PATCH",
+              "path": "/api/v1/my/email-preferences"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "update_my_financial_profile",
             "title": "Update My Financial Profile",
             "description": "Update the current user's financial profile used for personalized data point comparisons. Only provide fields you want to update — omitted fields are unchanged.",
@@ -7586,6 +8457,397 @@
             {
               "method": "PUT",
               "path": "/api/v1/my/financial-profile"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "update_my_preferences",
+            "title": "Update My Preferences",
+            "description": "Change the current user's privacy and posting settings: who can see their follows, followers, likes and community memberships, who can message them, the default audience and privacy of new posts, country, interface locale and Hacker News discussions. Only the fields sent change, and every current setting is returned. Financial-data visibility, consents, federation and the username cannot be changed here.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "follows_visibility": {
+                  "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
+                  "type": "string",
+                  "description": "Who can see the users the current user follows."
+                },
+                "topic_follows_visibility": {
+                  "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
+                  "type": "string",
+                  "description": "Who can see the topics the current user follows."
+                },
+                "rss_feed_follows_visibility": {
+                  "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
+                  "type": "string",
+                  "description": "Who can see the RSS feeds the current user follows."
+                },
+                "community_memberships_visibility": {
+                  "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
+                  "type": "string",
+                  "description": "Who can see the communities the current user belongs to."
+                },
+                "followers_visibility": {
+                  "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
+                  "type": "string",
+                  "description": "Who can see the current user’s followers."
+                },
+                "likes_visibility": {
+                  "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
+                  "type": "string",
+                  "description": "Who can see the current user’s likes."
+                },
+                "direct_messages_audience": {
+                  "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
+                  "type": "string",
+                  "description": "Who can send the current user a direct message."
+                },
+                "default_post_broadcast": {
+                  "enum": ["everyone", "followers", "mutual_followers", "users"],
+                  "type": "string",
+                  "description": "Who a new post is shown to unless the post says otherwise."
+                },
+                "default_post_privacy": {
+                  "enum": ["private", "public"],
+                  "type": "string",
+                  "description": "Whether a new post is public or private unless the post says otherwise."
+                },
+                "country": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ],
+                  "description": "An ISO 3166-1 alpha-2 country code, or null to clear it."
+                },
+                "ui_locale": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ],
+                  "description": "A supported interface locale, or null to use the default."
+                },
+                "hn_discussions": {
+                  "type": "boolean",
+                  "description": "Whether post and article pages show related Hacker News discussions."
+                }
+              },
+              "minProperties": 1,
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "settings": {
+                  "type": "object",
+                  "properties": {
+                    "follows_visibility": {
+                      "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
+                      "type": "string"
+                    },
+                    "topic_follows_visibility": {
+                      "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
+                      "type": "string"
+                    },
+                    "rss_feed_follows_visibility": {
+                      "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
+                      "type": "string"
+                    },
+                    "community_memberships_visibility": {
+                      "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
+                      "type": "string"
+                    },
+                    "followers_visibility": {
+                      "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
+                      "type": "string"
+                    },
+                    "likes_visibility": {
+                      "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
+                      "type": "string"
+                    },
+                    "direct_messages_audience": {
+                      "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
+                      "type": "string"
+                    },
+                    "default_post_broadcast": {
+                      "enum": ["everyone", "followers", "mutual_followers", "users"],
+                      "type": "string"
+                    },
+                    "default_post_privacy": {
+                      "enum": ["private", "public"],
+                      "type": "string"
+                    },
+                    "country": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "ui_locale": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "hn_discussions": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "follows_visibility",
+                    "topic_follows_visibility",
+                    "rss_feed_follows_visibility",
+                    "community_memberships_visibility",
+                    "followers_visibility",
+                    "likes_visibility",
+                    "direct_messages_audience",
+                    "default_post_broadcast",
+                    "default_post_privacy",
+                    "country",
+                    "ui_locale",
+                    "hn_discussions"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["success", "settings"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["preferences:read", "preferences:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "PATCH",
+              "path": "/api/v1/users/:idOrSlug"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "update_my_profile_link",
+            "title": "Update My Profile Link",
+            "description": "Change the url, handle or name of one of the current user's profile links. Only the fields sent change; send null to clear one. The link's kind and position stay the same, and another user's link cannot be changed.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "link_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The ID of one of the current user’s profile links."
+                },
+                "url": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ],
+                  "description": "An http or https URL without a fragment. Required for a url link; null clears it on a platform link."
+                },
+                "handle": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string",
+                      "maxLength": 255
+                    }
+                  ],
+                  "description": "The account handle on a platform link: letters, numbers, underscores and hyphens only. Null clears it."
+                },
+                "name": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string",
+                      "maxLength": 255
+                    }
+                  ],
+                  "description": "A label shown for the link, or null for none."
+                }
+              },
+              "required": ["link_id"],
+              "minProperties": 2,
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "profile_link": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "handle": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "image_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "image_placement": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "image_id": {
+                              "type": "string"
+                            },
+                            "placement_id": {
+                              "type": "string"
+                            },
+                            "placement_revision": {
+                              "type": "number"
+                            }
+                          },
+                          "required": ["image_id", "placement_id", "placement_revision"],
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "link_type": {
+                      "enum": [
+                        "facebook",
+                        "github",
+                        "instagram",
+                        "linkedin",
+                        "tiktok",
+                        "twitter",
+                        "url",
+                        "youtube"
+                      ],
+                      "type": "string"
+                    },
+                    "name": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "sort_order": {
+                      "type": "number"
+                    },
+                    "updated_at": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "url_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "user_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "created_at",
+                    "handle",
+                    "id",
+                    "image_id",
+                    "link_type",
+                    "name",
+                    "sort_order",
+                    "updated_at",
+                    "url",
+                    "url_id",
+                    "user_id"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": ["success", "profile_link"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["profile:read", "profile:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "PATCH",
+              "path": "/api/v1/my/profile/links/:id"
             }
           ]
         },

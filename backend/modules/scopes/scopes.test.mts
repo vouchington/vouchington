@@ -114,7 +114,7 @@ describe('validateScopeSet', () => {
     })
   })
 
-  it.each([['bookmarks'], ['lists']] as const)(
+  it.each([['bookmarks'], ['lists'], ['notifications'], ['preferences'], ['profile']] as const)(
     'declares %s read and write resource scopes whose write is not satisfied by read',
     resource => {
       const read = `${resource}:read` as const

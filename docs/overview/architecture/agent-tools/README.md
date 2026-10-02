@@ -142,7 +142,7 @@ tables that persist a row identifier.
 
 `set_bookmark`, `remove_bookmark`, and the five list write tools follow the same delegated-authority
 model; see [Bookmark and List Write Tools](bookmark-list-write-tools.md). `remove_entity_relation` and
-eight referral link and topic recommendation tools do too; see [Relation, Referral Link and Topic Recommendation Write Tools](relation-referral-recommendation-write-tools.md).
+eight referral link and topic recommendation tools do too; see [Relation, Referral Link and Topic Recommendation Write Tools](relation-referral-recommendation-write-tools.md). So do the eleven profile, notification, and preference tools: [Profile, Notification, and Preference Write Tools](profile-notification-write-tools.md).
 
 ---
 

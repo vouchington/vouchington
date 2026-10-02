@@ -26,11 +26,14 @@ import { resolveReviewDisputeTool } from '../admin/disputes-resolution.mts'
 import activateReferralLinkTool from '../activate-referral-link.mts'
 import addEntityRelationTool from '../add-entity-relation.mts'
 import addListItemTool from '../add-list-item.mts'
+import addMyProfileLinkTool from '../add-my-profile-link.mts'
 import compareTopicsTool from '../compare-topics.mts'
 import createListTool from '../create-list.mts'
 import createReferralLinkTool from '../create-referral-link.mts'
 import deleteListTool from '../delete-list.mts'
 import deactivateReferralLinkTool from '../deactivate-referral-link.mts'
+import deleteMyProfileLinkTool from '../delete-my-profile-link.mts'
+import deleteNotificationTool from '../delete-notification.mts'
 import deleteReferralLinkTool from '../delete-referral-link.mts'
 import getCommunityMembersTool from '../get-community-members.mts'
 import getCommunityPinnedPostsTool from '../get-community-pinned-posts.mts'
@@ -58,9 +61,12 @@ import manageMyCardsTool from '../manage-my-cards.mts'
 import manageMyPointValuationsTool from '../manage-my-point-valuations.mts'
 import manageMyRewardsStatusesTool from '../manage-my-rewards-statuses.mts'
 import manageMySpendingTool from '../manage-my-spending.mts'
+import markAllNotificationsReadTool from '../mark-all-notifications-read.mts'
+import markNotificationReadTool from '../mark-notification-read.mts'
 import removeBookmarkTool from '../remove-bookmark.mts'
 import removeEntityRelationTool from '../remove-entity-relation.mts'
 import removeListItemTool from '../remove-list-item.mts'
+import reorderMyProfileLinksTool from '../reorder-my-profile-links.mts'
 import requestReferralLinkUnfurlTool from '../request-referral-link-unfurl.mts'
 import searchCommunitiesTool from '../search-communities.mts'
 import searchDataPointsTool from '../search-data-points.mts'
@@ -69,7 +75,12 @@ import searchRssFeedItemsTool from '../search-rss-feed-items.mts'
 import searchTopicsTool from '../search-topics.mts'
 import setBookmarkTool from '../set-bookmark.mts'
 import updateListTool from '../update-list.mts'
+import updateMyBioTool from '../update-my-bio.mts'
+import updateMyDisplayIdentityTool from '../update-my-display-identity.mts'
+import updateMyEmailPreferencesTool from '../update-my-email-preferences.mts'
 import updateMyFinancialProfileTool from '../update-my-financial-profile.mts'
+import updateMyPreferencesTool from '../update-my-preferences.mts'
+import updateMyProfileLinkTool from '../update-my-profile-link.mts'
 import updateReferralLinkTool from '../update-referral-link.mts'
 import updateTopicRecommendationTool from '../update-topic-recommendation.mts'
 import withdrawTopicRecommendationTool from '../withdraw-topic-recommendation.mts'
@@ -104,11 +115,14 @@ export const ALL_TOOLS: readonly Tool[] = [
   activateReferralLinkTool,
   addEntityRelationTool,
   addListItemTool,
+  addMyProfileLinkTool,
   compareTopicsTool,
   createListTool,
   createReferralLinkTool,
   deleteListTool,
   deactivateReferralLinkTool,
+  deleteMyProfileLinkTool,
+  deleteNotificationTool,
   deleteReferralLinkTool,
   getCommunityMembersTool,
   getCommunityPinnedPostsTool,
@@ -136,9 +150,12 @@ export const ALL_TOOLS: readonly Tool[] = [
   manageMyPointValuationsTool,
   manageMyRewardsStatusesTool,
   manageMySpendingTool,
+  markAllNotificationsReadTool,
+  markNotificationReadTool,
   removeBookmarkTool,
   removeEntityRelationTool,
   removeListItemTool,
+  reorderMyProfileLinksTool,
   requestReferralLinkUnfurlTool,
   searchCommunitiesTool,
   searchDataPointsTool,
@@ -147,7 +164,12 @@ export const ALL_TOOLS: readonly Tool[] = [
   searchTopicsTool,
   setBookmarkTool,
   updateListTool,
+  updateMyBioTool,
+  updateMyDisplayIdentityTool,
+  updateMyEmailPreferencesTool,
   updateMyFinancialProfileTool,
+  updateMyPreferencesTool,
+  updateMyProfileLinkTool,
   updateReferralLinkTool,
   updateTopicRecommendationTool,
   withdrawTopicRecommendationTool,

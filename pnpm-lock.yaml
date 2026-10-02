@@ -10850,6 +10850,9 @@ importers:
       '@queues/elections':
         specifier: workspace:^
         version: link:../queues/elections
+      '@queues/notifications':
+        specifier: workspace:^
+        version: link:../queues/notifications
       '@queues/vote-weight':
         specifier: workspace:^
         version: link:../queues/vote-weight
@@ -10922,6 +10925,9 @@ importers:
       '@services/my':
         specifier: workspace:^
         version: link:../services/my
+      '@services/notifications':
+        specifier: workspace:^
+        version: link:../services/notifications
       '@services/openai-agents':
         specifier: workspace:^
         version: link:../services/openai-agents

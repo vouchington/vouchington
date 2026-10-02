@@ -284,6 +284,24 @@
       "audience": "user",
       "description_key": null,
       "requires": null,
+      "resource": "notifications",
+      "scope": "notifications:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "user",
+      "description_key": null,
+      "requires": "notifications:read",
+      "resource": "notifications",
+      "scope": "notifications:write",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
+      "description_key": null,
+      "requires": null,
       "resource": "point-valuations",
       "scope": "point-valuations:read",
       "surfaces": ["api-key", "oauth"]
@@ -320,8 +338,35 @@
       "audience": "user",
       "description_key": null,
       "requires": null,
+      "resource": "preferences",
+      "scope": "preferences:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "user",
+      "description_key": null,
+      "requires": "preferences:read",
+      "resource": "preferences",
+      "scope": "preferences:write",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
+      "description_key": null,
+      "requires": null,
       "resource": "profile",
       "scope": "profile:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "user",
+      "description_key": null,
+      "requires": "profile:read",
+      "resource": "profile",
+      "scope": "profile:write",
       "surfaces": ["api-key", "oauth"]
     },
     {
