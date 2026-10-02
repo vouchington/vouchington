@@ -138,7 +138,7 @@ test.describe('Community agent prompts', () => {
 
     await expect(page.getByTestId('community-agent-prompt-test-results')).toBeVisible()
     await expect(page.getByTestId('community-agent-prompt-test-result')).toBeVisible()
-    await expect(page.getByText('Matches panel prompt')).toBeVisible()
+    await expect(page.getByText('Matched simulated post')).toBeVisible()
   })
 })
 
