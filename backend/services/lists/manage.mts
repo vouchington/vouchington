@@ -43,7 +43,11 @@ export function assertValidListName(name: string): void {
 }
 
 /** Creates a list for its owner, defaulting to a private list with no description. */
-export async function createOwnedList(currentUserId: string, provenance: ContentProvenance, input: CreateOwnedListInput) {
+export async function createOwnedList(
+  currentUserId: string,
+  provenance: ContentProvenance,
+  input: CreateOwnedListInput,
+) {
   assertValidListName(input.name)
   return createList(currentUserId, provenance, {
     name: input.name,

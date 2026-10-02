@@ -10,6 +10,7 @@ import {
   insertTestTopic,
   suspendTestUser,
   unsuspendTestUser,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { createOwnedList, getListForWrite, searchListItems, searchUserLists } from '@services/lists'
@@ -86,7 +87,7 @@ describe('list write tools contract — real DB', () => {
 
   it('update_list changes only the fields sent and clears a description with null', async () => {
     const caller = await createCaller()
-    const list = await createOwnedList(caller.id, {
+    const list = await createOwnedList(caller.id, WEB_PROVENANCE, {
       name: listName(),
       description: 'Before',
       visibility: 'public',
@@ -123,7 +124,7 @@ describe('list write tools contract — real DB', () => {
 
   it('delete_list removes the list, and deleting it again is refused as not found', async () => {
     const caller = await createCaller()
-    const list = await createOwnedList(caller.id, { name: listName() })
+    const list = await createOwnedList(caller.id, WEB_PROVENANCE, { name: listName() })
 
     expect(
       await callStructuredMcpTool(caller, 'delete_list', { list_id: list.id }, SCOPES),
@@ -143,7 +144,7 @@ describe('list write tools contract — real DB', () => {
     'add_list_item and remove_list_item mirror the REST %s routes',
     async (type, make) => {
       const caller = await createCaller()
-      const list = await createOwnedList(caller.id, { name: listName() })
+      const list = await createOwnedList(caller.id, WEB_PROVENANCE, { name: listName() })
       const entityId = await make(caller.id)
       const args = { list_id: list.id, item_type: type, entity_id: entityId }
 
@@ -169,7 +170,7 @@ describe('list write tools contract — real DB', () => {
   it('never lets one user change another user’s list, and a missing list is not found', async () => {
     const caller = await createCaller()
     const owner = await createTestUser()
-    const list = await createOwnedList(owner.id, { name: 'Owner list' })
+    const list = await createOwnedList(owner.id, WEB_PROVENANCE, { name: 'Owner list' })
     const postId = await createPostFor(owner.id)
     const itemArgs = { list_id: list.id, item_type: 'post' as const, entity_id: postId }
     await callStructuredMcpTool(
@@ -205,7 +206,7 @@ describe('list write tools contract — real DB', () => {
   it('refuses a read-only scope grant and a free plan on every list tool', async () => {
     const caller = await createCaller()
     const free = await createCaller(null)
-    const list = await createOwnedList(caller.id, { name: 'Guarded' })
+    const list = await createOwnedList(caller.id, WEB_PROVENANCE, { name: 'Guarded' })
     const item = { list_id: list.id, item_type: 'post', entity_id: crypto.randomUUID() }
     const calls = [
       ['create_list', { name: listName() }],
@@ -230,7 +231,7 @@ describe('list write tools contract — real DB', () => {
 
   it('refuses a suspended user before any list change', async () => {
     const caller = await createCaller()
-    const list = await createOwnedList(caller.id, { name: 'Frozen' })
+    const list = await createOwnedList(caller.id, WEB_PROVENANCE, { name: 'Frozen' })
     const entityId = await createPostFor(caller.id)
     const item = { list_id: list.id, item_type: 'post', entity_id: entityId }
     await callStructuredMcpTool(caller, 'add_list_item', item, SCOPES)
@@ -270,7 +271,7 @@ describe('list write tools contract — real DB', () => {
 
   it('reaches the caller’s own private post only with the exact private grant', async () => {
     const caller = await createCaller()
-    const list = await createOwnedList(caller.id, { name: listName() })
+    const list = await createOwnedList(caller.id, WEB_PROVENANCE, { name: listName() })
     const post = await createTestPost({ user: caller, privacy: 'private', broadcast: 'users' })
     const args = { list_id: list.id, item_type: 'post', entity_id: post.id }
 
@@ -284,7 +285,7 @@ describe('list write tools contract — real DB', () => {
   it('hides another user’s private post even from a credential with the private grant', async () => {
     const caller = await createCaller()
     const owner = await createTestUser()
-    const list = await createOwnedList(caller.id, { name: listName() })
+    const list = await createOwnedList(caller.id, WEB_PROVENANCE, { name: listName() })
     const post = await createTestPost({ user: owner, privacy: 'private', broadcast: 'followers' })
 
     await callRejectedMcpTool(

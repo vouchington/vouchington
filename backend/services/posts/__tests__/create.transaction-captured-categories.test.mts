@@ -5,6 +5,7 @@ import {
   insertTestTopic,
   updatePostTitleMarkdown,
   waitForQueueJobs,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { notifications } from '@queues/notifications/queues'
 import { preparePostWithCommunityReviews } from '../create.mts'
@@ -34,6 +35,7 @@ describe('create transaction-captured categories', () => {
     await using query = await beginTransaction()
     const prepared = await preparePostWithCommunityReviews(
       user,
+      WEB_PROVENANCE,
       {
         title: originalTitle,
         markdown: `Original body ${suffix}`,

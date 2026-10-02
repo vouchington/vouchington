@@ -4,6 +4,7 @@ import {
   createTestUserWithAge,
   getEntityRelation,
   insertTestCard,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { createPost } from '../create.mts'
@@ -23,7 +24,7 @@ describe('update category vote order', () => {
   })
 
   it('leaves scores matching the latest sequential data-point edit', async () => {
-    const post = await createPost(owner, {
+    const post = await createPost(owner, WEB_PROVENANCE, {
       post_type: 'data_point',
       title: `Category score order ${Date.now().toString(36)}`,
       data_point_vertical: 'credit_card',
@@ -55,11 +56,11 @@ describe('update category vote order', () => {
       [firstAdmin, secondAdmin, owner].map(user => insertTestCard({ createdById: user.id })),
     )
     const [firstPost, secondPost] = await Promise.all([
-      createPost(firstAdmin, {
+      createPost(firstAdmin, WEB_PROVENANCE, {
         title: `First reciprocal post ${Date.now().toString(36)}`,
         categories: [{ type: 'topic', topic_id: topics[0]! }],
       }),
-      createPost(secondAdmin, {
+      createPost(secondAdmin, WEB_PROVENANCE, {
         title: `Second reciprocal post ${Date.now().toString(36)}`,
         categories: [{ type: 'topic', topic_id: topics[1]! }],
       }),

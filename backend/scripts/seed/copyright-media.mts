@@ -33,11 +33,11 @@ export async function seedCopyrightMedia(posterId: string): Promise<CopyrightSee
   `)
   await transaction(sql`/* seedCopyrightMedia:post */
     INSERT INTO posts (
-      id, post_type, title, markdown, created_by_id,
+      id, post_type, title, markdown, created_by_id, created_via,
       bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256
     ) VALUES (
       ${POST_ID}, 'discussion', 'Sunrise over the harbour', 'A hosted photograph for copyright review.',
-      ${posterId}, ${PROCESSED_SHA256}, ${PROCESSED_SHA256}
+      ${posterId}, 'system', ${PROCESSED_SHA256}, ${PROCESSED_SHA256}
     ) ON CONFLICT DO NOTHING
   `)
   await transaction(sql`/* seedCopyrightMedia:slug */

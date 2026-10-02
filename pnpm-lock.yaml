@@ -10802,6 +10802,9 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../modules/pagination
+      '@modules/request-client-info':
+        specifier: workspace:^
+        version: link:../modules/request-client-info
       '@modules/scopes':
         specifier: workspace:^
         version: link:../modules/scopes
