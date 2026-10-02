@@ -205,6 +205,10 @@ The existing Oxlint CI step evaluates its configured TypeScript rules from the e
 nested plugin lists; parity and runtime-backed activation coverage are documented in the
 [static-analysis guide](../../static-code-analysis/README.md).
 
+Static Analysis also runs the [jscpd dead-code baseline gate](quality/static-code-analysis/jscpd/README.md#dead-code-baseline)
+over tracked working-tree files. It rejects new or increased findings in all configured categories
+and stale baseline entries; the separate clone-size threshold retains its existing behavior.
+
 The main-only protected Storybook and internal-documentation artifacts are keep-classified for
 their one-day retention because the trusted infrastructure publishers consume the exact completed
 source-run artifacts after the source workflows complete. Each artifact is named with its source
