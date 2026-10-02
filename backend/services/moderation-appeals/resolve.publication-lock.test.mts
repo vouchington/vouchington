@@ -65,7 +65,7 @@ describe('resolveModerationAppealAccept publication lock', () => {
     const holder = holdReviewRow()
     await rowLocked.promise
 
-    const resolving = resolveModerationAppealAccept(staff.id, appeal.id)
+    const resolving = resolveModerationAppealAccept(staff.id, appeal.id, 'staff_or_user')
     try {
       await vi.waitFor(async () => {
         await expect(probePublicationLock(postId)).rejects.toMatchObject({ code: '55P03' })

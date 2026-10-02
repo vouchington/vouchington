@@ -1,14 +1,17 @@
-import { write } from '@data-stores/psql'
-import type { QueryOptions } from '@data-stores/psql/types'
+import { lockStoryLifecycles } from '@services/post-publication/story-lifecycle-lock'
+import { recordModeratorAction } from '@services/moderator-actions'
+import { beginTransaction, write } from '@data-stores/psql'
+import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { PostStory, Story } from './types.mts'
 import { invalidateStories } from './cache-invalidation.mts'
 
 export async function updateStoryTitle(
+  actorId: string,
   storyId: string,
   title: string,
-  options: QueryOptions = {},
 ): Promise<Story | null> {
+  await using query = await beginTransaction()
   const { rows } = await write(
     sql`/* updateStoryTitle */
     UPDATE stories
@@ -26,9 +29,16 @@ export async function updateStoryTitle(
       updated_at,
       deleted_at
   `,
-    options,
+    { query },
   )
   const story = (rows[0] as Story) ?? null
+  if (story)
+    await recordModeratorAction(
+      actorId,
+      { actionType: 'story_rename', metadata: { story_id: storyId, title } },
+      { query },
+    )
+  await query.commit()
   if (story) await invalidateStories(story.id)
   return story
 }
@@ -37,10 +47,12 @@ export async function updateStoryTitle(
  * Admin-only: set official item and lock it to prevent agent override.
  */
 export async function adminSetStoryOfficialItem(
+  actorId: string,
   storyId: string,
   officialItemId: string,
-  options: QueryOptions = {},
 ): Promise<Story | null> {
+  await using query = await beginTransaction()
+  await lockOfficialItemMembership(query, storyId, officialItemId)
   const { rows } = await write(
     sql`/* adminSetStoryOfficialItem */
     UPDATE stories
@@ -50,6 +62,7 @@ export async function adminSetStoryOfficialItem(
       updated_at = CURRENT_TIMESTAMP
     WHERE id = ${storyId}
       AND deleted_at IS NULL
+      AND EXISTS (SELECT 1 FROM rss_feed_items WHERE id = ${officialItemId} AND story_id = ${storyId} AND deleted_at IS NULL)
     RETURNING
       id,
       title,
@@ -61,11 +74,32 @@ export async function adminSetStoryOfficialItem(
       updated_at,
       deleted_at
   `,
-    options,
+    { query },
   )
   const story = (rows[0] as Story) ?? null
+  if (story)
+    await recordModeratorAction(
+      actorId,
+      {
+        actionType: 'story_official_item_set',
+        metadata: { story_id: storyId, rss_feed_item_id: officialItemId },
+      },
+      { query },
+    )
+  await query.commit()
   if (story) await invalidateStories(story.id)
   return story
+}
+
+async function lockOfficialItemMembership(
+  query: TransactionQuery,
+  storyId: string,
+  officialItemId: string,
+): Promise<void> {
+  await query(
+    sql`/* adminSetStoryOfficialItem:lockItem */ SELECT id FROM rss_feed_items WHERE id = ${officialItemId} AND deleted_at IS NULL FOR UPDATE`,
+  )
+  await lockStoryLifecycles(query, [storyId])
 }
 
 export async function createPostStory(

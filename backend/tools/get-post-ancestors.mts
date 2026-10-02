@@ -1,5 +1,5 @@
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from './types.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 import { resolveReadableThread } from './mcp-post-access.mts'
 import { mcpPostSchema, toMcpPost, type McpPost } from './mcp-post-output.mts'
 import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'

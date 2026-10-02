@@ -9,7 +9,7 @@ See also:
 - [Generated tool catalog](catalog.md)
 - [Generated MCP catalog](../../../../api-fixtures/v1/mcp.json)
 - [Tool registry source](../../../../backend/tools/registry/index.mts)
-- [Tool type definitions](../../../../backend/tools/types.mts)
+- [Tool type definitions](../../../../backend/services/openai-agents/tool-types.mts)
 - [Tool implementation directory](../../../../backend/tools/)
 - [Agents that use these tools](../../../../backend/agents/AGENTS.md)
 
@@ -44,7 +44,9 @@ which `tools/list` also sends as `idempotentHint: true`; write tools set `destru
 When a tool names REST equivalents in `meta.api`, its hints must agree with them:
 [`find-api-hint-conflicts.mts`](../../../../backend/services/mcp-tools/catalog/find-api-hint-conflicts.mts)
 fails the catalog test when a read tool names a non-`GET` operation, a write tool names a `GET`,
-or `idempotentHint` differs from whether every named operation is a `PUT` or `DELETE`.
+or a staff write omits its explicit `idempotentHint`. Staff hints describe the shared service:
+a guarded no-op can be idempotent, while repeated writes that append audit history are not.
+User tool write hints continue to follow whether every named operation is a `PUT` or `DELETE`.
 
 Each MCP server also sends `instructions` on `initialize`
 ([`instructions.mts`](../../../../backend/services/mcp-tools/instructions.mts)) so agents learn how the tools fit together before calling them. A result over the MCP response limit returns a tool error that asks the caller to narrow the query or lower the limit.

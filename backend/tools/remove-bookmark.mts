@@ -3,7 +3,7 @@ import { deleteBookmarkAction } from '@services/entity-relation-actions'
 import { BOOKMARK_TOOL_PARAMETERS, type BookmarkToolArgs } from './bookmark-tool-support.mts'
 import { successSchema } from './output-schema-shapes.mts'
 import { requirePrivateToolUser } from './private-user.mts'
-import type { Tool } from './types.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 
 const tool: Tool<BookmarkToolArgs, { success: true }> = {
   schema: {

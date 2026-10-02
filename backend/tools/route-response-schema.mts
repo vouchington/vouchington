@@ -1,5 +1,5 @@
 import contracts from '@voucha/api-fixtures/v1/request-contracts.json' with { type: 'json' }
-import type { ToolApiEndpoint, ToolOutputSchema } from './types.mts'
+import type { ToolApiEndpoint, ToolOutputSchema } from '@services/openai-agents/tool-types'
 
 type JsonSchema = Record<string, unknown>
 type Components = Record<string, JsonSchema>

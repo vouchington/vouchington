@@ -31,7 +31,7 @@ flowchart LR
 Service (canonical example): `backend/services/openai-moderation/backfill.mts`
 (`streamUnmoderated*IdBatches`) + `backend/queues/openai-moderation/enqueues.mts`
 (`enqueueCreate*ModerationBatch`)
-Registry: `backend/api/v1/mq/backfills-registry.mts`
+Registry: `backend/services/queue-monitoring/backfills-registry.mts`
 API: `backend/api/v1/mq/backfills.mts`
 
 ## BackfillEntry Eligibility

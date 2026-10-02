@@ -20,7 +20,7 @@ app
       path: ctx.params,
     })
 
-    const user = await suspendUser(currentUser, ctx.params.userId!, body.reason)
+    const user = await suspendUser(currentUser, ctx.params.userId!, 'allow', body.reason)
     ctx.json({ user })
   })
   .delete(async (ctx: Context) => {

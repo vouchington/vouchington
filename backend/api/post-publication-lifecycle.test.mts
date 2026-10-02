@@ -80,7 +80,7 @@ describe('post publication lifecycle capture integration', () => {
     })
     const holder = holdAuthorPublicationLifecycleLock(user.id, ready, held)
     await holderReady
-    const suspension = suspendUser(admin, user.id)
+    const suspension = suspendUser(admin, user.id, 'allow')
     try {
       await vi.waitFor(async () => {
         expect(await isTestAuthorPublicationLifecycleLockWaiting(user.id)).toBe(true)

@@ -2,7 +2,10 @@ import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { setPostClearanceStatus } from '@services/post-clearance'
-import { recordModerationTrainingFeedback } from '@services/moderation-training'
+import {
+  recordModerationTrainingFeedback,
+  type ModerationTrainingEvidence,
+} from '@services/moderation-training'
 import type { ModerationAppeal } from './config.mts'
 import { appendAppealLifecycleChange } from './lifecycle.mts'
 import { logAppealResolution } from './resolution-modlog.mts'
@@ -30,6 +33,7 @@ export { dismissModerationAppeal } from './dismiss-appeal.mts'
 export async function resolveModerationAppealAccept(
   staffUserId: string,
   appealId: string,
+  trainingEvidence: ModerationTrainingEvidence,
 ): Promise<ModerationAppealResponse> {
   await assertModerationAppealDelivered(appealId)
   const now = new Date()
@@ -100,6 +104,7 @@ export async function resolveModerationAppealAccept(
       `),
     recordModerationTrainingFeedback(
       {
+        trainingEvidence,
         sourceType: 'moderation_appeal',
         eventType: 'appeal_resolved',
         label: 'accepted',
@@ -137,10 +142,12 @@ export async function resolveModerationAppealAccept(
 export async function resolveModerationAppealReduce(
   staffUserId: string,
   appealId: string,
+  trainingEvidence: ModerationTrainingEvidence,
 ): Promise<ModerationAppealResponse> {
   return finalizeDeliveredModerationAppeal(
     staffUserId,
     appealId,
     REDUCE_DELIVERED_APPEAL_RESOLUTION,
+    trainingEvidence,
   )
 }

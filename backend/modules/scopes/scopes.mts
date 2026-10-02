@@ -1,3 +1,4 @@
+import { ADMIN_RESOURCE_DEFINITIONS } from './admin-resource-definitions.mts'
 import { compileVouchaScopeCatalog } from './scope-graph.mts'
 import { userResourceDefinitions } from './user-resource-definitions.mts'
 
@@ -17,6 +18,7 @@ export type {
 } from './scope-types.mts'
 
 export const SCOPE_DEFINITIONS: Record<ApiScope, ScopeDefinition> = {
+  ...ADMIN_RESOURCE_DEFINITIONS,
   'mcp.admin:read': {
     action: 'read',
     audience: 'admin',
@@ -64,6 +66,7 @@ export const SCOPE_DEFINITIONS: Record<ApiScope, ScopeDefinition> = {
   ...(userResourceDefinitions() as Record<
     Exclude<
       ApiScope,
+      | keyof typeof ADMIN_RESOURCE_DEFINITIONS
       | 'mcp.admin:read'
       | 'mcp.admin:write'
       | 'mcp.user:read'

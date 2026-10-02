@@ -16,7 +16,7 @@ describe('review-disputes staff history', () => {
     {
       name: 'annotate',
       run: (actor: string, id: string) =>
-        resolveReviewDisputeAnnotate(actor, id, 'Staff annotation'),
+        resolveReviewDisputeAnnotate(actor, id, 'Staff annotation', 'staff_or_user'),
       action: 'resolve_report',
     },
     { name: 'dismiss', run: dismissReviewDispute, action: 'dismiss_report' },
@@ -24,7 +24,7 @@ describe('review-disputes staff history', () => {
 
   it.each(resolutions)('$name records history with the resolution', async ({ run, action }) => {
     const { actorId, id } = await createStaffResolutionFixture('dispute')
-    await run(actorId, id)
+    await run(actorId, id, 'staff_or_user')
     expect((await readStaffResolutionState('dispute', id)).resolved_at).not.toBeNull()
     expect((await searchModeratorActions({ actorId })).results).toEqual(
       expect.arrayContaining([
@@ -38,12 +38,23 @@ describe('review-disputes staff history', () => {
     const before = await readStaffResolutionState('dispute', id)
     await expect(
       withRejectedStaffActionHistory(actorId, async () => {
-        await run(actorId, id)
+        await run(actorId, id, 'staff_or_user')
       }),
     ).rejects.toThrow('staff history rejected')
     expect(await readStaffResolutionState('dispute', id)).toEqual(before)
     expect((await searchModeratorActions({ actorId })).results).toEqual([])
   })
+
+  it.each(resolutions)(
+    '$name rejects undelivered disputes without side effects',
+    async ({ run }) => {
+      const { actorId, id } = await createStaffResolutionFixture('dispute', false)
+      const before = await readStaffResolutionState('dispute', id)
+      await expect(run(actorId, id, 'staff_or_user')).rejects.toMatchObject({ status: 422 })
+      expect(await readStaffResolutionState('dispute', id)).toEqual(before)
+      expect((await searchModeratorActions({ actorId })).results).toEqual([])
+    },
+  )
 
   it('draft history retains replaced text', async () => {
     const { actorId, id } = await createStaffResolutionFixture('dispute', false)

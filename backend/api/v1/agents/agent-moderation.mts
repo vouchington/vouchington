@@ -5,7 +5,6 @@ import { getAgentModerationElectionByIdCachedBatch } from '@services/entity-fetc
 import {
   getAgentModerationElectionVotesByElectionId,
   getAgentModerationElectionVote,
-  upsertAgentModerationElectionVotes,
 } from '@services/elections-votes/agent-moderation'
 import { isUUID } from '@modules/utils'
 import { createPaginationParser } from '@modules/pagination'
@@ -24,7 +23,7 @@ import {
 import type { ElectionVoteRequest } from '@voucha/types/entities/election'
 import { requireAuthAndRateLimit } from '../../response-helpers.mts'
 import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
-import { recordAgentModerationVoteTrainingFeedback } from '@services/moderation-training'
+import { upsertAgentModerationVotesWithTrainingEvidence } from '@services/elections-votes/agent-moderation/votes-with-training'
 import { createVoteStatsNoopReconciler } from '@services/elections-votes/shared'
 import { enqueueBulkUpdateAgentModerationElectionVoteStats } from '@queues/elections/enqueues'
 
@@ -35,17 +34,7 @@ const upsertAgentModerationVotesWithFeedback: CreateVoteHandlerOptions['upsertVo
   userId,
   votes,
   context,
-) =>
-  upsertAgentModerationElectionVotes(userId, votes, context, async (vote, query) => {
-    await recordAgentModerationVoteTrainingFeedback(
-      {
-        actorUserId: userId,
-        agentModerationId: vote.entity_id,
-        score: vote.score,
-      },
-      { query },
-    )
-  })
+) => upsertAgentModerationVotesWithTrainingEvidence(userId, votes, context, 'staff_or_user')
 
 // PUT /api/v1/agent-moderations/:id/vote (admin only)
 const agentModerationVoteHandler = createVoteHandler({

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { toolToMcpTool } from './adapters.mts'
-import type { Tool, ToolAnnotations } from '../types.mts'
+import type { Tool, ToolAnnotations } from '@services/openai-agents/tool-types'
 
 function makeToolWithAnnotations(annotations: ToolAnnotations): Tool {
   return {

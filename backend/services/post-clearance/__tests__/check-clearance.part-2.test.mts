@@ -88,7 +88,7 @@ describe('updateClearanceStatus', () => {
       clearanceStatus: 'rejected',
     })
 
-    await updateClearanceStatus(postId, 'approved', adminUser!.id)
+    await updateClearanceStatus(postId, 'approved', adminUser!.id, 'staff_or_user')
 
     const status = await getPostClearanceStatus(postId)
     expect(status).toBe('approved')
@@ -107,7 +107,7 @@ describe('updateClearanceStatus', () => {
       clearanceStatus: 'pending',
     })
 
-    await updateClearanceStatus(postId, 'approved', adminUser!.id)
+    await updateClearanceStatus(postId, 'approved', adminUser!.id, 'staff_or_user')
 
     const feedback = await getLatestTestModerationTrainingFeedback({
       postId,
@@ -126,7 +126,7 @@ describe('updateClearanceStatus', () => {
       clearanceStatus: 'approved',
     })
 
-    await updateClearanceStatus(postId, 'rejected', adminUser!.id)
+    await updateClearanceStatus(postId, 'rejected', adminUser!.id, 'staff_or_user')
 
     const status = await getPostClearanceStatus(postId)
     expect(status).toBe('rejected')
@@ -142,7 +142,7 @@ describe('updateClearanceStatus', () => {
     })
     await setPostModerationComplete(postId, true)
 
-    await updateClearanceStatus(postId, 'rejected', adminUser!.id)
+    await updateClearanceStatus(postId, 'rejected', adminUser!.id, 'staff_or_user')
 
     await expect(getLatestPostClearanceMetadata(postId)).resolves.toEqual({})
   })
@@ -156,7 +156,7 @@ describe('updateClearanceStatus', () => {
       clearanceStatus: 'pending',
     })
 
-    await updateClearanceStatus(postId, 'in_review')
+    await updateClearanceStatus(postId, 'in_review', undefined, 'staff_or_user')
 
     const status = await getPostClearanceStatus(postId)
     expect(status).toBe('in_review')

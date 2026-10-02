@@ -1,6 +1,10 @@
 import { assertToolAllowedForUser, type AgentTool } from '@services/openai-agents'
 import type { BasicUser } from '@services/users/types'
-import type { Tool, ToolCallOutput, ToolInvocationContext } from '@voucha/tools'
+import type {
+  Tool,
+  ToolCallOutput,
+  ToolInvocationContext,
+} from '@services/openai-agents/tool-types'
 
 type ToolExecutor = (
   args: never,

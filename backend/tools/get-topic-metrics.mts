@@ -1,5 +1,5 @@
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from './types.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 import { getTopicMetricsByAny } from '@services/topics/metrics'
 import { outcomeSchema } from './output-schema-shapes.mts'
 import {

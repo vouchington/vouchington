@@ -31,6 +31,12 @@ describe('admin landing pages', () => {
       await request.get(`/api/v1/admin/users/${regularUser.id}/landing-pages`).expect(403)
     })
 
+    it('returns 404 for an unknown target user', async () => {
+      const request = createRequest()
+      await request.authenticateAs(admin)
+      await request.get(`/api/v1/admin/users/${v7()}/landing-pages`).expect(404)
+    })
+
     it('returns the target user landing pages for admins', async () => {
       const request = createRequest()
       await request.authenticateAs(admin)

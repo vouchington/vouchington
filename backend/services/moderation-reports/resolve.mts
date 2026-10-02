@@ -1,9 +1,5 @@
-import {
-  beginTransaction,
-  withTransactionOptions,
-  write,
-  type QueryOptions,
-} from '@data-stores/psql'
+import { runInOwnedTransaction, lockModerationCases } from './resolve-transactions.mts'
+import { withTransactionOptions, write, type QueryOptions } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import {
   createModerationReportReviewedNotification,
@@ -17,7 +13,10 @@ import {
   reportEntityFkColumn,
 } from './config.mts'
 import { recordModeratorAction, recordModeratorActions } from '@services/moderator-actions'
-import { recordModerationTrainingFeedback } from '@services/moderation-training'
+import {
+  recordModerationTrainingFeedback,
+  type ModerationTrainingEvidence,
+} from '@services/moderation-training'
 import { maybeResolveCase } from '@services/moderation-cases'
 import { getModerationSystemUserId } from '@services/users/system-users'
 import { enqueueReportResolutionNotificationsBestEffort } from './enqueue-report-resolution-notifications.mts'
@@ -25,6 +24,7 @@ import { getReportResolutionContext } from './resolution-context.mts'
 import { ownsReportResolutionTransaction } from './transaction-ownership.mts'
 export { getReportResolutionContext } from './resolution-context.mts'
 type ReportResolutionScope = {
+  trainingEvidence: ModerationTrainingEvidence
   communityId?: string
   resolvedById: string | null
   status: 'reviewed' | 'dismissed' | 'actioned'
@@ -86,6 +86,7 @@ export async function resolveModerationReport(
       ),
       recordModerationTrainingFeedback(
         {
+          trainingEvidence: options.trainingEvidence,
           sourceType: 'moderation_report',
           eventType: 'report_resolved',
           label: options.status === 'dismissed' ? 'rejected' : 'accepted',
@@ -183,18 +184,4 @@ export async function dismissPendingReportsForDeletedEntity(
       : await runInOwnedTransaction(run)
   if (shouldEnqueueNotifications) enqueueReportResolutionNotificationsBestEffort(notifications)
   return count
-}
-async function runInOwnedTransaction<T>(run: (query: TransactionQuery) => Promise<T>): Promise<T> {
-  await using transaction = await beginTransaction()
-  const result = await run(transaction)
-  await transaction.commit()
-  return result
-}
-async function lockModerationCases(caseIds: string[], options: QueryOptions): Promise<void> {
-  const ids = [...new Set(caseIds)]
-  if (ids.length === 0) return
-  await write(
-    sql`/* lockModerationCases */ SELECT id FROM moderation_cases WHERE id = ANY(${ids}::uuid[]) ORDER BY id FOR UPDATE`,
-    options,
-  )
 }

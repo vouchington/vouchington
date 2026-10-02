@@ -102,7 +102,7 @@ describe('getModerationAppealById', () => {
     })
     const { appeal: created } = await createModerationAppeal(appellant, input)
     await deliverModerationAppealForTest(staff.id, created.id)
-    await dismissModerationAppeal(staff.id, created.id)
+    await dismissModerationAppeal(staff.id, created.id, 'staff_or_user')
     const fetched = await getModerationAppealById(created.id)
 
     expect(fetched!.status).toBe('dismissed')
@@ -189,7 +189,7 @@ describe('listModerationAppeals', () => {
     })
     const { appeal } = await createModerationAppeal(uniqueAppellant, input)
     await deliverModerationAppealForTest(staff.id, appeal.id)
-    await dismissModerationAppeal(staff.id, appeal.id)
+    await dismissModerationAppeal(staff.id, appeal.id, 'staff_or_user')
 
     const { appeals } = await listModerationAppeals({
       appellantUserId: uniqueAppellant.id,

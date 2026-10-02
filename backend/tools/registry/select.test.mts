@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { isToolAllowedForPlan, listToolsForSurface, isToolMcpEligible } from './select.mts'
-import type { Tool } from '../types.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 
 function makeTool(plan?: 'free' | 'plus' | 'pro', surfaces?: string[]): Tool {
   return {

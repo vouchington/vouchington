@@ -104,6 +104,10 @@ describe('moderation catalogs', () => {
     const oauthClientAndCrawlerActions = [
       'oauth_client_verify',
       'oauth_client_unverify',
+      'story_item_add',
+      'story_item_remove',
+      'story_official_item_set',
+      'story_rename',
       'crawler_create',
       'crawler_update',
       'crawler_delete',

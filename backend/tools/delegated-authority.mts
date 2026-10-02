@@ -1,7 +1,7 @@
 import createHttpError from 'http-errors'
 import type { EntityRelationActionAuthority } from '@services/entity-relation-actions'
 import type { PrivateUser } from '@services/users/types'
-import type { ToolInvocationContext } from './types.mts'
+import type { ToolInvocationContext } from '@services/openai-agents/tool-types'
 
 /**
  * The authority of a credential-delegated tool call. Only trusted MCP dispatch builds the context,

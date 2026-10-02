@@ -76,6 +76,10 @@ const moderationCoreEndpointRegistry: Record<string, ManifestEndpoint> = {
     path: '/api/v1/appeals',
     query: { limit: '25', status: 'pending' },
   },
+  'native.moderation.appeals.detail.default': {
+    method: 'GET',
+    path: '/api/v1/appeals/00000000-0000-7000-8000-000000000102',
+  },
   'native.moderation.appeals.page-2': {
     method: 'GET',
     path: '/api/v1/appeals',

@@ -86,7 +86,7 @@ describe('assign', () => {
   it('adminAssignItemToStory assigns item and sets story_locked_at', async () => {
     const story = await insertTestStory()
     const newItemId = await makeTestItem()
-    const result = await adminAssignItemToStory(story.id, newItemId)
+    const result = await adminAssignItemToStory(storyPostUser.id, story.id, newItemId)
     expect(result).toBe(newItemId)
     const ids = await getStoryItemIds(story.id)
     expect(ids).toContain(newItemId)
@@ -97,7 +97,7 @@ describe('assign', () => {
     const itemId = await makeTestItem()
 
     await expect(
-      adminAssignItemToStory(story.id, itemId, {
+      adminAssignItemToStory(storyPostUser.id, story.id, itemId, {
         refreshStoryPostForStory: async () => {
           throw new Error('refresh failed')
         },
@@ -111,7 +111,7 @@ describe('assign', () => {
     const newItemId = await makeTestItem()
     await setTestItemStoryLocked(newItemId, true)
     // Admin can bypass the lock
-    const result = await adminAssignItemToStory(story.id, newItemId)
+    const result = await adminAssignItemToStory(storyPostUser.id, story.id, newItemId)
     expect(result).toBe(newItemId)
   })
 
@@ -130,7 +130,7 @@ describe('assign', () => {
     })
     const enqueuedPostIds: string[] = []
 
-    await adminAssignItemToStory(story.id, itemId, {
+    await adminAssignItemToStory(storyPostUser.id, story.id, itemId, {
       refreshStoryPostForStory: async (refreshedStoryId, refreshOptions, refreshBehavior) => {
         expect(refreshBehavior?.enqueueAgent).toBe(false)
         expect(refreshedStoryId).toBe(story.id)
@@ -164,11 +164,11 @@ describe('assign', () => {
     const itemId = await makeTestItem()
 
     // First assign to story1
-    await adminAssignItemToStory(story1.id, itemId)
+    await adminAssignItemToStory(storyPostUser.id, story1.id, itemId)
 
     // Reassign to story2 — prior story_id should be captured and refresh fired (no-op since
     // no story post exists, but the code path must execute without throwing).
-    const result = await adminAssignItemToStory(story2.id, itemId)
+    const result = await adminAssignItemToStory(storyPostUser.id, story2.id, itemId)
     expect(result).toBe(itemId)
 
     const ids = await getStoryItemIds(story2.id)
@@ -188,9 +188,9 @@ describe('assign', () => {
     let assign: Promise<string | null>
     let remove: Promise<string | null>
     await withTestStoryLifecycleLock(story.id, async () => {
-      assign = adminAssignItemToStory(story.id, assignedItemId)
+      assign = adminAssignItemToStory(storyPostUser.id, story.id, assignedItemId)
       await expect.poll(() => isTestStoryLifecycleLockWaiting(story.id)).toBe(true)
-      remove = adminRemoveItemFromStory(assignedItemId)
+      remove = adminRemoveItemFromStory(storyPostUser.id, assignedItemId)
     })
     await expect(Promise.all([assign!, remove!])).resolves.toEqual([assignedItemId, assignedItemId])
 
@@ -203,15 +203,15 @@ describe('assign', () => {
   it('adminRemoveItemFromStory removes item and sets story_locked_at', async () => {
     const story = await insertTestStory()
     const newItemId = await makeTestItem()
-    await adminAssignItemToStory(story.id, newItemId)
-    const result = await adminRemoveItemFromStory(newItemId)
+    await adminAssignItemToStory(storyPostUser.id, story.id, newItemId)
+    const result = await adminRemoveItemFromStory(storyPostUser.id, newItemId)
     expect(result).toBe(newItemId)
   })
 
   it('getStoryWithItemCount reflects assigned items', async () => {
     const story = await insertTestStory()
     const newItemId = await makeTestItem()
-    await adminAssignItemToStory(story.id, newItemId)
+    await adminAssignItemToStory(storyPostUser.id, story.id, newItemId)
     const result = await getStoryWithItemCount(story.id)
     expect(result!.item_count).toBeGreaterThanOrEqual(1)
   })
@@ -230,7 +230,7 @@ describe('assign', () => {
     await addCategoryToRssFeedItem(movedItemId, topic.id)
     await refreshStoryPostForStory(prior.story.id)
     const completedRefreshes = new Set<string>()
-    await adminAssignItemToStory(target.story.id, movedItemId, {
+    await adminAssignItemToStory(storyPostUser.id, target.story.id, movedItemId, {
       refreshStoryPostForStory: async (storyId, refreshOptions, refreshBehavior) => {
         expect(refreshBehavior?.enqueueAgent).toBe(false)
         const result = await refreshStoryPostForStory(storyId, refreshOptions, refreshBehavior)
@@ -272,7 +272,7 @@ describe('assign', () => {
     await expect(
       getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id }),
     ).resolves.toBeUndefined()
-    await adminRemoveItemFromStory(itemIds[0]!, {
+    await adminRemoveItemFromStory(storyPostUser.id, itemIds[0]!, {
       refreshStoryPostForStory: async (storyId, refreshOptions, refreshBehavior) => {
         expect(refreshBehavior?.enqueueAgent).toBe(false)
         if (!refreshOptions?.query) throw new Error('Expected transactional story refresh')

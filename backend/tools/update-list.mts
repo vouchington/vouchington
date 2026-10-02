@@ -7,7 +7,7 @@ import {
   LIST_RESULT_SCHEMA,
   type ListToolFields,
 } from './list-tool-support.mts'
-import type { Tool } from './types.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 
 type UpdateListArgs = ListToolFields & { list_id: string }
 

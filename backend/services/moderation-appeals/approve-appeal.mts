@@ -1,3 +1,4 @@
+import type { ModerationAppealResponse } from './types.mts'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
@@ -18,7 +19,7 @@ type ApprovedAppeal = Pick<
 export async function approveModerationAppeal(
   staffUserId: string,
   appealId: string,
-): Promise<ModerationAppeal> {
+): Promise<ModerationAppealResponse> {
   const now = new Date()
   const { rows } = await write<ApprovedAppeal>(sql`/* approveModerationAppeal */
     WITH lifecycle_change_id AS (

@@ -6,7 +6,7 @@ import {
   isToolMcpEligible,
   listToolsForSurface,
 } from '@voucha/tools/registry/select'
-import type { Tool } from '@voucha/tools/types'
+import type { Tool } from '@services/openai-agents/tool-types'
 import { hasEveryScope, withScopePrerequisites, type ApiScope } from '@modules/scopes'
 import { isToolAllowedForUser } from './authorization.mts'
 import type { McpServerConfig } from './config.mts'

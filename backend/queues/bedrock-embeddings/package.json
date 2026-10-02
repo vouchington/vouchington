@@ -21,7 +21,6 @@
     "@modules/on-error": "workspace:^",
     "@services/analytics": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",
-    "@services/queue-monitoring": "workspace:^",
     "glide-mq": "^0.15.5"
   },
   "devDependencies": {

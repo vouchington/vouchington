@@ -40,7 +40,7 @@ describe('resolveModerationAppealAccept — suspension', () => {
 
     await deliverModerationAppealForTest(admin.id, appeal.id)
     refreshTopHashtags.mockClear()
-    await resolveModerationAppealAccept(admin.id, appeal.id)
+    await resolveModerationAppealAccept(admin.id, appeal.id, 'staff_or_user')
 
     const suspension = await getTestUserSuspension(suspensionId)
     expect(suspension?.lifted_at).not.toBeNull()
@@ -109,7 +109,7 @@ describe('resolveModerationAppealAccept — suspension', () => {
     )
     await deletionHoldsAuthorLifecycle.promise
 
-    const resolving = resolveModerationAppealAccept(admin.id, appeal.id)
+    const resolving = resolveModerationAppealAccept(admin.id, appeal.id, 'staff_or_user')
     const resolvingRejection = resolving.catch((error: unknown) => error)
     try {
       await vi.waitFor(async () => {
@@ -135,7 +135,9 @@ describe('resolveModerationAppealAccept — suspension', () => {
     const { appeal } = await createModerationAppeal(suspensionUser, input)
 
     await deliverModerationAppealForTest(moderator.id, appeal.id)
-    await expect(resolveModerationAppealAccept(moderator.id, appeal.id)).rejects.toMatchObject({
+    await expect(
+      resolveModerationAppealAccept(moderator.id, appeal.id, 'staff_or_user'),
+    ).rejects.toMatchObject({
       status: 403,
     })
   })

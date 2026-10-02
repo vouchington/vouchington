@@ -23,7 +23,7 @@ describe('suspendUser', () => {
     const user = await createTestUser({ username: safeUsername('suspend-set') })
     refreshTopHashtags.mockClear()
 
-    const result = await suspendUser(admin, user.id, 'spamming')
+    const result = await suspendUser(admin, user.id, 'allow', 'spamming')
 
     expect(result.suspended_at).toBeTruthy()
     expect(result.suspended_reason).toBe('spamming')
@@ -35,7 +35,7 @@ describe('suspendUser', () => {
     const admin = await createTestUser({ administrator: true })
     const user = await createTestUser({ username: safeUsername('suspend-noreason') })
 
-    const result = await suspendUser(admin, user.id)
+    const result = await suspendUser(admin, user.id, 'allow')
 
     expect(result.suspended_at).toBeTruthy()
     expect(result.suspended_reason).toBeNull()
@@ -45,19 +45,21 @@ describe('suspendUser', () => {
     const nonAdmin = await createTestUser({ username: safeUsername('suspend-nonadmin') })
     const target = await createTestUser({ username: safeUsername('suspend-target') })
 
-    await expect(suspendUser(nonAdmin, target.id)).rejects.toMatchObject({ status: 403 })
+    await expect(suspendUser(nonAdmin, target.id, 'allow')).rejects.toMatchObject({ status: 403 })
   })
 
   it('returns 403 for null user', async () => {
     const target = await createTestUser({ username: safeUsername('suspend-null') })
 
-    await expect(suspendUser(null, target.id)).rejects.toMatchObject({ status: 403 })
+    await expect(suspendUser(null, target.id, 'allow')).rejects.toMatchObject({ status: 403 })
   })
 
   it('returns 404 for missing user', async () => {
     const admin = await createTestUser({ administrator: true })
 
-    await expect(suspendUser(admin, '00000000-0000-7000-0000-000000000001')).rejects.toMatchObject({
+    await expect(
+      suspendUser(admin, '00000000-0000-7000-0000-000000000001', 'allow'),
+    ).rejects.toMatchObject({
       status: 404,
     })
   })
@@ -67,7 +69,7 @@ describe('suspendUser', () => {
     const user = await createTestUser({ username: safeUsername('suspend-already') })
     await suspendTestUser(user.id)
 
-    const err = await suspendUser(admin, user.id).catch(e => e)
+    const err = await suspendUser(admin, user.id, 'allow').catch(e => e)
     expect(err.status).toBe(409)
     expect(err.code).toBe(CONFLICT)
   })

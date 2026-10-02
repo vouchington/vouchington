@@ -1,11 +1,7 @@
-import { recordStaffOperation } from '@services/moderator-actions'
 import type { Context } from '@jongleberry/api-server'
-import { currentUserCanAccessQueueStats } from '@services/queue-monitoring'
+import { currentUserCanAccessQueueStats, setManagedQueuePaused } from '@services/queue-monitoring'
 import app from '../../../app.mts'
 import { requireAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
-import '../scheduled-jobs.mts'
-
-import { findQueueByName } from './shared.mts'
 
 app.route('/api/v1/mq/queues/:name/pause').post(async (ctx: Context) => {
   const currentUser = await requireAuthAndRateLimit(
@@ -14,14 +10,5 @@ app.route('/api/v1/mq/queues/:name/pause').post(async (ctx: Context) => {
     'POST:/api/v1/mq/queues/:name/pause',
   )
   validateRequestContract(ctx, 'POST:/api/v1/mq/queues/:name/pause', { path: ctx.params })
-
-  const queue = findQueueByName(ctx.params.name!)
-  ctx.assert(queue, 404, 'Queue not found')
-
-  await recordStaffOperation(
-    currentUser.id,
-    { actionType: 'queue_pause', queueName: queue!.name },
-    () => queue!.pause(),
-  )
-  ctx.json({ success: true })
+  ctx.json(await setManagedQueuePaused(currentUser, ctx.params.name!, true))
 })

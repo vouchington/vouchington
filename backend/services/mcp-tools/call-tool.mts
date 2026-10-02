@@ -1,9 +1,11 @@
 import { McpError, ErrorCode, type CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import onError from '@modules/on-error'
+import { isHttpError } from 'http-errors'
+import { CONFLICT, FORBIDDEN, INVALID_INPUT, NOT_FOUND } from '@modules/on-error/error-codes'
 import type { BasicUser } from '@services/users/types'
 import type { McpServerConfig } from './config.mts'
 import type { ApiScope } from '@modules/scopes'
-import type { ToolInvocationContext } from '@voucha/tools/types'
+import type { ToolInvocationContext } from '@services/openai-agents/tool-types'
 import { resolveMcpToolCall, type McpToolCallResolution } from './resolve-tool-call.mts'
 import { validateToolArguments } from './validate-tool-arguments.mts'
 import { buildToolResult } from './build-tool-result.mts'
@@ -49,6 +51,18 @@ export async function callMcpTool(
     // An oversized result is fixed by asking for less, so it goes back to the caller unreported.
     if (err instanceof McpToolResultTooLargeError) {
       return { isError: true, content: [{ type: 'text', text: MCP_TOOL_RESULT_TOO_LARGE_TEXT }] }
+    }
+    if (isHttpError(err) && err.status >= 400 && err.status < 500) {
+      const code =
+        err.status === 404
+          ? NOT_FOUND
+          : err.status === 409
+            ? CONFLICT
+            : err.status === 403
+              ? FORBIDDEN
+              : INVALID_INPUT
+      const error = { status: err.status, code, message: err.message, retryable: false }
+      return { isError: true, content: [{ type: 'text', text: JSON.stringify({ error }) }] }
     }
     onError(err instanceof Error ? err : new Error(String(err)))
     return {

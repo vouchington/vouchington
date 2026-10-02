@@ -1,9 +1,13 @@
+import { assertReviewDisputeDelivered } from './assert-delivered.mts'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import onError from '@modules/on-error'
 import { setPostClearanceStatus } from '@services/post-clearance'
-import { recordModerationTrainingFeedback } from '@services/moderation-training'
+import {
+  recordModerationTrainingFeedback,
+  type ModerationTrainingEvidence,
+} from '@services/moderation-training'
 import type { ReviewDisputeResponse } from './types.mts'
 import { getReviewDisputeAfterMutation } from './get.mts'
 import { appendLifecycleChange } from './lifecycle.mts'
@@ -15,7 +19,9 @@ export { dismissReviewDispute } from './dismiss-dispute.mts'
 export async function resolveReviewDisputeRemove(
   staffUserId: string,
   disputeId: string,
+  trainingEvidence: ModerationTrainingEvidence,
 ): Promise<ReviewDisputeResponse> {
+  await assertReviewDisputeDelivered(disputeId)
   const now = new Date()
   await using query = await beginTransaction()
   const { rows } = await query(
@@ -46,6 +52,7 @@ export async function resolveReviewDisputeRemove(
     `)
   await recordModerationTrainingFeedback(
     {
+      trainingEvidence,
       sourceType: 'review_dispute',
       eventType: 'dispute_resolved',
       label: 'accepted',
@@ -75,10 +82,12 @@ export async function resolveReviewDisputeAnnotate(
   staffUserId: string,
   disputeId: string,
   bodyText: string,
+  trainingEvidence: ModerationTrainingEvidence,
 ): Promise<ReviewDisputeResponse> {
   assert(bodyText.trim().length > 0, 422, 'body_text is required for annotation')
   assert(bodyText.length <= 2000, 422, 'body_text too long')
   const trimmedBody = bodyText.trim()
+  await assertReviewDisputeDelivered(disputeId)
   const now = new Date()
 
   await using query = await beginTransaction()
@@ -114,6 +123,7 @@ export async function resolveReviewDisputeAnnotate(
     `)
   await recordModerationTrainingFeedback(
     {
+      trainingEvidence,
       sourceType: 'review_dispute',
       eventType: 'dispute_resolved',
       label: 'edited',

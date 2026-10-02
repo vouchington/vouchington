@@ -1,3 +1,4 @@
+import { deliverReviewDisputeForTest } from '@voucha/test-helpers/dispute-delivery'
 import { describe, it, expect, beforeAll } from 'vitest'
 import {
   createTestUser,
@@ -140,7 +141,8 @@ describe('listReviewDisputes', () => {
 
   it('filters by status dismissed', async () => {
     const { dispute } = await makeDisputeFixture(staff.id)
-    await dismissReviewDispute(staff.id, dispute.id)
+    await deliverReviewDisputeForTest(staff.id, dispute.id)
+    await dismissReviewDispute(staff.id, dispute.id, 'staff_or_user')
     const { disputes } = await listReviewDisputes({ status: 'dismissed' })
     const found = disputes.find(d => d.id === dispute.id)
     expect(found).toBeDefined()

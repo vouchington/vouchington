@@ -8,7 +8,7 @@ const CLAIM_SELECT = sql`
   verified_at, verified_by_id, rejected_at, rejected_by_id, rejection_reason,
   revoked_at, revoked_by_id, revocation_reason,
   verification_hostname_id, verification_token_issued_at,
-  domain_verified_at, updated_at
+  domain_verified_at, created_at, updated_at
 `
 
 export async function getTopicClaimById(id: string): Promise<TopicClaim | null> {

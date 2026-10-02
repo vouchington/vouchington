@@ -3,7 +3,7 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ALL_TOOLS, getRegisteredToolByName } from './index.mts'
 import { getToolRequiredScopes, isToolMcpEligible, listToolsForSurface } from './select.mts'
-import type { Tool } from '../types.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 import { SCOPE_DEFINITIONS } from '@modules/scopes'
 
 const TOOLS_DIR = path.join(import.meta.dirname, '..')
@@ -16,7 +16,6 @@ const NON_TOOL_FILES = new Set([
   'delegated-authority.mts',
   'get-domain-ratings-helpers.mts',
   'get-domain-ratings-output-schema.mts',
-  'index.mts',
   'list-tool-support.mts',
   'mcp-community-output.mts',
   'mcp-post-access.mts',
@@ -29,9 +28,9 @@ const NON_TOOL_FILES = new Set([
   'resolve-topic.mts',
   'route-response-schema.mts',
   'search-system.mts',
+  'schema-validator.mts',
   'topic-hierarchy-result.mts',
   'topic-output-schema-parts.mts',
-  'types.mts',
 ])
 
 describe('tool registry', () => {
@@ -209,13 +208,10 @@ describe('tool registry', () => {
     expect(nonClientTools.map(t => t.schema.name)).toEqual([])
     const internalTools = listToolsForSurface('internal', ALL_TOOLS)
     expect(internalTools.map(tool => tool.schema.name)).not.toContain('add_entity_relation')
-    // The tools that opt out of the internal surface are the credential-only MCP writes.
-    const mcpOnlyTools = ALL_TOOLS.filter(
-      tool => !(tool.meta?.surfaces ?? ['internal']).includes('internal'),
+    expect(internalTools.map(tool => tool.schema.name)).toEqual(
+      ALL_TOOLS.filter(tool => tool.meta?.surfaces?.includes('internal')).map(
+        tool => tool.schema.name,
+      ),
     )
-    expect(mcpOnlyTools.map(tool => tool.schema.name)).toEqual(
-      expect.arrayContaining(['add_entity_relation', 'set_bookmark', 'create_list']),
-    )
-    expect(internalTools).toHaveLength(ALL_TOOLS.length - mcpOnlyTools.length)
   })
 })

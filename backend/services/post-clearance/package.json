@@ -36,6 +36,7 @@
     "@services/post-publication": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/types": "workspace:^",
+    "http-assert": "^1.5.0",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {

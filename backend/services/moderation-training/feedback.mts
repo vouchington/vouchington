@@ -3,10 +3,19 @@ import sql from 'sql-template-strings'
 import { write, type QueryOptions } from '@data-stores/psql'
 import type { ModerationTrainingFeedback, RecordModerationTrainingFeedbackInput } from './types.mts'
 
+export function recordModerationTrainingFeedback(
+  input: RecordModerationTrainingFeedbackInput & { trainingEvidence: 'staff_or_user' },
+  options?: QueryOptions,
+): Promise<ModerationTrainingFeedback>
+export function recordModerationTrainingFeedback(
+  input: RecordModerationTrainingFeedbackInput,
+  options?: QueryOptions,
+): Promise<ModerationTrainingFeedback | null>
 export async function recordModerationTrainingFeedback(
   input: RecordModerationTrainingFeedbackInput,
   options?: QueryOptions,
-): Promise<ModerationTrainingFeedback> {
+): Promise<ModerationTrainingFeedback | null> {
+  if (input.trainingEvidence === 'agent') return null
   assert(input.humanAction.trim() === input.humanAction, 422, 'humanAction must be trimmed')
   assert(
     input.humanAction.length > 0 && input.humanAction.length <= 120,

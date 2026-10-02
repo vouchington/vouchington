@@ -35,7 +35,7 @@ describe('required entrypoint reachability configuration', () => {
         scope: 'repository',
         options: {
           sourceGlobs: ['backend/queues/*/enqueues/schedules.mts'],
-          entrypoints: ['backend/api/v1/mq/scheduled-job-manifests.mts'],
+          entrypoints: ['backend/services/queue-monitoring/scheduled-job-manifests.mts'],
           maxDepth: 1,
         },
       },

@@ -1,5 +1,5 @@
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from './types.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 import { getRecommendedTopics } from '@services/recommended-topics/get-recommendations'
 import { clampToolLimit } from './search-system.mts'
 import { requirePrivateToolUser } from './private-user.mts'

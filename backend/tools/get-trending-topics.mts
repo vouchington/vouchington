@@ -1,5 +1,5 @@
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from './types.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 import { getTrendingTopics, trendingTopicsPaginationParser } from '@services/trending-topics'
 import type { TrendingTopicsResult } from '@services/trending-topics/types'
 import { objectSchema, successSchema } from './output-schema-shapes.mts'

@@ -3,7 +3,7 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
-import { SCHEDULED_JOBS_REGISTRY } from './scheduled-jobs-registry.mts'
+import { SCHEDULED_JOBS_REGISTRY } from '@services/queue-monitoring/scheduled-jobs-registry'
 
 describe('scheduled-jobs', () => {
   let admin: PrivateUser

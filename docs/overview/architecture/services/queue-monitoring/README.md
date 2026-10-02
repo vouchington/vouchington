@@ -14,14 +14,15 @@ flowchart TD
 ## Modules
 
 - **authorization.mts** — `currentUserCanAccessQueueStats()` admin role check
-- **get-queue-stats.mts** — Queue statistics fetching and aggregation
+- Queue statistics, bounded waiting-age reads, and cache/Lua implementation live in [the GlideMQ data store](../../backend/data-stores/valkey-glide-mq/README.md).
 - **publish-cloudwatch.mts** — bounded class-level depth/staleness publisher
 
 ## Functions
 
-- `getQueueStats(name)` — get stats for a single queue (waiting, active, completed, failed, paused, oldest waiting age)
+- `getQueueStats(name)` — get stats for a single queue (waiting, active, completed, failed, paused)
 - `getAllQueueStats(queueNames)` — batch fetch and sort stats for multiple queues
 - `getAggregatedQueueStats(queueNames)` — aggregate totals across all queues
+- `getAggregatedQueueMetricStats(queueNames)` — metrics-only aggregate with bounded oldest-waiting-job age
 
 ## Data Model
 
@@ -43,7 +44,7 @@ import {
   getQueueStats,
   getAllQueueStats,
   getAggregatedQueueStats,
-} from '@services/queue-monitoring'
+} from '@data-stores/valkey-glide-mq/get-queue-stats'
 
 // Single queue
 const stats = await getQueueStats('email-queue')

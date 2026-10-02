@@ -1,3 +1,4 @@
+import { deliverReviewDisputeForTest } from './dispute-delivery.mts'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createTestUser } from './entities/users.mts'
@@ -38,6 +39,7 @@ export async function createStaffResolutionFixture(kind: 'appeal' | 'dispute', d
   })
   await insertTestPostReview(postId, topicId, 3)
   const id = await insertTestReviewDispute({ postId, topicId, disputantUserId: target.id })
+  if (delivered) await deliverReviewDisputeForTest(actor.id, id)
   return { actorId: actor.id, id }
 }
 

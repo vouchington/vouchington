@@ -3,6 +3,7 @@ import { completeClassifierRun } from '@services/classifier-runs'
 import { adminAssignItemToStory, createStoryClusteringRunAdapter } from '@services/stories'
 import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
 import {
+  createTestUserDirect,
   deleteTestStory,
   insertTestStory,
   setTestItemStoryId,
@@ -166,7 +167,7 @@ describe('applying a story clustering decision after the world moved (real PG)',
     const { incoming, lease } = await persistedDecision(() => ({ storyId: story.id }), story.id)
     const overlap = Promise.all([
       completeClassifierRun(adapter, lease),
-      adminAssignItemToStory(story.id, incoming.itemId),
+      adminAssignItemToStory((await createTestUserDirect()).id, story.id, incoming.itemId),
     ])
 
     await expect(

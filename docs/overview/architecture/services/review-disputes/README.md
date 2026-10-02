@@ -20,7 +20,7 @@ reviews therefore keep each topic's evidence and rating snapshot in a separate d
 2. AI agent runs `createReviewDisputeDraft` to seed `public_response` from `ai_public_response`
 3. Moderator edits with `updateReviewDisputeDraft`, then approves with `approveReviewDispute`
 4. Moderator sends the approved response via `sendApprovedReviewDisputeResolution`
-5. Moderator resolves with `resolveReviewDisputeRemove`, `resolveReviewDisputeAnnotate`, or `dismissReviewDispute`
+5. Only after delivery, the moderator resolves with `resolveReviewDisputeRemove`, `resolveReviewDisputeAnnotate`, or `dismissReviewDispute`
 
 ## Legally Required Invariant
 

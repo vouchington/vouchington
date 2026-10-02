@@ -6,7 +6,7 @@ import {
   SUCCESS_RESULT_SCHEMA,
   type ListItemToolArgs,
 } from './list-tool-support.mts'
-import type { Tool } from './types.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 
 const tool: Tool<ListItemToolArgs, { success: true }> = {
   schema: {

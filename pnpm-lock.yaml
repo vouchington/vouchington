@@ -229,9 +229,6 @@ importers:
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
-      '@voucha/tools':
-        specifier: workspace:^
-        version: link:../../tools
       openai:
         specifier: ^7.23.0
         version: 7.23.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@8.11.2)(ws@8.21.3)(zod@4.6.5)
@@ -786,21 +783,12 @@ importers:
       '@queues/activitypub-inbox':
         specifier: workspace:^
         version: link:../queues/activitypub-inbox
-      '@queues/admin-imports':
-        specifier: workspace:^
-        version: link:../queues/admin-imports
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../queues/ai-agents
       '@queues/article-sync':
         specifier: workspace:^
         version: link:../queues/article-sync
-      '@queues/ban-evasion':
-        specifier: workspace:^
-        version: link:../queues/ban-evasion
-      '@queues/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../queues/bedrock-embeddings
       '@queues/bedrock-embeddings-batch':
         specifier: workspace:^
         version: link:../queues/bedrock-embeddings-batch
@@ -810,39 +798,21 @@ importers:
       '@queues/bluesky-follow-propagation':
         specifier: workspace:^
         version: link:../queues/bluesky-follow-propagation
-      '@queues/cache-purge':
-        specifier: workspace:^
-        version: link:../queues/cache-purge
       '@queues/crawl-boilerplate-removal':
         specifier: workspace:^
         version: link:../queues/crawl-boilerplate-removal
-      '@queues/crawl-browser':
-        specifier: workspace:^
-        version: link:../queues/crawl-browser
-      '@queues/crawl-embeds':
-        specifier: workspace:^
-        version: link:../queues/crawl-embeds
       '@queues/crawl-hostnames':
         specifier: workspace:^
         version: link:../queues/crawl-hostnames
       '@queues/crawl-referral-links':
         specifier: workspace:^
         version: link:../queues/crawl-referral-links
-      '@queues/crawler':
-        specifier: workspace:^
-        version: link:../queues/crawler
       '@queues/elections':
         specifier: workspace:^
         version: link:../queues/elections
       '@queues/emails':
         specifier: workspace:^
         version: link:../queues/emails
-      '@queues/entity-listeners':
-        specifier: workspace:^
-        version: link:../queues/entity-listeners
-      '@queues/entity-metrics-cache-refresh':
-        specifier: workspace:^
-        version: link:../queues/entity-metrics-cache-refresh
       '@queues/find-your-friends':
         specifier: workspace:^
         version: link:../queues/find-your-friends
@@ -858,9 +828,6 @@ importers:
       '@queues/kagi-smallweb':
         specifier: workspace:^
         version: link:../queues/kagi-smallweb
-      '@queues/language-detection':
-        specifier: workspace:^
-        version: link:../queues/language-detection
       '@queues/memberships':
         specifier: workspace:^
         version: link:../queues/memberships
@@ -873,42 +840,18 @@ importers:
       '@queues/openai-moderation':
         specifier: workspace:^
         version: link:../queues/openai-moderation
-      '@queues/post-mentions':
-        specifier: workspace:^
-        version: link:../queues/post-mentions
       '@queues/post-publication':
         specifier: workspace:^
         version: link:../queues/post-publication
       '@queues/psql':
         specifier: workspace:^
         version: link:../queues/psql
-      '@queues/report-integrity':
-        specifier: workspace:^
-        version: link:../queues/report-integrity
-      '@queues/rss-feed-discoverability':
-        specifier: workspace:^
-        version: link:../queues/rss-feed-discoverability
-      '@queues/rss-feed-item-categories':
-        specifier: workspace:^
-        version: link:../queues/rss-feed-item-categories
       '@queues/rss-feeds':
         specifier: workspace:^
         version: link:../queues/rss-feeds
-      '@queues/ses-inbound':
-        specifier: workspace:^
-        version: link:../queues/ses-inbound
       '@queues/sitemaps':
         specifier: workspace:^
         version: link:../queues/sitemaps
-      '@queues/spam-detection':
-        specifier: workspace:^
-        version: link:../queues/spam-detection
-      '@queues/story-post-related-url-projections':
-        specifier: workspace:^
-        version: link:../queues/story-post-related-url-projections
-      '@queues/topic-aliases':
-        specifier: workspace:^
-        version: link:../queues/topic-aliases
       '@queues/topic-ratings':
         specifier: workspace:^
         version: link:../queues/topic-ratings
@@ -918,9 +861,6 @@ importers:
       '@queues/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../queues/urls-domains-blacklist
-      '@queues/user-deletions':
-        specifier: workspace:^
-        version: link:../queues/user-deletions
       '@queues/user-rss-feed-imports':
         specifier: workspace:^
         version: link:../queues/user-rss-feed-imports
@@ -1531,6 +1471,9 @@ importers:
       '@data-stores/analytics':
         specifier: workspace:^
         version: link:../analytics
+      '@data-stores/graceful-shutdown':
+        specifier: workspace:^
+        version: link:../graceful-shutdown
       '@data-stores/valkey-core':
         specifier: workspace:^
         version: link:../valkey-core
@@ -2566,9 +2509,6 @@ importers:
       '@services/bedrock-embeddings':
         specifier: workspace:^
         version: link:../../services/bedrock-embeddings
-      '@services/queue-monitoring':
-        specifier: workspace:^
-        version: link:../../services/queue-monitoring
       glide-mq:
         specifier: ^0.15.5
         version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
@@ -3533,6 +3473,12 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/admin-imports':
+        specifier: workspace:^
+        version: link:../../queues/admin-imports
+      '@queues/article-sync':
+        specifier: workspace:^
+        version: link:../../queues/article-sync
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
@@ -5435,6 +5381,9 @@ importers:
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
+      '@services/moderation-training':
+        specifier: workspace:^
+        version: link:../moderation-training
       '@services/moderator-actions':
         specifier: workspace:^
         version: link:../moderator-actions
@@ -6552,22 +6501,52 @@ importers:
       '@services/oauth-authorization-server':
         specifier: workspace:^
         version: link:../oauth-authorization-server
+      '@services/openai-agents':
+        specifier: workspace:^
+        version: link:../openai-agents
       '@services/users':
         specifier: workspace:^
         version: link:../users
       '@voucha/tools':
         specifier: workspace:^
         version: link:../../tools
-      ajv:
-        specifier: ^8.20.0
-        version: 8.20.0
-      ajv-formats:
-        specifier: ^3.0.1
-        version: 3.0.1(ajv@8.20.0)
+      http-errors:
+        specifier: ^2.0.1
+        version: 2.0.1
     devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
+      '@modules/pagination':
+        specifier: workspace:^
+        version: link:../../modules/pagination
+      '@queues/ai-agents':
+        specifier: workspace:^
+        version: link:../../queues/ai-agents
+      '@queues/article-sync':
+        specifier: workspace:^
+        version: link:../../queues/article-sync
       '@services/communities':
         specifier: workspace:^
         version: link:../communities
+      '@services/dynamic-config-admin':
+        specifier: workspace:^
+        version: link:../dynamic-config-admin
+      '@services/elections-votes':
+        specifier: workspace:^
+        version: link:../elections-votes
+      '@services/feeds':
+        specifier: workspace:^
+        version: link:../feeds
+      '@services/queue-monitoring':
+        specifier: workspace:^
+        version: link:../queue-monitoring
+      '@services/stories':
+        specifier: workspace:^
+        version: link:../stories
+      '@types/http-errors':
+        specifier: ^2.0.5
+        version: 2.0.5
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -6841,6 +6820,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@modules/pagination':
+        specifier: workspace:^
+        version: link:../../modules/pagination
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
@@ -6959,6 +6941,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@modules/pagination':
+        specifier: workspace:^
+        version: link:../../modules/pagination
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
@@ -7642,6 +7627,12 @@ importers:
 
   backend/services/openai-agents:
     dependencies:
+      '@modules/scopes':
+        specifier: workspace:^
+        version: link:../../modules/scopes
+      '@services/users':
+        specifier: workspace:^
+        version: link:../users
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
@@ -7885,6 +7876,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      http-assert:
+        specifier: ^1.5.0
+        version: 1.5.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -8161,24 +8155,177 @@ importers:
 
   backend/services/queue-monitoring:
     dependencies:
-      '@data-stores/graceful-shutdown':
-        specifier: workspace:^
-        version: link:../../data-stores/graceful-shutdown
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
       '@modules/worker-queue-inventory':
         specifier: workspace:^
         version: link:../../modules/worker-queue-inventory
+      '@queues/account-data-requests':
+        specifier: workspace:^
+        version: link:../../queues/account-data-requests
+      '@queues/activitypub-delivery':
+        specifier: workspace:^
+        version: link:../../queues/activitypub-delivery
+      '@queues/activitypub-inbox':
+        specifier: workspace:^
+        version: link:../../queues/activitypub-inbox
+      '@queues/admin-imports':
+        specifier: workspace:^
+        version: link:../../queues/admin-imports
+      '@queues/ai-agents':
+        specifier: workspace:^
+        version: link:../../queues/ai-agents
+      '@queues/article-sync':
+        specifier: workspace:^
+        version: link:../../queues/article-sync
+      '@queues/ban-evasion':
+        specifier: workspace:^
+        version: link:../../queues/ban-evasion
+      '@queues/bedrock-embeddings':
+        specifier: workspace:^
+        version: link:../../queues/bedrock-embeddings
+      '@queues/bedrock-embeddings-batch':
+        specifier: workspace:^
+        version: link:../../queues/bedrock-embeddings-batch
+      '@queues/bloom-filters':
+        specifier: workspace:^
+        version: link:../../queues/bloom-filters
+      '@queues/bluesky-follow-propagation':
+        specifier: workspace:^
+        version: link:../../queues/bluesky-follow-propagation
+      '@queues/cache-purge':
+        specifier: workspace:^
+        version: link:../../queues/cache-purge
+      '@queues/crawl-boilerplate-removal':
+        specifier: workspace:^
+        version: link:../../queues/crawl-boilerplate-removal
+      '@queues/crawl-browser':
+        specifier: workspace:^
+        version: link:../../queues/crawl-browser
+      '@queues/crawl-embeds':
+        specifier: workspace:^
+        version: link:../../queues/crawl-embeds
+      '@queues/crawl-hostnames':
+        specifier: workspace:^
+        version: link:../../queues/crawl-hostnames
+      '@queues/crawl-referral-links':
+        specifier: workspace:^
+        version: link:../../queues/crawl-referral-links
+      '@queues/crawler':
+        specifier: workspace:^
+        version: link:../../queues/crawler
+      '@queues/elections':
+        specifier: workspace:^
+        version: link:../../queues/elections
+      '@queues/emails':
+        specifier: workspace:^
+        version: link:../../queues/emails
+      '@queues/entity-listeners':
+        specifier: workspace:^
+        version: link:../../queues/entity-listeners
+      '@queues/entity-metrics-cache-refresh':
+        specifier: workspace:^
+        version: link:../../queues/entity-metrics-cache-refresh
+      '@queues/find-your-friends':
+        specifier: workspace:^
+        version: link:../../queues/find-your-friends
+      '@queues/follower-distributions':
+        specifier: workspace:^
+        version: link:../../queues/follower-distributions
+      '@queues/heartbeat':
+        specifier: workspace:^
+        version: link:../../queues/heartbeat
+      '@queues/images':
+        specifier: workspace:^
+        version: link:../../queues/images
+      '@queues/kagi-smallweb':
+        specifier: workspace:^
+        version: link:../../queues/kagi-smallweb
+      '@queues/language-detection':
+        specifier: workspace:^
+        version: link:../../queues/language-detection
+      '@queues/memberships':
+        specifier: workspace:^
+        version: link:../../queues/memberships
+      '@queues/notifications':
+        specifier: workspace:^
+        version: link:../../queues/notifications
+      '@queues/oauth-authorization-exchange':
+        specifier: workspace:^
+        version: link:../../queues/oauth-authorization-exchange
+      '@queues/openai-moderation':
+        specifier: workspace:^
+        version: link:../../queues/openai-moderation
+      '@queues/post-mentions':
+        specifier: workspace:^
+        version: link:../../queues/post-mentions
+      '@queues/post-publication':
+        specifier: workspace:^
+        version: link:../../queues/post-publication
+      '@queues/psql':
+        specifier: workspace:^
+        version: link:../../queues/psql
+      '@queues/report-integrity':
+        specifier: workspace:^
+        version: link:../../queues/report-integrity
+      '@queues/rss-feed-discoverability':
+        specifier: workspace:^
+        version: link:../../queues/rss-feed-discoverability
+      '@queues/rss-feed-item-categories':
+        specifier: workspace:^
+        version: link:../../queues/rss-feed-item-categories
+      '@queues/rss-feeds':
+        specifier: workspace:^
+        version: link:../../queues/rss-feeds
+      '@queues/ses-inbound':
+        specifier: workspace:^
+        version: link:../../queues/ses-inbound
+      '@queues/sitemaps':
+        specifier: workspace:^
+        version: link:../../queues/sitemaps
+      '@queues/spam-detection':
+        specifier: workspace:^
+        version: link:../../queues/spam-detection
+      '@queues/story-post-related-url-projections':
+        specifier: workspace:^
+        version: link:../../queues/story-post-related-url-projections
+      '@queues/topic-aliases':
+        specifier: workspace:^
+        version: link:../../queues/topic-aliases
+      '@queues/topic-ratings':
+        specifier: workspace:^
+        version: link:../../queues/topic-ratings
+      '@queues/unfurl-referral-links':
+        specifier: workspace:^
+        version: link:../../queues/unfurl-referral-links
+      '@queues/urls-domains-blacklist':
+        specifier: workspace:^
+        version: link:../../queues/urls-domains-blacklist
+      '@queues/user-deletions':
+        specifier: workspace:^
+        version: link:../../queues/user-deletions
+      '@queues/user-rss-feed-imports':
+        specifier: workspace:^
+        version: link:../../queues/user-rss-feed-imports
+      '@queues/vote-integrity':
+        specifier: workspace:^
+        version: link:../../queues/vote-integrity
+      '@queues/vote-weight':
+        specifier: workspace:^
+        version: link:../../queues/vote-weight
+      '@services/moderator-actions':
+        specifier: workspace:^
+        version: link:../moderator-actions
+      '@services/users':
+        specifier: workspace:^
+        version: link:../users
       '@ts-shared/deploy-environment':
         specifier: workspace:^
         version: link:../../../ts-shared/deploy-environment
@@ -8188,6 +8335,9 @@ importers:
       glide-mq:
         specifier: ^0.15.5
         version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
+      http-assert:
+        specifier: ^1.5.0
+        version: 1.5.0
 
   backend/services/read-states:
     dependencies:
@@ -8521,6 +8671,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@modules/pagination':
+        specifier: workspace:^
+        version: link:../../modules/pagination
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
@@ -8595,6 +8748,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
       '@jongleberry/vurst-html':
         specifier: ^0.4.3
         version: 0.4.3
@@ -8701,9 +8857,6 @@ importers:
         specifier: ^14.0.2
         version: 14.0.2
     devDependencies:
-      '@services/queue-monitoring':
-        specifier: workspace:^
-        version: link:../queue-monitoring
       '@services/read-states':
         specifier: workspace:^
         version: link:../read-states
@@ -9122,6 +9275,9 @@ importers:
       '@services/feeds':
         specifier: workspace:^
         version: link:../feeds
+      '@services/moderator-actions':
+        specifier: workspace:^
+        version: link:../moderator-actions
       '@services/post-publication':
         specifier: workspace:^
         version: link:../post-publication
@@ -10088,6 +10244,12 @@ importers:
       '@services/moderation-cases':
         specifier: workspace:^
         version: link:../moderation-cases
+      '@services/moderation-reports':
+        specifier: workspace:^
+        version: link:../moderation-reports
+      '@services/moderation-training':
+        specifier: workspace:^
+        version: link:../moderation-training
       '@services/moderator-actions':
         specifier: workspace:^
         version: link:../moderator-actions
@@ -10338,6 +10500,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
       '@queues/elections':
         specifier: workspace:^
         version: link:../../queues/elections
@@ -10353,6 +10518,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      http-assert:
+        specifier: ^1.5.0
+        version: 1.5.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -10594,21 +10762,51 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../modules/on-error
+      '@modules/pagination':
+        specifier: workspace:^
+        version: link:../modules/pagination
       '@modules/scopes':
         specifier: workspace:^
         version: link:../modules/scopes
       '@modules/utils':
         specifier: workspace:^
         version: link:../modules/utils
+      '@queues/elections':
+        specifier: workspace:^
+        version: link:../queues/elections
+      '@queues/vote-weight':
+        specifier: workspace:^
+        version: link:../queues/vote-weight
+      '@services/admin-imports':
+        specifier: workspace:^
+        version: link:../services/admin-imports
+      '@services/ai-usage':
+        specifier: workspace:^
+        version: link:../services/ai-usage
+      '@services/attribution':
+        specifier: workspace:^
+        version: link:../services/attribution
       '@services/comments':
         specifier: workspace:^
         version: link:../services/comments
       '@services/communities':
         specifier: workspace:^
         version: link:../services/communities
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../services/copyright-notices
+      '@services/crawlers':
+        specifier: workspace:^
+        version: link:../services/crawlers
       '@services/data-points':
         specifier: workspace:^
         version: link:../services/data-points
+      '@services/dynamic-config-admin':
+        specifier: workspace:^
+        version: link:../services/dynamic-config-admin
+      '@services/elections-votes':
+        specifier: workspace:^
+        version: link:../services/elections-votes
       '@services/entity-fetch':
         specifier: workspace:^
         version: link:../services/entity-fetch
@@ -10621,21 +10819,57 @@ importers:
       '@services/feeds':
         specifier: workspace:^
         version: link:../services/feeds
+      '@services/growth-metrics':
+        specifier: workspace:^
+        version: link:../services/growth-metrics
       '@services/individuals-households':
         specifier: workspace:^
         version: link:../services/individuals-households
       '@services/lists':
         specifier: workspace:^
         version: link:../services/lists
+      '@services/landing-page-analytics':
+        specifier: workspace:^
+        version: link:../services/landing-page-analytics
+      '@services/moderation-analytics':
+        specifier: workspace:^
+        version: link:../services/moderation-analytics
+      '@services/moderation-appeals':
+        specifier: workspace:^
+        version: link:../services/moderation-appeals
+      '@services/moderation-reports':
+        specifier: workspace:^
+        version: link:../services/moderation-reports
+      '@services/moderator-actions':
+        specifier: workspace:^
+        version: link:../services/moderator-actions
+      '@services/my':
+        specifier: workspace:^
+        version: link:../services/my
+      '@services/openai-agents':
+        specifier: workspace:^
+        version: link:../services/openai-agents
+      '@services/post-clearance':
+        specifier: workspace:^
+        version: link:../services/post-clearance
       '@services/posts':
         specifier: workspace:^
         version: link:../services/posts
       '@services/prioritized-referral-links':
         specifier: workspace:^
         version: link:../services/prioritized-referral-links
+      '@services/queue-monitoring':
+        specifier: workspace:^
+        version: link:../services/queue-monitoring
       '@services/recommended-topics':
         specifier: workspace:^
         version: link:../services/recommended-topics
+      '@services/report-integrity':
+        specifier: workspace:^
+        version: link:../services/report-integrity
+      '@services/review-disputes':
+        specifier: workspace:^
+        version: link:../services/review-disputes
       '@services/rss-feed-items':
         specifier: workspace:^
         version: link:../services/rss-feed-items
@@ -10645,6 +10879,12 @@ importers:
       '@services/search-params':
         specifier: workspace:^
         version: link:../services/search-params
+      '@services/stories':
+        specifier: workspace:^
+        version: link:../services/stories
+      '@services/topic-claims':
+        specifier: workspace:^
+        version: link:../services/topic-claims
       '@services/topics':
         specifier: workspace:^
         version: link:../services/topics
@@ -10657,9 +10897,21 @@ importers:
       '@services/user-financial-profiles':
         specifier: workspace:^
         version: link:../services/user-financial-profiles
+      '@services/user-mod-notes':
+        specifier: workspace:^
+        version: link:../services/user-mod-notes
+      '@services/user-warnings':
+        specifier: workspace:^
+        version: link:../services/user-warnings
       '@services/users':
         specifier: workspace:^
         version: link:../services/users
+      '@services/vote-integrity':
+        specifier: workspace:^
+        version: link:../services/vote-integrity
+      '@services/vote-weight':
+        specifier: workspace:^
+        version: link:../services/vote-weight
       '@ts-shared/data-points':
         specifier: workspace:^
         version: link:../../ts-shared/data-points
@@ -10672,6 +10924,15 @@ importers:
       '@voucha/api-fixtures':
         specifier: workspace:^
         version: link:../../api-fixtures
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
+      ajv-formats:
+        specifier: ^3.0.1
+        version: 3.0.1(ajv@8.20.0)
+      http-assert:
+        specifier: ^1.5.0
+        version: 1.5.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -11208,9 +11469,6 @@ importers:
       '@services/communities':
         specifier: workspace:^
         version: link:../../services/communities
-      '@services/queue-monitoring':
-        specifier: workspace:^
-        version: link:../../services/queue-monitoring
       glide-mq:
         specifier: ^0.15.5
         version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))

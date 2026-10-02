@@ -1,4 +1,4 @@
-import type { Tool, ToolSurface } from '../types.mts'
+import type { Tool, ToolSurface } from '@services/openai-agents/tool-types'
 import { parseApiScope, SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
 
 type UserForPlanCheck = {

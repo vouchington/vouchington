@@ -1,3 +1,4 @@
+import { deliverReviewDisputeForTest } from '@voucha/test-helpers/dispute-delivery'
 import { describe, it, expect, beforeAll } from 'vitest'
 import {
   createTestUser,
@@ -62,13 +63,14 @@ describe('resolve review disputes', () => {
       claim_text: `Resolve test ${suffix}`,
     })
     const { dispute } = await createReviewDispute(claimant, input)
+    await deliverReviewDisputeForTest(staff.id, dispute.id)
     return dispute
   }
 
   it('resolveReviewDisputeRemove sets status=resolved and resolution_action=remove', async () => {
     const postId = await makeReviewPost()
     const dispute = await openDispute(postId, crypto.randomUUID())
-    const resolved = await resolveReviewDisputeRemove(staff.id, dispute.id)
+    const resolved = await resolveReviewDisputeRemove(staff.id, dispute.id, 'staff_or_user')
 
     expect(resolved.status).toBe('resolved')
     expect(resolved.resolution_action).toBe('remove')
@@ -85,6 +87,7 @@ describe('resolve review disputes', () => {
       staff.id,
       dispute.id,
       'The reviewer mischaracterized our fee structure.',
+      'staff_or_user',
     )
 
     expect(resolved.status).toBe('resolved')
@@ -98,7 +101,7 @@ describe('resolve review disputes', () => {
   it('dismissReviewDispute sets status=dismissed', async () => {
     const postId = await makeReviewPost()
     const dispute = await openDispute(postId, crypto.randomUUID())
-    const dismissed = await dismissReviewDispute(staff.id, dispute.id)
+    const dismissed = await dismissReviewDispute(staff.id, dispute.id, 'staff_or_user')
 
     expect(dismissed.status).toBe('dismissed')
     expect(dismissed.resolution_action).toBe('dismiss')
@@ -107,8 +110,10 @@ describe('resolve review disputes', () => {
   it('throws 404 when resolving an already resolved dispute', async () => {
     const postId = await makeReviewPost()
     const dispute = await openDispute(postId, crypto.randomUUID())
-    await dismissReviewDispute(staff.id, dispute.id)
+    await dismissReviewDispute(staff.id, dispute.id, 'staff_or_user')
 
-    await expect(dismissReviewDispute(staff.id, dispute.id)).rejects.toMatchObject({ status: 404 })
+    await expect(dismissReviewDispute(staff.id, dispute.id, 'staff_or_user')).rejects.toMatchObject(
+      { status: 404 },
+    )
   })
 })

@@ -24,6 +24,7 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey-glide-mq": "workspace:^",
     "@jongleberry/vurst-html": "^0.4.3",
     "@modules/feed-query-builders": "workspace:^",
     "@modules/on-error": "workspace:^",
@@ -61,7 +62,6 @@
     "uuid": "^14.0.2"
   },
   "devDependencies": {
-    "@services/queue-monitoring": "workspace:^",
     "@services/read-states": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^"

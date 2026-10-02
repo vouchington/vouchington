@@ -202,7 +202,7 @@ describe('getModerationAnalytics review regressions', () => {
       communityId: community.id,
     })
     await deliverModerationAppealForTest(staff.id, appeal.id)
-    await dismissModerationAppeal(staff.id, appeal.id)
+    await dismissModerationAppeal(staff.id, appeal.id, 'staff_or_user')
 
     const metrics = await getModerationAnalytics('all', {
       type: 'community',
@@ -240,7 +240,7 @@ describe('getModerationAnalytics review regressions', () => {
       communityId: community.id,
     })
     await deliverModerationAppealForTest(staff.id, appeal.id)
-    await resolveModerationAppealAccept(staff.id, appeal.id)
+    await resolveModerationAppealAccept(staff.id, appeal.id, 'staff_or_user')
 
     const metrics = await getModerationAnalytics('all', {
       type: 'community',

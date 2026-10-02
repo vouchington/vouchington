@@ -224,6 +224,11 @@ describe('flags', () => {
         .expect(200)
 
       expect(res.body).toHaveProperty('penalized_user_count', 0)
+      expect(res.body.flag).toMatchObject({
+        id: flag!.id,
+        resolution: 'penalized',
+        resolved_by_id: admin.id,
+      })
 
       const getRequest = createRequest()
       await getRequest.authenticateAs(admin)
@@ -232,9 +237,9 @@ describe('flags', () => {
         .expect(200)
       expect(getResponse.body.flag).toMatchObject({
         id: flag!.id,
-        resolution: null,
-        resolved_at: null,
-        resolved_by_id: null,
+        resolution: 'penalized',
+        resolved_at: expect.any(String),
+        resolved_by_id: admin.id,
       })
     })
 

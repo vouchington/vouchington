@@ -1,6 +1,7 @@
+import { getAllQueueStats } from '@data-stores/valkey-glide-mq/get-queue-stats'
 import type { Context } from '@jongleberry/api-server'
 import onError from '@modules/on-error'
-import { currentUserCanAccessQueueStats, getAllQueueStats } from '@services/queue-monitoring'
+import { currentUserCanAccessQueueStats } from '@services/queue-monitoring'
 import app from '../../../app.mts'
 import { requireAuthAndRateLimit } from '../../../response-helpers.mts'
 import { startSSE } from '../../../sse-helpers.mts'

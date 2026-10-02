@@ -24,6 +24,7 @@ exports backend/data-stores/psql/schema-growth-registry.mts buildSchemaGrowthReg
 exports backend/data-stores/psql/schema-growth-retained-identities.mts RETAINED_MISSING_UPDATED_AT
 exports backend/data-stores/valkey-core/app-integration.mts getValkeyAnalyticsPromiseForTest
 exports backend/data-stores/valkey-core/app-integration.mts resetValkeyAnalyticsLoaderForTest
+exports backend/data-stores/valkey-glide-mq/get-queue-stats-cached.mts clearQueueStatsCacheForTesting
 exports backend/data-stores/valkey-glide-mq/glide-mq-factory.mts createFlowProducer
 exports backend/data-stores/valkey-glide-mq/index.mts buildWorkerQueueSettings
 exports backend/data-stores/valkey/clients.mts closeDynamicConfigValkeySubscriptionClient
@@ -273,7 +274,6 @@ exports backend/services/posts/privacy-filter.mts buildPrivacyFilter
 exports backend/services/posts/review-successions/index.mts listReviewSuccessionsForPostIds
 exports backend/services/posts/review-successions/index.mts terminalizeActiveReviewSuccessionForManualPost
 exports backend/services/posts/review-successions/list.mts listReviewSuccessionsForPostIds
-exports backend/services/queue-monitoring/get-queue-stats-cached.mts clearQueueStatsCacheForTesting
 exports backend/services/queue-monitoring/remove-queue-scheduler.mts removeQueueScheduler
 exports backend/services/read-states/catalog.mts getReadStateStorageConfig
 exports backend/services/read-states/catalog.mts readStateStorageCatalog

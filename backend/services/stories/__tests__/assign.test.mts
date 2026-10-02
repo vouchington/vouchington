@@ -49,7 +49,7 @@ describe('adminAssignItemToStory', () => {
   it('assigns an item to a story and returns the item id', async () => {
     const story = await insertTestStory({ title: 'Assign Target Story' })
     const itemId = await makeItem()
-    const result = await adminAssignItemToStory(story.id, itemId)
+    const result = await adminAssignItemToStory((await createTestUserDirect()).id, story.id, itemId)
     expect(result).toBe(itemId)
   })
 
@@ -64,7 +64,7 @@ describe('adminAssignItemToStory', () => {
     const effects: string[] = []
 
     await expect(
-      adminAssignItemToStory(story.id, itemId, {
+      adminAssignItemToStory((await createTestUserDirect()).id, story.id, itemId, {
         refreshStoryPostForStory: async (_storyId, refreshOptions, refreshBehavior) => {
           expect(refreshOptions?.query).toBeDefined()
           expect(refreshBehavior?.enqueueAgent).toBe(false)
@@ -95,7 +95,11 @@ describe('adminAssignItemToStory', () => {
 
   it('returns null when item does not exist', async () => {
     const story = await insertTestStory({ title: 'Non-existent Item Story' })
-    const result = await adminAssignItemToStory(story.id, '018f7e1a-2b3c-7d4e-8f5a-9b0c1d2e3f4a')
+    const result = await adminAssignItemToStory(
+      (await createTestUserDirect()).id,
+      story.id,
+      '018f7e1a-2b3c-7d4e-8f5a-9b0c1d2e3f4a',
+    )
     expect(result).toBeNull()
   })
 })
@@ -128,13 +132,16 @@ describe('adminRemoveItemFromStory', () => {
   it('removes an item from its story and returns the item id', async () => {
     const story = await insertTestStory({ title: 'Remove Target Story' })
     const itemId = await makeItem()
-    await adminAssignItemToStory(story.id, itemId)
-    const result = await adminRemoveItemFromStory(itemId)
+    await adminAssignItemToStory((await createTestUserDirect()).id, story.id, itemId)
+    const result = await adminRemoveItemFromStory((await createTestUserDirect()).id, itemId)
     expect(result).toBe(itemId)
   })
 
   it('returns null when item does not exist', async () => {
-    const result = await adminRemoveItemFromStory('018f7e1a-2b3c-7d4e-8f5a-9b0c1d2e3f4b')
+    const result = await adminRemoveItemFromStory(
+      (await createTestUserDirect()).id,
+      '018f7e1a-2b3c-7d4e-8f5a-9b0c1d2e3f4b',
+    )
     expect(result).toBeNull()
   })
 })

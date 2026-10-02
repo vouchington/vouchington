@@ -95,6 +95,7 @@ app
     if (body.save_for_training === true) {
       ctx.assert(body.expected_flagged !== undefined, 422, 'expected_flagged is required')
       await recordModerationTrainingFeedback({
+        trainingEvidence: 'staff_or_user',
         sourceType: 'prompt_test_run',
         eventType: 'prompt_test_labelled',
         label: getPromptTestTrainingLabel(body.expected_flagged, result.flagged),

@@ -87,12 +87,17 @@ app.route('/api/v1/disputes/:id/resolution').post(async (ctx: Context) => {
 
   let dispute
   if (action === 'remove') {
-    dispute = await resolveReviewDisputeRemove(currentUser.id, id)
+    dispute = await resolveReviewDisputeRemove(currentUser.id, id, 'staff_or_user')
   } else if (action === 'annotate') {
     ctx.assert(body.body_text !== undefined, 422, 'body_text is required for annotate')
-    dispute = await resolveReviewDisputeAnnotate(currentUser.id, id, body.body_text)
+    dispute = await resolveReviewDisputeAnnotate(
+      currentUser.id,
+      id,
+      body.body_text,
+      'staff_or_user',
+    )
   } else {
-    dispute = await dismissReviewDispute(currentUser.id, id)
+    dispute = await dismissReviewDispute(currentUser.id, id, 'staff_or_user')
   }
 
   ctx.setStatus(200)

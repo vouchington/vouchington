@@ -1,5 +1,5 @@
 import { listToolsForSurface } from '@voucha/tools/registry/select'
-import type { Tool, ToolApiEndpoint } from '@voucha/tools/types'
+import type { Tool, ToolApiEndpoint } from '@services/openai-agents/tool-types'
 
 const CATALOG_BEGIN = '<!-- BEGIN GENERATED -->'
 const CATALOG_END = '<!-- END GENERATED -->'

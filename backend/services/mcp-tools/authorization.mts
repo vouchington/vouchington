@@ -1,4 +1,4 @@
-import type { Tool } from '@voucha/tools/types'
+import type { Tool } from '@services/openai-agents/tool-types'
 
 type UserForRoleCheck = {
   id: string

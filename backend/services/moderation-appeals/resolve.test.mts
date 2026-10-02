@@ -121,7 +121,7 @@ describe('resolve moderation appeals', () => {
   describe('resolveModerationAppealAccept', () => {
     it('sets status=resolved and resolution_action=accept', async () => {
       const { appeal } = await openWarningAppeal()
-      const resolved = await resolveModerationAppealAccept(staff.id, appeal.id)
+      const resolved = await resolveModerationAppealAccept(staff.id, appeal.id, 'staff_or_user')
       expect(resolved.status).toBe('resolved')
       expect(resolved.resolution_action).toBe('accept')
       expect(resolved.resolved_at).not.toBeNull()
@@ -142,7 +142,7 @@ describe('resolve moderation appeals', () => {
       })
       const { appeal } = await createModerationAppeal(appellant, input)
       await deliverModerationAppealForTest(staff.id, appeal.id)
-      await resolveModerationAppealAccept(staff.id, appeal.id)
+      await resolveModerationAppealAccept(staff.id, appeal.id, 'staff_or_user')
 
       // Warning should now be revoked — verify via a 404 when trying to appeal it again
       const retryInput = parseCreateModerationAppealInput({
@@ -157,7 +157,7 @@ describe('resolve moderation appeals', () => {
 
     it('lifts the community ban when accepting a ban appeal', async () => {
       const { appeal, community } = await openBanAppeal()
-      await resolveModerationAppealAccept(staff.id, appeal.id)
+      await resolveModerationAppealAccept(staff.id, appeal.id, 'staff_or_user')
 
       // Ban should now be lifted — no active ban remains
       const activeBan = await getTestActiveCommunityBan(community.id, appellant.id)
@@ -166,7 +166,7 @@ describe('resolve moderation appeals', () => {
 
     it('approves the post when accepting a post removal appeal', async () => {
       const { appeal, postId } = await openPostRemovalAppeal()
-      const resolved = await resolveModerationAppealAccept(staff.id, appeal.id)
+      const resolved = await resolveModerationAppealAccept(staff.id, appeal.id, 'staff_or_user')
       expect(await getPostClearanceStatus(postId)).toBe('approved')
       expect(resolved.target_context).toEqual(appeal.target_context)
       expect(resolved.staff_context?.original_decision).toEqual(
@@ -176,7 +176,7 @@ describe('resolve moderation appeals', () => {
 
     it('clears community unpublish when accepting a community-removal post appeal', async () => {
       const { appeal, postId, communityId } = await openCommunityRemovedPostAppeal()
-      const resolved = await resolveModerationAppealAccept(staff.id, appeal.id)
+      const resolved = await resolveModerationAppealAccept(staff.id, appeal.id, 'staff_or_user')
       const status = await getCommunityPostReviewStatus(communityId, postId)
       expect(status?.unpublished_at).toBeNull()
       const dirtyWork = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId })
@@ -219,7 +219,7 @@ describe('resolve moderation appeals', () => {
       })
       const { appeal } = await createModerationAppeal(appellant, input)
       await deliverModerationAppealForTest(staff.id, appeal.id)
-      await resolveModerationAppealAccept(staff.id, appeal.id)
+      await resolveModerationAppealAccept(staff.id, appeal.id, 'staff_or_user')
       // Clearance should now be approved
       expect(await getPostClearanceStatus(postId)).toBe('approved')
       // Community unpublish must NOT have been touched
@@ -229,7 +229,7 @@ describe('resolve moderation appeals', () => {
 
     it('does not change clearance status when accepting a community-removal post appeal', async () => {
       const { appeal, postId, communityId } = await openCommunityRemovedPostAppeal()
-      await resolveModerationAppealAccept(staff.id, appeal.id)
+      await resolveModerationAppealAccept(staff.id, appeal.id, 'staff_or_user')
       const clearance = await getPostClearanceStatus(postId)
       expect(clearance).not.toBe('approved')
       const status = await getCommunityPostReviewStatus(communityId, postId)
@@ -263,7 +263,7 @@ describe('resolve moderation appeals', () => {
       })
       const { appeal } = await createModerationAppeal(appellant, input)
       await deliverModerationAppealForTest(staff.id, appeal.id)
-      await resolveModerationAppealAccept(staff.id, appeal.id)
+      await resolveModerationAppealAccept(staff.id, appeal.id, 'staff_or_user')
       const status = await getCommunityPostReviewStatus(community.id, postId)
       expect(status?.unpublished_at).toBeNull()
       expect(await getPostClearanceStatus(postId)).not.toBe('approved')
@@ -271,8 +271,10 @@ describe('resolve moderation appeals', () => {
 
     it('throws 404 when resolving an already resolved appeal', async () => {
       const { appeal } = await openWarningAppeal()
-      await resolveModerationAppealAccept(staff.id, appeal.id)
-      await expect(resolveModerationAppealAccept(staff.id, appeal.id)).rejects.toMatchObject({
+      await resolveModerationAppealAccept(staff.id, appeal.id, 'staff_or_user')
+      await expect(
+        resolveModerationAppealAccept(staff.id, appeal.id, 'staff_or_user'),
+      ).rejects.toMatchObject({
         status: 404,
       })
     })

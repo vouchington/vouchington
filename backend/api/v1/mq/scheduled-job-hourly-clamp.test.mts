@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { projectScheduledJobs, upsertScheduledJobManifest } from '@modules/scheduled-job-manifest'
 import type { DeployEnvironmentSource } from '@ts-shared/deploy-environment'
-import { SCHEDULED_JOB_MANIFESTS } from './scheduled-job-manifests.mts'
+import { SCHEDULED_JOB_MANIFESTS } from '@services/queue-monitoring/scheduled-job-manifests'
 
 type ScheduledJobQueue = Parameters<typeof upsertScheduledJobManifest>[0]
 

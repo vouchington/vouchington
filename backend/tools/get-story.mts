@@ -4,7 +4,7 @@ import { getStoryById } from '@services/feeds/rss-feed-items/get-story-by-id'
 import { getStoryMemberPagesBatch } from '@services/feeds/rss-feed-items/story-member-pages'
 import type { BasicUser } from '@services/users/types'
 import createHttpError from 'http-errors'
-import type { Tool } from './types.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 import {
   mcpStoryItemSchema,
   mcpStorySchema,

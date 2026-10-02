@@ -54,7 +54,7 @@ table's partition key. The map is therefore the durable, cross-partition account
   (`backend/workers/ai-agents/processors/process-reconcile-background-responses.mts`) on the
   `ai_agents` queue's `reconcile-background-responses` job, scheduled every 5 minutes
   (`backend/queues/ai-agents/enqueues/schedules.mts`) and admin-triggerable via the
-  `SCHEDULED_JOBS_REGISTRY` (`backend/api/v1/mq/scheduled-jobs-registry.mts`), derived from the
+  `SCHEDULED_JOBS_REGISTRY` (`backend/services/queue-monitoring/scheduled-jobs-registry.mts`), derived from the
   queue's scheduled-job manifest. Each row is reconciled with bounded concurrency
   (`RECONCILE_CONCURRENCY = 5`) so a large orphan backlog can't fan out into an OpenAI rate-limit
   burst — see `backend/AGENTS.md`'s "avoid calling external APIs in a loop or unbounded

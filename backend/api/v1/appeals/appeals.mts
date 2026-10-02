@@ -1,3 +1,4 @@
+import { listModerationAppealPage } from '@services/moderation-appeals/list-page'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
@@ -8,7 +9,6 @@ import {
   createModerationAppeal,
   getModerationAppealById,
   getModerationAppealByIdFromPrimary,
-  listModerationAppeals,
   redactModerationAppeal,
   listRedactedModerationAppeals,
   MODERATION_APPEAL_STATUSES,
@@ -22,11 +22,7 @@ import {
   queryInteger,
   queryString,
 } from '@modules/pagination'
-import {
-  beforeIdFromCursor,
-  parseAndValidateCaseListQuery,
-  scopedPageInfo,
-} from '../../case-list-query-helpers.mts'
+import { parseAndValidateCaseListQuery } from '../../case-list-query-helpers.mts'
 
 type CreateModerationAppealRequest = {
   target_type: 'warning' | 'ban' | 'removal' | 'suspension'
@@ -71,16 +67,12 @@ app.route('/api/v1/appeals').get(async (ctx: Context) => {
 
   // Non-staff see only their own appeals; `mine=true` also scopes staff callers.
   const appellantUserId = !isStaff || mine ? currentUser.id : undefined
-  const cursorScope = `appeals:${status}:${appellantUserId ?? 'staff-all'}:id-desc`
-
-  const { appeals, hasNextPage } = await listModerationAppeals({
+  const { appeals, page_info } = await listModerationAppealPage({
     status,
     limit,
-    beforeId: beforeIdFromCursor(after, cursorScope),
     appellantUserId,
+    after,
   })
-
-  const page_info = scopedPageInfo(appeals, hasNextPage, cursorScope)
   if (isStaff) {
     ctx.json(apiResponse('GET:/api/v1/appeals#staff', { appeals, page_info }))
     return
@@ -103,5 +95,9 @@ app.route('/api/v1/appeals/:id').get(async (ctx: Context) => {
 
   ctx.assert(isStaff || isOwner, 403, 'Forbidden')
 
-  ctx.json({ appeal: isStaff ? appeal : redactModerationAppeal(appeal) })
+  if (isStaff) {
+    ctx.json(apiResponse('GET:/api/v1/appeals/:id#staff', { appeal }))
+    return
+  }
+  ctx.json({ appeal: redactModerationAppeal(appeal) })
 })

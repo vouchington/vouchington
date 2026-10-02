@@ -2,6 +2,7 @@ import { beginTransaction, read, type TransactionQuery } from '@data-stores/psql
 import createHttpError from 'http-errors'
 import { createCodedError } from '@modules/on-error/create-coded-error'
 import { ACCOUNT_SUSPENDED, CONFLICT } from '@modules/on-error/error-codes'
+import { assertSuspensionTarget } from './suspension-target.mts'
 import { isAdminUser } from './authorization.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { getPrivateUserByAny } from './get.mts'
@@ -17,12 +18,14 @@ import {
 export async function suspendUser(
   currentUser: PrivateUser | null,
   userId: string,
+  staffTargets: 'allow' | 'refuse',
   reason?: string,
 ): Promise<PrivateUser> {
   if (!isAdminUser(currentUser)) throw createHttpError(403, 'Forbidden')
 
   const user = await getPrivateUserByAny(userId)
   if (!user) throw createHttpError(404, 'User not found')
+  assertSuspensionTarget(currentUser!, user, staffTargets)
   if (user.suspended_at) throw createCodedError(409, 'User is already suspended', CONFLICT)
 
   await using query = await beginTransaction()

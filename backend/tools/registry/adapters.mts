@@ -1,4 +1,9 @@
-import type { Tool, ToolAnnotations, ToolOutputSchema, ToolSurface } from '../types.mts'
+import type {
+  Tool,
+  ToolAnnotations,
+  ToolOutputSchema,
+  ToolSurface,
+} from '@services/openai-agents/tool-types'
 import { getToolRequiredScopes } from './select.mts'
 
 export type McpToolAnnotations = {

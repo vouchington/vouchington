@@ -4,19 +4,20 @@ Source entrypoint: [backend/modules/scopes/README.md](../../../../../../backend/
 
 Canonical scope catalogue and strict parser shared by API-key and OAuth authorization surfaces.
 
-Scopes use `<resource>:<action>`. Resources are lowercase dot-delimited identifiers and actions are
-`read` or `write`. Only catalogue entries are valid; callers must not normalize case or whitespace.
+Scopes use `<resource>:<action>`. Resources are canonical lowercase identifiers. Catalogued action names include `read` and `write` as well as explicit administrative capabilities. Only catalogue entries are valid; callers must not normalize case or whitespace.
 The validator rejects duplicates, missing prerequisite scopes, unsupported credential surfaces, and
 mixed audiences unless the caller explicitly permits an OAuth grant to span audiences. Graph
 validation, prerequisite expansion, audience and surface filtering, and coverage walks come from
 `@vouchington/utils/scopes`. This module keeps the catalogue, compatibility grants, and
 authorization decisions.
 
+Admin resource scopes are OAuth-only. Moderation, account enforcement, and site-operation ordinary reads/writes inherit matching `mcp.admin:*` grants. Explicit approval, AI-rerun, agent-vote, sanction, queue/config/job, copyright, analytics, and editorial capabilities set `requiresExactGrant`; neither an umbrella nor a sibling scope covers them. Writes retain their matching read prerequisite. The shared authorization request presents these exact grants through `sensitive_scopes`.
+
 `listScopeCatalog()` projects the catalogue into the wire shape served by
 [`GET /api/v1/scopes`](../../../../../requirements/api/v1/scopes/README.md), so clients build pickers from data. Its
 nullable `description_key` is stable presentation metadata, not server-owned display text.
 `mcp_user_full_access` and `mcp_admin_full_access` distinguish the two MCP umbrella meanings;
-all other entries return `null`. Each client maps recognized identifiers through its own typed
+Financial profile and spending entries carry distinct read/write description identifiers; other entries return `null`. Each client maps recognized identifiers through its own typed
 localized catalogue and rejects unknown identifiers rather than rendering server English.
 
 API-key type policy remains in `@services/api-keys`. MCP tool records declare their

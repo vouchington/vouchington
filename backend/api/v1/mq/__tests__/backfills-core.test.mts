@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { CORE_BACKFILLS } from '../backfills-core.mts'
+import { CORE_BACKFILLS } from '@services/queue-monitoring/backfills-core'
 
 describe('CORE_BACKFILLS', () => {
   it('registers classifier run recovery for operators', () => {

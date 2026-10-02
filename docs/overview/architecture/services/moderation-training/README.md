@@ -2,7 +2,9 @@
 
 Source entrypoint: [backend/services/moderation-training/README.md](../../../../../backend/services/moderation-training/README.md)
 
-This package records moderator decisions as normalized feedback rows for future agent evaluation and fine-tuning datasets.
+This package records decisions corroborated by staff or users as normalized feedback rows for future agent evaluation and fine-tuning datasets. Every producer supplies explicit `trainingEvidence`: `staff_or_user` records feedback, while `agent` skips insertion. MCP moderation actions and automated agent callbacks retain their domain decisions and audit history without entering the training set. A later independent staff or user action creates feedback through its existing workflow; no pending training row or separate corroboration screen is created.
+
+Topic recommendations, aliases, hostnames, and retailers should use this same training infrastructure when implemented. Their additional admin tools and training integration remain deferred under #612 (D10).
 
 ## Signals
 

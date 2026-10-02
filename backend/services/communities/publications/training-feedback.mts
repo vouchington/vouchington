@@ -7,6 +7,7 @@ export function recordPublicationApprovedFeedback(input: {
   communityTrusted: boolean
 }): Promise<unknown> {
   return recordModerationTrainingFeedback({
+    trainingEvidence: 'staff_or_user',
     sourceType: 'community_review',
     eventType: 'manual_action_inferred',
     label: 'true_negative',
@@ -26,6 +27,7 @@ export function recordPublicationRejectedFeedback(input: {
   reason?: string
 }): Promise<unknown> {
   return recordModerationTrainingFeedback({
+    trainingEvidence: 'staff_or_user',
     sourceType: 'community_review',
     eventType: 'manual_action_inferred',
     label: 'true_positive',
@@ -45,6 +47,7 @@ export function recordPublicationUnpublishedFeedback(input: {
   postId: string
 }): Promise<unknown> {
   return recordModerationTrainingFeedback({
+    trainingEvidence: 'staff_or_user',
     sourceType: 'community_review',
     eventType: 'manual_action_inferred',
     label: 'true_positive',

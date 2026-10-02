@@ -218,7 +218,7 @@ describe('processAutoDispatchJudgement — dispatched_at stamping (Gap 1)', () =
     })
     const { postId, reportId, judgementId } = await makeTestFixture('idem-plat', 'remove')
     const systemUserId = await getModerationSystemUserId()
-    await updateClearanceStatus(postId, 'rejected', systemUserId)
+    await updateClearanceStatus(postId, 'rejected', systemUserId, 'agent')
 
     await processAutoDispatchJudgement(
       makeJob({

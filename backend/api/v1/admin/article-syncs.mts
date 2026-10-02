@@ -1,10 +1,12 @@
-import { recordStaffOperation } from '@services/moderator-actions'
+import {
+  startAdminArticleSync,
+  getAdminArticleSyncStatus,
+} from '@services/admin-imports/article-sync-controls'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { isHttpError } from 'http-errors'
 import { isAdminUser } from '@services/users'
 import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
-import { enqueueArticleSync } from '@queues/article-sync/enqueues'
 import { articleSync } from '@queues/article-sync/queues'
 import { articleSyncPubSub, type ArticleSyncStatus } from '@data-stores/valkey-pubsub'
 import { startSSE, pipeChannelToSSE, watchForAbortBeforeSSE } from '../../sse-helpers.mts'
@@ -17,43 +19,27 @@ import { apiResponse } from '../../response-contract.mts'
 app.route('/api/v1/article-syncs').post(async (ctx: Context) => {
   const currentUser = await requireAuthAndRateLimit(ctx, isAdminUser, 'POST:/api/v1/article-syncs')
 
-  const job = await recordStaffOperation(
-    currentUser.id,
-    { actionType: 'article_sync_run', queueName: articleSync.name },
-    async () => {
-      const queued = await enqueueArticleSync(currentUser.id)
-      if (!queued) ctx.throw(409, 'An article sync was already triggered recently')
-      return queued
-    },
-  )
-
+  const result = await startAdminArticleSync(currentUser)
   ctx.setStatus(202)
-  ctx.json({ jobId: job.id })
+  ctx.json(result)
 })
 
 /**
  * GET /api/v1/article-syncs/:jobId — Poll article sync job state.
  */
 app.route('/api/v1/article-syncs/:jobId').get(async (ctx: Context) => {
-  await requireAuthAndRateLimit(ctx, isAdminUser, 'GET:/api/v1/article-syncs/:jobId')
+  const currentUser = await requireAuthAndRateLimit(
+    ctx,
+    isAdminUser,
+    'GET:/api/v1/article-syncs/:jobId',
+  )
   validateRequestContract(ctx, 'GET:/api/v1/article-syncs/:jobId', { path: ctx.params })
-
-  const job = await articleSync.getJob(ctx.params.jobId!)
-  if (!job) {
-    ctx.throw(404, 'Sync job not found')
-  }
-
-  if (job.failedReason) {
-    ctx.json({ status: 'failed', error: job.failedReason })
-    return
-  }
-
-  if (job.finishedOn != null) {
-    ctx.json({ status: 'completed', result: job.returnvalue })
-    return
-  }
-
-  ctx.json(apiResponse('GET:/api/v1/article-syncs/:jobId#active', { status: 'active' as const }))
+  const result = await getAdminArticleSyncStatus(currentUser, ctx.params.jobId!)
+  ctx.json(
+    result.status === 'active'
+      ? apiResponse('GET:/api/v1/article-syncs/:jobId#active', result)
+      : result,
+  )
 })
 
 /**
@@ -61,10 +47,10 @@ app.route('/api/v1/article-syncs/:jobId').get(async (ctx: Context) => {
  */
 app.route('/api/v1/admin/article-syncs/:jobId/stream').get(async (ctx: Context) => {
   await requireAuthAndRateLimit(ctx, isAdminUser, 'GET:/api/v1/admin/article-syncs/:jobId/stream')
+
   validateRequestContract(ctx, 'GET:/api/v1/admin/article-syncs/:jobId/stream', {
     path: ctx.params,
   })
-
   const jobId = ctx.params.jobId!
 
   // Subscribe BEFORE checking current job state to avoid race conditions.

@@ -102,3 +102,9 @@ Community descriptions, rules and post markdown are wrapped with `wrapExternalCo
 names are sanitized. The shared post-page and hashtag-query logic lives in `@services/communities`
 (`getCommunityPostsPage`, `resolveCommunityHashtagQuery`), used by both the REST routes and the
 tools, so the two cannot drift.
+
+## Administrative actions
+
+Admin tools reuse domain service validation and history paths with explicit actor identity. They are exclusive to `admin_mcp`, require administrator role and their catalogued OAuth scopes, and do not depend on membership plans. Calls enforce the same scope policy used by listing. Expected 4xx failures return a typed `isError` payload with status, code, message, and `retryable: false`; unexpected failures retain the generic error and telemetry path.
+
+The shared admin factory marks user-authored and AI-derived text as untrusted external content and omits credential and verification secrets from both results and schemas. See [scope policy](../../backend/modules/scopes/README.md) and [training evidence](../moderation-training/README.md).

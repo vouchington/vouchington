@@ -10,9 +10,12 @@ import {
 } from '@queues/psql/config'
 import { psql } from '@queues/psql/queues'
 import { PSQL_SCHEDULED_ADMIN_JOB_TYPES } from '@queues/psql/types'
-import { BACKFILL_REGISTRY } from './backfills-registry.mts'
-import { SCHEDULED_JOB_MANIFESTS } from './scheduled-job-manifests.mts'
-import { SCHEDULED_JOB_API_ORDER, SCHEDULED_JOBS_REGISTRY } from './scheduled-jobs-registry.mts'
+import { BACKFILL_REGISTRY } from '@services/queue-monitoring/backfills-registry'
+import { SCHEDULED_JOB_MANIFESTS } from '@services/queue-monitoring/scheduled-job-manifests'
+import {
+  SCHEDULED_JOB_API_ORDER,
+  SCHEDULED_JOBS_REGISTRY,
+} from '@services/queue-monitoring/scheduled-jobs-registry'
 
 const EXPECTED_SCHEDULED_JOBS = [
   'account-data-requests/account-data-requests-cleanup',

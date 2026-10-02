@@ -19,13 +19,23 @@
     "@modules/scopes": "workspace:^",
     "@services/api-keys": "workspace:^",
     "@services/oauth-authorization-server": "workspace:^",
+    "@services/openai-agents": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/tools": "workspace:^",
-    "ajv": "^8.20.0",
-    "ajv-formats": "^3.0.1"
+    "http-errors": "^2.0.1"
   },
   "devDependencies": {
+    "@data-stores/valkey-core": "workspace:^",
+    "@modules/pagination": "workspace:^",
+    "@queues/ai-agents": "workspace:^",
+    "@queues/article-sync": "workspace:^",
     "@services/communities": "workspace:^",
+    "@services/dynamic-config-admin": "workspace:^",
+    "@services/elections-votes": "workspace:^",
+    "@services/feeds": "workspace:^",
+    "@services/queue-monitoring": "workspace:^",
+    "@services/stories": "workspace:^",
+    "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^"
   }
 }

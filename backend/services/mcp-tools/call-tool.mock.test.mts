@@ -1,7 +1,8 @@
 /* eslint-disable no-mistakes/vitest-mock-test-file-naming -- Routed to backend-mocks for the project-level @sentry/node mock (vitest.setup.sentry-mock.mts); asserts sentryCaptureExceptionMock. No in-file vi.mock, so the rule's unnecessaryMock branch fires; the .mock suffix is load-bearing for routing. */
+import createHttpError from 'http-errors'
 import { createTestUser } from '@voucha/test-helpers'
 import { ALL_TOOLS } from '@voucha/tools/registry/index'
-import type { ToolInvocationContext } from '@voucha/tools/types'
+import type { ToolInvocationContext } from '@services/openai-agents/tool-types'
 import type { PrivateUser } from '@services/users/types'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
@@ -93,6 +94,24 @@ describe('callMcpTool result errors', () => {
     })
     expect(sentryCaptureExceptionMock).not.toHaveBeenCalled()
   })
+
+  it.each([
+    [403, 'FORBIDDEN'],
+    [404, 'NOT_FOUND'],
+    [409, 'CONFLICT'],
+    [422, 'INVALID_INPUT'],
+  ] as const)(
+    'returns a non-retryable %s domain error without reporting it',
+    async (status, code) => {
+      stubToolFunction(() => Promise.reject(createHttpError(status, 'Domain guard refused action')))
+      const result = await call()
+      expect(result.isError).toBe(true)
+      expect(JSON.parse((result.content[0] as { text: string }).text)).toEqual({
+        error: { status, code, message: 'Domain guard refused action', retryable: false },
+      })
+      expect(sentryCaptureExceptionMock).not.toHaveBeenCalled()
+    },
+  )
 
   it('reports other tool failures with the generic message', async () => {
     const failure = new RangeError('limit must be between 1 and 100')

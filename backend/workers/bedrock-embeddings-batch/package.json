@@ -25,7 +25,6 @@
     "@services/bedrock-embeddings": "workspace:^",
     "@services/bedrock-embeddings-batch": "workspace:^",
     "@services/communities": "workspace:^",
-    "@services/queue-monitoring": "workspace:^",
     "glide-mq": "^0.15.5"
   },
   "devDependencies": {

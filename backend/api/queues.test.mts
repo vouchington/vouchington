@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import queues from './queues.mts'
+import queues from '@services/queue-monitoring/queue-inventory'
 import { policyManagedGlideQueueNames } from '@modules/worker-queue-inventory'
 
 describe('API queue monitoring inventory', () => {

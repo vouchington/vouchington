@@ -1,3 +1,4 @@
+import type { ModerationAppealResponse } from './types.mts'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
@@ -19,7 +20,7 @@ type SentAppeal = Pick<
 export async function sendApprovedModerationAppealResolution(
   staffUserId: string,
   appealId: string,
-): Promise<ModerationAppeal> {
+): Promise<ModerationAppealResponse> {
   const appeal = await getModerationAppealByIdFromPrimary(appealId)
   assert(appeal, 404, 'Appeal not found')
   // Legally required invariant: approved_at MUST be set before sending

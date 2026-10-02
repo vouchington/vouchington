@@ -1,3 +1,6 @@
+import { clearMovedStoryOfficialItem } from './clear-moved-official-item.mts'
+import { dispatchPostCommitEffectsBestEffort } from './assignment-effects.mts'
+import { recordModeratorAction } from '@services/moderator-actions'
 import { beginTransaction } from '@data-stores/psql'
 import onError from '@modules/on-error'
 import sql from 'sql-template-strings'
@@ -7,6 +10,8 @@ import { invalidateStories } from './cache-invalidation.mts'
 import { recordPostPublicationChange } from '@services/post-publication'
 
 type AssignmentDependencies = {
+  expectedStoryId?: string
+
   refreshStoryPostForStory?: typeof refreshStoryPostForStory
   invalidateStories?: typeof invalidateStories
   enqueueStoryPostAgent?: typeof enqueueStoryPostAgent
@@ -18,6 +23,7 @@ type AssignmentDependencies = {
  * Refreshes story-posts before invalidating stories after a successful assignment.
  */
 export async function adminAssignItemToStory(
+  actorId: string,
   storyId: string,
   itemId: string,
   dependencies: AssignmentDependencies = {},
@@ -60,6 +66,8 @@ export async function adminAssignItemToStory(
   )
   const row = result.rows[0] as { id: string; prior_story_id: string | null } | undefined
   if (row) {
+    if (row.prior_story_id !== storyId)
+      await clearMovedStoryOfficialItem(query, row.prior_story_id, itemId)
     const affectedStoryIds = [
       ...new Set(
         [storyId, row.prior_story_id].filter(
@@ -86,6 +94,19 @@ export async function adminAssignItemToStory(
     }
   }
   const { rows } = result
+  if (row)
+    await recordModeratorAction(
+      actorId,
+      {
+        actionType: 'story_item_add',
+        metadata: {
+          story_id: storyId,
+          rss_feed_item_id: itemId,
+          prior_story_id: row.prior_story_id,
+        },
+      },
+      { query },
+    )
   await query.commit()
   if (!rows[0]) return null
   const priorStoryId = rows[0].prior_story_id as string | null
@@ -105,6 +126,7 @@ export async function adminAssignItemToStory(
  * Refreshes the former story-post before invalidating stories.
  */
 export async function adminRemoveItemFromStory(
+  actorId: string,
   itemId: string,
   dependencies: AssignmentDependencies = {},
 ): Promise<string | null> {
@@ -123,6 +145,7 @@ export async function adminRemoveItemFromStory(
       FROM rss_feed_items
       WHERE id = ${itemId}
         AND deleted_at IS NULL
+        AND (${dependencies.expectedStoryId ?? null}::uuid IS NULL OR story_id = ${dependencies.expectedStoryId ?? null}::uuid)
       FOR UPDATE
     ), locked AS (
       SELECT 1
@@ -145,6 +168,7 @@ export async function adminRemoveItemFromStory(
   const row = result.rows[0] as { id: string; prior_story_id: string | null } | undefined
   if (row?.prior_story_id) {
     const priorStoryId = row.prior_story_id
+    await clearMovedStoryOfficialItem(query, priorStoryId, itemId)
     const refreshResult = await refreshStoryPost(priorStoryId, { query }, { enqueueAgent: false })
     if (refreshResult) {
       refreshResults = [refreshResult]
@@ -156,6 +180,15 @@ export async function adminRemoveItemFromStory(
     }
   }
   const { rows } = result
+  if (row)
+    await recordModeratorAction(
+      actorId,
+      {
+        actionType: 'story_item_remove',
+        metadata: { story_id: row.prior_story_id, rss_feed_item_id: itemId },
+      },
+      { query },
+    )
   await query.commit()
   if (!rows[0]) return null
   const priorStoryId = rows[0].prior_story_id as string | null
@@ -164,17 +197,4 @@ export async function adminRemoveItemFromStory(
     void enqueueStoryPost(refreshResult.postId, { force: true })
   await (dependencies.invalidateStories ?? invalidateStories)(priorStoryId)
   return rows[0].id as string
-}
-
-async function dispatchPostCommitEffectsBestEffort(
-  refreshResults: StoryPostRefreshResult[],
-  reportError: typeof onError,
-): Promise<void> {
-  const results = await Promise.allSettled(
-    refreshResults.map(refreshResult => refreshResult.dispatchPostCommitEffects()),
-  )
-  for (const result of results) {
-    if (result.status === 'rejected')
-      reportError(result.reason instanceof Error ? result.reason : new Error(String(result.reason)))
-  }
 }

@@ -102,7 +102,7 @@ terminal response and finalizes only with its exact lease token. Bounded concurr
 (`RECONCILE_CONCURRENCY = 5`) prevents a large expired-lease backlog from fanning out into an
 OpenAI rate-limit burst. It is declared in the queue's scheduled-job manifest
 and projected into `SCHEDULED_JOBS_REGISTRY`
-(`backend/api/v1/mq/scheduled-jobs-registry.mts`), so it is also admin-triggerable like every other
+(`backend/services/queue-monitoring/scheduled-jobs-registry.mts`), so it is also admin-triggerable like every other
 scheduled job.
 
 Each cron tick runs exactly one job — it is a batch reconciler, not a dispatcher that enqueues a

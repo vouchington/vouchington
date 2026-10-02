@@ -33,7 +33,6 @@
     "@services/openai-background-responses": "workspace:^",
     "@services/users": "workspace:^",
     "@ts-shared/utils": "workspace:^",
-    "@voucha/tools": "workspace:^",
     "openai": "^7.23.0"
   },
   "devDependencies": {

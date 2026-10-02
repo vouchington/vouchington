@@ -26,24 +26,13 @@ ignores:
   # List specific top-level api files explicitly: the glob 'backend/api/*.mts'
   # cannot be used because ast-grep's glob '*' matches path separators, which
   # would inadvertently ignore all nested route files too.
-  - 'backend/api/queues.mts'
   - 'backend/api/election-vote-handler.mts'
   - 'backend/api/app-origin-guard.mts'
   # Pre-existing exports in helper/registry files that do not act as route
   # modules. Tracked for future cleanup; do not add new exports to these files.
-  # Note: only the specific helper files are listed (not the whole mq/ dir) so
-  # that new route modules added to backend/api/v1/mq/ remain guarded.
-  - 'backend/api/v1/mq/scheduled-job-manifests.mts'
-  - 'backend/api/v1/mq/scheduled-jobs-registry.mts'
-  - 'backend/api/v1/mq/backfills-core.mts'
-  - 'backend/api/v1/mq/backfills-existing-dispatchers.mts'
-  - 'backend/api/v1/mq/backfills-existing-dispatchers-core.mts'
-  - 'backend/api/v1/mq/backfills-existing-dispatchers-recurring.mts'
-  - 'backend/api/v1/mq/backfills-registry.mts'
   - 'backend/api/v1/posts/get-route-access-post.mts'
   - 'backend/api/v1/posts/admin-moderation-data.mts'
   - 'backend/api/v1/communities/list-query.mts'
-  - 'backend/api/v1/reports/reports-cursor.mts'
 rule:
   any:
     - pattern: 'export default $EXP'
@@ -75,5 +64,8 @@ examples:
     isValid: true
     file: 'backend/test-helpers/api/server.mts'
   - code: 'export const SCHEDULED_JOB_MANIFESTS = []'
-    isValid: true
+    isValid: false
     file: 'backend/api/v1/mq/scheduled-job-manifests.mts'
+  - code: 'export const SCHEDULED_JOB_MANIFESTS = []'
+    isValid: true
+    file: 'backend/services/queue-monitoring/scheduled-job-manifests.mts'

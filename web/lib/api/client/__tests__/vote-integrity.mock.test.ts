@@ -95,7 +95,10 @@ describe('vote-integrity client api helpers', () => {
 
   it('encodes resolution, penalty application, and revocation paths', async () => {
     mockPatch.mockResolvedValueOnce({ flag: {} })
-    mockPost.mockResolvedValueOnce({ penalized_user_count: 1 })
+    mockPost.mockResolvedValueOnce({
+      flag: { id: 'flag-1', resolution: 'penalized' },
+      penalized_user_count: 1,
+    })
     mockDelete.mockResolvedValueOnce({ penalty: {} })
 
     await resolveVoteIntegrityFlag('flag ?#%/1', 'suspended')

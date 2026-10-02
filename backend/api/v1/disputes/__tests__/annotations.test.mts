@@ -1,3 +1,4 @@
+import { deliverReviewDisputeForTest } from '@voucha/test-helpers/dispute-delivery'
 import { describe, it, expect, beforeAll } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -42,7 +43,13 @@ async function makeAnnotatedPostFixture(staffId: string) {
     claim_text: `Annotation API test ${crypto.randomUUID()}`,
   })
   const { dispute } = await createReviewDispute(claimant, input)
-  const resolved = await resolveReviewDisputeAnnotate(staffId, dispute.id, 'Context note here.')
+  await deliverReviewDisputeForTest(staffId, dispute.id)
+  const resolved = await resolveReviewDisputeAnnotate(
+    staffId,
+    dispute.id,
+    'Context note here.',
+    'staff_or_user',
+  )
   return { postId, dispute: resolved }
 }
 

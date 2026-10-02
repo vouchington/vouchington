@@ -1,6 +1,6 @@
 import { getPinnedPosts } from '@services/communities'
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from './types.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 import { COMMUNITY_NOT_FOUND, loadPublicCommunity } from './mcp-community-output.mts'
 import { loadMcpPosts, mcpPostSchema, type McpPost } from './mcp-post-output.mts'
 import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'

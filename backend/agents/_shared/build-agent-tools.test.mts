@@ -1,6 +1,6 @@
 import { it, expect, describe } from 'vitest'
 import { buildAgentTools, agentToolsToSchemas } from './build-agent-tools.mts'
-import type { Tool } from '@voucha/tools'
+import type { Tool } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
 
 describe('build-agent-tools', () => {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { isToolAllowedForUser } from './authorization.mts'
-import type { Tool } from '@voucha/tools/types'
+import type { Tool } from '@services/openai-agents/tool-types'
 
 function makeMinimalTool(roles?: Record<string, boolean>): Tool {
   return {

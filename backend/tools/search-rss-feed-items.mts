@@ -1,5 +1,5 @@
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from './types.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 import { firstVisibleRssTextField } from '@modules/utils'
 import { getRssFeedItemByIdCachedBatch } from '@services/entity-fetch'
 import { toolsSearchRssFeedItemIds } from '@services/rss-feed-items/tools/search'

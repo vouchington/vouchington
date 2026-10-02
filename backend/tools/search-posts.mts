@@ -1,6 +1,6 @@
 import type { BasicUser } from '@services/users/types'
 import type { PostSearchSort } from '@services/posts/search/types'
-import type { Tool } from './types.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 import { getPostIds } from '@services/posts/search/get-ids'
 import { getPostByAnyCachedBatch } from '@services/entity-fetch'
 import { preparePostsSearchParams, resolvePostsSearchParams } from '@services/search-params'

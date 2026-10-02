@@ -4,7 +4,7 @@ import {
   isToolMcpEligible,
   listToolsForSurface,
 } from '@voucha/tools/registry/select'
-import type { Tool, ToolApiEndpoint, ToolMeta } from '@voucha/tools/types'
+import type { Tool, ToolApiEndpoint, ToolMeta } from '@services/openai-agents/tool-types'
 import {
   ADMIN_MCP_SERVER_CONFIG,
   USER_MCP_SERVER_CONFIG,

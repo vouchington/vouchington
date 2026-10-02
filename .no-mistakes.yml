@@ -477,7 +477,7 @@ rules:
       sourceGlobs:
         - backend/queues/*/enqueues/schedules.mts
       entrypoints:
-        - backend/api/v1/mq/scheduled-job-manifests.mts
+        - backend/services/queue-monitoring/scheduled-job-manifests.mts
       maxDepth: 1
 
   - name: scheduled job manifests are registered in a worker runtime
