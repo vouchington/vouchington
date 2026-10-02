@@ -21,9 +21,9 @@ export async function probeClassifierSubjectLock<C, L, E>(
   try {
     await adapter.lockCurrent(probe, subject)
     return 'free'
-  } catch (error) {
-    if ((error as { code?: string }).code === LOCK_NOT_AVAILABLE) return 'held'
-    throw error
+  } catch (err) {
+    if ((err as { code?: string }).code === LOCK_NOT_AVAILABLE) return 'held'
+    throw err
   }
 }
 

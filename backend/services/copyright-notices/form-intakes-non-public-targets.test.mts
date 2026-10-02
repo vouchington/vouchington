@@ -57,7 +57,7 @@ async function addCommentImage(root: { poster: PrivateUser; postId: string }): P
   return { postId, imageId }
 }
 
-const failure = (attempt: Promise<unknown>) => attempt.catch((error: unknown) => error)
+const failure = (attempt: Promise<unknown>) => attempt.catch((err: unknown) => err)
 const missingTarget = (): Target => ({ postId: crypto.randomUUID(), imageId: crypto.randomUUID() })
 
 describe('guest copyright form intakes', () => {
