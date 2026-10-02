@@ -15,13 +15,13 @@ import {
 } from './evidence-and-holds-restoration-hold-fixtures.mts'
 import {
   acceptCopyrightNoticeAndImposeRestriction,
-  claimCopyrightDeliveryIntent,
   createCopyrightDeliveryIntent,
   markCopyrightDeliveryIntentSent,
   markCopyrightDeliveryIntentFailed,
   prepareCopyrightEmailDelivery,
   enforceCopyrightAssessment,
 } from './index.mts'
+import { claimCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { claimCopyrightActionIntent, failCopyrightActionIntent } from './action-delivery-state.mts'
 import { compensateCopyrightActionFailure } from './action-delivery-compensation.mts'
 import { executeCopyrightActionIntent } from './action-delivery-execution.mts'

@@ -8,9 +8,9 @@ import {
   assertSingleValkeyTopology,
   collectValkeyDiagnostics,
   diagnoseValkey,
-  parseValkeyMemoryInfo,
   validateFlushTargetPrefixRegistry,
 } from './diagnostics.mts'
+import { parseValkeyMemoryInfo } from './memory-info.mts'
 import { createFlushTargetPrefixRegistry } from './flush-targets.mts'
 
 const COMPLETE_INFO = `# Memory

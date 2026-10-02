@@ -10,11 +10,11 @@ import {
 } from '@voucha/test-helpers'
 import { CONTRIBUTION_QUOTA_EXCEEDED } from '@modules/on-error/error-codes'
 import {
-  canonicalizeAdmissionIntent,
   pruneExpiredContributionAdmissions,
   resolveAdmissionIdentity,
   runContributionAdmission,
 } from './admission.mts'
+import { canonicalizeAdmissionIntent } from './admission-intent.mts'
 import { executePreparedContribution } from './prepared-contribution.mts'
 import { CONTRIBUTION_ADMISSION_CLAIM_SECONDS } from './config.mts'
 import type { ContributionPolicy } from './policy.mts'

@@ -6,10 +6,8 @@ import {
   createDynamicConfigTestKey,
 } from '@voucha/test-helpers/dynamic-config'
 import { DynamicConfig } from '@data-stores/valkey'
-import {
-  dynamicConfigRegistry,
-  type getDynamicConfigRegistryEntry,
-} from '@services/dynamic-config-admin'
+import type { getDynamicConfigRegistryEntry } from '@services/dynamic-config-admin'
+import { dynamicConfigRegistry } from '@services/dynamic-config-admin/registry'
 import type { PrivateUser } from '@services/users/types'
 
 type DynamicConfigRegistryEntry = NonNullable<ReturnType<typeof getDynamicConfigRegistryEntry>>

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { computeDigest, extractDigestHash, verifyDigest } from './digest.mts'
+import { verifyDigest } from './digest.mts'
+import { computeDigest, extractDigestHash } from '@vouchington/utils/http-signatures'
 
 describe('HTTP Signature digest', () => {
   describe('computeDigest', () => {

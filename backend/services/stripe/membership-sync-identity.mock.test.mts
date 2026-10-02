@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestSku, createTestUser } from '@voucha/test-helpers'
 import { getMembershipByStripeSubscriptionId } from '@services/memberships'
 import { getStripeMembershipSourceIdentity } from '@services/memberships/create-types'
-import { insertStripeEvent } from './events.mts'
+import { insertStripeEvent } from './insert-event.mts'
 
 vi.mock<typeof import('@modules/stripe/customers')>(
   import('@modules/stripe/customers'),

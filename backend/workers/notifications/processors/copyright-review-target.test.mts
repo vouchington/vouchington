@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { CopyrightReviewTargetBreaches } from '@services/copyright-notices'
+import type { CopyrightReviewTargetBreaches } from '@services/copyright-notices/review-target-breaches'
 import {
   processCheckCopyrightReviewTarget,
   type CheckCopyrightReviewTargetDeps as Deps,

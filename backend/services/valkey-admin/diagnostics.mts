@@ -5,7 +5,7 @@ import { sessionValkeyClient } from '@data-stores/valkey/clients'
 import type { FlushConcern, FlushTargetPrefixRegistry } from './concerns.mts'
 import { parseValkeyMemoryInfo, type ValkeyMemorySummary } from './memory-info.mts'
 
-export { parseValkeyMemoryInfo, type ValkeyMemorySummary } from './memory-info.mts'
+export { type ValkeyMemorySummary } from './memory-info.mts'
 
 const SCAN_COUNT = 500
 

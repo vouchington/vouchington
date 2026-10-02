@@ -1,5 +1,6 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { buildSignatureHeaders, computeDigest } from '@modules/http-signatures'
+import { buildSignatureHeaders } from '@modules/http-signatures'
+import { computeDigest } from '@vouchington/utils/http-signatures'
 import { activitypubInbox } from '@queues/activitypub-inbox/queues'
 import { activityPubInboxConfig } from '@services/ap-inbox-activities'
 import {

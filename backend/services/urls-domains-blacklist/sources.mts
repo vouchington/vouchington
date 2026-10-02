@@ -11,7 +11,7 @@ import {
   type DomainBlacklistType,
   type DomainBlacklistSourceId,
 } from './sources-constants.mts'
-export { BLACKLISTS } from './sources-constants.mts'
+
 export type { DomainBlacklistType, DomainBlacklistSourceId } from './sources-constants.mts'
 
 export const upsertBlacklistSources = async (options: QueryOptions = {}): Promise<void> => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mapBlueskyActor, mapBlueskyPost } from './bluesky.mts'
+import { mapBlueskyActor, mapBlueskyPost } from './bluesky-mappers.mts'
 
 describe('mapBlueskyActor', () => {
   it('maps an actor with displayName, description, and avatar', () => {

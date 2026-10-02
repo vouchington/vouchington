@@ -11,8 +11,11 @@ import {
   insertTestStory,
   setTestItemStoryId,
 } from '@voucha/test-helpers'
-import { shareRssFeedItemWithFollowers } from '@services/feeds'
-import { processFollowerDistributionChunk } from '@services/follower-distributions'
+import {
+  shareRssFeedItemWithFollowers,
+  processFollowerDistributionChunk,
+} from '@services/follower-distributions'
+
 describe('GET /api/v1/feeds/rss_feed_items/:feed_type', () => {
   it('should return 401 for unauthenticated users', async () => {
     const request = createRequest()

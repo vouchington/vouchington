@@ -73,6 +73,7 @@
   "devDependencies": {
     "@data-stores/valkey": "workspace:^",
     "@services/comments": "workspace:^",
+    "@services/entity-listener-reconciliation": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^",
     "vitest": "^5.0.2"

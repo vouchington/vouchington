@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type Stripe from 'stripe'
 import { createTestSku, createTestUser } from '@voucha/test-helpers'
 import { createMembership, grantMembership } from '@services/memberships'
-import { insertStripeEvent } from '../events.mts'
+import { insertStripeEvent } from '../insert-event.mts'
 import { recordStripeMembershipProviderFacts } from '../membership-provider-facts.mts'
 import {
   MissingStripeMembershipFactContextError,

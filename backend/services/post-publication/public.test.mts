@@ -15,7 +15,7 @@ import {
 import { describe, expect, it } from 'vitest'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { readFileSync } from 'node:fs'
-import { POST_PUBLICATION_DIRTY_WORK_KEY_KINDS } from './capture-keys.mts'
+import { POST_PUBLICATION_DIRTY_WORK_KEY_KINDS } from './retained-key-writes.mts'
 import { lockPostPublicationPostScopes } from './capture-posts.mts'
 import { RETAINED_KEY_COLUMNS } from './concrete-key-columns.mts'
 import {

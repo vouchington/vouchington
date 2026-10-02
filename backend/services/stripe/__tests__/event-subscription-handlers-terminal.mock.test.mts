@@ -7,7 +7,7 @@ import {
   getTestMembershipRaw,
 } from '@voucha/test-helpers'
 import { getMembershipHistory } from '@services/memberships'
-import { insertStripeEvent } from '@services/stripe/events'
+import { insertStripeEvent } from '../insert-event.mts'
 
 vi.mock<typeof import('@modules/stripe/subscriptions')>(
   import('@modules/stripe/subscriptions'),
@@ -22,7 +22,7 @@ import {
   handleSubscriptionDeleted,
   handleSubscriptionUpdated,
 } from '../event-subscription-handlers.mts'
-import { makeStripeSubscriptionEvent } from '../../../test-helpers/services/stripe/membership-sync-event.mts'
+import { makeStripeSubscriptionEvent } from '@voucha/test-helpers/services/stripe/membership-sync-event'
 
 const mockGetStripeSubscription = vi.mocked(getStripeSubscription)
 const applicationContext = { applicationId: `stripe-terminal-handler-${randomUUID()}` }

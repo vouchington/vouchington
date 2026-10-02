@@ -10,9 +10,10 @@ import {
   relatePostToTopic,
 } from '@voucha/test-helpers'
 
-import { sharePostWithFollowers } from '@services/feeds'
-
-import { processFollowerDistributionChunk } from '@services/follower-distributions'
+import {
+  sharePostWithFollowers,
+  processFollowerDistributionChunk,
+} from '@services/follower-distributions'
 
 describe('GET /api/v1/feeds/posts/:feed_type - hot sort and post type filtering', () => {
   it('returns 200 with sort=hot', async () => {

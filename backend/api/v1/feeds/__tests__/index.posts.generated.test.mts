@@ -11,10 +11,11 @@ import {
   waitForFollowTopicsFeedPost,
 } from '@voucha/test-helpers'
 
-import { sharePostWithFollowers } from '@services/feeds'
+import {
+  sharePostWithFollowers,
+  processFollowerDistributionChunk,
+} from '@services/follower-distributions'
 import { getPostFeedIds } from '@services/feeds/posts/get-ids'
-
-import { processFollowerDistributionChunk } from '@services/follower-distributions'
 
 import { insertTestLinkPostWithCrawl } from '@voucha/test-helpers/entities/link-posts'
 

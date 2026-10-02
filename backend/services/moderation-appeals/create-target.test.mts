@@ -10,7 +10,8 @@ import {
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
-import { openOrGetOpenCase, findOpenCaseForEntity, resolveCase } from '@services/moderation-cases'
+import { openOrGetOpenCase, findOpenCaseForEntity } from '@services/moderation-cases'
+import { resolveCase } from '@services/moderation-cases/resolve'
 import { createModerationAppeal } from './create.mts'
 import { parseCreateModerationAppealInput } from './parse.mts'
 

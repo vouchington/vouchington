@@ -17,7 +17,8 @@ import {
   completeIneligiblePurchaseReversal,
   markIneligiblePurchaseReversalCompleted,
 } from '@services/memberships/ineligible-stripe-purchase-reversal-execution'
-import { getStripeEventByStripeEventId, insertStripeEvent } from '@services/stripe/events'
+import { getStripeEventByStripeEventId } from '@services/stripe/events'
+import { insertStripeEvent } from '@services/stripe/insert-event'
 import { createStripeEvent, toJobData } from '../stripe-event-test-fixtures.mts'
 import { processStripeEvent } from '../stripe-event.mts'
 

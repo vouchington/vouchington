@@ -4,10 +4,10 @@ import { bookmarkEntity, unbookmarkEntity } from '@services/bookmarks/upsert'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
 import {
   backfillUserBookmarkBloomFilter,
-  checkBookmarkBloomCandidates,
   checkBookmarkBloomCandidatesByRelations,
   deleteUserBookmarkBloomFilter,
 } from '@services/bookmarks/bloom-filter'
+import { checkBookmarkBloomCandidates } from '@services/bookmarks/bloom-filter-candidates'
 import { getBookmarkBloomFilter } from '@services/bookmarks/bloom-filter-utils'
 import { overrideDynamicConfigFieldsForTest, insertTestTopic } from '@voucha/test-helpers'
 import { bloomFilterConfig } from '@services/bloom-filter-config'

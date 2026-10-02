@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
 import { createTestSku, createTestUser, createTestMembership } from '@voucha/test-helpers'
-import { getMembershipRefunds } from '@services/memberships'
+import { getMembershipRefunds } from '@services/memberships/refunds/read'
 import type { PrivateUser } from '@services/users/types'
 
 vi.mock<typeof import('@modules/stripe')>(import('@modules/stripe'), async importOriginal => ({

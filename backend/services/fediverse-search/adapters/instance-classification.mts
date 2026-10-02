@@ -18,8 +18,6 @@ import {
 export {
   type InstanceClassificationMetadata,
   type NodeInfoDocument,
-  findNodeInfoSchema2Link,
-  mapNodeInfoDocument,
 } from './instance-classification-mappers.mts'
 
 export type InstanceClassificationErrorCode = 'unsupported_host' | 'provider_error'

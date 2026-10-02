@@ -25,8 +25,6 @@ import {
 } from './bluesky-cursor.mts'
 import { rollUpBucketStatus } from './partial-bucket.mts'
 
-export { mapBlueskyActor, mapBlueskyPost } from './bluesky-mappers.mts'
-
 type BlueskyActorSearchResponse = {
   actors: BlueskyActor[]
   cursor?: string

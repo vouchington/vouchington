@@ -11,7 +11,7 @@ import {
   getActiveTestUserSessions,
   getTestUserSessionById,
   insertTestUserSession,
-} from '../../../../test-helpers/entities/user-sessions.mts'
+} from '@voucha/test-helpers/entities/user-sessions'
 import '../index.mts'
 import { routeRateLimitConfig } from '@services/route-rate-limits/config'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
@@ -19,9 +19,12 @@ import {
   getJwtRevokedKey,
   isSessionRevoked,
   revokeAllAuthenticatedSessions,
+} from '@services/jwt-session'
+import {
   touchAuthenticatedSession,
   upsertAuthenticatedSession,
-} from '@services/jwt-session'
+} from '@services/jwt-session/user-sessions'
+
 import { v7 } from 'uuid'
 import { decodeJwt } from 'jose'
 

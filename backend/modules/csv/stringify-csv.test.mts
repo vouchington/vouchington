@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { streamCsvRows } from './stringify-csv.mts'
+import { streamCsvRows } from '@vouchington/csv'
 
 async function collectStream(stream: NodeJS.ReadableStream): Promise<string> {
   const chunks: Buffer[] = []

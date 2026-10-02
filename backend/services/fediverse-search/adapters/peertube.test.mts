@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mapPeerTubeChannel, mapPeerTubeVideo } from './peertube.mts'
+import { mapPeerTubeChannel, mapPeerTubeVideo } from './peertube-mappers.mts'
 
 describe('mapPeerTubeVideo', () => {
   it('maps a video with account, thumbnail, and canonical url', () => {

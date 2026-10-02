@@ -8,10 +8,8 @@ import {
   insertTestOAuthAuthorization,
   markTestOAuthAuthorizationExchanging,
 } from '@voucha/test-helpers/entities/oauth-authorizations'
-import {
-  buildProviderAuthorizationUrl,
-  receiveOAuthAuthorizationCallback,
-} from '../authorization-broker.mts'
+import { receiveOAuthAuthorizationCallback } from '../authorization-broker.mts'
+import { buildProviderAuthorizationUrl } from '../authorization-provider-url.mts'
 
 describe('OAuth authorization broker callback', () => {
   it('persists an encrypted code before returning a stable completion handoff', async () => {

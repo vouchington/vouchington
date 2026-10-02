@@ -12,11 +12,9 @@ import {
 } from '@voucha/test-helpers'
 import { archivePost, unarchivePost } from '../archive.mts'
 import type { PrivateUser } from '@services/users/types'
-import {
-  listReviewSuccessionsForPostIds,
-  reconcileReviewSuccessionsForPostIds,
-  terminalizeActiveReviewSuccessionForManualPost,
-} from './index.mts'
+import { reconcileReviewSuccessionsForPostIds } from './index.mts'
+import { listReviewSuccessionsForPostIds } from './list.mts'
+import { terminalizeActiveReviewSuccessionForManualPost } from './manual.mts'
 
 describe('review successions', () => {
   let author: PrivateUser

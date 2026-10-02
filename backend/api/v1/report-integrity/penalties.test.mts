@@ -12,7 +12,7 @@ import {
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { applyReportAbusePenalty } from '@services/report-integrity/apply-penalty'
-import { clearJwtStale, isJwtStale } from '@services/jwt-session/invalidation'
+import { clearJwtStale, isJwtStale } from '@data-stores/valkey/jwt-stale'
 
 describe('report-integrity penalties API', () => {
   const randomUsername = () => `test-ri-pen-${randomBytes(4).toString('hex')}`

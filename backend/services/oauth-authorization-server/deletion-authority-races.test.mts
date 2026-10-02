@@ -10,7 +10,8 @@ import {
   waitForTestPostgresLockWaiter,
 } from '@voucha/test-helpers/postgres-lock-wait'
 import { createTestApprovedOAuthAuthorization } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
-import { exchangeOAuthAuthorizationCode, validateOAuthAccessToken } from './index.mts'
+import { exchangeOAuthAuthorizationCode } from './index.mts'
+import { validateOAuthAccessToken } from './access-tokens.mts'
 
 describe('OAuth authority and account-deletion lock races', () => {
   it('rechecks a grant subject after waiting for its deletion fence', async () => {

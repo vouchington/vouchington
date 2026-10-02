@@ -4,13 +4,8 @@ import { hydrateStripeEventRecord } from './event-record.mts'
 import type { StripeEventRecord, StripeEventRow } from './events-types.mts'
 
 export { markStripeEventCompleted, markStripeEventFailed } from './event-lifecycle.mts'
-export {
-  getStripeEventById,
-  markStripeEventProcessing,
-  restartFailedStripeEventAttempt,
-} from './event-processing.mts'
+export { getStripeEventById, markStripeEventProcessing } from './event-processing.mts'
 export { ingestStripeEvent } from './ingest.mts'
-export { insertStripeEvent } from './insert-event.mts'
 
 export async function getStripeEventByStripeEventId(
   stripeEventId: string,

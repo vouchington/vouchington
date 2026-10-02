@@ -9,8 +9,6 @@ export const NEW_ACCOUNT_AGE_DAYS = 30
 
 export {
   INTEGRITY_FLAG_STATUSES,
-  REPORT_INTEGRITY_FLAG_TYPES,
-  REPORT_INTEGRITY_RESOLUTIONS,
   type IntegrityFlagStatus,
   type ReportIntegrityPatchResolution,
 } from '@ts-shared/utils/moderation-catalogs'

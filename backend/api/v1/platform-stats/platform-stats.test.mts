@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
 import { cacheValkeyClient } from '@data-stores/valkey/clients'
-import { valkeyEvents } from '@data-stores/valkey/events'
+import { valkeyEvents } from 'valkyries'
 import { stableSerialize } from '@services/entity-cache/search-cache'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {

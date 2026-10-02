@@ -8,11 +8,6 @@ import {
   type UuidKeyKind,
 } from './retained-key-writes.mts'
 
-export {
-  POST_PUBLICATION_DIRTY_WORK_KEY_KINDS,
-  retainPostPublicationKeys,
-  type PostPublicationRetainedKey,
-} from './retained-key-writes.mts'
 export async function retainPostPublicationImpactKeys(
   query: TransactionQuery,
   dirtyWorkId: string,

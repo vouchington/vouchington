@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import {
-  attachDerivedStatus,
-  deriveDataRequestStatus,
-  isActiveDataRequest,
-} from './derive-status.mts'
+import { attachDerivedStatus, isActiveDataRequest } from './derive-status.mts'
+import { deriveDataRequestStatus } from '@voucha/types/entities/account-data-request'
 import type { UserDataRequestRow } from './types.mts'
 
 const baseRow: UserDataRequestRow = {

@@ -17,7 +17,8 @@ import type {
 import type { getPrivateUserByAny } from '@services/users/get'
 import type { enqueueSendDataExportReadyEmail } from '@queues/emails/enqueues'
 import { dataRequestPubSub } from '@data-stores/valkey-pubsub'
-import { processExportRequest, publishTerminalStatus } from './processors.mts'
+import { processExportRequest } from './processors.mts'
+import { publishTerminalStatus } from './processors/publish-terminal-status.mts'
 
 vi.mock<typeof import('node:fs/promises')>(import('node:fs/promises'), () => ({
   mkdtemp: vi.fn<VitestLooseMock>(),
@@ -77,7 +78,6 @@ describe('processExportRequest', () => {
 
   it('uploads zip to S3 and marks request ready', async () => {
     await runExportRequest(requestId, userId)
-
     expect(mockLeaseDataRequestUpload).toHaveBeenCalledWith(requestId, PROCESSING_ATTEMPT_ID)
     expect(mockUploadExportToS3).toHaveBeenCalledWith(
       requestId,

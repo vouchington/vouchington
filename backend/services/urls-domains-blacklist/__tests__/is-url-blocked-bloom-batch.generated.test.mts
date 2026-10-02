@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { ValkeyBloomFilter, bloomValkeyClient, valkeyEvents } from '@data-stores/valkey'
+import { ValkeyBloomFilter, bloomValkeyClient } from '@data-stores/valkey'
+import { valkeyEvents } from 'valkyries'
 import { getHostnamePolicyCandidates } from '@services/urls-hostnames/policies'
 import { describe, expect, it } from 'vitest'
 import { checkBloomFilters } from '../bloom-filter.mts'

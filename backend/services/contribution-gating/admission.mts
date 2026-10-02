@@ -29,7 +29,7 @@ import {
 import { cleanupRejectedContributionAdmission } from './admission-rejection-cleanup.mts'
 import { CONTRIBUTION_ADMISSION_REPLAY_RETENTION_MINUTES } from './admission-replay-retention.mts'
 
-export { canonicalizeAdmissionIntent, hashAdmissionIntent } from './admission-intent.mts'
+export { hashAdmissionIntent } from './admission-intent.mts'
 export { resolveAdmissionIdentity } from './admission-intent.mts'
 export { pruneExpiredContributionAdmissions } from './admission-reservations.mts'
 export type { ContributionAdmissionInput, ContributionAdmissionResult } from './admission-types.mts'

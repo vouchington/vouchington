@@ -1,7 +1,8 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { getRouteConfig, ROUTE_REGISTRY } from './config.mts'
+import { getRouteConfig } from './config.mts'
+import { ROUTE_REGISTRY } from './registry.mts'
 
 type DiscoveredRoute = {
   file: string

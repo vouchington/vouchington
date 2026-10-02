@@ -12,8 +12,9 @@ import {
 } from '@voucha/test-helpers'
 import { getPostByAny } from '../get.mts'
 import { updatePost } from '../update.mts'
-import { streamEntityReconciliationCandidateBatches } from '../../entity-listener-reconciliation/reconciliation.mts'
-import { listReviewSuccessionsForPostIds, reconcileReviewSuccessionsForPostIds } from './index.mts'
+import { streamEntityReconciliationCandidateBatches } from '@services/entity-listener-reconciliation/reconciliation'
+import { reconcileReviewSuccessionsForPostIds } from './index.mts'
+import { listReviewSuccessionsForPostIds } from './list.mts'
 
 async function createReviewPair() {
   const administrator = await createTestUser({ administrator: true })

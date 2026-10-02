@@ -27,7 +27,8 @@ import {
   rotateTestUserDeletionAttemptDuringProviderCall,
 } from '@voucha/test-helpers'
 import { deleteUser } from './delete.mts'
-import { processUserDeletionExternalWork, processUserDeletionPhaseBatch } from './delete-phases.mts'
+import { processUserDeletionPhaseBatch } from './delete-phases.mts'
+import { processUserDeletionExternalWork } from './delete-phase-external-work.mts'
 import { drainUserDeletionForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 
 describe('user deletion batches', () => {

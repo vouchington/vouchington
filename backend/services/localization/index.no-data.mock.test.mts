@@ -2,18 +2,17 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock<typeof import('node:fs')>(import('node:fs'), async importOriginal => importOriginal())
 import { DEFAULT_LOCALIZATION_BOUNDS, type CatalogMessage } from '@vouchington/localization'
+import { headerValue, isLocalizationClientError, localizationGetResult } from './index.mts'
 import {
   getLocalizationDatabase,
-  headerValue,
-  isLocalizationClientError,
-  localizationBatchPayload,
-  localizationGetResult,
   localizationSqlitePath,
-  queryValues,
-  resolveEmailLocalizationBatch,
   setLocalizationDatabaseForTests,
-} from './index.mts'
-import { DEFAULT_LOCALIZATION_SQLITE_PATH } from './database.mts'
+  DEFAULT_LOCALIZATION_SQLITE_PATH,
+} from './database.mts'
+import { localizationBatchPayload, resolveEmailLocalizationBatch } from './resolve.mts'
+
+import { queryValues } from './query.mts'
+
 import { installSampleLocalizationDatabase } from '@voucha/test-helpers/services/localization/fixtures'
 
 describe('localization service', () => {

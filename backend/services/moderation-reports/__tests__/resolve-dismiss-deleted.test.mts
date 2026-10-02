@@ -8,7 +8,8 @@ import {
   insertTestPost,
   withFailingTransactionQueryOptionsForTest,
 } from '@voucha/test-helpers'
-import { findOpenCaseForEntity, getCaseById } from '@services/moderation-cases'
+import { findOpenCaseForEntity } from '@services/moderation-cases'
+import { getCaseById } from '@services/moderation-cases/get'
 import { listNotifications } from '@services/notifications'
 import { getModerationSystemUserId } from '@services/users/system-users'
 import { getModerationReportById } from '../get-by-id.mts'

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mapLemmyCommunity, mapLemmyPerson, mapLemmyPost } from './lemmy.mts'
+import { mapLemmyCommunity, mapLemmyPerson, mapLemmyPost } from './lemmy-mappers.mts'
 
 describe('mapLemmyPost', () => {
   it('maps a full post view', () => {

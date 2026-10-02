@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ScheduledJobDefinition } from './types.mts'
-import {
-  defineScheduledJobManifest,
-  projectScheduledJobs,
-  validateScheduledJobManifests,
-} from './index.mts'
+import { defineScheduledJobManifest, projectScheduledJobs } from './index.mts'
+import { validateScheduledJobManifests } from './validation.mts'
 
 describe('scheduled job manifests', () => {
   it('defines a typed manifest with nonempty operator surfaces', () => {

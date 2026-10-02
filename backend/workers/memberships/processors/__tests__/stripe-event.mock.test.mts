@@ -7,7 +7,8 @@ import {
   getTestMembershipRaw,
 } from '@voucha/test-helpers'
 import { getMembershipByUserId } from '@services/memberships'
-import { getStripeEventByStripeEventId, insertStripeEvent } from '@services/stripe/events'
+import { getStripeEventByStripeEventId } from '@services/stripe/events'
+import { insertStripeEvent } from '@services/stripe/insert-event'
 import * as stripeCustomers from '@modules/stripe/customers'
 import { getStripeSubscription } from '@modules/stripe/subscriptions'
 import {

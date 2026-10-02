@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mapMastodonAccount } from './mastodon.mts'
+import { mapMastodonAccount } from './mastodon-mappers.mts'
 
 describe('mapMastodonAccount', () => {
   it('maps an account, stripping HTML from the note and using its own url hostname', () => {

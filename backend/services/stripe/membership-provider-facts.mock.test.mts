@@ -9,7 +9,7 @@ import {
   setStripeEventReceivedAtForTest,
 } from '@voucha/test-helpers'
 import { createMembership } from '@services/memberships'
-import { insertStripeEvent } from './events.mts'
+import { insertStripeEvent } from './insert-event.mts'
 import { recordStripeMembershipProviderFacts } from './membership-provider-facts.mts'
 
 const mocks = vi.hoisted(() => ({

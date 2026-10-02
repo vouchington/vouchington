@@ -15,9 +15,9 @@ import {
   exchangeOAuthRefreshToken,
   getOAuthAuthorizationRequestForUser,
   revokeOAuthToken,
-  validateOAuthAccessToken,
   getOAuthResourceUrl,
 } from './index.mts'
+import { validateOAuthAccessToken } from './access-tokens.mts'
 
 describe('OAuth authority after participant deletion', () => {
   it('rejects a deleted grant subject across bearer, code, refresh, and revocation', async () => {

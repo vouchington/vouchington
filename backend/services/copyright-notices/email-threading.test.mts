@@ -10,11 +10,11 @@ import {
   createCopyrightDeliveryIntent,
   createCopyrightEmailIntake,
   createOutboundCopyrightCorrespondence,
-  claimCopyrightDeliveryIntent,
   markCopyrightDeliveryIntentSent,
   recordCopyrightEmailParse,
   rejectCopyrightEmailIntake,
 } from './index.mts'
+import { claimCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 
 describe('copyright email threading', () => {

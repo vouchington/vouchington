@@ -20,12 +20,12 @@ import { recordTestClaimantEmailReceipt } from '@voucha/test-helpers/services/co
 import { copyrightCorrespondencePurpose } from './correspondence.mts'
 import {
   appendCopyrightGuestFiling,
-  authorizeCopyrightGuestCapability,
   getCopyrightParticipantNoticeDetail,
   getCopyrightPublicNoticeDetail,
   issueCopyrightGuestCapability,
   requestCopyrightGuestInformation,
 } from './index.mts'
+import { authorizeCopyrightGuestCapability } from './guest-capabilities.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'

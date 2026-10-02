@@ -1,9 +1,8 @@
-export { TOPIC_CLAIM_VERIFICATION_METHODS, getTopicClaimState } from './config.mts'
+export { getTopicClaimState } from './config.mts'
 export { createTopicClaim } from './create.mts'
 export {
   getTopicClaimById,
   getUnresolvedTopicClaimForClaimant,
-  getVerifiedTopicClaim,
   listTopicClaimsForTopic,
   listTopicClaimsForUser,
   listPendingTopicClaims,
@@ -13,8 +12,4 @@ export { verifyTopicClaimDomain } from './verify-domain.mts'
 export { adminVerifyTopicClaim, rejectTopicClaim } from './admin-verify.mts'
 export { revokeTopicClaim } from './revoke.mts'
 export { submitTopicClaimForManualReview } from './submit-for-manual-review.mts'
-export {
-  currentUserCanReviewTopicClaims,
-  currentUserCanClaimTopic,
-  currentUserCanDisputeReviewsOfTopic,
-} from './authorization.mts'
+export { currentUserCanReviewTopicClaims, currentUserCanClaimTopic } from './authorization.mts'

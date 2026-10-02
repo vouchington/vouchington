@@ -18,10 +18,13 @@ import {
   createCopyrightAppeal,
   reviewCopyrightAppeal,
   completeCopyrightMandatoryHumanReview,
-  getCopyrightRepeatInfringerAccount,
-  recordCopyrightRepeatInfringerDisposition,
   recordCopyrightRepeatInfringerReviewOutcome,
 } from './index.mts'
+import {
+  getCopyrightRepeatInfringerAccount,
+  recordCopyrightRepeatInfringerDisposition,
+} from './repeat-infringer-incidents.mts'
+
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 

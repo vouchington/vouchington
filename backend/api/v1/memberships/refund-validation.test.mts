@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
-import { getMembershipRefunds } from '@services/memberships/refunds'
+import { getMembershipRefunds } from '@services/memberships/refunds/read'
 import type { PrivateUser } from '@services/users/types'
 
 describe('POST /api/v1/memberships/refunds validation', () => {

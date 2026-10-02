@@ -14,12 +14,13 @@ import {
   type OwnedBackgroundResponseLease,
 } from '@services/openai-background-responses'
 import type { Response } from 'openai/resources/responses/responses'
-import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
+import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
 import {
   callRecordingAgentResponseUsage,
   recordAgentResponseUsage,
 } from '../record-response-usage.mts'
-import { OpenAIResponseNotCompletedError, getBackgroundResponseHooks } from '../create-response.mts'
+import { OpenAIResponseNotCompletedError } from '../create-response.mts'
+import { getBackgroundResponseHooks } from '@modules/openai-utils/create-response'
 
 // callRecordingAgentResponseUsage's fn never actually calls createOpenAIResponse here. It awaits
 // getBackgroundResponseHooks()?.onResponseCreated(responseId) itself, exactly like

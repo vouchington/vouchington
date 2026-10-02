@@ -126,7 +126,7 @@ The [direct winner builder](../../../backend/services/feeds/rss-feed-items/get-i
 
 - [docs/overview/architecture/services/feeds/README.md](services/feeds/README.md) -- feed query logic and share actions
 - [docs/overview/architecture/backend/modules/feed-query-builders/README.md](backend/modules/feed-query-builders/README.md) -- shared visibility, filtering, and hot-score SQL fragments
-- `backend/services/posts/privacy-filter.mts` -- generic `buildPrivacyFilter` SQL builder
+- `backend/modules/feed-query-builders/privacy-filter.mts` -- generic `buildPrivacyFilter` SQL builder
 - [docs/overview/architecture/services/entity-relations/README.md](services/entity-relations/README.md) -- follow/mute/block relationships that drive feed filtering
 - [docs/requirements/api/v1/feeds/README.md](../../requirements/api/v1/feeds/README.md) -- API route handlers
 - [docs/requirements/community/community-lists.md](../../requirements/community/community-lists.md) -- community list feed scopes

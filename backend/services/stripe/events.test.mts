@@ -2,12 +2,12 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type Stripe from 'stripe'
 import {
   getStripeEventByStripeEventId,
-  insertStripeEvent,
   markStripeEventCompleted,
   markStripeEventFailed,
   markStripeEventProcessing,
-  restartFailedStripeEventAttempt,
 } from './events.mts'
+import { insertStripeEvent } from './insert-event.mts'
+import { restartFailedStripeEventAttempt } from './event-processing.mts'
 import { normalizeStripeEvent } from './normalize-event.mts'
 
 describe('events', () => {

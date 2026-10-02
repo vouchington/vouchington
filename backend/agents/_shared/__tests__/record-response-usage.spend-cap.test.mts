@@ -3,7 +3,7 @@ import { findAiUsageRecordForAgent, pollUntilNotNull } from '@voucha/test-helper
 import type { OwnedBackgroundResponseLease } from '@services/openai-background-responses'
 import type { OpenAiSpendCapBreach } from '@services/ai-usage'
 import { callRecordingAgentResponseUsage } from '../record-response-usage.mts'
-import { getBackgroundResponseHooks } from '../create-response.mts'
+import { getBackgroundResponseHooks } from '@modules/openai-utils/create-response'
 
 function randomSuffix(): string {
   return Math.random().toString(36).slice(2, 10)

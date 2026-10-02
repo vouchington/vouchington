@@ -12,8 +12,6 @@ import {
   type Body,
 } from '@aws-sdk/client-ses'
 
-export { buildRawEmailMessage } from './ses-mime.mts'
-
 let client: CreateSESClient | undefined
 
 const TEST_SES_CREDENTIALS = {

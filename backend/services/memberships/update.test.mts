@@ -8,7 +8,8 @@ import {
   updateTestMembershipCancelAtPeriodEnd,
 } from '@voucha/test-helpers'
 import { createMembership } from './create.mts'
-import { cancelMembership, updateMembershipFromEvent } from './update.mts'
+import { updateMembershipFromEvent } from './update.mts'
+import { cancelMembership } from './update-cancellation.mts'
 import { getMembershipHistory } from './get.mts'
 
 async function updateProjectionWithoutRecording(

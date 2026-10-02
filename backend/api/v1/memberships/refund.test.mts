@@ -5,7 +5,7 @@ import { createTestMembership, createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import * as stripeInvoices from '@modules/stripe/invoices'
 import * as stripeRefunds from '@modules/stripe/refunds'
-import { getMembershipRefunds } from '@services/memberships/refunds'
+import { getMembershipRefunds } from '@services/memberships/refunds/read'
 import type { PrivateUser } from '@services/users/types'
 
 describe('POST /api/v1/memberships/refunds', () => {

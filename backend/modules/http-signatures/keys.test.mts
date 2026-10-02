@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { assertPrivateKeyPem, assertPublicKeyPem, generateRsaSha256KeyPair } from './keys.mts'
+import { assertPublicKeyPem, generateRsaSha256KeyPair } from './keys.mts'
+import { assertPrivateKeyPem } from '@vouchington/utils/http-signatures'
 
 describe('HTTP Signature key management', () => {
   describe('generateRsaSha256KeyPair', () => {

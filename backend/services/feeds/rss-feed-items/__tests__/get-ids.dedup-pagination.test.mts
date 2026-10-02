@@ -15,8 +15,10 @@ import {
   followUser,
   setTestRssFeedItemVotes,
 } from '@voucha/test-helpers'
-import { processFollowerDistributionChunk } from '@services/follower-distributions'
-import { shareRssFeedItemWithFollowers } from '../../share-actions.mts'
+import {
+  processFollowerDistributionChunk,
+  shareRssFeedItemWithFollowers,
+} from '@services/follower-distributions'
 
 describe('getRssFeedItemFeedIds dedup pagination', () => {
   it('deduplicates overlapping source and topic memberships before selecting story winners', async () => {

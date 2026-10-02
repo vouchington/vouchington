@@ -17,13 +17,7 @@ const silentLogger: ViewLogger = { error: () => {}, log: () => {} }
 
 type PendingViewStatement = { sql: string; view: string }
 type AttemptedView = { pendingView: PendingViewStatement; success: boolean }
-export {
-  buildDropViewStatement,
-  buildDropViewsStatement,
-  extractViewDeclarations,
-  extractViewNames,
-  type ManagedViewDeclaration,
-} from './view-sql.mts'
+export { type ManagedViewDeclaration } from './view-sql.mts'
 
 export interface RunViewsOptions {
   forced?: boolean
