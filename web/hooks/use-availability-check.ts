@@ -47,12 +47,12 @@ export function useAvailabilityCheck(kind: AvailabilityKind): {
             conflict: result.conflict,
           })
         })
-        .catch(error => {
+        .catch(err => {
           if (controller.signal.aborted) return
           if (
-            typeof error === 'object' &&
-            error !== null &&
-            (error as { name?: unknown }).name === 'AbortError'
+            typeof err === 'object' &&
+            err !== null &&
+            (err as { name?: unknown }).name === 'AbortError'
           )
             return
           setState({ status: 'error', conflict: null })

@@ -66,8 +66,8 @@ export function useTopicEditPage(
       })
       dispatch({ topic: { ...state.topic!, ...updated } })
       onSuccess('Basic info updated')
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: 'Failed to update basic info',
         tags: { form: 'admin-topic-basic' },
       })
@@ -92,8 +92,8 @@ export function useTopicEditPage(
         keepSavingThroughNavigation = true
         router.replace(topicManagementHref(mergedTopic, 'settings'))
       }
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: 'Failed to update topic type',
         tags: { form: 'admin-topic-type' },
       })
@@ -114,8 +114,8 @@ export function useTopicEditPage(
       )
       dispatch({ typeAttributes: updated })
       onSuccess('Type attributes updated')
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: 'Failed to update type attributes',
         tags: { form: 'admin-topic-attrs' },
       })
@@ -132,8 +132,8 @@ export function useTopicEditPage(
       if (state.spendingFrequency) data.default_spending_frequency = state.spendingFrequency
       await updateSpendingCategoryAttributes(id, data)
       onSuccess('Spending category updated')
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: 'Failed to update spending category',
         tags: { form: 'admin-topic-spending' },
       })
@@ -153,8 +153,8 @@ export function useTopicEditPage(
       })
       dispatch({ topic: { ...state.topic, ...updated } })
       onSuccess('Visibility settings updated')
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: 'Failed to update visibility settings',
         tags: { form: 'admin-topic-flags' },
       })

@@ -74,9 +74,9 @@ async function proxy(request: NextRequest) {
         { dt, st },
         getForwardedIpHeaders(request),
       )
-    } catch (error) {
+    } catch (err) {
       // Session validation error - continue without session
-      console.error('Session validation failed:', error)
+      console.error('Session validation failed:', err)
     }
   }
 
@@ -128,9 +128,9 @@ async function proxy(request: NextRequest) {
         { referrer, landing_url: landingUrl, ...(utm ? { utm } : {}) },
         { dt: sessionDt, st: sessionSt },
         getForwardedIpHeaders(request),
-      ).catch(error => {
+      ).catch(err => {
         /* c8 ignore next -- attribution error handler; injecting network failure requires mocking */
-        console.error('Attribution request failed:', error)
+        console.error('Attribution request failed:', err)
       }),
     )
   }

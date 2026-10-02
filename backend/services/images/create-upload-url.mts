@@ -78,13 +78,13 @@ function validateImageUpload(options: CreateUploadUrlOptions) {
         return format !== undefined && SUPPORTED_IMAGE_FORMATS.includes(format)
       },
     })
-  } catch (error) {
-    if (!(error instanceof MediaError)) throw error
-    if (error.code === 'CONTENT_TYPE_INVALID') {
+  } catch (err) {
+    if (!(err instanceof MediaError)) throw err
+    if (err.code === 'CONTENT_TYPE_INVALID') {
       if (rejectedFormat) throw createHttpError(400, `Unsupported format: ${rejectedFormat}`)
       throw createHttpError(400, `Invalid content type: ${options.contentType}`)
     }
-    if (error.code === 'CONTENT_LENGTH_INVALID') {
+    if (err.code === 'CONTENT_LENGTH_INVALID') {
       if (!Number.isInteger(options.contentLength)) {
         throw createHttpError(400, 'Content length must be an integer')
       }
@@ -93,6 +93,6 @@ function validateImageUpload(options: CreateUploadUrlOptions) {
       }
       throw createHttpError(400, 'Image too large (max 50MB)')
     }
-    throw error
+    throw err
   }
 }

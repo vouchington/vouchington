@@ -63,12 +63,12 @@ function loadInitialCatalog(
       }
       return entry.catalog
     },
-    error => {
+    err => {
       const current = catalogs.get(cacheKey)
       if (current?.state === 'loading' && current.promise === promise) {
         catalogs.delete(cacheKey)
       }
-      throw error
+      throw err
     },
   )
   catalogs.set(cacheKey, { state: 'loading', promise })

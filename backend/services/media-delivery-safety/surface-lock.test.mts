@@ -71,8 +71,8 @@ describe('multi-slot owner delivery fences', () => {
           result = { status: 'fulfilled', value }
           return value
         },
-        reason => {
-          result = { status: 'rejected', reason }
+        err => {
+          result = { status: 'rejected', reason: err }
         },
       )
       await vi.waitFor(() => expect(result).toBeDefined())

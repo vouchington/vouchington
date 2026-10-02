@@ -26,8 +26,8 @@ export async function runWithUserDeletionAttemptHeartbeat<T>(
         if (!(await renewAttempt(requestId, processingAttemptId))) ownershipLost = true
         return undefined
       })
-      .catch(error => {
-        heartbeatError = { reason: error }
+      .catch(err => {
+        heartbeatError = { reason: err }
       })
   }, heartbeatIntervalMs)
   timer.unref()

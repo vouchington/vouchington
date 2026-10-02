@@ -17,8 +17,8 @@ export function parseLLMJsonResponse<T = unknown>(text: string): T {
 
   try {
     return JSON.parse(stripped) as T
-  } catch (error) {
+  } catch (err) {
     const preview = stripped.length > 200 ? `${stripped.slice(0, 200)}…` : stripped
-    throw new SyntaxError(`Failed to parse LLM response as JSON: ${preview}`, { cause: error })
+    throw new SyntaxError(`Failed to parse LLM response as JSON: ${preview}`, { cause: err })
   }
 }

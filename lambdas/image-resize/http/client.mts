@@ -98,18 +98,18 @@ export async function fetchImageFromUrl(
     const etag = response.headers.get('etag') || ''
 
     return { file, etag, contentType: normalizedContentType }
-  } catch (error: unknown) {
+  } catch (err: unknown) {
     clearTimeout(timeoutId)
 
-    if (error instanceof Error && error.name === 'AbortError') {
+    if (err instanceof Error && err.name === 'AbortError') {
       throw new HttpOperationError(`Request timeout after ${timeoutMs}ms`, 504)
     }
 
-    if (error instanceof HttpOperationError) {
-      throw error
+    if (err instanceof HttpOperationError) {
+      throw err
     }
 
-    const message = error instanceof Error ? error.message : 'Unknown error'
+    const message = err instanceof Error ? err.message : 'Unknown error'
     throw new HttpOperationError(`Failed to fetch image from URL: ${message}`, 500)
   }
 }
@@ -132,8 +132,8 @@ async function readBodyWithLimit(
           413,
         ),
     )
-  } catch (error: unknown) {
+  } catch (err: unknown) {
     body.cancel().catch(() => {})
-    throw error
+    throw err
   }
 }

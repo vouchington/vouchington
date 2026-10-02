@@ -47,9 +47,9 @@ export async function createTestBlueskyDisconnectLockProbe(
           }
         }
         client.release()
-      } catch (error) {
+      } catch (err) {
         client.release(true)
-        throw error
+        throw err
       }
     },
   }

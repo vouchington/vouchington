@@ -82,7 +82,7 @@ export async function executeClassifierRun<C, L, E>(
           phase.reserved = true
         },
       })
-    } catch (error) {
+    } catch (err) {
       // A client that cannot be built (missing credentials) fails identically on every retry, so it
       // ends the remote half through the recorded path instead of looping the sweep.
       const failure = await failClassifierClientUnavailable(adapter, { lease, local })
@@ -91,7 +91,7 @@ export async function executeClassifierRun<C, L, E>(
           kind: 'client-unavailable',
           classifier: adapter.slug,
           runId: lease.runId,
-          error: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
+          error: err instanceof Error ? `${err.name}: ${err.message}` : String(err),
         })
       }
       return failure
@@ -109,11 +109,11 @@ export async function executeClassifierRun<C, L, E>(
         },
         signal,
       })
-    } catch (error) {
-      if (error instanceof AttemptStopped) return error.outcome
-      if (!phase.reserved && error instanceof OpenAiSpendCapBreachError)
+    } catch (err) {
+      if (err instanceof AttemptStopped) return err.outcome
+      if (!phase.reserved && err instanceof OpenAiSpendCapBreachError)
         await releaseClassifierRunLease(adapter, lease)
-      const classified = classifyFailure(error, phase, signal)
+      const classified = classifyFailure(err, phase, signal)
       if (classified) {
         const failure = await failClassifierRunAttempt(adapter, {
           lease,
@@ -126,12 +126,12 @@ export async function executeClassifierRun<C, L, E>(
           alarmPermanentProviderRejection(
             { classifier: adapter.slug, runId: lease.runId },
             classified,
-            error,
+            err,
           )
         }
         if (failure !== 'released') return failure
       }
-      throw error
+      throw err
     }
     if (!phase.reserved) throw new Error('Classifier client skipped its provider attempt hook')
   }

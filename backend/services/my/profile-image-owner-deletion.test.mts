@@ -95,7 +95,7 @@ describe('terminal image surface owner deletion', () => {
       placement.placement_id,
     ).then(
       () => null,
-      (error: unknown) => error,
+      (err: unknown) => err,
     )
     await expect.poll(() => testDeliveryTransactionIsWaitingForLock(pid)).toBe(true)
     await clearing.commit()
@@ -114,7 +114,7 @@ describe('terminal image surface owner deletion', () => {
     const pid = await getTestDeliveryTransactionPid(clearing)
     const result = clearTestImageSurfaceOwnerInTransaction(clearing, placement.placement_id).then(
       () => null,
-      (error: unknown) => error,
+      (err: unknown) => err,
     )
     await expect.poll(() => testDeliveryTransactionIsWaitingForLock(pid)).toBe(true)
     await reactivating.commit()

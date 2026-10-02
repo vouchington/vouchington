@@ -68,9 +68,9 @@ async function sumUnlinkedKeys(
       const { unlinkedKeys } = await scanAndUnlinkKeys(client, pattern, { signal })
       removed += unlinkedKeys
       signal?.throwIfAborted()
-    } catch (error) {
-      if (signal?.aborted && error === signal.reason) throw error
-      failures.push(error)
+    } catch (err) {
+      if (signal?.aborted && err === signal.reason) throw err
+      failures.push(err)
     }
   }
 

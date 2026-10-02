@@ -17,9 +17,9 @@ export async function acquireTestModerationTransparencyCohortLock(options: {
       '/* acquireTestModerationTransparencyCohortLock */ SELECT pg_advisory_lock(hashtextextended($1, 0))',
       [key],
     )
-  } catch (error) {
-    client.release(toError(error))
-    throw error
+  } catch (err) {
+    client.release(toError(err))
+    throw err
   }
   return createTestModerationTransparencyCohortLock(client, key)
 }
@@ -40,9 +40,9 @@ function createTestModerationTransparencyCohortLock(
         )
         if (!rows[0]?.unlocked) throw new Error('PostgreSQL did not release the cohort lock')
         client.release()
-      } catch (error) {
-        client.release(toError(error))
-        throw error
+      } catch (err) {
+        client.release(toError(err))
+        throw err
       }
     },
   }

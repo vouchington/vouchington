@@ -75,8 +75,8 @@ export function useOAuthAppsManager(initialData: ListResponse<OAuthApp>) {
       acceptIssued(issued)
       onSuccess(t('extracted.my.oauthAppsManager.oauthAppRegistered_4cc04a30'))
       return true
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.oauthAppsManager.failedToRegisterTheOauthApp_8bcb0aaa'),
         displayMessageByCode: redirectUriErrorMessages(),
       })
@@ -90,12 +90,12 @@ export function useOAuthAppsManager(initialData: ListResponse<OAuthApp>) {
       setServerAppsById(prev => new Map(prev).set(oauth_app.id, oauth_app))
       onSuccess(t('extracted.my.oauthAppsManager.oauthAppSaved_4f633bda'))
       return true
-    } catch (error) {
-      if (isMissingOAuthAppError(error)) {
+    } catch (err) {
+      if (isMissingOAuthAppError(err)) {
         reconcileMissingApp(id)
         return false
       }
-      onError(error, {
+      onError(err, {
         fallback: t('extracted.my.oauthAppsManager.failedToSaveTheOauthApp_85e1ca50'),
         displayMessageByCode: redirectUriErrorMessages(),
       })
@@ -106,12 +106,12 @@ export function useOAuthAppsManager(initialData: ListResponse<OAuthApp>) {
   async function handleRotate(id: string): Promise<void> {
     try {
       acceptIssued(await rotateOAuthAppSecret(id))
-    } catch (error) {
-      if (isMissingOAuthAppError(error)) {
+    } catch (err) {
+      if (isMissingOAuthAppError(err)) {
         reconcileMissingApp(id)
         return
       }
-      onError(error, {
+      onError(err, {
         fallback: t('extracted.my.oauthAppsManager.failedToRotateTheClientSecret_eb505b3a'),
       })
     }
@@ -123,12 +123,12 @@ export function useOAuthAppsManager(initialData: ListResponse<OAuthApp>) {
       setRevokedIds(prev => new Set(prev).add(id))
       setIssuedSecrets(prev => withoutSecretFor(prev, id))
       onSuccess(t('extracted.my.oauthAppsManager.oauthAppRevoked_3b7394c5'))
-    } catch (error) {
-      if (isMissingOAuthAppError(error)) {
+    } catch (err) {
+      if (isMissingOAuthAppError(err)) {
         reconcileMissingApp(id)
         return
       }
-      onError(error, {
+      onError(err, {
         fallback: t('extracted.my.oauthAppsManager.failedToRevokeTheOauthApp_73da1074'),
       })
     }

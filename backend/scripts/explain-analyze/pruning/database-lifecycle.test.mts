@@ -48,8 +48,8 @@ describe('owned pruning database lifecycle', () => {
       existed = await exists(sourceUrl(), name)
       try {
         await createOwnedPruningDatabase(run, sourceUrl(), name, () => {})
-      } catch (error) {
-        refusal = error
+      } catch (err) {
+        refusal = err
       }
     } finally {
       await owned?.drop()
@@ -69,8 +69,8 @@ describe('owned pruning database lifecycle', () => {
       })
       existedBeforeFailure = await exists(sourceUrl(), name)
       throw new Error('injected fixture failure')
-    } catch (error) {
-      caught = error
+    } catch (err) {
+      caught = err
     } finally {
       await owned?.drop()
     }
@@ -95,8 +95,8 @@ describe('owned pruning database lifecycle', () => {
         await createOwnedPruningDatabase(transportFailure, sourceUrl(), name, database => {
           owned = database
         })
-      } catch (error) {
-        refusal = error
+      } catch (err) {
+        refusal = err
       }
       existedAfterFailedCreate = await exists(sourceUrl(), name)
     } finally {

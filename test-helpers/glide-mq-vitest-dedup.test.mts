@@ -204,14 +204,14 @@ describe('GlideMQ test dedup', () => {
     workers.push(worker)
     try {
       await once(worker, 'completed', { signal: AbortSignal.timeout(2_000) })
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
         throw new Error(
           'Timed out waiting for the attached worker to drain the deduplicated backlog',
-          { cause: error },
+          { cause: err },
         )
       }
-      throw error
+      throw err
     }
 
     expect(Date.now() - startedAt).toBeLessThan(2_000)

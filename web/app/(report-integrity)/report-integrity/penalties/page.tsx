@@ -28,8 +28,8 @@ export default async function ReportIntegrityPenaltiesPage({
     initialData = await getReportIntegrityPenalties<ReportIntegrityPenaltiesResponse>({
       searchParams: { status: status === 'all' ? undefined : status },
     })
-  } catch (error) {
-    if (!(error instanceof ApiError) || error.status !== 404) throw error
+  } catch (err) {
+    if (!(err instanceof ApiError) || err.status !== 404) throw err
     available = false
     initialData = {
       results: [],

@@ -42,8 +42,8 @@ export function CopyrightEmailLegalProcessAction({
     setError(null)
     try {
       await recordCopyrightEmailIntakeLegalProcess(detail.id, reason.trim())
-    } catch (caught) {
-      setError(copyrightEmailActionError(caught, 'We could not record that legal process.'))
+    } catch (err) {
+      setError(copyrightEmailActionError(err, 'We could not record that legal process.'))
       setPending(false)
       return
     }

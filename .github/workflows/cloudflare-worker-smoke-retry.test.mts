@@ -67,8 +67,8 @@ if [ "$count" -ge 2 ]; then printf '200'; else printf '000'; fi`,
       events: (await readFile(eventsFile, 'utf8')).trim().split('\n'),
       result,
     }
-  } catch (error) {
-    result = error as Error
+  } catch (err) {
+    result = err as Error
     return {
       allocations: await readFile(allocationsFile, 'utf8'),
       events: (await readFile(eventsFile, 'utf8')).trim().split('\n'),

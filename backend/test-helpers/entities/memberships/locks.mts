@@ -78,10 +78,10 @@ export async function runConcurrentTestRetainedMembershipProductReconciliation<T
           WHERE membership_source_id = ${options.membershipSourceId}`)
       await transaction.commit()
       return result
-    } catch (error) {
-      firstValidated.reject(error)
-      firstUserLocked.reject(error)
-      throw error
+    } catch (err) {
+      firstValidated.reject(err)
+      firstUserLocked.reject(err)
+      throw err
     }
   }
 
@@ -106,11 +106,11 @@ export async function runConcurrentTestRetainedMembershipProductReconciliation<T
       await userLock
       await transaction.commit()
       return result
-    } catch (error) {
-      secondBackendProcessId.reject(error)
-      secondValidated.reject(error)
-      secondUserLockRequested.reject(error)
-      throw error
+    } catch (err) {
+      secondBackendProcessId.reject(err)
+      secondValidated.reject(err)
+      secondUserLockRequested.reject(err)
+      throw err
     }
   }
 

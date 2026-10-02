@@ -92,7 +92,7 @@ describe('background OpenAI response lease integration', () => {
     const response = runWithBackgroundResponseHooks({ onResponseCreated }, () =>
       createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
     )
-    const responseRejection = response.catch((error: unknown) => error)
+    const responseRejection = response.catch((err: unknown) => err)
     await vi.waitFor(() => expect(onResponseCreated).toHaveBeenCalledTimes(1))
     expect(openAIMocks.cancel).not.toHaveBeenCalled()
 

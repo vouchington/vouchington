@@ -102,9 +102,9 @@ export async function processEngagementRecommendationEmail<
         /* c8 ignore next -- Defensive observability for concurrent processor races. */
         reportEngagementMarkSkipped(input.userId, emailType)
       }
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next -- Avoid retrying after SES accepted the message. */
-      reportEngagementMarkFailed(error, input.userId, emailType)
+      reportEngagementMarkFailed(err, input.userId, emailType)
     }
   }
   return result

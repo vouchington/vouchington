@@ -55,13 +55,13 @@ export async function retryOnInflightSaturation<T>(
         shouldRetry: isInflightSaturationError,
       },
     )
-  } catch (error: unknown) {
+  } catch (err: unknown) {
     // Non-saturation errors are rethrown immediately by retryValkeyOperation — pass through.
-    if (!isInflightSaturationError(error)) throw error
+    if (!isInflightSaturationError(err)) throw err
 
     // Saturation exhaustion: all retry attempts failed. Decorate and report.
-    const err = error instanceof Error ? error : new Error(String(error))
-    const decorated = err as typeof err & {
+    const localErr = err instanceof Error ? err : new Error(String(err))
+    const decorated = localErr as typeof localErr & {
       tags?: Record<string, string | number | boolean>
       extra?: Record<string, unknown>
     }

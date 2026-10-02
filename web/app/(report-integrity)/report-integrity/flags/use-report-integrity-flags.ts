@@ -84,14 +84,14 @@ export function useReportIntegrityFlags(
         resolution,
       )
       applyConfirmedFlag(data.flag)
-    } catch (error) {
-      if (isAmbiguousIntegrityMutationFailure(error)) {
+    } catch (err) {
+      if (isAmbiguousIntegrityMutationFailure(err)) {
         await mutations.reconcile(flagId, 'resolve')
         return
       }
       mutations.fail(
         flagId,
-        getApiErrorMessage(error, t('extracted.flags.integrityActions.resolveFailed_bac8e0fb')),
+        getApiErrorMessage(err, t('extracted.flags.integrityActions.resolveFailed_bac8e0fb')),
       )
       return
     }
@@ -107,15 +107,15 @@ export function useReportIntegrityFlags(
       }>(flagId)
       setPenaltyResults(prev => ({ ...prev, [flagId]: data.penalized_user_count }))
       applyConfirmedFlag(data.flag)
-    } catch (error) {
-      if (isAmbiguousIntegrityMutationFailure(error)) {
+    } catch (err) {
+      if (isAmbiguousIntegrityMutationFailure(err)) {
         mutations.preventPenaltyRetry(flagId)
         await mutations.reconcile(flagId, 'penalty')
         return
       }
       mutations.fail(
         flagId,
-        getApiErrorMessage(error, t('extracted.flags.integrityActions.investigateFailed_4930e99c')),
+        getApiErrorMessage(err, t('extracted.flags.integrityActions.investigateFailed_4930e99c')),
       )
       return
     }

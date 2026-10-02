@@ -52,9 +52,9 @@ export async function completeWebBlueskyAccountLinkDurably(input: {
     await connectBlueskyAccountToUser(input.currentUserId, did, authorization.handle, {
       linkAuthorizationId: input.flowId,
     })
-  } catch (error) {
+  } catch (err) {
     await rejectBlueskyCallbackGeneration(authorization)
-    throw error
+    throw err
   }
   return { did, handle: authorization.handle }
 }

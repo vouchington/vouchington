@@ -110,8 +110,8 @@ if (import.meta.main) {
       check ? 'VITEST.md ownership table is up to date.' : 'VITEST.md ownership table written.',
     )
     process.exit(0)
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error))
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : String(err))
     process.exit(1)
   }
 }

@@ -88,8 +88,8 @@ async function classifyNewInstanceHostname(
   try {
     const result = await classifyInstance(hostname)
     return result.status === 'ok' ? result.metadata : null
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
     return null
   }
 }

@@ -106,9 +106,9 @@ export async function fetchCrawlerHtml(
       }
     }
     output.htmlFile = htmlFile
-  } catch (error) {
+  } catch (err) {
     await htmlFile.cleanup()
-    throw error
+    throw err
   }
   return output
 }
@@ -130,51 +130,45 @@ export default async function CrawlerHtml(
     const duration = Date.now() - startedAt.getTime()
     trackCrawlerRequest('html', domain, result.response_status_code, duration, true)
     return result
-  } catch (error: unknown) {
+  } catch (err: unknown) {
     const duration = Date.now() - startedAt.getTime()
 
-    if (isTimeoutError(error)) {
+    if (isTimeoutError(err)) {
       trackCrawlerRequest('html', domain, 0, duration, false, 'CrawlerTimeoutError')
       // Which phase timed out is not recoverable from the error alone — both raise the same
       // DOMException('TimeoutError'). `timeoutMs` here only feeds the error message text, so pick
       // the request budget for a fast failure and the response budget once elapsed time has moved
       // past it (i.e. headers must have already arrived).
       const timedOutPhaseMs = duration < requestTimeoutMs ? requestTimeoutMs : responseTimeoutMs
-      throw new CrawlerTimeoutError(url, timedOutPhaseMs, duration, error)
+      throw new CrawlerTimeoutError(url, timedOutPhaseMs, duration, err)
     }
 
-    if (error instanceof HttpRateLimitError) {
-      trackCrawlerRequest('html', domain, error.status, duration, false, 'CrawlerRateLimitError')
-      throw new CrawlerRateLimitError(url, error.status, duration, error.retryAfterMs, error)
+    if (err instanceof HttpRateLimitError) {
+      trackCrawlerRequest('html', domain, err.status, duration, false, 'CrawlerRateLimitError')
+      throw new CrawlerRateLimitError(url, err.status, duration, err.retryAfterMs, err)
     }
 
-    if (error instanceof HttpServerError) {
-      trackCrawlerRequest('html', domain, error.status, duration, false, 'CrawlerServerError')
-      throw new CrawlerServerError(url, error.status, duration, error)
+    if (err instanceof HttpServerError) {
+      trackCrawlerRequest('html', domain, err.status, duration, false, 'CrawlerServerError')
+      throw new CrawlerServerError(url, err.status, duration, err)
     }
 
-    if (error instanceof HttpResponseSizeError) {
+    if (err instanceof HttpResponseSizeError) {
       trackCrawlerRequest('html', domain, 0, duration, false, 'ResponseSizeExceeded')
-      throw new CrawlerResponseSizeExceededError(
-        url,
-        error.actualSize,
-        error.maxSize,
-        duration,
-        error,
-      )
+      throw new CrawlerResponseSizeExceededError(url, err.actualSize, err.maxSize, duration, err)
     }
 
-    if (error instanceof HttpNoBodyError) {
+    if (err instanceof HttpNoBodyError) {
       trackCrawlerRequest('html', domain, 0, duration, false, 'NoResponseBody')
-      throw error
+      throw err
     }
 
-    if (error instanceof Error) {
+    if (err instanceof Error) {
       trackCrawlerRequest('html', domain, 0, duration, false, 'CrawlerNetworkError')
-      throw new CrawlerNetworkError(url, duration, error)
+      throw new CrawlerNetworkError(url, duration, err)
     }
 
     trackCrawlerRequest('html', domain, 0, duration, false, 'UnknownError')
-    throw error
+    throw err
   }
 }

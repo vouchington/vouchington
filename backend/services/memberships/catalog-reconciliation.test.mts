@@ -177,7 +177,7 @@ describe('Stripe membership catalog reconciliation', () => {
     })
     const failureOutcome = failure.then(
       () => null,
-      error => error as Error,
+      err => err as Error,
     )
     await started
     const success = reconcileStripeMembershipCatalog({
@@ -228,7 +228,7 @@ describe('Stripe membership catalog reconciliation', () => {
       context,
       resolvePrice: failedResolver,
       invalidateCaches: failedInvalidation,
-    }).catch(error => error as AggregateError)
+    }).catch(err => err as AggregateError)
 
     await expect(outcome).resolves.toMatchObject({
       errors: [providerError, cacheError],

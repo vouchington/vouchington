@@ -59,9 +59,9 @@ describe('getEntityBookmarks', () => {
     mockClientApiGet.mockRejectedValueOnce(err)
 
     const p1 = getEntityBookmarks('topic', '2')
-    const p1Rejection = p1.catch((error: unknown) => error)
+    const p1Rejection = p1.catch((err: unknown) => err)
     const p2 = getEntityBookmarks('topic', '2')
-    const p2Rejection = p2.catch((error: unknown) => error)
+    const p2Rejection = p2.catch((err: unknown) => err)
 
     // Both callers see the same rejection
     await expect(p1Rejection).resolves.toBe(err)

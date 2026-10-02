@@ -159,7 +159,7 @@ describe('topic alias publication locking', () => {
       await query.commit()
     }
     const preparedMerge = prepareMerge()
-    const preparedMergeRejection = preparedMerge.catch((error: unknown) => error)
+    const preparedMergeRejection = preparedMerge.catch((err: unknown) => err)
     await discovered.promise
     await updateRssFeedById(feed.id, { topic_id: source.id })
     continueMerge.resolve()

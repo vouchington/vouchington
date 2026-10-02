@@ -57,8 +57,8 @@ export function CardsManager({ initialData }: Props) {
         setNewCardLabel('')
         onSuccess(t('extracted.my.cardsManager.cardAdded_399e2969'))
       })
-    } catch (error) {
-      onError(error, { fallback: t('extracted.my.cardsManager.failedToAddCard_ba5777be') })
+    } catch (err) {
+      onError(err, { fallback: t('extracted.my.cardsManager.failedToAddCard_ba5777be') })
     } finally {
       addingRef.current = false
     }
@@ -93,8 +93,8 @@ export function CardsManager({ initialData }: Props) {
         setEditingId(null)
         onSuccess(t('extracted.my.cardsManager.cardUpdated_59f297ef'))
       })
-    } catch (error) {
-      onError(error, { fallback: t('extracted.my.cardsManager.failedToUpdateCard_595f6bd2') })
+    } catch (err) {
+      onError(err, { fallback: t('extracted.my.cardsManager.failedToUpdateCard_595f6bd2') })
     }
   }
 
@@ -114,8 +114,8 @@ export function CardsManager({ initialData }: Props) {
         setConfirmingDeleteId(null)
         onSuccess(t('extracted.my.cardsManager.cardRemoved_0e75e7b8'))
       })
-    } catch (error) {
-      onError(error, { fallback: t('extracted.my.cardsManager.failedToRemoveCard_2774e228') })
+    } catch (err) {
+      onError(err, { fallback: t('extracted.my.cardsManager.failedToRemoveCard_2774e228') })
     }
   }
 

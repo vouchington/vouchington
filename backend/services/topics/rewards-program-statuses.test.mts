@@ -105,9 +105,9 @@ describe('rewards-program-statuses', () => {
     try {
       await updateRewardsProgramStatusAttributes(null, topic, { order_index: 1 })
       assert.fail('Should have thrown')
-    } catch (error: unknown) {
-      assert.ok(error && typeof error === 'object' && 'status' in error)
-      assert.equal(error.status, 401)
+    } catch (err: unknown) {
+      assert.ok(err && typeof err === 'object' && 'status' in err)
+      assert.equal(err.status, 401)
     }
   })
 
@@ -121,9 +121,9 @@ describe('rewards-program-statuses', () => {
     try {
       await updateRewardsProgramStatusAttributes(user, nonStatusTopic, { order_index: 1 })
       assert.fail('Should have thrown')
-    } catch (error: unknown) {
-      assert.ok(error && typeof error === 'object' && 'status' in error)
-      assert.equal(error.status, 400)
+    } catch (err: unknown) {
+      assert.ok(err && typeof err === 'object' && 'status' in err)
+      assert.equal(err.status, 400)
     }
   })
 })

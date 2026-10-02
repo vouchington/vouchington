@@ -94,9 +94,9 @@ export async function createSourceFromUrl(
       const resolvedUrlId = await createRssFeedUrlId(resolvedRedirectUrl, {
         preserveHttp: new URL(resolvedRedirectUrl).protocol === 'http:',
       })
-      setCanonicalUrl(originalUrlId, resolvedUrlId).catch(error => {
-        if (!(error instanceof CircularCanonicalReferenceError))
-          onError(error instanceof Error ? error : new Error(String(error)))
+      setCanonicalUrl(originalUrlId, resolvedUrlId).catch(err => {
+        if (!(err instanceof CircularCanonicalReferenceError))
+          onError(err instanceof Error ? err : new Error(String(err)))
       })
     }
 

@@ -35,7 +35,7 @@ describe('CrawlerHtml timeout classification', () => {
     const error = await CrawlerHtml(
       { url: 'https://example.com', requestTimeoutMs: 1234 },
       {},
-    ).catch((thrown: unknown) => thrown)
+    ).catch((err: unknown) => err)
 
     expect(error).toBeInstanceOf(CrawlerTimeoutError)
     expect(error).toMatchObject({ status: 504, url: 'https://example.com' })
@@ -49,7 +49,7 @@ describe('CrawlerHtml timeout classification', () => {
     const error = await CrawlerHtml(
       { url: 'https://example.com', requestTimeoutMs: 1234 },
       {},
-    ).catch((thrown: unknown) => thrown)
+    ).catch((err: unknown) => err)
 
     expect(error).toBeInstanceOf(CrawlerTimeoutError)
     expect(error).toMatchObject({ status: 504, url: 'https://example.com' })
@@ -58,9 +58,7 @@ describe('CrawlerHtml timeout classification', () => {
   it('still classifies a genuine non-timeout error as CrawlerNetworkError', async () => {
     vi.spyOn(undici, 'fetch').mockRejectedValue(new Error('getaddrinfo ENOTFOUND example.com'))
 
-    const error = await CrawlerHtml({ url: 'https://example.com' }, {}).catch(
-      (thrown: unknown) => thrown,
-    )
+    const error = await CrawlerHtml({ url: 'https://example.com' }, {}).catch((err: unknown) => err)
 
     expect(error).toBeInstanceOf(CrawlerNetworkError)
     expect(error).toMatchObject({ status: 502 })

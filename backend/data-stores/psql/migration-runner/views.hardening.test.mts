@@ -137,10 +137,9 @@ describe('forced view rebuilding', () => {
 async function getForcedRebuildError(viewsDir: string): Promise<Error> {
   try {
     await runViews('/unused-root', { folder: viewsDir, forced: true })
-  } catch (error) {
-    if (error instanceof Error && 'detail' in error && typeof error.detail === 'string')
-      return error
-    throw error
+  } catch (err) {
+    if (err instanceof Error && 'detail' in err && typeof err.detail === 'string') return err
+    throw err
   }
   throw new Error('Expected forced view rebuild to fail')
 }

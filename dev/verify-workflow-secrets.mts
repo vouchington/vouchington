@@ -68,14 +68,14 @@ export async function collectLiveSecretNames(
       for (const name of scopedNames) names.add(name)
       for (const name of scopedNames) organizationNames.add(name)
     }
-  } catch (error) {
-    warnings.push(`Could not list organization secrets for ${repo}: ${errorMessage(error)}`)
+  } catch (err) {
+    warnings.push(`Could not list organization secrets for ${repo}: ${errorMessage(err)}`)
   }
   let environments: string[] = []
   try {
     environments = await dependencies.listEnvironmentNames(repo)
-  } catch (error) {
-    warnings.push(`Could not list deployment environments for ${repo}: ${errorMessage(error)}`)
+  } catch (err) {
+    warnings.push(`Could not list deployment environments for ${repo}: ${errorMessage(err)}`)
   }
   const results = await pSettle(environments, {
     concurrency: ENVIRONMENT_SECRET_QUERY_CONCURRENCY,
@@ -134,10 +134,10 @@ export async function runVerifyWorkflowSecretsCli(
     })
     repoOverride = values.repo
     confirmNames = parseConfirmNames(values.confirm)
-  } catch (error) {
+  } catch (err) {
     output.error(
       'Usage: node dev/verify-workflow-secrets.mts [--repo <owner/repo>] ' +
-        `[--confirm <name1,name2,...>]\n${errorMessage(error)}`,
+        `[--confirm <name1,name2,...>]\n${errorMessage(err)}`,
     )
     return 2
   }
@@ -184,8 +184,8 @@ export async function runVerifyWorkflowSecretsCli(
       missingConfirmed.length > 0
       ? 1
       : 0
-  } catch (error) {
-    output.error(`verify-workflow-secrets failed: ${errorMessage(error)}`)
+  } catch (err) {
+    output.error(`verify-workflow-secrets failed: ${errorMessage(err)}`)
     return 1
   }
 }

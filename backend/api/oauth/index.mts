@@ -60,19 +60,19 @@ app.route('/authorize').get(async (ctx: Context) => {
       validated,
     )
     redirect(ctx, `/oauth/consent?request_id=${encodeURIComponent(result.request_id)}`)
-  } catch (error) {
-    if (!(error instanceof OAuthProtocolError)) throw error
+  } catch (err) {
+    if (!(err instanceof OAuthProtocolError)) throw err
     const location = await getOAuthAuthorizationErrorRedirect({
       clientId: queryString(ctx, 'client_id'),
       redirectUri: queryString(ctx, 'redirect_uri'),
       state: ctx.query.state,
-      error,
+      error: err,
     })
     if (location) {
       redirect(ctx, location)
       return
     }
-    sendOAuthError(ctx, error)
+    sendOAuthError(ctx, err)
   }
 })
 
@@ -83,9 +83,9 @@ app.route('/register').post(async (ctx: Context) => {
     const client = await registerOAuthClient(await parseOAuthRegistrationBody(ctx))
     ctx.setStatus(201)
     ctx.json(client)
-  } catch (error) {
-    if (!(error instanceof OAuthProtocolError)) throw error
-    sendOAuthError(ctx, error)
+  } catch (err) {
+    if (!(err instanceof OAuthProtocolError)) throw err
+    sendOAuthError(ctx, err)
   }
 })
 
@@ -98,9 +98,9 @@ app.route('/token').post(
       const client = parseOAuthClientAuthentication(ctx, form)
       await authenticateOAuthClient(client.clientId, client.clientSecret)
       ctx.json(await exchangeOAuthTokenGrant(form, client))
-    } catch (error) {
-      if (!(error instanceof OAuthProtocolError)) throw error
-      sendOAuthError(ctx, error)
+    } catch (err) {
+      if (!(err instanceof OAuthProtocolError)) throw err
+      sendOAuthError(ctx, err)
     }
   },
   { acceptedMediaTypes: FORM_MEDIA_TYPES },
@@ -120,9 +120,9 @@ app.route('/revoke').post(
       })
       ctx.setStatus(200)
       ctx.response.empty()
-    } catch (error) {
-      if (!(error instanceof OAuthProtocolError)) throw error
-      sendOAuthError(ctx, error)
+    } catch (err) {
+      if (!(err instanceof OAuthProtocolError)) throw err
+      sendOAuthError(ctx, err)
     }
   },
   { acceptedMediaTypes: FORM_MEDIA_TYPES },

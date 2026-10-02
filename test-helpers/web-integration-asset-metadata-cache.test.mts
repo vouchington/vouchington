@@ -99,8 +99,8 @@ describe('web-integration asset metadata cache', () => {
     let saturationError: unknown
     try {
       await vi.waitFor(() => expect(maximum).toBe(6), { timeout: 5_000 })
-    } catch (error) {
-      saturationError = error
+    } catch (err) {
+      saturationError = err
     } finally {
       releaseLeases()
     }

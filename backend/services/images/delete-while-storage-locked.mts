@@ -176,23 +176,23 @@ export async function deleteImageByIdWhileStorageLocked(
     await transaction.commit()
     return result as ImageDeleteResult
   }
-  const deleteResult = await deleteImageInTransaction().catch(async error => {
+  const deleteResult = await deleteImageInTransaction().catch(async err => {
     await repairFailedImageDeliveryMutation({ imageIds: [image.id] }).catch(onError)
-    throw error
+    throw err
   })
   if (!deleteResult.deletedThisImage) return
   try {
     await enqueueBulkOnPostUpdated(
       deleteResult.affectedPostIds.map(id => ({ id, contentChanged: true })),
     )
-  } catch (error) {
+  } catch (err) {
     /* c8 ignore next 3 -- only reached when Valkey fails during CSAM quarantine deletion */
     if (omitRollback) {
-      onError(error as Error)
+      onError(err as Error)
     } else {
       await rollbackImageDeletion(image.id, deleteResult)
       await repairFailedImageDeliveryMutation({ imageIds: [image.id] }).catch(onError)
-      throw error
+      throw err
     }
   }
   await cleanupDeletedImageStorage(lockedStorageImage!)

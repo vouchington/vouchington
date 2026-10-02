@@ -63,8 +63,8 @@ export function readPersistedSessionId(
     if (isValidSessionId(raw)) return raw
     if (options.strict) throw new Error(`invalid persisted ${agent} session id format`)
     return undefined
-  } catch (error) {
-    if (options.strict && (error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+  } catch (err) {
+    if (options.strict && (err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
     return undefined
   }
 }
@@ -139,8 +139,8 @@ export function resolveAndPersistRootCodexSessionId(options: {
       throw new Error('persisted session id did not match the selected id')
     }
     return { generated: real === '' && existing === undefined, sessionId }
-  } catch (error) {
-    throw new Error('failed to persist root Codex session id', { cause: error })
+  } catch (err) {
+    throw new Error('failed to persist root Codex session id', { cause: err })
   }
 }
 

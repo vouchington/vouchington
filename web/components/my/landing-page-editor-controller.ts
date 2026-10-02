@@ -110,9 +110,9 @@ export function useLandingPageEditorController(
       if (landing_page.slug !== previousSlug) {
         router.replace(myLandingPageHref(landing_page))
       }
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next -- error path requires injecting a save page details failure */
-      onError(error, { fallback: 'Failed to save page details' })
+      onError(err, { fallback: 'Failed to save page details' })
     } finally {
       setLoading(false)
     }
@@ -128,9 +128,9 @@ export function useLandingPageEditorController(
       setPage(landing_page)
       setDraftItems(landing_page.items)
       onSuccess('Landing page content saved')
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next -- error path requires injecting a save landing page content failure */
-      onError(error, { fallback: 'Failed to save landing page content' })
+      onError(err, { fallback: 'Failed to save landing page content' })
     } finally {
       setLoading(false)
     }
@@ -143,9 +143,9 @@ export function useLandingPageEditorController(
       const { landing_page } = await setDefaultMyLandingPage(page.id)
       setPage(prev => ({ ...prev, is_default: landing_page.is_default }))
       onSuccess('Default landing page updated')
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next -- error path requires injecting a set default landing page failure */
-      onError(error, { fallback: 'Failed to set default landing page' })
+      onError(err, { fallback: 'Failed to set default landing page' })
     } finally {
       setLoading(false)
     }
@@ -158,9 +158,9 @@ export function useLandingPageEditorController(
       await deleteMyLandingPage(page.id)
       onSuccess('Landing page deleted')
       router.push('/my/landing-pages')
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next 2 -- error path requires injecting a delete landing page failure */
-      onError(error, { fallback: 'Failed to delete landing page' })
+      onError(err, { fallback: 'Failed to delete landing page' })
       setLoading(false)
     }
   }

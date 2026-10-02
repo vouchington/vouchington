@@ -55,8 +55,8 @@ export function ParticipantsPanel({
       const updated = [...participants, result.participant]
       setParticipants(updated)
       onParticipantsChange?.(updated)
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.messages.participantsPanel.failedToAddParticipant_a1104c84'),
       })
     }
@@ -72,8 +72,8 @@ export function ParticipantsPanel({
       if (userId === currentUserId) {
         router.push('/messages')
       }
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.messages.participantsPanel.failedToRemoveParticipant_16c63aa8'),
       })
     }
@@ -85,8 +85,8 @@ export function ParticipantsPanel({
     try {
       await updateConversationParticipantPolicy(conversationId, newPolicy)
       setPolicy(newPolicy)
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.messages.participantsPanel.failedToUpdatePolicy_7ed6e98a'),
       })
     } finally {

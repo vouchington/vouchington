@@ -93,7 +93,7 @@ describe('OpenRouter Responses transport', () => {
         createOpenRouterResponse({ model: 'openai/gpt-5.4-nano', input: 'hello' }, undefined, {
           createResponse,
         }),
-    ).catch((caught: unknown) => caught)
+    ).catch((err: unknown) => err)
 
     expect(error).toMatchObject({ cause })
     expect(onUnknownBilledAttempt).toHaveBeenCalledExactlyOnceWith(

@@ -12,10 +12,8 @@ export async function delayForOpenAiSpendCap(
   let parkAtDayBoundary = true
   try {
     parkAtDayBoundary = await register(job, day)
-  } catch (error) {
-    reportRegistrationFailure(
-      error instanceof Error ? error : new Error(String(error), { cause: error }),
-    )
+  } catch (err) {
+    reportRegistrationFailure(err instanceof Error ? err : new Error(String(err), { cause: err }))
   }
   const delayedUntil = parkAtDayBoundary ? getDayBounds(day).endMs : Date.now() + 1_000
   return job.moveToDelayed(delayedUntil)

@@ -150,8 +150,8 @@ export function createLemmyAdapter(host: string = FEDIVERSE_LEMMY_HOST): Fediver
           ...(next_cursor === undefined ? {} : { next_cursor }),
           ...(status === 'ok' ? {} : { error_code: 'provider_error' }),
         }
-      } catch (error) {
-        onError(error as Error)
+      } catch (err) {
+        onError(err as Error)
         return { provider: 'lemmy', status: 'error', items: [], error_code: 'provider_error' }
       }
     },

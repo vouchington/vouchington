@@ -48,10 +48,10 @@ export function ProviderButton({
     setIsSubmitting(true)
     try {
       await onToken(await getToken())
-    } catch (error) {
-      if (!(error instanceof OAuthCancelledError)) {
+    } catch (err) {
+      if (!(err instanceof OAuthCancelledError)) {
         const message =
-          error instanceof Error ? error.message : 'Authentication failed. Please try again.'
+          err instanceof Error ? err.message : 'Authentication failed. Please try again.'
         toast.error(message)
       }
     } finally {

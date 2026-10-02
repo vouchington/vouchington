@@ -39,9 +39,9 @@ export async function FeedNewsListPage({ config, searchParams, action }: FeedNew
   }
   const dataResult = await getRssFeedItemsFeed(config.feedType, {
     searchParams: queryParams,
-  }).catch(error => {
-    const message = getListSearchErrorMessage(error)
-    if (!message) throw error
+  }).catch(err => {
+    const message = getListSearchErrorMessage(err)
+    if (!message) throw err
     return { error: message }
   })
   const hasSearchError = isListSearchErrorResult(dataResult)

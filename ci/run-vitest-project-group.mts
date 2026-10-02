@@ -161,8 +161,8 @@ async function main(): Promise<void> {
 }
 
 if (import.meta.main) {
-  main().catch(error => {
-    console.error(error instanceof Error ? error.message : error)
+  main().catch(err => {
+    console.error(err instanceof Error ? err.message : err)
     process.exitCode = 1
   })
 }

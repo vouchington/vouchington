@@ -112,7 +112,7 @@ async function drainBackgroundOpenAIResponse(
   })
   try {
     return await drainAsyncGenerator(events)
-  } catch (cause) {
+  } catch (err) {
     // A response that reached a terminal failed/incomplete/cancelled status (e.g. max_output_tokens)
     // is already done billing — cancelling it is a wasted request on a routine path, exactly the RPM
     // cost this whole feature exists to avoid. Only an interrupted drain (abort, network failure,
@@ -120,16 +120,16 @@ async function drainBackgroundOpenAIResponse(
     // sweeper's status check in reconcile.mts -- leaves a response worth cancelling.
     if (
       responseId &&
-      (!(cause instanceof OpenAIResponseNotCompletedError) ||
-        cause.status === 'queued' ||
-        cause.status === 'in_progress')
+      (!(err instanceof OpenAIResponseNotCompletedError) ||
+        err.status === 'queued' ||
+        err.status === 'in_progress')
     ) {
       await cancelOpenAIResponse(responseId).catch(onError)
     }
-    if (!lease && shouldLatchUnknownBilledOpenAIAttempt(cause)) {
-      await attemptHooks?.onUnknownBilledAttempt({ requestStartedAt, error: cause })
+    if (!lease && shouldLatchUnknownBilledOpenAIAttempt(err)) {
+      await attemptHooks?.onUnknownBilledAttempt({ requestStartedAt, error: err })
     }
-    throw cause
+    throw err
   } finally {
     await lease?.stopAndSettle().catch(onError)
   }

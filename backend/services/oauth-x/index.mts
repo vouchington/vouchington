@@ -85,8 +85,8 @@ export async function upsertXAccount(
       codeVerifier,
       options.signal,
     )
-  } catch (error) {
-    rethrowProviderTransportError('X', error)
+  } catch (err) {
+    rethrowProviderTransportError('X', err)
   }
   if (tokenResponse.error) {
     throw createHttpError(502, 'OAuth token exchange failed', {
@@ -97,8 +97,8 @@ export async function upsertXAccount(
   let xUser: XUserData
   try {
     xUser = await fetchXUser(tokenResponse.access_token, options.signal)
-  } catch (error) {
-    rethrowProviderTransportError('X', error)
+  } catch (err) {
+    rethrowProviderTransportError('X', err)
   }
   const providerUserData: Record<string, unknown> = {
     name: xUser.name,

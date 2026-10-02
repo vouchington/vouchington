@@ -14,8 +14,8 @@ export async function callRefundProvider<Result>(
 ): Promise<Result> {
   try {
     return await call()
-  } catch (error) {
-    throw new RefundProviderOperationError(`Stripe refund ${operation} failed`, error)
+  } catch (err) {
+    throw new RefundProviderOperationError(`Stripe refund ${operation} failed`, err)
   }
 }
 

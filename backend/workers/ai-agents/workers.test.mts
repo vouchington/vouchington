@@ -103,7 +103,7 @@ describe('ai-agents workers', () => {
     const thrown: unknown = await processAIAgentWorkerJob(makeJob(), worker, {
       ...spendCapDisabled,
       processAIAgent: mockProcessAIAgent as typeof processAIAgent,
-    }).catch((error: unknown) => error)
+    }).catch((err: unknown) => err)
 
     expect(thrown).toBe(outage)
     expect(rateLimit).not.toHaveBeenCalled()

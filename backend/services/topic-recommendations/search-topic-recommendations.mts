@@ -96,18 +96,18 @@ export async function searchTopicRecommendations(options: TopicRecommendationSea
         getCursor: row => ({ score: Number(row.vote_score), id: row.id }),
       }),
     }
-  } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error))
+  } catch (err) {
+    const localErr = err instanceof Error ? err : new Error(String(err))
     ;(
-      err as Error & {
+      localErr as Error & {
         extra?: Record<string, unknown>
         tags?: Record<string, string>
       }
     ).extra = { function: 'searchTopicRecommendations', options }
-    ;(err as Error & { tags?: Record<string, string> }).tags = {
+    ;(localErr as Error & { tags?: Record<string, string> }).tags = {
       path: 'search-topic-recommendations',
     }
-    onError(err)
-    throw err
+    onError(localErr)
+    throw localErr
   }
 }

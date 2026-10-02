@@ -157,7 +157,7 @@ describe('web-integration fetch retry', () => {
         acceptResponse: response => response.headers.has('x-request-id'),
       },
     )
-    const resultRejection = result.catch((error: unknown) => error)
+    const resultRejection = result.catch((err: unknown) => err)
     await vi.runAllTimersAsync()
 
     await expect(resultRejection).resolves.toBeInstanceOf(FetchResponseRejectedError)

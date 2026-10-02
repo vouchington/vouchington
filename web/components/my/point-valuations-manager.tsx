@@ -94,8 +94,8 @@ export function PointValuationsManager({ initialData }: { initialData: PointValu
         setNewNote('')
         onSuccess(t('extracted.my.pointValuationsManager.pointValuationAdded_e529b3a3'))
       })
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.pointValuationsManager.failedToAddPointValuation_f5379775'),
       })
     } finally {
@@ -137,8 +137,8 @@ export function PointValuationsManager({ initialData }: { initialData: PointValu
         setEditingId(null)
         onSuccess(t('extracted.my.pointValuationsManager.pointValuationUpdated_fd959a9b'))
       })
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.pointValuationsManager.failedToUpdatePointValuation_2a4e566a'),
       })
     } finally {

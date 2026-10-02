@@ -77,10 +77,10 @@ const update = createAdminTool<{ namespace: string; config: Record<string, unkno
       const result = await updateDynamicConfigNamespace(user, args.namespace, args.config)
       assert(result, 404, 'Dynamic config namespace not found')
       return { namespace: result.namespace, changed: result.changed }
-    } catch (error) {
-      if (error instanceof DynamicConfigValidationError)
-        throw createHttpError(400, error.message, { cause: error })
-      throw error
+    } catch (err) {
+      if (err instanceof DynamicConfigValidationError)
+        throw createHttpError(400, err.message, { cause: err })
+      throw err
     }
   },
 })

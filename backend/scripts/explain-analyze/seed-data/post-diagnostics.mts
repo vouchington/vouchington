@@ -26,24 +26,24 @@ export class PostSeedDiagnostics {
     try {
       mkdirSync(dirname(path), { recursive: true })
       writeFileSync(path, '')
-    } catch (error) {
-      this.#reportWriteError(error)
+    } catch (err) {
+      this.#reportWriteError(err)
     }
     this.write({ kind: 'seed_start' })
   }
 
   startObserver(backend: SeedBackend): void {
     this.write({ kind: 'backend', backend_pid: backend.pid, settings: backend })
-    this.#observer = this.#observe(backend.pid).catch(error => {
-      this.write({ kind: 'observer_error', error: String(error) })
+    this.#observer = this.#observe(backend.pid).catch(err => {
+      this.write({ kind: 'observer_error', error: String(err) })
     })
   }
 
   write(record: Record<string, unknown>): void {
     try {
       appendFileSync(this.path, `${JSON.stringify({ at: new Date().toISOString(), ...record })}\n`)
-    } catch (error) {
-      this.#reportWriteError(error)
+    } catch (err) {
+      this.#reportWriteError(err)
     }
   }
 
@@ -65,7 +65,7 @@ export class PostSeedDiagnostics {
         status: 'ok',
       })
       return result
-    } catch (error) {
+    } catch (err) {
       this.write({
         kind: 'operation',
         phase: 'end',
@@ -73,9 +73,9 @@ export class PostSeedDiagnostics {
         batch_index: batchIndex,
         elapsed_ms: Math.round((performance.now() - started) * 1000) / 1000,
         status: 'error',
-        error: String(error),
+        error: String(err),
       })
-      throw error
+      throw err
     }
   }
 
@@ -128,8 +128,8 @@ export class PostSeedDiagnostics {
         this.write({ kind: 'activity', backend_pid: backendPid, ...result.rows[0] })
         try {
           await delay(2_000, undefined, { signal: this.#controller.signal })
-        } catch (error) {
-          if (!this.#controller.signal.aborted) throw error
+        } catch (err) {
+          if (!this.#controller.signal.aborted) throw err
         }
       }
       const endStats = await this.#stats(client)
@@ -141,14 +141,14 @@ export class PostSeedDiagnostics {
           checkpointer: numericDelta(startStats.checkpointer, endStats.checkpointer),
         },
       })
-    } catch (error) {
-      this.write({ kind: 'observer_error', error: String(error) })
+    } catch (err) {
+      this.write({ kind: 'observer_error', error: String(err) })
     } finally {
       client?.release()
       try {
         await pool.end()
-      } catch (error) {
-        this.write({ kind: 'observer_error', error: String(error) })
+      } catch (err) {
+        this.write({ kind: 'observer_error', error: String(err) })
       }
     }
   }

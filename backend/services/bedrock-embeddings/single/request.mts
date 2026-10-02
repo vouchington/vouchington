@@ -42,15 +42,15 @@ export const createBedrockEmbedding = async (
       invocation: 'single',
     })
     return result
-  } catch (error: unknown) {
+  } catch (err: unknown) {
     if (
-      error instanceof Error &&
+      err instanceof Error &&
       process.env.NODE_ENV === 'test' &&
-      shouldSkipUnavailableBedrockIntegration(error)
+      shouldSkipUnavailableBedrockIntegration(err)
     ) {
-      Object.assign(error, { tags: { suppressLogging: true } })
+      Object.assign(err, { tags: { suppressLogging: true } })
     }
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error'
     trackAIEmbeddingCall({
       service: 'bedrock',
       model: BEDROCK_NOVA_MULTIMODAL_MODEL_NAME,
@@ -61,7 +61,7 @@ export const createBedrockEmbedding = async (
       entityType: options?.entityType || 'unknown',
       invocation: 'single',
     })
-    throw error
+    throw err
   }
 }
 

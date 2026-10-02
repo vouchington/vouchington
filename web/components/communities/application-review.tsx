@@ -73,10 +73,10 @@ export function ApplicationReview({ data, communitySlug, users }: ApplicationRev
         }))
       }
       refresh()
-    } catch (error) {
+    } catch (err) {
       setError(
-        error instanceof Error
-          ? error.message
+        err instanceof Error
+          ? err.message
           : t('extracted.communities.applicationReview.failedToApproveApplication_ebdd8f6e'),
       )
     } finally {
@@ -99,10 +99,10 @@ export function ApplicationReview({ data, communitySlug, users }: ApplicationRev
       setActiveAction(null)
       setRejectionReason('')
       refresh()
-    } catch (error) {
+    } catch (err) {
       setError(
-        error instanceof Error
-          ? error.message
+        err instanceof Error
+          ? err.message
           : t('extracted.communities.applicationReview.failedToRejectApplication_a6453cea'),
       )
     } finally {

@@ -108,7 +108,7 @@ describe('retrospective-save CLI', () => {
       () => {
         throw new Error('expected the process to exit nonzero')
       },
-      (error: unknown) => error,
+      (err: unknown) => err,
     )
     expect(rejection).toMatchObject({ code: 1 })
     expect((rejection as { stderr: string }).stderr).toContain('Usage:')
@@ -144,7 +144,7 @@ describe('retrospective-save CLI', () => {
       () => {
         throw new Error('expected the process to exit nonzero')
       },
-      (error: unknown) => error,
+      (err: unknown) => err,
     )
 
     expect(rejection).toMatchObject({ code: 1 })
@@ -177,7 +177,7 @@ describe('retrospective-save CLI', () => {
         '--new-root-codex-session',
       ],
       { cwd: dir },
-    ).catch((error: unknown) => error)
+    ).catch((err: unknown) => err)
 
     expect((rejection as { stderr: string }).stderr).toContain(
       '--root-codex --new-root-codex-session',
@@ -200,7 +200,7 @@ describe('retrospective-save CLI', () => {
       '--root-codex',
       '--session-id',
       'sess-1',
-    ]).catch((error: unknown) => error)
+    ]).catch((err: unknown) => err)
     const stderr = (rejection as { stderr: string }).stderr
     expect(stderr).toContain('--root-codex cannot be used with --session-id')
     expect(stderr).not.toContain('Replay with:')

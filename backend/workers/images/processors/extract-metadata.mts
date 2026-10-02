@@ -128,20 +128,20 @@ export async function processExtractImageMetadata(
         blocked: false,
       })
       .catch(resolvedDeps.onError)
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error)
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err)
     await failImageMetadata(imageId, errorMessage, resolvedDeps)
-    throw error
+    throw err
   }
 
   if (shouldEnqueueImageCreated) {
     try {
       await resolvedDeps.enqueueOnImageCreated(imageId)
-    } catch (error) {
+    } catch (err) {
       const reportError = (
-        error instanceof Error
-          ? error
-          : new Error('Failed to enqueue image-created listener', { cause: error })
+        err instanceof Error
+          ? err
+          : new Error('Failed to enqueue image-created listener', { cause: err })
       ) as ReportableError
       reportError.tags = { imageId }
       reportError.extra = {

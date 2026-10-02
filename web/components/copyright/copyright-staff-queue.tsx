@@ -48,8 +48,8 @@ export function CopyrightStaffQueue({
         await action()
         onSuccess(success)
         window.location.reload()
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: 'We could not record that copyright review action.',
           tags: { form: 'copyright-staff-review' },
         })

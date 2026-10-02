@@ -91,9 +91,9 @@ function OAuthBrokerCallbackContent() {
         await acknowledgeOAuthAuthorization(activeFlowId)
         if (cancelled) return
         window.close()
-      } catch (error) {
+      } catch (err) {
         if (!cancelled) {
-          if (isRetryableCompletionError(error)) {
+          if (isRetryableCompletionError(err)) {
             cancelPoll = scheduleOAuthCompletion(complete)
             return
           }

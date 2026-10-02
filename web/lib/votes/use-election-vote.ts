@@ -78,11 +78,11 @@ export function useElectionVote<TChoice extends Exclude<VoteChoice, null>>(
       try {
         if (next === null) await options.clearVote()
         else await options.submitVote(next)
-      } catch (error) {
+      } catch (err) {
         rollback?.()
         if (optimisticEntry) setLocalEntry({ key: electionKey, value: entry })
-        if (isEmailVerificationRequired(error)) emailRecovery?.openEmailVerificationRecovery()
-        else options.onError?.(error)
+        if (isEmailVerificationRequired(err)) emailRecovery?.openEmailVerificationRecovery()
+        else options.onError?.(err)
       } finally {
         setIsLoading(false)
       }

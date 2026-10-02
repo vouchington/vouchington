@@ -39,13 +39,13 @@ app
         ctx,
         'POST:/api/v1/conversations/:conversationId/client-generated-chat',
       )
-    } catch (error) {
+    } catch (err) {
       if (
-        getErrorStatus(error) !== 401 ||
-        getErrorResponseMessage(error, 401) !== 'Unauthorized' ||
-        getErrorResponseCode(error, 401) !== undefined
+        getErrorStatus(err) !== 401 ||
+        getErrorResponseMessage(err, 401) !== 'Unauthorized' ||
+        getErrorResponseCode(err, 401) !== undefined
       )
-        throw error
+        throw err
       ctx.setStatus(401)
       ctx.json(
         apiResponse(
@@ -119,11 +119,8 @@ app
     let modelProvider: ReturnType<typeof parseClientGeneratedChatModelProvider>
     try {
       modelProvider = parseClientGeneratedChatModelProvider(body.model_provider)
-    } catch (error) {
-      ctx.throw(
-        400,
-        error instanceof Error ? error.message : 'Invalid client-generated chat provider',
-      )
+    } catch (err) {
+      ctx.throw(400, err instanceof Error ? err.message : 'Invalid client-generated chat provider')
     }
 
     let modelName: string
@@ -139,8 +136,8 @@ app
     } else {
       try {
         modelName = normalizeFixedClientGeneratedChatModelName(modelProvider, body.model_name)
-      } catch (error) {
-        ctx.throw(400, error instanceof Error ? error.message : 'Invalid model_name')
+      } catch (err) {
+        ctx.throw(400, err instanceof Error ? err.message : 'Invalid model_name')
       }
     }
 
@@ -163,17 +160,17 @@ app
         await checkTurnSafety(message, assistantContent)
         result = await createClientGeneratedChatTurn(params)
       }
-    } catch (error) {
-      if (error instanceof ClientGeneratedTurnIdentityConflictError) {
+    } catch (err) {
+      if (err instanceof ClientGeneratedTurnIdentityConflictError) {
         ctx.setStatus(409)
         ctx.json(
           apiResponse('POST:/api/v1/conversations/:conversationId/client-generated-chat#conflict', {
-            message: error.message,
+            message: err.message,
           }),
         )
         return
       }
-      throw error
+      throw err
     }
 
     ctx.json({

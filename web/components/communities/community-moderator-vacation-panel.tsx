@@ -63,9 +63,9 @@ export function CommunityModeratorVacationPanel({
                 'extracted.communities.communityModeratorVacationPanel.communityDigestsResumed_be90a3ac',
               ),
         )
-      } catch (error) {
+      } catch (err) {
         setSuppressDigests(previous)
-        onError(error, {
+        onError(err, {
           fallback: t(
             'extracted.communities.communityModeratorVacationPanel.failedToUpdateCommunityDigestPreference_8cd7e69b',
           ),
@@ -97,9 +97,9 @@ export function CommunityModeratorVacationPanel({
             ),
           )
         }
-      } catch (error) {
+      } catch (err) {
         setActive(prev)
-        onError(error, {
+        onError(err, {
           fallback: t(
             'extracted.communities.communityModeratorVacationPanel.failedToUpdateVacationMode_247adec7',
           ),
@@ -124,9 +124,9 @@ export function CommunityModeratorVacationPanel({
             'extracted.communities.communityModeratorVacationPanel.vacationDurationUpdated_b2338847',
           ),
         )
-      } catch (error) {
+      } catch (err) {
         setDuration(prev)
-        onError(error, {
+        onError(err, {
           fallback: t(
             'extracted.communities.communityModeratorVacationPanel.failedToUpdateVacationDuration_b2cadfd0',
           ),

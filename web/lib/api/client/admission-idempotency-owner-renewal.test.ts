@@ -45,7 +45,7 @@ describe('admission idempotency owner renewal', () => {
       })
       const firstRequest = first.run(intent, () => winner.promise)
       const secondRequest = second.run(intent, () => loser.promise)
-      const secondRejection = secondRequest.catch((error: unknown) => error)
+      const secondRejection = secondRequest.catch((err: unknown) => err)
       await vi.waitFor(() => expect(Object.keys(persistedOwnerLeases(storage))).toHaveLength(2))
 
       await vi.advanceTimersByTimeAsync(ADMISSION_OWNER_LEASE_MS + 1)

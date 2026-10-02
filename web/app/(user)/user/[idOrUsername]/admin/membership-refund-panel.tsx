@@ -46,8 +46,8 @@ export function MembershipRefundPanel({ actorUserId, userId }: MembershipRefundP
     try {
       const { charges } = await fetchRefundableCharges(userId)
       dispatch({ type: 'loaded', userId, request, charges })
-    } catch (error) {
-      console.error('Failed to load refundable charges:', error)
+    } catch (err) {
+      console.error('Failed to load refundable charges:', err)
       dispatch({ type: 'empty', userId, request })
     }
   }, [userId])

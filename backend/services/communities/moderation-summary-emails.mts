@@ -66,10 +66,10 @@ async function dispatchModerationSummary(
       },
       props,
     )
-  } catch (error) {
+  } catch (err) {
     /* c8 ignore start -- Defensive cleanup/observability for per-recipient enqueue failures. */
     if (sendKey) await releaseModerationClaim(recipient.id, sendKey)
-    reportModerationDispatchError(error, recipient.id)
+    reportModerationDispatchError(err, recipient.id)
     /* c8 ignore stop */
   }
 }
@@ -78,8 +78,8 @@ async function dispatchModerationSummary(
 async function releaseModerationClaim(userId: string, sendKey: string): Promise<void> {
   try {
     await releaseUnsentModerationEmailClaim(userId, sendKey)
-  } catch (error) {
-    reportModerationDispatchError(error, userId)
+  } catch (err) {
+    reportModerationDispatchError(err, userId)
   }
 }
 

@@ -59,19 +59,19 @@ export async function reconcileExpiredBackgroundResponse(
   let raw: Response
   try {
     raw = await retrieveOpenAIResponse(row.responseId)
-  } catch (error) {
-    if (error instanceof APIError && error.status === 404) {
+  } catch (err) {
+    if (err instanceof APIError && err.status === 404) {
       const deleted = await deleteBackgroundResponseRegistration(row.responseId, row.leaseToken)
       if (!deleted) return 'lost-race'
       onError(
         new Error(
           `openai_background_responses row past OpenAI's retrieve() retention window: ${row.responseId}`,
-          { cause: error },
+          { cause: err },
         ),
       )
       return 'expired'
     }
-    throw error
+    throw err
   }
 
   try {
@@ -95,19 +95,15 @@ export async function reconcileExpiredBackgroundResponse(
       },
       dependencies,
     )
-  } catch (error) {
-    if (!(error instanceof OpenAIResponseNotCompletedError)) throw error
-    if (
-      error.status !== 'failed' &&
-      error.status !== 'incomplete' &&
-      error.status !== 'cancelled'
-    ) {
+  } catch (err) {
+    if (!(err instanceof OpenAIResponseNotCompletedError)) throw err
+    if (err.status !== 'failed' && err.status !== 'incomplete' && err.status !== 'cancelled') {
       await cancelOpenAIResponse(row.responseId)
       return 'still-active'
     }
     // Terminal usage can lag cancellation. Keep the sweeper-owned row until its short lease
     // expires so a later pass can retrieve the settled usage instead of deleting it prematurely.
-    if (!error.usage) return 'still-active'
+    if (!err.usage) return 'still-active'
     return claimAndRecordWithUncertainty(
       {
         responseId: row.responseId,
@@ -115,9 +111,9 @@ export async function reconcileExpiredBackgroundResponse(
         agentSlug: row.agentSlug,
         communityId: row.communityId,
         postId: row.postId,
-        usage: error.usage,
-        model: error.model,
-        serviceTier: error.service_tier ?? 'unknown-tier',
+        usage: err.usage,
+        model: err.model,
+        serviceTier: err.service_tier ?? 'unknown-tier',
         createdAt: row.createdAt,
       },
       dependencies,
@@ -131,11 +127,11 @@ async function claimAndRecordWithUncertainty(
 ): Promise<ReconcileBackgroundResponseResult> {
   try {
     return await dependencies.claimAndRecordBackgroundResponseUsage(params)
-  } catch (error) {
+  } catch (err) {
     onError(
-      error instanceof Error
-        ? error
-        : new Error('Background OpenAI usage ledger write failed', { cause: error }),
+      err instanceof Error
+        ? err
+        : new Error('Background OpenAI usage ledger write failed', { cause: err }),
     )
     await dependencies.latchAccountingUncertainty({
       requestDay: getUtcDayFromDate(params.createdAt),

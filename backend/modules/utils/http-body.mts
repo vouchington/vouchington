@@ -21,12 +21,12 @@ export const readResponseBodyAsBuffer = async (
       ...options,
       response: responseWithCompatibleBody(options.response, options.signal),
     })
-  } catch (error) {
-    if (error instanceof MissingResponseBodyError) throw new HttpNoBodyError(error.url)
-    if (error instanceof ResponseBodyTooLargeError) {
-      throw new HttpResponseSizeError(error.url, error.sizeBytes, error.maxSizeBytes)
+  } catch (err) {
+    if (err instanceof MissingResponseBodyError) throw new HttpNoBodyError(err.url)
+    if (err instanceof ResponseBodyTooLargeError) {
+      throw new HttpResponseSizeError(err.url, err.sizeBytes, err.maxSizeBytes)
     }
-    throw error
+    throw err
   }
 }
 
@@ -75,9 +75,9 @@ function responseWithCompatibleBody(
           } else {
             controller.enqueue(result.value)
           }
-        } catch (error) {
+        } catch (err) {
           release()
-          controller.error(error)
+          controller.error(err)
         }
       },
       async cancel(reason) {

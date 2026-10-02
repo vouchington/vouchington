@@ -66,9 +66,9 @@ export const deletePost = async (
       ])
     }
     await query.commit()
-  } catch (error) {
+  } catch (err) {
     await repairFailedImageDeliveryMutation({ postIds: [post.id] }).catch(onError)
-    throw error
+    throw err
   }
 
   void enqueueOnPostDeleted(post.id)

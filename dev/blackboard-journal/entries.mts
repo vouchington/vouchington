@@ -44,8 +44,8 @@ export async function runEntries(
   try {
     const entries = await readJournal(sessionId, env)
     return formatJournalEntries(sessionId, entries)
-  } catch (error) {
-    if (isBlackboardNotFound(error)) return `No journal entries found for session ${sessionId}.`
-    throw error
+  } catch (err) {
+    if (isBlackboardNotFound(err)) return `No journal entries found for session ${sessionId}.`
+    throw err
   }
 }

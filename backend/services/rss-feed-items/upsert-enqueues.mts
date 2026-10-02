@@ -117,8 +117,8 @@ async function enqueueRssFeedItemLanguageDetection(rows: RssFeedItemEnqueueRow[]
     try {
       // eslint-disable-next-line no-await-in-loop -- Sequential enqueues limit queue fanout pressure.
       await enqueueLanguageDetection('rss_feed_item', row.id)
-    } catch (error) {
-      onError(toError(error))
+    } catch (err) {
+      onError(toError(err))
     }
   }
 }
@@ -128,8 +128,8 @@ async function enqueueChunks<T>(items: T[], enqueue: (chunk: T[]) => unknown | P
     try {
       // eslint-disable-next-line no-await-in-loop -- Sequential chunks limit queue fanout pressure.
       await enqueue(chunk)
-    } catch (error) {
-      onError(toError(error))
+    } catch (err) {
+      onError(toError(err))
     }
   }
 }

@@ -41,14 +41,14 @@ export async function createFetchSafeTestServer(
       isAllowedPort: isFetchSafePort,
       maxBindAttempts,
     })
-  } catch (error) {
-    if (error instanceof EphemeralListenerAttemptsExhaustedError) {
+  } catch (err) {
+    if (err instanceof EphemeralListenerAttemptsExhaustedError) {
       throw new Error(
-        `failed to bind a fetch-safe test server after ${error.maxBindAttempts} attempts`,
-        { cause: error },
+        `failed to bind a fetch-safe test server after ${err.maxBindAttempts} attempts`,
+        { cause: err },
       )
     }
-    throw error
+    throw err
   }
   return createFetchSafeServerHandle(server, host, port)
 }

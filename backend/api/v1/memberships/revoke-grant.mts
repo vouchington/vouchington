@@ -37,10 +37,10 @@ app.route('/api/v1/membership-grants/:grantId').delete(async (ctx: Context) => {
   let result
   try {
     result = await revokeMembershipGrant(currentUser.id, grantId, body.reason.trim())
-  } catch (error) {
-    if (error instanceof CompletedMembershipGrantError)
+  } catch (err) {
+    if (err instanceof CompletedMembershipGrantError)
       ctx.throw(409, 'Completed membership grants cannot be revoked')
-    throw error
+    throw err
   }
   ctx.assert(result, 404, 'Membership grant not found')
   ctx.setStatus(204)

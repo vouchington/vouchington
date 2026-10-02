@@ -33,8 +33,8 @@ export function validateLocalLlmEndpointPolicyContract(
   let value: unknown
   try {
     value = JSON.parse(content)
-  } catch (error) {
-    return [`$ contains invalid JSON: ${error instanceof Error ? error.message : String(error)}`]
+  } catch (err) {
+    return [`$ contains invalid JSON: ${err instanceof Error ? err.message : String(err)}`]
   }
 
   const schemaPath = join(repoRoot, LOCAL_LLM_ENDPOINT_POLICY_SCHEMA)
@@ -44,18 +44,18 @@ export function validateLocalLlmEndpointPolicyContract(
   let schema: object
   try {
     schema = JSON.parse(readFileSync(schemaPath, 'utf8')) as object
-  } catch (error) {
+  } catch (err) {
     return [
-      `${LOCAL_LLM_ENDPOINT_POLICY_SCHEMA} contains invalid JSON: ${error instanceof Error ? error.message : String(error)}`,
+      `${LOCAL_LLM_ENDPOINT_POLICY_SCHEMA} contains invalid JSON: ${err instanceof Error ? err.message : String(err)}`,
     ]
   }
 
   let validate
   try {
     validate = new Ajv2020({ allErrors: true, strict: true }).compile(schema)
-  } catch (error) {
+  } catch (err) {
     return [
-      `${LOCAL_LLM_ENDPOINT_POLICY_SCHEMA} is not a valid schema: ${error instanceof Error ? error.message : String(error)}`,
+      `${LOCAL_LLM_ENDPOINT_POLICY_SCHEMA} is not a valid schema: ${err instanceof Error ? err.message : String(err)}`,
     ]
   }
   if (!validate(value)) return (validate.errors ?? []).map(formatAjvError)

@@ -57,9 +57,9 @@ export async function beginPushBindingReconciliationAtAuthenticationBoundary(
 ): Promise<Extract<WebPushWorkerState, { status: 'reconciling' }>> {
   try {
     return await beginPushBindingReconciliation(registration)
-  } catch (error) {
+  } catch (err) {
     await registration.unregister()
-    throw error
+    throw err
   }
 }
 

@@ -25,11 +25,11 @@ export function createBackgroundResponseRegistrationHooks(
         let lease: OwnedBackgroundResponseLease | undefined
         try {
           lease = await acquireBackgroundResponseLease({ responseId, ...params })
-        } catch (error) {
+        } catch (err) {
           onError(
-            error instanceof Error
-              ? error
-              : new Error('Background response lease acquisition failed', { cause: error }),
+            err instanceof Error
+              ? err
+              : new Error('Background response lease acquisition failed', { cause: err }),
           )
         }
         registration = { responseId, lease }

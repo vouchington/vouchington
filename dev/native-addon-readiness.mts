@@ -35,15 +35,15 @@ async function checkNativeAddon(
       requireFromConsumer = createRequire(requireFromConsumer.resolve(throughPackage))
     }
     resolvedPackagePath = requireFromConsumer.resolve(packageName)
-  } catch (error) {
-    return errorCause(error)
+  } catch (err) {
+    return errorCause(err)
   }
 
   try {
     await import(pathToFileURL(resolvedPackagePath).href)
     return null
-  } catch (error) {
-    return errorCause(error)
+  } catch (err) {
+    return errorCause(err)
   }
 }
 

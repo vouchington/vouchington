@@ -47,13 +47,13 @@ export async function refreshEntityRelationVoteStatsWithDependencies(
 ): Promise<void> {
   try {
     await dependencies.refreshFromPrimary(target)
-  } catch (refreshError) {
+  } catch (outerErr) {
     try {
       await dependencies.enqueueReconciliation([target])
-    } catch (enqueueError) {
+    } catch (err) {
       throw new Error(
-        `Primary entity-relation vote refresh failed (${refreshError instanceof Error ? refreshError.message : String(refreshError)}) and fallback enqueue also failed`,
-        { cause: enqueueError },
+        `Primary entity-relation vote refresh failed (${outerErr instanceof Error ? outerErr.message : String(outerErr)}) and fallback enqueue also failed`,
+        { cause: err },
       )
     }
   }

@@ -161,9 +161,9 @@ export async function updateMembershipFromEvent(
       outcome = await update(transaction)
       await transaction.commit()
     }
-  } catch (error) {
-    if (!options.query && error instanceof DuplicateStripeMembershipEventError) return null
-    throw error
+  } catch (err) {
+    if (!options.query && err instanceof DuplicateStripeMembershipEventError) return null
+    throw err
   }
   const membership = outcome?.membership ?? null
   if (!membership) return null

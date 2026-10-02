@@ -74,12 +74,12 @@ export function useKeyedBookmarkToggle({
       } else {
         await unbookmarkEntity(entityType, entityId, predicate)
       }
-    } catch (error) {
+    } catch (err) {
       if (ownsRequest()) {
         setActive(!next)
-        if (isRateLimitError(error)) {
+        if (isRateLimitError(err)) {
           /* c8 ignore next -- rate-limit branch requires injecting a rate-limit error */
-          toast.error(getRateLimitMessage(error))
+          toast.error(getRateLimitMessage(err))
         } else {
           toast.error(failureMessage)
         }

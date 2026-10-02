@@ -76,7 +76,7 @@ describe('processReconcileCopyrightDeliveryIntents', () => {
 
     const failure = await processReconcileCopyrightDeliveryIntents(deps).then(
       () => null,
-      (error: unknown) => error,
+      (err: unknown) => err,
     )
 
     expect(failure).toBeInstanceOf(AggregateError)

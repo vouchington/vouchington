@@ -65,8 +65,8 @@ export async function main(argv: string[]): Promise<number> {
       writeProtectedStorybookTombstone(args[0]!)
       return 0
     }
-  } catch (error) {
-    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`)
+  } catch (err) {
+    process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`)
     return 1
   }
   process.stderr.write(`${usage()}\n`)

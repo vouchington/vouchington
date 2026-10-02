@@ -41,8 +41,8 @@ export async function fetchSourceRunState(
     } catch {
       return { current: false, reason: 'malformed-response' }
     }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
     console.error(`::warning::Could not revalidate the source workflow run: ${message}`)
     return { current: false, reason: 'api-error' }
   }

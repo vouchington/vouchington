@@ -19,17 +19,17 @@ export async function clearCacheGroup(group: string): Promise<void> {
 
   try {
     await ValkeyCache.invalidateMany([...prefixes], cacheValkeyClient)
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
-    throw error
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
+    throw err
   }
 }
 
 export async function clearAllCaches(): Promise<void> {
   try {
     await ValkeyCache.invalidateMany(CACHE_FLUSH_PREFIXES, cacheValkeyClient)
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
-    throw error
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
+    throw err
   }
 }

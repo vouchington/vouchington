@@ -25,7 +25,7 @@ describe('OAuth authority and account-deletion lock races', () => {
       redirectUri: flow.redirectUri,
     }).then(
       () => ({ success: true }),
-      (error: unknown) => ({ success: false, error }),
+      (err: unknown) => ({ success: false, error: err }),
     )
     try {
       await waitForTestPostgresLockWaiter(
@@ -58,7 +58,7 @@ describe('OAuth authority and account-deletion lock races', () => {
       redirectUri: flow.redirectUri,
     }).then(
       () => ({ success: true }),
-      (error: unknown) => ({ success: false, error }),
+      (err: unknown) => ({ success: false, error: err }),
     )
     try {
       await waitForTestPostgresLockWaiter(

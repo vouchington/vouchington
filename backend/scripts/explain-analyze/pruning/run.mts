@@ -94,9 +94,9 @@ async function runPruningProof(): Promise<void> {
     if (results.length !== 20)
       throw new Error(`pruning proof expected 20 plans, got ${results.length}`)
     console.log(`Pruning proof passed ${results.length} forced custom/generic plans`)
-  } catch (error) {
-    failure = error
-    evidence.error = error instanceof Error ? error.message : stringFromUnknown(error)
+  } catch (err) {
+    failure = err
+    evidence.error = err instanceof Error ? err.message : stringFromUnknown(err)
   } finally {
     try {
       try {

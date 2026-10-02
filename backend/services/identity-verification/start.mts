@@ -85,9 +85,9 @@ export async function startIdentityVerification(
     })
     if (!session.url) throw new Error('Stripe Checkout session missing URL')
     await attachCheckout(attempt.id, session.id)
-  } catch (error) {
+  } catch (err) {
     await releaseAttempt(attempt.id).catch(onError)
-    throw error
+    throw err
   }
 
   if (!session.url) throw new Error('Stripe Checkout session missing URL')
@@ -135,7 +135,7 @@ export async function startIdentityVerification(
     await transaction.commit()
     claimCommitted =
       (rows[0] as { claim_committed?: boolean } | undefined)?.claim_committed === true
-  } catch (error) {
+  } catch (err) {
     await using transaction = await begin()
     const { rows } = await transaction(sql`/* startIdentityVerification:recover-ambiguous-claim */
         SELECT checkout_claimed_at
@@ -151,7 +151,7 @@ export async function startIdentityVerification(
       return { url: session.url }
     }
     await releaseAttachedAttempt(attempt.id, session.id).catch(onError)
-    throw error
+    throw err
   }
 
   if (!claimCommitted) {

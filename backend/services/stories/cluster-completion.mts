@@ -19,8 +19,8 @@ export async function completeClusteredStory(
   if (refreshResult) {
     try {
       await refreshResult.dispatchPostCommitEffects()
-    } catch (error) {
-      reportError(error instanceof Error ? error : new Error(String(error)))
+    } catch (err) {
+      reportError(err instanceof Error ? err : new Error(String(err)))
     }
     void (dependencies.enqueueStoryPostAgent ?? enqueueStoryPostAgent)(refreshResult.postId, {
       force: true,

@@ -53,9 +53,9 @@ export async function insertOAuthClient(
   let scopes: OAuthClient['scopes']
   try {
     scopes = parseOAuthScopes(metadata.scope)
-  } catch (error) {
-    if (error instanceof OAuthProtocolError) throw invalidClientMetadata(error.message)
-    throw error
+  } catch (err) {
+    if (err instanceof OAuthProtocolError) throw invalidClientMetadata(err.message)
+    throw err
   }
   const clientId = `voucha_${randomBytes(24).toString('base64url')}`
   const clientSecret =

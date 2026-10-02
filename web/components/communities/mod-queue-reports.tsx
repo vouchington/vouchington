@@ -82,8 +82,8 @@ export function ModQueueReports({
     try {
       const { conversation } = await openModmailThreadForReport(communitySlug, report.id)
       router.push(messagesHref(conversation))
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.communities.modQueueReports.failedToOpenModmailThread_3556da3b'),
         tags: { action: 'send-modmail', communitySlug },
       })
@@ -98,8 +98,8 @@ export function ModQueueReports({
     try {
       const { conversation } = await openModInternalThreadForReport(communitySlug, reportId)
       router.push(messagesHref(conversation))
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t(
           'extracted.communities.modQueueReports.failedToOpenInternalDiscussionThread_3243e335',
         ),
@@ -119,8 +119,8 @@ export function ModQueueReports({
       startTransition(() => {
         router.refresh()
       })
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.communities.modQueueReports.failedToClaimReport_0c3d37cb'),
         tags: { action: 'claim-report', communitySlug },
       })
@@ -138,8 +138,8 @@ export function ModQueueReports({
       startTransition(() => {
         router.refresh()
       })
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.communities.modQueueReports.failedToReleaseReportClaim_92ecdb84'),
         tags: { action: 'release-report', communitySlug },
       })
@@ -157,8 +157,8 @@ export function ModQueueReports({
       startTransition(() => {
         router.refresh()
       })
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.communities.modQueueReports.failedToEscalateReport_2c058a4e'),
         tags: { action: 'escalate-report', communitySlug },
       })
@@ -176,8 +176,8 @@ export function ModQueueReports({
       startTransition(() => {
         router.refresh()
       })
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.communities.modQueueReports.failedToRemoveEscalation_c89bb097'),
         tags: { action: 'de-escalate-report', communitySlug },
       })

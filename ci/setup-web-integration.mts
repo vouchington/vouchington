@@ -89,11 +89,11 @@ await timeStep('standalone-asset-copy', async () => {
     rmSync(webStandaloneStaticDir, { force: true, recursive: true })
     cpSync(webPublicDir, webStandalonePublicDir, { recursive: true })
     cpSync(webStaticDir, webStandaloneStaticDir, { recursive: true })
-  } catch (error) {
+  } catch (err) {
     // Stable marker for hasWebStackBuildFailureSignal, in case a runner shutdown races the
     // process before GitHub appends its own non-143 exit-code line (#10990 review).
-    process.stderr.write(`standalone-asset-copy failed: ${String(error)}\n`)
-    throw error
+    process.stderr.write(`standalone-asset-copy failed: ${String(err)}\n`)
+    throw err
   }
 })
 timings.total = performance.now() - totalStart
@@ -115,10 +115,10 @@ function writeTimingReport(): void {
         2,
       )}\n`,
     )
-  } catch (error) {
+  } catch (err) {
     // Best-effort diagnostics: a write failure (disk pressure, an unexpected path type) must not
     // abort the build or replace the real build error from timeStep's finally block.
-    process.stderr.write(`Failed to write timing report to ${timingReportPath}: ${String(error)}\n`)
+    process.stderr.write(`Failed to write timing report to ${timingReportPath}: ${String(err)}\n`)
   }
 }
 

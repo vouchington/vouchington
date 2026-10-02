@@ -46,11 +46,8 @@ export function useCopyrightEmailApprovalTargetResolution(
 async function resolveTarget(target: CopyrightEmailApprovalTarget) {
   try {
     return [target.id, await resolveCopyrightNoticeTargets(target.target_url.trim())] as const
-  } catch (error) {
-    return [
-      target.id,
-      error instanceof Error ? error.message : 'Unable to resolve this URL.',
-    ] as const
+  } catch (err) {
+    return [target.id, err instanceof Error ? err.message : 'Unable to resolve this URL.'] as const
   }
 }
 

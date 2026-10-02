@@ -67,9 +67,9 @@ export function useCommunityMembersManager({
     try {
       await updateMemberRole(community.slug, userId, role)
       router.refresh()
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next -- error path requires injecting a role update failure */
-      setError(error instanceof Error ? error.message : 'Failed to update role')
+      setError(err instanceof Error ? err.message : 'Failed to update role')
     } finally {
       setLoading(null)
     }
@@ -82,9 +82,9 @@ export function useCommunityMembersManager({
       await removeMember(community.slug, userId)
       dismissUser(userId)
       router.refresh()
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next -- error path requires injecting a remove failure */
-      setError(error instanceof Error ? error.message : 'Failed to remove member')
+      setError(err instanceof Error ? err.message : 'Failed to remove member')
     } finally {
       setLoading(null)
     }
@@ -98,8 +98,8 @@ export function useCommunityMembersManager({
       setBanDialogUserId(null)
       dismissUser(userId)
       router.refresh()
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to ban member')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to ban member')
     } finally {
       setLoading(null)
     }
@@ -112,9 +112,9 @@ export function useCommunityMembersManager({
       await transferOwnership(community.slug, userId)
       setTransferDialogUserId(null)
       router.refresh()
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next -- error path requires injecting a transfer failure */
-      setError(error instanceof Error ? error.message : 'Failed to transfer ownership')
+      setError(err instanceof Error ? err.message : 'Failed to transfer ownership')
     } finally {
       setLoading(null)
     }

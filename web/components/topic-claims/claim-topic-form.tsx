@@ -27,13 +27,13 @@ export function ClaimTopicForm({ topicIdOrSlug, onSuccess }: ClaimTopicFormProps
     try {
       const result = await createTopicClaim(topicIdOrSlug, { claimed_role: claimedRole })
       onSuccess(result.claim.id)
-    } catch (error) {
+    } catch (err) {
       setError(
-        error instanceof Error
-          ? error.message
+        err instanceof Error
+          ? err.message
           : t('extracted.topicClaims.claimTopicForm.failedToSubmitClaim_764dc1cf'),
       )
-      onError(error, {
+      onError(err, {
         fallback: t('extracted.topicClaims.claimTopicForm.anErrorOccurred_ddf785b7'),
       })
     } finally {

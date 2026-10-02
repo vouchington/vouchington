@@ -37,8 +37,8 @@ export function CopyrightAppealForm({
             : 'Appeal received. A moderator will review it.',
         )
         setReason('')
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: 'We could not submit this appeal. Please try again.',
           tags: { form: 'copyright-appeal' },
         })

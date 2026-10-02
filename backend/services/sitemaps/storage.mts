@@ -154,9 +154,9 @@ async function getJsonObject<T>(key: string): Promise<T | null> {
     const body = await response.Body?.transformToString()
     if (!body) return null
     return JSON.parse(body) as T
-  } catch (error) {
-    if (isMissingS3ObjectError(error)) return null
-    throw error
+  } catch (err) {
+    if (isMissingS3ObjectError(err)) return null
+    throw err
   }
 }
 

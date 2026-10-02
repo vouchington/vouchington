@@ -72,8 +72,8 @@ export function ValidationRuleForm({
       }
       setSaving(false)
       onSaved?.(result.validation_rule)
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t(
           'extracted.referralLinkValidations.validationRuleForm.failedToSaveRule_bf356f1f',
         ),

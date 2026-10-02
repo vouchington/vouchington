@@ -151,7 +151,7 @@ describe('story posts', () => {
         {},
         { getStoryTeller: async () => storyTeller },
       )
-      creationOutcome = creating.catch((error: unknown) => error)
+      creationOutcome = creating.catch((err: unknown) => err)
       await vi.waitFor(async () => {
         await expect(isTestAuthorPublicationLifecycleLockWaiting(storyTeller.id)).resolves.toBe(
           true,

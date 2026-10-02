@@ -291,8 +291,8 @@ async function expectNarrowPublicEmbedQuery(
     expect(queryText).not.toContain('AS display_meta_tags')
     expect(queryText).toContain('THEN c.embed_metadata ELSE NULL END AS embed_metadata')
     expect(query!.values).toContain(false)
-  } catch (error) {
+  } catch (err) {
     stopTestQueryCapture()
-    throw error
+    throw err
   }
 }

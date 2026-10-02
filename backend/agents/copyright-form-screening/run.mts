@@ -45,9 +45,9 @@ export async function runCopyrightFormScreeningAgent(
       model: DEFAULT_AGENT_MODEL,
     })
     return result ? recommendation : null
-  } catch (error) {
+  } catch (err) {
     await failCopyrightFormScreening(attempt)
-    throw error
+    throw err
   }
 }
 

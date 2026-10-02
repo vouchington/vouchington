@@ -46,8 +46,8 @@ describe('parse-llm-json', () => {
     let caught: SyntaxError | null = null
     try {
       parseLLMJsonResponse('not json at all')
-    } catch (error) {
-      caught = error as SyntaxError
+    } catch (err) {
+      caught = err as SyntaxError
     }
     expect(caught).toBeInstanceOf(SyntaxError)
     expect(caught?.cause).toBeInstanceOf(SyntaxError)
@@ -58,8 +58,8 @@ describe('parse-llm-json', () => {
     let caught: SyntaxError | null = null
     try {
       parseLLMJsonResponse(longInvalid)
-    } catch (error) {
-      caught = error as SyntaxError
+    } catch (err) {
+      caught = err as SyntaxError
     }
     expect(caught).toBeInstanceOf(SyntaxError)
     const syntaxError = caught!

@@ -26,8 +26,8 @@ export function normalizeImageOrigin(configured: string): string {
   let url: URL
   try {
     url = new URL(configured.trim())
-  } catch (error) {
-    throw new Error('IMAGE_ORIGIN must be a valid URL', { cause: error })
+  } catch (err) {
+    throw new Error('IMAGE_ORIGIN must be a valid URL', { cause: err })
   }
 
   if (

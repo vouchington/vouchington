@@ -30,9 +30,9 @@ export function parseFrontMatter(markdown: string): FrontMatterFields {
   let parsed: unknown
   try {
     parsed = load(lines.slice(1, endIndex).join('\n'))
-  } catch (error) {
-    throw new Error(`retrospective doc front matter is not valid YAML: ${String(error)}`, {
-      cause: error,
+  } catch (err) {
+    throw new Error(`retrospective doc front matter is not valid YAML: ${String(err)}`, {
+      cause: err,
     })
   }
   if (typeof parsed !== 'object' || parsed === null) {

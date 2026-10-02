@@ -90,10 +90,10 @@ export async function processRssFeedImportRow(
       result.status as CompletedImportRssFeedStatus,
       result.entity_id!,
     )
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    const finalFailure = isFinalAttempt || error instanceof UnrecoverableError
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    const finalFailure = isFinalAttempt || err instanceof UnrecoverableError
     await updateRssFeedImportRowFailed(row.id, message, { isFinalAttempt: finalFailure })
-    throw error
+    throw err
   }
 }

@@ -25,8 +25,8 @@ export async function getEntries(input: GetEntriesInput): Promise<SessionEntry[]
       entries.push(entry)
     }
     return entries
-  } catch (error) {
-    throw new Error(`get failed: ${formatError(error)}`, { cause: error })
+  } catch (err) {
+    throw new Error(`get failed: ${formatError(err)}`, { cause: err })
   }
 }
 
@@ -41,7 +41,7 @@ export async function appendEntry(input: AppendEntryInput): Promise<SessionEntry
   const entries = input.entries ?? createEntriesClient(input.connection)
   try {
     return await entries.append({ sessionId: input.sessionId, data: input.data })
-  } catch (error) {
-    throw new Error(`append failed: ${formatError(error)}`, { cause: error })
+  } catch (err) {
+    throw new Error(`append failed: ${formatError(err)}`, { cause: err })
   }
 }

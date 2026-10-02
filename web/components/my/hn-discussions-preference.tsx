@@ -27,9 +27,9 @@ export function HnDiscussionsPreference({
     try {
       await updateMyUser(userId, { hn_discussions: nextEnabled })
       toast.success(t('extracted.my.preferencesForm.hackerNewsDiscussionsUpdated_0f9827b3'))
-    } catch (error) {
+    } catch (err) {
       setEnabled(previous)
-      onError(error, {
+      onError(err, {
         fallback: t('extracted.my.privacyForm.failedToUpdatePrivacySetting_d08bc692'),
         tags: { form: 'my-preferences', field: 'hn_discussions' },
       })

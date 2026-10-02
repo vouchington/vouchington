@@ -28,7 +28,7 @@ export async function completeBlueskyCallback(
   const signal = createProviderOperationSignal()
   try {
     return await (await getClient(signal)).callback(params)
-  } catch (error) {
-    rethrowProviderTransportError('Bluesky', error)
+  } catch (err) {
+    rethrowProviderTransportError('Bluesky', err)
   }
 }

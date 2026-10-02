@@ -110,8 +110,8 @@ export async function upsertGithubAccount(
       options.codeVerifier,
       options.signal,
     )
-  } catch (error) {
-    rethrowProviderTransportError('GitHub', error)
+  } catch (err) {
+    rethrowProviderTransportError('GitHub', err)
   }
   if (tokenResponse.error) {
     throw createHttpError(502, 'OAuth token exchange failed', {
@@ -126,8 +126,8 @@ export async function upsertGithubAccount(
       fetchGithubUser(tokenResponse.access_token, options.signal),
       fetchGithubVerifiedPrimaryEmail(tokenResponse.access_token, options.signal),
     ])
-  } catch (error) {
-    rethrowProviderTransportError('GitHub', error)
+  } catch (err) {
+    rethrowProviderTransportError('GitHub', err)
   }
   const providerUserData: Record<string, unknown> = {
     login: githubUser.login,

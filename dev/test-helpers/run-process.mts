@@ -64,8 +64,8 @@ export async function runProcess(
         }, timeoutMs)
   try {
     ;({ stdout, stderr } = await pending)
-  } catch (error) {
-    const result = error as ExecFileError
+  } catch (err) {
+    const result = err as ExecFileError
     code = typeof result.code === 'number' ? result.code : null
     errno = typeof result.code === 'string' ? result.code : undefined
     signal = result.signal ?? null

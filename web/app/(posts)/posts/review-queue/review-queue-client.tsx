@@ -56,8 +56,8 @@ export function AdminReviewQueueClient({ initialData }: { initialData: AdminRevi
         )
         toast.success(status === 'approved' ? 'Post approved' : 'Post rejected')
       }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to update post')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update post')
     } finally {
       setActionPostId(null)
     }

@@ -75,12 +75,12 @@ async function performStoryPostRelatedUrlProjectionLeaseRenewal(
   try {
     const accepted = await state.renew(state.work)
     if (!accepted) state.ownershipLost = true
-  } catch (error) {
+  } catch (err) {
     state.ownershipLost = true
     state.renewalError =
-      error instanceof Error
-        ? error
-        : new Error('Story projection lease renewal failed', { cause: error })
+      err instanceof Error
+        ? err
+        : new Error('Story projection lease renewal failed', { cause: err })
   }
 }
 

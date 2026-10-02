@@ -160,7 +160,7 @@ describe('flushQueues', () => {
     close.mockResolvedValue(undefined)
 
     const flush = flushQueues()
-    const flushError = flush.catch(caught => caught)
+    const flushError = flush.catch(err => err)
     await vi.waitFor(() => expect(obliterate.mock.calls.length).toBeGreaterThanOrEqual(2))
     expect(close).not.toHaveBeenCalled()
 
@@ -251,7 +251,7 @@ describe('flushQueues', () => {
     close.mockResolvedValue(undefined)
 
     const flush = flushQueues(controller.signal)
-    const flushRejection = flush.catch((error: unknown) => error)
+    const flushRejection = flush.catch((err: unknown) => err)
     await vi.waitFor(() => expect(obliterate.mock.calls.length).toBeGreaterThanOrEqual(2))
     aborter.resolve()
 

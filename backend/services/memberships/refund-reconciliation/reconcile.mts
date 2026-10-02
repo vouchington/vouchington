@@ -45,10 +45,10 @@ export async function reconcileLeasedRefundOperation<Context>(
 ): Promise<void> {
   try {
     await reconcileLeasedRefundOperationProviderWork(lease, policy, operations)
-  } catch (error) {
-    if (!(error instanceof RefundProviderOperationError) || !policy.providerFailuresAreDurable)
-      throw unwrapRefundProviderOperationError(error)
-    await handleRefundProviderOutcome(policy, lease, error.message)
+  } catch (err) {
+    if (!(err instanceof RefundProviderOperationError) || !policy.providerFailuresAreDurable)
+      throw unwrapRefundProviderOperationError(err)
+    await handleRefundProviderOutcome(policy, lease, err.message)
   }
 }
 

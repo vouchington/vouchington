@@ -56,16 +56,16 @@ export async function assertRssFeedUrlExists(
     if (!result.feed) {
       throw createMissingFeedContentError()
     }
-  } catch (error) {
+  } catch (err) {
     if (
-      error &&
-      typeof error === 'object' &&
-      'statusCode' in error &&
-      'code' in error &&
-      (error as { statusCode?: number }).statusCode === 422 &&
-      (error as { code?: string }).code === MISSING_FEED_CONTENT_ERROR_CODE
+      err &&
+      typeof err === 'object' &&
+      'statusCode' in err &&
+      'code' in err &&
+      (err as { statusCode?: number }).statusCode === 422 &&
+      (err as { code?: string }).code === MISSING_FEED_CONTENT_ERROR_CODE
     ) {
-      throw error
+      throw err
     }
     assert(false, 422, 'RSS feed URL must return a valid RSS, Atom, or JSON feed')
   }
@@ -108,24 +108,24 @@ export async function fetchAndClassifyFeed(
     }
     if (!result.feed) throw createMissingFeedContentError()
     parsedFeed = result.feed
-  } catch (error) {
+  } catch (err) {
     // 1. Re-throw the explicit missing-content 422 we created ourselves.
     if (
-      error &&
-      typeof error === 'object' &&
-      'statusCode' in error &&
-      'code' in error &&
-      (error as { statusCode?: number }).statusCode === 422 &&
-      (error as { code?: string }).code === MISSING_FEED_CONTENT_ERROR_CODE
+      err &&
+      typeof err === 'object' &&
+      'statusCode' in err &&
+      'code' in err &&
+      (err as { statusCode?: number }).statusCode === 422 &&
+      (err as { code?: string }).code === MISSING_FEED_CONTENT_ERROR_CODE
     ) {
-      throw error
+      throw err
     }
     // 2. If the URL served HTML (content-type mismatch), attempt RSS autodiscovery.
     //    CrawlerInvalidContentTypeError has status=415, not statusCode=422, so it doesn't
     //    collide with the rethrow above.
     if (
-      error instanceof CrawlerInvalidContentTypeError &&
-      error.contentType.toLowerCase().includes('html')
+      err instanceof CrawlerInvalidContentTypeError &&
+      err.contentType.toLowerCase().includes('html')
     ) {
       try {
         const discovered = await discoverFeedUrlFromHtmlFn(rssFeedUrl)

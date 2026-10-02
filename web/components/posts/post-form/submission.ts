@@ -99,14 +99,14 @@ async function updateExistingPost(
   if (input.postType === 'review') {
     try {
       await syncReviewRatings(saved, post, input.reviewTopics)
-    } catch (error) {
-      throw new PostSavedWithRatingError(saved, error)
+    } catch (err) {
+      throw new PostSavedWithRatingError(saved, err)
     }
   }
-  await syncImages(saved, post, uploadedImages).catch(error => {
+  await syncImages(saved, post, uploadedImages).catch(err => {
     toast.error(
-      error instanceof ApiError
-        ? `Post saved, but images failed: ${error.message}`
+      err instanceof ApiError
+        ? `Post saved, but images failed: ${err.message}`
         : 'Post saved, but images could not be updated. Please try again.',
     )
   })

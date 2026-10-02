@@ -13,8 +13,8 @@ export function workerQueuePolicyCommandOutput(command: string | undefined): str
 if (import.meta.main) {
   try {
     process.stdout.write(`${workerQueuePolicyCommandOutput(process.argv[2])}\n`)
-  } catch (error) {
-    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`)
+  } catch (err) {
+    process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`)
     process.exit(1)
   }
 }

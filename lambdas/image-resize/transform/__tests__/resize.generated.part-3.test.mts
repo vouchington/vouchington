@@ -29,7 +29,7 @@ describe('transformImage', () => {
         lossless: false,
         progressive: false,
         format: 'jpeg',
-      }).catch(e => e)
+      }).catch(err => err)
       expect(errTransform).toBeInstanceOf(TransformError)
       expect(errTransform.statusCode).toBe(500)
     })

@@ -44,8 +44,8 @@ export async function holdTestFinalPurgeUserLifecycle(userId: string) {
         await transaction[Symbol.asyncDispose]()
       },
     }
-  } catch (error) {
+  } catch (err) {
     await transaction[Symbol.asyncDispose]()
-    throw error
+    throw err
   }
 }

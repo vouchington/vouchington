@@ -87,8 +87,8 @@ async function fetchAndValidateClientIdMetadataDocument(
       maxRedirects: 0,
       signal: requestController.signal,
     })
-  } catch (error) {
-    throw unavailableClientIdMetadata(error)
+  } catch (err) {
+    throw unavailableClientIdMetadata(err)
   } finally {
     clearTimeout(requestTimeout)
   }
@@ -104,9 +104,9 @@ async function fetchAndValidateClientIdMetadataDocument(
       maxSizeBytes: CLIENT_ID_METADATA_MAX_SIZE_BYTES,
       signal: AbortSignal.timeout(CLIENT_ID_METADATA_BODY_TIMEOUT_MS),
     })
-  } catch (error) {
+  } catch (err) {
     await cancelResponseBody(response)
-    throw unavailableClientIdMetadata(error)
+    throw unavailableClientIdMetadata(err)
   }
   let input: unknown
   try {

@@ -52,7 +52,7 @@ async function run(): Promise<void> {
   }
 }
 
-run().catch(error => {
-  console.error(error)
+run().catch(err => {
+  console.error(err)
   process.exitCode = 1
 })

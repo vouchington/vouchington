@@ -68,13 +68,13 @@ async function streamImageStateUntilTerminal(
           if (settled) return
           applyState(state)
         })
-        .catch(error => {
+        .catch(err => {
           if (settled) return
-          if (error instanceof ApiError && error.status < 500 && error.status !== 429) {
-            settle(() => reject(error))
+          if (err instanceof ApiError && err.status < 500 && err.status !== 429) {
+            settle(() => reject(err))
             return
           }
-          const retryAfterMs = getImageUploadRetryAfterMs(error)
+          const retryAfterMs = getImageUploadRetryAfterMs(err)
           if (retryAfterMs !== null) {
             scheduleProbe(retryAfterMs)
             return
@@ -82,7 +82,7 @@ async function streamImageStateUntilTerminal(
           probeErrors += 1
           if (probeErrors >= POLL_MAX_ERRORS) {
             settle(() =>
-              reject(error instanceof Error ? error : new Error('Image upload probe failed')),
+              reject(err instanceof Error ? err : new Error('Image upload probe failed')),
             )
           }
         })

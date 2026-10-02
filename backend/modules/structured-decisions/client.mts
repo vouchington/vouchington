@@ -67,19 +67,19 @@ async function attemptDecision(options: AttemptOptions): Promise<StructuredDecis
       body: JSON.stringify(options.dispatch.body),
       signal: options.signal,
     })
-  } catch (error) {
+  } catch (err) {
     // Checked before classifying the error as ambiguous: `AbortSignal.timeout`'s abort surfaces
     // as a `DOMException` named `TimeoutError`, which `isNetworkError` also treats as a network
     // failure -- without this ordering, every caller-driven timeout/cancellation would latch an
     // uncertainty record it never actually caused.
     throwIfAborted(options.signal)
-    if (isNetworkError(error)) await latchUnknownBilledAttempt(options, error)
+    if (isNetworkError(err)) await latchUnknownBilledAttempt(options, err)
     throw new StructuredDecisionError(
       'provider-error',
       'Structured-decision transport failed.',
       undefined,
       {
-        cause: error,
+        cause: err,
         failure: { retryClass: classifyProviderFailure(options.transport, undefined, undefined) },
       },
     )
@@ -110,16 +110,16 @@ async function decodeBilledResponse(
   let raw: unknown
   try {
     raw = await response.json()
-  } catch (error) {
+  } catch (err) {
     // Any failure reading/parsing the body of a 2xx response is ambiguous, not just a
     // `SyntaxError` -- a truncated stream throws a plain connection error from `.json()` too, and
     // it is exactly as billing-ambiguous as malformed JSON.
-    await latchUnknownBilledAttempt(options, error)
+    await latchUnknownBilledAttempt(options, err)
     throw new StructuredDecisionError(
       'invalid-response',
       'Provider returned malformed JSON.',
       undefined,
-      { cause: error },
+      { cause: err },
     )
   }
   // Usage is only validated/reported when a caller actually wants billing recorded: a caller

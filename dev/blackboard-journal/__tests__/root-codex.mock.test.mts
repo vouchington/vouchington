@@ -110,7 +110,7 @@ describe('runAppend root-Codex identity', () => {
       ],
       HOSTED_ENV,
       dir,
-    ).catch(error => error)
+    ).catch(err => err)
     if (!(error instanceof BlackboardJournalError)) throw new TypeError('unreachable')
     expect(error.agent).toBe('codex')
     expect(error.sessionIdArg).toMatch(/^codex-/)

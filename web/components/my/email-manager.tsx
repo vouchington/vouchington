@@ -46,8 +46,8 @@ export function EmailManager({ initialData, initialEmailAddresses }: Props) {
       setPendingEmail(result.email_address)
       setStep('verify')
       toast.info(t('extracted.my.emailManager.verificationCodeSentCheckYourEmail_b2532b31'))
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.emailManager.failedToSendVerificationCode_6401f8f4'),
         tags: { form: 'my-email-add' },
       })
@@ -68,8 +68,8 @@ export function EmailManager({ initialData, initialEmailAddresses }: Props) {
       setToken('')
       setPendingEmail('')
       onSuccess(t('extracted.my.emailManager.emailVerified_bdfb1e4f'))
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.emailManager.invalidOrExpiredVerificationCode_9b5b98fe'),
         tags: { form: 'my-email-verify' },
       })
@@ -91,8 +91,8 @@ export function EmailManager({ initialData, initialEmailAddresses }: Props) {
       const data = await setPrimaryMyEmailAddress(emailAddress)
       resetToFirstPage?.(data)
       onSuccess(t('extracted.my.emailManager.primaryEmailUpdated_9a61888f'))
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.emailManager.failedToUpdatePrimaryEmail_a080bb12'),
         tags: { form: 'my-email-add' },
       })
@@ -107,8 +107,8 @@ export function EmailManager({ initialData, initialEmailAddresses }: Props) {
       await deleteMyEmailAddress(emailAddress)
       removeEmail(emailAddress)
       onSuccess(t('extracted.my.emailManager.emailRemoved_89fcd2a8'))
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.emailManager.failedToRemoveEmailAddress_f0b3111b'),
         tags: { form: 'my-email-add' },
       })

@@ -59,14 +59,14 @@ export async function reconcileGooglePlayRtdnNotification(options: {
       applicationId: context.applicationId,
       purchaseToken,
     })
-  } catch (error) {
+  } catch (err) {
     if (
-      error instanceof GooglePlaySubscriptionLookupError &&
-      error.invalidPurchaseToken &&
-      error.purchaseTokenDigest === createHash('sha256').update(purchaseToken).digest('hex')
+      err instanceof GooglePlaySubscriptionLookupError &&
+      err.invalidPurchaseToken &&
+      err.purchaseTokenDigest === createHash('sha256').update(purchaseToken).digest('hex')
     )
       return rejectNotification(context.evidenceId, 'invalid_evidence')
-    throw error
+    throw err
   }
   await using query = await beginTransaction()
   const { lineageId } = await persistGooglePlayTokenLineage(

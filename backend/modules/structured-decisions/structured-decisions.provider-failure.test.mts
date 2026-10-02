@@ -35,7 +35,7 @@ async function failureOf(
     .mockResolvedValue(
       new Response(typeof body === 'string' ? body : JSON.stringify(body), { status, headers }),
     )
-  const error = await decide(fetch).catch((caught: unknown) => caught)
+  const error = await decide(fetch).catch((err: unknown) => err)
   expect(fetch).toHaveBeenCalledOnce()
   expect(error).toBeInstanceOf(StructuredDecisionError)
   return error as StructuredDecisionError
@@ -139,7 +139,7 @@ describe('structured-decision provider failure', () => {
     const fetch = vi
       .fn<StructuredDecisionFetch>()
       .mockResolvedValue(makeStructuredDecisionResponse({ not: 'a decision' }))
-    const error = await decide(fetch).catch((caught: unknown) => caught)
+    const error = await decide(fetch).catch((err: unknown) => err)
     expect(error).toMatchObject({ code: 'invalid-response', retryClass: undefined })
   })
 

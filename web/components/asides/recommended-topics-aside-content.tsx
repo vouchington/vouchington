@@ -51,11 +51,11 @@ export function RecommendedTopicsAsideContent({
     try {
       await bookmarkEntity('topic', topicId, 'follow')
       setFollowed(prev => new Set([...prev, topicId]))
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next 2 -- error path requires injecting a follow failure */
       const message =
-        error instanceof ApiError
-          ? error.message
+        err instanceof ApiError
+          ? err.message
           : t('extracted.asides.recommendedTopicsAsideContent.failedToFollowTopic_82dd9258')
       toast.error(message)
     } finally {
@@ -73,11 +73,11 @@ export function RecommendedTopicsAsideContent({
     try {
       await bookmarkEntity('topic', topicId, 'dismiss_recommendation')
       setDismissed(prev => new Set([...prev, topicId]))
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next 2 -- error path requires injecting a dismiss failure */
       const message =
-        error instanceof ApiError
-          ? error.message
+        err instanceof ApiError
+          ? err.message
           : t('extracted.asides.recommendedTopicsAsideContent.failedToDismiss_78d9fad2')
       toast.error(message)
     } finally {

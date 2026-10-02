@@ -80,8 +80,8 @@ export function ReferralLinksManager({ initialLinks, initialPageInfo, hasPlusTie
         setEditingId(null)
         toast.success(t('extracted.my.referralLinksManager.labelUpdated_1e4f4b5d'))
       })
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.referralLinksManager.failedToUpdateLabel_cee33cf4'),
       })
     }
@@ -108,8 +108,8 @@ export function ReferralLinksManager({ initialLinks, initialPageInfo, hasPlusTie
             : t('extracted.my.referralLinksManager.linkActivated_25b23bff'),
         )
       })
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.referralLinksManager.failedToUpdateLink_9a4cc50c'),
       })
     }
@@ -131,8 +131,8 @@ export function ReferralLinksManager({ initialLinks, initialPageInfo, hasPlusTie
         }))
         onSuccess(t('extracted.my.referralLinksManager.unfurlRequestedPerCardLinksWill_f4bc1558'))
       })
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.referralLinksManager.failedToRequestUnfurl_9e86096e'),
       })
     }
@@ -146,8 +146,8 @@ export function ReferralLinksManager({ initialLinks, initialPageInfo, hasPlusTie
         setConfirmingDeleteId(null)
         toast.success(t('extracted.my.referralLinksManager.referralLinkRemoved_89f3e010'))
       })
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.referralLinksManager.failedToRemoveLink_dadf1223'),
       })
     }

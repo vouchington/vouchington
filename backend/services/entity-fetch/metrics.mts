@@ -188,9 +188,9 @@ function wrapRefresh(
   return async (...keys: unknown[]): Promise<void> => {
     try {
       return await fn(...keys)
-    } catch (error) {
-      onError(error as Error)
-      throw error
+    } catch (err) {
+      onError(err as Error)
+      throw err
     }
   }
 }

@@ -80,13 +80,13 @@ async function handleRequest(
       ...(requestId ? { requestId } : {}),
     }
     runWithSessionRequestContext(value, () => listener(req, res))
-  } catch (error) {
-    logInvalidClientInfo(path, error)
+  } catch (err) {
+    logInvalidClientInfo(path, err)
     if (!dependencies.isEnforced()) {
       runWithSessionRequestContext(null, () => listener(req, res))
       return
     }
-    if (!res.headersSent) writeInvalidClientInfo(res, req, error)
+    if (!res.headersSent) writeInvalidClientInfo(res, req, err)
   }
 }
 

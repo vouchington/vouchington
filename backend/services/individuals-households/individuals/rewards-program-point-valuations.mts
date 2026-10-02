@@ -94,15 +94,15 @@ export const createIndividualRewardsProgramPointValuation = async (
       )
       RETURNING id
     `))
-  } catch (error) {
-    const pgError = error as { code?: string; constraint?: string }
+  } catch (err) {
+    const pgError = err as { code?: string; constraint?: string }
     if (pgError.code === '23503') {
       assert(false, 422, 'Invalid rewards_program_id')
     }
     if (pgError.code === '23505' && isDuplicatePointValuationConstraint(pgError.constraint)) {
       assert(false, 409, 'You already have a valuation for this rewards program')
     }
-    throw error
+    throw err
   }
   return getIndividualRewardsProgramPointValuationById(currentUser, user, rows[0].id, {
     readOnly: false,

@@ -56,9 +56,9 @@ export function CommunityBansPanel({ community, initialData }: Props) {
       setLiftedAtByUserId(prev => ({ ...prev, [userId]: new Date().toISOString() }))
       setLiftingUserId(null)
       router.refresh()
-    } catch (error) {
+    } catch (err) {
       setLiftingUserId(null)
-      setLiftError(error instanceof Error ? error.message : 'Failed to lift ban')
+      setLiftError(err instanceof Error ? err.message : 'Failed to lift ban')
     }
   }
 

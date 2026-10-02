@@ -48,8 +48,8 @@ export function EmailVerificationRecoveryDialog({
       const result = await requestMyEmailAddressVerification(email)
       setPendingEmail(result.email_address)
       setStep('verify')
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: 'Failed to send verification code.',
         tags: { form: 'email-recovery-add' },
       })
@@ -66,8 +66,8 @@ export function EmailVerificationRecoveryDialog({
       await verifyMyEmailAddress(pendingEmail, value)
       reset()
       onVerified()
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: 'Invalid or expired verification code.',
         tags: { form: 'email-recovery-verify' },
       })

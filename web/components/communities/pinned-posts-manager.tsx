@@ -35,13 +35,13 @@ export function PinnedPostsManager({ communitySlug, posts, initialPinnedPosts }:
     try {
       await setCommunityPinnedPosts(communitySlug, newPostIds)
       setPinnedPostIds(newPostIds)
-    } catch (error) {
+    } catch (err) {
       toast.error(
         t('extracted.communities.pinnedPostsManager.failedToUpdatePinnedPosts_5846d6ad'),
         {
           description:
-            error instanceof ApiError
-              ? error.message
+            err instanceof ApiError
+              ? err.message
               : t('extracted.communities.pinnedPostsManager.anErrorOccurred_ddf785b7'),
         },
       )

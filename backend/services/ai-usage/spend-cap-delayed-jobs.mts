@@ -61,13 +61,13 @@ async function registerDelayedJob<T extends SpendCapDelayData>(
   try {
     await job.updateData({ ...job.data, openAiSpendCapDelayedDay: day })
     await registry.hset(key, { [field]: MARKED })
-  } catch (error) {
+  } catch (err) {
     await abortOpenAiSpendCapDelayedJobRegistration(
       key,
       field,
       registration.generation,
       registry,
-      error,
+      err,
     )
   }
   return registration

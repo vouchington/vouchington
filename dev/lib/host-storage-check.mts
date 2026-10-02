@@ -86,14 +86,14 @@ async function resolveCandidate(
   let resolvedPath: string
   try {
     resolvedPath = await dependencies.realpath(candidate.path)
-  } catch (error) {
-    return { issue: makeResolutionIssue(candidate, errorMessage(error)) }
+  } catch (err) {
+    return { issue: makeResolutionIssue(candidate, errorMessage(err)) }
   }
   try {
     const pathStat = await dependencies.stat(resolvedPath)
     return { resolved: { ...candidate, device: pathStat.dev, resolvedPath } }
-  } catch (error) {
-    return { issue: makeProbeIssue({ ...candidate, path: resolvedPath }, errorMessage(error)) }
+  } catch (err) {
+    return { issue: makeProbeIssue({ ...candidate, path: resolvedPath }, errorMessage(err)) }
   }
 }
 
@@ -109,7 +109,7 @@ async function probeFilesystem(
   try {
     const filesystem = await dependencies.statfs(representative.resolvedPath)
     availableBytes = filesystem.bavail * filesystem.bsize
-  } catch (error) {
+  } catch (err) {
     const required = candidates.some(candidate => candidate.required)
     return {
       issues: [
@@ -122,7 +122,7 @@ async function probeFilesystem(
               : representative.recovery,
             required,
           },
-          errorMessage(error),
+          errorMessage(err),
         ),
       ],
     }

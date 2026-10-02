@@ -52,8 +52,8 @@ export function runToolingDependencyCruiser(
 if (import.meta.main) {
   try {
     process.exitCode = runToolingDependencyCruiser(process.argv.slice(2))
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : error)
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : err)
     process.exitCode = 1
   }
 }

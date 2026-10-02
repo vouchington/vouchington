@@ -126,17 +126,17 @@ export async function fetchWithTransportRetry(
     try {
       // oxlint-disable-next-line no-await-in-loop -- each attempt must settle (or hit its own ceiling) before deciding whether to retry
       response = await fetch(url, { ...init, signal: AbortSignal.timeout(attemptTimeoutMs) })
-    } catch (error) {
-      lastError = error
-      if (!isRetryableTransportError(error, idempotent)) throw error
+    } catch (err) {
+      lastError = err
+      if (!isRetryableTransportError(err, idempotent)) throw err
 
       if (attempt === 1) retryDeadline = Date.now() + RETRY_BUDGET_MS
 
       const backoffMs = RETRY_BACKOFFS_MS[attempt - 1]
-      if (backoffMs === undefined || retryDeadline! - Date.now() <= backoffMs) throw error
+      if (backoffMs === undefined || retryDeadline! - Date.now() <= backoffMs) throw err
 
       process.stderr.write(
-        `[fetch-retry] ${options.label}: attempt ${attempt} failed (${describeError(error)}), retrying in ${backoffMs}ms\n`,
+        `[fetch-retry] ${options.label}: attempt ${attempt} failed (${describeError(err)}), retrying in ${backoffMs}ms\n`,
       )
       // oxlint-disable-next-line no-await-in-loop -- intentional backoff between retry attempts.
       await delay(backoffMs)
@@ -182,16 +182,16 @@ export async function retryOnTransportError<T>(
     try {
       // oxlint-disable-next-line no-await-in-loop -- each attempt must settle before deciding whether to retry the whole operation
       return await attempt()
-    } catch (error) {
-      if (!isRetryableTransportError(error, options.idempotent)) throw error
+    } catch (err) {
+      if (!isRetryableTransportError(err, options.idempotent)) throw err
 
       if (attemptNumber === 1) retryDeadline = Date.now() + RETRY_BUDGET_MS
 
       const backoffMs = RETRY_BACKOFFS_MS[attemptNumber - 1]
-      if (backoffMs === undefined || retryDeadline! - Date.now() <= backoffMs) throw error
+      if (backoffMs === undefined || retryDeadline! - Date.now() <= backoffMs) throw err
 
       process.stderr.write(
-        `[fetch-retry] ${options.label}: attempt ${attemptNumber} failed (${describeError(error)}), retrying whole operation in ${backoffMs}ms\n`,
+        `[fetch-retry] ${options.label}: attempt ${attemptNumber} failed (${describeError(err)}), retrying whole operation in ${backoffMs}ms\n`,
       )
       // oxlint-disable-next-line no-await-in-loop -- intentional backoff between retry attempts.
       await delay(backoffMs)

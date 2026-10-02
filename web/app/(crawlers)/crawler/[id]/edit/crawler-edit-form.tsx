@@ -49,8 +49,8 @@ export function CrawlerEditForm({ crawler, crawlerId }: CrawlerEditFormProps) {
 
       onSuccess(t('extracted.edit.crawlerEditForm.crawlerUpdated_26524a0e'))
       push(createCrawlerPathname({ id: crawlerId }))
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.edit.crawlerEditForm.failedToUpdateCrawler_f838359a'),
         tags: { form: 'admin-crawler-edit' },
       })

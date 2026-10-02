@@ -120,8 +120,8 @@ function boundMessages(count: number): CatalogMessage[] {
 function thrownBy(action: () => unknown): unknown {
   try {
     action()
-  } catch (error) {
-    return error
+  } catch (err) {
+    return err
   }
   throw new Error('expected the action to throw')
 }

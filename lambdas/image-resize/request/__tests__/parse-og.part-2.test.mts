@@ -72,27 +72,27 @@ describe('parseOgRequest — signature verification', () => {
   it('rejects a missing signature with 403', () => {
     const base64url = toOgBase64url(GENERIC_PARAMS)
     const event = createMockEvent(base64url) // no sig
-    let err: RequestParseError | undefined
+    let expectedErr: RequestParseError | undefined
     try {
       parseOgRequest(event)
-    } catch (caught) {
-      err = caught as RequestParseError
+    } catch (err) {
+      expectedErr = err as RequestParseError
     }
-    expect(err).toBeInstanceOf(RequestParseError)
-    expect(err?.statusCode).toBe(403)
+    expect(expectedErr).toBeInstanceOf(RequestParseError)
+    expect(expectedErr?.statusCode).toBe(403)
   })
 
   it('rejects an invalid signature with 403', () => {
     const base64url = toOgBase64url(GENERIC_PARAMS)
     const event = createMockEvent(base64url, { sig: 'a'.repeat(64) })
-    let err: RequestParseError | undefined
+    let expectedErr: RequestParseError | undefined
     try {
       parseOgRequest(event)
-    } catch (caught) {
-      err = caught as RequestParseError
+    } catch (err) {
+      expectedErr = err as RequestParseError
     }
-    expect(err).toBeInstanceOf(RequestParseError)
-    expect(err?.statusCode).toBe(403)
+    expect(expectedErr).toBeInstanceOf(RequestParseError)
+    expect(expectedErr?.statusCode).toBe(403)
   })
 
   it('rejects a tampered path with 403', () => {
@@ -121,14 +121,14 @@ describe('parseOgRequest — signature verification', () => {
     process.env.ENVIRONMENT = 'staging'
     const base64url = toOgBase64url(GENERIC_PARAMS)
     const event = createMockEvent(base64url)
-    let err: RequestParseError | undefined
+    let expectedErr: RequestParseError | undefined
     try {
       parseOgRequest(event)
-    } catch (caught) {
-      err = caught as RequestParseError
+    } catch (err) {
+      expectedErr = err as RequestParseError
     }
-    expect(err).toBeInstanceOf(RequestParseError)
-    expect(err?.statusCode).toBe(403)
+    expect(expectedErr).toBeInstanceOf(RequestParseError)
+    expect(expectedErr?.statusCode).toBe(403)
   })
 
   it('keeps unsigned OG requests available outside deployed environments', () => {

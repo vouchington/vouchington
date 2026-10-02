@@ -43,9 +43,9 @@ export async function writeResponseToTemporaryFile(
       },
       filePath,
     }
-  } catch (error) {
+  } catch (err) {
     await rm(tempDir, { recursive: true, force: true })
-    throw error
+    throw err
   }
 }
 
@@ -71,7 +71,7 @@ function createResponseReadable(body: ReadableStream<Uint8Array>): Readable {
           }
           this.push(result.value)
         },
-        error => this.destroy(error instanceof Error ? error : new Error(String(error))),
+        err => this.destroy(err instanceof Error ? err : new Error(String(err))),
       )
     },
     destroy(error, callback) {

@@ -74,9 +74,9 @@ export async function beginBlueskyAccountLinkDirect(
       handle,
       encodeAppState(flowId),
     )
-  } catch (error) {
+  } catch (err) {
     await rejectBlueskyLinkAuthorization(flowId, userId)
-    throw error
+    throw err
   }
   return { redirectUrl, ...(callbackMode === 'native' && { flowId }) }
 }
@@ -130,7 +130,7 @@ export async function completeBlueskyAccountLinkCallbackDirect(
       callbackMode: authorization.callback_mode,
       flowId: authorization.id,
     }
-  } catch (error) {
+  } catch (err) {
     if (expectedState) {
       await deleteBlueskySessionForRejectedAuthorization(
         expectedState.userId,
@@ -138,7 +138,7 @@ export async function completeBlueskyAccountLinkCallbackDirect(
         expectedState.flowId,
       )
     }
-    throw error
+    throw err
   }
   if (returnedState.callbackMode !== expectedCallbackMode) {
     if (expectedState) {

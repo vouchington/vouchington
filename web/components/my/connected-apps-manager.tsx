@@ -33,12 +33,12 @@ export function ConnectedAppsManager({ initialData }: { initialData: ListRespons
       await revokeOAuthGrant(id)
       setRevokedIds(prev => new Set(prev).add(id))
       onSuccess(t('extracted.my.connectedAppsManager.accessRevoked_42849e0b'))
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 404) {
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) {
         setRevokedIds(prev => new Set(prev).add(id))
         return
       }
-      onError(error, {
+      onError(err, {
         fallback: t('extracted.my.connectedAppsManager.failedToRevokeAccess_d461cbfc'),
       })
     }

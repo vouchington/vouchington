@@ -157,11 +157,11 @@ async function measure(
         ),
       },
     }
-  } catch (error) {
+  } catch (err) {
     return {
       success: false,
       durationMs: Math.round(now() - startedAt),
-      error: error instanceof Error ? error.message : 'Unknown benchmark failure.',
+      error: err instanceof Error ? err.message : 'Unknown benchmark failure.',
     }
   }
 }

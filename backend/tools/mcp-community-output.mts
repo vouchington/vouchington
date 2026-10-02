@@ -72,9 +72,9 @@ export type McpCommunityEntry = {
 export async function loadPublicCommunity(idOrSlug: string): Promise<CommunityWithOwner | null> {
   try {
     return (await loadCommunityForViewer(null, idOrSlug)).community
-  } catch (error: unknown) {
-    if (createHttpError.isHttpError(error) && error.status === 404) return null
-    throw error
+  } catch (err: unknown) {
+    if (createHttpError.isHttpError(err) && err.status === 404) return null
+    throw err
   }
 }
 

@@ -62,9 +62,9 @@ async function run(): Promise<void> {
       errors: report.errors,
       type: 'result',
     } satisfies RepoFilePolicyWorkerSuccess)
-  } catch (error) {
+  } catch (err) {
     send({
-      message: error instanceof Error ? error.message : String(error),
+      message: err instanceof Error ? err.message : String(err),
       type: 'error',
     } satisfies RepoFilePolicyWorkerFailure)
   }

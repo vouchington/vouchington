@@ -118,7 +118,7 @@ describe('OpenAI response attempt accounting boundary', () => {
       { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
       async () => createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
     )
-    const resultRejection = result.catch((error: unknown) => error)
+    const resultRejection = result.catch((err: unknown) => err)
     await vi.runAllTimersAsync()
 
     await expect(resultRejection).resolves.toBe(error)

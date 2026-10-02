@@ -91,8 +91,8 @@ export function ModQueueBanEvasionActions({
           onClick={() => {
             confirmCommunityBanEvasion(banEvasion.community_id, entityId)
               .then(() => onAction(reportId))
-              .catch((error: unknown) =>
-                onError(error, {
+              .catch((err: unknown) =>
+                onError(err, {
                   fallback: t(
                     'extracted.communities.modQueueBanEvasion.failedToConfirmBanEvasion_60f5579d',
                   ),
@@ -112,8 +112,8 @@ export function ModQueueBanEvasionActions({
         onClick={() => {
           dismissCommunityBanEvasion(banEvasion.community_id, entityId)
             .then(() => onAction(reportId))
-            .catch((error: unknown) => {
-              onError(error, {
+            .catch((err: unknown) => {
+              onError(err, {
                 fallback: t(
                   'extracted.communities.modQueueBanEvasion.failedToDismissBanEvasionFlag_cee76e9b',
                 ),

@@ -51,10 +51,9 @@ export function OAuthConnection({
       )
       setAccount(response.oauth_account)
       toast.success(`${label} account connected`)
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next 3 -- error path requires injecting an OAuth connect failure */
-      const message =
-        error instanceof ApiError ? error.message : `Failed to connect ${label} account`
+      const message = err instanceof ApiError ? err.message : `Failed to connect ${label} account`
       toast.error(message)
     }
   }
@@ -65,10 +64,10 @@ export function OAuthConnection({
       await disconnectOAuthAccount(provider)
       setAccount(null)
       toast.success(`${label} account disconnected`)
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next 3 -- error path requires injecting an OAuth disconnect failure */
       const message =
-        error instanceof ApiError ? error.message : `Failed to disconnect ${label} account`
+        err instanceof ApiError ? err.message : `Failed to disconnect ${label} account`
       toast.error(message)
     } finally {
       setLoading(false)

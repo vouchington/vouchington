@@ -28,10 +28,10 @@ export async function listen(listener: RequestListener): Promise<Server> {
 export async function startListening(server: Server): Promise<void> {
   try {
     await listenOnEphemeralPort(server, '127.0.0.1')
-  } catch (error) {
+  } catch (err) {
     server.closeAllConnections()
     if (server.listening) server.close()
-    throw error
+    throw err
   }
 }
 
@@ -98,11 +98,9 @@ export function sendHttpRequest(
     try {
       for (const chunk of chunks) request.write(chunk)
       request.end()
-    } catch (error) {
+    } catch (err) {
       request.destroy()
-      reject(
-        error instanceof Error ? error : new Error('HTTP request write failed', { cause: error }),
-      )
+      reject(err instanceof Error ? err : new Error('HTTP request write failed', { cause: err }))
     }
   })
 }
@@ -141,12 +139,10 @@ export function sendExpectedBody(
     request.once('error', reject)
     try {
       request.flushHeaders()
-    } catch (error) {
+    } catch (err) {
       request.destroy()
       reject(
-        error instanceof Error
-          ? error
-          : new Error('HTTP request header flush failed', { cause: error }),
+        err instanceof Error ? err : new Error('HTTP request header flush failed', { cause: err }),
       )
     }
   })

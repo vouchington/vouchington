@@ -17,8 +17,8 @@ export async function ensureDefaultLandingPage(userId: string, username: string)
 
   try {
     await createMyLandingPage(userId, { title, slug })
-  } catch (error: unknown) {
-    if (error && typeof error === 'object' && 'status' in error && error.status === 409) return
-    throw error
+  } catch (err: unknown) {
+    if (err && typeof err === 'object' && 'status' in err && err.status === 409) return
+    throw err
   }
 }

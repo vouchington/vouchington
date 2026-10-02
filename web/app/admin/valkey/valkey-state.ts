@@ -82,9 +82,9 @@ function useValkeyData() {
         setError(null)
         setCacheGroups(cacheGroupsResult.groups)
       }
-    } catch (error) {
+    } catch (err) {
       if (shouldApply()) {
-        setError(error instanceof Error ? error.message : 'Failed to load cache groups')
+        setError(err instanceof Error ? err.message : 'Failed to load cache groups')
       }
     } finally {
       loadDataPendingRef.current = false
@@ -147,9 +147,9 @@ function useValkeyData() {
       .then(data => {
         if (!streamGroupsAppliedRef.current) setCacheGroups(data.groups)
       })
-      .catch((error: unknown) => {
+      .catch((err: unknown) => {
         if (!streamGroupsAppliedRef.current) {
-          setError(error instanceof Error ? error.message : 'Failed to load cache groups')
+          setError(err instanceof Error ? err.message : 'Failed to load cache groups')
         }
       })
       .finally(() => setLoading(false))

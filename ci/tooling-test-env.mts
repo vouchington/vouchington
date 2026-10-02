@@ -73,8 +73,8 @@ export function loadCurrentWorktreeEnv(cwd: string, baseEnv: NodeJS.ProcessEnv):
       stdio: ['ignore', 'pipe', 'pipe'],
     })
     return withBaseNodeEnv(parseNullDelimitedEnv(stdout), baseEnv)
-  } catch (error) {
-    if (!isMissingBashError(error)) throw error
+  } catch (err) {
+    if (!isMissingBashError(err)) throw err
     return withBaseNodeEnv(parseEnvFileText(readFileSync(envFile, 'utf8'), sourceEnv), baseEnv)
   }
 }

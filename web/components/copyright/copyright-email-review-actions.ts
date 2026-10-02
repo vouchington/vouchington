@@ -82,9 +82,9 @@ export function useCopyrightEmailReviewActions({
           response.copyright_email_intake.recommendation?.structured_output,
         ),
       )
-    } catch (error) {
+    } catch (err) {
       if (request === selectedIntakeRequest.current) {
-        setError(copyrightEmailActionError(error, 'We could not load that copyright email intake.'))
+        setError(copyrightEmailActionError(err, 'We could not load that copyright email intake.'))
       }
     } finally {
       if (request === selectedIntakeRequest.current) setLoading(false)
@@ -160,8 +160,8 @@ export function useCopyrightEmailReviewActions({
     setLoading(true)
     try {
       await action()
-    } catch (error) {
-      setError(copyrightEmailActionError(error, fallback))
+    } catch (err) {
+      setError(copyrightEmailActionError(err, fallback))
     } finally {
       setLoading(false)
     }

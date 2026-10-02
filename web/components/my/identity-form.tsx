@@ -54,8 +54,8 @@ export function IdentityForm({
     try {
       await updateMyIdentity({ username })
       onSuccess(t('extracted.my.identityForm.usernameUpdated_89b1eb5b'))
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.identityForm.failedToUpdateUsername_3e743bd6'),
         tags: { form: 'my-identity' },
       })
@@ -71,8 +71,8 @@ export function IdentityForm({
       setProfileImageId(null)
       setProfileImagePlacement(null)
       onSuccess(t('extracted.my.identityForm.profileImageRemoved_0324d161'))
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.identityForm.failedToRemoveProfileImage_f815f3cb'),
         tags: { form: 'my-identity' },
       })
@@ -97,8 +97,8 @@ export function IdentityForm({
       await updateMyIdentity({ use_display_name_from: value })
       setUseDisplayNameFrom(value)
       onSuccess(t('extracted.my.identityForm.displayNameSourceUpdated_f4f26310'))
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.identityForm.failedToUpdateDisplayNameSource_d5ee52e9'),
         tags: { form: 'my-identity' },
       })
@@ -113,8 +113,8 @@ export function IdentityForm({
       setProfileImageId(imageId)
       setProfileImagePlacement(null)
       onSuccess(t('extracted.my.identityForm.profileImageUpdated_4f3a12a1'))
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.identityForm.failedToUpdateProfileImage_6fb576f7'),
         tags: { form: 'my-identity' },
       })

@@ -71,8 +71,8 @@ export const normalizeUrlForUrlTable = (href: string, options?: NormalizeUrlOpti
   let url: URL
   try {
     url = new URL(normalizedHref)
-  } catch (error) {
-    throw new TypeError(`Invalid URL: ${href}`, { cause: error })
+  } catch (err) {
+    throw new TypeError(`Invalid URL: ${href}`, { cause: err })
   }
   const canonicalHostname = url.hostname.replace(/\.+$/, '')
   if (canonicalHostname !== url.hostname) {

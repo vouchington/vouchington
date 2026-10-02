@@ -84,12 +84,12 @@ export async function assessRecaptchaToken({
   let assessment: RecaptchaAssessment
   try {
     assessment = await dependencies.fetchRecaptchaAssessment(token, expectedAction, ip)
-  } catch (error) {
-    if (error instanceof dependencies.recaptchaRateLimitError) {
+  } catch (err) {
+    if (err instanceof dependencies.recaptchaRateLimitError) {
       // Stop spending assessments for the rest of the day, then fail open for this request.
       dependencies.setRecaptchaLockedOutBackground()
     }
-    onError(error instanceof Error ? error : new Error(String(error)))
+    onError(err instanceof Error ? err : new Error(String(err)))
     return
   }
 

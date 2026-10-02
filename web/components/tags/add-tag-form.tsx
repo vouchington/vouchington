@@ -56,11 +56,11 @@ export function AddTagForm({
         refresh()
         onTagAdded?.()
       })
-    } catch (error) {
-      if (isTagLimitError(error)) {
+    } catch (err) {
+      if (isTagLimitError(err)) {
         setLimitReached(true)
       } else {
-        onError(error, { fallback: t('extracted.tags.addTagForm.failedToAddTag_17a3edd6') })
+        onError(err, { fallback: t('extracted.tags.addTagForm.failedToAddTag_17a3edd6') })
       }
     } finally {
       setIsSubmitting(false)

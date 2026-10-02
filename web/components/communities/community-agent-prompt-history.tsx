@@ -55,9 +55,9 @@ export function CommunityAgentPromptHistory({
         })
         setExtraEntries(prev => [...prev, ...result.entries])
         setLoadMoreCursor(result.next_cursor)
-      } catch (error) {
-        setLoadMoreError(error instanceof Error ? error : new Error(String(error)))
-        onError(error, {
+      } catch (err) {
+        setLoadMoreError(err instanceof Error ? err : new Error(String(err)))
+        onError(err, {
           fallback: t(
             'extracted.communities.communityAgentPromptHistory.failedToLoadHistory_eeddd17d',
           ),

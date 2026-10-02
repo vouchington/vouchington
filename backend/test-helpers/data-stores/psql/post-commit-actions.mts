@@ -115,8 +115,8 @@ export async function runFailedBoundedPostCommitActionProbe(action: PostCommitAc
 async function getExpectedError(operation: () => Promise<unknown>): Promise<Error> {
   try {
     await operation()
-  } catch (error) {
-    return error instanceof Error ? error : new Error(String(error))
+  } catch (err) {
+    return err instanceof Error ? err : new Error(String(err))
   }
   throw new Error('Expected post-commit action probe operation to fail')
 }
@@ -124,8 +124,8 @@ async function getExpectedError(operation: () => Promise<unknown>): Promise<Erro
 function getExpectedSynchronousError(operation: () => void): Error {
   try {
     operation()
-  } catch (error) {
-    return error instanceof Error ? error : new Error(String(error))
+  } catch (err) {
+    return err instanceof Error ? err : new Error(String(err))
   }
   throw new Error('Expected post-commit action probe registration to fail')
 }

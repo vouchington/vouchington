@@ -43,8 +43,8 @@ async function runFixture(
       timeout: 25_000,
     })
     return { exitCode: 0, output: stripVTControlCharacters(`${stdout}\n${stderr}`) }
-  } catch (error) {
-    const failure = error as { code?: number; stdout?: string; stderr?: string }
+  } catch (err) {
+    const failure = err as { code?: number; stdout?: string; stderr?: string }
     return {
       exitCode: failure.code ?? 1,
       output: stripVTControlCharacters(`${failure.stdout ?? ''}\n${failure.stderr ?? ''}`),

@@ -101,8 +101,8 @@ export const processBedrockEmbeddingsBatchJob = async (
       default:
         throw new Error(`Unknown ordering key: ${orderingKey}`)
     }
-  } catch (error: unknown) {
-    return handleBedrockRateLimit(error, worker)
+  } catch (err: unknown) {
+    return handleBedrockRateLimit(err, worker)
   }
 }
 

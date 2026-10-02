@@ -12,11 +12,11 @@ export async function returnNullForMissingEntity<T>(
 
   try {
     return await request
-  } catch (error) {
-    if (error instanceof ApiError && nullStatusCodes.includes(error.status)) {
+  } catch (err) {
+    if (err instanceof ApiError && nullStatusCodes.includes(err.status)) {
       return null
     }
 
-    throw error
+    throw err
   }
 }

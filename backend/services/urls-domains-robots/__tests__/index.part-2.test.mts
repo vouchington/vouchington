@@ -171,7 +171,7 @@ describe('fetchRobotsTxt', () => {
       dependencies.isRetryableError.mockReturnValue(true)
 
       const result = fetchRobotsTxtForTest(domain)
-      const resultRejection = result.catch((error: unknown) => error)
+      const resultRejection = result.catch((err: unknown) => err)
       await vi.runAllTimersAsync()
 
       await expect(resultRejection).resolves.toBe(retryableError)

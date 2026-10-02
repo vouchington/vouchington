@@ -97,8 +97,8 @@ export function flushJobs(
     function onEvent() {
       try {
         if (inspectJobs(queue, jobIds, expectedDeadLetterJobIds).length === 0) finish()
-      } catch (error) {
-        finish(error)
+      } catch (err) {
+        finish(err)
       }
     }
     onEvent()
@@ -119,8 +119,8 @@ export function flushJobs(
                   captureFlushDiagnostics(queue, pendingJobIds),
                 ),
           )
-        } catch (error) {
-          finish(error)
+        } catch (err) {
+          finish(err)
         }
         return
       }

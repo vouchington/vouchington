@@ -238,7 +238,7 @@ describe('post classifier execution with real receipts', () => {
       dependencies,
     ).then(
       result => ({ result }),
-      (error: unknown) => ({ error }),
+      (err: unknown) => ({ error: err }),
     )
     expect(settled).toEqual(
       {

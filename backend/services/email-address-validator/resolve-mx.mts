@@ -18,9 +18,9 @@ function resolveMxWithTimeout(domain: string): Promise<{ exchange: string; prior
         clearTimeout(timer)
         resolve(result)
       })
-      .catch(error => {
+      .catch(err => {
         clearTimeout(timer)
-        reject(error instanceof Error ? error : new Error('DNS lookup failed', { cause: error }))
+        reject(err instanceof Error ? err : new Error('DNS lookup failed', { cause: err }))
       })
   })
 }
@@ -34,8 +34,8 @@ export async function resolveMxRecords(
     try {
       // oxlint-disable-next-line no-await-in-loop -- a DNS timeout must settle before the retry budget advances
       return await resolveMxWithTimeout(domain)
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error))
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err))
       // Only retry on timeout; other DNS errors (NXDOMAIN, NODATA) are definitive
       if (!(lastError instanceof DnsTimeoutError)) throw lastError
     }

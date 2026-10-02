@@ -71,8 +71,8 @@ async function reconcileTopicAliasCategoryMappingDirtyRows(
       updated + result.updated,
       errors,
     )
-  } catch (error) {
-    errors.push(error)
+  } catch (err) {
+    errors.push(err)
   }
   return reconcileTopicAliasCategoryMappingDirtyRows(remaining, reconciled, updated, errors)
 }

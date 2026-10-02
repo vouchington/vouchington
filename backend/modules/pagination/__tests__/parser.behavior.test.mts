@@ -21,33 +21,33 @@ describe('PaginationParser — limit', () => {
   })
 
   it('throws 400 for empty string limit', () => {
-    let err: unknown
+    let expectedErr: unknown
     try {
       parser.parse({ limit: '' })
-    } catch (e) {
-      err = e
+    } catch (err) {
+      expectedErr = err
     }
-    expect((err as { status: number }).status).toBe(400)
+    expect((expectedErr as { status: number }).status).toBe(400)
   })
 
   it('throws 400 for NaN string limit', () => {
-    let err: unknown
+    let expectedErr: unknown
     try {
       parser.parse({ limit: 'abc' })
-    } catch (e) {
-      err = e
+    } catch (err) {
+      expectedErr = err
     }
-    expect((err as { status: number }).status).toBe(400)
+    expect((expectedErr as { status: number }).status).toBe(400)
   })
 
   it('throws 400 for negative number limit', () => {
-    let err: unknown
+    let expectedErr: unknown
     try {
       parser.parse({ limit: '-5' })
-    } catch (e) {
-      err = e
+    } catch (err) {
+      expectedErr = err
     }
-    expect((err as { status: number }).status).toBe(400)
+    expect((expectedErr as { status: number }).status).toBe(400)
   })
 
   it.each(['1.5', '2x', '1e2', '+2', ' 2'])('rejects malformed integer %s', value => {
@@ -118,24 +118,24 @@ describe('PaginationParser — cursor', () => {
 
   it('throws 400 for non-string cursor value', () => {
     const parser = new PaginationParser({ cursor: { type: 'simple' } })
-    let err: unknown
+    let expectedErr: unknown
     try {
       parser.parse({ after: 12345 })
-    } catch (e) {
-      err = e
+    } catch (err) {
+      expectedErr = err
     }
-    expect((err as { status: number }).status).toBe(400)
+    expect((expectedErr as { status: number }).status).toBe(400)
   })
 
   it('throws 400 for empty string cursor', () => {
     const parser = new PaginationParser({ cursor: { type: 'simple' } })
-    let err: unknown
+    let expectedErr: unknown
     try {
       parser.parse({ after: '' })
-    } catch (e) {
-      err = e
+    } catch (err) {
+      expectedErr = err
     }
-    expect((err as { status: number }).status).toBe(400)
+    expect((expectedErr as { status: number }).status).toBe(400)
   })
 
   it('validates the cursor before the limit', () => {

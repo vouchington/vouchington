@@ -46,20 +46,20 @@ export async function fetchImageFromS3(
     const contentType = response.contentType || 'application/octet-stream'
 
     return { file, etag, contentType }
-  } catch (error: unknown) {
-    if (error instanceof S3OperationError) {
-      throw error
+  } catch (err: unknown) {
+    if (err instanceof S3OperationError) {
+      throw err
     }
-    if (error instanceof TypeError && error.message === 'S3 returned an unreadable media body') {
+    if (err instanceof TypeError && err.message === 'S3 returned an unreadable media body') {
       throw new S3OperationError('No body in S3 response', 404)
     }
     if (
-      (error as { name?: string }).name === 'NoSuchKey' ||
-      (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 404
+      (err as { name?: string }).name === 'NoSuchKey' ||
+      (err as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 404
     ) {
       throw new S3OperationError(`Image not found: ${key}`, 404)
     }
-    throw new S3OperationError(`Failed to fetch image from S3: ${(error as Error).message}`, 500)
+    throw new S3OperationError(`Failed to fetch image from S3: ${(err as Error).message}`, 500)
   }
 }
 
@@ -82,7 +82,7 @@ export async function putImageToCache(
         originEtag: originEtag.replaceAll('"', ''),
       },
     })
-  } catch (error: unknown) {
-    throw new S3OperationError(`Failed to write to cache: ${(error as Error).message}`, 500)
+  } catch (err: unknown) {
+    throw new S3OperationError(`Failed to write to cache: ${(err as Error).message}`, 500)
   }
 }

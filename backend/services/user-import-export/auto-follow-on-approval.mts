@@ -74,8 +74,8 @@ async function autoFollowRecommendationRequests({
     if (validRequests.length > 0) {
       await write(buildMarkFollowedQuery(validRequests.map(request => request.id)))
     }
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
   }
 }
 
@@ -110,8 +110,8 @@ async function followRequest(
 
     await upsertEntityRelation(user, relation, { id: request.user_id }, [{ id: objectId }])
     return request
-  } catch (error) {
-    const followError = error instanceof Error ? error : new Error(String(error))
+  } catch (err) {
+    const followError = err instanceof Error ? err : new Error(String(err))
     onError(followError)
     return null
   }

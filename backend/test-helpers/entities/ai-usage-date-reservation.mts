@@ -30,9 +30,9 @@ export async function acquireTestAiUsageDateReservation(): Promise<TestAiUsageDa
     throw new Error(
       `No AI usage test date reservation slots are available (${TEST_AI_USAGE_SLOT_COUNT} are in use)`,
     )
-  } catch (error) {
-    client.release(toError(error))
-    throw error
+  } catch (err) {
+    client.release(toError(err))
+    throw err
   }
 }
 
@@ -45,9 +45,9 @@ export async function acquireTestAiUsageDateReservationControlSlot(): Promise<Te
     }
     await clearSlot(client, TEST_AI_USAGE_CONTROL_SLOT)
     return createReservation(client, TEST_AI_USAGE_CONTROL_SLOT)
-  } catch (error) {
-    client.release(toError(error))
-    throw error
+  } catch (err) {
+    client.release(toError(err))
+    throw err
   }
 }
 
@@ -89,9 +89,9 @@ async function releaseReservation(client: PoolClient, slot: number): Promise<voi
       throw new Error('PostgreSQL did not release the AI usage test date reservation')
     }
     client.release()
-  } catch (error) {
-    client.release(toError(error))
-    throw error
+  } catch (err) {
+    client.release(toError(err))
+    throw err
   }
 }
 

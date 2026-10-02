@@ -75,9 +75,9 @@ export class FileBackedSet {
     try {
       const store = new MembershipStore(directory, tables)
       return tables.map(table => new FileBackedSet(store, table))
-    } catch (error) {
+    } catch (err) {
       await rm(directory, { force: true, recursive: true })
-      throw error
+      throw err
     }
   }
 

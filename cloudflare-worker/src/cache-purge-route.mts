@@ -76,9 +76,9 @@ export async function handleCachePurgeRequest(
   try {
     if (canaryFault === 'purge-reject') throw new Error('Injected cache purge rejection')
     result = await context.exports.CachedOrigin.purge(tags)
-  } catch (error) {
-    captureWorkerException(error, { routeTarget: 'cache-purge' }, { cacheTags: tags })
-    console.error('Cache purge threw:', error)
+  } catch (err) {
+    captureWorkerException(err, { routeTarget: 'cache-purge' }, { cacheTags: tags })
+    console.error('Cache purge threw:', err)
     return edgeErrorResponse(502, 'Cache purge failed', 'BAD_GATEWAY')
   }
   if (!result.success) {

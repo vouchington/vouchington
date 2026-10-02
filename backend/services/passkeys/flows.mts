@@ -37,14 +37,14 @@ export async function verifyPasskeyRegistration(
       response,
       context: passkeyName,
     })
-  } catch (error) {
-    if (error instanceof AuthError && error.code === 'challenge_expired') {
+  } catch (err) {
+    if (err instanceof AuthError && err.code === 'challenge_expired') {
       throw createHttpError(400, 'Registration challenge expired or not found')
     }
-    if (error instanceof AuthError && error.code === 'invalid_credentials') {
+    if (err instanceof AuthError && err.code === 'invalid_credentials') {
       throw createHttpError(400, 'Registration verification failed')
     }
-    throw error
+    throw err
   }
 }
 

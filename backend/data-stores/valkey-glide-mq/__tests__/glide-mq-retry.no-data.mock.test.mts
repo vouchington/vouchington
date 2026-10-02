@@ -103,7 +103,7 @@ describe('retryOnInflightSaturation', () => {
     const thrownPromise = retryOnInflightSaturation(fn, {
       command: 'xack',
       client: 'worker-queue-command',
-    }).catch((e: unknown) => e)
+    }).catch((err: unknown) => err)
     await vi.runAllTimersAsync()
     const thrown = await thrownPromise
 
@@ -137,7 +137,7 @@ describe('retryOnInflightSaturation', () => {
       const thrownPromise = retryOnInflightSaturation(fn, {
         command: 'xadd',
         client: 'worker-queue-command',
-      }).catch((e: unknown) => e)
+      }).catch((err: unknown) => err)
       await vi.runAllTimersAsync()
       const thrown = await thrownPromise
 

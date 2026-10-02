@@ -76,10 +76,10 @@ app.route('/api/v1/dynamic-config/namespaces/:namespace').patch(async (ctx: Cont
   try {
     const result = await updateDynamicConfigNamespace(currentUser, namespace, body.config)
     ctx.json({ namespace: result!.namespace, changed: result!.changed })
-  } catch (error) {
-    if (error instanceof DynamicConfigValidationError) {
-      ctx.throw(400, error.message)
+  } catch (err) {
+    if (err instanceof DynamicConfigValidationError) {
+      ctx.throw(400, err.message)
     }
-    throw error
+    throw err
   }
 })

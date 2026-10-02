@@ -65,8 +65,8 @@ app.route('/api/v1/posts/:idOrSlug/sends').post(async (ctx: Context) => {
 async function enqueueDistributionOrMarkFailed(distributionId: string) {
   try {
     await enqueueProcessFollowerDistribution(distributionId)
-  } catch (error) {
+  } catch (err) {
     await markFollowerDistributionFailed(distributionId, 'Failed to enqueue follower distribution')
-    throw error
+    throw err
   }
 }

@@ -36,8 +36,8 @@ export async function addListItem(
     RETURNING id, list_id, ${entityColumn} AS entity_id, order_index, created_at
     `,
     [listId, entityId],
-  ).catch(async (error: unknown) => {
-    const code = (error as { code?: string }).code
+  ).catch(async (err: unknown) => {
+    const code = (err as { code?: string }).code
     if (code === '23505') {
       // write() not read() to avoid replica-lag race on immediate re-add
       return write(
@@ -58,7 +58,7 @@ export async function addListItem(
     if (code === '22P02') {
       assert(false, 422, 'Invalid entity ID format')
     }
-    throw error
+    throw err
   })
 
   assert(rows.length > 0, 500, 'Failed to add list item')

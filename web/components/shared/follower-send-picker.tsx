@@ -98,9 +98,9 @@ export function FollowerSendPicker({
         ]
       })
       setPageInfo(response.page_info)
-    } catch (error) {
+    } catch (err) {
       if (!controller.signal.aborted && requestGeneration === requestGenerationRef.current) {
-        setLoadMoreError(error instanceof Error ? error : new Error('Unable to load followers'))
+        setLoadMoreError(err instanceof Error ? err : new Error('Unable to load followers'))
       }
     } finally {
       if (requestGeneration === requestGenerationRef.current) setIsLoadingMore(false)

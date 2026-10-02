@@ -9,7 +9,7 @@ import { fetchImageFromS3, streamToTempFile } from '../operations.mts'
 describe('streamToTempFile size limits', () => {
   it('throws 413 when the running total exceeds the max', async () => {
     const stream = Readable.from([Buffer.from('hello '), Buffer.from('world!!!!')])
-    const error = await streamToTempFile(stream, 8).catch((caught: unknown) => caught)
+    const error = await streamToTempFile(stream, 8).catch((err: unknown) => err)
     expect(error).toBeInstanceOf(S3OperationError)
     expect((error as S3OperationError).statusCode).toBe(413)
   })
@@ -43,7 +43,7 @@ describe('fetchImageFromS3 size limits', () => {
     } as unknown as S3Client
 
     const error = await fetchImageFromS3(mockClient, 'test-bucket', 'huge-key').catch(
-      (caught: unknown) => caught,
+      (err: unknown) => err,
     )
     expect(error).toBeInstanceOf(S3OperationError)
     expect((error as S3OperationError).statusCode).toBe(413)

@@ -37,8 +37,8 @@ export async function runWithJobTokenAccumulator<T>(
     if (store.total > 0) {
       try {
         await onSettled(store.total)
-      } catch (error) {
-        onError(error as Error)
+      } catch (err) {
+        onError(err as Error)
       }
     }
   }

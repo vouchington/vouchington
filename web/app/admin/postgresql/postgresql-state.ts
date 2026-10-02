@@ -53,9 +53,9 @@ export function usePostgreSQLAdminState() {
         setError(null)
         setStatus(nextStatus)
       }
-    } catch (error) {
+    } catch (err) {
       if (shouldApply()) {
-        setError(error instanceof Error ? error.message : 'Failed to load PostgreSQL status')
+        setError(err instanceof Error ? err.message : 'Failed to load PostgreSQL status')
       }
     } finally {
       loadDataPendingRef.current = false
@@ -113,9 +113,9 @@ export function usePostgreSQLAdminState() {
     // Initial REST load so the page is never blank if SSE fails or is slow.
     fetchMigrations()
       .then(data => setStatus(prev => prev ?? data))
-      .catch(error => {
+      .catch(err => {
         if (streamSnapshotAppliedRef.current) return
-        setError(error instanceof Error ? error.message : 'Failed to load PostgreSQL status')
+        setError(err instanceof Error ? err.message : 'Failed to load PostgreSQL status')
       })
       .finally(() => setLoading(false))
 
@@ -134,8 +134,8 @@ export function usePostgreSQLAdminState() {
       await enqueuePsqlJob(type)
       onSuccess(`${type} job queued`)
       await loadData()
-    } catch (error) {
-      onError(error, { fallback: `Failed to run ${type}`, tags: { form: 'admin-partition' } })
+    } catch (err) {
+      onError(err, { fallback: `Failed to run ${type}`, tags: { form: 'admin-partition' } })
     } finally {
       setActionLoading(prev => ({ ...prev, [type]: false }))
     }

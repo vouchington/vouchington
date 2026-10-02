@@ -63,13 +63,13 @@ export async function assertUrlAllowedByWebRisk(url: string): Promise<void> {
   let threat: WebRiskThreat | null
   try {
     threat = await checkWebRiskUrl(parsed)
-  } catch (error) {
-    if (error instanceof WebRiskRateLimitError) {
-      onError(error)
+  } catch (err) {
+    if (err instanceof WebRiskRateLimitError) {
+      onError(err)
       return
     }
     await setProviderCooldown(SHORT_FAILURE_COOLDOWN_SECONDS)
-    onError(error instanceof Error ? error : new Error(String(error)))
+    onError(err instanceof Error ? err : new Error(String(err)))
     return
   }
 
@@ -101,8 +101,8 @@ export async function checkWebRiskUrl(url: URL): Promise<WebRiskThreat | null> {
   const response = await fetch(requestUrl, {
     dispatcher: getExternalRequestDispatcher(),
     signal: AbortSignal.timeout(5000),
-  }).catch(error => {
-    throw new Error('Google Web Risk lookup request failed', { cause: error })
+  }).catch(err => {
+    throw new Error('Google Web Risk lookup request failed', { cause: err })
   })
 
   if (response.status === 429 || response.status === 403) {
@@ -127,8 +127,8 @@ export async function checkWebRiskUrl(url: URL): Promise<WebRiskThreat | null> {
   let data: unknown
   try {
     data = await response.json()
-  } catch (error) {
-    throw new Error('Google Web Risk lookup returned invalid JSON', { cause: error })
+  } catch (err) {
+    throw new Error('Google Web Risk lookup returned invalid JSON', { cause: err })
   }
   return parseWebRiskThreat(data)
 }

@@ -73,8 +73,8 @@ export async function handleCrawlRedirect(params: {
     hopCount + 1,
     visitedUrls,
     options,
-  ).catch(error => {
-    throw markRedirectStatusRecorded(error)
+  ).catch(err => {
+    throw markRedirectStatusRecorded(err)
   })
   return {
     crawl: redirectResult || redirectCrawl,
@@ -114,10 +114,10 @@ export async function trySetCanonicalUrl(
 ) {
   try {
     await setCanonicalUrl(urlId, canonicalUrlId)
-  } catch (error) {
-    if (!(error instanceof CircularCanonicalReferenceError)) {
+  } catch (err) {
+    if (!(err instanceof CircularCanonicalReferenceError)) {
       const reportError = dependencies?.onRedirectError ?? onError
-      reportError(error instanceof Error ? error : new Error(String(error)))
+      reportError(err instanceof Error ? err : new Error(String(err)))
     }
   }
 }

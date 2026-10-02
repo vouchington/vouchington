@@ -24,9 +24,9 @@ export async function openTranscriptLines(path: string): Promise<OpenTranscriptL
       stream.once('error', onError)
     })
     return { lines: streamTranscriptLines(stream) }
-  } catch (error) {
+  } catch (err) {
     stream.destroy()
-    return { error: error instanceof Error ? error.message : String(error) }
+    return { error: err instanceof Error ? err.message : String(err) }
   }
 }
 

@@ -35,8 +35,8 @@ export async function acceptActivityPubInboxDelivery(
     `)
     const row = rows[0] as DeliveryIdentityRow
     return { outcome: 'applied', value: mapIdentity(row) }
-  } catch (error) {
-    return mapActivityPubInboxCapacityErrorOrThrow(error)
+  } catch (err) {
+    return mapActivityPubInboxCapacityErrorOrThrow(err)
   }
 }
 

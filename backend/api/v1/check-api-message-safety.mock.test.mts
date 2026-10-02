@@ -19,8 +19,8 @@ vi.mock<typeof import('@modules/openai-utils/moderate')>(
 async function getSafetyError(message: string): Promise<Record<string, unknown>> {
   try {
     await checkApiMessageSafety(message)
-  } catch (error) {
-    return error as Record<string, unknown>
+  } catch (err) {
+    return err as Record<string, unknown>
   }
   throw new Error('Expected message safety to reject')
 }

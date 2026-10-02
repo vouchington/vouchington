@@ -9,12 +9,12 @@ const individualCardConstraintErrors: Readonly<Record<string, string>> = {
 export async function mapIndividualCardConstraintError<T>(operation: () => Promise<T>): Promise<T> {
   try {
     return await operation()
-  } catch (error) {
-    const pgError = error as { code?: string; constraint?: string }
+  } catch (err) {
+    const pgError = err as { code?: string; constraint?: string }
     const key =
       pgError.code && pgError.constraint ? `${pgError.code}:${pgError.constraint}` : undefined
     const message = key ? individualCardConstraintErrors[key] : undefined
-    if (!message) throw error
+    if (!message) throw err
     assert(false, 422, message)
   }
 }

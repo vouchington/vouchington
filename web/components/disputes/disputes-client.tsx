@@ -62,8 +62,8 @@ export function DisputesClient({
     try {
       const result = await approveDispute(id)
       dispatch({ type: 'update_dispute', dispute: result.dispute })
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.disputes.disputesClient.failedToApproveDispute_c4b95406'),
         tags: { form: 'dispute-approve' },
       })
@@ -77,8 +77,8 @@ export function DisputesClient({
     try {
       const result = await sendDisputeResolution(id)
       dispatch({ type: 'update_dispute', dispute: result.dispute })
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.disputes.disputesClient.failedToSendDisputeResolution_7cdfc475'),
         tags: { form: 'dispute-send' },
       })
@@ -91,9 +91,9 @@ export function DisputesClient({
     dispatch({ type: 'set_loading', id })
     try {
       await rerunDisputeAI(id)
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next -- error path requires injecting a rerun AI failure */
-      onError(error, {
+      onError(err, {
         fallback: t('extracted.disputes.disputesClient.failedToReRunAi_8c594308'),
         tags: { form: 'dispute-rerun' },
       })
@@ -108,9 +108,9 @@ export function DisputesClient({
       const result =
         action === 'dismiss' ? await dismissDispute(id) : await resolveDisputeRemove(id, action)
       dispatch({ type: 'update_dispute', dispute: result.dispute })
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next -- error path requires injecting a resolve dispute failure */
-      onError(error, {
+      onError(err, {
         fallback: t('extracted.disputes.disputesClient.failedToResolveDispute_ed6dde5c'),
         tags: { form: 'dispute-resolve' },
       })
@@ -124,10 +124,10 @@ export function DisputesClient({
     if (text !== undefined) {
       try {
         await updateDisputeDraft(id, { public_response: text })
-      } catch (error) {
+      } catch (err) {
         // Do not approve a stale draft if saving the edits failed.
         /* c8 ignore next -- error path requires injecting a save draft failure */
-        onError(error, {
+        onError(err, {
           fallback: t('extracted.disputes.disputesClient.failedToSaveDraft_350705d0'),
         })
         return
@@ -141,9 +141,9 @@ export function DisputesClient({
     try {
       const result = await resolveDisputeAnnotate(id, text)
       dispatch({ type: 'update_dispute', dispute: result.dispute })
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next 4 -- error path requires injecting an annotate failure */
-      onError(error, {
+      onError(err, {
         fallback: t('extracted.disputes.disputesClient.failedToAttachAnnotation_4e848bc5'),
         tags: { form: 'dispute-annotate' },
       })

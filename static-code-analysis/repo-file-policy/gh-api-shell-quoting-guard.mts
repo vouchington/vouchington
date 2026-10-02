@@ -34,8 +34,8 @@ export function checkGhApiShellQuoting(
       let violations: ShellQuotingViolation[]
       try {
         violations = workflowYamlViolations(content)
-      } catch (error) {
-        errors.push(`::error file=${file}::${file}: invalid YAML (${(error as Error).message})`)
+      } catch (err) {
+        errors.push(`::error file=${file}::${file}: invalid YAML (${(err as Error).message})`)
         continue
       }
       reportViolations(file, violations, errors)

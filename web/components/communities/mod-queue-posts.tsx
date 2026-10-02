@@ -82,8 +82,8 @@ export function ModQueuePosts({
     try {
       const { conversation } = await openModInternalThreadForPost(communitySlug, postId)
       router.push(messagesHref(conversation))
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t(
           'extracted.communities.modQueuePosts.failedToOpenInternalDiscussionThread_3243e335',
         ),
@@ -103,8 +103,8 @@ export function ModQueuePosts({
       startTransition(() => {
         router.refresh()
       })
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.communities.modQueuePosts.failedToClaimPost_f3c642ce'),
         tags: { action: 'claim-post', communitySlug },
       })
@@ -122,8 +122,8 @@ export function ModQueuePosts({
       startTransition(() => {
         router.refresh()
       })
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.communities.modQueuePosts.failedToReleasePostClaim_7e3c06c4'),
         tags: { action: 'release-post', communitySlug },
       })
@@ -141,8 +141,8 @@ export function ModQueuePosts({
       startTransition(() => {
         router.refresh()
       })
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.communities.modQueuePosts.failedToEscalatePost_e4397974'),
         tags: { action: 'escalate-post', communitySlug },
       })
@@ -160,8 +160,8 @@ export function ModQueuePosts({
       startTransition(() => {
         router.refresh()
       })
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.communities.modQueuePosts.failedToRemovePostEscalation_98077301'),
         tags: { action: 'de-escalate-post', communitySlug },
       })

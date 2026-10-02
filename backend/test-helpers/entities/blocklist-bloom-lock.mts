@@ -39,9 +39,9 @@ export async function createTestBlocklistBloomLockProbe(
           }
         }
         client.release()
-      } catch (error) {
+      } catch (err) {
         client.release(true)
-        throw error
+        throw err
       }
     },
   }

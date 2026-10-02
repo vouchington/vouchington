@@ -39,8 +39,8 @@ export function CommunityPostTypeSettingsForm({ community }: CommunityPostTypeSe
         t('extracted.communities.communityPostTypeSettingsForm.postTypeSettingsSaved_56838c16'),
       )
       startNavigation(() => router.refresh())
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t(
           'extracted.communities.communityPostTypeSettingsForm.couldNotSavePostTypeSettings_76037ef5',
         ),

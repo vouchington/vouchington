@@ -70,9 +70,9 @@ export async function seedPlaywrightTestData() {
     )
     const rssItemId = (rssItemRows[0] as { id: string } | undefined)?.id
     if (rssItemId) await upsertRecentlyViewed('rss_feed_item', rssItemId, testSessionId, testUserId)
-  } catch (error) {
+  } catch (err) {
     seeded = false
-    throw error
+    throw err
   }
 }
 if (import.meta.main) {

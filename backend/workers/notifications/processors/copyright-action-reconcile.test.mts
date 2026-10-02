@@ -186,7 +186,7 @@ describe('processReconcileCopyrightActionIntents', () => {
 
     const failure = await processReconcileCopyrightActionIntents(deps).then(
       () => null,
-      (error: unknown) => error,
+      (err: unknown) => err,
     )
 
     expect(failure).toBeInstanceOf(AggregateError)

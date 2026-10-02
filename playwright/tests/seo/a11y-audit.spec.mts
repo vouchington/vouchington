@@ -74,8 +74,8 @@ async function analyzePageA11y(page: Page, path: string) {
     try {
       await navigateTo(page, path)
       return await new AxeBuilder({ page }).withTags([...AXE_TAGS]).analyze()
-    } catch (error) {
-      lastError = error
+    } catch (err) {
+      lastError = err
       await page.waitForLoadState('load').catch(() => {})
     }
   }

@@ -76,11 +76,11 @@ async function runWithDeadline<T>(fn: () => Promise<T>, deadlineMs: number): Pro
     attempt = Promise.resolve().then(fn)
     const result = await Promise.race([attempt, timeout])
     return result
-  } catch (error) {
+  } catch (err) {
     if (timedOut && attempt) {
       attempt.catch(() => {})
     }
-    throw error
+    throw err
   } finally {
     clearTimeout(timerId)
   }
@@ -104,26 +104,26 @@ export function retryOnConnectionLost<T>(
   const retry = async (remainingRetries: number): Promise<T> => {
     try {
       return await runWithDeadline(fn, deadline - Date.now())
-    } catch (error) {
-      if (!isConnectionLostError(error) || remainingRetries <= 0) throw error
+    } catch (err) {
+      if (!isConnectionLostError(err) || remainingRetries <= 0) throw err
       const remainingMs = Math.max(0, deadline - Date.now())
-      if (remainingMs <= 0) throw error
+      if (remainingMs <= 0) throw err
       await new Promise<void>(resolve =>
         setTimeout(resolve, Math.min(effectiveBackoffMs, remainingMs)),
       )
       if (Date.now() >= deadline) {
-        throw new Error(CONNECTION_RETRY_BUDGET_EXCEEDED_MESSAGE, { cause: error })
+        throw new Error(CONNECTION_RETRY_BUDGET_EXCEEDED_MESSAGE, { cause: err })
       }
       return retry(remainingRetries - 1)
     }
   }
 
-  return retry(maxRetries).catch(error => {
-    if (error instanceof Error && error.message === CONNECTION_RETRY_BUDGET_EXCEEDED_MESSAGE) {
+  return retry(maxRetries).catch(err => {
+    if (err instanceof Error && err.message === CONNECTION_RETRY_BUDGET_EXCEEDED_MESSAGE) {
       throw new Error(`retryOnConnectionLost: ${CONNECTION_RETRY_BUDGET_EXCEEDED_MESSAGE}`, {
-        cause: error,
+        cause: err,
       })
     }
-    throw error
+    throw err
   })
 }

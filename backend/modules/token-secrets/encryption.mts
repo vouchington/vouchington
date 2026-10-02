@@ -16,9 +16,9 @@ function getTokenSecrets(): ReturnType<typeof createTokenSecrets> {
       hashSecret: 'encryption-only',
       encryptionKeys: parseEncryptionKeys(value),
     })
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    throw new Error(`${ENCRYPTION_KEYS_ENV}: ${message}`, { cause: error })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    throw new Error(`${ENCRYPTION_KEYS_ENV}: ${message}`, { cause: err })
   }
   cachedRawEncryptionKeys = value
   return cachedTokenSecrets

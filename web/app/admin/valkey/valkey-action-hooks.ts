@@ -13,8 +13,8 @@ export function useBloomFilterActions() {
     try {
       await rebuildBloomFilter(filter)
       onSuccess('Rebuild job queued')
-    } catch (error) {
-      onError(error, { fallback: 'Failed to queue rebuild', tags: { form: 'admin-valkey' } })
+    } catch (err) {
+      onError(err, { fallback: 'Failed to queue rebuild', tags: { form: 'admin-valkey' } })
     } finally {
       setRebuildLoading(prev => ({ ...prev, [filter]: false }))
     }
@@ -31,8 +31,8 @@ export function useCacheActions() {
     try {
       await clearCache(group)
       onSuccess(`Cleared cache group: ${group}`)
-    } catch (error) {
-      onError(error, { fallback: 'Failed to clear cache', tags: { form: 'admin-valkey' } })
+    } catch (err) {
+      onError(err, { fallback: 'Failed to clear cache', tags: { form: 'admin-valkey' } })
     } finally {
       setClearLoading(prev => ({ ...prev, [group]: false }))
     }
@@ -43,8 +43,8 @@ export function useCacheActions() {
     try {
       await clearCache('all')
       onSuccess('All caches cleared')
-    } catch (error) {
-      onError(error, { fallback: 'Failed to clear all caches', tags: { form: 'admin-valkey' } })
+    } catch (err) {
+      onError(err, { fallback: 'Failed to clear all caches', tags: { form: 'admin-valkey' } })
     } finally {
       setClearLoading(prev => ({ ...prev, all: false }))
     }
@@ -65,8 +65,8 @@ export function useFlushActions() {
           ? `Flushed ${concern} (${result.keysRemoved} keys removed)`
           : `Flushed ${concern}`,
       )
-    } catch (error) {
-      onError(error, { fallback: 'Failed to flush', tags: { form: 'admin-valkey' } })
+    } catch (err) {
+      onError(err, { fallback: 'Failed to flush', tags: { form: 'admin-valkey' } })
     } finally {
       setFlushLoading(prev => ({ ...prev, [concern]: false }))
     }

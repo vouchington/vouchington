@@ -71,8 +71,8 @@ export async function importTopics(
   if (newInputs.length > 0) {
     try {
       await options.assertCanCreateTopicRecommendations()
-    } catch (error) {
-      recommendationGateError = error instanceof Error ? error : new Error(String(error))
+    } catch (err) {
+      recommendationGateError = err instanceof Error ? err : new Error(String(err))
     }
   }
   for (const input of newInputs) {
@@ -102,12 +102,12 @@ export async function importTopics(
         inputValue: input.name,
         recommendationPostId: recommendation.id,
       })
-    } catch (error) {
-      onError(error instanceof Error ? error : new Error(String(error)))
+    } catch (err) {
+      onError(err instanceof Error ? err : new Error(String(err)))
       results[input.index] = {
         input: input.rawName,
         status: 'error',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: err instanceof Error ? err.message : 'Unknown error',
       }
     }
   }

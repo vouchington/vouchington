@@ -202,7 +202,7 @@ describe('copyright queue lease fencing', () => {
         },
       }),
       error,
-    ).catch(caught => caught)
+    ).catch(err => err)
     try {
       await Promise.race([
         entered.promise,

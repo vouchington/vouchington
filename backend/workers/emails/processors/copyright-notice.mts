@@ -35,14 +35,14 @@ export async function processSendCopyrightNoticeEmail(data: {
           sesMessageId,
         })
       : await markCopyrightDeliveryIntentSent({ intentId: data.intentId, leaseToken, sesMessageId })
-  } catch (error) {
-    if (error instanceof CopyrightDeliveryNotClaimedError) return false
+  } catch (err) {
+    if (err instanceof CopyrightDeliveryNotClaimedError) return false
     if (prepared)
       await markCopyrightDeliveryIntentFailed({
         intentId: data.intentId,
         leaseToken: prepared.leaseToken,
-        error: error instanceof Error ? error.message : String(error),
+        error: err instanceof Error ? err.message : String(err),
       })
-    throw error
+    throw err
   }
 }

@@ -27,14 +27,14 @@ export async function completeNativeCallback(
   try {
     await completeNativeBlueskyAccountLink(params, flowId, tokenHash)
     redirectToNativeApp(ctx, { flow_id: flowId, completion_token: token })
-  } catch (error) {
+  } catch (err) {
     const outcome = await resolveNativeBlueskyCallbackFailure(flowId, tokenHash)
     if (outcome === 'completed') {
       redirectToNativeApp(ctx, { flow_id: flowId, completion_token: token })
       return
     }
-    reportBlueskyCallbackError(error, { mode: 'native', flowId })
-    redirectToNativeApp(ctx, { flow_id: flowId, bluesky_error: getBlueskyCallbackErrorCode(error) })
+    reportBlueskyCallbackError(err, { mode: 'native', flowId })
+    redirectToNativeApp(ctx, { flow_id: flowId, bluesky_error: getBlueskyCallbackErrorCode(err) })
   }
 }
 

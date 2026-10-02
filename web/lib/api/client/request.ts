@@ -88,18 +88,18 @@ export class ClientRequest {
       }
 
       return JSON.parse(text) as T
-    } catch (error) {
-      if (error instanceof ApiError) {
-        throw error
+    } catch (err) {
+      if (err instanceof ApiError) {
+        throw err
       }
       // Let AbortError propagate unchanged — it's a client cancellation, not an API error.
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        throw error
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        throw err
       }
       throw new ApiError(
-        `${error instanceof Error ? error.message : 'Unknown error'} (${method} ${url})`,
+        `${err instanceof Error ? err.message : 'Unknown error'} (${method} ${url})`,
         500,
-        error,
+        err,
       )
     }
   }

@@ -66,8 +66,8 @@ export function CopyrightNoticeForm() {
             : 'Notice received. We will notify you about the review.',
         )
         router.push('/copyright/notices')
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: 'We could not submit this notice. Please try again.',
           tags: { form: 'copyright-notice' },
         })

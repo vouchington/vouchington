@@ -49,10 +49,10 @@ export function LanguageForm({ initialUser }: { initialUser: LanguageFormInitial
     try {
       await updateMyUser(currentUserId, { country: newCountry })
       onSuccess(t('settings.language.countrySaveSuccess'))
-    } catch (error) {
+    } catch (err) {
       setOptimisticCountry(previousValue)
       /* c8 ignore next -- error path requires injecting a save country failure */
-      onError(error, { fallback: t('settings.language.countrySaveError') })
+      onError(err, { fallback: t('settings.language.countrySaveError') })
     } finally {
       setPending(false)
     }
@@ -66,9 +66,9 @@ export function LanguageForm({ initialUser }: { initialUser: LanguageFormInitial
     try {
       await updateMyUser(currentUserId, { ui_locale: newUiLocale })
       onSuccess(t('settings.language.saveSuccess'))
-    } catch (error) {
+    } catch (err) {
       setOptimisticUiLocale(previousValue)
-      onError(error, { fallback: t('settings.language.saveError') })
+      onError(err, { fallback: t('settings.language.saveError') })
     } finally {
       setPending(false)
     }

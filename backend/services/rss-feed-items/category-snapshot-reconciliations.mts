@@ -129,8 +129,8 @@ export async function reconcileRssFeedItemCategorySnapshotRows(
       // eslint-disable-next-line no-await-in-loop -- a compare-and-delete must follow this item only.
       await acknowledgeRssFeedItemCategorySnapshot(row)
       reconciled += 1
-    } catch (error) {
-      errors.push(error)
+    } catch (err) {
+      errors.push(err)
     }
   }
   if (errors.length > 0)

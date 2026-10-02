@@ -56,9 +56,9 @@ export default function CuratedAsidesPage({ activeAsideType }: CuratedAsidesPage
         if (cancelled) return
         setItems(prev => ({ ...prev, [activeAsideType]: result.curated_aside_items }))
       })
-      .catch(error => {
+      .catch(err => {
         if (cancelled) return
-        onError(error, {
+        onError(err, {
           fallback: t(
             'extracted.curatedAsides.curatedAsidesClient.failedToLoadActiveasidetypeCuratedAsides_72554671',
             { activeAsideType },
@@ -92,8 +92,8 @@ export default function CuratedAsidesPage({ activeAsideType }: CuratedAsidesPage
         ...prev,
         [tabValue]: (prev[tabValue] ?? []).filter(i => i.id !== id),
       }))
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t(
           'extracted.curatedAsides.curatedAsidesClient.failedToDeleteCuratedItem_96346ae3',
         ),
@@ -125,8 +125,8 @@ export default function CuratedAsidesPage({ activeAsideType }: CuratedAsidesPage
         tabValue,
         updated.map(i => i.id),
       )
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t(
           'extracted.curatedAsides.curatedAsidesClient.failedToReorderCuratedItems_469ed821',
         ),

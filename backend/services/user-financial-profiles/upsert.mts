@@ -121,13 +121,13 @@ export async function upsertUserFinancialProfile(
   let rows: UserFinancialProfileRow[]
   try {
     ;({ rows } = await transactionQuery<UserFinancialProfileRow>(statement))
-  } catch (error) {
-    const pgError = error as { code?: string }
+  } catch (err) {
+    const pgError = err as { code?: string }
     if (pgError.code === '23503') assert(false, 422, 'currency must be supported')
     if (pgError.code === '23514' || pgError.code === '22003') {
       assert(false, 422, 'financial profile money is outside the supported range')
     }
-    throw error
+    throw err
   }
   const result = toUserFinancialProfile(rows[0]!)
   await transactionQuery.commit()

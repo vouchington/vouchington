@@ -61,8 +61,8 @@ export function useManageSourcePage(id: string, initialData?: Partial<ManageSour
         primaryHostname: toPrimaryHostname(topic),
       })
       onSuccess(hostname ? `Primary domain set to ${hostname}` : 'Primary domain removed')
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: 'Failed to update primary domain',
         tags: { form: 'admin-topic-domains' },
       })
@@ -94,8 +94,8 @@ export function useManageSourcePage(id: string, initialData?: Partial<ManageSour
       dispatch({ additionalHostnames })
       form.reset()
       onSuccess(`Added ${result.additional_hostname.hostname}`)
-    } catch (error) {
-      onError(error, { fallback: 'Failed to add hostname', tags: { form: 'admin-topic-domains' } })
+    } catch (err) {
+      onError(err, { fallback: 'Failed to add hostname', tags: { form: 'admin-topic-domains' } })
     } finally {
       dispatch({ addingHostname: false })
     }
@@ -109,8 +109,8 @@ export function useManageSourcePage(id: string, initialData?: Partial<ManageSour
         additionalHostnames: state.additionalHostnames.filter(h => h.hostname_id !== hostnameId),
       })
       onSuccess(`Removed ${hostname}`)
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: 'Failed to remove hostname',
         tags: { form: 'admin-topic-domains' },
       })
@@ -137,11 +137,11 @@ export function useManageSourcePage(id: string, initialData?: Partial<ManageSour
           pageInfo: toHostnamesPageInfo(page.page_info),
         })
       }
-    } catch (error) {
+    } catch (err) {
       if (idGenerationRef.current === generation) {
         dispatch({
           hostnamesFetchError:
-            error instanceof Error ? error : new Error('Failed to load more domains'),
+            err instanceof Error ? err : new Error('Failed to load more domains'),
         })
       }
     } finally {
@@ -185,8 +185,8 @@ async function loadManageSourceState(id: string): Promise<ManageSourceAction> {
       rssFeed,
       topicName: topicData?.name ?? null,
     }
-  } catch (error) {
+  } catch (err) {
     /* c8 ignore next -- error path requires injecting a load failure */
-    return { loadError: error instanceof Error ? error.message : 'Failed to load', loading: false }
+    return { loadError: err instanceof Error ? err.message : 'Failed to load', loading: false }
   }
 }

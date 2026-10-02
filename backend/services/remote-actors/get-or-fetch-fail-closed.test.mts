@@ -79,7 +79,7 @@ describe('remote actor stale-key fail-closed policy', () => {
     const cutoffError = await getOrFetchRemoteActorByKeyId(keyId, {
       fetchWithTimeout,
       validateUrl,
-    }).catch((error: unknown) => error)
+    }).catch((err: unknown) => err)
 
     expect(cutoffError).toBeInstanceOf(RemoteActorFetchAvailabilityError)
     expect((cutoffError as Error).cause).toBe(transportError)
@@ -103,7 +103,7 @@ describe('remote actor stale-key fail-closed policy', () => {
     const cutoffError = await getOrFetchRemoteActorByKeyId(keyId, {
       fetchWithTimeout,
       validateUrl,
-    }).catch((error: unknown) => error)
+    }).catch((err: unknown) => err)
 
     expect(cutoffError).toBeInstanceOf(RemoteActorFetchAvailabilityError)
     expect((cutoffError as Error).cause).toBe(validationTimeout)
@@ -127,7 +127,7 @@ describe('remote actor stale-key fail-closed policy', () => {
     const cutoffError = await getOrFetchRemoteActorByKeyId(keyId, {
       fetchWithTimeout,
       validateUrl,
-    }).catch((error: unknown) => error)
+    }).catch((err: unknown) => err)
 
     expect(cutoffError).toBeInstanceOf(RemoteActorFetchAvailabilityError)
     expect((cutoffError as Error).cause).toBe(resolverError)
@@ -189,7 +189,7 @@ describe('remote actor stale-key fail-closed policy', () => {
     const cutoffError = await getOrFetchRemoteActorByKeyId(keyId, {
       fetchWithTimeout,
       validateUrl,
-    }).catch((error: unknown) => error)
+    }).catch((err: unknown) => err)
 
     expect(cutoffError).toBeInstanceOf(RemoteActorFetchAvailabilityError)
     expect((cutoffError as Error).cause).toBe(bodyError)

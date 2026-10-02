@@ -32,8 +32,8 @@ async function run(root: string, tempPath: string) {
       env: { ...process.env, TMPDIR: tempPath, WORKER_PORT: '8787' },
     })
     return 0
-  } catch (error) {
-    return (error as { code?: number }).code ?? -1
+  } catch (err) {
+    return (err as { code?: number }).code ?? -1
   }
 }
 

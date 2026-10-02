@@ -53,9 +53,9 @@ export const getUrlByAny = async (
       const url = normalizeUrlForUrlTable(id)
       param = url.toString()
       filter = 'url = $1'
-    } catch (error) {
+    } catch (err) {
       throw createHttpError(422, 'Invalid URL identifier: must be a UUID or a valid URL', {
-        cause: error,
+        cause: err,
       })
     }
   }

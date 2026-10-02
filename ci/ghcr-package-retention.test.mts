@@ -113,7 +113,7 @@ describe('ghcr-package-retention', () => {
       },
     }).then(
       value => ({ ok: true as const, ...value }),
-      (error: { stderr: string }) => ({ ok: false as const, stderr: error.stderr }),
+      (err: { stderr: string }) => ({ ok: false as const, stderr: err.stderr }),
     )
     const deletes = await readFile(deletesPath, 'utf8').catch(() => '')
     return { deleted: deletes.split('\n').filter(Boolean).map(Number), result }

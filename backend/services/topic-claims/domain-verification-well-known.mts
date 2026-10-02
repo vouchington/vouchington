@@ -96,9 +96,9 @@ function withAbortableBody(response: Response, signal: AbortSignal): Response {
           } else {
             controller.enqueue(result.value)
           }
-        } catch (error) {
+        } catch (err) {
           release()
-          controller.error(error)
+          controller.error(err)
         }
       },
       async cancel(reason) {

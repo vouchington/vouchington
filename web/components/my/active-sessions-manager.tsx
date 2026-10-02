@@ -61,8 +61,8 @@ export function ActiveSessionsManager({ initialData, initialSessions }: Props) {
       if (session.is_current) {
         replace('/login')
       }
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('settings.activeSessions.toastFailedSignOutSession'),
         tags: { form: 'active-sessions' },
       })
@@ -77,8 +77,8 @@ export function ActiveSessionsManager({ initialData, initialSessions }: Props) {
       await revokeAuthSessions()
       onSuccess(t('settings.activeSessions.toastAllSessionsSignedOut'))
       replace('/login')
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('settings.activeSessions.toastFailedSignOutAllDevices'),
         tags: { form: 'active-sessions' },
       })

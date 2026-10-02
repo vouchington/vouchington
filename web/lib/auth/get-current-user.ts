@@ -28,10 +28,10 @@ export const getCurrentUser = cache(async function getCurrentUser(): Promise<Use
   try {
     const { user } = await getAuthMe()
     return user
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 401) {
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 401) {
       return null
     }
-    throw error
+    throw err
   }
 })

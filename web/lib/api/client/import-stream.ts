@@ -72,10 +72,10 @@ export async function streamImportProgress(
           signal?.removeEventListener('abort', onAbort)
           resolve()
         })
-        .catch((error: unknown) => {
+        .catch((err: unknown) => {
           clearInterval(state.interval)
           signal?.removeEventListener('abort', onAbort)
-          reject(error instanceof Error ? error : new Error('Import stream failed'))
+          reject(err instanceof Error ? err : new Error('Import stream failed'))
         })
     }, 2000)
     signal?.addEventListener('abort', onAbort, { once: true })

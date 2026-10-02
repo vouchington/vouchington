@@ -21,8 +21,8 @@ export function TriggerUrlCrawlButton({ id, urlType, rssFeedId }: TriggerUrlCraw
     try {
       await enqueueUrlCrawl(id)
       toast.success('Crawl enqueued')
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to trigger crawl')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to trigger crawl')
     } finally {
       setIsCrawling(false)
     }
@@ -34,8 +34,8 @@ export function TriggerUrlCrawlButton({ id, urlType, rssFeedId }: TriggerUrlCraw
     try {
       await refreshRssFeed(rssFeedId, {})
       toast.success('RSS sync triggered')
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to trigger RSS sync')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to trigger RSS sync')
     } finally {
       setIsSyncing(false)
     }

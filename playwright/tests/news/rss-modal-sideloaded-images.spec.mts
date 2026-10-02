@@ -96,22 +96,22 @@ test.describe('sideloaded images in RSS item modal', () => {
     if (feedId) {
       try {
         await write(`DELETE FROM rss_feeds WHERE id = $1`, [feedId])
-      } catch (error) {
-        errors.push(error)
+      } catch (err) {
+        errors.push(err)
       }
     }
     if (rssItemId) {
       try {
         await write(`DELETE FROM rss_feed_item_ids WHERE id = $1`, [rssItemId])
-      } catch (error) {
-        errors.push(error)
+      } catch (err) {
+        errors.push(err)
       }
     }
     if (topicId) {
       try {
         await write(`DELETE FROM topics WHERE id = $1`, [topicId])
-      } catch (error) {
-        errors.push(error)
+      } catch (err) {
+        errors.push(err)
       }
     }
     if (errors.length > 0) {

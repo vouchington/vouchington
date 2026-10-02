@@ -48,8 +48,8 @@ export function CommunityAgentPromptItem({ prompt, communitySlug, onPromptUpdate
         onPromptUpdated?.({ ...prompt, ...updated.community_agent_prompt, prompt: editText })
         onSuccess(t('extracted.communities.communityAgentPromptItem.promptUpdated_8dc48c5d'))
         refresh()
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: t(
             'extracted.communities.communityAgentPromptItem.failedToUpdatePrompt_db9aad3c',
           ),
@@ -65,8 +65,8 @@ export function CommunityAgentPromptItem({ prompt, communitySlug, onPromptUpdate
         onPromptUpdated?.(null)
         onSuccess(t('extracted.communities.communityAgentPromptItem.promptDeleted_8e7b89b8'))
         refresh()
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: t(
             'extracted.communities.communityAgentPromptItem.failedToDeletePrompt_daaf861e',
           ),
@@ -92,8 +92,8 @@ export function CommunityAgentPromptItem({ prompt, communitySlug, onPromptUpdate
           onSuccess(t('extracted.communities.communityAgentPromptItem.slotAllocated_417c6c1d'))
         }
         refresh()
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: t(
             'extracted.communities.communityAgentPromptItem.failedToUpdateSlotAllocation_11311ec6',
           ),

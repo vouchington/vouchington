@@ -64,11 +64,11 @@ const tool: Tool<ToolArgs, ToolResult> = {
         }
 
         return await getRatingsForHostname(args.hostname!.trim().toLowerCase())
-      } catch (error: unknown) {
-        if (error instanceof Error) onError(error)
+      } catch (err: unknown) {
+        if (err instanceof Error) onError(err)
         return {
           success: false,
-          error: error instanceof Error ? error.message : 'Failed to look up domain ratings.',
+          error: err instanceof Error ? err.message : 'Failed to look up domain ratings.',
         }
       }
     },

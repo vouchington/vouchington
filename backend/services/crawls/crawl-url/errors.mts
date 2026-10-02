@@ -52,9 +52,9 @@ async function lockRateLimitedHostname(error: unknown, hostname: CrawlHostnameRe
   try {
     const lockMs = await setDomainRateLimited(hostname.id, retryAfterMs)
     trackDomainRateLimitLocked('html', hostname.hostname, lockMs)
-  } catch (lockError) {
+  } catch (err) {
     /* v8 ignore next 2 -- Valkey remains real in tests; forced client failures would destabilize shared test state. */
-    const lockWriteError = lockError instanceof Error ? lockError : new Error(String(lockError))
+    const lockWriteError = err instanceof Error ? err : new Error(String(err))
     onError(lockWriteError)
   }
 }

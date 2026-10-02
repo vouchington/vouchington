@@ -60,9 +60,9 @@ export async function BrowseFeedPage({
         q,
         limit: 50,
       },
-    }).catch(error => {
-      const message = getListSearchErrorMessage(error)
-      if (!message) throw error
+    }).catch(err => {
+      const message = getListSearchErrorMessage(err)
+      if (!message) throw err
       return { error: message }
     }),
   ])

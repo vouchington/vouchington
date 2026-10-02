@@ -36,12 +36,12 @@ export function MessagesSidebarGroup() {
         .then(result => {
           if (!cancelled) replaceLoadedFirstPage(result.results, result.page_info)
         })
-        .catch(error => {
+        .catch(err => {
           if (!cancelled) {
             if (attempt < FIRST_PAGE_MAX_ATTEMPTS) {
               retryTimer = scheduleFirstPageRetry(() => fetchFirstPage(attempt + 1), attempt)
             } else {
-              onError(error, {
+              onError(err, {
                 fallback: t(
                   'extracted.messages.messagesSidebarGroup.failedToLoadMessages_eeaaa7b4',
                 ),
@@ -70,9 +70,9 @@ export function MessagesSidebarGroup() {
     try {
       const result = await getMyMessagesClient(pageInfo.end_cursor)
       appendPage(result.results, result.page_info)
-    } catch (error) {
-      setFetchError(error instanceof Error ? error : new Error(String(error)))
-      onError(error, {
+    } catch (err) {
+      setFetchError(err instanceof Error ? err : new Error(String(err)))
+      onError(err, {
         fallback: t('extracted.messages.messagesSidebarGroup.failedToLoadMoreMessages_d37c5429'),
       })
     } finally {

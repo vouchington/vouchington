@@ -64,8 +64,8 @@ export async function computeTranscriptFactsFromFiles(
     if (!detected) return { error: 'unsupported transcript schema' }
     if (detected === 'codex') facts.compactions = Math.max(codex.compacted, codex.events)
     return { facts }
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : String(error) }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : String(err) }
   } finally {
     await Promise.all([uuids.dispose(), advisors.dispose(), failedIds.dispose()])
   }

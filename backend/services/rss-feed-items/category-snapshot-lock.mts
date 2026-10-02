@@ -24,8 +24,8 @@ export async function withRssFeedItemCategorySnapshotLocks<Result>(
     )
     try {
       result = await operation()
-    } catch (error) {
-      operationError = toError(error)
+    } catch (err) {
+      operationError = toError(err)
     }
     const unlockError = await unlockCategorySnapshotLocks(client, itemIds)
     if (unlockError) {
@@ -41,9 +41,9 @@ export async function withRssFeedItemCategorySnapshotLocks<Result>(
     released = true
     if (operationError) throw operationError
     return result as Result
-  } catch (error) {
+  } catch (err) {
     if (!released) client.release(true)
-    throw toError(error)
+    throw toError(err)
   }
 }
 
@@ -62,8 +62,8 @@ async function unlockCategorySnapshotLocks(
     if (rows.some(row => !row.unlocked))
       return new Error('RSS feed item category snapshot advisory lock was not held at release')
     return undefined
-  } catch (error) {
-    return toError(error)
+  } catch (err) {
+    return toError(err)
   }
 }
 

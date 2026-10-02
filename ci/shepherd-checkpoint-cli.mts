@@ -108,7 +108,7 @@ export function runCheckpointCli(): void {
 
 try {
   runCheckpointCli()
-} catch (error) {
-  process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`)
+} catch (err) {
+  process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`)
   process.exitCode = 1
 }

@@ -219,7 +219,7 @@ describe('community membership role locks', () => {
     await ready.promise
 
     const ban = banUserFromCommunity(moderator, community.id, target.id)
-    const banRejection = ban.catch((error: unknown) => error)
+    const banRejection = ban.catch((err: unknown) => err)
     try {
       await waitForTestPostgresLockWaiter(await holderProcessId.promise, 'lockCommunityUsers')
     } finally {
@@ -268,7 +268,7 @@ describe('community membership role locks', () => {
     await ready.promise
 
     const lift = liftCommunityBan(moderator, community.id, target.id)
-    const liftRejection = lift.catch((error: unknown) => error)
+    const liftRejection = lift.catch((err: unknown) => err)
     try {
       await waitForTestPostgresLockWaiter(await holderProcessId.promise, 'lockCommunityUsers')
     } finally {

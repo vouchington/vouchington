@@ -7,7 +7,7 @@ export async function enqueueInitialOAuthAuthorizationExchangeBestEffort(
 ): Promise<void> {
   try {
     await enqueue(authorizationId)
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
   }
 }

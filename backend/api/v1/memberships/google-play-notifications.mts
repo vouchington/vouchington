@@ -54,15 +54,15 @@ app.route('/api/v1/memberships/google-play/notifications').post(async (ctx: Cont
     })
     ctx.setStatus(notification.replayed ? 200 : 202)
     ctx.json({ received: true })
-  } catch (error) {
-    if (error instanceof GooglePlayRtdnTrustUnavailableError) {
-      ctx.throw(503, error.message)
+  } catch (err) {
+    if (err instanceof GooglePlayRtdnTrustUnavailableError) {
+      ctx.throw(503, err.message)
       return
     }
-    if (error instanceof InvalidGooglePlayRtdnError) {
-      ctx.throw(401, error.message)
+    if (err instanceof InvalidGooglePlayRtdnError) {
+      ctx.throw(401, err.message)
       return
     }
-    throw error
+    throw err
   }
 })

@@ -12,12 +12,12 @@ export async function* iterateOpenAIResponseStream(
 ): AsyncGenerator<ResponseStreamEvent> {
   try {
     for await (const event of stream) yield event
-  } catch (cause) {
+  } catch (err) {
     if (
-      cause instanceof Error &&
-      ['AbortError', 'APIUserAbortError', 'TimeoutError'].includes(cause.name)
+      err instanceof Error &&
+      ['AbortError', 'APIUserAbortError', 'TimeoutError'].includes(err.name)
     )
-      throw cause
-    throw new OpenAIResponseStreamIterationError(hasEmittedTextDelta(), { cause })
+      throw err
+    throw new OpenAIResponseStreamIterationError(hasEmittedTextDelta(), { cause: err })
   }
 }

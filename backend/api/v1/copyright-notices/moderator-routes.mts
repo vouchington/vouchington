@@ -530,11 +530,11 @@ async function parseCopyrightReviewRequest(ctx: Context, routeId: string) {
 async function enqueueMissingSourceImageEmbedding(): Promise<void> {
   try {
     await enqueueCreateImageEmbeddingsBatch()
-  } catch (error) {
+  } catch (err) {
     onError(
-      error instanceof Error
-        ? error
-        : new Error('Failed to enqueue source image embedding batch', { cause: error }),
+      err instanceof Error
+        ? err
+        : new Error('Failed to enqueue source image embedding batch', { cause: err }),
     )
   }
 }

@@ -11,13 +11,13 @@ export default class SharedDbScopeGuardRunner extends TestRunner {
   ): Promise<void> {
     try {
       await super.importFile(filepath, source)
-    } catch (error) {
+    } catch (err) {
       const violations = unreportedSharedDbScopeViolations(filepath)
       markSharedDbScopeViolationsReported(filepath)
-      if (violations.length === 0) throw error
+      if (violations.length === 0) throw err
       throw new Error(
-        `${error instanceof Error ? error.message : String(error)}\n\n${violations.map(violation => violation.message).join('\n')}`,
-        { cause: error },
+        `${err instanceof Error ? err.message : String(err)}\n\n${violations.map(violation => violation.message).join('\n')}`,
+        { cause: err },
       )
     }
   }

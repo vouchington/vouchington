@@ -86,16 +86,11 @@ async function findExactTopic(
 ): Promise<ExactTopic | null> {
   const bySlug = await Promise.all(
     candidateSlugs.map(slug =>
-      dependencies.getTopicByAny(slug, options).catch((error: unknown) => {
-        if (
-          typeof error === 'object' &&
-          error !== null &&
-          'status' in error &&
-          error.status === 422
-        ) {
+      dependencies.getTopicByAny(slug, options).catch((err: unknown) => {
+        if (typeof err === 'object' && err !== null && 'status' in err && err.status === 422) {
           return null
         }
-        throw error
+        throw err
       }),
     ),
   )

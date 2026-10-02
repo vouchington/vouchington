@@ -148,7 +148,7 @@ export async function enqueueOAuthFriendSyncBestEffort(
       default:
         break
     }
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
   }
 }

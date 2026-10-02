@@ -71,9 +71,9 @@ export function createLambdaHandler(
         return await handleSideloadRequest(request, environments.sideload, resolvedDependencies)
       }
       return await handleS3Request(request, environments.source, resolvedDependencies)
-    } catch (error: unknown) {
-      if (error instanceof LambdaError) {
-        return buildErrorResponse(error.statusCode, error.message)
+    } catch (err: unknown) {
+      if (err instanceof LambdaError) {
+        return buildErrorResponse(err.statusCode, err.message)
       }
       return buildErrorResponse(500, 'Internal server error')
     }

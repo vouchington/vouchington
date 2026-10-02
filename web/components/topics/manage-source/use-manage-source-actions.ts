@@ -27,8 +27,8 @@ export function useSourceActions(
       })
       dispatch({ rssFeed: result.rss_feed as ManageSourceRssFeed })
       onSuccess('Source updated')
-    } catch (error) {
-      onError(error, { fallback: 'Failed to save source', tags: { form: 'admin-topic-source' } })
+    } catch (err) {
+      onError(err, { fallback: 'Failed to save source', tags: { form: 'admin-topic-source' } })
     } finally {
       dispatch({ saving: false })
     }
@@ -52,8 +52,8 @@ async function handleToggle(state: ManageSourceState, dispatch: (action: Action)
     })
     dispatch({ rssFeed: result.rss_feed as ManageSourceRssFeed })
     onSuccess(state.rssFeed.is_enabled ? 'Source disabled' : 'Source enabled')
-  } catch (error) {
-    onError(error, { fallback: 'Failed to toggle source', tags: { form: 'admin-topic-source' } })
+  } catch (err) {
+    onError(err, { fallback: 'Failed to toggle source', tags: { form: 'admin-topic-source' } })
   } finally {
     dispatch({ toggling: false })
   }
@@ -70,8 +70,8 @@ async function handleToggleDiscoverability(
     const result = await updateRssFeed(state.rssFeed.id, { discoverable: next })
     dispatch({ rssFeed: result.rss_feed as ManageSourceRssFeed })
     onSuccess(next ? 'Source made discoverable' : 'Source hidden from discovery')
-  } catch (error) {
-    onError(error, {
+  } catch (err) {
+    onError(err, {
       fallback: 'Failed to update discoverability',
       tags: { form: 'admin-topic-source' },
     })
@@ -87,8 +87,8 @@ async function handleDelete(state: ManageSourceState, dispatch: (action: Action)
     await deleteRssFeed(state.rssFeed.id)
     dispatch({ confirmDelete: false, crawls: [], rssFeed: null })
     onSuccess('Source deleted')
-  } catch (error) {
-    onError(error, { fallback: 'Failed to delete source', tags: { form: 'admin-topic-source' } })
+  } catch (err) {
+    onError(err, { fallback: 'Failed to delete source', tags: { form: 'admin-topic-source' } })
   } finally {
     dispatch({ deleting: false })
   }
@@ -112,8 +112,8 @@ async function handleRefresh(
       crawls: crawlsData.results,
       rssFeed: (feedData.results[0] as ManageSourceRssFeed | undefined) ?? state.rssFeed,
     })
-  } catch (error) {
-    onError(error, { fallback: 'Failed to refresh source', tags: { form: 'admin-topic-source' } })
+  } catch (err) {
+    onError(err, { fallback: 'Failed to refresh source', tags: { form: 'admin-topic-source' } })
   } finally {
     dispatch({ refreshing: false })
   }

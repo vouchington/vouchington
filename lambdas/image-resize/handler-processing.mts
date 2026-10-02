@@ -79,9 +79,9 @@ export async function processImageRequest(
     }
     if (cached.buffer) return buildResponse(200, cached.buffer, format)
     throw new Error('Image fetch returned no artifact')
-  } catch (error: unknown) {
-    if (!(error instanceof S3OperationError) || error.statusCode !== 404) {
-      throw error
+  } catch (err: unknown) {
+    if (!(err instanceof S3OperationError) || err.statusCode !== 404) {
+      throw err
     }
   }
 
@@ -108,9 +108,9 @@ export async function processImageRequest(
         FORMAT_TO_CONTENT_TYPE[format],
         origin.etag,
       )
-    } catch (error: unknown) {
-      console.error(`Failed to write image cache key ${cacheKey}`, error)
-      dependencies.captureCacheWriteError(error)
+    } catch (err: unknown) {
+      console.error(`Failed to write image cache key ${cacheKey}`, err)
+      dependencies.captureCacheWriteError(err)
     }
 
     if (isTempImageFile(transformed)) return await buildFileResponse(200, transformed, format)

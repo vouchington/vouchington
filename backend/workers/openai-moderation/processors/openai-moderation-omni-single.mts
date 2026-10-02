@@ -56,10 +56,10 @@ export async function handleOpenAIModerationOmniSingleJob(
           }
 
           return { success: true }
-        } catch (error) {
-          const failure = await failPostModerationAttempt(attempt, classifyModerationError(error))
+        } catch (err) {
+          const failure = await failPostModerationAttempt(attempt, classifyModerationError(err))
           if (failure.exhausted) await checkPostClearance(post.id)
-          throw error
+          throw err
         }
       }
       case 'image': {
@@ -104,8 +104,8 @@ export async function handleOpenAIModerationOmniSingleJob(
       default:
         throw new Error(`Unknown job type: ${job.name}`)
     }
-  } catch (error: unknown) {
-    return handleOpenAIRateLimit(error, worker)
+  } catch (err: unknown) {
+    return handleOpenAIRateLimit(err, worker)
   }
 }
 

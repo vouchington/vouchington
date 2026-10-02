@@ -63,7 +63,7 @@ export async function admitTestCopyrightBeforeScreening<T>(
   const pid = await getTestPostgresBackendProcessId(transaction)
   const admission = admit().then(
     value => ({ value, error: null }),
-    error => ({ value: null, error }),
+    err => ({ value: null, error: err }),
   )
   await waitForTestPostgresLockWaiter(pid, 'acceptCopyrightNoticeAndImposeRestriction:lockNotice')
   const admissionPid = await getTestPostgresAdvisoryLockHolderProcessId({
@@ -105,7 +105,7 @@ export async function startTestCopyrightScreeningBeforeAdmission<T>(
   const pid = await getTestPostgresBackendProcessId(transaction)
   const admission = admit().then(
     value => ({ value, error: null }),
-    error => ({ value: null, error }),
+    err => ({ value: null, error: err }),
   )
   await waitForTestPostgresLockWaiter(pid, 'lockAssessmentForm:fence')
   await transaction.commit()

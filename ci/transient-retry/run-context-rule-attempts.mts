@@ -147,10 +147,10 @@ export async function deriveRuleAttempts(
         afterRuleEvaluated: (replayCtx, rule) =>
           throwIfReplayEvidenceFailed(replayCtx, rule, replayRules.indexOf(rule)),
       })
-    } catch (error) {
-      if (!(error instanceof ReplayEvidenceUnavailableError)) throw error
-      if (error.ruleIndex === 0) throw error
-      replayRuleCount = Math.min(replayRuleCount, error.ruleIndex)
+    } catch (err) {
+      if (!(err instanceof ReplayEvidenceUnavailableError)) throw err
+      if (err.ruleIndex === 0) throw err
+      replayRuleCount = Math.min(replayRuleCount, err.ruleIndex)
       continue
     }
     if (result.decision === 'rerun') {

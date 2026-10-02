@@ -24,15 +24,12 @@ export async function fetchWithPinnedDns(
       signal,
       headers: { 'User-Agent': 'Voucha-Image-Resize/1.0' },
     })
-  } catch (error) {
-    if (error instanceof UnsafeUrlError) {
+  } catch (err) {
+    if (err instanceof UnsafeUrlError) {
       const isClientInputError =
-        error.reason === 'invalid URL' || error.reason.startsWith('scheme not allowed:')
-      throw new HttpOperationError(
-        `URL not allowed: ${error.reason}`,
-        isClientInputError ? 400 : 403,
-      )
+        err.reason === 'invalid URL' || err.reason.startsWith('scheme not allowed:')
+      throw new HttpOperationError(`URL not allowed: ${err.reason}`, isClientInputError ? 400 : 403)
     }
-    throw error
+    throw err
   }
 }

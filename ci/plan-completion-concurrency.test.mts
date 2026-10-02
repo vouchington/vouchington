@@ -159,7 +159,7 @@ describe('plan completion bounded snapshot', () => {
       const fixture = snapshotFixture()
       const failure = new Error('GitHub read unavailable')
       const snapshot = runPlanCompletionSnapshot({ repository: REPOSITORY, runGh: fixture.runGh })
-      const rejected = snapshot.catch((error: unknown) => error)
+      const rejected = snapshot.catch((err: unknown) => err)
       for (const phase of PHASES) {
         if (phase === failingPhase) break
         const total = phase === 'pull' ? PLAN_COUNT * 2 : PLAN_COUNT

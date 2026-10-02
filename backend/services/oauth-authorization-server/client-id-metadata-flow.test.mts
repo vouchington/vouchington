@@ -223,7 +223,7 @@ describe('Client ID Metadata Document OAuth flow', () => {
       responseType: 'token',
       scope: 'mcp.user:read',
       state,
-    }).catch((caught: unknown) => caught)
+    }).catch((err: unknown) => err)
     expect(error).toMatchObject({ code: 'unsupported_response_type' })
     if (!(error instanceof OAuthProtocolError)) throw new Error('expected OAuth protocol error')
 

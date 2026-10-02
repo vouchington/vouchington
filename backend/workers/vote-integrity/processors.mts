@@ -22,8 +22,8 @@ export async function processVoteIntegrityCheck(
     if (ipResult.flagged) {
       await createVoteIntegrityFlag(entityType, entityId, 'ip_correlation', ipResult.details)
     }
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
-    throw error
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
+    throw err
   }
 }

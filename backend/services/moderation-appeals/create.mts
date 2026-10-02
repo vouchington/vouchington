@@ -135,9 +135,9 @@ export async function createModerationAppeal(
       approved_at, approved_by_id, sent_at, resolved_at, resolved_by_id,
       resolution_action, latest_lifecycle_change_id, updated_at
     FROM upserted
-  `).catch(async (error: unknown) => {
+  `).catch(async (err: unknown) => {
     /* v8 ignore start -- concurrent appeal race; the integration regression is timing-dependent */
-    const pgErr = error as { code?: string; constraint?: string }
+    const pgErr = err as { code?: string; constraint?: string }
     const duplicateConstraints = new Set([
       'idx_moderation_appeals__one_open_ban',
       'idx_moderation_appeals__one_open_post',
@@ -169,7 +169,7 @@ export async function createModerationAppeal(
         if (existing) return { rows: [{ ...existing, inserted: false }] }
       }
     }
-    throw error
+    throw err
     /* v8 ignore stop */
   })
 

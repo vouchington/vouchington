@@ -37,9 +37,9 @@ export async function abortOpenAiSpendCapDelayedJobRegistration(
       keys: [key],
       args: [generation, field],
     })
-  } catch (abortError) {
+  } catch (err) {
     const failure = new AggregateError(
-      [error, toError(abortError)],
+      [error, toError(err)],
       'Failed to register an OpenAI spend-cap delayed job and abort its reservation',
     )
     failure.cause = error

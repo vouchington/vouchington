@@ -136,15 +136,15 @@ function reportRejectedEnqueue<TCallContext>(
   count: number,
   callContext?: TCallContext,
 ): void {
-  promise.catch(error => {
-    const err = toErrorWithReportingContext(error)
+  promise.catch(err => {
+    const localErr = toErrorWithReportingContext(err)
     onError(
-      options.decorateError?.(err, {
+      options.decorateError?.(localErr, {
         queueName: options.queueName,
         jobName: options.jobName,
         count,
         callContext,
-      }) ?? err,
+      }) ?? localErr,
     )
   })
 }

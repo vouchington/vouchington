@@ -63,8 +63,8 @@ export function ModmailThreadClient({
     try {
       const result = await sendModmailMessage(communitySlug, thread.id, trimmed)
       setMessages(prev => [...prev, result.message])
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.threadid.modmailThreadClient.failedToSendMessage_66b8e077'),
       })
     } finally {
@@ -94,14 +94,14 @@ export function ModmailThreadClient({
       setMessages(prev => prependUniqueMessages(prev, res.results))
       setHasMore(res.page_info.has_next_page)
       endCursorRef.current = res.page_info.end_cursor
-    } catch (error) {
+    } catch (err) {
       if (
         generation === generationRef.current &&
         contextSlug === communitySlug &&
         contextThreadId === thread.id
       ) {
-        setLoadMoreError(error instanceof Error ? error : new Error(String(error)))
-        onError(error, {
+        setLoadMoreError(err instanceof Error ? err : new Error(String(err)))
+        onError(err, {
           fallback: t('extracted.threadid.modmailThreadClient.failedToLoadMoreMessages_d37c5429'),
         })
       }
@@ -121,8 +121,8 @@ export function ModmailThreadClient({
     try {
       const result = await resolveModmailThread(communitySlug, thread.id)
       setThread(result.thread)
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.threadid.modmailThreadClient.failedToResolveThread_55590a32'),
       })
     }

@@ -11,6 +11,23 @@ describe('ClientRequest', () => {
     vi.unstubAllGlobals()
   })
 
+  it('preserves cancellation identity and forwards the caller signal', async () => {
+    const cancellation = new DOMException('The caller canceled the request', 'AbortError')
+    const controller = new AbortController()
+    controller.abort(cancellation)
+    const fetchMock = vi.fn<typeof fetch>().mockRejectedValue(cancellation)
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(
+      new ClientRequest().get('/api/example', { signal: controller.signal }),
+    ).rejects.toBe(cancellation)
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/example',
+      expect.objectContaining({ signal: controller.signal }),
+    )
+    expect(fetchMock.mock.calls[0]?.[1]?.signal).toBe(controller.signal)
+  })
+
   it('returns undefined for successful empty 200 responses', async () => {
     vi.stubGlobal(
       'fetch',
@@ -125,9 +142,9 @@ function errorResponse(
 async function captureApiError(request: Promise<unknown>): Promise<ApiError> {
   try {
     await request
-  } catch (error) {
-    if (error instanceof ApiError) return error
-    throw error
+  } catch (err) {
+    if (err instanceof ApiError) return err
+    throw err
   }
   throw new Error('Expected API request to reject')
 }

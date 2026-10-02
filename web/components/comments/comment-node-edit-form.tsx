@@ -31,8 +31,8 @@ export function CommentNodeEditForm({
       const { post: updatedPost } = await updatePost(post.id, { markdown: markdown.trim() })
       onSuccess(t('extracted.comments.commentNodeEditForm.commentUpdated_651de1d5'))
       onSave(updatedPost)
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.comments.commentNodeEditForm.failedToSaveComment_78443791'),
         tags: { form: 'comment-edit' },
       })

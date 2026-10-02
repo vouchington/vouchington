@@ -61,7 +61,7 @@ describe('open-oauth-popup', () => {
       })
       const rejection = authPromise.then(
         () => undefined,
-        (error: unknown) => error,
+        (err: unknown) => err,
       )
 
       popup.closed = true

@@ -35,8 +35,8 @@ export async function loadTypedEnvContractData(
 async function importTypedEnvContract(entrypoint: string): Promise<Record<string, unknown>> {
   try {
     return (await import(pathToFileURL(entrypoint).href)) as Record<string, unknown>
-  } catch (error) {
-    throw new Error(`failed to load typed env contract at ${entrypoint}`, { cause: error })
+  } catch (err) {
+    throw new Error(`failed to load typed env contract at ${entrypoint}`, { cause: err })
   }
 }
 

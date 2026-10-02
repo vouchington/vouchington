@@ -73,22 +73,22 @@ export const fetchUrl = async (
       resolvedAddresses,
       signal,
     })
-  } catch (error: unknown) {
+  } catch (err: unknown) {
     const duration = Date.now() - startedAt.getTime()
-    if (httpUtils.isTimeoutError(error)) {
+    if (httpUtils.isTimeoutError(err)) {
       trackCrawlerFailure(crawlerType, domain, 0, duration, 'CrawlerTimeoutError')
-      throw new CrawlerTimeoutError(url, timeoutMs, duration, error)
+      throw new CrawlerTimeoutError(url, timeoutMs, duration, err)
     }
-    if (error instanceof dependencies.unsafeUrlError) {
+    if (err instanceof dependencies.unsafeUrlError) {
       trackCrawlerFailure(crawlerType, domain, 0, duration, 'CrawlerSsrfError')
-      throw new CrawlerSsrfError(url, error.reason)
+      throw new CrawlerSsrfError(url, err.reason)
     }
-    if (error instanceof Error) {
+    if (err instanceof Error) {
       trackCrawlerFailure(crawlerType, domain, 0, duration, 'CrawlerNetworkError')
-      throw new CrawlerNetworkError(url, duration, error)
+      throw new CrawlerNetworkError(url, duration, err)
     }
     trackCrawlerFailure(crawlerType, domain, 0, duration, 'UnknownError')
-    throw error
+    throw err
   }
 }
 function createAbortError(url: string, timeoutMs: number): Error {
@@ -119,32 +119,26 @@ export const readBodyAsBuffer = async (options: ReadBodyOptions): Promise<Buffer
       signal,
     })
     return buffer
-  } catch (error: unknown) {
+  } catch (err: unknown) {
     const duration = Date.now() - startedAt.getTime()
-    if (error instanceof HttpResponseSizeError) {
+    if (err instanceof HttpResponseSizeError) {
       trackCrawlerFailure(crawlerType, domain, response.status, duration, 'ResponseSizeExceeded')
-      throw new CrawlerResponseSizeExceededError(
-        url,
-        error.actualSize,
-        error.maxSize,
-        duration,
-        error,
-      )
+      throw new CrawlerResponseSizeExceededError(url, err.actualSize, err.maxSize, duration, err)
     }
-    if (error instanceof HttpNoBodyError) {
+    if (err instanceof HttpNoBodyError) {
       trackCrawlerFailure(crawlerType, domain, response.status, duration, 'NoResponseBody')
-      throw error
+      throw err
     }
-    if (httpUtils.isTimeoutError(error)) {
+    if (httpUtils.isTimeoutError(err)) {
       trackCrawlerFailure(crawlerType, domain, response.status, duration, 'CrawlerTimeoutError')
-      throw new CrawlerTimeoutError(url, timeoutMs, duration, error)
+      throw new CrawlerTimeoutError(url, timeoutMs, duration, err)
     }
-    if (error instanceof Error) {
+    if (err instanceof Error) {
       trackCrawlerFailure(crawlerType, domain, response.status, duration, 'CrawlerNetworkError')
-      throw new CrawlerNetworkError(url, duration, error)
+      throw new CrawlerNetworkError(url, duration, err)
     }
     trackCrawlerFailure(crawlerType, domain, response.status, duration, 'ReadError')
-    throw error
+    throw err
   }
 }
 interface HandleErrorsOptions {
@@ -163,15 +157,15 @@ export const handleErrors = (options: HandleErrorsOptions): void => {
 
   try {
     dependencies.handleHttpErrors({ response, url })
-  } catch (error: unknown) {
-    if (error instanceof HttpRateLimitError) {
+  } catch (err: unknown) {
+    if (err instanceof HttpRateLimitError) {
       trackCrawlerFailure(crawlerType, domain, response.status, duration, 'CrawlerRateLimitError')
-      throw new CrawlerRateLimitError(url, error.status, duration, error.retryAfterMs, error)
+      throw new CrawlerRateLimitError(url, err.status, duration, err.retryAfterMs, err)
     }
-    if (error instanceof HttpServerError) {
+    if (err instanceof HttpServerError) {
       trackCrawlerFailure(crawlerType, domain, response.status, duration, 'CrawlerServerError')
-      throw new CrawlerServerError(url, error.status, duration, error)
+      throw new CrawlerServerError(url, err.status, duration, err)
     }
-    throw error
+    throw err
   }
 }

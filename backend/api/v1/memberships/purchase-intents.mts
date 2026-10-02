@@ -31,20 +31,20 @@ app.route('/api/v1/membership-purchase-intents').post(async (ctx: Context) => {
       productId: body.product_id,
       idempotencyKey: body.idempotency_key,
     })
-  } catch (error) {
-    if (!(error instanceof MembershipPurchaseIneligibleError)) throw error
+  } catch (err) {
+    if (!(err instanceof MembershipPurchaseIneligibleError)) throw err
     ctx.setStatus(409)
     ctx.json(
       apiResponse('POST:/api/v1/membership-purchase-intents#conflict', {
-        error: error.message,
-        code: error.code,
-        eligible_at: error.eligibleAt,
+        error: err.message,
+        code: err.code,
+        eligible_at: err.eligibleAt,
         management:
-          error.provider === null
+          err.provider === null
             ? null
             : {
-                provider: error.provider,
-                destination: getMembershipManagementDestination(error.provider),
+                provider: err.provider,
+                destination: getMembershipManagementDestination(err.provider),
               },
       }),
     )

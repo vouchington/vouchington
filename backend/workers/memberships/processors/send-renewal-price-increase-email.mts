@@ -76,7 +76,7 @@ export async function processSendRenewalPriceIncreaseEmail(
       html,
       text,
     })
-  } catch (error) {
+  } catch (err) {
     if (!deliveryAttempted) {
       await releaseRenewalPriceIncreaseNotification(
         data.membershipId,
@@ -85,7 +85,7 @@ export async function processSendRenewalPriceIncreaseEmail(
         claimToken,
       )
     }
-    throw error
+    throw err
   }
 
   await markRenewalPriceIncreaseNotificationDelivered(

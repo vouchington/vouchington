@@ -32,23 +32,23 @@ export function useStartStoryDiscussionAction(props: StartStoryDiscussionProps |
     try {
       const result = await createStoryPostFromStory(props.storyId)
       publishCreatedPost(result.post)
-    } catch (error) {
-      if (hasErrorCode(error, 'FEED_NOT_DISCOVERABLE')) {
+    } catch (err) {
+      if (hasErrorCode(err, 'FEED_NOT_DISCOVERABLE')) {
         try {
           const linkResult = await createLinkPost({ url_id: props.fallbackUrlId })
           publishCreatedPost(linkResult.post)
           return
-        } catch (linkError) {
-          if (isEmailVerificationRequired(linkError)) {
+        } catch (err) {
+          if (isEmailVerificationRequired(err)) {
             emailRecovery?.openEmailVerificationRecovery()
           } else {
-            toast.error(getApiErrorMessage(linkError, 'Failed to create discussion'))
+            toast.error(getApiErrorMessage(err, 'Failed to create discussion'))
           }
         }
-      } else if (error instanceof ApiError && error.status === 409) {
+      } else if (err instanceof ApiError && err.status === 409) {
         router.refresh()
       } else {
-        toast.error(getApiErrorMessage(error, 'Failed to create story discussion'))
+        toast.error(getApiErrorMessage(err, 'Failed to create story discussion'))
       }
       setIsCreating(false)
     }

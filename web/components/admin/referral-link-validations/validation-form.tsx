@@ -73,8 +73,8 @@ export function ValidationForm({
           onSaved?.(validation)
           push(`${basePath}/${validation.id}`)
         }
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: t(
             'extracted.referralLinkValidations.validationForm.failedToSaveValidation_5f2bde32',
           ),

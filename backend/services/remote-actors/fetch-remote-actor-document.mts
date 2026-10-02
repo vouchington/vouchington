@@ -62,17 +62,17 @@ export async function fetchRemoteActorDocument(
   let resolvedAddresses
   try {
     resolvedAddresses = await deps.validateUrl(actorUri, { timeoutMs: DNS_TIMEOUT_MS })
-  } catch (error) {
-    if (error instanceof UnsafeUrlError) {
-      throw createHttpError(422, `Unsafe remote actor URI: ${error.reason}`)
+  } catch (err) {
+    if (err instanceof UnsafeUrlError) {
+      throw createHttpError(422, `Unsafe remote actor URI: ${err.reason}`)
     }
-    if (isDnsResolutionAvailabilityError(error)) {
+    if (isDnsResolutionAvailabilityError(err)) {
       throw new RemoteActorFetchAvailabilityError(
         'Remote actor hostname resolution unavailable',
-        error,
+        err,
       )
     }
-    throw error
+    throw err
   }
 
   let response: Response
@@ -85,9 +85,9 @@ export async function fetchRemoteActorDocument(
       responseTimeoutMs: FETCH_TIMEOUT_MS,
       resolvedAddresses,
     }))
-  } catch (error) {
-    if (!isFetchTransportError(error)) throw error
-    throw new RemoteActorFetchAvailabilityError('Remote actor document fetch failed', error)
+  } catch (err) {
+    if (!isFetchTransportError(err)) throw err
+    throw new RemoteActorFetchAvailabilityError('Remote actor document fetch failed', err)
   }
   if (!response.ok) {
     cancelResponseBody(response)
@@ -106,9 +106,9 @@ export async function fetchRemoteActorDocument(
       maxSizeBytes: MAX_BODY_BYTES,
       signal: responseSignal,
     })
-  } catch (error) {
-    if (!isResponseBodyTransportError(error)) throw error
-    throw new RemoteActorFetchAvailabilityError('Remote actor response body was interrupted', error)
+  } catch (err) {
+    if (!isResponseBodyTransportError(err)) throw err
+    throw new RemoteActorFetchAvailabilityError('Remote actor response body was interrupted', err)
   }
   return parseRemoteActorDocument(body)
 }

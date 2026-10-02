@@ -19,8 +19,8 @@ export async function chromiumLaunchProbeExitCode(
       await browser.close()
     }
     return 0
-  } catch (error) {
-    process.stderr.write(`Chromium failed to launch: ${String(error)}\n`)
+  } catch (err) {
+    process.stderr.write(`Chromium failed to launch: ${String(err)}\n`)
     return 1
   }
 }

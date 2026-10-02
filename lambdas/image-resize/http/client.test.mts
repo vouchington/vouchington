@@ -101,7 +101,7 @@ describe('fetchImageFromUrl', () => {
       undefined,
       undefined,
       { fetchWithPinnedDns: mockFetchWithPinnedDns },
-    ).catch(e => e)
+    ).catch(err => err)
     expect(err404).toBeInstanceOf(HttpOperationError)
     expect((err404 as HttpOperationError).statusCode).toBe(404)
   })
@@ -113,7 +113,7 @@ describe('fetchImageFromUrl', () => {
 
     const err500 = await fetchImageFromUrl('https://example.com/error.jpg', undefined, undefined, {
       fetchWithPinnedDns: mockFetchWithPinnedDns,
-    }).catch(e => e)
+    }).catch(err => err)
     expect(err500).toBeInstanceOf(HttpOperationError)
     expect((err500 as HttpOperationError).statusCode).toBe(500)
   })
@@ -126,7 +126,7 @@ describe('fetchImageFromUrl', () => {
 
     const errAbort = await fetchImageFromUrl('https://example.com/slow.jpg', 1000, undefined, {
       fetchWithPinnedDns: mockFetchWithPinnedDns,
-    }).catch(e => e)
+    }).catch(err => err)
     expect(errAbort).toBeInstanceOf(HttpOperationError)
     expect((errAbort as HttpOperationError).statusCode).toBe(504)
     expect(() => {
@@ -142,7 +142,7 @@ describe('fetchImageFromUrl', () => {
       undefined,
       undefined,
       { fetchWithPinnedDns: mockFetchWithPinnedDns },
-    ).catch(e => e)
+    ).catch(err => err)
     expect(errNetwork).toBeInstanceOf(HttpOperationError)
     expect((errNetwork as HttpOperationError).statusCode).toBe(500)
     expect(() => {
@@ -170,7 +170,7 @@ describe('fetchImageFromUrl', () => {
       undefined,
       undefined,
       { fetchWithPinnedDns: mockFetchWithPinnedDns },
-    ).catch(e => e)
+    ).catch(err => err)
     expect(errContentType).toBeInstanceOf(HttpOperationError)
     expect((errContentType as HttpOperationError).statusCode).toBe(415)
     expect(() => {
@@ -192,7 +192,7 @@ describe('fetchImageFromUrl', () => {
       30000,
       10 * 1024 * 1024,
       { fetchWithPinnedDns: mockFetchWithPinnedDns },
-    ).catch(e => e)
+    ).catch(err => err)
     expect(errTooLarge).toBeInstanceOf(HttpOperationError)
     expect((errTooLarge as HttpOperationError).statusCode).toBe(413)
     expect(() => {
@@ -271,7 +271,7 @@ describe('fetchImageFromUrl', () => {
 
     const err = await fetchImageFromUrl('https://example.com/image.jpg', undefined, undefined, {
       fetchWithPinnedDns: mockFetchWithPinnedDns,
-    }).catch(e => e)
+    }).catch(err => err)
 
     expect(err).toBeInstanceOf(HttpOperationError)
     expect((err as HttpOperationError).statusCode).toBe(403)
@@ -289,7 +289,7 @@ describe('fetchImageFromUrl', () => {
       undefined,
       undefined,
       { fetchWithPinnedDns: mockFetchWithPinnedDns },
-    ).catch(e => e)
+    ).catch(err => err)
     expect(err).toBeInstanceOf(HttpOperationError)
     expect((err as HttpOperationError).statusCode).toBe(403)
   })

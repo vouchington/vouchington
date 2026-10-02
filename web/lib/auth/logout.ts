@@ -18,9 +18,9 @@ export async function logout(
     await admissionIdempotency.drain()
     if (navigator.locks) await withWebPushOwnershipLock(logoutWithPushCleanup)
     else await postLogout()
-  } catch (error) {
+  } catch (err) {
     admissionIdempotency.resume()
-    throw error
+    throw err
   }
   reloadPage()
 }

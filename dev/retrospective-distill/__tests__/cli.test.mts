@@ -41,7 +41,7 @@ describe('retrospective-distill CLI', () => {
       () => {
         throw new Error('expected the process to exit nonzero')
       },
-      (error: unknown) => error,
+      (err: unknown) => err,
     )
     expect(rejection).toMatchObject({ code: 1 })
     expect((rejection as { stderr: string }).stderr).toContain(

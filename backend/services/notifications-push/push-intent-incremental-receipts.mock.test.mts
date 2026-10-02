@@ -80,7 +80,7 @@ describe('incremental notification push receipts', () => {
         if (startedAfterOriginalExpiry) renewedAfterOriginalExpiry = true
         return accepted
       },
-    }).catch(error => error)
+    }).catch(err => err)
     try {
       await waitForDeliveredEndpoint(intent, promptSubscriptionId)
       await waitForTestDatabaseTimestamp(originalLeaseExpiry)
@@ -273,7 +273,7 @@ describe('incremental notification push receipts', () => {
       )
       const settled = delivery.then(
         value => ({ value, error: undefined }),
-        error => ({ value: undefined, error }),
+        err => ({ value: undefined, error: err }),
       )
       await renewalStarted.promise
       const result = await settled

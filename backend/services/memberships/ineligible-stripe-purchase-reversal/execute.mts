@@ -45,12 +45,12 @@ export async function executeIneligibleStripePurchaseReversal(
         providerRefundId: refund.id,
       })
     })
-  } catch (error) {
+  } catch (err) {
     await Promise.all(
       [...pending, ...(cancellation && !cancellation.completed ? [cancellation] : [])].map(
-        operation => failIneligiblePurchaseReversal(operation, error),
+        operation => failIneligiblePurchaseReversal(operation, err),
       ),
     )
-    throw error
+    throw err
   }
 }

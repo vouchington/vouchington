@@ -33,8 +33,8 @@ export function ProfileLinks({ initialLinks }: Props) {
       setLinks(prev => [...prev, link])
       setShowAddForm(false)
       onSuccess(t('extracted.my.profileLinks.profileLinkAdded_f8ee6d85'))
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.profileLinks.failedToAddLink_eb8d49b3'),
         tags: { form: 'my-profile-links' },
       })
@@ -52,8 +52,8 @@ export function ProfileLinks({ initialLinks }: Props) {
       setLinks(prev => prev.map(l => (l.id === linkId ? updated : l)))
       setEditingId(null)
       onSuccess(t('extracted.my.profileLinks.profileLinkUpdated_77ed45b7'))
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.profileLinks.failedToUpdateLink_9a4cc50c'),
         tags: { form: 'my-profile-links' },
       })
@@ -67,8 +67,8 @@ export function ProfileLinks({ initialLinks }: Props) {
       await deleteMyProfileLink(linkId)
       setLinks(prev => prev.filter(l => l.id !== linkId))
       onSuccess(t('extracted.my.profileLinks.profileLinkRemoved_ee75df75'))
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.profileLinks.failedToRemoveLink_dadf1223'),
         tags: { form: 'my-profile-links' },
       })
@@ -100,9 +100,9 @@ export function ProfileLinks({ initialLinks }: Props) {
       await reorderMyProfileLinks({
         ids: orderedLinks.map(l => l.id),
       })
-    } catch (error) {
+    } catch (err) {
       setLinks(prevLinks)
-      onError(error, {
+      onError(err, {
         fallback: t('extracted.my.profileLinks.failedToReorderLinks_2ba22b75'),
         tags: { form: 'my-profile-links' },
       })

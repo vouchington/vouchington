@@ -117,9 +117,9 @@ export async function processImageBatchCreation<T extends { id: string }>(
           }
           break
         }
-      } catch (error) {
+      } catch (err) {
         failures += 1
-        onError(error instanceof Error ? error : new Error(String(error)))
+        onError(err instanceof Error ? err : new Error(String(err)))
       }
     }
 

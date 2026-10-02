@@ -49,8 +49,8 @@ printf 'gh %s\\n' "$*" >> "$log"
       },
     })
     return { exitCode: 0, log: await readFile(logPath, 'utf8'), stderr: result.stderr }
-  } catch (error: unknown) {
-    const failed = error as { code?: number; stderr?: string }
+  } catch (err: unknown) {
+    const failed = err as { code?: number; stderr?: string }
     return {
       exitCode: failed.code ?? 1,
       log: await readFile(logPath, 'utf8').catch(() => ''),

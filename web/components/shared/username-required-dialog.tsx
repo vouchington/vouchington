@@ -78,10 +78,10 @@ export function UsernameRequiredDialog({
       await updateMyIdentity({ username: trimmedUsername })
       clearUsername()
       onUsernameSet()
-    } catch (error) {
+    } catch (err) {
       toast.error(
-        error instanceof ApiError
-          ? error.message
+        err instanceof ApiError
+          ? err.message
           : t('extracted.shared.usernameRequiredDialog.failedToCreateUsername_8854373c'),
       )
     } finally {

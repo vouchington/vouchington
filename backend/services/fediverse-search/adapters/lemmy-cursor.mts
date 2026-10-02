@@ -68,8 +68,8 @@ export async function fetchLemmyKind<R, T>(
       attempted: true,
       failed: false,
     }
-  } catch (error) {
-    onError(error as Error)
+  } catch (err) {
+    onError(err as Error)
     return { items: [], next: state, attempted: true, failed: true }
   }
 }

@@ -45,16 +45,16 @@ export async function submitTopicRecommendation(
     }
     apiSuccess = true
     onNavigate()
-  } catch (error) {
+  } catch (err) {
     if (!apiSuccess) {
-      if (!isEdit && error instanceof ApiError && error.code === 'IDENTITY_REQUIRED') {
+      if (!isEdit && err instanceof ApiError && err.code === 'IDENTITY_REQUIRED') {
         onIdentityRequired()
         return
       }
-      if (!isEdit && error instanceof ApiError && error.code === 'DUPLICATE_TOPIC') {
-        const data = error.data as { topic_name?: string } | null
+      if (!isEdit && err instanceof ApiError && err.code === 'DUPLICATE_TOPIC') {
+        const data = err.data as { topic_name?: string } | null
         onTurnstileReset()
-        onError(error, {
+        onError(err, {
           fallback: data?.topic_name
             ? `A topic already exists for "${data.topic_name}". Check the topic list.`
             : 'This topic already exists.',
@@ -62,9 +62,9 @@ export async function submitTopicRecommendation(
         onSetSubmitting(false)
         return
       }
-      if (!isEdit && error instanceof ApiError && error.code === 'DUPLICATE_RECOMMENDATION') {
+      if (!isEdit && err instanceof ApiError && err.code === 'DUPLICATE_RECOMMENDATION') {
         onTurnstileReset()
-        onError(error, {
+        onError(err, {
           fallback:
             'A pending recommendation already exists for this topic. Find it and Support it instead.',
         })
@@ -72,7 +72,7 @@ export async function submitTopicRecommendation(
         return
       }
       if (!isEdit) onTurnstileReset()
-      onError(error, { fallback: 'Failed to save recommendation' })
+      onError(err, { fallback: 'Failed to save recommendation' })
       onSetSubmitting(false)
       return
     }

@@ -186,7 +186,7 @@ describe('fetchCrawlerHtml headers and request options', () => {
           requestTimeoutMs: 1,
         },
         {},
-      ).catch(error => error)
+      ).catch(err => err)
       await vi.advanceTimersByTimeAsync(1)
       expect(await handled).toMatchObject({ message: 'aborted' })
 

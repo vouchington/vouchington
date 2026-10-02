@@ -119,8 +119,8 @@ export async function upsertImageOpenAIModeration(
 async function enqueueImageEmbeddingsBatch(): Promise<void> {
   try {
     await enqueueCreateImageEmbeddingsBatch()
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
   }
 }
 

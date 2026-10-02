@@ -93,8 +93,8 @@ export function LoginForm({
       shouldResetLoading = false
       onSuccess(t('extracted.auth.loginForm.signedIn_ca566c89'))
       handleLoginSuccess()
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.auth.loginForm.unableToConnectPleaseTryAgain_a2f03233'),
         tags: { form: 'auth-login' },
       })
@@ -127,8 +127,8 @@ export function LoginForm({
       onSuccess(t('extracted.auth.loginForm.signInCodeSent_9a34e846'))
       setStep('code')
       turnstile.reset()
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.auth.loginForm.failedToSendVerificationCode_6401f8f4'),
         tags: { form: 'auth-login' },
       })

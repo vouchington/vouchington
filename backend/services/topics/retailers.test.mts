@@ -77,9 +77,9 @@ describe('retailers', () => {
     try {
       await updateRetailerAttributes(null, topic)
       assert.fail('Should have thrown')
-    } catch (error: unknown) {
-      assert.ok(error && typeof error === 'object' && 'status' in error)
-      assert.equal((error as { status: number }).status, 401)
+    } catch (err: unknown) {
+      assert.ok(err && typeof err === 'object' && 'status' in err)
+      assert.equal((err as { status: number }).status, 401)
     }
   })
 
@@ -169,9 +169,9 @@ describe('retailers', () => {
     try {
       await updateRetailerCountries(null, topic, [COUNTRY_ID_US])
       assert.fail('Should have thrown')
-    } catch (error: unknown) {
-      assert.ok(error && typeof error === 'object' && 'status' in error)
-      assert.equal((error as { status: number }).status, 401)
+    } catch (err: unknown) {
+      assert.ok(err && typeof err === 'object' && 'status' in err)
+      assert.equal((err as { status: number }).status, 401)
     }
   })
 

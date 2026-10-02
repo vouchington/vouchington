@@ -67,8 +67,8 @@ export function AppealsClient({
       try {
         const result = await approveAppeal(id)
         dispatch({ type: 'update_appeal', appeal: result.appeal })
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: t('extracted.appeals.appealsClient.failedToApproveAppeal_b5452349'),
           tags: { form: 'appeal-approve' },
         })
@@ -81,8 +81,8 @@ export function AppealsClient({
       try {
         const result = await sendAppealResolution(id)
         dispatch({ type: 'update_appeal', appeal: result.appeal })
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: t('extracted.appeals.appealsClient.failedToSendAppealResolution_87938c2e'),
           tags: { form: 'appeal-send' },
         })
@@ -102,23 +102,23 @@ export function AppealsClient({
         }
         try {
           await enqueue
-        } catch (error) {
+        } catch (err) {
           rerunEnqueuesRef.current.delete(id)
-          throw error
+          throw err
         }
         let result: Awaited<ReturnType<typeof reconcileAppealAIDraft>>
         try {
           result = await reconcileAppealAIDraft(appeal)
-        } catch (error) {
-          if (error instanceof AppealDraftReconciliationTimeoutError) {
+        } catch (err) {
+          if (err instanceof AppealDraftReconciliationTimeoutError) {
             rerunEnqueuesRef.current.delete(id)
           }
-          throw error
+          throw err
         }
         rerunEnqueuesRef.current.delete(id)
         dispatch({ type: 'reconcile_rerun_appeal', appeal: result.appeal })
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: t('extracted.appeals.appealsClient.failedToReRunAi_8c594308'),
           tags: { form: 'appeal-rerun' },
         })
@@ -131,8 +131,8 @@ export function AppealsClient({
       try {
         const result = await resolveAppeal(id, action)
         dispatch({ type: 'update_appeal', appeal: result.appeal })
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: t('extracted.appeals.appealsClient.failedToResolveAppeal_162e0dc1'),
           tags: { form: 'appeal-resolve' },
         })
@@ -145,8 +145,8 @@ export function AppealsClient({
     if (text !== undefined) {
       try {
         await updateAppealDraft(id, { public_response: text })
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: t('extracted.appeals.appealsClient.failedToSaveDraft_350705d0'),
         })
         return

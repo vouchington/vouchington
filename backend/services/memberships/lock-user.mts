@@ -11,11 +11,11 @@ export async function lockMembershipUser(
     await query(
       sql`/* lockMembershipUser:active */ SELECT fn_lock_active_user_for_mutation(${userId})`,
     )
-  } catch (error) {
-    if (mapMissingToInvalidGrant && isInvalidGrantTargetPostgresError(error)) {
+  } catch (err) {
+    if (mapMissingToInvalidGrant && isInvalidGrantTargetPostgresError(err)) {
       throw new InvalidMembershipGrantUserError()
     }
-    throw error
+    throw err
   }
   await query(
     sql`/* lockMembershipUser:row */ SELECT id FROM users WHERE id = ${userId} FOR UPDATE`,

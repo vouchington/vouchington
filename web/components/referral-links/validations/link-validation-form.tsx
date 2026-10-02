@@ -43,8 +43,8 @@ export function LinkValidationForm({ referralProgramId }: LinkValidationFormProp
             const { validation } = await getReferralLinkValidation(trimmed)
             validationId = validation.id
             validationSlug = validation.slug
-          } catch (error) {
-            if (error instanceof ApiError && error.status === 404) {
+          } catch (err) {
+            if (err instanceof ApiError && err.status === 404) {
               onError(new Error('Validation not found'), {
                 fallback: t(
                   'extracted.validations.linkValidationForm.noValidationFoundForSlug_51caf7f8',
@@ -57,7 +57,7 @@ export function LinkValidationForm({ referralProgramId }: LinkValidationFormProp
               return
             }
             /* c8 ignore next -- re-throw for non-abort errors; injecting this path requires mocking */
-            throw error
+            throw err
           }
         }
 
@@ -69,8 +69,8 @@ export function LinkValidationForm({ referralProgramId }: LinkValidationFormProp
         )
         setSlug('')
         refresh()
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: t('extracted.validations.linkValidationForm.failedToLinkValidation_c04c3103'),
         })
       }

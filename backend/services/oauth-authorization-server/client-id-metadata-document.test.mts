@@ -281,7 +281,7 @@ describe('Client ID Metadata Documents', () => {
         return responseFor(metadataDocument(clientId, { client_name: 'Older' }))
       },
     })
-    const olderResult = older.catch((error: unknown) => error)
+    const olderResult = older.catch((err: unknown) => err)
     await olderStarted
     await expect(
       resolveClientIdMetadataDocument(clientId, {

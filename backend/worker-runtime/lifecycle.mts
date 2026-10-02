@@ -115,14 +115,14 @@ export async function initializeWorkerRuntime(
           successfulStartHookRan = true
           try {
             afterSuccessfulStart()
-          } catch (reason) {
+          } catch (err) {
             successfulStartHookRan = false
-            reportWorkerLoadFailure(reason, dependencies.onError)
+            reportWorkerLoadFailure(err, dependencies.onError)
           }
         }
       },
     }
-  } catch (reason) {
-    reportWorkerLoadFailure(reason, dependencies.onError)
+  } catch (err) {
+    reportWorkerLoadFailure(err, dependencies.onError)
   }
 }

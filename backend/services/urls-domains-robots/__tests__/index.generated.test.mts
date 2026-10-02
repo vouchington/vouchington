@@ -24,13 +24,13 @@ describe('index.generated', () => {
         expect(result.length).toBeGreaterThan(0)
         // robots.txt should contain User-agent
         expect(result.toLowerCase()).toContain('user-agent')
-      } catch (error) {
+      } catch (err) {
         // Skip test if network is unavailable (common in CI)
         // Handle both Error instances and string errors
-        const errorMessage = error instanceof Error ? error.message : String(error)
+        const errorMessage = err instanceof Error ? err.message : String(err)
         const isNetworkError =
-          typeof error === 'string' ||
-          (error instanceof Error &&
+          typeof err === 'string' ||
+          (err instanceof Error &&
             (errorMessage.includes('network') ||
               errorMessage.includes('timeout') ||
               errorMessage.includes('ENOTFOUND') ||
@@ -38,13 +38,13 @@ describe('index.generated', () => {
               errorMessage.includes('undefined') ||
               errorMessage.includes('string error') ||
               errorMessage.includes('AbortError') ||
-              error.name === 'AbortError' ||
-              error.name === 'TypeError'))
+              err.name === 'AbortError' ||
+              err.name === 'TypeError'))
 
         if (isNetworkError) {
           return // Skip test when network is unavailable
         }
-        throw error
+        throw err
       }
     },
     15000,
@@ -55,7 +55,7 @@ describe('index.generated', () => {
     // Try a subdomain or use a domain we know returns 404
     // If DNS fails, that's also acceptable - the function should handle network errors
     // In production, 404s return permissive robots.txt
-    const result = await fetchRobotsTxt('example.invalid').catch(e => e)
+    const result = await fetchRobotsTxt('example.invalid').catch(err => err)
     // Either the function returns the permissive robots.txt or it throws a defined error
     expect(result).toBeDefined()
   })
@@ -77,13 +77,13 @@ describe('index.generated', () => {
       expect(result2).toBe(result1)
       // Cached call should be very fast (< 100ms typically)
       expect(duration).toBeLessThan(500)
-    } catch (error) {
+    } catch (err) {
       // Skip test if network is unavailable (common in CI)
       // Handle both Error instances and string errors
-      const errorMessage = error instanceof Error ? error.message : String(error)
+      const errorMessage = err instanceof Error ? err.message : String(err)
       const isNetworkError =
-        typeof error === 'string' ||
-        (error instanceof Error &&
+        typeof err === 'string' ||
+        (err instanceof Error &&
           (errorMessage.includes('network') ||
             errorMessage.includes('timeout') ||
             errorMessage.includes('ENOTFOUND') ||
@@ -91,13 +91,13 @@ describe('index.generated', () => {
             errorMessage.includes('undefined') ||
             errorMessage.includes('string error') ||
             errorMessage.includes('AbortError') ||
-            error.name === 'AbortError' ||
-            error.name === 'TypeError'))
+            err.name === 'AbortError' ||
+            err.name === 'TypeError'))
 
       if (isNetworkError) {
         return // Skip test when network is unavailable
       }
-      throw error
+      throw err
     }
   })
 
@@ -111,13 +111,13 @@ describe('index.generated', () => {
         expect(typeof result).toBe('boolean')
         // OpenAI generally allows crawling of public pages
         expect(result).toBe(true)
-      } catch (error) {
+      } catch (err) {
         // Skip test if network is unavailable (common in CI)
         // Handle both Error instances and string errors
-        const errorMessage = error instanceof Error ? error.message : String(error)
+        const errorMessage = err instanceof Error ? err.message : String(err)
         const isNetworkError =
-          typeof error === 'string' ||
-          (error instanceof Error &&
+          typeof err === 'string' ||
+          (err instanceof Error &&
             (errorMessage.includes('network') ||
               errorMessage.includes('timeout') ||
               errorMessage.includes('ENOTFOUND') ||
@@ -125,13 +125,13 @@ describe('index.generated', () => {
               errorMessage.includes('undefined') ||
               errorMessage.includes('string error') ||
               errorMessage.includes('AbortError') ||
-              error.name === 'AbortError' ||
-              error.name === 'TypeError'))
+              err.name === 'AbortError' ||
+              err.name === 'TypeError'))
 
         if (isNetworkError) {
           return // Skip test when network is unavailable
         }
-        throw error
+        throw err
       }
     },
   )
@@ -147,13 +147,13 @@ describe('index.generated', () => {
         expect(typeof result).toBe('boolean')
         // Result may be true or false depending on robots.txt rules
         expect([true, false]).toContain(result)
-      } catch (error) {
+      } catch (err) {
         // Skip test if network is unavailable (common in CI)
         // Handle both Error instances and string errors
-        const errorMessage = error instanceof Error ? error.message : String(error)
+        const errorMessage = err instanceof Error ? err.message : String(err)
         const isNetworkError =
-          typeof error === 'string' ||
-          (error instanceof Error &&
+          typeof err === 'string' ||
+          (err instanceof Error &&
             (errorMessage.includes('network') ||
               errorMessage.includes('timeout') ||
               errorMessage.includes('ENOTFOUND') ||
@@ -161,13 +161,13 @@ describe('index.generated', () => {
               errorMessage.includes('undefined') ||
               errorMessage.includes('string error') ||
               errorMessage.includes('AbortError') ||
-              error.name === 'AbortError' ||
-              error.name === 'TypeError'))
+              err.name === 'AbortError' ||
+              err.name === 'TypeError'))
 
         if (isNetworkError) {
           return // Skip test when network is unavailable
         }
-        throw error
+        throw err
       }
     },
   )
@@ -176,7 +176,9 @@ describe('index.generated', () => {
     // Test with a domain that might return 404 for robots.txt
     // Use a subdomain or path that might not have robots.txt
     // DNS errors are acceptable - the function handles network errors
-    const result = await isUrlCrawlable('https://example.invalid/page', 'MyBot/1.0').catch(e => e)
+    const result = await isUrlCrawlable('https://example.invalid/page', 'MyBot/1.0').catch(
+      err => err,
+    )
     // Either the function returns true (permissive robots.txt on 404) or throws a defined error
     expect(result).toBeDefined()
   })
@@ -195,13 +197,13 @@ describe('index.generated', () => {
         // Both should return boolean values (may differ based on robots.txt rules)
         expect([true, false]).toContain(resultGeneric)
         expect([true, false]).toContain(resultCustom)
-      } catch (error) {
+      } catch (err) {
         // Skip test if network is unavailable (common in CI)
         // Handle both Error instances and string errors
-        const errorMessage = error instanceof Error ? error.message : String(error)
+        const errorMessage = err instanceof Error ? err.message : String(err)
         const isNetworkError =
-          typeof error === 'string' ||
-          (error instanceof Error &&
+          typeof err === 'string' ||
+          (err instanceof Error &&
             (errorMessage.includes('network') ||
               errorMessage.includes('timeout') ||
               errorMessage.includes('ENOTFOUND') ||
@@ -209,13 +211,13 @@ describe('index.generated', () => {
               errorMessage.includes('undefined') ||
               errorMessage.includes('string error') ||
               errorMessage.includes('AbortError') ||
-              error.name === 'AbortError' ||
-              error.name === 'TypeError'))
+              err.name === 'AbortError' ||
+              err.name === 'TypeError'))
 
         if (isNetworkError) {
           return // Skip test when network is unavailable
         }
-        throw error
+        throw err
       }
     },
   )
@@ -230,13 +232,13 @@ describe('index.generated', () => {
         expect(typeof result).toBe('boolean')
         expect([true, false]).toContain(result)
       }
-    } catch (error) {
+    } catch (err) {
       // Skip test if network is unavailable (common in CI)
       // Handle both Error instances and string errors
-      const errorMessage = error instanceof Error ? error.message : String(error)
+      const errorMessage = err instanceof Error ? err.message : String(err)
       const isNetworkError =
-        typeof error === 'string' ||
-        (error instanceof Error &&
+        typeof err === 'string' ||
+        (err instanceof Error &&
           (errorMessage.includes('network') ||
             errorMessage.includes('timeout') ||
             errorMessage.includes('ENOTFOUND') ||
@@ -244,13 +246,13 @@ describe('index.generated', () => {
             errorMessage.includes('undefined') ||
             errorMessage.includes('string error') ||
             errorMessage.includes('AbortError') ||
-            error.name === 'AbortError' ||
-            error.name === 'TypeError'))
+            err.name === 'AbortError' ||
+            err.name === 'TypeError'))
 
       if (isNetworkError) {
         return // Skip test when network is unavailable
       }
-      throw error
+      throw err
     }
   })
 

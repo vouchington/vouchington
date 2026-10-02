@@ -54,9 +54,9 @@ export function MergeClient({ topic }: { topic: Topic }) {
       )
       push(topicManagementHref(response.topic, 'settings/aliases'))
       refresh()
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next 2 -- error path requires injecting a merge failure */
-      onError(error, { fallback: t('extracted.settings.mergeClient.failedToMergeTopic_774455fd') })
+      onError(err, { fallback: t('extracted.settings.mergeClient.failedToMergeTopic_774455fd') })
       setSubmitting(false)
     }
   }

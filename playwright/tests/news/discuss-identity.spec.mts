@@ -84,8 +84,8 @@ test.describe('Discuss — IDENTITY_REQUIRED gate (community)', () => {
         itemType: 'rss_feed',
         entityId: SEEDED_RSS_FEED_ID,
       })
-    } catch (error: unknown) {
-      if ((error as { code?: string }).code !== '23505') throw error
+    } catch (err: unknown) {
+      if ((err as { code?: string }).code !== '23505') throw err
     }
   })
 

@@ -31,9 +31,9 @@ export async function loadTopicEditState(id: string): Promise<Partial<TopicEditS
       topicTypeValue: topicData.topic_type ?? '',
       typeSaving: false,
     }
-  } catch (error) {
+  } catch (err) {
     return {
-      loadError: error instanceof Error ? error.message : 'Failed to load topic',
+      loadError: err instanceof Error ? err.message : 'Failed to load topic',
       loading: false,
     }
   }

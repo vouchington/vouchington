@@ -78,8 +78,8 @@ async function updateSessionRevocationRegistry(
       WHERE id = ${sessionId}
         AND revoked_at IS NULL
     `)
-  } catch (error) {
+  } catch (err) {
     if (options?.registryFailureMode === 'ignore') return
-    throw error
+    throw err
   }
 }

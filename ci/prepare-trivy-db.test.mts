@@ -44,14 +44,14 @@ esac
       },
     }).then(
       value => ({ ok: true as const, value }),
-      error => ({ error, ok: false as const }),
+      err => ({ error: err, ok: false as const }),
     )
 
     const calls = await readFile(callsPath, 'utf8').then(
       content => content.trim().split('\n'),
-      (error: NodeJS.ErrnoException) => {
-        if (error.code === 'ENOENT') return []
-        throw error
+      (err: NodeJS.ErrnoException) => {
+        if (err.code === 'ENOENT') return []
+        throw err
       },
     )
 

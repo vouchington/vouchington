@@ -105,8 +105,8 @@ export async function ensureMembershipFromStripeSubscription(
           },
         })
         return
-      } catch (error) {
-        if (!(error instanceof MissingStripeMembershipFactContextError)) throw error
+      } catch (err) {
+        if (!(err instanceof MissingStripeMembershipFactContextError)) throw err
       }
     }
     await using transaction = await beginTransaction()
@@ -124,10 +124,10 @@ export async function ensureMembershipFromStripeSubscription(
       transaction,
     )
     await transaction.commit()
-  } catch (error) {
-    if (error instanceof DuplicateStripeMembershipEventError) return
+  } catch (err) {
+    if (err instanceof DuplicateStripeMembershipEventError) return
     if (
-      await recoverConcurrentStripeMembershipSource(error, {
+      await recoverConcurrentStripeMembershipSource(err, {
         eventId,
         subscriptionId,
         sourceIdentity,
@@ -135,7 +135,7 @@ export async function ensureMembershipFromStripeSubscription(
       })
     )
       return
-    throw error
+    throw err
   }
 }
 

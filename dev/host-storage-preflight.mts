@@ -72,8 +72,8 @@ async function discoverCommandPath(
     const path = stdout.trim()
     if (!path) throw new Error('command returned an empty path')
     return { candidate: { ...fallback, path } }
-  } catch (error) {
-    return { issue: makeResolutionIssue(fallback, errorMessage(error)) }
+  } catch (err) {
+    return { issue: makeResolutionIssue(fallback, errorMessage(err)) }
   }
 }
 
@@ -167,8 +167,8 @@ export async function runHostStoragePreflightCli(
   let options: HostStorageOptions
   try {
     options = parseHostStorageCliArguments(args)
-  } catch (error) {
-    output.error(`Host storage preflight usage error: ${errorMessage(error)}`)
+  } catch (err) {
+    output.error(`Host storage preflight usage error: ${errorMessage(err)}`)
     return 2
   }
 
@@ -180,8 +180,8 @@ export async function runHostStoragePreflightCli(
     if (!result.ok) return 1
     output.log('Host storage preflight passed: 5.00 GiB minimum free.')
     return 0
-  } catch (error) {
-    output.error(`Host storage preflight failed: ${errorMessage(error)}`)
+  } catch (err) {
+    output.error(`Host storage preflight failed: ${errorMessage(err)}`)
     return 1
   }
 }

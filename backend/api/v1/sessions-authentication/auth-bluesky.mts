@@ -105,8 +105,8 @@ app.route('/api/v1/auth/bluesky/callback').get(async (ctx: Context) => {
   let appStateError: unknown
   try {
     appState = await peekBlueskyAccountLinkAppState(params)
-  } catch (error) {
-    appStateError = error
+  } catch (err) {
+    appStateError = err
   }
   if (appState?.callbackMode === 'native' && appState.flowId) {
     await completeNativeCallback(ctx, params, appState.flowId)
@@ -127,8 +127,8 @@ app.route('/api/v1/auth/bluesky/callback').get(async (ctx: Context) => {
     }
     await completeBlueskyAccountLink(params, currentUser.id, appState.flowId)
     redirectToLinkUi(ctx, { bluesky: 'linked' })
-  } catch (error) {
-    let callbackError = error
+  } catch (err) {
+    let callbackError = err
     reportBlueskyCallbackError(callbackError, {
       mode: 'web',
       flowId: appState?.flowId,

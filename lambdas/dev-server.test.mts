@@ -56,6 +56,33 @@ describe('Lambda dev server Playwright fixture', () => {
     })
   })
 
+  it('returns a JSON error when response headers cannot be written', async () => {
+    const failure = new Error('response header write failed')
+    const headerSpy = vi
+      .spyOn(http.ServerResponse.prototype, 'setHeader')
+      .mockImplementationOnce(() => {
+        throw failure
+      })
+    const errorSpy = vi.spyOn(console, 'error').mockReturnValue(undefined)
+    try {
+      const response = await request('/not-a-route')
+
+      expect(response.status).toBe(500)
+      expect(response.headers['content-type']).toBe('application/json')
+      expect(JSON.parse(response.body.toString('utf8'))).toEqual({ error: 'Internal server error' })
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Lambda dev server error:',
+        'GET',
+        '/not-a-route',
+        failure,
+      )
+      expect(errorSpy.mock.calls[0]?.[3]).toBe(failure)
+    } finally {
+      headerSpy.mockRestore()
+      errorSpy.mockRestore()
+    }
+  })
+
   it('serves the reserved sideload source as a local PNG', async () => {
     const encoded = Buffer.from(PLAYWRIGHT_PODCAST_COVER_URL).toString('base64url')
     const response = await request(`/sideload/v2/${encoded}?w=400`)

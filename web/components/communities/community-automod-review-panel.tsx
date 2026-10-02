@@ -56,8 +56,8 @@ export function CommunityAutomodReviewPanel({
           : t('extracted.communities.communityAutomodReviewPanel.automodLabelSaved_d7bab9fe'),
       )
       startRefreshing(() => router.refresh())
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t(
           'extracted.communities.communityAutomodReviewPanel.failedToSaveAutomodReview_c1bee2b5',
         ),

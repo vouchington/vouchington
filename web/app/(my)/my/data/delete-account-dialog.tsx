@@ -48,9 +48,9 @@ export function DeleteAccountDialog({ userId }: Props) {
         setOpen(false)
         refresh()
       }
-    } catch (error) {
+    } catch (err) {
       setError(
-        onError(error, {
+        onError(err, {
           fallback: t('extracted.data.deleteAccountDialog.anUnexpectedErrorOccurred_6615bf1c'),
           tags: { form: 'delete-account' },
         }),

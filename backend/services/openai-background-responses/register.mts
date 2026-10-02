@@ -90,13 +90,13 @@ export async function acquireBackgroundResponseLease(
   let registered: RegisteredBackgroundResponseLease | null
   try {
     registered = await register(registration, leaseToken)
-  } catch (firstError) {
+  } catch (outerErr) {
     try {
       registered = await register(registration, leaseToken)
-    } catch (secondError) {
+    } catch (err) {
       throw new Error(
-        `Background OpenAI response registration could not prove ownership after two attempts: ${registration.responseId}; first failure: ${String(firstError)}`,
-        { cause: secondError },
+        `Background OpenAI response registration could not prove ownership after two attempts: ${registration.responseId}; first failure: ${String(outerErr)}`,
+        { cause: err },
       )
     }
   }

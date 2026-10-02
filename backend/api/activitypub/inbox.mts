@@ -136,8 +136,8 @@ app.route('/ap/inbox').post(async (ctx: Context) => {
         delivery.deliveryId,
         delivery.processingAttemptId,
       )
-    } catch (error) {
-      onError(error instanceof Error ? error : new Error(String(error)))
+    } catch (err) {
+      onError(err instanceof Error ? err : new Error(String(err)))
     }
     ctx.setStatus(202)
     ctx.json({ received: true })

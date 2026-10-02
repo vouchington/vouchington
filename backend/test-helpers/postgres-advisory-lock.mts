@@ -23,9 +23,9 @@ export async function acquireTestPostgresAdvisoryLock({
       key,
     ])
     await client.query('COMMIT')
-  } catch (error) {
-    client.release(toError(error))
-    throw error
+  } catch (err) {
+    client.release(toError(err))
+    throw err
   }
 
   return createTestPostgresAdvisoryLock(client, namespace, key)
@@ -52,9 +52,9 @@ function createTestPostgresAdvisoryLock(
           throw new Error('PostgreSQL did not release the test advisory lock')
         }
         client.release()
-      } catch (error) {
-        client.release(toError(error))
-        throw error
+      } catch (err) {
+        client.release(toError(err))
+        throw err
       }
     },
   }

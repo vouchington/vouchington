@@ -25,9 +25,9 @@ export async function acquireTestModerationTransparencyDateReservation(): Promis
     await acquireTestModerationTransparencyLock(client)
     await clearTestModerationTransparencyWindow(client)
     return createReservation(client)
-  } catch (error) {
-    client.release(toError(error))
-    throw error
+  } catch (err) {
+    client.release(toError(err))
+    throw err
   }
 }
 
@@ -67,10 +67,10 @@ async function acquireTestModerationTransparencyLock(client: PoolClient): Promis
       [TEST_MODERATION_TRANSPARENCY_LOCK],
     )
     await client.query('COMMIT')
-  } catch (error) {
+  } catch (err) {
     throw new Error(
       `Timed out reserving the moderation transparency test window after ${TEST_MODERATION_TRANSPARENCY_LOCK_TIMEOUT}`,
-      { cause: error },
+      { cause: err },
     )
   }
 }
@@ -94,9 +94,9 @@ async function clearTestModerationTransparencyWindow(client: PoolClient): Promis
       [TEST_MODERATION_TRANSPARENCY_NOW],
     )
     await client.query('COMMIT')
-  } catch (error) {
+  } catch (err) {
     await client.query('ROLLBACK')
-    throw error
+    throw err
   }
 }
 
@@ -117,9 +117,9 @@ function createReservation(client: PoolClient): TestModerationTransparencyDateRe
           throw new Error('PostgreSQL did not release the reserved test window')
         }
         client.release()
-      } catch (error) {
-        client.release(toError(error))
-        throw error
+      } catch (err) {
+        client.release(toError(err))
+        throw err
       }
     },
   }

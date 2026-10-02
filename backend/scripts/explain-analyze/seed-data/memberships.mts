@@ -189,5 +189,5 @@ export async function seedMembershipRefunds(count = MEMBERSHIP_REFUND_SEED_COUNT
   // index-vs-seqscan choice reflects the seeded distribution.
   await write(
     '/* seedExplainData */ ANALYZE membership_products, membership_sources, membership_source_states, memberships, membership_refunds',
-  ).catch(error => console.error('seedExplainData: ANALYZE membership tables failed', error))
+  ).catch(err => console.error('seedExplainData: ANALYZE membership tables failed', err))
 }

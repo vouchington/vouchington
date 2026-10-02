@@ -9,8 +9,8 @@ const SECOND_ID = '00000000-0000-7000-8000-000000000002'
 function thrownBy(run: () => unknown): unknown {
   try {
     run()
-  } catch (error) {
-    return error
+  } catch (err) {
+    return err
   }
   return undefined
 }

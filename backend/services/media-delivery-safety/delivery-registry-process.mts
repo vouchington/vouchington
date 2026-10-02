@@ -21,14 +21,14 @@ export async function processMediaDeliveryRegistryRecord(
   try {
     await publishStagedMediaDeliveryRecord(record.delivery_key, { dependencies })
     return 'completed'
-  } catch (error) {
+  } catch (err) {
     await failMediaDeliveryRegistryRecord(
       record.delivery_key,
       record.generation,
       now,
-      error instanceof Error ? error.message : String(error),
+      err instanceof Error ? err.message : String(err),
     )
-    throw error
+    throw err
   }
 }
 

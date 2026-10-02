@@ -48,14 +48,9 @@ export async function processStripeEvent(
   try {
     const outcome = await handleEvent(stripeEvent.payload, undefined, applicationContext)
     await markCompleted(stripeEventRecordId, outcome, processingAttemptId)
-  } catch (error) {
-    await markFailed(
-      stripeEventRecordId,
-      getErrorMessage(error),
-      processingAttemptId,
-      isFinalAttempt,
-    )
-    throw error
+  } catch (err) {
+    await markFailed(stripeEventRecordId, getErrorMessage(err), processingAttemptId, isFinalAttempt)
+    throw err
   }
 }
 

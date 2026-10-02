@@ -55,8 +55,8 @@ async function waitForHydrationSettled(
 ): Promise<void> {
   try {
     await evaluateHydrationSettled(page)
-  } catch (error) {
-    if (!isDestroyedExecutionContextError(error) || remainingReplacements <= 0) throw error
+  } catch (err) {
+    if (!isDestroyedExecutionContextError(err) || remainingReplacements <= 0) throw err
     // A client-side redirect landed after the first document had already gone
     // quiet, destroying the context this evaluate was waiting in. Wait for the
     // document that replaced it, then measure hydration against that one.

@@ -80,9 +80,9 @@ export function useNotificationPushActions(
       try {
         const binding = await bootstrapPushBinding()
         if (!cancelled) setCurrentBinding(binding)
-      } catch (error) {
+      } catch (err) {
         if (cancelled) return
-        if (error instanceof ApiError && error.status === 401) {
+        if (err instanceof ApiError && err.status === 401) {
           try {
             await withWebPushOwnershipLock(async () => {
               if (cancelled) return

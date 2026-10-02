@@ -69,7 +69,7 @@ describe('suspendUser', () => {
     const user = await createTestUser({ username: safeUsername('suspend-already') })
     await suspendTestUser(user.id)
 
-    const err = await suspendUser(admin, user.id, 'allow').catch(e => e)
+    const err = await suspendUser(admin, user.id, 'allow').catch(err => err)
     expect(err.status).toBe(409)
     expect(err.code).toBe(CONFLICT)
   })
@@ -103,7 +103,7 @@ describe('unsuspendUser', () => {
     const admin = await createTestUser({ administrator: true })
     const user = await createTestUser({ username: safeUsername('unsuspend-notsuspended') })
 
-    const err = await unsuspendUser(admin, user.id).catch(e => e)
+    const err = await unsuspendUser(admin, user.id).catch(err => err)
     expect(err.status).toBe(409)
     expect(err.code).toBe(CONFLICT)
   })
@@ -119,8 +119,8 @@ describe('assertNotSuspended', () => {
     let caughtError: { status: number; code: string } | undefined
     try {
       assertNotSuspended(freshUser)
-    } catch (e) {
-      caughtError = e as { status: number; code: string }
+    } catch (err) {
+      caughtError = err as { status: number; code: string }
     }
 
     expect(caughtError).toBeDefined()

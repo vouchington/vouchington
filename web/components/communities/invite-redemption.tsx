@@ -24,9 +24,9 @@ export function InviteRedemption({ code }: InviteRedemptionProps) {
       const result = await redeemInviteCode(code)
       setRedeemed(true)
       push(createCommunityPathname(result.community_invite.community_id))
-    } catch (error: unknown) {
+    } catch (err: unknown) {
       /* c8 ignore next -- error path requires injecting a redeem invite failure */
-      const status = (error as { status?: number }).status
+      const status = (err as { status?: number }).status
       if (status === 404) {
         toast.error('This invite link is invalid or has already been used.')
       } else if (status === 403) {

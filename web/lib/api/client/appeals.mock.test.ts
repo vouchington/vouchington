@@ -196,7 +196,7 @@ describe('appeals client api helpers', () => {
       })
       mockGet.mockResolvedValue({ appeal: before })
 
-      const capturedError = reconcileAppealAIDraft(before).catch((error: unknown) => error)
+      const capturedError = reconcileAppealAIDraft(before).catch((err: unknown) => err)
       await vi.advanceTimersByTimeAsync(57_000)
 
       await expect(capturedError).resolves.toBeInstanceOf(AppealDraftReconciliationTimeoutError)

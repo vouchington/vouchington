@@ -66,7 +66,7 @@ describe('createEntityRelationAction post mutation guard', () => {
           grantedScopes: ['entity-relations:read', 'entity-relations:write'],
         },
         input,
-      ).catch(error => error)
+      ).catch(err => err)
       try {
         await waitForTestPostgresLockWaiter(holderPid, 'lockPostPublicationCaptures')
       } finally {
@@ -107,7 +107,7 @@ describe('createEntityRelationAction post mutation guard', () => {
         objectType: 'post',
         objectId: object.id,
       },
-    ).catch(error => error)
+    ).catch(err => err)
     try {
       await waitForTestPostgresLockWaiter(holderPid, 'lockPostPublicationCaptures')
     } finally {
@@ -173,7 +173,7 @@ describe('createEntityRelationAction post mutation guard', () => {
         objectType: 'topic',
         objectId: topicId,
       },
-    ).catch(error => error)
+    ).catch(err => err)
     try {
       await waitForTestPostgresLockWaiter(holderPid, 'lockPostPublicationCaptures')
     } finally {

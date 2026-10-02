@@ -149,8 +149,8 @@ describe('queue error adapter', () => {
 function catchThrown(callback: () => never): unknown {
   try {
     callback()
-  } catch (error) {
-    return error
+  } catch (err) {
+    return err
   }
   throw new Error('Expected callback to throw')
 }
@@ -158,8 +158,8 @@ function catchThrown(callback: () => never): unknown {
 async function catchRejected(promise: Promise<never>): Promise<unknown> {
   try {
     await promise
-  } catch (error) {
-    return error
+  } catch (err) {
+    return err
   }
   throw new Error('Expected promise to reject')
 }

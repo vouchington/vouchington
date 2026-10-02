@@ -79,8 +79,8 @@ export async function runDependabotRerun(
       { execFile: ghExecFile, maxBuffer: LOG_MAX_BUFFER_BYTES },
     )
     source = JSON.parse(stdout) as unknown
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
     return failure(`Could not revalidate source workflow run: ${message}`)
   }
 
@@ -117,8 +117,8 @@ export async function runDependabotRerun(
       maxBuffer: LOG_MAX_BUFFER_BYTES,
     })
     pullRequest = JSON.parse(stdout) as unknown
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
     return failure(`Could not revalidate Dependabot pull request: ${message}`)
   }
 
@@ -146,8 +146,8 @@ export async function runDependabotRerun(
       },
     )
     return 0
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
     return failure(`Dependabot rerun request failed: ${message}`)
   }
 }

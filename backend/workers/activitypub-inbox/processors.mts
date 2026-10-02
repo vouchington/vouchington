@@ -61,25 +61,25 @@ export async function processDelivery(
       { deliveryId: result.deliveryId, processingAttemptId: result.processingAttemptId },
       Math.max(0, result.deferredUntil.getTime() - Date.now()),
     )
-  } catch (error) {
-    if (isTerminalProtocolError(error)) {
+  } catch (err) {
+    if (isTerminalProtocolError(err)) {
       await activityPubInboxDeliveryTransitions.reject(data.deliveryId, data.processingAttemptId)
-      throw new UnrecoverableError(error instanceof Error ? error.message : String(error))
+      throw new UnrecoverableError(err instanceof Error ? err.message : String(err))
     }
     if (options.isFinalAttempt) {
       await activityPubInboxDeliveryTransitions.exhaust(
         data.deliveryId,
         data.processingAttemptId,
-        error,
+        err,
       )
     } else {
       await activityPubInboxDeliveryTransitions.release(
         data.deliveryId,
         data.processingAttemptId,
-        error,
+        err,
       )
     }
-    throw error
+    throw err
   }
 }
 

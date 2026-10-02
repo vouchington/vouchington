@@ -42,8 +42,8 @@ export function CommunityAutomodFlagsPanel({
       setDismissedPostIds(current => ({ ...current, [postId]: true }))
       onSuccess(t('extracted.communities.communityAutomodFlagsPanel.automodFlagDismissed_66ee7e46'))
       startRefreshing(() => router.refresh())
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t(
           'extracted.communities.communityAutomodFlagsPanel.failedToDismissTheAutomodFlag_0e50ec68',
         ),

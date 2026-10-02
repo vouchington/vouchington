@@ -98,8 +98,8 @@ export async function getCommunityInviteRecipientUiLocale(
 ): Promise<string | null> {
   try {
     return await lookup(emailAddress)
-  } catch (error) {
-    const reportableError = error instanceof Error ? error : new Error(String(error))
+  } catch (err) {
+    const reportableError = err instanceof Error ? err : new Error(String(err))
     reportableError.message = `Failed to look up community invite recipient locale: ${reportableError.message}`
     onError(reportableError)
     return null

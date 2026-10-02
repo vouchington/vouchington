@@ -20,8 +20,8 @@ export async function reviewSuccessionTopicDeleteErrorCode(topicId: string): Pro
       DELETE FROM review_succession_topics WHERE topic_id = ${topicId}
     `)
     return 'ok'
-  } catch (error) {
-    const code = (error as { code?: string }).code
+  } catch (err) {
+    const code = (err as { code?: string }).code
     return code ?? 'error'
   }
 }

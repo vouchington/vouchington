@@ -125,13 +125,13 @@ export function usePaginatedList<T extends PaginatedData>(
             }
           : prev,
       )
-    } catch (error) {
+    } catch (err) {
       if (!requestLifecycle.isCurrent(requestToken)) return true
       setListState(prev =>
         prev.queryToken === requestToken
           ? {
               ...prev,
-              fetchError: error instanceof Error ? error : new Error('Failed to load more'),
+              fetchError: err instanceof Error ? err : new Error('Failed to load more'),
             }
           : prev,
       )

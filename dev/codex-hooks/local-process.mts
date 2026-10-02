@@ -61,8 +61,8 @@ export function gitIsAncestor(
       timeout: 5_000,
     })
     return true
-  } catch (error) {
-    return (error as { status?: number | null }).status === 1 ? false : undefined
+  } catch (err) {
+    return (err as { status?: number | null }).status === 1 ? false : undefined
   }
 }
 
@@ -90,8 +90,8 @@ export function gitConfiguredRemoteDefaults(cwd: string): string | undefined {
       stdio: ['ignore', 'pipe', 'ignore'],
       timeout: 5_000,
     })
-  } catch (error) {
-    return (error as { status?: number | null }).status === 1 ? '' : undefined
+  } catch (err) {
+    return (err as { status?: number | null }).status === 1 ? '' : undefined
   }
 }
 

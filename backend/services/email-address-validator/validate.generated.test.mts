@@ -44,7 +44,7 @@ describe('format validation', () => {
   })
 
   it('error includes email address', async () => {
-    const err = await validateEmailAddress('invalid-format').catch(e => e)
+    const err = await validateEmailAddress('invalid-format').catch(err => err)
     expect(err).toBeInstanceOf(EmailFormatInvalidError)
     expect((err as EmailFormatInvalidError).message).toContain('invalid-format')
   })
@@ -107,7 +107,7 @@ describe('domain validation', () => {
 
   it('error includes domain for domain errors', async () => {
     // Reuse the cached invalid domain from previous test
-    const err = await validateEmailAddress('user2@invalid-domain-12345.test').catch(e => e)
+    const err = await validateEmailAddress('user2@invalid-domain-12345.test').catch(err => err)
     expect(err).toBeInstanceOf(EmailDomainInvalidError)
     expect((err as EmailDomainInvalidError).domain).toBe('invalid-domain-12345.test')
   })

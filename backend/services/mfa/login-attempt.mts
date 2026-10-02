@@ -66,8 +66,8 @@ export async function recordFailedMfaLoginAttempt(
       LOGIN_ATTEMPT_TTL_SECONDS,
     )
     return result.limited
-  } catch (error) /* v8 ignore next 3 */ {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) /* v8 ignore next 3 */ {
+    onError(err instanceof Error ? err : new Error(String(err)))
     return false
   }
 }
@@ -84,8 +84,8 @@ export async function isMfaLoginAttemptLimited(
       FAILED_ATTEMPT_THRESHOLD,
       LOGIN_ATTEMPT_TTL_SECONDS,
     )
-  } catch (error) /* v8 ignore next 3 */ {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) /* v8 ignore next 3 */ {
+    onError(err instanceof Error ? err : new Error(String(err)))
     return false
   }
 }

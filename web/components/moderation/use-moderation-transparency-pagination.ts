@@ -34,12 +34,12 @@ export function useModerationTransparencyPagination(
         base: transparency,
         data: { ...next, buckets: [...displayed.buckets, ...next.buckets] },
       })
-    } catch (error) {
-      if (error instanceof ApiError && (error.status === 403 || error.status === 404)) {
+    } catch (err) {
+      if (err instanceof ApiError && (err.status === 403 || err.status === 404)) {
         setContinuation({ base: transparency, data: null })
         setFetchError(null)
       } else {
-        setFetchError(error instanceof Error ? error : new Error('load failed'))
+        setFetchError(err instanceof Error ? err : new Error('load failed'))
       }
     } finally {
       setLoadingMore(false)

@@ -140,8 +140,8 @@ describe('delivery authority and durable denial repair', () => {
         result = { status: 'fulfilled', value }
         return value
       },
-      reason => {
-        result = { status: 'rejected', reason }
+      err => {
+        result = { status: 'rejected', reason: err }
       },
     )
     try {

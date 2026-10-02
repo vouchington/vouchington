@@ -38,8 +38,8 @@ export function DeleteCommentButton({
       await deletePost(commentId)
       onSuccess(t('extracted.comments.deleteCommentButton.commentDeleted_7199a134'))
       onDeleted()
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.comments.deleteCommentButton.failedToDeleteComment_c65a5314'),
         tags: { form: 'comment-delete' },
       })

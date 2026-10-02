@@ -248,7 +248,7 @@ async function expectPublisherTypeRevalidationFailure({
       { id: sourceTopicId },
       [{ id: publisherTypeTopicId }],
       { vote: false },
-    ).catch(error => error)
+    ).catch(err => err)
     await vi.waitFor(async () => {
       expect(await isTestPostgresQueryWaitingForLock('lockTopicRssFeedAttachmentLifecycle')).toBe(
         true,

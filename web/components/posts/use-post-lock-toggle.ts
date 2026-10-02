@@ -32,9 +32,9 @@ export function usePostLockToggle({
       if (next) await lockPost(postIdOrSlug)
       else await unlockPost(postIdOrSlug)
       refresh()
-    } catch (error) {
+    } catch (err) {
       setLockState({ key: lockKey, isLocked: !next })
-      onError(error, {
+      onError(err, {
         fallback: next
           ? t('extracted.posts.postLockButton.failedToLockThreadPleaseTry_005f2152')
           : t('extracted.posts.postLockButton.failedToUnlockThreadPleaseTry_a7aaf9cf'),

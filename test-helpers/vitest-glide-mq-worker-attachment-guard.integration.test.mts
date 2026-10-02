@@ -75,8 +75,8 @@ async function runFixture(dir: string): Promise<{ exitCode: number; output: stri
       timeout: 25_000,
     })
     return { exitCode: 0, output: normalizeVitestOutput(`${stdout}\n${stderr}`) }
-  } catch (error) {
-    const executionError = error as { code?: number; stdout?: string; stderr?: string }
+  } catch (err) {
+    const executionError = err as { code?: number; stdout?: string; stderr?: string }
     return {
       exitCode: executionError.code ?? 1,
       output: normalizeVitestOutput(

@@ -89,8 +89,8 @@ if [ "$count" -ge 2 ]; then printf '200'; else printf '000'; fi`,
   let result: Awaited<ReturnType<typeof execFile>> | Error
   try {
     result = await execFile('bash', [smokeScript], { env, timeout })
-  } catch (error) {
-    result = error as Error
+  } catch (err) {
+    result = err as Error
   }
   try {
     const [allocations, events] = await Promise.all([
@@ -133,8 +133,8 @@ while true; do /bin/sleep 1; done`,
   let result: Awaited<ReturnType<typeof execFile>> | Error
   try {
     result = await execFile('bash', [smokeScript], { env, timeout })
-  } catch (error) {
-    result = error as Error
+  } catch (err) {
+    result = err as Error
   }
   try {
     const [allocations, events] = await Promise.all([

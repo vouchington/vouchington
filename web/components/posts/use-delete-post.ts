@@ -17,9 +17,9 @@ export function useDeletePost(postIdOrSlug: string, onDeleted?: () => void) {
       onSuccess('Post deleted')
       onDeleted?.()
       push('/')
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next 3 -- error path requires injecting a delete failure */
-      onError(error, {
+      onError(err, {
         fallback: 'Failed to delete post. Please try again.',
         tags: { form: 'post-delete' },
       })

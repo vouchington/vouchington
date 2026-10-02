@@ -173,7 +173,7 @@ describe('transaction post-commit actions', () => {
       await rejectFirst.promise
       throw new Error('reject first concurrent nested post-commit action')
     })
-    const rejectedScopeRejection = rejectedScope.catch((error: unknown) => error)
+    const rejectedScopeRejection = rejectedScope.catch((err: unknown) => err)
     await firstStarted.promise
     const retainedScope = withTransactionOptions({ client: transaction.client }, async query => {
       secondStarted.resolve()

@@ -90,8 +90,8 @@ export function AppealForm({
         }
         onSuccessProp?.()
         startRefreshing(() => router.refresh())
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: t('extracted.appeals.appealForm.failedToSubmitAppeal_b909cc9f'),
           tags: { form: 'appeal-form' },
         })

@@ -72,12 +72,12 @@ class LeaseController implements OwnedBackgroundResponseLease {
       }
       this.degraded = false
       this.schedule(BACKGROUND_RESPONSE_HEARTBEAT_INTERVAL_MS)
-    } catch (cause) {
+    } catch (err) {
       if (!this.degraded) {
         this.degraded = true
         this.report(
           new Error(`Background OpenAI response lease renewal failed: ${this.responseId}`, {
-            cause,
+            cause: err,
           }),
         )
       }

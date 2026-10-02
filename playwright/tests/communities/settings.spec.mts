@@ -65,10 +65,10 @@ test.describe('Community Settings', () => {
       communityId: COMMUNITY_ID,
       userId: TEST_USER_ID,
       role: 'owner',
-    }).catch((error: unknown) => {
-      const msg = error instanceof Error ? error.message : String(error)
+    }).catch((err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err)
       if (!msg.includes('unique') && !msg.includes('duplicate') && !msg.includes('already exists'))
-        throw error
+        throw err
     })
 
     const moderator = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)

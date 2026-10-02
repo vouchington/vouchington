@@ -203,7 +203,7 @@ describe('create.generated', () => {
     })
     const creationOutcome = creating.then(
       () => undefined,
-      (error: unknown) => error,
+      (err: unknown) => err,
     )
     try {
       releaseDestinationRow.resolve()

@@ -35,17 +35,17 @@ export async function processAppleMembershipVerification(
   if (!claim) return
   try {
     await processClaimedAppleVerification(claim.id, claim.processingClaimToken, dependencies)
-  } catch (error) {
-    if (error instanceof AppleVerificationConflictError) {
+  } catch (err) {
+    if (err instanceof AppleVerificationConflictError) {
       await terminalizeAppleVerification(
         claim.id,
         claim.processingClaimToken,
         'conflict',
-        error.reasonCode,
+        err.reasonCode,
       )
       return
     }
-    if (error instanceof DirectMembershipSourceRejectedError) {
+    if (err instanceof DirectMembershipSourceRejectedError) {
       await terminalizeAppleVerification(
         claim.id,
         claim.processingClaimToken,

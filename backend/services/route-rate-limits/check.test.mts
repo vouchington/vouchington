@@ -33,13 +33,13 @@ describe('check', () => {
     const errors: unknown[] = []
     try {
       overrideDynamicConfigFieldsForTest(routeRateLimitConfig, { enabled: false })
-    } catch (error) {
-      errors.push(error)
+    } catch (err) {
+      errors.push(err)
     }
     try {
       await rateLimitKeyCleanup.cleanup()
-    } catch (error) {
-      errors.push(error)
+    } catch (err) {
+      errors.push(err)
     }
     if (errors.length === 1) throw errors[0]
     if (errors.length > 1) {
@@ -51,8 +51,8 @@ describe('check', () => {
     const errors: unknown[] = []
     try {
       overrideDynamicConfigFieldsForTest(routeRateLimitConfig, { enabled: false })
-    } catch (error) {
-      errors.push(error)
+    } catch (err) {
+      errors.push(err)
     }
     const finalizers = await Promise.allSettled([
       rateLimitKeyCleanup.cleanup(),

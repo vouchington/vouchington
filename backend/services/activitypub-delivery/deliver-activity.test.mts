@@ -148,8 +148,8 @@ describe('deliverActivityToInbox', () => {
         { inboxUrl: INBOX_URL, activity: {}, keyId: KEY_ID, privateKeyPem },
         { validateUrl, fetch },
       )
-    } catch (error) {
-      caught = error
+    } catch (err) {
+      caught = err
     }
 
     expect(caught).toBe(dnsTimeout)

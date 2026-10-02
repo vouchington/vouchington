@@ -45,7 +45,7 @@ let signalCleanup: Promise<void> | undefined
 
 function handleSignal(): void {
   signalCleanup ??= cleanup()
-    .catch(error => console.error('Benchmark cleanup failed', error))
+    .catch(err => console.error('Benchmark cleanup failed', err))
     .finally(() => process.exit(128))
 }
 

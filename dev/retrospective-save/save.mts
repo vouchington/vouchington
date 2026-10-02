@@ -190,11 +190,11 @@ export async function runSave(
         dependencies,
       }),
     )
-  } catch (error) {
+  } catch (err) {
     throw new RetrospectiveSaveError(
-      error instanceof Error ? error.message : String(error),
+      err instanceof Error ? err.message : String(err),
       replayInfo,
-      error,
+      err,
     )
   }
 }

@@ -25,9 +25,9 @@ export function useTopicImageActions({
       const { topic: updated } = await updateTopic(id, { [field]: imageId })
       dispatch({ topic: { ...state.topic!, ...updated } })
       onSuccess(`${field === 'logo_image_id' ? 'Logo' : 'Hero image'} ${verb}`)
-    } catch (error) {
+    } catch (err) {
       const action = imageId === null ? 'remove' : 'update'
-      onError(error, {
+      onError(err, {
         fallback: `Failed to ${action} image`,
         tags: { form: 'admin-topic-images' },
       })

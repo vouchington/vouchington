@@ -124,8 +124,8 @@ export async function cleanupAbandonedUploads() {
       try {
         await deleteKnownImageStorageFromS3(image)
         await markImageUploadSourceDeleted(image.id)
-      } catch (error) {
-        onError(error as Error)
+      } catch (err) {
+        onError(err as Error)
       }
     }),
   )

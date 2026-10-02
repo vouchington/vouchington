@@ -59,8 +59,8 @@ export async function executeCopyrightActionIntent(
       return 'stale'
     }
     return finalized ? 'applied' : 'stale'
-  } catch (error) {
-    return compensateCopyrightActionFailure(intent, now, restorePublishedTuple, dependencies, error)
+  } catch (err) {
+    return compensateCopyrightActionFailure(intent, now, restorePublishedTuple, dependencies, err)
   }
 }
 

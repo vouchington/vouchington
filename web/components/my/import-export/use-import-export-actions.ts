@@ -44,9 +44,9 @@ export function useImportExportActions({ isTopics, selectedType, state, dispatch
         progress => dispatch({ importProgress: progress }),
         controller.signal,
       )
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') return
-      onError(error, { fallback: 'Import stream disconnected' })
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return
+      onError(err, { fallback: 'Import stream disconnected' })
     } finally {
       if (!controller.signal.aborted) dispatch({ importingFeeds: false })
     }
@@ -60,8 +60,8 @@ export function useImportExportActions({ isTopics, selectedType, state, dispatch
         await preflightExport(url)
         triggerDownload(url)
         onSuccess('Topics exported')
-      } catch (error) {
-        onError(error, { fallback: 'Failed to export topics' })
+      } catch (err) {
+        onError(err, { fallback: 'Failed to export topics' })
       } finally {
         dispatch({ exportingTopics: false })
       }
@@ -72,8 +72,8 @@ export function useImportExportActions({ isTopics, selectedType, state, dispatch
         await preflightExport(url)
         triggerDownload(url)
         onSuccess('RSS feeds exported')
-      } catch (error) {
-        onError(error, { fallback: 'Failed to export RSS feeds' })
+      } catch (err) {
+        onError(err, { fallback: 'Failed to export RSS feeds' })
       } finally {
         dispatch({ exportingFeeds: false })
       }
@@ -104,8 +104,8 @@ export function useImportExportActions({ isTopics, selectedType, state, dispatch
         dispatch({ rssFeedUrls: '' })
         await startImportStream(data.import.id, data.import.total_rows)
       }
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: isTopics ? 'Failed to import topics' : 'Failed to import RSS feeds',
       })
       dispatch({ importingFeeds: false })
@@ -127,18 +127,18 @@ export function useImportExportActions({ isTopics, selectedType, state, dispatch
         : { opml: contents, follow: true as const }
       try {
         validateRssFeedImportBody(body)
-      } catch (error) {
-        if (error instanceof RssFeedImportValidationError && error.code === 'body_too_large') {
+      } catch (err) {
+        if (err instanceof RssFeedImportValidationError && err.code === 'body_too_large') {
           toast.error(t('extracted.importExport.sourceFileInput.requestIsTooLargeMax2Mib_53c0b35b'))
           dispatch({ importingFeeds: false })
           return
         }
-        throw error
+        throw err
       }
       const data = await importRssFeeds(body)
       await startImportStream(data.import.id, data.import.total_rows)
-    } catch (error) {
-      onError(error, { fallback: `Failed to import ${isCsv ? 'CSV' : 'OPML'}` })
+    } catch (err) {
+      onError(err, { fallback: `Failed to import ${isCsv ? 'CSV' : 'OPML'}` })
       dispatch({ importingFeeds: false })
     }
   }

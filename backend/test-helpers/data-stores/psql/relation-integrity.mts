@@ -71,9 +71,9 @@ export async function getMismatchedAdminImportTargetViolationCodes(
   ]) {
     try {
       await operation()
-    } catch (error) {
-      if (typeof error === 'object' && error && 'code' in error && typeof error.code === 'string')
-        codes.push(error.code)
+    } catch (err) {
+      if (typeof err === 'object' && err && 'code' in err && typeof err.code === 'string')
+        codes.push(err.code)
     }
   }
   return codes

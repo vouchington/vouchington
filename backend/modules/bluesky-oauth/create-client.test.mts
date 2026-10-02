@@ -91,7 +91,7 @@ describe('createBlueskyOAuthClient', () => {
     expect(injectedFetch).not.toBe(globalThis['fetch'])
 
     const error = await injectedFetch('http://pds.attacker.example.net/oauth').catch(
-      (caught: unknown) => caught,
+      (err: unknown) => err,
     )
 
     expect(error).toBeInstanceOf(TypeError)

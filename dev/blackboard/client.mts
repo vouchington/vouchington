@@ -33,20 +33,20 @@ export async function resolveBlackboardConnection(
   const env = options.env ?? process.env
   try {
     return resolvePortableBlackboardConnection(env)
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
     if (message === 'AGENT_BLACKBOARD_URL is not set') {
       throw new Error(
         `${message}; export the hosted agent-blackboard deployment URL — see docs/development/agent-blackboard.md`,
-        { cause: error },
+        { cause: err },
       )
     }
     if (message === 'AGENT_BLACKBOARD_TOKEN is not set') {
       throw new Error(
         `${message}; export a client credential for the hosted agent-blackboard deployment — see docs/development/agent-blackboard.md`,
-        { cause: error },
+        { cause: err },
       )
     }
-    throw error
+    throw err
   }
 }

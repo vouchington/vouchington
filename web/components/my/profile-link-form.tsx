@@ -147,8 +147,8 @@ export function ProfileLinkForm({ link, onSubmit, onCancel, loading }: Props) {
         ...(linkType === 'url' ? { url: url || undefined } : { handle: handle || undefined }),
         name: name || undefined,
       })
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.profileLinkForm.failedToSaveLink_ee85bd27'),
         tags: { form: 'my-profile-link-form' },
       })

@@ -100,7 +100,7 @@ describe('OpenAI response integration boundary', () => {
       const error: unknown = await createOpenAIResponse({
         model: 'gpt-4.1-mini',
         input: 'hello',
-      }).catch((caught: unknown) => caught)
+      }).catch((err: unknown) => err)
 
       expect(error).toBeInstanceOf(OpenAIResponseNotCompletedError)
       const notCompleted = error as OpenAIResponseNotCompletedError
@@ -134,7 +134,7 @@ describe('OpenAI response integration boundary', () => {
       const error: unknown = await createOpenAIResponse({
         model: 'gpt-4.1-mini',
         input: 'hello',
-      }).catch((caught: unknown) => caught)
+      }).catch((err: unknown) => err)
 
       expect(error).toBeInstanceOf(OpenAIResponseNotCompletedError)
       const notCompleted = error as OpenAIResponseNotCompletedError

@@ -133,9 +133,9 @@ async function restoreRetainedDirectSource(
       membershipProviderEvidenceId,
       acceptedObservation,
     )
-  } catch (error) {
-    if (error instanceof DirectMembershipSourceRejectedError) return null
-    throw error
+  } catch (err) {
+    if (err instanceof DirectMembershipSourceRejectedError) return null
+    throw err
   }
   return null
 }

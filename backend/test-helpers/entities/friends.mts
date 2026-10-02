@@ -142,9 +142,9 @@ export async function acquireTestFriendRowLock(
       [providerUserId, friendProviderUserId],
     )
     if (result.rows.length === 0) throw new Error('Friend row to lock does not exist')
-  } catch (error) {
+  } catch (err) {
     await transaction.rollback()
-    throw error
+    throw err
   }
   return createTestFriendRowLock(transaction)
 }

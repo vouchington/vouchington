@@ -60,8 +60,8 @@ export function ReferralLinkForm({
         onSuccess(t('extracted.referralLinks.referralLinkForm.referralLinkSaved_405751ae'))
         onSaved?.()
         refresh()
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: t('extracted.referralLinks.referralLinkForm.failedToSaveReferralLink_83612a5e'),
         })
       }
@@ -79,8 +79,8 @@ export function ReferralLinkForm({
         onSuccess(t('extracted.referralLinks.referralLinkForm.referralLinkDeleted_e04c8b57'))
         onSaved?.()
         refresh()
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: t(
             'extracted.referralLinks.referralLinkForm.failedToDeleteReferralLink_68bdf774',
           ),

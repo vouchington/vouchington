@@ -29,8 +29,8 @@ export async function ensureSession(input: EnsureSessionInput): Promise<EnsureSe
       version: input.version,
     })
     return { status }
-  } catch (error) {
-    throw new Error(`sessions ensure failed: ${formatError(error)}`, { cause: error })
+  } catch (err) {
+    throw new Error(`sessions ensure failed: ${formatError(err)}`, { cause: err })
   }
 }
 

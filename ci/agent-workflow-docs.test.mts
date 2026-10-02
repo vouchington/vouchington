@@ -22,9 +22,9 @@ type ScreenshotCommandResult = {
 async function readOptionalFile(path: string): Promise<string | undefined> {
   try {
     return await readFile(path, 'utf8')
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
-    throw error
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return undefined
+    throw err
   }
 }
 
@@ -50,8 +50,8 @@ async function runScreenshotCommand(forwardedArgs: string[]): Promise<Screenshot
           PATH: `${directory}:${process.env.PATH ?? ''}`,
         },
       })
-    } catch (error) {
-      const result = error as Error & {
+    } catch (err) {
+      const result = err as Error & {
         code?: number | string
         stderr?: string
         stdout?: string

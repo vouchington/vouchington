@@ -150,15 +150,14 @@ function trackedFileContent(file: string): string | undefined {
     const content = readFileSync(join(gitRoot, file), 'utf8')
     trackedFileContentCache.set(file, content)
     return content
-  } catch (error) {
-    const code =
-      error !== null && typeof error === 'object' && 'code' in error ? error.code : undefined
+  } catch (err) {
+    const code = err !== null && typeof err === 'object' && 'code' in err ? err.code : undefined
     if (code === 'EISDIR' || code === 'ENOENT') {
       trackedFileContentCache.set(file, undefined)
       return undefined
     }
 
-    throw error
+    throw err
   }
 }
 

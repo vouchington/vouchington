@@ -54,9 +54,9 @@ export async function loadCrawlPreflight(
 
   try {
     await assertUrlAllowedByWebRisk(url.url)
-  } catch (error) {
-    if (isHttpError(error) && error.status === 400) return null
-    throw error
+  } catch (err) {
+    if (isHttpError(err) && err.status === 400) return null
+    throw err
   }
 
   if (options?.ignoreRobotsTxt !== true) {

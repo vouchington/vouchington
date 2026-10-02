@@ -28,9 +28,9 @@ export function loadSchemaSnapshot(
     }
     try {
       value = JSON.parse(readFileSync(join(repoRoot, SCHEMA_SNAPSHOT_PATH), 'utf8'))
-    } catch (error) {
+    } catch (err) {
       return failed(
-        `${SCHEMA_SNAPSHOT_PATH}: could not read valid JSON (${error instanceof Error ? error.message : String(error)})`,
+        `${SCHEMA_SNAPSHOT_PATH}: could not read valid JSON (${err instanceof Error ? err.message : String(err)})`,
       )
     }
   }

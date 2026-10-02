@@ -65,10 +65,10 @@ export function ModmailInbox({ communitySlug, initialData }: Props) {
         hasMore: res.page_info.has_next_page,
         endCursor: res.page_info.end_cursor,
       })
-    } catch (error) {
+    } catch (err) {
       if (generation === generationRef.current && contextSlug === communitySlug) {
-        setLoadError(error instanceof Error ? error : new Error(String(error)))
-        onError(error, {
+        setLoadError(err instanceof Error ? err : new Error(String(err)))
+        onError(err, {
           fallback: isFirstPageRetry
             ? t('extracted.communities.modmailInbox.failedToLoadModmailInbox_b0fe8c15')
             : t('extracted.communities.modmailInbox.failedToLoadMoreThreads_c5092cf8'),

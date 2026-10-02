@@ -120,8 +120,8 @@ export function createPeerTubeAdapter(
           fetchPeerTubeChannels(host, options.q, combined.c, limit),
         ])
         return buildPeerTubeCombinedBucket(combined, limit, videosResult, channelsResult)
-      } catch (error) {
-        onError(error as Error)
+      } catch (err) {
+        onError(err as Error)
         return { provider: 'peertube', status: 'error', items: [], error_code: 'provider_error' }
       }
     },

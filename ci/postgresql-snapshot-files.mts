@@ -30,8 +30,8 @@ export async function assertSafeSnapshotDestination(root: string, relative: stri
       if (status.isSymbolicLink() || (isLeaf ? !status.isFile() : !status.isDirectory())) {
         throw new Error(`Unsafe snapshot destination: ${relative}`)
       }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
     }
   }
 }

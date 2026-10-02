@@ -25,10 +25,10 @@ export function useConfiguredOAuthProviders(runtimePublicProviders: OAuthProvide
           })
         }
       })
-      .catch(error => {
+      .catch(err => {
         if (!ignore) {
           setConfiguration({ providers: [], broker_capabilities: {} })
-          onError(error, {
+          onError(err, {
             fallback: 'Unable to load sign-in providers.',
             tags: { form: 'auth-login', action: 'load-oauth-providers' },
           })

@@ -97,10 +97,10 @@ async function replaceFailedImageWhileLocked(
       return result
     }
     replacement = await replaceFailedImageInTransaction()
-  } catch (error) {
-    if (!isUniqueViolation(error)) throw error
+  } catch (err) {
+    if (!isUniqueViolation(err)) throw err
     const winner = await getImageByHash(hash, true)
-    if (!winner) throw error
+    if (!winner) throw err
     await deleteImageUploadSourceFromS3(incoming)
     await deletePendingImage(incoming.id).catch(onError)
     if (winner.deleted_at) {

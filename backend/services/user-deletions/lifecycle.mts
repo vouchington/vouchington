@@ -92,14 +92,14 @@ export async function processUserDeletionBatch(
   try {
     const result = await processCurrentPhaseBatch(request, deps)
     return await advanceUserDeletionAttempt(request, result.hasMore, result.retryAfterMs)
-  } catch (error) {
+  } catch (err) {
     await releaseFailedUserDeletionAttempt(
       request.id,
       request.processingAttemptId,
-      error,
+      err,
       options.isFinalAttempt ?? false,
     )
-    throw error
+    throw err
   }
 }
 

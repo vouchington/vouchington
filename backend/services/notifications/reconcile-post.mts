@@ -46,9 +46,9 @@ export async function reconcileNotificationsForPost(
       },
       options,
     )
-  } catch (error) {
-    if (error instanceof Error) {
-      const enrichedError = error as Error & {
+  } catch (err) {
+    if (err instanceof Error) {
+      const enrichedError = err as Error & {
         tags?: Record<string, string | number | boolean>
         extra?: Record<string, unknown>
       }
@@ -59,7 +59,7 @@ export async function reconcileNotificationsForPost(
       enrichedError.extra = { postId }
       onError(enrichedError)
     }
-    throw error
+    throw err
   }
 }
 async function populatePostNotificationRecipients(

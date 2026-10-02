@@ -18,9 +18,9 @@ export async function loadJournalEntries(
   let first: IteratorResult<JournalEntry>
   try {
     first = await iterator.next()
-  } catch (error) {
-    if (isBlackboardNotFound(error)) return { status: 'not-found' }
-    throw error
+  } catch (err) {
+    if (isBlackboardNotFound(err)) return { status: 'not-found' }
+    throw err
   }
   if (first.done) return { status: 'ok', entries: [] }
 

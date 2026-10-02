@@ -71,8 +71,8 @@ export function createCrawlEmbedResolver(
     ): Promise<EmbedResolutionPlan | null | undefined> {
       try {
         return await resolver.planExtracted({ documentUrl, content })
-      } catch (error) {
-        dependencies.reportError(error)
+      } catch (err) {
+        dependencies.reportError(err)
         return undefined
       }
     },

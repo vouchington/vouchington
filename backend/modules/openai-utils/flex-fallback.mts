@@ -27,9 +27,9 @@ export async function withOpenAIFlexFallback<P extends FlexFallbackParams, T>(
 ): Promise<T> {
   try {
     return await run(params, 0)
-  } catch (error) {
-    const fallback = getOpenAIFlexFallbackParams(params, error, provider)
-    if (!fallback) throw error
+  } catch (err) {
+    const fallback = getOpenAIFlexFallbackParams(params, err, provider)
+    if (!fallback) throw err
     return run(fallback, 1)
   }
 }

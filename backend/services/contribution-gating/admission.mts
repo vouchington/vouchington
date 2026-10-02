@@ -57,8 +57,8 @@ export async function runContributionAdmission<T>(
     if (!(await leaseKeeper.ensureOwned())) return { kind: 'in_progress', retryAfterSeconds: 1 }
     try {
       await input.beforeCapacity?.()
-    } catch (error) {
-      throw new RejectedContributionAdmissionPreconditionError(error)
+    } catch (err) {
+      throw new RejectedContributionAdmissionPreconditionError(err)
     }
     if (!(await renewContributionAdmissionLeaseFromWritePool(claim.reservationId, claim.leaseId)))
       return { kind: 'in_progress', retryAfterSeconds: 1 }
@@ -70,8 +70,8 @@ export async function runContributionAdmission<T>(
     }
     try {
       await input.beforeCommit?.()
-    } catch (error) {
-      throw new RejectedContributionAdmissionPreconditionError(error)
+    } catch (err) {
+      throw new RejectedContributionAdmissionPreconditionError(err)
     }
     await using query = await beginTransaction()
     const response = await input.execute(query)
@@ -137,7 +137,7 @@ export async function runContributionAdmission<T>(
       return { kind: 'created', response: published.response }
     }
     return result
-  } catch (error) {
+  } catch (err) {
     if (committedResult)
       return input.callerCanReplayIdempotencyIdentity === false
         ? committedResult
@@ -150,24 +150,24 @@ export async function runContributionAdmission<T>(
         }
       return { kind: 'in_progress', retryAfterSeconds: 1 }
     }
-    if (error instanceof LostContributionAdmissionLeaseError) {
+    if (err instanceof LostContributionAdmissionLeaseError) {
       return { kind: 'in_progress', retryAfterSeconds: 1 }
     }
-    if (error instanceof RejectedContributionAdmissionPreconditionError) {
+    if (err instanceof RejectedContributionAdmissionPreconditionError) {
       await leaseKeeper.stop()
       await cleanupRejectedAdmission()
-      throw error.reason
+      throw err.reason
     }
-    if (error instanceof RejectedContributionAdmissionCapacityError) {
+    if (err instanceof RejectedContributionAdmissionCapacityError) {
       await cleanupRejectedAdmission()
-      throw error.reason
+      throw err.reason
     }
-    if (isTerminalContributionAdmissionMutationError(error)) {
+    if (isTerminalContributionAdmissionMutationError(err)) {
       await cleanupRejectedAdmission()
-      throw error
+      throw err
     }
-    await markContributionAdmissionRetryableFailure(claim.reservationId, claim.leaseId, error)
-    throw error
+    await markContributionAdmissionRetryableFailure(claim.reservationId, claim.leaseId, err)
+    throw err
   } finally {
     await leaseKeeper.stop()
   }

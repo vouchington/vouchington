@@ -44,7 +44,7 @@ export async function processBedrockNovaMultimodalV1SingleJob(
       default:
         throw new Error(`Unknown job type: ${job.name}`)
     }
-  } catch (error: unknown) {
-    return handleBedrockRateLimit(error, worker)
+  } catch (err: unknown) {
+    return handleBedrockRateLimit(err, worker)
   }
 }

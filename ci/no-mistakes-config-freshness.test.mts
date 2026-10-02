@@ -42,9 +42,9 @@ function runOxlintOnMockBoundaryFixture(source: string): { status: number; outpu
         stdio: 'pipe',
       })
       return { status: 0, output: '' }
-    } catch (error) {
+    } catch (err) {
       // execFileSync always throws string stdout/stderr here since it's called with encoding: 'utf8'.
-      const result = error as { status?: number; stderr?: string; stdout?: string }
+      const result = err as { status?: number; stderr?: string; stdout?: string }
       return { status: result.status ?? 1, output: `${result.stdout ?? ''}${result.stderr ?? ''}` }
     }
   } finally {

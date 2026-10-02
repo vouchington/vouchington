@@ -66,8 +66,8 @@ export async function fetchGlobalServerFeatureFlags(): Promise<GlobalFeatureFlag
       headers: { Cookie: '', 'x-voucha-request-kind': GLOBAL_FEATURE_FLAGS_REQUEST_KIND },
     })
     return { ok: true, flags: response.flags }
-  } catch (error) {
-    return { ok: false, error }
+  } catch (err) {
+    return { ok: false, error: err }
   }
 }
 

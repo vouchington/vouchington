@@ -105,17 +105,17 @@ export async function processAIAgentWorkerJob(
       () => dependencies.processAIAgent(job),
       totalTokens => job.reportTokens(totalTokens),
     )
-  } catch (error: unknown) {
-    if (error instanceof OpenAiSpendCapBreachError) {
+  } catch (err: unknown) {
+    if (err instanceof OpenAiSpendCapBreachError) {
       // Mid-loop recheck already recorded the breach; park like the pre-dispatch path.
       await delayForOpenAiSpendCap(
         job,
-        error.breach.day,
+        err.breach.day,
         dependencies.registerOpenAiSpendCapRecheck,
         dependencies.reportOpenAiSpendCapRegistrationFailure,
       )
     }
-    return dependencies.handleOpenAIRateLimit(error, worker)
+    return dependencies.handleOpenAIRateLimit(err, worker)
   }
 }
 

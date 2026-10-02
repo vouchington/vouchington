@@ -148,9 +148,9 @@ export async function updateTopicRecommendation(
 
     void enqueueOnPostUpdated(recommendation.id)
     return updated
-  } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error))
-    const extendedError = err as Error & {
+  } catch (err) {
+    const localErr = err instanceof Error ? err : new Error(String(err))
+    const extendedError = localErr as Error & {
       extra?: Record<string, unknown>
       tags?: Record<string, string | number | boolean>
     }
@@ -164,7 +164,7 @@ export async function updateTopicRecommendation(
       ...(extendedError.tags ?? {}),
       area: 'topic-recommendations',
     }
-    onError(err)
-    throw error
+    onError(localErr)
+    throw err
   }
 }

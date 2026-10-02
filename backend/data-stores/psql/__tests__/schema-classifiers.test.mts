@@ -243,7 +243,7 @@ describe('classifier schema constraints', () => {
     await using replacement = await fixture.holdThresholdReplacement()
     const captureError = fixture
       .createTopicBatch({ communityId: fixture.communityId })
-      .catch(caught => caught)
+      .catch(err => err)
 
     await expect.poll(replacement.hasBlockedOperation).toBe(true)
     await replacement.release()

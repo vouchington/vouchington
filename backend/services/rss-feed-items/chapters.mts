@@ -70,9 +70,9 @@ export async function getPodcastEpisodeChaptersById(
     } finally {
       clearTimeout(timeoutId)
     }
-  } catch (error) {
-    if (error instanceof UnsafeUrlError) return []
-    deps.onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    if (err instanceof UnsafeUrlError) return []
+    deps.onError(err instanceof Error ? err : new Error(String(err)))
     return []
   }
 }

@@ -17,8 +17,8 @@ export async function publishTerminalImageState(imageId: string, flagged: boolea
         blocked: flagged,
       })
       return
-    } catch (error) {
-      lastError = error
+    } catch (err) {
+      lastError = err
       if (attempt < terminalStatePublishAttempts) {
         // oxlint-disable-next-line no-await-in-loop -- retry backoff must finish before the next publish attempt starts
         await sleep(terminalStatePublishRetryMs)

@@ -35,8 +35,8 @@ export async function createDataRequestOrConflict(
   try {
     const request = await deps.createDataRequest(userId, requestedById)
     return { type: 'created', request }
-  } catch (error) {
-    if (isActiveRequestUniqueViolation(error)) {
+  } catch (err) {
+    if (isActiveRequestUniqueViolation(err)) {
       // Intentional extra read after the write race so API callers can return the
       // current active request metadata in a 409 response.
       const racedExisting = await deps.getLatestDataRequest(userId, requestedById)
@@ -45,7 +45,7 @@ export async function createDataRequestOrConflict(
         existing: racedExisting && isActiveDataRequest(racedExisting) ? racedExisting : null,
       }
     }
-    throw error
+    throw err
   }
 }
 

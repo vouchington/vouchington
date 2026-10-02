@@ -122,9 +122,9 @@ export async function disconnectBlueskyAccountAndCleanupFollows(
     const request = await requestBlueskyDisconnect(userId)
     try {
       await (dependencies?.enqueueDisconnectRequested ?? enqueueDisconnectRequested)(request)
-    } catch (error) {
+    } catch (err) {
       const reportError = dependencies?.reportError ?? onError
-      reportError(error instanceof Error ? error : new Error(String(error)))
+      reportError(err instanceof Error ? err : new Error(String(err)))
       await (dependencies?.disconnectWithoutLock ?? disconnectAcceptedBlueskyAccountWithoutLock)(
         userId,
         request,

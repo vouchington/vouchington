@@ -23,8 +23,8 @@ async function main(): Promise<void> {
 }
 
 if (import.meta.main) {
-  main().catch((error: unknown) => {
-    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`)
+  main().catch((err: unknown) => {
+    process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`)
     process.exit(1)
   })
 }

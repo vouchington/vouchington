@@ -49,10 +49,10 @@ export async function createIndividualRewardsProgramStatus(
     ;({ rows } = await write(
       sql`/* createIndividualRewardsProgramStatus */ INSERT INTO individual_rewards_program_statuses (individual_id, rewards_program_status_id) VALUES (${individual.id}, ${rewardsProgramStatusId}) RETURNING id`,
     ))
-  } catch (error) {
-    if ((error as { code?: string }).code === '23503')
+  } catch (err) {
+    if ((err as { code?: string }).code === '23503')
       assert(false, 422, 'Invalid rewards_program_status_id')
-    throw error
+    throw err
   }
   const status = await getIndividualRewardsProgramStatusById(currentUser, user, rows[0].id, {
     readOnly: false,
@@ -95,9 +95,9 @@ export async function updateIndividualRewardsProgramStatusById(
       `/* updateIndividualRewardsProgramStatusById */ UPDATE individual_rewards_program_statuses SET ${sets.join(', ')} WHERE id = $${values.push(id)} AND individual_id = $${values.push(individual.id)} RETURNING id`,
       values,
     ))
-  } catch (error) {
-    if ((error as { code?: string }).code === '23514') assert(false, 422, 'since must be <= until')
-    throw error
+  } catch (err) {
+    if ((err as { code?: string }).code === '23514') assert(false, 422, 'since must be <= until')
+    throw err
   }
   assert(rows[0], 404, 'Not found')
   const status = await getIndividualRewardsProgramStatusById(currentUser, user, rows[0].id, {

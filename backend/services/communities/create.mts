@@ -124,12 +124,12 @@ export async function createCommunity(
     community = await getCommunity(newCommunity.id, options)
     await query.commit()
     void enqueueReconcileMediaDeliveryRegistry()
-  } catch (error) {
-    const pgError = error as { code?: string; constraint?: string }
+  } catch (err) {
+    const pgError = err as { code?: string; constraint?: string }
     if (pgError.code === '23505') {
       throw createHttpError(409, `Slug "${slug}" is already taken`)
     }
-    throw error
+    throw err
   }
 
   assert(community, 500, 'Failed to create community')

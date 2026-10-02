@@ -37,7 +37,7 @@ describe('fetchImageFromS3', () => {
       }),
     } as unknown as S3Client
 
-    const err1 = await fetchImageFromS3(mockClient, 'test-bucket', 'missing-key').catch(e => e)
+    const err1 = await fetchImageFromS3(mockClient, 'test-bucket', 'missing-key').catch(err => err)
     expect(err1).toBeInstanceOf(S3OperationError)
     expect(err1.statusCode).toBe(404)
   })
@@ -50,7 +50,7 @@ describe('fetchImageFromS3', () => {
       }),
     } as unknown as S3Client
 
-    const err2 = await fetchImageFromS3(mockClient, 'test-bucket', 'missing-key').catch(e => e)
+    const err2 = await fetchImageFromS3(mockClient, 'test-bucket', 'missing-key').catch(err => err)
     expect(err2).toBeInstanceOf(S3OperationError)
     expect(err2.statusCode).toBe(404)
   })
@@ -63,7 +63,7 @@ describe('fetchImageFromS3', () => {
       }),
     } as unknown as S3Client
 
-    const err3 = await fetchImageFromS3(mockClient, 'test-bucket', 'test-key').catch(e => e)
+    const err3 = await fetchImageFromS3(mockClient, 'test-bucket', 'test-key').catch(err => err)
     expect(err3).toBeInstanceOf(S3OperationError)
     expect(err3.statusCode).toBe(500)
   })

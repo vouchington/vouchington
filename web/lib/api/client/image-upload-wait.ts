@@ -29,20 +29,20 @@ export async function pollImageUntilUploaded(
         throw new ApiError(state.upload_error ?? 'Image processing failed', 422)
       }
       if (state.upload_status === 'complete' || state.ready) return state
-    } catch (error) {
-      if (isAbortError(error)) {
+    } catch (err) {
+      if (isAbortError(err)) {
         throwIfAborted(options.signal)
         throw new InternalImageProcessingTimeoutError(imageId)
       }
-      if (!(error instanceof ApiError) || (error.status < 500 && error.status !== 429)) throw error
-      const retryAfterMs = getImageUploadRetryAfterMs(error)
+      if (!(err instanceof ApiError) || (err.status < 500 && err.status !== 429)) throw err
+      const retryAfterMs = getImageUploadRetryAfterMs(err)
       if (retryAfterMs !== null) {
         timeoutAt += retryAfterMs
         await delay(retryAfterMs, options.signal)
         return poll()
       }
       errors += 1
-      if (errors >= POLL_MAX_ERRORS) throw error
+      if (errors >= POLL_MAX_ERRORS) throw err
     }
 
     await delay(Math.min(POLL_INTERVAL_MS, getRemainingMs(timeoutAt, imageId)), options.signal)

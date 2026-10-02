@@ -18,11 +18,11 @@ export async function getSupplementaryTransparency(
       kind: 'available',
       transparency: await getCommunityModerationTransparency(slug, { range }),
     }
-  } catch (error) {
-    if (!(error instanceof ApiError)) return { kind: 'unavailable' }
-    if (error.status === 401) return { kind: 'unauthenticated' }
-    if (error.status === 403) return { kind: 'entitlement-denied' }
-    if (error.status === 404) return { kind: 'community-unavailable' }
+  } catch (err) {
+    if (!(err instanceof ApiError)) return { kind: 'unavailable' }
+    if (err.status === 401) return { kind: 'unauthenticated' }
+    if (err.status === 403) return { kind: 'entitlement-denied' }
+    if (err.status === 404) return { kind: 'community-unavailable' }
     return { kind: 'unavailable' }
   }
 }

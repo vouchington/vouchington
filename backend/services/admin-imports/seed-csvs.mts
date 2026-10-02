@@ -66,8 +66,8 @@ export async function seedTopicsFromRows(
     try {
       // oxlint-disable-next-line no-await-in-loop -- each seed row records its own result before the next row can be classified for retry
       await processTopicRow(admin, makeSyntheticRow(row, i))
-    } catch (error) {
-      errors.push({ slug: row.slug?.trim() || `row-${i}`, error })
+    } catch (err) {
+      errors.push({ slug: row.slug?.trim() || `row-${i}`, error: err })
     }
   }
 
@@ -89,11 +89,11 @@ export async function seedTopicsFromRows(
       // If pass 1 recorded an error for this row but pass 2 succeeded, clear it
       const errorIdx = errors.findIndex(e => e.slug === slug)
       if (errorIdx >= 0) errors.splice(errorIdx, 1)
-    } catch (error) {
+    } catch (err) {
       // Record pass-2 failures only for rows that succeeded in pass 1
       // (rows that already failed in pass 1 are already recorded there)
       if (!pass1ErrorSlugs.has(slug)) {
-        errors.push({ slug, error })
+        errors.push({ slug, error: err })
       }
     }
   }

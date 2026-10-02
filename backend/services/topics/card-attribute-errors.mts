@@ -10,13 +10,13 @@ const referenceConstraintErrors: Readonly<Record<string, { status: 404 | 422; me
 export async function mapCardAttributeReferenceError<T>(operation: () => Promise<T>): Promise<T> {
   try {
     return await operation()
-  } catch (error) {
-    const pgError = error as { code?: string; constraint?: string }
+  } catch (err) {
+    const pgError = err as { code?: string; constraint?: string }
     const mappedError =
       pgError.code === '23503' && pgError.constraint
         ? referenceConstraintErrors[pgError.constraint]
         : undefined
-    if (!mappedError) throw error
+    if (!mappedError) throw err
     throw createHttpError(mappedError.status, mappedError.message)
   }
 }

@@ -61,13 +61,13 @@ export async function resolveGooglePlayTokenLineage(options: {
           purchaseToken: token,
         })
       }
-    } catch (error) {
+    } catch (err) {
       if (
         depth > 0 &&
-        error instanceof GooglePlaySubscriptionLookupError &&
-        (error.status === 404 ||
-          error.status === 410 ||
-          (error.status === 400 && error.reason === 'subscriptionExpired'))
+        err instanceof GooglePlaySubscriptionLookupError &&
+        (err.status === 404 ||
+          err.status === 410 ||
+          (err.status === 400 && err.reason === 'subscriptionExpired'))
       ) {
         tokens.push({ token, linkedToken: null })
         return {
@@ -77,7 +77,7 @@ export async function resolveGooglePlayTokenLineage(options: {
           tokens,
         }
       }
-      throw error
+      throw err
     }
     currentSubscription ??= subscription
     if (depth === 0) {

@@ -85,8 +85,8 @@ async function drainBufferedRecords(): Promise<void> {
     try {
       // eslint-disable-next-line no-await-in-loop -- each append may add the next batch to this shared drain
       await flushBufferedRecords()
-    } catch (error) {
-      if (!hasError) firstError = error
+    } catch (err) {
+      if (!hasError) firstError = err
       hasError = true
     }
   }

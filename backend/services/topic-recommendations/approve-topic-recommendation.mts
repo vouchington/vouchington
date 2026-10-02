@@ -138,12 +138,12 @@ export async function approveTopicRecommendation(
       topic_slug: transactionResult.topic.slug,
       topic_type: transactionResult.topic_type,
     }
-  } catch (error) {
+  } catch (err) {
     const message =
-      error instanceof Error && error.message.trim().length > 0
-        ? error.message.trim()
+      err instanceof Error && err.message.trim().length > 0
+        ? err.message.trim()
         : 'Topic approval failed'
     await setTopicRecommendationApprovalError(recommendation.id, message)
-    throw error
+    throw err
   }
 }

@@ -59,9 +59,9 @@ export async function createFreshBenchmarkDatabase(
   }
   try {
     onCreated?.(database)
-  } catch (error) {
+  } catch (err) {
     await database.drop()
-    throw error
+    throw err
   }
   return database
 }

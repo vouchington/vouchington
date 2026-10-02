@@ -12,12 +12,12 @@ self.addEventListener('message', event => {
       try {
         const state = await handlePushMessage(event.data)
         port.postMessage({ type: 'voucha:web-push', version: 1, ok: true, state })
-      } catch (error) {
+      } catch (err) {
         port.postMessage({
           type: 'voucha:web-push',
           version: 1,
           ok: false,
-          error: error instanceof Error ? error.message : 'Invalid push binding request.',
+          error: err instanceof Error ? err.message : 'Invalid push binding request.',
         })
       }
     }),

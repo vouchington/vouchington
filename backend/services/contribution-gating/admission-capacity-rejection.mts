@@ -27,10 +27,9 @@ export async function runContributionAdmissionCapacityCheckOrReject<T>(
 ): Promise<T> {
   try {
     return await check()
-  } catch (error) {
-    if (isContributionQuotaRejection(error))
-      throw new RejectedContributionAdmissionCapacityError(error)
-    throw error
+  } catch (err) {
+    if (isContributionQuotaRejection(err)) throw new RejectedContributionAdmissionCapacityError(err)
+    throw err
   }
 }
 

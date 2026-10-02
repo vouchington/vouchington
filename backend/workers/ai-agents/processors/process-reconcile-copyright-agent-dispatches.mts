@@ -71,8 +71,8 @@ async function dispatchCopyrightAgentPage(
     try {
       // oxlint-disable-next-line no-await-in-loop -- each durable legal effect may lock targets.
       await deps.applyFormEffect(item.submissionId)
-    } catch (error) {
-      errors.push(error)
+    } catch (err) {
+      errors.push(err)
     }
   }
   return errors

@@ -22,10 +22,10 @@ export async function insertPostFeedShares(
   }
   try {
     assertDistributablePost(post, distribution.sender_user_id, 'share')
-  } catch (error) {
+  } catch (err) {
     await markDistributionFailed(
       distribution.id,
-      error instanceof Error ? error.message : 'Post is no longer distributable',
+      err instanceof Error ? err.message : 'Post is no longer distributable',
       query,
     )
     return false
@@ -66,10 +66,10 @@ export async function insertPostManualSendNotifications(
   }
   try {
     assertDistributablePost(post, distribution.sender_user_id, 'send')
-  } catch (error) {
+  } catch (err) {
     await markDistributionFailed(
       distribution.id,
-      error instanceof Error ? error.message : 'Post is no longer distributable',
+      err instanceof Error ? err.message : 'Post is no longer distributable',
       query,
     )
     return { failed: true, notificationsToDeliver: [] }
