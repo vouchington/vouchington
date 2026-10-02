@@ -6,6 +6,7 @@ import {
   getTopicFollowExistsForTest,
   getTopicImportRequestByRecommendationForTest,
   insertPendingTopicImportRequestForTest,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgres-pool-query-failure'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
@@ -18,6 +19,7 @@ describe('recommendation approval auto-follow database failure', () => {
     const topic = await createTestTopic({ user })
     const recommendation = await createTopicRecommendation(
       user,
+      WEB_PROVENANCE,
       {
         topic_title: 'Pending import recommendation',
         topic_slug: `auto-follow-recommendation-${randomUUID()}`,
