@@ -17,6 +17,7 @@ import { assertAdminEmailIndexPlan } from './plan-admin-email-gate.mts'
 import { assertEmbeddingReconciliationPlanIfApplicable } from './plan-embedding-reconciliation-gate.mts'
 import { assertStoryMemberPagePlan } from './plan-story-member-pages-gate.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
+import { assertSemanticPostCandidatePlan } from './plan-semantic-post-gate.mts'
 
 const UNIVERSAL_TOPIC_CANDIDATE_RELATIONS = new Set([
   'relation__post__category__topic',
@@ -41,6 +42,7 @@ const MEMBERSHIP_REFUND_INDEXES_BY_SCENARIO = new Map([
 type PlanNode = Record<string, unknown>
 
 export function assertRequiredPlanShape(result: ExplainResult): void {
+  assertSemanticPostCandidatePlan(result)
   assertPlanReturnedRows(result)
   const scenarioId = result.scenario_id
   if (scenarioId === 'post-search-universal-topic') assertUniversalTopicCandidatePlan(result)

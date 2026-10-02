@@ -12,6 +12,10 @@ import {
 import { seedUuid } from '../seed-data/common.mts'
 import * as services from '../run-services.mts'
 import { runSemanticRssSearchScenario } from './semantic-rss-search.mts'
+import {
+  runSemanticPostSearchScenarios,
+  runSimilarPostSearchScenarios,
+} from './semantic-post-search.mts'
 import { runPreciseRssRecencyCursorScenario } from './precise-rss-cursor.mts'
 
 const {
@@ -27,6 +31,8 @@ const {
 } = services
 
 export async function runSearchAndFacetScenarios() {
+  await runSemanticPostSearchScenarios()
+  await runSimilarPostSearchScenarios()
   // Comment tree — sort=new. Same root post seedComments() (comments-and-recently-viewed.mts)
   // built its 3-tier comment tree under.
   const seedCommentRootId = seedUuid(0, '05')

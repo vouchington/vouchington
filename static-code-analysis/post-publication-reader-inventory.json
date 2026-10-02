@@ -6,7 +6,10 @@
       "path": "backend/services/posts/check-privacy-access-batch.mts",
       "classification": "direct-sql"
     },
-    { "path": "backend/services/posts/direct-access-filter.mts", "classification": "direct-sql" },
+    {
+      "path": "backend/services/posts/direct-access-filter.mts",
+      "classification": "direct-sql"
+    },
     {
       "path": "backend/services/posts/get-visible-collection-rows.mts",
       "classification": "direct-sql"
@@ -39,11 +42,26 @@
       "path": "backend/services/comments/descendant-page.mts",
       "classification": "descendants-boundary"
     },
-    { "path": "backend/md/posts.mts", "classification": "public-boundary" },
-    { "path": "backend/services/rss-xml/posts-feed.mts", "classification": "public-boundary" },
-    { "path": "backend/services/posts/public-ids.mts", "classification": "public-sql" },
-    { "path": "backend/services/posts/metrics.mts", "classification": "public-sql" },
-    { "path": "backend/services/posts/metrics-batch.mts", "classification": "public-sql" },
+    {
+      "path": "backend/md/posts.mts",
+      "classification": "public-boundary"
+    },
+    {
+      "path": "backend/services/rss-xml/posts-feed.mts",
+      "classification": "public-boundary"
+    },
+    {
+      "path": "backend/services/posts/public-ids.mts",
+      "classification": "public-sql"
+    },
+    {
+      "path": "backend/services/posts/metrics.mts",
+      "classification": "public-sql"
+    },
+    {
+      "path": "backend/services/posts/metrics-batch.mts",
+      "classification": "public-sql"
+    },
     {
       "path": "backend/services/search/omnisearch-content-verticals.mts",
       "classification": "public-boundary"
@@ -112,9 +130,18 @@
       "path": "backend/services/trending-posts/get-trending-posts.mts",
       "classification": "public-sql"
     },
-    { "path": "backend/services/data-points/search.mts", "classification": "public-sql" },
-    { "path": "backend/services/data-points/insights.mts", "classification": "public-sql" },
-    { "path": "backend/services/sitemaps/daily-queries.mts", "classification": "public-sql" },
+    {
+      "path": "backend/services/data-points/search.mts",
+      "classification": "public-sql"
+    },
+    {
+      "path": "backend/services/data-points/insights.mts",
+      "classification": "public-sql"
+    },
+    {
+      "path": "backend/services/sitemaps/daily-queries.mts",
+      "classification": "public-sql"
+    },
     {
       "path": "backend/services/sitemaps/family-landing-pages-query.mts",
       "classification": "public-sql"
@@ -195,6 +222,13 @@
       "path": "backend/services/posts/search/query-builder/select-and-joins.mts",
       "classification": "raw-hydrator",
       "reason": "Search fragment; base-filters owns public eligibility composition for the assembled query.",
+      "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
+      "owner_classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/posts/search/query-builder/semantic-candidates.mts",
+      "classification": "raw-hydrator",
+      "reason": "The bounded semantic candidate query composes the same search WHERE assembler; base-filters owns public eligibility composition before the candidate limit.",
       "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
       "owner_classification": "mixed-discovery-sql"
     },

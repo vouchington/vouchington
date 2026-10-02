@@ -1,7 +1,7 @@
 import type { PrivateUser } from '@services/users/types'
 import type { PostSearchOptions } from './types.mts'
 import { buildPostSearchQuery } from './query-builder.mts'
-import { read } from '@data-stores/psql'
+import { executePostSearchQuery } from './execute-query.mts'
 import { getCachedSearchEmbedding } from '@services/bedrock-embeddings/search/get-cached'
 import { buildCountQuery, hasSemanticSearch } from '@modules/search-utils'
 
@@ -36,7 +36,7 @@ export async function getPostFacets(
   // Wrap in COUNT query
   const countQuery = buildCountQuery(baseQuery)
 
-  const { rows } = await read(countQuery)
+  const { rows } = await executePostSearchQuery(countQuery, semanticSearchEmbedding !== undefined)
 
   return {
     total_count: Number.parseInt(rows[0]?.total_count || '0', 10),

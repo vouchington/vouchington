@@ -14,7 +14,9 @@ describe('embedding-ctes', () => {
     const ctes = buildEmbeddingCtes({ semanticSearchEmbeddingVector: '[0.1,0.2,0.3]' })
     expect(ctes).toHaveLength(1)
     expect(ctes[0].text).toContain('semantic_search_embedding')
+    expect(ctes[0].text).toContain('AS NOT MATERIALIZED')
     expect(ctes[0].text).toContain('::vector AS embedding')
+    expect(ctes[0].values).toEqual(['[0.1,0.2,0.3]'])
   })
 
   it('buildEmbeddingCtes returns similar_post CTE when post ID provided', () => {

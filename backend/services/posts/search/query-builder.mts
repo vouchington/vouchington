@@ -11,6 +11,7 @@ import { appendCtes, buildPostSearchCtes } from './query-builder/ctes.mts'
 import { appendPostSearchOrderAndLimit } from './query-builder/order-and-limit.mts'
 import { appendPostSearchSelectAndJoins } from './query-builder/select-and-joins.mts'
 import { appendPostSearchWhereClause } from './query-builder/where-clause.mts'
+import { buildSemanticPostCandidates } from './query-builder/semantic-candidates.mts'
 
 export function buildPostSearchQuery(
   currentUser?: BasicUser,
@@ -32,15 +33,15 @@ export function buildPostSearchQuery(
   const query = sql`/* buildPostSearchQuery */
   `
 
-  appendCtes(
-    query,
-    buildPostSearchCtes({
-      ...options,
-      hasSemanticSearch,
-      hasTextSearch,
-    }),
-  )
+  const ctes = buildPostSearchCtes({
+    ...options,
+    hasSemanticSearch,
+    hasTextSearch,
+  })
+  if (hasSemanticSearch) ctes.push(buildSemanticPostCandidates(currentUser, options, hasTextSearch))
+  appendCtes(query, ctes)
   appendPostSearchSelectAndJoins(query, {
+    useSemanticCandidates: hasSemanticSearch,
     currentUser,
     followingRankExpression,
     hasSemanticSearch,

@@ -13,6 +13,7 @@ export function appendPostSearchSelectAndJoins(
     options,
     rankingScoreExpression,
     sort,
+    useSemanticCandidates = false,
   }: {
     currentUser?: BasicUser
     followingRankExpression: SQLStatement | null
@@ -21,6 +22,7 @@ export function appendPostSearchSelectAndJoins(
     options: PostSearchOptions
     rankingScoreExpression: SQLStatement | null
     sort: string
+    useSemanticCandidates?: boolean
   },
 ): void {
   query.append(sql`SELECT
@@ -36,9 +38,19 @@ export function appendPostSearchSelectAndJoins(
     query.append(buildHotScoreExpression())
     query.append(sql` AS hot_score`)
   }
-  query.append(sql`
-    FROM posts
-  `)
+  if (useSemanticCandidates) {
+    // Keep ranking/filter distance work bounded even when a full-table join looks cheaper.
+    query.append(sql`
+      FROM semantic_post_candidates
+      CROSS JOIN LATERAL (
+        SELECT semantic_selected_post.* FROM posts semantic_selected_post
+        WHERE semantic_selected_post.id = semantic_post_candidates.id
+        LIMIT 1
+      ) posts
+    `)
+  } else {
+    query.append(sql`\n    FROM posts\n`)
+  }
   appendSearchJoins(query, { hasSemanticSearch, hasTextSearch, options })
   if (sort === 'following_new' && currentUser) appendFollowingJoin(query, currentUser.id)
 }

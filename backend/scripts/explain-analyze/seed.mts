@@ -63,6 +63,7 @@ import { checkpointSeed, printRowCounts, runAnalyze } from './seed-data/maintena
 import { seedOAuthClientVerification } from './seed-data/oauth-client-verification.mts'
 import { seedPostFeedShares } from './seed-data/post-feed-shares.mts'
 import { seedAdminEmails } from './seed-data/admin-emails.mts'
+import { seedSemanticPosts } from './seed-data/semantic-posts.mts'
 import { RSS_FEED_SEED_COUNT, RSS_FEED_ITEM_SEED_COUNT } from './seed-data/common.mts'
 import {
   seedMembershipRefunds,
@@ -88,6 +89,7 @@ async function main() {
   await seedRewardsProgramStatuses(REWARDS_PROGRAM_STATUS_SEED_COUNT)
   await seedTopicParentRelations(500)
   await seedPosts(100_000)
+  await seedSemanticPosts()
   await seedPostFeedShares()
   await seedUserRemovedPlatformPosts()
   await checkpointSeed('posts')

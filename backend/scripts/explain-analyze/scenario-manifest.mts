@@ -1,4 +1,12 @@
 export const EXPLAIN_SCENARIO_MANIFEST = [
+  'post-search-similar-post-new',
+  'post-search-similar-post-relevance',
+  'post-search-similar-rss-new',
+  'post-search-similar-rss-relevance',
+  'post-search-semantic-new',
+  'post-search-semantic-relevance',
+  'post-search-hybrid-new',
+  'post-search-hybrid-relevance',
   'comment-ancestors',
   'comment-tree-best',
   'comment-tree-new',

@@ -52,13 +52,49 @@ Notes:
 
 ### Semantic search plan
 
-Semantic filtering (`semantic_search_query` and the `similar_*` options) is a distance-threshold predicate, not a nearest-neighbour scan. The pgvector HNSW index serves only `ORDER BY embedding <=> query LIMIT n`, so this query never uses it and `hnsw.iterative_scan` does not apply. REST `GET /api/v1/posts` and MCP `search_posts` share this one query.
+REST `GET /api/v1/posts` and MCP `search_posts` share one query. A `semantic_search_query`
+first selects a materialized window ordered by raw cosine distance, with privacy, moderation,
+text and other search filters applied before the window. The HNSW scan uses strict iterative
+ordering and finite search limits; its settings and a forced custom plan are scoped to the
+read transaction and do not leak into pooled connections.
+Initial HNSW exploration is independent of the candidate cap. Strict iterative scans refill
+the window within the finite scan budget; a smaller initial exploration reduces index startup
+cost but does not make recall exact. The EXPLAIN gate verifies index use on the seeded corpus.
+The parameter-only embedding CTE is not materialized, so the custom planner sees the same
+constant embedding in eligibility filters and distance ordering even with repeated references.
+The parameter-only text query is also inlined so hybrid planning sees its real selectivity.
+Candidate selection drives raw distance ordering from the vector relation and checks all
+eligibility in a correlated, one-row lateral lookup before counting toward the cap.
+An explicit author scope also filters the driving relation, allowing selective author indexes
+and exact distance sorting instead of an unrelated global ANN traversal.
+After candidate selection, ranking and cursor filters read posts by candidate ID through bounded
+lateral lookups; the outer query cannot rescan the corpus to recompute embedding distances.
 
-- `sort=relevance` with a semantic query (alone or hybrid) computes the distance for every candidate row and sorts by the ranking score; cost grows with the number of embedded posts that pass the other filters.
-- `sort=new`, and `similar_*` requests with either sort, walk `posts.id DESC` and filter on distance until the page fills. `similar_*` requests have no ranking expression, so `sort=relevance` is recency-ordered within the threshold.
-- Hybrid requests can also switch to a slower generic plan on a long-lived pooled connection, because the query runs as a named prepared statement.
+The repaired, distinct-direction CI corpus measured all four custom semantic/hybrid plans
+using HNSW: 1,000 candidates, 26 output rows, and 30.960–33.992 ms execution time.
+Their candidate startup cost was 4,943.71, with total estimated cost 104,527–104,530.
+The same scenarios measured generic plans at 191.694–198.306 ms. These are synthetic
+100,000-post / 40,000-vector measurements, not production latency or exact-recall guarantees.
+See [the captured validation record](https://github.com/vouchington/vouchington/pull/1636).
 
-The plan evidence, the reasoning, and the open candidate-window decision are in the [search-utils plan notes](../../../backend/modules/search-utils/README.md#semantic-post-search-plan).
+Approximate recall and a capped result window are intentional ([#1549](https://github.com/vouchington/vouchington/issues/1549)).
+The candidate cap is defined by `SEMANTIC_POST_CANDIDATE_LIMIT` in the query builder. Ranking
+formulas and the distance threshold are unchanged within those candidates. Hybrid ranking
+can omit high text-score matches outside the distance window. Recency, vote and hot sorts
+also operate within that same window.
+
+Page cursors apply after candidate selection, so later pages never refill the window with new
+candidates. Pagination ends at its boundary; facets count that window rather than the exhaustive
+match set. Approximate recall can under-fill a page after the finite scan budget is exhausted.
+Only distance orders candidate selection so HNSW can serve the window; final ranking breaks
+ties by post ID. Inclusion at a tied distance boundary is arbitrary. Each request recomputes
+the window: cursors and facets use the same selection query, not a persisted candidate snapshot,
+so concurrent corpus changes or approximate index traversal can change membership across requests.
+Text-only and `similar_*` requests retain their existing query paths; similar-item relevance
+remains recency-ordered within the threshold.
+
+The representative vector seeds and semantic/hybrid scenarios in `backend/scripts/explain-analyze/`
+compare custom and generic plans. See the [search-utils plan notes](../../../backend/modules/search-utils/README.md#semantic-post-search-plan).
 
 ## Get IDs
 

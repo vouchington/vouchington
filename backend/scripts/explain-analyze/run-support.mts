@@ -127,6 +127,7 @@ export async function runAndCapture(
   fn: () => Promise<unknown>,
   nameSuffix?: string,
   captureQueryName?: string | readonly string[],
+  explainOptions: { localSettings?: Readonly<Record<string, string>> } = {},
 ): Promise<void> {
   console.log(`Running: ${label}`)
   clearCapturedQueries()
@@ -155,7 +156,10 @@ export async function runAndCapture(
         Boolean,
       )
       const name = suffixes.length > 0 ? `${baseName}:${suffixes.join(':')}` : baseName
-      const result = await explainAnalyze(name, cq.text, cq.values, { planCacheMode })
+      const result = await explainAnalyze(name, cq.text, cq.values, {
+        ...explainOptions,
+        planCacheMode,
+      })
       result.scenario_id = label
       result.capture_index = captureIndex
       collectAndGate(result)
