@@ -31,6 +31,13 @@ public community data: the tools read as a signed-out reader whatever the creden
 membership, so the scope never exposes a private community. `mcp.user:read` covers it like every
 other user read scope.
 
+`profile:read/write`, `notifications:read/write`, and `preferences:read/write` are user-audience
+resource scopes for the profile, notification, and preference write tools. Each write requires its
+read, `mcp.user:read` with `mcp.user:write` covers them, and none is an exact grant. `profile:read`
+already authorized `get_my_profile`, so a profile write grant also lets the credential read the
+profile. See
+[Profile, Notification, and Preference Write Tools](../../../agent-tools/profile-notification-write-tools.md).
+
 `post-relations.owned-private:write` is an exact, non-inheritable user capability. It requires
 `entity-relations:write` (and therefore read) for API keys and OAuth grants, but broad
 `mcp.user:write` never covers it. The `set_bookmark` and `add_list_item` MCP tools check the same
