@@ -5,7 +5,6 @@ export {
   runWithBackgroundResponseHooks,
   runWithOpenAIResponseAttemptHooks,
   type OpenAIResponse,
-  type OpenAIResponseInput,
   type BackgroundResponseHooks,
   type OpenAIResponseAttemptHooks,
   type OpenAIUsage,

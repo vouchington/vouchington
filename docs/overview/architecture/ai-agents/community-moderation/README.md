@@ -11,9 +11,20 @@ every active community prompt, and the community's `communities.automod_action` 
 
 - `executeCommunityModerationRun` and `createCommunityModerationClient` - build the bounded input
   for a leased classifier run and make the single provider call over every pinned prompt.
-- `simulateCommunityPromptOnPosts` - dry-runs a community prompt against posts without writing results.
-- `prepareModerationInput` and `callOpenAIModeration` (`openai-moderation.mts`) - build the bounded
-  model input and make the OpenAI moderation call. The prompt test-runs route imports them directly.
+- `prepareCommunityPromptDryRun` - loads the active `community-moderation` classifier's prompt,
+  model, provider and thresholds once, and returns a `classify` function that asks one stored or
+  unsaved community rule one question about a piece of text.
+- `simulateCommunityPromptOnPosts` - dry-runs one community rule against up to 50 sampled posts.
+
+## Dry runs
+
+The automod simulate route and the prompt test-runs route are no-persist classifier dry runs. Each
+makes one single-question classifier call per post (simulate runs up to eight in flight, each with
+its own deadline) and applies the classifier's thresholds, so the preview matches production.
+A dry run writes no classifier receipt, attempt or `agent_moderations` row, and it never takes an
+automod action. The daily spend cap is checked before any call, and every call records its usage
+in the AI usage ledger under the `community-moderation-dry-run` workload. The responses carry
+`flagged` and an empty `reason`, because the classifier returns a probability, not an explanation.
 
 ## Related
 

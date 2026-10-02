@@ -1,4 +1,7 @@
-import { MODERATOR_CONFIGS } from '@voucha/types/entities/moderator-configs'
+import {
+  POST_CLASSIFIER_LABELS,
+  POST_CLASSIFIER_REMOTE_QUESTIONS,
+} from '@voucha/types/entities/post-classifier'
 import type { BenchmarkConfig } from './benchmark-config.mts'
 import { modeledCurrentCost, observedJevCost } from './benchmark-cost.mts'
 import type { StructuredDecisionClient, StructuredDecisionRequest } from './types.mts'
@@ -37,20 +40,17 @@ export async function runBenchmark(
     { length: 60 },
     () => 'A traveler describes a rewards program experience with concrete dates and details.',
   ).join(' ')
-  const moderationQuestions: StructuredDecisionRequest['questions'][number][] = []
-  for (const moderator of MODERATOR_CONFIGS) {
-    if (moderator.slug !== 'ai-generated')
-      moderationQuestions.push({
-        id: moderator.slug,
-        type: 'noul',
-        question: moderator.prompt,
-      })
-  }
+  const catalogQuestions = POST_CLASSIFIER_REMOTE_QUESTIONS.map(({ questionId, question }) => ({
+    id: questionId,
+    type: 'noul' as const,
+    question,
+  }))
   const scenarios = [
     {
-      name: 'moderation-fixed-six',
-      request: { state, questions: moderationQuestions },
-      currentCalls: 6,
+      name: 'post-classifier-catalog',
+      request: { state, questions: catalogQuestions },
+      // The hosted labels used to be one agent call each; the catalog asks them all in one decision.
+      currentCalls: POST_CLASSIFIER_LABELS.filter(label => label.kind === 'remote').length,
       repeatInstructions: false,
     },
     {

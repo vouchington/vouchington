@@ -14,4 +14,4 @@ Response:
 { "flagged": false, "reason": "" }
 ```
 
-Testing does not save any results or consume a slot.
+Testing is a no-persist dry run: one single-question classifier call with the classifier's thresholds applied. It does not save any results, write a classifier receipt or attempt, or consume a slot. The daily AI spend cap is checked first, and a breach returns 429. `reason` is always empty, because the classifier returns a probability, not an explanation.

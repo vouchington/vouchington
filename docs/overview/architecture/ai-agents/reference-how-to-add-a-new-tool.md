@@ -7,8 +7,8 @@
 3. Use `currentUser as unknown as PrivateUser` if the tool needs an authenticated user
 4. Add `strict: null` to the schema (repo convention: leave provider strict-mode unset)
 5. Write `backend/tools/<name>.test.mts` — real DB test with `createTestUser()` in `beforeAll`
-6. Add the tool to the `buildAgentTools` entries of the agent that should expose it
-7. Update that agent's system prompt to document the new tool
+6. Register the tool in the MCP tool catalog (`@services/mcp-tools`); no first-party agent loads
+   tools directly, so there is no per-agent tool list to update
 
 ### Tool file structure
 

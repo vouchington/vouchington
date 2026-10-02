@@ -26,9 +26,8 @@ OpenAI API utilities — rate limit handling for glide-mq workers and response t
   `usage`, using the typed `SUPPORTED_MODEL_TIERS` price table. Returns `null` for any
   unpriced model/tier pair (e.g. `gpt-5.4-nano:priority`, which has no price row because
   OpenAI has no Priority-tier offering for that model) rather than guessing.
-- `SupportedModel` / `SupportedServiceTier` — types derived from `SUPPORTED_MODEL_TIERS`, so an
-  unsupported model/tier pair is a compile error at any call site that constructs one directly.
-- `FLEX_SERVICE_TIER` — the `'flex'` tier constant for background/batch-tolerant agent requests.
+- `SupportedModel` — type derived from `SUPPORTED_MODEL_TIERS`, so an unsupported model is a
+  compile error at any call site that constructs one directly.
 - The full pricing matrix, its source/retrieval date, and the refresh procedure for when OpenAI
   updates pricing or ships a new model live in the private `vouchington/vouchington-docs`
   repository.

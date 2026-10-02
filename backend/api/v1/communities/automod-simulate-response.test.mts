@@ -17,7 +17,7 @@ describe('createAutomodSimulationResults', () => {
           content_excerpt: 'Sample post Body',
         },
       ],
-      [{ post_id: 'post-1', flagged: true, reason: 'Matches rule' }],
+      [{ post_id: 'post-1', flagged: true, reason: '' }],
     )
 
     expect(results).toEqual([
@@ -30,7 +30,7 @@ describe('createAutomodSimulationResults', () => {
         approved_at: '2026-01-02T00:00:00.000Z',
         content_excerpt: 'Sample post Body',
         flagged: true,
-        reason: 'Matches rule',
+        reason: '',
       },
     ])
   })

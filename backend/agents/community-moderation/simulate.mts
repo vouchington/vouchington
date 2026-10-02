@@ -1,150 +1,81 @@
-import {
-  createOpenAIResponse,
-  parseLLMJsonResponse,
-  callRecordingAgentResponseUsage,
-  SYNCHRONOUS_REQUEST_RETRY_POLICY,
-} from '@agents/_shared'
-import { extractTextFromOpenAIResponse } from '@modules/openai-utils'
-import { prepareModerationInput } from './openai-moderation.mts'
-import type { CommunityAgentPrompt } from '@services/community-agent-prompts'
-import type { CommunityAgentPromptSimulationPost } from '@services/community-agent-prompts/simulations'
+import type { ClassifierExternalContentPart } from '@agents/classifiers/safe-content'
+import type {
+  CommunityAgentPrompt,
+  CommunityAgentPromptSimulationPost,
+} from '@services/community-agent-prompts'
+import pMap from 'p-map'
+import { prepareCommunityPromptDryRun, type CommunityPromptDryRunDependencies } from './dry-run.mts'
 
 export interface CommunityPromptSimulationResult {
   post_id: string
   flagged: boolean
-  reason: string
+  /** Always empty: the classifier answers with a probability, not a reason. */
+  reason: ''
 }
 
-interface CommunityPromptSimulationResponse {
-  results: CommunityPromptSimulationResult[]
-}
-
+/** What one preview post costs to read: title and body share this many characters. */
 const MAX_SIMULATION_POST_INPUT_CHARS = 4000
+/** Provider calls in flight at once; the simulation's post cap bounds the total. */
+const SIMULATION_CONCURRENCY = 8
 
-const simulationJsonSchema = {
-  type: 'object',
-  properties: {
-    results: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          post_id: { type: 'string' },
-          flagged: { type: 'boolean' },
-          reason: { type: 'string' },
-        },
-        required: ['post_id', 'flagged', 'reason'],
-        additionalProperties: false,
-      },
-    },
-  },
-  required: ['results'],
-  additionalProperties: false,
-} as const
+type SimulationOptions = CommunityPromptDryRunDependencies & {
+  /** Previews this text instead of the stored rule. */
+  promptOverride?: string
+}
 
+/**
+ * Previews one community rule over a sample of posts as a classifier dry run: one yes/no call per
+ * post, as production asks it, so the flags match what a real run would conclude. Nothing is
+ * persisted; the first failed call (a provider error, a timeout or the daily spend cap) fails the
+ * whole preview and cancels the calls still in flight.
+ */
 export async function simulateCommunityPromptOnPosts(
-  prompt: CommunityAgentPrompt,
-  posts: CommunityAgentPromptSimulationPost[],
-  options: {
-    currentUserId: string
-    promptOverride?: string
-    createResponse?: typeof createOpenAIResponse
-  },
+  prompt: Pick<CommunityAgentPrompt, 'id' | 'community_id' | 'prompt'>,
+  posts: readonly CommunityAgentPromptSimulationPost[],
+  options: SimulationOptions = {},
 ): Promise<CommunityPromptSimulationResult[]> {
   if (posts.length === 0) return []
-
-  const createResponse = options.createResponse ?? createOpenAIResponse
-  const agentSlug = `community-prompt-${prompt.id}`
-
-  // Records the ledger row for both outcomes: a successful response, or a failed/incomplete one
-  // (which still billed tokens) before the error propagates, so the moderator's retry doesn't
-  // compound an unrecorded charge with another one.
-  const response = await callRecordingAgentResponseUsage(
-    () =>
-      createResponse(
-        {
-          model: prompt.model_name,
-          input: buildSimulationInput(posts),
-          instructions: buildSimulationInstructions(options.promptOverride ?? prompt.prompt),
-          metadata: {
-            type: 'community-prompt-simulation',
-            prompt_id: prompt.id,
-            moderator_id: prompt.agent_id,
-            sample_count: String(posts.length),
-          },
-          service_tier: 'flex',
-          prompt_cache_key: prompt.id,
-          safety_identifier: options.currentUserId,
-          text: {
-            format: {
-              type: 'json_schema',
-              name: 'community_prompt_simulation',
-              schema: simulationJsonSchema,
-              json_schema: {
-                schema: simulationJsonSchema,
-              },
-            },
-          },
-        } as unknown as Parameters<typeof createResponse>[0],
-        { maxRetries: SYNCHRONOUS_REQUEST_RETRY_POLICY.maxRetries },
-      ),
-    { agentSlug, communityId: prompt.community_id },
+  const { promptOverride, ...dependencies } = options
+  const dryRun = await prepareCommunityPromptDryRun(
+    {
+      communityId: prompt.community_id,
+      prompt: { id: prompt.id, text: promptOverride ?? prompt.prompt },
+    },
+    dependencies,
   )
-
-  return parseSimulationResponse(response, posts)
-}
-
-function buildSimulationInstructions(prompt: string): string {
-  return `${prompt}
-
-Evaluate each candidate post independently. Return exactly one result for each post_id. Do not apply moderation actions; this is a dry run.`
-}
-
-function buildSimulationInput(posts: CommunityAgentPromptSimulationPost[]): string {
-  return JSON.stringify({
-    posts: posts.map(post => ({
-      post_id: post.id,
-      content: truncateSimulationPostInput(prepareModerationInput(post.title, post.markdown)),
-    })),
-  })
-}
-
-function truncateSimulationPostInput(input: string): string {
-  if (input.length <= MAX_SIMULATION_POST_INPUT_CHARS) return input
-  return `${input.slice(0, MAX_SIMULATION_POST_INPUT_CHARS - 3).trimEnd()}...`
-}
-
-function parseSimulationResponse(
-  response: Awaited<ReturnType<typeof createOpenAIResponse>>,
-  posts: CommunityAgentPromptSimulationPost[],
-): CommunityPromptSimulationResult[] {
-  const text = extractTextFromOpenAIResponse(response)
-  const parsed = parseLLMJsonResponse<CommunityPromptSimulationResponse>(text)
-  if (!parsed || !Array.isArray(parsed.results)) {
-    throw new TypeError(`Invalid community prompt simulation results: ${JSON.stringify(parsed)}`)
+  const cancelInFlight = new AbortController()
+  try {
+    return await pMap(
+      posts,
+      async post => {
+        const { flagged } = await dryRun.classify(simulationParts(post), cancelInFlight.signal)
+        return { post_id: post.id, flagged, reason: '' as const }
+      },
+      { concurrency: SIMULATION_CONCURRENCY },
+    )
+  } catch (err) {
+    cancelInFlight.abort(err)
+    throw err
   }
+}
 
-  const expectedIds = new Set(posts.map(post => post.id))
-  const resultsByPostId = new Map<string, CommunityPromptSimulationResult>()
-  for (const result of parsed.results) {
-    if (
-      typeof result?.post_id !== 'string' ||
-      typeof result.flagged !== 'boolean' ||
-      typeof result.reason !== 'string' ||
-      !expectedIds.has(result.post_id)
-    ) {
-      throw new TypeError(`Invalid community prompt simulation result: ${JSON.stringify(result)}`)
-    }
-    resultsByPostId.set(result.post_id, {
-      post_id: result.post_id,
-      flagged: result.flagged,
-      reason: result.reason,
-    })
+function simulationParts(
+  post: CommunityAgentPromptSimulationPost,
+): ClassifierExternalContentPart[] {
+  const parts: ClassifierExternalContentPart[] = []
+  let remaining = MAX_SIMULATION_POST_INPUT_CHARS
+  if (post.title.trim()) {
+    const content = truncate(post.title, remaining)
+    parts.push({ content, isTitle: true })
+    remaining -= content.length
   }
-
-  if (resultsByPostId.size !== posts.length) {
-    throw new TypeError('Community prompt simulation did not return one result per post')
+  if (post.markdown.trim() && remaining > 0) {
+    parts.push({ content: truncate(post.markdown, remaining) })
   }
+  return parts
+}
 
-  return posts.map(post => resultsByPostId.get(post.id)!)
+function truncate(text: string, maxChars: number): string {
+  if (text.length <= maxChars) return text
+  return `${text.slice(0, Math.max(0, maxChars - 3)).trimEnd()}...`
 }

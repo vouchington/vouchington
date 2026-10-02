@@ -1,13 +1,8 @@
-import {
-  callOpenAIModeration,
-  prepareModerationInput,
-} from '@agents/community-moderation/openai-moderation'
-import { SYNCHRONOUS_REQUEST_RETRY_POLICY } from '@agents/_shared'
+import { prepareCommunityPromptDryRun } from '@agents/community-moderation'
 import type { Context } from '@jongleberry/api-server'
 import { assertOpenAiSpendCapNotBreached } from '@services/ai-usage'
 import { currentUserCanModerateCommunity, getCommunityMember } from '@services/communities'
 import { getCommunityAgentPrompt } from '@services/community-agent-prompts'
-import type { ActiveModeratorConfig } from '@services/moderation'
 import { recordModerationTrainingFeedback } from '@services/moderation-training'
 import { getPromptTestTrainingLabel } from '@services/moderation-training/prompt-test-label'
 import app from '../../../app.mts'
@@ -55,42 +50,18 @@ app
     )
     ctx.assert(typeof body.text === 'string' && body.text, 422, 'text is required')
 
-    const input = prepareModerationInput('', body.text)
-    const config: ActiveModeratorConfig = {
-      moderator_id: prompt.agent_id,
-      moderator_slug: `community-prompt-${promptId}`,
-      on_flag_action: 'none',
-      is_baseline: false,
-      system_user_id: '',
-      prompt: {
-        id: promptId,
-        prompt: prompt.prompt,
-        model_name: prompt.model_name,
-        model_provider: prompt.model_provider,
-      },
-    }
-
-    // Dry-run: use a fake post object since we don't actually have one. id is null, not a
-    // placeholder string — callOpenAIModeration now records usage keyed on it, and ai_usage_records
-    // .post_id is a real FK; null is the documented "not post-scoped" value, a non-UUID string
-    // would fail the insert on every test run.
-    const fakePost = {
-      id: null,
-      post_type: 'link',
-      created_by_id: currentUser.id,
-    } as unknown as Parameters<typeof callOpenAIModeration>[2]
-
     const spendCapBreach = await assertOpenAiSpendCapNotBreached('agent-prompt-test-run-moderation')
     ctx.assert(!spendCapBreach, 429, 'Daily OpenAI spend cap reached, try again after UTC midnight')
 
-    // callOpenAIModeration() already records usage internally via recordAgentResponseUsage() —
-    // recording it again here would double-count every successful test run in /admin/ai-costs.
-    // A moderator is waiting synchronously on this request, so it gets the 1-retry budget rather
-    // than the queued-worker default of 2.
-    const moderationCall = await callOpenAIModeration(input, config, fakePost, community.id, {
-      retryPolicy: SYNCHRONOUS_REQUEST_RETRY_POLICY,
+    // A no-persist classifier dry run: the same question, model and threshold as a real run, with
+    // no receipt, attempt or moderation row. It records its own usage against the cost ledger, so
+    // recording it again here would double-count every test run in /admin/ai-costs. A cap breach
+    // after the pre-check is an `OpenAiSpendCapBreachError`, which carries status 429.
+    const dryRun = await prepareCommunityPromptDryRun({
+      communityId: community.id,
+      prompt: { id: prompt.id, text: prompt.prompt },
     })
-    const { result } = moderationCall
+    const verdict = await dryRun.classify([{ content: body.text }])
 
     if (body.save_for_training === true) {
       ctx.assert(body.expected_flagged !== undefined, 422, 'expected_flagged is required')
@@ -98,7 +69,7 @@ app
         trainingEvidence: 'staff_or_user',
         sourceType: 'prompt_test_run',
         eventType: 'prompt_test_labelled',
-        label: getPromptTestTrainingLabel(body.expected_flagged, result.flagged),
+        label: getPromptTestTrainingLabel(body.expected_flagged, verdict.flagged),
         humanAction: 'save_prompt_test_run',
         actorUserId: currentUser.id,
         communityId: community.id,
@@ -106,16 +77,17 @@ app
         inputSha256: null,
         metadata: {
           prompt_id: promptId,
-          prompt_model_name: prompt.model_name,
-          prompt_model_provider: prompt.model_provider,
+          classifier_model_name: dryRun.modelName,
+          classifier_model_provider: dryRun.modelProvider,
           test_text: body.text,
           expected_flagged: body.expected_flagged,
           expected_reason: body.expected_reason ?? null,
-          actual_flagged: result.flagged,
-          actual_reason: result.reason,
+          actual_flagged: verdict.flagged,
+          actual_probability: verdict.probability,
         },
       })
     }
 
-    ctx.json({ flagged: result.flagged, reason: result.reason })
+    // The classifier answers with a probability, not a reason; the response shape is unchanged.
+    ctx.json({ flagged: verdict.flagged, reason: '' })
   })

@@ -10,7 +10,6 @@ Shared safety, tool, testing, and orchestration guidance plus package-level agen
 - [Usage Tracking](_shared/reference-usage-tracking.md)
 - [Used by](_shared/reference-used-by.md)
 - [Agent Patterns](reference-agent-patterns.md)
-- [Complete Tool Inventory](reference-complete-tool-inventory.md)
 - [How to Add a New Tool](reference-how-to-add-a-new-tool.md)
 - [Tests](reference-tests.md)
 
@@ -26,7 +25,6 @@ Shared safety, tool, testing, and orchestration guidance plus package-level agen
 - [Copyright Email Intake](copyright-email-intake/README.md)
 - [Copyright Form Screening](copyright-form-screening/README.md)
 - [Dispute Resolution](dispute-resolution/README.md)
-- [Politics Averse](politics-averse/README.md)
 - [Post Classifier](post-classifier/README.md)
 - [Report Judgement](report-judgement/README.md)
 - [Story Clustering](story-clustering/README.md)

@@ -9,7 +9,6 @@ Business-logic helpers for post-moderation agents, moderation prompt retrieval, 
 - fetch active moderator prompts and configs
 - manage per-community enablement for fixed global label agents
 - run local detector-backed moderators such as `ai-generated`
-- run tool-capable moderators such as `politics-averse`, which can inspect domain trust and RSS-source topic metrics before deciding
 - determine which moderators still need to run for a given content hash
 - persist agent moderation results
 - search historical moderation results for review tooling
@@ -31,13 +30,13 @@ OpenAI call.
 
 ## Political Content Detection
 
-`politics-averse` is a fixed-label built-in agent that applies to both posts and comments. The
-`@agents/politics-averse` package holds its prompt, tools, and result parsing.
+`politics-averse` is a fixed-label built-in agent that applies to both posts and comments. It is
+a label of the post classifier catalog, not a separate agent package: the classifier asks a
+single-question policy for it and gets no tools.
 
 - Allows neutral news/event discussion
 - Allows sourced political analysis
 - Flags partisan persuasion, campaign-style advocacy, and unsupported political claims
-- Uses the `get_domain_ratings` tool to inspect linked domain trust plus RSS-source topic ratings when the linked URL maps to a known feed
 - On flag: labels the content `political`
 
 Moderator agents do not write public post votes. Public voting surfaces are reserved for community users without Voucha roles.

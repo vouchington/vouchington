@@ -15,7 +15,7 @@ import * as communityModeration from '@agents/community-moderation'
 import { openAiSpendCapConfig } from '@services/ai-usage'
 
 describe('POST /api/v1/communities/:slug/automod/simulate community action', () => {
-  it('states the community action and makes one model call for the whole sample', async () => {
+  it('states the community action and simulates the whole sample once', async () => {
     await openAiSpendCapConfig.waitForInitialization()
     const restoreConfig = overrideDynamicConfigFieldsForTest(openAiSpendCapConfig, {
       enabled: false,
@@ -26,7 +26,7 @@ describe('POST /api/v1/communities/:slug/automod/simulate community action', () 
         posts.map((post, index) => ({
           post_id: post.id,
           flagged: index === 0,
-          reason: index === 0 ? 'Breaks the rule' : 'Fine',
+          reason: '' as const,
         })),
       )
     try {

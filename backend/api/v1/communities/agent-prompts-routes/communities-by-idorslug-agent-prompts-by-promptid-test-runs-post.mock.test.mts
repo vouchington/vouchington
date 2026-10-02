@@ -1,159 +1,185 @@
 import { randomUUID } from 'node:crypto'
-import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,
+  findAiUsageRecordForResponseId,
+  getLatestTestPromptTestTrainingFeedback,
   insertTestCommunity,
   insertTestCommunityMember,
   insertTestCommunityAgentPrompt,
-  findAiUsageRecordForAgent,
   pollUntilNotNull,
 } from '@voucha/test-helpers'
+import { answerCommunityQuestions } from '@voucha/test-helpers/data-stores/psql/classifier-runs/community-moderation-provider'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import type { PrivateUser } from '@services/users/types'
 import { openAiSpendCapConfig } from '@services/ai-usage'
-import { createOpenAIResponse } from '@modules/openai-utils/create-response'
+import { fetchStructuredDecisionProvider } from '@modules/structured-decisions/transport'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
-vi.mock<typeof import('@modules/openai-utils/create-response')>(
-  import('@modules/openai-utils/create-response'),
+vi.mock<typeof import('@modules/structured-decisions/transport')>(
+  import('@modules/structured-decisions/transport'),
   async importOriginal => ({
     ...(await importOriginal()),
-    createOpenAIResponse: vi.fn<VitestLooseMock>(),
+    fetchStructuredDecisionProvider: vi.fn<typeof fetchStructuredDecisionProvider>(),
   }),
 )
+
+const provider = vi.mocked(fetchStructuredDecisionProvider)
+type AnswerOptions = NonNullable<Parameters<typeof answerCommunityQuestions>[1]>
+
+function answerWith(options: AnswerOptions) {
+  provider.mockImplementation(async (_url, init) => answerCommunityQuestions(init, options))
+}
 
 describe('POST /api/v1/communities/:idOrSlug/agent-prompts/:promptId/test-runs', () => {
   let owner: PrivateUser
 
   beforeAll(async () => {
     owner = await createTestUser()
-
-    vi.mocked(createOpenAIResponse).mockImplementation(async () => ({
-      id: `resp_test_run_${randomUUID()}`,
-      status: 'completed',
-      output: [
-        {
-          id: 'msg_test_run',
-          type: 'message',
-          role: 'assistant',
-          status: 'completed',
-          content: [
-            {
-              type: 'output_text',
-              text: '{"flagged":false,"reason":"Safe content."}',
-              annotations: [],
-              logprobs: [],
-            },
-          ],
-        },
-      ],
-      output_text: '{"flagged":false,"reason":"Safe content."}',
-      usage: { input_tokens: 50, output_tokens: 20 },
-      model: 'gpt-5.4-nano-2026-03-17',
-      service_tier: 'flex',
-    }))
+  })
+  beforeEach(() => {
+    vi.stubEnv('OPENROUTER_API_KEY', 'test-provider-key')
+    answerWith({ probability: 0.01 })
+  })
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    provider.mockReset()
   })
 
-  it('returns the moderation result for the test text', async () => {
-    // enabled: false bypasses the real spend-cap DB read (spend-cap-guard.mts's own
-    // short-circuit), so this success path can't flake on unrelated ai_usage_records rows from
-    // other tests sharing today's UTC window.
+  async function createPrompt() {
+    const slug = `test-runs-mock-${randomUUID().slice(0, 8)}`
+    const community = await insertTestCommunity({ createdById: owner.id, slug })
+    await insertTestCommunityMember({ communityId: community.id, userId: owner.id, role: 'owner' })
+    const prompt = await insertTestCommunityAgentPrompt({
+      communityId: community.id,
+      createdById: owner.id,
+    })
+    const request = createRequest()
+    await request.authenticateAs(owner)
+    const testRun = (body: Record<string, unknown>) =>
+      request.post(`/api/v1/communities/${slug}/agent-prompts/${prompt.id}/test-runs`).send(body)
+    return { community, prompt, testRun }
+  }
+
+  // enabled: false bypasses the real spend-cap DB read (spend-cap-guard.mts's own short-circuit),
+  // so the success paths can't flake on unrelated ai_usage_records rows from other tests sharing
+  // today's UTC window.
+  async function withSpendCapDisabled(run: () => Promise<void>) {
     await openAiSpendCapConfig.waitForInitialization()
     const restore = overrideDynamicConfigFieldsForTest(openAiSpendCapConfig, { enabled: false })
     try {
-      const slug = `test-runs-mock-${randomUUID().slice(0, 8)}`
-      const community = await insertTestCommunity({ createdById: owner.id, slug })
-      await insertTestCommunityMember({
-        communityId: community.id,
-        userId: owner.id,
-        role: 'owner',
-      })
-      const prompt = await insertTestCommunityAgentPrompt({
-        communityId: community.id,
-        createdById: owner.id,
-      })
-
-      const request = createRequest()
-      await request.authenticateAs(owner)
-      const response = await request
-        .post(`/api/v1/communities/${slug}/agent-prompts/${prompt.id}/test-runs`)
-        .send({ text: 'Sample content to moderate' })
-        .expect(200)
-
-      expect(response.body).toMatchObject({ flagged: false, reason: 'Safe content.' })
+      await run()
     } finally {
       restore()
     }
+  }
+
+  it('flags text the classifier is confident breaks the rule, with no reason', async () => {
+    await withSpendCapDisabled(async () => {
+      answerWith({ probability: 0.97 })
+      const { testRun } = await createPrompt()
+
+      const response = await testRun({ text: 'Sample content to moderate' }).expect(200)
+
+      expect(response.body).toEqual({ flagged: true, reason: '' })
+    })
   })
 
-  it('records ai usage for the test run', async () => {
-    await openAiSpendCapConfig.waitForInitialization()
-    const restore = overrideDynamicConfigFieldsForTest(openAiSpendCapConfig, { enabled: false })
-    try {
-      const slug = `test-runs-mock-${randomUUID().slice(0, 8)}`
-      const community = await insertTestCommunity({ createdById: owner.id, slug })
-      await insertTestCommunityMember({
-        communityId: community.id,
-        userId: owner.id,
-        role: 'owner',
-      })
-      const prompt = await insertTestCommunityAgentPrompt({
-        communityId: community.id,
-        createdById: owner.id,
-      })
-      const agentSlug = `community-prompt-${prompt.id}`
+  it('does not flag text the classifier is confident is fine', async () => {
+    await withSpendCapDisabled(async () => {
+      const { testRun } = await createPrompt()
 
-      const request = createRequest()
-      await request.authenticateAs(owner)
-      await request
-        .post(`/api/v1/communities/${slug}/agent-prompts/${prompt.id}/test-runs`)
-        .send({ text: 'Sample content to moderate' })
-        .expect(200)
+      const response = await testRun({ text: 'Sample content to moderate' }).expect(200)
 
-      const row = await pollUntilNotNull(() =>
-        findAiUsageRecordForAgent(agentSlug, { inputTokens: 50, outputTokens: 20 }),
+      expect(response.body).toEqual({ flagged: false, reason: '' })
+      expect(provider).toHaveBeenCalledOnce()
+    })
+  })
+
+  it('asks the stored rule about the test text in one call', async () => {
+    await withSpendCapDisabled(async () => {
+      const asked: string[][] = []
+      answerWith({ asked })
+      const { prompt, testRun } = await createPrompt()
+
+      await testRun({ text: 'Sample content to moderate' }).expect(200)
+
+      expect(asked).toEqual([[prompt.id]])
+      expect(stringFromUnknown(provider.mock.calls[0]![1]!.body)).toContain(
+        'Sample content to moderate',
       )
-      if (!row) throw new Error('ai_usage_records row was not written for the test run')
-      expect(row.model).toBe('gpt-5.4-nano-2026-03-17')
-      expect(row.service_tier).toBe('flex')
-      expect(row.community_id).toBe(community.id)
-      expect(row.pricing_status).toBe('priced')
-    } finally {
-      restore()
-    }
+    })
   })
 
-  it('returns 429 and does not call OpenAI when the daily spend cap is breached', async () => {
+  it('records the call against the community in the ai usage ledger', async () => {
+    await withSpendCapDisabled(async () => {
+      const responseId = `decision-${randomUUID()}`
+      answerWith({ responseId })
+      const { community, testRun } = await createPrompt()
+
+      await testRun({ text: 'Sample content to moderate' }).expect(200)
+
+      await expect(
+        pollUntilNotNull(() => findAiUsageRecordForResponseId(responseId)),
+      ).resolves.toMatchObject({
+        agent_slug: 'community-moderation-dry-run',
+        community_id: community.id,
+        post_id: null,
+        input_tokens: 12,
+        output_tokens: 0,
+      })
+    })
+  })
+
+  it('saves the labelled run for training with the classifier model and probability', async () => {
+    await withSpendCapDisabled(async () => {
+      answerWith({ probability: 0.97 })
+      const { community, prompt, testRun } = await createPrompt()
+
+      await testRun({
+        text: 'Sample content to moderate',
+        save_for_training: true,
+        expected_flagged: false,
+        expected_reason: 'Looks fine to me',
+      }).expect(200)
+
+      const feedback = await getLatestTestPromptTestTrainingFeedback(community.id)
+      expect(feedback?.label).toBe('false_positive')
+      expect(feedback?.metadata).toEqual({
+        prompt_id: prompt.id,
+        classifier_model_name: expect.any(String),
+        classifier_model_provider: 'openrouter',
+        test_text: 'Sample content to moderate',
+        expected_flagged: false,
+        expected_reason: 'Looks fine to me',
+        actual_flagged: true,
+        actual_probability: 0.97,
+      })
+    })
+  })
+
+  it('requires expected_flagged to save a run for training', async () => {
+    await withSpendCapDisabled(async () => {
+      const { testRun } = await createPrompt()
+
+      await testRun({ text: 'Sample content to moderate', save_for_training: true }).expect(422)
+    })
+  })
+
+  it('returns 429 and does not call the provider when the daily spend cap is breached', async () => {
     await openAiSpendCapConfig.waitForInitialization()
     // 0 is the true kill-switch value (#8773 review round 4): totalMicrounits is never negative, so
     // this breaches on the very first call regardless of what other tests have written today.
     const restore = overrideDynamicConfigFieldsForTest(openAiSpendCapConfig, {
       daily_cap_microunits: 0,
     })
-    // This mock isn't cleared between tests in this file -- prior tests in this describe block
-    // already called it, so clear call history (not the beforeAll implementation) before asserting.
-    vi.mocked(createOpenAIResponse).mockClear()
     try {
-      const slug = `test-runs-mock-${randomUUID().slice(0, 8)}`
-      const community = await insertTestCommunity({ createdById: owner.id, slug })
-      await insertTestCommunityMember({
-        communityId: community.id,
-        userId: owner.id,
-        role: 'owner',
-      })
-      const prompt = await insertTestCommunityAgentPrompt({
-        communityId: community.id,
-        createdById: owner.id,
-      })
+      const { testRun } = await createPrompt()
 
-      const request = createRequest()
-      await request.authenticateAs(owner)
-      await request
-        .post(`/api/v1/communities/${slug}/agent-prompts/${prompt.id}/test-runs`)
-        .send({ text: 'Sample content to moderate' })
-        .expect(429)
+      await testRun({ text: 'Sample content to moderate' }).expect(429)
 
-      expect(createOpenAIResponse).not.toHaveBeenCalled()
+      expect(provider).not.toHaveBeenCalled()
     } finally {
       restore()
     }

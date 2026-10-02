@@ -217,15 +217,9 @@ importers:
       '@services/ai-usage':
         specifier: workspace:^
         version: link:../../services/ai-usage
-      '@services/openai-agents':
-        specifier: workspace:^
-        version: link:../../services/openai-agents
       '@services/openai-background-responses':
         specifier: workspace:^
         version: link:../../services/openai-background-responses
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
@@ -374,36 +368,30 @@ importers:
       '@agents/classifiers':
         specifier: workspace:^
         version: link:../classifiers
-      '@agents/politics-averse':
-        specifier: workspace:^
-        version: link:../politics-averse
-      '@modules/openai-utils':
-        specifier: workspace:^
-        version: link:../../modules/openai-utils
       '@modules/structured-decisions':
         specifier: workspace:^
         version: link:../../modules/structured-decisions
+      '@services/ai-usage':
+        specifier: workspace:^
+        version: link:../../services/ai-usage
       '@services/classifier-runs':
         specifier: workspace:^
         version: link:../../services/classifier-runs
       '@services/community-agent-prompts':
         specifier: workspace:^
         version: link:../../services/community-agent-prompts
-      '@services/entity-relations':
-        specifier: workspace:^
-        version: link:../../services/entity-relations
-      '@services/moderation':
-        specifier: workspace:^
-        version: link:../../services/moderation
       '@services/posts':
         specifier: workspace:^
         version: link:../../services/posts
+      '@ts-shared/utils':
+        specifier: workspace:^
+        version: link:../../../ts-shared/utils
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
-      openai:
-        specifier: ^7.23.0
-        version: 7.23.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@8.11.2)(ws@8.21.3)(zod@4.6.5)
+      p-map:
+        specifier: ^7.0.8
+        version: 7.0.8
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -520,31 +508,6 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../../services/users
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
-  backend/agents/politics-averse:
-    dependencies:
-      '@agents/_shared':
-        specifier: workspace:^
-        version: link:../_shared
-      '@modules/openai-utils':
-        specifier: workspace:^
-        version: link:../../modules/openai-utils
-      '@services/moderation':
-        specifier: workspace:^
-        version: link:../../services/moderation
-      '@services/posts':
-        specifier: workspace:^
-        version: link:../../services/posts
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
-      '@voucha/tools':
-        specifier: workspace:^
-        version: link:../../tools
-    devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -690,9 +653,6 @@ importers:
 
   backend/api:
     dependencies:
-      '@agents/_shared':
-        specifier: workspace:^
-        version: link:../agents/_shared
       '@agents/community-moderation':
         specifier: workspace:^
         version: link:../agents/community-moderation
@@ -1327,6 +1287,9 @@ importers:
       '@aws-sdk/client-s3':
         specifier: ^3.1143.0
         version: 3.1143.0
+      '@modules/structured-decisions':
+        specifier: workspace:^
+        version: link:../modules/structured-decisions
       '@services/ap-post-likes':
         specifier: workspace:^
         version: link:../services/ap-post-likes
@@ -7700,19 +7663,6 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
-      ajv:
-        specifier: ^8.20.0
-        version: 8.20.0
-      ajv-formats:
-        specifier: ^3.0.1
-        version: 3.0.1(ajv@8.20.0)
-      http-errors:
-        specifier: ^2.0.1
-        version: 2.0.1
-    devDependencies:
-      '@types/http-errors':
-        specifier: ^2.0.5
-        version: 2.0.5
 
   backend/services/openai-background-responses:
     dependencies:

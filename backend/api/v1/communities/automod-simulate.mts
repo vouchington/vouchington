@@ -67,10 +67,9 @@ app.route('/api/v1/communities/:idOrSlug/automod/simulate').post(async (ctx: Con
     ctx.assert(!spendCapBreach, 429, 'Daily OpenAI spend cap reached, try again after UTC midnight')
   }
 
-  const simulationResults = await simulateCommunityPromptOnPosts(prompt, posts, {
-    currentUserId: currentUser.id,
-    promptOverride,
-  })
+  // A cap breach after the pre-check (the sample is many calls) is an `OpenAiSpendCapBreachError`,
+  // which carries status 429 and so answers the same way.
+  const simulationResults = await simulateCommunityPromptOnPosts(prompt, posts, { promptOverride })
   const results = createAutomodSimulationResults(posts, simulationResults)
 
   ctx.json({

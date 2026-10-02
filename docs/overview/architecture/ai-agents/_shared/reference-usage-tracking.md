@@ -7,7 +7,7 @@
 `AsyncLocalStorage`-scoped per-job TPM accumulator (`token-accumulator.mts`), so a glide-mq
 `tokenLimiter` can throttle on real token consumption instead of staying permanently inert.
 `recordAgentResponseUsage` (below) calls `addAccumulatedTokens` on every OpenAI response it
-records — direct calls and the tool loop both flow through it — so no call site needs to opt in
+records — every direct call flows through it — so no call site needs to opt in
 individually. `addAccumulatedTokens` is a no-op outside an active scope (e.g. a script run
 directly, or most existing tests).
 
@@ -28,8 +28,8 @@ summed internally and reported once at settlement rather than per OpenAI call.
 
 ### `recordAgentResponseUsage(params)`
 
-Awaited `ai_usage_records` settlement for a single completed OpenAI call, shared by
-`callRecordingAgentResponseUsage` (below) and the tool loop's usage recording. No-ops when
+Awaited `ai_usage_records` settlement for a single completed OpenAI call, used by
+`callRecordingAgentResponseUsage` (below). No-ops when
 `params.response.usage` is absent (e.g. a test double that doesn't model the real API shape). A
 storable completed-response ID is used first, followed by a storable registration ID. Any supplied
 unusable ID is reported without echoing its value, as is a response with both IDs absent. When
@@ -40,7 +40,7 @@ background lease still settles under its registration ID and fencing token.
 
 ### `callRecordingAgentResponseUsage(fn, params)`
 
-Wraps a direct (non-tool-loop) `createOpenAIResponse` call, recording the ledger row for both a
+Wraps a direct `createOpenAIResponse` call, recording the ledger row for both a
 resolved response and a thrown `OpenAIResponseNotCompletedError` (which still billed tokens)
 before rethrowing.
 

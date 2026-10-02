@@ -76,6 +76,28 @@ export async function getLatestTestModerationTrainingFeedback(input: {
   return rows[0]
 }
 
+/** The latest label a moderator saved from a rule test run, which belongs to a community, not a post. */
+export async function getLatestTestPromptTestTrainingFeedback(communityId: string): Promise<
+  | {
+      label: string
+      metadata: Record<string, unknown>
+    }
+  | undefined
+> {
+  const { rows } = await read<{ label: string; metadata: Record<string, unknown> }>(
+    sql`/* getLatestTestPromptTestTrainingFeedback */
+    SELECT label, metadata
+    FROM moderation_training_feedbacks
+    WHERE community_id = ${communityId}
+      AND source_type = 'prompt_test_run'
+      AND human_action = 'save_prompt_test_run'
+    ORDER BY id DESC
+    LIMIT 1
+  `,
+  )
+  return rows[0]
+}
+
 export async function getLatestTestAppealTrainingFeedback(
   moderationAppealId: string,
 ): Promise<{ label: string; post_id: string | null } | undefined> {
