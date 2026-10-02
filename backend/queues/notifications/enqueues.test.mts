@@ -39,7 +39,7 @@ describe('copyright and media-delivery notification enqueue wiring', () => {
 
   it('throttles the copyright evidence retention sweep to one schedule', async () => {
     await enqueueSweepCopyrightEvidenceRetention()
-    const job = (await notifications.getJobs('waiting')).find(
+    const job = (await readAllQueueJobs(notifications)).find(
       candidate => candidate.name === 'processSweepCopyrightEvidenceRetention',
     )
     expect(job?.data).toEqual({})
