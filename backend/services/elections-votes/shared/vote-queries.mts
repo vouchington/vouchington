@@ -10,8 +10,7 @@ export type ElectionVoteEntityPagination = { limit: number; afterUserId?: string
  * per entity in the append-only vote table). Returns unmapped rows — callers must run
  * mapCurrentVotes() to get ElectionVote[]. When `pagination` is omitted, no cursor filter or
  * LIMIT is appended, matching the historical unbounded behavior relied on by every non-route
- * caller (batch vote lookups) and by the write-path single-vote lookup. `relationTable` limits
- * relation votes to one concrete relation table, since the same id can exist in several.
+ * caller (batch vote lookups) and by the write-path single-vote lookup.
  */
 export async function fetchElectionVoteRowsByUser(
   config: EntityElectionConfig,
@@ -19,7 +18,6 @@ export async function fetchElectionVoteRowsByUser(
   entityIds: string[] | undefined,
   run: QueryExecutor,
   pagination?: ElectionVoteUserPagination,
-  relationTable?: string,
 ): Promise<Record<string, unknown>[]> {
   const query = sql`/* fetchElectionVoteRowsByUser */
     SELECT DISTINCT ON (election_vote.`
@@ -46,8 +44,6 @@ export async function fetchElectionVoteRowsByUser(
     query.append(config.entityIdColumn)
     query.append(sql` = ANY(${entityIds})`)
   }
-  if (relationTable && config.voteTable === 'view_entity_relation_votes')
-    query.append(sql` AND election_vote.entity_relation = ${relationTable}`)
   if (pagination?.afterEntityId) {
     query.append(sql` AND election_vote.`)
     query.append(config.entityIdColumn)

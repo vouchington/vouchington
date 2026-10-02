@@ -75043,7 +75043,7 @@
       },
       "comment": "Append-only votes for the concrete relation__post__category__topic elected relation.",
       "foreignKeys": {
-        "relation__post__category__top_subject_id_entity_relation_i_fkey": {
+        "fk_relati__post__categor__topic__votes__subject_entity_relation": {
           "columns": ["subject_id", "entity_relation_id"],
           "definition": "FOREIGN KEY (subject_id, entity_relation_id) REFERENCES relation__post__category__topic(subject_id, id) ON DELETE CASCADE",
           "onDelete": "cascade",
@@ -75858,7 +75858,7 @@
       },
       "comment": "Append-only votes for the concrete relation__post__category__topic_alias elected relation.",
       "foreignKeys": {
-        "relation__post__category__to_subject_id_entity_relation_i_fkey1": {
+        "fk_rela__post__cate__topi_alias__votes__subject_entity_relation": {
           "columns": ["subject_id", "entity_relation_id"],
           "definition": "FOREIGN KEY (subject_id, entity_relation_id) REFERENCES relation__post__category__topic_alias(subject_id, id) ON DELETE CASCADE",
           "onDelete": "cascade",
@@ -77330,6 +77330,15 @@
       },
       "comment": "Append-only votes for the concrete relation__post__related__post elected relation.",
       "foreignKeys": {
+        "fk_relatio__post__related__post__votes__subject_entity_relation": {
+          "columns": ["subject_id", "entity_relation_id"],
+          "definition": "FOREIGN KEY (subject_id, entity_relation_id) REFERENCES relation__post__related__post(subject_id, id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["subject_id", "id"],
+          "referencedTable": "relation__post__related__post",
+          "validated": true
+        },
         "relation__post__related__post__votes_user_agent_id_fkey": {
           "columns": ["user_agent_id"],
           "definition": "FOREIGN KEY (user_agent_id) REFERENCES user_agent_strings(id) ON DELETE SET NULL",
@@ -77346,15 +77355,6 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "users",
-          "validated": true
-        },
-        "relation__post__related__post_subject_id_entity_relation_i_fkey": {
-          "columns": ["subject_id", "entity_relation_id"],
-          "definition": "FOREIGN KEY (subject_id, entity_relation_id) REFERENCES relation__post__related__post(subject_id, id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["subject_id", "id"],
-          "referencedTable": "relation__post__related__post",
           "validated": true
         }
       },
@@ -78147,7 +78147,7 @@
       },
       "comment": "Append-only votes for the concrete relation__post__related__url elected relation.",
       "foreignKeys": {
-        "relation__post__related__url__subject_id_entity_relation_i_fkey": {
+        "fk_relation__post__related__url__votes__subject_entity_relation": {
           "columns": ["subject_id", "entity_relation_id"],
           "definition": "FOREIGN KEY (subject_id, entity_relation_id) REFERENCES relation__post__related__url(subject_id, id) ON DELETE CASCADE",
           "onDelete": "cascade",
@@ -79190,7 +79190,7 @@
       },
       "comment": "Append-only votes for the concrete relation__rss_feed_item__category__topic elected relation.",
       "foreignKeys": {
-        "relation__rss_feed_item__cate_subject_id_entity_relation_i_fkey": {
+        "fk_rel__rss_fee_item__cate__topi__vote__subject_entity_relation": {
           "columns": ["subject_id", "entity_relation_id"],
           "definition": "FOREIGN KEY (subject_id, entity_relation_id) REFERENCES relation__rss_feed_item__category__topic(subject_id, id) ON DELETE CASCADE",
           "onDelete": "cascade",
@@ -79996,7 +79996,7 @@
       },
       "comment": "Append-only votes for the concrete relation__rss_feed_item__category__topic_alias elected relation.",
       "foreignKeys": {
-        "relation__rss_feed_item__cat_subject_id_entity_relation_i_fkey1": {
+        "fk_rel__rss_fee_ite__cat__top_ali__vot__subject_entity_relation": {
           "columns": ["subject_id", "entity_relation_id"],
           "definition": "FOREIGN KEY (subject_id, entity_relation_id) REFERENCES relation__rss_feed_item__category__topic_alias(subject_id, id) ON DELETE CASCADE",
           "onDelete": "cascade",
@@ -80802,7 +80802,7 @@
       },
       "comment": "Append-only votes for the concrete relation__topic__category__topic elected relation.",
       "foreignKeys": {
-        "relation__topic__category__to_subject_id_entity_relation_i_fkey": {
+        "fk_relati__topic__catego__topic__votes__subject_entity_relation": {
           "columns": ["subject_id", "entity_relation_id"],
           "definition": "FOREIGN KEY (subject_id, entity_relation_id) REFERENCES relation__topic__category__topic(subject_id, id) ON DELETE CASCADE",
           "onDelete": "cascade",
@@ -81608,7 +81608,7 @@
       },
       "comment": "Append-only votes for the concrete relation__topic__faq__post elected relation.",
       "foreignKeys": {
-        "relation__topic__faq__post__v_subject_id_entity_relation_i_fkey": {
+        "fk_relation__topic__faq__post__votes__subject_entity_relation": {
           "columns": ["subject_id", "entity_relation_id"],
           "definition": "FOREIGN KEY (subject_id, entity_relation_id) REFERENCES relation__topic__faq__post(subject_id, id) ON DELETE CASCADE",
           "onDelete": "cascade",
@@ -82414,7 +82414,7 @@
       },
       "comment": "Append-only votes for the concrete relation__topic__faq__url elected relation.",
       "foreignKeys": {
-        "relation__topic__faq__url__vo_subject_id_entity_relation_i_fkey": {
+        "fk_relation__topic__faq__url__votes__subject_entity_relation": {
           "columns": ["subject_id", "entity_relation_id"],
           "definition": "FOREIGN KEY (subject_id, entity_relation_id) REFERENCES relation__topic__faq__url(subject_id, id) ON DELETE CASCADE",
           "onDelete": "cascade",
@@ -83220,7 +83220,7 @@
       },
       "comment": "Append-only votes for the concrete relation__topic__guide__url elected relation.",
       "foreignKeys": {
-        "relation__topic__guide__url___subject_id_entity_relation_i_fkey": {
+        "fk_relation__topic__guide__url__votes__subject_entity_relation": {
           "columns": ["subject_id", "entity_relation_id"],
           "definition": "FOREIGN KEY (subject_id, entity_relation_id) REFERENCES relation__topic__guide__url(subject_id, id) ON DELETE CASCADE",
           "onDelete": "cascade",
@@ -84026,6 +84026,15 @@
       },
       "comment": "Append-only votes for the concrete relation__topic__landing_page__url elected relation.",
       "foreignKeys": {
+        "fk_rela__topic__landi_page__url__votes__subject_entity_relation": {
+          "columns": ["subject_id", "entity_relation_id"],
+          "definition": "FOREIGN KEY (subject_id, entity_relation_id) REFERENCES relation__topic__landing_page__url(subject_id, id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["subject_id", "id"],
+          "referencedTable": "relation__topic__landing_page__url",
+          "validated": true
+        },
         "relation__topic__landing_page__url__votes_user_agent_id_fkey": {
           "columns": ["user_agent_id"],
           "definition": "FOREIGN KEY (user_agent_id) REFERENCES user_agent_strings(id) ON DELETE SET NULL",
@@ -84042,15 +84051,6 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "users",
-          "validated": true
-        },
-        "relation__topic__landing_page_subject_id_entity_relation_i_fkey": {
-          "columns": ["subject_id", "entity_relation_id"],
-          "definition": "FOREIGN KEY (subject_id, entity_relation_id) REFERENCES relation__topic__landing_page__url(subject_id, id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["subject_id", "id"],
-          "referencedTable": "relation__topic__landing_page__url",
           "validated": true
         }
       },
@@ -85252,7 +85252,7 @@
       },
       "comment": "Append-only votes for the concrete relation__topic__publisher_type__topic elected relation.",
       "foreignKeys": {
-        "relation__topic__publisher_ty_subject_id_entity_relation_i_fkey": {
+        "fk_rela__topi__publ_type__topic__votes__subject_entity_relation": {
           "columns": ["subject_id", "entity_relation_id"],
           "definition": "FOREIGN KEY (subject_id, entity_relation_id) REFERENCES relation__topic__publisher_type__topic(subject_id, id) ON DELETE CASCADE",
           "onDelete": "cascade",
@@ -86058,7 +86058,7 @@
       },
       "comment": "Append-only votes for the concrete relation__topic__related__post elected relation.",
       "foreignKeys": {
-        "relation__topic__related__pos_subject_id_entity_relation_i_fkey": {
+        "fk_relati__topic__related__post__votes__subject_entity_relation": {
           "columns": ["subject_id", "entity_relation_id"],
           "definition": "FOREIGN KEY (subject_id, entity_relation_id) REFERENCES relation__topic__related__post(subject_id, id) ON DELETE CASCADE",
           "onDelete": "cascade",
@@ -86864,7 +86864,7 @@
       },
       "comment": "Append-only votes for the concrete relation__topic__related__topic elected relation.",
       "foreignKeys": {
-        "relation__topic__related__top_subject_id_entity_relation_i_fkey": {
+        "fk_relati__topic__relate__topic__votes__subject_entity_relation": {
           "columns": ["subject_id", "entity_relation_id"],
           "definition": "FOREIGN KEY (subject_id, entity_relation_id) REFERENCES relation__topic__related__topic(subject_id, id) ON DELETE CASCADE",
           "onDelete": "cascade",
@@ -87670,6 +87670,15 @@
       },
       "comment": "Append-only votes for the concrete relation__topic__related__url elected relation.",
       "foreignKeys": {
+        "fk_relatio__topic__related__url__votes__subject_entity_relation": {
+          "columns": ["subject_id", "entity_relation_id"],
+          "definition": "FOREIGN KEY (subject_id, entity_relation_id) REFERENCES relation__topic__related__url(subject_id, id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["subject_id", "id"],
+          "referencedTable": "relation__topic__related__url",
+          "validated": true
+        },
         "relation__topic__related__url__votes_user_agent_id_fkey": {
           "columns": ["user_agent_id"],
           "definition": "FOREIGN KEY (user_agent_id) REFERENCES user_agent_strings(id) ON DELETE SET NULL",
@@ -87686,15 +87695,6 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "users",
-          "validated": true
-        },
-        "relation__topic__related__url_subject_id_entity_relation_i_fkey": {
-          "columns": ["subject_id", "entity_relation_id"],
-          "definition": "FOREIGN KEY (subject_id, entity_relation_id) REFERENCES relation__topic__related__url(subject_id, id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["subject_id", "id"],
-          "referencedTable": "relation__topic__related__url",
           "validated": true
         }
       },
@@ -88476,7 +88476,7 @@
       },
       "comment": "Append-only votes for the concrete relation__topic__terms_of_service__url elected relation.",
       "foreignKeys": {
-        "relation__topic__terms_of_ser_subject_id_entity_relation_i_fkey": {
+        "fk_rela__topi__term_of_serv__url__vote__subject_entity_relation": {
           "columns": ["subject_id", "entity_relation_id"],
           "definition": "FOREIGN KEY (subject_id, entity_relation_id) REFERENCES relation__topic__terms_of_service__url(subject_id, id) ON DELETE CASCADE",
           "onDelete": "cascade",
@@ -89912,7 +89912,7 @@
       },
       "comment": "Append-only votes for the concrete relation__user__category__topic elected relation.",
       "foreignKeys": {
-        "relation__user__category__top_subject_id_entity_relation_i_fkey": {
+        "fk_relati__user__categor__topic__votes__subject_entity_relation": {
           "columns": ["subject_id", "entity_relation_id"],
           "definition": "FOREIGN KEY (subject_id, entity_relation_id) REFERENCES relation__user__category__topic(subject_id, id) ON DELETE CASCADE",
           "onDelete": "cascade",

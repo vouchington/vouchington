@@ -56,13 +56,14 @@ function createVoteMutationHandler<VoteResult extends ElectionVoteMutationResult
       await options.preAssertAccess(ctx, currentUser)
     }
 
-    // After auth and role checks, so callers denied access never see a validation diagnostic.
+    // Validate after authorization so denied callers cannot probe malformed IDs.
     ctx.assert(isUUID(ctx.params.id!), 422, 'Invalid ID')
+    const entityId = ctx.params.id!.toLowerCase()
 
     const isAdmin = isAdminUser(currentUser)
     const entity =
       options.shouldBypassContributionGating || options.shouldAllowOfficialAccount
-        ? await options.getEntity(ctx.params.id!)
+        ? await options.getEntity(entityId)
         : undefined
     if (options.shouldBypassContributionGating || options.shouldAllowOfficialAccount) {
       ctx.assert(entity, 404, options.entityNotFoundMessage)
@@ -77,7 +78,7 @@ function createVoteMutationHandler<VoteResult extends ElectionVoteMutationResult
       entity && options.shouldBypassContributionGating
         ? await options.shouldBypassContributionGating(currentUser, entity)
         : false
-    const resolvedEntity = entity ?? (await options.getEntity(ctx.params.id!))
+    const resolvedEntity = entity ?? (await options.getEntity(entityId))
     ctx.assert(resolvedEntity, 404, options.entityNotFoundMessage)
     const assertAccess =
       options[isClear ? 'assertClearAccess' : 'assertAccess'] ?? options.assertAccess
@@ -120,19 +121,18 @@ function createVoteMutationHandler<VoteResult extends ElectionVoteMutationResult
       userAgent: (ctx.req.headers['user-agent'] as string | undefined) ?? null,
     }
     // Serialize the read/quota-reservation/append decision across application instances. The
-    // persistence layer has its own differently-namespaced lock, so the nested vote transaction
-    // cannot deadlock this request-level idempotency boundary.
+    // persistence lock uses a separate namespace to avoid nested-transaction deadlocks.
     const upsertedVotes = await withElectionVoteRequestLock(
       options.entityType,
       currentUser.id,
-      ctx.params.id!,
+      entityId,
       async () => {
         if (options.getCurrentVote) {
-          const currentVote = await options.getCurrentVote(currentUser.id, ctx.params.id!)
+          const currentVote = await options.getCurrentVote(currentUser.id, entityId)
           assertNeutralRequiresExistingBallot(choice, currentVote)
           if ((isClear && currentVote === null) || (!isClear && currentVote?.choice === choice)) {
             if (options.onNoop) {
-              await options.onNoop(currentUser, ctx.params.id!, resolvedEntity)
+              await options.onNoop(currentUser, entityId, resolvedEntity)
             }
             return null
           }
@@ -158,7 +158,7 @@ function createVoteMutationHandler<VoteResult extends ElectionVoteMutationResult
           await assertWithinContributionQuota(currentUser.id, isAdmin, membershipPlan)
         }
 
-        return options.upsertVotes(currentUser.id, [{ entityId: ctx.params.id!, score }], context)
+        return options.upsertVotes(currentUser.id, [{ entityId, score }], context)
       },
     )
 
@@ -177,7 +177,7 @@ function createVoteMutationHandler<VoteResult extends ElectionVoteMutationResult
       const previousScore = upsertedVotes[0]?.previous_score ?? null
       await options.onVote(
         currentUser,
-        ctx.params.id!,
+        entityId,
         score,
         resolvedEntity,
         previousScore,
@@ -188,7 +188,7 @@ function createVoteMutationHandler<VoteResult extends ElectionVoteMutationResult
     if (!isClear && score !== null && options.enqueueIntegrityCheck !== false) {
       void enqueueVoteIntegrityCheck(
         options.entityType,
-        ctx.params.id!,
+        entityId,
         currentUser.id,
         ctx.ip ?? null,
         score,

@@ -36,7 +36,7 @@ describe('withElectionVoteRequestLock', () => {
     expect(values).toEqual(Array.from({ length: writeMax }, (_, index) => index))
   })
 
-  it('serializes handlers that use the same election vote request key', async () => {
+  it('serializes handlers with case variants of the same election vote request key', async () => {
     const firstEntered = Promise.withResolvers<void>()
     const releaseFirst = Promise.withResolvers<void>()
     const secondEntered = Promise.withResolvers<void>()
@@ -55,10 +55,15 @@ describe('withElectionVoteRequestLock', () => {
       key: requestKey,
     })
 
-    const second = withElectionVoteRequestLock('post', 'same-user', entityId, async () => {
-      executionOrder.push('second')
-      secondEntered.resolve()
-    })
+    const second = withElectionVoteRequestLock(
+      'post',
+      'SAME-USER',
+      entityId.toUpperCase(),
+      async () => {
+        executionOrder.push('second')
+        secondEntered.resolve()
+      },
+    )
 
     await waitForTestPostgresLockWaiter(firstHolderProcessId, 'lockElectionVoteRequest')
     expect(executionOrder).toEqual(['first'])

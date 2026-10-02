@@ -246,7 +246,7 @@ describe('required EXPLAIN plan shapes', () => {
     expect(() => assertRequiredPlanShape(fanout)).toThrow('exactly one partition child')
   })
 
-  it('requires entity-relation vote lookups to prune both partition levels', () => {
+  it('requires entity-relation vote lookups to prune the concrete vote table partition', () => {
     const queryText =
       'SELECT * FROM relation__post__category__topic__votes WHERE entity_relation_id = $1'
     const pruned = result('entity-relation-votes-by-target', queryText, {

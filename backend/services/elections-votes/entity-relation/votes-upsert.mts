@@ -39,6 +39,7 @@ export async function upsertEntityRelationElectionVotes(
   options: QueryOptions & { enqueueVoteStats?: boolean } = {},
 ): Promise<ElectionVoteMutationResult[]> {
   if (votes.length === 0) return []
+  const normalizedUserId = userId.toLowerCase()
   if (relationMetadata && !relationMetadata.election) {
     throw new Error(
       `Entity relation ${relationMetadata.table_name} does not support election votes`,
@@ -47,7 +48,7 @@ export async function upsertEntityRelationElectionVotes(
   const targetRelations = relationMetadata ? [relationMetadata] : electionRelations
 
   const deduplicated = new Map<string, ElectionVoteScore>()
-  for (const vote of votes) deduplicated.set(vote.entityId, vote.score)
+  for (const vote of votes) deduplicated.set(vote.entityId.toLowerCase(), vote.score)
   const values = [...deduplicated]
     .map(([entityId, score]) => ({ entityId, score }))
     .toSorted((left, right) => left.entityId.localeCompare(right.entityId))
@@ -57,7 +58,7 @@ export async function upsertEntityRelationElectionVotes(
   const query = sql`/* upsertEntityRelationElectionVotes */
     WITH input_data AS (
       SELECT * FROM UNNEST(
-        ${values.map(() => userId)}::uuid[],
+        ${values.map(() => normalizedUserId)}::uuid[],
         ${values.map(value => value.entityId)}::uuid[],
         ${values.map(value => value.score)}::smallint[],
         ${values.map(() => context.ipAddress)}::inet[],
@@ -114,7 +115,7 @@ export async function upsertEntityRelationElectionVotes(
       ),
     )
     query.append(sql` previous
-          WHERE previous.user_id = ${userId}
+          WHERE previous.user_id = ${normalizedUserId}
             AND previous.entity_relation_id = matched_relations.entity_relation_id
           ORDER BY previous.id DESC
           LIMIT 1
@@ -133,12 +134,12 @@ export async function upsertEntityRelationElectionVotes(
 
   const run = async (transaction: TransactionQuery) => {
     await transaction(sql`/* lockActiveUserForEntityRelationElectionVoteMutation */
-      SELECT fn_lock_active_user_for_mutation(${userId}::uuid)
+      SELECT fn_lock_active_user_for_mutation(${normalizedUserId}::uuid)
     `)
     const locks = targetRelations
       .flatMap(metadata =>
         values.map(value => ({
-          key: `${getEntityRelationVoteTableName(metadata)}:${userId}:${value.entityId}`,
+          key: `${getEntityRelationVoteTableName(metadata)}:${normalizedUserId}:${value.entityId}`,
         })),
       )
       .toSorted((left, right) => left.key.localeCompare(right.key))

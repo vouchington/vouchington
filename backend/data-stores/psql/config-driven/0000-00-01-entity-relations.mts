@@ -9,6 +9,7 @@ import {
   createVoteDefaultPartitionSql,
   createVoteIndexesSql,
 } from './utils/election-vote-table-sql.mts'
+import { getElectionForeignKeyName } from './utils/election-sql-identifiers.mts'
 import { createEntityRelationVoteIntegrityTargets } from './utils/entity-relation-vote-integrity-targets.mts'
 import { createRetainedEntityRelationImpacts } from './utils/retained-entity-relation-impacts.mts'
 
@@ -120,7 +121,7 @@ CREATE TABLE IF NOT EXISTS ${voteTable} (
   user_agent_id UUID REFERENCES user_agent_strings ON DELETE SET NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   PRIMARY KEY (entity_relation_id, id),
-  FOREIGN KEY (subject_id, entity_relation_id) REFERENCES ${metadata.table_name} (subject_id, id) ON DELETE CASCADE
+  CONSTRAINT ${getElectionForeignKeyName(voteTable, 'subject_entity_relation')} FOREIGN KEY (subject_id, entity_relation_id) REFERENCES ${metadata.table_name} (subject_id, id) ON DELETE CASCADE
 ) PARTITION BY RANGE (entity_relation_id);
 
 ${createVoteDefaultPartitionSql(voteTable)}

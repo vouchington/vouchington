@@ -34,7 +34,7 @@ _none_
 
 **Foreign keys:**
 
-- `relation__rss_feed_item__cat_subject_id_entity_relation_i_fkey1`: `FOREIGN KEY (subject_id, entity_relation_id) REFERENCES relation__rss_feed_item__category__topic_alias(subject_id, id) ON DELETE CASCADE`
+- `fk_rel__rss_fee_ite__cat__top_ali__vot__subject_entity_relation`: `FOREIGN KEY (subject_id, entity_relation_id) REFERENCES relation__rss_feed_item__category__topic_alias(subject_id, id) ON DELETE CASCADE`
 - `relation__rss_feed_item__category__topic_ali_user_agent_id_fkey`: `FOREIGN KEY (user_agent_id) REFERENCES user_agent_strings(id) ON DELETE SET NULL`
 - `relation__rss_feed_item__category__topic_alias__vo_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
