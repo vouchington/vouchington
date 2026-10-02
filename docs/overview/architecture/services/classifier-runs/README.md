@@ -219,15 +219,19 @@ follows. Each threshold is a named constant in
 the age thresholds are set longer than the longest spend-cap parking window, so a parked run does
 not alarm.
 
-| Alarm kind             | Raised when                                                              | Throttle      |
-| ---------------------- | ------------------------------------------------------------------------ | ------------- |
-| `run-age`              | the oldest incomplete run is older than its threshold                    | once per hour |
-| `request-age`          | the oldest pending request is older than its threshold                   | once per hour |
-| `subject-unrequested`  | any eligible feed item past the grace period has no request or run       | once per hour |
-| `terminal-failures`    | failed terminal runs in the window reach the threshold                   | once per hour |
-| `client-unavailable`   | the provider client cannot be built, which is a missing or unusable key  | none, at once |
-| `provider-rejected`    | the provider permanently rejects a run                                   | none, at once |
-| `sweep-bound-exceeded` | a run is given up at the sweep bound, which is the re-enqueue loop alarm | none, at once |
+The alarm kinds are:
+
+- `run-age`: the oldest incomplete run is older than its threshold. Throttled to once per hour.
+- `request-age`: the oldest pending request is older than its threshold. Throttled to once per hour.
+- `subject-unrequested`: any eligible feed item past the grace period has no request or run.
+  Throttled to once per hour.
+- `terminal-failures`: failed terminal runs in the window reach the threshold. Throttled to once per
+  hour.
+- `client-unavailable`: the provider client cannot be built, which is a missing or unusable key. Not
+  throttled; it alarms at once.
+- `provider-rejected`: the provider permanently rejects a run. Not throttled.
+- `sweep-bound-exceeded`: a run is given up at the sweep bound, which is the re-enqueue loop alarm.
+  Not throttled.
 
 Every alarm goes through `recordClassifierRunAlarm` (`@modules/on-error`, Sentry message
 `classifier_run_alarm`, fingerprinted by alarm kind and classifier so each pair is one issue). The
