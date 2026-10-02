@@ -15,6 +15,9 @@ const FALLBACK_POLL_MS = 10
 
 type DeadLetterEnvelope = { originalJobId?: string }
 
+/** The terminal failure observed for one of the flushed job ids, if any. */
+export type FailureLookup = (jobId: string) => FlushedJobFailure | undefined
+
 function hasDeadLetterJob(queueName: string, originalJobId: string): boolean {
   const dlqName = deadLetterQueueNames.get(queueName)
   if (!dlqName) return false
@@ -36,14 +39,14 @@ function inspectJobs(
   queue: ShimTestQueue,
   jobIds: string[],
   expectedDeadLetterJobIds: Set<string>,
-  failures: ReadonlyMap<string, FlushedJobFailure>,
+  failureOf: FailureLookup,
 ): string[] {
   const pending: string[] = []
   for (const jobId of jobIds) {
     const record = queue.jobs.get(jobId)
     // A `removeOnFail` job leaves no record, so its failure is only known from the watched event.
     const failure =
-      failures.get(jobId) ??
+      failureOf(jobId) ??
       (record?.state === 'failed'
         ? { name: record.name, reason: record.failedReason ?? 'unknown error' }
         : undefined)
@@ -84,10 +87,10 @@ export function flushJobs(
   jobIds: string[],
   expectedDeadLetterJobIds: Set<string>,
   flushTimeoutMs = DEFAULT_FLUSH_TIMEOUT_MS,
-  failures: ReadonlyMap<string, FlushedJobFailure> = new Map(),
+  failureOf: FailureLookup = () => undefined,
 ): Promise<void> {
   if (queue.workers.size === 0) return Promise.resolve()
-  if (inspectJobs(queue, jobIds, expectedDeadLetterJobIds, failures).length === 0) {
+  if (inspectJobs(queue, jobIds, expectedDeadLetterJobIds, failureOf).length === 0) {
     return Promise.resolve()
   }
   const deadline = nowMs() + flushTimeoutMs
@@ -106,7 +109,7 @@ export function flushJobs(
     function check() {
       if (settled) return
       try {
-        const pendingJobIds = inspectJobs(queue, jobIds, expectedDeadLetterJobIds, failures)
+        const pendingJobIds = inspectJobs(queue, jobIds, expectedDeadLetterJobIds, failureOf)
         if (pendingJobIds.length === 0) return finish()
         const remaining = deadline - nowMs()
         if (remaining <= 0) {

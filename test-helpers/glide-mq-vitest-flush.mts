@@ -1,8 +1,10 @@
+import type { TestJob } from 'glide-mq/testing'
 import { TestQueueFlushTimeoutError } from './glide-mq-vitest-flush-diagnostics.mts'
-import { flushJobs } from './glide-mq-vitest-flush-wait.mts'
+import { type FailureLookup, flushJobs } from './glide-mq-vitest-flush-wait.mts'
 import {
   type FlushedJobFailure,
   isInsideTestWorkerProcessor,
+  recordOf,
   type ShimTestQueue,
 } from './glide-mq-vitest-internals.mts'
 export { TestQueueFlushTimeoutError }
@@ -25,14 +27,26 @@ function stripTestJobOptions(opts?: TestJobOptions): Record<string, unknown> | u
  */
 async function withFailureWatcher<T>(
   queue: ShimTestQueue,
-  run: (failures: Map<string, FlushedJobFailure>) => Promise<T>,
+  run: (failures: Map<object, FlushedJobFailure>) => Promise<T>,
 ): Promise<T> {
-  const failures = new Map<string, FlushedJobFailure>()
+  const failures = new Map<object, FlushedJobFailure>()
   queue.failureWatchers.add(failures)
   try {
     return await run(failures)
   } finally {
     queue.failureWatchers.delete(failures)
+  }
+}
+
+/** Only a failure of one of these very jobs counts; a stale job reusing an id does not. */
+function failureLookup(
+  failures: ReadonlyMap<object, FlushedJobFailure>,
+  jobs: TestJob[],
+): FailureLookup {
+  const byId = new Map(jobs.map(job => [job.id, job]))
+  return jobId => {
+    const job = byId.get(jobId)
+    return job && failures.get(recordOf(job))
   }
 }
 
@@ -50,7 +64,7 @@ export function addAndFlush<D, R>(
         [job.id],
         opts?.expectDeadLetter === true ? new Set([job.id]) : new Set(),
         opts?.flushTimeoutMs,
-        failures,
+        failureLookup(failures, [job]),
       )
     }
     return job
@@ -84,7 +98,10 @@ export function addBulkAndFlush<D, R>(
         jobIds,
         expectedDeadLetterJobIds,
         timeouts.length > 0 ? Math.max(...timeouts) : undefined,
-        failures,
+        failureLookup(
+          failures,
+          result.flatMap(job => (job ? [job] : [])),
+        ),
       )
     }
     return result

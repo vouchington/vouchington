@@ -1,4 +1,4 @@
-import { TestWorker } from 'glide-mq/testing'
+import { type TestJob, TestWorker } from 'glide-mq/testing'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { addAndFlush, addBulkAndFlush } from './glide-mq-vitest-flush.mts'
 import { getOrCreateQueue } from './glide-mq-vitest-internals.mts'
@@ -47,6 +47,44 @@ describe('GlideMQ test flush across job states', () => {
     ).rejects.toThrow('planned failure')
     expect(queue.jobs.size).toBe(0)
     expect(queue.failureWatchers.size).toBe(0)
+  })
+
+  it('ignores a stale job that fails under a reused id after an obliterate', async () => {
+    const queue = getOrCreateQueue(uniqueQueueName('stale-id'))
+    const releaseStale = Promise.withResolvers<void>()
+    const releaseFresh = Promise.withResolvers<void>()
+    const staleStarted = Promise.withResolvers<void>()
+    const freshStarted = Promise.withResolvers<void>()
+    workers.push(
+      new TestWorker(
+        queue,
+        async (job: TestJob) => {
+          if (job.name === 'stale') {
+            staleStarted.resolve()
+            await releaseStale.promise
+            throw new Error('stale failure')
+          }
+          freshStarted.resolve()
+          await releaseFresh.promise
+          return 'ok'
+        },
+        { concurrency: 2 },
+      ),
+    )
+    await queue.add('stale', {}, { attempts: 1 })
+    await staleStarted.promise
+    await queue.obliterate({ force: true })
+
+    // The obliterate restarted the id counter, so the fresh job reuses the stale job's id.
+    const flush = addAndFlush(queue, 'fresh', {}, { attempts: 1 })
+    await freshStarted.promise
+    releaseStale.resolve()
+    const staleFailed = new Promise<void>(resolve => queue.once('failed', () => resolve()))
+    releaseStale.resolve()
+    await staleFailed
+    releaseFresh.resolve()
+
+    await expect(flush).resolves.toMatchObject({ name: 'fresh' })
   })
 
   it('keeps a deduplicated add at its own index in addBulkAndFlush', async () => {

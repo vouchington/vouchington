@@ -37,17 +37,26 @@ export const deadLetterQueueNames = new Map<string, string>()
  */
 export type FlushedJobFailure = { name: string; reason: string }
 
+/**
+ * The in-memory record behind a job. An id is not enough to tell two jobs apart: `obliterate`
+ * restarts the id counter, so a job still running from before it can fail under the id a newer job
+ * now holds. The record is one object per job.
+ */
+export function recordOf(job: TestJob): object {
+  return (job as unknown as { _record: object })._record
+}
+
 export class ShimTestQueue<D = any, R = any> extends TestQueue<D, R> {
   /** Flush waiters, woken whenever any job on this queue completes or fails. */
   readonly settleWaiters = new Set<() => void>()
-  /** Terminal failures by job id, filled for as long as a flush holds its map in this set. */
-  readonly failureWatchers = new Set<Map<string, FlushedJobFailure>>()
+  /** Terminal failures by job record, filled for as long as a flush holds its map in this set. */
+  readonly failureWatchers = new Set<Map<object, FlushedJobFailure>>()
   readonly #recordFailure = (job: TestJob, err: unknown) => {
     const failure = {
       name: job.name,
       reason: job.failedReason ?? (err instanceof Error ? err.message : String(err)),
     }
-    for (const watcher of this.failureWatchers) watcher.set(job.id, failure)
+    for (const watcher of this.failureWatchers) watcher.set(recordOf(job), failure)
   }
   readonly #notifySettleWaiters = () => {
     for (const waiter of [...this.settleWaiters]) waiter()
