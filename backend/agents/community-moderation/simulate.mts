@@ -9,8 +9,11 @@ import { prepareCommunityPromptDryRun, type CommunityPromptDryRunDependencies } 
 export interface CommunityPromptSimulationResult {
   post_id: string
   flagged: boolean
-  /** Always empty: the classifier answers with a probability, not a reason. */
-  reason: ''
+  /**
+   * Always the empty string: the classifier answers with a probability, not a reason. Typed as a
+   * plain string so the published response schema keeps the field it always had.
+   */
+  reason: string
 }
 
 /** What one preview post costs to read: title and body share this many characters. */
@@ -49,7 +52,7 @@ export async function simulateCommunityPromptOnPosts(
       posts,
       async post => {
         const { flagged } = await dryRun.classify(simulationParts(post), cancelInFlight.signal)
-        return { post_id: post.id, flagged, reason: '' as const }
+        return { post_id: post.id, flagged, reason: '' }
       },
       { concurrency: SIMULATION_CONCURRENCY },
     )

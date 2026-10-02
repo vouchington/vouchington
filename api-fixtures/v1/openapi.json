@@ -37175,7 +37175,7 @@
                             "type": "string"
                           },
                           "reason": {
-                            "const": ""
+                            "type": "string"
                           },
                           "title": {
                             "type": "string"

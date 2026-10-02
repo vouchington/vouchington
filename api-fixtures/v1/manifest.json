@@ -70435,7 +70435,7 @@
     },
     "POST:/api/v1/communities/:communitySlug/automod/simulate": {
       "bodyKind": "content",
-      "hash": "70262d018330e437af793a8e45917b9a3ded6207917239e68e8a67bd1aed1068",
+      "hash": "964adff43735ee03063ae9c4813baa8873559b980cb057bb0d73e86bd28b8fab",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -70562,8 +70562,7 @@
                     "reason": {
                       "required": true,
                       "schema": {
-                        "type": "literal",
-                        "value": ""
+                        "type": "string"
                       }
                     },
                     "title": {
