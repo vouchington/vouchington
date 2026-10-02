@@ -1,6 +1,6 @@
 import dns from 'node:dns'
 import { describe, expect, it, vi } from 'vitest'
-import { createTestUser } from '@voucha/test-helpers'
+import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { MockAgent, withMockAgentDefaultFetchForTest } from '@voucha/test-helpers/provider-http'
 import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgres-pool-query-failure'
 import { getUrlByAny } from '@services/urls/get'
@@ -51,7 +51,9 @@ describe('source creation canonical mapping failure', () => {
     try {
       const { result, error } = await withMockAgentDefaultFetchForTest(agent, () =>
         withPostgresPoolQueryFailureForTest('/* setCanonicalUrl */', async () => {
-          const created = await createSourceFromUrl(user, originalUrl, { follow: false })
+          const created = await createSourceFromUrl(user, WEB_PROVENANCE, originalUrl, {
+            follow: false,
+          })
           await vi.waitFor(() => {
             expect(
               sentryCaptureExceptionMock.mock.calls
