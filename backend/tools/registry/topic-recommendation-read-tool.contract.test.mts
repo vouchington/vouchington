@@ -4,6 +4,7 @@ import {
   createRandomString,
   createTestPost,
   createTestUser,
+  softDeleteUser,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import {
@@ -215,6 +216,24 @@ describe('list_my_topic_recommendations contract — real DB', () => {
       aliases: ['short name'],
       status: 'pending',
     })
+  })
+
+  it('refuses an empty cursor instead of listing the first page again', async () => {
+    const author = asCaller(await createTestUser(), 'plus')
+    await submit(author)
+
+    expect(await list({}, author)).toMatchObject({ success: true })
+    expect(await list({ after: '' }, author)).toEqual(INVALID_CURSOR)
+  })
+
+  it('refuses a caller whose account was deleted after its credential was issued', async () => {
+    const author = asCaller(await createTestUser(), 'plus')
+    await submit(author)
+    await softDeleteUser(author.id)
+
+    expect(await callRejectedMcpTool(author, TOOL, {}, READ)).toContain(
+      'Tool current user not found',
+    )
   })
 
   it('lists nothing for an account that has submitted nothing, and refuses a missing scope', async () => {

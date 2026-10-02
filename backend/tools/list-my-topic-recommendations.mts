@@ -19,6 +19,7 @@ import {
   type InvalidCursorResult,
   type SearchPageInfo,
 } from './paged-search.mts'
+import { requirePrivateToolUser } from './private-user.mts'
 import { closedObject, foundOrNotFoundSchema } from './read-tool-output-schema.mts'
 import { clampToolLimit } from './search-system.mts'
 import {
@@ -113,9 +114,10 @@ const tool: Tool<ToolArgs, ToolResult> = {
   function:
     (currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
+      const user = await requirePrivateToolUser(currentUser)
       const page = await findPageOrNull(args.after, () =>
         searchTopicRecommendations({
-          created_by_id: currentUser.id,
+          created_by_id: user.id,
           status: args.status,
           after: args.after,
           limit: clampToolLimit(args.limit, PAGE_LIMIT.default, PAGE_LIMIT.max),
