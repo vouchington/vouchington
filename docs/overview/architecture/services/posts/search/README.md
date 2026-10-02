@@ -54,12 +54,18 @@ Notes:
 
 REST `GET /api/v1/posts` and MCP `search_posts` share one query. A `semantic_search_query`
 first selects a materialized window ordered by raw cosine distance, with privacy, moderation,
-text and other search filters applied before the window. The HNSW scan uses strict iterative
+text and other search filters applied before the window. The HNSW scan uses relaxed iterative
 ordering and finite search limits; its settings and a forced custom plan are scoped to the
 read transaction and do not leak into pooled connections.
-Initial HNSW exploration is independent of the candidate cap. Strict iterative scans refill
+Initial HNSW exploration is independent of the candidate cap. Relaxed iterative scans refill
 the window within the finite scan budget; a smaller initial exploration reduces index startup
-cost but does not make recall exact. The EXPLAIN gate verifies index use on the seeded corpus.
+cost but does not make recall exact. Strict iterative ordering is deliberately not used: it
+discards any row a resumed scan finds nearer than the last row already emitted, so a selective
+filter could return an empty or incomplete window ([#1751](https://github.com/vouchington/vouchington/issues/1751)).
+The window only supplies a set of candidate ids and the outer query sorts them, so order within
+the window never reaches a caller; when the cap binds, boundary membership is approximate, as
+accepted in [#1549](https://github.com/vouchington/vouchington/issues/1549).
+The EXPLAIN gate verifies index use on the seeded corpus.
 The parameter-only embedding CTE is not materialized, so the custom planner sees the same
 constant embedding in eligibility filters and distance ordering even with repeated references.
 The parameter-only text query is also inlined so hybrid planning sees its real selectivity.
