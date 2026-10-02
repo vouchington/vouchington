@@ -8,12 +8,37 @@ import {
   insertTestPost,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
+import { withAbortedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-aborted-transaction'
+import { postSlugExists } from './get.mts'
 
 function rand(): string {
   return createRandomString(8)
 }
 
 describe('createPostSlug', () => {
+  it('propagates an aborted caller transaction without leaving an orphan slug', async () => {
+    const user = await createTestUser()
+    const postId = await insertTestPost({
+      title: `Aborted slug ${rand()}`,
+      slug: `original-${rand()}`,
+      createdById: user.id,
+      markdown: 'body',
+    })
+    const slug = `aborted-${rand()}`
+
+    await expect(
+      withAbortedPostgresTransactionForTest(options =>
+        createPostSlug({ id: postId, title: 'Aborted transaction' }, slug, options),
+      ),
+    ).rejects.toMatchObject({ code: '25P02' })
+    expect(await postSlugExists(slug)).toBe(false)
+
+    await using query = await beginTransaction()
+    await createPostSlug({ id: postId, title: 'Healthy transaction' }, slug, { query })
+    await query.commit()
+    expect(await postSlugExists(slug)).toBe(true)
+  })
+
   it('rejects a UUID-shaped slug with 422', async () => {
     const user = (await createTestUser()) as PrivateUser
     const postId = await insertTestPost({

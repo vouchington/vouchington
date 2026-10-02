@@ -41,4 +41,33 @@ describe('seedTopicsFromRows', () => {
     const parents = await getTopicParents(child!.id)
     expect(parents.map(topic => topic.id)).toEqual([parent!.id])
   })
+
+  it('keeps importing valid rows and returns the invalid row error', async () => {
+    const suffix = crypto.randomUUID()
+    const invalidSlug = `seed-csvs-invalid-${suffix}`
+    const validSlug = `seed-csvs-valid-${suffix}`
+
+    const result = await seedTopicsFromRows([
+      {
+        slug: invalidSlug,
+        name: `Invalid seed topic ${suffix}`,
+        topic_type: 'not-a-topic-type',
+      },
+      {
+        slug: validSlug,
+        name: `Valid seed topic ${suffix}`,
+      },
+    ])
+
+    expect(result.processed).toBe(1)
+    expect(result.errors).toHaveLength(1)
+    expect(result.errors[0]).toMatchObject({
+      slug: invalidSlug,
+      error: { status: 422, message: expect.stringContaining('Invalid topic type') },
+    })
+    await expect(getTopicBySlug(validSlug)).resolves.toMatchObject({
+      slug: validSlug,
+      name: `Valid seed topic ${suffix}`,
+    })
+  })
 })

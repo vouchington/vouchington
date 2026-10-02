@@ -18,6 +18,25 @@ describe('updateCommunity language handling', () => {
     user = await createTestUser({ administrator: true })
   })
 
+  it('preserves the community when storage rejects unsupported text', async () => {
+    const community = await insertTestCommunity({ createdById: user.id })
+
+    await expect(
+      updateCommunity(user, community.id, { name: 'Unsupported\u0000name' }),
+    ).rejects.toMatchObject({ code: '22021' })
+    expect((await getCommunity(community.id))?.name).toBe(community.name)
+  })
+
+  it('maps a conflicting slug to 409 without changing the original community', async () => {
+    const community = await insertTestCommunity({ createdById: user.id })
+    const other = await insertTestCommunity({ createdById: user.id })
+
+    await expect(updateCommunity(user, community.id, { slug: other.slug })).rejects.toMatchObject({
+      status: 409,
+    })
+    expect((await getCommunity(community.id))?.slug).toBe(community.slug)
+  })
+
   it('accepts a valid ISO 639-1 default_language and normalises it on the community', async () => {
     const community = await insertTestCommunity({ createdById: user.id })
 

@@ -19,7 +19,7 @@ vi.mock<typeof import('@modules/aws/bedrock-control')>(
   }),
 )
 
-const batchIdPrefix = 'stale-cleanup-test-'
+const batchIdPrefix = `stale-cleanup-test-${randomUUID()}-`
 const createdBatchIds: string[] = []
 
 function batchId() {

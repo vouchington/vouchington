@@ -3,11 +3,14 @@ import * as fsPromises from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { Readable } from 'node:stream'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest'
 import { gunzipBytes, gzipBytes } from '@modules/utils/compression'
 import { downloadCrawlHtmlToTempFile, uploadCrawlHtmlFileToS3, uploadCrawlHtmlToS3 } from './s3.mts'
 
 const recordedGzipDirectories = vi.hoisted(() => ({ paths: [] as string[] }))
+const mocks = vi.hoisted(() => ({
+  send: vi.fn<typeof import('@aws-sdk/client-s3').S3Client.prototype.send>(),
+}))
 
 vi.mock<typeof import('node:fs/promises')>(import('node:fs/promises'), async importOriginal => {
   const actual = await importOriginal<typeof import('node:fs/promises')>()
@@ -21,25 +24,46 @@ vi.mock<typeof import('node:fs/promises')>(import('node:fs/promises'), async imp
   }
 })
 
-vi.mock<typeof import('@modules/aws')>(import('@modules/aws'), async importOriginal => {
-  const mockSend = vi.fn<VitestLooseMock>()
-  return {
-    ...(await importOriginal<typeof import('@modules/aws')>()),
-    S3ImagesClient: {
-      send: mockSend,
-    } as unknown as typeof import('@modules/aws').S3ImagesClient,
-  }
+vi.mock<typeof import('@aws-sdk/client-s3')>(import('@aws-sdk/client-s3'), async importOriginal => {
+  const sdk = await importOriginal()
+  vi.spyOn(sdk.S3Client.prototype, 'send').mockImplementation(mocks.send)
+  return sdk
 })
 
-import { S3Buckets, S3ImagesClient } from '@modules/aws'
+import { S3Buckets } from '@modules/aws'
 
 describe('s3', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.send.mockReset()
+    recordedGzipDirectories.paths.length = 0
+  })
+
+  afterAll(() => {
+    vi.restoreAllMocks()
   })
 
   describe('crawl S3 operations', () => {
-    const mockSend = vi.mocked(S3ImagesClient.send)
+    const mockSend = mocks.send
+
+    it('propagates a vanished upload source and removes its partial gzip directory', async () => {
+      const directory = mkdtempSync(path.join(os.tmpdir(), 'crawl-vanished-source-'))
+      const filePath = path.join(directory, 'page.html')
+      writeFileSync(filePath, '<html>vanished</html>')
+      await fsPromises.rm(filePath)
+      try {
+        await expect(
+          uploadCrawlHtmlFileToS3('example.com', 'missing-source', 'deadbeef', filePath),
+        ).rejects.toMatchObject({ code: 'ENOENT', path: filePath })
+        expect(mockSend).not.toHaveBeenCalled()
+        expect(recordedGzipDirectories.paths).toHaveLength(1)
+        await expect(fsPromises.access(recordedGzipDirectories.paths[0]!)).rejects.toMatchObject({
+          code: 'ENOENT',
+        })
+      } finally {
+        await fsPromises.rm(directory, { recursive: true, force: true })
+      }
+    })
 
     it('should upload gzipped HTML with correct S3 key', async () => {
       const html = Buffer.from('<html>test</html>')

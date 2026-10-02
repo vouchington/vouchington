@@ -20,6 +20,13 @@ import { emails } from '@queues/emails/queues'
 import { v7 } from 'uuid'
 
 describe('create', () => {
+  it('refuses to create a user without an authentication identity', async () => {
+    await expect(upsertUser({ deviceId: v7() })).rejects.toMatchObject({
+      status: 400,
+      message: 'Cannot create user: no oauthAccount, emailAddress, or phoneNumber provided',
+    })
+  })
+
   it('upsertUser finds an existing email-address user when facebook account has same email', async () => {
     // Create a user with a known email address
     const emailAddress = createRandomEmailAddress()

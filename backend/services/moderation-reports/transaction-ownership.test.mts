@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { ownsReportResolutionTransaction } from './transaction-ownership.mts'
+import { withAbortedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-aborted-transaction'
 
 describe('ownsReportResolutionTransaction', () => {
+  it('propagates an aborted caller transaction instead of treating it as unowned', async () => {
+    await expect(
+      withAbortedPostgresTransactionForTest(options =>
+        ownsReportResolutionTransaction({ client: options.query.client }),
+      ),
+    ).rejects.toMatchObject({ code: '25P02' })
+  })
+
   it('owns default and pool-backed transactions', async () => {
     expect(await ownsReportResolutionTransaction(undefined)).toBe(true)
     expect(

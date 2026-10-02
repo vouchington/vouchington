@@ -7,6 +7,7 @@ import {
 import { getJwtRevokedKey } from './constants.mts'
 import { revokeSession, revokeSessions, isSessionRevoked } from './revocation.mts'
 import { revokeSessionKeys, revokeUserSessionsBefore } from './session-revocation-keys.mts'
+import { withAbortedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-aborted-transaction'
 import { v7 } from 'uuid'
 
 describe('revocation', () => {
@@ -42,6 +43,15 @@ describe('revocation', () => {
       },
     })
 
+    await expect(isSessionRevoked(sid)).resolves.toBe(true)
+  })
+
+  it('propagates the PostgreSQL failure for a strict registry write in an aborted transaction', async () => {
+    const sid = v7()
+
+    await expect(
+      withAbortedPostgresTransactionForTest(options => revokeSession(sid, options)),
+    ).rejects.toMatchObject({ code: '25P02' })
     await expect(isSessionRevoked(sid)).resolves.toBe(true)
   })
 

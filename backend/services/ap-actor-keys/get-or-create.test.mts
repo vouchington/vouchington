@@ -2,8 +2,16 @@ import { describe, it, expect } from 'vitest'
 import { getOrCreateActorKeyPair, getActorPrivateKeyPem } from './get-or-create.mts'
 import { getActorKeyId } from '@modules/activitypub-uris'
 import { createTestUserDirect } from '@voucha/test-helpers'
+import { randomUUID } from 'node:crypto'
 
 describe('getOrCreateActorKeyPair', () => {
+  it('rejects an absent actor owner without retaining a private key', async () => {
+    const userId = randomUUID()
+
+    await expect(getOrCreateActorKeyPair(userId)).rejects.toMatchObject({ code: '23503' })
+    expect(await getActorPrivateKeyPem(userId)).toBeNull()
+  })
+
   it('generates and persists a keypair on first call', async () => {
     const user = await createTestUserDirect()
 

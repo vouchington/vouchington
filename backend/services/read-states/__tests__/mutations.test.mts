@@ -113,4 +113,10 @@ describe('read-state mutations', () => {
       expect(await readStateExists(user.id, type, missingId)).toBe(false)
     },
   )
+
+  it('preserves invalid UUID input as a PostgreSQL input error instead of a missing target', async () => {
+    await expect(markRead(user.id, 'post', 'invalid-post-id')).rejects.toMatchObject({
+      code: '22P02',
+    })
+  })
 })
