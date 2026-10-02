@@ -163,7 +163,7 @@ describe('story clustering run configuration (real PG)', () => {
       promptVersionId: expect.any(String),
       modelProvider: 'openrouter',
     })
-    expect(Object.keys(resolved.configuration).sort()).toEqual([
+    expect(Object.keys(resolved.configuration).toSorted()).toEqual([
       'actorId',
       'classifierId',
       'modelName',
