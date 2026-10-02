@@ -174,7 +174,7 @@ describe('member transcript contract', () => {
     expect(second.body.results[0].completion.status).toBe('completed')
     expect(second.body.page_info.has_next_page).toBe(false)
     const list = await request.get('/api/v1/my/conversations').expect(200)
-    expect(Object.keys(list.body.results[0]).sort()).toEqual([
+    expect(Object.keys(list.body.results[0]).toSorted()).toEqual([
       'created_at',
       'id',
       'title',
