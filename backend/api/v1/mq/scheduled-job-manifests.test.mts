@@ -104,7 +104,7 @@ const EXPECTED_SCHEDULED_JOBS = [
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 30 manifests and 82 live jobs', () => {
+  it('imports the exact 30 manifests and 81 live jobs', () => {
     expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(30)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
