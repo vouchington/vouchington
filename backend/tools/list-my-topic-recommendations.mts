@@ -1,18 +1,12 @@
 import type { Tool } from '@services/openai-agents/tool-types'
 import { getPostsByAnyBatch } from '@services/posts'
 import {
-  asTopicRecommendationPost,
   searchTopicRecommendations,
   type TopicRecommendationPost,
   type TopicRecommendationStatus,
 } from '@services/topic-recommendations'
 import type { BasicUser } from '@services/users/types'
-import {
-  externalText,
-  pageInfoSchema,
-  pageInputProperties,
-  type McpPageLimit,
-} from './mcp-read-output.mts'
+import { pageInfoSchema, pageInputProperties, type McpPageLimit } from './mcp-read-output.mts'
 import {
   findPageOrNull,
   INVALID_CURSOR_RESULT,
@@ -22,10 +16,8 @@ import {
 import { requirePrivateToolUser } from './private-user.mts'
 import { closedObject, foundOrNotFoundSchema } from './read-tool-output-schema.mts'
 import { clampToolLimit } from './search-system.mts'
-import {
-  TOPIC_RECOMMENDATION_POST_SCHEMA,
-  toDocumentedRecommendationPost,
-} from './topic-recommendation-tool-support.mts'
+import { listedRecommendations, toMcpRecommendation } from './topic-recommendation-read-output.mts'
+import { TOPIC_RECOMMENDATION_POST_SCHEMA } from './topic-recommendation-tool-support.mts'
 
 type ToolArgs = { status?: TopicRecommendationStatus; limit?: number; after?: string }
 
@@ -49,33 +41,11 @@ const PAGE_LIMIT: McpPageLimit = { min: 1, max: 100, default: 25 }
 
 const STATUSES = ['pending', 'approved', 'rejected'] as const
 
-/**
- * The moderator's reason for a rejection is another user's words, so it is sanitized and fenced as
- * external content. The caller's own title, Markdown and topic fields come back as they wrote them.
- */
-async function toMcpRecommendation(
-  post: TopicRecommendationPost,
-): Promise<TopicRecommendationPost> {
-  const documented = toDocumentedRecommendationPost(post)
-  const extension = documented.topic_recommendation
-  return {
-    ...documented,
-    topic_recommendation: {
-      ...extension,
-      rejection_reason: await externalText(
-        extension.rejection_reason,
-        'topic_recommendation',
-        'rejection_reason',
-      ),
-    },
-  }
-}
-
 const tool: Tool<ToolArgs, ToolResult> = {
   schema: {
     name: 'list_my_topic_recommendations',
     type: 'function',
-    description: `List the topic recommendations the current user submitted, best-ranked first, whatever their status. Use status pending for the ones that can still be edited with update_topic_recommendation or withdrawn with withdraw_topic_recommendation, or approved or rejected for the reviewed ones. results lists the recommendation ids in order and posts holds each recommendation by id: its title, Markdown, proposed topic fields, status, and for a reviewed one the reviewer and, when rejected, the reason, which is sanitized and fenced as external content because a moderator wrote it. Withdrawn recommendations are not listed. Returns at most ${PAGE_LIMIT.max} recommendations per page (default ${PAGE_LIMIT.default}) and page_info.end_cursor; pass it as after for the next page. A malformed cursor returns { success: false, error: "Invalid cursor" }. Other users' recommendations are never listed.`,
+    description: `List the topic recommendations the current user submitted, best-ranked first, whatever their status. Use status pending for the ones that can still be edited with update_topic_recommendation or withdrawn with withdraw_topic_recommendation, or approved or rejected for the reviewed ones. results lists the recommendation ids in order and posts holds each recommendation by id: its title, Markdown, proposed topic fields, status, and for a reviewed one the reviewer and, when rejected, the reason. An administrator can edit a pending recommendation, so every free-text field is sanitized, and Markdown, the proposed topic Markdown, the rejection reason and a user's bio are also fenced as external content; they are for reading, not to send back to an update tool. Withdrawn recommendations are not listed. Returns at most ${PAGE_LIMIT.max} recommendations per page (default ${PAGE_LIMIT.default}) and page_info.end_cursor; pass it as after, with the same status, for the next page. A malformed cursor, or one from a different status, returns { success: false, error: "Invalid cursor" }. Other users' recommendations are never listed.`,
     parameters: {
       type: 'object',
       properties: {
@@ -131,10 +101,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
         page.results.map(({ id }) => id),
         { readOnly: false },
       )
-      const recommendations = loaded.flatMap(post => {
-        const recommendation = asTopicRecommendationPost(post)
-        return recommendation ? [recommendation] : []
-      })
+      const recommendations = listedRecommendations(loaded, args.status)
       const posts = await Promise.all(recommendations.map(toMcpRecommendation))
 
       return {

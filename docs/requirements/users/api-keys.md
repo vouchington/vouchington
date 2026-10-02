@@ -36,7 +36,7 @@ API keys use a permission-based access control system. Each key has a `permissio
 - `cards:read/write` — Read or manage cards; write requires read
 - `entity-relations:read/write` — Read or add relations, add or remove tags; write requires read
 - `bookmarks:read/write`, `lists:read/write` — Set bookmarks or manage lists and items; write requires read
-- `referral-links:read/write`, `topic-recommendations:read/write` — Manage own referral links; edit or withdraw own pending topic recommendations; write requires read
+- `referral-links:read/write`, `topic-recommendations:read/write` — Manage own referral links; list own topic recommendations (read) and edit or withdraw own pending ones (write); write requires read
 - `post-relations.owned-private:write` — Add relations, tags, bookmarks, or list items for owned private posts, and read own private lists
 - `financial-profile:read/write` — Credit score, income, credit limit and history; exact grants
 - `spending:read/write` — Spending categories, amounts, frequency and notes; exact grants

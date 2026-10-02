@@ -109,7 +109,7 @@ describe('list_my_topic_recommendations contract — real DB', () => {
     const request = createRequest()
     await request.authenticateAs(ownerUser)
     const rest = await request.get(`/api/v1/topic-recommendations/${pending.id}`).expect(200)
-    const { [INTERNAL_POST_COLUMN]: internal, ...restPost } = rest.body.post
+    const { [INTERNAL_POST_COLUMN]: internal, markdown: written, ...restPost } = rest.body.post
     // Like update_topic_recommendation, the tool keeps the properties the documented Post lists, so
     // the two user fields the nested created_by and updated_by users carry stay out.
     const documented = {
@@ -119,9 +119,13 @@ describe('list_my_topic_recommendations contract — real DB', () => {
     }
 
     const page = await list({ status: 'pending' })
+    const { markdown: fenced, ...post } = page.posts[pending.id]!
 
     expect(internal).toBeDefined()
-    expect(page.posts[pending.id]).toEqual(documented)
+    // Every field but the Markdown, which the tool fences, is the REST field.
+    expect(post).toEqual(documented)
+    expect(fenced).toMatch(/^<external-content source="topic_recommendation"/)
+    expect(fenced).toContain(written)
     expect(JSON.stringify(page)).not.toContain(INTERNAL_POST_COLUMN)
   })
 

@@ -74,18 +74,32 @@ consents, federation, email addresses, sign-in settings and the username are not
 `list_my_topic_recommendations` lists the recommendations the caller submitted, best-ranked first
 like the REST list, whatever their status; `status` (`pending`, `approved` or `rejected`) narrows
 it. `results` lists the ids in order and `posts` holds each recommendation by id, with the same
-post `update_topic_recommendation` returns, minus the internal moderation columns. A pending one
-can still be edited or withdrawn; an approved or rejected one carries its reviewer and, when
-rejected, the reason. Withdrawn recommendations are not listed. Pages hold at most 100
-(default 25), the REST bounds, and `page_info.end_cursor` is the REST score cursor.
+post `update_topic_recommendation` returns, minus the internal moderation columns and with its text
+fenced as below. A pending one can still be edited or withdrawn; an approved or rejected one carries
+its reviewer and, when rejected, the reason. Withdrawn recommendations are not listed. Pages hold at
+most 100 (default 25), the REST bounds. `page_info.end_cursor` is a score cursor scoped to the
+caller and the `status`: it continues the same listing only, so a cursor used with another status,
+another account or the REST list returns `{ success: false, error: "Invalid cursor" }`.
 
 `GET /api/v1/topic-recommendations` lists every user's recommendations and has no owner filter, and
 there is no `/my` route. The owner filter lives in the search service and only this tool uses it,
-with the credential's own id; the tool takes no user id or search text. A moderator's rejection
-reason is another user's text, so it is sanitized and fenced as `external-content` from
-`topic_recommendation`. The caller's own title, Markdown and topic fields come back as written. The
-posts are read from the primary database, not the entity cache, so an edit made a moment ago is
-listed as edited. The ids come from a replica, as on REST.
+with the credential's own id; the tool takes no user id or search text.
+
+An administrator can edit a pending recommendation, and `updated_by_id` names only the last editor,
+so an administrator's edit of one field outlives the submitter's edit of another. No field is known
+to be the caller's own words, so every free-text field is sanitized, the title, topic title and
+aliases as titles, and the Markdown, the proposed topic Markdown and the rejection reason also
+fenced as `external-content` from `topic_recommendation`. The nested `created_by` and `updated_by`
+users get the `get_user` treatment: names sanitized, a bio fenced. Identifiers, slugs, hostnames and
+URLs keep the formats the service validated. An empty title or Markdown stays an empty string, the
+documented type. That text is for reading, not to send back to an update tool.
+
+The posts are read from the primary database, not the entity cache, so an edit made a moment ago is
+listed as edited. The ids come from a replica, as on REST, so a recommendation reviewed or withdrawn
+a moment ago can still be selected there. The row just read decides: a post that no longer has the
+requested `status` is dropped from the page, and the cursor, a position in the ranking, skips
+nothing. A single recommendation is not truncated, as in `get_post`: one whose text exceeds half the
+1 MiB result bound fails the call with the result-size error whatever the `limit`.
 
 ## Routes without a tool
 

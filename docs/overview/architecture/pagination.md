@@ -23,6 +23,10 @@ and unenforced top-N product expectations are not exemptions.
 - Friend recommendation cursors use the exact
   `{"resource":"my-friend-recommendations","owner_id":"…","order":"id-asc"}` scope. Unscoped
   simple ID cursors are rejected.
+- The owner-filtered topic recommendation listing, which the MCP `list_my_topic_recommendations`
+  tool uses, carries a scope of the resource, owner, status, text filter and `best` order. A cursor
+  from another owner or status, or a plain REST score cursor, is refused, and the unfiltered REST
+  listing refuses a scoped one.
 - Private post relation collections use the same scope binding with a timestamp-and-UUID keyset.
   Resolve comments to their root and apply post type, clearance, audience, and community access in
   SQL before selecting the visible `limit + 1` relation rows.

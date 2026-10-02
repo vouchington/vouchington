@@ -1,7 +1,12 @@
 import { read } from '@data-stores/psql'
 import type { TopicRecommendationSearchOptions } from './types.mts'
 import type { PostSearchResult } from '@services/posts/search/types'
-import { decodeUuidCursor, isScoreCursor, buildPageInfo } from '@modules/pagination'
+import {
+  buildPageInfo,
+  decodeScopedScoreCursor,
+  decodeUuidCursor,
+  isScoreCursor,
+} from '@modules/pagination'
 import onError from '@modules/on-error'
 import { isUUID } from '@modules/utils/ids'
 
@@ -9,6 +14,23 @@ type SearchRow = {
   id: string
   post_type: 'topic_recommendation'
   vote_score: string | number
+}
+
+/**
+ * What the continuation cursor of an owner-filtered listing belongs to: the owner, status, text
+ * filter and ranking. A cursor from another owner, status or filter selects another dataset, so
+ * `decodeScopedScoreCursor` refuses it instead of skipping that dataset's leading rows. The
+ * unfiltered REST listing keeps its plain score cursor.
+ */
+function ownerCursorScope(options: TopicRecommendationSearchOptions): string | undefined {
+  if (!options.created_by_id) return undefined
+  return JSON.stringify({
+    resource: 'topic-recommendations',
+    created_by_id: options.created_by_id,
+    status: options.status ?? null,
+    q: options.q?.trim() || null,
+    order: 'best',
+  })
 }
 
 export async function searchTopicRecommendations(options: TopicRecommendationSearchOptions = {}) {
@@ -60,8 +82,12 @@ export async function searchTopicRecommendations(options: TopicRecommendationSea
       filters.push(`(${disjuncts.join(' OR ')})`)
     }
 
+    const scope = ownerCursorScope(options)
     if (options.after) {
-      const cursor = decodeUuidCursor(options.after, isScoreCursor, 'Invalid cursor for sort=best')
+      const message = 'Invalid cursor for sort=best'
+      const cursor = scope
+        ? decodeScopedScoreCursor(options.after, scope, message)
+        : decodeUuidCursor(options.after, isScoreCursor, message)
       params.push(cursor.score, cursor.id)
       const scoreParam = params.length - 1
       const idParam = params.length
@@ -98,7 +124,11 @@ export async function searchTopicRecommendations(options: TopicRecommendationSea
       results,
       page_info: buildPageInfo(resultRows, {
         hasNextPage,
-        getCursor: row => ({ score: Number(row.vote_score), id: row.id }),
+        getCursor: row => ({
+          score: Number(row.vote_score),
+          id: row.id,
+          ...(scope ? { scope } : {}),
+        }),
       }),
     }
   } catch (err) {

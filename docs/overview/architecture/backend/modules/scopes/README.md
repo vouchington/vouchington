@@ -58,8 +58,10 @@ grant before they touch an own private post, as does `remove_entity_relation`, a
 `lists:write` and `lists:read` never imply it.
 
 `referral-links` and `topic-recommendations` are ordinary user read/write resources (write requires
-read). `topic-recommendations:read` has no read tool yet: it exists as the prerequisite the write
-tools declare, so a credential that carries only it can list nothing.
+read). `topic-recommendations:read` reads the holder's own recommendations through
+`list_my_topic_recommendations`, whatever their status, including a moderator's rejection reason, and
+is the prerequisite the write tools declare. A credential that carries it lists only the
+recommendations its owner submitted.
 
 The same coverage rule (`hasEveryScope`) decides whether an OAuth client's registered scopes cover
 a requested scope. `listScopesForAudience` feeds OAuth discovery metadata, and
