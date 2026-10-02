@@ -16,7 +16,7 @@ import {
   type StoryClusteringItem,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/story-clustering-fixture'
 import { describe, expect, it } from 'vitest'
-import { createStoryClusteringRunAdapter } from './adapter.mts'
+import { createStoryClusteringRunAdapter } from '../adapter.mts'
 
 const adapter = createStoryClusteringRunAdapter()
 
