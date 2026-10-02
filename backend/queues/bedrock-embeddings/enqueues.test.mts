@@ -15,6 +15,10 @@ import {
   closeScopedDynamicConfigContext,
 } from '@voucha/test-helpers/dynamic-config'
 
+// Default-priority jobs are parked as `prioritized` (reported under 'delayed') until a worker
+// promotes them, and no worker runs here, so look across every state instead of 'waiting'.
+const getQueuedJobs = () => bedrock_embeddings_nova_multimodal_v1_single.searchJobs({})
+
 const enqueueBacklogItems = async (count: number, runId: string): Promise<void> => {
   if (count === 0) return
   // Uses the public bulk enqueue function. Since the queue is obliterated in beforeEach
@@ -62,8 +66,8 @@ describe('bedrock-embeddings enqueues', () => {
       const topicId = `topic-${randomUUID()}`
       await enqueueCreateTopicEmbedding(topicId)
 
-      const waiting = await bedrock_embeddings_nova_multimodal_v1_single.getJobs('waiting')
-      const topicJob = waiting.find(j => (j.data as Record<string, unknown>).id === topicId)
+      const queued = await getQueuedJobs()
+      const topicJob = queued.find(j => (j.data as Record<string, unknown>).id === topicId)
       expect(topicJob).toBeDefined()
     })
 
@@ -76,8 +80,8 @@ describe('bedrock-embeddings enqueues', () => {
       const topicId = `topic-${randomUUID()}`
       await enqueueCreateTopicEmbedding(topicId)
 
-      const waiting = await bedrock_embeddings_nova_multimodal_v1_single.getJobs('waiting')
-      const topicJob = waiting.find(j => (j.data as Record<string, unknown>).id === topicId)
+      const queued = await getQueuedJobs()
+      const topicJob = queued.find(j => (j.data as Record<string, unknown>).id === topicId)
       expect(topicJob).toBeUndefined()
     })
 
@@ -90,8 +94,8 @@ describe('bedrock-embeddings enqueues', () => {
       const topicId = `topic-${randomUUID()}`
       await enqueueCreateTopicEmbedding(topicId)
 
-      const waiting = await bedrock_embeddings_nova_multimodal_v1_single.getJobs('waiting')
-      const topicJob = waiting.find(j => (j.data as Record<string, unknown>).id === topicId)
+      const queued = await getQueuedJobs()
+      const topicJob = queued.find(j => (j.data as Record<string, unknown>).id === topicId)
       expect(topicJob).toBeUndefined()
     })
 
@@ -102,8 +106,8 @@ describe('bedrock-embeddings enqueues', () => {
       const topicId = `topic-${randomUUID()}`
       await enqueueCreateTopicEmbedding(topicId)
 
-      const waiting = await bedrock_embeddings_nova_multimodal_v1_single.getJobs('waiting')
-      const topicJob = waiting.find(j => (j.data as Record<string, unknown>).id === topicId)
+      const queued = await getQueuedJobs()
+      const topicJob = queued.find(j => (j.data as Record<string, unknown>).id === topicId)
       expect(topicJob).toBeDefined()
     })
 
@@ -115,8 +119,8 @@ describe('bedrock-embeddings enqueues', () => {
       const topicId = `topic-${randomUUID()}`
       await enqueueCreateTopicEmbedding(topicId)
 
-      const waiting = await bedrock_embeddings_nova_multimodal_v1_single.getJobs('waiting')
-      const topicJob = waiting.find(j => (j.data as Record<string, unknown>).id === topicId)
+      const queued = await getQueuedJobs()
+      const topicJob = queued.find(j => (j.data as Record<string, unknown>).id === topicId)
       expect(topicJob).toBeDefined()
     })
   })
@@ -143,8 +147,8 @@ describe('bedrock-embeddings enqueues', () => {
       const postId = `post-${randomUUID()}`
       await enqueueCreatePostEmbedding(postId)
 
-      const waiting = await bedrock_embeddings_nova_multimodal_v1_single.getJobs('waiting')
-      const postJob = waiting.find(j => (j.data as Record<string, unknown>).id === postId)
+      const queued = await getQueuedJobs()
+      const postJob = queued.find(j => (j.data as Record<string, unknown>).id === postId)
       expect(postJob).toBeDefined()
     })
 
@@ -157,8 +161,8 @@ describe('bedrock-embeddings enqueues', () => {
       const postId = `post-${randomUUID()}`
       await enqueueCreatePostEmbedding(postId)
 
-      const waiting = await bedrock_embeddings_nova_multimodal_v1_single.getJobs('waiting')
-      const postJob = waiting.find(j => (j.data as Record<string, unknown>).id === postId)
+      const queued = await getQueuedJobs()
+      const postJob = queued.find(j => (j.data as Record<string, unknown>).id === postId)
       expect(postJob).toBeUndefined()
     })
   })
@@ -185,8 +189,8 @@ describe('bedrock-embeddings enqueues', () => {
       const itemId = `rss-${randomUUID()}`
       await enqueueBulkCreateRssFeedItemEmbeddings([{ rss_feed_item_id: itemId }])
 
-      const waiting = await bedrock_embeddings_nova_multimodal_v1_single.getJobs('waiting')
-      const rssJob = waiting.find(
+      const queued = await getQueuedJobs()
+      const rssJob = queued.find(
         j => (j.data as Record<string, unknown>).rss_feed_item_id === itemId,
       )
       expect(rssJob).toBeDefined()
@@ -201,8 +205,8 @@ describe('bedrock-embeddings enqueues', () => {
       const itemId = `rss-${randomUUID()}`
       await enqueueBulkCreateRssFeedItemEmbeddings([{ rss_feed_item_id: itemId }])
 
-      const waiting = await bedrock_embeddings_nova_multimodal_v1_single.getJobs('waiting')
-      const rssJob = waiting.find(
+      const queued = await getQueuedJobs()
+      const rssJob = queued.find(
         j => (j.data as Record<string, unknown>).rss_feed_item_id === itemId,
       )
       expect(rssJob).toBeUndefined()
@@ -239,8 +243,8 @@ describe('bedrock-embeddings enqueues', () => {
       const topicId2 = `topic-${randomUUID()}`
       await enqueueCreateTopicEmbedding(topicId2)
 
-      const waiting = await bedrock_embeddings_nova_multimodal_v1_single.getJobs('waiting')
-      const job2 = waiting.find(j => (j.data as Record<string, unknown>).id === topicId2)
+      const queued = await getQueuedJobs()
+      const job2 = queued.find(j => (j.data as Record<string, unknown>).id === topicId2)
       expect(job2).toBeDefined()
     })
   })

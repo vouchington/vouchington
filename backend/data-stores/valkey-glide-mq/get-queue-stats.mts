@@ -74,6 +74,22 @@ export async function getQueueStats(name: string): Promise<QueueStats> {
   }
 }
 
+// Unfinished work on one queue, for backlog guards. GlideMQ parks a freshly enqueued priority job
+// in its scheduled ZSet until the scheduler promotes it (about every 5s), and `delayed` is that
+// ZSet's size. Reading `waiting + active` alone is blind to every priority job enqueued since the
+// last promotion. The ZSet also holds backoff retries, which are still pending work.
+export async function getQueueBacklogDepth(name: string): Promise<number> {
+  try {
+    const counts = await getQueueInstance(name).getJobCounts()
+    return counts.waiting + counts.active + counts.delayed
+  } catch (err) {
+    const localErr = err as Error & { extra?: Record<string, unknown> }
+    localErr.extra = { queueName: name, operation: 'getQueueBacklogDepth' }
+    onError(localErr)
+    throw err
+  }
+}
+
 async function getQueueMetricStats(name: string): Promise<QueueMetricStats> {
   const queue = getQueueInstance(name)
   try {
