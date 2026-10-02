@@ -1,4 +1,4 @@
-import { configure, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   copyrightEmailIntakesClientMock as intakesClient,
@@ -12,9 +12,7 @@ import {
   makeMatchedCopyrightEmailIntake as makeMatchedIntake,
   makeMatchedCopyrightEmailQueueItem as makeMatchedQueueItem,
 } from '@/test-helpers/components/copyright/copyright-email-review'
-import { CopyrightEmailReview } from './copyright-email-review'
-
-configure({ testIdAttribute: 'data-pw' })
+import { CopyrightEmailReview } from '../copyright-email-review'
 
 vi.mock(import('@/lib/api/client/copyright-email-intakes'), () => intakesClient)
 vi.mock(import('@/lib/api/client/copyright-notice-targets'), () => targetsClient)
