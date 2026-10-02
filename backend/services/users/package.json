@@ -61,7 +61,7 @@
     "@voucha/types": "workspace:^",
     "http-assert": "^1.5.0",
     "http-errors": "^2.0.1",
-    "pg": "^8.23.0",
+    "pg": "^8.23.1",
     "sql-template-strings": "^2.2.2",
     "uuid": "^14.0.2"
   },
