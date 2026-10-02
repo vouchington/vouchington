@@ -29,6 +29,7 @@
     "@modules/pagination": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@queues/images": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@services/contribution-gating": "workspace:^",
     "@services/entity-cache": "workspace:^",

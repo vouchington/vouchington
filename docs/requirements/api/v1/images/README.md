@@ -156,6 +156,9 @@ if (!response.ok) {
    - Deletes the new staging object
    - Deletes new database record
    - Returns existing image with same hash
+   - While `copyright.staydownMatching` is on and that image is registered for staydown, records a
+     staff-review match (one primary-database insert) before replying. A failure there is reported
+     and swallowed, and never changes the response or blocks the upload
 6. If unique:
    - Promotes the verified bytes to a SHA-256-keyed object in the final bucket, then persists the hash and final key while leaving status as `processing`
    - Enqueues `images:extract-metadata` worker job (sharp metadata + flips status to `complete`, then runs OpenAI moderation)

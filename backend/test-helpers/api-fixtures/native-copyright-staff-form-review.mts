@@ -46,6 +46,7 @@ export const reviewedStaffCase = {
   legal_holds: [],
   action_intents: [],
   delivery_intents: [],
+  staydown_matches: [],
   email_correspondence: [],
   reasons: ['deadline_due'],
   waiting_since: '2026-07-01T12:00:00.000Z',

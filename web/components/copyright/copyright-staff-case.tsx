@@ -15,6 +15,7 @@ import { CopyrightStaffInformationRequests } from './copyright-staff-information
 import { CopyrightRepeatInfringerActions } from './copyright-repeat-infringer-actions'
 import { CopyrightStaffLegalHoldReview } from './copyright-staff-case-legal-hold'
 import { CopyrightStaffQueueStatus } from './copyright-staff-queue-status'
+import { CopyrightStaffStaydownMatches } from './copyright-staff-staydown-matches'
 import {
   ReviewButtons,
   type SubmitRecovery,
@@ -78,6 +79,7 @@ export function CopyrightStaffCase({
       <CopyrightStaffInformationRequests notice={notice} />
       <CopyrightStaffCorrespondence notice={notice} />
       <CopyrightStaffIntentRecovery {...{ notice, pending, submitRecovery }} />
+      <CopyrightStaffStaydownMatches {...{ notice, pending, submitRecovery }} />
       <CopyrightRepeatInfringerActions
         canAdminister={canAdminister}
         canSubmit={canSubmit}

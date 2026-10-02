@@ -1,3 +1,5 @@
+import type { CopyrightStaydownMatch } from './copyright-staydown'
+
 export type CopyrightNoticeSummary = {
   id: string
   jurisdiction: 'us_dmca'
@@ -146,6 +148,7 @@ export type CopyrightStaffQueueItem = {
     state: 'pending' | 'claimed' | 'sent' | 'failed' | 'bounced'
     delivery_attempt_count: number
   }>
+  staydown_matches: CopyrightStaydownMatch[]
   email_correspondence: Array<{
     submission_id: string | null
     kind: 'supplement' | 'appeal' | 'counter_notice' | 'withdrawal' | 'court_or_ccb_hold'
@@ -166,6 +169,7 @@ export type CopyrightStaffQueueReason =
   | 'action_failed'
   | 'enforcement_pending'
   | 'delivery_failed'
+  | 'staydown_review'
   | 'deadline_due'
   | 'deadline_missed'
 

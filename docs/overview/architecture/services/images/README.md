@@ -172,6 +172,10 @@ curl -X PUT "https://s3.amazonaws.com/..." \
 3. Writes `data` and `upload_completed_at` only when the row is active and nonterminal
 4. Fires `enqueueOnImageCreated` so downstream listeners run only after metadata is populated
 
+The entity-listener image processor then enqueues the `staydown-hash` job for the new image, which
+matches it perceptually against the copyright staydown registry. It never changes the upload; see
+[staydown matching](../../../../requirements/moderation/COPYRIGHT-NOTICES.md#staydown-matching).
+
 If completion or metadata processing fails, the active nonterminal row records
 `upload_failed_at` and `upload_error`; `processing` remains a derived state while only
 `upload_started_at` is set.
@@ -189,6 +193,10 @@ If completion or metadata processing fails, the active nonterminal row records
    - If hash exists → return existing image, delete new upload
    - If hash was deleted → reject with "previously flagged"
    - If unique → keep new upload
+
+A byte-identical re-upload of an image that moderators confirmed as infringing resolves to the
+existing image here. While `copyright.staydownMatching` is on, that is the moment the exact
+SHA-256 match is recorded for staff review; the upload still returns the existing image.
 
 ### Why Hash After Upload?
 

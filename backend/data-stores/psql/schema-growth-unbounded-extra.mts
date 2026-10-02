@@ -85,6 +85,8 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'copyright_repeat_infringer_incidents',
   'copyright_repeat_infringer_reviews',
   'copyright_restrictions',
+  'copyright_staydown_entries',
+  'copyright_staydown_matches',
   'copyright_territorial_decisions',
   'copyright_territorial_escalations',
   'copyright_territorial_notice_acknowledgments',

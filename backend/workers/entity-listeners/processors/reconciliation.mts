@@ -95,7 +95,7 @@ export async function reconcileEntity(
       await dependencies.processPostDeleted({ id: data.entityId })
       return
     case 'image':
-      dependencies.processImageCreated({ id: data.entityId })
+      await dependencies.processImageCreated({ id: data.entityId })
       return
     case 'url':
       await dependencies.processUrlCreated({ id: data.entityId })

@@ -14,6 +14,7 @@ import {
   selectStaffDeliveryIntents,
   selectStaffEmailCorrespondence,
 } from './read-models-staff-intents.mts'
+import { selectStaffStaydownMatches } from './read-models-staff-staydown.mts'
 import {
   selectStaffEvidence,
   selectStaffFormReview,
@@ -63,6 +64,7 @@ export async function getPendingCopyrightStaffCase(
     actionIntents,
     deliveryIntents,
     emailCorrespondence,
+    staydownMatches,
   ] = await Promise.all([
     selectStaffTargets(noticeId, query),
     selectStaffEvidence(noticeId, query),
@@ -74,6 +76,7 @@ export async function getPendingCopyrightStaffCase(
     selectStaffActionIntents(noticeId, query),
     selectStaffDeliveryIntents(noticeId, query),
     selectStaffEmailCorrespondence(noticeId, query),
+    selectStaffStaydownMatches(noticeId, query),
   ])
   return {
     id: notice.id,
@@ -93,6 +96,7 @@ export async function getPendingCopyrightStaffCase(
     legal_holds: legalHolds,
     action_intents: actionIntents,
     delivery_intents: deliveryIntents,
+    staydown_matches: staydownMatches,
     email_correspondence: emailCorrespondence,
   }
 }

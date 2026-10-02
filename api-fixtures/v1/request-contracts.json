@@ -3812,7 +3812,8 @@
         "enforcement_pending",
         "form_intake_review",
         "legal_hold_review",
-        "restriction_review"
+        "restriction_review",
+        "staydown_review"
       ],
       "type": "string"
     },
@@ -31255,6 +31256,20 @@
           }
         },
         "required": ["id", "restrictionId"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-notices/:id/staydown-matches/:matchId/reviews": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "matchId": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "matchId"],
         "type": "object"
       }
     },

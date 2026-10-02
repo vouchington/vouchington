@@ -27,6 +27,7 @@
     "@modules/queue-errors": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
     "@queues/images": "workspace:^",
+    "@services/copyright-notices": "workspace:^",
     "@services/images": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
     "@vouchington/media": "^0.2.0",

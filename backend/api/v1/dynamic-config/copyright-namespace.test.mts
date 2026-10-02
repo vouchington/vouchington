@@ -83,6 +83,7 @@ describe('copyright dynamic-config namespace', () => {
       reviewTargetMinutes: 0,
       evidenceRetentionDeletion: false,
       evidenceRetentionDays: 0,
+      staydownMatching: false,
     })
     const moderatorRequest = createRequest()
     await moderatorRequest.authenticateAs(moderator)

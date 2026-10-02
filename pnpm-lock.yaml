@@ -4708,6 +4708,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/images':
+        specifier: workspace:^
+        version: link:../../queues/images
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
@@ -10795,6 +10798,9 @@ importers:
       pgvector:
         specifier: ^0.3.0
         version: 0.3.0
+      sharp:
+        specifier: ^0.35.5
+        version: 0.35.5(@types/node@26.6.3)
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -12023,6 +12029,9 @@ importers:
       '@services/community-agent-prompts':
         specifier: workspace:^
         version: link:../../services/community-agent-prompts
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../../services/copyright-notices
       '@services/crawlers':
         specifier: workspace:^
         version: link:../../services/crawlers
@@ -12186,6 +12195,9 @@ importers:
       '@queues/images':
         specifier: workspace:^
         version: link:../../queues/images
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../../services/copyright-notices
       '@services/images':
         specifier: workspace:^
         version: link:../../services/images

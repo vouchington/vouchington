@@ -90,6 +90,7 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | oauth-authorization-exchange                 | dispatchOAuthAuthorizationExchanges            | —                                        | 100              |
 | images                                       | cleanup-abandoned-uploads                      | —                                        | 10               |
 | images                                       | extract-metadata                               | —                                        | 5                |
+| images                                       | staydown-hash                                  | —                                        | 5                |
 | kagi-smallweb                                | sync                                           | —                                        | 10               |
 | memberships                                  | processStripeEvent                             | —                                        | 10               |
 | memberships                                  | recoverStripeEvents                            | —                                        | 100              |

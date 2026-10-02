@@ -13,6 +13,7 @@ const reasonLabels: Record<CopyrightStaffQueueReason, string> = {
   action_failed: 'Failed action',
   enforcement_pending: 'Enforcement pending',
   delivery_failed: 'Failed delivery',
+  staydown_review: 'Possible re-upload',
   deadline_due: 'Escalation due',
   deadline_missed: 'Restoration deadline missed',
 }
