@@ -11,9 +11,11 @@ export async function createStaydownPatternImage(seed: number): Promise<Buffer> 
   let state = seed
   const next = () => {
     state = (state * 1_664_525 + 1_013_904_223) % 4_294_967_296
-    return state
+    // The top byte: the low bits of a power-of-two LCG repeat every 256 draws, which would leave
+    // only 256 distinct pictures for the shared test database to collide on.
+    return Math.floor(state / 16_777_216)
   }
-  const cells = Array.from({ length: GRID * GRID }, () => next() % 256)
+  const cells = Array.from({ length: GRID * GRID }, () => next())
   const cell = SIZE / GRID
   const raw = Buffer.alloc(SIZE * SIZE * 3)
   for (let y = 0; y < SIZE; y += 1) {
