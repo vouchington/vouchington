@@ -173,7 +173,7 @@ describe('copyright in-case responses with intake switched off', () => {
       .expect(200)
     expect(rejection.body).toEqual({ reply_queued: true })
     await expect(readCopyrightEmailIntakeReview(rejected.id)).resolves.toEqual([
-      { accepted: false, promoted_copyright_notice_id: null },
+      { decision: 'rejected', promoted_copyright_notice_id: null },
     ])
   })
 

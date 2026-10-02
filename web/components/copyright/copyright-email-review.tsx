@@ -15,6 +15,7 @@ import {
   createCopyrightEmailCorrespondenceDraft,
   type CopyrightEmailCorrespondenceDraft,
 } from './copyright-email-correspondence-model'
+import { CopyrightEmailLegalProcessAction } from './copyright-email-legal-process-action'
 import { CopyrightEmailReviewDetail } from './copyright-email-review-detail'
 import {
   listCopyrightEmailIntakes,
@@ -150,26 +151,39 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
           )}
         </div>
         {detail && (
-          <CopyrightEmailReviewDetail
-            key={detail.id}
-            detail={detail}
-            draft={draft}
-            loading={loading}
-            rationale={rationale}
-            manualFallbackReason={manualFallbackReason}
-            replyEmail={replyEmail}
-            correspondenceDraft={correspondenceDraft}
-            onChangeDraft={setDraft}
-            onChangeRationale={setRationale}
-            onChangeManualFallbackReason={setManualFallbackReason}
-            onChangeReplyEmail={setReplyEmail}
-            onChangeCorrespondenceDraft={setCorrespondenceDraft}
-            onApproveInitial={() => approve()}
-            onRejectInitial={() => reject()}
-            onRequestInformation={message => requestInformation(message)}
-            onAdmitCorrespondence={() => admitCorrespondence()}
-            onRejectCorrespondence={() => rejectCorrespondence()}
-          />
+          <div className='space-y-4'>
+            <CopyrightEmailReviewDetail
+              key={detail.id}
+              detail={detail}
+              draft={draft}
+              loading={loading}
+              rationale={rationale}
+              manualFallbackReason={manualFallbackReason}
+              replyEmail={replyEmail}
+              correspondenceDraft={correspondenceDraft}
+              onChangeDraft={setDraft}
+              onChangeRationale={setRationale}
+              onChangeManualFallbackReason={setManualFallbackReason}
+              onChangeReplyEmail={setReplyEmail}
+              onChangeCorrespondenceDraft={setCorrespondenceDraft}
+              onApproveInitial={() => approve()}
+              onRejectInitial={() => reject()}
+              onRequestInformation={message => requestInformation(message)}
+              onAdmitCorrespondence={() => admitCorrespondence()}
+              onRejectCorrespondence={() => rejectCorrespondence()}
+            />
+            <CopyrightEmailLegalProcessAction
+              key={`legal-process-${detail.id}`}
+              detail={detail}
+              disabled={loading}
+              onRecorded={queue => {
+                setDetail(current => (current?.id === detail.id ? null : current))
+                setSuccess('The email intake was recorded as legal process. No reply was sent.')
+                if (queue) resetToFirstPage?.(queue)
+                else setError('The decision was recorded, but the queue could not be reloaded.')
+              }}
+            />
+          </div>
         )}
       </div>
     </main>

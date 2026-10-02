@@ -52,12 +52,12 @@ async function admitCopyrightEmailIntake(
   await assertNotUnresolvedThreadReply(transaction, intake.id)
   await assertNoThreadCorrespondenceDecision(transaction, intake.id)
   const { rows: priorPromotions } = await transaction<{
-    accepted: boolean
+    decision: string
     promoted_copyright_notice_id: string | null
     submission_id: string | null
   }>(
     sql`/* promoteCopyrightEmailIntake:priorPromotion */
-      SELECT review.accepted, review.promoted_copyright_notice_id, submission.id AS submission_id
+      SELECT review.decision, review.promoted_copyright_notice_id, submission.id AS submission_id
       FROM copyright_notice_email_intake_reviews review
       LEFT JOIN copyright_notice_submissions submission
         ON submission.copyright_notice_id = review.promoted_copyright_notice_id
@@ -67,8 +67,9 @@ async function admitCopyrightEmailIntake(
   )
   const prior = priorPromotions[0]
   if (prior) {
+    assert(prior.decision !== 'legal_process', 409, 'Copyright email intake is legal process')
     assert(
-      prior.accepted && prior.promoted_copyright_notice_id && prior.submission_id,
+      prior.decision === 'approved' && prior.promoted_copyright_notice_id && prior.submission_id,
       409,
       'Copyright email intake was already rejected',
     )
@@ -203,8 +204,8 @@ async function recordEmailPromotion(
   await transaction(sql`/* promoteCopyrightEmailIntake:review */
     INSERT INTO copyright_notice_email_intake_reviews (
       copyright_notice_email_intake_id, copyright_notice_email_intake_recommendation_id, reviewed_at,
-      reviewed_by_id, accepted, rationale_ciphertext, promoted_copyright_notice_id
-    ) VALUES (${intake.id}, ${input.recommendationId}, CURRENT_TIMESTAMP, ${input.currentUser.id}, true,
+      reviewed_by_id, decision, rationale_ciphertext, promoted_copyright_notice_id
+    ) VALUES (${intake.id}, ${input.recommendationId}, CURRENT_TIMESTAMP, ${input.currentUser.id}, 'approved',
       ${encryptSecret(
         JSON.stringify({
           rationale: input.rationale,

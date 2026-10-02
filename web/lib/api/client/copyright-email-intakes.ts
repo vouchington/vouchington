@@ -96,6 +96,14 @@ export function requestCopyrightEmailIntakeInformation(
     { ...input, response_kind: 'needs_information' },
   )
 }
+// Records an initial email intake as legal process, such as a subpoena. The server decides it
+// without a case, assessment, restriction, claimant-visible event, or reply of any kind.
+export function recordCopyrightEmailIntakeLegalProcess(id: string, reason: string) {
+  return clientApi.post<{ decision: 'legal_process' }>(
+    `/api/v1/copyright-email-intakes/${id}/legal-process`,
+    { reason },
+  )
+}
 export function approveCopyrightEmailIntake(id: string, input: CopyrightEmailIntakeApprovalInput) {
   return clientApi.post(`/api/v1/copyright-email-intakes/${id}/approvals`, input)
 }

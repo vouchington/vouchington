@@ -416,8 +416,20 @@ sufficient to identify an alleged infringer, to the extent Voucha has it.
    send it to counsel the same day. A subpoena emailed to the designated inbox becomes an email
    intake in the email review queue. Do not approve it, because approval admits it as a copyright
    notice. Do not reject it either, because rejection queues the standard notice-rejection reply
-   to the parsed sender (or to an address staff type when none was parsed). Record a disposition
-   only after counsel says whether that reply may go out.
+   to the parsed sender (or to an address staff type when none was parsed).
+   - **Record as legal process.** Open the intake on the email review page (`/copyright/email-review`)
+     and choose **Record as legal process**. Enter a short reason of up to 1,000 characters, such as
+     a matter id, then confirm. Do not put the requester's name or the subpoena text in it. The
+     reason is stored encrypted and never logged, shown, or returned in an error. The intake
+     closes with no reply and no email of any kind. It opens no case and creates no assessment,
+     restriction, or claimant-visible event. It leaves the queue, and the
+     [review-target page](#review-target-page) stops counting it. The intake's review row records
+     who decided and when.
+   - **It is final.** A second decision on the intake, including a rejection or an approval, returns
+     `409`, and nothing undoes it. Record it once the subpoena is with counsel.
+   - **Initial intakes only.** The action is not offered on a reply that is linked to a case thread
+     or waiting for its root case. If a subpoena arrives that way, ask counsel before deciding
+     it: rejecting it as correspondence sends no email, but it does write a case event.
 2. **Validity checks.** Before anything is disclosed, record for counsel whether:
    - a clerk of a US district court issued and signed it;
    - it attaches or follows a notification that meets §512(c)(3)(A);

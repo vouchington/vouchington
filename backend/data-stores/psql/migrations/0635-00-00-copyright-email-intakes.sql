@@ -78,16 +78,13 @@ CREATE TABLE copyright_notice_email_intake_reviews (
   copyright_notice_email_intake_recommendation_id uuid REFERENCES copyright_notice_email_intake_recommendations(id) ON DELETE RESTRICT,
   reviewed_at timestamptz NOT NULL,
   reviewed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
-  accepted boolean NOT NULL,
+  decision text NOT NULL CHECK (decision IN ('approved', 'rejected', 'legal_process')),
   rationale_ciphertext text NOT NULL CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 1048576),
   promoted_copyright_notice_id uuid UNIQUE REFERENCES copyright_notices(id) ON DELETE RESTRICT,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (copyright_notice_email_intake_id),
-  CHECK (
-    (accepted AND promoted_copyright_notice_id IS NOT NULL)
-    OR (NOT accepted AND promoted_copyright_notice_id IS NULL)
-  )
+  CHECK ((decision = 'approved') = (promoted_copyright_notice_id IS NOT NULL))
 );
 
 CREATE INDEX idx_copyright_email_intake_attachments__intake ON copyright_notice_email_intake_attachments(copyright_notice_email_intake_id, id);
@@ -122,7 +119,7 @@ COMMENT ON TABLE copyright_notice_email_intakes IS 'Immutable, private records f
 COMMENT ON COLUMN copyright_notice_email_intakes.raw_storage_key IS 'Private immutable original RFC 5322 object. The original preserves every attachment and is retained before the SES source object can be deleted.';
 COMMENT ON TABLE copyright_notice_email_intake_attachments IS 'Private parsed attachment metadata; attachment bytes remain preserved inside the original MIME object until a moderator admits them as case evidence.';
 COMMENT ON TABLE copyright_notice_email_intake_recommendations IS 'Immutable agent extraction and recommendation. It is advisory only and cannot impose a copyright restriction.';
-COMMENT ON TABLE copyright_notice_email_intake_reviews IS 'Append-only moderator approval or rejection of an email extraction. A moderator must review before an email can create or affect a copyright case.';
+COMMENT ON TABLE copyright_notice_email_intake_reviews IS 'Append-only staff decision on an email intake: approval into a case, rejection, or closure as legal process with no reply. This row is the audit record of the decision. A moderator must review before an email can create or affect a copyright case.';
 COMMENT ON COLUMN copyright_notice_email_intakes.ses_message_id IS 'Stable SES delivery identifier used for replay-safe admission.';
 COMMENT ON COLUMN copyright_notice_email_intakes.received_at IS 'Timestamp assigned by the inbound email delivery.';
 COMMENT ON COLUMN copyright_notice_email_intakes.raw_sha256 IS 'SHA-256 digest of the preserved original RFC 5322 message.';
@@ -158,10 +155,10 @@ COMMENT ON COLUMN copyright_notice_email_intake_recommendations.structured_outpu
 COMMENT ON COLUMN copyright_notice_email_intake_reviews.copyright_notice_email_intake_id IS 'Email intake reviewed by a moderator.';
 COMMENT ON COLUMN copyright_notice_email_intake_reviews.copyright_notice_email_intake_recommendation_id IS 'Optional advisory recommendation reviewed as provenance.';
 COMMENT ON COLUMN copyright_notice_email_intake_reviews.reviewed_at IS 'Moderator-supplied review completion timestamp.';
-COMMENT ON COLUMN copyright_notice_email_intake_reviews.reviewed_by_id IS 'Moderator who approved or rejected the intake; erased on account deletion.';
-COMMENT ON COLUMN copyright_notice_email_intake_reviews.accepted IS 'Whether the moderator accepted the structured intake.';
-COMMENT ON COLUMN copyright_notice_email_intake_reviews.rationale_ciphertext IS 'Encrypted moderator rationale.';
-COMMENT ON COLUMN copyright_notice_email_intake_reviews.promoted_copyright_notice_id IS 'Legal case created by an accepted review, if any.';
+COMMENT ON COLUMN copyright_notice_email_intake_reviews.reviewed_by_id IS 'Staff member who decided the intake; erased on account deletion.';
+COMMENT ON COLUMN copyright_notice_email_intake_reviews.decision IS 'Staff decision: approved opened a case, rejected declined the email as a copyright notice and may have queued a reply, legal_process closed it as legal process such as a subpoena with no reply, case, or claimant-visible event.';
+COMMENT ON COLUMN copyright_notice_email_intake_reviews.rationale_ciphertext IS 'Encrypted staff rationale, or for legal_process the encrypted reason; it can name a legal matter and is never logged or returned.';
+COMMENT ON COLUMN copyright_notice_email_intake_reviews.promoted_copyright_notice_id IS 'Legal case created by an approved review; null for every other decision.';
 
 -- Current indexes for fresh schema bootstrap.
 CREATE INDEX IF NOT EXISTS idx_copyright_notice_email_intakes__received_id

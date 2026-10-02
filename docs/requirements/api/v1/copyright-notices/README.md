@@ -103,6 +103,18 @@ staff did not see next to the parsed sender. A repeated decision is replay-safe:
 again and reports whether the original decision queued a reply. A parse recorded after the
 decision sends nothing.
 
+`POST /api/v1/copyright-email-intakes/:id/legal-process` closes an initial intake that is legal
+process, such as a §512(h) subpoena, with no reply and no email of any kind. The body is
+`{ reason: string }`: not blank after trimming, at most 1,000 characters. The reason is encrypted
+like the review rationale and is never logged or returned in an error body. It returns `201` with
+`{ decision: 'legal_process' }`. It is neither an approval nor a rejection: it opens no case and
+creates no assessment, restriction, or claimant-visible event, and the intake leaves the staff email
+queue and the review-target count. The same staff roles as approve and reject may call it; others
+get `403`. An unknown intake is `404` and an invalid reason `422`. An intake that already has any
+decision, including an earlier legal-process one, is `409`, and so is an unresolved or thread-linked
+reply. It is not replay-safe on purpose: a repeat reports the conflict so staff do not believe a
+second matter was recorded.
+
 Staff repeat-infringer actions are separate from that queue payload.
 `GET /api/v1/copyright-notices/:id/repeat-infringer-accounts` lists incidents for one case.
 Reviewers record incident dispositions and warning or no-action review outcomes. Administrators

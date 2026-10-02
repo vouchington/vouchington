@@ -3,15 +3,41 @@ import sql from 'sql-template-strings'
 
 export async function readCopyrightEmailIntakeReview(intakeId: string): Promise<
   {
-    accepted: boolean
+    decision: string
     promoted_copyright_notice_id: string | null
   }[]
 > {
   const { rows } = await read<{
-    accepted: boolean
+    decision: string
     promoted_copyright_notice_id: string | null
   }>(sql`/* readCopyrightEmailIntakeReview */
-    SELECT accepted, promoted_copyright_notice_id
+    SELECT decision, promoted_copyright_notice_id
+    FROM copyright_notice_email_intake_reviews
+    WHERE copyright_notice_email_intake_id = ${intakeId}`)
+  return rows
+}
+
+export async function readCopyrightEmailIntakeReviewRecord(intakeId: string): Promise<
+  {
+    decision: string
+    reviewed_at: Date
+    reviewed_by_id: string | null
+    rationale_ciphertext: string
+    recommendation_id: string | null
+    promoted_copyright_notice_id: string | null
+  }[]
+> {
+  const { rows } = await read<{
+    decision: string
+    reviewed_at: Date
+    reviewed_by_id: string | null
+    rationale_ciphertext: string
+    recommendation_id: string | null
+    promoted_copyright_notice_id: string | null
+  }>(sql`/* readCopyrightEmailIntakeReviewRecord */
+    SELECT decision, reviewed_at, reviewed_by_id, rationale_ciphertext,
+      copyright_notice_email_intake_recommendation_id AS recommendation_id,
+      promoted_copyright_notice_id
     FROM copyright_notice_email_intake_reviews
     WHERE copyright_notice_email_intake_id = ${intakeId}`)
   return rows

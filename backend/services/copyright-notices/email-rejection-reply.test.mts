@@ -105,7 +105,7 @@ describe.each([
     })
     await expect(readCopyrightEmailIntakeResponses(intake.id)).resolves.toEqual([])
     await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.toEqual([
-      { accepted: false, promoted_copyright_notice_id: null },
+      { decision: 'rejected', promoted_copyright_notice_id: null },
     ])
     await expect(decide(intake.id, decision)).resolves.toEqual({
       responseId: null,

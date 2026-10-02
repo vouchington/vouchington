@@ -63,7 +63,7 @@ describe('copyright email promotion', () => {
       expect.arrayContaining([expect.objectContaining({ imposed_by_id: moderator.id })]),
     )
     await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.toEqual([
-      { accepted: true, promoted_copyright_notice_id: approved.noticeId },
+      { decision: 'approved', promoted_copyright_notice_id: approved.noticeId },
     ])
     await expect(
       promoteCopyrightEmailIntake({

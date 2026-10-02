@@ -76,16 +76,17 @@ export async function rejectCopyrightEmailIntake(input: {
   assert(intake, 404, 'Copyright email intake not found')
   await assertNoInitialIntakeThreadBarrier(transaction, input.intakeId)
   await assertRecommendationScope(transaction, input.recommendationId, input.intakeId)
-  const { rows: decisions } = await transaction<{ accepted: boolean; response_id: string | null }>(
+  const { rows: decisions } = await transaction<{ decision: string; response_id: string | null }>(
     sql`/* rejectCopyrightEmailIntake:existing */
-      SELECT review.accepted, response.id AS response_id
+      SELECT review.decision, response.id AS response_id
       FROM copyright_notice_email_intake_reviews review
       LEFT JOIN copyright_notice_delivery_intents response
         ON response.copyright_notice_email_intake_id = review.copyright_notice_email_intake_id
       WHERE review.copyright_notice_email_intake_id = ${input.intakeId}`,
   )
   const decision = decisions[0]
-  assert(!decision?.accepted, 409, 'Copyright email intake was already approved')
+  assert(decision?.decision !== 'approved', 409, 'Copyright email intake was already approved')
+  assert(decision?.decision !== 'legal_process', 409, 'Copyright email intake is legal process')
   if (decision) {
     await transaction.commit()
     return { responseId: null, replyQueued: decision.response_id !== null }
@@ -104,10 +105,10 @@ export async function rejectCopyrightEmailIntake(input: {
   await transaction(sql`/* rejectCopyrightEmailIntake */
     INSERT INTO copyright_notice_email_intake_reviews (
       copyright_notice_email_intake_id, copyright_notice_email_intake_recommendation_id,
-      reviewed_at, reviewed_by_id, accepted, rationale_ciphertext
+      reviewed_at, reviewed_by_id, decision, rationale_ciphertext
     ) VALUES (
       ${input.intakeId}, ${input.recommendationId}, CURRENT_TIMESTAMP, ${input.currentUser.id},
-      false, ${encryptSecret(
+      'rejected', ${encryptSecret(
         JSON.stringify({
           rationale: input.rationale,
           manual_fallback_reason: input.manualFallbackReason,
@@ -132,7 +133,7 @@ export async function rejectCopyrightEmailIntake(input: {
   return { responseId: response, replyQueued: response !== null }
 }
 
-async function assertNoInitialIntakeThreadBarrier(
+export async function assertNoInitialIntakeThreadBarrier(
   transaction: TransactionQuery,
   intakeId: string,
 ): Promise<void> {
