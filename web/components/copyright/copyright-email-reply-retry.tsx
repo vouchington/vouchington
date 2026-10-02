@@ -53,8 +53,8 @@ export function CopyrightEmailReplyRetry({
           ? 'The reply will be sent again to the original sender.'
           : 'That reply was no longer waiting to be retried.',
       )
-    } catch (error) {
-      setError(copyrightEmailActionError(error, 'We could not retry that reply.'))
+    } catch (err) {
+      setError(copyrightEmailActionError(err, 'We could not retry that reply.'))
     } finally {
       setRetrying(false)
     }
