@@ -1,4 +1,4 @@
-import { onGracefulShutdown } from '@data-stores/psql'
+import { shutdownDataStoresForOneOffCommand } from '@data-stores/graceful-shutdown'
 import { formatClassifierUsageReport, readClassifierUsageReport } from '@services/classifier-runs'
 import onError from '@modules/on-error'
 import { parseArgs } from 'node:util'
@@ -32,7 +32,7 @@ async function main() {
     const report = await readClassifierUsageReport(window)
     console.log(values.json ? JSON.stringify(report, null, 2) : formatClassifierUsageReport(report))
   } finally {
-    await onGracefulShutdown()
+    await shutdownDataStoresForOneOffCommand()
   }
 }
 
