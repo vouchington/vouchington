@@ -27,7 +27,9 @@ arguments (a closed schema, so unknown fields fail) before it runs. Ownership an
 stay in the service commands and throw the status and message the route sends. Official accounts,
 administrators included, cannot create or edit a personal referral link, as on REST, so
 `create_referral_link` takes no `user_id`; an administrator can still activate, deactivate and delete
-another user's link. The MCP call path
+another user's link. `create_referral_link` records the request's [content
+provenance](../../../requirements/content/content-provenance.md), the `mcp` channel plus the issuing
+OAuth client for an OAuth token, as the REST route does. The MCP call path
 reports a thrown error and returns its generic `Tool execution failed. Please try again.` text, as
 for every other write tool, while scope, plan and argument refusals keep their own messages.
 

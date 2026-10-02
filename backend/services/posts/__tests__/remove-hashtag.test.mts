@@ -10,6 +10,7 @@ import {
   getPostHashtagSourcesForTest,
   insertTestPost,
   insertTestTopic,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { getMinUUIDv7ForDate } from '@modules/utils/ids'
 import { POST_CONTENT_EDIT_WINDOW_EXPIRED } from '@modules/on-error/error-codes'
@@ -38,7 +39,7 @@ describe('removePostHashtag', () => {
       slug: `remove-category-${suffix}`,
       createdById: creator.id,
     })
-    const post = await createPost(creator, {
+    const post = await createPost(creator, WEB_PROVENANCE, {
       title: `Remove hashtag ${suffix}`,
       categories: [
         { type: 'topic', topic_id: topicId },
@@ -71,7 +72,7 @@ describe('removePostHashtag', () => {
 
   it('round-trips with add and reports a repeated removal without writing', async () => {
     const suffix = createRandomString(8).toLowerCase()
-    const post = await createPost(creator, { title: `Round trip ${suffix}` })
+    const post = await createPost(creator, WEB_PROVENANCE, { title: `Round trip ${suffix}` })
     await addPostHashtag(creator, post.id, `#round-${suffix}`, firstParty)
 
     const first = await removePostHashtag(creator, post.id, `#round-${suffix}`, firstParty)
@@ -86,7 +87,7 @@ describe('removePostHashtag', () => {
 
   it('reports an absent hashtag as not removed without a revision', async () => {
     const suffix = createRandomString(8).toLowerCase()
-    const post = await createPost(creator, {
+    const post = await createPost(creator, WEB_PROVENANCE, {
       title: `Absent tag ${suffix}`,
       categories: [{ type: 'hashtag', hashtag: `#present-${suffix}` }],
     })
@@ -101,11 +102,11 @@ describe('removePostHashtag', () => {
 
   it('refuses a hashtag the post text writes before any mutation', async () => {
     const suffix = createRandomString(8).toLowerCase()
-    const inBody = await createPost(creator, {
+    const inBody = await createPost(creator, WEB_PROVENANCE, {
       title: `Body tag ${suffix}`,
       markdown: `Body mentions #body-${suffix}`,
     })
-    const inTitle = await createPost(creator, {
+    const inTitle = await createPost(creator, WEB_PROVENANCE, {
       title: `Title tag #title-${suffix}`,
       categories: [{ type: 'hashtag', hashtag: `#title-${suffix}` }],
     })
@@ -128,7 +129,7 @@ describe('removePostHashtag', () => {
   it('rejects an invalid hashtag, a non-author, an expired edit and a deleted post', async () => {
     const suffix = createRandomString(8).toLowerCase()
     const other = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
-    const post = await createPost(creator, {
+    const post = await createPost(creator, WEB_PROVENANCE, {
       title: `Guarded ${suffix}`,
       categories: [{ type: 'hashtag', hashtag: `#guarded-${suffix}` }],
     })
@@ -140,7 +141,7 @@ describe('removePostHashtag', () => {
       slug: `aged-remove-${suffix}`,
       createdById: creator.id,
     })
-    const deleted = await createPost(creator, { title: `Deleted remove ${suffix}` })
+    const deleted = await createPost(creator, WEB_PROVENANCE, { title: `Deleted remove ${suffix}` })
     await deleteTestPost(deleted.id)
 
     await expect(
@@ -160,7 +161,7 @@ describe('removePostHashtag', () => {
 
   it('requires the exact owned-private grant and never reaches another user private post', async () => {
     const suffix = createRandomString(8).toLowerCase()
-    const post = await createPost(creator, {
+    const post = await createPost(creator, WEB_PROVENANCE, {
       title: `Private remove ${suffix}`,
       broadcast: 'users',
       privacy: 'private',
@@ -187,7 +188,7 @@ describe('removePostHashtag', () => {
 
   it('lets an administrator remove a hashtag from a private post first-party', async () => {
     const suffix = createRandomString(8).toLowerCase()
-    const post = await createPost(creator, {
+    const post = await createPost(creator, WEB_PROVENANCE, {
       title: `Admin private remove ${suffix}`,
       broadcast: 'users',
       privacy: 'private',

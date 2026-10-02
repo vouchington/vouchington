@@ -1,3 +1,4 @@
+import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 import type { BasicUser } from '@services/users/types'
 import {
   createUserReferralLink,
@@ -49,7 +50,7 @@ const tool: Tool<CreateReferralLinkArgs, { success: true; referral_link: UserRef
   },
   function: (currentUser: BasicUser) => async (args: CreateReferralLinkArgs) => {
     const user = await requireActiveToolUser(currentUser)
-    const referral_link = await createUserReferralLink(user, {
+    const referral_link = await createUserReferralLink(user, getRequestContentProvenance(), {
       user_id: user.id,
       referral_program_id: args.referral_program_id,
       url: args.url,

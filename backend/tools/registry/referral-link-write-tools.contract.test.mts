@@ -4,17 +4,21 @@ import { createReferralProgramFixture } from '@voucha/test-helpers/entities/refe
 import {
   createTestMembership,
   createTestUser,
+  readTestContentProvenance,
   suspendTestUser,
   unsuspendTestUser,
 } from '@voucha/test-helpers'
-import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
+import {
+  callRejectedMcpTool,
+  callStructuredMcpTool,
+  expectMcpToolFunctionThrows,
+} from '@voucha/test-helpers/mcp-tool-contract'
 import { OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN } from '@modules/on-error/error-codes'
 import { getTopicBySlug } from '@services/topics/get'
 import { getUserReferralLink, type UserReferralLink } from '@services/user-referral-program-links'
 import { addUserRole } from '@services/users/roles-permissions'
 import deleteReferralLinkTool from '../delete-referral-link.mts'
 import updateReferralLinkTool from '../update-referral-link.mts'
-import { getRegisteredToolByName } from './index.mts'
 
 const SCOPES = ['referral-links:read', 'referral-links:write'] as const
 
@@ -24,17 +28,6 @@ type LinkResult = { referral_link: UserReferralLink }
 async function createCaller(plan: 'plus' | null = 'plus') {
   return { ...(await createTestUser()), membership_plan: plan }
 }
-
-/**
- * The refusal the tool throws itself. The call path reduces a thrown error to one generic failure
- * text, so the status and message are asserted on the tool function and the refusal on the call.
- */
-const expectToolThrows = (
-  caller: Caller,
-  name: string,
-  args: Record<string, unknown>,
-  expected: { status?: number; message?: string; code?: string },
-) => expect(getRegisteredToolByName(name)!.function(caller)(args)).rejects.toMatchObject(expected)
 
 const unique = () => crypto.randomUUID().slice(0, 8)
 
@@ -95,6 +88,10 @@ describe('referral link write tools contract — real DB', () => {
     expect(Object.keys(link).toSorted()).toEqual(Object.keys(rest.body.referral_link).toSorted())
     expect(link).toMatchObject({ user_id: caller.id, label: 'Tool', deactivated_at: null })
     expect(link.activated_at).toEqual(expect.any(String))
+    expect(await readTestContentProvenance('user_referral_program_links', link.id)).toEqual({
+      createdVia: 'mcp',
+      oauthClientId: null,
+    })
   })
 
   it('create_referral_link reactivates a deactivated link and keeps its label unless one is sent', async () => {
@@ -168,7 +165,7 @@ describe('referral link write tools contract — real DB', () => {
 
     for (const [name, args] of linkCalls(id)) {
       await callRejectedMcpTool(caller, name, args, SCOPES)
-      await expectToolThrows(caller, name, args, { status: 403 })
+      await expectMcpToolFunctionThrows(caller, name, args, { status: 403 })
     }
     await expect(
       updateReferralLinkTool.function(caller)({ link_id: crypto.randomUUID(), label: 'x' }),
@@ -187,8 +184,8 @@ describe('referral link write tools contract — real DB', () => {
     const { id } = await createLink(owner, { label: 'Owner link' })
     const official = { status: 403, code: OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN }
 
-    await expectToolThrows(admin, 'create_referral_link', createArgs(), official)
-    await expectToolThrows(
+    await expectMcpToolFunctionThrows(admin, 'create_referral_link', createArgs(), official)
+    await expectMcpToolFunctionThrows(
       admin,
       'update_referral_link',
       { link_id: id, label: 'Staff label' },
@@ -230,7 +227,7 @@ describe('referral link write tools contract — real DB', () => {
     const { id } = await createLink(caller)
 
     await callRejectedMcpTool(caller, 'request_referral_link_unfurl', { link_id: id }, SCOPES)
-    await expectToolThrows(
+    await expectMcpToolFunctionThrows(
       caller,
       'request_referral_link_unfurl',
       { link_id: id },
@@ -266,7 +263,7 @@ describe('referral link write tools contract — real DB', () => {
 
     for (const [name, args] of calls) {
       await callRejectedMcpTool(caller, name, args, SCOPES)
-      await expectToolThrows(caller, name, args, {
+      await expectMcpToolFunctionThrows(caller, name, args, {
         status: 403,
         message: 'Your account has been suspended',
       })

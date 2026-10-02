@@ -7,6 +7,7 @@ import {
   getPostHashtagSourcesForTest,
   suspendTestUser,
   unsuspendTestUser,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import type { ApiScope } from '@modules/scopes'
@@ -61,7 +62,7 @@ describe('remove_entity_relation contract — real DB', () => {
   })
 
   const postWithTag = (suffix: string, extra: Record<string, unknown> = {}) =>
-    createPost(owner, {
+    createPost(owner, WEB_PROVENANCE, {
       title: `Remove tool ${suffix}`,
       categories: [{ type: 'hashtag', hashtag: `#drop-${suffix}` }],
       ...extra,
@@ -69,7 +70,7 @@ describe('remove_entity_relation contract — real DB', () => {
 
   it('removes a hashtag add_entity_relation added, then reports a repeat as not removed', async () => {
     const suffix = suffixed()
-    const post = await createPost(owner, { title: `Round trip ${suffix}` })
+    const post = await createPost(owner, WEB_PROVENANCE, { title: `Round trip ${suffix}` })
     const tag = `#round-${suffix}`
     await callStructuredMcpTool(
       owner,
@@ -99,7 +100,7 @@ describe('remove_entity_relation contract — real DB', () => {
 
   it('refuses a hashtag the post text writes, leaving the post unchanged', async () => {
     const suffix = suffixed()
-    const post = await createPost(owner, {
+    const post = await createPost(owner, WEB_PROVENANCE, {
       title: `Inline ${suffix}`,
       markdown: `Mentions #inline-${suffix}`,
     })
@@ -174,7 +175,7 @@ describe('remove_entity_relation contract — real DB', () => {
   it('refuses a suspended user before any change', async () => {
     const author = await createCaller()
     const suffix = suffixed()
-    const post = await createPost(author, {
+    const post = await createPost(author, WEB_PROVENANCE, {
       title: `Suspended ${suffix}`,
       categories: [{ type: 'hashtag', hashtag: `#drop-${suffix}` }],
     })

@@ -6,6 +6,7 @@ import {
   createTestUser,
   suspendTestUser,
   unsuspendTestUser,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { getPostByAny } from '@services/posts'
@@ -31,7 +32,7 @@ async function createCaller(plan: 'plus' | null = 'plus') {
 
 async function submit(author: Caller): Promise<TopicRecommendationPost> {
   const suffix = createRandomString(8).toLowerCase()
-  return createTopicRecommendation(author, {
+  return createTopicRecommendation(author, WEB_PROVENANCE, {
     markdown: `Why ${suffix}`,
     topic_title: `Tool topic ${suffix}`,
     topic_slug: `tool-topic-${suffix}`,
