@@ -31,10 +31,18 @@ public community data: the tools read as a signed-out reader whatever the creden
 membership, so the scope never exposes a private community. `mcp.user:read` covers it like every
 other user read scope.
 
+`hostnames:read` and `users:read` are user-audience resource scopes for the hostname and user MCP
+read tools. Both tools read as a signed-out reader whatever the credential owner's role, so neither
+scope exposes a blocked hostname or a private profile field, and `mcp.user:read` covers them like
+every other user read scope. `lists:read` also covers the list read tools; it never reads a private
+list on its own.
+
 `post-relations.owned-private:write` is an exact, non-inheritable user capability. It requires
 `entity-relations:write` (and therefore read) for API keys and OAuth grants, but broad
 `mcp.user:write` never covers it. The `set_bookmark` and `add_list_item` MCP tools check the same
-grant before they touch an own private post; `bookmarks:write` and `lists:write` never imply it.
+grant before they touch an own private post, and `get_my_lists`, `get_list` and `get_list_items`
+check it before they return an own private list; `bookmarks:write`, `lists:write` and `lists:read`
+never imply it.
 
 The same coverage rule (`hasEveryScope`) decides whether an OAuth client's registered scopes cover
 a requested scope. `listScopesForAudience` feeds OAuth discovery metadata, and

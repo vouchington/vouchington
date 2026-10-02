@@ -4,7 +4,6 @@ import {
   createTestUser,
   insertTestVerifiedIdentity,
   restoreUser,
-  safeUsername,
   setUserMarkdown,
   setUserVerificationFields,
   softDeleteUser,
@@ -38,7 +37,6 @@ const ids = (page: { results: Row[] }) => page.results.map(row => row.id)
 
 describe('get_user and search_users — real DB', () => {
   const random = createRandomString(6).toLowerCase()
-  const name = (label: string) => safeUsername(`${label}${random}`)
   let caller: McpContractCaller
   let admin: McpContractCaller
   let ada: Awaited<ReturnType<typeof createTestUser>>

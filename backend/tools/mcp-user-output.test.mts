@@ -4,6 +4,7 @@ import getUserTool from './get-user.mts'
 import { mcpUserSchema, USER_PAGE_LIMIT } from './mcp-user-output.mts'
 import { inlineSchemaReferences } from './route-response-schema.mts'
 import searchUsersTool from './search-users.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 
 type JsonSchema = Record<string, unknown>
 type OpenApi = {
@@ -25,8 +26,10 @@ function documentedUser(field: string): unknown {
   return inlineSchemaReferences(documented, openApi.components.schemas)
 }
 
-function branches(tool: typeof getUserTool): JsonSchema[] {
-  return (tool.meta?.outputSchema as unknown as { oneOf: JsonSchema[] }).oneOf
+function branches(tool: { meta?: Tool['meta'] }): JsonSchema[] {
+  const schema = tool.meta?.outputSchema as unknown as { oneOf?: JsonSchema[] } | undefined
+  if (!schema?.oneOf) throw new Error('the tool has no found-or-not-found output schema')
+  return schema.oneOf
 }
 
 const TOOLS = [

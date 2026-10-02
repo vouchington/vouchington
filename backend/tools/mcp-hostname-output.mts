@@ -3,7 +3,12 @@ import { getHostnameElectionByIdCachedBatch } from '@services/entity-fetch'
 import { toPublicViewHostname, type ViewHostname } from '@services/urls-hostnames'
 import { nullable } from './output-schema-shapes.mts'
 import { closedObject, pickProperties } from './read-tool-output-schema.mts'
-import { pageProperties, sanitizedTitle, type McpPage, type McpPageLimit } from './mcp-read-output.mts'
+import {
+  pageProperties,
+  sanitizedTitle,
+  type McpPage,
+  type McpPageLimit,
+} from './mcp-read-output.mts'
 
 /** Both hostname read tools page like the signed-out REST routes: 25 at most, 25 by default. */
 export const HOSTNAME_PAGE_LIMIT: McpPageLimit = { min: 1, max: 25, default: 25 }

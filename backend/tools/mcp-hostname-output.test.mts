@@ -4,6 +4,7 @@ import getTopHostnamesTool from './get-top-hostnames.mts'
 import { HOSTNAME_PAGE_LIMIT, mcpHostnameSchema } from './mcp-hostname-output.mts'
 import { inlineSchemaReferences } from './route-response-schema.mts'
 import searchHostnamesTool from './search-hostnames.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 
 type JsonSchema = Record<string, unknown>
 type OpenApi = {
@@ -23,8 +24,10 @@ function documented(component: string, property: string): unknown {
   return inlineSchemaReferences(documentedProperty, openApi.components.schemas)
 }
 
-function branches(tool: typeof searchHostnamesTool): JsonSchema[] {
-  return (tool.meta?.outputSchema as unknown as { oneOf: JsonSchema[] }).oneOf
+function branches(tool: { meta?: Tool['meta'] }): JsonSchema[] {
+  const schema = tool.meta?.outputSchema as unknown as { oneOf?: JsonSchema[] } | undefined
+  if (!schema?.oneOf) throw new Error('the tool has no found-or-not-found output schema')
+  return schema.oneOf
 }
 
 const TOOLS = [

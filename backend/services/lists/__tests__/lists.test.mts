@@ -170,7 +170,10 @@ describe('lists service', () => {
       const lists = []
       for (const visibility of visibilities) {
         lists.push(
-          await createList(listUser.id, { name: `Visible ${createRandomString(8)}`, visibility }),
+          await createList(listUser.id, WEB_PROVENANCE, {
+            name: `Visible ${createRandomString(8)}`,
+            visibility,
+          }),
         )
       }
       const readable = lists.filter(list => list.visibility !== 'private').map(list => list.id)

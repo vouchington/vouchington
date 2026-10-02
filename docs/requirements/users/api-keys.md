@@ -29,19 +29,21 @@ API keys use a permission-based access control system. Each key has a `permissio
 
 ### Available Permissions
 
-| Permission                                 | Description                                                                |
-| ------------------------------------------ | -------------------------------------------------------------------------- |
-| `rss:read`                                 | Access RSS feed endpoints (`/rss/posts`, `/rss/news`)                      |
-| `topics:read`                              | Read topic and recommendation MCP tools                                    |
-| `posts:read`                               | Read post MCP tools                                                        |
-| `communities:read`                         | Read public community MCP tools                                            |
-| `cards:read/write`                         | Read or manage cards; write requires read                                  |
-| `entity-relations:read/write`              | Read or add relations; write requires read                                 |
-| `bookmarks:read/write`, `lists:read/write` | Set bookmarks or manage lists and items; write requires read               |
-| `post-relations.owned-private:write`       | Add relations, tags, bookmarks, or list items for owned private posts only |
-| `financial-profile:read/write`             | Credit score, income, credit limit and history; exact grants               |
-| `spending:read/write`                      | Spending categories, amounts, frequency and notes; exact grants            |
-| `mcp.user:read/write`                      | User MCP access excluding exact-grant permissions                          |
+| Permission                                 | Description                                                                                       |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| `rss:read`                                 | Access RSS feed endpoints (`/rss/posts`, `/rss/news`)                                             |
+| `topics:read`                              | Read topic and recommendation MCP tools                                                           |
+| `posts:read`                               | Read post MCP tools                                                                               |
+| `communities:read`                         | Read public community MCP tools                                                                   |
+| `hostnames:read`                           | Read hostname MCP tools                                                                           |
+| `users:read`                               | Read public user profile MCP tools                                                                |
+| `cards:read/write`                         | Read or manage cards; write requires read                                                         |
+| `entity-relations:read/write`              | Read or add relations; write requires read                                                        |
+| `bookmarks:read/write`, `lists:read/write` | Set bookmarks or manage lists and items; write requires read                                      |
+| `post-relations.owned-private:write`       | Add relations, tags, bookmarks, or list items for owned private posts, and read own private lists |
+| `financial-profile:read/write`             | Credit score, income, credit limit and history; exact grants                                      |
+| `spending:read/write`                      | Spending categories, amounts, frequency and notes; exact grants                                   |
+| `mcp.user:read/write`                      | User MCP access excluding exact-grant permissions                                                 |
 
 Scopes use the strict lowercase `<resource>:<action>` grammar. Dot-delimited resources compose the
 surface and audience, such as `mcp.user` and `mcp.admin`. Unknown, whitespace-padded, case-normalized,
