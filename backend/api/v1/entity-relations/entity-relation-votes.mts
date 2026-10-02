@@ -1,4 +1,5 @@
 import app from '../../app.mts'
+import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
 import type { Context } from '@jongleberry/api-server'
 import {
   createVoteClearHandler,
@@ -63,9 +64,12 @@ const entityRelationVoteOptions: CreateVoteHandlerOptions = {
   votePolicy: 'relation',
   getCurrentVote: getEntityRelationElectionVote,
   upsertVotes: async (userId, votes, context) => {
+    const target = await resolveEntityRelationElectionTargetById(votes[0]!.entityId)
+    const metadata = entityRelationMetadatum.find(item => item.table_name === target?.relationTable)
+    if (!metadata) return []
     const isUserTagVote =
       votes.length === 1 && Boolean(await getUserTagRelationById(votes[0]!.entityId))
-    return upsertEntityRelationElectionVotes(userId, votes, context, undefined, {
+    return upsertEntityRelationElectionVotes(userId, votes, context, metadata, {
       enqueueVoteStats: !isUserTagVote,
     })
   },

@@ -11,7 +11,7 @@ export function withElectionVoteRequestLock<Result>(
     lockSql: '/* lockElectionVoteRequest */ SELECT pg_advisory_lock(hashtextextended($1, 0))',
     unlockSql:
       '/* unlockElectionVoteRequest */ SELECT pg_advisory_unlock(hashtextextended($1, 0)) AS unlocked',
-    values: [`vote-request:${entityType}:${userId}:${entityId}`],
+    values: [`vote-request:${entityType}:${userId.toLowerCase()}:${entityId.toLowerCase()}`],
     unlockNotHeldMessage: 'Election vote request lock was not held',
     whenOperationAndUnlockFail: 'attach-unlock-error-as-cause',
   })

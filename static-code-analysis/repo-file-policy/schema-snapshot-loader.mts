@@ -151,14 +151,9 @@ function validatePhysicalPartition(value: unknown, path: string, errors: string[
 
 function validatePartitionPolicy(value: unknown, path: string, errors: string[]): void {
   if (!isRecord(value)) return addError(errors, `${path} must be an object`)
-  validateOneOf(value.strategy, `${path}.strategy`, ['RANGE', 'LIST -> RANGE'], errors)
+  validateOneOf(value.strategy, `${path}.strategy`, ['RANGE'], errors)
   validateString(value.key, `${path}.key`, errors)
-  validateOneOf(
-    value.children,
-    `${path}.children`,
-    ['default', 'monthly', 'list-default-range'],
-    errors,
-  )
+  validateOneOf(value.children, `${path}.children`, ['default', 'monthly'], errors)
   validateNullableOneOf(
     value.retentionOwner,
     `${path}.retentionOwner`,

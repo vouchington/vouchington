@@ -21,10 +21,13 @@ Config-driven service for managing election voting across 7 entity types.
 Each election-capable relation has its own generated `<relation>__votes` parent, partitioned by
 RANGE on `entity_relation_id`. Its table-level composite foreign key on
 `(subject_id, entity_relation_id)` enforces the relation target and cascades target deletion.
+Generated composite FK names are explicit, unique, and bounded to PostgreSQL’s 63-byte limit.
 Scoped readers and writers select that concrete parent; export and other cross-family readers use
 `view_entity_relation_votes`, whose `entity_relation` tag uses the metadata-generated
 `elected_entity_relations` enum. Relation votes remain binary, and the neutral/semantic provenance
-flags default to false. The vote API is unchanged. See the
+flags default to false. Validated UUIDs are normalized to lowercase before request locks and
+relation-vote batch deduplication. A relation-ID vote route resolves the concrete relation metadata
+and writes only that relation’s vote table under one mutation lock. The vote API is unchanged. See the
 [R3 storage contract](../../../../development/postgres-schema-rules.md#r3--normalize-ids-are-fk-columns-json-is-for-schemaless-data).
 
 ### Shared Factories ([`shared/`](../../../../../backend/services/elections-votes/shared/))

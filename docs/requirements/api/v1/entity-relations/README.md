@@ -84,6 +84,9 @@ Admins list all voters; other authenticated users see only their own vote.
 
 `PUT` and `DELETE /api/v1/entity-relations/:id/vote` and this route name a relation by ID alone. A relation ID is unique only within its relation table, so all three return `404` when no election relation has the ID and `409` when more than one election relation table has it.
 
+Vote mutation UUIDs are case-insensitive and normalized before locking and writing. Once the
+relation is resolved, PUT and DELETE lock and write only its concrete vote table.
+
 Query parameters:
 
 - `after` — opaque cursor from `page_info.end_cursor`; advances to the next page. Returns 400 for an invalid or cross-resource/cross-branch cursor.

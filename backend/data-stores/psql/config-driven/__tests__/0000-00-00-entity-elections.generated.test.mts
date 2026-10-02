@@ -7,6 +7,7 @@ import {
   entityRelationMetadatum,
   getEntityRelationVoteTableName,
 } from '@voucha/types/entities/entity-relations-metadata'
+import { getElectionForeignKeyName } from '../utils/election-sql-identifiers.mts'
 import { VOTE_SCHEMA_CONFIGS } from '../utils/election-schema-config.mts'
 
 describe('0000-00-00-entity-elections', () => {
@@ -28,6 +29,24 @@ describe('0000-00-00-entity-elections', () => {
       ...generated.matchAll(/CREATE\s+(?:UNIQUE\s+)?INDEX\s+IF\s+NOT\s+EXISTS\s+([a-z_0-9]+)/gi),
     ].map(match => match[1])
     expect(new Set(indexes).size).toBe(indexes.length)
+  })
+
+  it('names concrete vote composite foreign keys explicitly and uniquely', () => {
+    const sql = generateEntityRelationsSql()
+    const names = entityRelationMetadatum
+      .filter(metadata => metadata.election)
+      .map(metadata => {
+        const table = getEntityRelationVoteTableName(metadata)
+        const name = getElectionForeignKeyName(table, 'subject_entity_relation')
+        expect(Buffer.byteLength(name)).toBeLessThanOrEqual(63)
+        expect(sql).toContain(`CONSTRAINT ${name} FOREIGN KEY (subject_id, entity_relation_id)`)
+        return name
+      })
+    expect(new Set(names).size).toBe(names.length)
+    expect(getElectionForeignKeyName('post_votes', 'subject_entity_relation')).toBe(
+      'fk_post_votes__subject_entity_relation',
+    )
+    expect(() => getElectionForeignKeyName('abc', 'x'.repeat(64))).toThrow('cannot fit')
   })
 
   it('stores the current outbound ActivityPub Like generation on post vote events', () => {

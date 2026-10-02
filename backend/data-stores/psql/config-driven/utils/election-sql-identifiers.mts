@@ -28,8 +28,16 @@ export const ELECTION_ENTITY_TABLE_IDENTIFIERS: ReadonlySet<string> = new Set(
 
 /** Preserves every owner word and separator while fitting PostgreSQL's identifier limit. */
 export function getElectionIndexName(table: string, suffix: string): string {
+  return getElectionSqlIdentifier('idx', table, suffix)
+}
+
+export function getElectionForeignKeyName(table: string, suffix: string): string {
+  return getElectionSqlIdentifier('fk', table, suffix)
+}
+
+function getElectionSqlIdentifier(prefix: string, table: string, suffix: string): string {
   const words = table.split(/(_+)/)
-  const render = () => `idx_${words.join('')}__${suffix}`
+  const render = () => `${prefix}_${words.join('')}__${suffix}`
   while (Buffer.byteLength(render()) > 63) {
     let longest = -1
     for (let index = 0; index < words.length; index += 2) {
@@ -39,7 +47,7 @@ export function getElectionIndexName(table: string, suffix: string): string {
       )
         longest = index
     }
-    if (longest < 0) throw new Error(`Election index suffix cannot fit: ${table} ${suffix}`)
+    if (longest < 0) throw new Error(`Election identifier suffix cannot fit: ${table} ${suffix}`)
     words[longest] = words[longest]!.slice(0, -1)
   }
   return render()
