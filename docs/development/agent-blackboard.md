@@ -261,8 +261,8 @@ journal notes — see the [`blackboard` skill](../../.agents/skills/blackboard/S
 `dev/check-blackboard.mts` without runner arguments is an advisory SessionStart availability probe.
 It uses bounded `sessions.list({ limit: 1 })`; emitting context cannot mechanically stop an agent.
 A sandboxed probe reports unavailable assessment instead of a false deployment outage, because its
-credential and egress are deliberately withheld by Claude's
-[sandbox credential deny list](agent-sandbox.md#sandbox-credential-deny-list).
+credential and egress are deliberately withheld by the machine-configured Claude sandbox's
+[credential deny list](agent-sandbox.md#sandbox-credential-deny-list).
 `CHECK_BLACKBOARD_SKIP=1` skips only this advisory probe.
 That diagnostic does not discard interactive pending feedback.
 

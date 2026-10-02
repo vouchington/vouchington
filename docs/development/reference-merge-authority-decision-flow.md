@@ -39,7 +39,8 @@ and #434.
 **Confirm strength differs by runtime.** Claude's `permissionDecision: "allow"` proceeds silently no
 matter what auto-mode is active, so the hook emits it only for an attended session. An unattended
 Claude session (`claude -p`) gets empty output, and its permission mode decides. Codex's confirm
-relies on `approval_policy = "on-request"` in `.codex/config.toml`. A Codex session explicitly
+relies on the machine's Codex `approval_policy = "on-request"` (user config written by
+vouchington-machines, see [agent-sandbox.md](agent-sandbox.md)). A Codex session explicitly
 started with `--ask-for-approval never` or `--dangerously-bypass-approvals-and-sandbox` has opted
 out of that, and the hook has no Codex-side
 equivalent to force a prompt either way. Interactive Codex merge may still surface a confirmation,

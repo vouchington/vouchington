@@ -23,9 +23,11 @@
   provenance; do not fabricate those lines.
 - Use `${TMPDIR:-/tmp}` / `os.tmpdir()` for scratch artifacts and agent-created throwaway worktrees.
   Do not put extra checkouts inside the repo or home directory. Keep harness-owned worktrees intact.
-- Use the documented [sandbox recovery](../../../docs/development/agent-sandbox.md) for host git/gh,
-  pnpm stores, Docker, or edit-helper failures. A sandbox error is not evidence that credentials are
-  missing. Do not inspect or print secrets. Retry only the authorized action with the needed access.
+- Sandbox, approval, and model policy is machine config from vouchington-machines
+  ([contract](https://github.com/vouchington/vouchington-machines/blob/main/docs/agent-config.md);
+  [ownership](../../../docs/development/agent-sandbox.md)), not this checkout. For host git/gh, pnpm
+  store, Docker, or edit-helper failures, retry only the authorized action with the needed access. A
+  sandbox error is not evidence that credentials are missing. Do not inspect or print secrets.
 - Keep the tmux title current with `./dev/tmux-name <topic>` outside the sandbox; add `-pr<number>`
   after PR creation. Follow checkpoint hook reminders rather than duplicating their state.
 - Keep large logs and analysis results in private temporary artifacts and return bounded summaries.

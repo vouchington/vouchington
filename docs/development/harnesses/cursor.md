@@ -13,13 +13,12 @@ in this repository. It does **not** get copied skills or `AGENTS.md` files.
   second hook source double-fires.
 - MCP uses [`mcp.json`](../../../.cursor/mcp.json)'s root-resolving Agent Blackboard wrapper. Its exact eight-tool
   allowlist is kept in both [`cli.json`](../../../.cursor/cli.json) and [`permissions.json`](../../../.cursor/permissions.json).
-- CLI allow/deny tokens: [`cli.json`](../../../.cursor/cli.json). Auto-review guidance:
-  [`permissions.json`](../../../.cursor/permissions.json).
-- OS sandbox: [`sandbox.json`](../../../.cursor/sandbox.json). Matches Codex `workspace-write`
-  extra writable roots (pnpm store, pnpm cache/state, no-mistakes cache, cargo,
-  macOS temp) and allows outbound network. Private/RFC1918 and
-  localhost stay hard-blocked by Cursor, so Docker, Postgres, Valkey, and local
-  stack commands still need unsandboxed runs — see
+- CLI deny tokens and the MCP allowlist: [`cli.json`](../../../.cursor/cli.json). Auto-review
+  guidance: [`permissions.json`](../../../.cursor/permissions.json). Neither grants Shell commands.
+- OS sandbox: not a project file. `~/.cursor/sandbox.json` is written by vouchington-machines
+  `./configure-agents.sh` (see [Agent Sandbox](../agent-sandbox.md)). Private/RFC1918 and
+  localhost stay hard-blocked by Cursor, so Docker, Postgres, Valkey, and local stack commands
+  still need unsandboxed runs; see
   [start-of-work.md](../../../.agents/skills/agent-workflow/start-of-work.md).
 - Agents Window / `agent --worktree` setup: [`worktrees.json`](../../../.cursor/worktrees.json)
   runs `./dev/initialize monorepo` through the generic `setup-worktree`

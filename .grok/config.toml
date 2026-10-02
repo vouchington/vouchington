@@ -1,3 +1,5 @@
+# Native Agent Blackboard registration and grants only. Sandbox profile and approval policy are
+# host-owned user config; see docs/development/agent-sandbox.md.
 [mcp_servers.agent-blackboard]
 command = "bash"
 args = ["-c", 'exec "$(git rev-parse --show-toplevel)/dev/blackboard-mcp"']

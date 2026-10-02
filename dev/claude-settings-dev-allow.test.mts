@@ -11,8 +11,9 @@ import { plainForcePushReason } from './plain-force-push.mts'
 // blanket dev/ allow rules skip review for every checked-in dev/ entrypoint; each dev/ command
 // that leaves the OS sandbox also keeps a narrow allow rule, because auto mode may drop the blanket
 // ones and Claude Code documents that it keeps narrow rules. The `/../` deny rules refuse the plain
-// spelling of a path that escapes dev/. Rationale:
-// docs/development/agent-sandbox.md#claude-review-skip-for-dev-commands.
+// spelling of a path that escapes dev/. `sandbox.excludedCommands` holds only this repository's
+// dev/ scripts (host sandbox policy is machine-owned; see agent-sandbox-config.test.mts).
+// Rationale: docs/development/agent-sandbox.md#claude-review-skip-for-dev-commands.
 
 type ClaudeSettings = {
   permissions: { allow: string[]; deny: string[] }

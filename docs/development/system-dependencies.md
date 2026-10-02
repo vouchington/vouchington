@@ -5,6 +5,11 @@ Host-level package installation and maintenance are owned by
 That host-only repository provisions developer machines. Voucha does not duplicate brew, apt,
 cargo, Docker, or runtime installers.
 
+Agent runtime policy (sandbox, approvals, models) is host-owned too. After provisioning, run
+`./configure-agents.sh` from vouchington-machines (`--dry-run` first; `./diagnose-agents.sh` to
+check drift). Auto Harness profiles use a dedicated `HOME` and need `--home <profile home>`. See
+[Agent Sandbox](agent-sandbox.md) for the project/machine split.
+
 ## Product contract
 
 Voucha expects the host repository to provide these capabilities:
