@@ -71,6 +71,10 @@ export { enforceCopyrightAssessment } from './enforce-assessment.mts'
 export { recoverMissingDecisionAssessments } from './enforcement-recovery.mts'
 export { searchPendingCopyrightEnforcementAssessmentIds } from './enforcement-pending.mts'
 export {
+  liftSuspendedClaimantAutomaticRestrictions,
+  searchSuspendedClaimantAutomaticRestrictionNoticeIds,
+} from './claimant-suspension-lifts.mts'
+export {
   recoverRejectedCopyrightFormReviewEffect,
   searchRecoverableCopyrightFormReviewIntakeIds,
 } from './form-reviews-recovery.mts'

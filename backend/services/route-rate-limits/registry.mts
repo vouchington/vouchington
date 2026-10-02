@@ -118,8 +118,8 @@ export const ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
   'PATCH:/api/v1/reports/:id': { category: 'write' },
   'GET:/api/v1/communities/:idOrSlug/reports/pending': { category: 'read' },
   'PATCH:/api/v1/communities/:idOrSlug/reports/:reportId': { category: 'write' },
-  // Copyright intake — sensitive: legal submissions are CAPTCHA-protected and deliberately scarce
-  'POST:/api/v1/copyright-notices': { category: 'sensitive', ttlSeconds: 3600 },
+  // Copyright intake — sensitive and scarce; claimant submissions fail closed when the limiter is down
+  'POST:/api/v1/copyright-notices': { category: 'sensitive', ttlSeconds: 3600, failClosed: true },
   'POST:/api/v1/copyright-eu-notices': { category: 'sensitive', ttlSeconds: 3600 },
   'POST:/api/v1/copyright-eu-notices/:id/acknowledgment-failures': { category: 'sensitive' },
   'POST:/api/v1/copyright-eu-notices/:id/statements-of-reasons': { category: 'sensitive' },

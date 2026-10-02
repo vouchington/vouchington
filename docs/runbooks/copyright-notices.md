@@ -74,8 +74,8 @@ intake queue shows each message's wait age.
    A parse that lands after the decision sends nothing, and a repeated decision reports the original
    outcome.
 
-6. While automatic provisional withholding is off, a clear-screened signed-in form waits here like
-   a guest form. Accept it to withhold its targets, or reject it. The screen is advisory only.
+6. While automatic provisional withholding is off, or a notice fails an abuse gate, a
+   clear-screened signed-in form waits here like a guest form. Accept it to withhold its targets, or reject it. The screen is advisory only.
 7. If a signed-in case was provisionally restricted automatically, record a human `confirm`,
    `modify`, or `reverse` decision even when nobody appeals.
 
@@ -232,16 +232,32 @@ history records each change.
 
 Before enabling it, confirm all of the following:
 
-- claimant abuse controls ([#1209](https://github.com/vouchington/vouchington/issues/1209)) are live;
 - the GDPR Article 22 automated-decision disclosure
-  ([#1230](https://github.com/vouchington/vouchington/issues/1230)) is published; and
-- the staff queue has no clear-screened signed-in intake awaiting review, or staff accept that the
-  sweeps withhold all of them without a moderator.
+  ([#1230](https://github.com/vouchington/vouchington/issues/1230)) is published;
+- every abuse gate is set in the `copyright` namespace, **before** you flip the switch:
+  `automaticWithholdingMinTrustTier`, `automaticWithholdingMinAccountAgeDays`,
+  `automaticWithholdingClaimantDailyCap` and `automaticWithholdingPosterDailyCap`. They launch
+  unset (-1). While any is unset, nothing is withheld automatically and every notice waits for a
+  moderator, so an incomplete setup fails closed. There are no defaults to inherit; choose each
+  value with legal and trust review. Zero is a real value (a cap of 0 refuses every notice); and
+- you flip the switch with the namespace PATCH, not by editing stored state, because the audited
+  off-to-on change is what opens the automation window (below).
 
-Enabling it releases the backlog. The agent-dispatch sweeps withhold every clear-screened signed-in
-intake that lacks a moderator review, and the action reconciler enforces every pending
-automated request. Each of those restrictions then needs its own human decision within the triage
-target above.
+Enabling it does not release a backlog. Automation acts only on notices received after the audited
+off-to-on change. A clear-screened signed-in notice received earlier, and an automated assessment
+left pending while the switch was off, stay in the staff queue (`enforcement_pending`) until a
+moderator accepts or rejects the intake. Clear the queue by hand. Each automatic restriction then
+needs its own human decision within the triage target above.
+
+A notice that fails a gate (suspended or too-new claimant, low trust tier, claimant or poster over
+its 24-hour cap) is never dropped: it waits in the staff queue like a guest form, and a moderator
+accepts or rejects it. It is not retried when the cap clears.
+
+The staff case shows the claimant's misuse ledger: notices withdrawn, rejected on review, and
+restrictions reversed by counter-notice or appeal. It is recorded whether the switch is on or off.
+Use it when deciding whether to suspend a notifier from the user admin panel. Nothing suspends a
+notifier automatically. Suspending one reverses their unreviewed automatic restrictions within a
+sweep (about five minutes), whatever the switch says; confirmed restrictions stay.
 
 Disabling it stops new automated assessments. Pending automated requests stay unenforced and in the
 staff queue until a moderator decides the intake. Existing restrictions stay in place; review them

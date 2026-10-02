@@ -1,4 +1,4 @@
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
 import sql from 'sql-template-strings'
 import { getImagePlacementKey } from '@services/images/placements'
@@ -11,6 +11,26 @@ export async function reverseAutomatedCopyrightRestrictions(
   reviewedAt = new Date(),
 ): Promise<void> {
   await using transaction = await beginTransaction()
+  const { intentIds } = await reverseAutomatedCopyrightRestrictionsInTransaction(transaction, {
+    noticeId,
+    submissionId,
+    moderatorId,
+    reviewedAt,
+  })
+  await transaction.commit()
+  for (const intentId of intentIds) void enqueueApplyCopyrightAction(intentId)
+}
+
+/**
+ * Reverses a submission's pending automated restrictions and creates their restore intents inside
+ * the caller's transaction, so the caller can record why in the same commit. The caller commits and
+ * enqueues the returned intents.
+ */
+export async function reverseAutomatedCopyrightRestrictionsInTransaction(
+  transaction: TransactionQuery,
+  input: { noticeId: string; submissionId: string; moderatorId: string | null; reviewedAt: Date },
+): Promise<{ restrictionIds: string[]; intentIds: string[] }> {
+  const { noticeId, submissionId, moderatorId, reviewedAt } = input
   const { rows: placements } = await transaction<{ placement_id: string }>(sql`
     /* reviewCopyrightFormIntake:reverseAutomatedRestrictions:placements */
     SELECT DISTINCT target.placement_id
@@ -58,6 +78,5 @@ export async function reverseAutomatedCopyrightRestrictions(
     )
     intentIds.push(intent.id)
   }
-  await transaction.commit()
-  for (const intentId of intentIds) void enqueueApplyCopyrightAction(intentId)
+  return { restrictionIds: rows.map(restriction => restriction.id), intentIds }
 }

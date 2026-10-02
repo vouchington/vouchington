@@ -38,6 +38,7 @@
     "@services/notifications": "workspace:^",
     "@services/post-publication": "workspace:^",
     "@services/posts": "workspace:^",
+    "@services/user-rate-limits": "workspace:^",
     "@services/users": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/config": "workspace:^",

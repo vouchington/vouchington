@@ -1,5 +1,6 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { recordClaimantMisuseEvent } from './claimant-misuse-ledger.mts'
 import { reverseAutomatedCopyrightRestrictions } from './form-reviews-reversal.mts'
 import {
   queryCopyrightSweepIdPage,
@@ -125,6 +126,11 @@ export async function recoverRejectedCopyrightFormReviewEffect(intakeId: string)
         ${recoveredAssessment[0]!.id}, 'durable_review'
       )
     `)
+    await recordClaimantMisuseEvent(transaction, {
+      noticeId: state.notice_id,
+      recordedAt: state.reviewed_at,
+      event: { outcome: 'notice_rejected', assessmentId: recoveredAssessment[0]!.id },
+    })
   }
   await transaction.commit()
   await reverseAutomatedCopyrightRestrictions(

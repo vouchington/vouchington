@@ -81,7 +81,9 @@ as display-safe. Staff guest-capability management (issue, list, revoke, and inf
 is web-only staff tooling; its fixtures, including `web.copyright.guest-capabilities.listed`, have
 only the web consumer. The staff case's emailed information-request delivery state (queued, sent,
 failed, or bounced) comes from `delivery_intents` entries whose `delivery_kind` is
-`staff_information_request`; it is web-only too, and no native client renders it. Staff email-intake review is web-only staff tooling too. Its rejection and
+`staff_information_request`; it is web-only too, and no native client renders it. The staff case
+also carries `claimant.misuse`, the claimant account's misuse ledger counts (or null when no account
+filed the notice); it is web-only staff tooling with no native consumer. Staff email-intake review is web-only staff tooling too. Its rejection and
 information-request responses (`web.copyright.email-intake-rejection.reply-queued` and `.no-reply`,
 `web.copyright.email-intake-information-request.reply-queued` and `.no-reply`) have only the web
 consumer; native clients have no staff email review action, including the

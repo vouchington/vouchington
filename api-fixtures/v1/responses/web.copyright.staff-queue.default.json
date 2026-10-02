@@ -5,7 +5,13 @@
       "appeals": [],
       "claimant": {
         "contact": "claimant@example.test",
-        "display_name": "Claimant"
+        "display_name": "Claimant",
+        "misuse": {
+          "notice_rejected": 2,
+          "notice_withdrawn": 1,
+          "restriction_reversed_by_appeal": 1,
+          "restriction_reversed_by_counter_notice": 0
+        }
       },
       "counter_notices": [],
       "delivery_intents": [],
@@ -83,7 +89,8 @@
       "appeals": [],
       "claimant": {
         "contact": "claimant@example.test",
-        "display_name": "Claimant"
+        "display_name": "Claimant",
+        "misuse": null
       },
       "counter_notices": [],
       "delivery_intents": [],

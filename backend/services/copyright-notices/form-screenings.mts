@@ -1,7 +1,9 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { appendCopyrightSubmissionAssessmentInTransaction } from './compliance.mts'
-import { isAutomaticProvisionalWithholdingEnabled } from './config.mts'
+import { checkAutomaticWithholdingEligibility } from './automatic-withholding-gates.mts'
+import { refuseAutomaticWithholding } from './automatic-withholding-refusals.mts'
+import { getAutomaticWithholdingWindow } from './automatic-withholding-since.mts'
 import {
   type CopyrightFormScreeningResultInput,
   startCopyrightFormScreening,
@@ -22,11 +24,15 @@ export async function appendCopyrightFormScreening(
  * Workflow-owned automation gate. Agents only return a recommendation and advisory guidance; they
  * cannot call this, and it never reads the guidance. While
  * `automaticProvisionalWithholding` is off, a clear screen changes nothing and a moderator decides.
+ * While it is on, the claimant-abuse gates run first, and a notice that fails one is recorded as
+ * refused and stays with a moderator.
  */
 export async function applyNonSpamSignedInCopyrightFormScreening(
   submissionId: string,
 ): Promise<void> {
-  if (!(await isAutomaticProvisionalWithholdingEnabled())) return
+  const window = await getAutomaticWithholdingWindow()
+  if (!window.enabled) return
+  const eligibility = await checkAutomaticWithholdingEligibility(submissionId, window)
   await using transaction = await beginTransaction()
   const { rows: intakeIdRows } = await transaction<{ id: string }>(
     sql`/* applyNonSpamSignedInCopyrightFormScreening:intakeId */
@@ -46,10 +52,13 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
     notice_id: string
     screening_id: string
     form_review_accepted: boolean | null
+    refused: boolean
   }>(sql`/* applyNonSpamSignedInCopyrightFormScreening */
     SELECT intake.id AS intake_id, intake.copyright_notice_id AS notice_id,
       screening.id AS screening_id,
-      review.accepted AS form_review_accepted
+      review.accepted AS form_review_accepted,
+      EXISTS (SELECT 1 FROM copyright_automatic_withholding_refusals refusal
+        WHERE refusal.copyright_notice_submission_id = submission.id) AS refused
     FROM copyright_notice_form_intakes intake JOIN copyright_notice_submissions submission ON submission.id = intake.copyright_notice_submission_id
     JOIN copyright_notice_form_screening_executions execution
       ON execution.copyright_notice_form_intake_id = intake.id AND execution.state = 'completed'
@@ -61,7 +70,7 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
       AND fn_current_copyright_form_screening(submission.id, screening.id)
   `)
   const intake = rows[0]
-  if (!intake || intake.form_review_accepted !== null) {
+  if (!intake || intake.form_review_accepted !== null || intake.refused) {
     await transaction.commit()
     return
   }
@@ -99,6 +108,16 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
     (currentAssessment.copyright_notice_form_screening_id === null ||
       !currentAssessment.substantially_compliant)
   ) {
+    await transaction.commit()
+    return
+  }
+  const refused = await refuseAutomaticWithholding(transaction, {
+    submissionId,
+    noticeId: intake.notice_id,
+    eligibility,
+    hasAutomatedAssessment: existingAssessments.length > 0,
+  })
+  if (refused) {
     await transaction.commit()
     return
   }

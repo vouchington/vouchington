@@ -12,6 +12,10 @@ export const copyrightConfig = new DynamicConfig({
     evidenceRetentionDeletion: 'boolean',
     evidenceRetentionDays: 'number',
     staydownMatching: 'boolean',
+    automaticWithholdingMinTrustTier: 'number',
+    automaticWithholdingMinAccountAgeDays: 'number',
+    automaticWithholdingClaimantDailyCap: 'number',
+    automaticWithholdingPosterDailyCap: 'number',
   },
   defaultFields: {
     automaticProvisionalWithholding: false,
@@ -22,8 +26,20 @@ export const copyrightConfig = new DynamicConfig({
     // switch is on.
     evidenceRetentionDays: 0,
     staydownMatching: false,
+    // -1 means unset: automatic withholding is refused until an operator approves every gate.
+    automaticWithholdingMinTrustTier: -1,
+    automaticWithholdingMinAccountAgeDays: -1,
+    automaticWithholdingClaimantDailyCap: -1,
+    automaticWithholdingPosterDailyCap: -1,
   },
 })
+
+export type AutomaticWithholdingThresholds = {
+  minTrustTier: number
+  minAccountAgeDays: number
+  claimantDailyCap: number
+  posterDailyCap: number
+}
 
 /**
  * Whether a clear anti-spam screen of a signed-in notice may withhold its targets before a
@@ -32,6 +48,27 @@ export const copyrightConfig = new DynamicConfig({
 export async function isAutomaticProvisionalWithholdingEnabled(): Promise<boolean> {
   await copyrightConfig.waitForInitialization()
   return copyrightConfig.getFields().automaticProvisionalWithholding === true
+}
+
+/**
+ * The operator-approved abuse gates that must pass before an automated assessment may withhold, or
+ * null while any of them is unset (-1) or malformed. Null fails closed: nothing is withheld
+ * automatically and the notice stays with a moderator. Zero is a real value.
+ */
+export async function getAutomaticWithholdingThresholds(): Promise<AutomaticWithholdingThresholds | null> {
+  await copyrightConfig.waitForInitialization()
+  const fields = copyrightConfig.getFields()
+  const values = [
+    fields.automaticWithholdingMinTrustTier,
+    fields.automaticWithholdingMinAccountAgeDays,
+    fields.automaticWithholdingClaimantDailyCap,
+    fields.automaticWithholdingPosterDailyCap,
+  ]
+  if (!values.every(value => typeof value === 'number' && Number.isInteger(value) && value >= 0)) {
+    return null
+  }
+  const [minTrustTier, minAccountAgeDays, claimantDailyCap, posterDailyCap] = values as number[]
+  return { minTrustTier, minAccountAgeDays, claimantDailyCap, posterDailyCap }
 }
 
 /**

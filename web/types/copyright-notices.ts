@@ -1,3 +1,4 @@
+import type { CopyrightStaffClaimant } from './copyright-claimant-misuse'
 import type { CopyrightStaydownMatch } from './copyright-staydown'
 
 export type CopyrightNoticeSummary = {
@@ -69,7 +70,7 @@ export type CopyrightStaffQueueItem = {
   id: string
   received_at: string
   jurisdiction: 'us_dmca'
-  claimant: { display_name: string | null; contact: string }
+  claimant: CopyrightStaffClaimant
   work_description: string
   targets: Array<{
     id: string

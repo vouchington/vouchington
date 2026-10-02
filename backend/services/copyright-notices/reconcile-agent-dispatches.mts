@@ -143,6 +143,10 @@ function buildPendingCopyrightAgentDispatchesQuery() {
           SELECT 1 FROM copyright_notice_form_intake_reviews review
           WHERE review.copyright_notice_form_intake_id = intake.id
         )
+        AND NOT EXISTS (
+          SELECT 1 FROM copyright_automatic_withholding_refusals refusal
+          WHERE refusal.copyright_notice_submission_id = submission.id
+        )
         AND (current_assessment.id IS NULL OR (
           current_assessment.copyright_notice_form_screening_id IS NOT NULL
           AND current_assessment.substantially_compliant

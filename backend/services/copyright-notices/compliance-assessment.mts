@@ -3,6 +3,7 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
+import { recordClaimantMisuseEvent } from './claimant-misuse-ledger.mts'
 import type {
   CopyrightNoticeSubmissionAssessmentRecord,
   CopyrightSubmissionKind,
@@ -135,6 +136,17 @@ export async function appendCopyrightSubmissionAssessmentInTransaction(
   `)
   const assessment = rows[0] as CopyrightNoticeSubmissionAssessmentRecord | undefined
   assert(assessment, 500, 'Failed to append copyright submission assessment')
+  if (
+    input.currentUser !== null &&
+    !input.substantiallyCompliant &&
+    submissionRows[0].kind === 'notice'
+  ) {
+    await recordClaimantMisuseEvent(transaction, {
+      noticeId: submissionRows[0].copyright_notice_id,
+      recordedAt: input.assessedAt,
+      event: { outcome: 'notice_rejected', assessmentId: assessment.id },
+    })
+  }
   if (input.targetIds) {
     const { rows: scopedTargets } = await transaction<{ id: string }>(
       sql`/* appendCopyrightSubmissionAssessment:scopeCounterNoticeTargets */

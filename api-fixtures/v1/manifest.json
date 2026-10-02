@@ -13701,13 +13701,43 @@
     },
     "GET:/api/v1/copyright-notices/review-queue": {
       "bodyKind": "content",
-      "hash": "a3e7152db615c9cf14605a80cf8da36c5ab704109aafcb2234dfcb3d042cd192",
+      "hash": "1283d6ff13e88500926369029321f25227fca538472c4a95743ca0914a9f16d7",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
       "routeTemplate": "/api/v1/copyright-notices/review-queue",
       "schema": {
         "definitions": {
+          "ClaimantMisuseSummary": {
+            "additionalProperties": false,
+            "properties": {
+              "notice_rejected": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "notice_withdrawn": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "restriction_reversed_by_appeal": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "restriction_reversed_by_counter_notice": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          },
           "CopyrightFormGuidance": {
             "additionalProperties": false,
             "properties": {
@@ -14095,6 +14125,21 @@
                                 },
                                 {
                                   "type": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "misuse": {
+                            "required": true,
+                            "schema": {
+                              "type": "union",
+                              "variants": [
+                                {
+                                  "name": "ClaimantMisuseSummary",
+                                  "type": "ref"
+                                },
+                                {
+                                  "type": "null"
                                 }
                               ]
                             }
@@ -89283,7 +89328,7 @@
       ],
       "path": "/api/v1/copyright-notices/review-queue",
       "responseSchema": {
-        "hash": "20ccafbda705058ebbf39049493a577239b35e0518a35bcd237a3f04a91c56f2",
+        "hash": "a0fef2db8dd948c4b5e7ea24864038ba18e984a295d35aab0e7eb3e55b3af44b",
         "key": "web.copyright.staff-queue.default"
       },
       "route": {

@@ -21,7 +21,7 @@ export const reviewedStaffCase = {
   id: '00000000-0000-7000-8000-000000000815',
   received_at: '2026-07-01T11:00:00.000Z',
   jurisdiction: 'us_dmca',
-  claimant: { display_name: 'Claimant', contact: 'claimant@example.test' },
+  claimant: { display_name: 'Claimant', contact: 'claimant@example.test', misuse: null },
   work_description: 'Original photograph.',
   targets: [],
   evidence: [],

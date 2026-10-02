@@ -70,10 +70,11 @@ export function copyrightStaffQueueKeysSql(): SQLStatement {
       WHERE intent.state = 'failed'
       UNION ALL
       `.append(
-    // Includes the assessments the automatic-withholding switch is holding back, so staff see them.
+    // Includes the automated assessments the switch, an earlier on-period or a suspended claimant is
+    // holding back, so staff see them.
     pendingCopyrightEnforcementSql(
       "DISTINCT submission.copyright_notice_id, 'enforcement_pending'::text, assessment.created_at",
-      true,
+      'all',
     ),
   ).append(sql`
       UNION ALL

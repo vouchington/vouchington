@@ -11,6 +11,7 @@ import {
   listCopyrightStaffQueue,
 } from '../../../services/copyright-notices/read-models-staff.mts'
 import { readCopyrightStaffQueueCursorRows } from '../../data-stores/psql/copyright-notice-reads.mts'
+import type { PrivateUser } from '../../../services/users/types.mts'
 import { testCopyrightFormGuidance } from './form-guidance.mts'
 
 export async function isTestCopyrightStaffCaseQueued(
@@ -32,8 +33,8 @@ export async function isTestCopyrightStaffCaseQueued(
   }
 }
 
-export async function createClearScreenedForm(targetCount = 1) {
-  const notice = await createSignedInCopyrightForm(targetCount)
+export async function createClearScreenedForm(targetCount = 1, people: FormPeople = {}) {
+  const notice = await createSignedInCopyrightForm(targetCount, people)
   const screeningId = await appendCopyrightFormScreening({
     intakeId: notice.intake.id,
     inputSha256: Buffer.alloc(32, targetCount),
@@ -46,9 +47,15 @@ export async function createClearScreenedForm(targetCount = 1) {
   return { notice, screeningId }
 }
 
+/** Accounts to reuse, so a test can file several notices from one claimant or against one poster. */
+export type FormPeople = { claimant?: PrivateUser; poster?: { id: string } }
+
 /** A complete signed-in structured form whose screening has not run yet. */
-export async function createSignedInCopyrightForm(targetCount = 1) {
-  const [claimant, poster] = await Promise.all([createTestUser(), createTestUser()])
+export async function createSignedInCopyrightForm(targetCount = 1, people: FormPeople = {}) {
+  const [claimant, poster] = await Promise.all([
+    people.claimant ?? createTestUser(),
+    people.poster ?? createTestUser(),
+  ])
   const postId = await insertTestPost({
     title: `copyright screen recovery ${crypto.randomUUID()}`,
     slug: `copyright-screen-recovery-${crypto.randomUUID()}`,

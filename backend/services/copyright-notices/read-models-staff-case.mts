@@ -1,5 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { readClaimantMisuseSummary } from './claimant-misuse-summary.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import { decryptCopyrightText } from './erased-ciphertext.mts'
 import { copyrightFormSecretPurpose } from './form-intakes.mts'
@@ -30,15 +31,16 @@ export async function getPendingCopyrightStaffCase(
     id: string
     received_at: Date
     jurisdiction: 'us_dmca'
+    claimant_user_id: string | null
     claimant_display_name: string | null
     claimant_contact_ciphertext: string
     work_description: string
     form_key: string | null
     ses_message_id: string | null
   }>(sql`/* getPendingCopyrightStaffCase:notice */
-    SELECT notice.id, notice.received_at, notice.jurisdiction, notice.claimant_display_name,
-      notice.claimant_contact_ciphertext, notice.work_description, form.idempotency_key AS form_key,
-      email.ses_message_id
+    SELECT notice.id, notice.received_at, notice.jurisdiction, notice.claimant_user_id,
+      notice.claimant_display_name, notice.claimant_contact_ciphertext, notice.work_description,
+      form.idempotency_key AS form_key, email.ses_message_id
     FROM copyright_notices notice
     LEFT JOIN copyright_notice_form_intakes form ON form.copyright_notice_id = notice.id
     LEFT JOIN copyright_notice_email_intake_reviews email_review ON email_review.promoted_copyright_notice_id = notice.id
@@ -65,6 +67,7 @@ export async function getPendingCopyrightStaffCase(
     deliveryIntents,
     emailCorrespondence,
     staydownMatches,
+    misuse,
   ] = await Promise.all([
     selectStaffTargets(noticeId, query),
     selectStaffEvidence(noticeId, query),
@@ -77,6 +80,7 @@ export async function getPendingCopyrightStaffCase(
     selectStaffDeliveryIntents(noticeId, query),
     selectStaffEmailCorrespondence(noticeId, query),
     selectStaffStaydownMatches(noticeId, query),
+    notice.claimant_user_id ? readClaimantMisuseSummary(notice.claimant_user_id, query) : null,
   ])
   return {
     id: notice.id,
@@ -85,6 +89,7 @@ export async function getPendingCopyrightStaffCase(
     claimant: {
       display_name: notice.claimant_display_name,
       contact: decryptCopyrightText(notice.claimant_contact_ciphertext, contactPurpose),
+      misuse,
     },
     work_description: notice.work_description,
     targets,
