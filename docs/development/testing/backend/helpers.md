@@ -244,6 +244,19 @@ const observed = await observeTestPostgresQueryPools('/* getEntityById */', () =
 expect(observed.pools).toEqual(['write'])
 ```
 
+Use `withPostgresQueryFailureForTest(queryMarker, operation, { command })` from
+`@voucha/test-helpers/postgres-query-failure` to verify an owned transaction's storage-error
+propagation and rollback. It shares the pool observer's serialization queue, instruments only
+clients acquired in the callback's async context, and restores their properties before release.
+The exact leading SQL annotation selects one statement; `command` distinguishes statements that
+share an annotation. After the owner sends `BEGIN`, the helper runs actual division-by-zero SQL
+directly on that client, then forwards the service's original statement unchanged. The returned
+`error` is PostgreSQL's actual `25P02` error, so a callback that captures a propagated error can
+assert identity as well as persisted state. Matching statements must use the adapter's plain-config
+Promise API; callback pool queries and other async contexts are forwarded untouched. Do not nest
+this helper and a pool observation. Use the borrowed aborted-transaction helper above when the
+service already accepts a transaction query.
+
 ## Notification Push Recovery Backlogs
 
 Use `withTestNotificationPushRecoveryBacklog()` from

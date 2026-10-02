@@ -4,6 +4,7 @@ import {
   sanitizeRssFeedItemContentHtmlBatch,
 } from './sanitize-content-html.mts'
 import type { RssFeedItemToUpsert } from './types.mts'
+import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 
 function makeData(overrides: Partial<RssFeedItemToUpsert> = {}): RssFeedItemToUpsert {
   return {
@@ -15,6 +16,18 @@ function makeData(overrides: Partial<RssFeedItemToUpsert> = {}): RssFeedItemToUp
 
 describe('sanitizeRssFeedItemContentHtml', () => {
   const scriptScheme = `javascript:`
+
+  it('reports native sanitizer size rejection and returns null', async () => {
+    const content = 'x'.repeat(10 * 1024 * 1024 + 1)
+
+    await expect(sanitizeRssFeedItemContentHtml(makeData({ content }))).resolves.toBeNull()
+    expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Input too large: 10485761 bytes (max 10485760 bytes)',
+      }),
+      expect.anything(),
+    )
+  })
 
   it('returns null when no content fields are present', async () => {
     const result = await sanitizeRssFeedItemContentHtml(makeData())
