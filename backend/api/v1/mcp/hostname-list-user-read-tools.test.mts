@@ -20,7 +20,13 @@ type ToolResult = { isError?: boolean; structuredContent?: Body }
 
 const KINDS = ['api_key', 'oauth'] as const satisfies readonly Kind[]
 const READ = ['hostnames:read', 'users:read', 'lists:read'] as const satisfies readonly ApiScope[]
-const OWNED_PRIVATE = [...READ, 'post-relations.owned-private:write'] as const
+// The private-data consent scope can only be granted together with the relation scopes it extends.
+const OWNED_PRIVATE = [
+  ...READ,
+  'entity-relations:read',
+  'entity-relations:write',
+  'post-relations.owned-private:write',
+] as const
 const LIST_NOT_FOUND = { success: false, error: 'List not found' }
 const TOOLS = [
   'search_hostnames',
@@ -208,14 +214,26 @@ describe('hostname, list and user read tools over MCP HTTP', () => {
     },
   )
 
-  it.each(KINDS)('%s asks for a scope when a call lacks it', async kind => {
+  it('oauth asks the client to step up when a call lacks the scope', async () => {
     const user = await createTestUser()
-    const token = await issueCredential(kind, user, ['lists:read'])
+    const token = await issueCredential('oauth', user, ['lists:read'])
 
     const response = await postMcp(token, toolCall('search_users', { q: 'anyone' })).expect(403)
 
     expect(response.headers['www-authenticate']).toContain('error="insufficient_scope"')
     expect(response.headers['www-authenticate']).toContain('users:read')
+  })
+
+  it('api_key keeps a call that lacks the scope in-band and returns no data', async () => {
+    const user = await createTestUser()
+    const token = await issueCredential('api_key', user, ['lists:read'])
+
+    const response = await postMcp(token, toolCall('search_users', { q: user.username! })).expect(
+      200,
+    )
+
+    expect(response.body).toMatchObject({ error: { code: -32600 } })
+    expect(response.body).not.toHaveProperty('result')
   })
 
   it.each(KINDS)('%s is rejected once its owner is suspended', async kind => {

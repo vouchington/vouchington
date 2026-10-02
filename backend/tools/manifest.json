@@ -61,6 +61,30 @@
       "requiredScopes": ["communities:read"]
     },
     {
+      "name": "get_list_items",
+      "description": "List the items on a list, newest first: each is a post or an RSS feed item, with the item_type and entity_id to read it with (get_post, or the RSS item tools). The list must be readable as get_list describes; otherwise this returns { success: false, error: \"List not found\" }. A post the caller cannot read, such as a private or deleted post, is left out, so a page can hold fewer items than limit while page_info.has_next_page is still true: keep paging until it is false. media_type keeps only RSS feed items of that media type. Returns at most 25 items per page and page_info.end_cursor; pass it as after to get the next page. A malformed cursor returns { success: false, error: \"Invalid cursor\" }.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/lists/:id/items"
+        }
+      ],
+      "requiredScopes": ["lists:read"]
+    },
+    {
+      "name": "get_list",
+      "description": "Get one list by its UUID: its name, description, owner and visibility. Public and unlisted lists are readable by anyone who has the id. A private list is readable only by its owner, and only when the credential holds the post-relations.owned-private:write private-data consent scope (the mcp.user:write scope does not include it). Every other case, including an unknown, removed or another user's private list, returns the same { success: false, error: \"List not found\" }. Use get_list_items to read inside a list.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/lists/:id"
+        }
+      ],
+      "requiredScopes": ["lists:read"]
+    },
+    {
       "name": "get_my_cards",
       "description": "List the current user's wallet cards.",
       "parameters": null,
@@ -115,6 +139,18 @@
         }
       ],
       "requiredScopes": ["financial-profile:read"]
+    },
+    {
+      "name": "get_my_lists",
+      "description": "List the current user's own lists, newest first: each one's name, description and visibility. Public and unlisted lists are always included. Private lists are included only when the credential holds the post-relations.owned-private:write private-data consent scope (the mcp.user:write scope does not include it); without it they are left out as if they did not exist. Returns at most 25 lists per page and page_info.end_cursor; pass it as after to get the next page. A malformed cursor returns { success: false, error: \"Invalid cursor\" }. Use get_list_items to read inside a list.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/lists"
+        }
+      ],
+      "requiredScopes": ["lists:read"]
     },
     {
       "name": "get_my_rewards_statuses",
@@ -213,6 +249,18 @@
       "requiredScopes": ["posts:read"]
     },
     {
+      "name": "get_top_hostnames",
+      "description": "List the most trusted hostnames, as a signed-out reader sees them: hostnames with at least one trust vote up, highest net trust votes first, never an administratively blocked hostname. topic is a topic UUID or slug; a topic that does not exist returns no results. Returns at most 25 hostnames per page and page_info.end_cursor; pass it as after to get the next page. A malformed cursor returns { success: false, error: \"Invalid cursor\" }.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/hostnames/top"
+        }
+      ],
+      "requiredScopes": ["hostnames:read"]
+    },
+    {
       "name": "get_topic_details",
       "description": "Get detailed information about a topic (card, bank account, rewards program, etc.). For cards, returns the annual fee, issuing bank, and card brand. For rewards programs, returns the parent company. Always includes the full description and aliases. Set hierarchy to also get parent topics (the organization that issues a card) and/or child topics (all cards a bank issues, all tiers in a rewards program); children come one page at a time, so pass children_page_info.end_cursor as children_after for the next page.",
       "parameters": null,
@@ -247,6 +295,18 @@
         }
       ],
       "requiredScopes": ["topics:read"]
+    },
+    {
+      "name": "get_user",
+      "description": "Get one user's public profile by UUID or username: username, bio, official-account flag and, only when the user shows their verified badge, the verified name. It is the signed-out profile for every caller, your own included: no email, phone, roles, linked accounts or private settings, ever. A deleted or unknown user returns { success: false, error: \"User not found\" }. An email address or phone number is not a valid identifier.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/users/:idOrSlug"
+        }
+      ],
+      "requiredScopes": ["users:read"]
     },
     {
       "name": "manage_my_cards",
@@ -341,6 +401,18 @@
       "requiredScopes": ["communities:read"]
     },
     {
+      "name": "search_hostnames",
+      "description": "Search the hostnames Voucha knows, as a signed-out reader sees them: an administratively blocked hostname never appears, whoever asks. Each hostname carries its topic_id and its public trust vote totals (election). query and hostname both match part of the hostname. topic is a topic UUID or slug; a topic that does not exist returns no results. Sorted by hostname (A to Z, the default) or, with sort \"trust\", by net trust votes (highest first). Returns at most 25 hostnames per page and page_info.end_cursor; pass it as after, with the same sort, to get the next page. A malformed cursor, or one from a different sort, returns { success: false, error: \"Invalid cursor\" }.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/hostnames"
+        }
+      ],
+      "requiredScopes": ["hostnames:read"]
+    },
+    {
       "name": "search_posts",
       "description": "Search for posts using keyword (text_search_query or q), semantic (semantic_search_query), and similar-item signals. Use search for hybrid text+semantic search. Returns page_info.end_cursor; pass it as after to get the next page. A malformed or foreign cursor returns { success: false, error: \"Invalid cursor\" }.",
       "parameters": null,
@@ -363,6 +435,18 @@
         }
       ],
       "requiredScopes": ["topics:read"]
+    },
+    {
+      "name": "search_users",
+      "description": "Search users by the start of their username, case-insensitive, sorted A to Z. Results are public profiles only, as get_user returns them, and never an administrator's view. A blank query returns no results. Returns at most 25 users per page and page_info.end_cursor; pass it as after, with the same q, to get the next page. A malformed cursor, or one from a different q, returns { success: false, error: \"Invalid cursor\" }.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/users"
+        }
+      ],
+      "requiredScopes": ["users:read"]
     },
     {
       "name": "update_my_financial_profile",

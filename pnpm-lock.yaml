@@ -10886,6 +10886,9 @@ importers:
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../services/elections-votes
+      '@services/entity-cache':
+        specifier: workspace:^
+        version: link:../services/entity-cache
       '@services/entity-fetch':
         specifier: workspace:^
         version: link:../services/entity-fetch
@@ -10982,6 +10985,9 @@ importers:
       '@services/trending-topics':
         specifier: workspace:^
         version: link:../services/trending-topics
+      '@services/urls-hostnames':
+        specifier: workspace:^
+        version: link:../services/urls-hostnames
       '@services/user-financial-profiles':
         specifier: workspace:^
         version: link:../services/user-financial-profiles

@@ -1,4 +1,4 @@
-# Post, Story and Community Read Tools
+# Post, Story, Community, Hostname, List and User Read Tools
 
 [Back to MCP Tools service](README.md#structured-tool-results)
 
@@ -7,7 +7,8 @@ a news story. Each requires the `posts:read` scope, is read-only, names its REST
 and sits on the `internal`, `mcp` and `client` surfaces like the other post tools. `search_posts`
 is not one of them but follows their [privacy rule](#privacy). The
 [community read tools](#community-read-tools) follow the same shape with the `communities:read`
-scope.
+scope, and the [hostname](#hostname-read-tools), [list](#list-read-tools) and
+[user](#user-read-tools) read tools with `hostnames:read`, `lists:read` and `users:read`.
 
 | Tool                   | REST twin                                 | Arguments                                              |
 | ---------------------- | ----------------------------------------- | ------------------------------------------------------ |
@@ -102,6 +103,79 @@ Community descriptions, rules and post markdown are wrapped with `wrapExternalCo
 names are sanitized. The shared post-page and hashtag-query logic lives in `@services/communities`
 (`getCommunityPostsPage`, `resolveCommunityHashtagQuery`), used by both the REST routes and the
 tools, so the two cannot drift.
+
+## Hostname read tools
+
+`search_hostnames` and `get_top_hostnames` read the hostnames Voucha knows. Each requires the
+`hostnames:read` scope (a resource scope covered by `mcp.user:read`), is read-only, and names its
+REST twin in `meta.api`.
+
+| Tool                | REST twin                   | Arguments                                                                     |
+| ------------------- | --------------------------- | ----------------------------------------------------------------------------- |
+| `search_hostnames`  | `GET /api/v1/hostnames`     | `query`, `hostname`, `topic` (UUID or slug), `sort` (trust), `limit`, `after` |
+| `get_top_hostnames` | `GET /api/v1/hostnames/top` | `topic` (UUID or slug), `limit`, `after`                                      |
+
+Both tools read as a signed-out reader for every caller, so an administratively blocked hostname
+never appears, even to an administrator. Each result is `{ id, hostname, topic_id, election }`,
+where `election` holds the public trust vote totals (`votes_count_up`, `votes_count_down`,
+`votes_score_net`) or is `null` when the hostname has none. A `topic` that does not exist returns an
+empty page. `search_hostnames` sorts by hostname, or by net trust votes with `sort: "trust"`;
+`get_top_hostnames` lists hostnames with at least one trust vote up. Paging follows the
+[community rules](#community-read-tools) with `limit` 1 to 25 (default 25).
+
+## List read tools
+
+`get_my_lists`, `get_list` and `get_list_items` read lists. Each requires the existing `lists:read`
+scope (covered by `mcp.user:read`), is read-only, and names its REST twin in `meta.api`.
+
+| Tool             | REST twin                     | Arguments                                                    |
+| ---------------- | ----------------------------- | ------------------------------------------------------------ |
+| `get_my_lists`   | `GET /api/v1/lists`           | `limit` (1-25, default 20), `after`                          |
+| `get_list`       | `GET /api/v1/lists/:id`       | `list_id`                                                    |
+| `get_list_items` | `GET /api/v1/lists/:id/items` | `list_id`, `media_type`, `limit` (1-25, default 20), `after` |
+
+### List privacy
+
+A public or unlisted list is readable by anyone who holds its id, as on the REST routes. A private
+list is readable only by its owner, and only when the credential also holds the exact grant
+`post-relations.owned-private:write`, the same consent the entity-relation write tools demand before
+they touch an owner's private post. `mcp.user:write` never implies it (it is `requiresExactGrant`),
+so a broad credential never reads a private list, and creating a credential with the grant also
+requires `entity-relations:read` and `entity-relations:write`. Without the grant `get_my_lists`
+leaves private lists out of the page and its cursor as if they did not exist.
+
+Every denial is the same `{ success: false, error: "List not found" }`: another user's private
+list, a private list read without the grant, a removed list, an unknown id and a malformed id cannot
+be told apart. `loadReadableList` (`backend/tools/list-read-access.mts`) decides this for
+`get_list` and `get_list_items`, and `hasOwnedPrivateGrant` answers false instead of throwing so a
+read never reveals which condition failed.
+
+`get_list_items` returns post and RSS feed items with the `item_type` and `entity_id` to read them
+with. Each post goes through the same `resolveReadableThread` policy as `get_post` (the
+[privacy rule](#privacy)), so a private, deleted or hidden post is left out of the page. A page can
+therefore hold fewer items than `limit` while `page_info.has_next_page` is still true; keep paging
+until it is false. List descriptions are wrapped with `wrapExternalContent` and names are
+sanitized.
+
+## User read tools
+
+`get_user` and `search_users` read public user profiles. Each requires the `users:read` scope (a
+resource scope covered by `mcp.user:read`), is read-only, and names its REST twin in `meta.api`.
+
+| Tool           | REST twin                     | Arguments                                |
+| -------------- | ----------------------------- | ---------------------------------------- |
+| `get_user`     | `GET /api/v1/users/:idOrSlug` | `user_id` (UUID or username)             |
+| `search_users` | `GET /api/v1/users`           | `q`, `limit` (1-25, default 10), `after` |
+
+Both tools return the signed-out public profile for every caller: the caller's own account, another
+user and an administrator all see `{ id, username, markdown, verification_status,
+verified_badge_visible, verified_display_name, is_official_account }` and nothing else, never an
+email address, phone number or suspension. A deleted or unknown user is
+`{ success: false, error: "User not found" }`, and `get_user` takes a UUID or username (case
+insensitive), refusing an email address or phone number as an invalid identifier. The verified name
+appears only while the user shows the verified badge. `search_users` matches the start of a
+username, A to Z, treats a LIKE wildcard as plain text, and returns nothing for a blank query, an
+email address or an id. The bio is wrapped with `wrapExternalContent`.
 
 ## Administrative actions
 

@@ -185,6 +185,15 @@
       "audience": "user",
       "description_key": null,
       "requires": null,
+      "resource": "hostnames",
+      "scope": "hostnames:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
+      "description_key": null,
+      "requires": null,
       "resource": "lists",
       "scope": "lists:read",
       "surfaces": ["api-key", "oauth"]
@@ -502,6 +511,15 @@
       "requires": null,
       "resource": "topics",
       "scope": "topics:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
+      "description_key": null,
+      "requires": null,
+      "resource": "users",
+      "scope": "users:read",
       "surfaces": ["api-key", "oauth"]
     }
   ]

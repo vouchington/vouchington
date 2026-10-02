@@ -2519,6 +2519,263 @@
         },
         {
           "tool": {
+            "name": "get_list_items",
+            "title": "Get List Items",
+            "description": "List the items on a list, newest first: each is a post or an RSS feed item, with the item_type and entity_id to read it with (get_post, or the RSS item tools). The list must be readable as get_list describes; otherwise this returns { success: false, error: \"List not found\" }. A post the caller cannot read, such as a private or deleted post, is left out, so a page can hold fewer items than limit while page_info.has_next_page is still true: keep paging until it is false. media_type keeps only RSS feed items of that media type. Returns at most 25 items per page and page_info.end_cursor; pass it as after to get the next page. A malformed cursor returns { success: false, error: \"Invalid cursor\" }.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "list_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The ID of the list."
+                },
+                "media_type": {
+                  "type": "string",
+                  "description": "Only RSS feed items of this media type"
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 25,
+                  "description": "Items per page, from 1 to 25 (default: 20)"
+                },
+                "after": {
+                  "type": "string",
+                  "description": "Opaque cursor from the previous page_info.end_cursor, for the next page."
+                }
+              },
+              "required": ["list_id"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "list_id": {
+                            "type": "string"
+                          },
+                          "item_type": {
+                            "enum": ["post", "rss_feed_item"],
+                            "type": "string"
+                          },
+                          "entity_id": {
+                            "type": "string"
+                          },
+                          "order_index": {
+                            "type": "number"
+                          },
+                          "media_type": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "created_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "list_id",
+                          "item_type",
+                          "entity_id",
+                          "order_index",
+                          "media_type",
+                          "created_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page_info": {
+                      "type": "object",
+                      "properties": {
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["has_next_page", "start_cursor", "end_cursor"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "results", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["lists:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/lists/:id/items"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_list",
+            "title": "Get List",
+            "description": "Get one list by its UUID: its name, description, owner and visibility. Public and unlisted lists are readable by anyone who has the id. A private list is readable only by its owner, and only when the credential holds the post-relations.owned-private:write private-data consent scope (the mcp.user:write scope does not include it). Every other case, including an unknown, removed or another user's private list, returns the same { success: false, error: \"List not found\" }. Use get_list_items to read inside a list.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "list_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The ID of the list."
+                }
+              },
+              "required": ["list_id"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "list": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "owner_user_id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "visibility": {
+                          "enum": ["private", "public", "unlisted"],
+                          "type": "string"
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "owner_user_id",
+                        "name",
+                        "description",
+                        "visibility",
+                        "created_at",
+                        "updated_at"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "list"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["lists:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/lists/:id"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "get_my_cards",
             "title": "Get My Cards",
             "description": "List the current user's wallet cards.",
@@ -3591,6 +3848,149 @@
             {
               "method": "GET",
               "path": "/api/v1/my/financial-profile"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_my_lists",
+            "title": "Get My Lists",
+            "description": "List the current user's own lists, newest first: each one's name, description and visibility. Public and unlisted lists are always included. Private lists are included only when the credential holds the post-relations.owned-private:write private-data consent scope (the mcp.user:write scope does not include it); without it they are left out as if they did not exist. Returns at most 25 lists per page and page_info.end_cursor; pass it as after to get the next page. A malformed cursor returns { success: false, error: \"Invalid cursor\" }. Use get_list_items to read inside a list.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 25,
+                  "description": "Lists per page, from 1 to 25 (default: 20)"
+                },
+                "after": {
+                  "type": "string",
+                  "description": "Opaque cursor from the previous page_info.end_cursor, for the next page."
+                }
+              },
+              "required": []
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "owner_user_id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "visibility": {
+                            "enum": ["private", "public", "unlisted"],
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "updated_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "owner_user_id",
+                          "name",
+                          "description",
+                          "visibility",
+                          "created_at",
+                          "updated_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page_info": {
+                      "type": "object",
+                      "properties": {
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["has_next_page", "start_cursor", "end_cursor"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "results", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["lists:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/lists"
             }
           ]
         },
@@ -4781,6 +5181,159 @@
         },
         {
           "tool": {
+            "name": "get_top_hostnames",
+            "title": "Get Top Hostnames",
+            "description": "List the most trusted hostnames, as a signed-out reader sees them: hostnames with at least one trust vote up, highest net trust votes first, never an administratively blocked hostname. topic is a topic UUID or slug; a topic that does not exist returns no results. Returns at most 25 hostnames per page and page_info.end_cursor; pass it as after to get the next page. A malformed cursor returns { success: false, error: \"Invalid cursor\" }.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "topic": {
+                  "type": "string",
+                  "description": "Only hostnames of this topic UUID or slug"
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 25,
+                  "description": "Hostnames per page, from 1 to 25 (default: 25)"
+                },
+                "after": {
+                  "type": "string",
+                  "description": "Opaque cursor from the previous page_info.end_cursor, for the next page."
+                }
+              },
+              "required": []
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "hostname": {
+                            "type": "string"
+                          },
+                          "topic_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "election": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "votes_count_up": {
+                                    "type": "number"
+                                  },
+                                  "votes_count_down": {
+                                    "type": "number"
+                                  },
+                                  "votes_score_net": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "votes_count_up",
+                                  "votes_count_down",
+                                  "votes_score_net"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        },
+                        "required": ["id", "hostname", "topic_id", "election"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page_info": {
+                      "type": "object",
+                      "properties": {
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["has_next_page", "start_cursor", "end_cursor"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "results", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["hostnames:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/hostnames/top"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "get_topic_details",
             "title": "Get Topic Details",
             "description": "Get detailed information about a topic (card, bank account, rewards program, etc.). For cards, returns the annual fee, issuing bank, and card brand. For rewards programs, returns the parent company. Always includes the full description and aliases. Set hierarchy to also get parent topics (the organization that issues a card) and/or child topics (all cards a bank issues, all tiers in a rewards program); children come one page at a time, so pass children_page_info.end_cursor as children_after for the next page.",
@@ -5516,6 +6069,155 @@
             {
               "method": "GET",
               "path": "/api/v1/trending-topics"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_user",
+            "title": "Get User",
+            "description": "Get one user's public profile by UUID or username: username, bio, official-account flag and, only when the user shows their verified badge, the verified name. It is the signed-out profile for every caller, your own included: no email, phone, roles, linked accounts or private settings, ever. A deleted or unknown user returns { success: false, error: \"User not found\" }. An email address or phone number is not a valid identifier.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "user_id": {
+                  "type": "string",
+                  "description": "User UUID or username"
+                }
+              },
+              "required": ["user_id"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "username": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "markdown": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "verification_status": {
+                          "anyOf": [
+                            {
+                              "const": "duplicate_id"
+                            },
+                            {
+                              "const": "failed"
+                            },
+                            {
+                              "const": "identity_pending"
+                            },
+                            {
+                              "const": "payment_pending"
+                            },
+                            {
+                              "const": "unverified"
+                            },
+                            {
+                              "const": "verified"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "verified_badge_visible": {
+                          "anyOf": [
+                            {
+                              "const": false
+                            },
+                            {
+                              "const": true
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "verified_display_name": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "is_official_account": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "username",
+                        "markdown",
+                        "verification_status",
+                        "verified_badge_visible",
+                        "verified_display_name",
+                        "is_official_account"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "user"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["users:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/users/:idOrSlug"
             }
           ]
         },
@@ -7362,6 +8064,172 @@
         },
         {
           "tool": {
+            "name": "search_hostnames",
+            "title": "Search Hostnames",
+            "description": "Search the hostnames Voucha knows, as a signed-out reader sees them: an administratively blocked hostname never appears, whoever asks. Each hostname carries its topic_id and its public trust vote totals (election). query and hostname both match part of the hostname. topic is a topic UUID or slug; a topic that does not exist returns no results. Sorted by hostname (A to Z, the default) or, with sort \"trust\", by net trust votes (highest first). Returns at most 25 hostnames per page and page_info.end_cursor; pass it as after, with the same sort, to get the next page. A malformed cursor, or one from a different sort, returns { success: false, error: \"Invalid cursor\" }.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "query": {
+                  "type": "string",
+                  "description": "Part of the hostname to match. Same as GET /api/v1/hostnames query."
+                },
+                "hostname": {
+                  "type": "string",
+                  "description": "Part of the hostname to match. Same as GET /api/v1/hostnames hostname."
+                },
+                "topic": {
+                  "type": "string",
+                  "description": "Only hostnames of this topic UUID or slug"
+                },
+                "sort": {
+                  "type": "string",
+                  "enum": ["trust"],
+                  "description": "trust sorts by net trust votes, highest first. Omit it to sort by hostname."
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 25,
+                  "description": "Hostnames per page, from 1 to 25 (default: 25)"
+                },
+                "after": {
+                  "type": "string",
+                  "description": "Opaque cursor from the previous page_info.end_cursor, for the next page."
+                }
+              },
+              "required": []
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "hostname": {
+                            "type": "string"
+                          },
+                          "topic_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "election": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "votes_count_up": {
+                                    "type": "number"
+                                  },
+                                  "votes_count_down": {
+                                    "type": "number"
+                                  },
+                                  "votes_score_net": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "votes_count_up",
+                                  "votes_count_down",
+                                  "votes_score_net"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        },
+                        "required": ["id", "hostname", "topic_id", "election"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page_info": {
+                      "type": "object",
+                      "properties": {
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["has_next_page", "start_cursor", "end_cursor"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "results", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["hostnames:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/hostnames"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "search_posts",
             "title": "Search Posts",
             "description": "Search for posts using keyword (text_search_query or q), semantic (semantic_search_query), and similar-item signals. Use search for hybrid text+semantic search. Returns page_info.end_cursor; pass it as after to get the next page. A malformed or foreign cursor returns { success: false, error: \"Invalid cursor\" }.",
@@ -7663,6 +8531,198 @@
             {
               "method": "GET",
               "path": "/api/v1/topics"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "search_users",
+            "title": "Search Users",
+            "description": "Search users by the start of their username, case-insensitive, sorted A to Z. Results are public profiles only, as get_user returns them, and never an administrator's view. A blank query returns no results. Returns at most 25 users per page and page_info.end_cursor; pass it as after, with the same q, to get the next page. A malformed cursor, or one from a different q, returns { success: false, error: \"Invalid cursor\" }.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "q": {
+                  "type": "string",
+                  "description": "The start of the username to find"
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 25,
+                  "description": "Users per page, from 1 to 25 (default: 10)"
+                },
+                "after": {
+                  "type": "string",
+                  "description": "Opaque cursor from the previous page_info.end_cursor, for the next page."
+                }
+              },
+              "required": ["q"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "username": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "markdown": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "verification_status": {
+                            "anyOf": [
+                              {
+                                "const": "duplicate_id"
+                              },
+                              {
+                                "const": "failed"
+                              },
+                              {
+                                "const": "identity_pending"
+                              },
+                              {
+                                "const": "payment_pending"
+                              },
+                              {
+                                "const": "unverified"
+                              },
+                              {
+                                "const": "verified"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "verified_badge_visible": {
+                            "anyOf": [
+                              {
+                                "const": false
+                              },
+                              {
+                                "const": true
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "verified_display_name": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "is_official_account": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "username",
+                          "markdown",
+                          "verification_status",
+                          "verified_badge_visible",
+                          "verified_display_name",
+                          "is_official_account"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page_info": {
+                      "type": "object",
+                      "properties": {
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["has_next_page", "start_cursor", "end_cursor"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "results", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["users:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/users"
             }
           ]
         },
