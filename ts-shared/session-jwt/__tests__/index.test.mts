@@ -208,7 +208,7 @@ describe('@ts-shared/session-jwt', () => {
         { did, sid, uid: null },
         {
           env: {
-            VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: Buffer.from('[123]', 'utf-8').toString('base64'),
+            VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: Buffer.from('[123]', 'utf8').toString('base64'),
           },
           mode: 'production',
           expiresIn: '2 days',
@@ -224,7 +224,7 @@ describe('@ts-shared/session-jwt', () => {
         { did, sid, uid: null },
         {
           env: {
-            VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: Buffer.from('[]', 'utf-8').toString('base64'),
+            VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: Buffer.from('[]', 'utf8').toString('base64'),
           },
           mode: 'production',
           expiresIn: '2 days',

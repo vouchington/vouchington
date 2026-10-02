@@ -66,7 +66,7 @@ export async function getPodcastEpisodeChaptersById(
         maxSizeBytes: CHAPTERS_MAX_SIZE_BYTES,
         signal: abortController.signal,
       })
-      return normalizePodcastChapters(JSON.parse(body.toString('utf-8')))
+      return normalizePodcastChapters(JSON.parse(body.toString('utf8')))
     } finally {
       clearTimeout(timeoutId)
     }

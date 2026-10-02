@@ -14,7 +14,7 @@ function readSeedCsvFileHeaders(): SeedCsvFileHeaders[] {
     .filter(f => f.endsWith('-topics.csv'))
     .toSorted()
     .map(file => {
-      const rows = parseCsvRows(readFileSync(join(SEED_DIR, file), 'utf-8'))
+      const rows = parseCsvRows(readFileSync(join(SEED_DIR, file), 'utf8'))
       return { file, headers: rows[0] ? Object.keys(rows[0]) : [] }
     })
 }

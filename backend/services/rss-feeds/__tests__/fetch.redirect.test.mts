@@ -19,7 +19,7 @@ import { CrawlerHttpClientError } from '@modules/on-error/errors'
 
 const mockXml = Buffer.from(
   '<rss version="2.0"><channel><title>Mock</title><item><link>https://example.com/item-redirect-1</link><guid>redir-guid-1</guid><title>Item 1</title></item></channel></rss>',
-  'utf-8',
+  'utf8',
 )
 const mockContentSha256 = createHash('sha256').update(mockXml).digest()
 const mockFeed = parseFeedDocument(mockXml).feed

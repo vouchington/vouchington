@@ -8,12 +8,12 @@ describe('HTTP Signature digest', () => {
     })
 
     it('returns a SHA-256 prefixed digest for a Buffer body', () => {
-      expect(computeDigest(Buffer.from('hello world', 'utf-8'))).toMatch(/^SHA-256=/)
+      expect(computeDigest(Buffer.from('hello world', 'utf8'))).toMatch(/^SHA-256=/)
     })
 
     it('produces the same digest for a string and its equivalent Buffer', () => {
       const body = 'test body content'
-      expect(computeDigest(body)).toBe(computeDigest(Buffer.from(body, 'utf-8')))
+      expect(computeDigest(body)).toBe(computeDigest(Buffer.from(body, 'utf8')))
     })
 
     it('produces different digests for different bodies', () => {
@@ -67,7 +67,7 @@ describe('HTTP Signature digest', () => {
 
     it('handles a Buffer body correctly', () => {
       const body = 'buffer test'
-      expect(verifyDigest(Buffer.from(body, 'utf-8'), computeDigest(body))).toBe(true)
+      expect(verifyDigest(Buffer.from(body, 'utf8'), computeDigest(body))).toBe(true)
     })
   })
 })

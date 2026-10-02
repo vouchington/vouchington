@@ -71,7 +71,7 @@ export async function syncLocalArticles(
     .map(file => ({ file }))
 
   return syncArticleFiles(currentUser, mdFiles, article =>
-    readFile(join(articlesDir, article.file), 'utf-8'),
+    readFile(join(articlesDir, article.file), 'utf8'),
   )
 }
 

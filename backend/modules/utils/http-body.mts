@@ -32,7 +32,7 @@ export const readResponseBodyAsBuffer = async (
 
 export const readResponseBody = async (options: ReadResponseBodyOptions): Promise<string> => {
   const buffer = await readResponseBodyAsBuffer(options)
-  return buffer.toString('utf-8')
+  return buffer.toString('utf8')
 }
 
 function responseWithCompatibleBody(

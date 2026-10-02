@@ -40,12 +40,12 @@ export async function sanitizeRssFeedItemContentHtml(
   if (!html) return null
 
   try {
-    const sanitized = await sanitizeRssHtml(Buffer.from(html, 'utf-8'), {
+    const sanitized = await sanitizeRssHtml(Buffer.from(html, 'utf8'), {
       proxyImages: true,
       imageProxyUrlPrefix: CURRENT_SIDELOAD_PATH_PREFIX,
       imageProxySigningKeys: getSigningKeys(),
     })
-    const result = absolutizeSideloadImageSources(sanitized.html.toString('utf-8').trim())
+    const result = absolutizeSideloadImageSources(sanitized.html.toString('utf8').trim())
     return result || null
   } catch (error) {
     onError(error instanceof Error ? error : new Error(String(error)))
@@ -71,7 +71,7 @@ export async function sanitizeRssFeedItemContentHtmlBatch(
   const withContent: Array<{ id: string; html: string; bytes: number }> = []
   for (const item of items) {
     const html = getRawHtmlContent(item.data)
-    if (html) withContent.push({ id: item.id, html, bytes: Buffer.byteLength(html, 'utf-8') })
+    if (html) withContent.push({ id: item.id, html, bytes: Buffer.byteLength(html, 'utf8') })
   }
 
   if (withContent.length === 0) return {}
@@ -104,14 +104,14 @@ export async function sanitizeRssFeedItemContentHtmlBatch(
   await Promise.all(
     chunks.map(async chunk => {
       try {
-        const buffers = chunk.map(({ html }) => Buffer.from(html, 'utf-8'))
+        const buffers = chunk.map(({ html }) => Buffer.from(html, 'utf8'))
         const sanitized = await sanitizeRssHtmlBatch(buffers, {
           proxyImages: true,
           imageProxyUrlPrefix: CURRENT_SIDELOAD_PATH_PREFIX,
           imageProxySigningKeys: getSigningKeys(),
         })
         for (let i = 0; i < chunk.length; i++) {
-          const serialized = sanitized[i]?.html.toString('utf-8').trim()
+          const serialized = sanitized[i]?.html.toString('utf8').trim()
           const html = serialized ? absolutizeSideloadImageSources(serialized) : undefined
           if (html) result[chunk[i]!.id] = html
         }

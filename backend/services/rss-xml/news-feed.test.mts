@@ -59,8 +59,8 @@ describe('news feed sanitization', () => {
 
   it('sanitizes script tags from descriptions', async () => {
     const html = '<p>Safe content</p><script>alert("xss")</script>'
-    const sanitized = await sanitizeRssHtml(Buffer.from(html, 'utf-8'))
-    const result = sanitized.html.toString('utf-8')
+    const sanitized = await sanitizeRssHtml(Buffer.from(html, 'utf8'))
+    const result = sanitized.html.toString('utf8')
 
     expect(result).toContain('Safe content')
     expect(result).not.toContain('<script')
@@ -69,8 +69,8 @@ describe('news feed sanitization', () => {
 
   it('strips event handlers from descriptions', async () => {
     const html = '<img src="x" onerror="alert(1)"><p>Normal text</p>'
-    const sanitized = await sanitizeRssHtml(Buffer.from(html, 'utf-8'))
-    const result = sanitized.html.toString('utf-8')
+    const sanitized = await sanitizeRssHtml(Buffer.from(html, 'utf8'))
+    const result = sanitized.html.toString('utf8')
 
     expect(result).toContain('Normal text')
     expect(result).not.toContain('onerror')
@@ -79,8 +79,8 @@ describe('news feed sanitization', () => {
 
   it('removes javascript: URLs from descriptions', async () => {
     const html = `<a href="${scriptScheme}alert(1)">click me</a><p>Safe</p>`
-    const sanitized = await sanitizeRssHtml(Buffer.from(html, 'utf-8'))
-    const result = sanitized.html.toString('utf-8')
+    const sanitized = await sanitizeRssHtml(Buffer.from(html, 'utf8'))
+    const result = sanitized.html.toString('utf8')
 
     expect(result).toContain('Safe')
     expect(result).not.toContain(scriptScheme)
@@ -88,8 +88,8 @@ describe('news feed sanitization', () => {
 
   it('preserves safe HTML in descriptions', async () => {
     const html = '<p>Normal <strong>bold</strong> and <em>italic</em> text</p>'
-    const sanitized = await sanitizeRssHtml(Buffer.from(html, 'utf-8'))
-    const result = sanitized.html.toString('utf-8')
+    const sanitized = await sanitizeRssHtml(Buffer.from(html, 'utf8'))
+    const result = sanitized.html.toString('utf8')
 
     expect(result).toContain('<p>')
     expect(result).toContain('<strong>bold</strong>')
@@ -97,15 +97,15 @@ describe('news feed sanitization', () => {
   }, 30_000)
 
   it('returns empty string for empty content', async () => {
-    const sanitized = await sanitizeRssHtml(Buffer.from('', 'utf-8'))
-    const result = sanitized.html.toString('utf-8')
+    const sanitized = await sanitizeRssHtml(Buffer.from('', 'utf8'))
+    const result = sanitized.html.toString('utf8')
     expect(result).toBe('')
   }, 30_000)
 
   it('strips style attributes', async () => {
     const html = '<p style="color:red">Styled text</p>'
-    const sanitized = await sanitizeRssHtml(Buffer.from(html, 'utf-8'))
-    const result = sanitized.html.toString('utf-8')
+    const sanitized = await sanitizeRssHtml(Buffer.from(html, 'utf8'))
+    const result = sanitized.html.toString('utf8')
 
     expect(result).toContain('Styled text')
     expect(result).not.toContain('style=')
@@ -113,8 +113,8 @@ describe('news feed sanitization', () => {
 
   it('removes iframe elements', async () => {
     const html = '<iframe src="https://evil.com"></iframe><p>After iframe</p>'
-    const sanitized = await sanitizeRssHtml(Buffer.from(html, 'utf-8'))
-    const result = sanitized.html.toString('utf-8')
+    const sanitized = await sanitizeRssHtml(Buffer.from(html, 'utf8'))
+    const result = sanitized.html.toString('utf8')
 
     expect(result).toContain('After iframe')
     expect(result).not.toContain('<iframe')
@@ -123,8 +123,8 @@ describe('news feed sanitization', () => {
 
   it('adds nofollow to links', async () => {
     const html = '<a href="https://example.com">link</a>'
-    const sanitized = await sanitizeRssHtml(Buffer.from(html, 'utf-8'))
-    const result = sanitized.html.toString('utf-8')
+    const sanitized = await sanitizeRssHtml(Buffer.from(html, 'utf8'))
+    const result = sanitized.html.toString('utf8')
 
     expect(result).toContain('rel="nofollow noopener"')
   }, 30_000)

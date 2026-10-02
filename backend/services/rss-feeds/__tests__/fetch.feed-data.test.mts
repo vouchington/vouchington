@@ -109,7 +109,7 @@ describe('fetch.feed-data', () => {
     </item>
   </channel>
 </rss>`,
-      'utf-8',
+      'utf8',
     )
     const parsedFeed = parseFeedDocument(chaptersXml).feed
     const [parsedItem] = (parsedFeed.items as Record<string, unknown>[] | undefined) ?? []

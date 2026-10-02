@@ -149,7 +149,7 @@ function createTextDecoder(contentType: HeaderValue | undefined): TextDecoder {
     'params' in contentType &&
     typeof contentType.params.charset === 'string'
       ? contentType.params.charset
-      : 'utf-8'
+      : 'utf8'
   try {
     return new TextDecoder(charset)
   } catch {

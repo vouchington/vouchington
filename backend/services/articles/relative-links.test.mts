@@ -93,7 +93,7 @@ describe('committed articles', () => {
     const parsed = await Promise.all(
       files.map(async file => {
         const { frontmatter, body } = parseFrontmatter(
-          await readFile(join(ARTICLES_DIR, file), 'utf-8'),
+          await readFile(join(ARTICLES_DIR, file), 'utf8'),
         )
         return { file, slug: frontmatter.slug || basename(file, '.md'), body }
       }),

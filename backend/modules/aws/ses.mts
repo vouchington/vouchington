@@ -51,7 +51,7 @@ export const sendEmail = (options: SendEmailOptions) => {
   /* c8 ignore start -- AWS transport wiring; raw MIME construction is covered separately. */
   if (options.headers) {
     const command = new SendRawEmailCommand({
-      RawMessage: { Data: Buffer.from(buildRawEmailMessage(options), 'utf-8') },
+      RawMessage: { Data: Buffer.from(buildRawEmailMessage(options), 'utf8') },
       Destinations: [
         ...(Array.isArray(options.to) ? options.to : [options.to]),
         ...getBccAddresses(options),
@@ -75,6 +75,7 @@ export const sendEmail = (options: SendEmailOptions) => {
     Source: options.source || process.env.SES_SOURCE_EMAIL || 'no-reply@voucha.ai',
     Message: {
       Subject: {
+        // oxlint-disable-next-line unicorn/text-encoding-identifier-case -- Preserve the SES wire charset label.
         Charset: 'UTF-8',
         Data: options.subject,
       },
@@ -85,12 +86,14 @@ export const sendEmail = (options: SendEmailOptions) => {
   }
   if (options.text) {
     input.Message.Body.Text = {
+      // oxlint-disable-next-line unicorn/text-encoding-identifier-case -- Preserve the SES wire charset label.
       Charset: 'UTF-8',
       Data: options.text,
     }
   }
   if (options.html) {
     input.Message.Body.Html = {
+      // oxlint-disable-next-line unicorn/text-encoding-identifier-case -- Preserve the SES wire charset label.
       Charset: 'UTF-8',
       Data: options.html,
     }

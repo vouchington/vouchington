@@ -65,7 +65,7 @@ export async function getArticleMarkdown(article: ArticleMarkdownFile): Promise<
 
   rejectOversizedArticle(response.ContentLength)
   const markdown = await readS3BodyAsString(response.Body)
-  rejectOversizedArticle(Buffer.byteLength(markdown, 'utf-8'))
+  rejectOversizedArticle(Buffer.byteLength(markdown, 'utf8'))
   setCacheEntry(article.key, { cacheToken: article.cacheToken, markdown })
   return markdown
 }
@@ -104,7 +104,7 @@ type S3BodyWithStringTransform = {
 }
 
 function readS3BodyAsString(body: unknown): Promise<string> {
-  if (isS3BodyWithStringTransform(body)) return body.transformToString('utf-8')
+  if (isS3BodyWithStringTransform(body)) return body.transformToString('utf8')
   throw new Error('S3 article body is not readable')
 }
 

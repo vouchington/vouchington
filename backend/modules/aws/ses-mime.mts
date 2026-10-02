@@ -51,12 +51,12 @@ function normalizeCrLf(value: string): string {
 }
 
 function encodeMimeBody(value: string): string {
-  const encoded = Buffer.from(normalizeCrLf(value), 'utf-8').toString('base64')
+  const encoded = Buffer.from(normalizeCrLf(value), 'utf8').toString('base64')
   return (encoded.match(/.{1,76}/g) ?? ['']).join('\r\n')
 }
 
 function encodeHeaderValue(value: string): string {
   return /^[\x20-\x7E]*$/.test(value)
     ? value
-    : `=?UTF-8?B?${Buffer.from(value, 'utf-8').toString('base64')}?=`
+    : `=?UTF-8?B?${Buffer.from(value, 'utf8').toString('base64')}?=`
 }

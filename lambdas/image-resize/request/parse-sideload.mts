@@ -58,7 +58,7 @@ export function parseSideloadRequest(
   let url: string
   try {
     const base64 = base64url.replaceAll('-', '+').replaceAll('_', '/')
-    url = Buffer.from(base64, 'base64').toString('utf-8')
+    url = Buffer.from(base64, 'base64').toString('utf8')
   } catch {
     throw new RequestParseError('Invalid base64url encoding in URL', 400)
   }

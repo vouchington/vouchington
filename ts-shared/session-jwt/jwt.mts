@@ -61,7 +61,7 @@ export function encodeJwkSetForEnv(jwks: JWK[]): string {
   const json = JSON.stringify(jwks)
   const buffer = getBuffer()
   if (buffer) {
-    return buffer.from(json, 'utf-8').toString('base64')
+    return buffer.from(json, 'utf8').toString('base64')
   }
 
   const btoaFn = (globalThis as typeof globalThis & { btoa?: (value: string) => string }).btoa

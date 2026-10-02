@@ -94,7 +94,7 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
     const mockResponse = createResponse(
       200,
       { 'content-type': 'application/xhtml+xml; charset=utf-8' },
-      createReadableBody([Buffer.from(html, 'utf-8')]),
+      createReadableBody([Buffer.from(html, 'utf8')]),
     )
     fetchSpy.mockResolvedValue(mockResponse)
 
@@ -127,7 +127,7 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
       createResponse(
         200,
         { 'content-type': 'text/html; charset=utf-8' },
-        createReadableBody([Buffer.from(html, 'utf-8')]),
+        createReadableBody([Buffer.from(html, 'utf8')]),
       ),
     )
 
@@ -196,7 +196,7 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
     const mockResponse = createResponse(
       200,
       { 'content-type': 'text/html; charset=unsupported-charset' },
-      createReadableBody([Buffer.from(html, 'utf-8')]),
+      createReadableBody([Buffer.from(html, 'utf8')]),
     )
     fetchSpy.mockResolvedValue(mockResponse)
 
@@ -268,7 +268,7 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
     const mockResponse = createResponse(
       200,
       { 'content-type': 'TEXT/HTML; charset=UTF-8' },
-      createReadableBody([Buffer.from(html, 'utf-8')]),
+      createReadableBody([Buffer.from(html, 'utf8')]),
     )
     fetchSpy.mockResolvedValue(mockResponse)
 
@@ -288,7 +288,7 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
     const mockResponse = createResponse(
       200,
       { 'content-type': 'text/html' },
-      createReadableBody([Buffer.from(html, 'utf-8')]),
+      createReadableBody([Buffer.from(html, 'utf8')]),
     )
     fetchSpy.mockResolvedValue(mockResponse)
 

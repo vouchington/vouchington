@@ -77,7 +77,7 @@ export async function handleBrowserCrawlResult(
   let crawlId: string | undefined
   if (result.html) {
     const crawl = await createCrawl(urlId, crawler.id)
-    const htmlBuffer = Buffer.from(result.html, 'utf-8')
+    const htmlBuffer = Buffer.from(result.html, 'utf8')
     const options = applyCrawlerRules(crawler)
     const content = await getContentFromHtml(htmlBuffer, options)
     await updateCrawl(crawl.id, urlId, {

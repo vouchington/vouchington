@@ -25,11 +25,11 @@ describe('index', () => {
   it('uses web base64 globals when Buffer is unavailable', async () => {
     const privateKey = await generatePrivateJwk('worker-runtime-key')
     const nodeBuffer = Buffer
-    const encodedKeySet = nodeBuffer.from(JSON.stringify([privateKey]), 'utf-8').toString('base64')
+    const encodedKeySet = nodeBuffer.from(JSON.stringify([privateKey]), 'utf8').toString('base64')
 
     vi.stubGlobal('Buffer', undefined)
-    vi.stubGlobal('btoa', (value: string) => nodeBuffer.from(value, 'utf-8').toString('base64'))
-    vi.stubGlobal('atob', (value: string) => nodeBuffer.from(value, 'base64').toString('utf-8'))
+    vi.stubGlobal('btoa', (value: string) => nodeBuffer.from(value, 'utf8').toString('base64'))
+    vi.stubGlobal('atob', (value: string) => nodeBuffer.from(value, 'base64').toString('utf8'))
 
     expect(encodeJwkSetForEnv([privateKey])).toBe(encodedKeySet)
     const { did, sid, uid } = makeIds()

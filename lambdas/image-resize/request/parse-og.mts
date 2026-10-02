@@ -47,7 +47,7 @@ export function parseOgRequest(
   // Decode base64url to the OG params JSON payload.
   let json: unknown
   try {
-    const decoded = Buffer.from(base64url, 'base64url').toString('utf-8')
+    const decoded = Buffer.from(base64url, 'base64url').toString('utf8')
     json = JSON.parse(decoded)
   } catch {
     throw new RequestParseError('Invalid base64url or JSON encoding in OG params', 400)

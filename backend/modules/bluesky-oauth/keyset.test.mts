@@ -3,7 +3,7 @@ import { BLUESKY_JWT_PRIVATE_KEYS_ENV, getBlueskyKeyset } from './keyset.mts'
 import testPrivateKey from './test-jwk-private-key.mts'
 
 function toEnvValue(jwks: readonly unknown[]): string {
-  return Buffer.from(JSON.stringify(jwks), 'utf-8').toString('base64')
+  return Buffer.from(JSON.stringify(jwks), 'utf8').toString('base64')
 }
 
 function customJwk(kid: string): Record<string, string> {
@@ -56,7 +56,7 @@ describe('getBlueskyKeyset', () => {
   })
 
   it('accepts the {keys: [...]} JWKS-document wrapper shape', async () => {
-    const env = Buffer.from(JSON.stringify({ keys: [customJwk('wrapped-key')] }), 'utf-8').toString(
+    const env = Buffer.from(JSON.stringify({ keys: [customJwk('wrapped-key')] }), 'utf8').toString(
       'base64',
     )
     const keyset = await getBlueskyKeyset({ mode: 'production', env })
