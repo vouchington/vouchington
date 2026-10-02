@@ -50,21 +50,21 @@ describe('completeMfaLoginWithContext', () => {
     expect(lifetimeSeconds).toBeLessThanOrEqual(30 * 24 * 60 * 60 + 1)
   }, 20_000)
 
-  it('throws 403 for a suspended user', async () => {
+  it('mints a session for a suspended user', async () => {
     const user = await createTestUser()
     await suspendTestUser(user.id)
     const suspendedUser = (await getTestPrivateUserById(user.id))!
 
-    await expect(
-      completeMfaLoginWithContext(
-        {
-          userId: user.id,
-          deviceId: v7(),
-          sessionId: v7(),
-        },
-        suspendedUser,
-      ),
-    ).rejects.toMatchObject({ status: 403, message: 'Account suspended' })
+    const result = await completeMfaLoginWithContext(
+      {
+        userId: user.id,
+        deviceId: v7(),
+        sessionId: v7(),
+      },
+      suspendedUser,
+    )
+    expect(result.userId).toBe(user.id)
+    expect(result.sessionToken.payload.uid).toBe(user.id)
 
     await unsuspendTestUser(user.id)
   }, 20_000)

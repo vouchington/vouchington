@@ -99,7 +99,7 @@ export async function applyHotWarmCold(
   const user = await fetchUser(uid)
   const claims = user ? await getEnrichedSessionClaims(user) : null
 
-  if (!claims || claims.suspended) {
+  if (!claims) {
     await revokeSession(verified.sid)
     return issueAnonSession(did, dt, verified.dc)
   }

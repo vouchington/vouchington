@@ -81,7 +81,6 @@ export async function issueDiscoverablePasskeyLogin(opts: {
     throw createHttpError(401, 'Passkey sign-in failed')
   }
   const claims = await getEnrichedSessionClaims(opts.user)
-  if (claims.suspended) throw createHttpError(403, 'Account suspended')
 
   const tokens = await createDeviceAndSessionTokens({
     did: opts.deviceId,

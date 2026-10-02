@@ -4,7 +4,11 @@ import { grantConsent } from '@services/user-consents/create'
 import { getActiveConsents } from '@services/user-consents/get'
 import { revokeConsent } from '@services/user-consents/revoke'
 import type { ConsentType } from '@services/user-consents/types'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import {
+  requireAuth,
+  requireAuthForSuspendedException,
+  validateRequestContract,
+} from '../../response-helpers.mts'
 
 type GrantConsentRequest = { consent_type: ConsentType; version: string }
 
@@ -44,7 +48,10 @@ app.route('/api/v1/my/consents').post(async (ctx: Context) => {
 
 // DELETE /api/v1/my/consents/:type
 app.route('/api/v1/my/consents/:type').delete(async (ctx: Context) => {
-  const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/my/consents/:type')
+  const currentUser = await requireAuthForSuspendedException(
+    ctx,
+    'DELETE:/api/v1/my/consents/:type',
+  )
   validateRequestContract(ctx, 'DELETE:/api/v1/my/consents/:type', { path: ctx.params })
 
   // The path schema is a plain string, so the consent-type enum is checked here.

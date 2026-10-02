@@ -3,9 +3,47 @@ import type { PrivateUser } from '@services/users/types'
 import type { PageInfo } from '@voucha/types/pagination'
 import { isUUID } from '@modules/utils'
 import { RuntimeRequestValidatorRegistry } from '@services/runtime-request-validation'
+import { assertNotSuspended } from '@services/users/suspension-guard'
 export { setAnonymousPublicCacheHeaders } from './cache-headers.mts'
 
+const SUSPENDED_EXCEPTION_ROUTES = [
+  'POST:/api/v1/appeals',
+  'DELETE:/api/v1/my/consents/:type',
+  'DELETE:/api/v1/users/:idOrSlug',
+  'POST:/api/v1/users/:idOrSlug/data-request',
+  'POST:/api/v1/memberships/billing-portal-sessions',
+  'POST:/api/v1/markdown/preview',
+] as const
+type SuspendedExceptionRoute = (typeof SUSPENDED_EXCEPTION_ROUTES)[number]
+const SUSPENDED_PROTOCOL_ROUTES = [
+  'POST:/api/v1/auth/oauth/:provider/continue',
+  'POST:/api/v1/auth/oauth/:provider/authorizations',
+  'POST:/api/v1/auth/oauth/authorizations/:flowId/complete',
+  'POST:/api/v1/copyright-notices/:id/guest-filings',
+] as const
+type SuspendedProtocolRoute = (typeof SUSPENDED_PROTOCOL_ROUTES)[number]
+
+function isUnsafeRoute(routeId: string): boolean {
+  return /^(POST|PUT|PATCH|DELETE):/.test(routeId)
+}
+
+function assertActiveForRoute(currentUser: PrivateUser | null, routeId: string): void {
+  if (isUnsafeRoute(routeId)) assertNotSuspended(currentUser)
+}
+
 export async function requireAuth(ctx: Context, routeId: string): Promise<PrivateUser> {
+  const currentUser = await requireUserAfterAnonRateLimit(ctx, routeId)
+  const signatureError = captureSignatureVerificationError(ctx)
+  await applyRouteRateLimitBeforeSignatureError(ctx, routeId, signatureError)
+  assertActiveForRoute(currentUser, routeId)
+  return currentUser
+}
+export async function requireAuthForSuspendedException(
+  ctx: Context,
+  routeId: SuspendedExceptionRoute,
+): Promise<PrivateUser> {
+  if (!SUSPENDED_EXCEPTION_ROUTES.includes(routeId))
+    throw new Error(`Unapproved suspension exception: ${routeId}`)
   const currentUser = await requireUserAfterAnonRateLimit(ctx, routeId)
   const signatureError = captureSignatureVerificationError(ctx)
   await applyRouteRateLimitBeforeSignatureError(ctx, routeId, signatureError)
@@ -15,6 +53,18 @@ export async function getOptionalAuthAndRateLimit(
   ctx: Context,
   routeId: string,
 ): Promise<PrivateUser | null> {
+  const signatureError = captureSignatureVerificationError(ctx)
+  const currentUser = await ctx.getCurrentUser()
+  await applyRouteRateLimitBeforeSignatureError(ctx, routeId, signatureError)
+  assertActiveForRoute(currentUser, routeId)
+  return currentUser
+}
+export async function getOptionalProtocolAuthAndRateLimit(
+  ctx: Context,
+  routeId: SuspendedProtocolRoute,
+): Promise<PrivateUser | null> {
+  if (!SUSPENDED_PROTOCOL_ROUTES.includes(routeId))
+    throw new Error(`Unapproved protocol route: ${routeId}`)
   const signatureError = captureSignatureVerificationError(ctx)
   const currentUser = await ctx.getCurrentUser()
   await applyRouteRateLimitBeforeSignatureError(ctx, routeId, signatureError)
@@ -29,6 +79,7 @@ export async function requireAuthAndRateLimit(
   ctx.assert(canFn(currentUser), 403, 'Forbidden')
   const signatureError = captureSignatureVerificationError(ctx)
   await applyRouteRateLimitBeforeSignatureError(ctx, routeId, signatureError)
+  assertActiveForRoute(currentUser, routeId)
   return currentUser
 }
 export function validateUUIDParam(ctx: Context, name: string): string {

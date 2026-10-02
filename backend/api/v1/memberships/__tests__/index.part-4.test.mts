@@ -65,6 +65,7 @@ describe('retained direct subscription management', () => {
       expect.stringMatching(/^cus_retained_portal_/),
       expect.any(String),
       expect.any(String),
+      undefined,
     )
   })
 })

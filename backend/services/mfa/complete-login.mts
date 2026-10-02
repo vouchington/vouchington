@@ -44,7 +44,6 @@ export async function completeMfaLoginWithContext(
     throw createHttpError(401, 'Login attempt expired or invalid')
   }
   const claims = await getEnrichedSessionClaims(user)
-  if (claims.suspended) throw createHttpError(403, 'Account suspended')
   const tokens = await createDeviceAndSessionTokens({
     did: attempt.deviceId,
     uid: user.id,

@@ -28,4 +28,12 @@
 | Deep linking                                                      | 🟢  | 🟢           | 🟢           | Both native clients dispatch supported deep links into rendered native destinations.                                                                                                                                                                                                           |
 | Navigation customization                                          | 🟢  | 🟢           | 🟢           | Native navigation behavior is rendered and tested.                                                                                                                                                                                                                                             |
 
+Suspended-account writes receive the existing `403 ACCOUNT_SUSPENDED` error across web, Swift,
+and .NET. Reads, sign-in/session refresh, and the narrow self-service exceptions follow the
+[backend suspension policy](security/reference-security-authentication-sessions.md#suspended-user-write-policy).
+Notification target navigation preserves unread state during suspension; billing management opens
+only cancellation for the member's existing subscription. These changes keep the current response,
+session, and generated fixture shapes, so no native DTO migration or new UI parity claim follows.
+Clients must handle the server rejection without committing optimistic state.
+
 [vouchington/vouchington-clients#138]: https://github.com/vouchington/vouchington-clients/pull/138

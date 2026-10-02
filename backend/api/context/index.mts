@@ -166,7 +166,7 @@ const extensions = {
         return null
       }
 
-      const user = await getPrivateUserByAny(sessionData.uid)
+      const user = await getPrivateUserByAny(sessionData.uid, { readOnly: false })
       if (!user) {
         const deviceData = await this.getDeviceTokenData()
         const deviceClass = 'dc' in deviceData ? deviceData.dc : undefined

@@ -1,5 +1,6 @@
 import type { Context } from '@jongleberry/api-server'
 import { isAdminUser } from '@services/users'
+import { assertNotSuspended } from '@services/users/suspension-guard'
 import { RateLimiter } from '@data-stores/valkey-rate-limiter'
 import { isUUID } from '@modules/utils'
 import { validateRequestContract } from './response-helpers.mts'
@@ -51,6 +52,7 @@ function createVoteMutationHandler<VoteResult extends ElectionVoteMutationResult
     ctx.assert(currentUser, 401, 'Unauthorized')
 
     await ctx.applyRouteRateLimit(options.routeKey)
+    assertNotSuspended(currentUser)
 
     if (options.preAssertAccess) {
       await options.preAssertAccess(ctx, currentUser)
@@ -120,8 +122,7 @@ function createVoteMutationHandler<VoteResult extends ElectionVoteMutationResult
       sessionId: sessionData.sid ?? null,
       userAgent: (ctx.req.headers['user-agent'] as string | undefined) ?? null,
     }
-    // Serialize the read/quota-reservation/append decision across application instances. The
-    // persistence lock uses a separate namespace to avoid nested-transaction deadlocks.
+    // Serialize read/quota/append; persistence uses a separate lock namespace to prevent deadlocks.
     const upsertedVotes = await withElectionVoteRequestLock(
       options.entityType,
       currentUser.id,

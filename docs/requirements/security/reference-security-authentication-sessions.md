@@ -28,6 +28,34 @@
 - **Key rotation**: prepend the new key, deploy both backend and Cloudflare Worker, wait for old
   tokens to expire, then remove the old trailing key
 
+### Suspended-user write policy
+
+An account suspension blocks ordinary user-attributed writes, including staff actions, with
+`403 ACCOUNT_SUSPENDED`. Authentication resolves the current user from the primary database;
+cached session claims do not grant permission to write. Standard REST authorization helpers reject
+POST, PUT, PATCH, and DELETE after their authentication, capability, rate-limit, and signature
+preamble, before route validation or mutation. Direct vote and user-attributed view/referral routes
+also enforce suspension.
+
+Sign-in and session refresh remain available for read access and the following narrow exceptions:
+
+- Submit the member's own moderation appeal and log out.
+- Delete the member's own account, withdraw their consent, or request their own personal-data export.
+- Cancel an existing subscription through a cancellation-only Stripe flow. It returns to Voucha
+  after completion and does not expose the full billing portal.
+- Preview Markdown, which only renders content.
+
+Suspended staff cannot use a self-service exception for another account. Notification target
+navigation returns the caller's owned target without marking the notification as read. Other reads
+retain their existing access rules. Linking authentication accounts remains blocked, including an
+OAuth connection begun before suspension. Authentication still rejects deleted users, revoked
+sessions, invalid device/session pairs, and invalid proofs.
+
+Independent credential boundaries retain their own authorization: external callbacks, OAuth server
+tokens, guest copyright filing capabilities, and token-based email unsubscribe do not derive their
+authority from an ambient user session. MCP credential-owner authentication continues to reject
+suspended accounts.
+
 ### Multi-Factor Authentication
 
 - Users may register **multiple passkeys** (WebAuthn/FIDO2) and **multiple TOTP authenticators**; both types coexist per account.

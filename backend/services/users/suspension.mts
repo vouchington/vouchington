@@ -1,7 +1,7 @@
 import { beginTransaction, read, type TransactionQuery } from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import { createCodedError } from '@modules/on-error/create-coded-error'
-import { ACCOUNT_SUSPENDED, CONFLICT } from '@modules/on-error/error-codes'
+import { CONFLICT } from '@modules/on-error/error-codes'
 import { assertSuspensionTarget } from './suspension-target.mts'
 import { isAdminUser } from './authorization.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
@@ -154,11 +154,7 @@ export async function unsuspendUser(
   return updated
 }
 
-export function assertNotSuspended(currentUser: PrivateUser | null | undefined): void {
-  if (currentUser?.suspended_at) {
-    throw createCodedError(403, 'Your account has been suspended', ACCOUNT_SUSPENDED)
-  }
-}
+export { assertNotSuspended } from './suspension-guard.mts'
 
 export async function getUserSuspensionById(suspensionId: string): Promise<
   | {

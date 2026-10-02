@@ -122,6 +122,24 @@ describe('Stripe operations', () => {
         idempotencyKey: 'portal-key',
       }),
     ).resolves.toEqual({ url: 'https://portal.test' })
+    expect(createPortal).toHaveBeenLastCalledWith(
+      'cus_1',
+      'https://example.com',
+      'portal-key',
+      undefined,
+    )
+    await createBillingPortalSessionOperation({
+      customerId: 'cus_1',
+      returnUrl: 'https://example.com',
+      idempotencyKey: 'cancel-key',
+      cancellationSubscriptionId: 'sub_1',
+    })
+    expect(createPortal).toHaveBeenLastCalledWith(
+      'cus_1',
+      'https://example.com',
+      'cancel-key',
+      'sub_1',
+    )
     await expect(
       cancelSubscriptionAtPeriodEndOperation({
         subscriptionId: 'sub_1',
@@ -148,7 +166,12 @@ describe('Stripe operations', () => {
     await expect(
       sanitizeCustomerOperation({ customerId: 'cus_1', idempotencyKey: 'sanitize-key' }),
     ).resolves.toBeNull()
-    expect(createPortal).toHaveBeenCalledWith('cus_1', 'https://example.com', 'portal-key')
+    expect(createPortal).toHaveBeenCalledWith(
+      'cus_1',
+      'https://example.com',
+      'portal-key',
+      undefined,
+    )
     expect(cancelAtPeriodEnd).toHaveBeenCalledWith('sub_1', 'later-key')
     expect(cancelImmediately).toHaveBeenCalledWith('sub_1')
     expect(createRefund).toHaveBeenCalledWith({

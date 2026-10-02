@@ -72,6 +72,7 @@ export async function createBillingPortalSessionOperation(
     payload.customerId,
     payload.returnUrl,
     payload.idempotencyKey,
+    payload.cancellationSubscriptionId,
   )
   return { url: session.url }
 }

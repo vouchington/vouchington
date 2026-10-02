@@ -1,10 +1,17 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { TEST_CAPTCHA_TOKEN } from '@voucha/test-helpers/captcha/test-captcha-token'
-import { createTestUser, insertTestCommunity, insertTestCommunityBan } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  insertTestCommunity,
+  insertTestCommunityBan,
+  suspendTestUserGetId,
+  unsuspendTestUser,
+} from '@voucha/test-helpers'
 import { Response as UndiciResponse } from 'undici'
 import type { PrivateUser } from '@services/users/types'
 import type * as Undici from 'undici'
+import { getModerationAppealByIdFromPrimary } from '@services/moderation-appeals'
 
 const mockFetch = vi.hoisted(() => vi.fn<typeof Undici.fetch>())
 
@@ -92,5 +99,33 @@ describe('POST /api/v1/appeals CAPTCHA', () => {
         body: expect.stringContaining(`response=${TEST_CAPTCHA_TOKEN}`),
       }),
     )
+  })
+
+  it('allows a suspended member to appeal their own suspension', async () => {
+    const member = await createTestUser()
+    const request = createRequest()
+    await request.authenticateAs(member)
+    const suspensionId = await suspendTestUserGetId(member.id)
+    try {
+      const response = await request
+        .post('/api/v1/appeals')
+        .send({
+          target_type: 'suspension',
+          target_id: suspensionId,
+          appeal_reason: `Please review ${crypto.randomUUID()}`,
+          cf_turnstile_response: TEST_CAPTCHA_TOKEN,
+        })
+        .expect(201)
+      expect(response.body.appeal).toMatchObject({
+        user_suspension_id: suspensionId,
+        status: 'pending',
+      })
+      expect(await getModerationAppealByIdFromPrimary(response.body.appeal.id)).toMatchObject({
+        appellant_id: member.id,
+      })
+      expect(mockFetch).toHaveBeenCalled()
+    } finally {
+      await unsuspendTestUser(member.id)
+    }
   })
 })

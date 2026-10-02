@@ -7,6 +7,8 @@ import {
   restoreUser,
   softDeleteTestUserAndWaitBeforeCommit,
   softDeleteUser,
+  suspendTestUser,
+  unsuspendTestUser,
 } from '@voucha/test-helpers'
 import {
   connectOAuthAccountToUser,
@@ -15,6 +17,25 @@ import {
 import { upsertOAuthAccount } from './upsert.mts'
 
 describe('connectOAuthAccountToUser', () => {
+  it('rechecks suspension after provider work and leaves the account unlinked', async () => {
+    const user = await createTestUser()
+    const providerUserId = `github-suspended-${randomUUID()}`
+    await upsertOAuthAccount('github', providerUserId, `tests+${providerUserId}@voucha.ai`, {
+      login: providerUserId,
+    })
+    try {
+      await suspendTestUser(user.id)
+      await expect(
+        connectOAuthAccountToUser('github', user.id, providerUserId),
+      ).rejects.toMatchObject({ status: 403, code: 'ACCOUNT_SUSPENDED' })
+      expect(await getTestOAuthAccountRaw('github', providerUserId)).toMatchObject({
+        user_id: null,
+      })
+    } finally {
+      await unsuspendTestUser(user.id)
+    }
+  })
+
   it('throws 409 when the provider account belongs to another user', async () => {
     const userA = await createTestUser()
     const userB = await createTestUser()

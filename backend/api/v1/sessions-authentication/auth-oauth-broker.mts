@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import {
-  getOptionalAuthAndRateLimit,
+  getOptionalProtocolAuthAndRateLimit,
   parseJsonBody,
   validateRequestContract,
 } from '../../response-helpers.mts'
@@ -37,15 +37,14 @@ app.route('/api/v1/auth/oauth/providers').get(async (ctx: Context) => {
   )
 })
 
-// This is a public route: getOptionalAuthAndRateLimit() (rate limit + optional auth) runs before
+// This is a public route: getOptionalProtocolAuthAndRateLimit() runs before
 // assertBrokerOAuthProvider() so probing an invalid :provider segment can't skip the rate limiter
 // (issue #322) — mirroring GET broker-callback below, which already rate-limits first.
 app.route('/api/v1/auth/oauth/:provider/authorizations').post(async (ctx: Context) => {
-  const currentUser = await getOptionalAuthAndRateLimit(
+  const currentUser = await getOptionalProtocolAuthAndRateLimit(
     ctx,
     'POST:/api/v1/auth/oauth/:provider/authorizations',
   )
-  if (currentUser) assertNotSuspended(currentUser)
   const provider = assertBrokerOAuthProvider(ctx.params.provider ?? '')
   const body = apiRequest(
     'POST:/api/v1/auth/oauth/:provider/authorizations',
@@ -65,6 +64,7 @@ app.route('/api/v1/auth/oauth/:provider/authorizations').post(async (ctx: Contex
   // invalid purpose/callback_mode value; the schema check runs after them, against the same
   // body, to add the unrecognized-field and completion_proof_challenge type guard.
   validateRequestContract(ctx, 'POST:/api/v1/auth/oauth/:provider/authorizations', { body })
+  if (body.purpose === 'connect' && currentUser) assertNotSuspended(currentUser)
   const sessionData = await ctx.getSessionTokenData()
   const result = await beginOAuthAuthorization({
     provider,

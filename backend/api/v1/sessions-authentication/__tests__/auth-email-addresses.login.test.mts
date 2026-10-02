@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRequest, nextTestRequestIp, request } from '@voucha/test-helpers/api/server'
 import {
   createUniqueTestEmail,
+  createTestUser,
+  suspendTestUser,
+  unsuspendTestUser,
   overrideDynamicConfigFieldsForTest,
   invalidateEmailDomainCaches,
 } from '@voucha/test-helpers'
@@ -51,6 +54,25 @@ describe('Email Address Authentication Routes', () => {
   describe('POST /api/v1/auth/email-address/login', () => {
     beforeEach(() => {
       vi.clearAllMocks()
+    })
+
+    it('lets a suspended existing user sign in', async () => {
+      const user = await createTestUser()
+      await suspendTestUser(user.id)
+      try {
+        const emailAddress = user.email_address!
+        const { token } = await createEmailAddressLoginToken(emailAddress)
+        const response = await createRequest()
+          .post('/api/v1/auth/email-address/login')
+          .send({ emailAddress, token, dt: deviceToken, st: sessionToken })
+          .expect(200)
+
+        expect(response.body.uid).toBe(user.id)
+        expect(response.body.user.suspended_at).toBeTruthy()
+        expect(response.body.st.payload.uid).toBe(user.id)
+      } finally {
+        await unsuspendTestUser(user.id)
+      }
     })
 
     it('logs in with token or otp field and returns session payload', async () => {
