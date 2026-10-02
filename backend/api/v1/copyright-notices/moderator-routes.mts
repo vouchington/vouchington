@@ -27,6 +27,7 @@ import {
   appendCopyrightLegalHoldAssessment,
   resolveCopyrightLegalHold,
   replayFailedCopyrightDeliveryIntent,
+  reviewCopyrightStaydownMatch,
 } from '@services/copyright-notices'
 import {
   boundedString,
@@ -132,6 +133,24 @@ app
     })
     if (replayed) void enqueueDeliverCopyrightNotice(intentId)
     ctx.json({ replayed })
+  })
+
+app
+  .route('/api/v1/copyright-notices/:id/staydown-matches/:matchId/reviews')
+  .post(async (ctx: Context) => {
+    setPrivateNoStoreCacheHeaders(ctx)
+    const currentUser = await requireAuthAndRateLimit(
+      ctx,
+      currentUserCanReviewCopyrightNotices,
+      'POST:/api/v1/copyright-notices/:id/staydown-matches/:matchId/reviews',
+    )
+    assertNotSuspended(currentUser)
+    const reviewed = await reviewCopyrightStaydownMatch({
+      noticeId: validateUUIDParam(ctx, 'id'),
+      matchId: validateUUIDParam(ctx, 'matchId'),
+      actorUserId: currentUser.id,
+    })
+    ctx.json({ reviewed })
   })
 
 app

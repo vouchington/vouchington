@@ -4,8 +4,11 @@ import { getWorkerConcurrency } from '@modules/queue-config'
 import { cleanupAbandonedUploads } from '@services/images/cleanup-abandoned-uploads'
 import { IMAGES_QUEUE_NAME } from '@queues/images/config'
 import { processExtractImageMetadata } from '../processors/extract-metadata.mts'
+import { processStaydownHash } from '../processors/staydown-hash.mts'
 
-type ImagesJobData = {/* cleanup-abandoned-uploads */} | { id: string /* extract-metadata */ }
+type ImagesJobData =
+  | {/* cleanup-abandoned-uploads */}
+  | { id: string /* extract-metadata, staydown-hash */ }
 
 export async function handleImagesJob(job: Job<ImagesJobData>): Promise<unknown> {
   switch (job.name) {
@@ -14,6 +17,11 @@ export async function handleImagesJob(job: Job<ImagesJobData>): Promise<unknown>
     case 'extract-metadata': {
       const data = job.data as { id: string }
       await processExtractImageMetadata(data.id)
+      return { success: true }
+    }
+    case 'staydown-hash': {
+      const data = job.data as { id: string }
+      await processStaydownHash(data.id)
       return { success: true }
     }
     default:

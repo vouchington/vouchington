@@ -86,6 +86,13 @@ export function copyrightStaffQueueKeysSql(): SQLStatement {
           WHERE erased.copyright_notice_id = intent.copyright_notice_id
         )
       UNION ALL
+      SELECT target.copyright_notice_id, 'staydown_review', staydown_match.created_at
+      FROM copyright_staydown_matches staydown_match
+      JOIN copyright_staydown_entries entry ON entry.id = staydown_match.copyright_staydown_entry_id
+      JOIN copyright_restrictions restriction ON restriction.id = entry.copyright_restriction_id
+      JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
+      WHERE staydown_match.reviewed_at IS NULL
+      UNION ALL
       SELECT deadline.copyright_notice_id,
         CASE WHEN deadline.restoration_deadline_at <= CURRENT_TIMESTAMP
           THEN 'deadline_missed' ELSE 'deadline_due' END,

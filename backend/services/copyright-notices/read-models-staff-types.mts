@@ -86,6 +86,21 @@ export type CopyrightStaffCase = {
     state: 'pending' | 'claimed' | 'sent' | 'failed' | 'bounced'
     delivery_attempt_count: number
   }>
+  /**
+   * Unreviewed uploads that matched an image this case confirmed as infringing. Each is a prompt
+   * for staff to look, never a finding: the upload stays published whatever staff decide.
+   */
+  staydown_matches: Array<{
+    id: string
+    /** The matching image; for an exact match, the registered image itself. */
+    image_id: string
+    registered_image_id: string
+    uploaded_by_id: string
+    match_kind: 'exact' | 'perceptual'
+    /** Differing bits out of 64; 0 for an exact match. */
+    hamming_distance: number
+    matched_at: Date
+  }>
   email_correspondence: Array<{
     submission_id: string | null
     kind: 'supplement' | 'appeal' | 'counter_notice' | 'withdrawal' | 'court_or_ccb_hold'
@@ -103,6 +118,7 @@ export type CopyrightStaffQueueReason =
   | 'action_failed'
   | 'enforcement_pending'
   | 'delivery_failed'
+  | 'staydown_review'
   | 'deadline_due'
   | 'deadline_missed'
 

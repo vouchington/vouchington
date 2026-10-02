@@ -247,6 +247,41 @@ Disabling it stops new automated assessments. Pending automated requests stay un
 staff queue until a moderator decides the intake. Existing restrictions stay in place; review them
 as usual.
 
+## Staydown matching
+
+`staydownMatching` in the `copyright` dynamic-config namespace stays `false`. Only a developer or an
+administrator can change it, and the namespace history records each change. Staydown binds only an
+online content-sharing service provider under DSM Directive Article 17(4)(b)-(c). **Counsel must
+decide whether Voucha is one before anyone enables the switch.** See
+[Staydown matching](../requirements/moderation/COPYRIGHT-NOTICES.md#staydown-matching) for the
+contract.
+
+While it is off, nothing is hashed or matched and no review item appears. While it is on, a
+moderator-confirmed image enters a registry (exact SHA-256 at once, a perceptual hash a moment
+later), and an upload with identical bytes or a near-duplicate image creates a "Possible re-upload"
+item in the case queue. The upload still publishes; this feature never blocks, hides, or delays one.
+
+To triage a possible re-upload:
+
+1. Open the case and compare the uploaded image with the confirmed one. A near-duplicate can be a
+   lawful use such as quotation, criticism, review, parody, or pastiche; Article 17(7) forbids
+   treating a match as a finding.
+2. If the upload infringes, handle it through the normal notice workflow. If not, do nothing more.
+3. Select **Mark reviewed** so the item leaves the queue. A reviewed match is not reopened for the
+   same image and uploader.
+
+Notes for operators:
+
+- Uploads made while the switch was off are not matched afterwards, and turning the switch off
+  leaves existing entries inert until their restriction is lifted. Lifting a restriction, including
+  a staff reversal, removes its entry and matches.
+- A near-duplicate that uploads before the confirmed image's perceptual hash exists is matched
+  perceptually only when its `staydown-hash` job is replayed. The entity-listener reconciliation
+  replays recent images on its hourly pass, so only a recent upload recovers that way. Identical
+  files match at once.
+- A stale item that nobody marks reviewed keeps the case in the queue and counts toward the review
+  target.
+
 ## Counter-notice and hold handling
 
 1. Keep informal appeals separate from statutory counter-notices.

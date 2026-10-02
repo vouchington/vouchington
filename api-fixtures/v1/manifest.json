@@ -13701,7 +13701,7 @@
     },
     "GET:/api/v1/copyright-notices/review-queue": {
       "bodyKind": "content",
-      "hash": "28365bd2f3a9a892ccf506cdb72d4a172344c1f5d75d51a12f085cf90481ced1",
+      "hash": "a3e7152db615c9cf14605a80cf8da36c5ab704109aafcb2234dfcb3d042cd192",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -13902,6 +13902,10 @@
               {
                 "type": "literal",
                 "value": "restriction_review"
+              },
+              {
+                "type": "literal",
+                "value": "staydown_review"
               }
             ]
           },
@@ -14737,6 +14741,70 @@
                               }
                             },
                             "target_id": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "type": "array"
+                      }
+                    },
+                    "staydown_matches": {
+                      "required": true,
+                      "schema": {
+                        "items": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "hamming_distance": {
+                              "required": true,
+                              "schema": {
+                                "type": "number"
+                              }
+                            },
+                            "id": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
+                            },
+                            "image_id": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
+                            },
+                            "match_kind": {
+                              "required": true,
+                              "schema": {
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "type": "literal",
+                                    "value": "exact"
+                                  },
+                                  {
+                                    "type": "literal",
+                                    "value": "perceptual"
+                                  }
+                                ]
+                              }
+                            },
+                            "matched_at": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
+                            },
+                            "registered_image_id": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
+                            },
+                            "uploaded_by_id": {
                               "required": true,
                               "schema": {
                                 "type": "string"
@@ -89215,7 +89283,7 @@
       ],
       "path": "/api/v1/copyright-notices/review-queue",
       "responseSchema": {
-        "hash": "59e5fec107be94dee46b42ba832642b0796d890066600ca8f1834b40ee17ebec",
+        "hash": "20ccafbda705058ebbf39049493a577239b35e0518a35bcd237a3f04a91c56f2",
         "key": "web.copyright.staff-queue.default"
       },
       "route": {

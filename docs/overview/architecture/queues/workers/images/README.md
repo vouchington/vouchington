@@ -10,12 +10,19 @@ This package exists to keep `sharp` (a ~30 MiB native binary) out of the API dep
 
 ## Exports
 
-- `images` — the `Worker` instance that processes `cleanup-abandoned-uploads` and
-  `extract-metadata` jobs from the `images` queue.
+- `images` — the `Worker` instance that processes `cleanup-abandoned-uploads`,
+  `extract-metadata`, and `staydown-hash` jobs from the `images` queue.
 
 `extract-metadata` receives only `{ id }` and reads the image row from the PostgreSQL primary. It
 requires the stored key to match the persisted SHA-256 digest before Sharp reads the canonical
 object. Invalid storage state becomes a terminal failure; provider failures remain retryable.
+
+`staydown-hash` receives only `{ id }`, does nothing while `copyright.staydownMatching` is off, and
+otherwise computes a 64-bit dHash (`staydown-dhash.mts`: auto-orient, flatten on white, greyscale,
+9x8 resize, left-greater-than-right bits; null for a flat image) with Sharp. It stores the hash on a
+registered staydown entry and records staff-review matches through `@services/copyright-notices`.
+It never writes the image row. Both writes are idempotent, so retries and reconciliation replays are
+safe.
 
 The processor function `processExtractImageMetadata` is internal to this package. It is not part of the public export map but is accessible via relative import in tests within this package.
 

@@ -3,6 +3,7 @@ import sql from 'sql-template-strings'
 import { copyrightTargetRestoreIsBlocked } from './court-hold-assessment-gate.mts'
 import type { CopyrightActionDeliveryOutcome } from './action-delivery-state-types.mts'
 import type { LockedCopyrightActionDelivery } from './action-delivery-locking-types.mts'
+import { removeCopyrightStaydownEntryInTransaction } from './staydown-registration.mts'
 import {
   copyrightActionDeliveryFacts,
   lockCopyrightActionDeadline,
@@ -118,6 +119,7 @@ export async function liftCopyrightRestrictionInTransaction(
     SET lifted_at = ${now}, lifted_by_id = NULL
     WHERE id = ${restrictionId} AND lifted_at IS NULL
   `)
+  await removeCopyrightStaydownEntryInTransaction(restrictionId, query)
 }
 
 export async function insertCopyrightActionLifecycleEvent(

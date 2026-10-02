@@ -7,7 +7,7 @@ allowlisted member projection; PostgreSQL owns the durable legal aggregate intro
 `0634-00-00-copyright-notices.sql`.
 
 The package provides transactional aggregate creation, immutable submission and assessment records,
-deadline derivation, restriction/review transitions, hold resolution, correspondence approval, and
+deadline derivation, restriction/review transitions, [staydown](staydown.md), hold resolution, correspondence approval, and
 revision-fenced restore intents. The intake layer adds structured form and preserved-email records,
 but remains disabled by default with `COPYRIGHT_INTAKE_ENABLED`. `assertCopyrightIntakeEnabled()`
 is the one guard every new-intake route (US form, EU and UK notices) and staff approval of an
@@ -31,7 +31,7 @@ A statutory counter-notice forwarding intent is created only inside the qualifyi
 transaction, after an identified reviewer has found the immutable counter-notice compliant. The
 forwarded body and restoration date derive from that assessed submission and exact target scope.
 
-The form-intake layer adds a deliberately small authoritative resolver for the currently supported
+The form-intake layer adds a small authoritative resolver for the currently supported
 post-image placement: it accepts a hosted post URL plus image ID, verifies the association in the
 primary database, and derives the placement key server-side. It does not accept caller-supplied
 placement keys or revisions. The full authoritative revision and delivery transition remain in the

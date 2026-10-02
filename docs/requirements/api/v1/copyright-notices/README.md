@@ -65,6 +65,18 @@ oldest open item's time), and `next_deadline` (the earliest open deadline's `esc
 `restoration_deadline_at`, or null). Urgency is evaluated against the current time on each request,
 so a case whose deadline passes between pages moves to an earlier tier.
 
+While `copyright.staydownMatching` is on, an upload that matches an image a moderator confirmed on
+a case adds the `staydown_review` reason to that case. Each item's `staydown_matches` lists its
+unreviewed matches: `id`, `match_kind` (`exact` or `perceptual`), `hamming_distance` (differing
+bits of 64; 0 for an exact match), `registered_image_id`, the matching `image_id` (the registered
+image itself for an exact match, because a byte-identical re-upload resolves to the existing image),
+`uploaded_by_id`, and `matched_at`.
+The list is empty while the switch is off. A moderator marks one reviewed with
+`POST /api/v1/copyright-notices/:id/staydown-matches/:matchId/reviews`, which returns
+`{ reviewed: boolean }` (`false` when already reviewed) and `404` for a match that belongs to a
+different case. The match never blocks the upload; see
+[staydown matching](../../../moderation/COPYRIGHT-NOTICES.md#staydown-matching).
+
 A queued item's `form_review` returns the intake's screening and advisory guidance whether or not a
 moderator has decided it. Its `review` is null until then, and afterwards `{ accepted, reviewed_at,
 reviewed_by_id }` with a null `reviewed_by_id` once the reviewer's account is erased. The
@@ -187,4 +199,5 @@ target-scoped restrictions. A repeat-infringer account read is one query. A revi
 disposition, or reinstatement is one transaction. Restrict and terminate then call account
 suspension. The guest capability list is private, uncached, and one primary-database query walking
 the `(copyright_notice_id, id)` index. A guest filing locks its capability row, then appends the
-filing and any withdrawal revocations in one transaction.
+filing and any withdrawal revocations in one transaction. Marking a staydown match reviewed is one
+update by primary key.

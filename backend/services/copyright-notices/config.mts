@@ -11,6 +11,7 @@ export const copyrightConfig = new DynamicConfig({
     reviewTargetMinutes: 'number',
     evidenceRetentionDeletion: 'boolean',
     evidenceRetentionDays: 'number',
+    staydownMatching: 'boolean',
   },
   defaultFields: {
     automaticProvisionalWithholding: false,
@@ -20,6 +21,7 @@ export const copyrightConfig = new DynamicConfig({
     // 0 means unset: nothing is deleted until counsel approves a retention period, even when the
     // switch is on.
     evidenceRetentionDays: 0,
+    staydownMatching: false,
   },
 })
 
@@ -56,4 +58,14 @@ export async function getCopyrightEvidenceRetentionDays(): Promise<number | null
   await copyrightConfig.waitForInitialization()
   const days = copyrightConfig.getFields().evidenceRetentionDays
   return typeof days === 'number' && Number.isInteger(days) && days > 0 ? days : null
+}
+
+/**
+ * Whether media a moderator confirmed as infringing is hashed into the staydown registry, and
+ * whether new uploads are matched against it. Off by default: DSM Article 17(4)(b)-(c) staydown
+ * binds only an online content-sharing service provider, which counsel must decide Voucha is.
+ */
+export async function isCopyrightStaydownMatchingEnabled(): Promise<boolean> {
+  await copyrightConfig.waitForInitialization()
+  return copyrightConfig.getFields().staydownMatching === true
 }

@@ -29298,7 +29298,8 @@
                             "enforcement_pending",
                             "form_intake_review",
                             "legal_hold_review",
-                            "restriction_review"
+                            "restriction_review",
+                            "staydown_review"
                           ],
                           "type": "string"
                         },
@@ -29326,6 +29327,46 @@
                             }
                           },
                           "required": ["id", "imposed_at", "status", "target_id"],
+                          "type": "object"
+                        },
+                        "type": "array"
+                      },
+                      "staydown_matches": {
+                        "items": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "hamming_distance": {
+                              "type": "number"
+                            },
+                            "id": {
+                              "type": "string"
+                            },
+                            "image_id": {
+                              "type": "string"
+                            },
+                            "match_kind": {
+                              "enum": ["exact", "perceptual"],
+                              "type": "string"
+                            },
+                            "matched_at": {
+                              "type": "string"
+                            },
+                            "registered_image_id": {
+                              "type": "string"
+                            },
+                            "uploaded_by_id": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "hamming_distance",
+                            "id",
+                            "image_id",
+                            "match_kind",
+                            "matched_at",
+                            "registered_image_id",
+                            "uploaded_by_id"
+                          ],
                           "type": "object"
                         },
                         "type": "array"
@@ -29392,6 +29433,7 @@
                       "reasons",
                       "received_at",
                       "restrictions",
+                      "staydown_matches",
                       "targets",
                       "waiting_since",
                       "work_description"

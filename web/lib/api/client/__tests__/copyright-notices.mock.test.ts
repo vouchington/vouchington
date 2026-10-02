@@ -33,6 +33,7 @@ import {
   recordCopyrightRepeatInfringerReinstatement,
   recordCopyrightRepeatInfringerReviewOutcome,
 } from '../copyright-repeat-infringer'
+import { reviewCopyrightStaydownMatch } from '../copyright-staydown'
 import { expectApiWrapperCall } from '@/test-helpers/api-wrapper'
 import type { CopyrightNoticesPage, CopyrightStaffQueuePage } from '@/types/copyright-notices'
 
@@ -222,6 +223,11 @@ describe('copyright notices client', () => {
       '/api/v1/copyright-notices/notice-1/delivery-intents/intent-1/replays',
       {},
     ])
+    await expectPost(
+      { reviewed: true },
+      () => reviewCopyrightStaydownMatch('notice-1', 'match-1'),
+      ['/api/v1/copyright-notices/notice-1/staydown-matches/match-1/reviews', {}],
+    )
     await expectGet(
       { copyright_repeat_infringer_accounts: [] },
       () => listCopyrightRepeatInfringerAccounts('notice-1'),

@@ -7,8 +7,11 @@ import type { CopyrightHumanReviewAction, CopyrightRestrictionRecord } from './t
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
-import { syncCopyrightRepeatInfringerIncidents } from './repeat-infringer-incidents.mts'
 import { createCopyrightRestoreIntentForReversalInTransaction } from './restoration-reversal.mts'
+import {
+  applyCopyrightConfirmationConsequencesInTransaction,
+  enqueueCopyrightStaydownHashes,
+} from './staydown-registration.mts'
 
 export async function completeCopyrightMandatoryHumanReview(input: {
   currentUser: PrivateUser
@@ -74,7 +77,10 @@ export async function completeCopyrightMandatoryHumanReview(input: {
     )
     restoreIntentId = intent.id
   }
-  await syncCopyrightRepeatInfringerIncidents(input.noticeId, transaction)
+  const staydownImageIds = await applyCopyrightConfirmationConsequencesInTransaction(
+    input.noticeId,
+    transaction,
+  )
   await transaction(sql`/* completeCopyrightMandatoryHumanReview:event */
     INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id,
       copyright_restriction_id, review_action, review_rationale_ciphertext)
@@ -86,5 +92,6 @@ export async function completeCopyrightMandatoryHumanReview(input: {
   `)
   await transaction.commit()
   if (restoreIntentId) void enqueueApplyCopyrightAction(restoreIntentId)
+  enqueueCopyrightStaydownHashes(staydownImageIds)
   return restriction
 }

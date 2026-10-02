@@ -7,6 +7,8 @@ import { createImageUploadUrl } from '@services/images/create-upload-url'
 import { completeImageUpload } from '@services/images/complete-upload'
 import { getImageUploadState, deriveUploadStatus } from '@services/images/get-upload-state'
 import { assertNotSuspended } from '@services/users'
+import { recordCopyrightStaydownExactMatch } from '@services/copyright-notices/staydown-matches'
+import onError from '@modules/on-error'
 
 type CreateImageUploadUrlRequest = { content_type: string; content_length: number }
 
@@ -35,6 +37,14 @@ app.route('/api/v1/images/:id/completions').post(async (ctx: Context) => {
   validateRequestContract(ctx, 'POST:/api/v1/images/:id/completions', { path: ctx.params })
 
   const image = await completeImageUpload(currentUser, id)
+  // Bytes already hosted deduplicate to the existing image. When a moderator confirmed that image
+  // as infringing, staff are asked to look; the upload itself is never held back or failed.
+  if (image.id !== id) {
+    await recordCopyrightStaydownExactMatch({
+      imageId: image.id,
+      uploadedById: currentUser.id,
+    }).catch(err => onError(err instanceof Error ? err : new Error(String(err))))
+  }
 
   ctx.json({ image: toCompleteImageUploadResponse(image) })
 })

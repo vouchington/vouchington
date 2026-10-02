@@ -150,6 +150,7 @@ function makeNotice(): CopyrightStaffQueueItem {
         delivery_attempt_count: 3,
       },
     ],
+    staydown_matches: [],
     email_correspondence: [],
     reasons: ['action_failed', 'delivery_failed'],
     waiting_since: '2026-01-01T00:00:00.000Z',

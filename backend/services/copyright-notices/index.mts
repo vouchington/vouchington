@@ -42,7 +42,7 @@ export { appendCopyrightNoticeSubmission } from './submission-appending.mts'
 export { appendCopyrightSubmissionAssessment } from './compliance.mts'
 export { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 export { completeCopyrightMandatoryHumanReview } from './human-review.mts'
-
+export { reviewCopyrightStaydownMatch } from './staydown-review.mts'
 export {
   recordCopyrightRepeatInfringerReinstatement,
   recordCopyrightRepeatInfringerReviewOutcome,

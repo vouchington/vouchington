@@ -41,6 +41,7 @@
     "@services/comments": "workspace:^",
     "@services/communities": "workspace:^",
     "@services/community-agent-prompts": "workspace:^",
+    "@services/copyright-notices": "workspace:^",
     "@services/crawlers": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@services/entity-cache": "workspace:^",

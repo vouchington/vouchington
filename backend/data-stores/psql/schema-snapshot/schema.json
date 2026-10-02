@@ -31301,6 +31301,522 @@
       },
       "uniqueConstraints": {}
     },
+    "copyright_staydown_entries": {
+      "checkConstraints": {
+        "copyright_staydown_entries_sha_256_check": "CHECK ((octet_length(sha_256) = 32))"
+      },
+      "columns": {
+        "copyright_restriction_id": {
+          "collation": null,
+          "comment": "The moderator-confirmed restriction this entry belongs to. Lifting the restriction deletes the entry.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "image_id": {
+          "collation": null,
+          "comment": "The confirmed image the hashes were taken from.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "perceptual_hash": {
+          "collation": null,
+          "comment": "64-bit difference hash (dHash) of the image, for near-duplicate matching by Hamming distance. Null until the image worker computes it, or when the image is too flat to hash.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "bit(64)"
+        },
+        "sha_256": {
+          "collation": null,
+          "comment": "SHA-256 of the original image bytes, for exact re-upload matching.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "bytea"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Registry of media whose withholding a moderator confirmed, kept only while that restriction is in force. Written only when copyright.staydownMatching is on.",
+      "foreignKeys": {
+        "copyright_staydown_entries_copyright_restriction_id_fkey": {
+          "columns": ["copyright_restriction_id"],
+          "definition": "FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_restrictions",
+          "validated": true
+        },
+        "copyright_staydown_entries_image_id_fkey": {
+          "columns": ["image_id"],
+          "definition": "FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "images",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_staydown_entries_copyright_restriction_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_staydown_entries_copyright_restriction_id_key ON public.copyright_staydown_entries USING btree (copyright_restriction_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_restriction_id",
+              "descending": false,
+              "expression": "copyright_restriction_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_staydown_entries_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_staydown_entries_pkey ON public.copyright_staydown_entries USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_staydown_entries__image": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_staydown_entries__image ON public.copyright_staydown_entries USING btree (image_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_staydown_entries__sha_256": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_staydown_entries__sha_256 ON public.copyright_staydown_entries USING btree (sha_256)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "sha_256",
+              "descending": false,
+              "expression": "sha_256",
+              "nullsFirst": false,
+              "opclass": "bytea_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_staydown_entries_updated_at": "CREATE TRIGGER trigger_copyright_staydown_entries_updated_at BEFORE UPDATE ON public.copyright_staydown_entries FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "copyright_staydown_entries_copyright_restriction_id_key": {
+          "columns": ["copyright_restriction_id"],
+          "definition": "UNIQUE (copyright_restriction_id)"
+        }
+      }
+    },
+    "copyright_staydown_matches": {
+      "checkConstraints": {
+        "copyright_staydown_match_exact_distance": "CHECK (((match_kind <> 'exact'::text) OR (hamming_distance = 0)))",
+        "copyright_staydown_match_reviewer": "CHECK (((reviewed_by_id IS NULL) OR (reviewed_at IS NOT NULL)))",
+        "copyright_staydown_matches_hamming_distance_check": "CHECK (((hamming_distance >= 0) AND (hamming_distance <= 64)))",
+        "copyright_staydown_matches_match_kind_check": "CHECK ((match_kind = ANY (ARRAY['exact'::text, 'perceptual'::text])))"
+      },
+      "columns": {
+        "copyright_staydown_entry_id": {
+          "collation": null,
+          "comment": "The registered image the upload matched; it leads to the case staff review.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
+        "hamming_distance": {
+          "collation": null,
+          "comment": "Bit difference between the two perceptual hashes; 0 for an exact match.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "smallint"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "image_id": {
+          "collation": null,
+          "comment": "The matching image: the new upload for a perceptual match, or the existing image the upload deduplicated to for an exact match.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "match_kind": {
+          "collation": null,
+          "comment": "exact (same SHA-256) or perceptual (dHash within the documented Hamming distance).",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "reviewed_at": {
+          "collation": null,
+          "comment": "When a moderator marked the match reviewed; null while it waits in the staff queue.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "reviewed_by_id": {
+          "collation": null,
+          "comment": "The moderator who reviewed the match; null while unreviewed or once that account is erased.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        },
+        "uploaded_by_id": {
+          "collation": null,
+          "comment": "The user who uploaded the matching bytes.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        }
+      },
+      "comment": "An upload that matched a staydown entry, shown to staff until a moderator marks it reviewed. Never blocks the upload. One row per entry, image and uploader, so a reviewed match is never reopened by a replay. Deleted with its entry when the restriction is lifted.",
+      "foreignKeys": {
+        "copyright_staydown_matches_copyright_staydown_entry_id_fkey": {
+          "columns": ["copyright_staydown_entry_id"],
+          "definition": "FOREIGN KEY (copyright_staydown_entry_id) REFERENCES copyright_staydown_entries(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_staydown_entries",
+          "validated": true
+        },
+        "copyright_staydown_matches_image_id_fkey": {
+          "columns": ["image_id"],
+          "definition": "FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "images",
+          "validated": true
+        },
+        "copyright_staydown_matches_reviewed_by_id_fkey": {
+          "columns": ["reviewed_by_id"],
+          "definition": "FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "copyright_staydown_matches_uploaded_by_id_fkey": {
+          "columns": ["uploaded_by_id"],
+          "definition": "FOREIGN KEY (uploaded_by_id) REFERENCES users(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_staydown_match_unique": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_staydown_match_unique ON public.copyright_staydown_matches USING btree (copyright_staydown_entry_id, image_id, uploaded_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_staydown_entry_id",
+              "descending": false,
+              "expression": "copyright_staydown_entry_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "uploaded_by_id",
+              "descending": false,
+              "expression": "uploaded_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_staydown_matches_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_staydown_matches_pkey ON public.copyright_staydown_matches USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_staydown_matches__image": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_staydown_matches__image ON public.copyright_staydown_matches USING btree (image_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_staydown_matches__open": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_staydown_matches__open ON public.copyright_staydown_matches USING btree (copyright_staydown_entry_id) WHERE (reviewed_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_staydown_entry_id",
+              "descending": false,
+              "expression": "copyright_staydown_entry_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(reviewed_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_staydown_matches__reviewed_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_staydown_matches__reviewed_by ON public.copyright_staydown_matches USING btree (reviewed_by_id) WHERE (reviewed_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "reviewed_by_id",
+              "descending": false,
+              "expression": "reviewed_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(reviewed_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_staydown_matches__uploaded_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_staydown_matches__uploaded_by ON public.copyright_staydown_matches USING btree (uploaded_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "uploaded_by_id",
+              "descending": false,
+              "expression": "uploaded_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_staydown_matches_updated_at": "CREATE TRIGGER trigger_copyright_staydown_matches_updated_at BEFORE UPDATE ON public.copyright_staydown_matches FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "copyright_staydown_match_unique": {
+          "columns": ["copyright_staydown_entry_id", "image_id", "uploaded_by_id"],
+          "definition": "UNIQUE (copyright_staydown_entry_id, image_id, uploaded_by_id)"
+        }
+      }
+    },
     "copyright_territorial_decisions": {
       "checkConstraints": {
         "chk_copyright_territorial_decisions__human": "CHECK ((automation_disclosure = 'human'::text))",

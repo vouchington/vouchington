@@ -92,7 +92,10 @@ an email SES flagged for malware. Its **Record as legal process** action
 is web-only staff tooling as well: it has no fixture and no native consumer, and it sends no reply.
 The queue fixture (`web.copyright.email-intake-queue.default`)
 also carries `waiting_reason` and `waiting_since`, which list a declined intake whose reply failed
-or bounced; only the web consumer reads them. The
+or bounced; only the web consumer reads them. The staydown queue reason
+(`staydown_review`, the "Possible re-upload" status) and its `staydown_matches` list in the staff
+queue fixture `web.copyright.staff-queue.default`, plus the mark-reviewed action, are web-only
+staff tooling as well; native clients have no staff copyright queue. The
 [request and response contract](api/v1/copyright-notices/README.md) is owned by the API page.
 Table B lists every web copyright surface (policy pages, member cases, notice filing, poster
 responses, guest filing, and the four staff surfaces). Swift and .NET render none of them, and

@@ -30,5 +30,9 @@ export const copyrightRegistryEntry = defineDynamicConfigNamespace({
       max_value: 3650,
       integer: true,
     },
+    staydownMatching: {
+      description:
+        'Hash media a moderator confirmed as infringing and send later uploads of the same or a near-identical image to staff review. Never blocks, hides or delays an upload. Off until counsel decides Voucha is an online content-sharing service provider; read the copyright runbook before enabling.',
+    },
   },
 })

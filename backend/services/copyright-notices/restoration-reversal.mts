@@ -3,6 +3,7 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { getImagePlacementForCopyright, getImagePlacementKey } from '@services/images/placements'
 import type { CopyrightActionIntentRecord } from './types.mts'
+import { removeCopyrightStaydownEntryInTransaction } from './staydown-registration.mts'
 
 export async function createCopyrightRestoreIntentForReversalInTransaction(
   restrictionId: string,
@@ -45,6 +46,9 @@ export async function createCopyrightRestoreIntentForReversalInTransaction(
     409,
     'Copyright restriction is not awaiting reversal delivery',
   )
+  // A reversed restriction no longer vouches for the image, so staydown stops without waiting for
+  // the restore action to be delivered.
+  await removeCopyrightStaydownEntryInTransaction(restrictionId, transaction)
   const placement = await getImagePlacementForCopyright(restriction.placement_id, {
     query: transaction,
   })

@@ -398,10 +398,11 @@ members. All mutation routes remain server-authorized even when an authenticated
 appeal or counter-notice form.
 
 The staff queue lists a case while it has any open item: an unreviewed form intake, restriction,
-appeal, counter-notice, or qualifying court or CCB filing; a failed action or delivery; a compliant
-assessment with a target it has not yet restricted (`enforcement_pending`); or an open restoration
-deadline at or past `escalation_at`. An open deadline before escalation does not queue a case by
-itself. Each case carries its distinct
+appeal, counter-notice, or qualifying court or CCB filing; an unreviewed possible re-upload
+([staydown matching](#staydown-matching)); a failed action or delivery; a compliant
+assessment with a target it has not yet restricted (`enforcement_pending`); or an open
+restoration deadline at or past `escalation_at`. An open deadline before escalation does not
+queue a case by itself. Each case carries its distinct
 `reasons`, the `waiting_since` time of its oldest open item, and its earliest open deadline. The
 queue orders cases by urgency: a missed restoration deadline first, then a deadline past escalation,
 then all other work, each oldest wait first. Urgency depends on the clock, so a case can move to an
@@ -437,6 +438,59 @@ Keep the switch off until both prerequisites ship:
 Turning the switch on releases the backlog. The next sweep withholds every clear-screened signed-in
 intake that still lacks a moderator review and enforces every pending automated request. Clear the
 queue first, and follow the [runbook](../../runbooks/copyright-notices.md#automatic-provisional-withholding).
+
+## Staydown matching
+
+DSM Directive Article 17(4)(b)-(c) obliges only an online content-sharing service provider (OCSSP)
+to keep confirmed-infringing works down. Whether Voucha is an OCSSP is a legal question for counsel,
+so the capability ships switched off. `staydownMatching` in the audited `copyright` dynamic-config
+namespace defaults to `false`. Only a developer or an administrator can change it, and every change
+records the actor and the previous and next values. Counsel must decide the OCSSP question before
+anyone enables it.
+
+The feature never blocks, hides, or delays an upload. Article 17(7) and CJEU C-401/19 forbid
+preventing lawful uses such as quotation, criticism, review, caricature, parody, and pastiche, and
+an image match cannot tell those uses from infringement. A match only creates a staff review item.
+The upload publishes as usual.
+
+While the switch is off, nothing is hashed at confirmation, nothing is matched at upload, and no
+review item is created. Existing registry entries stay inert until their restriction is lifted. While
+it is on:
+
+- **Registry.** It holds only images whose restriction a moderator confirmed: accepting a notice,
+  completing mandatory human review with `confirm`, or confirming on appeal. An automated
+  provisional withholding and a reversed restriction are never registered. Each entry stores the
+  image's exact SHA-256 and a 64-bit perceptual difference hash (dHash) of its normalized pixels.
+  The SHA-256 registers in the confirming transaction, and the `staydown-hash` job on the images
+  queue fills the dHash. A flat image with too little detail to hash perceptually is matched only
+  by its exact SHA-256.
+- **Matching.** An upload matches when its SHA-256 equals an entry's, or when the Hamming distance
+  between the two dHashes is at most eight of 64 bits (unrelated images average 32). Identical bytes
+  are matched when the upload completes, because a re-upload resolves to the existing image. A new
+  image is matched by the same `staydown-hash` job after its metadata is extracted.
+- **Review.** A match is one row per registry entry, matched image, and uploader. The staff queue
+  lists the case that confirmed the registered image with the reason `staydown_review` (shown as
+  "Possible re-upload") and the wait age of its oldest unreviewed match. The case view lists each
+  match with the registered image, the uploaded image and uploader, whether the upload is an
+  identical file or a near-duplicate with its Hamming distance, and how long ago it matched. Staff mark a match
+  reviewed with `POST /api/v1/copyright-notices/:id/staydown-matches/:matchId/reviews`. A reviewed
+  match is not reopened for the same entry, image, and uploader. Any removal decision stays
+  with the normal notice, appeal, and restoration workflow.
+- **Lifting.** Lifting the restriction by any route (a restoration, or a staff reversal on review
+  or appeal) removes the entry and, by cascade, its matches. A reversal removes the entry when the
+  restore intent is created, without waiting for delivery.
+
+Known limits. Uploads made while the switch was off are not matched afterwards. A new image hashed
+before a just-registered image's dHash exists is matched perceptually only when its job is replayed,
+which the entity-listener reconciliation does for recent images on its hourly pass; identical bytes
+always match at once. The
+perceptual lookup scans the active registry, so its cost follows the number of active entries, and
+the registry grows only by moderator confirmations. National variants such as the German UrhDaG
+are out of scope.
+
+Staff tooling is web-only; see the [client parity matrix](../CLIENT-PARITY-MATRIX.md).
+The operator procedure is in the
+[runbook](../../runbooks/copyright-notices.md#staydown-matching).
 
 ## Global launch gate
 

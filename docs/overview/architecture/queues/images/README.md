@@ -6,6 +6,7 @@ Owns asynchronous image work that should not block the API request path:
 
 1. Cleans up abandoned (orphaned) image uploads from S3.
 2. Extracts image metadata after upload completion so the API can return a `processing` response immediately.
+3. Hashes images for the copyright staydown registry while that switch is on.
 
 ## Package split
 
@@ -27,20 +28,28 @@ The worker-only code (the `Worker` class and the `sharp`-calling processor) live
   requires its final key to match the persisted SHA-256 digest. It runs `sharp(...).metadata()`,
   validates the format, transitions the row from `processing` → `complete` (or `failed`), then fires
   `enqueueOnImageCreated`.
+- `staydown-hash` — receives only the image ID and does nothing while `copyright.staydownMatching`
+  is off. Otherwise it computes a 64-bit perceptual dHash of the stored image, fills the hash of a
+  registered staydown entry, and records a staff-review match for any registered entry within the
+  Hamming threshold. It never touches the image row, so an upload is unaffected. The entity-listener
+  image processor enqueues it for each new image, and a moderator confirmation enqueues it for each
+  newly registered image after commit. Deduplication is per image and source (`upload` or
+  `registration`).
 - **Lock duration**: 120,000 ms (2 min); stalled interval: 30,000 ms (default)
 
 ## Durable transition matrix
 
-| Failure mode                           | Detectable state                                                                  | Recovery/reconciliation path                                                                      | Idempotency guarantee                                            |
-| -------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| Dispatch failure                       | API has no committed final digest row                                             | Client retries completion while the row remains pending                                           | Row claim admits one completion                                  |
-| Provider non-consumption               | `extract-metadata` remains waiting/failed                                         | GlideMQ retry or admin retry re-delivers the ID job                                               | Metadata transition accepts only processing rows                 |
-| Provider consumption then DB failure   | Final digest exists but row is still processing                                   | Worker retry repeats the final-key read and metadata transition                                   | Immutable digest key and state predicate                         |
-| Durable commit then reply/enqueue loss | Processing row is older than one hour with `sha_256` and matching digest `s3_key` | Hourly cleanup re-enqueues `extract-metadata` after commit                                        | Stable per-image queue deduplication and authoritative DB reload |
-| Source-delete failure                  | Staged row is older than one hour and `upload_source_deleted_at` is null          | Hourly cleanup retries staging-only deletion for live rows or all known storage for terminal rows | Idempotent S3 deletion and durable deletion evidence             |
-| TTL expiry                             | Missing metadata job while the durable digest row remains processing              | Same one-hour cleanup recovery re-enqueues it                                                     | Stable per-image queue deduplication                             |
-| Orphan cleanup                         | Incomplete nonterminal row exceeds 24 hours                                       | Cleanup terminalizes and deletes known storage; it does not terminalize durable digest rows       | `FOR UPDATE SKIP LOCKED` claim and source-deletion timestamp     |
-| Normal terminal removal                | Metadata row becomes complete or failed                                           | Worker finalizes status and cleanup clears any remaining staged source                            | Lifecycle predicates prevent a second terminal transition        |
+| Failure mode                           | Detectable state                                                                   | Recovery/reconciliation path                                                                      | Idempotency guarantee                                                       |
+| -------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Dispatch failure                       | API has no committed final digest row                                              | Client retries completion while the row remains pending                                           | Row claim admits one completion                                             |
+| Provider non-consumption               | `extract-metadata` remains waiting/failed                                          | GlideMQ retry or admin retry re-delivers the ID job                                               | Metadata transition accepts only processing rows                            |
+| Provider consumption then DB failure   | Final digest exists but row is still processing                                    | Worker retry repeats the final-key read and metadata transition                                   | Immutable digest key and state predicate                                    |
+| Durable commit then reply/enqueue loss | Processing row is older than one hour with `sha_256` and matching digest `s3_key`  | Hourly cleanup re-enqueues `extract-metadata` after commit                                        | Stable per-image queue deduplication and authoritative DB reload            |
+| Source-delete failure                  | Staged row is older than one hour and `upload_source_deleted_at` is null           | Hourly cleanup retries staging-only deletion for live rows or all known storage for terminal rows | Idempotent S3 deletion and durable deletion evidence                        |
+| TTL expiry                             | Missing metadata job while the durable digest row remains processing               | Same one-hour cleanup recovery re-enqueues it                                                     | Stable per-image queue deduplication                                        |
+| Staydown hash enqueue loss             | Image has no `copyright_staydown_matches` row though it resembles a registered one | Entity-listener reconciliation replays `processImageCreated`, which re-enqueues the hash job      | Idempotent hash fill and match upsert; exact SHA-256 matching is unaffected |
+| Orphan cleanup                         | Incomplete nonterminal row exceeds 24 hours                                        | Cleanup terminalizes and deletes known storage; it does not terminalize durable digest rows       | `FOR UPDATE SKIP LOCKED` claim and source-deletion timestamp                |
+| Normal terminal removal                | Metadata row becomes complete or failed                                            | Worker finalizes status and cleanup clears any remaining staged source                            | Lifecycle predicates prevent a second terminal transition                   |
 
 ## Related
 
