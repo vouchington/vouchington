@@ -11,6 +11,6 @@
     "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.63.0",
     "@voucha/test-helpers": "workspace:^",
-    "vitest": "^5.0.2"
+    "vitest": "^5.0.3"
   }
 }

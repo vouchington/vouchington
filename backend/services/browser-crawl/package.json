@@ -30,6 +30,6 @@
     "ssrf-guard": "^1.0.0"
   },
   "devDependencies": {
-    "vitest": "^5.0.2"
+    "vitest": "^5.0.3"
   }
 }
