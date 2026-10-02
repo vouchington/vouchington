@@ -24,6 +24,8 @@ export type CreateTopicRecommendationInput = {
 export type UpdateTopicRecommendationInput = Partial<CreateTopicRecommendationInput>
 
 export type TopicRecommendationSearchOptions = {
+  /** Only the recommendations this user submitted. */
+  created_by_id?: string
   status?: TopicRecommendationStatus
   q?: string
   limit?: number

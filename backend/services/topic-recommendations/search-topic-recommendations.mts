@@ -20,6 +20,11 @@ export async function searchTopicRecommendations(options: TopicRecommendationSea
       `posts.post_type = 'topic_recommendation'`,
     ]
 
+    if (options.created_by_id) {
+      params.push(options.created_by_id)
+      filters.push(`posts.created_by_id = $${params.length}`)
+    }
+
     if (options.status === 'pending') {
       filters.push(`ptr.reviewed_at IS NULL`)
     } else if (options.status === 'approved') {

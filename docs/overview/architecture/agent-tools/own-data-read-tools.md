@@ -1,23 +1,25 @@
-# Own Profile, Notification and Preference Read Tools
+# Own Profile, Notification, Preference and Recommendation Read Tools
 
-Six MCP read tools return the caller's own bio, profile links, notifications, email preferences
-and settings. They are the reads for the
-[profile, notification and preference write tools](profile-notification-write-tools.md): each
-reads what one of those tools changes. Each is read-only (`readOnlyHint`), names its REST twin in
+Seven MCP read tools return the caller's own bio, profile links, notifications, email preferences,
+settings and topic recommendations. They are the reads for the
+[profile, notification and preference write tools](profile-notification-write-tools.md) and the
+[topic recommendation write tools](relation-referral-recommendation-write-tools.md): each reads
+what one of those tools changes. Each is read-only (`readOnlyHint`), names its REST twin in
 `meta.api`, sits on the `internal`, `mcp` and `client` surfaces, and needs no paid plan. The
 generated [tool catalog](catalog.md) holds each tool's description and scopes; the
 [agent tools overview](README.md) covers metadata and plan gating.
 
-| Tool                          | REST twin                                  | Scope                | Arguments        |
-| ----------------------------- | ------------------------------------------ | -------------------- | ---------------- |
-| `get_my_notifications`        | `GET /api/v1/my/notifications`             | `notifications:read` | `limit`, `after` |
-| `get_my_unread_notifications` | `GET /api/v1/my/notifications/unread`      | `notifications:read` | none             |
-| `get_my_bio`                  | `GET /api/v1/my/profile`                   | `profile:read`       | none             |
-| `get_my_profile_links`        | `GET /api/v1/my/profile/links`             | `profile:read`       | none             |
-| `get_my_email_preferences`    | `GET /api/v1/my/email-preferences`         | `preferences:read`   | none             |
-| `get_my_preferences`          | `GET /api/v1/users/:idOrSlug` (own record) | `preferences:read`   | none             |
+| Tool                            | REST twin                                  | Scope                        | Arguments                  |
+| ------------------------------- | ------------------------------------------ | ---------------------------- | -------------------------- |
+| `get_my_notifications`          | `GET /api/v1/my/notifications`             | `notifications:read`         | `limit`, `after`           |
+| `get_my_unread_notifications`   | `GET /api/v1/my/notifications/unread`      | `notifications:read`         | none                       |
+| `get_my_bio`                    | `GET /api/v1/my/profile`                   | `profile:read`               | none                       |
+| `get_my_profile_links`          | `GET /api/v1/my/profile/links`             | `profile:read`               | none                       |
+| `get_my_email_preferences`      | `GET /api/v1/my/email-preferences`         | `preferences:read`           | none                       |
+| `get_my_preferences`            | `GET /api/v1/users/:idOrSlug` (own record) | `preferences:read`           | none                       |
+| `list_my_topic_recommendations` | `GET /api/v1/topic-recommendations` (own)  | `topic-recommendations:read` | `status`, `limit`, `after` |
 
-No scope is new, and `mcp.user:read` already covers all three. Every tool acts on the credential's
+No scope is new, and `mcp.user:read` already covers all four. Every tool acts on the credential's
 own account and takes no user id, so another user's data cannot be asked for. Each re-reads that
 account from the primary database before it reads anything, so an account deleted after the
 credential was issued is refused with `401` instead of still returning the rows that outlive it.
@@ -66,6 +68,24 @@ default audience and privacy of new posts, country, interface locale and Hacker 
 They are read from the account's private user record on the primary database, so a read straight
 after an update sees it. A field the account has never set is `null`. Financial-data visibility,
 consents, federation, email addresses, sign-in settings and the username are not included.
+
+## Topic recommendations
+
+`list_my_topic_recommendations` lists the recommendations the caller submitted, best-ranked first
+like the REST list, whatever their status; `status` (`pending`, `approved` or `rejected`) narrows
+it. `results` lists the ids in order and `posts` holds each recommendation by id, with the same
+post `update_topic_recommendation` returns, minus the internal moderation columns. A pending one
+can still be edited or withdrawn; an approved or rejected one carries its reviewer and, when
+rejected, the reason. Withdrawn recommendations are not listed. Pages hold at most 100
+(default 25), the REST bounds, and `page_info.end_cursor` is the REST score cursor.
+
+`GET /api/v1/topic-recommendations` lists every user's recommendations and has no owner filter, and
+there is no `/my` route. The owner filter lives in the search service and only this tool uses it,
+with the credential's own id; the tool takes no user id or search text. A moderator's rejection
+reason is another user's text, so it is sanitized and fenced as `external-content` from
+`topic_recommendation`. The caller's own title, Markdown and topic fields come back as written. The
+posts are read from the primary database, not the entity cache, so an edit made a moment ago is
+listed as edited. The ids come from a replica, as on REST.
 
 ## Routes without a tool
 

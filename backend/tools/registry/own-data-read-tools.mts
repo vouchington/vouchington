@@ -4,8 +4,12 @@ import getMyNotificationsTool from '../get-my-notifications.mts'
 import getMyPreferencesTool from '../get-my-preferences.mts'
 import getMyProfileLinksTool from '../get-my-profile-links.mts'
 import getMyUnreadNotificationsTool from '../get-my-unread-notifications.mts'
+import listMyTopicRecommendationsTool from '../list-my-topic-recommendations.mts'
 
-/** The read tools for the caller's own bio, profile links, notifications and preferences. */
+/**
+ * The read tools for the caller's own bio, profile links, notifications, preferences and topic
+ * recommendations.
+ */
 export const ownDataReadTools = [
   getMyBioTool,
   getMyEmailPreferencesTool,
@@ -13,4 +17,5 @@ export const ownDataReadTools = [
   getMyPreferencesTool,
   getMyProfileLinksTool,
   getMyUnreadNotificationsTool,
+  listMyTopicRecommendationsTool,
 ]
