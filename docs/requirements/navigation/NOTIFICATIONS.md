@@ -11,7 +11,8 @@
 
 ## Notification Behavior
 
-- Clicking a notification marks it as read before navigation
+- Clicking a notification marks it as read before navigation. A suspended account still navigates
+  (the redirect-target request returns the same target) but its read state is not recorded.
 - Web, Swift, and .NET resolve structured `target_entity` references before the legacy nullable
   `target_path`. Community targets use the response's minimal `{ id, slug, name }` community
   sidecar; inaccessible/missing targets fall back to `/my/notifications`.

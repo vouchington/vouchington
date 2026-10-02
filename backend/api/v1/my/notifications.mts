@@ -12,7 +12,7 @@ import {
   listNotifications,
   listWebPushSubscriptionsPage,
   markAllNotificationsRead,
-  markNotificationReadAndGetRedirectTarget,
+  getNotificationRedirectTarget,
   markNotificationRead,
   upsertWebPushSubscription,
   deleteWebPushSubscription,
@@ -66,7 +66,10 @@ app.route('/api/v1/my/notifications/:id/redirect-target').get(async (ctx: Contex
     path: ctx.params,
   })
 
-  const target_url = await markNotificationReadAndGetRedirectTarget(currentUser.id, ctx.params.id!)
+  // A suspended account still resolves the target, but its read state is not recorded.
+  const target_url = await getNotificationRedirectTarget(currentUser.id, ctx.params.id!, {
+    markRead: !currentUser.suspended_at,
+  })
   ctx.assert(target_url, 404, 'Notification not found')
   ctx.json({ target_url })
 })
@@ -114,6 +117,7 @@ app.route('/api/v1/my/notifications/push-subscriptions').get(async (ctx: Context
 
 app.route('/api/v1/my/notifications/push-subscriptions').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/notifications/push-subscriptions')
+  assertNotSuspended(currentUser)
 
   const body = (await ctx.request.json('20kb')) as CreateWebPushSubscriptionRequest
   validateRequestContract(ctx, 'POST:/api/v1/my/notifications/push-subscriptions', { body })
@@ -159,6 +163,7 @@ app.route('/api/v1/my/notifications/push-subscriptions/:id').delete(async (ctx: 
     ctx,
     'DELETE:/api/v1/my/notifications/push-subscriptions/:id',
   )
+  assertNotSuspended(currentUser)
   validateRequestContract(ctx, 'DELETE:/api/v1/my/notifications/push-subscriptions/:id', {
     path: ctx.params,
   })
