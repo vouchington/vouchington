@@ -60,6 +60,8 @@ export {
 } from './sql-agent-prompts.mts'
 export {
   getRssFeedImportFollowForTest,
+  countRssFeedImportBatchesForTest,
+  rewriteRssFeedImportBatchProvenanceForTest,
   softDeleteRssFeedItemsForTest,
   restoreRssFeedItemsForTest,
   setRssFeedDeclaredLanguageForTest,

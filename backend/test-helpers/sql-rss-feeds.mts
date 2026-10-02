@@ -11,6 +11,27 @@ export async function getRssFeedImportFollowForTest(importId: string): Promise<b
   return rows[0]!.follow
 }
 
+export async function countRssFeedImportBatchesForTest(userId: string): Promise<number> {
+  const { rows } = await read<{ count: number }>(sql`/* countRssFeedImportBatchesForTest */
+    SELECT COUNT(*)::INT AS count
+    FROM user_rss_feed_import_batches
+    WHERE user_id = ${userId}
+  `)
+  return rows[0]!.count
+}
+
+// Raw column values, so a test can attempt a rewrite the schema must reject.
+export async function rewriteRssFeedImportBatchProvenanceForTest(
+  importId: string,
+  provenance: { createdVia: string; oauthClientId: string | null },
+): Promise<void> {
+  await write(sql`/* rewriteRssFeedImportBatchProvenanceForTest */
+    UPDATE user_rss_feed_import_batches
+    SET created_via = ${provenance.createdVia}, created_via_oauth_client_id = ${provenance.oauthClientId}
+    WHERE id = ${importId}
+  `)
+}
+
 export async function softDeleteRssFeedItemsForTest(itemIds: string[]): Promise<void> {
   await write(sql`/* softDeleteRssFeedItemsForTest */
     UPDATE rss_feed_items

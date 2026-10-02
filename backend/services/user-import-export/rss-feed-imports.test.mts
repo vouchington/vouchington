@@ -1,9 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
-import { createTestUser, insertTestRssFeedDirect } from '@voucha/test-helpers'
+import { createTestUser, insertTestRssFeedDirect, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { softDeleteUser } from '@voucha/test-helpers/entities/users-lifecycle'
 import type { PrivateUser } from '@services/users/types'
-import { SYSTEM_PROVENANCE } from '@voucha/types/entities/content-provenance'
 import {
   getRssFeedImport,
   processRssFeedImportRow,
@@ -27,7 +26,7 @@ describe('RSS feed import batches', () => {
       `https://batch-import-b-${Date.now()}.example.com/rss`,
     ]
 
-    const created = await submitRssFeedImport(user, urls, { follow: false })
+    const created = await submitRssFeedImport(user, WEB_PROVENANCE, urls, { follow: false })
     const status = await getRssFeedImport(user.id, created.import.id)
 
     expect(created.rowIds).toHaveLength(2)
@@ -45,6 +44,7 @@ describe('RSS feed import batches', () => {
     await expect(
       submitRssFeedImport(
         user,
+        WEB_PROVENANCE,
         Array.from({ length: 501 }, (_, index) => `https://too-many-${index}.example.com/rss`),
       ),
     ).rejects.toThrow('Maximum 500 URLs per import')
@@ -57,7 +57,7 @@ describe('RSS feed import batches', () => {
       (_, index) => `https://scale-import-${suffix}-${index}.example.com/rss`,
     )
 
-    const created = await submitRssFeedImport(user, urls, { follow: false })
+    const created = await submitRssFeedImport(user, WEB_PROVENANCE, urls, { follow: false })
     const status = await getRssFeedImport(user.id, created.import.id)
 
     expect(created.rowIds).toHaveLength(500)
@@ -67,10 +67,10 @@ describe('RSS feed import batches', () => {
   })
 
   it('rejects rows that do not belong to the requested import', async () => {
-    const first = await submitRssFeedImport(user, [
+    const first = await submitRssFeedImport(user, WEB_PROVENANCE, [
       `https://wrong-import-a-${Date.now()}.example.com/rss`,
     ])
-    const second = await submitRssFeedImport(user, [
+    const second = await submitRssFeedImport(user, WEB_PROVENANCE, [
       `https://wrong-import-b-${Date.now()}.example.com/rss`,
     ])
 
@@ -81,7 +81,7 @@ describe('RSS feed import batches', () => {
 
   it('marks rows failed when the import user is no longer available', async () => {
     const transientUser = await createTestUser()
-    const created = await submitRssFeedImport(transientUser, [
+    const created = await submitRssFeedImport(transientUser, WEB_PROVENANCE, [
       `https://missing-user-import-${Date.now()}.example.com/rss`,
     ])
     await softDeleteUser(transientUser.id)
@@ -103,7 +103,7 @@ describe('RSS feed import batches', () => {
   it('records a successful existing-feed row', async () => {
     const rssFeedUrl = `https://existing-import-${Date.now()}.example.com/feed.xml`
     const rssFeed = await insertTestRssFeedDirect({ rssFeedUrl })
-    const created = await submitRssFeedImport(user, [rssFeedUrl])
+    const created = await submitRssFeedImport(user, WEB_PROVENANCE, [rssFeedUrl])
 
     await processRssFeedImportRow(created.import.id, created.rowIds[0]!)
 
@@ -129,7 +129,7 @@ describe('RSS feed import batches', () => {
       topic_id: randomUUID(),
       rss_feed_id: rssFeed.id,
     })
-    const created = await submitRssFeedImport(user, [rssFeedUrl])
+    const created = await submitRssFeedImport(user, WEB_PROVENANCE, [rssFeedUrl])
 
     await processRssFeedImportRow(created.import.id, created.rowIds[0]!, {
       createSourceFromUrlImpl,
@@ -137,7 +137,7 @@ describe('RSS feed import batches', () => {
 
     expect(createSourceFromUrlImpl).toHaveBeenCalledWith(
       expect.objectContaining({ id: user.id }),
-      SYSTEM_PROVENANCE,
+      WEB_PROVENANCE,
       rssFeedUrl,
       expect.any(Object),
     )
@@ -150,7 +150,7 @@ describe('RSS feed import batches', () => {
   })
 
   it('records invalid URL rows as errors without calling source creation', async () => {
-    const created = await submitRssFeedImport(user, ['not-a-url'])
+    const created = await submitRssFeedImport(user, WEB_PROVENANCE, ['not-a-url'])
 
     await processRssFeedImportRow(created.import.id, created.rowIds[0]!)
 
@@ -172,7 +172,7 @@ describe('RSS feed import batches', () => {
     const createSourceFromUrlImpl = vi
       .fn<(...args: any[]) => Promise<any>>()
       .mockRejectedValueOnce(new Error('temporary failure'))
-    const created = await submitRssFeedImport(user, [rssFeedUrl])
+    const created = await submitRssFeedImport(user, WEB_PROVENANCE, [rssFeedUrl])
 
     await expect(
       processRssFeedImportRow(created.import.id, created.rowIds[0]!, {
@@ -194,7 +194,7 @@ describe('RSS feed import batches', () => {
     const createSourceFromUrlImpl = vi
       .fn<(...args: any[]) => Promise<any>>()
       .mockRejectedValueOnce(new Error('terminal failure'))
-    const created = await submitRssFeedImport(user, [rssFeedUrl])
+    const created = await submitRssFeedImport(user, WEB_PROVENANCE, [rssFeedUrl])
 
     await expect(
       processRssFeedImportRow(created.import.id, created.rowIds[0]!, {
@@ -228,7 +228,7 @@ describe('RSS feed import batches', () => {
   })
 
   it('does not count duplicate terminal failures twice', async () => {
-    const created = await submitRssFeedImport(user, [
+    const created = await submitRssFeedImport(user, WEB_PROVENANCE, [
       `https://duplicate-failure-import-${Date.now()}.example.com/feed.xml`,
     ])
     const rowId = created.rowIds[0]!
@@ -250,7 +250,7 @@ describe('RSS feed import batches', () => {
 
   it('does not let stale successes overwrite terminal failures', async () => {
     const rssFeed = await insertTestRssFeedDirect({})
-    const created = await submitRssFeedImport(user, [
+    const created = await submitRssFeedImport(user, WEB_PROVENANCE, [
       `https://stale-success-import-${Date.now()}.example.com/feed.xml`,
     ])
     const rowId = created.rowIds[0]!

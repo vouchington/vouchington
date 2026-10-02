@@ -12,10 +12,10 @@ User data import and export — OPML parsing, RSS feed and topic import/export, 
   RSS/topic exports.
 - `parseOpml(xml)` — parses an OPML document into a list of RSS feed URLs
 - `validateRssFeedUrl(url)` — validates a URL before import
-- `submitRssFeedImport(currentUser, urls, options?)` — stores a user-owned RSS import batch and rows for async worker processing. Queue jobs carry only import and row IDs.
+- `submitRssFeedImport(currentUser, provenance, urls, options?)` — stores a user-owned RSS import batch and rows for async worker processing. The batch keeps the submitting request's `ContentProvenance` (`created_via` and `created_via_oauth_client_id`). Queue jobs carry only import and row IDs.
 - `getRssFeedImport(currentUserId, importId)` — returns owner-scoped import progress and per-row outcomes.
-- `processRssFeedImportRow(importId, rowId, options?)` — worker entry point for one stored RSS import row.
-- `importSingleRssFeed(currentUser, url, options?)` — processes one stored import row; multi-URL imports must use `submitRssFeedImport` and the worker queue.
+- `processRssFeedImportRow(importId, rowId, options?)` — worker entry point for one stored RSS import row. It creates the feed with the batch's stored provenance, never `system`.
+- `importSingleRssFeed(currentUser, provenance, url, options?)` — processes one stored import row; multi-URL imports must use `submitRssFeedImport` and the worker queue.
 - `importTopics(currentUserId, slugs)` — imports topics by slug
 - `streamUserRssFeeds(currentUserId, maxItems, feedType?)` — cursor-streams at most `maxItems`
   followed RSS feeds in bounded batches.

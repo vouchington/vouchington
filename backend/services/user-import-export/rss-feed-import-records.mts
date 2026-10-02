@@ -1,5 +1,6 @@
 import { read, beginTransaction, write } from '@data-stores/psql'
 import { isUUID } from '@modules/utils'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import sql from 'sql-template-strings'
 import {
   type CreateUserRssFeedImportResult,
@@ -12,6 +13,7 @@ import {
 
 export async function createRssFeedImport(
   userId: string,
+  provenance: ContentProvenance,
   urls: string[],
   follow: boolean,
 ): Promise<CreateUserRssFeedImportResult> {
@@ -20,11 +22,15 @@ export async function createRssFeedImport(
     sql`/* createRssFeedImport */
         INSERT INTO user_rss_feed_import_batches (
           user_id,
+          created_via,
+          created_via_oauth_client_id,
           follow,
           total_rows
         )
         VALUES (
           ${userId},
+          ${provenance.createdVia},
+          ${provenance.oauthClientId},
           ${follow},
           ${urls.length}
         )
@@ -102,6 +108,8 @@ export async function getRssFeedImportRowWithBatch(rowId: string): Promise<{
       SELECT
         r.*,
         b.user_id AS batch_user_id,
+        b.created_via AS batch_created_via,
+        b.created_via_oauth_client_id AS batch_created_via_oauth_client_id,
         b.follow AS batch_follow,
         b.total_rows AS batch_total_rows,
         b.completed_rows AS batch_completed_rows,
@@ -117,6 +125,8 @@ export async function getRssFeedImportRowWithBatch(rowId: string): Promise<{
   const raw = rows[0] as
     | (UserRssFeedImportRow & {
         batch_user_id: string
+        batch_created_via: UserRssFeedImportBatchRow['created_via']
+        batch_created_via_oauth_client_id: string | null
         batch_follow: boolean
         batch_total_rows: number
         batch_completed_rows: number
@@ -131,6 +141,8 @@ export async function getRssFeedImportRowWithBatch(rowId: string): Promise<{
     batch: {
       id: raw.batch_id,
       user_id: raw.batch_user_id,
+      created_via: raw.batch_created_via,
+      created_via_oauth_client_id: raw.batch_created_via_oauth_client_id,
       follow: raw.batch_follow,
       total_rows: raw.batch_total_rows,
       completed_rows: raw.batch_completed_rows,

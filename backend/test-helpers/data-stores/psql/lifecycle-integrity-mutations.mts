@@ -32,8 +32,8 @@ export async function insertContradictoryBedrockBatchLifecycle(): Promise<void> 
 
 export async function insertContradictoryRssImportRowLifecycle(userId: string): Promise<void> {
   const { rows } = await write<{ id: string }>(sql`
-    INSERT INTO user_rss_feed_import_batches (user_id, total_rows)
-    VALUES (${userId}, 1)
+    INSERT INTO user_rss_feed_import_batches (user_id, created_via, total_rows)
+    VALUES (${userId}, 'system', 1)
     RETURNING id
   `)
   await write(sql`/* rejectContradictoryRssImportRowLifecycle */
@@ -109,8 +109,8 @@ export async function rewriteTerminalBedrockBatch(): Promise<void> {
 export async function rewriteTerminalRssImportBatch(userId: string): Promise<void> {
   const { rows } = await write<{ id: string }>(sql`
     INSERT INTO user_rss_feed_import_batches (
-      user_id, total_rows, completed_rows, completed_at
-    ) VALUES (${userId}, 1, 1, CURRENT_TIMESTAMP)
+      user_id, created_via, total_rows, completed_rows, completed_at
+    ) VALUES (${userId}, 'system', 1, 1, CURRENT_TIMESTAMP)
     RETURNING id
   `)
   await write(sql`/* rejectTerminalRssImportBatchRewrite */

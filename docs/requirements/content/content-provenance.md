@@ -40,8 +40,13 @@ Every user-content table carries two columns:
 
 The tables are `posts` (including comments, stories and topic recommendations), `communities`,
 `topics`, `lists`, `rss_feeds`, `moderation_reports`, `moderation_appeals`,
-`community_applications` and `user_referral_program_links`. `conversation_messages` gains the same
-columns in a later stage, together with its writers.
+`community_applications`, `user_referral_program_links` and `user_rss_feed_import_batches`.
+`conversation_messages` gains the same columns in a later stage, together with its writers.
+
+`user_rss_feed_import_batches` holds the channel of the request that submitted a user RSS feed
+import. A queue job creates the feeds later, so it reads the batch's stored provenance instead of
+recording `system`; each feed then carries the same channel and OAuth client as the submitting
+request. Staff CSV imports (`backend/services/admin-imports`) are platform work and record `system`.
 
 Invariants and what enforces each:
 
@@ -78,8 +83,10 @@ dynamically registered clients keep it `NULL`. Administrators set and clear `ver
 or replacing its redirect URIs clears them. Labels stay generic until the exposure stage below.
 
 The enum, columns, checks, indexes and immutability triggers live in the canonical table creators.
-The `0726-00-01` through `0726-00-09` migrations add the cross-file OAuth client foreign keys.
-`created_via` is `NOT NULL` with no default on all nine tables; fresh-bootstrap seeds explicitly
+The `0726-00-01` through `0726-00-09` migrations add the cross-file OAuth client foreign keys, and
+`0726-00-11` adds the foreign key and trigger for `user_rss_feed_import_batches`, whose creator
+runs before `oauth_clients` and the immutability function exist.
+`created_via` is `NOT NULL` with no default on all ten tables; fresh-bootstrap seeds explicitly
 record `system`. See the [prelaunch schema policy](../../development/postgres-schema-rules.md#prelaunch-relational-storage).
 [`schema-content-provenance.test.mts`](../../../backend/data-stores/psql/__tests__/schema-content-provenance.test.mts)
 checks every table's columns, validated constraints, valid index and trigger, the trigger on a real
@@ -99,7 +106,9 @@ only for `api` and `mcp`, matching the database check. One pure resolver maps th
 | REST API key or OAuth | `api`                                       | Issuing client for OAuth   |
 
 REST API-key and OAuth writes have no route producer yet. Request handlers pass request
-provenance; queue jobs, config-driven seeds, fixtures and scripts pass `system`. Platform-authored
+provenance; config-driven seeds, fixtures and scripts pass `system`. A queue job that finishes work
+a request submitted passes the provenance that request stored (user RSS feed imports); other queue
+jobs pass `system`. Platform-authored
 StoryTeller posts and ban-evasion reports always record `system`, even when a request triggered
 the work. A revived row preserves its original provenance.
 

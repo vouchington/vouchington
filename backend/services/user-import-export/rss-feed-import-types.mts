@@ -1,3 +1,7 @@
+import type {
+  ContentCreationChannel,
+  ContentProvenance,
+} from '@voucha/types/entities/content-provenance'
 import type { ImportRssFeedStatus } from './import-rss-feeds.mts'
 
 export type UserRssFeedImportSummary = {
@@ -26,6 +30,8 @@ export type UserRssFeedImport = {
 export type UserRssFeedImportBatchRow = {
   id: string
   user_id: string
+  created_via: ContentCreationChannel
+  created_via_oauth_client_id: string | null
   follow: boolean
   total_rows: number
   completed_rows: number
@@ -50,6 +56,17 @@ export type UserRssFeedImportRow = {
 export type CreateUserRssFeedImportResult = {
   import: UserRssFeedImportSummary
   rowIds: string[]
+}
+
+// The submitting request's provenance, read back for the queue job that creates the feeds. The
+// batch's CHECK constraint keeps an OAuth client to the `api` and `mcp` channels.
+export function getBatchProvenance(
+  batch: Pick<UserRssFeedImportBatchRow, 'created_via' | 'created_via_oauth_client_id'>,
+): ContentProvenance {
+  return {
+    createdVia: batch.created_via,
+    oauthClientId: batch.created_via_oauth_client_id,
+  } as ContentProvenance
 }
 
 export function toImportSummary(batch: UserRssFeedImportBatchRow): UserRssFeedImportSummary {
