@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestUser, setTestUserDirectMessagesAudience } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  setTestUserDirectMessagesAudience,
+  suspendTestUser,
+} from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { encodeCursor } from '@modules/pagination'
 
@@ -122,6 +126,25 @@ describe('messages thread API', () => {
         .post('/api/v1/my/messages/nonexistent-id/messages')
         .send({ text: 'hello' })
         .expect(401)
+    })
+
+    it('returns 403 when the sender is suspended', async () => {
+      const sender = await createTestUser()
+      const setupRequest = createRequest()
+      await setupRequest.authenticateAs(sender)
+      const convResponse = await setupRequest
+        .post('/api/v1/my/messages')
+        .send({ user_id: otherUser.id })
+        .expect(201)
+      const conversationId = convResponse.body.conversation.id as string
+      await suspendTestUser(sender.id)
+
+      const request = createRequest()
+      await request.authenticateAs(sender)
+      await request
+        .post(`/api/v1/my/messages/${conversationId}/messages`)
+        .send({ text: 'Hello there' })
+        .expect(403)
     })
 
     it('sends a message in a conversation', async () => {
