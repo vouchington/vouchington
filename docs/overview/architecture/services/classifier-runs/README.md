@@ -270,8 +270,11 @@ durable requests per classifier.
   provider call per shard under one batch.
 - **Candidates.** The candidate count is the number of results the batch retained, so a run that
   never decided retains none.
-- **Diagnostic counters.** Request, sweep-enqueue and attempt counts describe work, not value, and
-  are never a KPI. Queue job counts in Valkey are not durable and are not measured here.
+- **Diagnostic counters.** The job figures are the durable ones: requests per classifier, attempts
+  and retries per run, and sweep enqueues that added a job. They describe work, not value, and are
+  never a KPI. Queue job counts in Valkey are not durable, so the report does not read them.
+- **Reasoning-agent residual calls.** The reasoning pass (C7) is a classifier of its own, so its
+  provider calls, tokens, cost and requests are a group beside the first stage's.
 - **No savings.** The report computes none. A before and after comparison of fan-out is the
   consumer's, from two windows of measured runs, and a figure with no measured baseline is reported
   as unmeasured.
