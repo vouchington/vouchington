@@ -7,9 +7,9 @@ CREATE TABLE IF NOT EXISTS ai_usage_records (
   community_id UUID REFERENCES communities (id) ON DELETE SET NULL,
   -- guardrails-disable-next-line uuid-must-be-key
   post_id UUID REFERENCES posts (id) ON DELETE SET NULL,
-  -- guardrails-disable-next-line uuid-must-be-key
   -- Set only for a classifier provider attempt; its foreign key to classifier_runs is added in
   -- 0736-00-00-classifier-runs.sql because that table is created later.
+  -- guardrails-disable-next-line uuid-must-be-key
   classifier_run_id UUID,
   agent_slug TEXT NOT NULL,
   model TEXT NOT NULL,
