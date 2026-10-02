@@ -66,6 +66,13 @@ COPY --parents api-fixtures/package.json backend/package.json backend/*/package.
 # The prepare script also checks for the script file before running it.
 ENV HUSKY=0
 
+# lingua-rs downloads its native binding from GitHub Releases in its postinstall. By default a
+# failed download only warns and exits 0, which ships an image with no binding (#1704). Strict
+# mode makes that install fail instead. The deploy-* stages inherit this from builder, so the
+# lifecycle scripts `pnpm deploy` re-runs are covered too. Image builds only; local installs
+# stay best-effort.
+ENV LINGUA_RS_STRICT_INSTALL=1
+
 # Install dependencies with workspace scripts disabled, then run the deferred
 # install scripts. This compiles third-party native packages such as sharp
 # (backend) and esbuild (email-templates), which only need node_modules +
