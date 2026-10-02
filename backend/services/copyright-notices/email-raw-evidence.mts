@@ -8,6 +8,7 @@ import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import type { CopyrightEmailSesVerdict } from './email-ses-verdicts.mts'
+import { COPYRIGHT_ERASED_KEY_PREFIX } from './retention-erasure-spec.mts'
 
 export type CopyrightEmailRawEvidence = {
   bytes: Buffer
@@ -29,7 +30,8 @@ export async function loadCopyrightEmailRawEvidence(
 ): Promise<CopyrightEmailRawEvidence | null> {
   if (!currentUserCanReviewCopyrightNotices(currentUser)) return null
   const record = await getRawEvidenceRecord(intakeId)
-  if (!record) return null
+  // The retention sweep deletes the object, then overwrites its key; there is nothing to fetch.
+  if (!record || record.raw_storage_key.startsWith(COPYRIGHT_ERASED_KEY_PREFIX)) return null
   // The stored object is the sender's unmodified message. Refuse before any read once SES has
   // flagged it, so malware never leaves the private evidence bucket; other verdicts still allow it.
   if (record.virus_verdict === 'fail') {

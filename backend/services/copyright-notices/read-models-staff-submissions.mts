@@ -1,6 +1,7 @@
 import { decryptSecret } from '@modules/token-secrets'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
+import { decryptCopyrightJson } from './erased-ciphertext.mts'
 import type { CopyrightStaffCase } from './read-models-staff-types.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
 
@@ -143,7 +144,7 @@ export async function selectStaffLegalHolds(
     submission_id: row.submission_id,
     received_at: row.received_at,
     statement: parseStatement(
-      decryptSecret(row.body_ciphertext, copyrightSubmissionPurpose(row.submission_id)),
+      decryptCopyrightJson(row.body_ciphertext, copyrightSubmissionPurpose(row.submission_id)),
     ),
     assessment: row.assessment_id
       ? {

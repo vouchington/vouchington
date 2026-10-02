@@ -39,6 +39,19 @@ Glide Queue system for reconciling notifications and delivering browser push mes
   Sentry warning with counts and notice or email intake IDs. It sends nothing when every count is
   zero. See the
   [copyright runbook](../../../../runbooks/copyright-notices.md#review-target-page).
+- `processSweepCopyrightEvidenceRetention` runs hourly at minute 17. It calls
+  `sweepCopyrightEvidenceRetention`, which first reads `copyright.evidenceRetentionDeletion` and
+  `copyright.evidenceRetentionDays` and does nothing while the switch is off (the default) or the
+  period is unset. Otherwise it erases the evidence and personal data of at most 25 eligible US
+  DMCA cases per run, one case at a time, each in its own transaction: the evidence-bucket objects
+  (every version) are deleted before any database column changes, so a bucket refusal leaves the
+  case untouched for the next run. Each case first takes the per-account advisory lock that
+  placing a preservation hold also takes, for every account party to it, and eligibility (which
+  an open hold on any of them fails) is checked again under those locks. Failures are sent to
+  Sentry as one tagged warning with counts, notice IDs and error class names, and the job itself
+  still completes, because the next run retries every left-over case. A manual trigger is
+  throttled for five minutes. See the
+  [copyright runbook](../../../../runbooks/copyright-notices.md#evidence-retention-deletion).
 - `delete-notification`
   - Performs asynchronous soft deletion for user-initiated deletes
 - `follow-notification`

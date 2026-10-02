@@ -16,5 +16,6 @@ export type NotificationJobs =
   | 'processApplyCopyrightAction'
   | 'processReconcileCopyrightActionIntents'
   | 'processCheckCopyrightReviewTarget'
+  | 'processSweepCopyrightEvidenceRetention'
   | 'processApplyMediaDeliveryRegistryRecord'
   | 'processReconcileMediaDeliveryRegistry'

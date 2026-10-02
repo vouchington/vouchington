@@ -13,6 +13,7 @@ export const SCHEDULED_JOB_API_ORDER = [
   'copyright-action-reconciliation',
   'copyright-delivery-reconciliation',
   'copyright-review-target-page',
+  'copyright-evidence-retention',
   'dispatchRssFeeds',
   'refreshRssFeedCrawlTiers',
   'refreshTopHashtags',

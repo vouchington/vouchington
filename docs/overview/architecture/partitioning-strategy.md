@@ -159,7 +159,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `copyright_notice_guest_capabilities`,
   `copyright_notice_legal_hold_assessments`, `copyright_notice_legal_hold_assessment_targets`,
   `copyright_notice_legal_hold_resolutions`,
-  `copyright_notice_lifecycle_events`,
+  `copyright_notice_lifecycle_events`, `copyright_notice_retention_erasures`,
   `copyright_notice_submission_assessments`, `copyright_notice_submission_requests`,
   `copyright_notice_submission_targets`, `copyright_notice_submissions`,
   `copyright_notice_target_images`, `copyright_notice_targets`,

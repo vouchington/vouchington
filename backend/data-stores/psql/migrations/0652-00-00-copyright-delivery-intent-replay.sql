@@ -3,6 +3,9 @@
 CREATE OR REPLACE FUNCTION fn_guard_copyright_delivery_intent_transition()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
+  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN
+    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;
+  END IF;
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'copyright delivery intents are retained' USING ERRCODE = 'check_violation';
   END IF;

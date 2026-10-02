@@ -3,6 +3,7 @@ import {
   enqueueApplyMediaDeliveryRegistryRecord,
   enqueueCheckCopyrightReviewTarget,
   enqueueReconcileCopyrightActionIntents,
+  enqueueSweepCopyrightEvidenceRetention,
 } from './enqueues.mts'
 import { notifications } from './queues.mts'
 
@@ -30,6 +31,20 @@ describe('copyright and media-delivery notification enqueue wiring', () => {
     expect(job?.opts).toMatchObject({
       deduplication: {
         id: 'copyright-review-target-page',
+        mode: 'throttle',
+      },
+    })
+  })
+
+  it('throttles the copyright evidence retention sweep to one schedule', async () => {
+    await enqueueSweepCopyrightEvidenceRetention()
+    const job = (await notifications.getJobs('waiting')).find(
+      candidate => candidate.name === 'processSweepCopyrightEvidenceRetention',
+    )
+    expect(job?.data).toEqual({})
+    expect(job?.opts).toMatchObject({
+      deduplication: {
+        id: 'copyright-evidence-retention',
         mode: 'throttle',
       },
     })

@@ -1,6 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
+import { decryptCopyrightText, liveCopyrightCiphertext } from './erased-ciphertext.mts'
 import { parseCopyrightFormGuidance } from './form-screening-guidance.mts'
 import type { CopyrightStaffCase } from './read-models-staff-types.mts'
 
@@ -68,6 +69,7 @@ export async function selectStaffFormReview(
   const row = rows[0]
   if (!row) return null
   const purpose = `copyright-form-screening:${row.intake_id}`
+  const guidance = liveCopyrightCiphertext(row.guidance_ciphertext)
   return {
     intake_id: row.intake_id,
     source_kind: row.source_kind,
@@ -76,12 +78,10 @@ export async function selectStaffFormReview(
           state: row.state,
           recommendation: row.recommendation,
           rationale: row.rationale_ciphertext
-            ? decryptSecret(row.rationale_ciphertext, purpose)
+            ? decryptCopyrightText(row.rationale_ciphertext, purpose)
             : null,
-          guidance: row.guidance_ciphertext
-            ? parseCopyrightFormGuidance(
-                JSON.parse(decryptSecret(row.guidance_ciphertext, purpose)),
-              )
+          guidance: guidance
+            ? parseCopyrightFormGuidance(JSON.parse(decryptSecret(guidance, purpose)))
             : null,
         }
       : null,

@@ -476,6 +476,9 @@ CREATE INDEX idx_copyright_notice_events__actor ON copyright_notice_lifecycle_ev
 CREATE OR REPLACE FUNCTION fn_guard_copyright_notice_immutable_evidence()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
+  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN
+    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;
+  END IF;
   RAISE EXCEPTION 'copyright legal receipt and evidence records are immutable' USING ERRCODE = 'check_violation';
 END;
 $$;
@@ -487,6 +490,9 @@ DECLARE
   old_actor jsonb;
   new_actor jsonb;
 BEGIN
+  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN
+    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;
+  END IF;
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'copyright legal records are retained' USING ERRCODE = 'check_violation';
   END IF;
@@ -587,6 +593,9 @@ $$;
 CREATE OR REPLACE FUNCTION fn_guard_copyright_notice_submission()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
+  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN
+    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;
+  END IF;
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'copyright legal receipt records are retained' USING ERRCODE = 'check_violation';
   END IF;
@@ -637,6 +646,9 @@ CREATE TRIGGER trigger_copyright_notice_events_immutable BEFORE UPDATE OR DELETE
 CREATE OR REPLACE FUNCTION fn_guard_copyright_notice_identity()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
+  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN
+    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;
+  END IF;
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'copyright notices are retained legal records' USING ERRCODE = 'check_violation';
   END IF;
@@ -780,6 +792,9 @@ CREATE TRIGGER trigger_copyright_deadlines_updated_at BEFORE UPDATE ON copyright
 CREATE OR REPLACE FUNCTION fn_guard_copyright_correspondence()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
+  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN
+    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;
+  END IF;
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'copyright correspondence is a retained legal record' USING ERRCODE = 'check_violation';
   END IF;

@@ -4,7 +4,9 @@ import { countDynamicConfigAuditRows, createTestUser } from '@voucha/test-helper
 import { persistDynamicConfigTestBaseline } from '@voucha/test-helpers/dynamic-config'
 import {
   copyrightConfig,
+  getCopyrightEvidenceRetentionDays,
   getCopyrightReviewTargetMinutes,
+  isCopyrightEvidenceRetentionDeletionEnabled,
 } from '@services/copyright-notices/config'
 
 const path = '/api/v1/dynamic-config/namespaces/copyright'
@@ -35,6 +37,39 @@ describe('copyright dynamic-config namespace', () => {
       .expect(400)
   })
 
+  it('launches with evidence retention deletion off and no retention period', async () => {
+    const developer = await createTestUser({ extraRoles: ['developer'] })
+    const request = createRequest()
+    await request.authenticateAs(developer)
+
+    const current = await request.get(path).expect(200)
+
+    expect(current.body.namespace.fields).toContainEqual(
+      expect.objectContaining({
+        name: 'evidenceRetentionDays',
+        type: 'number',
+        value: 0,
+        default_value: 0,
+        min_value: 0,
+        integer: true,
+      }),
+    )
+    expect(current.body.namespace.fields).toContainEqual(
+      expect.objectContaining({
+        name: 'evidenceRetentionDeletion',
+        type: 'boolean',
+        value: false,
+        default_value: false,
+      }),
+    )
+    expect(await isCopyrightEvidenceRetentionDeletionEnabled()).toBe(false)
+    expect(await getCopyrightEvidenceRetentionDays()).toBeNull()
+    await request
+      .patch(path)
+      .send({ config: { evidenceRetentionDays: -1 } })
+      .expect(400)
+  })
+
   it('launches with automatic provisional withholding off and audits a developer enabling it', async () => {
     const [developer, moderator] = await Promise.all([
       createTestUser({ extraRoles: ['developer'] }),
@@ -46,6 +81,8 @@ describe('copyright dynamic-config namespace', () => {
     expect(current.body.namespace.config).toEqual({
       automaticProvisionalWithholding: false,
       reviewTargetMinutes: 0,
+      evidenceRetentionDeletion: false,
+      evidenceRetentionDays: 0,
     })
     const moderatorRequest = createRequest()
     await moderatorRequest.authenticateAs(moderator)

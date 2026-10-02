@@ -613,12 +613,84 @@ See [account data export](../users/ACCOUNT-DATA-EXPORT.md#copyright-records) for
 
 ## Evidence retention
 
-Retention deletion is not built yet, so nothing is deleted today. Case records, evidence objects,
-and preserved emails stay, and no table or setting stores a retention duration. Voucha must still
-keep US records for the repeat-infringer policy, restoration, the three-year limitation period, and
-litigation holds. A switched-off deletion sweep is tracked in
-[#1101](https://github.com/vouchington/vouchington/issues/1101). It waits on an approved retention
-schedule and stays off until one is set.
+GDPR and UK GDPR need a retention period, real deletion or anonymisation when it ends, and
+disclosure of both. The US side must keep records for the repeat-infringer policy (17 USC 512(i)),
+restoration (512(g)), the three-year limitation period (17 USC 507(b)), and litigation holds. An
+hourly sweep reconciles the two. It is off by default and deletes nothing until counsel approves a
+period.
+
+- **Switch and period.** Both live in the audited `copyright` dynamic-config namespace, and only a
+  developer can change them. `evidenceRetentionDeletion` defaults to `false`. `evidenceRetentionDays`
+  defaults to `0`, which means unset. Nothing is deleted while the switch is off, or while the
+  period is unset even with the switch on.
+- **Which cases.** Only `us_dmca` cases. EU and UK cases, and their narrative records, are kept.
+- **The clock.** A case's clock starts at its last lifecycle event with no blocker. The sweep takes
+  the latest of the notice's creation, its last lifecycle event, the last change to its
+  deliveries, repeat-infringer incidents, and guest capabilities (an unrevoked capability counts to
+  its expiry), and the release of any preservation hold on an account party to it. The case
+  becomes eligible once that moment is `evidenceRetentionDays` old. There is no manual case-close
+  step.
+- **Blockers.** A case is never swept while it has a staff-queue item other than a failed or
+  bounced delivery (an open form intake, appeal, counter-notice, court or CCB hold, restriction
+  review, failed media action, or incomplete enforcement request), an open deadline, an active
+  restriction, an operative repeat-infringer incident, a pending or claimed delivery, a live guest
+  capability, an open qualifying court or CCB hold with no resolution, or an open
+  [legal-process preservation hold](#repeat-infringer-incidents) on an account party
+  to the case. A party is the signed-in claimant, the submitter of any submission, the account of
+  an incident raised on the case, or the author of a post a target belongs to. A failed or bounced
+  delivery alone does not block: no staff action clears it, so it would otherwise hold the case
+  forever. The clock still waits from the delivery's last change, and a failed media action still
+  blocks. A hold is recorded only on an account, so legal process that concerns an email-only
+  claimant, or that no administrator recorded as a hold, is a matter-file hold the switch cannot see.
+- **What is erased.** Each overwritten column keeps its row, so the minimal record survives.
+
+  - Overwritten: the notice claimant name, contact, work description, and claimant user; submission
+    bodies; form signature and requester; screening and review rationale; hold, appeal, and
+    counter-notice rationale; correspondence and delivery text; recipient email; lifecycle review
+    rationale; and the parsed email sender, subject, body, message id, attachment names, and agent
+    recommendations. These are personal data and statements.
+  - Object versions deleted and the key overwritten with `erased:<row id>`: evidence artifact and
+    raw `.eml` storage keys. This is the evidence itself.
+  - Overwritten with a per-row digest: email thread lookup tokens and matched-reference lookups,
+    which identify the sender's mail thread.
+  - Kept: the notice, targets, submissions, dates, kinds, states, hashes, MIME types, and sizes
+    (the minimal record for the repeat-infringer count and the limitation period); restrictions,
+    deadlines, and hold and review outcomes (restoration records); repeat-infringer incidents,
+    dispositions, and reinstatements (the 512(i) count must not change); and guest capabilities
+    (a hash and expiry with no personal data, which block the case while live).
+
+  A legal-record table refuses UPDATE and DELETE by trigger. The sweep sets a transaction-local
+  setting that lets one allowlisted function permit an update only when it changes nothing but the
+  listed columns. It never deletes a row. A new copyright column that holds ciphertext, a storage
+  key or a lookup token must be added to the sweep's erasure list or recorded as kept, and a test
+  fails until it is.
+
+- **Fail closed.** The evidence bucket is versioned. For each key, the sweep lists every object
+  version and delete marker and deletes each by version id. A refusal inside a successful response
+  counts as a failure. It then lists the key again and proceeds only when none remain. Only then
+  does it overwrite the database in the same transaction that marks the case erased. A failure at any
+  step rolls the case back, leaves it for the next run, and reports its id. An unset bucket
+  with keys present fails the same way.
+- **Bounded and resumable.** A run takes at most 25 cases in random order, so one case that keeps
+  failing cannot starve the others. A case with an erasure marker is never selected again, so
+  re-running is safe.
+- **Reporting.** A failed case sends a `copyright_retention_erasure_failed` Sentry warning with a
+  count and notice ids only, and the job still completes. While the delete permission is missing and
+  the switch is on, this repeats each hour.
+- **Readers.** An erased case still opens. The staff case shows `[erased]` for the claimant contact
+  and screening rationale, an empty statement for a hold, and no guidance. An erased email intake
+  shows no parsed fields, parser error or recommendation, and its raw download returns nothing.
+  An erased case's failed-delivery item leaves the staff queue and the review-target count.
+- **Known limits.** The sweep does not erase a delivery intent that no notice owns, a case from an
+  email that was never promoted ([#1660](https://github.com/vouchington/vouchington/issues/1660)),
+  or an EU or UK record. Replaying an idempotent form request after its case was erased opens a new
+  case, and a counter-notice that arrives after erasure cannot be forwarded to the claimant.
+
+[Enabling it](../../runbooks/copyright-notices.md#evidence-retention-deletion) needs a
+counsel-approved period
+([#1230](https://github.com/vouchington/vouchington/issues/1230)), the evidence-bucket delete
+permission ([#1229](https://github.com/vouchington/vouchington/issues/1229)), and an account data
+export that tolerates erased rows ([#1754](https://github.com/vouchington/vouchington/issues/1754)).
 
 ## Review-target page
 

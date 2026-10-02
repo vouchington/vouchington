@@ -106,6 +106,7 @@ export { compileEuCopyrightTransparencyReport } from './eu-reporting.mts'
 export { recordEuCopyrightSupervisedComplaint } from './eu-supervised-complaint.mts'
 export { readCopyrightReviewTargetBreaches } from './review-target-breaches.mts'
 export { getCopyrightReviewTargetMinutes } from './config.mts'
+export { sweepCopyrightEvidenceRetention } from './retention-erasure.mts'
 export {
   currentUserCanApproveCopyrightTerritorialPolicy,
   recordCopyrightTerritorialPolicyApproval,

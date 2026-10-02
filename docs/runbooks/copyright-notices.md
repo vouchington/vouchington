@@ -275,7 +275,9 @@ as usual.
    qualifying legal hold covers a placement that account owns, or while an administrator has an
    open [preservation hold](#dmca-512h-subpoenas) on the account. An open review alone does not
    refuse deletion.
-5. Retention durations are still an approved-policy gate. Do not invent a clock in the product.
+5. An operative incident keeps its case out of the retention sweep, and incidents never age out.
+   The retention period is an approved-policy gate; see
+   [Evidence retention deletion](#evidence-retention-deletion).
 
 ## Recovery scans
 
@@ -388,6 +390,59 @@ A qualifying court or CCB hold blocks the restore but does not cancel or resolve
 deadline held open that way keeps paging as a missed restoration deadline. Only a completed restore
 or a superseding assessment clears it.
 
+## Evidence retention deletion
+
+The `copyright-evidence-retention` job on the `notifications` queue runs hourly. It deletes the
+evidence and claimant personal data of old `us_dmca` cases, and keeps the minimal record that the
+repeat-infringer count needs. What it erases, and what stops it, is in
+[evidence retention](../requirements/moderation/COPYRIGHT-NOTICES.md#evidence-retention). It does
+nothing until you do all of the following, in order.
+
+1. **Get a counsel-approved period.** Counsel sets how many days a case is kept after its last
+   lifecycle event ([#1230](https://github.com/vouchington/vouchington/issues/1230)). Do not choose
+   one yourself. It must cover the three-year limitation period and any restoration and
+   repeat-infringer need counsel identifies.
+2. **Confirm the evidence-bucket permissions.** The worker role needs `s3:ListBucketVersions`,
+   `s3:DeleteObjectVersion` and `s3:DeleteObject` on `S3_BUCKET_COPYRIGHT_EVIDENCE`
+   ([#1229](https://github.com/vouchington/vouchington/issues/1229)). Without them every erasure
+   fails and nothing changes, which is safe but noisy.
+3. **Confirm the account data export tolerates erased rows** (#1754). The export decrypts a case's
+   text, and an erased column is the literal `erased`, which does not decrypt. Until the export
+   skips erased cases, an account that owns one cannot be exported, so do not enable the switch.
+4. **Check for open legal process.** An open [preservation hold](#dmca-512h-subpoenas) on an
+   account keeps every case that account is party to out of the sweep, and the period restarts
+   when the hold is released. The sweep cannot see legal process that no hold records: a request
+   about an email-only claimant, who has no account, or a matter nobody placed a hold for. Place
+   the hold first, and keep the switch off while counsel has an open matter over copyright
+   records that a hold cannot cover.
+5. **Set the period, then the switch.** In the admin dynamic-config page, open the `copyright`
+   namespace (developer role). Set `evidenceRetentionDays` to the approved whole number of days,
+   then set `evidenceRetentionDeletion` to `true`. Each change is recorded in the namespace
+   history. The first run after that erases every case already past the period, 25 cases an hour.
+
+To stop, set `evidenceRetentionDeletion` back to `false`. Erased cases stay erased: the data is gone.
+Setting `evidenceRetentionDays` to `0` also stops it.
+
+**Reading a failure.** When a case cannot be erased, the job still completes and sends one Sentry
+warning, `copyright_retention_erasure_failed`. It carries the counts and the failed notice ids
+(at most 25 a run), each with the error class (and code, for an S3 error). It never carries a key,
+claimant, or message text.
+The case keeps all its data and is retried on the next run, so a missing permission repeats this
+warning every hour while the switch is on. The Sentry alert rule that routes it is not set up yet
+([#1230](https://github.com/vouchington/vouchington/issues/1230)). Fix the cause rather than
+turning the warning off.
+
+**What staff see afterwards.** An erased case still opens in the staff queue and the case view. The
+claimant contact and screening rationale read `[erased]`, a court or CCB hold statement is empty,
+and an email intake shows no parsed fields or agent recommendation. The raw `.eml` download is
+unavailable. The repeat-infringer account view is unchanged, and its incident counts are the same.
+
+**Not covered.** The sweep leaves EU and UK cases, repeat-infringer reviews and decisions, guest
+capabilities, and email that was never promoted to a case
+([#1660](https://github.com/vouchington/vouchington/issues/1660)). A case with an active restriction
+or an operative incident is never swept. If a claimant asks for erasure before the period ends,
+that is a data-subject request for counsel, not something this switch handles.
+
 ## Urgent review
 
 Urgent work has no per-case alert rows or acknowledgements. Two mechanisms surface it:
@@ -487,10 +542,12 @@ sufficient to identify an alleged infringer, to the extent Voucha has it.
    - **Already deleted.** A hold cannot be placed on an account that is already deleted. If the
      subpoena arrives after deletion, tell counsel the same day: the account's personal data was
      scrubbed at deletion, and the soft-deleted row is purged 90 days after it.
-   - Copyright case records are append-only, and nothing in the product destroys case evidence.
-     Retention deletion is not built yet, so nothing is deleted today; a switched-off deletion sweep
-     is tracked in [#1101](https://github.com/vouchington/vouchington/issues/1101) (see
-     [evidence retention](../requirements/moderation/COPYRIGHT-NOTICES.md#evidence-retention)).
+   - **Case evidence.** Copyright case records are append-only, and the only thing that destroys
+     case evidence is the evidence retention sweep, which is off by default. A preservation hold
+     keeps the sweep away from every case the held account is a party to, as claimant, as the
+     author of a targeted post, as the submitter of an appeal or counter-notice, or as the subject of
+     a repeat-infringer incident (see [Evidence retention deletion](#evidence-retention-deletion)).
+     A hold on a different account, or none, does not.
 
    If counsel also directs a copy of the data, an administrator requests an
    [account data export](../requirements/users/ACCOUNT-DATA-EXPORT.md) for the account and saves
