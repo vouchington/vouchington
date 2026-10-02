@@ -57,6 +57,7 @@ export type ApiScope =
   | 'profile:read'
   | 'profile:write'
   | 'recommendations:read'
+  | 'reference-data:read'
   | 'referral-links:read'
   | 'referral-links:write'
   | 'rewards-statuses:read'
@@ -68,6 +69,7 @@ export type ApiScope =
   | 'topic-recommendations:write'
   | 'topics:read'
   | 'users:read'
+  | 'web-search:read'
 
 export type ScopeDefinition = {
   action: ScopeAction

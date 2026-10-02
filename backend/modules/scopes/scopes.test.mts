@@ -46,6 +46,8 @@ describe('validateScopeSet', () => {
   it.each([
     ['hostnames:read', 'hostnames'],
     ['users:read', 'users'],
+    ['reference-data:read', 'reference-data'],
+    ['web-search:read', 'web-search'],
   ] as const)(
     'treats %s as a read-only resource scope under the user umbrella',
     (scope, resource) => {
