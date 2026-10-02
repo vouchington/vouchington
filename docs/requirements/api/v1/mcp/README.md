@@ -118,9 +118,9 @@ even to the author or an administrator, and no result carries a viewer sidecar. 
 different sort, returns `{ success: false, error: "Invalid cursor" }`. Descriptions, rules and post
 text are wrapped as external content.
 
-The [hostname read tools](../../../../overview/architecture/services/mcp-tools/read-tools.md#hostname-read-tools)
+The [hostname read tools](../../../../overview/architecture/agent-tools/hostname-list-user-read-tools.md#hostnames)
 (`search_hostnames`, `get_top_hostnames`, each requiring `hostnames:read`) and
-[user read tools](../../../../overview/architecture/services/mcp-tools/read-tools.md#user-read-tools)
+[user read tools](../../../../overview/architecture/agent-tools/hostname-list-user-read-tools.md#users)
 (`get_user`, `search_users`, each requiring `users:read`) read as a signed-out reader for every
 caller. A hostname result carries its `topic_id` and public trust vote totals, and an
 administratively blocked hostname never appears, even to an administrator. A user result is the
@@ -128,7 +128,7 @@ public profile only, so no result carries an email address, phone number or susp
 deleted or unknown user is `{ success: false, error: "User not found" }`. The bio is wrapped as
 external content.
 
-The [list read tools](../../../../overview/architecture/services/mcp-tools/read-tools.md#list-read-tools)
+The [list read tools](../../../../overview/architecture/agent-tools/hostname-list-user-read-tools.md#lists)
 (`get_my_lists`, `get_list`, `get_list_items`, each requiring `lists:read`) read a public or
 unlisted list by id, as REST does. A private list is readable only by its owner and only when the
 credential holds the exact `post-relations.owned-private:write` grant, which `mcp.user:write` does
