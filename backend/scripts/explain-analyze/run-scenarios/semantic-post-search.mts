@@ -32,13 +32,13 @@ export async function runSemanticPostSearchScenarios(): Promise<void> {
           'buildPostSearchQuery',
           { localSettings: SEMANTIC_POST_SEARCH_SETTINGS },
         )
-      } catch (error) {
+      } catch (err) {
         try {
           await recordSemanticPostFailure(scenario, options, seed)
-        } catch (diagnosticError) {
-          console.error(`${scenario}: secondary diagnostic failure`, diagnosticError)
+        } catch (err) {
+          console.error(`${scenario}: secondary diagnostic failure`, err)
         }
-        throw error
+        throw err
       }
     }
   }

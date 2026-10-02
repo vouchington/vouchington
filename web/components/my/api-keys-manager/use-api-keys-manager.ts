@@ -126,8 +126,8 @@ export function useApiKeysManager(
         ])
         setClientFirstPage(page)
       }
-    } catch (error) {
-      toast.error(error instanceof ApiError ? error.message : t('settings.apiKeys.rotationFailed'))
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : t('settings.apiKeys.rotationFailed'))
     } finally {
       setRotatingIds(prev => new Set([...prev].filter(value => value !== id)))
     }
