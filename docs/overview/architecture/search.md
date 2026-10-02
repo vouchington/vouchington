@@ -110,7 +110,7 @@ Uses the unified cursor-based pagination module. Cursors are opaque base64 strin
 
 ## URL Search Min-Length
 
-The URL search endpoint (`GET /api/v1/urls?query=`) requires a minimum query length of 3 characters after trimming (`backend/services/urls/search.mts`). Shorter queries return a 400 error.
+The URL search endpoint (`GET /api/v1/urls?query=`) requires a minimum query length of 3 characters after trimming (`backend/services/urls/search.mts`). Shorter queries return a 400 error. The trimmed query is matched as a literal substring: `%`, `_`, and `\` are escaped before the `ILIKE`, so wildcard-only input such as `%%%` cannot bypass the minimum length or match every URL.
 
 Frontend guards prevent the API call before the minimum is met:
 

@@ -27,6 +27,26 @@ describe('search', () => {
     expect(results.some(r => r.url.includes(random))).toBe(true)
   })
 
+  it('searchUrls treats LIKE wildcards in the query as literal characters', async () => {
+    const random = Math.random().toString(36).slice(2, 10)
+    const hostnameId = await insertTestUrlHostname({
+      hostname: `search-wild-${random}.example.com`,
+    })
+    const literalUrl = `https://search-wild-${random}.example.com/a_b%c`
+    const otherUrl = `https://search-wild-${random}.example.com/axbyc`
+    await insertTestUrl({ url: literalUrl, hostnameId })
+    await insertTestUrl({ url: otherUrl, hostnameId })
+
+    const literal = await searchUrls({ query: `${random}.example.com/a_b%c` })
+    expect(literal.results.map(r => r.url)).toEqual([literalUrl])
+
+    const wildcardOnly = await searchUrls({ query: `${random}.example.com/a_b%`, limit: 10 })
+    expect(wildcardOnly.results.map(r => r.url)).toEqual([literalUrl])
+
+    const matchAll = await searchUrls({ query: '%%%', limit: 10 })
+    expect(matchAll.results).toHaveLength(0)
+  })
+
   it('searchUrls uses the shared limit clamp', async () => {
     const random = Math.random().toString(36).slice(2, 10)
     for (let index = 0; index < 101; index++) {
