@@ -49,7 +49,7 @@ describe('GlideMQ test obliterate', () => {
     await shimQueue.obliterate({ force: true })
 
     expect(queue.jobs.size).toBe(0)
-    expect(queue.dedupSet.size).toBe(0)
+    expect(queue.dedupEntries.size).toBe(0)
     expect(queue.waitingQueue).toHaveLength(0)
     expect(queue.budgets.size).toBe(0)
     expect((await queue.getMetrics('completed')).count).toBe(0)

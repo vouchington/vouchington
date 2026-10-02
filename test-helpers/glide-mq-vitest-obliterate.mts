@@ -4,7 +4,7 @@ import { deadLetterQueueNames, getOrCreateQueue } from './glide-mq-vitest-intern
 
 /**
  * Fully clear a shim TestQueue's owned state — everything `obliterate()` promises but upstream
- * `TestQueue.drain()` does not touch: `jobs`, `dedupSet`, the shim dedup map, `waitingQueue`,
+ * `TestQueue.drain()` does not touch: `jobs`, `dedupEntries`, the shim dedup map, `waitingQueue`,
  * `budgets`, `metricsData` counters, registered schedulers, and pause state. Also obliterates the
  * configured dead-letter queue, if any.
  *
@@ -32,7 +32,7 @@ export async function obliterateTestQueue(
   visited.add(queue.name)
 
   queue.jobs.clear()
-  queue.dedupSet.clear()
+  queue.dedupEntries.clear()
   clearDedupEntries(queue.name)
   queue.waitingQueue.length = 0
   queue.budgets.clear()
