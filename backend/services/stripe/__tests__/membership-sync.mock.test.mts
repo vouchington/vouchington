@@ -13,7 +13,7 @@ import {
 } from '@voucha/test-helpers'
 import { withPostgresQueryFailureForTest } from '@voucha/test-helpers/postgres-query-failure'
 import { createMembership } from '@services/memberships'
-import { insertStripeEvent } from '../events.mts'
+import { insertStripeEvent } from '../insert-event.mts'
 import { ensureMembershipFromStripeSubscription } from '../membership-sync.mts'
 
 vi.mock<typeof import('@modules/stripe/subscriptions')>(
