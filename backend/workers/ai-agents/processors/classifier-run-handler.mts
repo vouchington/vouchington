@@ -7,9 +7,12 @@ import {
   claimClassifierRun,
   completeClassifierRun,
   listPendingClassifierRunRequests,
+  readClassifierRunHealth,
   reserveClassifierRun,
   supersedeStaleClassifierRun,
   type ClassifierRunAdapter,
+  type ClassifierRunHealth,
+  type ClassifierRunHealthScope,
   type ClassifierRunLease,
   type ClassifierRunSubject,
   type ClassifierRunTarget,
@@ -42,6 +45,7 @@ export type ClassifierRunHandler = {
   slug: string
   reserve(subject: ClassifierRunSubject): ReturnType<typeof reserveClassifierRun>
   pendingRequests(after: string | null): Promise<DiscoveryPage<PendingClassifierRunRequest>>
+  health(now: Date, scope?: ClassifierRunHealthScope): Promise<ClassifierRunHealth>
   run(job: Job<ClassifierRunJobData>): Promise<ClassifierRunJobResult>
 }
 
@@ -122,6 +126,7 @@ export function createClassifierRunHandler<C, L, E>(
     slug: adapter.slug,
     reserve: subject => reserveClassifierRun(adapter, subject),
     pendingRequests: after => listPendingClassifierRunRequests(adapter, after),
+    health: (now, scope) => readClassifierRunHealth(adapter, now, scope),
     run,
   }
 }

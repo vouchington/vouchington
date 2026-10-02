@@ -18,8 +18,6 @@ export type IncompleteClassifierRun = {
   rssFeedItemId: string | null
   inputSha256: string
   configurationSha256: string
-  /** When the run was reserved; the sweep derives run age from it. */
-  createdAt: Date
   /** Sweep enqueues that added a job; a run at the bound is given up, not enqueued. */
   sweepEnqueueCount: number
 }
@@ -28,7 +26,6 @@ export type PendingClassifierRunRequest = {
   requestId: string
   postId: string | null
   rssFeedItemId: string | null
-  createdAt: Date
 }
 
 export type DiscoveryPage<T> = { items: T[]; next: string | null }
@@ -40,7 +37,6 @@ type IncompleteRow = {
   rss_feed_item_id: string | null
   input_sha256: Buffer
   configuration_sha256: Buffer
-  created_at: Date
   sweep_enqueue_count: number
 }
 
@@ -55,7 +51,7 @@ export async function listIncompleteClassifierRuns(
 ): Promise<DiscoveryPage<IncompleteClassifierRun>> {
   const { rows } = await write<IncompleteRow>(sql`/* listIncompleteClassifierRuns */
     SELECT run.id, classifier.slug AS classifier_slug, run.post_id, run.rss_feed_item_id,
-      run.input_sha256, run.configuration_sha256, run.created_at, run.sweep_enqueue_count
+      run.input_sha256, run.configuration_sha256, run.sweep_enqueue_count
     FROM classifier_runs run
     JOIN classifiers classifier ON classifier.id = run.classifier_id
     WHERE run.id > COALESCE(${after}::uuid, ${FIRST_UUID}::uuid)
@@ -72,7 +68,6 @@ export async function listIncompleteClassifierRuns(
       rssFeedItemId: row.rss_feed_item_id,
       inputSha256: row.input_sha256.toString('hex'),
       configurationSha256: row.configuration_sha256.toString('hex'),
-      createdAt: row.created_at,
       sweepEnqueueCount: row.sweep_enqueue_count,
     })),
     next: rows.length === limit ? (rows[rows.length - 1]?.id ?? null) : null,
@@ -84,7 +79,6 @@ type RequestRow = {
   post_id: string | null
   rss_feed_item_id: string | null
   input_sha256: Buffer
-  created_at: Date
   eligible: boolean
 }
 
@@ -113,7 +107,7 @@ export async function listPendingClassifierRunRequests<C, L, E>(
   const { rows } = await write<RequestRow>(
     sql`/* listPendingClassifierRunRequests */
     SELECT request.id, request.post_id, request.rss_feed_item_id, request.input_sha256,
-      request.created_at, (`.append(adapter.requestEligibility()).append(sql`) AS eligible
+      (`.append(adapter.requestEligibility()).append(sql`) AS eligible
     FROM classifier_run_requests request
     JOIN classifiers classifier ON classifier.id = request.classifier_id
     WHERE classifier.slug = ${adapter.slug}
@@ -131,7 +125,6 @@ export async function listPendingClassifierRunRequests<C, L, E>(
         requestId: row.id,
         postId: row.post_id,
         rssFeedItemId: row.rss_feed_item_id,
-        createdAt: row.created_at,
       })
     } else {
       ineligible.push({ subject: subjectOf(row), inputSha256: row.input_sha256 })

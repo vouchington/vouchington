@@ -255,7 +255,6 @@ exports backend/services/users/update-contact-info.mts updateUserEmailAddress
 exports backend/services/users/update-contact-info.mts updateUserPhoneNumber
 exports backend/services/web-risk/state.mts configureWebRiskStateForTest
 exports backend/services/web-risk/state.mts resetWebRiskStateForTest
-exports backend/workers/ai-agents/processors/process-reconcile-classifier-runs.mts CLASSIFIER_RUN_AGE_ALARM_MS
 exports backend/workers/ai-agents/processors/spend-cap-recheck.mts getOpenAiSpendCapRecheckAt
 exports backend/workers/article-sync/processors.mts publishTerminalStatus
 exports backend/workers/bedrock-embeddings-batch/processors/reconciliation.mts processReconciliationPage

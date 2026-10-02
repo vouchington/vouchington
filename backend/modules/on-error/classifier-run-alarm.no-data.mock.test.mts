@@ -35,23 +35,49 @@ const ids = { classifier: 'post-classifier', runId: 'run-1' }
 const clientUnavailable = {
   kind: 'client-unavailable' as const,
   ...ids,
-  error: 'StructuredDecisionError: A structured-decision API key is required.',
+  errorName: 'StructuredDecisionError',
 }
 const runAge = {
   kind: 'run-age' as const,
   ...ids,
-  oldestRunAgeMs: 93_600_000,
-  thresholdMs: 86_400_000,
+  oldestRunAgeMs: 100_800_000,
+  thresholdMs: 93_600_000,
+  incompleteRuns: 3,
 }
 const requestAge = {
   kind: 'request-age' as const,
   classifier: 'post-classifier',
   requestId: 'request-1',
-  oldestRequestAgeMs: 93_600_000,
-  thresholdMs: 86_400_000,
+  oldestRequestAgeMs: 100_800_000,
+  thresholdMs: 93_600_000,
+  pendingRequests: 2,
+}
+const subjectUnrequested = {
+  kind: 'subject-unrequested' as const,
+  classifier: 'story-clustering-classifier',
+  unrequestedSubjects: 4,
+  oldestUnrequestedAgeMs: 7_200_000,
+  graceMs: 3_600_000,
+}
+const terminalFailures = {
+  kind: 'terminal-failures' as const,
+  classifier: 'post-classifier',
+  windowMs: 86_400_000,
+  thresholdCount: 10,
+  failedTotal: 12,
+  failedByKind: { 'client-unavailable': 2, 'provider-error': 10 },
+  completed: 5,
+}
+const sweepBound = { kind: 'sweep-bound-exceeded' as const, ...ids, sweepEnqueueCount: 10 }
+const providerRejected = {
+  kind: 'provider-rejected' as const,
+  ...ids,
+  status: 401,
+  providerCode: 'invalid_api_key',
+  errorType: 'invalid_request_error',
 }
 
-// lastAgeReportedAt is module-level throttle state -- vi.resetModules() plus a dynamic import per
+// The periodic-alarm throttle is module-level state -- vi.resetModules() plus a dynamic import per
 // test gives each test a fresh, unthrottled instance.
 describe('recordClassifierRunAlarm', () => {
   beforeEach(() => {
@@ -65,18 +91,46 @@ describe('recordClassifierRunAlarm', () => {
   })
 
   it.each([
-    [clientUnavailable, { error: clientUnavailable.error, runId: 'run-1' }],
+    [clientUnavailable, { runId: 'run-1', errorName: 'StructuredDecisionError' }],
     [
-      { kind: 'sweep-bound-exceeded' as const, ...ids, sweepEnqueueCount: 10 },
-      { runId: 'run-1', sweepEnqueueCount: 10 },
+      providerRejected,
+      {
+        runId: 'run-1',
+        status: 401,
+        providerCode: 'invalid_api_key',
+        errorType: 'invalid_request_error',
+      },
     ],
-    [runAge, { runId: 'run-1', oldestRunAgeMs: 93_600_000, thresholdMs: 86_400_000 }],
+    [sweepBound, { runId: 'run-1', sweepEnqueueCount: 10 }],
+    [
+      runAge,
+      { runId: 'run-1', oldestRunAgeMs: 100_800_000, thresholdMs: 93_600_000, incompleteRuns: 3 },
+    ],
     [
       requestAge,
-      { requestId: 'request-1', oldestRequestAgeMs: 93_600_000, thresholdMs: 86_400_000 },
+      {
+        requestId: 'request-1',
+        oldestRequestAgeMs: 100_800_000,
+        thresholdMs: 93_600_000,
+        pendingRequests: 2,
+      },
+    ],
+    [
+      subjectUnrequested,
+      { unrequestedSubjects: 4, oldestUnrequestedAgeMs: 7_200_000, graceMs: 3_600_000 },
+    ],
+    [
+      terminalFailures,
+      {
+        windowMs: 86_400_000,
+        thresholdCount: 10,
+        failedTotal: 12,
+        failedByKind: { 'client-unavailable': 2, 'provider-error': 10 },
+        completed: 5,
+      },
     ],
   ])(
-    'groups %o by kind and classifier with run ids kept out of the fingerprint',
+    'groups %o by kind and classifier with ids and counts kept out of the fingerprint',
     async (context, extra) => {
       const { recordClassifierRunAlarm } = await import('./classifier-run-alarm.mts')
       const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -86,19 +140,39 @@ describe('recordClassifierRunAlarm', () => {
         expect(consoleWarn).not.toHaveBeenCalled()
         expect(captureMessage).toHaveBeenCalledExactlyOnceWith('classifier_run_alarm', {
           level: 'error',
-          fingerprint: ['classifier_run_alarm', context.kind, 'post-classifier'],
+          fingerprint: ['classifier_run_alarm', context.kind, context.classifier],
           tags: {
             reason: 'classifier_run_alarm',
             alarm_kind: context.kind,
-            classifier: 'post-classifier',
+            classifier: context.classifier,
           },
-          extra: { classifier: 'post-classifier', ...extra },
+          extra: { classifier: context.classifier, ...extra },
         })
       } finally {
         consoleWarn.mockRestore()
       }
     },
   )
+
+  it('drops any field outside its kind, so no prompt, content, key or token can ride along', async () => {
+    const { recordClassifierRunAlarm } = await import('./classifier-run-alarm.mts')
+    const smuggled = {
+      prompt: 'private prompt text',
+      content: 'private post body',
+      apiKey: 'sk-live-secret',
+      token: 'raw-token',
+      error: 'the provider said: key sk-live-secret is invalid',
+    }
+
+    for (const context of [clientUnavailable, runAge, subjectUnrequested, terminalFailures]) {
+      captureMessage.mockClear()
+      recordClassifierRunAlarm({ ...context, ...smuggled })
+
+      const [, hint] = captureMessage.mock.calls[0]!
+      expect(Object.keys(hint.extra)).not.toEqual(expect.arrayContaining(Object.keys(smuggled)))
+      expect(JSON.stringify(hint)).not.toMatch(/private|sk-live|raw-token/)
+    }
+  })
 
   it('logs to console in development and CI but not in production without CI', async () => {
     const { recordClassifierRunAlarm } = await import('./classifier-run-alarm.mts')
@@ -126,27 +200,43 @@ describe('recordClassifierRunAlarm', () => {
     }
   })
 
-  it('throttles each repeating age alarm to once per hour and nothing else', async () => {
+  it('throttles each repeating alarm to once per hour per kind and classifier', async () => {
     vi.stubEnv('NODE_ENV', 'production')
     vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'))
     try {
       const { recordClassifierRunAlarm } = await import('./classifier-run-alarm.mts')
 
-      recordClassifierRunAlarm(runAge)
-      recordClassifierRunAlarm(runAge)
+      for (const periodic of [runAge, requestAge, subjectUnrequested, terminalFailures]) {
+        captureMessage.mockClear()
+        recordClassifierRunAlarm(periodic)
+        recordClassifierRunAlarm(periodic)
+        expect(captureMessage).toHaveBeenCalledOnce()
+      }
+
+      captureMessage.mockClear()
+      recordClassifierRunAlarm({ ...runAge, classifier: 'tagging-classifier' })
       expect(captureMessage).toHaveBeenCalledOnce()
 
-      recordClassifierRunAlarm(requestAge)
-      recordClassifierRunAlarm(requestAge)
-      expect(captureMessage).toHaveBeenCalledTimes(2)
-
-      recordClassifierRunAlarm(clientUnavailable)
-      recordClassifierRunAlarm(clientUnavailable)
-      expect(captureMessage).toHaveBeenCalledTimes(4)
-
       vi.advanceTimersByTime(60 * 60 * 1000)
+      captureMessage.mockClear()
       recordClassifierRunAlarm(runAge)
-      expect(captureMessage).toHaveBeenCalledTimes(5)
+      expect(captureMessage).toHaveBeenCalledOnce()
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it('reports every at-once alarm each time it happens', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    try {
+      const { recordClassifierRunAlarm } = await import('./classifier-run-alarm.mts')
+
+      for (const once of [clientUnavailable, providerRejected, sweepBound]) {
+        captureMessage.mockClear()
+        recordClassifierRunAlarm(once)
+        recordClassifierRunAlarm(once)
+        expect(captureMessage).toHaveBeenCalledTimes(2)
+      }
     } finally {
       vi.unstubAllEnvs()
     }

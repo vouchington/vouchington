@@ -91,7 +91,8 @@ export async function executeClassifierRun<C, L, E>(
           kind: 'client-unavailable',
           classifier: adapter.slug,
           runId: lease.runId,
-          error: err instanceof Error ? `${err.name}: ${err.message}` : String(err),
+          // The name only: a construction failure's message can carry a key or a provider payload.
+          errorName: err instanceof Error ? err.name : typeof err,
         })
       }
       return failure

@@ -26,6 +26,7 @@
     "@data-stores/psql": "workspace:^",
     "@services/classifiers": "workspace:^",
     "@services/post-publication": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {

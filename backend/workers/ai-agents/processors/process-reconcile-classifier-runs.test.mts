@@ -124,7 +124,6 @@ describe('classifier run recovery sweep: request discovery', () => {
             requestId: randomUUID(),
             postId: randomUUID(),
             rssFeedItemId: null,
-            createdAt: new Date(),
           },
         ],
         next: chained,

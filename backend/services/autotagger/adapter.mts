@@ -35,6 +35,7 @@ export function createAutotaggerRunAdapter(): AutotaggerRunAdapter {
     captureCandidates: (query, subject) => captureAutotaggerCandidateTopicIds(query, subject),
     ready: hasCurrentAutotaggerEmbedding,
     requestEligibility: autotaggerRequestEligibility,
+    requestsEveryEligibleFeedItem: true,
     applyEffects: applyAutotaggerEffects,
   }
 }
