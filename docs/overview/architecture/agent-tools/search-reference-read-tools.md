@@ -45,7 +45,7 @@ enabled_at, disabled_at }`, with the dates as ISO text. It answers `Topic not fo
 a referral program` or `Referral program attributes not found` instead of failing.
 
 `get_my_referral_links` lists the caller's own links, newest first, and has no `user_id` argument:
-one passed anyway is ignored, so a credential can never read another user's links. A
+one passed anyway is ignored, so this tool never lists another user's links. A
 `referral_program_id` that is not a UUID returns `{ success: false, error: "Invalid
 referral_program_id" }` before the database is read. Each link is `{ id, referral_program_id,
 referral_program_name, referral_program_slug, url, label, created_at, activated_at,
