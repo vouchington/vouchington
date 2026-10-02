@@ -140,6 +140,8 @@ category path described in [Tags](../../../requirements/content/TAGS.md). Its re
 returns the canonical subject/predicate/object tuple; `relation_id` is included only for relation
 tables that persist a row identifier.
 
+`remove_entity_relation` and eight referral link and topic recommendation tools follow the same model; see [Relation, Referral Link and Topic Recommendation Write Tools](relation-referral-recommendation-write-tools.md).
+
 `set_bookmark`, `remove_bookmark`, and the five list write tools follow the same delegated-authority
 model; see [Bookmark and List Write Tools](bookmark-list-write-tools.md).
 

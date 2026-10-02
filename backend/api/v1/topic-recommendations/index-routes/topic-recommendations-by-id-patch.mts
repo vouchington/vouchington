@@ -1,6 +1,7 @@
 import type { Context } from '@jongleberry/api-server'
 import { getPostByAnyCached } from '@services/entity-fetch'
 import {
+  asTopicRecommendationPost,
   currentUserCanEditTopicRecommendation,
   updateTopicRecommendation,
   type UpdateTopicRecommendationInput,
@@ -8,12 +9,10 @@ import {
 import app from '../../../app.mts'
 import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 
-import { assertTopicRecommendationPost } from './shared.mts'
-
 app.route('/api/v1/topic-recommendations/:id').patch(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/topic-recommendations/:id')
 
-  const post = assertTopicRecommendationPost(await getPostByAnyCached(ctx.params.id!))
+  const post = asTopicRecommendationPost(await getPostByAnyCached(ctx.params.id!))
   ctx.assert(post, 404, 'Recommendation not found')
   ctx.assert(currentUserCanEditTopicRecommendation(currentUser, post), 403, 'Forbidden')
 

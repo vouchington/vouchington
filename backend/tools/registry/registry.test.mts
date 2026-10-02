@@ -25,12 +25,14 @@ const NON_TOOL_FILES = new Set([
   'paged-search.mts',
   'private-user.mts',
   'read-tool-output-schema.mts',
+  'referral-link-tool-support.mts',
   'resolve-topic.mts',
   'route-response-schema.mts',
   'search-system.mts',
   'schema-validator.mts',
   'topic-hierarchy-result.mts',
   'topic-output-schema-parts.mts',
+  'topic-recommendation-tool-support.mts',
 ])
 
 describe('tool registry', () => {

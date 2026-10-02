@@ -27,9 +27,9 @@ import {
   recordPostUpdatePublicationChanges,
 } from './update/publication-change.mts'
 import {
-  prepareLockedAdditiveHashtagChanges,
-  type AdditiveHashtagIntent,
-} from './update/additive-hashtag.mts'
+  prepareLockedHashtagIntentChanges,
+  type PostHashtagIntent,
+} from './update/hashtag-intent.mts'
 import { mapPostUpdateError } from './update/post-update-error.mts'
 
 export const updatePost = async (
@@ -37,9 +37,9 @@ export const updatePost = async (
   post: Post,
   requestedChanges: UpdatePostChanges,
   membershipPlan: ContributionLimitMembershipPlan = null,
-  additiveIntent?: AdditiveHashtagIntent,
+  hashtagIntent?: PostHashtagIntent,
 ) => {
-  await assertValidPostUpdate(creator, post, requestedChanges, membershipPlan, !!additiveIntent)
+  await assertValidPostUpdate(creator, post, requestedChanges, membershipPlan, !!hashtagIntent)
 
   let changed = false
   let contentChanged = false
@@ -56,18 +56,18 @@ export const updatePost = async (
         post.id,
         creator.id,
         requestedChanges,
-        additiveIntent,
+        hashtagIntent,
       )
       const options = { query }
       await query(sql`/* updatePost.lock */ SELECT id FROM posts WHERE id = ${post.id} FOR UPDATE`)
       const currentPost = await getPostByAny(post.id, options)
       if (!currentPost) throw createHttpError(404, 'Post not found')
-      if (additiveIntent)
-        effectiveChanges = await prepareLockedAdditiveHashtagChanges(
+      if (hashtagIntent)
+        effectiveChanges = await prepareLockedHashtagIntentChanges(
           creator,
           currentPost,
           requestedChanges,
-          additiveIntent,
+          hashtagIntent,
           options,
         )
       const changes = effectiveChanges

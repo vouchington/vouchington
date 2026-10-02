@@ -13,9 +13,10 @@ const USER_RESOURCE_SCOPES = {
   posts: ['read'],
   profile: ['read'],
   recommendations: ['read'],
-  'referral-links': ['read'],
+  'referral-links': ['read', 'write'],
   'rewards-statuses': ['read', 'write'],
   spending: ['read', 'write'],
+  'topic-recommendations': ['read', 'write'],
   topics: ['read'],
 } as const
 

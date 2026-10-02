@@ -10913,6 +10913,9 @@ importers:
       '@services/recommended-topics':
         specifier: workspace:^
         version: link:../services/recommended-topics
+      '@services/referral-link-unfurl':
+        specifier: workspace:^
+        version: link:../services/referral-link-unfurl
       '@services/report-integrity':
         specifier: workspace:^
         version: link:../services/report-integrity
@@ -10934,6 +10937,9 @@ importers:
       '@services/topic-claims':
         specifier: workspace:^
         version: link:../services/topic-claims
+      '@services/topic-recommendations':
+        specifier: workspace:^
+        version: link:../services/topic-recommendations
       '@services/topics':
         specifier: workspace:^
         version: link:../services/topics
@@ -10949,6 +10955,9 @@ importers:
       '@services/user-mod-notes':
         specifier: workspace:^
         version: link:../services/user-mod-notes
+      '@services/user-referral-program-links':
+        specifier: workspace:^
+        version: link:../services/user-referral-program-links
       '@services/user-warnings':
         specifier: workspace:^
         version: link:../services/user-warnings
@@ -10986,9 +10995,6 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
     devDependencies:
-      '@services/user-referral-program-links':
-        specifier: workspace:^
-        version: link:../services/user-referral-program-links
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5

@@ -62,7 +62,9 @@ Creates a new entity relation and automatically casts Confirm for it.
 The route supplies first-party authority to the shared relation command. The MCP-only
 `add_entity_relation` adapter supplies verified delegated credential authority to that same command,
 so relation tuples and ordinary REST policy stay identical. Delegated private-post work additionally
-requires the exact own-private grant and matching candidate/effective-root ownership.
+requires the exact own-private grant and matching candidate/effective-root ownership. The MCP-only
+`remove_entity_relation` tool removes a `#tag` from a post through the post update path, not through
+a relation route; see [Tags](../../../content/TAGS.md#authored-mcp-tags).
 
 For `user → category → topic`, the target must be another existing user and the object must be a
 curated user-tag topic. Eligible signed-in users may propose tags; administrators may also propose

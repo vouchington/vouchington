@@ -55,6 +55,16 @@ Manage referral links and their validation rules.
 `label` and validation `user_help_text` accept `null` to clear their values. Authorization and
 resource preflights occur before detailed request validation; see [Route Helpers](../../README.md#route-helpers).
 
+## MCP tools
+
+Six MCP-only tools (`create_referral_link`, `update_referral_link`, `delete_referral_link`,
+`activate_referral_link`, `deactivate_referral_link`, `request_referral_link_unfurl`) run the same
+service commands as the owner routes above, so ownership, administrator access to another user's
+links, the child-link rule, link validation and the paid unfurl gate are identical. They need the
+`referral-links:read` and `referral-links:write` scopes and a Plus plan, and refuse a suspended
+account first. The validation and rule routes and the list and prioritized routes have no write
+tool. See [Write tools for relations, referral links and topic recommendations](../../../../overview/architecture/agent-tools/relation-referral-recommendation-write-tools.md).
+
 ## POST /api/v1/referral-link-validations/:validationId/rules
 
 **Request:**

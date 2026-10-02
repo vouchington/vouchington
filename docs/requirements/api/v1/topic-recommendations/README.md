@@ -92,6 +92,14 @@ Approval creates the type-specific extension row (`topics__referral_programs` or
 - Generic `/api/v1/posts` and generic tools do not expose this post type
 - Embedding content for these posts includes the recommendation rationale plus proposed topic details so similarity search can use the full request
 
+## MCP tools
+
+`update_topic_recommendation` and `withdraw_topic_recommendation` are MCP-only twins of the PATCH
+and DELETE routes. They call the same service commands, so the creator-or-admin and pending-only
+rules hold, and they need the `topic-recommendations:read` and `topic-recommendations:write` scopes
+and a Plus plan. Creating, listing, approving and rejecting have no tool, and `dismiss_recommendation`
+stays a REST-only bookmark predicate. See [Write tools for relations, referral links and topic recommendations](../../../../overview/architecture/agent-tools/relation-referral-recommendation-write-tools.md).
+
 ## Performance
 
 | Endpoint                                          | Round Trips | Caching                         | Notes                                                                                                             |

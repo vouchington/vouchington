@@ -52,11 +52,14 @@ export type ApiScope =
   | 'profile:read'
   | 'recommendations:read'
   | 'referral-links:read'
+  | 'referral-links:write'
   | 'rewards-statuses:read'
   | 'rewards-statuses:write'
   | 'rss:read'
   | 'spending:read'
   | 'spending:write'
+  | 'topic-recommendations:read'
+  | 'topic-recommendations:write'
   | 'topics:read'
 
 export type ScopeDefinition = {

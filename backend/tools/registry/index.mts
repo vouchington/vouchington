@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { adminEditorialStoryTools } from '../admin/editorial-stories.mts'
 import { adminEditorialImportTools } from '../admin/editorial-imports.mts'
 import { adminEditorialCategoryTools } from '../admin/editorial-categories.mts'
@@ -23,11 +24,15 @@ import { adminDisputesLifecycleTools } from '../admin/disputes-lifecycle.mts'
 import { adminSiteOperationsTools } from '../admin/site-operations.mts'
 import { resolveModerationAppealTool } from '../admin/appeals-resolution.mts'
 import { resolveReviewDisputeTool } from '../admin/disputes-resolution.mts'
+import activateReferralLinkTool from '../activate-referral-link.mts'
 import addEntityRelationTool from '../add-entity-relation.mts'
 import addListItemTool from '../add-list-item.mts'
 import compareTopicsTool from '../compare-topics.mts'
 import createListTool from '../create-list.mts'
+import createReferralLinkTool from '../create-referral-link.mts'
 import deleteListTool from '../delete-list.mts'
+import deactivateReferralLinkTool from '../deactivate-referral-link.mts'
+import deleteReferralLinkTool from '../delete-referral-link.mts'
 import getCommunityMembersTool from '../get-community-members.mts'
 import getCommunityPinnedPostsTool from '../get-community-pinned-posts.mts'
 import getCommunityPostsTool from '../get-community-posts.mts'
@@ -55,7 +60,9 @@ import manageMyPointValuationsTool from '../manage-my-point-valuations.mts'
 import manageMyRewardsStatusesTool from '../manage-my-rewards-statuses.mts'
 import manageMySpendingTool from '../manage-my-spending.mts'
 import removeBookmarkTool from '../remove-bookmark.mts'
+import removeEntityRelationTool from '../remove-entity-relation.mts'
 import removeListItemTool from '../remove-list-item.mts'
+import requestReferralLinkUnfurlTool from '../request-referral-link-unfurl.mts'
 import searchCommunitiesTool from '../search-communities.mts'
 import searchDataPointsTool from '../search-data-points.mts'
 import searchPostsTool from '../search-posts.mts'
@@ -64,6 +71,9 @@ import searchTopicsTool from '../search-topics.mts'
 import setBookmarkTool from '../set-bookmark.mts'
 import updateListTool from '../update-list.mts'
 import updateMyFinancialProfileTool from '../update-my-financial-profile.mts'
+import updateReferralLinkTool from '../update-referral-link.mts'
+import updateTopicRecommendationTool from '../update-topic-recommendation.mts'
+import withdrawTopicRecommendationTool from '../withdraw-topic-recommendation.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
 
 export const ALL_TOOLS: readonly Tool[] = [
@@ -92,11 +102,15 @@ export const ALL_TOOLS: readonly Tool[] = [
   ...adminSiteOperationsTools,
   resolveModerationAppealTool,
   resolveReviewDisputeTool,
+  activateReferralLinkTool,
   addEntityRelationTool,
   addListItemTool,
   compareTopicsTool,
   createListTool,
+  createReferralLinkTool,
   deleteListTool,
+  deactivateReferralLinkTool,
+  deleteReferralLinkTool,
   getCommunityMembersTool,
   getCommunityPinnedPostsTool,
   getCommunityPostsTool,
@@ -124,7 +138,9 @@ export const ALL_TOOLS: readonly Tool[] = [
   manageMyRewardsStatusesTool,
   manageMySpendingTool,
   removeBookmarkTool,
+  removeEntityRelationTool,
   removeListItemTool,
+  requestReferralLinkUnfurlTool,
   searchCommunitiesTool,
   searchDataPointsTool,
   searchPostsTool,
@@ -133,6 +149,9 @@ export const ALL_TOOLS: readonly Tool[] = [
   setBookmarkTool,
   updateListTool,
   updateMyFinancialProfileTool,
+  updateReferralLinkTool,
+  updateTopicRecommendationTool,
+  withdrawTopicRecommendationTool,
 ] as unknown as Tool[]
 
 export function getRegisteredToolByName(name: string): Tool | undefined {

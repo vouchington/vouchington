@@ -9,17 +9,18 @@ import {
 } from '@services/entity-fetch'
 import renderMarkdown from '@services/markdown'
 import { getAdminUserIdsFromPosts } from '@services/markdown/admin-users'
-import { currentUserCanViewTopicRecommendation } from '@services/topic-recommendations'
+import {
+  asTopicRecommendationPost,
+  currentUserCanViewTopicRecommendation,
+} from '@services/topic-recommendations'
 import app from '../../../app.mts'
 import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
-
-import { assertTopicRecommendationPost } from './shared.mts'
 
 app.route('/api/v1/topic-recommendations/:id').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/topic-recommendations/:id')
   validateRequestContract(ctx, 'GET:/api/v1/topic-recommendations/:id', { path: ctx.params })
 
-  const post = assertTopicRecommendationPost(await getPostByAnyCached(ctx.params.id!))
+  const post = asTopicRecommendationPost(await getPostByAnyCached(ctx.params.id!))
   ctx.assert(post, 404, 'Recommendation not found')
   ctx.assert(currentUserCanViewTopicRecommendation(currentUser, post), 403, 'Forbidden')
 

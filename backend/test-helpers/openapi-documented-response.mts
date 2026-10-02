@@ -19,7 +19,7 @@ const openApi = JSON.parse(
 
 /** The JSON body schema the generated OpenAPI document gives one response, with every `$ref` inlined. */
 export function documentedResponseSchema(
-  method: 'get' | 'post' | 'patch' | 'put',
+  method: 'get' | 'post' | 'patch' | 'put' | 'delete',
   path: string,
   status: string,
 ): JsonSchema {
@@ -32,7 +32,7 @@ export function documentedResponseSchema(
 
 /** One property of the object a response documents. */
 export function documentedResponseProperty(
-  method: 'get' | 'post' | 'patch' | 'put',
+  method: 'get' | 'post' | 'patch' | 'put' | 'delete',
   path: string,
   status: string,
   property: string,
