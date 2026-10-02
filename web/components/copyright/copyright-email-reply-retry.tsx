@@ -64,7 +64,6 @@ export function CopyrightEmailReplyRetry({
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button
-          data-pw='copyright-email-reply-retry'
           disabled={disabled || retrying}
           size='sm'
           variant='outline'
@@ -82,12 +81,7 @@ export function CopyrightEmailReplyRetry({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            data-pw='copyright-email-reply-retry-confirm'
-            onClick={retry}
-          >
-            Send reply again
-          </AlertDialogAction>
+          <AlertDialogAction onClick={retry}>Send reply again</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
