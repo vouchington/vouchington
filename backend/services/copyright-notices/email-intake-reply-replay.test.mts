@@ -121,6 +121,21 @@ describe('replaying the failed reply to a declined email intake', () => {
     ).resolves.toMatchObject({ state: 'pending', delivery_attempt_count: 0 })
   })
 
+  it('retries a reply that failed again, because the guard is the failed state and not a count', async () => {
+    const declined = await declineWithFailedReply()
+    const staff = await createStaff()
+    const replay = () =>
+      replayFailedCopyrightEmailIntakeReply({ currentUser: staff, intakeId: declined.intakeId })
+
+    await expect(replay()).resolves.toBe(declined.intentId)
+    await failTestCopyrightDeliveryIntent(declined.intentId)
+    await expect(replay()).resolves.toBe(declined.intentId)
+
+    await expect(
+      readTestCopyrightDeliveryIntentReplayEvents(declined.intentId),
+    ).resolves.toHaveLength(2)
+  })
+
   it('refuses a user who cannot review copyright notices and changes nothing', async () => {
     const declined = await declineWithFailedReply()
     const member = await createTestUser()

@@ -91,8 +91,10 @@ means this call reset a `failed` reply to `pending` and queued its email; the st
 recipient are unchanged, so the retry sends the exact original text. The reset is one conditional
 update, so concurrent calls reset it once and write one `delivery_intent_replayed` audit event
 naming the actor. That event has no case: the reply, not a notice, owns it. Every other state,
-including a `bounced` reply, an unknown intake, and a reply already retried, returns
-`replayed: false` and changes nothing. The route never creates a case or a case queue row.
+including a `bounced` reply, a reply that is already `pending` or `sent`, and an unknown intake,
+returns `replayed: false` and changes nothing. The `failed` state is the only guard, so it stops a
+double click or two reviewers racing, not a second retry: a retried reply that fails again can be
+retried again. The route never creates a case or a case queue row.
 
 The staff intake response, `GET /api/v1/copyright-email-intakes/:id`, carries
 `copyright_email_intake.ses_verdicts`: `{ spf, dkim, dmarc, spam, virus }`, each `pass`, `fail`,

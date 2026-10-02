@@ -57,10 +57,12 @@ intake queue shows each message's wait age.
    queue with a `reply_failed` or `reply_bounced` reason and the time since the failure.
    - **Retry reply** appears only beside a `reply_failed` item. After you confirm, the same stored
      reply is sent again to the same sender, word for word; the retry is recorded under your name
-     as a `delivery_intent_replayed` audit event that belongs to the reply, not to a case. It runs
-     once: a second click, or a retry by another reviewer at the same moment, finds nothing failed
-     and reports that the reply was no longer waiting. A `reply_bounced` item has no retry, because
-     a bounce means the address does not accept mail, so contact the sender by another channel.
+     as a `delivery_intent_replayed` audit event that belongs to the reply, not to a case. The retry
+     applies only while the reply is failed, so a second click, or a retry by another reviewer at the
+     same moment, finds nothing failed and reports that the reply was no longer waiting. If the
+     retried reply fails again, the item returns to the queue and can be retried again. A
+     `reply_bounced` item has no retry, because a bounce means the address does not accept mail, so
+     contact the sender by another channel.
    - **Reject email intake** closes the intake without opening a case. It needs the review
      rationale, plus the manual-fallback reason when there is no recommendation.
    - **Request information** closes the intake the same way and sends your message to the sender.
