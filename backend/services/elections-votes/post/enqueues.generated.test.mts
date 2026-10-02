@@ -1,5 +1,6 @@
 import { expect, it, beforeAll, describe } from 'vitest'
 import { createTestUser, insertPostElectionVote, insertTestPost } from '@voucha/test-helpers'
+import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
 import { getPostElectionById } from './get-election.mts'
 import { enqueueBulkUpdatePostElectionVoteStats } from '@queues/elections/enqueues'
 import type { PrivateUser } from '@services/users/types'
@@ -11,7 +12,7 @@ describe('enqueues.generated', () => {
     user = await createTestUser()
   })
 
-  it('enqueueBulkUpdatePostElectionVoteStats executes inline and updates vote stats', async () => {
+  it('enqueueBulkUpdatePostElectionVoteStats recomputes the vote stats of a post', async () => {
     const postId = await insertTestPost({
       title: 'Post election inline cache invalidation',
       slug: `post-election-inline-${Math.random().toString(36).slice(2, 10)}`,
@@ -25,6 +26,7 @@ describe('enqueues.generated', () => {
     expect(before).toBeTruthy()
 
     await enqueueBulkUpdatePostElectionVoteStats([postId])
+    await onceElectionVoteStatsCompleted({ electionId: postId, orderingKey: 'post' })
 
     const refreshed = await getPostElectionById(postId)
     expect(refreshed).toBeTruthy()

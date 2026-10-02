@@ -49,6 +49,30 @@ describe('promoteDelayedJobs', () => {
     expect(await queue.getJobs('delayed')).toHaveLength(2)
   })
 
+  it('ends the throttle window of a promoted job so the next enqueue is accepted', async () => {
+    const queue = newQueue()
+    const deduplication = { id: 'recompute-1', mode: 'throttle' as const, ttl: 5_000 }
+    await queue.add('recompute', {}, { delay: 6_000, deduplication })
+    await expect(queue.add('recompute', {}, { delay: 6_000, deduplication })).resolves.toBeNull()
+
+    await promoteDelayedJobs(queue)
+
+    await expect(
+      queue.add('recompute', {}, { delay: 6_000, deduplication }),
+    ).resolves.not.toBeNull()
+  })
+
+  it('keeps the window of a job that is not the one being promoted', async () => {
+    const queue = newQueue()
+    const deduplication = { id: 'recompute-2', mode: 'throttle' as const, ttl: 5_000 }
+    await queue.add('recompute', { n: 1 }, { delay: 6_000, deduplication })
+    await queue.add('other', { n: 2 }, { delay: 6_000 })
+
+    await promoteDelayedJobs(queue, { name: 'other' })
+
+    await expect(queue.add('recompute', { n: 3 }, { deduplication })).resolves.toBeNull()
+  })
+
   it('reports zero when nothing is delayed', async () => {
     await expect(promoteDelayedJobs(newQueue())).resolves.toBe(0)
   })

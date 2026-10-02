@@ -25,6 +25,8 @@
  * file's terminal jobs on a shared queue.
  */
 
+import { getOrCreateQueue } from '../../test-helpers/glide-mq-vitest-internals.mts'
+
 type EnqueuedJobLike = { id: string }
 
 /** The five job states reachable through `getJobs`/`searchJobs`. `'suspended'` is a real record
@@ -96,12 +98,33 @@ export async function readAllQueueJobs<T extends { id: string; timestamp: number
     .toSorted((a, b) => a.timestamp - b.timestamp || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 }
 
+type DelayedJob = {
+  id: string
+  opts: { deduplication?: { id: string; mode?: string } }
+  getState: () => Promise<string>
+  promote: () => Promise<void>
+}
+
 export type DelayedJobSearch = {
+  name: string
   searchJobs: (opts: {
     name?: string
     state?: 'delayed'
     data?: Record<string, unknown>
-  }) => Promise<Array<{ getState: () => Promise<string>; promote: () => Promise<void> }>>
+  }) => Promise<DelayedJob[]>
+}
+
+/**
+ * Promoting stands in for the delay elapsing, and a `throttle` window is never longer than the
+ * delay it guards (production relies on that: the job has not run inside its own window). So it ends
+ * the window too; otherwise an enqueue made right after the promoted job ran would be throttled
+ * away, which production, where the job is still waiting out its delay, never does.
+ */
+function endThrottleWindow(queueName: string, job: DelayedJob): void {
+  const dedup = job.opts.deduplication
+  if (dedup?.mode !== 'throttle') return
+  const entries = getOrCreateQueue(queueName).dedupEntries
+  if (entries.get(dedup.id)?.jobId === job.id) entries.delete(dedup.id)
 }
 
 /**
@@ -124,7 +147,10 @@ export async function promoteDelayedJobs(
       if ((await job.getState()) !== 'delayed') return 0
       // The delay timer can fire between the state read and this call; the job is then already out.
       return job.promote().then(
-        () => 1,
+        () => {
+          endThrottleWindow(queue.name, job)
+          return 1
+        },
         (err: unknown) => {
           if (!/not_delayed|not_found/.test(String(err))) throw err
           return 0

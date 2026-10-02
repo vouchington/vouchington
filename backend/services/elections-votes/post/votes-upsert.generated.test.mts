@@ -1,5 +1,6 @@
 import { expect, it, beforeAll, describe } from 'vitest'
-import { createTestUser, insertTestPost, pollUntilNotNull } from '@voucha/test-helpers'
+import { createTestUser, insertTestPost } from '@voucha/test-helpers'
+import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
 import { getPostElectionById } from './get-election.mts'
 import { upsertPostElectionVotes } from './votes-upsert.mts'
 import type { PrivateUser } from '@services/users/types'
@@ -26,7 +27,9 @@ describe('votes-upsert.generated', () => {
 
     await upsertPostElectionVotes(user.id, [{ entityId: postId, score: 1 }])
 
-    const refreshed = await waitForUpdatedElectionStats(postId)
+    await onceElectionVoteStatsCompleted({ electionId: postId, orderingKey: 'post' })
+
+    const refreshed = await getPostElectionById(postId)
     expect(refreshed).toBeTruthy()
     expect(refreshed?.votes_count_up).toBe(1)
     expect(refreshed?.votes_count_down).toBe(0)
@@ -45,21 +48,4 @@ describe('votes-upsert.generated', () => {
       upsertPostElectionVotes(user.id, [{ entityId: postId, score: null }]),
     ).resolves.toEqual([])
   })
-
-  async function waitForUpdatedElectionStats(postId: string) {
-    const latest = await pollUntilNotNull(
-      async () => {
-        const latest = await getPostElectionById(postId)
-        if (latest && latest.votes_count_up === 1 && latest.votes_count_down === 0) {
-          return latest
-        }
-        return null
-      },
-      600,
-      50,
-    )
-
-    if (latest === null) throw new Error(`Election stats did not converge in time: ${postId}`)
-    return latest
-  }
 })

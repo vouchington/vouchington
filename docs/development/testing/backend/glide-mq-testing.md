@@ -63,6 +63,9 @@ filter those on the result.
 Do not wait out a production `delay` in a test. Release it with `promoteDelayedJobs(queue, { name, data })`
 (`backend/test-helpers/queue-jobs.mts`), which promotes only jobs in state `delayed` (a prioritized job
 rejects `promote()`). A flush does not wait for a delayed job, so `add` returns while it stays parked.
+Promoting a `throttle` job also ends its throttle window. Production only throttles a repeat inside a
+window its delay outlasts, so the repeat after the job has run is accepted there; without the release a
+test's second enqueue right after the promoted job completed would return `null`.
 
 The elections recompute is the common case: it is debounced by `ELECTIONS_DEFAULTS.recomputeDelayMs`.
 `onceElectionVoteStatsCompleted` (`backend/test-helpers/election-vote-stats.mts`) releases it for you. A

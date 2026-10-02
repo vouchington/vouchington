@@ -138,7 +138,8 @@ expect(job).toMatchObject({ name: 'processReconcilePostPublication', data: {} })
 - `getEnqueuedJobId(enqueued)` — the id extraction `readEnqueuedJob` uses internally; exported for
   callers that only need the id.
 - `promoteDelayedJobs(queue, { name, data })` — releases jobs parked by the `delay` option so a test
-  does not wait out real time (glide-mq 0.16 honors `delay`). A `priority > 0` job is `prioritized`,
+  does not wait out real time (glide-mq 0.16 honors `delay`); a promoted `throttle` job also releases
+  its throttle window. A `priority > 0` job is `prioritized`,
   not `delayed`: it is also absent from `getJobs('waiting')` until a worker promotes it, so look it up
   with `searchJobs({ name, data })` or by id.
 
