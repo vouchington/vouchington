@@ -84,7 +84,7 @@ export function CommunityAiAgentsPanel({ agents, communitySlug }: CommunityAiAge
               <span className='min-w-0 space-y-1'>
                 <span className='block font-medium'>{formatAgentName(agent.slug)}</span>
                 <span className='block text-xs text-muted-foreground'>
-                  @{agent.system_username} · {formatAction(agent.on_flag_action, t)}
+                  @{agent.system_username}
                 </span>
                 <span className='flex flex-wrap gap-1'>
                   {agent.always_on ? (
@@ -134,13 +134,4 @@ function formatAgentName(slug: string): string {
     .split('-')
     .map(part => (part === 'ai' ? 'AI' : part.charAt(0).toUpperCase() + part.slice(1)))
     .join(' ')
-}
-
-function formatAction(
-  action: CommunityAiAgent['on_flag_action'],
-  t: ReturnType<typeof useTranslations>,
-): string {
-  return action === 'review_queue'
-    ? t('extracted.communities.communityAiAgentsPanel.tagsAndMovesToReview_72e046d5')
-    : t('extracted.communities.communityAiAgentsPanel.tagsOnly_822f5607')
 }

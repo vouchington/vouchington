@@ -17,7 +17,6 @@ export function createAutomodSimulationResults(
       approved_at: post.approved_at.toISOString(),
       content_excerpt: post.content_excerpt,
       flagged: result.flagged,
-      reason: result.reason,
     }
   })
 }

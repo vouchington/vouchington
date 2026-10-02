@@ -138,7 +138,7 @@ test.describe('Community agent prompts', () => {
 
     await expect(page.getByTestId('community-agent-prompt-test-results')).toBeVisible()
     await expect(page.getByTestId('community-agent-prompt-test-result')).toBeVisible()
-    await expect(page.getByText('Matches panel prompt')).toBeVisible()
+    await expect(page.getByText('Matched simulated post')).toBeVisible()
   })
 })
 
@@ -165,7 +165,6 @@ function makeSimulationResponse({ matched }: { matched: boolean }) {
             approved_at: '2026-01-01T00:00:00.000Z',
             content_excerpt: 'Simulated post body',
             flagged: true,
-            reason: 'Matches panel prompt',
           },
         ]
       : [],

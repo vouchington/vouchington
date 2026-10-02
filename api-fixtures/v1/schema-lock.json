@@ -146,7 +146,7 @@
     },
     "GET:/api/v1/communities/:communitySlug/ai-agents": {
       "fixtureIds": ["web.communities.ai-agents.default"],
-      "hash": "dafc4f6c0b893ddf8908cae6ab42c18e7548d42e1a79cd09393d7fec7891e917"
+      "hash": "adcc137a8b23111972289d00b324ccc332ffaec1b50de2e13ab44e5a88ee1cb8"
     },
     "GET:/api/v1/communities/:communitySlug/application-questions": {
       "fixtureIds": ["web.communities.application-questions.default"],
@@ -1044,7 +1044,7 @@
     },
     "POST:/api/v1/communities/:communitySlug/automod/simulate": {
       "fixtureIds": ["web.communities.automod-simulate.default"],
-      "hash": "964adff43735ee03063ae9c4813baa8873559b980cb057bb0d73e86bd28b8fab"
+      "hash": "e05b74db79cece5c4bcf03b691c20508398266166ef5511eb145ee49d78fe102"
     },
     "POST:/api/v1/communities/:communitySlug/saved-replies": {
       "fixtureIds": ["web.communities.saved-reply.create.default"],
@@ -1321,7 +1321,7 @@
     },
     "PUT:/api/v1/communities/:communitySlug/ai-agents/:agentSlug": {
       "fixtureIds": ["web.communities.ai-agent.default"],
-      "hash": "508e0dc9da176d75b71aebcf12dd0ae2285beeede8f42145ef6ad01a139af6b4"
+      "hash": "874fe50d1a0390a29de33d122cfebcf0ba8bbf0f117906d77ffdb6edf79835e4"
     },
     "PUT:/api/v1/entity-relations/:id/vote": {
       "fixtureIds": ["native.entity-relations.post.category.topic.vote.default"],
@@ -2623,11 +2623,11 @@
     },
     "web.communities.ai-agent.default": {
       "fixtureIds": ["web.communities.ai-agent.default"],
-      "hash": "757fcab86dd9cd13fb0fba722a25438aa99ed9a04223da0a1344ed19b1322298"
+      "hash": "c74aec0dc01a64d779d7cb2837414e1c0d8967e2b936d37e47239dbe62ce50dc"
     },
     "web.communities.ai-agents.default": {
       "fixtureIds": ["web.communities.ai-agents.default"],
-      "hash": "4ad531be035dd7b716d5586ecd3fb2d7659f4e11251f36196ef467c48ef0d498"
+      "hash": "9da94b06622a43ef586977b1845151e0a6a42dcd8d99aa6e1ae2f9313fb823d7"
     },
     "web.communities.application-questions.default": {
       "fixtureIds": ["web.communities.application-questions.default"],

@@ -5298,8 +5298,6 @@
 {"alias":"extracted.communities.communityAiAgentsPanel.failedToUpdateCommunityAiAgent_e8326c8a","consumer":"web","copyId":"copy.extracted.communities.communityAiAgentsPanel.failedToUpdateCommunityAiAgent_e8326c8a"},
 {"alias":"extracted.communities.communityAiAgentsPanel.nameDisabled_79e3c2ff","consumer":"web","copyId":"copy.extracted.communities.communityAiAgentsPanel.nameDisabled_79e3c2ff"},
 {"alias":"extracted.communities.communityAiAgentsPanel.nameEnabled_52997ef0","consumer":"web","copyId":"copy.extracted.communities.communityAiAgentsPanel.nameEnabled_52997ef0"},
-{"alias":"extracted.communities.communityAiAgentsPanel.tagsAndMovesToReview_72e046d5","consumer":"web","copyId":"copy.extracted.communities.communityAiAgentsPanel.tagsAndMovesToReview_72e046d5"},
-{"alias":"extracted.communities.communityAiAgentsPanel.tagsOnly_822f5607","consumer":"web","copyId":"copy.extracted.communities.communityAiAgentsPanel.tagsOnly_822f5607"},
 {"alias":"extracted.communities.communityAutomodActionForm.automodActionSaved_5a7127b1","consumer":"web","copyId":"copy.extracted.communities.communityAutomodActionForm.automodActionSaved_5a7127b1"},
 {"alias":"extracted.communities.communityAutomodActionForm.automodAction_83211784","consumer":"web","copyId":"copy.extracted.communities.communityAutomodActionForm.automodAction_83211784"},
 {"alias":"extracted.communities.communityAutomodActionForm.chooseWhatHappensToAPublishedPost_b2e29694","consumer":"web","copyId":"copy.extracted.communities.communityAutomodActionForm.chooseWhatHappensToAPublishedPost_b2e29694"},

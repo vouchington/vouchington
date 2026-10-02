@@ -377,9 +377,6 @@
         "preservation_hold_release"
       ]
     },
-    "moderator_on_flag_action": {
-      "values": ["none", "review_queue"]
-    },
     "notification_delete_reasons": {
       "values": ["system_pruned", "user_deleted"]
     },
@@ -3253,7 +3250,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 4,
           "type": "timestamp with time zone"
         },
         "is_baseline": {
@@ -3264,19 +3261,8 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
-          "type": "boolean"
-        },
-        "on_flag_action": {
-          "collation": null,
-          "comment": "Action taken when a moderator flags content: none (record only, the default; every seeded moderator) or review_queue (move to review queue).",
-          "defaultExpression": "'none'::moderator_on_flag_action",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
           "ordinalPosition": 3,
-          "type": "moderator_on_flag_action"
+          "type": "boolean"
         },
         "slug": {
           "collation": null,
@@ -3297,7 +3283,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         }
       },

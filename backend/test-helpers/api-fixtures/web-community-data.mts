@@ -191,7 +191,6 @@ export const communityAiAgent = {
   system_user_id: 'system-user-1',
   system_username: 'community_agent',
   label_topic_slugs: [],
-  on_flag_action: 'none',
   enabled: true,
   always_on: false,
   enabled_at: timestamp,

@@ -109,7 +109,6 @@ export interface CommunityAiAgent {
   system_user_id: string
   system_username: string
   label_topic_slugs: string[]
-  on_flag_action: 'none' | 'review_queue'
   enabled: boolean
   always_on: boolean
   enabled_at: string | null

@@ -2138,9 +2138,6 @@
             },
             "type": "array"
           },
-          "on_flag_action": {
-            "$ref": "#/components/schemas/ModeratorOnFlagAction"
-          },
           "slug": {
             "enum": [
               "ai-generated",
@@ -2168,7 +2165,6 @@
           "enabled_by_id",
           "entitlement",
           "label_topic_slugs",
-          "on_flag_action",
           "slug",
           "system_user_id",
           "system_username"
@@ -10983,10 +10979,6 @@
         },
         "required": ["actor_id", "counts", "total"],
         "type": "object"
-      },
-      "ModeratorOnFlagAction": {
-        "enum": ["none", "review_queue"],
-        "type": "string"
       },
       "ModeratorWorkloadMetrics": {
         "additionalProperties": false,
@@ -36128,12 +36120,9 @@
                   "properties": {
                     "flagged": {
                       "type": "boolean"
-                    },
-                    "reason": {
-                      "type": "string"
                     }
                   },
-                  "required": ["flagged", "reason"],
+                  "required": ["flagged"],
                   "type": "object"
                 }
               }
@@ -37174,9 +37163,6 @@
                           "post_type": {
                             "type": "string"
                           },
-                          "reason": {
-                            "type": "string"
-                          },
                           "title": {
                             "type": "string"
                           }
@@ -37189,7 +37175,6 @@
                           "lingua_rs_detected_language",
                           "post_id",
                           "post_type",
-                          "reason",
                           "title"
                         ],
                         "type": "object"

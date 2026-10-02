@@ -36,11 +36,10 @@ Response:
       "post_type": "discussion",
       "approved_at": "2026-06-01T00:00:00.000Z",
       "content_excerpt": "Example post content...",
-      "flagged": true,
-      "reason": ""
+      "flagged": true
     }
   ]
 }
 ```
 
-Simulation samples approved, non-unpublished community posts from the selected window (at most 50). Each post gets one single-question classifier call, with the classifier's thresholds applied, so the preview matches a real run. It is a no-persist dry run: it does not write a classifier receipt, attempt or `agent_moderations` row, enqueue jobs, consume prompt slots, or apply the automod action. The daily AI spend cap is checked before any call, and a breach returns 429. `reason` is always empty, because the classifier returns a probability, not an explanation. `simulation.community_automod_action` states which action (`record_only`, `review_queue` or `unpublish`) the community currently applies to a real flag, so a moderator can read the results against it.
+Simulation samples approved, non-unpublished community posts from the selected window (at most 50). Each post gets one single-question classifier call, with the classifier's thresholds applied, so the preview matches a real run. It is a no-persist dry run: it does not write a classifier receipt, attempt or `agent_moderations` row, enqueue jobs, consume prompt slots, or apply the automod action. The daily AI spend cap is checked before any call, and a breach returns 429. Results carry no `reason`, because the classifier returns a probability, not an explanation. `simulation.community_automod_action` states which action (`record_only`, `review_queue` or `unpublish`) the community currently applies to a real flag, so a moderator can read the results against it.

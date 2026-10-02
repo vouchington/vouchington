@@ -82,7 +82,7 @@ describe('POST /api/v1/communities/:idOrSlug/agent-prompts/:promptId/test-runs',
 
       const response = await testRun({ text: 'Sample content to moderate' }).expect(200)
 
-      expect(response.body).toEqual({ flagged: true, reason: '' })
+      expect(response.body).toEqual({ flagged: true })
     })
   })
 
@@ -92,7 +92,7 @@ describe('POST /api/v1/communities/:idOrSlug/agent-prompts/:promptId/test-runs',
 
       const response = await testRun({ text: 'Sample content to moderate' }).expect(200)
 
-      expect(response.body).toEqual({ flagged: false, reason: '' })
+      expect(response.body).toEqual({ flagged: false })
       expect(provider).toHaveBeenCalledOnce()
     })
   })

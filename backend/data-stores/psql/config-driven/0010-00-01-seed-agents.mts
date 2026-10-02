@@ -76,9 +76,9 @@ ON CONFLICT (system_user_id) DO UPDATE SET
   deactivated_at = NULL,
   deleted_at = NULL;`)
 
-  // 5. Upsert agents__moderators rows. on_flag_action is left to the column default
-  // (`none`): the C5 classifiers are record-only. Their prompt, model and provider are seeded
-  // by 0635-00-03-seed-post-classifier, so no per-moderator agent_prompts rows exist.
+  // 5. Upsert agents__moderators rows. The C5 classifiers are record-only (the community action is
+  // communities.automod_action). Their prompt, model and provider are seeded by
+  // 0635-00-03-seed-post-classifier, so no per-moderator agent_prompts rows exist.
   for (const config of MODERATOR_CONFIGS) {
     parts.push(`
 INSERT INTO agents__moderators (agent_id, slug, is_baseline)

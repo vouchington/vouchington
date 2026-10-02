@@ -1,55 +1,20 @@
-import {
-  aiGeneratedPrompt,
-  clickBaitPrompt,
-  marketplacePrompt,
-  politicsAversePrompt,
-  selfPromotionPrompt,
-  shitPostPrompt,
-  vaguePostPrompt,
-} from './moderator-prompts.mts'
-
 type ModeratorConfig = {
   slug: string
-  prompt: string
   baseline: boolean
 }
 
+/**
+ * The seven fixed moderator identities seeded into `agents` / `agents__moderators`. Their question
+ * text lives in the C5 post classifier catalog (`post-classifier.mts`); nothing here is a prompt.
+ */
 export const MODERATOR_CONFIGS: ModeratorConfig[] = [
-  {
-    slug: 'self-promotion',
-    prompt: selfPromotionPrompt,
-    baseline: false,
-  },
-  {
-    slug: 'marketplace',
-    prompt: marketplacePrompt,
-    baseline: false,
-  },
-  {
-    slug: 'ai-generated',
-    prompt: aiGeneratedPrompt,
-    baseline: true,
-  },
-  {
-    slug: 'politics-averse',
-    prompt: politicsAversePrompt,
-    baseline: false,
-  },
-  {
-    slug: 'click-bait',
-    prompt: clickBaitPrompt,
-    baseline: false,
-  },
-  {
-    slug: 'vague-post',
-    prompt: vaguePostPrompt,
-    baseline: false,
-  },
-  {
-    slug: 'shit-post',
-    prompt: shitPostPrompt,
-    baseline: false,
-  },
+  { slug: 'self-promotion', baseline: false },
+  { slug: 'marketplace', baseline: false },
+  { slug: 'ai-generated', baseline: true },
+  { slug: 'politics-averse', baseline: false },
+  { slug: 'click-bait', baseline: false },
+  { slug: 'vague-post', baseline: false },
+  { slug: 'shit-post', baseline: false },
 ]
 
 export function isBaselineModeratorSlug(slug: string): boolean {

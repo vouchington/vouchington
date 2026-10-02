@@ -76,7 +76,7 @@ describe('simulateCommunityPromptOnPosts', () => {
     expect(getConfiguration).not.toHaveBeenCalled()
   })
 
-  it('asks one question per post and keeps results in sample order with no reason', async () => {
+  it('asks one question per post and keeps results in sample order', async () => {
     await withReservedAiUsageDay(1_000_000, async () => {
       const asked: string[][] = []
       const fetch = vi.fn<StructuredDecisionFetch>(async (_url, init) =>
@@ -88,9 +88,9 @@ describe('simulateCommunityPromptOnPosts', () => {
       const posts = [post('a'), post('b', { title: 'SPAMMY title' }), post('c')]
 
       await expect(simulateCommunityPromptOnPosts(rule, posts, options(fetch))).resolves.toEqual([
-        { post_id: 'a', flagged: false, reason: '' },
-        { post_id: 'b', flagged: true, reason: '' },
-        { post_id: 'c', flagged: false, reason: '' },
+        { post_id: 'a', flagged: false },
+        { post_id: 'b', flagged: true },
+        { post_id: 'c', flagged: false },
       ])
       expect(asked).toEqual([[rule.id], [rule.id], [rule.id]])
     })
@@ -229,7 +229,7 @@ describe('simulateCommunityPromptOnPosts', () => {
         { fetch, apiKey: 'test-key' },
       )
 
-      expect(results).toEqual([{ post_id: fixture.postId, flagged: true, reason: '' }])
+      expect(results).toEqual([{ post_id: fixture.postId, flagged: true }])
       expect(await getClassifierRunFacts(fixture.postId)).toEqual([])
       expect(await getClassifierRunRequestFacts(fixture.postId)).toEqual([])
       expect(await getPostLLMModerations(fixture.postId)).toEqual([])

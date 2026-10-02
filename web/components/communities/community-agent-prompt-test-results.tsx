@@ -81,7 +81,6 @@ export function CommunityAgentPromptTestResults({
                   lingua_rs_detected_language: result.lingua_rs_detected_language,
                 }}
               />
-              {result.reason ? <p className='text-sm'>{result.reason}</p> : null}
             </div>
           ))}
         </div>

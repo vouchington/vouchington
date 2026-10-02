@@ -25,7 +25,6 @@ const simulation = {
       approved_at: '2026-06-01T10:00:00.000Z',
       content_excerpt: 'Hey everyone, use my link below to get a free sign-up bonus...',
       flagged: true,
-      reason: 'Repeated unrelated referral link promotion.',
     },
     {
       post_id: '019000000000000000000000202',
@@ -36,7 +35,6 @@ const simulation = {
       approved_at: '2026-06-02T10:00:00.000Z',
       content_excerpt: 'Not affiliated with any bank, just sharing a comparison I made...',
       flagged: true,
-      reason: 'Borderline promotional language.',
     },
   ],
 } satisfies CommunityAutomodSimulation

@@ -3,11 +3,10 @@ import {
   searchPostModerationsByPostIds,
   searchPostModerationsByAgent,
 } from '../search-post-moderations.mts'
-import { createPostLLMModerator, updatePostLLMModerator } from '../moderators.mts'
 import { createPost } from '@services/posts'
 import {
+  createTestAgent,
   createTestUser,
-  createSystemUser,
   insertTestAgentModeration,
   insertTestAgentPrompt,
   mockAiGeneratedModerationResults,
@@ -30,9 +29,7 @@ describe('search-post-moderations', () => {
 
     const random = randomSuffix()
     moderatorSlug = `test-mod-${random}`
-    const systemUser = await createSystemUser(moderatorSlug)
-    const moderator = await createPostLLMModerator(user, systemUser, moderatorSlug)
-    await updatePostLLMModerator(user, moderator.id, { active: true })
+    const moderator = await createTestAgent({ slug: moderatorSlug, activated: true })
     agentId = moderator.id
 
     promptId = await insertTestAgentPrompt({ agentId })

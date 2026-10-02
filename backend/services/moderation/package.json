@@ -25,7 +25,6 @@
   "dependencies": {
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
-    "@modules/utils": "workspace:^",
     "@services/agents": "workspace:^",
     "@services/communities": "workspace:^",
     "@services/users": "workspace:^",

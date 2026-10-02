@@ -26,10 +26,9 @@ import { encodeRecentAutomodActionsCursor } from './recent-actions-utils.mts'
 // searchRecentAutomodActions/recordAutomodActionFeedback behavior; the one place that
 // referenced the created post's title/post_type/created_at feeds an unasserted cursor call.
 //
-// Uses createTestAgent (raw insert into agents/agents__moderators) rather than
-// @services/moderation's createPostLLMModerator/updatePostLLMModerator: moderation depends on
-// communities (forward), and communities depends on moderation-training (forward), so a
-// moderation-training->moderation devDependency would complete a 3-cycle.
+// Uses createTestAgent (raw insert into agents/agents__moderators) rather than a @services/moderation
+// helper: moderation depends on communities (forward), and communities depends on moderation-training
+// (forward), so a moderation-training->moderation devDependency would complete a 3-cycle.
 describe('moderation-training feedback coverage', () => {
   it('records OpenAI, spam, duplicate, and in-review keep-removed automod feedback', async () => {
     const owner = await createTestUser()

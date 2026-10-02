@@ -17,7 +17,6 @@ const baseAgent: CommunityAiAgent = {
   system_user_id: 'system-self-promotion',
   system_username: 'self-promotion',
   label_topic_slugs: ['self-promotion'],
-  on_flag_action: 'review_queue',
   enabled: false,
   always_on: false,
   enabled_at: null,
@@ -57,7 +56,6 @@ const agents: CommunityAiAgent[] = [
     system_user_id: 'system-click-bait',
     system_username: 'click-bait',
     label_topic_slugs: ['click-bait'],
-    on_flag_action: 'none',
   },
 ]
 
