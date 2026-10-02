@@ -11,6 +11,7 @@ export async function addPostHashtag(
   tag: string,
   authority: PostMutationAuthority,
 ): Promise<{ post_id: string; tag: string; topic_alias_id: string }> {
+  // ast-grep-ignore: no-three-sequential-awaits -- private authorization must precede plan resolution and the mutation it constrains.
   const { post, normalized, rootIds } = await resolveHashtagMutation(
     currentUser,
     postId,

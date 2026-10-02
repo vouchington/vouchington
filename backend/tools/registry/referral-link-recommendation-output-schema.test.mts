@@ -1,11 +1,11 @@
 import { documentedResponseProperty } from '@voucha/test-helpers/openapi-documented-response'
 import { describe, expect, it } from 'vitest'
-import activateReferralLinkTool from './activate-referral-link.mts'
-import createReferralLinkTool from './create-referral-link.mts'
-import deactivateReferralLinkTool from './deactivate-referral-link.mts'
-import requestReferralLinkUnfurlTool from './request-referral-link-unfurl.mts'
-import updateReferralLinkTool from './update-referral-link.mts'
-import updateTopicRecommendationTool from './update-topic-recommendation.mts'
+import activateReferralLinkTool from '../activate-referral-link.mts'
+import createReferralLinkTool from '../create-referral-link.mts'
+import deactivateReferralLinkTool from '../deactivate-referral-link.mts'
+import requestReferralLinkUnfurlTool from '../request-referral-link-unfurl.mts'
+import updateReferralLinkTool from '../update-referral-link.mts'
+import updateTopicRecommendationTool from '../update-topic-recommendation.mts'
 
 type JsonSchema = Record<string, unknown>
 

@@ -16,8 +16,8 @@ import {
 } from '@services/topic-recommendations'
 import { addUserRole } from '@services/users/roles-permissions'
 import { getPrivateUserByAny } from '@services/users/get'
-import updateTopicRecommendationTool from './update-topic-recommendation.mts'
-import withdrawTopicRecommendationTool from './withdraw-topic-recommendation.mts'
+import updateTopicRecommendationTool from '../update-topic-recommendation.mts'
+import withdrawTopicRecommendationTool from '../withdraw-topic-recommendation.mts'
 
 const SCOPES = ['topic-recommendations:read', 'topic-recommendations:write'] as const
 

@@ -12,7 +12,7 @@ import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers
 import type { ApiScope } from '@modules/scopes'
 import { createPost } from '@services/posts'
 import { HASHTAG_IN_POST_TEXT_MESSAGE } from '@services/posts/update/hashtag-intent'
-import removeEntityRelationTool from './remove-entity-relation.mts'
+import removeEntityRelationTool from '../remove-entity-relation.mts'
 
 const SCOPES = ['entity-relations:read', 'entity-relations:write'] as const
 const PRIVATE_SCOPES = [...SCOPES, 'post-relations.owned-private:write'] as const

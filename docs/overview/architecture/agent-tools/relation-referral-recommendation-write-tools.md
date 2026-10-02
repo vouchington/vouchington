@@ -81,5 +81,5 @@ whose change was already made.
 | `PUT /api/v1/bookmarks/:entityType/:entityId/dismiss_recommendation`                                           | No tool: stays REST-only                                                                              |
 
 The result schemas come from the generated OpenAPI components (`UserReferralLink`, `Post`), and
-`backend/tools/referral-link-recommendation-output-schema.test.mts` pins them to the documented REST
+`backend/tools/registry/referral-link-recommendation-output-schema.test.mts` pins them to the documented REST
 bodies.

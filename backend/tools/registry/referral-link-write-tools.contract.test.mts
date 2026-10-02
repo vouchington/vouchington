@@ -12,9 +12,9 @@ import { OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN } from '@modules/on-error/error
 import { getTopicBySlug } from '@services/topics/get'
 import { getUserReferralLink, type UserReferralLink } from '@services/user-referral-program-links'
 import { addUserRole } from '@services/users/roles-permissions'
-import deleteReferralLinkTool from './delete-referral-link.mts'
-import { getRegisteredToolByName } from './registry/index.mts'
-import updateReferralLinkTool from './update-referral-link.mts'
+import deleteReferralLinkTool from '../delete-referral-link.mts'
+import updateReferralLinkTool from '../update-referral-link.mts'
+import { getRegisteredToolByName } from './index.mts'
 
 const SCOPES = ['referral-links:read', 'referral-links:write'] as const
 
