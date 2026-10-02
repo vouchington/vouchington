@@ -33,10 +33,13 @@ import getCommunityPinnedPostsTool from '../get-community-pinned-posts.mts'
 import getCommunityPostsTool from '../get-community-posts.mts'
 import getCommunityTool from '../get-community.mts'
 import getDomainRatingsTool from '../get-domain-ratings.mts'
+import getListItemsTool from '../get-list-items.mts'
+import getListTool from '../get-list.mts'
 import getMyCardsTool from '../get-my-cards.mts'
 import getMyPointValuationsTool from '../get-my-point-valuations.mts'
 import getMyProfileTool from '../get-my-profile.mts'
 import getMyFinancialProfileTool from '../get-my-financial-profile.mts'
+import getMyListsTool from '../get-my-lists.mts'
 import getMyRewardsStatusesTool from '../get-my-rewards-statuses.mts'
 import getMySpendingTool from '../get-my-spending.mts'
 import getPostAncestorsTool from '../get-post-ancestors.mts'
@@ -45,11 +48,13 @@ import getPostTool from '../get-post.mts'
 import getRecommendedTopicsTool from '../get-recommended-topics.mts'
 import getReferralLinksTool from '../get-referral-links.mts'
 import getStoryTool from '../get-story.mts'
+import getTopHostnamesTool from '../get-top-hostnames.mts'
 import getTopicDetailsTool from '../get-topic-details.mts'
 import getTopicInsightsTool from '../get-topic-insights.mts'
 import getTopicMetricsTool from '../get-topic-metrics.mts'
 import getTrendingPostsTool from '../get-trending-posts.mts'
 import getTrendingTopicsTool from '../get-trending-topics.mts'
+import getUserTool from '../get-user.mts'
 import manageMyCardsTool from '../manage-my-cards.mts'
 import manageMyPointValuationsTool from '../manage-my-point-valuations.mts'
 import manageMyRewardsStatusesTool from '../manage-my-rewards-statuses.mts'
@@ -58,9 +63,11 @@ import removeBookmarkTool from '../remove-bookmark.mts'
 import removeListItemTool from '../remove-list-item.mts'
 import searchCommunitiesTool from '../search-communities.mts'
 import searchDataPointsTool from '../search-data-points.mts'
+import searchHostnamesTool from '../search-hostnames.mts'
 import searchPostsTool from '../search-posts.mts'
 import searchRssFeedItemsTool from '../search-rss-feed-items.mts'
 import searchTopicsTool from '../search-topics.mts'
+import searchUsersTool from '../search-users.mts'
 import setBookmarkTool from '../set-bookmark.mts'
 import updateListTool from '../update-list.mts'
 import updateMyFinancialProfileTool from '../update-my-financial-profile.mts'
@@ -102,10 +109,13 @@ export const ALL_TOOLS: readonly Tool[] = [
   getCommunityPostsTool,
   getCommunityTool,
   getDomainRatingsTool,
+  getListItemsTool,
+  getListTool,
   getMyCardsTool,
   getMyPointValuationsTool,
   getMyProfileTool,
   getMyFinancialProfileTool,
+  getMyListsTool,
   getMyRewardsStatusesTool,
   getMySpendingTool,
   getPostAncestorsTool,
@@ -114,11 +124,13 @@ export const ALL_TOOLS: readonly Tool[] = [
   getRecommendedTopicsTool,
   getReferralLinksTool,
   getStoryTool,
+  getTopHostnamesTool,
   getTopicDetailsTool,
   getTopicInsightsTool,
   getTopicMetricsTool,
   getTrendingPostsTool,
   getTrendingTopicsTool,
+  getUserTool,
   manageMyCardsTool,
   manageMyPointValuationsTool,
   manageMyRewardsStatusesTool,
@@ -127,9 +139,11 @@ export const ALL_TOOLS: readonly Tool[] = [
   removeListItemTool,
   searchCommunitiesTool,
   searchDataPointsTool,
+  searchHostnamesTool,
   searchPostsTool,
   searchRssFeedItemsTool,
   searchTopicsTool,
+  searchUsersTool,
   setBookmarkTool,
   updateListTool,
   updateMyFinancialProfileTool,

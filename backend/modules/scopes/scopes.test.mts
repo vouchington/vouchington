@@ -43,6 +43,32 @@ describe('validateScopeSet', () => {
     ).toMatchObject({ valid: true, scopes: ['communities:read'] })
   })
 
+  it.each([
+    ['hostnames:read', 'hostnames'],
+    ['users:read', 'users'],
+  ] as const)(
+    'treats %s as a read-only resource scope under the user umbrella',
+    (scope, resource) => {
+      expect(hasScope(['mcp.user:read'], scope)).toBe(true)
+      expect(hasScope([scope], scope)).toBe(true)
+      expect(hasScope(['posts:read', 'lists:read'], scope)).toBe(false)
+      expect(hasScope(['mcp.admin:read'], scope)).toBe(false)
+      expect(SCOPE_DEFINITIONS[scope]).toMatchObject({
+        action: 'read',
+        audience: 'user',
+        resource,
+        surfaces: ['api-key', 'oauth'],
+      })
+      expect(SCOPE_DEFINITIONS[scope]).not.toHaveProperty('requires')
+      expect(
+        validateScopeSet([scope], { surface: 'oauth', allowMixedAudiences: false }),
+      ).toMatchObject({
+        valid: true,
+        scopes: [scope],
+      })
+    },
+  )
+
   it('returns scopes in canonical order with audience metadata', () => {
     expect(
       validateScopeSet(['mcp.user:write', 'mcp.user:read'], {

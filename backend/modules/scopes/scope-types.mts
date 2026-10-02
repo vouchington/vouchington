@@ -39,6 +39,7 @@ export type ApiScope =
   | 'entity-relations:write'
   | 'financial-profile:read'
   | 'financial-profile:write'
+  | 'hostnames:read'
   | 'lists:read'
   | 'lists:write'
   | 'mcp.admin:read'
@@ -58,6 +59,7 @@ export type ApiScope =
   | 'spending:read'
   | 'spending:write'
   | 'topics:read'
+  | 'users:read'
 
 export type ScopeDefinition = {
   action: ScopeAction
