@@ -18,6 +18,11 @@ type RunRow = {
   run_id: string
   classifier: string
   primitive: string
+  subject_kind: 'post' | 'rss_feed_item'
+  subject_id: string
+  input_sha256: string
+  configuration_sha256: string
+  community_identity_id: string | null
   batch_id: string | null
   prompt_version_id: string | null
   provider: string | null
@@ -66,6 +71,11 @@ export async function readClassifierRunUsage(
     SELECT run.id AS run_id,
       classifier.slug AS classifier,
       classifier.primitive::text AS primitive,
+      CASE WHEN run.post_id IS NOT NULL THEN 'post' ELSE 'rss_feed_item' END AS subject_kind,
+      COALESCE(run.post_id, run.rss_feed_item_id) AS subject_id,
+      encode(run.input_sha256, 'hex') AS input_sha256,
+      encode(run.configuration_sha256, 'hex') AS configuration_sha256,
+      run.community_identity_id,
       run.decision_batch_id AS batch_id,
       batch.prompt_version_id,
       prompt.model_provider::text AS provider,
@@ -137,6 +147,11 @@ function toRunUsage(row: RunRow): ClassifierRunUsage {
     runId: row.run_id,
     classifier: row.classifier,
     primitive: row.primitive,
+    subjectKind: row.subject_kind,
+    subjectId: row.subject_id,
+    inputSha256: row.input_sha256,
+    configurationSha256: row.configuration_sha256,
+    communityIdentityId: row.community_identity_id,
     batchId: row.batch_id,
     promptVersionId: row.prompt_version_id,
     provider: row.provider,

@@ -32,6 +32,7 @@
     "@services/admin-imports": "workspace:^",
     "@services/articles": "workspace:^",
     "@services/bookmarks": "workspace:^",
+    "@services/classifier-runs": "workspace:^",
     "@services/comments": "workspace:^",
     "@services/communities": "workspace:^",
     "@services/conversations-messages": "workspace:^",

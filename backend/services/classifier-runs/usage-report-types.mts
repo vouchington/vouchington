@@ -13,6 +13,14 @@ export type ClassifierRunUsage = {
   runId: string
   classifier: string
   primitive: string
+  subjectKind: 'post' | 'rss_feed_item'
+  subjectId: string
+  /** Hex of the subject's content digest; with the subject, one content version. */
+  inputSha256: string
+  /** Hex of the configuration digest; the other half of the receipt's identity. */
+  configurationSha256: string
+  /** The community publication the run is scoped to (C8), else null. */
+  communityIdentityId: string | null
   /** Null for a run that never reserved a remote batch (local-only work). */
   batchId: string | null
   promptVersionId: string | null
@@ -83,10 +91,79 @@ export type ClassifierUsageGroup = {
   localCostMicrounits: '0'
 }
 
+/**
+ * Everything one content version cost: a classifier's runs for one subject at one input digest
+ * (and community publication), whatever their configurations. The receipt identity admits one run
+ * per configuration, so more than one run here means the configuration changed.
+ */
+export type ClassifierContentVersionUsage = {
+  classifier: string
+  subjectKind: 'post' | 'rss_feed_item'
+  subjectId: string
+  inputSha256: string
+  communityIdentityId: string | null
+  /** Runs (receipts) reserved for this content version, one per configuration digest. */
+  runs: number
+  /** Runs that billed at least one provider response. */
+  billedRuns: number
+  /**
+   * Billed runs beyond the first: the same content classified again under a changed configuration
+   * (a C8 rule edit, a new prompt version). A count to read, not a failure: each receipt was still
+   * allowed one call. An unchanged configuration cannot produce a second receipt.
+   */
+  reclassifications: number
+  attemptsStarted: number
+  retries: number
+  sweepEnqueues: number
+  /** Billed provider responses recorded in the ledger, summed over the version's runs. */
+  providerCalls: number
+  /** The most billed responses any one run (receipt) of this version has. The KPI is at most one. */
+  maxProviderCallsPerRun: number
+  /** Runs with more than one billed response: an attempt that billed and was then repeated. */
+  runsOverOneCall: number
+  attemptsWithoutRecordedResponse: number
+  /** Provider calls whose outcomes were persisted: the responses the content version used. */
+  persistedDecisionCalls: number
+  costMicrounits: string
+  latencyMsTotal: number
+  latencySamples: number
+  /** Local detector runs, never billed and not counted in `providerCalls`. */
+  localDetectorRuns: number
+}
+
+/**
+ * One classifier's content versions summed, with how many billed calls each receipt took. The D3
+ * KPI holds for the classifier when `maxProviderCallsPerRun` is at most one: every receipt, hence
+ * every content version under one configuration, took at most one billed call.
+ */
+export type ClassifierEfficiency = {
+  classifier: string
+  contentVersions: number
+  runs: number
+  providerCalls: number
+  /** Runs that billed at least one provider response; the rest were local, replayed or unbilled. */
+  billedRuns: number
+  maxProviderCallsPerRun: number
+  /** Runs with more than one billed call; each is listed in the content version it belongs to. */
+  runsOverOneCall: number
+  /** Billed runs beyond the first per content version: configuration changes, not breaches. */
+  reclassifications: number
+  attemptsStarted: number
+  retries: number
+  sweepEnqueues: number
+  attemptsWithoutRecordedResponse: number
+  costMicrounits: string
+  latencyMsTotal: number
+  latencySamples: number
+  localDetectorRuns: number
+}
+
 export type ClassifierUsageReport = {
   window: ClassifierUsageWindow
   runs: ClassifierRunUsage[]
   groups: ClassifierUsageGroup[]
+  contentVersions: ClassifierContentVersionUsage[]
+  efficiency: ClassifierEfficiency[]
   /** Durable dispatch requests per classifier slug. Diagnostic only; never a KPI. */
   requests: Record<string, number>
 }

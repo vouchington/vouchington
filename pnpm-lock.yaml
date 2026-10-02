@@ -3169,6 +3169,9 @@ importers:
       '@services/bookmarks':
         specifier: workspace:^
         version: link:../services/bookmarks
+      '@services/classifier-runs':
+        specifier: workspace:^
+        version: link:../services/classifier-runs
       '@services/comments':
         specifier: workspace:^
         version: link:../services/comments
