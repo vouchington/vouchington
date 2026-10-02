@@ -1,60 +1,66 @@
-import type { TestQueue } from 'glide-mq/testing'
 import {
   captureFlushDiagnostics,
   TestQueueFlushTimeoutError,
 } from './glide-mq-vitest-flush-diagnostics.mts'
-import { deadLetterQueueNames, getOrCreateQueue, kickQueue } from './glide-mq-vitest-internals.mts'
-
-type QueueRecord = { state?: string; failedReason?: string; name?: string; data?: unknown }
-type WorkerEvents = { on(event: 'completed' | 'failed', listener: () => void): void }
+import {
+  deadLetterQueueNames,
+  type FlushedJobFailure,
+  getOrCreateQueue,
+  type ShimTestQueue,
+} from './glide-mq-vitest-internals.mts'
 
 export const DEFAULT_FLUSH_TIMEOUT_MS = 14_000
-const flushWaiters = new WeakMap<object, Set<() => void>>()
+// Parking by DelayedError / moveToDelayed emits no queue event, so waiters also re-check on a timer.
+const FALLBACK_POLL_MS = 10
 
-function subscribeFlushWaiter(worker: WorkerEvents, waiter: () => void): () => void {
-  let waiters = flushWaiters.get(worker)
-  if (!waiters) {
-    waiters = new Set()
-    flushWaiters.set(worker, waiters)
-    const active = waiters
-    const fanout = () => active.forEach(pending => pending())
-    worker.on('completed', fanout)
-    worker.on('failed', fanout)
-  }
-  waiters.add(waiter)
-  return () => waiters.delete(waiter)
-}
+type DeadLetterEnvelope = { originalJobId?: string }
+
+/** The terminal failure observed for one of the flushed job ids, if any. */
+export type FailureLookup = (jobId: string) => FlushedJobFailure | undefined
 
 function hasDeadLetterJob(queueName: string, originalJobId: string): boolean {
   const dlqName = deadLetterQueueNames.get(queueName)
   if (!dlqName) return false
-  for (const record of getOrCreateQueue(dlqName).jobs.values() as Iterable<QueueRecord>) {
-    if ((record.data as { originalJobId?: string } | undefined)?.originalJobId === originalJobId)
+  for (const record of getOrCreateQueue(dlqName).jobs.values()) {
+    if ((record.data as DeadLetterEnvelope | undefined)?.originalJobId === originalJobId) {
       return true
+    }
   }
   return false
 }
 
+/**
+ * Ids still owed work. `waiting`, `prioritized` and `active` jobs will be processed, so a flush
+ * waits for them. `delayed` (a `delay` option or `moveToDelayed`) and `suspended` jobs are parked
+ * until a timer, `promote()` or a signal releases them, so a flush does not wait for those. A retried
+ * job never stays `delayed`: the shim promotes it as soon as the worker parks it for its backoff.
+ */
 function inspectJobs(
-  queue: TestQueue,
+  queue: ShimTestQueue,
   jobIds: string[],
   expectedDeadLetterJobIds: Set<string>,
+  failureOf: FailureLookup,
 ): string[] {
   const pending: string[] = []
   for (const jobId of jobIds) {
-    const record = queue.jobs.get(jobId) as QueueRecord | undefined
-    if (!record) continue
-    if (record.state === 'failed') {
+    const record = queue.jobs.get(jobId)
+    // A `removeOnFail` job leaves no record, so its failure is only known from the watched event.
+    const failure =
+      failureOf(jobId) ??
+      (record?.state === 'failed'
+        ? { name: record.name, reason: record.failedReason ?? 'unknown error' }
+        : undefined)
+    if (failure) {
       if (!expectedDeadLetterJobIds.has(jobId)) {
         throw new Error(
-          `Test queue job failed in "${queue.name}" (${record.name ?? 'unknown'}#${jobId}): ${record.failedReason ?? 'unknown error'}`,
+          `Test queue job failed in "${queue.name}" (${failure.name}#${jobId}): ${failure.reason}`,
         )
       }
       if (!hasDeadLetterJob(queue.name, jobId)) pending.push(jobId)
     } else if (
-      record.state === 'waiting' ||
-      record.state === 'active' ||
-      record.state === 'delayed'
+      record?.state === 'waiting' ||
+      record?.state === 'prioritized' ||
+      record?.state === 'active'
     ) {
       pending.push(jobId)
     }
@@ -62,79 +68,68 @@ function inspectJobs(
   return pending
 }
 
+const nowMs = () => Number(process.hrtime.bigint() / 1_000_000n)
+
 /**
  * Wait for `jobIds` to reach a terminal state (or land on the configured dead-letter queue for the
  * ids in `expectedDeadLetterJobIds`), bounded by `flushTimeoutMs`. No-ops immediately if the queue
- * has no attached workers — see `test-helpers/glide-mq-vitest-internals.mts` for why that no-op is
- * intentional rather than a bug in itself (it becomes one only when nothing ever attaches a worker).
+ * has no attached workers: a queue nothing consumes cannot make progress, so waiting would only
+ * burn the timeout (it becomes a bug only when nothing ever attaches a worker). Rejects with the
+ * job's failure and, on timeout, with worker/queue diagnostics.
+ *
+ * glide-mq 0.16's native waiters do not fit here: `addAndWait` refuses `removeOnComplete` /
+ * `removeOnFail` (several production enqueues set them), waits on one id, and throws when the add
+ * is deduplicated; `Job.waitUntilFinished` polls every 500ms and resolves 'failed' instead of
+ * throwing; `Worker.drain()` closes the worker, which tests keep attached.
  */
 export function flushJobs(
-  queue: TestQueue,
+  queue: ShimTestQueue,
   jobIds: string[],
   expectedDeadLetterJobIds: Set<string>,
   flushTimeoutMs = DEFAULT_FLUSH_TIMEOUT_MS,
+  failureOf: FailureLookup = () => undefined,
 ): Promise<void> {
-  if (!queue.workers || queue.workers.size === 0) return Promise.resolve()
-  if (inspectJobs(queue, jobIds, expectedDeadLetterJobIds).length === 0) return Promise.resolve()
-  const deadline = Number(process.hrtime.bigint() / 1_000_000n) + flushTimeoutMs
+  if (queue.workers.size === 0) return Promise.resolve()
+  if (inspectJobs(queue, jobIds, expectedDeadLetterJobIds, failureOf).length === 0) {
+    return Promise.resolve()
+  }
+  const deadline = nowMs() + flushTimeoutMs
 
   return new Promise((resolve, reject) => {
     let settled = false
-    let kickTimer: ReturnType<typeof setTimeout> | undefined
-    let delayMs = 0
-    const unsubscribers = [...queue.workers].map(worker =>
-      subscribeFlushWaiter(worker as WorkerEvents, onEvent),
-    )
+    let pollTimer: ReturnType<typeof setTimeout> | undefined
     function finish(error?: unknown) {
-      if (settled) return
       settled = true
-      if (kickTimer !== undefined) clearTimeout(kickTimer)
-      for (const unsubscribe of unsubscribers) unsubscribe()
+      clearTimeout(pollTimer)
+      queue.settleWaiters.delete(check)
       // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- preserves the original queue-inspection failure for test diagnostics
       if (error) reject(error)
       else resolve()
     }
-    function onEvent() {
+    function check() {
+      if (settled) return
       try {
-        if (inspectJobs(queue, jobIds, expectedDeadLetterJobIds).length === 0) finish()
+        const pendingJobIds = inspectJobs(queue, jobIds, expectedDeadLetterJobIds, failureOf)
+        if (pendingJobIds.length === 0) return finish()
+        const remaining = deadline - nowMs()
+        if (remaining <= 0) {
+          return finish(
+            new TestQueueFlushTimeoutError(
+              queue.name,
+              [...jobIds],
+              pendingJobIds,
+              flushTimeoutMs,
+              captureFlushDiagnostics(queue, pendingJobIds),
+            ),
+          )
+        }
+        clearTimeout(pollTimer)
+        pollTimer = setTimeout(check, Math.min(FALLBACK_POLL_MS, remaining))
       } catch (err) {
         finish(err)
       }
     }
-    onEvent()
-    const scheduleKick = () => {
-      if (settled) return
-      const remaining = deadline - Number(process.hrtime.bigint() / 1_000_000n)
-      if (remaining <= 0) {
-        try {
-          const pendingJobIds = inspectJobs(queue, jobIds, expectedDeadLetterJobIds)
-          finish(
-            pendingJobIds.length === 0
-              ? undefined
-              : new TestQueueFlushTimeoutError(
-                  queue.name,
-                  [...jobIds],
-                  pendingJobIds,
-                  flushTimeoutMs,
-                  captureFlushDiagnostics(queue, pendingJobIds),
-                ),
-          )
-        } catch (err) {
-          finish(err)
-        }
-        return
-      }
-      kickTimer = setTimeout(
-        () => {
-          if (settled) return
-          kickQueue(queue)
-          onEvent()
-          if (!settled) scheduleKick()
-        },
-        Math.min(delayMs, remaining),
-      )
-      delayMs = 10
-    }
-    scheduleKick()
+    queue.settleWaiters.add(check)
+    check()
   })
 }

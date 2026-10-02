@@ -4,8 +4,8 @@ import {
   getEntityRelation,
   getFollowExists,
   insertTestLocalFollow,
-  pollUntilNotNull,
 } from '@voucha/test-helpers'
+import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
 import { withOnlyOneWritePoolClientAvailable } from '@voucha/test-helpers/write-pool-probe'
 import type { PrivateUser } from '@services/users/types'
 import { getUserVouchElectionById } from './get-election.mts'
@@ -131,24 +131,10 @@ describe('votes-upsert', () => {
   })
 
   async function waitForUpdatedVouchStats(userId: string, expected: { up: number; down: number }) {
-    const latest = await pollUntilNotNull(
-      async () => {
-        const latest = await getUserVouchElectionById(userId)
-        if (
-          latest &&
-          latest.votes_count_up === expected.up &&
-          latest.votes_count_down === expected.down
-        ) {
-          return latest
-        }
-        return null
-      },
-      600,
-      50,
-    )
+    await onceElectionVoteStatsCompleted({ electionId: userId, orderingKey: 'user_vouch' })
 
-    if (latest === null)
-      throw new Error(`User vouch election stats did not converge in time for user ${userId}`)
+    const latest = await getUserVouchElectionById(userId)
+    expect({ up: latest?.votes_count_up, down: latest?.votes_count_down }).toEqual(expected)
     return latest
   }
 })

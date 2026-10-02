@@ -10,6 +10,7 @@ import {
   insertTestPost,
   setPostEmbeddingContentSha256KeepingInput,
   setPostEmbeddingContentSha256,
+  readAllQueueJobs,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '@services/communities/types'
@@ -184,7 +185,7 @@ describe('isFirstCommunityPost', () => {
 })
 
 async function getBanEvasionJobsFor(communityId: string, userId: string) {
-  const waiting = await ban_evasion.getJobs('waiting')
+  const waiting = await readAllQueueJobs(ban_evasion)
   return waiting.filter(job => {
     const data = job.data as { communityId?: string; userId?: string }
     return data.communityId === communityId && data.userId === userId

@@ -61,9 +61,7 @@ describe('completeImageUpload - success path', () => {
       image_id,
       expect.objectContaining({ sha256: expect.any(Buffer) }),
     )
-    const job = (await imagesQueue.getJobs('waiting')).find(
-      queued => (queued.data as { id?: string }).id === image_id,
-    )
+    const [job] = await imagesQueue.searchJobs({ data: { id: image_id } })
     expect(job?.data).toEqual({ id: image_id })
   })
 
@@ -196,9 +194,7 @@ describe('completeImageUpload - success path', () => {
     )
 
     // Verify metadata extraction was enqueued for the worker using the production options
-    const queuedJob = (await imagesQueue.getJobs('waiting')).find(
-      job => (job.data as { id?: string }).id === image_id,
-    )
+    const [queuedJob] = await imagesQueue.searchJobs({ data: { id: image_id } })
     expect(queuedJob).toMatchObject({
       name: 'extract-metadata',
       data: { id: image_id },

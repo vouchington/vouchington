@@ -165,11 +165,10 @@ describe('topic alias post-cache invalidation', () => {
     const cached = await Promise.all(postIds.map(postId => caches.posts.get(postId)))
     expect(cached.filter(value => value === null)).toHaveLength(100)
     expect(cached.filter(value => value !== null)).toHaveLength(1)
-    const continuation = (await topicAliases.getJobs('waiting')).find(
-      job =>
-        job.name === 'processInvalidatePostsForTopicAliases' &&
-        (job.data as { topicAliasIds?: string[] }).topicAliasIds?.includes(alias.id),
-    )
+    // Prioritized jobs are not in `getJobs('waiting')` until a worker promotes them.
+    const continuation = (
+      await topicAliases.searchJobs({ name: 'processInvalidatePostsForTopicAliases' })
+    ).find(job => (job.data as { topicAliasIds?: string[] }).topicAliasIds?.includes(alias.id))
     expect(continuation?.data).toEqual({
       afterPostId: expect.any(String),
       topicAliasIds: [alias.id],
@@ -219,17 +218,17 @@ async function expectPostCachesInvalidated(postIds: string[]): Promise<void> {
     .toBe(true)
 }
 
+// The reconciliation job is prioritized, which `getJobs('waiting')` excludes until a worker
+// promotes it, so search every state by name and post id.
 async function expectPostNotificationReconciliationEnqueued(postIds: string[]): Promise<void> {
   await expect
     .poll(async () => {
-      const jobs = await notifications.getJobs('waiting')
-      return postIds.every(postId =>
-        jobs.some(
-          job =>
-            job.name === 'processReconcilePostNotifications' &&
-            (job.data as { postId?: string }).postId === postId,
+      const found = await Promise.all(
+        postIds.map(postId =>
+          notifications.searchJobs({ name: 'processReconcilePostNotifications', data: { postId } }),
         ),
       )
+      return found.every(jobs => jobs.length > 0)
     })
     .toBe(true)
 }

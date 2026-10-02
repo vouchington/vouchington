@@ -6,11 +6,12 @@ import {
   enqueueSweepCopyrightEvidenceRetention,
 } from './enqueues.mts'
 import { notifications } from './queues.mts'
+import { readAllQueueJobs } from '@voucha/test-helpers'
 
 describe('copyright and media-delivery notification enqueue wiring', () => {
   it('throttles action-intent reconciliation to one five-minute schedule', async () => {
     await enqueueReconcileCopyrightActionIntents()
-    const job = (await notifications.getJobs('waiting')).find(
+    const job = (await readAllQueueJobs(notifications)).find(
       candidate => candidate.name === 'processReconcileCopyrightActionIntents',
     )
     expect(job?.data).toEqual({})
@@ -24,7 +25,7 @@ describe('copyright and media-delivery notification enqueue wiring', () => {
 
   it('throttles the copyright review-target sweep to one five-minute schedule', async () => {
     await enqueueCheckCopyrightReviewTarget()
-    const job = (await notifications.getJobs('waiting')).find(
+    const job = (await readAllQueueJobs(notifications)).find(
       candidate => candidate.name === 'processCheckCopyrightReviewTarget',
     )
     expect(job?.data).toEqual({})
@@ -38,7 +39,7 @@ describe('copyright and media-delivery notification enqueue wiring', () => {
 
   it('throttles the copyright evidence retention sweep to one schedule', async () => {
     await enqueueSweepCopyrightEvidenceRetention()
-    const job = (await notifications.getJobs('waiting')).find(
+    const job = (await readAllQueueJobs(notifications)).find(
       candidate => candidate.name === 'processSweepCopyrightEvidenceRetention',
     )
     expect(job?.data).toEqual({})
@@ -53,7 +54,7 @@ describe('copyright and media-delivery notification enqueue wiring', () => {
   it('deduplicates one registry projection per delivery key', async () => {
     const deliveryKey = `image-placement:${crypto.randomUUID()}:0:${crypto.randomUUID()}`
     await enqueueApplyMediaDeliveryRegistryRecord(deliveryKey)
-    const job = (await notifications.getJobs('waiting')).find(
+    const job = (await readAllQueueJobs(notifications)).find(
       candidate =>
         candidate.name === 'processApplyMediaDeliveryRegistryRecord' &&
         (candidate.data as { deliveryKey?: string }).deliveryKey === deliveryKey,

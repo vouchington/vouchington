@@ -4,6 +4,7 @@ import {
   createTestUserDirect,
   createReferralProgramFixture,
   WEB_PROVENANCE,
+  readAllQueueJobs,
 } from '@voucha/test-helpers'
 import { createUserReferralLink } from '@services/user-referral-program-links/create'
 import { createChildReferralLink } from '@services/user-referral-program-links/create-child'
@@ -28,7 +29,7 @@ describe('unfurl referral links processor', () => {
       makeJob('unfurl_referral_links_dispatcher', {}, 'dispatcher'),
     )
 
-    const waiting = await unfurlReferralLinksQueue.getJobs('waiting')
+    const waiting = await readAllQueueJobs(unfurlReferralLinksQueue)
     expect(
       waiting.some(
         job =>

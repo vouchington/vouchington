@@ -1,11 +1,7 @@
 import { TestWorker } from 'glide-mq/testing'
 import { afterEach, describe, expect, it } from 'vitest'
 import { addAndFlush } from './glide-mq-vitest-flush.mts'
-import {
-  configureDeadLetterQueue,
-  getOrCreateQueue,
-  wireDeadLetterQueue,
-} from './glide-mq-vitest-internals.mts'
+import { configureDeadLetterQueue, getOrCreateQueue } from './glide-mq-vitest-internals.mts'
 import { Queue } from './glide-mq-vitest-shim.mts'
 
 function uniqueQueueName(label: string): string {
@@ -14,52 +10,57 @@ function uniqueQueueName(label: string): string {
 
 describe('GlideMQ test obliterate', () => {
   const workers: TestWorker<unknown, unknown>[] = []
+  let releaseHang: (() => void) | undefined
 
   afterEach(async () => {
-    const closing = workers.splice(0)
-    await Promise.all(closing.map(worker => worker.close()))
+    releaseHang?.()
+    releaseHang = undefined
+    await Promise.all(workers.splice(0).map(worker => worker.close()))
   })
 
-  it('clears jobs, dedup state, waitingQueue, budgets, metrics, and schedulers, resumes a paused queue, and preserves attached workers', async () => {
+  it('clears jobs and schedulers, resumes a paused queue, and keeps the attached worker consuming', async () => {
     const name = uniqueQueueName('full')
     const queue = getOrCreateQueue(name)
-    const worker = new TestWorker(queue, async (job: { data: unknown }) => job.data)
-    workers.push(worker)
-
-    const dedupOpts = { deduplication: { id: 'obliterate-dedup', mode: 'simple' as const } }
-    const done = await addAndFlush(queue, 'done', { n: 1 }, dedupOpts)
-    expect(done).not.toBeNull()
-    expect((await queue.getMetrics('completed')).count).toBe(1)
-
-    queue.setBudget('flow-1', { maxTotalTokens: 100 })
-    queue.recordBudgetUsage('flow-1', { input: 5 }, {}, 5, 0)
-    expect(queue.budgets.size).toBe(1)
-
+    workers.push(new TestWorker(queue, async (job: { data: unknown }) => job.data))
+    await addAndFlush(queue, 'done', { n: 1 })
     await queue.upsertJobScheduler('sched-1', { every: 60_000 }, { name: 'scheduled', data: {} })
-    expect(await queue.getRepeatableJobs()).toHaveLength(1)
-
-    // Seed a job that a worker never gets to consume, to prove waitingQueue is actually cleared
-    // rather than relying on a worker draining it.
+    // A job the worker never gets to consume proves the queue is cleared rather than drained.
     await queue.pause()
     await queue.add('stuck', { n: 2 })
-    expect(queue.waitingQueue).toHaveLength(1)
-    expect(queue.isPaused()).toBe(true)
 
     const shimQueue = new Queue(name)
-    await shimQueue.obliterate({ force: true })
+    await shimQueue.obliterate()
 
-    expect(queue.jobs.size).toBe(0)
-    expect(queue.dedupSet.size).toBe(0)
-    expect(queue.waitingQueue).toHaveLength(0)
-    expect(queue.budgets.size).toBe(0)
-    expect((await queue.getMetrics('completed')).count).toBe(0)
-    expect(await queue.getRepeatableJobs()).toHaveLength(0)
-    expect(queue.isPaused()).toBe(false)
-    expect(queue.workers.has(worker)).toBe(true)
+    expect(await shimQueue.getJobs('completed')).toHaveLength(0)
+    expect(await shimQueue.getJobs('waiting')).toHaveLength(0)
+    expect(await shimQueue.getRepeatableJobs()).toHaveLength(0)
+    expect(await shimQueue.isPaused()).toBe(false)
+    const again = await addAndFlush(queue, 'again', { n: 3 })
+    expect((await shimQueue.getJob(again!.id))?.returnvalue).toEqual({ n: 3 })
+  })
 
-    // The dedup map is cleared too: the same id no longer references a (now-gone) job.
-    const reAdded = await addAndFlush(queue, 'again', { n: 3 }, dedupOpts)
-    expect(reAdded).not.toBeNull()
+  it('forces past an active job instead of refusing', async () => {
+    const name = uniqueQueueName('active')
+    const queue = getOrCreateQueue(name)
+    let processorStarted!: () => void
+    const started = new Promise<void>(resolve => {
+      processorStarted = resolve
+    })
+    const hang = new Promise<void>(resolve => {
+      releaseHang = resolve
+    })
+    workers.push(
+      new TestWorker(queue, async () => {
+        processorStarted()
+        await hang
+      }),
+    )
+    await queue.add('hang', { n: 1 })
+    await started
+
+    await new Queue(name).obliterate()
+
+    expect(await queue.getJobs('active')).toHaveLength(0)
   })
 
   it('cascades into the configured dead-letter queue', async () => {
@@ -67,16 +68,16 @@ describe('GlideMQ test obliterate', () => {
     const dlqName = `${name}-dlq`
     const queue = getOrCreateQueue(name)
     configureDeadLetterQueue(name, { name: dlqName })
-    const worker = new TestWorker(queue, () => {
-      throw new Error('planned failure')
-    })
-    wireDeadLetterQueue(worker, name, { name: dlqName })
-    workers.push(worker)
+    workers.push(
+      new TestWorker(queue, () => {
+        throw new Error('planned failure')
+      }),
+    )
 
     await addAndFlush(queue, 'fail', { id: 'x' }, { expectDeadLetter: true })
-    expect(getOrCreateQueue(dlqName).jobs.size).toBe(1)
+    expect(await getOrCreateQueue(dlqName).getJobs('waiting')).toHaveLength(1)
 
-    await new Queue(name).obliterate({ force: true })
-    expect(getOrCreateQueue(dlqName).jobs.size).toBe(0)
+    await new Queue(name).obliterate()
+    expect(await getOrCreateQueue(dlqName).getJobs('waiting')).toHaveLength(0)
   })
 })

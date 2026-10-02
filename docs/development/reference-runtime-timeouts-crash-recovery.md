@@ -12,14 +12,14 @@ only makes a genuinely slow-but-alive job get re-picked-up (and duplicated) soon
 | Account data requests | `backend/workers/account-data-requests/workers.mts` | 600,000                                                                              |
 | AI agents (core)      | `backend/workers/ai-agents/workers/core.mts`        | 300,000                                                                              |
 | Bloom filters         | `backend/workers/bloom-filters/workers.mts`         | 600,000 (`BLOOM_FILTER_LOCK_DURATION_MS`, `backend/queues/bloom-filters/config.mts`) |
-| Article sync          | `backend/workers/article-sync/workers.mts`          | 30,000 (intentional `glide-mq` 0.15.3 default; heartbeat every 15,000)               |
+| Article sync          | `backend/workers/article-sync/workers.mts`          | 30,000 (intentional `glide-mq` default; heartbeat every 15,000)                      |
 
 This table covers only `lockDuration`. Bloom filters is the one worker whose queue config also
 defines `BLOOM_FILTER_STALLED_INTERVAL_MS` (30,000 — how quickly a stalled job is detected,
 `backend/queues/bloom-filters/config.mts`); the other workers' `stalledInterval` (if set) lives
 directly in their `workers.mts`, not a shared config file, so it's out of scope for this registry.
 
-The article-sync worker intentionally inherits `glide-mq` 0.15.3's 30,000ms default. A healthy
+The article-sync worker intentionally inherits the `glide-mq` default of 30,000ms (unchanged in 0.16). A healthy
 worker renews that lock every 15,000ms, so the lock can remain held for jobs of any duration. The
 30-second value controls only how soon another worker may recover the job after heartbeats stop;
 it is unrelated to the job's total runtime and independent of the centrally owned 60-second SSE

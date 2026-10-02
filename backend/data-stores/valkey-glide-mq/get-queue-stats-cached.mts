@@ -1,14 +1,14 @@
-import { getQueueStats, type QueueStats } from './get-queue-stats.mts'
+import { getQueueBacklogDepth } from './get-queue-stats.mts'
 
-const cache = new Map<string, { fetchedAt: number; promise: Promise<QueueStats> }>()
+const cache = new Map<string, { fetchedAt: number; promise: Promise<number> }>()
 
-export function getQueueStatsCached(name: string, ttlMs: number): Promise<QueueStats> {
+export function getQueueBacklogDepthCached(name: string, ttlMs: number): Promise<number> {
   const entry = cache.get(name)
   const now = Date.now()
   if (entry && now - entry.fetchedAt < ttlMs) {
     return entry.promise
   }
-  const promise: Promise<QueueStats> = getQueueStats(name).catch(err => {
+  const promise: Promise<number> = getQueueBacklogDepth(name).catch(err => {
     if (cache.get(name)?.promise === promise) {
       cache.delete(name)
     }

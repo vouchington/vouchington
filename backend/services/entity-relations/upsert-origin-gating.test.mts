@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
 import { upsertEntityRelation } from './upsert.mts'
 import { entityRelationMetadatum, type EntityRelationMetadata } from './metadata.mts'
-import { createTestUser, waitForQueueJobs } from '@voucha/test-helpers'
+import { createTestUser, waitForQueueJobs, readAllQueueJobs } from '@voucha/test-helpers'
 import { notifications } from '@queues/notifications/queues'
 import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
 import type { DistributeActivityData } from '@queues/activitypub-delivery/enqueues'
@@ -36,11 +36,11 @@ describe('upsertEntityRelation origin gating (Phase C3 loop prevention)', () => 
   ): Promise<Awaited<ReturnType<typeof notifications.getJobs>>> {
     const deadline = Date.now() + timeoutMs
     while (Date.now() < deadline) {
-      const jobs = await notifications.getJobs('waiting', 0, 100)
+      const jobs = await readAllQueueJobs(notifications)
       if (predicate(jobs)) return jobs
       await new Promise<void>(resolve => setImmediate(resolve))
     }
-    return notifications.getJobs('waiting', 0, 100)
+    return readAllQueueJobs(notifications)
   }
 
   function hasFollowJobFor(
@@ -124,11 +124,11 @@ describe('upsertEntityRelation origin gating (Phase C3 loop prevention)', () => 
   ): Promise<Awaited<ReturnType<typeof blueskyFollowPropagation.getJobs>>> {
     const deadline = Date.now() + timeoutMs
     while (Date.now() < deadline) {
-      const jobs = await blueskyFollowPropagation.getJobs('waiting', 0, 100)
+      const jobs = await readAllQueueJobs(blueskyFollowPropagation)
       if (predicate(jobs)) return jobs
       await new Promise<void>(resolve => setImmediate(resolve))
     }
-    return blueskyFollowPropagation.getJobs('waiting', 0, 100)
+    return readAllQueueJobs(blueskyFollowPropagation)
   }
 
   function hasBlueskyReconcileJobFor(

@@ -6,8 +6,8 @@ import {
   insertTestAgentModeration,
   insertTestAgentPrompt,
   insertTestPost,
-  pollUntilNotNull,
 } from '@voucha/test-helpers'
+import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
 import { caches } from '@services/entity-cache/caches'
 import { getAgentModerationElectionById } from './get-election.mts'
 import { upsertAgentModerationElectionVotes } from './votes-upsert.mts'
@@ -173,31 +173,14 @@ describe('votes-upsert.generated', () => {
       votes_score_net: 1,
     },
   ) {
-    const latest = await pollUntilNotNull(
-      async () => {
-        await caches.agent_moderation_elections.invalidateCacheGetByAny(moderationId)
-        const latest = await getAgentModerationElectionByIdCached(moderationId)
-        if (
-          latest &&
-          latest.votes_count_up === expected.votes_count_up &&
-          latest.votes_count_down === expected.votes_count_down &&
-          latest.votes_score_net === expected.votes_score_net
-        ) {
-          return latest
-        }
-        return null
-      },
-      5000,
-      100,
-    )
+    await onceElectionVoteStatsCompleted({
+      electionId: moderationId,
+      orderingKey: 'agent_moderation',
+    })
 
-    if (latest === null)
-      throw new Error(
-        `Agent moderation election stats did not converge in time: ${JSON.stringify({
-          moderationId,
-          expected,
-        })}`,
-      )
+    await caches.agent_moderation_elections.invalidateCacheGetByAny(moderationId)
+    const latest = await getAgentModerationElectionByIdCached(moderationId)
+    expect(latest).toMatchObject(expected)
     return latest
   }
 })

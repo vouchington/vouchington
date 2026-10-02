@@ -1,3 +1,4 @@
+import { toSchedulerTemplateOptions } from '@modules/scheduled-job-manifest'
 import type { ScheduledJobDefinition } from '../../../modules/scheduled-job-manifest/types.mts'
 import {
   enqueuePostEmbeddingTriggerRecovery,
@@ -13,7 +14,7 @@ export const reconciliationScheduleEntries = [
     template: {
       name: 'reconcile_existing',
       data: { entityType: 'topics' },
-      opts: reconciliationJobOptions('copy:topics'),
+      opts: toSchedulerTemplateOptions(reconciliationJobOptions('copy:topics')),
     },
     operatorSurfaces: [
       {
@@ -33,7 +34,7 @@ export const reconciliationScheduleEntries = [
     template: {
       name: 'reconcile_existing',
       data: { entityType: 'posts' },
-      opts: reconciliationJobOptions('copy:posts'),
+      opts: toSchedulerTemplateOptions(reconciliationJobOptions('copy:posts')),
     },
     operatorSurfaces: [
       {
@@ -52,7 +53,7 @@ export const reconciliationScheduleEntries = [
     template: {
       name: 'reconcile_existing',
       data: { entityType: 'rss_feed_items' },
-      opts: reconciliationJobOptions('copy:rss_feed_items'),
+      opts: toSchedulerTemplateOptions(reconciliationJobOptions('copy:rss_feed_items')),
     },
     operatorSurfaces: [
       {
@@ -71,7 +72,7 @@ export const reconciliationScheduleEntries = [
     template: {
       name: 'post_trigger_recovery',
       data: {},
-      opts: reconciliationJobOptions('post-trigger'),
+      opts: toSchedulerTemplateOptions(reconciliationJobOptions('post-trigger')),
     },
     operatorSurfaces: [
       {

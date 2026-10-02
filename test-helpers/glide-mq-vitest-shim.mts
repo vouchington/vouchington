@@ -1,7 +1,6 @@
-import { TestJob, TestQueue, TestWorker } from 'glide-mq/testing'
+import { TestJob, TestWorker } from 'glide-mq/testing'
 import { addAndFlush, addBulkAndFlush } from './glide-mq-vitest-flush.mts'
 import {
-  attachTestJobRetry,
   clampTestWorkerConcurrency,
   configureDeadLetterQueue,
   getDeadLetterJob,
@@ -9,8 +8,8 @@ import {
   getOrCreateQueue,
   removeDeadLetterJob,
   replayDeadLetterJob,
+  type ShimTestQueue,
   wrapTestWorkerProcessor,
-  wireDeadLetterQueue,
 } from './glide-mq-vitest-internals.mts'
 import { obliterateTestQueue } from './glide-mq-vitest-obliterate.mts'
 
@@ -19,11 +18,11 @@ type AnyFlowJob = AnyJob & { children?: AnyFlowJob[] }
 
 export class Queue<D = any, R = any> {
   readonly name: string
-  #inner: TestQueue<D, R>
+  #inner: ShimTestQueue<D, R>
 
   constructor(name: string, options?: { deadLetterQueue?: { name: string } }) {
     this.name = name
-    this.#inner = getOrCreateQueue(name) as TestQueue<D, R>
+    this.#inner = getOrCreateQueue(name)
     configureDeadLetterQueue(name, options?.deadLetterQueue)
   }
   add(name: string, data: D, opts?: Record<string, unknown>) {
@@ -38,17 +37,15 @@ export class Queue<D = any, R = any> {
   ) {
     return addBulkAndFlush(this.#inner, jobs as any)
   }
-  async getJob(id: string) {
-    return attachTestJobRetry(this.#inner, await this.#inner.getJob(id))
+  getJob(id: string) {
+    return this.#inner.getJob(id)
   }
-  async getJobs(
+  getJobs(
     type: 'waiting' | 'active' | 'delayed' | 'completed' | 'failed',
     start?: number,
     end?: number,
   ) {
-    return (await this.#inner.getJobs(type, start, end)).map(job =>
-      attachTestJobRetry(this.#inner, job)!,
-    )
+    return this.#inner.getJobs(type, start, end)
   }
   getJobCounts() {
     return this.#inner.getJobCounts()
@@ -69,6 +66,7 @@ export class Queue<D = any, R = any> {
     return this.#inner.close()
   }
 
+  /** Always forced: test workers hold no locks, so there is no active job worth refusing for. */
   obliterate(_opts?: { force?: boolean }) {
     return obliterateTestQueue(this.#inner)
   }
@@ -138,40 +136,26 @@ export class Worker<D = any, R = any> extends TestWorker<D, R> {
       deadLetterQueue?: { name: string }
       lockDuration?: number
       stalledInterval?: number
-      batch?: { size?: number; timeout?: number }
+      batch?: { size: number; timeout?: number }
     },
   ) {
     const queueName =
       typeof queueNameOrQueue === 'string' ? queueNameOrQueue : queueNameOrQueue.name
-    const queue = getOrCreateQueue(queueName) as TestQueue<D, R>
+    const queue = getOrCreateQueue(queueName) as ShimTestQueue<D, R>
     configureDeadLetterQueue(queueName, options?.deadLetterQueue)
     // scope is production-only routing TestWorkerOptions.tokenLimiter doesn't accept; intentionally dropped
     const tokenLimiterOpts = options?.tokenLimiter
       ? { maxTokens: options.tokenLimiter.maxTokens, duration: options.tokenLimiter.duration }
       : undefined
-    // Wrap batch processors as single-job processors: the test environment
-    // processes one job at a time, so we wrap the single job in an array and
-    // unwrap the first result. BatchError is unwrapped so the TestWorker sees
-    // the per-job error for the one job it dispatched.
-    const effectiveProcessor: (job: any) => Promise<R> | R = options?.batch
-      ? async (job: any) => {
-          let results: R[]
-          try {
-            results = await (processor as (jobs: any[]) => Promise<R[]>)([job])
-          } catch (err) {
-            if (err instanceof BatchError && err.results[0] instanceof Error) {
-              throw err.results[0]
-            }
-            throw err
-          }
-          return results[0]
-        }
-      : (processor as (job: any) => Promise<R> | R)
-    super(queue, wrapTestWorkerProcessor(effectiveProcessor), {
+    // glide-mq's TestWorker batches natively and settles a BatchError per job. `timeout: 0`
+    // dispatches whatever is waiting immediately instead of holding a partial batch for the
+    // production flush window, which would add that window to every flushed add.
+    const batch = options?.batch ? { size: options.batch.size, timeout: 0 } : undefined
+    super(queue, wrapTestWorkerProcessor(processor as (job: any) => Promise<R> | R) as any, {
       concurrency: clampTestWorkerConcurrency(options?.concurrency),
+      ...(batch && { batch }),
       ...(tokenLimiterOpts && { tokenLimiter: tokenLimiterOpts }),
     })
-    wireDeadLetterQueue(this, queueName, options?.deadLetterQueue)
   }
 }
 

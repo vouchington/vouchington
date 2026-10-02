@@ -11,6 +11,7 @@ import {
   updatePostTitleMarkdown,
   updatePostModerationData,
   getTestPostPublicationDirtyWorkForScope,
+  readAllQueueJobs,
 } from '@voucha/test-helpers'
 import { updateStoryPostAgentResult } from './update-story-post-agent-result.mts'
 
@@ -48,7 +49,7 @@ describe('updateStoryPostAgentResult', () => {
       openai_omni_moderation_flagged: null,
       openai_omni_moderation_results: null,
     })
-    const waiting = await spam_detection.getJobs('waiting')
+    const waiting = await readAllQueueJobs(spam_detection)
     const spamJob = waiting.find(job => (job.data as { id?: string }).id === postId)
     expect(spamJob).toBeDefined()
     expect(spamJob!.data).toMatchObject({
@@ -129,7 +130,7 @@ describe('updateStoryPostAgentResult', () => {
     await expect(getPostModerationData(postId)).resolves.toMatchObject({
       openai_omni_moderation_content_sha256: content_sha256,
     })
-    const waiting = await spam_detection.getJobs('waiting')
+    const waiting = await readAllQueueJobs(spam_detection)
     const spamJob = waiting.find(job => (job.data as { id?: string }).id === postId)
     expect(spamJob!.data).toMatchObject({
       contentSha256: content_sha256.toString('hex'),
@@ -164,7 +165,7 @@ describe('updateStoryPostAgentResult', () => {
     await expect(getPostModerationData(postId)).resolves.toMatchObject({
       openai_omni_moderation_content_sha256: content_sha256,
     })
-    const waiting = await spam_detection.getJobs('waiting')
+    const waiting = await readAllQueueJobs(spam_detection)
     const spamJob = waiting.find(job => (job.data as { id?: string }).id === postId)
     expect(spamJob!.data).toMatchObject({
       contentSha256: content_sha256.toString('hex'),
@@ -196,7 +197,7 @@ describe('updateStoryPostAgentResult', () => {
       openai_omni_moderation_flagged: true,
       openai_omni_moderation_results: { flagged_categories: [] },
     })
-    const waiting = await spam_detection.getJobs('waiting')
+    const waiting = await readAllQueueJobs(spam_detection)
     expect(waiting).toHaveLength(0)
   })
 })

@@ -19,7 +19,7 @@
     "@modules/queue-config": "workspace:^",
     "@queues/language-detection": "workspace:^",
     "@services/language-detection": "workspace:^",
-    "glide-mq": "^0.15.5"
+    "glide-mq": "^0.16.0"
   },
   "devDependencies": {
     "@services/urls": "workspace:^",

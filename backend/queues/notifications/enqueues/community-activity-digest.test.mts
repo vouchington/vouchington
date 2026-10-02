@@ -8,6 +8,7 @@ import { notifications } from '../queues.mts'
 import { enqueueBulkDeliverNotificationPushIntents } from '../enqueues.mts'
 import { upsertSchedules } from './schedules.mts'
 import { COMMUNITY_ACTIVITY_DIGEST_INACTIVITY_TIMEOUT_MS } from '@voucha/types/community-activity-digest'
+import { readAllQueueJobs } from '@voucha/test-helpers'
 
 describe('community activity digest queue wiring', () => {
   it('persists the previous closed UTC week in dispatch data', () => {
@@ -29,7 +30,7 @@ describe('community activity digest queue wiring', () => {
     ])
     await enqueueCommunityActivityDigestBatch(batch)
 
-    const jobs = await notifications.getJobs('waiting')
+    const jobs = await readAllQueueJobs(notifications)
     const dispatch = jobs.find(job => job.name === 'processCommunityActivityDigestDispatch')
     const cursors = jobs.filter(
       job =>
@@ -58,7 +59,7 @@ describe('community activity digest queue wiring', () => {
 
     await enqueueBulkDeliverNotificationPushIntents([notification, notification])
 
-    const jobs = await notifications.getJobs('waiting')
+    const jobs = await readAllQueueJobs(notifications)
     const pushIntents = jobs.filter(
       job =>
         job.name === 'processDeliverNotificationPushIntent' &&

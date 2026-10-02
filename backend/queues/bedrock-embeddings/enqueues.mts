@@ -7,7 +7,7 @@ import {
 } from './config.mts'
 import { bedrock_embeddings_nova_multimodal_v1_single } from './queues.mts'
 import type { DefaultBedrockEmbeddingsJobData } from './types.mts'
-import { getQueueStatsCached } from '@data-stores/valkey-glide-mq/get-queue-stats-cached'
+import { getQueueBacklogDepthCached } from '@data-stores/valkey-glide-mq/get-queue-stats-cached'
 import { trackAIEmbeddingShortCircuit } from '@services/analytics'
 import { getBacklogThreshold } from '@services/bedrock-embeddings/batch/config'
 import onError from '@modules/on-error'
@@ -16,11 +16,11 @@ const QUEUE_STATS_CACHE_TTL_MS = 2000
 
 async function isSingleQueueBackedUp(): Promise<boolean> {
   try {
-    const stats = await getQueueStatsCached(
+    const depth = await getQueueBacklogDepthCached(
       EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME,
       QUEUE_STATS_CACHE_TTL_MS,
     )
-    return stats.waiting + stats.active >= getBacklogThreshold()
+    return depth >= getBacklogThreshold()
   } catch {
     return false
   }

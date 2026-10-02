@@ -137,6 +137,11 @@ expect(job).toMatchObject({ name: 'processReconcilePostPublication', data: {} })
   `results.filter(r => !isDeduplicatedEnqueue(r))`.
 - `getEnqueuedJobId(enqueued)` — the id extraction `readEnqueuedJob` uses internally; exported for
   callers that only need the id.
+- `promoteDelayedJobs(queue, { name, data })` — releases jobs parked by the `delay` option so a test
+  does not wait out real time (glide-mq 0.16 honors `delay`); a promoted `throttle` job also releases
+  its throttle window. A `priority > 0` job is `prioritized`,
+  not `delayed`: it is also absent from `getJobs('waiting')` until a worker promotes it, so look it up
+  with `searchJobs({ name, data })` or by id.
 
 See `backend/queues/post-publication/enqueues.test.mts` for the full pattern, including a regression
 test that attaches a no-op stub worker and proves the id-scoped read survives a live consumer

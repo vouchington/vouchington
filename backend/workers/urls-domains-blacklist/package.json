@@ -22,7 +22,7 @@
     "@queues/urls-domains-blacklist": "workspace:^",
     "@services/urls-domains-blacklist": "workspace:^",
     "@services/urls-domains-blacklist-sync": "workspace:^",
-    "glide-mq": "^0.15.5"
+    "glide-mq": "^0.16.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

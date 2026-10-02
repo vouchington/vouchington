@@ -48,14 +48,15 @@ describe('RSS feed item category snapshot reconciliation', () => {
     await expect(getRssFeedItemCategories(item!.id)).resolves.toEqual([
       expect.objectContaining({ category_text: category }),
     ])
+    // The notification job is prioritized, which `getJobs('waiting')` excludes until a worker
+    // promotes it, so search every state.
     await expect
       .poll(async () => {
-        const jobs = await notifications.getJobs('waiting')
-        return jobs.some(
-          job =>
-            job.name === 'processReconcileRssFeedItemNotifications' &&
-            (job.data as { rssFeedItemId?: string }).rssFeedItemId === item!.id,
-        )
+        const jobs = await notifications.searchJobs({
+          name: 'processReconcileRssFeedItemNotifications',
+          data: { rssFeedItemId: item!.id },
+        })
+        return jobs.length > 0
       })
       .toBe(true)
     await expect(

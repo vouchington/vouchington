@@ -4,6 +4,7 @@ import { createQueue } from '@data-stores/valkey-glide-mq'
 import {
   getAggregatedQueueMetricStats,
   getAllQueueStats,
+  getQueueBacklogDepth,
   getQueueStats,
 } from './get-queue-stats.mts'
 
@@ -86,6 +87,35 @@ describe('get-queue-stats', () => {
       expect(error.extra).toEqual({ queueName: name, operation: 'getQueueMetricStats' })
     } finally {
       getJobs.mockRestore()
+    }
+  })
+
+  it('counts every unfinished job in the backlog depth, whichever list it is parked in', async () => {
+    const name = `backlog-${crypto.randomUUID()}`
+    const queue = createQueue(name)
+    try {
+      await expect(getQueueBacklogDepth(name)).resolves.toBe(0)
+      await queue.add('plain', {})
+      await queue.add('prioritized', {}, { priority: 5 })
+      await queue.add('delayed', {}, { delay: 60_000 })
+
+      await expect(getQueueBacklogDepth(name)).resolves.toBe(3)
+    } finally {
+      await queue.close()
+    }
+  })
+
+  it('decorates backlog-depth read errors with operation context', async () => {
+    const name = `backlog-error-${crypto.randomUUID()}`
+    const error = new Error('backlog read failed') as Error & {
+      extra?: Record<string, unknown>
+    }
+    const getJobCounts = vi.spyOn(Queue.prototype, 'getJobCounts').mockRejectedValueOnce(error)
+    try {
+      await expect(getQueueBacklogDepth(name)).rejects.toBe(error)
+      expect(error.extra).toEqual({ queueName: name, operation: 'getQueueBacklogDepth' })
+    } finally {
+      getJobCounts.mockRestore()
     }
   })
 

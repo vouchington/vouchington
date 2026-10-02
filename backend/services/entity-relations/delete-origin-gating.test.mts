@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
 import { upsertEntityRelation } from './upsert.mts'
 import { softDeleteEntityRelation } from './delete.mts'
 import { entityRelationMetadatum, type EntityRelationMetadata } from './metadata.mts'
-import { createTestUser, waitForQueueJobs } from '@voucha/test-helpers'
+import { createTestUser, waitForQueueJobs, readAllQueueJobs } from '@voucha/test-helpers'
 import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
 import type { DistributeActivityData } from '@queues/activitypub-delivery/enqueues'
 import { blueskyFollowPropagation } from '@queues/bluesky-follow-propagation/queues'
@@ -79,11 +79,11 @@ describe('softDeleteEntityRelation origin gating (Phase C3 loop prevention)', ()
   ): Promise<Awaited<ReturnType<typeof blueskyFollowPropagation.getJobs>>> {
     const deadline = Date.now() + timeoutMs
     while (Date.now() < deadline) {
-      const jobs = await blueskyFollowPropagation.getJobs('waiting', 0, 100)
+      const jobs = await readAllQueueJobs(blueskyFollowPropagation)
       if (predicate(jobs)) return jobs
       await new Promise<void>(resolve => setImmediate(resolve))
     }
-    return blueskyFollowPropagation.getJobs('waiting', 0, 100)
+    return readAllQueueJobs(blueskyFollowPropagation)
   }
 
   function hasBlueskyReconcileJobFor(

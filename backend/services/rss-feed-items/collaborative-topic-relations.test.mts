@@ -4,6 +4,8 @@ import {
   type CollaborativeTopicLimits,
 } from './collaborative-topic-relations.mts'
 import { getRssFeedItemById } from './get.mts'
+import { elections } from '@queues/elections/queues'
+import { promoteDelayedJobs } from '@voucha/test-helpers/queue-jobs'
 import { upsertRssFeedItemCategories } from './categories.mts'
 import { createTopicAliases } from '@services/topics/aliases'
 import { addUrl } from '@services/urls/upsert'
@@ -68,8 +70,13 @@ async function applyAndAwaitVoteStats(
 ): Promise<EntityRelation[]> {
   const relations = await applyCollaborativeTopicRelations(itemId, limits)
   const newTopicIds = relations.map(relation => relation.object_id)
+  // The recompute is debounced (`ELECTIONS_DEFAULTS.recomputeDelayMs`) and its enqueue is
+  // fire-and-forget, so each poll releases whatever has been parked since the last one.
   await expect
-    .poll(() => getItemCategoryTopicIds(itemId))
+    .poll(async () => {
+      await promoteDelayedJobs(elections, { name: 'processUpdateElectionVoteStats' })
+      return getItemCategoryTopicIds(itemId)
+    })
     .toEqual(expect.arrayContaining(newTopicIds))
   return relations
 }

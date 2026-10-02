@@ -14,7 +14,8 @@ scoped rules under [`backend/queues/`](../../../backend/queues/AGENTS.md),
 2. Start from durable source-of-truth state, pass minimal identifiers, make every retry safe, and
    await or explicitly mark every fan-out edge.
 3. Apply the canonical job options, deduplication, backfill, scheduler/admin-trigger, and
-   data-driven worker-placement requirements from the checklist.
+   data-driven worker-placement requirements from the checklist. Scheduler templates take no
+   `delay`, `deduplication`, `parent`, or `jobId`, and backlog guards count `delayed` jobs too.
 4. Test service behavior with real PostgreSQL, Valkey, and GlideMQ boundaries; do not mock internal
    queues, workers, services, or data stores.
 5. Update the domain README and queue inventory with the implementation.

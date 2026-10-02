@@ -154,13 +154,7 @@ describe('membership enqueues', () => {
       membershipProviderObservationId: randomUUID(),
     }
     await enqueueBulkSendRenewalPriceIncreaseEmail([data])
-    const jobs = (
-      await Promise.all(
-        (['waiting', 'active', 'completed', 'failed'] as const).map(state =>
-          memberships.getJobs(state),
-        ),
-      )
-    ).flat()
+    const jobs = (await Promise.all(QUEUE_STATES.map(state => memberships.getJobs(state)))).flat()
     const job = jobs.find(
       candidate => (candidate.data as { membershipId?: string }).membershipId === data.membershipId,
     )
@@ -183,13 +177,7 @@ describe('membership enqueues', () => {
       .mockReturnValue(timeBucket * MEMBERSHIP_ENTITLEMENT_EFFECTS_INTERVAL_MS + 123)
     try {
       await enqueueDeliverMembershipEntitlementEffects()
-      const jobs = (
-        await Promise.all(
-          (['waiting', 'active', 'completed', 'failed'] as const).map(state =>
-            memberships.getJobs(state),
-          ),
-        )
-      ).flat()
+      const jobs = (await Promise.all(QUEUE_STATES.map(state => memberships.getJobs(state)))).flat()
       const jobId = `membership-entitlement-effects__${timeBucket}`
       const job = jobs.find(candidate => candidate.id === jobId)
 

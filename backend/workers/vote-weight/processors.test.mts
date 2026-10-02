@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createTestUser } from '@voucha/test-helpers'
+import { createTestUser, readAllQueueJobs } from '@voucha/test-helpers'
 import { voteWeightQueue } from '@queues/vote-weight/queues'
 import { processRecalculateVoteWeightDispatcher } from './processors.mts'
 
@@ -15,7 +15,7 @@ describe('vote weight dispatcher processor', () => {
 
     await processRecalculateVoteWeightDispatcher({ afterId: cursorUser!.id })
 
-    const waiting = await voteWeightQueue.getJobs('waiting')
+    const waiting = await readAllQueueJobs(voteWeightQueue)
     expect(
       waiting.some(
         job =>

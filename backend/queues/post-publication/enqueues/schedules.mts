@@ -3,13 +3,7 @@ import {
   defineScheduledJobManifest,
   upsertScheduledJobManifest,
 } from '@modules/scheduled-job-manifest'
-import {
-  POST_PUBLICATION_ORDERING,
-  PRIORITY_RECONCILIATION,
-  QUEUE_NAME,
-  RECONCILIATION_DEDUPLICATION_ID,
-  RECONCILIATION_DEDUPLICATION_TTL_MS,
-} from '../config.mts'
+import { POST_PUBLICATION_ORDERING, PRIORITY_RECONCILIATION, QUEUE_NAME } from '../config.mts'
 import { enqueueReconcilePostPublication } from '../enqueues.mts'
 import { postPublication } from '../queues.mts'
 
@@ -28,11 +22,6 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
         ...ENQUEUE_BASE_DEFAULTS,
         priority: PRIORITY_RECONCILIATION,
         ordering: POST_PUBLICATION_ORDERING.reconciliation,
-        deduplication: {
-          id: RECONCILIATION_DEDUPLICATION_ID,
-          mode: 'throttle',
-          ttl: RECONCILIATION_DEDUPLICATION_TTL_MS,
-        },
       },
     },
     operatorSurfaces: [

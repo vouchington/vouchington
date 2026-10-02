@@ -59,7 +59,7 @@
     "@voucha/types": "workspace:^",
     "@vouchington/localization": "^0.2.0",
     "@vouchington/localization-compiler": "^0.2.2",
-    "glide-mq": "^0.15.5",
+    "glide-mq": "^0.16.0",
     "jose": "^6.2.12",
     "openai": "^7.23.0",
     "otpauth": "^9.5.2",

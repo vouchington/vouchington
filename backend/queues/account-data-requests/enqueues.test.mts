@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { enqueueBulkExportRequests, enqueueExportRequest } from './enqueues.mts'
 import { accountDataRequests } from './queues.mts'
+import { readAllQueueJobs } from '@voucha/test-helpers'
 
 describe('account data request enqueues', () => {
   it('uses request and attempt database ids as the job and dedup ids', async () => {
@@ -10,13 +11,7 @@ describe('account data request enqueues', () => {
     const processingAttemptId = randomUUID()
     const jobId = `account-data-export__${requestId}__${processingAttemptId}`
     await enqueueExportRequest(requestId, userId, processingAttemptId)
-    const jobs = (
-      await Promise.all(
-        (['waiting', 'active', 'completed', 'failed'] as const).map(state =>
-          accountDataRequests.getJobs(state),
-        ),
-      )
-    ).flat()
+    const jobs = await readAllQueueJobs(accountDataRequests)
     expect(jobs.find(job => job.id === jobId)).toMatchObject({
       id: jobId,
       data: { requestId, userId, processingAttemptId },

@@ -26,13 +26,10 @@ const enqueueSingleItems = async (count: number, runId: string) => {
   await enqueueBulkCreateRssFeedItemEmbeddings(items)
 }
 
-const findCreationDispatcherJob = async () => {
-  const [waiting, active] = await Promise.all([
-    bedrock_embeddings_batch.getJobs('waiting'),
-    bedrock_embeddings_batch.getJobs('active'),
-  ])
-  return [...waiting, ...active].find(job => job.name === 'creation_dispatcher')
-}
+// A prioritized job is reported under neither 'waiting' nor 'active' until a worker promotes it,
+// and no worker runs here, so search every state by name.
+const findCreationDispatcherJob = async () =>
+  (await bedrock_embeddings_batch.searchJobs({ name: 'creation_dispatcher' }))[0]
 
 describe('processBacklogDispatcher', () => {
   beforeAll(async () => {

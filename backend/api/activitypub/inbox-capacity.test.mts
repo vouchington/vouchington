@@ -18,6 +18,8 @@ const INBOX_HOST = 'inbox-capacity-test.example'
 const INBOX_URL = `http://${INBOX_HOST}/ap/inbox`
 let restoreWorkerConfig: () => void = () => undefined
 
+// Inbox jobs are prioritized, which `getJobs('waiting')` excludes until a worker promotes them, so
+// every job assertion searches all states (the queue is obliterated around each test).
 describe('POST /ap/inbox capacity handling', () => {
   beforeEach(async () => {
     await resetActivityPubInboxDeliveryStorageForTest()
@@ -39,7 +41,7 @@ describe('POST /ap/inbox capacity handling', () => {
     const response = await request.expect(503)
 
     expect(response.headers['retry-after']).toBe('300')
-    expect(await activitypubInbox.getJobs('waiting')).toHaveLength(0)
+    expect(await activitypubInbox.searchJobs({})).toHaveLength(0)
   })
 
   it('maps only the named PostgreSQL capacity violation to 503', async () => {
@@ -49,7 +51,7 @@ describe('POST /ap/inbox capacity handling', () => {
     const response = await request.expect(500)
 
     expect(response.headers['retry-after']).toBeUndefined()
-    expect(await activitypubInbox.getJobs('waiting')).toHaveLength(0)
+    expect(await activitypubInbox.searchJobs({})).toHaveLength(0)
   })
 
   it('allows a cached verified signer to bypass the unverified capacity cap', async () => {
@@ -59,7 +61,7 @@ describe('POST /ap/inbox capacity handling', () => {
     const response = await signedRequest(actorUri, keyId, privateKeyPem).expect(202)
 
     expect(response.headers['retry-after']).toBeUndefined()
-    expect(await activitypubInbox.getJobs('waiting')).toHaveLength(1)
+    expect(await activitypubInbox.searchJobs({})).toHaveLength(1)
   })
 })
 

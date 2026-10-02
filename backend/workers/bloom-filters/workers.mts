@@ -6,7 +6,8 @@ import {
   QUEUE_NAME,
 } from '@queues/bloom-filters/config'
 import type { BloomFilterProcessorJobs } from '@queues/bloom-filters/types'
-import { Worker, BatchError, type Job } from 'glide-mq'
+import { Worker, type Job } from 'glide-mq'
+import { processBatchSettled } from './processors/process-batch-settled.mts'
 import * as processors from './processors.mts'
 
 function runOne(job: Job): Promise<void> {
@@ -34,20 +35,7 @@ function runOne(job: Job): Promise<void> {
 
 export const bloomFilters = new Worker(
   QUEUE_NAME,
-  async (jobs: Job[]) => {
-    const settled = await Promise.allSettled(
-      jobs.map(job => Promise.resolve().then(() => runOne(job))),
-    )
-    const results = settled.map(r =>
-      r.status === 'fulfilled'
-        ? r.value
-        : r.reason instanceof Error
-          ? r.reason
-          : new Error(String(r.reason)),
-    )
-    if (settled.some(r => r.status === 'rejected')) throw new BatchError(results)
-    return results
-  },
+  (jobs: Job[]) => processBatchSettled(jobs, runOne),
   {
     connection: workerQueueConnection,
     prefix: workerQueuePrefix,

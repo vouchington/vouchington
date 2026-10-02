@@ -94,8 +94,10 @@ of mutating the shared production mapping — see [Test Helpers § Shared member
 timing race: the in-memory test shim's `add()` (`test-helpers/glide-mq-vitest-flush-wait.mts`)
 blocks until every attached worker drains the job to a terminal state before resolving. So once a
 worker is attached to a queue in the fork, `getJobs('waiting')` on that queue is _deterministically_
-empty, and if the job ends `failed` unexpectedly the enqueue call itself throws, before any
-assertion runs (#10984, Main CI backend run 34008968250; #11013).
+empty (and, since glide-mq 0.16, always misses a `priority > 0` job, which stays `prioritized` until a
+worker promotes it), and if the job ends `failed` unexpectedly the enqueue call itself throws, before
+any assertion runs (#10984, Main CI backend run 34008968250; #11013). Look jobs up by id or with
+`searchJobs`.
 
 `test-helpers/vitest.setup.glide-mq-workers.mts` is the allowlist of workers that may
 stay live for side effects. Definition identity tests that import any other worker

@@ -4,6 +4,7 @@ import {
   insertTestReferralProgram,
   createTestUrlWithHostname,
   insertTestUserReferralProgramLink,
+  readAllQueueJobs,
 } from '@voucha/test-helpers'
 import {
   markReferralLinkUnfurlRequested,
@@ -49,7 +50,7 @@ describe('dispatchUnfurlReferralLinks', () => {
     const totalEnqueued = await dispatchUnfurlReferralLinks()
     expect(totalEnqueued).toBeGreaterThanOrEqual(1)
 
-    const jobs = await unfurlReferralLinksQueue.getJobs('waiting')
+    const jobs = await readAllQueueJobs(unfurlReferralLinksQueue)
     const enqueuedLinkIds = new Set(jobs.map(jobParentLinkId))
 
     expect(enqueuedLinkIds.has(requestedOnly)).toBe(true)

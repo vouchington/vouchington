@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { enqueueSpamDetection } from './enqueues.mts'
 import { spam_detection } from './queues.mts'
+import { readAllQueueJobs } from '@voucha/test-helpers'
 
 describe('enqueueSpamDetection', () => {
   beforeEach(async () => {
@@ -15,7 +16,7 @@ describe('enqueueSpamDetection', () => {
 
     await enqueueSpamDetection(postId, { contentSha256 })
 
-    const waiting = await spam_detection.getJobs('waiting')
+    const waiting = await readAllQueueJobs(spam_detection)
     const job = waiting.find(item => (item.data as { id?: string }).id === postId)
     expect(job).toBeDefined()
     expect(job!.data).toEqual({ id: postId, contentSha256: contentSha256Hex })
@@ -33,7 +34,7 @@ describe('enqueueSpamDetection', () => {
 
     await enqueueSpamDetection(postId)
 
-    const waiting = await spam_detection.getJobs('waiting')
+    const waiting = await readAllQueueJobs(spam_detection)
     const job = waiting.find(item => (item.data as { id?: string }).id === postId)
     expect(job).toBeDefined()
     expect(job!.data).toEqual({ id: postId })
@@ -52,7 +53,7 @@ describe('enqueueSpamDetection', () => {
 
     await enqueueSpamDetection(postId, { contentSha256, deduplicationKey })
 
-    const waiting = await spam_detection.getJobs('waiting')
+    const waiting = await readAllQueueJobs(spam_detection)
     const job = waiting.find(item => (item.data as { id?: string }).id === postId)
     expect(job).toBeDefined()
     expect(job!.opts).toMatchObject({

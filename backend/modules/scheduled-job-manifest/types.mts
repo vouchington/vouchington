@@ -1,4 +1,4 @@
-import type { JobOptions } from 'glide-mq'
+import type { JobTemplate } from 'glide-mq'
 
 export type ScheduledJobEnvironment = 'all' | 'production'
 
@@ -42,9 +42,16 @@ export type NonEmptyOperatorSurfaces = readonly [
   ...ScheduledJobOperatorSurfaceDefinition[],
 ]
 
+/**
+ * Job options a scheduler template may carry. The scheduler tick never applies `delay`,
+ * `deduplication`, `parent` or a fixed `jobId`, so glide-mq rejects them at `upsertJobScheduler`;
+ * the type excludes them. Dedup for a scheduled job belongs on the manual-trigger enqueue.
+ */
+export type SchedulerTemplateJobOptions = NonNullable<JobTemplate['opts']>
+
 type ScheduledJobTemplate = {
   name: string
-  opts: JobOptions | (() => JobOptions)
+  opts: SchedulerTemplateJobOptions | (() => SchedulerTemplateJobOptions)
 } & ({ data?: unknown; dataFactory?: never } | { data?: never; dataFactory: () => unknown })
 
 export type ScheduledJobDefinition = {
@@ -76,7 +83,7 @@ export type ScheduledJobQueue = {
   upsertJobScheduler: (
     schedulerId: string,
     repeat: ScheduledJobRepeat,
-    template: { name: string; data?: unknown; opts: JobOptions },
+    template: { name: string; data?: unknown; opts: SchedulerTemplateJobOptions },
   ) => Promise<unknown>
   getRepeatableJobs: () => Promise<ReadonlyArray<{ name: string }>>
   removeJobScheduler: (schedulerId: string) => Promise<unknown>

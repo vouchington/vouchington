@@ -6,6 +6,7 @@ import {
   enqueueReconcilePostModeration,
 } from './enqueues.mts'
 import { openai_moderation_omni_single } from './queues.mts'
+import { readAllQueueJobs } from '@voucha/test-helpers'
 
 describe('enqueueCreatePostModeration', () => {
   beforeEach(async () => {
@@ -18,7 +19,7 @@ describe('enqueueCreatePostModeration', () => {
 
     await enqueueCreatePostModeration(postId, { deduplicationKey })
 
-    const waiting = await openai_moderation_omni_single.getJobs('waiting')
+    const waiting = await readAllQueueJobs(openai_moderation_omni_single)
     const job = waiting.find(
       item => item.name === 'post' && (item.data as { id?: string }).id === postId,
     )
@@ -42,7 +43,7 @@ describe('enqueueReconcileImageQuarantines', () => {
   it('uses a one-attempt, throttled reconciliation job', async () => {
     await enqueueReconcileImageQuarantines()
 
-    const [job] = await openai_moderation_omni_single.getJobs('waiting')
+    const [job] = await readAllQueueJobs(openai_moderation_omni_single)
     expect(job).toMatchObject({
       name: 'reconcile_image_quarantines',
       opts: {
@@ -65,7 +66,7 @@ describe('enqueueReconcilePostModeration', () => {
   it('uses a one-attempt, throttled reconciliation job', async () => {
     await enqueueReconcilePostModeration()
 
-    const [job] = await openai_moderation_omni_single.getJobs('waiting')
+    const [job] = await readAllQueueJobs(openai_moderation_omni_single)
     expect(job).toMatchObject({
       name: 'reconcile_post_moderation',
       opts: {

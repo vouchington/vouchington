@@ -157,9 +157,7 @@ describe('cleanupAbandonedUploads', () => {
     )
     expect(deleteSourceSpy).toHaveBeenCalledWith(expect.objectContaining({ id: result.image_id }))
     expect(await getImageById(result.image_id)).not.toBeNull()
-    const job = (await imagesQueue.getJobs('waiting')).find(
-      queued => (queued.data as { id?: string }).id === result.image_id,
-    )
+    const [job] = await imagesQueue.searchJobs({ data: { id: result.image_id } })
     expect(job?.data).toEqual({ id: result.image_id })
   })
 

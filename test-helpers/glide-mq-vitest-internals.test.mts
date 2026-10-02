@@ -7,7 +7,6 @@ import {
   getUnexpectedAttachedTestWorkerQueueNames,
   getDeadLetterJobs,
   getOrCreateQueue,
-  wireDeadLetterQueue,
 } from './glide-mq-vitest-internals.mts'
 import { Queue } from './glide-mq-vitest-shim.mts'
 
@@ -28,11 +27,11 @@ describe('GlideMQ dead-letter and retry', () => {
     const deadLetterQueue = { name: `${queueName}-dlq` }
     const queue = getOrCreateQueue(queueName)
     configureDeadLetterQueue(queueName, deadLetterQueue)
-    const worker = new TestWorker(queue, () => {
-      throw new Error('planned failure')
-    })
-    wireDeadLetterQueue(worker, queueName, deadLetterQueue)
-    workers.push(worker)
+    workers.push(
+      new TestWorker(queue, async () => {
+        throw new Error('planned failure')
+      }),
+    )
 
     const job = await addAndFlush(queue, 'fail', { id: 'job-1' }, { expectDeadLetter: true })
     expect(job).not.toBeNull()
@@ -42,7 +41,75 @@ describe('GlideMQ dead-letter and retry', () => {
       originalQueue: queueName,
       originalJobId: job!.id,
       data: { id: 'job-1' },
+      attemptsMade: 1,
     })
+  })
+
+  it('dead-letters a retried job once, after its last attempt', async () => {
+    const queueName = uniqueQueueName('dlq-retried')
+    const queue = getOrCreateQueue(queueName)
+    configureDeadLetterQueue(queueName, { name: `${queueName}-dlq` })
+    let attempts = 0
+    workers.push(
+      new TestWorker(queue, async () => {
+        attempts++
+        throw new Error('planned failure')
+      }),
+    )
+
+    await addAndFlush(
+      queue,
+      'fail',
+      { id: 'job-1' },
+      { attempts: 3, backoff: { type: 'fixed', delay: 60_000 }, expectDeadLetter: true },
+    )
+
+    expect(attempts).toBe(3)
+    expect(await getDeadLetterJobs(queueName)).toHaveLength(1)
+  })
+
+  it('does not sleep through the backoff of a retried job', async () => {
+    const queue = getOrCreateQueue(uniqueQueueName('retry-backoff'))
+    let attempts = 0
+    workers.push(
+      new TestWorker(queue, async () => {
+        attempts++
+        if (attempts === 1) throw new Error('first attempt fails')
+        return 'ok'
+      }),
+    )
+
+    const job = await addAndFlush(
+      queue,
+      'flaky',
+      { n: 1 },
+      { attempts: 2, backoff: { type: 'fixed', delay: 60_000 } },
+    )
+
+    expect(attempts).toBe(2)
+    expect((await queue.getJob(job!.id))?.returnvalue).toBe('ok')
+  })
+
+  it('keeps the hooks after the queue is closed', async () => {
+    const queue = getOrCreateQueue(uniqueQueueName('closed'))
+    await queue.close()
+    let attempts = 0
+    workers.push(
+      new TestWorker(queue, async () => {
+        attempts++
+        if (attempts === 1) throw new Error('first attempt fails')
+        return 'ok'
+      }),
+    )
+
+    await addAndFlush(
+      queue,
+      'flaky',
+      {},
+      { attempts: 2, backoff: { type: 'fixed', delay: 60_000 } },
+    )
+
+    expect(attempts).toBe(2)
   })
 
   it('retries a failed job returned by shim Queue.getJobs', async () => {
@@ -68,8 +135,8 @@ describe('GlideMQ dead-letter and retry', () => {
     await Promise.all(closing.map(worker => worker.close()))
     await failedJob.retry()
 
-    expect(inner.jobs.get(failedJob.id)?.state).toBe('waiting')
     expect(await queue.getJobs('failed')).toHaveLength(0)
+    expect(await queue.getJobs('waiting')).toHaveLength(1)
   })
 })
 

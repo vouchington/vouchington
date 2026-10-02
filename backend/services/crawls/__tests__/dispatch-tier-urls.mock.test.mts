@@ -55,16 +55,15 @@ async function seedCrawlDelay(hostname: string): Promise<void> {
   ownedRobotsTxtHostnames.push(hostname)
 }
 
-async function findWaitingJobsByUrlId(urlId: string): Promise<Job[]> {
+async function findCrawlJobsByUrlId(urlId: string): Promise<Job[]> {
   return crawlUrls.searchJobs({
-    state: 'waiting',
     name: 'crawl_url',
     data: { url_id: urlId },
   })
 }
 
-async function expectExactWaitingJob(urlId: string, hostnameId: string): Promise<void> {
-  const jobs = await findWaitingJobsByUrlId(urlId)
+async function expectExactCrawlJob(urlId: string, hostnameId: string): Promise<void> {
+  const jobs = await findCrawlJobsByUrlId(urlId)
   expect(jobs).toHaveLength(1)
   const [job] = jobs
   expect(job).toMatchObject({
@@ -102,8 +101,8 @@ async function expectExactWaitingJob(urlId: string, hostnameId: string): Promise
   })
 }
 
-async function expectNoWaitingJob(urlId: string): Promise<void> {
-  await expect(findWaitingJobsByUrlId(urlId)).resolves.toEqual([])
+async function expectNoCrawlJob(urlId: string): Promise<void> {
+  await expect(findCrawlJobsByUrlId(urlId)).resolves.toEqual([])
 }
 
 describe('dispatch-tier-urls', () => {
@@ -175,11 +174,11 @@ describe('dispatch-tier-urls', () => {
     await dispatchTier1CrawlUrls()
 
     for (const url of [positiveVoteUrl, profileUrl]) {
-      await expectExactWaitingJob(url.id, url.hostname.id)
+      await expectExactCrawlJob(url.id, url.hostname.id)
     }
-    await expectExactWaitingJob(inactiveReferralUrl!.id, inactiveReferralUrl!.hostname.id)
-    await expectNoWaitingJob(rssUrl!.id)
-    await expectNoWaitingJob(activeReferralUrl!.id)
+    await expectExactCrawlJob(inactiveReferralUrl!.id, inactiveReferralUrl!.hostname.id)
+    await expectNoCrawlJob(rssUrl!.id)
+    await expectNoCrawlJob(activeReferralUrl!.id)
   })
 
   it('dispatches eligible Tier 2 URLs as exact per-hostname crawl jobs', async () => {
@@ -202,8 +201,8 @@ describe('dispatch-tier-urls', () => {
     await dispatchTier2CrawlUrls()
 
     for (const url of [firstTier2Url, secondTier2Url]) {
-      await expectExactWaitingJob(url.id, url.hostname.id)
+      await expectExactCrawlJob(url.id, url.hostname.id)
     }
-    await expectNoWaitingJob(tier1Url.id)
+    await expectNoCrawlJob(tier1Url.id)
   })
 })

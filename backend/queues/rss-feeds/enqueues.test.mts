@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { PRIORITY_DEFAULT, RSS_FEEDS_DEFAULTS } from './config.mts'
 import { enqueueBulkFetchRssFeeds } from './enqueues.mts'
 import { rss_feeds } from './queues.mts'
+import { readAllQueueJobs } from '@voucha/test-helpers'
 
 function isJobForRssFeed(job: { data: unknown }, rssFeedId: string): boolean {
   return (job.data as { rssFeedId?: unknown } | null | undefined)?.rssFeedId === rssFeedId
@@ -14,7 +15,7 @@ describe('rss-feeds enqueues', () => {
 
     await enqueueBulkFetchRssFeeds([rssFeedId], { ttl: 60_000 })
 
-    const jobs = (await rss_feeds.getJobs('waiting')).filter(job => isJobForRssFeed(job, rssFeedId))
+    const jobs = (await readAllQueueJobs(rss_feeds)).filter(job => isJobForRssFeed(job, rssFeedId))
     expect(jobs).toHaveLength(1)
     expect(jobs?.[0]?.data).toEqual({ rssFeedId, ttl: 60_000 })
     expect(jobs?.[0]?.opts).toMatchObject({
@@ -35,7 +36,7 @@ describe('rss-feeds enqueues', () => {
       skipDeduplication: true,
     })
 
-    const jobs = (await rss_feeds.getJobs('waiting')).filter(job => isJobForRssFeed(job, rssFeedId))
+    const jobs = (await readAllQueueJobs(rss_feeds)).filter(job => isJobForRssFeed(job, rssFeedId))
     expect(jobs).toHaveLength(1)
     expect(jobs?.[0]?.data).toEqual({ rssFeedId, ttl: 0 })
     expect(jobs?.[0]?.opts.deduplication).toBeUndefined()
@@ -50,7 +51,7 @@ describe('rss-feeds enqueues', () => {
       skipDeduplication: true,
     })
 
-    const jobs = (await rss_feeds.getJobs('waiting')).filter(job => isJobForRssFeed(job, rssFeedId))
+    const jobs = (await readAllQueueJobs(rss_feeds)).filter(job => isJobForRssFeed(job, rssFeedId))
     expect(jobs).toHaveLength(2)
     expect(new Set(jobs.map(job => job.id)).size).toBe(2)
     expect(jobs).toEqual(

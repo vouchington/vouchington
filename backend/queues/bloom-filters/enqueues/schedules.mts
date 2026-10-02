@@ -1,5 +1,6 @@
 import {
   defineScheduledJobManifest,
+  toSchedulerTemplateOptions,
   upsertScheduledJobManifest,
 } from '@modules/scheduled-job-manifest'
 import type { BloomFilterEntityType, BloomFilterProcessorJobs } from '../types.mts'
@@ -27,7 +28,11 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     template: {
       name: 'processRebuildBloomFilter' as BloomFilterProcessorJobs,
       data: { filter: 'url-blocklist' },
-      opts: () => ({ attempts: 3, ...rebuildBloomFilterJobOptions({ filter: 'url-blocklist' }) }),
+      opts: () =>
+        toSchedulerTemplateOptions({
+          attempts: 3,
+          ...rebuildBloomFilterJobOptions({ filter: 'url-blocklist' }),
+        }),
     },
     operatorSurfaces: [{ kind: 'valkey-bloom-filter', rebuildInput: 'url-blocklist' }],
   },
@@ -38,7 +43,11 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     template: {
       name: 'processRebuildBloomFilter' as BloomFilterProcessorJobs,
       data: { filter: 'email-blocklist' },
-      opts: () => ({ attempts: 3, ...rebuildBloomFilterJobOptions({ filter: 'email-blocklist' }) }),
+      opts: () =>
+        toSchedulerTemplateOptions({
+          attempts: 3,
+          ...rebuildBloomFilterJobOptions({ filter: 'email-blocklist' }),
+        }),
     },
     operatorSurfaces: [{ kind: 'valkey-bloom-filter', rebuildInput: 'email-blocklist' }],
   },
@@ -49,7 +58,8 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     template: {
       name: 'processRebuildEmbeddingBloomFilter' as BloomFilterProcessorJobs,
       data: {},
-      opts: () => ({ attempts: 3, ...rebuildEmbeddingBloomFilterJobOptions() }),
+      opts: () =>
+        toSchedulerTemplateOptions({ attempts: 3, ...rebuildEmbeddingBloomFilterJobOptions() }),
     },
     operatorSurfaces: [{ kind: 'valkey-bloom-filter', rebuildInput: 'embedding' }],
   },
@@ -60,7 +70,11 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     template: {
       name: 'processRebuildBloomFilter' as BloomFilterProcessorJobs,
       data: { filter: 'api-keys' },
-      opts: () => ({ attempts: 3, ...rebuildBloomFilterJobOptions({ filter: 'api-keys' }) }),
+      opts: () =>
+        toSchedulerTemplateOptions({
+          attempts: 3,
+          ...rebuildBloomFilterJobOptions({ filter: 'api-keys' }),
+        }),
     },
     operatorSurfaces: [{ kind: 'valkey-bloom-filter', rebuildInput: 'api-keys' }],
   },
@@ -70,7 +84,11 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     template: {
       name: 'processBackfillBloomFilter' as BloomFilterProcessorJobs,
       data: { entityType },
-      opts: () => ({ attempts: 3, ...backfillBloomFilterJobOptions({ entityType }) }),
+      opts: () =>
+        toSchedulerTemplateOptions({
+          attempts: 3,
+          ...backfillBloomFilterJobOptions({ entityType }),
+        }),
     },
     operatorSurfaces: [
       { kind: 'backfill', backfillId: backfillId },
