@@ -6758,9 +6758,6 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../../modules/utils
       '@services/agents':
         specifier: workspace:^
         version: link:../agents

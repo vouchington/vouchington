@@ -213,6 +213,24 @@ automod flag list. Native delivery is tracked by
 [vouchington-clients#199](https://github.com/vouchington/vouchington-clients/issues/199); this
 repository does not edit `vouchington-clients`.
 
+## Retired agent flag action handoff
+
+#188 removes the last per-agent flag action. The seeded moderators are record-only, so
+`agents__moderators.on_flag_action` and the `moderator_on_flag_action` enum are gone, and the
+`community_ai_agent` and `community_ai_agents` responses (`/api/v1/communities/:idOrSlug/ai-agents`)
+no longer carry `on_flag_action`. Web drops the action text from each agent row. The same change
+removes `reason` from the automod simulate results and from the prompt `test-runs` response, which
+now returns `{ "flagged": boolean }`: the classifier answers with a probability, so the field was
+always empty. Swift `CommunityAdministrationModels.swift` declares `onFlagAction` as a non-optional
+Codable property, so **current Swift builds fail to decode `community_ai_agent` until the clients
+follow**. .NET `ApiModels.CommunityAgents.cs` and the row display in
+`CommunityDetailViewModel.Surface.Rows.cs` (line 55) read the same field. The stale prompt-model
+declarations in Swift `CommunityAgentPromptModels.swift` and .NET `ApiModels.Communities.Moderation.cs`
+also still mention it. Vouchington has not launched, so this ships as one current contract with no
+shim. Native delivery is tracked by
+[vouchington-clients#201](https://github.com/vouchington/vouchington-clients/issues/201); this
+repository does not edit `vouchington-clients`.
+
 ## Semantic post search candidate window
 
 #1549 keeps REST post search and MCP `search_posts` on the same approximate, capped candidate

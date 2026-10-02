@@ -15,26 +15,15 @@ describe('moderator configs', () => {
     expect(slugs).toHaveLength(7)
   })
 
-  it('politics-averse has correct config', () => {
+  it('politics-averse is a non-baseline identity', () => {
     const config = MODERATOR_CONFIGS.find(c => c.slug === 'politics-averse')
-    expect(config).toMatchObject({ slug: 'politics-averse', baseline: false })
-    expect(config?.prompt).toContain('Neutral discussion of news and current events')
-    expect(config?.prompt).toContain('Partisan political opinion or persuasion')
-    expect(config?.prompt).toContain('reputable sources')
+    expect(config).toEqual({ slug: 'politics-averse', baseline: false })
   })
 
-  it('carries only the identity, prompt text and baseline flag', () => {
+  it('carries only the identity and baseline flag', () => {
     for (const config of MODERATOR_CONFIGS) {
-      expect(Object.keys(config).toSorted()).toEqual(['baseline', 'prompt', 'slug'])
+      expect(Object.keys(config).toSorted()).toEqual(['baseline', 'slug'])
       expect(config.slug).toBeTruthy()
-      expect(config.prompt).toBeTruthy()
-    }
-  })
-
-  it('tag-only moderators ask for a structured response', () => {
-    const configsBySlug = new Map(MODERATOR_CONFIGS.map(config => [config.slug, config]))
-    for (const slug of ['click-bait', 'vague-post', 'shit-post']) {
-      expect(configsBySlug.get(slug)?.prompt).toContain('Respond with:')
     }
   })
 

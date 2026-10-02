@@ -179,9 +179,6 @@ exports backend/services/moderation-appeals/get.mts getAppealCaseTrace
 exports backend/services/moderation-cases/get.mts getCaseById
 exports backend/services/moderation-cases/resolve.mts resolveCase
 exports backend/services/moderation-reports/get.mts listPendingModerationReports
-exports backend/services/moderation/moderators.mts createPostLLMModerator
-exports backend/services/moderation/moderators.mts getPostLLMModeratorBySlug
-exports backend/services/moderation/moderators.mts updatePostLLMModerator
 exports backend/services/moderation/search-post-moderations.mts searchPostModerationsByAgent
 exports backend/services/moderators/tagging.mts tagPostWithTopicForModerators
 exports backend/services/notifications-push/push-intents.mts createNotificationPushIntents

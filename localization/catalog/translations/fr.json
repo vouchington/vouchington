@@ -786,8 +786,6 @@
 {"id":"copy.extracted.communities.communityAiAgentsPanel.failedToUpdateCommunityAiAgent_e8326c8a","value":"Impossible de mettre à jour l'agent d'IA communautaire"},
 {"id":"copy.extracted.communities.communityAiAgentsPanel.nameDisabled_79e3c2ff","value":"{name} désactivé"},
 {"id":"copy.extracted.communities.communityAiAgentsPanel.nameEnabled_52997ef0","value":"{name} activé"},
-{"id":"copy.extracted.communities.communityAiAgentsPanel.tagsAndMovesToReview_72e046d5","value":"Balise et déplace vers la file d'attente d'examen"},
-{"id":"copy.extracted.communities.communityAiAgentsPanel.tagsOnly_822f5607","value":"Balisage uniquement"},
 {"id":"copy.extracted.communities.communityAutomodActionForm.automodActionSaved_5a7127b1","value":"Action d'automod enregistrée"},
 {"id":"copy.extracted.communities.communityAutomodActionForm.automodAction_83211784","value":"Action d'automod"},
 {"id":"copy.extracted.communities.communityAutomodActionForm.chooseWhatHappensToAPublishedPost_b2e29694","value":"Choisissez ce qui arrive à une publication publiée lorsqu'un des prompts d'agent de cette communauté la signale. Le signalement est toujours enregistré, et modifier ce réglage ne relance jamais un prompt."},

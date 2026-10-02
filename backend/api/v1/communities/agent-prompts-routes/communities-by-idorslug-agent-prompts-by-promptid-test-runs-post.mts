@@ -88,6 +88,6 @@ app
       })
     }
 
-    // The classifier answers with a probability, not a reason; the response shape is unchanged.
-    ctx.json({ flagged: verdict.flagged, reason: '' })
+    // The classifier answers with a probability, not a reason, so the response is the verdict alone.
+    ctx.json({ flagged: verdict.flagged })
   })

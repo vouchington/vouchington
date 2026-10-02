@@ -24,12 +24,12 @@ Moderators with `is_baseline = true` run on every post site-wide, regardless of 
 | `vague-post`      | no       | Too vague to be useful                      |
 | `shit-post`       | no       | Low-effort noise                            |
 
-The config carries only each moderator's identity, prompt text, and baseline flag. The seed
-provisions the system user, `agents` row, and `agents__moderators` row per slug, and no
-`agent_prompts` rows: the classifier's prompt, model, and provider are seeded with the post
-classifier. Every seeded moderator is record-only (`agents__moderators.on_flag_action` defaults to
-`none`); only a community's own prompts can act on a flag, through the community-level
-`communities.automod_action` setting.
+The config carries only each moderator's identity and baseline flag; the rule text lives in the
+post classifier catalog (`backend/types/entities/post-classifier.mts`). The seed provisions the
+system user, `agents` row, and `agents__moderators` row per slug, and no `agent_prompts` rows: the
+classifier's prompt, model, and provider are seeded with the post classifier. Every seeded
+moderator is record-only and has no per-agent action setting; only a community's own prompts can
+act on a flag, through the community-level `communities.automod_action` setting.
 
 **Processing (community prompts, `backend/agents/community-moderation/classifier-run.mts`):**
 

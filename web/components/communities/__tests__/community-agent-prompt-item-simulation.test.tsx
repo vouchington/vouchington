@@ -49,7 +49,6 @@ describe('CommunityAgentPromptItem simulation', () => {
           approved_at: '2026-01-01T00:00:00.000Z',
           content_excerpt: 'Matched post body',
           flagged: true,
-          reason: 'Matches test prompt',
         },
       ],
     })
@@ -78,7 +77,7 @@ describe('CommunityAgentPromptItem simulation', () => {
       })
     })
     expect(document.querySelector('[data-pw="community-agent-prompt-test-results"]')).not.toBeNull()
-    expect(document.body.textContent).toContain('Matches test prompt')
+    expect(document.body.textContent).toContain('Matched post body')
   })
 
   it('clears stale simulation results when the draft prompt changes', async () => {
@@ -97,9 +96,8 @@ describe('CommunityAgentPromptItem simulation', () => {
           title: 'Matched post',
           post_type: 'discussion',
           approved_at: '2026-01-01T00:00:00.000Z',
-          content_excerpt: 'Matched post body',
+          content_excerpt: 'Old simulation result',
           flagged: true,
-          reason: 'Old simulation result',
         },
       ],
     })

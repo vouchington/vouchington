@@ -30,7 +30,6 @@ export interface CommunityAutomodSimulationResult {
   approved_at: string
   content_excerpt: string
   flagged: boolean
-  reason: string
 }
 
 export interface CommunityAutomodSimulation {

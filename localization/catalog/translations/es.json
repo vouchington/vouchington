@@ -786,8 +786,6 @@
 {"id":"copy.extracted.communities.communityAiAgentsPanel.failedToUpdateCommunityAiAgent_e8326c8a","value":"Error al actualizar agente de IA comunitario"},
 {"id":"copy.extracted.communities.communityAiAgentsPanel.nameDisabled_79e3c2ff","value":"{name} deshabilitado"},
 {"id":"copy.extracted.communities.communityAiAgentsPanel.nameEnabled_52997ef0","value":"{name} habilitado"},
-{"id":"copy.extracted.communities.communityAiAgentsPanel.tagsAndMovesToReview_72e046d5","value":"Etiqueta y mueve a la cola de revisión"},
-{"id":"copy.extracted.communities.communityAiAgentsPanel.tagsOnly_822f5607","value":"Solo etiqueta"},
 {"id":"copy.extracted.communities.communityAutomodActionForm.automodActionSaved_5a7127b1","value":"Acción de automod guardada"},
 {"id":"copy.extracted.communities.communityAutomodActionForm.automodAction_83211784","value":"Acción de automod"},
 {"id":"copy.extracted.communities.communityAutomodActionForm.chooseWhatHappensToAPublishedPost_b2e29694","value":"Elige qué ocurre con una publicación publicada cuando uno de los prompts de agente de esta comunidad la marca. La marca siempre se registra y cambiar esto nunca vuelve a ejecutar un prompt."},

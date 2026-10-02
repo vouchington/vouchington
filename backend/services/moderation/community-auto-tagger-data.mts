@@ -2,7 +2,6 @@ import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { isBaselineModeratorSlug } from '@services/agents/moderator-configs'
 import type { CommunityAiAgentEntitlement } from './community-agent-entitlements.mts'
-import type { ModeratorOnFlagAction } from './active-moderator-config.mts'
 import {
   AI_GENERATED_MODERATOR_SLUG,
   CLICK_BAIT_MODERATOR_SLUG,
@@ -33,7 +32,6 @@ export type CommunityAutoTaggerAgent = {
   system_user_id: string
   system_username: string
   label_topic_slugs: string[]
-  on_flag_action: ModeratorOnFlagAction
   enabled: boolean
   always_on: boolean
   enabled_at: Date | null
@@ -46,7 +44,6 @@ type CommunityAutoTaggerAgentRow = {
   agent_id: string
   system_user_id: string
   system_username: string
-  on_flag_action: ModeratorOnFlagAction
   enabled_at: Date | null
   disabled_at: Date | null
   enabled_by_id: string | null
@@ -89,7 +86,6 @@ export async function getCommunityAutoTaggerAgentRows(
       a.id AS agent_id,
       a.system_user_id,
       u.username AS system_username,
-      am.on_flag_action,
       cata.enabled_at,
       cata.disabled_at,
       cata.enabled_by_id
@@ -124,7 +120,6 @@ export function mapCommunityAutoTaggerAgent(
     system_user_id: row.system_user_id,
     system_username: row.system_username,
     label_topic_slugs: getLabelTopicSlugs(row.slug),
-    on_flag_action: row.on_flag_action,
     enabled,
     always_on: alwaysOn,
     enabled_at: row.enabled_at,

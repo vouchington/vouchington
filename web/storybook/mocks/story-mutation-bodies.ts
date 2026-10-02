@@ -182,7 +182,6 @@ export function automodSimulation(body: unknown): unknown {
         approved_at: storyMutationAt,
         content_excerpt: 'Referral link without a personal data point',
         flagged: true,
-        reason: 'Referral',
       },
     ],
   }

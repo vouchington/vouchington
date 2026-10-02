@@ -1,11 +1,10 @@
 import { updateClearanceStatus } from '@services/post-clearance/update-status'
 import { createPost } from '@services/posts'
-import { createPostLLMModerator, updatePostLLMModerator } from '@services/moderation/moderators'
 import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createRandomString,
-  createSystemUser,
+  createTestAgent,
   createTestUser,
   archiveTestCommunity,
   insertTestAgentModeration,
@@ -45,9 +44,10 @@ describe('Community automod recent action routes', () => {
       userId: owner.id,
       role: 'owner',
     })
-    const systemUser = await createSystemUser(`automod-agent-${random}`)
-    const moderator = await createPostLLMModerator(owner, systemUser, `automod-agent-${random}`)
-    await updatePostLLMModerator(owner, moderator.id, { active: true })
+    const moderator = await createTestAgent({
+      slug: `automod-agent-${random}`,
+      activated: true,
+    })
     const promptId = await insertTestAgentPrompt({ agentId: moderator.id })
     const post = await createPost(owner, WEB_PROVENANCE, {
       title: `Automod route candidate ${random}`,

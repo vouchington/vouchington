@@ -37,7 +37,6 @@ function agent(overrides: Partial<CommunityAiAgent>): CommunityAiAgent {
     system_user_id: 'system-user-1',
     system_username: 'self-promotion',
     label_topic_slugs: ['self-promotion'],
-    on_flag_action: 'review_queue',
     enabled: false,
     always_on: false,
     enabled_at: null,

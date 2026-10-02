@@ -23,10 +23,9 @@ import { searchRecentAutomodActions } from './recent-actions.mts'
 // searchRecentAutomodActions/recordAutomodActionFeedback behavior, not on createPost's
 // real write-path side effects.
 //
-// Uses createTestAgent (raw insert into agents/agents__moderators) rather than
-// @services/moderation's createPostLLMModerator/updatePostLLMModerator: moderation depends on
-// communities (forward), and communities depends on moderation-training (forward), so a
-// moderation-training->moderation devDependency would complete a 3-cycle.
+// Uses createTestAgent (raw insert into agents/agents__moderators) rather than a @services/moderation
+// helper: moderation depends on communities (forward), and communities depends on moderation-training
+// (forward), so a moderation-training->moderation devDependency would complete a 3-cycle.
 describe('automod feedback current input matching', () => {
   it('rejects stale agent moderation feedback after content changes', async () => {
     const owner = await createTestUser()
