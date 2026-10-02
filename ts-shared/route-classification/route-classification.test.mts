@@ -198,6 +198,16 @@ describe('ROBOTS_DISALLOW_PREFIXES', () => {
     )
   })
 
+  it('includes every prefix required by the SEO requirements', () => {
+    expect(ROBOTS_DISALLOW_PREFIXES).toEqual(
+      expect.arrayContaining(['/admin/', '/api/', '/auth/', '/feed/', '/login', '/my/']),
+    )
+  })
+
+  it('does not disallow /md/ because llms.txt advertises it to agents', () => {
+    expect(ROBOTS_DISALLOW_PREFIXES.some(prefix => '/md/'.startsWith(prefix))).toBe(false)
+  })
+
   it('every robots disallow prefix is covered by the private path classifier', () => {
     const notCovered = ROBOTS_DISALLOW_PREFIXES.filter(prefix => {
       const exactPath = prefix.replace(/\$$/, '')
