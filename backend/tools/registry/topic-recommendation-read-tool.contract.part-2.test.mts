@@ -5,11 +5,14 @@ import {
   callStructuredMcpTool,
   type McpContractCaller,
 } from '@voucha/test-helpers/mcp-tool-contract'
+import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
 import {
+  approveTopicRecommendation,
   createTopicRecommendation,
   updateTopicRecommendation,
   type TopicRecommendationPost,
 } from '@services/topic-recommendations'
+import { createTopicAliases } from '@services/topics/aliases'
 import { addUserRole } from '@services/users/roles-permissions'
 import { getPrivateUserByAny } from '@services/users/get'
 
@@ -73,6 +76,29 @@ describe('list_my_topic_recommendations text provenance — real DB', () => {
     expect(JSON.stringify(post)).not.toContain('<system>')
   })
 
+  it('fences the stored approval error an administrator\u2019s alias put in the message', async () => {
+    const author = asCaller(await createTestUser())
+    const admin = await createTestUser()
+    await addUserRole(admin.id, 'administrator')
+    const reviewer = (await getPrivateUserByAny(admin.id, { readOnly: false }))!
+    const recommendation = await submit(author)
+    const alias = `${INJECTION} ${createRandomString(8).toLowerCase()}`
+    await updateTopicRecommendation(reviewer, recommendation, { topic_aliases: [alias] })
+    const topicId = await insertTestTopic({
+      name: `Alias holder ${createRandomString(8)}`,
+      slug: `alias-holder-${createRandomString(8).toLowerCase()}`,
+      createdById: admin.id,
+    })
+    await createTopicAliases(topicId, alias)
+    await expect(
+      approveTopicRecommendation(reviewer, WEB_PROVENANCE, recommendation),
+    ).rejects.toThrow(/Alias already belongs to another topic/)
+    const post = (await list(author)).posts[recommendation.id]!
+
+    expect(post.topic_recommendation.approval_error_message).toMatch(/^<external-content /)
+    expect(post.topic_recommendation.approval_error_message).toContain('Alias already belongs')
+  })
+
   it('keeps an empty title empty and an absent proposed-topic Markdown null', async () => {
     const author = asCaller(await createTestUser())
     const recommendation = await submit(author)
@@ -82,6 +108,7 @@ describe('list_my_topic_recommendations text provenance — real DB', () => {
     expect(post.title).toBe('')
     expect(post.topic_recommendation.topic_markdown).toBeNull()
     expect(post.topic_recommendation.rejection_reason).toBeNull()
+    expect(post.topic_recommendation.approval_error_message).toBeNull()
   })
 })
 

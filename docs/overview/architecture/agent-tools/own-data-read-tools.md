@@ -88,8 +88,10 @@ with the credential's own id; the tool takes no user id or search text.
 An administrator can edit a pending recommendation, and `updated_by_id` names only the last editor,
 so an administrator's edit of one field outlives the submitter's edit of another. No field is known
 to be the caller's own words, so every free-text field is sanitized, the title, topic title and
-aliases as titles, and the Markdown, the proposed topic Markdown and the rejection reason also
-fenced as `external-content` from `topic_recommendation`. The nested `created_by` and `updated_by`
+aliases as titles, and the Markdown, the proposed topic Markdown, the rejection reason and the
+stored approval error also fenced as `external-content` from `topic_recommendation`. The approval
+error is the message of whatever failed an approval, so it can quote an alias or slug an
+administrator typed. The nested `created_by` and `updated_by`
 users get the `get_user` treatment: names sanitized, a bio fenced. Identifiers, slugs, hostnames and
 URLs keep the formats the service validated. An empty title or Markdown stays an empty string, the
 documented type. That text is for reading, not to send back to an update tool.

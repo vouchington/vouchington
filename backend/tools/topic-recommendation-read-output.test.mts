@@ -48,6 +48,7 @@ const extension = {
   topic_title: HOSTILE,
   topic_markdown: HOSTILE,
   rejection_reason: HOSTILE,
+  approval_error_message: HOSTILE,
   status: 'rejected',
   topic_slug: 'a-slug',
 }
@@ -78,6 +79,7 @@ describe('toMcpRecommendation', () => {
     expect(post.markdown).toMatch(/^<external-content source="topic_recommendation"/)
     expect(post.topic_recommendation.topic_markdown).toMatch(/^<external-content /)
     expect(post.topic_recommendation.rejection_reason).toMatch(/^<external-content /)
+    expect(post.topic_recommendation.approval_error_message).toMatch(/^<external-content /)
     expect(post.updated_by?.markdown).toMatch(/^<external-content source="user"/)
     expect(post.updated_by).toMatchObject({ id: 'staff', roles: ['administrator'] })
     expect(post.topic_recommendation.aliases).toHaveLength(1)
@@ -90,13 +92,19 @@ describe('toMcpRecommendation', () => {
       ...withoutUsers,
       title: '',
       markdown: '  ',
-      topic_recommendation: { ...extension, topic_markdown: null, rejection_reason: null },
+      topic_recommendation: {
+        ...extension,
+        topic_markdown: null,
+        rejection_reason: null,
+        approval_error_message: null,
+      },
     } as unknown as TopicRecommendationPost)
 
     expect(post).toMatchObject({ title: '', markdown: '' })
     expect(post.topic_recommendation).toMatchObject({
       topic_markdown: null,
       rejection_reason: null,
+      approval_error_message: null,
     })
     expect(Object.keys(post)).not.toContain('updated_by')
     expect(Object.keys(post)).not.toContain('created_by')

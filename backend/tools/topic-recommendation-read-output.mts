@@ -47,7 +47,9 @@ async function sanitizedUser(user: BasicUser | null | undefined) {
 /**
  * One recommendation as an MCP client receives it: the documented post with its free text
  * sanitized (titles, names, aliases) or sanitized and fenced as external content (Markdown, the
- * rejection reason, a user's bio). That includes the submitter's own text: an administrator can
+ * rejection reason, the stored approval error, a user's bio). The approval error is the message of
+ * whatever failed an administrator's approval, so it can quote an alias or slug an administrator
+ * typed. That includes the submitter's own text: an administrator can
  * edit a pending recommendation, `updated_by_id` names only the last editor, and an administrator's
  * edit of one field outlives the submitter's edit of another, so no field is known to be the
  * caller's. Slugs, hostnames and URLs keep the formats the service validated.
@@ -64,6 +66,7 @@ export async function toMcpRecommendation(
     topicMarkdown,
     aliases,
     rejectionReason,
+    approvalError,
     createdBy,
     updatedBy,
   ] = await Promise.all([
@@ -73,6 +76,7 @@ export async function toMcpRecommendation(
     externalText(extension.topic_markdown, SOURCE, 'topic_markdown'),
     Promise.all(extension.aliases.map(sanitizedTitle)),
     externalText(extension.rejection_reason, SOURCE, 'rejection_reason'),
+    externalText(extension.approval_error_message, SOURCE, 'approval_error_message'),
     sanitizedUser(documented.created_by),
     sanitizedUser(documented.updated_by),
   ])
@@ -88,6 +92,7 @@ export async function toMcpRecommendation(
       topic_markdown: topicMarkdown,
       aliases,
       rejection_reason: rejectionReason,
+      approval_error_message: approvalError,
     },
   }
 }
