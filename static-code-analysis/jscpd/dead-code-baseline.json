@@ -723,6 +723,14 @@
     },
     {
       "category": "unused-file",
+      "path": "backend/test-helpers/data-stores/psql/classifier-comparison-plans.mts",
+      "parent": "",
+      "name": "",
+      "symbolKind": "",
+      "count": 1
+    },
+    {
+      "category": "unused-file",
       "path": "backend/test-helpers/data-stores/psql/classifier-fixture-data.mts",
       "parent": "",
       "name": "",
@@ -804,14 +812,6 @@
     {
       "category": "unused-file",
       "path": "backend/test-helpers/data-stores/psql/classifiers-seed.mts",
-      "parent": "",
-      "name": "",
-      "symbolKind": "",
-      "count": 1
-    },
-    {
-      "category": "unused-file",
-      "path": "backend/test-helpers/data-stores/psql/classifiers.mts",
       "parent": "",
       "name": "",
       "symbolKind": "",
@@ -1044,6 +1044,14 @@
     {
       "category": "unused-file",
       "path": "backend/test-helpers/data-stores/psql/copyright-notice-schema-types.mts",
+      "parent": "",
+      "name": "",
+      "symbolKind": "",
+      "count": 1
+    },
+    {
+      "category": "unused-file",
+      "path": "backend/test-helpers/data-stores/psql/copyright-territorial-constraints.mts",
       "parent": "",
       "name": "",
       "symbolKind": "",
@@ -2692,6 +2700,14 @@
     {
       "category": "unused-file",
       "path": "web/test-helpers/components/topics/topic-post-list-page.mock-support.tsx",
+      "parent": "",
+      "name": "",
+      "symbolKind": "",
+      "count": 1
+    },
+    {
+      "category": "unused-file",
+      "path": "web/test-helpers/lib/api/client/manifest-coverage/classifier-threshold-registry.ts",
       "parent": "",
       "name": "",
       "symbolKind": "",
