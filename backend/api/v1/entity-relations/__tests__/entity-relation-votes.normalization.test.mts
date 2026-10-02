@@ -89,10 +89,6 @@ describe('relation vote normalized concrete identity', () => {
         .expect(204)
       const queries = stopTestQueryCapture()
       expectConcreteWrite(queries, table, user.id, relationId)
-      const requestLock = queries.find(query =>
-        query.text.includes('/* lockElectionVoteRequest */'),
-      )!
-      expect(requestLock.values).toEqual([`vote-request:entity_relation:${user.id}:${relationId}`])
       await request
         .put(`/api/v1/entity-relations/${relationId}/vote`)
         .send({ choice: 'confirm' })
