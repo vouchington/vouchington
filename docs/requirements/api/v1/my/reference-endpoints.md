@@ -11,9 +11,13 @@ A suspended account gets `403` with `ACCOUNT_SUSPENDED` right after authenticati
 body is parsed or any state changes, from `PATCH /api/v1/my/profile`, every profile-link mutation
 (`POST /api/v1/my/profile/links`, `PUT /api/v1/my/profile/links/order`,
 `PATCH`/`DELETE /api/v1/my/profile/links/:id`), `POST /api/v1/my/notifications/read-all`,
-`PATCH`/`DELETE /api/v1/my/notifications/:id`, and `PATCH /api/v1/my/email-preferences`. Reads stay
-available. The signed-token one-click `POST /api/v1/email-unsubscribe` is not an authenticated
-`/my` route and still works for a suspended account.
+`PATCH`/`DELETE /api/v1/my/notifications/:id`, `POST /api/v1/my/notifications/push-subscriptions`,
+`DELETE /api/v1/my/notifications/push-subscriptions/:id`, and `PATCH /api/v1/my/email-preferences`.
+Reads stay available, including `GET /api/v1/my/notifications/:id/redirect-target`: a suspended
+account still gets `200` with the same `target_url`, but the route does not record `read_at`, so
+opening a notification does not mark it read until the account is restored. The signed-token
+one-click `POST /api/v1/email-unsubscribe` is not an authenticated `/my` route and still works for
+a suspended account.
 
 ### Identity & Email
 

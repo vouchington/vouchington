@@ -13,17 +13,32 @@ export async function markNotificationRead(userId: string, notificationId: strin
   return (rowCount ?? 0) > 0
 }
 
-export async function markNotificationReadAndGetRedirectTarget(
+/**
+ * Resolves the navigation target of one of the user's notifications. With `markRead` the same
+ * statement also records the read state; without it nothing is written.
+ */
+export async function getNotificationRedirectTarget(
   userId: string,
   notificationId: string,
+  options: { markRead: boolean },
 ) {
-  const { rows } = await write(sql`/* markNotificationReadAndGetRedirectTarget */
-    UPDATE notifications
-    SET read_at = COALESCE(read_at, CURRENT_TIMESTAMP)
-    WHERE user_id = ${userId}
-      AND id = ${notificationId}
-      AND deleted_at IS NULL
-    RETURNING target_path
+  const { rows } = await write(sql`/* getNotificationRedirectTarget */
+    WITH target AS (
+      SELECT user_id, id, target_path
+      FROM notifications
+      WHERE user_id = ${userId}
+        AND id = ${notificationId}
+        AND deleted_at IS NULL
+    ),
+    marked AS (
+      UPDATE notifications
+      SET read_at = COALESCE(notifications.read_at, CURRENT_TIMESTAMP)
+      FROM target
+      WHERE ${options.markRead}::boolean
+        AND notifications.user_id = target.user_id
+        AND notifications.id = target.id
+    )
+    SELECT target_path FROM target
   `)
 
   return (rows[0]?.target_path as string | undefined) ?? null

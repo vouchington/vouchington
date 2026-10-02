@@ -115,7 +115,8 @@ ordering proof required by the [PostgreSQL ordering guard](../../../../developme
 - `reconcileNotificationsForRssFeedItem(rssFeedItemId, options?)`
 - `listNotifications(userId, options?)`
 - `getUnreadNotificationsSummary(userId)`
-- `markNotificationReadAndGetRedirectTarget(userId, notificationId)`
+- `getNotificationRedirectTarget(userId, notificationId, { markRead })` (writes nothing when
+  `markRead` is false)
 - `markNotificationRead(userId, notificationId)`
 - `markAllNotificationsRead(userId)`
 - `deleteNotification(userId, notificationId)`
