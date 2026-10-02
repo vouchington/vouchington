@@ -6,6 +6,7 @@ import assert from 'http-assert'
 import { addUserRole } from './roles-permissions.mts'
 import { getPrivateUserByAny } from './get.mts'
 import {
+  AUTOTAGGER_AGENT_SYSTEM_USERNAME,
   AUTOTAGGER_CLASSIFIER_SYSTEM_USERNAME,
   MODERATION_SYSTEM_USERNAME,
   RSS_FEED_AUTO_UPDATER_USERNAME,
@@ -146,11 +147,17 @@ export async function getModerationSystemUserId(): Promise<string> {
 }
 
 // C6's shared actor for classifier-derived topic votes (backend/services/classifiers) -- a
-// dedicated system user distinct from the legacy 'autotagger' username, which keeps its own
-// agents row for C7's tool-loop residual path.
+// dedicated system user distinct from the reserved 'autotagger' account, which C7 acts as.
 export async function getAutotaggerClassifierSystemUserId(): Promise<string> {
   const user = await getSystemUserByUsername(AUTOTAGGER_CLASSIFIER_SYSTEM_USERNAME)
   if (!user) throw new Error(`System user ${AUTOTAGGER_CLASSIFIER_SYSTEM_USERNAME} not found`)
+  return user.id
+}
+
+/** The scoped reasoning autotagger's (C7) actor on its run receipts and the topic relations it adds. */
+export async function getAutotaggerAgentSystemUserId(): Promise<string> {
+  const user = await getSystemUserByUsername(AUTOTAGGER_AGENT_SYSTEM_USERNAME)
+  if (!user) throw new Error(`System user ${AUTOTAGGER_AGENT_SYSTEM_USERNAME} not found`)
   return user.id
 }
 
