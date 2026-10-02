@@ -27,9 +27,9 @@
     "@data-stores/analytics": "workspace:^",
     "@data-stores/graceful-shutdown": "workspace:^",
     "@data-stores/valkey-core": "workspace:^",
-    "@glidemq/speedkey": "^0.3.0",
+    "@glidemq/speedkey": "^0.4.2",
     "@modules/on-error": "workspace:^",
-    "glide-mq": "^0.15.5",
+    "glide-mq": "^0.16.0",
     "valkyries": "^0.8.1"
   }
 }

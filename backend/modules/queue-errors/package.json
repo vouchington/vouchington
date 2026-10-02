@@ -22,6 +22,6 @@
   "scripts": {},
   "dependencies": {
     "@vouchington/queue-errors": "^0.1.1",
-    "glide-mq": "^0.15.5"
+    "glide-mq": "^0.16.0"
   }
 }

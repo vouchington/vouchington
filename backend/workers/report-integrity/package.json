@@ -19,7 +19,7 @@
     "@modules/queue-config": "workspace:^",
     "@queues/report-integrity": "workspace:^",
     "@services/report-integrity": "workspace:^",
-    "glide-mq": "^0.15.5"
+    "glide-mq": "^0.16.0"
   },
   "devDependencies": {
     "@services/users": "workspace:^",

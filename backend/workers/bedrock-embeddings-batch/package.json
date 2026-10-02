@@ -25,7 +25,7 @@
     "@services/bedrock-embeddings": "workspace:^",
     "@services/bedrock-embeddings-batch": "workspace:^",
     "@services/communities": "workspace:^",
-    "glide-mq": "^0.15.5"
+    "glide-mq": "^0.16.0"
   },
   "devDependencies": {
     "@modules/aws": "workspace:^",

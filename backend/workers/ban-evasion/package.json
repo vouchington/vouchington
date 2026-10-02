@@ -20,7 +20,7 @@
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/queue-config": "workspace:^",
     "@services/communities": "workspace:^",
-    "glide-mq": "^0.15.5"
+    "glide-mq": "^0.16.0"
   },
   "devDependencies": {
     "@services/users": "workspace:^",

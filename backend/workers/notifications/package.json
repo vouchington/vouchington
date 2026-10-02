@@ -34,7 +34,7 @@
     "@services/notifications": "workspace:^",
     "@services/notifications-push": "workspace:^",
     "@services/users": "workspace:^",
-    "glide-mq": "^0.15.5"
+    "glide-mq": "^0.16.0"
   },
   "devDependencies": {
     "@services/modmail": "workspace:^",

@@ -23,7 +23,7 @@
     "@queues/crawler": "workspace:^",
     "@services/crawls": "workspace:^",
     "@services/urls": "workspace:^",
-    "glide-mq": "^0.15.5"
+    "glide-mq": "^0.16.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

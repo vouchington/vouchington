@@ -20,6 +20,6 @@
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@ts-shared/cache": "workspace:^",
     "@voucha/types": "workspace:^",
-    "glide-mq": "^0.15.5"
+    "glide-mq": "^0.16.0"
   }
 }
