@@ -3,7 +3,7 @@ import { beginTransaction, read, write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
-import sql from 'sql-template-strings'
+import sql, { type SQLStatement } from 'sql-template-strings'
 import type {
   CopyrightDeliveryIntentRecord,
   CopyrightDeliveryRecipientRecord,
@@ -296,25 +296,56 @@ export async function replayFailedCopyrightDeliveryIntent(input: {
   noticeId: string
   actorUserId: string
 }): Promise<boolean> {
+  const replayed = await resetFailedCopyrightDeliveryIntent(
+    sql`id = ${input.intentId} AND copyright_notice_id = ${input.noticeId}`,
+    input.actorUserId,
+  )
+  return replayed !== null
+}
+
+/**
+ * Resets the one failed reply to a declined email intake and returns its intent id, or null when
+ * the intake has no failed reply. A bounced, sent, claimed or pending reply never matches.
+ */
+export function replayFailedCopyrightEmailIntakeReplyIntent(input: {
+  intakeId: string
+  actorUserId: string
+}): Promise<string | null> {
+  return resetFailedCopyrightDeliveryIntent(
+    sql`copyright_notice_email_intake_id = ${input.intakeId}`,
+    input.actorUserId,
+  )
+}
+
+/**
+ * The conditional update is the replay guard: a concurrent second replay waits on the row lock,
+ * then matches nothing, so one reset writes exactly one audit row. The body and recipient stay as
+ * stored, so the retry resends the exact text.
+ */
+async function resetFailedCopyrightDeliveryIntent(
+  scope: SQLStatement,
+  actorUserId: string,
+): Promise<string | null> {
   await using transaction = await beginTransaction()
-  const { rows } = await transaction(sql`/* replayFailedCopyrightDeliveryIntent */
+  const { rows } = await transaction<{ id: string; copyright_notice_id: string | null }>(
+    sql`/* replayFailedCopyrightDeliveryIntent */
     UPDATE copyright_notice_delivery_intents
     SET state = 'pending', claimed_at = NULL, failed_at = NULL, next_attempt_at = NULL,
       delivery_attempt_count = 0, failure_ciphertext = NULL
-    WHERE id = ${input.intentId} AND copyright_notice_id = ${input.noticeId} AND state = 'failed'
-    RETURNING id
-  `)
-  if (!rows[0]) return false
+    WHERE `.append(scope).append(sql` AND state = 'failed'
+    RETURNING id, copyright_notice_id`),
+  )
+  const intent = rows[0]
+  if (!intent) return null
   await transaction(sql`/* replayFailedCopyrightDeliveryIntent:event */
     INSERT INTO copyright_notice_lifecycle_events (
       copyright_notice_id, event_type, actor_user_id, copyright_notice_delivery_intent_id
     ) VALUES (
-      ${input.noticeId}, 'delivery_intent_replayed', ${input.actorUserId},
-      ${input.intentId}
+      ${intent.copyright_notice_id}, 'delivery_intent_replayed', ${actorUserId}, ${intent.id}
     )
   `)
   await transaction.commit()
-  return true
+  return intent.id
 }
 
 function normalizeEmailAddress(email: string): string {

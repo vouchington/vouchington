@@ -16,6 +16,7 @@ import {
   listCopyrightEmailIntakes,
   rejectCopyrightEmailCorrespondence,
   rejectCopyrightEmailIntake,
+  replayCopyrightEmailIntakeReply,
   requestCopyrightEmailIntakeInformation,
 } from '../copyright-email-intakes'
 import { expectApiWrapperCall } from '@/test-helpers/api-wrapper'
@@ -154,6 +155,16 @@ describe('copyright email intake client', () => {
         '/api/v1/copyright-email-intakes/intake-1/correspondence-rejections',
         correspondence,
       ],
+    })
+  })
+
+  it('replays the failed reply to a declined intake', async () => {
+    mockPost.mockClear()
+    await expectApiWrapperCall({
+      mock: mockPost,
+      response: { replayed: true },
+      call: () => replayCopyrightEmailIntakeReply('intake-1'),
+      expectedArgs: ['/api/v1/copyright-email-intakes/intake-1/reply/replays', {}],
     })
   })
 })

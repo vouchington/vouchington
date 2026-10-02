@@ -215,7 +215,7 @@ CREATE TABLE copyright_notice_correspondence_messages (
 
 CREATE TABLE copyright_notice_lifecycle_events (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE CASCADE,
+  copyright_notice_id uuid REFERENCES copyright_notices(id) ON DELETE CASCADE,
   event_type text NOT NULL CHECK (event_type IN (
     'notice_received', 'supplement_received', 'appeal_received', 'counter_notice_received',
     'withdrawal_received', 'court_or_ccb_hold_received', 'submission_assessed',
@@ -260,6 +260,10 @@ CREATE TABLE copyright_notice_lifecycle_events (
   CHECK ((event_type = 'counter_notice_reviewed') = (counter_notice_accepted IS NOT NULL)),
   CHECK ((event_type = 'mandatory_human_review_completed') = (review_action IS NOT NULL)),
   CHECK (event_type <> 'media_delivery_registry_replayed' OR replay_reason IS NOT NULL),
+  -- A replayed reply to a declined email intake belongs to no case; every other event names one.
+  CONSTRAINT copyright_lifecycle_event_notice_scope CHECK (
+    copyright_notice_id IS NOT NULL OR event_type = 'delivery_intent_replayed'
+  ),
   CONSTRAINT copyright_lifecycle_event_source_shape CHECK (
     num_nonnulls(
       copyright_notice_submission_id, copyright_notice_submission_assessment_id,
@@ -405,10 +409,11 @@ BEGIN
       AND source.copyright_notice_id = NEW.copyright_notice_id
   ) THEN RAISE EXCEPTION 'lifecycle email intake belongs to another notice' USING ERRCODE = 'check_violation'; END IF;
 
+  -- A NULL notice pairs only with an email-intake reply, which is the one intent with no notice.
   IF NEW.copyright_notice_delivery_intent_id IS NOT NULL AND NOT EXISTS (
     SELECT 1 FROM copyright_notice_delivery_intents source
     WHERE source.id = NEW.copyright_notice_delivery_intent_id
-      AND source.copyright_notice_id = NEW.copyright_notice_id
+      AND source.copyright_notice_id IS NOT DISTINCT FROM NEW.copyright_notice_id
   ) THEN RAISE EXCEPTION 'lifecycle delivery intent belongs to another notice' USING ERRCODE = 'check_violation'; END IF;
 
   IF NEW.media_delivery_registry_key IS NOT NULL AND NOT EXISTS (
@@ -936,7 +941,7 @@ COMMENT ON COLUMN copyright_notice_evidence_artifacts.mime_type IS 'Untrusted de
 COMMENT ON COLUMN copyright_notice_evidence_artifacts.byte_size IS 'Preserved artifact byte length for bounds and integrity checks.';
 
 COMMENT ON TABLE copyright_notice_lifecycle_events IS 'Append-only legal workflow audit trail.';
-COMMENT ON COLUMN copyright_notice_lifecycle_events.copyright_notice_id IS 'Legal case whose transition or correspondence event was recorded.';
+COMMENT ON COLUMN copyright_notice_lifecycle_events.copyright_notice_id IS 'Legal case whose transition or correspondence event was recorded; NULL only for a replayed email-intake reply, which belongs to no case.';
 COMMENT ON COLUMN copyright_notice_lifecycle_events.event_type IS 'Versioned legal workflow event name.';
 COMMENT ON COLUMN copyright_notice_lifecycle_events.actor_user_id IS 'User or staff actor for the event; NULL for system activity or after account deletion.';
 COMMENT ON COLUMN copyright_notice_lifecycle_events.copyright_notice_action_intent_id IS 'Concrete action intent source; its restriction is derived through the required restriction FK.';
@@ -949,7 +954,7 @@ COMMENT ON COLUMN copyright_notice_lifecycle_events.copyright_notice_legal_hold_
 COMMENT ON COLUMN copyright_notice_lifecycle_events.copyright_notice_deadline_id IS 'Counter-notice deadline started by this event.';
 COMMENT ON COLUMN copyright_notice_lifecycle_events.copyright_restriction_id IS 'Restriction imposed or reviewed by this event.';
 COMMENT ON COLUMN copyright_notice_lifecycle_events.copyright_notice_email_intake_id IS 'Email intake cited by this event.';
-COMMENT ON COLUMN copyright_notice_lifecycle_events.copyright_notice_delivery_intent_id IS 'Delivery intent replayed by this event.';
+COMMENT ON COLUMN copyright_notice_lifecycle_events.copyright_notice_delivery_intent_id IS 'Delivery intent replayed by this event; a reply to a declined email intake is replayed with no case, and its intake is the intent''s own.';
 COMMENT ON COLUMN copyright_notice_lifecycle_events.media_delivery_registry_key IS 'Media delivery registry record replayed by this event.';
 COMMENT ON COLUMN copyright_notice_lifecycle_events.copyright_notice_guest_capability_id IS 'Guest capability issued or revoked by this event; the actor is NULL when a withdrawal revoked it.';
 COMMENT ON COLUMN copyright_notice_lifecycle_events.review_action IS 'Human review outcome stored on a mandatory-review event.';

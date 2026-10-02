@@ -42894,6 +42894,43 @@
         }
       }
     },
+    "/api/v1/copyright-email-intakes/{id}/reply/replays": {
+      "post": {
+        "operationId": "post_api_v1_copyright-email-intakes_id_reply_replays",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "replayed": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["replayed"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/api/v1/copyright-eu-notices": {
       "post": {
         "operationId": "post_api_v1_copyright-eu-notices",

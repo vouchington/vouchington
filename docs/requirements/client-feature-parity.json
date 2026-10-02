@@ -2872,10 +2872,12 @@
             "web/components/copyright/copyright-email-approval-fields.tsx",
             "web/components/copyright/copyright-email-correspondence-fields.tsx",
             "web/components/copyright/copyright-email-information-request-field.tsx",
-            "web/components/copyright/copyright-email-reply-address-field.tsx"
+            "web/components/copyright/copyright-email-reply-address-field.tsx",
+            "web/components/copyright/copyright-email-reply-retry.tsx"
           ],
           "behaviorTests": [
             "web/components/copyright/copyright-email-review.mock.test.tsx",
+            "web/components/copyright/__tests__/copyright-email-review.reply-retry.mock.test.tsx",
             "web/components/copyright/__tests__/copyright-email-review.pagination.mock.test.tsx",
             "web/components/copyright/__tests__/copyright-email-review.parse-state.mock.test.tsx",
             "web/components/copyright/__tests__/copyright-email-review.reply-address.mock.test.tsx",
@@ -2897,7 +2899,7 @@
         }
       },
       "gap": {
-        "summary": "Swift and .NET render no copyright email-intake queue, approval, rejection, information-request, or correspondence form. Email-intake review remains web-only staff tooling, and its rejection and information-request response fixtures have only the web consumer. The queue fixture's `waiting_reason` and `waiting_since` fields, which surface a declined intake whose reply failed or bounced, have only the web consumer too.",
+        "summary": "Swift and .NET render no copyright email-intake queue, approval, rejection, information-request, failed-reply retry, or correspondence form. Email-intake review remains web-only staff tooling, and its rejection, information-request, and failed-reply retry response fixtures have only the web consumer. The queue fixture's `waiting_reason` and `waiting_since` fields, which surface a declined intake whose reply failed or bounced, have only the web consumer too.",
         "trackingIssue": "https://github.com/vouchington/vouchington/issues/1229"
       }
     },

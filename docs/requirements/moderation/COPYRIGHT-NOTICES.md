@@ -232,7 +232,12 @@ was sent. An address typed beside a parsed sender is refused. A parse that lands
 sends nothing, because the response is created only at decision time. When that reply fails or
 bounces, the intake returns to the email review page with the reason (`reply_failed` or
 `reply_bounced`) and how long it has waited since the failure, so a declined sender who was never
-answered is visible to staff. See the [API](../api/v1/copyright-notices/README.md) for the contract.
+answered is visible to staff. Staff can retry a `reply_failed` reply from that page, and a reply that
+fails again can be retried again; the retry resends the exact stored text and writes a
+`delivery_intent_replayed` lifecycle event naming the
+reviewer, with no case, because the reply to a declined intake belongs to the intake. A
+`reply_bounced` reply stays terminal. See the [API](../api/v1/copyright-notices/README.md) for the
+contract.
 
 An initial intake that is legal process, such as a §512(h) subpoena, is closed with **Record as
 legal process** (`POST /api/v1/copyright-email-intakes/:id/legal-process`), because a rejection

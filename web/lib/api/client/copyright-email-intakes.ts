@@ -104,6 +104,14 @@ export function recordCopyrightEmailIntakeLegalProcess(id: string, reason: strin
     { reason },
   )
 }
+// Puts the failed reply to a declined intake back in the delivery queue. `replayed` is false when
+// the reply was no longer failed, for example because another reviewer already retried it.
+export function replayCopyrightEmailIntakeReply(id: string) {
+  return clientApi.post<{ replayed: boolean }>(
+    `/api/v1/copyright-email-intakes/${id}/reply/replays`,
+    {},
+  )
+}
 export function approveCopyrightEmailIntake(id: string, input: CopyrightEmailIntakeApprovalInput) {
   return clientApi.post(`/api/v1/copyright-email-intakes/${id}/approvals`, input)
 }

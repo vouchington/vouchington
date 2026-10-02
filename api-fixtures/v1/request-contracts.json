@@ -30999,6 +30999,17 @@
         "type": "object"
       }
     },
+    "POST:/api/v1/copyright-email-intakes/:id/reply/replays": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
     "POST:/api/v1/copyright-eu-notices": {
       "body": {
         "$ref": "#/components/schemas/CopyrightTerritorialNoticeRequest"

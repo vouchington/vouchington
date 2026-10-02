@@ -84,6 +84,18 @@ stays on the queue as `reply_failed` or `reply_bounced`, waiting since that fail
 who never received the reply is not lost. The queue never lists a declined intake whose reply is
 pending or sent.
 
+`POST /api/v1/copyright-email-intakes/:id/reply/replays` retries the failed reply to a declined
+intake. It has the case delivery replay's authorization (administrator or moderator) and
+suspension rules, takes no body, and returns `200` with `{ replayed: boolean }`. `replayed: true`
+means this call reset a `failed` reply to `pending` and queued its email; the stored body and
+recipient are unchanged, so the retry sends the exact original text. The reset is one conditional
+update, so concurrent calls reset it once and write one `delivery_intent_replayed` audit event
+naming the actor. That event has no case: the reply, not a notice, owns it. Every other state,
+including a `bounced` reply, a reply that is already `pending` or `sent`, and an unknown intake,
+returns `replayed: false` and changes nothing. The `failed` state is the only guard, so it stops a
+double click or two reviewers racing, not a second retry: a retried reply that fails again can be
+retried again. The route never creates a case or a case queue row.
+
 The staff intake response, `GET /api/v1/copyright-email-intakes/:id`, carries
 `copyright_email_intake.ses_verdicts`: `{ spf, dkim, dmarc, spam, virus }`, each `pass`, `fail`,
 `gray`, `processing_failed`, or `unknown`. SES reported them in headers it prepended to the message
