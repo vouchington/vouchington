@@ -3,6 +3,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { RefObject } from 'react'
 import { Button } from '@/components/ui/button'
+import { Kbd } from '@/components/ui/kbd'
 import { EntityActionIcons } from '@/components/shared/entity-action-icons'
 import { ScoreVote } from '@/components/votes/score-vote'
 import { clearPostVote, submitPostRecommendationVote } from '@/lib/api/client/elections'
@@ -138,12 +139,12 @@ export function TopicRecommendationDialogFooter({
               {t(
                 'extracted.topicRecommendations.topicRecommendationDialogFooter.reject_ab604a36',
               )}{' '}
-              <kbd
-                className='ml-1 hidden rounded border px-1 text-xs sm:inline'
+              <Kbd
+                className='ml-1 hidden sm:inline-flex'
                 aria-hidden='true'
               >
                 {t('extracted.topicRecommendations.topicRecommendationDialogFooter.r_eefa7a5b')}
-              </kbd>
+              </Kbd>
             </Button>
             <Button
               type='button'
@@ -153,12 +154,12 @@ export function TopicRecommendationDialogFooter({
               data-pw='topic-recommendation-dialog-approve'
             >
               {t('extracted.topicRecommendations.topicRecommendationDialogFooter.approve_6007acbe')}{' '}
-              <kbd
-                className='ml-1 hidden rounded border px-1 text-xs sm:inline'
+              <Kbd
+                className='ml-1 hidden sm:inline-flex'
                 aria-hidden='true'
               >
                 {t('extracted.topicRecommendations.topicRecommendationDialogFooter.a_05db6588')}
-              </kbd>
+              </Kbd>
             </Button>
           </>
         ) : null}

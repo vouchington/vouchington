@@ -4,6 +4,7 @@ import type { ComponentProps, ReactNode } from 'react'
 import dynamic from 'next/dynamic'
 import { usePathname } from 'next/navigation'
 import { PanelLeft } from 'lucide-react'
+import { Kbd } from '@/components/ui/kbd'
 import {
   Sidebar,
   SidebarContent,
@@ -85,9 +86,7 @@ export function AppSidebar({ siteFooter }: { siteFooter?: ReactNode }) {
               data-pw='app-sidebar-trigger'
             >
               <PanelLeft />
-              <kbd className='pointer-events-none ml-auto flex h-5 shrink-0 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-xs font-medium'>
-                {isMac ? '⌘/' : 'Ctrl+/'}
-              </kbd>
+              <Kbd className='ml-auto shrink-0'>{isMac ? '⌘/' : 'Ctrl+/'}</Kbd>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
