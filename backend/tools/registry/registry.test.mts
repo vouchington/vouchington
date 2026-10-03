@@ -43,6 +43,7 @@ const NON_TOOL_FILES = new Set([
   'schema-validator.mts',
   'topic-hierarchy-result.mts',
   'topic-output-schema-parts.mts',
+  'topic-recommendation-read-output.mts',
   'topic-recommendation-tool-support.mts',
 ])
 

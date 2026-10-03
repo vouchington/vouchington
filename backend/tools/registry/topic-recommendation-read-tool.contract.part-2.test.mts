@@ -29,11 +29,18 @@ const asCaller = (user: TestUser): McpContractCaller => ({ ...user, membership_p
 
 async function submit(author: McpContractCaller): Promise<TopicRecommendationPost> {
   const suffix = createRandomString(8).toLowerCase()
-  return createTopicRecommendation(author, WEB_PROVENANCE, {
-    markdown: `Why ${suffix}`,
-    topic_title: `Listed topic ${suffix}`,
-    topic_slug: `listed-topic-${suffix}`,
-  })
+  // No post-created event: its listener auto-upvotes the author, which moves the sort key while
+  // the cursor tests page and can slip a row between two pages.
+  return createTopicRecommendation(
+    author,
+    WEB_PROVENANCE,
+    {
+      markdown: `Why ${suffix}`,
+      topic_title: `Listed topic ${suffix}`,
+      topic_slug: `listed-topic-${suffix}`,
+    },
+    { skipCreatedEvents: true },
+  )
 }
 
 type Page = {
