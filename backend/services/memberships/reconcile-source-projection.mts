@@ -2,6 +2,7 @@ import type { QueryExecutor } from '@data-stores/psql'
 import { classifyMembershipChange } from '@vouchington/memberships'
 import sql from 'sql-template-strings'
 import { recordMembershipChange } from './changes.mts'
+import { compareMembershipPlans } from './plan-ranking.mts'
 import { isTerminalMembershipStatus } from './update-result.mts'
 import type { MembershipPlanSlug, MembershipStatus } from './types.mts'
 
@@ -116,7 +117,7 @@ export function classifyMembershipProjectionChange(
     nextPlan,
     previousSku: prior.membership_product_id,
     nextSku,
-    comparePlans: (left, right) => getPlanRank(left) - getPlanRank(right),
+    comparePlans: compareMembershipPlans,
   })
 }
 
@@ -126,8 +127,4 @@ function getStatus(membership: PriorMembership): MembershipStatus {
   if (membership.paused_at) return 'paused'
   if (membership.past_due_at) return 'past_due'
   return 'active'
-}
-
-function getPlanRank(plan: MembershipPlanSlug): number {
-  return plan === 'plus' ? 1 : 2
 }
