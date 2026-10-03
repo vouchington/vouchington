@@ -52,6 +52,7 @@ export type ApiScope =
   | 'point-valuations:write'
   | 'post-relations.owned-private:write'
   | 'posts:read'
+  | 'posts:write'
   | 'preferences:read'
   | 'preferences:write'
   | 'profile:read'

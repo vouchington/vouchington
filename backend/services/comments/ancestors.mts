@@ -1,11 +1,14 @@
-import { read } from '@data-stores/psql'
+import { read, type QueryOptions } from '@data-stores/psql'
 import { mapCommentRow } from '@modules/search-utils'
 import { isSlug, isUUID } from '@modules/utils'
 import createError from 'http-errors'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { CommentNode, CommentRow } from './types.mts'
 
-export async function getCommentAncestorsByAny(idOrSlug: string): Promise<CommentNode[]> {
+export async function getCommentAncestorsByAny(
+  idOrSlug: string,
+  options: QueryOptions = {},
+): Promise<CommentNode[]> {
   const isId = isUUID(idOrSlug)
   const isSlugValue = isSlug(idOrSlug)
   if (!isId && !isSlugValue) throw createError(422, `Invalid post identifier: ${idOrSlug}`)
@@ -15,7 +18,7 @@ export async function getCommentAncestorsByAny(idOrSlug: string): Promise<Commen
         sql`/* getCommentAncestorsByAny:fragment */
           (SELECT post_id FROM post_slugs WHERE slug = ${idOrSlug.toLowerCase()} LIMIT 1)`,
       )
-  const { rows } = await read(query)
+  const { rows } = await read(query, options)
   return rows.map(row => mapCommentRow(row as CommentRow))
 }
 

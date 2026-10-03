@@ -46,7 +46,7 @@ When a tool names REST equivalents in `meta.api`, its hints must agree with them
 fails the catalog test when a read tool names a non-`GET` operation, a write tool names a `GET`,
 or a staff write omits its explicit `idempotentHint`. Staff hints describe the shared service:
 a guarded no-op can be idempotent, while repeated writes that append audit history are not.
-User tool write hints continue to follow whether every named operation is a `PUT` or `DELETE`.
+User tool write hints follow `PUT`/`DELETE`, or a required UUID `idempotency_key` for admitted creation.
 
 Each MCP server also sends `instructions` on `initialize`
 ([`instructions.mts`](../../../../backend/services/mcp-tools/instructions.mts)) so agents learn how the tools fit together before calling them. A result over the MCP response limit returns a tool error that asks the caller to narrow the query or lower the limit.
@@ -142,7 +142,7 @@ tables that persist a row identifier.
 
 `set_bookmark`, `remove_bookmark`, and the five list write tools follow the same delegated-authority
 model; see [Bookmark and List Write Tools](bookmark-list-write-tools.md). `remove_entity_relation` and
-eight referral link and topic recommendation tools do too; see [Relation, Referral Link and Topic Recommendation Write Tools](relation-referral-recommendation-write-tools.md). So do the eleven profile, notification, and preference tools: [Profile, Notification, and Preference Write Tools](profile-notification-write-tools.md). The hostname, list and user read tools are in [Hostname, List and User Read Tools](hostname-list-user-read-tools.md), the trending, referral program, web search and reference data read tools in [Trending, Referral, Search and Reference Read Tools](search-reference-read-tools.md), and the community list, list membership and membership plan read tools in [Community List, List Membership and Membership Plan Read Tools](community-list-membership-read-tools.md), and the caller's own bio, link, notification, settings and topic recommendation reads in [Own Profile, Notification, Preference and Recommendation Read Tools](own-data-read-tools.md).
+the referral link and topic recommendation tools do too; see [Relation, Referral Link and Topic Recommendation Write Tools](relation-referral-recommendation-write-tools.md). So do the eleven profile, notification, and preference tools: [Profile, Notification, and Preference Write Tools](profile-notification-write-tools.md). Post creation, replies, edits, archive and deletion use [Post and Comment Write Tools](post-comment-write-tools.md). The hostname, list and user read tools are in [Hostname, List and User Read Tools](hostname-list-user-read-tools.md), the trending, referral program, web search and reference data read tools in [Trending, Referral, Search and Reference Read Tools](search-reference-read-tools.md), and the community list, list membership and membership plan read tools in [Community List, List Membership and Membership Plan Read Tools](community-list-membership-read-tools.md), and the caller's own bio, link, notification, settings and topic recommendation reads in [Own Profile, Notification, Preference and Recommendation Read Tools](own-data-read-tools.md).
 
 ---
 

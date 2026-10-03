@@ -12,7 +12,7 @@ const USER_RESOURCE_SCOPES = {
   lists: ['read', 'write'],
   notifications: ['read', 'write'],
   'point-valuations': ['read', 'write'],
-  posts: ['read'],
+  posts: ['read', 'write'],
   preferences: ['read', 'write'],
   profile: ['read', 'write'],
   recommendations: ['read'],

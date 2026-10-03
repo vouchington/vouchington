@@ -7,6 +7,575 @@
       "tools": [
         {
           "tool": {
+            "name": "create_post",
+            "title": "Create Post or Comment",
+            "description": "Create a post, or reply with post_type comment and parent_id. Send community_id for a community root post. Story and topic recommendation posts use dedicated workflows. Reuse the UUID idempotency_key with the same body to retry safely.",
+            "inputSchema": {
+              "additionalProperties": false,
+              "properties": {
+                "broadcast": {
+                  "enum": ["everyone", "followers", "mutual_followers", "users"],
+                  "type": "string"
+                },
+                "categories": {
+                  "items": {
+                    "anyOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "hashtag": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "const": "hashtag"
+                          }
+                        },
+                        "required": ["hashtag", "type"],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "topic_id": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "const": "topic"
+                          }
+                        },
+                        "required": ["topic_id", "type"],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "type": "array"
+                },
+                "community_id": {
+                  "type": "string"
+                },
+                "data_point_vertical": {
+                  "type": "string"
+                },
+                "declared_language": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "images": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "caption": {
+                        "type": "string"
+                      },
+                      "image_id": {
+                        "type": "string"
+                      },
+                      "order_index": {
+                        "type": "number"
+                      }
+                    },
+                    "required": ["image_id", "order_index"],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "is_anonymous": {
+                  "type": "boolean"
+                },
+                "markdown": {
+                  "type": "string"
+                },
+                "parent_id": {
+                  "type": "string"
+                },
+                "post_type": {
+                  "type": "string",
+                  "enum": [
+                    "discussion",
+                    "review",
+                    "data_point",
+                    "comment",
+                    "link",
+                    "article",
+                    "blog_post"
+                  ]
+                },
+                "privacy": {
+                  "enum": ["private", "public"],
+                  "type": "string"
+                },
+                "review_topic_ratings": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "rating": {
+                        "type": "number"
+                      },
+                      "topic_id": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["rating", "topic_id"],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "root_id": {
+                  "type": "string"
+                },
+                "slug": {
+                  "type": "string"
+                },
+                "structured_data": {},
+                "title": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                },
+                "url_id": {
+                  "type": "string"
+                },
+                "idempotency_key": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "A UUID for this submission and its retries."
+                }
+              },
+              "type": "object",
+              "required": ["idempotency_key"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "post": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "slug": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "post_type": {
+                      "enum": [
+                        "article",
+                        "blog_post",
+                        "comment",
+                        "data_point",
+                        "discussion",
+                        "link",
+                        "review",
+                        "story",
+                        "topic_recommendation"
+                      ],
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "markdown": {
+                      "type": "string"
+                    },
+                    "parent_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "root_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "created_by_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "is_anonymous": {
+                      "type": "boolean"
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "slug",
+                    "post_type",
+                    "title",
+                    "markdown",
+                    "parent_id",
+                    "root_id",
+                    "created_by_id",
+                    "is_anonymous",
+                    "created_at",
+                    "updated_at"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["success", "post"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["posts:read", "posts:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/posts"
+            },
+            {
+              "method": "POST",
+              "path": "/api/v1/communities/:idOrSlug/posts"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "update_post",
+            "title": "Edit or Archive Own Post",
+            "description": "Edit your own post or comment. Send only fields to change; archive true archives it and archive false restores it. Content edits retain the REST edit window and per-type rules.",
+            "inputSchema": {
+              "additionalProperties": false,
+              "properties": {
+                "ai_summary_markdown": {
+                  "type": "string"
+                },
+                "archive": {
+                  "type": "boolean"
+                },
+                "broadcast": {
+                  "enum": ["everyone", "followers", "mutual_followers", "users"],
+                  "type": "string"
+                },
+                "categories": {
+                  "items": {
+                    "anyOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "hashtag": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "const": "hashtag"
+                          }
+                        },
+                        "required": ["hashtag", "type"],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "topic_id": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "const": "topic"
+                          }
+                        },
+                        "required": ["topic_id", "type"],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "type": "array"
+                },
+                "community_id": {
+                  "type": "string"
+                },
+                "data_point_vertical": {
+                  "type": "string"
+                },
+                "declared_language": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "images": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "caption": {
+                        "type": "string"
+                      },
+                      "image_id": {
+                        "type": "string"
+                      },
+                      "order_index": {
+                        "type": "number"
+                      }
+                    },
+                    "required": ["image_id", "order_index"],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "is_anonymous": {
+                  "type": "boolean"
+                },
+                "markdown": {
+                  "type": "string"
+                },
+                "parent_id": {
+                  "type": "string"
+                },
+                "post_type": {
+                  "enum": [
+                    "article",
+                    "blog_post",
+                    "comment",
+                    "data_point",
+                    "discussion",
+                    "link",
+                    "review",
+                    "story",
+                    "topic_recommendation"
+                  ],
+                  "type": "string"
+                },
+                "privacy": {
+                  "enum": ["private", "public"],
+                  "type": "string"
+                },
+                "root_id": {
+                  "type": "string"
+                },
+                "slug": {
+                  "type": "string"
+                },
+                "structured_data": {},
+                "title": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                },
+                "url_id": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The UUID or slug of your post or comment."
+                }
+              },
+              "type": "object",
+              "required": ["id"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "post": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "slug": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "post_type": {
+                      "enum": [
+                        "article",
+                        "blog_post",
+                        "comment",
+                        "data_point",
+                        "discussion",
+                        "link",
+                        "review",
+                        "story",
+                        "topic_recommendation"
+                      ],
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "markdown": {
+                      "type": "string"
+                    },
+                    "parent_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "root_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "created_by_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "is_anonymous": {
+                      "type": "boolean"
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "slug",
+                    "post_type",
+                    "title",
+                    "markdown",
+                    "parent_id",
+                    "root_id",
+                    "created_by_id",
+                    "is_anonymous",
+                    "created_at",
+                    "updated_at"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["success", "post"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["posts:read", "posts:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "PATCH",
+              "path": "/api/v1/posts/:idOrSlug"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "delete_post",
+            "title": "Delete Own Post",
+            "description": "Delete your own post or comment. Another user’s post cannot be deleted. A deleted or missing target is not found.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "The UUID or slug of your post or comment."
+                }
+              },
+              "required": ["id"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                }
+              },
+              "required": ["success"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["posts:read", "posts:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "DELETE",
+              "path": "/api/v1/posts/:idOrSlug"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "create_topic_recommendation",
             "title": "Create Topic Recommendation",
             "description": "Submit a pending topic recommendation. Reuse the same UUID idempotency_key and body to safely retry; a moderator decides whether to approve it.",
