@@ -36,12 +36,12 @@ Both `st` and `dt` are set with `HttpOnly`, `Secure`, and `SameSite=Lax` flags. 
 
 ### Analytics Cookies
 
-These cookies are only set when you choose **"Accept All"** in the cookie consent banner. They are not loaded for users who choose **"Essential Only."**
+Analytics and browser Sentry error monitoring load only when you choose **"Accept All"** in the cookie consent banner and your browser sends no Global Privacy Control signal. They are not loaded for users who choose **"Essential Only."**
 
-| Name                         | Type                        | Purpose                                                                                                                                                 | Duration                         | Party                                              |
-| ---------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | -------------------------------------------------- |
-| GTM tags (via `g.voucha.ai`) | HTTP cookie / local storage | Server-side Google Tag Manager — usage analytics, page view tracking, and conversion measurement                                                        | Per GTM tag configuration        | Third-party (Voucha-operated server-side endpoint) |
-| Sentry session replay        | Script                      | Error monitoring and session replay (approximately 10% of sessions; 100% of sessions that encounter errors). Replay data may include page interactions. | Per Sentry session configuration | Third-party (Sentry)                               |
+| Name                              | Type                        | Purpose                                                                                                                                                                                                                                                                                                                                                       | Duration                  | Party                                              |
+| --------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | -------------------------------------------------- |
+| GTM tags (via `g.voucha.ai`)      | HTTP cookie / local storage | Server-side Google Tag Manager — usage analytics, page view tracking, and conversion measurement                                                                                                                                                                                                                                                              | Per GTM tag configuration | Third-party (Voucha-operated server-side endpoint) |
+| Sentry error monitoring (browser) | Script / session storage    | Error monitoring (no session replay): error traces; click, navigation, console and request breadcrumbs; page URL, referrer and user agent; language and time zone; release-health session and performance traces (100% sampled). URL query strings are scrubbed. Events use our `/monitoring` endpoint; `sentry_previous_trace` is stored in session storage. | Browser session           | Third-party (Sentry)                               |
 
 ### Functional Cookies
 
@@ -78,8 +78,10 @@ In addition to cookies, we use browser local storage to store preferences that a
 
 When you first visit Voucha, a banner appears at the bottom of the page. You can choose:
 
-- **Essential Only** — only essential cookies are set; analytics and session replay are not loaded
+- **Essential Only** — only essential cookies are set; analytics and browser error monitoring are not loaded
 - **Accept All** — essential and analytics cookies are set
+
+If your browser sends a Global Privacy Control signal, we treat it as Essential Only.
 
 You can change your choice at any time by clearing your browser's local storage for the `cookie-consent` key, which will cause the banner to reappear on your next visit.
 

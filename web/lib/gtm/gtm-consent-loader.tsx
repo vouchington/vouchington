@@ -2,27 +2,10 @@
 
 import { useCallback, useEffect, useSyncExternalStore } from 'react'
 import { useLoadScript } from '@/hooks/use-load-script'
-import { hasNavigatorGlobalPrivacyControl } from '@/lib/privacy/global-privacy-control'
+import { hasAnalyticsConsent, subscribeToCookieConsent } from '@/lib/privacy/cookie-consent'
 import { getValidGtmId } from './gtm-id'
 import { GTM_ORIGIN } from './gtm-origin'
 import { GtmPageViewTracker } from './gtm-page-view-tracker'
-
-function getConsent(): string | null {
-  try {
-    return localStorage.getItem('cookie-consent')
-  } catch {
-    return null
-  }
-}
-
-function subscribeToConsent(onStoreChange: () => void) {
-  window.addEventListener('cookie-consent-changed', onStoreChange)
-  return () => window.removeEventListener('cookie-consent-changed', onStoreChange)
-}
-
-function getHasConsentSnapshot() {
-  return getConsent() === 'all' && !hasNavigatorGlobalPrivacyControl()
-}
 
 // Loads GTM only after the user has granted cookie consent.
 // Reads localStorage on mount and listens for cookie-consent-changed events.
@@ -30,10 +13,10 @@ export function GtmConsentLoader({ gtmId, nonce }: { gtmId?: string; nonce?: str
   const validGtmId = getValidGtmId(gtmId)
   const subscribe = useCallback(
     (onStoreChange: () => void) =>
-      validGtmId ? subscribeToConsent(onStoreChange) : () => undefined,
+      validGtmId ? subscribeToCookieConsent(onStoreChange) : () => undefined,
     [validGtmId],
   )
-  const getSnapshot = useCallback(() => !!validGtmId && getHasConsentSnapshot(), [validGtmId])
+  const getSnapshot = useCallback(() => !!validGtmId && hasAnalyticsConsent(), [validGtmId])
   const hasConsent = useSyncExternalStore(subscribe, getSnapshot, () => false)
 
   // Initialize dataLayer when consent is granted

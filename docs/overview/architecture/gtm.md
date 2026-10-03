@@ -28,7 +28,7 @@ Browser                        g.voucha.ai
 
 When `NEXT_PUBLIC_GTM_ID` is unset, GTM is fully disabled and the browser never makes requests to `g.voucha.ai`. The ID is public browser config and must stay runtime-configured, not baked into Docker images.
 
-GTM is loaded client-side only after `cookie-consent` is set to `all` in local storage and the browser is not sending Global Privacy Control (`navigator.globalPrivacyControl === true`). GPC is a runtime override: it suppresses GTM even when stale local consent says `all`, but it does not rewrite local storage. The app does not render a `<noscript>` iframe fallback because the fallback would either bypass consent or never run under the current client-side consent model.
+GTM is loaded client-side only after `cookie-consent` is set to `all` in local storage and the browser is not sending Global Privacy Control (`navigator.globalPrivacyControl === true`). The shared reader `web/lib/privacy/cookie-consent.ts` enforces this gate for GTM and browser Sentry. GPC suppresses both even when stale local consent says `all`; the cookie banner also stores `essential` when GPC is active. Browser Sentry initializes at most once per page load, rechecks consent before delayed runtime config initialization, and closes on opt-out without restarting until the next page load. The app does not render a `<noscript>` iframe fallback because the fallback would either bypass consent or never run under the current client-side consent model.
 
 Cookie consent behavior and test coverage are tracked in the [User Privacy Feature Matrix](../../requirements/users/USER-PRIVACY-MATRIX.md).
 
@@ -51,7 +51,7 @@ pushEvent({ event: 'login', method: 'google' })
 pushEvent({ event: 'my_custom_event', custom_param: 'value' })
 ```
 
-Only push custom analytics events after the same consent gate has passed (`cookie-consent` is `all` and GPC is inactive). `pushEvent` writes to `window.dataLayer` directly and does not check consent by itself.
+Only push custom analytics events after the shared `web/lib/privacy/cookie-consent.ts` consent gate used by GTM and browser Sentry has passed (`cookie-consent` is `all` and GPC is inactive). `pushEvent` writes to `window.dataLayer` directly and does not check consent by itself.
 
 To add a new typed event, extend the union in `web/lib/gtm/types.ts`:
 
