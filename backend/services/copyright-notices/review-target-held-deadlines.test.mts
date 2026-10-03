@@ -41,6 +41,24 @@ describe('actionable copyright review paging', () => {
     expect(read.missedEscalation).toEqual(none)
     expect(read.missedRestorationDeadline).toEqual(none)
   })
+  it('never makes a future-at-assessment receipt qualify as the sweep clock advances', async () => {
+    const fixture = await fixtureWithDeadline()
+    const now = new Date()
+    await insertAssessedCopyrightLegalHold({
+      ...fixture,
+      receivedAt: hoursAgo(3),
+      agentReceivedAt: new Date(now.getTime() + 3_600_000),
+    })
+    for (const sweepAt of [now, new Date(now.getTime() + 2 * 3_600_000)]) {
+      const read = await readCopyrightReviewTargetBreaches({
+        now: sweepAt,
+        reviewTargetMinutes: 60,
+        noticeIds: [fixture.noticeId],
+      })
+      expect(read.missedEscalation).toEqual({ count: 1, noticeIds: [fixture.noticeId] })
+      expect(read.missedRestorationDeadline).toEqual({ count: 1, noticeIds: [fixture.noticeId] })
+    }
+  })
   it('pages a partially held deadline until every restricted target is covered', async () => {
     const fixture = await fixtureWithDeadline()
     const extraTarget = await insertCopyrightPagingTarget(fixture.noticeId, fixture.imageId)

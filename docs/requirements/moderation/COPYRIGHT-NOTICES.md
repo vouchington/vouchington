@@ -838,7 +838,7 @@ account data export of an erased case completes ([#1754](https://github.com/vouc
 A five-minute sweep sends one Sentry warning when copyright work is late. It counts four sets:
 
 - notices with actionable paging-view queue work open longer than `reviewTargetMinutes`: unreviewed
-  intake, restriction, appeal or counter-notice, unassessed court/CCB filing, failed action or delivery,
+  intake, restriction, appeal or counter-notice, unassessed court/CCB filing, unreviewed staydown match, failed action or delivery,
   or pending enforcement. Assessed qualifying holds awaiting resolution do not count. Failures use
   the same timer; staff-assessed pending enforcement is timed from assessment, automated requests
   from notice receipt, with each notice counted once;
@@ -856,7 +856,9 @@ counted: that set measures unreviewed work, and the reply failure has its own re
 which means unset: both waiting counts stay off until an operator records an approved target. Missed
 deadlines page whether or not a target is set, except while every still-restricted counter-notice
 target is covered by an unresolved qualifying hold and no filing on the case is unassessed.
-Resolution resumes paging if restoration remains incomplete. Unassessed filings never silence
+Qualification fixes agent receipt against the recorded assessment time; a future-at-assessment
+receipt does not become qualifying as the sweep clock advances. Resolution resumes paging if
+restoration remains incomplete. Unassessed filings never silence
 paging. The staff queue display and urgency remain unchanged. The warning carries only counts and at most 20 notice
 or email intake IDs per set. It never carries claimant, poster, work, correspondence, sender,
 subject, or body fields. When every count is zero, nothing is sent. See the

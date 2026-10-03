@@ -2,7 +2,7 @@ import sql, { type SQLStatement } from 'sql-template-strings'
 import { unassessedCourtFilingSql } from './unassessed-court-filing-sql.mts'
 
 /** A deadline is held only while every still-restricted assessed target has a qualifying hold. */
-export function heldCopyrightDeadlineSql(now: Date): SQLStatement {
+export function heldCopyrightDeadlineSql(): SQLStatement {
   const restrictedTargets = sql`
     SELECT deadline_target.copyright_notice_target_id
     FROM copyright_notice_counter_notice_assessment_targets deadline_target
@@ -31,7 +31,7 @@ export function heldCopyrightDeadlineSql(now: Date): SQLStatement {
             AND resolution.id IS NULL AND hold.from_original_claimant AND hold.same_material
             AND hold.proceeding_kind IS NOT NULL AND hold.commenced_at IS NOT NULL
             AND hold.received_by_designated_agent_at IS NOT NULL
-            AND hold.received_by_designated_agent_at <= ${now}
+            AND hold.received_by_designated_agent_at <= hold.assessed_at
         )
       ))`)
 }

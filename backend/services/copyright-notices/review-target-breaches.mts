@@ -61,7 +61,7 @@ export async function readCopyrightReviewTargetBreaches(options: {
       WHERE resolved_at IS NULL AND cancelled_at IS NULL AND escalation_at <= ${options.now}
         AND (${scope}::uuid[] IS NULL OR copyright_notice_id = ANY(${scope}::uuid[]))
         AND NOT `)
-    .append(heldCopyrightDeadlineSql(options.now)).append(sql`
+    .append(heldCopyrightDeadlineSql()).append(sql`
       GROUP BY copyright_notice_id
     ), email_waiting AS (
       SELECT intake.id, intake.received_at FROM copyright_notice_email_intakes intake
