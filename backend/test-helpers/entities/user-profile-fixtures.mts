@@ -23,50 +23,40 @@ const randomSuffix = () => createRandomString(8)
 export async function createUserProfileFixture({
   suffix = randomSuffix(),
 }: CreateUserProfileFixtureOptions = {}) {
-  const owner = await createTestUser({ username: `users-owner-${suffix}` })
-  const follower = await createTestUser({ username: `users-follower-${suffix}` })
-  const followingUser = await createTestUser({ username: `users-following-${suffix}` })
-  const blockedUser = await createTestUser({ username: `users-blocked-${suffix}` })
-  const mutedUser = await createTestUser({ username: `users-muted-${suffix}` })
-  const admin = await createTestUser({
-    username: `users-admin-${suffix}`,
-    administrator: true,
-  })
+  const [owner, follower, followingUser, blockedUser, mutedUser, admin] = await Promise.all([
+    createTestUser({ username: `users-owner-${suffix}` }),
+    createTestUser({ username: `users-follower-${suffix}` }),
+    createTestUser({ username: `users-following-${suffix}` }),
+    createTestUser({ username: `users-blocked-${suffix}` }),
+    createTestUser({ username: `users-muted-${suffix}` }),
+    createTestUser({ username: `users-admin-${suffix}`, administrator: true }),
+  ])
 
   if (!owner || !follower || !followingUser || !blockedUser || !mutedUser || !admin) {
     throw new Error('Failed to create test users for user profile fixture')
   }
 
-  const followingTopic = await createTestTopic({
-    user: owner,
-    name: `Following Topic ${suffix}`,
-    slug: `following-topic-${suffix}`,
-  })
-  const blockedTopic = await createTestTopic({
-    user: owner,
-    name: `Blocked Topic ${suffix}`,
-    slug: `blocked-topic-${suffix}`,
-  })
-  const mutedTopic = await createTestTopic({
-    user: owner,
-    name: `Muted Topic ${suffix}`,
-    slug: `muted-topic-${suffix}`,
-  })
-  const viewedTopic = await createTestTopic({
-    user: owner,
-    name: `Viewed Topic ${suffix}`,
-    slug: `viewed-topic-${suffix}`,
-  })
-  const rssTopic = await createTestTopic({
-    user: owner,
-    name: `RSS Topic ${suffix}`,
-    slug: `rss-topic-${suffix}`,
-  })
+  const [followingTopic, blockedTopic, mutedTopic, viewedTopic, rssTopic] = await Promise.all([
+    createTestTopic({
+      user: owner,
+      name: `Following Topic ${suffix}`,
+      slug: `following-topic-${suffix}`,
+    }),
+    createTestTopic({
+      user: owner,
+      name: `Blocked Topic ${suffix}`,
+      slug: `blocked-topic-${suffix}`,
+    }),
+    createTestTopic({ user: owner, name: `Muted Topic ${suffix}`, slug: `muted-topic-${suffix}` }),
+    createTestTopic({
+      user: owner,
+      name: `Viewed Topic ${suffix}`,
+      slug: `viewed-topic-${suffix}`,
+    }),
+    createTestTopic({ user: owner, name: `RSS Topic ${suffix}`, slug: `rss-topic-${suffix}` }),
+  ])
 
-  const rssFeedId = await insertTestRssFeed({
-    topicId: rssTopic.id,
-    title: `User Feed ${suffix}`,
-  })
+  const rssFeedId = await insertTestRssFeed({ topicId: rssTopic.id, title: `User Feed ${suffix}` })
 
   const guid = `user-feed-item-${suffix}`
   const rssItemUrl = await insertTestUrlDirect(null, `https://example.com/${guid}`, {

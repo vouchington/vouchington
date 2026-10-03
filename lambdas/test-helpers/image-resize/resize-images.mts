@@ -8,20 +8,12 @@ type ImageEncoder = (
 export async function createResizeTestImages(encode: ImageEncoder) {
   const rgbImage = await encode(
     Buffer.alloc(100 * 100 * 3, 255),
-    {
-      width: 100,
-      height: 100,
-      channels: 3,
-    },
+    { width: 100, height: 100, channels: 3 },
     'jpeg',
   )
   const grayscaleImage = await encode(
     Buffer.alloc(100 * 100, 128),
-    {
-      width: 100,
-      height: 100,
-      channels: 1,
-    },
+    { width: 100, height: 100, channels: 1 },
     'png',
     true,
   )
@@ -32,24 +24,10 @@ export async function createResizeTestImages(encode: ImageEncoder) {
     alphaBuffer[i + 2] = 0
     alphaBuffer[i + 3] = 128
   }
-  const alphaImage = await encode(alphaBuffer, { width: 100, height: 100, channels: 4 }, 'png')
-  const largeImage = await encode(
-    Buffer.alloc(1000 * 1000 * 3, 255),
-    {
-      width: 1000,
-      height: 1000,
-      channels: 3,
-    },
-    'jpeg',
-  )
-  const smallImage = await encode(
-    Buffer.alloc(50 * 50 * 3, 255),
-    {
-      width: 50,
-      height: 50,
-      channels: 3,
-    },
-    'jpeg',
-  )
+  const [alphaImage, largeImage, smallImage] = await Promise.all([
+    encode(alphaBuffer, { width: 100, height: 100, channels: 4 }, 'png'),
+    encode(Buffer.alloc(1000 * 1000 * 3, 255), { width: 1000, height: 1000, channels: 3 }, 'jpeg'),
+    encode(Buffer.alloc(50 * 50 * 3, 255), { width: 50, height: 50, channels: 3 }, 'jpeg'),
+  ])
   return { rgbImage, grayscaleImage, alphaImage, largeImage, smallImage }
 }

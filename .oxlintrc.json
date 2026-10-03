@@ -817,7 +817,7 @@
     "react-doctor/public-env-secret-name": "error",
     // Performance (react-compiler agnostic)
     "react-doctor/async-defer-await": "error", // 1 remaining hit on 2026-08-19 (topic-publisher-types-aside) was fixed in this PR; prior 12-case backlog is gone
-    "react-doctor/async-parallel": "off", // 1951 cases on 2026-08-19; per-site review for data-dependency correctness
+    "react-doctor/async-parallel": "error",
     "react-doctor/js-batch-dom-css": "error",
     "react-doctor/js-cache-property-access": "error",
     "react-doctor/js-cache-storage": "error",

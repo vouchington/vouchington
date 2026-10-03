@@ -13,47 +13,42 @@ export type MembershipObservationConstraintFixture = {
 export async function createMembershipObservationConstraintFixture(): Promise<MembershipObservationConstraintFixture> {
   const suffix = randomUUID()
   const applicationId = `schema-observation-${suffix}`
-  const userId = (await createLocalTestUser()).id
-  const { rows: productRows } = await read<{
-    id: string
-  }>(`/* getMembershipObservationConstraintProduct */
-    SELECT id FROM membership_products WHERE plan = 'plus' AND billing_interval = 'monthly'`)
+  const [user, { rows: productRows }] = await Promise.all([
+    createLocalTestUser(),
+    read<{ id: string }>(`/* getMembershipObservationConstraintProduct */
+    SELECT id FROM membership_products WHERE plan = 'plus' AND billing_interval = 'monthly'`),
+  ])
+  const userId = user.id
   const productId = productRows[0]!.id
-  const { rows: mappingRows } = await write<{
-    id: string
-  }>(sql`/* createMembershipObservationConstraintMapping */
+  const [{ rows: mappingRows }, { rows: lineageRows }] = await Promise.all([
+    write<{ id: string }>(sql`/* createMembershipObservationConstraintMapping */
     INSERT INTO membership_provider_products (membership_product_id, provider, environment, application_id, provider_product_id, price_minor_units, currency_code)
-    VALUES (${productId}, 'stripe', 'test', ${applicationId}, ${`price-${suffix}`}, 100, 'usd') RETURNING id`)
-  const { rows: lineageRows } = await write<{
-    id: string
-  }>(sql`/* createMembershipObservationConstraintLineage */
+    VALUES (${productId}, 'stripe', 'test', ${applicationId}, ${`price-${suffix}`}, 100, 'usd') RETURNING id`),
+    write<{ id: string }>(sql`/* createMembershipObservationConstraintLineage */
     INSERT INTO membership_provider_lineages (provider, environment, application_id, provider_lineage_id)
-    VALUES ('stripe', 'test', ${applicationId}, ${`lineage-${suffix}`}) RETURNING id`)
+    VALUES ('stripe', 'test', ${applicationId}, ${`lineage-${suffix}`}) RETURNING id`),
+  ])
   const lineageId = lineageRows[0]!.id
-  const { rows: evidenceRows } = await write<{
-    id: string
-  }>(sql`/* createMembershipObservationConstraintEvidence */
+  const [{ rows: evidenceRows }, { rows: priceOptionalEvidenceRows }] = await Promise.all([
+    write<{ id: string }>(sql`/* createMembershipObservationConstraintEvidence */
     INSERT INTO membership_provider_evidence_records (provider, environment, application_id, membership_provider_lineage_id, evidence_lookup_sha256, encrypted_evidence, verified_at)
-    VALUES ('stripe', 'test', ${applicationId}, ${lineageId}, ${suffix.replaceAll('-', '').padEnd(64, 'c')}, '\x01'::bytea, CURRENT_TIMESTAMP) RETURNING id`)
+    VALUES ('stripe', 'test', ${applicationId}, ${lineageId}, ${suffix.replaceAll('-', '').padEnd(64, 'c')}, '\x01'::bytea, CURRENT_TIMESTAMP) RETURNING id`),
+    write<{ id: string }>(sql`/* createPriceOptionalMembershipObservationEvidence */
+    INSERT INTO membership_provider_evidence_records (provider, environment, application_id, membership_provider_lineage_id, evidence_lookup_sha256, encrypted_evidence, verified_at)
+    VALUES ('stripe', 'test', ${applicationId}, ${lineageId}, ${randomUUID().replaceAll('-', '').padEnd(64, 'f')}, '\x04'::bytea, CURRENT_TIMESTAMP) RETURNING id`),
+  ])
   const evidenceId = evidenceRows[0]!.id
   const mappingId = mappingRows[0]!.id
-  const { rows: priceOptionalEvidenceRows } = await write<{
-    id: string
-  }>(sql`/* createPriceOptionalMembershipObservationEvidence */
-    INSERT INTO membership_provider_evidence_records (provider, environment, application_id, membership_provider_lineage_id, evidence_lookup_sha256, encrypted_evidence, verified_at)
-    VALUES ('stripe', 'test', ${applicationId}, ${lineageId}, ${randomUUID().replaceAll('-', '').padEnd(64, 'f')}, '\x04'::bytea, CURRENT_TIMESTAMP) RETURNING id`)
-  const { rows: observationRows } = await write<{
-    id: string
-  }>(sql`/* createFamilyMembershipObservation */
+  const [{ rows: observationRows }, { rows: sourceRows }] = await Promise.all([
+    write<{ id: string }>(sql`/* createFamilyMembershipObservation */
     INSERT INTO membership_provider_observations (
       provider, environment, application_id, membership_provider_evidence_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id,
       observed_price_minor_units, observed_price_currency_code, provider_revision, provider_order, source_kind, effective_at
-    ) VALUES ('stripe', 'test', ${applicationId}, ${evidenceId}, ${lineageId}, ${mappingId}, ${productId}, 100, 'usd', 'family', 3, 'family', CURRENT_TIMESTAMP) RETURNING id`)
-  const { rows: sourceRows } = await write<{
-    id: string
-  }>(sql`/* createDirectMembershipObservationSource */
+    ) VALUES ('stripe', 'test', ${applicationId}, ${evidenceId}, ${lineageId}, ${mappingId}, ${productId}, 100, 'usd', 'family', 3, 'family', CURRENT_TIMESTAMP) RETURNING id`),
+    write<{ id: string }>(sql`/* createDirectMembershipObservationSource */
     INSERT INTO membership_sources (user_id, source_kind, membership_provider_lineage_id)
-    VALUES (${userId}, 'direct', ${lineageId}) RETURNING id`)
+    VALUES (${userId}, 'direct', ${lineageId}) RETURNING id`),
+  ])
 
   return {
     allowObservationWithoutKnownPrice() {

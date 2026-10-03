@@ -27,18 +27,25 @@ process.env.VOUCHA_STORED_SECRET_ENCRYPTION_KEYS ??=
   'fake-test-key:raw32:this fake test key is not secret'
 
 export async function setup() {
-  const { Logger } = await import('@valkey/valkey-glide')
-  const { raiseHnswEfSearchForTestDatabase } =
-    await import('../backend/test-helpers/vector-search-recall.mts')
-  const { boundStatementTimeoutForTestDatabase } =
-    await import('../backend/test-helpers/statement-timeout.mts')
-  const { default: seed } = await import('@voucha/scripts/seed')
-  const { warmUpEmbeddingBloomFilter } = await import('@services/bedrock-embeddings')
-  const { warmUpUrlBlocklistBloomFilter, warmUpEmailBlocklistBloomFilter } =
-    await import('@services/urls-domains-blacklist')
-  const { dynamicConfigRegistry } = await import('@services/dynamic-config-admin/registry')
-  const { persistDynamicConfigTestBaseline } =
-    await import('../backend/test-helpers/dynamic-config.mts')
+  const [
+    { Logger },
+    { raiseHnswEfSearchForTestDatabase },
+    { boundStatementTimeoutForTestDatabase },
+    { default: seed },
+    { warmUpEmbeddingBloomFilter },
+    { warmUpUrlBlocklistBloomFilter, warmUpEmailBlocklistBloomFilter },
+    { dynamicConfigRegistry },
+    { persistDynamicConfigTestBaseline },
+  ] = await Promise.all([
+    import('@valkey/valkey-glide'),
+    import('../backend/test-helpers/vector-search-recall.mts'),
+    import('../backend/test-helpers/statement-timeout.mts'),
+    import('@voucha/scripts/seed'),
+    import('@services/bedrock-embeddings'),
+    import('@services/urls-domains-blacklist'),
+    import('@services/dynamic-config-admin/registry'),
+    import('../backend/test-helpers/dynamic-config.mts'),
+  ])
 
   // Suppress WARN-level messages from Glide's Rust logger (e.g. "item exists" from BF.RESERVE)
   Logger.setLoggerConfig('error')

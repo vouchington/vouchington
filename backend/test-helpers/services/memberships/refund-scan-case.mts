@@ -4,9 +4,11 @@ import { getIneligiblePurchaseReversalCase } from '../../../services/memberships
 import { claimIneligiblePurchaseReversals } from '../../../services/memberships/ineligible-stripe-purchase-reversal/claim-ledger.mts'
 
 export async function createRefundScanCase() {
-  const user = await createTestUser()
-  const familySku = await createTestSku({ plan: 'pro' })
-  const incomingSku = await createTestSku({ plan: 'plus' })
+  const [user, familySku, incomingSku] = await Promise.all([
+    createTestUser(),
+    createTestSku({ plan: 'pro' }),
+    createTestSku({ plan: 'plus' }),
+  ])
   const invoiceId = `in_refund_scan_${randomUUID()}`
   const subscriptionId = `sub_refund_scan_${randomUUID()}`
   await createTestFamilyMembership({
