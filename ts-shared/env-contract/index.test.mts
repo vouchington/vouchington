@@ -52,6 +52,16 @@ describe('environment contract', () => {
     )
   })
 
+  it('assigns the copyright evidence bucket to both API and worker tasks', () => {
+    expect(envContractsByName().get('S3_BUCKET_COPYRIGHT_EVIDENCE')).toEqual([
+      expect.objectContaining({
+        sourceOfTruth: 'vouchington-infra',
+        sensitivity: 'internal',
+        surfaces: ['ecs-backend-environment', 'ecs-worker-environment'],
+      }),
+    ])
+  })
+
   it('keeps public identifiers out of the secret sensitivity set', () => {
     expect(knownPublicEnvNames()).toEqual(expect.arrayContaining(['GOOGLE_CLIENT_ID']))
     expect(knownPublicEnvNames()).toEqual(
