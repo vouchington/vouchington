@@ -65,6 +65,10 @@ delegated credential.
 
 ## Topic recommendations and `dismiss_recommendation`
 
+Recommendation edits return the same sanitized and fenced post as the recommendation read tools.
+An administrator can edit a pending recommendation, so text that survives the submitter's edit
+is still external content, including the recommendation description and the post's attached text.
+
 The two recommendation tools act on a recommendation the caller submitted, while it is pending.
 `dismiss_recommendation` is a different thing: a bookmark predicate that hides a recommended topic
 from a feed, not a change to a submitted recommendation. It stays REST-only, as
