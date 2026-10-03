@@ -75,6 +75,10 @@ jobs:
       - name: jscpd clone-size threshold
         run: pnpm exec jscpd .
         timeout-minutes: 3
+
+      - name: jscpd dead-code baseline
+        run: pnpm run jscpd:dead-code
+        timeout-minutes: 3
       - run: pnpm exec syncpack lint && pnpm exec syncpack format --check
         timeout-minutes: 2
       - name: Repo Node static checks

@@ -12,6 +12,7 @@ export const targets = {
         'static-code-analysis.yml',
       ),
       workflowCommand('jscpd', 'pnpm exec jscpd .', 'static-code-analysis.yml'),
+      workflowCommand('jscpd dead code', 'pnpm run jscpd:dead-code', 'static-code-analysis.yml'),
       workflowCommand(
         'syncpack',
         'pnpm exec syncpack lint && pnpm exec syncpack format --check',

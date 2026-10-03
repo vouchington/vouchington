@@ -1,10 +1,57 @@
-# jscpd Clone-Size Threshold
+# jscpd Clone-Size and Dead-Code Gates
 
 Source entrypoint: [static-code-analysis/jscpd/README.md](../../../../../static-code-analysis/jscpd/README.md)
 
 [Back to Static Code Analysis](../README.md)
 
-The gate is the plain [jscpd](https://github.com/kucherenko/jscpd) CLI, `jscpd .`, configured by
+The clone-size command and dead-code command are separate checks. The clone-size command below
+keeps its existing working-tree behavior. The dead-code guard runs the same released jscpd package
+against a temporary copy of the current **tracked working-tree files**. It includes unstaged edits
+to tracked files and excludes untracked importers, package manifests, and `.gitignore` files, any of
+which could otherwise change reachability. It rejects symlinks outside the repository.
+
+## Dead-Code Baseline
+
+`pnpm run jscpd:dead-code` scans all five categories in `.jscpd.json` at its configured minimum
+confidence. It runs in `pnpm run lint`, the Static Analysis workflow, and `ci-local static`.
+The native scan reads the full tracked graph. The guard then excludes `unused-file` findings that
+jscpd labels `used-only-by-tests` and findings located in `.test`/`.spec` files, `test-helpers`,
+`__tests__`, `integration-tests`, or `web/storybook`. This keeps an unimported source file visible while leaving
+test-only code outside this gate; the clone-size scan has its own unchanged scope.
+
+The guard consumes jscpd's native JSON report, fails when the analyzer fails, analyzes no files,
+or leaves unparsed files, and compares every retained finding by category, path, parent, name,
+and symbol kind. Repeated findings share an identity with a count, so a new or increased finding
+fails even when another finding disappears. Line numbers and message wording do not affect that
+identity.
+
+The checked-in [`dead-code-baseline.json`](../../../../../static-code-analysis/jscpd/dead-code-baseline.json)
+temporarily records reviewed findings, including framework symbols jscpd cannot recognize.
+Removing a finding makes the baseline stale and fails
+the regular check. After verifying a cleanup, run `pnpm run jscpd:dead-code:update` to remove
+only stale findings; it refuses new or increased findings. `--seed` creates an initial baseline only
+when no baseline exists. Review baseline changes as code changes, rather than changing the minimum
+confidence or widening the test-only exclusion without review.
+
+The explicit `deadCode.entry` roots are runtime, CLI, generator, or configuration loader targets.
+They are kept narrow so ordinary helpers still require consumers. The entries are:
+
+| Loader                               | Roots in `.jscpd.json`                                                                                                                                                                                                                                                                                                          |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Backend executable and scripts       | `backend/entrypoints/api/verify-ipv6-egress.mts`, `backend/entrypoints/worker-cpu/serve.mts`, `backend/modules/structured-decisions/benchmark.mts`, `backend/scripts/backfill-rss-feed-item-source-publications.mts`, `backend/scripts/seed-source/run.mts`                                                                     |
+| Backend configuration/type sources   | `backend/data-stores/psql/config-driven/*.mts`, `backend/types/lib-dom-absent.mts`                                                                                                                                                                                                                                              |
+| CI and development commands          | `ci/transient-retry/rerun-known-transient.mts`, `dev/agent-issue-labels/batch-issues.mts`, `dev/agent-issue-labels/labels-from-paths.mts`, `dev/localization/local-catalog.mts`, `dev/localization/local-smoke.mts`, `dev/native-addon-readiness.mts`, `dev/otel-register.mts`                                                  |
+| Hooks and PR tooling                 | `.pr-shepherd/classification/*.mts`, `dev/codex-hooks/persist-session-id.mts`, `dev/codex-hooks/post-tool-use.mts`, `dev/codex-hooks/pre-tool-use.mts`                                                                                                                                                                          |
+| Static analysis loaders              | `static-code-analysis/oxlint-plugin.cjs`, `static-code-analysis/repo-file-policy-worker.mts`                                                                                                                                                                                                                                    |
+| Web generation and Storybook aliases | `web/generate-membership-benefit-catalog.ts`, `web/storybook/mocks/contribute-cta-aside.tsx`, `web/storybook/mocks/get-resolved-ui-locale.ts`, `web/storybook/mocks/get-translations.ts`, `web/storybook/mocks/languages.ts`, `web/storybook/mocks/load-server-messages.ts`, `web/storybook/mocks/upgrade-membership-aside.tsx` |
+| Vitest setup                         | `web/test-helpers/vitest.setup.fake-timer-guard.mts`, `web/test-helpers/vitest.setup.storybook-browser-guard.mts`                                                                                                                                                                                                               |
+
+The [jscpd configuration](../../../../../.jscpd.json) owns the entries, formats, exclusions,
+categories, and confidence floor. Review scope changes there. Every configured entry must match
+a file in the tracked snapshot, or the guard fails. The RSS source-publication backfill remains
+an explicit CLI root; its cleanup is a separate change.
+
+The clone-size gate is the plain [jscpd](https://github.com/kucherenko/jscpd) CLI, `jscpd .`, configured by
 [`.jscpd.json`](../../../../../.jscpd.json); no wrapper sits in between. CI runs `pnpm exec jscpd .` in
 [`static-code-analysis.yml`](../../../../../.github/workflows/static-code-analysis.yml), and `pnpm run lint`
 runs the same command through the `jscpd` package script.
