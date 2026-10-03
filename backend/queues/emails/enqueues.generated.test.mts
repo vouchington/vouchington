@@ -7,13 +7,13 @@ import {
   enqueueSendPostReferralLinkEmail,
 } from './enqueues.mts'
 import { describe, expect, it } from 'vitest'
-import { readAllQueueJobs } from '@voucha/test-helpers'
+import { readAllQueueJobs, readEnqueuedJob } from '@voucha/test-helpers'
 import { emails } from './queues.mts'
 import { upsertSchedules } from './enqueues/schedules.mts'
 
 describe('enqueues.generated', () => {
   describe('enqueueSendEmailAddressLoginToken', () => {
-    it('should send an email', async () => {
+    it('enqueues the login email with its recipient and template variables', async () => {
       const input = {
         emailAddress: 'tests@voucha.ai',
       }
@@ -21,8 +21,12 @@ describe('enqueues.generated', () => {
         token: '123456',
         expiration: '1 hour',
       }
-      const result = await enqueueSendEmailAddressLoginToken(input, variables)
-      expect(result).toBeDefined()
+      const enqueued = await enqueueSendEmailAddressLoginToken(input, variables)
+      const job = await readEnqueuedJob(emails, enqueued)
+      expect(job).toMatchObject({
+        name: 'processSendEmailAddressLoginToken',
+        data: { input, variables },
+      })
     })
   })
 

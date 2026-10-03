@@ -1,6 +1,6 @@
 import { test, expect } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { TEST_USER_USERNAME } from '../../helpers/auth.mts'
+import { TEST_USER_USERNAME, withCleanUser } from '../../helpers/auth.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import {
   createTestLandingPage,
@@ -70,23 +70,19 @@ test.describe('Landing page content editing', () => {
   })
 
   test('shows empty-state hint when no profile links are available', async ({ page }) => {
-    const { slug } = await createTestLandingPage(TEST_USER_ID, 'Empty Hint Test Page')
+    const user = await withCleanUser(page)
+    const { slug } = await createTestLandingPage(user.id, 'Empty Hint Test Page')
 
     await navigateTo(page, `/my/landing-page/${slug}`)
 
     await expect(page.getByTestId('landing-page-editor')).toBeVisible()
 
-    // Switch to profile_link type — if the test user has no available profile links,
-    // the empty hint should appear. We verify the UI pattern.
+    // The new user has no profile links, so switching types must show the empty state.
     await page.getByTestId('landing-page-add-type-select').click()
     await page.getByRole('listbox').getByRole('option', { name: 'Profile link' }).click()
 
-    // Either the empty hint is shown (no profile links) OR the candidate select is shown
-    // This test confirms the UI renders without error regardless
-    const emptyHint = page.getByTestId('landing-page-add-item-empty-hint')
-    const candidateSelect = page.getByTestId('landing-page-candidate-select')
-    const hasHint = await emptyHint.isVisible().catch(() => false)
-    const hasSelect = await candidateSelect.isVisible().catch(() => false)
-    expect(hasHint || hasSelect).toBe(true)
+    await expect(page.getByTestId('landing-page-add-item-empty-hint')).toBeVisible()
+    await expect(page.getByTestId('landing-page-candidate-select')).toBeVisible()
+    await expect(page.getByTestId('landing-page-add-item-button')).toBeDisabled()
   })
 })

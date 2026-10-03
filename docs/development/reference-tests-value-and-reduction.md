@@ -18,6 +18,27 @@ Every test must protect an app-owned branch, invariant, side effect, mapping, or
 
 Coverage sameness is necessary but not sufficient. Before deleting a weak test that is the sole project coverage owner for production code, consolidate, strengthen, or move that coverage to a valuable test. Never use a coverage percentage alone as proof that a deletion preserves a contract.
 
+## Review questions
+
+For each new or changed test, identify the observable contract, an implementation defect that
+would make the test fail, and why its chosen boundary needs coverage. Prefer concrete response
+fields, persisted state, or an owned queued job over merely checking that an operation returned
+a defined value. A definedness assertion can still be useful when the operation itself enforces
+the contract, such as a throwing DOM query.
+
+Establish the fixture state deliberately and assert its expected outcome. Do not accept either
+branch just because a shared fixture might contain data. Keep browser coverage for interactions
+that component tests cannot represent, and use retrying locator assertions for asynchronous UI.
+The regex-only `repo-file-policy` check rejects the exact `.isVisible().catch(() => false)`
+fallback in tracked Playwright specs, including multiline calls. It does not parse code or infer
+assertion quality, and the same literal inside a comment or string also matches.
+
+Tests reading skills, instructions, or reference docs must identify a machine consumer or
+observable runtime contract. Wording, heading order, and example-command spelling alone are
+not contracts. Preserve checks for parsed configuration and machine-consumed markers; use the
+existing documentation link checks for link integrity. Test value and duplication remain review
+judgments rather than broad bans on mocks, Markdown reads, or `toBeDefined()`.
+
 ## Evidence for a reduction
 
 Record exact base and head evidence. For changed production behavior, run the owning focused tests.
