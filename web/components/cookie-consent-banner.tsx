@@ -3,26 +3,13 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import {
+  COOKIE_CONSENT_CHANGED_EVENT,
+  readCookieConsent,
+  writeCookieConsent,
+} from '@/lib/privacy/cookie-consent'
 import { hasNavigatorGlobalPrivacyControl } from '@/lib/privacy/global-privacy-control'
 import { useTranslations } from '@/lib/i18n/use-translations'
-
-const VALID_CONSENT_VALUES = ['all', 'essential'] as const
-
-function getStoredConsent(): string | null {
-  try {
-    return localStorage.getItem('cookie-consent')
-  } catch {
-    return null
-  }
-}
-
-function setStoredConsent(value: string): void {
-  try {
-    localStorage.setItem('cookie-consent', value)
-  } catch {
-    // localStorage may be unavailable in private browsing or when storage is full
-  }
-}
 
 export function CookieConsentBanner() {
   const t = useTranslations()
@@ -30,27 +17,26 @@ export function CookieConsentBanner() {
 
   useEffect(() => {
     if (hasNavigatorGlobalPrivacyControl()) {
-      setStoredConsent('essential')
-      window.dispatchEvent(new CustomEvent('cookie-consent-changed'))
+      writeCookieConsent('essential')
+      window.dispatchEvent(new CustomEvent(COOKIE_CONSENT_CHANGED_EVENT))
       return
     }
-    const stored = getStoredConsent()
-    const isValid = VALID_CONSENT_VALUES.includes(stored as (typeof VALID_CONSENT_VALUES)[number])
-    if (!isValid) {
+    const stored = readCookieConsent()
+    if (stored === null) {
       queueMicrotask(() => setVisible(true))
     }
   }, [])
 
   function handleAcceptAll() {
-    setStoredConsent('all')
+    writeCookieConsent('all')
     setVisible(false)
-    window.dispatchEvent(new CustomEvent('cookie-consent-changed'))
+    window.dispatchEvent(new CustomEvent(COOKIE_CONSENT_CHANGED_EVENT))
   }
 
   function handleEssentialOnly() {
-    setStoredConsent('essential')
+    writeCookieConsent('essential')
     setVisible(false)
-    window.dispatchEvent(new CustomEvent('cookie-consent-changed'))
+    window.dispatchEvent(new CustomEvent(COOKIE_CONSENT_CHANGED_EVENT))
   }
 
   if (!visible) return null

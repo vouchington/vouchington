@@ -60,14 +60,14 @@ covers errors. Existing filters or Lambda-specific hooks run first; their final 
 scrubbed. Null drops, synchronous returns, async returns, thrown errors, and rejected promises keep
 their existing control flow.
 
-| Workspace         | File                                                                  | Notes                                                                                                                                                             |
-| ----------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Backend           | `backend/modules/on-error/sentry-scrub.mts` (wired from `sentry.mts`) | `scrubSentrySpan`, overridable via `SentryInitDeps`                                                                                                               |
-| Web (server)      | `web/sentry-server-options.ts`                                        | DI pattern via `SentryServerInitDeps`; `web/sentry.server.config.ts` initializes these options                                                                    |
-| Web (client)      | `web/sentry-client-options.ts`                                        | `web/sentry.client.config.ts` initializes these options; the only surface where the plain `url` and `*.fragment` keys are actually observed (browser fetch spans) |
-| Web (edge)        | `web/sentry-edge-options.ts`                                          | `web/sentry.edge.config.ts` initializes these options, same hooks                                                                                                 |
-| Lambdas           | `lambdas/shared/sentry.mts`                                           | Retains the existing deep event scrubber, then applies the shared request-metadata contract                                                                       |
-| Cloudflare Worker | `cloudflare-worker/src/sentry.mts`                                    | Registers the shared error and span scrubbers                                                                                                                     |
+| Workspace         | File                                                                  | Notes                                                                                                                                                               |
+| ----------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Backend           | `backend/modules/on-error/sentry-scrub.mts` (wired from `sentry.mts`) | `scrubSentrySpan`, overridable via `SentryInitDeps`                                                                                                                 |
+| Web (server)      | `web/sentry-server-options.ts`                                        | DI pattern via `SentryServerInitDeps`; `web/sentry.server.config.ts` initializes these options                                                                      |
+| Web (client)      | `web/sentry-client-options.ts`                                        | `web/instrumentation-client.ts` initializes these options; the only surface where the plain `url` and `*.fragment` keys are actually observed (browser fetch spans) |
+| Web (edge)        | `web/sentry-edge-options.ts`                                          | `web/sentry.edge.config.ts` initializes these options, same hooks                                                                                                   |
+| Lambdas           | `lambdas/shared/sentry.mts`                                           | Retains the existing deep event scrubber, then applies the shared request-metadata contract                                                                         |
+| Cloudflare Worker | `cloudflare-worker/src/sentry.mts`                                    | Registers the shared error and span scrubbers                                                                                                                       |
 
 Enabled Sentry reporting surfaces always register the scrubbers. Sentry is disabled outside
 `staging`/`production`, including under `OTEL_ENABLED=1`. These hooks do not establish a scrubbing

@@ -115,8 +115,8 @@ All 4xx API responses are expected client errors — bad input, expired sessions
 These errors are suppressed at two levels:
 
 1. **`ApiError.digest`** — 401/403/404 errors use `NEXT_HTTP_ERROR_FALLBACK;{status}` to trigger Next.js's built-in error pages. Other 4xx errors use `EXPECTED_CLIENT_ERROR;{status}` so error boundaries can display status-specific messaging while Sentry ignores the noise.
-2. **Sentry `ignoreErrors`** — `sentry.client.config.ts` ignores digests matching `/^EXPECTED_CLIENT_ERROR(?:;\d+)?$/`.
+2. **Sentry `ignoreErrors`** — `web/sentry-client-options.ts` configures `ignoreErrors` for digests matching `/^EXPECTED_CLIENT_ERROR(?:;\d+)?$/`.
 
-Sentry filtering uses `beforeSend` in `sentry.server.config.ts`, `sentry.client.config.ts`, and `sentry.edge.config.ts`. All three configs import `filterSentryEvent` from `web/lib/on-error/` (the same module that ships the [client-side `onError` handler](reference-error-handling-client-side-onerror-web-lib-on-error.md#client-side-onerror-weblibon-error)) so the suppression rules stay in one place.
+The client, server and edge options modules (`web/sentry-client-options.ts`, `web/sentry-server-options.ts` and `web/sentry-edge-options.ts`) register `scrubSentryError` as `beforeSend` and `scrubSentrySpan` as `beforeSendSpan`. The error scrubber applies `filterSentryEvent` from `web/lib/on-error/` (the same module that ships the [client-side `onError` handler](reference-error-handling-client-side-onerror-web-lib-on-error.md#client-side-onerror-weblibon-error)) so the suppression rules stay in one place.
 
 Detection uses duck-typing via `isExpectedApiError()` in `web/lib/api/error.ts`, checking `name === 'ApiError'` and `status` is in range 400–499.

@@ -16,9 +16,13 @@ const { sentryInitCall, mockSentryInit } = vi.hoisted(() => {
   }
 })
 
-vi.mock<typeof import('@sentry/nextjs')>(import('@sentry/nextjs'), () => ({ init: mockSentryInit }))
-
-import './sentry.client.config'
+vi.mock<typeof import('@sentry/nextjs')>(import('@sentry/nextjs'), () => ({
+  init: mockSentryInit,
+  close: vi.fn<typeof Sentry.close>(),
+  getClient: () => undefined,
+  captureRouterTransitionStart:
+    vi.fn<(typeof import('@sentry/nextjs'))['captureRouterTransitionStart']>(),
+}))
 
 function getInitOptions(): Record<string, unknown> {
   const options = sentryInitCall.options
@@ -26,12 +30,21 @@ function getInitOptions(): Record<string, unknown> {
   return options as Record<string, unknown>
 }
 
-describe('client Sentry config', () => {
+import './instrumentation-client'
+
+describe('client Sentry instrumentation', () => {
   afterEach(() => {
+    localStorage.setItem('cookie-consent', 'essential')
+    window.dispatchEvent(new Event('cookie-consent-changed'))
     clearRuntimePublicConfigForTest()
   })
 
-  it('registers request metadata scrubbing', async () => {
+  it('waits for consent then registers request metadata scrubbing', async () => {
+    expect(mockSentryInit).not.toHaveBeenCalled()
+    window.dispatchEvent(new Event(RUNTIME_PUBLIC_CONFIG_READY_EVENT))
+    expect(mockSentryInit).not.toHaveBeenCalled()
+    localStorage.setItem('cookie-consent', 'all')
+    window.dispatchEvent(new Event('cookie-consent-changed'))
     expect(sentryInitCall.options).toBeUndefined()
     setRuntimePublicConfigForTest({
       environment: 'production',
