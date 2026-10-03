@@ -12,10 +12,11 @@ import {
 } from './planning-impact-dir.mts'
 
 const scriptPath = join(import.meta.dirname, 'planning-impact-dir.mts')
+const fixtureTempParent = tmpdir()
 const tempRoots: string[] = []
 
 async function makeTempRoot(): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), 'voucha-planning-impact-test-'))
+  const root = await mkdtemp(join(fixtureTempParent, 'voucha-planning-impact-test-'))
   tempRoots.push(root)
   return root
 }
@@ -110,13 +111,6 @@ describe('planning-impact-dir', () => {
       }),
     ],
     [
-      'path outside the configured root',
-      (session: PlanningImpactSession) => ({
-        ...session,
-        directory: join(tmpdir(), 'no-mistakes-impact.abcdef'),
-      }),
-    ],
-    [
       'wrong capability',
       (session: PlanningImpactSession) => ({
         ...session,
@@ -129,6 +123,22 @@ describe('planning-impact-dir', () => {
     const invalid = alterSession(session)
 
     expect(await cleanupSession(invalid, root)).toMatchObject({ status: 1 })
+    expect((await lstat(session.directory)).isDirectory()).toBe(true)
+    expect(await cleanupSession(session, root)).toMatchObject({ status: 0 })
+  })
+
+  it('rejects a path outside the configured root before inspecting it', async () => {
+    const root = await makeTempRoot()
+    const session = await createSession(root)
+    const invalid = {
+      ...session,
+      directory: join(fixtureTempParent, 'no-mistakes-impact.abcdef'),
+    }
+
+    expect(await cleanupSession(invalid, root)).toEqual({
+      status: 1,
+      stderr: 'refusing to remove an unexpected planning impact path',
+    })
     expect((await lstat(session.directory)).isDirectory()).toBe(true)
     expect(await cleanupSession(session, root)).toMatchObject({ status: 0 })
   })
