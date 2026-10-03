@@ -61,6 +61,9 @@ describe('claimant copyright decision notices', () => {
       recipient_user_id: null,
       email: 'claimant@example.test',
     })
+    expect(decision[0].text).not.toContain('case page')
+    expect(decision[0].text).toContain('/copyright/designated-agent')
+    expect(decision[0].text).toContain('judicial redress through a court')
   })
   it('does not add a reversed notifier decision when staff reject an automatic restriction', async () => {
     const { notice } = await createClearScreenedForm()

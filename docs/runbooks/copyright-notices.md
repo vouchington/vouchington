@@ -650,7 +650,7 @@ sufficient to identify an alleged infringer, to the extent Voucha has it.
 
 US copyright decisions persist the exact statement sent to each participant. Check the private delivery
 intent state and `sent_at` before treating a notice as informed; retry a failed notice through the existing Delivery failures replay; a human reversal and later restoration
-are separate notices. Participants see their own stored texts under “Notices sent to you”; staff use
+are separate notices. An expired counter-notice waiting period is disclosed as automatic restoration. A busy account lifecycle transition returns a retryable conflict before legal changes and delivery obligations commit; retry the operation after that transition completes. Participants see their own stored texts under “Notices sent to you”; staff use
 the existing private delivery aggregate. See the [delivery requirements](../requirements/moderation/COPYRIGHT-NOTICES.md#immutable-decision-statements).
 
 Before enabling intake, supply `COPYRIGHT_INTAKE_ENABLED` to the email delivery worker as well as the

@@ -21,9 +21,12 @@ export function copyrightStatementText(
   const scope = fields.restriction
     ? 'The image is withheld from visibility globally. It has not been deleted. The restriction continues until review or the applicable restoration process ends it.'
     : ''
-  const automation = input.automatedDecision
-    ? 'The provisional restriction was imposed automatically. A person will review it.'
-    : 'A person made this decision.'
+  const automation =
+    fields.automation.decision === 'automatic_deadline'
+      ? 'The restriction ended automatically when the counter-notice waiting period expired.'
+      : fields.automation.decision === 'automatic_pending_review'
+        ? 'The provisional restriction was imposed automatically. A person will review it.'
+        : 'A person made this decision.'
   const assistance = input.aiGuidance
     ? 'Automated tools assisted with processing this case.'
     : 'Automated tools did not assist with processing this case.'
@@ -52,9 +55,13 @@ export function copyrightStatementText(
 export function copyrightStatementSummary(input: CopyrightStatementInput): string {
   switch (input.event) {
     case 'restricted':
-      return `An image was restricted for copyright case ${input.noticeId}. See the case page for the reasons and redress routes.`
+      return input.audience === 'claimant'
+        ? `Your copyright notice resulted in an image restriction for case ${input.noticeId}. The reasons and redress routes are included in this notice.`
+        : `An image was restricted for copyright case ${input.noticeId}. See the case page for the reasons and redress routes.`
     case 'confirmed':
-      return `A person confirmed the image restriction for copyright case ${input.noticeId}. See the case page for the reasons and redress routes.`
+      return input.audience === 'claimant'
+        ? `A person confirmed the image restriction for your copyright case ${input.noticeId}. The reasons and redress routes are included in this notice.`
+        : `A person confirmed the image restriction for copyright case ${input.noticeId}. See the case page for the reasons and redress routes.`
     case 'reversed':
       return `A person reversed the image restriction decision for copyright case ${input.noticeId}. Restoration will be processed separately.`
     case 'not_accepted':
@@ -153,4 +160,16 @@ export function copyrightNotificationCopy(
     case 'status_update':
       return { title: 'Copyright case update', body: 'There is an update to your copyright case.' }
   }
+}
+
+/** Unpromoted intake has neither a copyright case nor an established legal ground. */
+export function copyrightIntakeRejectionText(receivedAt: Date, aiGuidance: boolean): string {
+  return [
+    'We could not accept your emailed copyright notice. No copyright case was opened.',
+    `This response concerns the email received ${receivedAt.toISOString()}. A person made this intake decision.`,
+    aiGuidance
+      ? 'Automated tools assisted with processing this email.'
+      : 'Automated tools did not assist with processing this email.',
+    'You may file a new notice at /copyright/notices/new, contact /copyright/designated-agent, or seek judicial redress through a court.',
+  ].join('\n\n')
 }

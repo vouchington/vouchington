@@ -5,8 +5,8 @@ import { v7 as uuidv7 } from 'uuid'
 import {
   copyrightReceiptText,
   copyrightNeedsInformationText,
+  copyrightIntakeRejectionText,
 } from './statement-of-reasons-wording.mts'
-import { buildCopyrightStatementOfReasons } from './statement-of-reasons.mts'
 import { insertCopyrightDeliveryRecipient } from './delivery-intents.mts'
 import type { CopyrightEmailIntakeDeliveryKind } from './delivery-types.mts'
 
@@ -36,17 +36,7 @@ export async function createCopyrightEmailIntakeResponseInTransaction(
   `)
   const rejectedText =
     input.responseKind === 'rejected'
-      ? buildCopyrightStatementOfReasons({
-          audience: 'claimant',
-          event: 'not_accepted',
-          noticeId: input.intakeId,
-          receivedAt: rows[0]!.received_at,
-          jurisdiction: 'us_dmca',
-          legalBasis: 'copyright',
-          targetUrls: [],
-          automatedDecision: false,
-          aiGuidance: rows[0]!.ai_guidance,
-        }).text
+      ? copyrightIntakeRejectionText(rows[0]!.received_at, rows[0]!.ai_guidance)
       : null
   const id = uuidv7()
   const deliveryKind: CopyrightEmailIntakeDeliveryKind = `email_intake_${input.responseKind}`

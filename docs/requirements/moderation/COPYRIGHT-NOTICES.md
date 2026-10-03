@@ -370,7 +370,15 @@ erased claimant has no member-visible profile link.
 An accepted case participant sees their own immutable statement texts and delivery times under
 “Notices sent to you”. Posters receive restriction, first human review, and restriction-ended
 notices; signed-in notifiers see the notice decision. Staff and unrelated members do not receive
-that projection. [Delivery obligations](#immutable-decision-statements) define the privacy boundary
+that projection. A member who is both notifier and poster receives both sets addressed to them.
+Stored poster reasons contain only the affected target's public-eligible URL, never another owner's
+or a non-public target's URL. A deleted poster receives no new account delivery obligations; retained
+historical obligations do not authorize the erased account. Counter-notice deadline restoration
+states that it was automatic, distinct from a provisional restriction awaiting human review.
+Guest and email-only claimants receive the reasons and usable redress in the email itself, without
+an instruction to open an inaccessible authenticated case page. A rejection before email promotion
+is an intake decision: it does not invent a case identifier or establish US legal grounds.
+[Delivery obligations](#immutable-decision-statements) define the privacy boundary
 and distinguish review reversal from image restoration.
 
 `/copyright/notices/new` is public. A signed-out visitor files with the same Turnstile check,

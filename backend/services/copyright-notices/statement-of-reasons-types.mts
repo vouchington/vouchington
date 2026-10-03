@@ -33,7 +33,7 @@ export type CopyrightStatementFields = {
   facts: { noticeId: string; receivedAt: string; targetUrls: string[]; basis: 'art_16_notice' }
   automation: {
     detection: false
-    decision: 'person' | 'automatic_pending_review'
+    decision: 'person' | 'automatic_pending_review' | 'automatic_deadline'
     aiGuidance: boolean
   }
   legalGround: { jurisdiction: 'us_dmca'; legalBasis: 'copyright'; citation: string }

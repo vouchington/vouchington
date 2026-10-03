@@ -64,6 +64,12 @@ describe('copyright action delivery branches', () => {
     expect(statements.find(row => row.channel === 'email')?.text).toContain(
       'The image is unavailable.',
     )
+    expect(statements.find(row => row.channel === 'email')?.text).toContain(
+      'ended automatically when the counter-notice waiting period expired',
+    )
+    expect(statements.find(row => row.channel === 'email')?.text).not.toContain(
+      'A person made this decision',
+    )
     await processCopyrightActionIntent(restore.id, restore.now, {
       ...createTestCopyrightDeliveryDependencies(async () => undefined),
     })

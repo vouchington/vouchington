@@ -23,7 +23,7 @@ type CopyrightStatementFacts = Pick<
 export async function selectCopyrightStatementFacts(
   noticeId: string,
   transaction: TransactionQuery,
-  authority: { restrictionId?: string; assessmentId?: string } = {},
+  authority: { restrictionId?: string; assessmentId?: string; targetId?: string } = {},
 ): Promise<CopyrightStatementFacts> {
   const { rows } = await transaction<{
     id: string
@@ -37,7 +37,10 @@ export async function selectCopyrightStatementFacts(
     sql`/* selectCopyrightStatementFacts */
     SELECT notice.id, notice.received_at, notice.jurisdiction, notice.legal_basis,
       ARRAY(SELECT target.hosted_use_url FROM copyright_notice_targets target
-        WHERE target.copyright_notice_id = notice.id ORDER BY target.id) AS target_urls,
+        JOIN image_placements image_placement ON image_placement.placement_id = target.placement_id
+        JOIN view_public_post_eligibility public_post ON public_post.post_id = image_placement.post_id
+        WHERE target.copyright_notice_id = notice.id AND target.id = ${authority.targetId ?? null}
+        ORDER BY target.id) AS target_urls,
       (`
       .append(
         sql`EXISTS (SELECT 1 FROM copyright_notice_submission_assessments assessment WHERE assessment.id = ${authority.assessmentId ?? null} AND (`,

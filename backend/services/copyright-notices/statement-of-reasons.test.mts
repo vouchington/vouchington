@@ -107,4 +107,28 @@ describe('copyright statements of reasons', () => {
     ])
     expect(statement.text).not.toContain(input.targetUrls[0])
   })
+  it('distinguishes deadline-driven restoration from human review and provisional automation', () => {
+    const statement = buildCopyrightStatementOfReasons({
+      ...input,
+      event: 'restriction_ended',
+      restorationCause: 'counter_notice_window',
+      restorationOutcome: 'visible',
+    })
+    expect(statement.fields.automation.decision).toBe('automatic_deadline')
+    expect(statement.text).toContain(
+      'ended automatically when the counter-notice waiting period expired',
+    )
+    expect(statement.text).not.toContain('A person made this decision')
+    expect(statement.text).not.toContain('A person will review it')
+  })
+  it.each(['restricted', 'confirmed'] as const)(
+    'includes usable claimant reasons for %s without requiring a case page',
+    event => {
+      const statement = buildCopyrightStatementOfReasons({ ...input, audience: 'claimant', event })
+      expect(statement.inAppSummary).not.toContain('case page')
+      expect(statement.text).toContain('reasons and redress routes are included in this notice')
+      expect(statement.text).toContain('/copyright/designated-agent')
+      expect(statement.text).toContain('judicial redress through a court')
+    },
+  )
 })

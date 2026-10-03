@@ -63,7 +63,12 @@ export function buildCopyrightStatementOfReasons(input: CopyrightStatementInput)
     },
     automation: {
       detection: false,
-      decision: input.automatedDecision ? 'automatic_pending_review' : 'person',
+      decision:
+        input.event === 'restriction_ended' && input.restorationCause === 'counter_notice_window'
+          ? 'automatic_deadline'
+          : input.automatedDecision
+            ? 'automatic_pending_review'
+            : 'person',
       aiGuidance: input.aiGuidance,
     },
     legalGround: { jurisdiction: 'us_dmca', legalBasis: 'copyright', citation: '17 U.S.C. 512' },

@@ -57,4 +57,32 @@ describe('private participant statement projection', () => {
       await getCopyrightParticipantNoticeDetail(notice.intake.copyright_notice_id, claimant),
     ).toBeNull()
   })
+  it('includes both roles addressed to a claimant who also owns the reported post', async () => {
+    const participant = await createTestUser()
+    const notice = await createSignedInCopyrightForm(1, {
+      claimant: participant,
+      poster: participant,
+    })
+    await reviewCopyrightFormIntake({
+      intakeId: notice.intake.id,
+      currentUser: await createTestUser({ extraRoles: ['moderator'] }),
+      accepted: true,
+      rationale: 'Complete notice.',
+    })
+    const detail = await getCopyrightParticipantNoticeDetail(
+      notice.intake.copyright_notice_id,
+      participant,
+    )
+    expect(detail?.viewer_role).toBe('claimant')
+    expect(detail?.statements.map(row => row.delivery_kind).toSorted()).toEqual([
+      'claimant_decision_notice',
+      'poster_restriction_notice',
+    ])
+    expect(
+      await getCopyrightParticipantNoticeDetail(
+        notice.intake.copyright_notice_id,
+        await createTestUser(),
+      ),
+    ).toBeNull()
+  })
 })

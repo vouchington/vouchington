@@ -1,3 +1,4 @@
+import { DELETED_USER_ID } from '@services/users/constants'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { createCopyrightStatementDeliveryInTransaction } from './statement-delivery.mts'
@@ -18,7 +19,9 @@ export async function selectCopyrightTargetPosters(
     JOIN media_placements placement ON target.placement_id = placement.id
     JOIN image_placements image_placement ON image_placement.placement_id = placement.id
     JOIN posts post ON post.id = image_placement.post_id
-    WHERE target.id = ${targetId}
+    JOIN users account ON account.id = post.created_by_id AND account.deleted_at IS NULL
+    WHERE target.id = ${targetId} AND post.created_by_id <> ${DELETED_USER_ID}
+    ORDER BY user_id
   `)
   return rows
 }
