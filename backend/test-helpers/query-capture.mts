@@ -34,6 +34,26 @@ export function stopTestQueryCapture(): CapturedTestQuery[] {
   }))
 }
 
+/**
+ * Queries issued by `operation`. `backend-data-stores` shares one fork across files, and the
+ * elections worker in that fork runs other tests' jobs while capture is on. Those jobs are a
+ * different async context, so they stay out of this snapshot. A descendant still running from an
+ * earlier capture writes into that capture's own buffer.
+ */
+export async function withCapturedTestQueries<Result>(
+  operation: () => Promise<Result>,
+): Promise<{ result: Result; queries: CapturedTestQuery[] }> {
+  const { result, queries } = await runWithCapturedQueries(operation)
+  return {
+    result,
+    queries: queries.map(query => ({
+      text: query.text,
+      values: [...query.values],
+      timestamp: query.timestamp,
+    })),
+  }
+}
+
 export function countCapturedQueriesByAnnotation(
   queries: CapturedTestQuery[],
   annotation: string,

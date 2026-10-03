@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { stopTestQueryCapture } from '../../test-helpers/query-capture.mts'
+import { stopTestQueryCapture, withCapturedTestQueries } from '../../test-helpers/query-capture.mts'
 
 import {
   clearCapturedQueries,
@@ -13,6 +13,8 @@ import {
   captureQueryAfterDisable,
   captureQueryAfterStop,
   captureQueryBeforeStop,
+  captureQueryInsideOperation,
+  captureQueryOutsideOperation,
   captureSqlTemplateQuery,
   captureStringQuery,
   captureUncloneableValuesQuery,
@@ -98,5 +100,21 @@ describe('query capture', () => {
 
     captureQueryAfterStop()
     expect(getCapturedQueries()).toEqual([])
+  })
+
+  it('omits queries scheduled outside the captured operation', async () => {
+    const outsideQueryDone = new Promise<void>(resolve => {
+      setImmediate(() => {
+        captureQueryOutsideOperation()
+        resolve()
+      })
+    })
+
+    const { queries } = await withCapturedTestQueries(async () => {
+      captureQueryInsideOperation()
+      await outsideQueryDone
+    })
+
+    expect(queries.map(query => query.text)).toEqual(['/* insideOperation */ SELECT 1'])
   })
 })
