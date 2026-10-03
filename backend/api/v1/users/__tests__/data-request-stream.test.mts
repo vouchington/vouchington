@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, safeUsername } from '@voucha/test-helpers'
-import type { ChannelSubscription, DataRequestStatus } from '@data-stores/valkey-pubsub'
+import type { ChannelSubscription, DataRequestStreamStatus } from '@data-stores/valkey-pubsub'
 import * as valkey from '@data-stores/valkey-pubsub'
 import type { PrivateUser } from '@services/users/types'
 import {
@@ -17,7 +17,7 @@ const subscribeSpy = vi.spyOn(valkey.dataRequestPubSub, 'subscribe')
 const getExportDownloadUrlSpy = vi.spyOn(accountDataRequests, 'getExportDownloadUrl')
 const pipeChannelToSSESpy = vi.spyOn(sseHelpers, 'pipeChannelToSSE')
 
-function makeSubscription(): ChannelSubscription<DataRequestStatus> {
+function makeSubscription(): ChannelSubscription<DataRequestStreamStatus> {
   return {
     setHandler: vi.fn<VitestLooseMock>(),
     close: vi.fn<() => void>(),
@@ -44,15 +44,13 @@ describe('GET /api/v1/users/:idOrSlug/data-request/stream', () => {
     subscribeSpy.mockResolvedValue(makeSubscription())
     pipeChannelToSSESpy.mockImplementation(
       async (options: {
-        stream: { write: (data: string) => void }
+        emit: (event: { event: string; data: unknown }) => void
         initialValue?: unknown
         eventName: string
         subscription: { setHandler: (fn: null) => void }
       }) => {
         if (options.initialValue !== undefined) {
-          options.stream.write(
-            `event: ${options.eventName}\ndata: ${JSON.stringify(options.initialValue)}\n\n`,
-          )
+          options.emit({ event: options.eventName, data: options.initialValue })
         }
         options.subscription.setHandler(null)
       },
@@ -106,7 +104,7 @@ describe('GET /api/v1/users/:idOrSlug/data-request/stream', () => {
 
     const response = await request.get(`/api/v1/users/${user.id}/data-request/stream`).expect(200)
     const pipeOptions = pipeChannelToSSESpy.mock.calls[0][0] as {
-      isTerminal: (status: DataRequestStatus) => boolean
+      isTerminal: (status: DataRequestStreamStatus) => boolean
       abortSignal: AbortSignal
     }
 

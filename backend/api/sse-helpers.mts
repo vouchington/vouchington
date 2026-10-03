@@ -2,6 +2,7 @@ import type { Context } from '@jongleberry/api-server'
 import { PassThrough } from 'node:stream'
 import type { ChannelSubscription } from '@data-stores/valkey-pubsub'
 import onError from '@modules/on-error'
+import type { ApiSseEvent } from './response-contract.mts'
 import { SSE_CYCLE_EXPIRED } from '@modules/sse-lifecycle'
 
 export const DEFAULT_SSE_CYCLE_DURATION_MS = 60_000
@@ -130,16 +131,15 @@ export function startSSE(ctx: Context, options: { cycleDurationMs?: number } = {
   return { stream, pipelinePromise, lifecycleSignal: lifecycle.signal }
 }
 
-export function pipeChannelToSSE<T>(options: {
-  ctx: Context
-  stream: PassThrough
+export function pipeChannelToSSE<T, const TName extends string>(options: {
+  emit: (event: ApiSseEvent<TName, T>) => void
   subscription: ChannelSubscription<T>
-  eventName: string
+  eventName: TName
   abortSignal: AbortSignal
   isTerminal?: (value: T) => boolean
   initialValue?: T
 }): Promise<void> {
-  const { stream, subscription, eventName, abortSignal, isTerminal, initialValue } = options
+  const { emit, subscription, eventName, abortSignal, isTerminal, initialValue } = options
 
   if (abortSignal.aborted) {
     subscription.setHandler(null)
@@ -148,7 +148,7 @@ export function pipeChannelToSSE<T>(options: {
 
   if (initialValue !== undefined) {
     try {
-      stream.write(`event: ${eventName}\ndata: ${JSON.stringify(initialValue)}\n\n`)
+      emit({ event: eventName, data: initialValue })
     } catch {
       // client gone
     }
@@ -177,7 +177,7 @@ export function pipeChannelToSSE<T>(options: {
     subscription.setHandler((value: T) => {
       if (settled) return
       try {
-        stream.write(`event: ${eventName}\ndata: ${JSON.stringify(value)}\n\n`)
+        emit({ event: eventName, data: value })
       } catch {
         // client gone
       }

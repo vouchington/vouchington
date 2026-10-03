@@ -1,24 +1,8 @@
+import { apiSseFrame } from '../response-contract.mts'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PassThrough } from 'node:stream'
 import { acquireDuringSSECycle, pipeChannelToSSE, watchForAbortBeforeSSE } from '../sse-helpers.mts'
-import type { Context } from '@jongleberry/api-server'
 import type { ChannelSubscription } from '@data-stores/valkey-pubsub'
-
-function makeCtx(overrides?: Partial<Context>): Context {
-  const socket = { setNoDelay: vi.fn<() => void>() }
-  const res = {
-    on: vi.fn<VitestLooseMock>(),
-    writableEnded: false,
-    socket,
-  }
-  return {
-    setType: vi.fn<VitestLooseMock>(),
-    set: vi.fn<VitestLooseMock>(),
-    pipeline: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
-    res,
-    ...overrides,
-  } as unknown as Context
-}
 
 function makeSub<T>(onSetHandler?: () => void): {
   sub: ChannelSubscription<T>
@@ -82,21 +66,18 @@ describe('acquireDuringSSECycle', () => {
 describe('pipeChannelToSSE', () => {
   let stream: PassThrough
   let written: string[]
-  let ctx: Context
 
   beforeEach(() => {
     stream = new PassThrough()
     written = []
     stream.on('data', (chunk: Buffer) => written.push(chunk.toString()))
-    ctx = makeCtx()
   })
 
   it('stops the subscription on lifecycle expiry without writing a named error', async () => {
     const { sub, getHandler } = makeSub<string>()
     const lifecycle = new AbortController()
     const promise = pipeChannelToSSE({
-      ctx,
-      stream,
+      emit: event => stream.write(apiSseFrame('GET:/test', event)),
       subscription: sub,
       eventName: 'snapshot',
       abortSignal: lifecycle.signal,
@@ -117,8 +98,7 @@ describe('pipeChannelToSSE', () => {
     delayedSnapshot.resolve({ status: 'pending' })
 
     await pipeChannelToSSE({
-      ctx,
-      stream,
+      emit: event => stream.write(apiSseFrame('GET:/test', event)),
       subscription: sub,
       eventName: 'state',
       abortSignal: abort.signal,
@@ -132,8 +112,7 @@ describe('pipeChannelToSSE', () => {
     const { sub } = makeSub<{ status: string }>()
     const abort = new AbortController()
     const promise = pipeChannelToSSE({
-      ctx,
-      stream,
+      emit: event => stream.write(apiSseFrame('GET:/test', event)),
       subscription: sub,
       eventName: 'state',
       abortSignal: abort.signal,
@@ -149,8 +128,7 @@ describe('pipeChannelToSSE', () => {
     const abort = new AbortController()
 
     await pipeChannelToSSE({
-      ctx,
-      stream,
+      emit: event => stream.write(apiSseFrame('GET:/test', event)),
       subscription: sub,
       eventName: 'state',
       abortSignal: abort.signal,
@@ -168,8 +146,7 @@ describe('pipeChannelToSSE', () => {
     const abort = new AbortController()
 
     const pipePromise = pipeChannelToSSE({
-      ctx,
-      stream,
+      emit: event => stream.write(apiSseFrame('GET:/test', event)),
       subscription: sub,
       eventName: 'update',
       abortSignal: abort.signal,
@@ -191,8 +168,7 @@ describe('pipeChannelToSSE', () => {
     const abort = new AbortController()
 
     const pipePromise = pipeChannelToSSE({
-      ctx,
-      stream,
+      emit: event => stream.write(apiSseFrame('GET:/test', event)),
       subscription: sub,
       eventName: 'status',
       abortSignal: abort.signal,
@@ -213,8 +189,7 @@ describe('pipeChannelToSSE', () => {
 
     await expect(
       pipeChannelToSSE({
-        ctx,
-        stream,
+        emit: event => stream.write(apiSseFrame('GET:/test', event)),
         subscription: sub,
         eventName: 'x',
         abortSignal: abort.signal,
@@ -227,8 +202,7 @@ describe('pipeChannelToSSE', () => {
     const abort = new AbortController()
 
     const pipePromise = pipeChannelToSSE({
-      ctx,
-      stream,
+      emit: event => stream.write(apiSseFrame('GET:/test', event)),
       subscription: sub,
       eventName: 'status',
       abortSignal: abort.signal,
@@ -246,8 +220,7 @@ describe('pipeChannelToSSE', () => {
     const { sub, getHandler } = makeSub<string>(() => abort.abort())
 
     await pipeChannelToSSE({
-      ctx,
-      stream,
+      emit: event => stream.write(apiSseFrame('GET:/test', event)),
       subscription: sub,
       eventName: 'x',
       abortSignal: abort.signal,

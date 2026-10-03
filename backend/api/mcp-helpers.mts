@@ -10,6 +10,7 @@ import {
   findMcpStepUpScopes,
   handleMcpHttpRequest,
   type McpServerConfig,
+  type McpHttpResponse,
 } from '@services/mcp-tools'
 import { checkRouteRateLimit } from '@services/route-rate-limits'
 import { isAdminUser } from '@services/users'
@@ -24,7 +25,10 @@ import { startMcpUsageMeter } from './mcp-usage-helpers.mts'
 // Both routes audit every call of a verified credential (an OAuth access token or, on the user
 // route, an API key) before the call runs: each rejection below and each admitted message writes its
 // own row, all sharing one correlation id.
-export async function dispatchMcpRequest(ctx: Context, config: McpServerConfig): Promise<Response> {
+export async function dispatchMcpRequest(
+  ctx: Context,
+  config: McpServerConfig,
+): Promise<McpHttpResponse> {
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   const authentication = await authenticateMcpBearer(ctx.req.headers.authorization, config)
   if (authentication.status !== 'authenticated') {

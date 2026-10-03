@@ -8,6 +8,7 @@ import { MCP_SERVER_INSTRUCTIONS } from './instructions.mts'
 import type { BasicUser } from '@services/users/types'
 import type { McpServerConfig } from './config.mts'
 import type { ApiScope } from '@modules/scopes'
+import type { McpHttpResponse } from './http-response.mts'
 
 type McpRequestContext = {
   user: BasicUser & {
@@ -21,7 +22,7 @@ type McpRequestContext = {
   onToolError?: (toolName: string) => Promise<void>
 }
 
-export async function handleMcpHttpRequest(ctx: McpRequestContext): Promise<Response> {
+export async function handleMcpHttpRequest(ctx: McpRequestContext): Promise<McpHttpResponse> {
   const invalidRequestResponse = validateRegisteredMcpRequest(ctx.parsedBody)
   if (invalidRequestResponse) return invalidRequestResponse
 

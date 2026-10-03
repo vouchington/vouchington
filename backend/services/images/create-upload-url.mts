@@ -36,7 +36,7 @@ export async function createImageUploadUrl(user: { id: string }, options: Create
   })
 
   // Source provenance and the selected presign bucket commit together in the row.
-  const { rows } = await write(
+  const { rows } = await write<{ id: string }>(
     `/* createImageUploadUrl */
     INSERT INTO images (
       id,

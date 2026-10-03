@@ -16,7 +16,7 @@ describe('handleMcpHttpRequest', () => {
     user = { ...(await createTestUser()), membership_plan: null }
   })
 
-  const post = (body: Record<string, unknown>, config: McpServerConfig = USER_MCP_SERVER_CONFIG) =>
+  const post = (body: unknown, config: McpServerConfig = USER_MCP_SERVER_CONFIG) =>
     handleMcpHttpRequest({
       user,
       permissions: ['mcp.user:read'],
@@ -54,6 +54,52 @@ describe('handleMcpHttpRequest', () => {
       expect(json.result?.instructions).toBe(MCP_SERVER_INSTRUCTIONS[config.surface])
     },
   )
+
+  it('preserves a bodyless notification acknowledgement without Content-Type', async () => {
+    const response = await post({ jsonrpc: '2.0', method: 'notifications/initialized' })
+    expect(response.status).toBe(202)
+    expect(response.headers.has('Content-Type')).toBe(false)
+    expect(response.body).toBeNull()
+  })
+  it('returns the SDK batch array only when multiple requests need replies', async () => {
+    const response = await post([
+      { jsonrpc: '2.0', id: 'first', method: 'tools/list', params: {} },
+      { jsonrpc: '2.0', id: 'second', method: 'tools/list', params: {} },
+    ])
+    expect(response.status).toBe(200)
+    expect(response.headers.get('Content-Type')).toContain('application/json')
+    const replies = (await response.json()) as { id: string; result: { tools: unknown[] } }[]
+    expect(replies.map(reply => reply.id).toSorted()).toEqual(['first', 'second'])
+    expect(replies.every(reply => Array.isArray(reply.result.tools))).toBe(true)
+  })
+  it('returns one reply for a request mixed with a notification', async () => {
+    const response = await post([
+      { jsonrpc: '2.0', id: 'only', method: 'tools/list', params: {} },
+      { jsonrpc: '2.0', method: 'notifications/initialized' },
+    ])
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({
+      id: 'only',
+      result: { tools: expect.any(Array) },
+    })
+  })
+  it('retains nullable-id SDK transport errors and in-band method errors', async () => {
+    const invalid = await post({ jsonrpc: 'invalid', method: 'tools/list' })
+    expect(invalid.status).toBe(400)
+    expect(invalid.headers.get('Content-Type')).toContain('application/json')
+    expect(await invalid.json()).toMatchObject({
+      jsonrpc: '2.0',
+      id: null,
+      error: { code: expect.any(Number) },
+    })
+
+    const unregistered = await post({ jsonrpc: '2.0', id: 'unknown', method: 'unregistered' })
+    expect(unregistered.status).toBe(200)
+    expect(await unregistered.json()).toMatchObject({
+      id: 'unknown',
+      error: { code: ErrorCode.MethodNotFound },
+    })
+  })
 
   it('returns a Response for tools/list request', async () => {
     const response = await post({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} })

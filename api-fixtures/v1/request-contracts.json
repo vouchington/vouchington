@@ -533,6 +533,75 @@
       "required": ["flag", "penalized_user_count"],
       "type": "object"
     },
+    "ArticleSyncItem": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "enum": ["created", "error", "skipped", "updated"],
+          "type": "string"
+        },
+        "error": {
+          "type": "string"
+        },
+        "file": {
+          "type": "string"
+        },
+        "slug": {
+          "type": "string"
+        }
+      },
+      "required": ["action", "file", "slug"],
+      "type": "object"
+    },
+    "ArticleSyncResult": {
+      "additionalProperties": false,
+      "properties": {
+        "results": {
+          "items": {
+            "$ref": "#/components/schemas/ArticleSyncItem"
+          },
+          "type": "array"
+        },
+        "summary": {
+          "additionalProperties": false,
+          "properties": {
+            "created": {
+              "type": "number"
+            },
+            "errored": {
+              "type": "number"
+            },
+            "skipped": {
+              "type": "number"
+            },
+            "updated": {
+              "type": "number"
+            }
+          },
+          "required": ["created", "errored", "skipped", "updated"],
+          "type": "object"
+        }
+      },
+      "required": ["results", "summary"],
+      "type": "object"
+    },
+    "ArticleSyncStatus": {
+      "additionalProperties": false,
+      "properties": {
+        "error": {
+          "type": "string"
+        },
+        "result": {
+          "$ref": "#/components/schemas/ArticleSyncResult"
+        },
+        "status": {
+          "enum": ["completed", "failed"],
+          "type": "string"
+        }
+      },
+      "required": ["status"],
+      "type": "object"
+    },
     "AsidePreference": {
       "additionalProperties": false,
       "properties": {
@@ -6068,6 +6137,26 @@
       "enum": ["expired", "failed", "pending", "processing", "ready"],
       "type": "string"
     },
+    "DataRequestStreamStatus": {
+      "additionalProperties": false,
+      "properties": {
+        "download_url": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "status": {
+          "$ref": "#/components/schemas/DataRequestStatus"
+        }
+      },
+      "required": ["status"],
+      "type": "object"
+    },
     "DeviceTokenPayload": {
       "additionalProperties": {},
       "properties": {
@@ -6437,7 +6526,7 @@
       ],
       "type": "string"
     },
-    "ElectionVoteChoiceForPolicy__sentiment_____recommendation_": {
+    "ElectionVoteChoiceForPolicy__recommendation_____sentiment_": {
       "enum": ["disavow", "dislike", "like", "neutral", "oppose", "support", "vouch"],
       "type": "string"
     },
@@ -6453,11 +6542,11 @@
       "enum": ["disavow", "dislike", "like", "neutral", "vouch"],
       "type": "string"
     },
-    "ElectionVoteRequest__sentiment_____recommendation_": {
+    "ElectionVoteRequest__recommendation_____sentiment_": {
       "additionalProperties": false,
       "properties": {
         "choice": {
-          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy__sentiment_____recommendation_"
+          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy__recommendation_____sentiment_"
         }
       },
       "required": ["choice"],
@@ -6515,14 +6604,14 @@
       "required": ["__entity_type", "choice", "created_at", "entity_id", "user_id"],
       "type": "object"
     },
-    "ElectionVote__sentiment_____recommendation_": {
+    "ElectionVote__recommendation_____sentiment_": {
       "additionalProperties": false,
       "properties": {
         "__entity_type": {
           "const": "election_vote"
         },
         "choice": {
-          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy__sentiment_____recommendation_"
+          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy__recommendation_____sentiment_"
         },
         "created_at": {
           "type": "string"
@@ -8153,6 +8242,28 @@
       "required": ["community_slug"],
       "type": "object"
     },
+    "ImportProgressChunk": {
+      "additionalProperties": false,
+      "properties": {
+        "batchId": {
+          "type": "string"
+        },
+        "completed": {
+          "type": "number"
+        },
+        "done": {
+          "type": "boolean"
+        },
+        "failed": {
+          "type": "number"
+        },
+        "total": {
+          "type": "number"
+        }
+      },
+      "required": ["batchId", "completed", "done", "failed", "total"],
+      "type": "object"
+    },
     "ImportRow": {
       "additionalProperties": false,
       "properties": {
@@ -8317,6 +8428,19 @@
     "ImportType": {
       "enum": ["rss_feed", "topic"],
       "type": "string"
+    },
+    "Individual": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        }
+      },
+      "required": ["id", "updated_at"],
+      "type": "object"
     },
     "IndividualCard": {
       "additionalProperties": false,
@@ -8679,6 +8803,96 @@
       },
       "required": ["client_secret", "oauth_app"],
       "type": "object"
+    },
+    "JSONRPCResponse": {
+      "anyOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "error": {
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "type": "number"
+                },
+                "data": {},
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": ["code", "message"],
+              "type": "object"
+            },
+            "id": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "jsonrpc": {
+              "const": "2.0"
+            }
+          },
+          "required": ["error", "jsonrpc"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "jsonrpc": {
+              "const": "2.0"
+            },
+            "result": {
+              "additionalProperties": {},
+              "properties": {
+                "_meta": {
+                  "additionalProperties": {},
+                  "properties": {
+                    "io.modelcontextprotocol/related-task": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "taskId": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["taskId"],
+                      "type": "object"
+                    },
+                    "progressToken": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "required": ["id", "jsonrpc", "result"],
+          "type": "object"
+        }
+      ]
     },
     "LandingPage": {
       "additionalProperties": false,
@@ -11395,7 +11609,7 @@
           "type": "string"
         },
         "counts": {
-          "$ref": "#/components/schemas/Partial_Record__remove_____warn_____reject_____queue_retry_failed_____approve_____ban_____lift_ban_____activate_restriction_____lift_restriction_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal_____topic_claim_verify_____topic_claim_reject_____topic_claim_revoke_____report_claim_____report_unclaim_____report_escalate_____report_deescalate_____report_integrity_flag_review_____report_integrity_penalty_apply_____report_integrity_penalty_revoke_____vote_integrity_flag_review_____vote_integrity_penalty_apply_____vote_integrity_penalty_revoke_____vote_weight_set_____vote_weight_reset_____agent_moderation_vote_set_____agent_moderation_vote_delete_____mod_note_delete_____report_judgement_rerun_____appeal_resolution_draft_rerun_____dispute_resolution_draft_rerun_____oauth_client_verify_____oauth_client_unverify_____story_item_add_____story_item_remove_____story_official_item_set_____story_rename_____crawler_create_____crawler_update_____crawler_delete_____rss_category_assign_____rss_category_reject_____rss_category_unreject_____queue_pause_____queue_resume_____scheduled_job_run_____backfill_run_____article_sync_run_____import_batch_create_____preservation_hold_place_____preservation_hold_release__number"
+          "$ref": "#/components/schemas/Partial_Record__ban_____remove_____warn_____reject_____approve_____lift_ban_____activate_restriction_____lift_restriction_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal_____topic_claim_verify_____topic_claim_reject_____topic_claim_revoke_____report_claim_____report_unclaim_____report_escalate_____report_deescalate_____report_integrity_flag_review_____report_integrity_penalty_apply_____report_integrity_penalty_revoke_____vote_integrity_flag_review_____vote_integrity_penalty_apply_____vote_integrity_penalty_revoke_____vote_weight_set_____vote_weight_reset_____agent_moderation_vote_set_____agent_moderation_vote_delete_____mod_note_delete_____report_judgement_rerun_____appeal_resolution_draft_rerun_____dispute_resolution_draft_rerun_____oauth_client_verify_____oauth_client_unverify_____story_item_add_____story_item_remove_____story_official_item_set_____story_rename_____crawler_create_____crawler_update_____crawler_delete_____rss_category_assign_____rss_category_reject_____rss_category_unreject_____queue_pause_____queue_resume_____queue_retry_failed_____scheduled_job_run_____backfill_run_____article_sync_run_____import_batch_create_____preservation_hold_place_____preservation_hold_release__number"
         },
         "total": {
           "type": "number"
@@ -12479,7 +12693,7 @@
       },
       "type": "object"
     },
-    "Omit_ModerationAppealResponse__case_id_____resolved_by_id_____appellant_id_____recommended_action_____ai_public_response_____ai_internal_response_____model_____ai_drafted_at_____internal_notes_____drafted_at_____edited_at_____edited_by_id_____approved_by_id_____latest_lifecycle_change_id_____staff_context_____appeal_reason_": {
+    "Omit_ModerationAppealResponse__approved_by_id_____resolved_by_id_____appeal_reason_____recommended_action_____ai_drafted_at_____ai_internal_response_____ai_public_response_____appellant_id_____case_id_____drafted_at_____edited_at_____edited_by_id_____internal_notes_____latest_lifecycle_change_id_____model_____staff_context_": {
       "additionalProperties": false,
       "properties": {
         "approved_at": {
@@ -12913,7 +13127,7 @@
       ],
       "type": "object"
     },
-    "Omit_ModerationReport__reporter_user_id_____note_": {
+    "Omit_ModerationReport__note_____reporter_user_id_": {
       "additionalProperties": false,
       "properties": {
         "case_id": {
@@ -13331,7 +13545,7 @@
       ],
       "type": "object"
     },
-    "Omit_ReviewDisputeResponse__resolved_by_id_____disputant_user_id_____claim_text_____recommended_action_____ai_public_response_____ai_internal_response_____model_____ai_drafted_at_____internal_notes_____drafted_at_____edited_at_____edited_by_id_____approved_by_id_____latest_lifecycle_change_id_____staff_context_": {
+    "Omit_ReviewDisputeResponse__approved_by_id_____resolved_by_id_____claim_text_____recommended_action_____ai_drafted_at_____ai_internal_response_____ai_public_response_____drafted_at_____edited_at_____edited_by_id_____internal_notes_____latest_lifecycle_change_id_____model_____disputant_user_id_____staff_context_": {
       "additionalProperties": false,
       "properties": {
         "approved_at": {
@@ -13451,6 +13665,30 @@
         "topic_id",
         "updated_at"
       ],
+      "type": "object"
+    },
+    "Omit___jsonrpc___2.0___error____code__number__message__string__data___unknown_____id___string___number___undefined____id": {
+      "additionalProperties": false,
+      "properties": {
+        "error": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "number"
+            },
+            "data": {},
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": ["code", "message"],
+          "type": "object"
+        },
+        "jsonrpc": {
+          "const": "2.0"
+        }
+      },
+      "required": ["error", "jsonrpc"],
       "type": "object"
     },
     "OmnisearchCommunity": {
@@ -13931,7 +14169,7 @@
       },
       "type": "object"
     },
-    "Partial_Record__remove_____warn_____reject_____queue_retry_failed_____approve_____ban_____lift_ban_____activate_restriction_____lift_restriction_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal_____topic_claim_verify_____topic_claim_reject_____topic_claim_revoke_____report_claim_____report_unclaim_____report_escalate_____report_deescalate_____report_integrity_flag_review_____report_integrity_penalty_apply_____report_integrity_penalty_revoke_____vote_integrity_flag_review_____vote_integrity_penalty_apply_____vote_integrity_penalty_revoke_____vote_weight_set_____vote_weight_reset_____agent_moderation_vote_set_____agent_moderation_vote_delete_____mod_note_delete_____report_judgement_rerun_____appeal_resolution_draft_rerun_____dispute_resolution_draft_rerun_____oauth_client_verify_____oauth_client_unverify_____story_item_add_____story_item_remove_____story_official_item_set_____story_rename_____crawler_create_____crawler_update_____crawler_delete_____rss_category_assign_____rss_category_reject_____rss_category_unreject_____queue_pause_____queue_resume_____scheduled_job_run_____backfill_run_____article_sync_run_____import_batch_create_____preservation_hold_place_____preservation_hold_release__number": {
+    "Partial_Record__ban_____remove_____warn_____reject_____approve_____lift_ban_____activate_restriction_____lift_restriction_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal_____topic_claim_verify_____topic_claim_reject_____topic_claim_revoke_____report_claim_____report_unclaim_____report_escalate_____report_deescalate_____report_integrity_flag_review_____report_integrity_penalty_apply_____report_integrity_penalty_revoke_____vote_integrity_flag_review_____vote_integrity_penalty_apply_____vote_integrity_penalty_revoke_____vote_weight_set_____vote_weight_reset_____agent_moderation_vote_set_____agent_moderation_vote_delete_____mod_note_delete_____report_judgement_rerun_____appeal_resolution_draft_rerun_____dispute_resolution_draft_rerun_____oauth_client_verify_____oauth_client_unverify_____story_item_add_____story_item_remove_____story_official_item_set_____story_rename_____crawler_create_____crawler_update_____crawler_delete_____rss_category_assign_____rss_category_reject_____rss_category_unreject_____queue_pause_____queue_resume_____queue_retry_failed_____scheduled_job_run_____backfill_run_____article_sync_run_____import_batch_create_____preservation_hold_place_____preservation_hold_release__number": {
       "additionalProperties": false,
       "properties": {
         "activate_restriction": {
@@ -14384,7 +14622,7 @@
       "required": ["post_id", "topic_slug", "topic_title"],
       "type": "object"
     },
-    "Pick_ImportBatch__id_____created_at_____import_type_____total_rows_": {
+    "Pick_ImportBatch__created_at_____id_____import_type_____total_rows_": {
       "additionalProperties": false,
       "properties": {
         "created_at": {
@@ -16581,14 +16819,14 @@
       "required": ["plus", "pro"],
       "type": "object"
     },
-    "Record__facebook_____x_____github____version__1__modes__Record__web_____native___boolean__purposes__readonly___authenticate_____connect_______": {
+    "Record__facebook_____github_____x____version__1__modes__Record__native_____web___boolean__purposes__readonly___authenticate_____connect_______": {
       "additionalProperties": false,
       "properties": {
         "facebook": {
           "additionalProperties": false,
           "properties": {
             "modes": {
-              "$ref": "#/components/schemas/Record__web_____native__boolean"
+              "$ref": "#/components/schemas/Record__native_____web__boolean"
             },
             "purposes": {
               "items": {
@@ -16608,7 +16846,7 @@
           "additionalProperties": false,
           "properties": {
             "modes": {
-              "$ref": "#/components/schemas/Record__web_____native__boolean"
+              "$ref": "#/components/schemas/Record__native_____web__boolean"
             },
             "purposes": {
               "items": {
@@ -16628,7 +16866,7 @@
           "additionalProperties": false,
           "properties": {
             "modes": {
-              "$ref": "#/components/schemas/Record__web_____native__boolean"
+              "$ref": "#/components/schemas/Record__native_____web__boolean"
             },
             "purposes": {
               "items": {
@@ -16648,7 +16886,7 @@
       "required": ["facebook", "github", "x"],
       "type": "object"
     },
-    "Record__web_____native__boolean": {
+    "Record__native_____web__boolean": {
       "additionalProperties": false,
       "properties": {
         "native": {
@@ -17257,6 +17495,11 @@
       "additionalProperties": {
         "type": "boolean"
       },
+      "properties": {},
+      "type": "object"
+    },
+    "Record_string_never": {
+      "additionalProperties": false,
       "properties": {},
       "type": "object"
     },
@@ -18019,6 +18262,11 @@
         "thumbnail",
         "title"
       ],
+      "type": "object"
+    },
+    "RetailerAttributes": {
+      "additionalProperties": false,
+      "properties": {},
       "type": "object"
     },
     "Revenue": {
@@ -33483,7 +33731,7 @@
     },
     "PUT:/api/v1/posts/:id/vote": {
       "body": {
-        "$ref": "#/components/schemas/ElectionVoteRequest__sentiment_____recommendation_"
+        "$ref": "#/components/schemas/ElectionVoteRequest__recommendation_____sentiment_"
       },
       "path": {
         "properties": {
