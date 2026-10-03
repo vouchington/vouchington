@@ -7,7 +7,7 @@ import {
   type WorkerRuntime,
   type WorkerRuntimeConfig,
   type WorkerRuntimeDependencies,
-} from '../../worker-runtime/index.mts'
+} from '../worker-runtime/index.mts'
 
 export type QueueClass = 'all' | 'cpu' | 'io'
 

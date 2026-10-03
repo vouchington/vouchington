@@ -1,6 +1,6 @@
 import { describe } from 'vitest'
 
-import { registerWorkerQueueClassTests } from '../../test-helpers/entrypoints/worker-queue-class-selection.mts'
+import { registerWorkerQueueClassTests } from '../../test-helpers/worker-queue-class-selection.mts'
 import { SCHEDULE_DEFINITIONS } from './definitions.mts'
 import { initializeWorkerRuntime } from './runtime.mts'
 
