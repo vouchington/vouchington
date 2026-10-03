@@ -1,4 +1,4 @@
-import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/services/copyright-notices/statement-notices'
+import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { describe, expect, it, vi } from 'vitest'
 import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'

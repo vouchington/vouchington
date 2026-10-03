@@ -1,18 +1,13 @@
-import {
-  createTestUser,
-  insertTestImage,
-  insertTestPost,
-  insertTestPostImage,
-} from '../../index.mts'
+import { createTestUser, insertTestImage, insertTestPost, insertTestPostImage } from './index.mts'
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { DELETED_USER_ID } from '../../../services/users/constants.mts'
-import { createCopyrightNoticeAggregate } from './create-notice-aggregate.mts'
-import { getCopyrightNoticePrivateAggregate } from './private-aggregate.mts'
+import { DELETED_USER_ID } from '../services/users/constants.mts'
+import { createCopyrightNoticeAggregate } from './services/copyright-notices/create-notice-aggregate.mts'
+import { getCopyrightNoticePrivateAggregate } from './services/copyright-notices/private-aggregate.mts'
 import {
   appendCopyrightSubmissionAssessment,
   acceptCopyrightNoticeAndImposeRestriction,
-} from '../../../services/copyright-notices/index.mts'
+} from '../services/copyright-notices/index.mts'
 
 export async function createMultiOwnerStatementFixture() {
   const [claimant, moderator, publicOwner, privateOwner] = await Promise.all([

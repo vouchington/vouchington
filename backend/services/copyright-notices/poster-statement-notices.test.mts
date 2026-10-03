@@ -15,7 +15,7 @@ import {
   readTestCopyrightStatementIntents,
   replayTestCopyrightStatementNotices,
   createTestCopyrightLiftStatement,
-} from '@voucha/test-helpers/services/copyright-notices/statement-notices'
+} from '@voucha/test-helpers/copyright-statement-notices'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { reviewCopyrightFormIntake } from './form-reviews.mts'
 import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'

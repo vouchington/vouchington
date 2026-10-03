@@ -1,4 +1,4 @@
-import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/services/copyright-notices/statement-notices'
+import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
 import { describe, expect, it } from 'vitest'
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import type { CopyrightImagePlacement } from '@services/images/placements'

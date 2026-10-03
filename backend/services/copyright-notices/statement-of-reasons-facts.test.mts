@@ -5,7 +5,7 @@ import {
   createClearScreenedForm,
   createSignedInCopyrightForm,
 } from '@voucha/test-helpers/services/copyright-notices/screened-form'
-import { readTestCopyrightStatementFacts } from '@voucha/test-helpers/services/copyright-notices/statement-notices'
+import { readTestCopyrightStatementFacts } from '@voucha/test-helpers/copyright-statement-notices'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { reviewCopyrightFormIntake } from './form-reviews.mts'

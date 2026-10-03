@@ -5,7 +5,7 @@ import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/cop
 import {
   eraseTestCopyrightStatementBody,
   readTestCopyrightStatementIntents,
-} from '@voucha/test-helpers/services/copyright-notices/statement-notices'
+} from '@voucha/test-helpers/copyright-statement-notices'
 import { reviewCopyrightFormIntake } from './form-reviews.mts'
 import { getCopyrightParticipantNoticeDetail } from './read-models.mts'
 

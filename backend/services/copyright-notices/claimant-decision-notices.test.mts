@@ -13,7 +13,7 @@ import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/cop
 import {
   readTestCopyrightStatementIntents,
   replayTestCopyrightClaimantDecision,
-} from '@voucha/test-helpers/services/copyright-notices/statement-notices'
+} from '@voucha/test-helpers/copyright-statement-notices'
 import { reviewCopyrightFormIntake } from './form-reviews.mts'
 import { recoverRejectedCopyrightFormReviewEffect } from './form-reviews-recovery.mts'
 

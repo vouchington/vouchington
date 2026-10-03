@@ -9,7 +9,7 @@ import {
   markStatementPosterDeleted,
   reassignStatementTargetToTombstone,
   withStatementPosterLifecycleFence,
-} from '@voucha/test-helpers/services/copyright-notices/statement-recipient-fixture'
+} from '@voucha/test-helpers/copyright-statement-recipient-fixture'
 import {
   createSignedInCopyrightForm,
   createClearScreenedForm,
@@ -19,7 +19,7 @@ import {
   readTestCopyrightStatementIntents,
   replayTestCopyrightStatementNotices,
   createTestCopyrightLiftStatement,
-} from '@voucha/test-helpers/services/copyright-notices/statement-notices'
+} from '@voucha/test-helpers/copyright-statement-notices'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { reviewCopyrightFormIntake } from './form-reviews.mts'
 import { getCopyrightParticipantNoticeDetail } from './read-models.mts'

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
-import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/services/copyright-notices/statement-notices'
+import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { openHeldCounterNoticeRestore } from './restoration-hold-scene.mts'
 import {

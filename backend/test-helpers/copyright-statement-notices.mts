@@ -1,11 +1,11 @@
-import { createCopyrightPosterNoticesInTransaction } from '../../../services/copyright-notices/restriction-poster-notices.mts'
+import { createCopyrightPosterNoticesInTransaction } from '../services/copyright-notices/restriction-poster-notices.mts'
 import { beginTransaction, read, write } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
-import { copyrightCorrespondencePurpose } from '../../../services/copyright-notices/correspondence.mts'
-import { selectCopyrightStatementFacts } from '../../../services/copyright-notices/statement-of-reasons-facts.mts'
-import { createCopyrightReviewOutcomeNoticesInTransaction } from '../../../services/copyright-notices/review-outcome-notices.mts'
-import { createCopyrightClaimantDecisionNoticeInTransaction } from '../../../services/copyright-notices/claimant-decision-notices.mts'
+import { copyrightCorrespondencePurpose } from '../services/copyright-notices/correspondence.mts'
+import { selectCopyrightStatementFacts } from '../services/copyright-notices/statement-of-reasons-facts.mts'
+import { createCopyrightReviewOutcomeNoticesInTransaction } from '../services/copyright-notices/review-outcome-notices.mts'
+import { createCopyrightClaimantDecisionNoticeInTransaction } from '../services/copyright-notices/claimant-decision-notices.mts'
 
 export async function readTestCopyrightStatementIntents(noticeId: string) {
   const { rows } = await read<{

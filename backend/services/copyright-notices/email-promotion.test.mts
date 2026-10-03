@@ -1,5 +1,5 @@
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
-import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/services/copyright-notices/statement-notices'
+import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
 import { failTestCopyrightDeliveryIntent } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { copyrightPromotionText, copyrightReceiptText } from './statement-of-reasons-wording.mts'
 import { describe, expect, it, vi } from 'vitest'
