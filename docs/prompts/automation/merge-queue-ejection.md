@@ -21,11 +21,9 @@ List this workflow's runs created in the last 24 hours, paging until a page is e
 Keep the runs whose `conclusion` is not `skipped`; the workflow already skipped every removal reason
 other than a CI failure or timeout. Each run's `head_sha` is the ejected head. Map it to its pull
 request with `gh api repos/{{REPOSITORY}}/commits/<head_sha>/pulls` and keep the pull request whose
-`head.sha` equals it and whose base is `main`. When several runs map to one pull request and head,
-the newest is the entry. Check each older run against the untriaged rules below; for each one that is
-still untriaged, also fingerprint its failing merge-group run and report it in the same entry.
+`head.sha` equals it and whose base is `main`.
 
-An entry is untriaged when all of these hold:
+Each run is one removal, called an occurrence. An occurrence is untriaged when all of these hold:
 
 - the pull request is open and unmerged;
 - its head still equals the run's `head_sha`;
@@ -33,9 +31,11 @@ An entry is untriaged when all of these hold:
 - none of its comments containing its triage marker (see [Report](#report)) was created at or after
   the run's `created_at`.
 
-Skip any other entry and continue with the rest; never stop the session because one pull request
-moved, merged, or closed. The seed pull request gets no special treatment: skip it too when it no
-longer qualifies.
+An entry is one pull request at one head with at least one untriaged occurrence. A pull request
+re-enqueued unchanged and ejected again has one occurrence per untriaged run, each classified on its
+own. Skip every other run and continue with the rest; never stop the session because one pull
+request moved, merged, or closed. The seed pull request gets no special treatment: skip it too when
+it no longer qualifies.
 
 ## Find stack layers
 
@@ -57,11 +57,9 @@ A stack layer's own CI did not fail; do not classify it.
 
 ## Find the failing merge-group run
 
-Apply this to each entry, and separately to each older untriaged removal reported with it.
-Merge-group runs have `event` `merge_group` and a `head_branch` of the form
-`gh-readonly-queue/main/pr-<N>-<base sha>`. The ejection time is the matching removal in the pull
-request's timeline: the latest removal for the entry, or the removal closest to an older run's
-`created_at` for an older removal. Page through
+Apply this to each occurrence. Merge-group runs have `event` `merge_group` and a `head_branch` of
+the form `gh-readonly-queue/main/pr-<N>-<base sha>`. The ejection time is the removal in the pull
+request's timeline closest to the occurrence's run `created_at`. Page through
 `gh api "repos/{{REPOSITORY}}/actions/runs?event=merge_group&per_page=100&page=<n>"`, newest first,
 and keep the runs whose `head_branch` starts with `gh-readonly-queue/main/pr-<N>-`. Stop at the first
 page whose runs were all created more than a day before the ejection. The newest group created
@@ -72,34 +70,36 @@ group's base before blaming either side.
 ## Classify and group root causes
 
 Read `ci/transient-retry/rules.mts` for the catalogued transient fingerprints. Establish each
-entry's failure from logs, and reproduce it locally when that is cheap. Run pull-request code on this
-host only when the pull request is a same-repository branch, in a detached checkout you leave before
-any fix; for a fork, classify from CI evidence alone. Fingerprint each failure by workflow, job, and
-stable error text, and check whether the same fingerprint appears in other recent merge-group or
-nightly runs that did not include the entry.
+occurrence's failure from logs, and reproduce it locally when that is cheap. Run pull-request code
+on this host only when the pull request is a same-repository branch, in a detached checkout you leave
+before any fix; for a fork, classify from CI evidence alone. Fingerprint each failure by workflow,
+job, and stable error text, and check whether the same fingerprint appears in other recent
+merge-group or nightly runs that did not include the pull request.
 
-Group the entries that share a fingerprint. An entry whose own change is the root cause stays a group
-of one. Then choose exactly one outcome per group, and open at most one fix PR or issue per group.
-Finishing a group's outcome finishes only that group: continue with the next group, then report and
-sweep. End the session early only when you cannot continue at all, such as lost `gh` access.
+Group the occurrences that share a fingerprint; one entry's occurrences can land in different
+groups. An occurrence caused by its pull request's own change stays a group of one. Then choose
+exactly one outcome per group, and open at most one fix PR or issue per group. Finishing a group's
+outcome finishes only that group: continue with the next group, then report and sweep. End the
+session early only when you cannot continue at all, such as lost `gh` access.
 
 1. **The pull request is the root cause.** Its own change fails deterministically, or conflicts with
    an entry ahead of it or with `main`. Post the analysis comment below; this group is done. Do not
    fix it.
-2. **A flaky test.** The failure is nondeterministic and not caused by any entry in the group. Search
-   open pull requests and issues for the same test first. If a focused fix already exists, reference
-   it in the comments; this group is done. Otherwise find or file one issue for the flake, then create
-   one draft fix PR from `main` that closes it. Create the fix branch from `{{MAIN_SHA}}`, never from a
-   fetched pull-request ref, and before creating the PR require `git log {{MAIN_SHA}}..HEAD` to list
-   only your own commits. When the fix adds or tightens an assertion, first show that
-   the assertion fails against the pre-fix source, per
-   [Implementation](../../../.agents/skills/agent-workflow/implementation.md)'s regression-test rule.
-   Create the PR with `node dev/pr-description.mts create --title <title> --body-file <path>`. Title
-   it `Automation fix: flaky <test> (merge queue #N[, #M…])`, listing every entry in the group. The
-   body needs `## Root cause`, `## Implementation choice`, `## Options considered` with pros and cons,
-   implementation details, the failing runs, validation evidence, `## Related issues` with the
-   closing reference, and the line `Workspace setup: Automation merge-queue-ejection run`. Apply both
-   the `automation` and `automation:auto-fix` labels, then re-fetch the PR and require both labels.
+2. **A flaky test.** The failure is nondeterministic and not caused by any pull request in the
+   group. Search open pull requests and issues for the same test first. If a focused fix already
+   exists, reference it in the comments; this group is done. Otherwise find or file one issue for
+   the flake, then create one draft fix PR from `main` that closes it. Create the fix branch from
+   `{{MAIN_SHA}}`, never from a fetched pull-request ref, and before creating the PR require
+   `git log {{MAIN_SHA}}..HEAD` to list only your own commits. When the fix adds or tightens an
+   assertion, first show that the assertion fails against the pre-fix source, per
+   [Implementation](../../../.agents/skills/agent-workflow/implementation.md)'s regression-test
+   rule. Create the PR with `node dev/pr-description.mts create --title <title> --body-file <path>`.
+   Title it `Automation fix: flaky <test> (merge queue #N[, #M…])`, listing every pull request in
+   the group. The body needs `## Root cause`, `## Implementation choice`, `## Options considered`
+   with pros and cons, implementation details, the failing runs, validation evidence,
+   `## Related issues` with the closing reference, and the line
+   `Workspace setup: Automation merge-queue-ejection run`. Apply both the `automation` and
+   `automation:auto-fix` labels, then re-fetch the PR and require both labels.
 3. **A CI or architecture defect.** Repository tooling, a ratchet, or shared infrastructure rejects
    work the group did not cause. Search for an existing issue; comment new evidence on it, or file
    one issue with the failing runs, fingerprint, and a proposed fix. Do not open a PR for it.
@@ -130,8 +130,9 @@ comments on its stack layers, because there is no triage comment for them to lin
 issue for a flaky test or CI defect does not need this recheck: the defect remains even after the
 ejected pull request moves on.
 
-- An entry's comment states the outcome, the failing run and job, the evidence, the PR or issue you
-  opened or found, and the other entries that share its root cause.
+- An entry's one comment covers each of its occurrences: the outcome, the failing run and job, the
+  evidence, the PR or issue you opened or found, and the other pull requests that share its root
+  cause.
 - A stack layer's comment names the layer below it that failed, links that layer's triage comment,
   and says the layer can be re-enqueued once the failing layer is resolved.
 
