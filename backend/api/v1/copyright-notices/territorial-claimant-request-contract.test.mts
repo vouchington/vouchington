@@ -3,7 +3,7 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import {
   TERRITORIAL_SURFACES,
-  approveTerritorialPolicy,
+  approveJurisdictionPolicy,
   createTerritorialActors,
   seedDeterminedTerritorialNotice,
   territorialNoticeBody,
@@ -52,7 +52,7 @@ describe.each(TERRITORIAL_SURFACES)('$label claimant request contracts', surface
 
   it.each(MALFORMED_FIELDS)('rejects %s on a notice before recording it', async (_label, extra) => {
     const { claimantRequest, administrator } = await createTerritorialActors()
-    await approveTerritorialPolicy(administrator, surface.jurisdiction)
+    await approveJurisdictionPolicy(administrator, surface.jurisdiction)
     const body = territorialNoticeBody()
     const key = crypto.randomUUID()
 
@@ -72,7 +72,7 @@ describe.each(TERRITORIAL_SURFACES)('$label claimant request contracts', surface
 
   it('accepts a string cf_turnstile_response on a notice', async () => {
     const { claimantRequest, administrator } = await createTerritorialActors()
-    await approveTerritorialPolicy(administrator, surface.jurisdiction)
+    await approveJurisdictionPolicy(administrator, surface.jurisdiction)
 
     await claimantRequest
       .post(surface.base)
@@ -101,7 +101,7 @@ describe.each(TERRITORIAL_SURFACES)('$label claimant request contracts', surface
     'rejects %s on a redress request before recording it',
     async (_label, extra) => {
       const actors = await createTerritorialActors()
-      await approveTerritorialPolicy(actors.administrator, surface.jurisdiction)
+      await approveJurisdictionPolicy(actors.administrator, surface.jurisdiction)
       const noticeId = await seedDeterminedTerritorialNotice(surface.jurisdiction, actors)
       const url = `${surface.base}/${noticeId}/redress-requests`
       const key = crypto.randomUUID()
@@ -123,7 +123,7 @@ describe.each(TERRITORIAL_SURFACES)('$label claimant request contracts', surface
 
   it('keeps the redress explanation message and the path id check', async () => {
     const actors = await createTerritorialActors()
-    await approveTerritorialPolicy(actors.administrator, surface.jurisdiction)
+    await approveJurisdictionPolicy(actors.administrator, surface.jurisdiction)
     const noticeId = await seedDeterminedTerritorialNotice(surface.jurisdiction, actors)
     const key = crypto.randomUUID()
 
@@ -143,7 +143,7 @@ describe.each(TERRITORIAL_SURFACES)('$label claimant request contracts', surface
   // The service decides existence, so a missing notice is a 404 for a valid body only.
   it('leaves the missing-notice 404 to the service behind a malformed body', async () => {
     const actors = await createTerritorialActors()
-    await approveTerritorialPolicy(actors.administrator, surface.jurisdiction)
+    await approveJurisdictionPolicy(actors.administrator, surface.jurisdiction)
     const url = `${surface.base}/${crypto.randomUUID()}/redress-requests`
     const body = { explanation: 'Please review this restriction' }
 
@@ -163,7 +163,7 @@ describe.each(TERRITORIAL_SURFACES)('$label claimant request contracts', surface
   // is still a 422: a documented consequence of validating before the service runs.
   it('leaves the ownership 403 to the service behind a malformed body', async () => {
     const actors = await createTerritorialActors()
-    await approveTerritorialPolicy(actors.administrator, surface.jurisdiction)
+    await approveJurisdictionPolicy(actors.administrator, surface.jurisdiction)
     const noticeId = await seedDeterminedTerritorialNotice(surface.jurisdiction, actors)
     const url = `${surface.base}/${noticeId}/redress-requests`
     const body = { explanation: 'Please review this restriction' }
@@ -187,7 +187,7 @@ describe('EU supervised complaint request contract', () => {
 
   async function complaintFixture() {
     const actors = await createTerritorialActors()
-    await approveTerritorialPolicy(actors.administrator, 'eu_dsa')
+    await approveJurisdictionPolicy(actors.administrator, 'eu_dsa')
     const noticeId = await seedDeterminedTerritorialNotice('eu_dsa', actors)
     return { ...actors, url: `${eu!.base}/${noticeId}/supervised-complaints` }
   }

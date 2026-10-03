@@ -108,7 +108,7 @@ disposition; restrict and terminate recheck the operative threshold at decision 
 EU and UK contracts live in migration `0737-00-00-copyright-eu-uk-contracts.sql`. They record
 receipt, routing, a staff decision (the EU statement of reasons under DSA Art. 17, or the UK
 review), redress, escalation, and EU reporting facts, and they fail closed until a separate
-territorial policy approval exists. They do not use the US restoration clock or decide legal
+jurisdiction policy approval exists. They do not use the US restoration clock or decide legal
 merits. Seven `copyright_territorial_*` tables hold both jurisdictions; only supervised complaints
 and transparency reports are EU-only. Each notice-child row carries `jurisdiction` and a composite
 foreign key to `copyright_notices (id, jurisdiction)`, a redress request references the decision on
@@ -121,7 +121,7 @@ Their SQL is static, and per-jurisdiction error text and encryption purposes liv
 
 ```mermaid
 flowchart TD
-  policy[Unwithdrawn territorial policy approval]
+  policy[Unwithdrawn jurisdiction policy approval]
   policy -->|missing or withdrawn| closed[Fail closed]
   policy -->|eu_dsa| euReceipt[EU receipt routed to the staff queue]
   policy -->|uk| ukReceipt[UK receipt routed to the staff queue]

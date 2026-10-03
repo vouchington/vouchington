@@ -28,19 +28,19 @@ describe('territorial copyright notice routes', () => {
     const moderatorRequest = createRequest()
     await moderatorRequest.authenticateAs(moderator)
     await moderatorRequest
-      .post('/api/v1/copyright-territorial-policies')
+      .post('/api/v1/copyright-jurisdiction-policies')
       .send({ jurisdiction: 'eu_dsa', policy_version: 'eu-route' })
       .expect(403)
     const administratorRequest = createRequest()
     await administratorRequest.authenticateAs(administrator)
     const approval = await administratorRequest
-      .post('/api/v1/copyright-territorial-policies')
+      .post('/api/v1/copyright-jurisdiction-policies')
       .send({
         jurisdiction: 'eu_dsa',
         policy_version: `eu-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
       })
       .expect(201)
-    expect(approval.body.copyright_territorial_policy.jurisdiction).toBe('eu_dsa')
+    expect(approval.body.copyright_jurisdiction_policy.jurisdiction).toBe('eu_dsa')
     const key = crypto.randomUUID()
     const created = await claimantRequest
       .post('/api/v1/copyright-eu-notices')

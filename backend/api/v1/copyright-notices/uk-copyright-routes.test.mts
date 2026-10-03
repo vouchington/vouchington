@@ -26,7 +26,7 @@ describe('UK copyright notice routes', () => {
     const administratorRequest = createRequest()
     await administratorRequest.authenticateAs(administrator)
     await administratorRequest
-      .post('/api/v1/copyright-territorial-policies')
+      .post('/api/v1/copyright-jurisdiction-policies')
       .send({
         jurisdiction: 'uk',
         policy_version: `uk-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,

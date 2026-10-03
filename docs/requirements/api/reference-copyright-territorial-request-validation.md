@@ -1,8 +1,8 @@
-# Copyright EU, UK, and territorial policy request validation
+# Copyright EU, UK, and jurisdiction policy request validation
 
 [Back to Request validation](reference-request-validation.md)
 
-The EU, UK, and territorial policy routes under `backend/api/v1/copyright-notices/` validate their
+The EU, UK, and jurisdiction policy routes under `backend/api/v1/copyright-notices/` validate their
 path and JSON body with `validateRequestContract` immediately before the first service call.
 [Request validation](reference-request-validation.md) owns the ordering and the generated contract
 mechanics; the [Copyright Notices API](v1/copyright-notices/README.md) owns the legal flow. This
@@ -26,9 +26,9 @@ diagnostic. A contract `422` names only the carrier (`Invalid request body` or
 | `POST /copyright-{eu,uk}-notices/:id/redress-requests/:redressId/decisions` | Closed `CopyrightTerritorialRedressDecisionRequest` and path  |
 | `POST /copyright-eu-notices/:id/supervised-complaints`                      | Closed `CopyrightTerritorialSupervisedComplaintRequest`, path |
 | `POST /copyright-eu-reports`                                                | Closed `CopyrightTerritorialReportRequest`                    |
-| `POST /copyright-territorial-policies`                                      | Closed `CopyrightTerritorialPolicyRequest`                    |
+| `POST /copyright-jurisdiction-policies`                                     | Closed `CopyrightJurisdictionPolicyRequest`                   |
 | `POST /copyright-{eu,uk}-notices/:id/acknowledgment-failures`               | `id` path only                                                |
-| `POST /copyright-territorial-policies/:id/withdrawals`                      | `id` path only                                                |
+| `POST /copyright-jurisdiction-policies/:id/withdrawals`                     | `id` path only                                                |
 
 The request types live in `territorial-request-types.mts` beside the routes, and the compiler
 extracts the schema from them, so the OpenAPI document, the request-contract bundle, and the runtime
@@ -99,7 +99,7 @@ before them, as a missing field already did:
 
 - Ownership `403` on a redress request and a supervised complaint: the requester or a staff
   reviewer may file; anyone else gets `403` only for a well-formed body.
-- Territorial availability `403` (`lockCurrentCopyrightTerritorialPolicy`): the service reads the
+- Jurisdiction availability `403` (`lockCurrentCopyrightJurisdictionPolicy`): the service reads the
   current policy approval after its idempotent replay lookup. Moving it ahead of the contract would
   turn a stored receipt's replay after a withdrawal into `403` and an over-length `422` on an
   unapproved territory into `403`, so it stays a documented exception. The kill switch,

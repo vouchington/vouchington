@@ -1,4 +1,4 @@
-// Closed request bodies for the EU, UK, and territorial policy routes. The generated request
+// Closed request bodies for the EU, UK, and jurisdiction policy routes. The generated request
 // contract is the shape and drift guard; the route-level parsers in
 // `@services/copyright-notices/territorial-http-input` run first so each rejection keeps its
 // field-named message. `cf_turnstile_response` is optional because an App Attest caller sends none;
@@ -40,7 +40,7 @@ export type CopyrightTerritorialReviewRequest = {
   rationale: string
 }
 
-export type CopyrightTerritorialPolicyRequest = {
+export type CopyrightJurisdictionPolicyRequest = {
   jurisdiction: 'eu_dsa' | 'uk'
   policy_version: string
 }

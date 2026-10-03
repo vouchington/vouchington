@@ -6,23 +6,23 @@ Counts of stored EU copyright facts for a caller-supplied period. EU only. The p
 
 Not partitioned — growth: unbounded.
 
-| Column                                     | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                       |
-| ------------------------------------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------- |
-| `id`                                       | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                               |
-| `jurisdiction`                             | `text`                     | no       |                              |          |           |           | Always eu_dsa. The composite foreign key requires an eu_dsa policy approval.  |
-| `copyright_territorial_policy_approval_id` | `uuid`                     | no       |                              |          |           |           | eu_dsa policy approval this report was produced under.                        |
-| `period_started_at`                        | `timestamp with time zone` | no       |                              |          |           |           | Start of the caller-supplied reporting period. Not a statutory clock.         |
-| `period_ended_at`                          | `timestamp with time zone` | no       |                              |          |           |           | End of the caller-supplied reporting period. Must be after period_started_at. |
-| `receipt_count`                            | `integer`                  | no       |                              |          |           |           | Count of stored EU notice receipts in the period.                             |
-| `statement_of_reasons_count`               | `integer`                  | no       |                              |          |           |           | Count of stored EU statements of reasons in the period.                       |
-| `redress_request_count`                    | `integer`                  | no       |                              |          |           |           | Count of stored EU redress requests in the period.                            |
-| `redress_decision_count`                   | `integer`                  | no       |                              |          |           |           | Count of stored EU redress decisions in the period.                           |
-| `supervised_complaint_count`               | `integer`                  | no       |                              |          |           |           | Count of stored EU supervised complaints in the period.                       |
-| `escalation_count`                         | `integer`                  | no       |                              |          |           |           | Count of stored EU escalations in the period.                                 |
-| `reported_at`                              | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When this transparency report was recorded.                                   |
-| `reported_by_id`                           | `uuid`                     | yes      |                              |          |           |           | User who recorded the report. Null after that account is deleted.             |
-| `created_at`                               | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                               |
-| `updated_at`                               | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                               |
+| Column                                      | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                       |
+| ------------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------- |
+| `id`                                        | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                               |
+| `jurisdiction`                              | `text`                     | no       |                              |          |           |           | Always eu_dsa. The composite foreign key requires an eu_dsa policy approval.  |
+| `copyright_jurisdiction_policy_approval_id` | `uuid`                     | no       |                              |          |           |           | eu_dsa policy approval this report was produced under.                        |
+| `period_started_at`                         | `timestamp with time zone` | no       |                              |          |           |           | Start of the caller-supplied reporting period. Not a statutory clock.         |
+| `period_ended_at`                           | `timestamp with time zone` | no       |                              |          |           |           | End of the caller-supplied reporting period. Must be after period_started_at. |
+| `receipt_count`                             | `integer`                  | no       |                              |          |           |           | Count of stored EU notice receipts in the period.                             |
+| `statement_of_reasons_count`                | `integer`                  | no       |                              |          |           |           | Count of stored EU statements of reasons in the period.                       |
+| `redress_request_count`                     | `integer`                  | no       |                              |          |           |           | Count of stored EU redress requests in the period.                            |
+| `redress_decision_count`                    | `integer`                  | no       |                              |          |           |           | Count of stored EU redress decisions in the period.                           |
+| `supervised_complaint_count`                | `integer`                  | no       |                              |          |           |           | Count of stored EU supervised complaints in the period.                       |
+| `escalation_count`                          | `integer`                  | no       |                              |          |           |           | Count of stored EU escalations in the period.                                 |
+| `reported_at`                               | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When this transparency report was recorded.                                   |
+| `reported_by_id`                            | `uuid`                     | yes      |                              |          |           |           | User who recorded the report. Null after that account is deleted.             |
+| `created_at`                                | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                               |
+| `updated_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                               |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -37,13 +37,13 @@ _none_
 
 **Foreign keys:**
 
-- `fk_copyright_eu_transparency_reports__approval`: `FOREIGN KEY (copyright_territorial_policy_approval_id, jurisdiction) REFERENCES copyright_territorial_policy_approvals(id, jurisdiction) ON DELETE RESTRICT`
+- `fk_copyright_eu_transparency_reports__approval`: `FOREIGN KEY (copyright_jurisdiction_policy_approval_id, jurisdiction) REFERENCES copyright_jurisdiction_policy_approvals(id, jurisdiction) ON DELETE RESTRICT`
 - `fk_copyright_eu_transparency_reports__reported_by`: `FOREIGN KEY (reported_by_id) REFERENCES users(id) ON DELETE SET NULL`
 
 **Indexes:**
 
 - `copyright_eu_transparency_reports_pkey`: `CREATE UNIQUE INDEX copyright_eu_transparency_reports_pkey ON public.copyright_eu_transparency_reports USING btree (id)`
-- `idx_copyright_eu_transparency_reports__policy`: `CREATE INDEX idx_copyright_eu_transparency_reports__policy ON public.copyright_eu_transparency_reports USING btree (copyright_territorial_policy_approval_id, jurisdiction)`
+- `idx_copyright_eu_transparency_reports__policy`: `CREATE INDEX idx_copyright_eu_transparency_reports__policy ON public.copyright_eu_transparency_reports USING btree (copyright_jurisdiction_policy_approval_id, jurisdiction)`
 - `idx_copyright_eu_transparency_reports__reported_by`: `CREATE INDEX idx_copyright_eu_transparency_reports__reported_by ON public.copyright_eu_transparency_reports USING btree (reported_by_id) WHERE (reported_by_id IS NOT NULL)`
 
 **Triggers:**

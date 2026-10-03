@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { receiveEuCopyrightNotice } from '../../../services/copyright-notices/eu-notice-receipt.mts'
-import { recordCopyrightTerritorialPolicyApproval } from '../../../services/copyright-notices/territorial-policy.mts'
+import { recordCopyrightJurisdictionPolicyApproval } from '../../../services/copyright-notices/jurisdiction-policy.mts'
 import { receiveUkCopyrightNotice } from '../../../services/copyright-notices/uk-notice-receipt.mts'
 import { createTestUser } from '../../index.mts'
 
 /**
- * An EU DSA or UK notice, received under a freshly approved territorial policy. Nothing in the
+ * An EU DSA or UK notice, received under a freshly approved jurisdiction policy. Nothing in the
  * staff queue holds it open, so only its jurisdiction keeps it from the US DMCA retention sweep.
  */
 export async function createRetentionTerritorialCase(jurisdiction: 'eu_dsa' | 'uk') {
@@ -13,7 +13,7 @@ export async function createRetentionTerritorialCase(jurisdiction: 'eu_dsa' | 'u
     createTestUser(),
     createTestUser({ administrator: true }),
   ])
-  await recordCopyrightTerritorialPolicyApproval(administrator, {
+  await recordCopyrightJurisdictionPolicyApproval(administrator, {
     jurisdiction,
     policyVersion: `${jurisdiction}-${randomUUID().replaceAll('-', '').slice(0, 12)}`,
   })

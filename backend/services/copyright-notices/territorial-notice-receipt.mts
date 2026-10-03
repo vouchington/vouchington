@@ -4,7 +4,7 @@ import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
-import { lockCurrentCopyrightTerritorialPolicy } from './territorial-policy.mts'
+import { lockCurrentCopyrightJurisdictionPolicy } from './jurisdiction-policy.mts'
 import {
   assertBoundedText,
   assertIdempotencyKey,
@@ -82,7 +82,7 @@ export async function receiveTerritorialCopyrightNoticeInTransaction(
       is_duplicate: true,
     }
   }
-  const approval = await lockCurrentCopyrightTerritorialPolicy(jurisdiction, transaction)
+  const approval = await lockCurrentCopyrightJurisdictionPolicy(jurisdiction, transaction)
   const labels = territorialLabels(jurisdiction)
   const purpose = `${labels.noticePurpose}:${idempotencyKey}`
   const failure = labels.noticeFailed

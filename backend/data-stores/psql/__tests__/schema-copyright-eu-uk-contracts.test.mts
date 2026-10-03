@@ -3,7 +3,7 @@ import {
   readTerritorialContractTableNames,
   readTerritorialClockColumnNames,
   rejectEuReceiptForUsNotice,
-  rejectUsTerritorialPolicyApproval,
+  rejectUsJurisdictionPolicyApproval,
 } from '../../../test-helpers/data-stores/psql/copyright-eu-uk-contracts.mts'
 import { onGracefulShutdown } from '../index.mts'
 
@@ -16,21 +16,21 @@ describe('copyright EU and UK contract schema', () => {
     await expect(readTerritorialContractTableNames()).resolves.toEqual([
       'copyright_eu_supervised_complaints',
       'copyright_eu_transparency_reports',
+      'copyright_jurisdiction_policy_approvals',
+      'copyright_jurisdiction_policy_withdrawals',
       'copyright_territorial_decisions',
       'copyright_territorial_escalations',
       'copyright_territorial_notice_acknowledgments',
       'copyright_territorial_notice_receipts',
       'copyright_territorial_notice_routings',
-      'copyright_territorial_policy_approvals',
-      'copyright_territorial_policy_withdrawals',
       'copyright_territorial_redress_decisions',
       'copyright_territorial_redress_requests',
     ])
     await expect(readTerritorialClockColumnNames()).resolves.toEqual([])
   })
 
-  it('rejects a US DMCA territorial policy approval', async () => {
-    await expect(rejectUsTerritorialPolicyApproval()).rejects.toMatchObject({ code: '23514' })
+  it('rejects a US DMCA jurisdiction policy approval', async () => {
+    await expect(rejectUsJurisdictionPolicyApproval()).rejects.toMatchObject({ code: '23514' })
   })
 
   it('rejects an EU receipt for a US DMCA notice', async () => {

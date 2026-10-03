@@ -4,7 +4,7 @@ import {
   acknowledgeUkCopyrightNotice,
   receiveEuCopyrightNotice,
   receiveUkCopyrightNotice,
-  recordCopyrightTerritorialPolicyApproval,
+  recordCopyrightJurisdictionPolicyApproval,
   recordEuCopyrightStatementOfReasons,
   recordUkCopyrightReview,
   submitEuCopyrightRedress,
@@ -135,11 +135,11 @@ export async function createTerritorialActors(): Promise<TerritorialActors> {
 
 /** Approves a fresh policy version so the jurisdiction accepts intake. Approvals are shared and
  * permanent in the test database, exactly as the existing route tests leave them. */
-export async function approveTerritorialPolicy(
+export async function approveJurisdictionPolicy(
   administrator: PrivateUser,
   jurisdiction: TerritorialJurisdiction,
 ) {
-  return recordCopyrightTerritorialPolicyApproval(administrator, {
+  return recordCopyrightJurisdictionPolicyApproval(administrator, {
     jurisdiction,
     policyVersion: `${jurisdiction.slice(0, 2)}-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
   })

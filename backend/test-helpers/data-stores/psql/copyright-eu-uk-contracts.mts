@@ -58,6 +58,7 @@ export async function readTerritorialClockColumnNames(): Promise<string[]> {
         table_name LIKE 'copyright_eu_%'
         OR table_name LIKE 'copyright_uk_%'
         OR table_name LIKE 'copyright_territorial_%'
+      OR table_name LIKE 'copyright_jurisdiction_policy_%'
       )
       AND column_name IN (
         'earliest_restoration_at',
@@ -80,15 +81,16 @@ export async function readTerritorialContractTableNames(): Promise<string[]> {
       table_name LIKE 'copyright_eu_%'
       OR table_name LIKE 'copyright_uk_%'
       OR table_name LIKE 'copyright_territorial_%'
+      OR table_name LIKE 'copyright_jurisdiction_policy_%'
     )
     ORDER BY table_name
   `)
   return rows.map(row => row.table_name)
 }
 
-export async function rejectUsTerritorialPolicyApproval(): Promise<void> {
-  await write(sql`/* rejectUsTerritorialPolicyApproval */
-    INSERT INTO copyright_territorial_policy_approvals (jurisdiction, policy_version)
+export async function rejectUsJurisdictionPolicyApproval(): Promise<void> {
+  await write(sql`/* rejectUsJurisdictionPolicyApproval */
+    INSERT INTO copyright_jurisdiction_policy_approvals (jurisdiction, policy_version)
     VALUES ('us_dmca', 'us-dmca')
   `)
 }
@@ -103,7 +105,7 @@ export async function rejectEuReceiptForUsNotice(): Promise<void> {
     WITH actor AS (
       INSERT INTO users DEFAULT VALUES RETURNING id
     ), approval AS (
-      INSERT INTO copyright_territorial_policy_approvals (
+      INSERT INTO copyright_jurisdiction_policy_approvals (
         jurisdiction, policy_version, approved_by_id
       )
       SELECT 'eu_dsa', ${version}, id FROM actor
@@ -124,7 +126,7 @@ export async function rejectEuReceiptForUsNotice(): Promise<void> {
   if (!fixture) throw new Error('missing US notice fixture')
   await write(sql`/* rejectEuReceiptForUsNotice */
     INSERT INTO copyright_territorial_notice_receipts (
-      copyright_notice_id, jurisdiction, copyright_territorial_policy_approval_id,
+      copyright_notice_id, jurisdiction, copyright_jurisdiction_policy_approval_id,
       requester_user_id, idempotency_key, request_sha256, hosted_use_url, grounds_ciphertext
     ) VALUES (
       ${fixture.notice_id}, 'eu_dsa', ${fixture.approval_id}, ${fixture.user_id}, ${randomUUID()},
@@ -133,50 +135,50 @@ export async function rejectEuReceiptForUsNotice(): Promise<void> {
   `)
 }
 
-export async function concealTerritorialPolicyApprovals(
+export async function concealJurisdictionPolicyApprovals(
   transaction: TransactionQuery,
   jurisdiction: 'eu_dsa' | 'uk',
   actorId: string,
 ): Promise<void> {
-  await transaction(sql`/* concealTerritorialPolicyApprovals */
-    INSERT INTO copyright_territorial_policy_withdrawals (
-      copyright_territorial_policy_approval_id, withdrawn_by_id
+  await transaction(sql`/* concealJurisdictionPolicyApprovals */
+    INSERT INTO copyright_jurisdiction_policy_withdrawals (
+      copyright_jurisdiction_policy_approval_id, withdrawn_by_id
     )
     SELECT approval.id, ${actorId}
-    FROM copyright_territorial_policy_approvals approval
+    FROM copyright_jurisdiction_policy_approvals approval
     WHERE approval.jurisdiction = ${jurisdiction}
       AND NOT EXISTS (
-        SELECT 1 FROM copyright_territorial_policy_withdrawals withdrawal
-        WHERE withdrawal.copyright_territorial_policy_approval_id = approval.id
+        SELECT 1 FROM copyright_jurisdiction_policy_withdrawals withdrawal
+        WHERE withdrawal.copyright_jurisdiction_policy_approval_id = approval.id
       )
   `)
 }
 
-export async function insertTerritorialPolicyApproval(
+export async function insertJurisdictionPolicyApproval(
   transaction: TransactionQuery,
   jurisdiction: 'eu_dsa' | 'uk',
   policyVersion: string,
   actorId: string,
 ): Promise<string> {
-  const { rows } = await transaction<{ id: string }>(sql`/* insertTerritorialPolicyApproval */
-    INSERT INTO copyright_territorial_policy_approvals (
+  const { rows } = await transaction<{ id: string }>(sql`/* insertJurisdictionPolicyApproval */
+    INSERT INTO copyright_jurisdiction_policy_approvals (
       jurisdiction, policy_version, approved_by_id
     ) VALUES (${jurisdiction}, ${policyVersion}, ${actorId})
     RETURNING id
   `)
   const approval = rows[0]
-  if (!approval) throw new Error('missing territorial policy approval')
+  if (!approval) throw new Error('missing jurisdiction policy approval')
   return approval.id
 }
 
-export async function insertTerritorialPolicyWithdrawal(
+export async function insertJurisdictionPolicyWithdrawal(
   transaction: TransactionQuery,
   approvalId: string,
   actorId: string,
 ): Promise<void> {
-  await transaction(sql`/* insertTerritorialPolicyWithdrawal */
-    INSERT INTO copyright_territorial_policy_withdrawals (
-      copyright_territorial_policy_approval_id, withdrawn_by_id
+  await transaction(sql`/* insertJurisdictionPolicyWithdrawal */
+    INSERT INTO copyright_jurisdiction_policy_withdrawals (
+      copyright_jurisdiction_policy_approval_id, withdrawn_by_id
     ) VALUES (${approvalId}, ${actorId})
   `)
 }

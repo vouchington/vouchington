@@ -35,7 +35,7 @@ describe('EU copyright notice routes', () => {
     const administratorRequest = createRequest()
     await administratorRequest.authenticateAs(administrator)
     await administratorRequest
-      .post('/api/v1/copyright-territorial-policies')
+      .post('/api/v1/copyright-jurisdiction-policies')
       .send({
         jurisdiction: 'eu_dsa',
         policy_version: `eu-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,

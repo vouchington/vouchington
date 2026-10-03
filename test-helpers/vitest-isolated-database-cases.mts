@@ -29,6 +29,11 @@ const isolatedDatabaseCases = {
     fullName:
       'ActivityPub inbox durable storage bounds > deletes expired rows in deterministic lease-aware locked batches',
   },
+  'copyright-eu-transparency-report': {
+    file: 'backend/services/copyright-notices/eu-copyright-contract.test.mts',
+    fullName:
+      'EU copyright notice contracts > requires a staff statement before redress and reports only stored facts',
+  },
   'copyright-staff-email-intakes': {
     file: 'backend/services/copyright-notices/email-intakes-staff-queue.test.mts',
     fullName:

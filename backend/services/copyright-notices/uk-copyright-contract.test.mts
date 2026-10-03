@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import {
-  concealTerritorialPolicyApprovals,
-  insertTerritorialPolicyApproval,
-  insertTerritorialPolicyWithdrawal,
+  concealJurisdictionPolicyApprovals,
+  insertJurisdictionPolicyApproval,
+  insertJurisdictionPolicyWithdrawal,
   readCopyrightTerritorialContractShape,
   withRolledBackTerritorialTransaction,
 } from '@voucha/test-helpers/data-stores/psql/copyright-eu-uk-contracts'
@@ -17,7 +17,7 @@ import {
 } from './uk-notice-receipt.mts'
 import { recordUkCopyrightRedressDecision, submitUkCopyrightRedress } from './uk-redress.mts'
 import { recordUkCopyrightReview } from './uk-review.mts'
-import { recordCopyrightTerritorialPolicyApproval } from './territorial-policy.mts'
+import { recordCopyrightJurisdictionPolicyApproval } from './jurisdiction-policy.mts'
 import type { TerritorialNoticeRequest } from './territorial-fields.mts'
 
 function noticeRequest(): TerritorialNoticeRequest {
@@ -34,7 +34,7 @@ describe('UK copyright notice contracts', () => {
   it('fails closed without an approved policy and after that approval is withdrawn', async () => {
     const claimant = await createTestUser()
     await withRolledBackTerritorialTransaction(async transaction => {
-      await concealTerritorialPolicyApprovals(transaction, 'uk', claimant.id)
+      await concealJurisdictionPolicyApprovals(transaction, 'uk', claimant.id)
       await expect(
         receiveUkCopyrightNoticeInTransaction(
           claimant,
@@ -43,7 +43,7 @@ describe('UK copyright notice contracts', () => {
           transaction,
         ),
       ).rejects.toMatchObject({ status: 403, message: 'UK copyright notices are not available' })
-      const approvalId = await insertTerritorialPolicyApproval(
+      const approvalId = await insertJurisdictionPolicyApproval(
         transaction,
         'uk',
         `uk-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
@@ -56,7 +56,7 @@ describe('UK copyright notice contracts', () => {
         transaction,
       )
       expect(opened.route_destination).toBe('staff_queue')
-      await insertTerritorialPolicyWithdrawal(transaction, approvalId, claimant.id)
+      await insertJurisdictionPolicyWithdrawal(transaction, approvalId, claimant.id)
       await expect(
         receiveUkCopyrightNoticeInTransaction(
           claimant,
@@ -75,7 +75,7 @@ describe('UK copyright notice contracts', () => {
       createTestUser({ administrator: true }),
       createTestUser(),
     ])
-    await recordCopyrightTerritorialPolicyApproval(administrator, {
+    await recordCopyrightJurisdictionPolicyApproval(administrator, {
       jurisdiction: 'uk',
       policyVersion: `uk-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
     })

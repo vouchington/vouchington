@@ -9,7 +9,7 @@ import {
 } from './territorial-acknowledgment-sql.mts'
 import type { TerritorialCopyrightJurisdiction } from './territorial-fields.mts'
 import { territorialLabels } from './territorial-labels.mts'
-import { lockCurrentCopyrightTerritorialPolicy } from './territorial-policy.mts'
+import { lockCurrentCopyrightJurisdictionPolicy } from './jurisdiction-policy.mts'
 
 export type TerritorialCopyrightAcknowledgment = {
   id: string
@@ -54,7 +54,7 @@ export async function recordTerritorialCopyrightAcknowledgment(
       'Forbidden',
     )
   }
-  await lockCurrentCopyrightTerritorialPolicy(jurisdiction, transaction)
+  await lockCurrentCopyrightJurisdictionPolicy(jurisdiction, transaction)
   const { rows: updatedRows } = await transaction<TerritorialCopyrightAcknowledgment>(
     updateTerritorialAcknowledgmentQuery(current.id, outcome),
   )

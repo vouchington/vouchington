@@ -36,7 +36,7 @@ import type {
 // Every handler keeps its admission order (kill switch, content type, authentication and role, rate
 // limit, suspension, CAPTCHA, Idempotency-Key, field-named parsers, path id) and adds the generated
 // contract immediately before the first service call. The service still decides ownership,
-// territorial availability, and existence, so those rejections stay behind a malformed body, as a
+// jurisdiction availability, and existence, so those rejections stay behind a malformed body, as a
 // missing field already did.
 app.route('/api/v1/copyright-uk-notices').post(async (ctx: Context) => {
   setPrivateNoStoreCacheHeaders(ctx)
