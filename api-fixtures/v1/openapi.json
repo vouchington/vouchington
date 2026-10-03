@@ -78449,6 +78449,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "include_bio",
+            "required": false,
+            "schema": {
+              "enum": ["0", "1"],
+              "type": "string"
+            }
           }
         ],
         "responses": {

@@ -219,6 +219,7 @@ const expectedParameters = {
   'GET:/api/v1/trending-referral-programs': ['after', 'limit'],
   'GET:/api/v1/urls/:id/crawls': ['after', 'limit'],
   'GET:/api/v1/users': ['after', 'limit'],
+  'GET:/api/v1/users/:idOrSlug': ['include_bio'],
   'GET:/api/v1/users/:idOrSlug/communities/:listType': ['after', 'limit'],
   'GET:/api/v1/users/:idOrSlug/domains/:listType': ['after', 'limit'],
   'GET:/api/v1/users/:idOrSlug/posts/:listType': ['after', 'limit'],
