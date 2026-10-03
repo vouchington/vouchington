@@ -1,7 +1,6 @@
 # Codex reads checked-in AGENTS.md files. Do not add a CLAUDE.md fallback.
 plan_mode_reasoning_effort = "xhigh"
 model_reasoning_effort = "medium"
-model = "gpt-6-astra"
 sandbox_mode = "workspace-write"
 approval_policy = "on-request"
 approvals_reviewer = "auto_review"
