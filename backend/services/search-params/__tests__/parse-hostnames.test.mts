@@ -19,6 +19,7 @@ describe('parse-hostnames', () => {
     expect(result.blocked).toBe(false)
     expect(result.crawlable).toBeUndefined()
     expect(result.limit).toBe(50)
+    expect(result).not.toHaveProperty('topic_ids')
   })
 
   it('parseHostnamesSearchParams parses query and hostname strings', async () => {

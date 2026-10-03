@@ -102,6 +102,49 @@ describe('parse-rss-feeds', () => {
     expect(searchOptions.topic_match).toBeUndefined()
   })
 
+  it('includes only resolved plural publisher type ids', async () => {
+    const publisherTypeId = 'cccccccc-0000-0000-0000-000000000003'
+    resolveHashtagTopicSearch.mockResolvedValue({
+      filters: [],
+      hasUnknown: false,
+      topicIds: [],
+      textSearchQuery: undefined,
+    })
+    const getTopicIdsByAnyCachedBatchMock = vi
+      .fn<typeof getTopicIdsByAnyCachedBatch>()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([publisherTypeId])
+
+    const { shouldReturnEmpty, searchOptions } = await parseRssFeedsSearchParams(
+      { publisher_types: ['local-news'] },
+      { getTopicIdsByAnyCachedBatch: getTopicIdsByAnyCachedBatchMock, resolveHashtagTopicSearch },
+    )
+
+    expect(shouldReturnEmpty).toBe(false)
+    expect(searchOptions.publisher_type_ids).toEqual([publisherTypeId])
+  })
+
+  it('omits the plural publisher type filter when no identifiers resolve', async () => {
+    resolveHashtagTopicSearch.mockResolvedValue({
+      filters: [],
+      hasUnknown: false,
+      topicIds: [],
+      textSearchQuery: undefined,
+    })
+    const getTopicIdsByAnyCachedBatchMock = vi
+      .fn<typeof getTopicIdsByAnyCachedBatch>()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+
+    const { shouldReturnEmpty, searchOptions } = await parseRssFeedsSearchParams(
+      { publisher_types: ['missing-type'] },
+      { getTopicIdsByAnyCachedBatch: getTopicIdsByAnyCachedBatchMock, resolveHashtagTopicSearch },
+    )
+
+    expect(shouldReturnEmpty).toBe(true)
+    expect(searchOptions).not.toHaveProperty('publisher_type_ids')
+  })
+
   it('returns an empty result for an unknown or unlinked hashtag', async () => {
     resolveHashtagTopicSearch.mockResolvedValue({
       filters: [{ kind: 'exact_alias', aliasId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' }],

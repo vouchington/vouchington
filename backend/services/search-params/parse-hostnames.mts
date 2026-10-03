@@ -70,6 +70,7 @@ async function parseHostnamesSearchParamsImpl(
     [{ identifier: topicIdentifier, resolved: resolvedTopicId }],
     [{ identifiers: topicIdentifiers, resolved: resolvedTopicIds }],
   )
+  const topicIds = resolvedTopicIds.filter((id): id is string => !!id)
 
   return {
     shouldReturnEmpty,
@@ -77,9 +78,7 @@ async function parseHostnamesSearchParamsImpl(
     query: query.query ? stringFromUnknown(query.query) : undefined,
     hostname: query.hostname ? stringFromUnknown(query.hostname) : undefined,
     ...(resolvedTopicId ? { topic_id: resolvedTopicId } : {}),
-    ...(resolvedTopicIds.filter((id): id is string => !!id).length > 0
-      ? { topic_ids: resolvedTopicIds.filter((id): id is string => !!id) }
-      : {}),
+    ...(topicIds.length > 0 ? { topic_ids: topicIds } : {}),
     ...(query.topic_match === 'all' ? { topic_match: 'all' as const } : {}),
     ...(query.include_descendants !== undefined
       ? { include_descendants: parseBooleanish(query.include_descendants) }
