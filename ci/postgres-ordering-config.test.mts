@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { parse as parseYaml } from 'yaml'
 
+import { NO_MISTAKES_SCHEMA_CATALOG_PATH } from './no-mistakes-schema-catalog.mts'
 import { trackedFiles } from './test-helpers/tracked-files.mts'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
@@ -19,7 +20,7 @@ describe('PostgreSQL ordering guard config', () => {
       rules: Array<{ name: string; options?: Record<string, unknown>; rule: string; scope: string }>
     }
     const expectedOptions = {
-      schemaCatalogPath: 'backend/data-stores/psql/schema-snapshot/schema.json',
+      schemaCatalogPath: NO_MISTAKES_SCHEMA_CATALOG_PATH,
       sqlInclude: ['backend/data-stores/psql/config-driven/**/*.sql'],
       include: ['backend/**/*.mts', 'backend/**/*.ts'],
       exclude: [

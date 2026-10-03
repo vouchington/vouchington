@@ -6,8 +6,8 @@ import type { Topic } from './types.mts'
  * idx_topics__slug is a non-partial unique index.
  */
 export async function topicSlugExists(slug: string): Promise<boolean> {
-  // no-mistakes-disable-next-line postgres-required-predicates: any lifecycle state is intentional, see doc comment above
   const { rows } = await read(
+    // no-mistakes-disable-next-line postgres-required-predicates: any lifecycle state is intentional, see doc comment above
     `/* topicSlugExists */ SELECT 1 FROM topics WHERE slug = $1 LIMIT 1`,
     [slug.toLowerCase().trim()],
   )
@@ -20,8 +20,8 @@ export async function topicSlugExists(slug: string): Promise<boolean> {
  * merged topic names are still reserved and unavailable for new creates.
  */
 export async function topicNameExists(name: string): Promise<boolean> {
-  // no-mistakes-disable-next-line postgres-required-predicates: any lifecycle state is intentional, see doc comment above
   const { rows } = await read(
+    // no-mistakes-disable-next-line postgres-required-predicates: any lifecycle state is intentional, see doc comment above
     `/* topicNameExists */ SELECT 1 FROM topics WHERE LOWER(name) = LOWER($1) LIMIT 1`,
     [name.trim()],
   )

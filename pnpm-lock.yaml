@@ -86,8 +86,8 @@ importers:
         specifier: ^18.5.0
         version: 18.5.0
       eslint-plugin-no-mistakes:
-        specifier: ^0.68.0
-        version: 0.68.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
+        specifier: ^0.69.0
+        version: 0.69.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
       eslint-plugin-playwright:
         specifier: ^2.12.0
         version: 2.12.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
@@ -119,8 +119,8 @@ importers:
         specifier: ^6
         version: 6.38.0
       no-mistakes:
-        specifier: ^0.68.0
-        version: 0.68.0
+        specifier: ^0.69.0
+        version: 0.69.0
       oxfmt:
         specifier: ^0.71.0
         version: 0.71.0
@@ -170,8 +170,8 @@ importers:
         specifier: ^5.0.3
         version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.3)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.2(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       vouchington-tooling:
-        specifier: ^0.27.0
-        version: 0.27.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.3)
+        specifier: ^0.29.0
+        version: 0.29.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.3)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -1404,8 +1404,8 @@ importers:
         specifier: npm:@typescript/typescript6@^6.0.2
         version: '@typescript/typescript6@6.0.2'
       vouchington-tooling:
-        specifier: ^0.27.0
-        version: 0.27.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.3)
+        specifier: ^0.29.0
+        version: 0.29.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.3)
 
   backend/data-stores/valkey:
     dependencies:
@@ -10788,8 +10788,8 @@ importers:
         specifier: ^0.8.1
         version: 0.8.1
       vouchington-tooling:
-        specifier: ^0.27.0
-        version: 0.27.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.3)
+        specifier: ^0.29.0
+        version: 0.29.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.3)
     devDependencies:
       '@ts-shared/utils':
         specifier: workspace:^
@@ -13003,8 +13003,8 @@ importers:
         specifier: ^3.3.1
         version: 3.3.1
       no-mistakes:
-        specifier: ^0.68.0
-        version: 0.68.0
+        specifier: ^0.69.0
+        version: 0.69.0
       picomatch:
         specifier: ^4.0.4
         version: 4.0.7
@@ -13027,8 +13027,8 @@ importers:
         specifier: ^11.0.5
         version: 11.0.5
       vouchington-tooling:
-        specifier: ^0.27.0
-        version: 0.27.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.3)
+        specifier: ^0.29.0
+        version: 0.29.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.3)
     devDependencies:
       '@types/picomatch':
         specifier: ^4.0.3
@@ -13260,8 +13260,8 @@ importers:
         specifier: ^8.20.0
         version: 8.20.0
       no-mistakes:
-        specifier: ^0.68.0
-        version: 0.68.0
+        specifier: ^0.69.0
+        version: 0.69.0
       oxfmt:
         specifier: ^0.71.0
         version: 0.71.0
@@ -13269,8 +13269,8 @@ importers:
         specifier: ^1.9.0
         version: 1.9.0
       vouchington-tooling:
-        specifier: ^0.27.0
-        version: 0.27.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.3)
+        specifier: ^0.29.0
+        version: 0.29.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.3)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -19421,9 +19421,6 @@ packages:
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
 
-  csv-parse@7.0.2:
-    resolution: {integrity: sha512-uKZghv9UmPkMVLYy//KZ9HFAIJsl7wkhoEdIL0+rhuSY9pZQlhaeGEDPIe+/w7eh81MOql8Q/9+inAGWG6ZHYA==}
-
   csv-parse@7.0.3:
     resolution: {integrity: sha512-YFd3QM/yo17vH91L1IOZuvl09zM0zEEtdfTcOCKWcMdM++MNaQSyp09slXyFCLaPXvHstQFx/xC8myiFHSMUvw==}
 
@@ -19774,8 +19771,8 @@ packages:
     resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
     engines: {node: '>=12'}
 
-  eslint-plugin-no-mistakes@0.68.0:
-    resolution: {integrity: sha512-ci9IxXKhW3bAAVAUEBVkM5JFk/+EFdbQy6FV5jMINldC/K+vlQBPIgRz7ntnW15i97/CRugJ4FIWDBFPa+dtGA==}
+  eslint-plugin-no-mistakes@0.69.0:
+    resolution: {integrity: sha512-TKBnop6hJAt14MLgzM7zAyzk1OymjCXd4kUyK+lpQ9IaLtW38l9e0l0VBpRnvBW+6z4AjZg/nWoxVsST1KIoBA==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
     peerDependencies:
       eslint: '>=9'
@@ -21125,30 +21122,30 @@ packages:
       sass:
         optional: true
 
-  no-mistakes-darwin-arm64@0.68.0:
-    resolution: {integrity: sha512-/+sNg6YEKfXuWyawUVbX4I1RqX33pJCuV4yCGaOijmlOWMTOQfAUYqMuM5iUJnqsNLADNJTbhCCHcXTMMOMV7Q==}
+  no-mistakes-darwin-arm64@0.69.0:
+    resolution: {integrity: sha512-TpfotDhcMRDGFEe++wP3081zWXNyZtXijyk1UB3BL+uYgWzitR5EE0yNigXuNjBC/DI/5T5hbGfMih3XtoMhUw==}
     cpu: [arm64]
     os: [darwin]
 
-  no-mistakes-linux-arm64-gnu@0.68.0:
-    resolution: {integrity: sha512-rNQHK7YyAWOHssdWHAqR9d+zDyW0h5za0RmlTc+owyGJZkSTfjVpVhEkW4X+8zQ+x/2Nz7J0FygtfyhAx02Rtg==}
+  no-mistakes-linux-arm64-gnu@0.69.0:
+    resolution: {integrity: sha512-qZIc6m6YrKn227PR4CFALlW/6EmRG4hCvcwMLLcNScDi0q3AcbWQ6Rxg8NfqDgk2Ch1Kxk5syh7rdJpTKXVsuA==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-linux-x64-gnu@0.68.0:
-    resolution: {integrity: sha512-29XluHN70MN/DK8Kd0UV8ho2fFo7gkwjQbBI8meZq47zeQLUrEZLq7g7cVgqSbm/iXXC2VE78TxQ9gEUG1CUHQ==}
+  no-mistakes-linux-x64-gnu@0.69.0:
+    resolution: {integrity: sha512-nvqCph9GTGwVghXtmykwSnCN50VojqAF1vuAEB8WucYaTnrP1dmDa2ZlPJvOEeSWYGINn8kZCcAVY4F1yJvrIw==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-win32-x64-msvc@0.68.0:
-    resolution: {integrity: sha512-PDZYguEtqJGf/j2uTjqpyLhjr0crSbEYaahwKjIkhoC3AeC5wAVjvX0LWYuM4F8SUofJpvI7QfYTohYolVVIkQ==}
+  no-mistakes-win32-x64-msvc@0.69.0:
+    resolution: {integrity: sha512-JemvaO4P/ln55CHuNxcIeQN9Wn4E8h9fzCVR6cwbnQs04D/KkQ+3l+k6VN/MdkU6ugVehFBWZ1p4SVHp2sl/0g==}
     cpu: [x64]
     os: [win32]
 
-  no-mistakes@0.68.0:
-    resolution: {integrity: sha512-AK/j6hfMAtT5M29jgBBy80NgMd5y8Bbb5xxxd6adttdNta7gAjspSYd3YrQJeTvDHE2HcnvNZ8Jkhto10FfbKg==}
+  no-mistakes@0.69.0:
+    resolution: {integrity: sha512-eKXOJV5ETBZ8M1tImOkVL6KQ3hfKkBRrTvlWm6lhm/0IA2WwfE62VIhLneSJo1yIJQ6d8BoX4eLKGSpqnGgs+w==}
     hasBin: true
 
   node-app-attest@1.0.1:
@@ -22638,8 +22635,8 @@ packages:
       jsdom:
         optional: true
 
-  vouchington-tooling@0.27.0:
-    resolution: {integrity: sha512-hTLI2+jaxjH5fBqZRdrGu9+yt230zKuqekowcyT1A+VW0r6Z7u5RaLr5eyo1GevhO8RYp0+kZvSyRiaZJnd3dQ==}
+  vouchington-tooling@0.29.0:
+    resolution: {integrity: sha512-jemwWvzNkosLrBoFieIKBsCxlR7162iUxhPMcH61qr8Z4sBZIQWhKY6CZfPcHqhiBbUsH2/ZIFiTvBuJCLEkcQ==}
     engines: {node: '>=24.0.0'}
     hasBin: true
     peerDependencies:
@@ -28441,8 +28438,6 @@ snapshots:
 
   csstype@3.2.3: {}
 
-  csv-parse@7.0.2: {}
-
   csv-parse@7.0.3: {}
 
   csv-stringify@6.8.3: {}
@@ -28807,7 +28802,7 @@ snapshots:
 
   escape-string-regexp@5.0.0: {}
 
-  eslint-plugin-no-mistakes@0.68.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
+  eslint-plugin-no-mistakes@0.69.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
     dependencies:
       eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
 
@@ -30319,24 +30314,24 @@ snapshots:
       - '@babel/core'
       - babel-plugin-macros
 
-  no-mistakes-darwin-arm64@0.68.0:
+  no-mistakes-darwin-arm64@0.69.0:
     optional: true
 
-  no-mistakes-linux-arm64-gnu@0.68.0:
+  no-mistakes-linux-arm64-gnu@0.69.0:
     optional: true
 
-  no-mistakes-linux-x64-gnu@0.68.0:
+  no-mistakes-linux-x64-gnu@0.69.0:
     optional: true
 
-  no-mistakes-win32-x64-msvc@0.68.0:
+  no-mistakes-win32-x64-msvc@0.69.0:
     optional: true
 
-  no-mistakes@0.68.0:
+  no-mistakes@0.69.0:
     optionalDependencies:
-      no-mistakes-darwin-arm64: 0.68.0
-      no-mistakes-linux-arm64-gnu: 0.68.0
-      no-mistakes-linux-x64-gnu: 0.68.0
-      no-mistakes-win32-x64-msvc: 0.68.0
+      no-mistakes-darwin-arm64: 0.69.0
+      no-mistakes-linux-arm64-gnu: 0.69.0
+      no-mistakes-linux-x64-gnu: 0.69.0
+      no-mistakes-win32-x64-msvc: 0.69.0
 
   node-app-attest@1.0.1:
     dependencies:
@@ -32052,12 +32047,12 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vouchington-tooling@0.27.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.3):
+  vouchington-tooling@0.29.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.3):
     dependencies:
       '@types/mdast': 4.0.4
       '@types/unist': 3.0.3
-      csv-parse: 7.0.2
-      csv-stringify: 6.8.3
+      csv-parse: 7.0.3
+      csv-stringify: 6.9.0
       dockerfile-ast: 0.7.1
       picomatch: 4.0.7
       remark: 15.0.1(supports-color@10.2.2)

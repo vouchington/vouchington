@@ -14,8 +14,8 @@ type FeedLookupResult = { id: string; topic_id: string; topic_slug: string }
 export async function findExistingFeedByUrlId(
   rssFeedUrlId: string,
 ): Promise<FeedLookupResult | null> {
-  // no-mistakes-disable-next-line postgres-required-predicates: feed dedup intentionally spans inactive topic lifecycle states
   const { rows } = await read(
+    // no-mistakes-disable-next-line postgres-required-predicates: feed dedup intentionally spans inactive topic lifecycle states
     sql`/* findExistingFeedByUrlId */ SELECT COALESCE(canonical.id, rf.id) AS id, COALESCE(canonical.topic_id, rf.topic_id) AS topic_id, COALESCE(ct.slug, t.slug) AS topic_slug FROM rss_feeds rf JOIN topics t ON t.id = rf.topic_id LEFT JOIN rss_feeds canonical ON canonical.id = rf.canonical_rss_feed_id AND canonical.deleted_at IS NULL LEFT JOIN topics ct ON ct.id = canonical.topic_id WHERE rf.rss_feed_url_id = ${rssFeedUrlId} AND rf.deleted_at IS NULL LIMIT 1`,
   )
   return (rows[0] as FeedLookupResult | undefined) ?? null
@@ -28,8 +28,8 @@ export async function findExistingFeedByUrlId(
  * Same dedup invariant as findExistingFeedByUrlId — see that function's JSDoc.
  */
 export async function findExistingFeedByUrl(url: string): Promise<FeedLookupResult | null> {
-  // no-mistakes-disable-next-line postgres-required-predicates: feed dedup intentionally spans inactive topic lifecycle states
   const { rows } = await read(
+    // no-mistakes-disable-next-line postgres-required-predicates: feed dedup intentionally spans inactive topic lifecycle states
     sql`/* findExistingFeedByUrl */ SELECT COALESCE(canonical.id, rf.id) AS id, COALESCE(canonical.topic_id, rf.topic_id) AS topic_id, COALESCE(ct.slug, t.slug) AS topic_slug FROM rss_feeds rf JOIN urls u ON u.id = rf.rss_feed_url_id JOIN topics t ON t.id = rf.topic_id LEFT JOIN rss_feeds canonical ON canonical.id = rf.canonical_rss_feed_id AND canonical.deleted_at IS NULL LEFT JOIN topics ct ON ct.id = canonical.topic_id WHERE u.url = ${url} AND rf.deleted_at IS NULL LIMIT 1`,
   )
   return (rows[0] as FeedLookupResult | undefined) ?? null

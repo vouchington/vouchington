@@ -78,12 +78,13 @@ async function createTopicInDatabase(
     assert(url, 422, 'homepage_url_id does not reference a known URL')
   }
 
-  const { rows } = await write(
-    sql`/* createTopicInDatabase */
+  const createTopicSql = sql`/* createTopicInDatabase */
     WITH source_alias_owner AS (
-      -- no-mistakes-disable-next-line postgres-required-predicates: source-alias owner must be soft-deleted to revive it
       SELECT topic.id
-      FROM topic_aliases source_alias
+`
+  createTopicSql.append(
+    // no-mistakes-disable-next-line postgres-required-predicates: source-alias owner must be soft-deleted to revive it
+    sql`FROM topic_aliases source_alias
       JOIN topics topic ON topic.id = source_alias.topic_id
       WHERE source_alias.id = ${updates.source_topic_alias_id ?? null}
         AND topic.slug = ${updates.slug}
@@ -132,8 +133,8 @@ async function createTopicInDatabase(
     UNION ALL
     SELECT id FROM inserted_topic
   `,
-    options,
   )
+  const { rows } = await write(createTopicSql, options)
 
   const topicId = rows[0].id as string
   if (updates.source_topic_alias_id) {

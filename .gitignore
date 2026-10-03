@@ -81,6 +81,9 @@ test-report.junit.xml
 # dependency-cruiser incremental cache
 .dependency-cruiser-cache/
 
+# Projected for no-mistakes 0.69 from the committed schema snapshot. Regenerated before check.
+backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
+
 # Other unused harness dirs (Claude, Codex, Grok, and Cursor use first-class trees)
 .kilocode/
 .kiro/

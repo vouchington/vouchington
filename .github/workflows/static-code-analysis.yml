@@ -130,6 +130,8 @@ jobs:
         with:
           cache: false
         timeout-minutes: 3
+      - name: Project the no-mistakes schema catalog
+        run: node ci/no-mistakes-schema-catalog.mts
       - name: Run no-mistakes
         run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check --tsconfig tsconfig.json
         timeout-minutes: 10

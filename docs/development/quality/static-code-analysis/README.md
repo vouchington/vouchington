@@ -729,7 +729,9 @@ This section records the outcomes of the evaluation in #5044 so the tracking iss
   `triggerWrittenColumns` stay in [`.no-mistakes.yml`](../../../../.no-mistakes.yml)).
   `postgres-sql-shape-policy` bans unrestricted `EXISTS (… UNION …)`.
   `postgres-required-predicates` requires `deleted_at IS NULL` and `merged_into_topic_id IS NULL` on
-  `topics` queries. The local `config-driven-sql-guard` / `on-conflict-*` /
+  `topics` queries. no-mistakes 0.69 reports that finding on the SQL text line, so an intentional
+  `no-mistakes-disable-next-line` sits on the source line immediately above that SQL. The local
+  `config-driven-sql-guard` / `on-conflict-*` /
   `topics-active-filter-guard` copies are deleted. TypeScript-generated config-driven SQL is still
   judged at test time by `generated-ddl-insert-invariants.mts`.
   Reproduce with `pnpm run no-mistakes`.
@@ -738,7 +740,12 @@ This section records the outcomes of the evaluation in #5044 so the tracking iss
 
 - **Catalog-backed PostgreSQL conflict and lock order → `no-mistakes` 0.59.0**:
   `postgres-conflict-ordering` resolves production multi-row UPSERTs across backend runtime code and
-  deploy-time config-driven SQL against the committed v2 schema snapshot. It requires the conflict
+  deploy-time config-driven SQL against the committed v2 schema snapshot. no-mistakes 0.69 reads
+  check constraints and triggers as `{ definition }` objects and column types as `dataType`. The
+  committed snapshot keeps those constraints and triggers as strings and column types as `type`, so
+  [`ci/no-mistakes-schema-catalog.mts`](../../../../ci/no-mistakes-schema-catalog.mts) writes a
+  gitignored projection before `no-mistakes check`, and the catalog-backed rules set
+  `schemaCatalogPath` to that file. It requires the conflict
   target and source `ORDER BY` to begin with the same unique-index key sequence. The
   catalog-backed `postgres-lock-ordering` configuration applies that prefix to multi-row row locks,
   while the repository-wide configuration continues to require deterministic ordering. Tests, test
