@@ -64,8 +64,9 @@ else: they declare no contract and keep every other status and message.
 ## Statuses
 
 The route-level field parsers run before the contract, so the contract only adds `422` for input the
-parsers never looked at. Every one of these changes is a malformed body that was previously accepted
-and ignored; none is a legal-workflow contract, and a valid request behaves exactly as before.
+parsers never looked at. Apart from the non-object body, every one of these changes is a malformed
+body that was previously accepted and ignored; none is a legal-workflow contract, and a valid
+request behaves exactly as before.
 
 - A JSON `null` body on any of the four decision routes now returns `422` (`Invalid request body`).
   Previously the shared reader read `rationale` from it and answered `500`. An array or scalar body
