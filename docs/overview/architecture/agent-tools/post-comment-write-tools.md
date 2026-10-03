@@ -20,7 +20,7 @@ Articles and blog posts keep the existing administrator restriction; official an
 create reviews or data points. These tools never grant administrator mutation authority over
 another member's content.
 
-Image attachment edits use the separate REST post-images endpoint. `update_post` rejects images and immutable type, thread, community and source URL fields; creation derives `root_id` from its parent. Comments inherit their thread audience and reject audience edits.
+Image attachment edits use the separate REST post-images endpoint. `update_post` rejects images and immutable type, thread, community and source URL fields; creation derives `root_id` from its parent. Comments inherit their thread audience and reject audience inputs in both creation and edits. Creation accepts review_topic_ratings only for reviews and one of url or url_id for links.
 Community creation accepts a canonical UUID `community_id`; exact retries consult admission before mutable community access checks.
 
 Creation requires a UUID `idempotency_key`. The

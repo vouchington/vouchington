@@ -8,7 +8,7 @@ import {
   softDeleteUser,
   getPostDeletedById,
 } from '@voucha/test-helpers'
-import { callRejectedMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
+import { callStructuredMcpTool, callRejectedMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { withConcurrentCommunityReviewDisableForTest } from '@voucha/test-helpers/post-delegated-privacy-race'
 import { deletePost, getPostByAny } from '@services/posts'
 
@@ -118,4 +118,39 @@ describe('delegated post mutation contracts and transaction fences', () => {
     })
     expect(await getPostDeletedById(id)).toEqual({ deleted_by_id: null })
   })
+  it.each([
+    [{ post_type: 'comment', privacy: 'private' }, 'Comments inherit'],
+    [{ post_type: 'comment', broadcast: 'users' }, 'Comments inherit'],
+    [{ post_type: 'discussion', review_topic_ratings: [] }, 'only allowed for review'],
+    [{ post_type: 'link', url: 'https://example.com', url_id: crypto.randomUUID() }, 'Send either'],
+  ])(
+    'rejects type-inapplicable creation fields and releases the failed key: %j',
+    async (fields, message) => {
+      const user = await caller()
+      const parent = await insertTestPost({
+        title: 'Root',
+        slug: crypto.randomUUID(),
+        markdown: 'Root',
+        createdById: user.id,
+        clearanceStatus: 'approved',
+      })
+      const key = crypto.randomUUID()
+      const body = {
+        idempotency_key: key,
+        title: crypto.randomUUID(),
+        markdown: 'Useful content',
+        ...fields,
+        ...('post_type' in fields && fields.post_type === 'comment' ? { parent_id: parent } : {}),
+      }
+      expect(await callRejectedMcpTool(user, 'create_post', body, SCOPES)).toContain(message)
+      expect(
+        await callStructuredMcpTool(
+          user,
+          'create_post',
+          { idempotency_key: key, title: crypto.randomUUID(), markdown: 'Corrected discussion' },
+          SCOPES,
+        ),
+      ).toMatchObject({ success: true, post: { post_type: 'discussion' } })
+    },
+  )
 })
