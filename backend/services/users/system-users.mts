@@ -3,7 +3,6 @@ import type { BasicUser } from './types.mts'
 import { isSlug } from '@modules/utils'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import { addUserRole } from './roles-permissions.mts'
 import { getPrivateUserByAny } from './get.mts'
 import {
   AUTOTAGGER_AGENT_SYSTEM_USERNAME,
@@ -65,12 +64,6 @@ export const upsertSystemUser = async (
   const result = rows[0]
   await query.commit()
   return result
-}
-
-export const upsertSystemAdministrator = async (username: string): Promise<SystemUserRow> => {
-  const user = await upsertSystemUser(username, 'official')
-  await addUserRole(user.id, 'administrator')
-  return user
 }
 
 export const upsertAdminEmailAddresses = async (

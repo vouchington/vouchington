@@ -1,6 +1,5 @@
 import { expect, it, describe } from 'vitest'
 import {
-  upsertSystemAdministrator,
   upsertSystemUser,
   upsertAdminEmailAddresses,
   getUserByPrimaryEmail,
@@ -14,30 +13,18 @@ import {
   safeUsername,
 } from '@voucha/test-helpers'
 
-describe('upsertSystemAdministrator', () => {
-  it('ensures administrator role on existing user', async () => {
-    const random = Math.random().toString(36).slice(2, 10)
-    const username = `system-admin-${random}`
-
-    const user = await upsertSystemAdministrator(username)
-    await upsertSystemAdministrator(username)
-
-    const refreshed = await getPrivateUserByAny(user.id)
-    expect(refreshed?.roles).toContain('administrator')
-  })
-})
-
 describe('getSystemUserForAuthorization', () => {
-  it('loads persisted authorization roles for a system administrator', async () => {
+  it('loads the persisted role-free system actor', async () => {
     const username = safeUsername('system-actor')
-    const systemUser = await upsertSystemAdministrator(username)
+    const systemUser = await upsertSystemUser(username)
 
     const actor = await getSystemUserForAuthorization(username)
     const persistedRoles = await getTestUserRoleSlugs(systemUser.id)
 
     expect(actor?.id).toBe(systemUser.id)
     expect(actor?.__entity_type).toBe('user')
-    expect(persistedRoles).toContain('administrator')
+    expect(persistedRoles).toEqual([])
+    expect(actor?.account_type).toBe('system')
     expect(actor?.roles.toSorted()).toEqual(persistedRoles)
   })
 
@@ -108,7 +95,7 @@ describe('upsertSystemUser', () => {
 describe('upsertAdminEmailAddresses', () => {
   it('inserts email addresses for a user and is idempotent', async () => {
     const random = Math.random().toString(36).slice(2, 10)
-    const user = await upsertSystemAdministrator(`email-test-${random}`)
+    const user = await createTestUserDirect({ administrator: true })
 
     const emails = [
       { email: `tests+primary-${random}@voucha.ai`, isPrimary: true },
