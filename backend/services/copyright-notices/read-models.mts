@@ -7,6 +7,10 @@ import { assertNotSuspended } from '@services/users'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import type { CopyrightEmailSesVerdict, CopyrightEmailSesVerdicts } from './email-ses-verdicts.mts'
+import {
+  selectCopyrightParticipantStatements,
+  type CopyrightParticipantStatement,
+} from './participant-statements.mts'
 import { liveCopyrightCiphertext } from './erased-ciphertext.mts'
 import {
   copyrightTimelineEventTypesFor,
@@ -170,6 +174,7 @@ export type CopyrightPublicNoticeDetail = CopyrightPublicNotice & {
 }
 
 export type CopyrightParticipantNoticeDetail = CopyrightPublicNoticeDetail & {
+  statements: CopyrightParticipantStatement[]
   viewer_role: 'claimant' | 'poster' | 'staff'
   respondable_target_ids: string[]
   submissions: Array<{ id: string; kind: string; received_at: Date; source_kind: string }>
@@ -353,9 +358,16 @@ export async function getCopyrightParticipantNoticeDetail(
       ORDER BY target.id
     `),
   ])
+  const statements = await selectCopyrightParticipantStatements(
+    noticeId,
+    currentUser.id,
+    viewerRole,
+    transaction,
+  )
   await transaction.commit()
   return {
     ...detail,
+    statements,
     viewer_role: viewerRole,
     respondable_target_ids: respondableTargets.map(target => target.id),
     submissions,

@@ -22,7 +22,7 @@ Right now the process covers images in Voucha posts. A notice names each image b
 
 ## A Person Reviews Every Notice
 
-A moderator reviews every copyright notice before we act on it. We may use automated tools to screen out spam or summarize a notice, but a person decides. We don't act on a notice that's missing required information.
+We may use automated tools to screen or summarize a notice, and automatic provisional withholding may hide an image pending review. A person reviews the decision. Each notice explains whether automated tools assisted or imposed a provisional restriction. We don't act on a notice that's missing required information.
 
 A case records a claim. It doesn't mean the poster infringed anything, and it doesn't prove that the person who filed it owns the work.
 
@@ -31,7 +31,7 @@ A case records a claim. It doesn't mean the poster infringed anything, and it do
 - **The image is hidden in that post, for everyone.** It's hidden in every country, not just the US. The rest of the post stays up.
 - **Other posts aren't affected.** If the same image appears in another post, that post isn't changed unless the notice names it too.
 - **Nothing is deleted.** We keep the image so we can restore it if the decision changes.
-- **The poster is told.** We email the poster, and the case appears on the case list at `/copyright/notices`.
+- **Both sides are told.** The poster gets an email and an in-app notice with the reasons and redress routes. The notifier gets a decision email. Accepted cases appear at `/copyright/notices`, where each signed-in participant sees their own notices.
 
 ## What Other Members Can See
 

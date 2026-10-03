@@ -7,6 +7,7 @@
     "provisional_withholding_at": "2026-07-01T12:01:00.000Z",
     "received_at": "2026-07-01T12:00:00.000Z",
     "respondable_target_ids": ["00000000-0000-7000-8000-000000000805"],
+    "statements": [],
     "submissions": [],
     "target_count": 1,
     "targets": [

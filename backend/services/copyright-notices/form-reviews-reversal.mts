@@ -2,6 +2,7 @@ import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
 import sql from 'sql-template-strings'
 import { getImagePlacementKey } from '@services/images/placements'
+import { createCopyrightReviewOutcomeNoticesInTransaction } from './review-outcome-notices.mts'
 import { createCopyrightRestoreIntentForReversalInTransaction } from './restoration-reversal.mts'
 
 export async function reverseAutomatedCopyrightRestrictions(
@@ -74,6 +75,11 @@ export async function reverseAutomatedCopyrightRestrictionsInTransaction(
     // oxlint-disable-next-line no-await-in-loop -- each placement owns an independent durable saga.
     const intent = await createCopyrightRestoreIntentForReversalInTransaction(
       restriction.id,
+      transaction,
+    )
+    // oxlint-disable-next-line no-await-in-loop -- each newly reviewed restriction requires durable notices.
+    await createCopyrightReviewOutcomeNoticesInTransaction(
+      { noticeId, restrictionId: restriction.id, action: 'reverse' },
       transaction,
     )
     intentIds.push(intent.id)

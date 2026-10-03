@@ -1,4 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
+import { copyrightReceiptText } from './statement-of-reasons-wording.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { createDeterministicCopyrightCorrespondenceInTransaction } from './correspondence.mts'
 
@@ -12,7 +13,7 @@ export async function createCopyrightFormReceiptInTransaction(
       noticeId: input.noticeId,
       submissionId: input.submissionId,
       correspondenceKind: 'receipt',
-      bodyText: `We received your copyright notice for case ${input.noticeId}. We will review it and contact you if we need more information.`,
+      bodyText: copyrightReceiptText(input.noticeId),
     },
     transaction,
   )

@@ -13361,13 +13361,51 @@
     },
     "GET:/api/v1/copyright-notices/:id/participant": {
       "bodyKind": "content",
-      "hash": "0af7d2ab4683e0f42402b6e1d7416a96971e9e5470eb57557e9d949a86008235",
+      "hash": "53cd8dafc6a3ca32e69a873e778b4769c04b60aae909f34d4266124f66f10a5b",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
       "routeTemplate": "/api/v1/copyright-notices/:id/participant",
       "schema": {
         "definitions": {
+          "CopyrightParticipantStatement": {
+            "additionalProperties": false,
+            "properties": {
+              "delivery_kind": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "sent_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "text": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          },
           "CopyrightPublicNotice": {
             "additionalProperties": false,
             "properties": {
@@ -13465,6 +13503,16 @@
                         "schema": {
                           "items": {
                             "type": "string"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "statements": {
+                        "required": true,
+                        "schema": {
+                          "items": {
+                            "name": "CopyrightParticipantStatement",
+                            "type": "ref"
                           },
                           "type": "array"
                         }
@@ -89803,7 +89851,7 @@
       ],
       "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000000804/participant",
       "responseSchema": {
-        "hash": "531c0ad893619477bcabc808a6fc99f510bcf4c40e7b2aad97701d4625cb0127",
+        "hash": "fea29dd486fa6c9ede59efca88a2784d3b6568c9b24be71067248d302ad0ff5c",
         "key": "web.copyright.notice.participant.populated"
       },
       "route": {
@@ -89831,7 +89879,7 @@
       ],
       "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000000804/participant",
       "responseSchema": {
-        "hash": "b931233288238ab122ac15480c8a89657fe6c158cbf54f8b80102870a1d31ddb",
+        "hash": "e5cc40cf4621e26b2be97ba94c2ef15d00f415319b200bb27e6833ed41a31ec5",
         "key": "web.copyright.notice.participant.null-claimant"
       },
       "route": {

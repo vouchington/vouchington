@@ -71,7 +71,9 @@ intake queue shows each message's wait age.
      the fixed reply text, so write only what the sender must supply, such as the work and each
      allegedly infringing URL.
 
-   A parse that lands after the decision sends nothing, and a repeated decision reports the original
+   Arrival receipts and staff replies are separate obligations. A receipt failure never raises
+   `reply_failed`; Retry reply resets only the stored rejection or information-request reply. A parse
+   that lands after the decision sends no staff reply, and a repeated decision reports the original
    outcome.
 
 6. While automatic provisional withholding is off, or a notice fails an abuse gate, a
@@ -152,8 +154,10 @@ existing case, and list it in the staff email intake queue and the
 configured wherever mail is received, because ingest fails without them. A stack with no
 `S3_BUCKET_SES_INBOUND` (local development) skips the five-minute reconcile instead, with a
 `scheduled_job_config_missing` warning in Sentry, so in a deployed environment that warning means the
-bucket is misconfigured. Only the AI recommendation job is paused, so no email contents reach a model. Ingest sends the sender nothing: there is no acknowledgement or automatic
-reply. During a pause a sender receives mail only when staff act: the response staff choose when
+bucket is misconfigured. The AI recommendation job and automatic arrival receipt are paused, so no email contents reach a model
+and ingest sends no acknowledgement. When enabled, a successful new-message parse with stored DMARC
+pass and no spam or virus failure queues a receipt to the parsed sender. Reply messages do not receive
+an arrival receipt. During a pause a sender receives mail only when staff act: the response staff choose when
 they reject an email or ask for more information (sent to the parsed sender, or to an address staff
 type when no sender was parsed), and the deterministic notices a case's normal
 review queues after staff record an in-case filing, such as the counter-notice status update. No
@@ -641,3 +645,15 @@ sufficient to identify an alleged infringer, to the extent Voucha has it.
 7. **Close out.** In the matter file, record the requester, the service date, the validity
    checks, counsel's decision, the notice sent, and what was produced and when. The case record
    has no subpoena event or correspondence type, so don't add one to it.
+
+## Statements of reasons and decision notices
+
+US copyright decisions persist the exact statement sent to each participant. Check the private delivery
+intent state and `sent_at` before treating a notice as informed; retry a failed notice through the existing Delivery failures replay; a human reversal and later restoration
+are separate notices. Participants see their own stored texts under “Notices sent to you”; staff use
+the existing private delivery aggregate. See the [delivery requirements](../requirements/moderation/COPYRIGHT-NOTICES.md#immutable-decision-statements).
+
+Before enabling intake, supply `COPYRIGHT_INTAKE_ENABLED` to the email delivery worker as well as the
+backend. A successfully parsed new email with DMARC pass may queue an arrival receipt; this can coexist
+with a subsequent staff reply. Replay failed staff replies separately from receipts. Promotion preserves
+the original receipt and queues a case acknowledgement with the applicable central wording.

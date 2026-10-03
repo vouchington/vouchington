@@ -209,7 +209,12 @@ export const ENV_VAR_CONTRACT_GROUPS = [
     ['ecs-backend-environment', 'ecs-worker-environment'],
     ['PG_QUERY_TIMING_SAMPLE', 'PG_POOL_STATS_INTERVAL_MS'],
   ),
-  group('vouchington-infra', 'internal', ['ecs-backend-environment'], ['COPYRIGHT_INTAKE_ENABLED']),
+  group(
+    'vouchington-infra',
+    'internal',
+    ['ecs-backend-environment', 'ecs-worker-environment'],
+    ['COPYRIGHT_INTAKE_ENABLED'],
+  ),
   group(
     'vouchington-infra',
     'secret',

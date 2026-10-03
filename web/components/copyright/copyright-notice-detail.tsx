@@ -3,14 +3,20 @@ import { userHref } from '@/lib/links/entity-href'
 import type {
   CopyrightNoticeDetail,
   CopyrightNoticeResponseEligibility,
+  CopyrightParticipantNoticeDetail,
 } from '@/types/copyright-notices'
+import { CopyrightNoticeStatements } from './copyright-notice-statements'
 import { copyrightTimelineEventLabel } from './copyright-timeline-event-label'
+
+const EMPTY_STATEMENTS: CopyrightParticipantNoticeDetail['statements'] = []
 
 export function CopyrightNoticeDetailView({
   notice,
   responseEligibility,
+  statements = EMPTY_STATEMENTS,
 }: {
   notice: CopyrightNoticeDetail
+  statements?: CopyrightParticipantNoticeDetail['statements']
   responseEligibility: CopyrightNoticeResponseEligibility | null
 }) {
   return (
@@ -70,6 +76,7 @@ export function CopyrightNoticeDetailView({
           ))}
         </ol>
       </section>
+      <CopyrightNoticeStatements statements={statements} />
       {responseEligibility?.viewer_role === 'poster' &&
         responseEligibility.respondable_target_ids.length > 0 && (
           <div className='flex gap-3'>

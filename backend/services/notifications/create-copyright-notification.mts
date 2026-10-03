@@ -1,36 +1,30 @@
+import { copyrightNotificationCopy } from '../copyright-notices/statement-of-reasons-wording.mts'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 /** Creates the member-visible, non-sensitive projection of one legal delivery intent. */
 export async function createCopyrightNoticeNotification(input: {
+  statementCopy?: { title: string; body: string }
   userId: string
   noticeId: string
   eventKey: string
-  deliveryKind: 'claimant_receipt' | 'status_update' | 'poster_restriction_notice'
+  deliveryKind:
+    | 'claimant_receipt'
+    | 'status_update'
+    | 'poster_restriction_notice'
+    | 'poster_review_notice'
+    | 'poster_restoration_notice'
+    | 'claimant_decision_notice'
 }): Promise<void> {
-  const copy = copyrightNotificationCopy(input.deliveryKind)
+  const copy = input.statementCopy ?? copyrightNotificationCopy(input.deliveryKind)
   await write(sql`/* createCopyrightNoticeNotification */
     INSERT INTO notifications (
-      user_id, entity_type, copyright_notice_id, event_key, delivery_type, title, body, target_path
-    ) VALUES (
+      user_id, entity_type, copyright_notice_id, event_key, delivery_type, title, body, target_path, target_intent
+    ) SELECT
       ${input.userId}, 'copyright_notice', ${input.noticeId}, ${input.eventKey}, 'subscription',
-      ${copy.title}, ${copy.body}, ${`/copyright-notices/${input.noticeId}`}
-    ) ON CONFLICT (user_id, event_key) WHERE event_key IS NOT NULL DO NOTHING
+      ${copy.title}, ${copy.body}, CASE WHEN notice.accepted_at IS NOT NULL THEN ${`/copyright/notices/${input.noticeId}`} ELSE NULL END,
+      CASE WHEN notice.accepted_at IS NULL THEN 'notifications_inbox' ELSE NULL END
+    FROM copyright_notices notice WHERE notice.id = ${input.noticeId}
+    ON CONFLICT (user_id, event_key) WHERE event_key IS NOT NULL DO NOTHING
   `)
-}
-
-function copyrightNotificationCopy(
-  deliveryKind: 'claimant_receipt' | 'status_update' | 'poster_restriction_notice',
-): { title: string; body: string } {
-  switch (deliveryKind) {
-    case 'claimant_receipt':
-      return { title: 'Copyright notice received', body: 'Your copyright notice was received.' }
-    case 'poster_restriction_notice':
-      return {
-        title: 'Material restricted for a copyright notice',
-        body: 'Review the case and available response options.',
-      }
-    case 'status_update':
-      return { title: 'Copyright case update', body: 'There is an update to your copyright case.' }
-  }
 }

@@ -85,7 +85,7 @@ describe.each([
             : 'More information is needed for your copyright notice',
         text: expect.stringContaining(
           kind === 'rejected'
-            ? 'We could not accept your copyright notice.'
+            ? '/copyright/designated-agent'
             : 'Please identify the copyrighted work',
         ),
       })

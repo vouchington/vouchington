@@ -68,7 +68,8 @@ describe('copyright in-app notification delivery', () => {
         expect.objectContaining({
           event_key: eventKey,
           copyright_notice_id: notice.id,
-          target_path: `/copyright-notices/${notice.id}`,
+          target_path: null,
+          target_intent: 'notifications_inbox',
         }),
       ]),
     )

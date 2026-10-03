@@ -15,6 +15,7 @@ import {
   assertStatutoryEmailFields,
   type PromoteCopyrightEmailIntakeInput,
 } from './email-promotion-input.mts'
+import { copyrightPromotionText, copyrightReceiptText } from './statement-of-reasons-wording.mts'
 import { enforceCopyrightAssessment } from './enforce-assessment.mts'
 
 export type { PromoteCopyrightEmailIntakeInput } from './email-promotion-input.mts'
@@ -224,12 +225,20 @@ async function recordEmailPromotion(
     { initialIntakeId: intake.id, noticeId },
     transaction,
   )
+  const { rows: arrivalReceipt } = await transaction<{
+    id: string
+  }>(sql`/* recordEmailPromotion:arrivalReceipt */
+    SELECT id FROM copyright_notice_delivery_intents WHERE copyright_notice_email_intake_id = ${intake.id}
+      AND delivery_kind = 'email_intake_received' AND state NOT IN ('failed', 'bounced')
+  `)
   const claimantReceipt = await createDeterministicCopyrightCorrespondenceInTransaction(
     {
       noticeId,
       submissionId: submission.id,
       correspondenceKind: 'receipt',
-      bodyText: `We received your copyright notice for case ${noticeId}. We will review it and contact you if we need more information.`,
+      bodyText: arrivalReceipt[0]
+        ? copyrightPromotionText(noticeId)
+        : copyrightReceiptText(noticeId),
     },
     transaction,
   )

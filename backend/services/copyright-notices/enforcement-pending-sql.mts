@@ -1,4 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
+import { automatedAssessmentSql } from './automated-assessment-sql.mts'
 
 /**
  * Which automated (clear-screen, not moderator-reviewed) assessments a pending-enforcement query
@@ -52,9 +53,8 @@ export function pendingCopyrightEnforcementSql(
       )
       AND (`)
     .append(
-      sql`${automaticScope === 'all'}::boolean OR NOT (
-        assessment.assessed_by_id IS NULL AND assessment.copyright_notice_form_screening_id IS NOT NULL
-      ) OR (
+      sql`${automaticScope === 'all'}::boolean OR NOT (`.append(automatedAssessmentSql())
+        .append(sql`) OR (
         ${since}::timestamptz IS NOT NULL
         AND submission.received_at >= ${since}::timestamptz
         AND NOT EXISTS (
@@ -64,6 +64,6 @@ export function pendingCopyrightEnforcementSql(
             ON suspension.user_id = claimed_notice.claimant_user_id AND suspension.lifted_at IS NULL
           WHERE claimed_notice.id = submission.copyright_notice_id
         )
-      ))`,
+      ))`),
     )
 }

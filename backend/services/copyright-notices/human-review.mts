@@ -6,6 +6,7 @@ import { getImagePlacementKey } from '@services/images/placements'
 import type { CopyrightHumanReviewAction, CopyrightRestrictionRecord } from './types.mts'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
+import { createCopyrightReviewOutcomeNoticesInTransaction } from './review-outcome-notices.mts'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
 import { createCopyrightRestoreIntentForReversalInTransaction } from './restoration-reversal.mts'
 import {
@@ -69,6 +70,7 @@ export async function completeCopyrightMandatoryHumanReview(input: {
   `)
   const restriction = rows[0]
   assert(restriction, 409, 'Copyright restriction is not awaiting mandatory human review')
+  await createCopyrightReviewOutcomeNoticesInTransaction(input, transaction)
   let restoreIntentId: string | null = null
   if (input.action === 'reverse') {
     const intent = await createCopyrightRestoreIntentForReversalInTransaction(

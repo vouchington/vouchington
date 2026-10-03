@@ -107,4 +107,46 @@ describe('CopyrightNoticeDetailView', () => {
 
     expect(screen.getByText('guest capability issued', { exact: false })).toBeInTheDocument()
   })
+  it('renders stored statements only when available', () => {
+    const notice = {
+      id: 'case-123',
+      jurisdiction: 'us_dmca' as const,
+      received_at: '2026-01-01T00:00:00.000Z',
+      accepted_at: '2026-01-02T00:00:00.000Z',
+      provisional_withholding_at: null,
+      target_count: 0,
+      claimant: null,
+      targets: [],
+      timeline: [],
+    }
+    const { rerender } = render(
+      <CopyrightNoticeDetailView
+        notice={notice}
+        responseEligibility={null}
+        statements={[]}
+      />,
+    )
+    expect(
+      screen.queryByRole('heading', { name: 'Statements of reasons and decisions' }),
+    ).not.toBeInTheDocument()
+    rerender(
+      <CopyrightNoticeDetailView
+        notice={notice}
+        responseEligibility={null}
+        statements={[
+          {
+            id: 'statement-123',
+            delivery_kind: 'poster_review_notice',
+            sent_at: null,
+            text: 'Stored decision evidence.',
+          },
+        ]}
+      />,
+    )
+    expect(
+      screen.getByRole('heading', { name: 'Statements of reasons and decisions' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Stored decision evidence.')).toBeInTheDocument()
+    expect(screen.getByText('Delivery pending')).toBeInTheDocument()
+  })
 })

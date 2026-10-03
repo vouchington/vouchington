@@ -1,0 +1,110 @@
+import { describe, expect, it } from 'vitest'
+import { buildCopyrightStatementOfReasons } from './statement-of-reasons.mts'
+
+const input = {
+  audience: 'poster' as const,
+  event: 'restricted' as const,
+  noticeId: crypto.randomUUID(),
+  receivedAt: new Date(),
+  jurisdiction: 'us_dmca',
+  legalBasis: 'copyright',
+  targetUrls: ['https://example.test/image-a', 'https://example.test/image-b'],
+  automatedDecision: false,
+  aiGuidance: false,
+}
+
+describe('copyright statements of reasons', () => {
+  it.each(['restricted', 'confirmed'] as const)(
+    'describes the %s restriction and offered redress',
+    event => {
+      const statement = buildCopyrightStatementOfReasons({ ...input, event })
+      expect(statement.fields.restriction).toEqual({
+        type: 'visibility_restriction',
+        subject: 'image',
+        deleted: false,
+        scope: 'global',
+      })
+      expect(statement.fields.facts.basis).toBe('art_16_notice')
+      expect(statement.fields.legalGround).toMatchObject({
+        jurisdiction: 'us_dmca',
+        legalBasis: 'copyright',
+      })
+      expect(statement.fields.redress.map(route => route.key)).toEqual([
+        'appeal',
+        'counter_notice',
+        'court',
+      ])
+      expect(statement.text).toContain(input.noticeId)
+      for (const url of input.targetUrls) expect(statement.text).toContain(url)
+      expect(statement.inAppSummary.length).toBeLessThanOrEqual(1000)
+    },
+  )
+  it.each(['reversed', 'restriction_ended'] as const)('offers no redress for %s', event => {
+    const statement = buildCopyrightStatementOfReasons({
+      ...input,
+      event,
+      restorationCause: 'review_reversed',
+      restorationOutcome: 'still_hidden',
+    })
+    expect(statement.fields.redress).toEqual([])
+    expect(statement.text).not.toContain('internal_complaint')
+    expect(statement.text).not.toContain('out_of_court_dispute_settlement')
+    expect(statement.inAppSummary.length).toBeLessThanOrEqual(1000)
+  })
+  it.each([
+    ['visible', 'Restoration is authorized.'],
+    ['still_hidden', 'Another restriction keeps the image hidden.'],
+    ['unavailable', 'The image is unavailable.'],
+  ] as const)(
+    'states the %s restoration outcome without internal enums',
+    (restorationOutcome, wording) => {
+      const statement = buildCopyrightStatementOfReasons({
+        ...input,
+        event: 'restriction_ended',
+        restorationCause: 'review_reversed',
+        restorationOutcome,
+      })
+      expect(statement.text).toContain(wording)
+      expect(statement.text).not.toContain('review_reversed')
+      expect(statement.fields.redress).toEqual([])
+    },
+  )
+  it('discloses an automatic provisional decision and assistance independently', () => {
+    const statement = buildCopyrightStatementOfReasons({
+      ...input,
+      automatedDecision: true,
+      aiGuidance: true,
+    })
+    expect(statement.fields.automation).toEqual({
+      detection: false,
+      decision: 'automatic_pending_review',
+      aiGuidance: true,
+    })
+    expect(statement.text).toContain('person will review')
+    expect(buildCopyrightStatementOfReasons(input).fields.automation).toEqual({
+      detection: false,
+      decision: 'person',
+      aiGuidance: false,
+    })
+  })
+  it.each(['eu_dsa', 'uk'])('rejects unsupported legal ground %s', jurisdiction => {
+    expect(() => buildCopyrightStatementOfReasons({ ...input, jurisdiction })).toThrow(
+      'Unsupported copyright statement legal ground',
+    )
+  })
+  it('provides notifier redress without exposing target URLs', () => {
+    const statement = buildCopyrightStatementOfReasons({
+      ...input,
+      audience: 'claimant',
+      event: 'not_accepted',
+    })
+    expect(statement.fields.restriction).toBeNull()
+    expect(statement.fields.facts.targetUrls).toEqual([])
+    expect(statement.fields.redress.map(route => route.key)).toEqual([
+      'new_notice',
+      'designated_agent',
+      'court',
+    ])
+    expect(statement.text).not.toContain(input.targetUrls[0])
+  })
+})

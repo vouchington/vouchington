@@ -1,3 +1,4 @@
+import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/services/copyright-notices/statement-notices'
 import { describe, expect, it } from 'vitest'
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import type { CopyrightImagePlacement } from '@services/images/placements'
@@ -56,6 +57,21 @@ describe('copyright action delivery branches', () => {
         ...createTestCopyrightDeliveryDependencies(async () => undefined),
       }),
     ).resolves.toBe('applied')
+    const statements = (await readTestCopyrightStatementIntents(notice.id)).filter(
+      row => row.delivery_kind === 'poster_restoration_notice',
+    )
+    expect(statements).toHaveLength(2)
+    expect(statements.find(row => row.channel === 'email')?.text).toContain(
+      'The image is unavailable.',
+    )
+    await processCopyrightActionIntent(restore.id, restore.now, {
+      ...createTestCopyrightDeliveryDependencies(async () => undefined),
+    })
+    expect(
+      (await readTestCopyrightStatementIntents(notice.id)).filter(
+        row => row.delivery_kind === 'poster_restoration_notice',
+      ),
+    ).toHaveLength(2)
   })
 
   it('republishes withhold and fails closed when restore finalization sees a changed tuple', async () => {
@@ -107,6 +123,13 @@ describe('copyright action delivery branches', () => {
         }),
       }),
     ).rejects.toThrow('rollback outage')
+    const statements = (await readTestCopyrightStatementIntents(notice.id)).filter(
+      row => row.delivery_kind === 'poster_restoration_notice' && row.channel === 'email',
+    )
+    expect(statements).toHaveLength(1)
+    expect(statements[0]?.text).toContain('Restoration is authorized.')
+    expect(statements[0]?.text).toContain('when restoration delivery completes')
+    expect(statements[0]?.text).not.toContain('The image is visible again.')
   })
 })
 

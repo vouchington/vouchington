@@ -107,11 +107,38 @@ rows, resolve private recipient evidence case-scoped, and report SES bounces bef
 The reply to a declined email intake is the same kind of row, with no case: it carries the intake's
 id instead of a notice id, a `delivery_kind` of `email_intake_rejected` or
 `email_intake_needs_information`, and the `correspondent` role. A check keeps exactly one of the
-two ids set, and a unique constraint keeps one reply per intake. The rendered body is stored
+two ids set, and a unique constraint keeps one delivery per intake and kind. The rendered body is stored
 encrypted on the row and cannot change, so every retry sends the same text and never the staff
 rationale. The sender's address goes in the row's recipient record, so SES bounces correlate to it
 like any other delivery. These rows never appear as a case in the staff queue or the case
 aggregate, and never match an inbound reply to a case.
+
+### Immutable decision statements
+
+US copyright restrictions record a statement when imposed, when a person first confirms or reverses
+an automatic decision, and when the restriction ends. A review reversal is distinct from restoration:
+the review statement remains available even if restoration is blocked or its delivery fails. The lift
+statement says whether restoration is authorized pending delivery, the image remains hidden by another
+restriction, or the image is unavailable. It never treats pending or failed edge delivery as proof
+that the image is already visible.
+The statement identifies the case, receipt time, public target URLs, global image visibility restriction,
+US copyright basis, and actual automatic-decision and AI-guidance provenance. Moderator deletion does
+not turn a human decision into an automatic decision. Statements exclude contact details, signatures,
+private evidence, and staff rationale. Only supported US copyright grounds are rendered.
+
+Each affected poster receives one immutable email and in-app obligation per event. The notifier receives
+one decision pair per notice, using the retained receipt email address for email delivery; guest and
+email-only notifiers receive email only. Stable event keys reuse the original text on retry. The private
+participant response exposes only that participant's stored email statements and their `sent_at`
+(or null while unsent); staff receive an empty statement list and erased bodies are omitted. Public
+member cases never expose these texts. Web renders them under “Notices sent to you”.
+
+A successful first parse of a new email queues an arrival receipt only while intake is enabled, with
+stored DMARC pass, no spam or virus failure, and no reply references. It sends to the parsed sender.
+Receipt and later rejection or information-request obligations coexist; staff reply status and replay
+exclude arrival receipts. Promotion keeps the arrival receipt and says that the message is now a case
+when a receipt already exists in a nonfailed, nonbounced state. Otherwise it uses the ordinary case
+receipt. The email worker must receive `COPYRIGHT_INTAKE_ENABLED` through its environment contract.
 
 ## Placement enforcement boundary
 
@@ -311,6 +338,9 @@ and a verdict SES did not report is `unknown`, never `pass`. That boundary assum
 domain aligns with the From address. The staff review page shows all five. An SPF, DKIM, or DMARC
 failure (or a spam verdict) is a risk note beside the evidence and never rejects, delays, or
 decides a notice, because a legitimate claimant can fail them through a forwarder or mailing list.
+A stored DMARC pass permits an arrival receipt after a successful first parse of a new message,
+provided spam and malware did not fail. Intake paused or reply references present means no arrival
+receipt; failed authentication waits for staff promotion to receive its case acknowledgement.
 
 A malware `fail` quarantines the original: the raw `.eml` route refuses with `409` (code
 `COPYRIGHT_EMAIL_QUARANTINED`), the intake response carries `raw_email.download_url: null`, and the
@@ -335,14 +365,22 @@ never expose legal claimant or poster identity, email, mailing address, signatur
 evidence artifacts, encrypted fields, moderator rationale, or agent recommendation. A guest or
 erased claimant has no member-visible profile link.
 
+### Statements of reasons and decision notices
+
+An accepted case participant sees their own immutable statement texts and delivery times under
+“Notices sent to you”. Posters receive restriction, first human review, and restriction-ended
+notices; signed-in notifiers see the notice decision. Staff and unrelated members do not receive
+that projection. [Delivery obligations](#immutable-decision-statements) define the privacy boundary
+and distinguish review reversal from image restoration.
+
 `/copyright/notices/new` is public. A signed-out visitor files with the same Turnstile check,
 statutory fields, and § 512(f) warning as a signed-in member, and the notice is a guest filing as
 described below. The API returns only the case identifier, and a guest has no case read, so after
 filing the form shows an in-page receipt with that identifier in place of the sign-in-only case
 list. The receipt states what a guest can rely on: the receipt email to the address on the notice
 and, only if staff issue one, a capability token for `/copyright/notices/:id/guest`. There is no
-online status view for a guest, and nothing emails a form claimant a review outcome or a request
-for more information, so the receipt promises neither. The hosted
+online status view for a guest. The notifier receives a decision email and staff can send an
+information request to the retained receipt address. The hosted
 material field and its lookup error both point to the designated-agent page for a claimant who
 cannot open the image. That copy is the same for every lookup failure, so it never says whether a
 hidden image exists.

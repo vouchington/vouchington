@@ -3,9 +3,10 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { getImagePlacementKey } from '@services/images/placements'
 import type { CopyrightRestrictionRecord } from './types.mts'
-import { createCopyrightPosterRestrictionNoticesInTransaction } from './restriction-poster-notices.mts'
+import { createCopyrightPosterNoticesInTransaction } from './restriction-poster-notices.mts'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
 import { lockAssessmentForm } from './compliance.mts'
+import { createCopyrightClaimantDecisionNoticeInTransaction } from './claimant-decision-notices.mts'
 import {
   applyCopyrightConfirmationConsequencesInTransaction,
   enqueueCopyrightStaydownHashes,
@@ -58,11 +59,12 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   const { rows: assessmentRows } = await transaction<{
     source_kind: 'signed_in_form' | 'guest_form' | 'email' | 'staff'
     assessed_by_id: string | null
+    copyright_notice_form_screening_id: string | null
     substantially_compliant: boolean
     current_screening_authority: boolean
     has_rejected_form_review: boolean
   }>(sql`/* acceptCopyrightNoticeAndImposeRestriction:lockAssessment */
-    SELECT submission.source_kind, assessment.assessed_by_id, assessment.substantially_compliant,
+    SELECT submission.source_kind, assessment.assessed_by_id, assessment.substantially_compliant, assessment.copyright_notice_form_screening_id,
       assessment.copyright_notice_form_screening_id IS NULL OR fn_current_copyright_form_screening(
         submission.id, assessment.copyright_notice_form_screening_id
       ) AS current_screening_authority,
@@ -137,8 +139,17 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   `)
   const actionIntent = actionIntentRows[0]
   assert(actionIntent, 500, 'Copyright withhold action intent was not recorded')
-  await createCopyrightPosterRestrictionNoticesInTransaction(
-    { noticeId: input.noticeId, targetId: input.targetId, restrictionId: restriction.id },
+  await createCopyrightPosterNoticesInTransaction(
+    {
+      noticeId: input.noticeId,
+      targetId: input.targetId,
+      restrictionId: restriction.id,
+      event: 'restricted',
+    },
+    transaction,
+  )
+  await createCopyrightClaimantDecisionNoticeInTransaction(
+    { noticeId: input.noticeId, event: 'restricted', assessmentId: input.assessmentId },
     transaction,
   )
   let staydownImageIds: string[] = []
