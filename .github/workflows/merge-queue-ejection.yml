@@ -155,5 +155,5 @@ jobs:
           fi
           BODY="$BODY
 
-          The next ejection's triage session sweeps untriaged ejections from the last day and will cover this PR. Until then, inspect the failed merge-group run before re-enqueueing."
+          If another ejection starts triage within a day, that session also sweeps this PR. Until then, inspect the failed merge-group run before re-enqueueing."
           gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body "$BODY"

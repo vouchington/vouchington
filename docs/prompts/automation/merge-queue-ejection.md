@@ -104,6 +104,10 @@ Each ejected pull request and each stack layer gets at most one comment per remo
 
 `<!-- merge-queue-ejection-triage pr=<N> head=<head sha> -->`
 
+A comment contains a pull request's marker when it contains
+`merge-queue-ejection-triage pr=<N> head=<head sha>` with the full head SHA; this also matches older
+markers that end with `main=<sha>`.
+
 Immediately before posting each comment, re-fetch that pull request. Skip it when it is no longer
 open and unmerged at the head you recorded, or when a comment containing its marker was created at or
 after its removal. Triage can take tens of minutes, so the discovery-time check is stale by then.
@@ -124,8 +128,8 @@ about 75 minutes have passed since the session started. Leave anything found aft
 next session.
 
 An ejection that joins this session after its last pass, or that the bound leaves behind, gets only
-the session link from the workflow. The next ejection's session covers it through the 24-hour
-discovery window, which also retries ejections whose earlier session failed.
+the session link from the workflow. A session that another ejection starts within 24 hours covers
+it through its discovery window, which also retries ejections whose earlier session failed.
 
 For any PR body this workflow is authorized to create or update, follow the
 [PR-description standard](../../../.agents/skills/pr-description/SKILL.md): keep `## Summary`

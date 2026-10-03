@@ -240,8 +240,9 @@ completed deploy`, so Automation Fix Main can never legally subscribe to itself,
   rechecked against the live PR immediately before posting; a stack layer's comment points to the
   failing layer's triage. Before exiting it repeats discovery, bounded to three passes and about 75
   minutes so a busy queue cannot run the shared session into its timeout. An ejection that joins
-  after the last pass, or that the bound leaves behind, gets only the session link until the next
-  ejection's session sweeps it; that 24-hour sweep also retries ejections whose session failed.
+  after the last pass, or that the bound leaves behind, gets only the session link; a session that
+  another ejection starts within 24 hours sweeps it, and that sweep also retries ejections whose
+  session failed.
   Ejections that arrive after a session finished start a new one, which relies on searching open PRs
   and issues to avoid a duplicate fix. Its failure comment stays quiet when the `dispatch` job was
   cancelled by concurrency coalescing, as for Dependabot below. Fix Main still owns failures on
