@@ -4,6 +4,7 @@ import {
   recordMembershipChange,
   type MembershipLifecycleFields,
 } from '@services/memberships'
+import { compareMembershipPlans } from '@services/memberships/plan-ranking'
 import type { QueryExecutor } from '@data-stores/psql'
 import { classifyMembershipChange } from '@vouchington/memberships'
 import type {
@@ -28,7 +29,7 @@ export function getMembershipChangeType(options: {
     nextPlan,
     previousSku: previousSkuId,
     nextSku: nextSkuId,
-    comparePlans: (left, right) => getMembershipPlanRank(left) - getMembershipPlanRank(right),
+    comparePlans: compareMembershipPlans,
   })
 }
 
@@ -76,18 +77,3 @@ export function getMembershipLifecycleSnapshotFromFields(membership: MembershipL
 }
 
 export { isTerminalMembershipStatus }
-
-function getMembershipPlanRank(plan: Membership['plan']): number {
-  switch (plan) {
-    case 'plus':
-      return 1
-    case 'pro':
-      return 2
-    default:
-      return assertNeverMembershipPlan(plan)
-  }
-}
-
-function assertNeverMembershipPlan(plan: never): never {
-  throw new Error(`Unhandled membership plan: ${plan}`)
-}

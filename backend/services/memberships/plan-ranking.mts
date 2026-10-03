@@ -1,10 +1,18 @@
 import type { MembershipPlanSlug } from './types.mts'
 
+/** Positive when `left` outranks `right`. Change classification passes `(next, previous)`. */
+export function compareMembershipPlans(
+  left: MembershipPlanSlug,
+  right: MembershipPlanSlug,
+): number {
+  return getMembershipPlanRank(left) - getMembershipPlanRank(right)
+}
+
 export function isHigherMembershipPlan(
   candidate: MembershipPlanSlug,
   current: MembershipPlanSlug,
 ): boolean {
-  return getMembershipPlanRank(candidate) > getMembershipPlanRank(current)
+  return compareMembershipPlans(candidate, current) > 0
 }
 
 function getMembershipPlanRank(plan: MembershipPlanSlug): number {
