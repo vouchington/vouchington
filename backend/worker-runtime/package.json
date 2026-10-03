@@ -34,7 +34,7 @@
     "@services/urls-domains-blacklist": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
     "@ts-shared/utils": "workspace:^",
-    "@vouchington/worker-runtime": "^0.1.0",
+    "@vouchington/worker-runtime": "^0.1.1",
     "@workers/heartbeat": "workspace:^",
     "glide-mq": "^0.16.0"
   }

@@ -2202,8 +2202,8 @@ importers:
   backend/modules/queue-errors:
     dependencies:
       '@vouchington/queue-errors':
-        specifier: ^0.1.1
-        version: 0.1.1(glide-mq@0.16.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2)))
+        specifier: ^0.1.2
+        version: 0.1.2(glide-mq@0.16.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2)))
       glide-mq:
         specifier: ^0.16.0
         version: 0.16.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
@@ -11090,8 +11090,8 @@ importers:
         specifier: workspace:^
         version: link:../../ts-shared/utils
       '@vouchington/worker-runtime':
-        specifier: ^0.1.0
-        version: 0.1.0(glide-mq@0.16.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2)))
+        specifier: ^0.1.1
+        version: 0.1.1(glide-mq@0.16.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2)))
       '@workers/heartbeat':
         specifier: workspace:^
         version: link:../workers/heartbeat
@@ -18776,11 +18776,11 @@ packages:
     resolution: {integrity: sha512-o2m4ZwCWC7/gmaFX3wScDXzQ5jUTNgW9MBB3U2i4w91fhau9g6sXxEs/YczIeRyXKtsxazYXcYdJTdA0rwxIGg==}
     engines: {node: '>=24.0.0'}
 
-  '@vouchington/queue-errors@0.1.1':
-    resolution: {integrity: sha512-DVZU3/q2cDLbBtgrpQszXld8tTKBy9Zmx9LcEoHIuDDcXm5PAeJPe2VFZo5QdUAFPvV+J91DroOJidFC4WcfpA==}
+  '@vouchington/queue-errors@0.1.2':
+    resolution: {integrity: sha512-Sf1nJt1DvZk4ANwkouzf02S0R471lFolQKoFkJNnEtxO4OH/PrI0K1jey9YDBwSOqB1VoDnppymb/Sd0zC+uuQ==}
     engines: {node: '>=24.0.0'}
     peerDependencies:
-      glide-mq: ^0.15.3
+      glide-mq: ^0.16.0
 
   '@vouchington/request-contract-validation@0.0.1':
     resolution: {integrity: sha512-wrLKPJtZZtgq+pevjM2m7h0TBMxWsbUES/m2U6VBquVvLXXh47DeqxF1uPIvRRv9QiuesL+qiQ9QEzkLeRgOAQ==}
@@ -18818,11 +18818,11 @@ packages:
     resolution: {integrity: sha512-MzrhsHnPzTUw5k1RWVKdfpYLKewPGx8+th4imB01LKIasEWOHxrMcwuZz1FEFgRHZdLtrhIs1DI78pGgOmqwvg==}
     engines: {node: '>=24.0.0'}
 
-  '@vouchington/worker-runtime@0.1.0':
-    resolution: {integrity: sha512-P/vsublVuM1q55UzOjGO+Vif6JI+KJkXWGZ7iEsjr5qrDVhcnbrqDCxXcwwoOTw42+lRkSnBGqP7OTiu2CXygw==}
+  '@vouchington/worker-runtime@0.1.1':
+    resolution: {integrity: sha512-jNg5df1Oldl/SrF4R77DMASpu5a17NQKuKQ2Fr55pk5IuSwXAKoscWWKO4RDRwxZChE5IkiodbsY/+CBVcKSAw==}
     engines: {node: '>=24.0.0'}
     peerDependencies:
-      glide-mq: ^0.15.3
+      glide-mq: ^0.16.0
 
   '@webassemblyjs/ast@1.14.1':
     resolution: {integrity: sha512-nuBEDgQfm1ccRp/8bCQrx1frohyufl4JlbMMZ4P1wpeOfDhF6FQkxZJ1b/e+PLwr6X1Nhw6OLme5usuBWYBvuQ==}
@@ -27754,7 +27754,7 @@ snapshots:
     transitivePeerDependencies:
       - pg-native
 
-  '@vouchington/queue-errors@0.1.1(glide-mq@0.16.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2)))':
+  '@vouchington/queue-errors@0.1.2(glide-mq@0.16.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2)))':
     dependencies:
       glide-mq: 0.16.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
@@ -27792,7 +27792,7 @@ snapshots:
     dependencies:
       uuid: 14.0.2
 
-  '@vouchington/worker-runtime@0.1.0(glide-mq@0.16.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2)))':
+  '@vouchington/worker-runtime@0.1.1(glide-mq@0.16.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2)))':
     dependencies:
       glide-mq: 0.16.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
