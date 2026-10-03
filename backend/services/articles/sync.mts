@@ -9,6 +9,7 @@ import { tagPostWithTopics } from '@services/posts/tagging'
 import type { PostType } from '@services/posts/types'
 import { updatePost } from '@services/posts/update'
 import type { PrivateUser } from '@services/users/types'
+import type { ArticleSyncItem, ArticleSyncResult } from '@voucha/types/article-sync'
 
 import { parseFrontmatter, extractTitleFromMarkdown } from './parse.mts'
 import { rewriteRelativeArticleLinks } from './relative-links.mts'
@@ -16,18 +17,6 @@ import { getArticleMarkdown, listArticleMarkdownFiles } from './storage.mts'
 import { SYSTEM_PROVENANCE } from '@voucha/types/entities/content-provenance'
 
 const ALLOWED_POST_TYPES: ReadonlySet<PostType> = new Set(['article', 'blog_post'])
-
-export type ArticleSyncItem = {
-  file: string
-  slug: string
-  action: 'created' | 'updated' | 'skipped' | 'error'
-  error?: string
-}
-
-export type ArticleSyncResult = {
-  results: ArticleSyncItem[]
-  summary: { created: number; updated: number; skipped: number; errored: number }
-}
 
 function contentHash(title: string, markdown: string): string {
   return createHash('sha256').update(`${title}\n${markdown}`).digest('hex')

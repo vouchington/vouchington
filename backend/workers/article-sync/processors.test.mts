@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { getPrivateUserByAny } from '@services/users/get'
-import type { ArticleSyncResult, syncArticles } from '@services/articles'
+import type { syncArticles } from '@services/articles'
 import { articleSyncPubSub, type ArticleSyncStatus } from '@data-stores/valkey-pubsub'
 import { UnrecoverableError } from '@modules/queue-errors'
 import { processArticleSync, publishTerminalStatus } from './processors.mts'
@@ -113,7 +113,7 @@ describe('article-sync processors', () => {
   })
 })
 
-function makeSyncResult(created: number): ArticleSyncResult {
+function makeSyncResult(created: number): Awaited<ReturnType<typeof syncArticles>> {
   return {
     results: [],
     summary: { created, updated: 0, skipped: 0, errored: 0 },

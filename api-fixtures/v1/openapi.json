@@ -546,6 +546,75 @@
         "required": ["flag", "penalized_user_count"],
         "type": "object"
       },
+      "ArticleSyncItem": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": ["created", "error", "skipped", "updated"],
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        },
+        "required": ["action", "file", "slug"],
+        "type": "object"
+      },
+      "ArticleSyncResult": {
+        "additionalProperties": false,
+        "properties": {
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/ArticleSyncItem"
+            },
+            "type": "array"
+          },
+          "summary": {
+            "additionalProperties": false,
+            "properties": {
+              "created": {
+                "type": "number"
+              },
+              "errored": {
+                "type": "number"
+              },
+              "skipped": {
+                "type": "number"
+              },
+              "updated": {
+                "type": "number"
+              }
+            },
+            "required": ["created", "errored", "skipped", "updated"],
+            "type": "object"
+          }
+        },
+        "required": ["results", "summary"],
+        "type": "object"
+      },
+      "ArticleSyncStatus": {
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/ArticleSyncResult"
+          },
+          "status": {
+            "enum": ["completed", "failed"],
+            "type": "string"
+          }
+        },
+        "required": ["status"],
+        "type": "object"
+      },
       "AsidePreference": {
         "additionalProperties": false,
         "properties": {
@@ -6090,6 +6159,26 @@
         "enum": ["expired", "failed", "pending", "processing", "ready"],
         "type": "string"
       },
+      "DataRequestStreamStatus": {
+        "additionalProperties": false,
+        "properties": {
+          "download_url": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/DataRequestStatus"
+          }
+        },
+        "required": ["status"],
+        "type": "object"
+      },
       "DeviceTokenPayload": {
         "additionalProperties": {},
         "properties": {
@@ -8175,6 +8264,28 @@
         "required": ["community_slug"],
         "type": "object"
       },
+      "ImportProgressChunk": {
+        "additionalProperties": false,
+        "properties": {
+          "batchId": {
+            "type": "string"
+          },
+          "completed": {
+            "type": "number"
+          },
+          "done": {
+            "type": "boolean"
+          },
+          "failed": {
+            "type": "number"
+          },
+          "total": {
+            "type": "number"
+          }
+        },
+        "required": ["batchId", "completed", "done", "failed", "total"],
+        "type": "object"
+      },
       "ImportRow": {
         "additionalProperties": false,
         "properties": {
@@ -8339,6 +8450,19 @@
       "ImportType": {
         "enum": ["rss_feed", "topic"],
         "type": "string"
+      },
+      "Individual": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "updated_at"],
+        "type": "object"
       },
       "IndividualCard": {
         "additionalProperties": false,
@@ -8706,6 +8830,96 @@
         },
         "required": ["client_secret", "oauth_app"],
         "type": "object"
+      },
+      "JSONRPCResponse": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "error": {
+                "additionalProperties": false,
+                "properties": {
+                  "code": {
+                    "type": "number"
+                  },
+                  "data": {},
+                  "message": {
+                    "type": "string"
+                  }
+                },
+                "required": ["code", "message"],
+                "type": "object"
+              },
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "jsonrpc": {
+                "const": "2.0"
+              }
+            },
+            "required": ["error", "jsonrpc"],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "jsonrpc": {
+                "const": "2.0"
+              },
+              "result": {
+                "additionalProperties": {},
+                "properties": {
+                  "_meta": {
+                    "additionalProperties": {},
+                    "properties": {
+                      "io.modelcontextprotocol/related-task": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "taskId": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["taskId"],
+                        "type": "object"
+                      },
+                      "progressToken": {
+                        "anyOf": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "type": "object"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "required": ["id", "jsonrpc", "result"],
+            "type": "object"
+          }
+        ]
       },
       "LandingPage": {
         "additionalProperties": false,
@@ -11422,7 +11636,7 @@
             "type": "string"
           },
           "counts": {
-            "$ref": "#/components/schemas/Partial_Record__remove_____warn_____reject_____queue_retry_failed_____approve_____ban_____lift_ban_____activate_restriction_____lift_restriction_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal_____topic_claim_verify_____topic_claim_reject_____topic_claim_revoke_____report_claim_____report_unclaim_____report_escalate_____report_deescalate_____report_integrity_flag_review_____report_integrity_penalty_apply_____report_integrity_penalty_revoke_____vote_integrity_flag_review_____vote_integrity_penalty_apply_____vote_integrity_penalty_revoke_____vote_weight_set_____vote_weight_reset_____agent_moderation_vote_set_____agent_moderation_vote_delete_____mod_note_delete_____report_judgement_rerun_____appeal_resolution_draft_rerun_____dispute_resolution_draft_rerun_____oauth_client_verify_____oauth_client_unverify_____story_item_add_____story_item_remove_____story_official_item_set_____story_rename_____crawler_create_____crawler_update_____crawler_delete_____rss_category_assign_____rss_category_reject_____rss_category_unreject_____queue_pause_____queue_resume_____scheduled_job_run_____backfill_run_____article_sync_run_____import_batch_create_____preservation_hold_place_____preservation_hold_release__number"
+            "$ref": "#/components/schemas/Partial_Record__remove_____approve_____reject_____ban_____lift_ban_____activate_restriction_____lift_restriction_____warn_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal_____topic_claim_verify_____topic_claim_reject_____topic_claim_revoke_____report_claim_____report_unclaim_____report_escalate_____report_deescalate_____report_integrity_flag_review_____report_integrity_penalty_apply_____report_integrity_penalty_revoke_____vote_integrity_flag_review_____vote_integrity_penalty_apply_____vote_integrity_penalty_revoke_____vote_weight_set_____vote_weight_reset_____agent_moderation_vote_set_____agent_moderation_vote_delete_____mod_note_delete_____report_judgement_rerun_____appeal_resolution_draft_rerun_____dispute_resolution_draft_rerun_____oauth_client_verify_____oauth_client_unverify_____story_item_add_____story_item_remove_____story_official_item_set_____story_rename_____crawler_create_____crawler_update_____crawler_delete_____rss_category_assign_____rss_category_reject_____rss_category_unreject_____queue_pause_____queue_resume_____queue_retry_failed_____scheduled_job_run_____backfill_run_____article_sync_run_____import_batch_create_____preservation_hold_place_____preservation_hold_release__number"
           },
           "total": {
             "type": "number"
@@ -13480,6 +13694,30 @@
         ],
         "type": "object"
       },
+      "Omit___jsonrpc___2.0___error____code__number__message__string__data___unknown_____id___string___number___undefined____id": {
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "type": "number"
+              },
+              "data": {},
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": ["code", "message"],
+            "type": "object"
+          },
+          "jsonrpc": {
+            "const": "2.0"
+          }
+        },
+        "required": ["error", "jsonrpc"],
+        "type": "object"
+      },
       "OmnisearchCommunity": {
         "additionalProperties": false,
         "properties": {
@@ -13958,7 +14196,7 @@
         },
         "type": "object"
       },
-      "Partial_Record__remove_____warn_____reject_____queue_retry_failed_____approve_____ban_____lift_ban_____activate_restriction_____lift_restriction_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal_____topic_claim_verify_____topic_claim_reject_____topic_claim_revoke_____report_claim_____report_unclaim_____report_escalate_____report_deescalate_____report_integrity_flag_review_____report_integrity_penalty_apply_____report_integrity_penalty_revoke_____vote_integrity_flag_review_____vote_integrity_penalty_apply_____vote_integrity_penalty_revoke_____vote_weight_set_____vote_weight_reset_____agent_moderation_vote_set_____agent_moderation_vote_delete_____mod_note_delete_____report_judgement_rerun_____appeal_resolution_draft_rerun_____dispute_resolution_draft_rerun_____oauth_client_verify_____oauth_client_unverify_____story_item_add_____story_item_remove_____story_official_item_set_____story_rename_____crawler_create_____crawler_update_____crawler_delete_____rss_category_assign_____rss_category_reject_____rss_category_unreject_____queue_pause_____queue_resume_____scheduled_job_run_____backfill_run_____article_sync_run_____import_batch_create_____preservation_hold_place_____preservation_hold_release__number": {
+      "Partial_Record__remove_____approve_____reject_____ban_____lift_ban_____activate_restriction_____lift_restriction_____warn_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal_____topic_claim_verify_____topic_claim_reject_____topic_claim_revoke_____report_claim_____report_unclaim_____report_escalate_____report_deescalate_____report_integrity_flag_review_____report_integrity_penalty_apply_____report_integrity_penalty_revoke_____vote_integrity_flag_review_____vote_integrity_penalty_apply_____vote_integrity_penalty_revoke_____vote_weight_set_____vote_weight_reset_____agent_moderation_vote_set_____agent_moderation_vote_delete_____mod_note_delete_____report_judgement_rerun_____appeal_resolution_draft_rerun_____dispute_resolution_draft_rerun_____oauth_client_verify_____oauth_client_unverify_____story_item_add_____story_item_remove_____story_official_item_set_____story_rename_____crawler_create_____crawler_update_____crawler_delete_____rss_category_assign_____rss_category_reject_____rss_category_unreject_____queue_pause_____queue_resume_____queue_retry_failed_____scheduled_job_run_____backfill_run_____article_sync_run_____import_batch_create_____preservation_hold_place_____preservation_hold_release__number": {
         "additionalProperties": false,
         "properties": {
           "activate_restriction": {
@@ -17300,6 +17538,11 @@
         "properties": {},
         "type": "object"
       },
+      "Record_string_never": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
       "Record_string_number": {
         "additionalProperties": {
           "type": "number"
@@ -18059,6 +18302,11 @@
           "thumbnail",
           "title"
         ],
+        "type": "object"
+      },
+      "RetailerAttributes": {
+        "additionalProperties": false,
+        "properties": {},
         "type": "object"
       },
       "Revenue": {
@@ -24866,19 +25114,24 @@
           "200": {
             "content": {
               "text/event-stream": {
-                "schema": {}
+                "schema": {
+                  "type": "string"
+                },
+                "x-sse-events": {
+                  "status": {
+                    "dataSchema": {
+                      "$ref": "#/components/schemas/ArticleSyncStatus"
+                    }
+                  }
+                }
               }
             },
-            "description": "OK",
-            "x-schema-unavailable": true,
-            "x-schema-unavailable-reason": "SSE event payload sequence is not statically extracted"
+            "description": "OK"
           },
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "SSE event payload sequence is not statically extracted"
+        }
       }
     },
     "/api/v1/admin/classifiers": {
@@ -25417,9 +25670,7 @@
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "registered route has no success response"
+        }
       },
       "get": {
         "operationId": "get_api_v1_admin_mcp",
@@ -25430,9 +25681,7 @@
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "registered route has no success response"
+        }
       },
       "post": {
         "operationId": "post_api_v1_admin_mcp",
@@ -25444,12 +25693,194 @@
           }
         },
         "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "error": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "code": {
+                              "type": "number"
+                            },
+                            "data": {},
+                            "message": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["code", "message"],
+                          "type": "object"
+                        },
+                        "id": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "jsonrpc": {
+                          "const": "2.0"
+                        }
+                      },
+                      "required": ["error", "jsonrpc"],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "jsonrpc": {
+                          "const": "2.0"
+                        },
+                        "result": {
+                          "additionalProperties": {},
+                          "properties": {
+                            "_meta": {
+                              "additionalProperties": {},
+                              "properties": {
+                                "io.modelcontextprotocol/related-task": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "taskId": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["taskId"],
+                                  "type": "object"
+                                },
+                                "progressToken": {
+                                  "anyOf": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "required": ["id", "jsonrpc", "result"],
+                      "type": "object"
+                    },
+                    {
+                      "items": {
+                        "$ref": "#/components/schemas/JSONRPCResponse"
+                      },
+                      "type": "array"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "error": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "code": {
+                              "type": "number"
+                            },
+                            "data": {},
+                            "message": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["code", "message"],
+                          "type": "object"
+                        },
+                        "id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "jsonrpc": {
+                          "const": "2.0"
+                        }
+                      },
+                      "required": ["error", "id", "jsonrpc"],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "202": {
+            "description": "Accepted"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "error": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "code": {
+                              "type": "number"
+                            },
+                            "data": {},
+                            "message": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["code", "message"],
+                          "type": "object"
+                        },
+                        "id": {
+                          "type": "null"
+                        },
+                        "jsonrpc": {
+                          "const": "2.0"
+                        }
+                      },
+                      "required": ["error", "id", "jsonrpc"],
+                      "type": "object"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "route can send a raw buffered response body (ctx.response.buffer) whose shape is not statically determinable"
+        }
       }
     },
     "/api/v1/admin/moderation-analytics": {
@@ -26044,19 +26475,38 @@
           "200": {
             "content": {
               "text/event-stream": {
-                "schema": {}
+                "schema": {
+                  "type": "string"
+                },
+                "x-sse-events": {
+                  "snapshot": {
+                    "dataSchema": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "error": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["error"],
+                          "type": "object"
+                        },
+                        {
+                          "$ref": "#/components/schemas/MigrationStatus"
+                        }
+                      ]
+                    }
+                  }
+                }
               }
             },
-            "description": "OK",
-            "x-schema-unavailable": true,
-            "x-schema-unavailable-reason": "SSE event payload sequence is not statically extracted"
+            "description": "OK"
           },
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "SSE event payload sequence is not statically extracted"
+        }
       }
     },
     "/api/v1/admin/topic-claims": {
@@ -26308,19 +26758,50 @@
           "200": {
             "content": {
               "text/event-stream": {
-                "schema": {}
+                "schema": {
+                  "type": "string"
+                },
+                "x-sse-events": {
+                  "snapshot": {
+                    "dataSchema": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "errors": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "groups": {
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "groups": {
+                          "anyOf": [
+                            {
+                              "items": {
+                                "$ref": "#/components/schemas/CacheGroup"
+                              },
+                              "type": "array"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["groups"],
+                      "type": "object"
+                    }
+                  }
+                }
               }
             },
-            "description": "OK",
-            "x-schema-unavailable": true,
-            "x-schema-unavailable-reason": "SSE event payload sequence is not statically extracted"
+            "description": "OK"
           },
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "SSE event payload sequence is not statically extracted"
+        }
       }
     },
     "/api/v1/admin/warnings": {
@@ -52569,21 +53050,60 @@
                       ],
                       "type": "object"
                     },
-                    {}
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "hostname_elections": {
+                          "additionalProperties": false,
+                          "properties": {},
+                          "type": "object"
+                        },
+                        "hostnames": {
+                          "additionalProperties": false,
+                          "properties": {},
+                          "type": "object"
+                        },
+                        "page_info": {
+                          "$ref": "#/components/schemas/PageInfo"
+                        },
+                        "results": {
+                          "items": false,
+                          "maxItems": 0,
+                          "minItems": 0,
+                          "prefixItems": [],
+                          "type": "array"
+                        },
+                        "top_urls_by_hostname_id": {
+                          "additionalProperties": false,
+                          "properties": {},
+                          "type": "object"
+                        },
+                        "topics": {
+                          "additionalProperties": false,
+                          "properties": {},
+                          "type": "object"
+                        }
+                      },
+                      "required": [
+                        "hostname_elections",
+                        "hostnames",
+                        "page_info",
+                        "results",
+                        "top_urls_by_hostname_id",
+                        "topics"
+                      ],
+                      "type": "object"
+                    }
                   ]
                 }
               }
             },
-            "description": "OK",
-            "x-schema-unavailable": true,
-            "x-schema-unavailable-reason": "backend/api/v1/hostnames/hostnames.mts: Property \"results\": Unsupported response contract type \"never\": never is not supported"
+            "description": "OK"
           },
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "backend/api/v1/hostnames/hostnames.mts: Property \"results\": Unsupported response contract type \"never\": never is not supported"
+        }
       },
       "post": {
         "operationId": "post_api_v1_hostnames",
@@ -52732,7 +53252,50 @@
               "application/json": {
                 "schema": {
                   "anyOf": [
-                    {},
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "hostname_elections": {
+                          "additionalProperties": false,
+                          "properties": {},
+                          "type": "object"
+                        },
+                        "hostnames": {
+                          "additionalProperties": false,
+                          "properties": {},
+                          "type": "object"
+                        },
+                        "page_info": {
+                          "$ref": "#/components/schemas/PageInfo"
+                        },
+                        "results": {
+                          "items": false,
+                          "maxItems": 0,
+                          "minItems": 0,
+                          "prefixItems": [],
+                          "type": "array"
+                        },
+                        "social_by_hostname_id": {
+                          "additionalProperties": false,
+                          "properties": {},
+                          "type": "object"
+                        },
+                        "topics": {
+                          "additionalProperties": false,
+                          "properties": {},
+                          "type": "object"
+                        }
+                      },
+                      "required": [
+                        "hostname_elections",
+                        "hostnames",
+                        "page_info",
+                        "results",
+                        "social_by_hostname_id",
+                        "topics"
+                      ],
+                      "type": "object"
+                    },
                     {
                       "$ref": "#/components/schemas/Record_string_unknown"
                     }
@@ -52740,16 +53303,12 @@
                 }
               }
             },
-            "description": "OK",
-            "x-schema-unavailable": true,
-            "x-schema-unavailable-reason": "backend/api/v1/hostnames/social-hostnames.mts: Property \"results\": Unsupported response contract type \"never\": never is not supported"
+            "description": "OK"
           },
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "backend/api/v1/hostnames/social-hostnames.mts: Property \"results\": Unsupported response contract type \"never\": never is not supported"
+        }
       }
     },
     "/api/v1/hostnames/top": {
@@ -52761,7 +53320,50 @@
               "application/json": {
                 "schema": {
                   "anyOf": [
-                    {},
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "hostname_elections": {
+                          "additionalProperties": false,
+                          "properties": {},
+                          "type": "object"
+                        },
+                        "hostnames": {
+                          "additionalProperties": false,
+                          "properties": {},
+                          "type": "object"
+                        },
+                        "page_info": {
+                          "$ref": "#/components/schemas/PageInfo"
+                        },
+                        "results": {
+                          "items": false,
+                          "maxItems": 0,
+                          "minItems": 0,
+                          "prefixItems": [],
+                          "type": "array"
+                        },
+                        "top_urls_by_hostname_id": {
+                          "additionalProperties": false,
+                          "properties": {},
+                          "type": "object"
+                        },
+                        "topics": {
+                          "additionalProperties": false,
+                          "properties": {},
+                          "type": "object"
+                        }
+                      },
+                      "required": [
+                        "hostname_elections",
+                        "hostnames",
+                        "page_info",
+                        "results",
+                        "top_urls_by_hostname_id",
+                        "topics"
+                      ],
+                      "type": "object"
+                    },
                     {
                       "$ref": "#/components/schemas/Record_string_unknown"
                     }
@@ -52769,16 +53371,12 @@
                 }
               }
             },
-            "description": "OK",
-            "x-schema-unavailable": true,
-            "x-schema-unavailable-reason": "backend/api/v1/hostnames/top-hostnames.mts: Property \"results\": Unsupported response contract type \"never\": never is not supported"
+            "description": "OK"
           },
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "backend/api/v1/hostnames/top-hostnames.mts: Property \"results\": Unsupported response contract type \"never\": never is not supported"
+        }
       }
     },
     "/api/v1/hostnames/{id}": {
@@ -53973,19 +54571,66 @@
           "201": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "membership": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "household_id": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "individual": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "updated_at": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["id", "updated_at"],
+                          "type": "object"
+                        },
+                        "relationship": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "household_id",
+                        "id",
+                        "individual",
+                        "relationship",
+                        "updated_at"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["membership"],
+                  "type": "object"
+                }
               }
             },
-            "description": "Created",
-            "x-schema-unavailable": true,
-            "x-schema-unavailable-reason": "backend/api/v1/households/household-members.mts: Property \"membership\": Unsupported response contract type \"any\": any is not allowed"
+            "description": "Created"
           },
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "backend/api/v1/households/household-members.mts: Property \"membership\": Unsupported response contract type \"any\": any is not allowed"
+        }
       }
     },
     "/api/v1/households/{id}/memberships/{membershipId}": {
@@ -54035,19 +54680,40 @@
           "201": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "upload": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "content_type": {
+                          "type": "string"
+                        },
+                        "expires_at": {
+                          "type": "string"
+                        },
+                        "image_id": {
+                          "type": "string"
+                        },
+                        "upload_url": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["content_type", "expires_at", "image_id", "upload_url"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["upload"],
+                  "type": "object"
+                }
               }
             },
-            "description": "Created",
-            "x-schema-unavailable": true,
-            "x-schema-unavailable-reason": "backend/api/v1/images/index.mts: Property \"upload\": Property \"image_id\": Unsupported response contract type \"any\": any is not allowed"
+            "description": "Created"
           },
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "backend/api/v1/images/index.mts: Property \"upload\": Property \"image_id\": Unsupported response contract type \"any\": any is not allowed"
+        }
       }
     },
     "/api/v1/images/{id}/completions": {
@@ -54104,19 +54770,24 @@
           "200": {
             "content": {
               "text/event-stream": {
-                "schema": {}
+                "schema": {
+                  "type": "string"
+                },
+                "x-sse-events": {
+                  "state": {
+                    "dataSchema": {
+                      "$ref": "#/components/schemas/ImageUploadState"
+                    }
+                  }
+                }
               }
             },
-            "description": "OK",
-            "x-schema-unavailable": true,
-            "x-schema-unavailable-reason": "SSE event payload sequence is not statically extracted"
+            "description": "OK"
           },
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "SSE event payload sequence is not statically extracted"
+        }
       }
     },
     "/api/v1/images/{id}/upload-state": {
@@ -54302,19 +54973,38 @@
           "200": {
             "content": {
               "text/event-stream": {
-                "schema": {}
+                "schema": {
+                  "type": "string"
+                },
+                "x-sse-events": {
+                  "done": {
+                    "dataSchema": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/Record_string_never"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {},
+                          "type": "object"
+                        }
+                      ]
+                    }
+                  },
+                  "progress": {
+                    "dataSchema": {
+                      "$ref": "#/components/schemas/ImportProgressChunk"
+                    }
+                  }
+                }
               }
             },
-            "description": "OK",
-            "x-schema-unavailable": true,
-            "x-schema-unavailable-reason": "SSE event payload sequence is not statically extracted"
+            "description": "OK"
           },
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "SSE event payload sequence is not statically extracted"
+        }
       }
     },
     "/api/v1/landing-pages/{landingPageId}/clicks": {
@@ -55008,9 +55698,7 @@
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "registered route has no success response"
+        }
       },
       "get": {
         "operationId": "get_api_v1_mcp",
@@ -55021,9 +55709,7 @@
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "registered route has no success response"
+        }
       },
       "post": {
         "operationId": "post_api_v1_mcp",
@@ -55035,12 +55721,194 @@
           }
         },
         "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "error": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "code": {
+                              "type": "number"
+                            },
+                            "data": {},
+                            "message": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["code", "message"],
+                          "type": "object"
+                        },
+                        "id": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "jsonrpc": {
+                          "const": "2.0"
+                        }
+                      },
+                      "required": ["error", "jsonrpc"],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "jsonrpc": {
+                          "const": "2.0"
+                        },
+                        "result": {
+                          "additionalProperties": {},
+                          "properties": {
+                            "_meta": {
+                              "additionalProperties": {},
+                              "properties": {
+                                "io.modelcontextprotocol/related-task": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "taskId": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["taskId"],
+                                  "type": "object"
+                                },
+                                "progressToken": {
+                                  "anyOf": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "required": ["id", "jsonrpc", "result"],
+                      "type": "object"
+                    },
+                    {
+                      "items": {
+                        "$ref": "#/components/schemas/JSONRPCResponse"
+                      },
+                      "type": "array"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "error": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "code": {
+                              "type": "number"
+                            },
+                            "data": {},
+                            "message": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["code", "message"],
+                          "type": "object"
+                        },
+                        "id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "jsonrpc": {
+                          "const": "2.0"
+                        }
+                      },
+                      "required": ["error", "id", "jsonrpc"],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "202": {
+            "description": "Accepted"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "error": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "code": {
+                              "type": "number"
+                            },
+                            "data": {},
+                            "message": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["code", "message"],
+                          "type": "object"
+                        },
+                        "id": {
+                          "type": "null"
+                        },
+                        "jsonrpc": {
+                          "const": "2.0"
+                        }
+                      },
+                      "required": ["error", "id", "jsonrpc"],
+                      "type": "object"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "route can send a raw buffered response body (ctx.response.buffer) whose shape is not statically determinable"
+        }
       }
     },
     "/api/v1/me/individual": {
@@ -55050,19 +55918,24 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "individual": {
+                      "$ref": "#/components/schemas/Individual"
+                    }
+                  },
+                  "required": ["individual"],
+                  "type": "object"
+                }
               }
             },
-            "description": "OK",
-            "x-schema-unavailable": true,
-            "x-schema-unavailable-reason": "backend/api/v1/individuals/index.mts: Property \"individual\": Unsupported response contract type \"any\": any is not allowed"
+            "description": "OK"
           },
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "backend/api/v1/individuals/index.mts: Property \"individual\": Unsupported response contract type \"any\": any is not allowed"
+        }
       }
     },
     "/api/v1/membership-grants": {
@@ -57130,19 +58003,37 @@
           "200": {
             "content": {
               "text/event-stream": {
-                "schema": {}
+                "schema": {
+                  "type": "string"
+                },
+                "x-sse-events": {
+                  "stats": {
+                    "dataSchema": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "queues": {
+                          "items": {
+                            "$ref": "#/components/schemas/QueueStats"
+                          },
+                          "type": "array"
+                        },
+                        "stats": {
+                          "$ref": "#/components/schemas/AggregatedQueueStats"
+                        }
+                      },
+                      "required": ["queues", "stats"],
+                      "type": "object"
+                    }
+                  }
+                }
               }
             },
-            "description": "OK",
-            "x-schema-unavailable": true,
-            "x-schema-unavailable-reason": "SSE event payload sequence is not statically extracted"
+            "description": "OK"
           },
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "SSE event payload sequence is not statically extracted"
+        }
       }
     },
     "/api/v1/my/api-keys": {
@@ -68212,21 +69103,56 @@
                       "required": ["hostname_elections", "page_info", "results", "topic_elections"],
                       "type": "object"
                     },
-                    {}
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "hostname_elections": {
+                          "additionalProperties": false,
+                          "properties": {},
+                          "type": "object"
+                        },
+                        "page_info": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "end_cursor": {
+                              "type": "null"
+                            },
+                            "has_next_page": {
+                              "const": false
+                            },
+                            "start_cursor": {
+                              "type": "null"
+                            }
+                          },
+                          "required": ["end_cursor", "has_next_page", "start_cursor"],
+                          "type": "object"
+                        },
+                        "results": {
+                          "items": false,
+                          "maxItems": 0,
+                          "minItems": 0,
+                          "prefixItems": [],
+                          "type": "array"
+                        },
+                        "topic_elections": {
+                          "additionalProperties": false,
+                          "properties": {},
+                          "type": "object"
+                        }
+                      },
+                      "required": ["hostname_elections", "page_info", "results", "topic_elections"],
+                      "type": "object"
+                    }
                   ]
                 }
               }
             },
-            "description": "OK",
-            "x-schema-unavailable": true,
-            "x-schema-unavailable-reason": "backend/api/v1/rss-feeds/rss-feeds.mts: Property \"results\": Unsupported response contract type \"never\": never is not supported"
+            "description": "OK"
           },
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "backend/api/v1/rss-feeds/rss-feeds.mts: Property \"results\": Unsupported response contract type \"never\": never is not supported"
+        }
       },
       "post": {
         "operationId": "post_api_v1_rss-feeds",
@@ -68753,7 +69679,48 @@
               "application/json": {
                 "schema": {
                   "anyOf": [
-                    {},
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "communities": {
+                          "items": false,
+                          "maxItems": 0,
+                          "minItems": 0,
+                          "prefixItems": [],
+                          "type": "array"
+                        },
+                        "domains": {
+                          "items": false,
+                          "maxItems": 0,
+                          "minItems": 0,
+                          "prefixItems": [],
+                          "type": "array"
+                        },
+                        "news": {
+                          "items": false,
+                          "maxItems": 0,
+                          "minItems": 0,
+                          "prefixItems": [],
+                          "type": "array"
+                        },
+                        "posts": {
+                          "items": false,
+                          "maxItems": 0,
+                          "minItems": 0,
+                          "prefixItems": [],
+                          "type": "array"
+                        },
+                        "topics": {
+                          "items": false,
+                          "maxItems": 0,
+                          "minItems": 0,
+                          "prefixItems": [],
+                          "type": "array"
+                        }
+                      },
+                      "required": ["communities", "domains", "news", "posts", "topics"],
+                      "type": "object"
+                    },
                     {
                       "$ref": "#/components/schemas/OmnisearchResult"
                     }
@@ -68761,16 +69728,12 @@
                 }
               }
             },
-            "description": "OK",
-            "x-schema-unavailable": true,
-            "x-schema-unavailable-reason": "backend/api/v1/search/search.mts: Property \"communities\": Unsupported response contract type \"never\": never is not supported"
+            "description": "OK"
           },
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "backend/api/v1/search/search.mts: Property \"communities\": Unsupported response contract type \"never\": never is not supported"
+        }
       }
     },
     "/api/v1/session": {
@@ -72956,9 +73919,7 @@
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "registered route has no success response"
+        }
       },
       "get": {
         "operationId": "get_api_v1_topics_idOrSlug",
@@ -74476,19 +75437,24 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "retailer_attributes": {
+                      "$ref": "#/components/schemas/RetailerAttributes"
+                    }
+                  },
+                  "required": ["retailer_attributes"],
+                  "type": "object"
+                }
               }
             },
-            "description": "OK",
-            "x-schema-unavailable": true,
-            "x-schema-unavailable-reason": "backend/api/v1/topics/topic-routes/retailer-routes.mts: Property \"retailer_attributes\": Unsupported response contract type \"never\": never is not supported"
+            "description": "OK"
           },
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "backend/api/v1/topics/topic-routes/retailer-routes.mts: Property \"retailer_attributes\": Unsupported response contract type \"never\": never is not supported"
+        }
       },
       "patch": {
         "operationId": "patch_api_v1_topics_idOrSlug_retailer",
@@ -74506,19 +75472,31 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "retailer_attributes": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/RetailerAttributes"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["retailer_attributes"],
+                  "type": "object"
+                }
               }
             },
-            "description": "OK",
-            "x-schema-unavailable": true,
-            "x-schema-unavailable-reason": "backend/api/v1/topics/topic-routes/retailer-routes.mts: Property \"retailer_attributes\": Unsupported response contract type \"never\": never is not supported"
+            "description": "OK"
           },
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "backend/api/v1/topics/topic-routes/retailer-routes.mts: Property \"retailer_attributes\": Unsupported response contract type \"never\": never is not supported"
+        }
       }
     },
     "/api/v1/topics/{idOrSlug}/retailer/countries": {
@@ -79993,19 +80971,24 @@
           "200": {
             "content": {
               "text/event-stream": {
-                "schema": {}
+                "schema": {
+                  "type": "string"
+                },
+                "x-sse-events": {
+                  "status": {
+                    "dataSchema": {
+                      "$ref": "#/components/schemas/DataRequestStreamStatus"
+                    }
+                  }
+                }
               }
             },
-            "description": "OK",
-            "x-schema-unavailable": true,
-            "x-schema-unavailable-reason": "SSE event payload sequence is not statically extracted"
+            "description": "OK"
           },
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "SSE event payload sequence is not statically extracted"
+        }
       }
     },
     "/api/v1/users/{idOrSlug}/domains/{listType}": {
@@ -83034,7 +84017,23 @@
               "application/json": {
                 "schema": {
                   "anyOf": [
-                    {},
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "page_info": {
+                          "$ref": "#/components/schemas/PageInfo"
+                        },
+                        "results": {
+                          "items": false,
+                          "maxItems": 0,
+                          "minItems": 0,
+                          "prefixItems": [],
+                          "type": "array"
+                        }
+                      },
+                      "required": ["page_info", "results"],
+                      "type": "object"
+                    },
                     {
                       "additionalProperties": false,
                       "properties": {
@@ -83123,45 +84122,15 @@
                 }
               }
             },
-            "description": "OK",
-            "x-schema-unavailable": true,
-            "x-schema-unavailable-reason": "backend/api/v1/web-search/web-search.mts: Property \"results\": Unsupported response contract type \"never\": never is not supported"
+            "description": "OK"
           },
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "backend/api/v1/web-search/web-search.mts: Property \"results\": Unsupported response contract type \"never\": never is not supported"
+        }
       }
     }
   },
   "x-unavailable-request-routes": [],
-  "x-unavailable-routes": [
-    "DELETE:/api/v1/admin/mcp",
-    "DELETE:/api/v1/mcp",
-    "DELETE:/api/v1/topics/:idOrSlug",
-    "GET:/api/v1/admin/article-syncs/:jobId/stream",
-    "GET:/api/v1/admin/mcp",
-    "GET:/api/v1/admin/postgresql/stream",
-    "GET:/api/v1/admin/valkey/stream",
-    "GET:/api/v1/hostnames",
-    "GET:/api/v1/hostnames/social",
-    "GET:/api/v1/hostnames/top",
-    "GET:/api/v1/images/:id/state/stream",
-    "GET:/api/v1/imports/:batchId/stream",
-    "GET:/api/v1/mcp",
-    "GET:/api/v1/me/individual",
-    "GET:/api/v1/mq/stream",
-    "GET:/api/v1/rss-feeds",
-    "GET:/api/v1/search",
-    "GET:/api/v1/topics/:idOrSlug/retailer",
-    "GET:/api/v1/users/:idOrSlug/data-request/stream",
-    "GET:/api/v1/web-search",
-    "PATCH:/api/v1/topics/:idOrSlug/retailer",
-    "POST:/api/v1/admin/mcp",
-    "POST:/api/v1/households/:id/memberships",
-    "POST:/api/v1/images/upload-url",
-    "POST:/api/v1/mcp"
-  ]
+  "x-unavailable-routes": []
 }
