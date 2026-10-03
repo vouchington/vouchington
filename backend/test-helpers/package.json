@@ -61,7 +61,7 @@
     "@vouchington/localization-compiler": "^0.2.2",
     "glide-mq": "^0.16.0",
     "jose": "^6.2.12",
-    "openai": "^7.23.0",
+    "openai": "^7.25.0",
     "otpauth": "^9.5.2",
     "pgvector": "^0.3.0",
     "sharp": "^0.35.5",
