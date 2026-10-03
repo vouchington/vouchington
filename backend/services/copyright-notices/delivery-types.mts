@@ -1,4 +1,5 @@
 export type CopyrightEmailIntakeDeliveryKind =
+  | 'email_intake_received'
   | 'email_intake_rejected'
   | 'email_intake_needs_information'
 
@@ -6,6 +7,9 @@ export type CopyrightNoticeDeliveryKind =
   | 'claimant_receipt'
   | 'status_update'
   | 'poster_restriction_notice'
+  | 'poster_review_notice'
+  | 'poster_restoration_notice'
+  | 'claimant_decision_notice'
   | 'counter_notice_forwarding'
   | 'staff_information_request'
 

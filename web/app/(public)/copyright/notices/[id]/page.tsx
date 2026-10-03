@@ -20,6 +20,7 @@ export default async function CopyrightNoticePage({ params }: { params: Promise<
     <main className='mx-auto max-w-3xl py-8'>
       <CopyrightNoticeDetailView
         notice={visibleNotice}
+        statements={participant?.statements ?? []}
         responseEligibility={
           participant
             ? {

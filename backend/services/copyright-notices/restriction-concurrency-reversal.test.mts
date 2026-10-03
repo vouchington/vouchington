@@ -1,3 +1,4 @@
+import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/services/copyright-notices/statement-notices'
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { describe, expect, it, vi } from 'vitest'
 import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
@@ -95,6 +96,16 @@ describe('copyright restriction reversal concurrency', () => {
       }),
     ).resolves.toBe('stale')
 
+    const statements = await readTestCopyrightStatementIntents(notice.id)
+    expect(statements.filter(row => row.delivery_kind === 'poster_review_notice')).toHaveLength(2)
+    expect(
+      statements.filter(row => row.delivery_kind === 'poster_restoration_notice'),
+    ).toHaveLength(2)
+    expect(
+      statements.find(
+        row => row.delivery_kind === 'poster_restoration_notice' && row.channel === 'email',
+      )?.text,
+    ).toContain('human review reversed the decision')
     await expect(getImagePlacementForCopyright(placement.placement_id)).resolves.toEqual(
       expect.objectContaining({ withheld: false }),
     )

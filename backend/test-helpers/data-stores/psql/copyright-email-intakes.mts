@@ -69,13 +69,19 @@ export async function readCopyrightEmailIntakeSesVerdicts(intakeId: string): Pro
 export async function readCopyrightEmailIntakeResponses(intakeId: string): Promise<
   {
     id: string
-    delivery_kind: 'email_intake_rejected' | 'email_intake_needs_information'
+    delivery_kind:
+      | 'email_intake_received'
+      | 'email_intake_rejected'
+      | 'email_intake_needs_information'
     state: string
   }[]
 > {
   const { rows } = await read<{
     id: string
-    delivery_kind: 'email_intake_rejected' | 'email_intake_needs_information'
+    delivery_kind:
+      | 'email_intake_received'
+      | 'email_intake_rejected'
+      | 'email_intake_needs_information'
     state: string
   }>(sql`/* readCopyrightEmailIntakeResponses */
     SELECT id, delivery_kind, state

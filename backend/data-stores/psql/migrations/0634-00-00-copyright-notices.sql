@@ -188,7 +188,7 @@ CREATE TABLE copyright_notice_correspondence_messages (
   correspondence_kind text NOT NULL CONSTRAINT copyright_correspondence_kind_check CHECK (correspondence_kind IN (
     'receipt',
     'request_information',
-    'restriction_notice',
+    'restriction_notice', 'decision_notice',
     'counter_notice_forwarding',
     'restoration_notice',
     'status_update',

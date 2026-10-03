@@ -143,6 +143,14 @@ export const nativeCopyrightClaimantApiFixtureCases: ApiFixtureCase[] = [
         viewer_role: 'claimant',
         respondable_target_ids: [],
         submissions: [],
+        statements: [
+          {
+            id: '00000000-0000-7000-8000-0000000008f2',
+            delivery_kind: 'claimant_decision_notice',
+            sent_at: '2026-07-01T12:02:00.000Z',
+            text: 'A person confirmed the image restriction. See the case page for redress routes.',
+          },
+        ],
       },
     },
     consumers: ['web'],
@@ -168,6 +176,7 @@ export const nativeCopyrightClaimantApiFixtureCases: ApiFixtureCase[] = [
         viewer_role: 'poster',
         respondable_target_ids: [targetId],
         submissions: [],
+        statements: [],
       },
     },
     consumers: ['web'],

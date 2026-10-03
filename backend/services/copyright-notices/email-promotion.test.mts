@@ -1,11 +1,18 @@
-import { describe, expect, it } from 'vitest'
+import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
+import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/services/copyright-notices/statement-notices'
+import { failTestCopyrightDeliveryIntent } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
+import { copyrightPromotionText, copyrightReceiptText } from './statement-of-reasons-wording.mts'
+import { describe, expect, it, vi } from 'vitest'
 import {
   createTestUser,
   insertTestImage,
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
-import { readCopyrightEmailIntakeReview } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
+import {
+  readCopyrightEmailIntakeReview,
+  readCopyrightEmailIntakeResponses,
+} from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import {
   markCopyrightDeliveryIntentBouncedBySesMessageId,
   markCopyrightDeliveryIntentFailed,
@@ -18,55 +25,29 @@ import { createParsedCopyrightEmailIntake } from './email-intake-test-fixtures.m
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('copyright email promotion', () => {
-  it('requires a moderator to promote an email intake before imposing its restrictions', async () => {
-    const [poster, moderatorRecord] = await Promise.all([createTestUser(), createTestUser()])
-    const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
-    const postId = await insertTestPost({
-      title: `Copyright email approval ${crypto.randomUUID()}`,
-      slug: `copyright-email-approval-${crypto.randomUUID()}`,
-      createdById: poster.id,
-      markdown: 'Hosted copyright target.',
-    })
-    const imageId = await insertTestImage(poster.id)
-    const placementId = await insertTestPostImage({ postId, imageId })
-    const intake = await createParsedCopyrightEmailIntake()
-    const approved = await promoteCopyrightEmailIntake({
-      currentUser: moderator,
-      intakeId: intake.id,
-      recommendationId: null,
-      manualFallbackReason: 'The extraction agent was unavailable.',
-      jurisdiction: 'us_dmca',
-      claimantDisplayName: 'Claimant',
-      claimantContact: 'claimant@example.test',
-      claimantEmail: 'claimant@example.test',
-      workDescription: 'Original photograph',
-      goodFaithBelief: true,
-      accuracyAuthorityUnderPenaltyOfPerjury: true,
-      electronicSignature: 'Claimant',
-      targets: [
-        {
-          placementId,
-          placementRevision: 1,
-          imageId,
-          hostedUseUrl: `https://voucha.ai/posts/${postId}`,
-        },
-      ],
-      rationale: 'The email contains the statutory notice statements.',
-    })
-    const aggregate = await getCopyrightNoticePrivateAggregate(approved.noticeId)
-    expect(aggregate?.submissions).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ id: approved.submissionId, source_kind: 'email' }),
-      ]),
-    )
-    expect(aggregate?.restrictions).toEqual(
-      expect.arrayContaining([expect.objectContaining({ imposed_by_id: moderator.id })]),
-    )
-    await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.toEqual([
-      { decision: 'approved', promoted_copyright_notice_id: approved.noticeId },
-    ])
-    await expect(
-      promoteCopyrightEmailIntake({
+  useCopyrightIntakeEnvironment()
+  it.each(['pending', 'failed', 'none'] as const)(
+    'promotes while retaining a %s arrival receipt and uses the applicable case acknowledgement',
+    async receiptState => {
+      const [poster, moderatorRecord] = await Promise.all([createTestUser(), createTestUser()])
+      const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
+      const postId = await insertTestPost({
+        title: `Copyright email approval ${crypto.randomUUID()}`,
+        slug: `copyright-email-approval-${crypto.randomUUID()}`,
+        createdById: poster.id,
+        markdown: 'Hosted copyright target.',
+      })
+      const imageId = await insertTestImage(poster.id)
+      const placementId = await insertTestPostImage({ postId, imageId })
+      if (receiptState === 'none') vi.stubEnv('COPYRIGHT_INTAKE_ENABLED', 'false')
+      const intake = await createParsedCopyrightEmailIntake()
+      vi.stubEnv('COPYRIGHT_INTAKE_ENABLED', 'true')
+      const arrival = (await readCopyrightEmailIntakeResponses(intake.id))[0]
+      expect(arrival?.delivery_kind).toBe(
+        receiptState === 'none' ? undefined : 'email_intake_received',
+      )
+      if (receiptState === 'failed') await failTestCopyrightDeliveryIntent(arrival!.id)
+      const approved = await promoteCopyrightEmailIntake({
         currentUser: moderator,
         intakeId: intake.id,
         recommendationId: null,
@@ -87,10 +68,69 @@ describe('copyright email promotion', () => {
             hostedUseUrl: `https://voucha.ai/posts/${postId}`,
           },
         ],
-        rationale: 'The prior moderator decision may be safely replayed.',
-      }),
-    ).resolves.toEqual(approved)
-  })
+        rationale: 'The email contains the statutory notice statements.',
+      })
+      const aggregate = await getCopyrightNoticePrivateAggregate(approved.noticeId)
+      const receipt = aggregate!.deliveryIntents.find(
+        row => row.delivery_kind === 'claimant_receipt',
+      )!
+      expect((await prepareCopyrightEmailDelivery(receipt.id)).text).toBe(
+        receiptState === 'pending'
+          ? copyrightPromotionText(approved.noticeId)
+          : copyrightReceiptText(approved.noticeId),
+      )
+      expect(await readCopyrightEmailIntakeResponses(intake.id)).toEqual(
+        receiptState === 'none'
+          ? []
+          : [{ id: arrival!.id, delivery_kind: 'email_intake_received', state: receiptState }],
+      )
+      const claimantDecision = (await readTestCopyrightStatementIntents(approved.noticeId)).filter(
+        row => row.recipient_role === 'claimant',
+      )
+      expect(claimantDecision).toHaveLength(1)
+      expect(claimantDecision[0]).toMatchObject({
+        channel: 'email',
+        recipient_user_id: null,
+        email: 'claimant@example.test',
+      })
+      expect(aggregate?.submissions).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: approved.submissionId, source_kind: 'email' }),
+        ]),
+      )
+      expect(aggregate?.restrictions).toEqual(
+        expect.arrayContaining([expect.objectContaining({ imposed_by_id: moderator.id })]),
+      )
+      await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.toEqual([
+        { decision: 'approved', promoted_copyright_notice_id: approved.noticeId },
+      ])
+      await expect(
+        promoteCopyrightEmailIntake({
+          currentUser: moderator,
+          intakeId: intake.id,
+          recommendationId: null,
+          manualFallbackReason: 'The extraction agent was unavailable.',
+          jurisdiction: 'us_dmca',
+          claimantDisplayName: 'Claimant',
+          claimantContact: 'claimant@example.test',
+          claimantEmail: 'claimant@example.test',
+          workDescription: 'Original photograph',
+          goodFaithBelief: true,
+          accuracyAuthorityUnderPenaltyOfPerjury: true,
+          electronicSignature: 'Claimant',
+          targets: [
+            {
+              placementId,
+              placementRevision: 1,
+              imageId,
+              hostedUseUrl: `https://voucha.ai/posts/${postId}`,
+            },
+          ],
+          rationale: 'The prior moderator decision may be safely replayed.',
+        }),
+      ).resolves.toEqual(approved)
+    },
+  )
 
   it('sends and records a bounced staff response to a rejected email', async () => {
     const responseId = await rejectParsedIntakeWithResponse({

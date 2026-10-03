@@ -3855,6 +3855,32 @@
       "required": ["image_id", "post_id", "target_url"],
       "type": "object"
     },
+    "CopyrightParticipantStatement": {
+      "additionalProperties": false,
+      "properties": {
+        "delivery_kind": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "sent_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": ["delivery_kind", "id", "sent_at", "text"],
+      "type": "object"
+    },
     "CopyrightPublicNotice": {
       "additionalProperties": false,
       "properties": {

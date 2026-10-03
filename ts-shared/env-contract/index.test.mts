@@ -25,6 +25,7 @@ describe('environment contract', () => {
     )
     expect(envNamesForSurface('ecs-worker-environment')).toEqual(
       expect.arrayContaining([
+        'COPYRIGHT_INTAKE_ENABLED',
         'BEDROCK_BATCH_SQS_QUEUE_URL',
         'APPLE_APP_STORE_SERVER_API_ISSUER_ID',
         'APPLE_APP_STORE_SERVER_API_KEY_ID',

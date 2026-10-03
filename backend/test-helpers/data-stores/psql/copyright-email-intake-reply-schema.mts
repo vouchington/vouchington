@@ -68,7 +68,7 @@ export const rejectReplyToClaimant = (intakeId: string) =>
 
 export const rejectReplyInApp = (intakeId: string) => insertReply({ intakeId, channel: 'in_app' })
 
-export const rejectSecondReplyForIntake = (intakeId: string) => insertReply({ intakeId })
+export const rejectSameReplyKindForIntake = (intakeId: string) => insertReply({ intakeId })
 
 export const rejectReplyIntakeReassignment = (intentId: string, otherIntakeId: string) =>
   write(sql`/* rejectCopyrightReplyIntakeReassignment */
@@ -83,3 +83,8 @@ export const rejectReplyBodyMutation = (intentId: string) =>
 export const rejectReplyDeletion = (intentId: string) =>
   write(sql`/* rejectCopyrightReplyDeletion */
     DELETE FROM copyright_notice_delivery_intents WHERE id = ${intentId}`)
+
+export async function createCopyrightEmailIntakeReceiptRow(intakeId: string): Promise<string> {
+  const { rows } = await insertReply({ intakeId, kind: 'email_intake_received' })
+  return rows[0]!.id
+}

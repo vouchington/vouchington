@@ -41,8 +41,8 @@ Once the designated agent's contact details are published on `/copyright/designa
 ## What Happens After a Notice
 
 1. **We confirm we got it.** We email you a receipt.
-2. **A moderator reviews it.** A person reviews every notice before we act. We don't act on a notice that's missing required information. If something is missing, the moderator emails you at the address on your notice to ask for it.
-3. **If we accept it,** the image is hidden in that post for everyone. The rest of the post stays up, and other posts aren't changed. We email the poster, and the case appears at `/copyright/notices`.
+2. **A moderator reviews it.** Automated tools may assist or provisionally withhold an image pending review, but a person reviews the decision. We don't act on a notice that's missing required information. If something is missing, the moderator emails you at the address on your notice to ask for it.
+3. **If we accept it,** the image is hidden in that post for everyone. The rest of the post stays up, and other posts aren't changed. The poster gets an email and an in-app notice with the reasons and redress routes, and you receive a decision email. The case appears at `/copyright/notices`.
 
 A case records a claim. It doesn't decide who owns the work or whether anyone infringed.
 
@@ -50,7 +50,7 @@ A case records a claim. It doesn't decide who owns the work or whether anyone in
 
 ## If Your Image Was Taken Down
 
-You'll get an email, and you can see the case at `/copyright/notices`. Signed in as the poster, you have two options.
+You'll get an email and an in-app notice with the reasons, including whether automated tools assisted. You can see your notices on the case at `/copyright/notices`. A human review and a later restriction-ended notice explain any change. Signed in as the poster, you have two options.
 
 ### Option 1: Appeal
 

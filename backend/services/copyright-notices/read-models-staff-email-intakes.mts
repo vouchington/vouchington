@@ -61,7 +61,8 @@ export async function searchCopyrightStaffEmailIntakes(
     LEFT JOIN copyright_notice_email_intake_notice_links link
       ON link.copyright_notice_email_intake_id = intake.id
     LEFT JOIN copyright_notice_delivery_intents reply
-      ON reply.copyright_notice_email_intake_id = intake.id AND reply.state IN ('failed', 'bounced')
+      ON reply.copyright_notice_email_intake_id = intake.id
+      AND reply.delivery_kind IN ('email_intake_rejected', 'email_intake_needs_information') AND reply.state IN ('failed', 'bounced')
     WHERE (`.append(copyrightEmailIntakeAwaitingReviewSql())
   query.append(sql` OR reply.id IS NOT NULL)`)
   if (options.after) {

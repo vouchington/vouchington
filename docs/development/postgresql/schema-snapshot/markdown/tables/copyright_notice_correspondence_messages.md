@@ -31,7 +31,7 @@ Not partitioned — growth: unbounded.
 
 **Check constraints:**
 
-- `copyright_correspondence_kind_check`: `CHECK ((correspondence_kind = ANY (ARRAY['receipt'::text, 'request_information'::text, 'restriction_notice'::text, 'counter_notice_forwarding'::text, 'restoration_notice'::text, 'status_update'::text, 'inbound_message'::text])))`
+- `copyright_correspondence_kind_check`: `CHECK ((correspondence_kind = ANY (ARRAY['receipt'::text, 'request_information'::text, 'restriction_notice'::text, 'decision_notice'::text, 'counter_notice_forwarding'::text, 'restoration_notice'::text, 'status_update'::text, 'inbound_message'::text])))`
 - `copyright_notice_correspondence_messages_body_ciphertext_check`: `CHECK (((char_length(body_ciphertext) >= 1) AND (char_length(body_ciphertext) <= 1048576)))`
 - `copyright_notice_correspondence_messages_check`: `CHECK (((approved_at IS NULL) OR (composition_kind = 'agent'::text)))`
 - `copyright_notice_correspondence_messages_check1`: `CHECK (((approved_at IS NOT NULL) OR (approved_by_id IS NULL)))`

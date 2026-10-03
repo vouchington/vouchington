@@ -20,7 +20,7 @@ CREATE TABLE copyright_notice_delivery_intents (
   recipient_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
   recipient_user_erased_at timestamptz,
   recipient_role text NOT NULL CHECK (recipient_role IN ('claimant', 'poster', 'correspondent')),
-  delivery_kind text NOT NULL CHECK (delivery_kind IN ('claimant_receipt', 'status_update', 'poster_restriction_notice', 'counter_notice_forwarding', 'staff_information_request', 'email_intake_rejected', 'email_intake_needs_information')),
+  delivery_kind text NOT NULL CHECK (delivery_kind IN ('claimant_receipt', 'status_update', 'poster_restriction_notice', 'poster_review_notice', 'poster_restoration_notice', 'claimant_decision_notice', 'counter_notice_forwarding', 'staff_information_request', 'email_intake_rejected', 'email_intake_needs_information', 'email_intake_received')),
   channel text NOT NULL CHECK (channel IN ('in_app', 'email')),
   state text NOT NULL DEFAULT 'pending' CHECK (state IN ('pending', 'claimed', 'sent', 'failed', 'bounced')),
   delivery_attempt_count integer NOT NULL DEFAULT 0 CHECK (delivery_attempt_count BETWEEN 0 AND 5),
@@ -38,11 +38,13 @@ CREATE TABLE copyright_notice_delivery_intents (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (idempotency_key),
-  UNIQUE (copyright_notice_email_intake_id),
+  UNIQUE (copyright_notice_email_intake_id, delivery_kind),
   FOREIGN KEY (copyright_notice_submission_id, copyright_notice_id)
     REFERENCES copyright_notice_submissions(id, copyright_notice_id) ON DELETE RESTRICT,
   FOREIGN KEY (copyright_notice_correspondence_message_id, copyright_notice_id)
     REFERENCES copyright_notice_correspondence_messages(id, copyright_notice_id) ON DELETE RESTRICT,
+  CHECK (delivery_kind <> 'claimant_decision_notice' OR recipient_role = 'claimant'),
+  CHECK (delivery_kind NOT IN ('poster_restriction_notice', 'poster_review_notice', 'poster_restoration_notice') OR recipient_role = 'poster'),
   CHECK (recipient_role <> 'poster' OR recipient_user_id IS NOT NULL OR recipient_user_erased_at IS NOT NULL),
   CHECK (recipient_role <> 'correspondent' OR recipient_user_id IS NULL),
   CHECK (recipient_user_erased_at IS NULL OR recipient_user_id IS NULL),
@@ -58,7 +60,7 @@ CREATE TABLE copyright_notice_delivery_intents (
   CHECK (num_nonnulls(copyright_notice_id, copyright_notice_email_intake_id) = 1),
   CHECK (delivery_kind <> 'staff_information_request' OR (recipient_role = 'claimant' AND channel = 'email'
     AND recipient_user_id IS NULL AND copyright_notice_correspondence_message_id IS NOT NULL)),
-  CHECK ((copyright_notice_email_intake_id IS NOT NULL) = (delivery_kind IN ('email_intake_rejected', 'email_intake_needs_information'))),
+  CHECK ((copyright_notice_email_intake_id IS NOT NULL) = (delivery_kind IN ('email_intake_rejected', 'email_intake_needs_information', 'email_intake_received'))),
   CHECK ((copyright_notice_email_intake_id IS NOT NULL) = (body_ciphertext IS NOT NULL)),
   CHECK (copyright_notice_email_intake_id IS NULL OR (recipient_role = 'correspondent' AND channel = 'email'
     AND copyright_notice_submission_id IS NULL AND copyright_notice_correspondence_message_id IS NULL))
@@ -124,10 +126,10 @@ CREATE TRIGGER trigger_copyright_delivery_intents_updated_at
 BEFORE UPDATE ON copyright_notice_delivery_intents
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
-COMMENT ON TABLE copyright_notice_delivery_intents IS 'Durable, idempotent legal-notice delivery obligations, including private replies to rejected email intakes. Transport workers claim and transition intents; they cannot alter case facts.';
+COMMENT ON TABLE copyright_notice_delivery_intents IS 'Durable, idempotent legal-notice delivery obligations, including statements of reasons, decision notices, authenticated arrival receipts, and private replies to rejected email intakes. Transport workers claim and transition intents; they cannot alter case facts.';
 COMMENT ON COLUMN copyright_notice_delivery_intents.copyright_notice_id IS 'Copyright case that owns the delivery obligation; NULL for a reply to a declined email intake, which never creates a case.';
-COMMENT ON COLUMN copyright_notice_delivery_intents.copyright_notice_email_intake_id IS 'Declined private inbound email this reply answers; exactly one of this and copyright_notice_id is set, and at most one reply exists per intake.';
-COMMENT ON COLUMN copyright_notice_delivery_intents.body_ciphertext IS 'Immutable encrypted reply body sent for an email-intake reply, so every retry sends the same legal text; NULL for case deliveries.';
+COMMENT ON COLUMN copyright_notice_delivery_intents.copyright_notice_email_intake_id IS 'Private inbound email this receipt or reply answers; exactly one of this and copyright_notice_id is set, and at most one delivery of each kind exists per intake.';
+COMMENT ON COLUMN copyright_notice_delivery_intents.body_ciphertext IS 'Immutable encrypted receipt or reply body sent for an email intake, so every retry sends the same legal text; NULL for case deliveries.';
 COMMENT ON COLUMN copyright_notice_delivery_intents.copyright_notice_submission_id IS 'Optional immutable submission that caused the delivery.';
 COMMENT ON COLUMN copyright_notice_delivery_intents.copyright_notice_correspondence_message_id IS 'Optional private correspondence body delivered by this obligation.';
 COMMENT ON COLUMN copyright_notice_delivery_intents.recipient_user_id IS 'Voucha user receiving the notice when the recipient has an account.';

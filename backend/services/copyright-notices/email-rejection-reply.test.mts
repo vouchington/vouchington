@@ -75,7 +75,8 @@ describe.each([
       await expect(readCopyrightEmailIntakeResponses(intake.id)).resolves.toEqual([
         { id: result.responseId, delivery_kind: `email_intake_${kind}`, state: 'pending' },
       ])
-      await expect(prepareCopyrightEmailDelivery(result.responseId as string)).resolves.toEqual({
+      const delivery = await prepareCopyrightEmailDelivery(result.responseId as string)
+      expect(delivery).toEqual({
         leaseToken: expect.any(String),
         correspondenceId: null,
         recipientEmail: replyEmail,
@@ -85,7 +86,7 @@ describe.each([
             : 'More information is needed for your copyright notice',
         text: expect.stringContaining(
           kind === 'rejected'
-            ? 'We could not accept your copyright notice.'
+            ? '/copyright/designated-agent'
             : 'Please identify the copyrighted work',
         ),
       })
@@ -95,6 +96,21 @@ describe.each([
       })
     },
   )
+
+  it('rejects the unpromoted email without inventing a case or legal jurisdiction', async () => {
+    const intake = await create()
+    const result = await decide(intake.id, {
+      ...rejected,
+      replyEmail: `sender-${crypto.randomUUID()}@example.test`,
+    })
+    const delivery = await prepareCopyrightEmailDelivery(result.responseId!)
+    expect(delivery.text).toContain('No copyright case was opened')
+    expect(delivery.text).not.toContain(intake.id)
+    expect(delivery.text).not.toContain('17 U.S.C.')
+    expect(delivery.text).not.toContain('US DMCA')
+    expect(delivery.text).toContain('/copyright/designated-agent')
+    expect(delivery.text).toContain('A person made this intake decision')
+  })
 
   it.each(decisionKinds)('queues no $kind reply without an address', async ({ decision }) => {
     const intake = await create()

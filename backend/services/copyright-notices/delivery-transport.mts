@@ -1,3 +1,8 @@
+import { getCopyrightStatementInAppSummary } from './statement-in-app-summary.mts'
+import {
+  copyrightEmailSubject,
+  copyrightNotificationCopy,
+} from './statement-of-reasons-wording.mts'
 import { decryptSecret } from '@modules/token-secrets'
 import { getVerifiedEmailAddress } from '@services/contribution-gating'
 import { createCopyrightNoticeNotification } from '@services/notifications'
@@ -11,7 +16,6 @@ import {
   recordCopyrightDeliveryRecipient,
 } from './delivery-intents.mts'
 import { getCopyrightEmailCorrespondence } from './correspondence.mts'
-import type { CopyrightDeliveryKind } from './delivery-types.mts'
 import { decryptCopyrightEmailIntakeResponseBody } from './email-intake-reply.mts'
 
 export class CopyrightDeliveryNotClaimedError extends Error {
@@ -30,15 +34,20 @@ export async function deliverCopyrightInAppNotification(intentId: string): Promi
     assert(
       intent.delivery_kind === 'claimant_receipt' ||
         intent.delivery_kind === 'status_update' ||
-        intent.delivery_kind === 'poster_restriction_notice',
+        intent.delivery_kind === 'poster_restriction_notice' ||
+        intent.delivery_kind === 'poster_review_notice' ||
+        intent.delivery_kind === 'poster_restoration_notice' ||
+        intent.delivery_kind === 'claimant_decision_notice',
       422,
       'Copyright delivery kind is not sent in-app',
     )
+    const summary = await getCopyrightStatementInAppSummary(intent.id)
+    const copy = copyrightNotificationCopy(intent.delivery_kind)
     await createCopyrightNoticeNotification({
+      statementCopy: summary ? { title: copy.title, body: summary } : copy,
       userId: intent.recipient_user_id,
       noticeId: intent.copyright_notice_id,
       eventKey: `copyright-delivery:${intent.id}`,
-      deliveryKind: intent.delivery_kind,
     })
     return await markCopyrightDeliveryIntentSent({ intentId, leaseToken: intent.lease_token })
   } catch (err) {
@@ -116,24 +125,6 @@ export async function resolveCopyrightEmailRecipient(
     return email
   }
   assert(false, 422, 'Copyright email delivery has no private recipient')
-}
-
-function copyrightEmailSubject(kind: CopyrightDeliveryKind): string {
-  switch (kind) {
-    case 'email_intake_rejected':
-      return 'We could not accept your copyright notice'
-    case 'email_intake_needs_information':
-    case 'staff_information_request':
-      return 'More information is needed for your copyright notice'
-    case 'claimant_receipt':
-      return 'We received your copyright notice'
-    case 'poster_restriction_notice':
-      return 'Copyright notice affecting your material'
-    case 'counter_notice_forwarding':
-      return 'Counter-notice for your copyright claim'
-    case 'status_update':
-      return 'Update to your copyright case'
-  }
 }
 
 function errorMessage(error: unknown): string {

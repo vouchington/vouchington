@@ -30,6 +30,7 @@ export type CopyrightNoticeDetail = CopyrightNoticeSummary & {
 }
 
 export type CopyrightParticipantNoticeDetail = CopyrightNoticeDetail & {
+  statements: Array<{ id: string; delivery_kind: string; sent_at: string | null; text: string }>
   viewer_role: 'claimant' | 'poster' | 'staff'
   respondable_target_ids: string[]
   submissions: Array<{ id: string; kind: string; received_at: string; source_kind: string }>
