@@ -75,6 +75,13 @@ cancel_reset() {
     reset_worker="${reset_worker:-${!:-}}"
     if [ -n "$reset_worker" ]; then
         kill -TERM -- "-$reset_worker" 2>/dev/null || true
+        # Allow interrupted Git commands to remove index.lock before forcing
+        # termination. The grace period is bounded even if children ignore TERM.
+        local grace_tick=0
+        while [ "$grace_tick" -lt 10 ] && kill -0 -- "-$reset_worker" 2>/dev/null; do
+            /bin/sleep 0.1
+            grace_tick=$((grace_tick + 1))
+        done
         kill -KILL -- "-$reset_worker" 2>/dev/null || true
         wait "$reset_worker" 2>/dev/null || true
     fi
@@ -85,7 +92,15 @@ run_reset_supervised() {
     trap 'cancel_reset 143' TERM
     trap 'cancel_reset 129' HUP
     set -m
-    (set +m; "$@") 9>&- &
+    (
+        set +m
+        # The supervisor must remain responsive to signals. Background jobs
+        # cannot read its terminal; ignoring TTIN makes /dev/tty reads fail
+        # instead of suspending indefinitely (including SSH prompts).
+        trap '' TTIN TTOU
+        export GIT_TERMINAL_PROMPT=0
+        "$@"
+    ) </dev/null 9>&- &
     reset_worker=$!
     set +m
     wait "$reset_worker"

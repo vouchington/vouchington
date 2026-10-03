@@ -35,7 +35,8 @@ Operating-system and host provisioning is intentionally not a `dev/` entrypoint.
 - `./dev/reset-worktree [--force]` — Current disposable worktree with dependencies installed; fetches
   `origin/main` before teardown, then returns it to a fresh branch and runs monorepo initialization
   (`pnpm install` follows the reset). `--force` permits discarding uncommitted changes. A second reset
-  of the same worktree fails immediately; see
+  of the same worktree fails immediately. Reset runs without terminal input; configure Git
+  authentication and SSH host trust beforehand. See
   [git-worktree-locks.md](../git-worktree-locks.md).
 - `./dev/rebase-onto-main [--stack] [--upstack]` — Current worktree. Runs `git fetch origin main`,
   then `git rebase origin/main`, both with `git -C` anchored at the repository that contains

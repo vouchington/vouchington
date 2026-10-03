@@ -120,6 +120,96 @@ wait
     },
   )
 
+  it('allows TERM cleanup before forcibly stopping remaining children', async () => {
+    const cwd = await makeRepo()
+    const binDir = await makeFakeBin()
+    const lockFile = join(cwd, 'git-index.lock')
+    await writeFile(
+      join(binDir, 'dropdb'),
+      `#!/usr/bin/env bash
+trap '/bin/sleep 0.1; rm -f "$GIT_INDEX_LOCK"; exit 0' TERM
+printf 'active git write' > "$GIT_INDEX_LOCK"
+/bin/sleep 60 &
+wait
+`,
+    )
+    const reset = spawn('bash', [join(cwd, 'dev', 'reset-worktree')], {
+      cwd,
+      env: {
+        ...process.env,
+        PATH: `${binDir}:/usr/bin:/bin`,
+        FAKE_COMMAND_LOG: join(cwd, 'commands.log'),
+        GIT_INDEX_LOCK: lockFile,
+      },
+      stdio: 'ignore',
+    })
+    const exited = once(reset, 'exit')
+    try {
+      await expect.poll(async () => readFile(lockFile, 'utf8').catch(() => '')).not.toBe('')
+      reset.kill('SIGTERM')
+      expect((await exited)[0]).toBe(143)
+      await expect(lstat(lockFile)).rejects.toMatchObject({ code: 'ENOENT' })
+    } finally {
+      reset.kill('SIGTERM')
+    }
+  })
+
+  it('fails terminal reads instead of suspending a background reset worker', async () => {
+    const cwd = await makeRepo({ withEnv: false })
+    const binDir = await makeFakeBin()
+    const gitPath = join(binDir, 'git')
+    const gitScript = await readFile(gitPath, 'utf8')
+    await writeFile(
+      gitPath,
+      gitScript.replace(
+        "    printf 'git fetch origin main",
+        `    read -r terminal_input </dev/tty || exit 1
+    printf 'git fetch origin main`,
+      ),
+    )
+    // A real controlling terminal reproduces SIGTTIN; pipes cannot.
+    const result = await execFileAsync(
+      'python3',
+      [
+        '-c',
+        `
+import os, pty, select, signal, sys, time
+pid, fd = pty.fork()
+if pid == 0:
+    os.execvp('bash', ['bash', sys.argv[1]])
+output = b''
+deadline = time.monotonic() + 5
+while time.monotonic() < deadline:
+    if select.select([fd], [], [], 0.05)[0]:
+        try:
+            output += os.read(fd, 65536)
+        except OSError:
+            pass
+    child, status = os.waitpid(pid, os.WNOHANG)
+    if child:
+        print(os.waitstatus_to_exitcode(status))
+        print(output.decode(errors='replace'))
+        sys.exit(0)
+os.kill(pid, signal.SIGTERM)
+os.waitpid(pid, 0)
+raise RuntimeError('reset worker suspended on terminal input')
+`,
+        join(cwd, 'dev', 'reset-worktree'),
+      ],
+      {
+        cwd,
+        env: {
+          ...process.env,
+          PATH: `${binDir}:${process.env.PATH}`,
+          FAKE_COMMAND_LOG: join(cwd, 'commands.log'),
+        },
+      },
+    )
+    expect(result.stdout.split('\n')[0]).toBe('1')
+    expect(result.stdout).toContain('Input/output error')
+    expect(await readFile(join(cwd, 'commands.log'), 'utf8')).not.toContain('checkout -B')
+  })
+
   it('keeps the help path free of lock-file side effects', async () => {
     const cwd = await makeRepo({ withEnv: false })
     const binDir = await makeFakeBin()
