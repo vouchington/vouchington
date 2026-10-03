@@ -3,13 +3,13 @@ import {
   decryptExportedCopyrightJson,
   decryptExportedCopyrightText,
   erasedExportFields,
-  exportedCopyrightText,
 } from './stream-copyright-erased.mts'
 
 export type FiledNoticeRow = {
   notice_id: string
   received_at: Date
   jurisdiction: string
+  erased_by_retention_at: Date | null
   claimant_display_name: string
   claimant_contact_ciphertext: string
   work_description: string
@@ -38,7 +38,8 @@ export type CounterNoticeBody = {
 /**
  * One row of `copyright-notices-filed.csv`. These purposes mirror `copyrightFormSecretPurpose` and
  * `copyrightSubmissionPurpose`; a decrypt failure throws, so a record is never silently omitted.
- * Every column the retention sweep erases reads as an explicit erased marker instead, and the row
+ * Plaintext is marked erased only when the case has a retention-erasure record; ciphertext uses
+ * the sweep sentinel. Every erased column reads as an explicit marker, and the row
  * keeps the same columns either way, because the CSV header comes from the first row.
  */
 export function filedNoticeExportRow(row: FiledNoticeRow): Record<string, unknown> {
@@ -51,9 +52,13 @@ export function filedNoticeExportRow(row: FiledNoticeRow): Record<string, unknow
     notice_id: row.notice_id,
     received_at: row.received_at,
     jurisdiction: row.jurisdiction,
-    claimant_display_name: exportedCopyrightText(row.claimant_display_name),
+    claimant_display_name:
+      row.erased_by_retention_at !== null
+        ? EXPORT_COPYRIGHT_ERASED_TEXT
+        : row.claimant_display_name,
     claimant_contact: decryptExportedCopyrightText(row.claimant_contact_ciphertext, purpose),
-    work_description: exportedCopyrightText(row.work_description),
+    work_description:
+      row.erased_by_retention_at !== null ? EXPORT_COPYRIGHT_ERASED_TEXT : row.work_description,
     good_faith_belief: row.good_faith_belief,
     accuracy_authority_under_penalty_of_perjury: row.accuracy_authority_under_penalty_of_perjury,
     electronic_signature: decryptExportedCopyrightText(
