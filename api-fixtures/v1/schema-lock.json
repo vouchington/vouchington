@@ -452,7 +452,7 @@
     },
     "GET:/api/v1/mq/queues": {
       "fixtureIds": ["web.admin.mq.queues.default"],
-      "hash": "1f7c8dd762920aed5741a196cabc5b4efc269bde021e92172379daa4656b0526"
+      "hash": "2acc9cc094683657c87399dfae18b265d2f092725732ed086bd96d04ce9b28d8"
     },
     "GET:/api/v1/mq/scheduled-jobs": {
       "fixtureIds": ["web.admin.mq.scheduled-jobs.default"],
@@ -460,7 +460,7 @@
     },
     "GET:/api/v1/mq/stats": {
       "fixtureIds": ["web.admin.mq.stats.default"],
-      "hash": "4a11d4e3a2a93eed4b9983d9dfe9aacfa7aa81fed57e778428c41a672160ddb2"
+      "hash": "8bf6cbf6fb5bc72dd840c9dfa33da854cf4585a791a6d8ff231016a81b245f83"
     },
     "GET:/api/v1/my/api-keys": {
       "fixtureIds": ["native.my.api-keys.paginated"],
@@ -2547,7 +2547,7 @@
     },
     "web.admin.mq.queues.default": {
       "fixtureIds": ["web.admin.mq.queues.default"],
-      "hash": "247be239a9daa4b2ee9785cd6590e9b2959ec5c6076b0bd935bdf0c4494caa92"
+      "hash": "80b425f2e7ad038c57b66fa2c5682d9c2b102b6f21c76ff24cd92e19eb051d71"
     },
     "web.admin.mq.queues.pause.default": {
       "fixtureIds": ["web.admin.mq.queues.pause.default"],
@@ -2567,7 +2567,7 @@
     },
     "web.admin.mq.stats.default": {
       "fixtureIds": ["web.admin.mq.stats.default"],
-      "hash": "bace65bcc8c2ffd88be160044b9c2948dcea767b29917454fec0585c972d010f"
+      "hash": "63ba6bd24e2c1d3d36845bcaa3ece865e45f22c52b9dc37bcf8905af3e39da54"
     },
     "web.admin.oauth-clients.list": {
       "fixtureIds": ["web.admin.oauth-clients.list"],

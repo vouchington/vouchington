@@ -6,6 +6,7 @@ export interface QueueStats {
   name: string
   waiting: number
   active: number
+  delayed: number
   completed: number
   failed: number
   paused: boolean
@@ -14,6 +15,7 @@ export interface QueueStats {
 export interface QueueStatsSummary {
   totalWaiting: number
   totalActive: number
+  totalDelayed: number
   totalCompleted: number
   totalFailed: number
   queueCount: number

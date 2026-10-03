@@ -19,16 +19,17 @@ flowchart TD
 
 ## Functions
 
-- `getQueueStats(name)` — get stats for a single queue (waiting, active, completed, failed, paused)
+- `getQueueStats(name)` — get stats for a single queue (waiting, active, delayed, completed, failed, paused)
 - `getAllQueueStats(queueNames)` — batch fetch and sort stats for multiple queues
-- `getAggregatedQueueStats(queueNames)` — aggregate totals across all queues
-- `getAggregatedQueueMetricStats(queueNames)` — metrics-only aggregate with bounded oldest-waiting-job age
+- `getAggregatedQueueStats(queueNames)` — aggregate totals across all queues, including `totalDelayed`
+- `getAggregatedQueueMetricStats(queueNames)` — metrics-only aggregate with bounded oldest-waiting-job age; its `totalWaiting` already counts due priority jobs, so it has no `totalDelayed`
 
 ## Data Model
 
 No owned database tables. Reads live queue state directly from GlideMQ (Valkey-backed):
 
-- Queue stats (waiting, active, completed, failed counts) are fetched via the GlideMQ client API.
+- Queue stats (waiting, active, delayed, completed, failed counts) are fetched via the GlideMQ client API.
+  `delayed` is the scheduled set: unpromoted priority jobs, future delays and backoff retries.
 - `oldestWaitingAgeMs` reads one oldest waiting job without loading the backlog.
 - Paused state is tracked per-queue in the queue's Valkey key space.
 
@@ -48,14 +49,14 @@ import {
 
 // Single queue
 const stats = await getQueueStats('email-queue')
-// => { name: 'email-queue', waiting: 5, active: 2, completed: 1000, failed: 3, paused: false }
+// => { name: 'email-queue', waiting: 5, active: 2, delayed: 4, completed: 1000, failed: 3, paused: false }
 
 // All queues (sorted by name)
 const allStats = await getAllQueueStats(['email-queue', 'moderation-queue'])
 
 // Aggregate totals
 const totals = await getAggregatedQueueStats(['email-queue', 'moderation-queue'])
-// => { totalWaiting: 10, totalActive: 4, totalCompleted: 2000, totalFailed: 6, queueCount: 2 }
+// => { totalWaiting: 10, totalActive: 4, totalDelayed: 7, totalCompleted: 2000, totalFailed: 6, queueCount: 2 }
 ```
 
 ## Related

@@ -35,7 +35,15 @@ describe('mq client — queues', () => {
     it('GETs the queues endpoint', async () => {
       const mockResponse = {
         queues: [
-          { name: 'ai_agents', waiting: 0, active: 1, completed: 10, failed: 0, paused: false },
+          {
+            name: 'ai_agents',
+            waiting: 0,
+            active: 1,
+            delayed: 3,
+            completed: 10,
+            failed: 0,
+            paused: false,
+          },
         ],
         total: 1,
       }
@@ -54,6 +62,7 @@ describe('mq client — queues', () => {
         stats: {
           totalWaiting: 1,
           totalActive: 2,
+          totalDelayed: 6,
           totalCompleted: 3,
           totalFailed: 4,
           queueCount: 5,

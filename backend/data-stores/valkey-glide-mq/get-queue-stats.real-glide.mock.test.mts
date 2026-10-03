@@ -6,7 +6,7 @@ import {
   workerQueueConnection,
   workerQueuePrefix,
 } from '@data-stores/valkey-glide-mq'
-import { getAggregatedQueueMetricStats } from './get-queue-stats.mts'
+import { getAggregatedQueueMetricStats, getQueueStats } from './get-queue-stats.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
@@ -92,6 +92,8 @@ describe('queue metric ordering through real GlideMQ', () => {
       await expect(getAggregatedQueueMetricStats([queueName])).resolves.toMatchObject({
         totalWaiting: 125,
       })
+      // The dashboard path reads the whole scheduled ZSet as `delayed` and keeps it out of `waiting`.
+      await expect(getQueueStats(queueName)).resolves.toMatchObject({ waiting: 0, delayed: 126 })
     } finally {
       await workerQueueCommandClient.unlink([scheduledKey])
       await queue.close()

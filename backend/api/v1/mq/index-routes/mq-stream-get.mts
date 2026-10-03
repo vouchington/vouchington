@@ -1,4 +1,4 @@
-import { getAllQueueStats } from '@data-stores/valkey-glide-mq/get-queue-stats'
+import { aggregateQueueStats, getAllQueueStats } from '@data-stores/valkey-glide-mq/get-queue-stats'
 import type { Context } from '@jongleberry/api-server'
 import onError from '@modules/on-error'
 import { currentUserCanAccessQueueStats } from '@services/queue-monitoring'
@@ -21,23 +21,7 @@ app.route('/api/v1/mq/stream').get(async (ctx: Context) => {
     inFlight = true
     try {
       const queues = await getAllQueueStats(QUEUE_NAMES)
-      let totalWaiting = 0
-      let totalActive = 0
-      let totalCompleted = 0
-      let totalFailed = 0
-      for (const q of queues) {
-        totalWaiting += q.waiting
-        totalActive += q.active
-        totalCompleted += q.completed
-        totalFailed += q.failed
-      }
-      const stats = {
-        totalWaiting,
-        totalActive,
-        totalCompleted,
-        totalFailed,
-        queueCount: queues.length,
-      }
+      const stats = aggregateQueueStats(queues)
       if (!lifecycleSignal.aborted && !stream.destroyed) {
         stream.write(`event: stats\ndata: ${JSON.stringify({ stats, queues })}\n\n`)
       }
