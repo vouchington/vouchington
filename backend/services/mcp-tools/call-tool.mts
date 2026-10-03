@@ -1,7 +1,15 @@
 import { McpError, ErrorCode, type CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import onError from '@modules/on-error'
 import { isHttpError } from 'http-errors'
-import { CONFLICT, FORBIDDEN, INVALID_INPUT, NOT_FOUND } from '@modules/on-error/error-codes'
+import {
+  CONFLICT,
+  FORBIDDEN,
+  INVALID_INPUT,
+  NOT_FOUND,
+  CONTRIBUTION_ADMISSION_IN_PROGRESS,
+  CONTRIBUTION_QUOTA_EXCEEDED,
+  IDEMPOTENCY_KEY_REUSED,
+} from '@modules/on-error/error-codes'
 import type { BasicUser } from '@services/users/types'
 import type { McpServerConfig } from './config.mts'
 import type { ApiScope } from '@modules/scopes'
@@ -61,7 +69,25 @@ export async function callMcpTool(
             : err.status === 403
               ? FORBIDDEN
               : INVALID_INPUT
-      const error = { status: err.status, code, message: err.message, retryable: false }
+      const admissionCodes = [
+        CONTRIBUTION_ADMISSION_IN_PROGRESS,
+        CONTRIBUTION_QUOTA_EXCEEDED,
+        IDEMPOTENCY_KEY_REUSED,
+      ]
+      const admissionCode =
+        typeof err['code'] === 'string' && admissionCodes.includes(err['code']) ? err['code'] : null
+      const retryAfterSeconds = err['retryAfterSeconds']
+      const error = {
+        status: err.status,
+        code: admissionCode ?? code,
+        message: err.message,
+        retryable:
+          admissionCode === CONTRIBUTION_ADMISSION_IN_PROGRESS ||
+          admissionCode === CONTRIBUTION_QUOTA_EXCEEDED,
+        ...(admissionCode && Number.isInteger(retryAfterSeconds) && retryAfterSeconds > 0
+          ? { retryAfterSeconds }
+          : {}),
+      }
       return { isError: true, content: [{ type: 'text', text: JSON.stringify({ error }) }] }
     }
     onError(err instanceof Error ? err : new Error(String(err)))

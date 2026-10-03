@@ -7,6 +7,1147 @@
       "tools": [
         {
           "tool": {
+            "name": "create_topic_recommendation",
+            "title": "Create Topic Recommendation",
+            "description": "Submit a pending topic recommendation. Reuse the same UUID idempotency_key and body to safely retry; a moderator decides whether to approve it.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "description": "The recommendation title."
+                },
+                "markdown": {
+                  "type": "string",
+                  "description": "The reason for the recommendation, as Markdown."
+                },
+                "topic_title": {
+                  "type": "string",
+                  "description": "The title of the topic being recommended."
+                },
+                "topic_slug": {
+                  "type": "string",
+                  "description": "The slug of the topic being recommended."
+                },
+                "topic_markdown": {
+                  "type": "string",
+                  "description": "The description of the topic, as Markdown."
+                },
+                "topic_hostname": {
+                  "type": "string",
+                  "description": "The primary hostname of the topic."
+                },
+                "topic_hostnames": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Every hostname of the topic."
+                },
+                "topic_aliases": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Other names the topic goes by."
+                },
+                "topic_type": {
+                  "type": "string",
+                  "enum": ["card", "referral_program", "topic"],
+                  "description": "What kind of topic is being recommended."
+                },
+                "example_referral_link": {
+                  "type": "string",
+                  "description": "An example referral link for the topic."
+                },
+                "landing_page_urls": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Landing page URLs for the topic."
+                },
+                "idempotency_key": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "A UUID for this submission and its retries."
+                }
+              },
+              "required": ["idempotency_key", "markdown", "topic_title", "topic_slug"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "post": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "__entity_type": {
+                      "const": "post"
+                    },
+                    "ai_summary_markdown": {
+                      "type": "string"
+                    },
+                    "approved_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "archived_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "archived_by_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "broadcast": {
+                      "enum": ["everyone", "followers", "mutual_followers", "users"],
+                      "type": "string"
+                    },
+                    "can_edit_content": {
+                      "type": "boolean"
+                    },
+                    "clearance_reason": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "clearance_status": {
+                      "enum": ["approved", "in_review", "pending", "rejected"],
+                      "type": "string"
+                    },
+                    "clearance_updated_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "community_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "created_by": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "__entity_type": {
+                              "const": "user"
+                            },
+                            "account_type": {
+                              "anyOf": [
+                                {
+                                  "const": "ai_agent"
+                                },
+                                {
+                                  "const": "official"
+                                },
+                                {
+                                  "const": "system"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "id": {
+                              "type": "string"
+                            },
+                            "individual_id": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "markdown": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "profile_image_id": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "profile_image_placement": {
+                              "anyOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "image_id": {
+                                      "type": "string"
+                                    },
+                                    "placement_id": {
+                                      "type": "string"
+                                    },
+                                    "placement_revision": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": ["image_id", "placement_id", "placement_revision"],
+                                  "type": "object"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "roles": {
+                              "items": {
+                                "type": "string"
+                              },
+                              "type": "array"
+                            },
+                            "use_display_name_from": {
+                              "anyOf": [
+                                {
+                                  "const": "apple"
+                                },
+                                {
+                                  "const": "facebook"
+                                },
+                                {
+                                  "const": "github"
+                                },
+                                {
+                                  "const": "google"
+                                },
+                                {
+                                  "const": "linkedin"
+                                },
+                                {
+                                  "const": "microsoft"
+                                },
+                                {
+                                  "const": "username"
+                                },
+                                {
+                                  "const": "x"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "username": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "verification_status": {
+                              "anyOf": [
+                                {
+                                  "const": "duplicate_id"
+                                },
+                                {
+                                  "const": "failed"
+                                },
+                                {
+                                  "const": "identity_pending"
+                                },
+                                {
+                                  "const": "payment_pending"
+                                },
+                                {
+                                  "const": "unverified"
+                                },
+                                {
+                                  "const": "verified"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "verified_badge_visible": {
+                              "anyOf": [
+                                {
+                                  "const": false
+                                },
+                                {
+                                  "const": true
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "verified_display_name": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "required": ["__entity_type", "account_type", "id", "roles"],
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "created_by_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "data_point_vertical": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "declared_language": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "deleted_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "deleted_by_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "html": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "images": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "caption": {
+                            "type": "string"
+                          },
+                          "image_id": {
+                            "type": "string"
+                          },
+                          "order_index": {
+                            "type": "number"
+                          },
+                          "placement_id": {
+                            "type": "string"
+                          },
+                          "placement_revision": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "caption",
+                          "image_id",
+                          "order_index",
+                          "placement_id",
+                          "placement_revision"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "in_review_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "is_anonymous": {
+                      "type": "boolean"
+                    },
+                    "lingua_rs_detected_language": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "locked_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "locked_by_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "markdown": {
+                      "type": "string"
+                    },
+                    "parent_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "post_explicit_categories": {
+                      "items": {
+                        "anyOf": [
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "hashtag": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "const": "hashtag"
+                              }
+                            },
+                            "required": ["hashtag", "type"],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "topic_id": {
+                                "type": "string"
+                              },
+                              "topic_name": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "const": "topic"
+                              }
+                            },
+                            "required": ["topic_id", "topic_name", "type"],
+                            "type": "object"
+                          }
+                        ]
+                      },
+                      "type": "array"
+                    },
+                    "post_hashtags": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "display_token": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "topic_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "required": ["display_token", "id", "key", "topic_id"],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "post_related_topics": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "__entity_type": {
+                            "const": "topic"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "topic_type": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["__entity_type", "id", "name", "slug", "topic_type"],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "post_type": {
+                      "const": "topic_recommendation"
+                    },
+                    "privacy": {
+                      "enum": ["private", "public"],
+                      "type": "string"
+                    },
+                    "rejected_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "review_topic_ratings": {
+                      "anyOf": [
+                        {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "category_slug": {
+                                "anyOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "order_index": {
+                                "type": "number"
+                              },
+                              "rating": {
+                                "type": "number"
+                              },
+                              "topic": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "__entity_type": {
+                                    "const": "topic"
+                                  },
+                                  "created_at": {
+                                    "type": "string"
+                                  },
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "markdown": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "slug": {
+                                    "type": "string"
+                                  },
+                                  "topic_type": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "__entity_type",
+                                  "created_at",
+                                  "id",
+                                  "markdown",
+                                  "name",
+                                  "slug",
+                                  "topic_type"
+                                ],
+                                "type": "object"
+                              },
+                              "topic_id": {
+                                "type": "string"
+                              },
+                              "updated_at": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["order_index", "rating", "topic_id", "updated_at"],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "root_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "slug": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "structured_data": {},
+                    "title": {
+                      "type": "string"
+                    },
+                    "topic_recommendation": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "aliases": {
+                          "items": {
+                            "type": "string"
+                          },
+                          "type": "array"
+                        },
+                        "approval_error_message": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "created_topic_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "created_topic_slug": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "example_referral_link": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "hostname": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "__entity_type": {
+                                  "const": "hostname"
+                                },
+                                "hostname": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["__entity_type", "hostname", "id"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "hostname_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "hostnames": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "__entity_type": {
+                                "const": "hostname"
+                              },
+                              "hostname": {
+                                "type": "string"
+                              },
+                              "id": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["__entity_type", "hostname", "id"],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "landing_page_urls": {
+                          "items": {
+                            "type": "string"
+                          },
+                          "type": "array"
+                        },
+                        "post_id": {
+                          "type": "string"
+                        },
+                        "rejection_reason": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "reviewed_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "reviewed_by_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "status": {
+                          "enum": ["approved", "pending", "rejected"],
+                          "type": "string"
+                        },
+                        "topic_markdown": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "topic_slug": {
+                          "type": "string"
+                        },
+                        "topic_title": {
+                          "type": "string"
+                        },
+                        "topic_type": {
+                          "enum": ["card", "referral_program", "topic"],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "aliases",
+                        "approval_error_message",
+                        "created_topic_id",
+                        "example_referral_link",
+                        "hostname",
+                        "hostname_id",
+                        "hostnames",
+                        "landing_page_urls",
+                        "post_id",
+                        "rejection_reason",
+                        "reviewed_at",
+                        "reviewed_by_id",
+                        "status",
+                        "topic_markdown",
+                        "topic_slug",
+                        "topic_title",
+                        "topic_type"
+                      ],
+                      "type": "object"
+                    },
+                    "updated_at": {
+                      "type": "string"
+                    },
+                    "updated_by": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "__entity_type": {
+                              "const": "user"
+                            },
+                            "account_type": {
+                              "anyOf": [
+                                {
+                                  "const": "ai_agent"
+                                },
+                                {
+                                  "const": "official"
+                                },
+                                {
+                                  "const": "system"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "id": {
+                              "type": "string"
+                            },
+                            "individual_id": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "markdown": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "profile_image_id": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "profile_image_placement": {
+                              "anyOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "image_id": {
+                                      "type": "string"
+                                    },
+                                    "placement_id": {
+                                      "type": "string"
+                                    },
+                                    "placement_revision": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": ["image_id", "placement_id", "placement_revision"],
+                                  "type": "object"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "roles": {
+                              "items": {
+                                "type": "string"
+                              },
+                              "type": "array"
+                            },
+                            "use_display_name_from": {
+                              "anyOf": [
+                                {
+                                  "const": "apple"
+                                },
+                                {
+                                  "const": "facebook"
+                                },
+                                {
+                                  "const": "github"
+                                },
+                                {
+                                  "const": "google"
+                                },
+                                {
+                                  "const": "linkedin"
+                                },
+                                {
+                                  "const": "microsoft"
+                                },
+                                {
+                                  "const": "username"
+                                },
+                                {
+                                  "const": "x"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "username": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "verification_status": {
+                              "anyOf": [
+                                {
+                                  "const": "duplicate_id"
+                                },
+                                {
+                                  "const": "failed"
+                                },
+                                {
+                                  "const": "identity_pending"
+                                },
+                                {
+                                  "const": "payment_pending"
+                                },
+                                {
+                                  "const": "unverified"
+                                },
+                                {
+                                  "const": "verified"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "verified_badge_visible": {
+                              "anyOf": [
+                                {
+                                  "const": false
+                                },
+                                {
+                                  "const": true
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "verified_display_name": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "required": ["__entity_type", "account_type", "id", "roles"],
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "updated_by_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "url_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "__entity_type",
+                    "ai_summary_markdown",
+                    "approved_at",
+                    "archived_at",
+                    "archived_by_id",
+                    "broadcast",
+                    "clearance_reason",
+                    "clearance_status",
+                    "clearance_updated_at",
+                    "community_id",
+                    "created_at",
+                    "created_by_id",
+                    "deleted_at",
+                    "deleted_by_id",
+                    "id",
+                    "in_review_at",
+                    "is_anonymous",
+                    "locked_at",
+                    "locked_by_id",
+                    "markdown",
+                    "post_type",
+                    "privacy",
+                    "rejected_at",
+                    "root_id",
+                    "title",
+                    "topic_recommendation",
+                    "updated_at",
+                    "updated_by_id"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": ["success", "post"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["topic-recommendations:read", "topic-recommendations:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/topic-recommendations"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "get_community_list_item_counts",
             "title": "Get Community List Item Counts",
             "description": "Count the entries on a public community's curated list, by its UUID or slug, for each item_type: topic, rss_feed, post, url_hostname and url. The counts are what a signed-out reader sees, so post leaves out a post the public cannot see, and they match what get_community_list_items pages through. A private, deleted or unknown community returns { success: false, error: \"Community not found\" }.",

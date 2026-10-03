@@ -1,6 +1,6 @@
 # Relation, Referral Link and Topic Recommendation Write Tools
 
-Ten MCP-only tools write a user's own tags, tag votes, referral links and pending topic recommendations. Each
+Eleven MCP-only tools write a user's own tags, tag votes, referral links and pending topic recommendations. Each
 runs the same shared service command as its REST twin, so the permission, suspension, guard and
 ownership rules do not fork, and an MCP credential has the same permissions as the signed-in user:
 scopes and consent only delegate that authority. All require `plan: 'plus'` and the full resource
@@ -18,6 +18,7 @@ call. The generated [tool catalog](catalog.md) holds each description, hint and 
 | `activate_referral_link`        | `POST /api/v1/referral-links/:linkId/activations`   | Child links follow their parent and are refused                            |
 | `deactivate_referral_link`      | `DELETE /api/v1/referral-links/:linkId/activations` | Idempotent                                                                 |
 | `request_referral_link_unfurl`  | `POST /api/v1/referral-links/:linkId/unfurls`       | Amex all-cards links of a paid owner only; the work runs in the background |
+| `create_topic_recommendation`   | `POST /api/v1/topic-recommendations`                | Required UUID idempotency key; shared delegated admission                  |
 | `update_topic_recommendation`   | `PATCH /api/v1/topic-recommendations/:id`           | Pending only; omitted fields are kept                                      |
 | `withdraw_topic_recommendation` | `DELETE /api/v1/topic-recommendations/:id`          | Pending only; withdrawing a withdrawn one is not found                     |
 
@@ -48,7 +49,8 @@ Removing a tag the post's title or text writes is refused with `422` before any 
 come from the text, so edit the text. Removing a tag the post does not carry changes nothing and
 returns `removed: false`, so a repeat removal behaves idempotently. The tool still declares
 `idempotentHint: false` because the registry ties that hint to its `PATCH` REST twin: only tools
-whose every REST operation is `PUT` or `DELETE` are idempotent.
+whose every REST operation is `PUT` or `DELETE`, or which require a UUID admission key, are
+idempotent.
 
 ## Withdrawing a vote
 
@@ -66,10 +68,10 @@ delegated credential.
 ## Topic recommendations and `dismiss_recommendation`
 
 Recommendation edits return the same sanitized and fenced post as the recommendation read tools.
-An administrator can edit a pending recommendation, so text that survives the submitter's edit
-is still external content, including the recommendation description and the post's attached text.
+Administrator text that survives a submitter edit stays external content.
 
-The two recommendation tools act on a recommendation the caller submitted, while it is pending.
+`create_topic_recommendation` submits a pending recommendation. The update and withdrawal tools
+act on an existing recommendation the caller submitted, while it is pending.
 `dismiss_recommendation` is a different thing: a bookmark predicate that hides a recommended topic
 from a feed, not a change to a submitted recommendation. It stays REST-only, as
 [Bookmark and List Write Tools](bookmark-list-write-tools.md) decided, and `set_bookmark` rejects it.
@@ -97,18 +99,16 @@ whose change was already made.
 | `POST /api/v1/referral-programs/:id/official-referral-links`, `DELETE /api/v1/official-referral-links/:linkId` | No tool: administrator-only (`currentUserCanManageOfficialReferralLink`); admin tools                    |
 | `PUT /api/v1/crawlers/referral-program`                                                                        | No tool: administrator-only crawler setup; admin tools                                                   |
 | `PATCH /api/v1/topics/:idOrSlug/referral-program`                                                              | No tool: topic curation under `currentUserCanUpdateTopic`; a topic write tool, not a link tool           |
-| `POST /api/v1/topic-recommendations`                                                                           | No tool: CAPTCHA, `Idempotency-Key` admission and quotas are request-bound, with no policy for a token   |
+| `POST /api/v1/topic-recommendations`                                                                           | `create_topic_recommendation`; delegated admission and a required UUID `idempotency_key`                 |
 | `PATCH`, `DELETE /api/v1/topic-recommendations/:id`                                                            | `update_topic_recommendation`, `withdraw_topic_recommendation`                                           |
 | `POST /api/v1/topic-recommendations/:id/approvals`, `.../rejections`                                           | No tool: administrator review (admin tools)                                                              |
 | `PUT /api/v1/bookmarks/:entityType/:entityId/dismiss_recommendation`                                           | No tool: stays REST-only                                                                                 |
 
-`POST /api/v1/topic-recommendations` has no tool because its admission is bound to the HTTP
-request: it verifies a Turnstile or App Attest proof, takes the `Idempotency-Key` header through
-`admitRouteContribution` and counts the contribution against quotas. An API key or OAuth token
-carries none of those, and no policy says what replaces them for a delegated credential, so a
-create tool would drop the abuse controls or invent its own. It waits for that decision (#1749).
-The only request-free admission today is the user data import's
-`admitImportedTopicRecommendation`, which is not a policy for an agent.
+`create_topic_recommendation` uses `admitDelegatedContribution` beside `admitRouteContribution`.
+The credential replaces challenges and keeps the REST owner budget and administrator exemption. A UUID
+`idempotency_key` identifies the submission: the same body replays the original record, another
+body conflicts, and an in-progress submission returns its retry delay. See the
+[admission policy](../../../requirements/platform/agent-access.md#delegated-contribution-admission).
 
 The result schemas come from the generated OpenAPI components (`UserReferralLink`, `Post`), and
 `backend/tools/registry/referral-link-recommendation-output-schema.test.mts` pins them to the documented REST
