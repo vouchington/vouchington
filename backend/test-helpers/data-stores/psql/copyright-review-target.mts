@@ -99,6 +99,7 @@ export async function insertAssessedCopyrightLegalHold(input: {
   actorUserId: string
   targetId: string
   receivedAt: Date
+  agentReceivedAt?: Date
   qualifying?: boolean
   resolved?: boolean
 }): Promise<string> {
@@ -114,7 +115,7 @@ export async function insertAssessedCopyrightLegalHold(input: {
         copyright_notice_submission_id, assessed_at, assessed_by_id, from_original_claimant,
         proceeding_kind, commenced_at, received_by_designated_agent_at, same_material, rationale_ciphertext
       ) VALUES (${submissionId}, CURRENT_TIMESTAMP, ${input.actorUserId}, ${qualifies},
-        'federal_court', ${input.receivedAt}, ${input.receivedAt}, true, ${`rationale-${randomUUID()}`})
+        'federal_court', ${input.receivedAt}, ${input.agentReceivedAt ?? input.receivedAt}, true, ${`rationale-${randomUUID()}`})
       RETURNING id
     ), target AS (
       INSERT INTO copyright_notice_legal_hold_assessment_targets (

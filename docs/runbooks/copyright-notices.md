@@ -410,6 +410,7 @@ Its `reason` tag has the same value, and one boolean tag per count shows which c
     or CCB filing awaiting assessment, timed from receipt. An assessed qualifying hold awaiting
     resolution does not count;
   - an active restriction with no human review, timed from when it was imposed;
+  - an unreviewed staydown match, timed from when the match was created;
   - a failed media action or failed or bounced delivery, timed from the failure on the same
     `reviewTargetMinutes` timer; and
   - a compliant assessment with a target it has not yet restricted, timed from the assessment for
