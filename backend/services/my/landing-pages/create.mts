@@ -21,8 +21,7 @@ export async function createMyLandingPage(
   const slug = validateLandingPageSlug(input.slug)
 
   await using query = await beginTransaction()
-  await lockUserLandingPages(query, userId)
-  await getUsernameForLandingPages(userId, { query })
+  await lockLandingPageCreation(query, userId)
   const count = await countUserLandingPages(query, userId)
 
   assert(count < MAX_LANDING_PAGES, 400, `Maximum of ${MAX_LANDING_PAGES} landing pages allowed`)
@@ -50,6 +49,14 @@ export async function createMyLandingPage(
   await query.commit()
   await invalidate.users(userId)
   return landingPage
+}
+
+async function lockLandingPageCreation(
+  query: Awaited<ReturnType<typeof beginTransaction>>,
+  userId: string,
+): Promise<void> {
+  await lockUserLandingPages(query, userId)
+  await getUsernameForLandingPages(userId, { query })
 }
 
 async function countUserLandingPages(

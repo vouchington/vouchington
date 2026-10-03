@@ -3,7 +3,17 @@ import sql from 'sql-template-strings'
 import { validateUUID } from '@modules/utils'
 import assert from 'http-assert'
 import type { LandingPage, LandingPageItemRow } from './types.mts'
+import { lockUserLandingPages } from './shared.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
+
+export async function getLockedLandingPageRowForUser(
+  userId: string,
+  pageId: string,
+  query: TransactionQuery,
+): Promise<LandingPage> {
+  await lockUserLandingPages(query, userId)
+  return getLandingPageRowForUser(userId, pageId, { query })
+}
 
 export async function getLandingPageRowForUser(
   userId: string,
