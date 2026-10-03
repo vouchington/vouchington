@@ -110,7 +110,8 @@ describe('area coverage wiring', () => {
         producerIds.map(id => [id, true]),
       )
       expect(needsOf(coverage)).toEqual(expect.arrayContaining(producerIds))
-      expect(needsOf(codecov).toSorted()).toEqual(producerIds.toSorted())
+      const selectionNeeds = area === 'tooling' ? ['changes'] : []
+      expect(needsOf(codecov).toSorted()).toEqual([...producerIds, ...selectionNeeds].toSorted())
 
       // Each producer's artifacts match exactly one upload pattern, and every pattern matches.
       const artifacts = producers.flatMap(([, job]) => fullLcovArtifacts(job.uses!.slice(2)))
@@ -133,6 +134,12 @@ describe('area coverage wiring', () => {
       expect(coverage.permissions).not.toHaveProperty('id-token')
     },
   )
+
+  it('skips tooling uploads when only the bounds job runs without LCOV', () => {
+    const { jobs } = areas.find(({ area }) => area === 'tooling')!
+    const [, codecov] = jobCalling(jobs, codecovWorkflow)
+    expect(clausesOf(codecov.if)).toContain("needs.changes.outputs.area-tooling == 'true'")
+  })
 
   // Each queued entry was already gated at its pull request, and the combined queued range would
   // charge it with other entries' lines, adding a job per area and an ejection path. Queue runs

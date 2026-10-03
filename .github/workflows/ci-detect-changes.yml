@@ -59,6 +59,8 @@ on:
         value: ${{ jobs.detect-changes.outputs.area-lambdas }}
       area-tooling:
         value: ${{ jobs.detect-changes.outputs.area-tooling }}
+      i18n-route-bounds:
+        value: ${{ jobs.detect-changes.outputs.i18n-route-bounds }}
 
 permissions: {}
 
@@ -98,6 +100,7 @@ jobs:
       area-cloudflare-worker: ${{ steps.areas.outputs.cloudflare-worker }}
       area-lambdas: ${{ steps.areas.outputs.lambdas }}
       area-tooling: ${{ steps.areas.outputs.tooling }}
+      i18n-route-bounds: ${{ steps.areas.outputs.i18n-route-bounds }}
     steps:
       # Full history keeps both parents of a pull request's merge commit (the docs-only check diffs
       # HEAD^1..HEAD) and the merge-queue range's merge base.
@@ -209,6 +212,7 @@ jobs:
             echo "cloudflare-worker=$(area "$CLOUDFLARE_WORKER")"
             echo "lambdas=$(area "$LAMBDAS")"
             echo "tooling=$(area "$TOOLING")"
+            echo "i18n-route-bounds=$(area "$I18N_ROUTE_BOUNDS")"
           } >> "$GITHUB_OUTPUT"
         env:
           FULL: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
@@ -219,3 +223,4 @@ jobs:
           CLOUDFLARE_WORKER: ${{ steps.filter.outputs.cloudflare-worker }}
           LAMBDAS: ${{ steps.filter.outputs.lambdas }}
           TOOLING: ${{ steps.filter.outputs.ts-shared == 'true' || steps.filter.outputs.tooling == 'true' || steps.filter.outputs.portability == 'true' || steps.filter.outputs.shell-scripts == 'true' }}
+          I18N_ROUTE_BOUNDS: ${{ steps.filter.outputs.i18n-route-bounds }}

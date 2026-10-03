@@ -2,8 +2,8 @@ name: Tooling
 
 # Area workflow: when `changes` selects the tooling area (ts-shared, CI/dev tooling, host
 # portability and shell scripts), every tooling suite runs in full. The `tooling` job is the
-# required check; it passes when the area is skipped. nightly.yml calls this workflow for the full
-# run. See docs/development/ci.md.
+# required check. Catalog/web inputs can select only the separate i18n bounds job; the gate passes
+# when neither is selected. nightly.yml calls this workflow for the full run. See docs/development/ci.md.
 on:
   pull_request:
     types: [opened, synchronize, reopened]
@@ -39,9 +39,10 @@ jobs:
 
   test-tooling:
     needs: [changes]
-    if: needs.changes.outputs.area-tooling == 'true'
+    if: needs.changes.outputs.area-tooling == 'true' || needs.changes.outputs.i18n-route-bounds == 'true'
     uses: ./.github/workflows/tests-tooling.yml
     with:
+      run_tooling: ${{ needs.changes.outputs.area-tooling == 'true' }}
       publish_coverage: true
     permissions:
       actions: read
@@ -82,9 +83,10 @@ jobs:
 
   # Informational; the `tooling` gate does not wait on it.
   codecov:
-    needs: [test-ts-shared, test-tooling, test-portability]
+    needs: [changes, test-ts-shared, test-tooling, test-portability]
     if: >-
       !cancelled() &&
+      needs.changes.outputs.area-tooling == 'true' &&
       contains(needs.*.result, 'success') &&
       !contains(needs.*.result, 'failure') &&
       !contains(needs.*.result, 'cancelled')
