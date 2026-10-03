@@ -23,8 +23,13 @@ makes one single-question classifier call per post (simulate runs up to eight in
 its own deadline) and applies the classifier's thresholds, so the preview matches production.
 A dry run writes no classifier receipt, attempt or `agent_moderations` row, and it never takes an
 automod action. The daily spend cap is checked before any call, and every call records its usage
-in the AI usage ledger under the `community-moderation-dry-run` workload. The responses carry
-`flagged` and an empty `reason`, because the classifier returns a probability, not an explanation.
+in the AI usage ledger under the `community-moderation-dry-run` workload.
+
+The simulate response carries one `flagged` verdict per sampled post plus a `simulation` summary
+that names the action a real flag would take; the
+[simulate reference](../../../../requirements/moderation/reference-post-api-v1-communities-slug-automod-simulate.md)
+owns the full shape. The test-runs response is `{ "flagged": boolean }`. Neither carries a `reason`,
+because the classifier returns a probability, not an explanation.
 
 ## Related
 
