@@ -54,6 +54,21 @@ How Voucha steers AI agents to its API and MCP server instead of the website.
   - every discovery document is free of private strings once the exact allowlisted URLs are
     removed from it
 
+## Delegated Contribution Admission
+
+For MCP create tools, an API key or OAuth token with the write scope replaces CAPTCHA,
+App Attest and the reCAPTCHA assessment. The credential owner's quotas and suspensions
+still apply, including the REST administrator capacity exemption. Each tool requires a UUID
+`idempotency_key`, fed into the same durable admission identity as its REST route. Equal
+keys and bodies replay the original result; changed bodies return `IDEMPOTENCY_KEY_REUSED`.
+An active claim returns `CONTRIBUTION_ADMISSION_IN_PROGRESS` and `retryAfterSeconds`;
+exhausted capacity returns `CONTRIBUTION_QUOTA_EXCEEDED` with `retryable: false` because admission does not supply a capacity retry delay.
+
+`admitDelegatedContribution` in `backend/services/contribution-gating/` owns this policy.
+Domain authorization and preparation use the existing service commands, and created content
+records the MCP channel and OAuth client through request provenance. A separate smaller
+quota for token-created content is deferred until abuse requires it.
+
 ## Related
 
 - [SEO machine-readable discovery](../seo/SEO.md#machine-readable-discovery)

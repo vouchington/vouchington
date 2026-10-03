@@ -21,6 +21,19 @@ function fixtureTool(
 }
 
 describe('findApiHintConflicts', () => {
+  it('recognizes required UUID admission keys on POST tools', () => {
+    const tool = fixtureTool('admitted_create', IDEMPOTENT_WRITE, ['POST'])
+    tool.schema.parameters = {
+      type: 'object',
+      required: ['idempotency_key'],
+      properties: { idempotency_key: { type: 'string', format: 'uuid' } },
+    }
+    expect(findApiHintConflicts([tool])).toEqual([])
+    tool.schema.parameters['required'] = []
+    expect(findApiHintConflicts([tool])).toEqual([
+      { tool: 'admitted_create', conflict: 'idempotentHint should be false' },
+    ])
+  })
   it('accepts hints that agree with the named REST methods', () => {
     expect(
       findApiHintConflicts([
