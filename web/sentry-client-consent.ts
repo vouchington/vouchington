@@ -6,6 +6,7 @@ type RuntimeTarget = Parameters<typeof initializeSentryClient>[2]
 
 interface ConsentGatedSentryClientDeps {
   init: (options: SentryInitOptions) => void
+  disable: () => void
   close: () => unknown
   hasConsent?: () => boolean
   subscribe?: (listener: () => void) => () => void
@@ -15,6 +16,7 @@ interface ConsentGatedSentryClientDeps {
 
 export function startConsentGatedSentryClient({
   init,
+  disable,
   close,
   hasConsent = hasAnalyticsConsent,
   subscribe = subscribeToCookieConsent,
@@ -29,6 +31,7 @@ export function startConsentGatedSentryClient({
     if (!hasConsent()) {
       if (initialized && !closed) {
         closed = true
+        disable()
         void close()
       }
       return
@@ -49,4 +52,10 @@ export function startConsentGatedSentryClient({
   const unsubscribe = subscribe(reconcile)
   reconcile()
   return unsubscribe
+}
+
+export function disableSentryClient(
+  client: { getOptions: () => { enabled?: boolean } } | undefined,
+): void {
+  if (client) client.getOptions().enabled = false
 }

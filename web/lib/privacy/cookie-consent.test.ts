@@ -1,3 +1,4 @@
+import { dispatchStorageEvent } from '@/test-helpers/storage-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   COOKIE_CONSENT_CHANGED_EVENT,
@@ -41,6 +42,31 @@ describe('cookie consent', () => {
     })
     expect(hasAnalyticsConsent()).toBe(false)
     expect(() => writeCookieConsent('all')).not.toThrow()
+  })
+  it('reconciles fail closed when storage access throws during a storage event', () => {
+    const listener = vi.fn<() => void>()
+    const unsubscribe = subscribeToCookieConsent(listener)
+    const storage = localStorage
+    vi.spyOn(window, 'localStorage', 'get').mockImplementation(() => {
+      throw new Error('blocked')
+    })
+    dispatchStorageEvent('cookie-consent', storage)
+    expect(listener).toHaveBeenCalledTimes(1)
+    unsubscribe()
+  })
+  it('filters storage events and removes both subscriptions', () => {
+    const listener = vi.fn<() => void>()
+    const unsubscribe = subscribeToCookieConsent(listener)
+    dispatchStorageEvent('other', localStorage)
+    dispatchStorageEvent('cookie-consent', sessionStorage)
+    expect(listener).not.toHaveBeenCalled()
+    dispatchStorageEvent('cookie-consent', localStorage)
+    dispatchStorageEvent(null, localStorage)
+    expect(listener).toHaveBeenCalledTimes(2)
+    unsubscribe()
+    dispatchStorageEvent('cookie-consent', localStorage)
+    window.dispatchEvent(new Event(COOKIE_CONSENT_CHANGED_EVENT))
+    expect(listener).toHaveBeenCalledTimes(2)
   })
   it('subscribes and unsubscribes without dispatching during writes', () => {
     const listener = vi.fn<() => void>()

@@ -19,6 +19,7 @@ const { sentryInitCall, mockSentryInit } = vi.hoisted(() => {
 vi.mock<typeof import('@sentry/nextjs')>(import('@sentry/nextjs'), () => ({
   init: mockSentryInit,
   close: vi.fn<typeof Sentry.close>(),
+  getClient: () => undefined,
   captureRouterTransitionStart:
     vi.fn<(typeof import('@sentry/nextjs'))['captureRouterTransitionStart']>(),
 }))

@@ -1,8 +1,9 @@
 import * as Sentry from '@sentry/nextjs'
-import { startConsentGatedSentryClient } from './sentry-client-consent'
+import { disableSentryClient, startConsentGatedSentryClient } from './sentry-client-consent'
 
 startConsentGatedSentryClient({
   init: options => Sentry.init(options),
+  disable: () => disableSentryClient(Sentry.getClient()),
   close: () => Sentry.close(),
 })
 
