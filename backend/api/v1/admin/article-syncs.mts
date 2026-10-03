@@ -10,7 +10,7 @@ import { requireAuthAndRateLimit, validateRequestContract } from '../../response
 import { articleSync } from '@queues/article-sync/queues'
 import { articleSyncPubSub, type ArticleSyncStatus } from '@data-stores/valkey-pubsub'
 import { startSSE, pipeChannelToSSE, watchForAbortBeforeSSE } from '../../sse-helpers.mts'
-import { apiResponse } from '../../response-contract.mts'
+import { apiResponse, apiSseFrame } from '../../response-contract.mts'
 
 /**
  * POST /api/v1/article-syncs — Enqueue an article sync job.
@@ -89,8 +89,8 @@ app.route('/api/v1/admin/article-syncs/:jobId/stream').get(async (ctx: Context) 
     abortBeforeSSE.stop()
     sse = startSSE(ctx)
     await pipeChannelToSSE({
-      ctx,
-      stream: sse.stream,
+      emit: event =>
+        sse!.stream.write(apiSseFrame('GET:/api/v1/admin/article-syncs/:jobId/stream', event)),
       subscription,
       eventName: 'status',
       abortSignal: sse.lifecycleSignal,

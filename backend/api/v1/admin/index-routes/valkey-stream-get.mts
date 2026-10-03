@@ -1,3 +1,4 @@
+import { apiSseFrame } from '../../../response-contract.mts'
 import { createChannelPubSub } from '@data-stores/valkey-pubsub'
 import onError from '@modules/on-error'
 import { getCacheGroups } from '@services/valkey-admin/clear-cache'
@@ -7,7 +8,7 @@ import { createAdminSnapshotStream } from './snapshot-stream.mts'
 
 const TICKER_INTERVAL_MS = 10_000
 
-const valkeyPubSub = createChannelPubSub<unknown>('admin:valkey')
+const valkeyPubSub = createChannelPubSub<Awaited<ReturnType<typeof fetchSnapshot>>>('admin:valkey')
 
 async function fetchSnapshot() {
   const cacheGroupsResult = await Promise.allSettled([Promise.resolve(getCacheGroups())]).then(
@@ -26,7 +27,9 @@ async function fetchSnapshot() {
   }
 }
 
-function publishValkeySnapshot(publish: (value: unknown) => Promise<void>): void {
+function publishValkeySnapshot(
+  publish: (value: Awaited<ReturnType<typeof fetchSnapshot>>) => Promise<void>,
+): void {
   fetchSnapshot()
     .then(snapshot => publish(snapshot))
     .catch(onError)
@@ -34,6 +37,7 @@ function publishValkeySnapshot(publish: (value: unknown) => Promise<void>): void
 
 app.route('/api/v1/admin/valkey/stream').get(
   createAdminSnapshotStream({
+    emit: (stream, event) => stream.write(apiSseFrame('GET:/api/v1/admin/valkey/stream', event)),
     authorize: currentUserCanAccessValkeyAdmin,
     rateLimitKey: 'GET:/api/v1/admin/valkey/stream',
     pubSub: valkeyPubSub,

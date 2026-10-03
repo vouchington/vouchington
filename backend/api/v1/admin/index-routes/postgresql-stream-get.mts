@@ -1,3 +1,4 @@
+import { apiSseFrame } from '../../../response-contract.mts'
 import { createChannelPubSub } from '@data-stores/valkey-pubsub'
 import onError from '@modules/on-error'
 import { getMigrationStatus } from '@services/psql-admin'
@@ -7,9 +8,11 @@ import { createAdminSnapshotStream } from './snapshot-stream.mts'
 
 const TICKER_INTERVAL_MS = 30_000
 
-const postgresqlPubSub = createChannelPubSub<unknown>('admin:postgresql')
+type PostgresqlSnapshot = Awaited<ReturnType<typeof getMigrationStatus>> | { error: string }
 
-function publishPostgresqlSnapshot(publish: (value: unknown) => Promise<void>): void {
+const postgresqlPubSub = createChannelPubSub<PostgresqlSnapshot>('admin:postgresql')
+
+function publishPostgresqlSnapshot(publish: (value: PostgresqlSnapshot) => Promise<void>): void {
   getMigrationStatus()
     .then(snapshot => publish(snapshot))
     .catch(err => {
@@ -19,7 +22,7 @@ function publishPostgresqlSnapshot(publish: (value: unknown) => Promise<void>): 
     })
 }
 
-async function loadPostgresqlInitialValue(): Promise<unknown> {
+async function loadPostgresqlInitialValue(): Promise<PostgresqlSnapshot | undefined> {
   try {
     return await getMigrationStatus()
   } catch (err) /* v8 ignore next 2 -- exercising recovery requires a forbidden internal service failure mock */ {
@@ -30,6 +33,8 @@ async function loadPostgresqlInitialValue(): Promise<unknown> {
 
 app.route('/api/v1/admin/postgresql/stream').get(
   createAdminSnapshotStream({
+    emit: (stream, event) =>
+      stream.write(apiSseFrame('GET:/api/v1/admin/postgresql/stream', event)),
     authorize: currentUserCanAccessPsqlAdmin,
     rateLimitKey: 'GET:/api/v1/admin/postgresql/stream',
     pubSub: postgresqlPubSub,

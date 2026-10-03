@@ -1,3 +1,4 @@
+import { apiSseFrame } from '../../../response-contract.mts'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ImportProgressChunk, ImportProgressSubscription } from '@data-stores/valkey-pubsub'
 import { pipeImportProgressToSSE, pipeUserRssFeedImportProgressToSSE } from './stream-helpers.mts'
@@ -54,7 +55,7 @@ describe('pipeImportProgressToSSE', () => {
 
     await pipeImportProgressToSSE({
       subscription: sub,
-      write: data => writes.push(data),
+      emit: event => writes.push(apiSseFrame('GET:/test', event)),
       disconnectSignal: abortController.signal,
       throttleIntervalMs: 250,
     })
@@ -68,7 +69,7 @@ describe('pipeImportProgressToSSE', () => {
 
     const promise = pipeImportProgressToSSE({
       subscription: sub,
-      write: data => writes.push(data),
+      emit: event => writes.push(apiSseFrame('GET:/test', event)),
       disconnectSignal: new AbortController().signal,
       throttleIntervalMs: 250,
     })
@@ -97,7 +98,7 @@ describe('pipeImportProgressToSSE', () => {
 
     const promise = pipeImportProgressToSSE({
       subscription: sub,
-      write: data => writes.push(data),
+      emit: event => writes.push(apiSseFrame('GET:/test', event)),
       disconnectSignal: new AbortController().signal,
       throttleIntervalMs: 250,
     })
@@ -138,7 +139,7 @@ describe('pipeImportProgressToSSE', () => {
 
     const promise = pipeImportProgressToSSE({
       subscription: sub,
-      write: data => writes.push(data),
+      emit: event => writes.push(apiSseFrame('GET:/test', event)),
       disconnectSignal: abortController.signal,
       throttleIntervalMs: 250,
     })
@@ -163,7 +164,7 @@ describe('pipeImportProgressToSSE', () => {
 
     await pipeImportProgressToSSE({
       subscription,
-      write: vi.fn<VitestLooseMock>(),
+      emit: vi.fn<VitestLooseMock>(),
       disconnectSignal: abortController.signal,
       throttleIntervalMs: 250,
     })
@@ -187,7 +188,7 @@ describe('pipeImportProgressToSSE', () => {
 
     await pipeImportProgressToSSE({
       subscription: sub,
-      write,
+      emit: event => write(apiSseFrame('GET:/test', event)),
       disconnectSignal,
       throttleIntervalMs: 250,
     })
@@ -207,8 +208,8 @@ describe('pipeUserRssFeedImportProgressToSSE', () => {
       batchId: pendingImport.import.id,
       userId: FAKE_USER_ID,
       initialImport: pendingImport,
-      write: data => {
-        writes.push(data)
+      emit: event => {
+        writes.push(apiSseFrame('GET:/test', event))
         controller.abort()
       },
       disconnectSignal: controller.signal,
@@ -228,7 +229,7 @@ describe('pipeUserRssFeedImportProgressToSSE', () => {
       batchId: pendingImport.import.id,
       userId: FAKE_USER_ID,
       initialImport: pendingImport,
-      write: () => true,
+      emit: () => true,
       disconnectSignal: abortController.signal,
       pollIntervalMs: 250,
       readImport,
@@ -254,8 +255,8 @@ describe('pipeUserRssFeedImportProgressToSSE', () => {
       batchId: pendingImport.import.id,
       userId: FAKE_USER_ID,
       initialImport: pendingImport,
-      write: data => {
-        chunks.push(data)
+      emit: event => {
+        chunks.push(apiSseFrame('GET:/test', event))
         return true
       },
       disconnectSignal: abortController.signal,

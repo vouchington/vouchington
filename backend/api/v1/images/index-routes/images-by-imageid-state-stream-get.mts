@@ -1,3 +1,4 @@
+import { apiSseFrame } from '../../../response-contract.mts'
 import app from '../../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
@@ -39,8 +40,7 @@ app.route('/api/v1/images/:id/state/stream').get(async (ctx: Context) => {
     abortBeforeSSE.stop()
     sse = startSSE(ctx)
     await pipeChannelToSSE({
-      ctx,
-      stream: sse.stream,
+      emit: event => sse!.stream.write(apiSseFrame('GET:/api/v1/images/:id/state/stream', event)),
       subscription,
       eventName: 'state',
       abortSignal: sse.lifecycleSignal,
