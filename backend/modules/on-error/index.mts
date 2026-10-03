@@ -14,7 +14,6 @@ export { recordSpendCapBreach } from './spend-cap-breach.mts'
 export { recordScheduledJobConfigMissing } from './scheduled-job-config-missing.mts'
 export { recordSqsConsumerConfigMissing } from './sqs-consumer-config-missing.mts'
 export { recordValkeySaturation } from './valkey-saturation.mts'
-export { recordWorkerQueueTopologySkew } from './worker-queue-topology-skew.mts'
 
 const messageIgnores = ['placeholder error ignore message']
 

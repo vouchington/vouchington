@@ -6,6 +6,7 @@ import {
   type WorkerQueueClass,
 } from '@modules/worker-queue-inventory/worker-queue-class'
 import {
+  loadWorkers,
   upsertSchedules,
   type ScheduleDefinition,
   type WorkerDefinition,
@@ -13,8 +14,7 @@ import {
 import { addSqsConsumerEventListeners, addWorkerEventListeners } from './observability.mts'
 import { setup } from './setup.mts'
 import { loadSqsConsumers, type SqsConsumer, type SqsConsumerDefinition } from './sqs-consumer.mts'
-import { loadUniversalWorkers } from './universal-workers.mts'
-import { loadWorkers } from './worker-runtime.mts'
+import { loadUniversalWorkers, UNIVERSAL_WORKER_DEFINITIONS } from './universal-workers.mts'
 
 export type WorkerRuntimeHooks = {
   afterLoad?: () => void
@@ -78,23 +78,23 @@ export async function initializeWorkerRuntime(
   dependencies: WorkerRuntimeDependencies = defaultDependencies,
 ): Promise<WorkerRuntime> {
   try {
+    // Every queue this process can run, from the entrypoint's own definitions: `QUEUES` may name
+    // only these. Universal workers bypass selection, but their names are still known queues.
+    const knownQueueNames = [
+      ...config.workerDefinitions,
+      ...config.sqsConsumerDefinitions,
+      ...UNIVERSAL_WORKER_DEFINITIONS,
+    ].map(definition => definition.queueName)
     // Resolved once so workers, SQS consumers and schedules select from the same list: a class
     // expands to an explicit include list, which also reaches explicit-inclusion definitions that
     // unset QUEUES skips. Every consumer takes this value, never process.env.QUEUES.
-    const queues = resolveQueueSelection(dependencies.env, config.queueClasses)
-    const sqsQueueNames = config.sqsConsumerDefinitions.map(definition => definition.queueName)
-    const workerQueueNames = config.workerDefinitions.map(definition => definition.queueName)
+    const queues = resolveQueueSelection(dependencies.env, config.queueClasses, knownQueueNames)
     const [workers, sqsConsumers] = await Promise.all([
       Promise.all([
-        dependencies.loadWorkers(config.workerDefinitions, queues, undefined, sqsQueueNames),
+        dependencies.loadWorkers(config.workerDefinitions, queues),
         dependencies.loadUniversalWorkers(),
       ]).then(([runtimeWorkers, universalWorkers]) => [...runtimeWorkers, ...universalWorkers]),
-      dependencies.loadSqsConsumers(
-        config.sqsConsumerDefinitions,
-        queues,
-        undefined,
-        workerQueueNames,
-      ),
+      dependencies.loadSqsConsumers(config.sqsConsumerDefinitions, queues),
     ])
 
     config.hooks?.afterLoad?.()

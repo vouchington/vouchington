@@ -48,12 +48,11 @@ process at startup.
 
 `QUEUES` is the name-level selector for local development and the image smoke test, and is used
 instead of the class. Use comma-separated queue names to include only those queues, or prefix every
-entry with `-` to run every queue except those names.
-
-An include-mode `QUEUES` entry the running process's compiled `WORKER_DEFINITIONS` don't recognize
-is dropped rather than treated as fatal — the process starts and runs the queues it does know,
-and reports the drop as a warning (`recordWorkerQueueTopologySkew`, `@modules/on-error`). This
-tolerates deploy/rollback topology skew when a private-infrastructure task definition briefly leads
-or lags the queues implemented by an already-running image. A real typo in the queue policy is
-caught at CI time by `backend/entrypoints/worker-cpu/__tests__/worker-queue-policy.test.mts`, not by
-this runtime check.
+entry with `-` to run every queue except those names. Every name, included or excluded, must be a
+queue the running entrypoint's `WORKER_DEFINITIONS`, `SQS_CONSUMER_DEFINITIONS`, or universal
+workers define. A name outside that set (a typo, a retired queue, or a queue only the other
+entrypoint runs) fails the process at startup with an error listing the unknown names, the same way
+setting `WORKER_QUEUE_CLASS` together with `QUEUES` does. Deployed task definitions pass only the
+class, so the app is the only source of queue names there; a deployed `QUEUES` value that names a
+queue the image does not define crashes the worker at startup. The image smoke test derives its
+exclude list from the image's own `WORKER_DEFINITIONS`, so it always names queues the image knows.

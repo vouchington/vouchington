@@ -19,7 +19,6 @@ export type Outcome = {
   workers: string[]
   sqsConsumers: string[]
   schedules: string[]
-  unknownIncludes: string[][]
   reportedErrors: Error[]
   failure: Error | undefined
 }
@@ -42,30 +41,20 @@ export async function runEntrypoint(
     workers: [],
     sqsConsumers: [],
     schedules: [],
-    unknownIncludes: [],
     reportedErrors: [],
     failure: undefined,
   }
-  const onUnknownIncludes = (names: readonly string[]): void => {
-    outcome.unknownIncludes.push([...names])
-  }
   const dependencies: WorkerRuntimeDependencies = {
-    loadWorkers: async (definitions, queues, _onUnknownIncludes, ownedByOthers) => {
-      outcome.workers = selectedWorkerDefinitions(
-        definitions,
-        queues,
-        onUnknownIncludes,
-        ownedByOthers,
-      ).map(definition => definition.queueName)
+    loadWorkers: async (definitions, queues) => {
+      outcome.workers = selectedWorkerDefinitions(definitions, queues).map(
+        definition => definition.queueName,
+      )
       return []
     },
-    loadSqsConsumers: async (definitions, queues, _onUnknownIncludes, ownedByOthers) => {
-      outcome.sqsConsumers = selectedSqsConsumerDefinitions(
-        definitions,
-        queues,
-        onUnknownIncludes,
-        ownedByOthers,
-      ).map(definition => definition.queueName)
+    loadSqsConsumers: async (definitions, queues) => {
+      outcome.sqsConsumers = selectedSqsConsumerDefinitions(definitions, queues).map(
+        definition => definition.queueName,
+      )
       return []
     },
     loadUniversalWorkers: async () => [],

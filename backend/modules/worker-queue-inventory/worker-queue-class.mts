@@ -17,7 +17,10 @@ export type QueueSelectionEnv = {
   QUEUES?: string | undefined
 }
 
-export type WorkerQueueClassErrorCode = 'CONFLICTING_QUEUE_SELECTORS' | 'UNSUPPORTED_QUEUE_CLASS'
+export type WorkerQueueClassErrorCode =
+  | 'CONFLICTING_QUEUE_SELECTORS'
+  | 'UNSUPPORTED_QUEUE_CLASS'
+  | 'UNKNOWN_QUEUE_NAMES'
 
 /** A worker process was configured with a queue selection it must not start with. */
 export class WorkerQueueClassError extends Error {
@@ -56,15 +59,18 @@ export function workerQueueClassQueueNames(queueClass: WorkerQueueClass): string
  * expands it to an explicit include list from its own policy. The explicit list is required
  * because an unset selection means "all" and skips `requiresExplicitInclusion` definitions.
  * `QUEUES` remains the name-level selector for local development and image smoke tests and is
- * returned untouched. Blank values count as unset. Setting both, or a class the entrypoint does
- * not accept, throws so a misconfigured process fails at startup.
+ * returned untouched, but every name it lists (an include `name` or an exclude `-name`) must be in
+ * `knownQueueNames`, the queues this process's runtimes can run. Blank values count as unset.
+ * Setting both selectors, a class the entrypoint does not accept, or an unknown `QUEUES` name
+ * throws so a misconfigured process fails at startup.
  */
 export function resolveQueueSelection(
   env: QueueSelectionEnv,
   acceptedClasses: readonly WorkerQueueClass[],
+  knownQueueNames: readonly string[],
 ): string | undefined {
   const queueClass = env.WORKER_QUEUE_CLASS?.trim()
-  if (!queueClass) return env.QUEUES
+  if (!queueClass) return requireKnownQueueNames(env.QUEUES, knownQueueNames)
 
   if (env.QUEUES?.trim()) {
     throw new WorkerQueueClassError(
@@ -79,4 +85,26 @@ export function resolveQueueSelection(
     )
   }
   return formatQueueIncludeList(workerQueueClassQueueNames(queueClass))
+}
+
+// Names are read the way `parseQueueSelection` reads them: comma-separated, trimmed, with one
+// leading `-` marking an exclude. Empty entries and mixed signs are left for that parser to reject.
+function requireKnownQueueNames(
+  queues: string | undefined,
+  knownQueueNames: readonly string[],
+): string | undefined {
+  const known = new Set(knownQueueNames)
+  const unknown = new Set(
+    (queues ?? '')
+      .split(',')
+      .map(entry => entry.trim().replace(/^-/, ''))
+      .filter(name => name.length > 0 && !known.has(name)),
+  )
+  if (unknown.size > 0) {
+    throw new WorkerQueueClassError(
+      'UNKNOWN_QUEUE_NAMES',
+      `QUEUES names queues this worker does not run: ${[...unknown].join(', ')}`,
+    )
+  }
+  return queues
 }

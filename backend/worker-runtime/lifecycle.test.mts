@@ -109,10 +109,8 @@ describe('worker lifecycle', () => {
     const runtime = await initializing
     expect(runtime.workers).toEqual([policyWorker, universalWorker])
     expect(runtime.sqsConsumers).toEqual([sqsConsumer])
-    expect(workerCalls).toEqual([[config.workerDefinitions, undefined, undefined, ['sqs-queue']]])
-    expect(sqsCalls).toEqual([
-      [config.sqsConsumerDefinitions, undefined, undefined, ['worker-queue']],
-    ])
+    expect(workerCalls).toEqual([[config.workerDefinitions, undefined]])
+    expect(sqsCalls).toEqual([[config.sqsConsumerDefinitions, undefined]])
   })
 
   it('hands the one resolved class selection to workers, SQS consumers and schedules', async () => {
