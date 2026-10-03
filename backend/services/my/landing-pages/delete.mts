@@ -1,11 +1,12 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { promoteOldestRemainingLandingPage } from './shared.mts'
+import { lockUserLandingPages, promoteOldestRemainingLandingPage } from './shared.mts'
 import { getLandingPageRowForUser } from './reads.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 
 export async function deleteMyLandingPage(userId: string, pageId: string): Promise<void> {
   await using query = await beginTransaction()
+  await lockUserLandingPages(query, userId)
   const page = await getLandingPageRowForUser(userId, pageId, { query })
 
   await query(

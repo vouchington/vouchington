@@ -5,6 +5,7 @@ import { invalidate } from '@services/entity-cache/invalidate'
 import {
   getUsernameForLandingPages,
   MAX_LANDING_PAGES,
+  lockUserLandingPages,
   validateLandingPageSlug,
   validateSubtitle,
   validateTitle,
@@ -21,6 +22,7 @@ export async function createMyLandingPage(
 
   await using query = await beginTransaction()
   await lockUserLandingPages(query, userId)
+  await getUsernameForLandingPages(userId, { query })
   const count = await countUserLandingPages(query, userId)
 
   assert(count < MAX_LANDING_PAGES, 400, `Maximum of ${MAX_LANDING_PAGES} landing pages allowed`)
@@ -48,14 +50,6 @@ export async function createMyLandingPage(
   await query.commit()
   await invalidate.users(userId)
   return landingPage
-}
-
-async function lockUserLandingPages(
-  query: Awaited<ReturnType<typeof beginTransaction>>,
-  userId: string,
-): Promise<void> {
-  await query(sql`/* createMyLandingPage */ SELECT pg_advisory_xact_lock(hashtext(${userId}))`)
-  await getUsernameForLandingPages(userId, { query })
 }
 
 async function countUserLandingPages(
