@@ -1,3 +1,4 @@
+import { copyrightNotificationCopy } from './statement-of-reasons-wording.mts'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
@@ -47,19 +48,19 @@ describe('copyright in-app notification delivery', () => {
       userId: user.id,
       noticeId: notice.id,
       eventKey,
-      deliveryKind: 'poster_restriction_notice',
+      statementCopy: copyrightNotificationCopy('poster_restriction_notice'),
     })
     await createCopyrightNoticeNotification({
       userId: user.id,
       noticeId: notice.id,
       eventKey,
-      deliveryKind: 'poster_restriction_notice',
+      statementCopy: copyrightNotificationCopy('poster_restriction_notice'),
     })
     await createCopyrightNoticeNotification({
       userId: user.id,
       noticeId: notice.id,
       eventKey: `copyright-delivery-${crypto.randomUUID()}`,
-      deliveryKind: 'status_update',
+      statementCopy: copyrightNotificationCopy('status_update'),
     })
 
     const { notifications } = await listNotifications(user.id)

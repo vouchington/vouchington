@@ -48,7 +48,6 @@ export async function deliverCopyrightInAppNotification(intentId: string): Promi
       userId: intent.recipient_user_id,
       noticeId: intent.copyright_notice_id,
       eventKey: `copyright-delivery:${intent.id}`,
-      deliveryKind: intent.delivery_kind,
     })
     return await markCopyrightDeliveryIntentSent({ intentId, leaseToken: intent.lease_token })
   } catch (err) {

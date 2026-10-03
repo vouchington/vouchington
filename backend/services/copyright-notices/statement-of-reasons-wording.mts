@@ -1,5 +1,8 @@
 import type { CopyrightDeliveryKind } from './delivery-types.mts'
-import type { CopyrightStatementInput, CopyrightStatementFields } from './statement-of-reasons.mts'
+import type {
+  CopyrightStatementInput,
+  CopyrightStatementFields,
+} from './statement-of-reasons-types.mts'
 
 export function copyrightReceiptText(noticeId?: string): string {
   return `We received your copyright notice${noticeId ? ` for case ${noticeId}` : ''}. We will review it and contact you if we need more information.`
