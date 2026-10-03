@@ -30,7 +30,10 @@ app.route('/api/v1/auth/oauth/authorizations/:flowId/complete').post(async (ctx:
     'POST:/api/v1/auth/oauth/authorizations/:flowId/complete',
     await parseJsonBody<CompleteOAuthAuthorizationBody>(ctx),
   )
-  validateRequestContract(ctx, 'POST:/api/v1/auth/oauth/authorizations/:flowId/complete', { body })
+  validateRequestContract(ctx, 'POST:/api/v1/auth/oauth/authorizations/:flowId/complete', {
+    path: ctx.params,
+    body,
+  })
   const cookieCredential = parseOAuthCompletionCookie(ctx.cookies.get('oauth_completion'), flowId)
   const bodyCredential =
     typeof body.completion_token === 'string' ? body.completion_token : undefined

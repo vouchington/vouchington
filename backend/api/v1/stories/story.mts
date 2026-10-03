@@ -38,7 +38,7 @@ app.route('/api/v1/stories/:id').get(async (ctx: Context) => {
     ...storyMembersParser.queryContract,
     ...storyMembersQuery.queryContract,
   })
-  validateRequestContract(ctx, 'GET:/api/v1/stories/:id', { query })
+  validateRequestContract(ctx, 'GET:/api/v1/stories/:id', { path: ctx.params, query })
   const story = await getStoryById(storyId)
   ctx.assert(story, 404, 'Story not found')
   const page = (

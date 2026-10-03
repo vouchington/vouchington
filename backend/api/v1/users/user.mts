@@ -118,7 +118,7 @@ app
     const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/users/:idOrSlug')
     assertNotSuspended(currentUser)
     const body = (await ctx.request.json('1mb')) as UpdateUserOptions
-    validateRequestContract(ctx, 'PATCH:/api/v1/users/:idOrSlug', { body })
+    validateRequestContract(ctx, 'PATCH:/api/v1/users/:idOrSlug', { path: ctx.params, body })
     const updated = await updateUser(currentUser, ctx.params.idOrSlug!, body)
     ctx.json({ user: updated })
   })

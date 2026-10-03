@@ -23,6 +23,7 @@ async function requireAuthAndItemId(
   const currentUser = await requireAuth(ctx, operation)
   assertNotSuspended(currentUser)
   ctx.assert(ctx.params.id, 400, 'id required')
+  validateRequestContract(ctx, operation, { path: ctx.params })
   return { currentUser, id: ctx.params.id }
 }
 
