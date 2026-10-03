@@ -1,8 +1,10 @@
 # AI Agents
 
-Voucha uses OpenAI for content moderation and retained focused backend agents, Amazon Bedrock for
-semantic search embeddings, plus a local Rust detector for AI-generated post moderation. Hosted web
-agent chat has been removed; native transcript synchronization remains available during migration.
+Voucha uses OpenAI for content moderation, Jev for fixed classifiers, OpenRouter for retained
+focused agents, Amazon Bedrock for semantic search embeddings, and a local Rust detector for
+AI-generated post labels. The [AI platform overview](ai-platform.md) owns classifier execution,
+provider boundaries and measurement. Hosted agent chat, support and CRM runtime surfaces are
+removed; native conversation transcript synchronization has its own storage contract.
 
 Conversation and message `created_by_id` fields are required API keys but nullable after a user is
 hard-deleted. User sidecars omit null IDs, and native conversation lists and transcripts render the

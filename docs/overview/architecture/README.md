@@ -14,7 +14,8 @@ System design, pipelines, and application-layer patterns for Voucha.
 | [Analytics Pipeline](./analytics-pipeline.md)                                           | Local JSONL + DuckDB analytics, table registry, env vars, Phase 3 Firehose plan                              |
 | [Content Rendering](./content-rendering.md)                                             | Post rendering rules, image proxying, mention parsing                                                        |
 | [HTML & Markdown Rendering Passes](./html-markdown-rendering-passes.md)                 | Multi-pass rendering pipeline for safe HTML and Markdown output                                              |
-| [AI Agents](./ai-agents.md)                                                             | LLM moderation pipeline, semantic embeddings, agent conversations                                            |
+| [AI Platform](./ai-platform.md)                                                         | Shared classifier identity, execution, failure rules, provider boundaries and measurement                    |
+| [AI Agents](./ai-agents.md)                                                             | Content moderation, semantic embeddings and focused agent pipeline references                                |
 | [Bedrock Embeddings](./bedrock-embeddings.md)                                           | Dual-pipeline embeddings architecture: real-time single queue and Bedrock batch API                          |
 | [Event Ingress Routing](./event-ingress.md)                                             | Canonical routing rule for inbound AWS events and webhooks: in-VPC Lambda vs. public endpoint                |
 | [Crawling](./crawling.md)                                                               | HTML/RSS crawl pipeline, rate limiting, scheduling, blacklist, robots.txt                                    |
