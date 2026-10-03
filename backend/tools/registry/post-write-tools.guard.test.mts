@@ -13,7 +13,7 @@ import {
   insertTestPostStory,
 } from '@voucha/test-helpers'
 import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
-import { withConcurrentPostPrivacyChangeForTest } from '@voucha/test-helpers/post-delegated-privacy-race'
+import { withConcurrentPostPrivacyChangeForTest } from '@voucha/test-helpers/post-delegated-write-race'
 import { getCommunityMember } from '@services/communities/members/get'
 import { deleteCommunity } from '@services/communities/delete'
 import { getPostByAny } from '@services/posts'
