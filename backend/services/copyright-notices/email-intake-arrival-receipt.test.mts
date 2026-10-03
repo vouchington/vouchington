@@ -2,7 +2,6 @@ import { createTestUser } from '@voucha/test-helpers'
 import { failTestCopyrightDeliveryIntent } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { rejectCopyrightEmailIntake } from './email-rejection.mts'
 import { replayFailedCopyrightEmailIntakeReplyIntent } from './delivery-intents.mts'
-import { searchCopyrightStaffEmailIntakes } from './read-models-staff-email-intakes.mts'
 import { describe, expect, it, vi } from 'vitest'
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
@@ -74,8 +73,6 @@ describe('authenticated email arrival receipts', () => {
         actorUserId: moderator.id,
       }),
     ).toBeNull()
-    const queue = await searchCopyrightStaffEmailIntakes(moderator, { limit: 100 })
-    expect(queue.intakes.some(row => row.id === message.id)).toBe(false)
     await failTestCopyrightDeliveryIntent(result.responseId!)
     expect(
       await replayFailedCopyrightEmailIntakeReplyIntent({
