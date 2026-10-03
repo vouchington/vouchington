@@ -47,4 +47,26 @@ describe('localization route handler', () => {
     })
     expect(() => localizationRoute(boom as never)).toThrow(/headers failed/)
   })
+
+  it.each([
+    ['repeated consumer', { consumer: ['web', 'native'], locales: 'en' }],
+    ['unknown consumer', { consumer: 'unknown', locales: 'en' }],
+  ])('rejects a %s before rendering a localization payload', (_label, query) => {
+    const ctx = createContext(query)
+
+    expect(() => localizationRoute(ctx as never)).toThrow(/consumer/i)
+    expect(ctx.throw).toHaveBeenCalledWith(400, expect.any(String))
+    expect(ctx.json).not.toHaveBeenCalled()
+  })
+
+  it('accepts repeated locale and selector values through the query boundary', () => {
+    const ctx = createContext({
+      consumer: 'web',
+      locales: ['en', 'es'],
+      selectors: ['nav.*', 'email.welcome.preview'],
+    })
+
+    localizationRoute(ctx as never)
+    expect(ctx.json).toHaveBeenCalled()
+  })
 })
