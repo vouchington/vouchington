@@ -6,6 +6,10 @@ export function captureStringQuery(): void {
   maybeCaptureQuery('/* fromString */ SELECT $1', [1])
 }
 
+export function captureAnnotatedQuery(annotation: string): void {
+  maybeCaptureQuery(`/* ${annotation} */ SELECT 1`)
+}
+
 export function captureSqlTemplateQuery(): void {
   maybeCaptureQuery(sql`/* fromSql */ SELECT ${2}`)
 }

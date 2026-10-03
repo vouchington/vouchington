@@ -264,6 +264,10 @@ the EXPLAIN. The same uncovered-join-partner shape existed in `household-query-p
   mint one — an inline `async () => {}` does not typecheck. That callback must `ANALYZE` every
   relation the asserted plan touches, including join partners, not just the table the test itself
   writes to.
+- Capture that one statement with `captureScopedTestQueries()`. Process-global
+  `enableQueryCapture()` also records SQL from in-process GlideMQ workers on the same fork, so a
+  raw `queries.length === 1` check fails when a worker query lands in the window (Backend run
+  37093575229, `household-query-plans.test.mts`).
 - Never collapse an extracted plan value to a boolean before asserting: `toContain`,
   `arrayContaining`, and `assert.ok(cond, msg)` all print the actual plan/index list on failure, while
   `expect(arr.some(...)).toBe(true)` prints only `expected false to be true`.

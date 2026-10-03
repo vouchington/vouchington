@@ -6,8 +6,10 @@ import {
   disableQueryCapture,
   enableQueryCapture,
   getCapturedQueries,
+  runWithCapturedQueries,
 } from './query-capture.mts'
 import {
+  captureAnnotatedQuery,
   captureQueryAfterDisable,
   captureQueryAfterStop,
   captureQueryBeforeStop,
@@ -59,6 +61,26 @@ describe('query capture', () => {
 
     captureQueryAfterStop()
     expect(getCapturedQueries()).toEqual([])
+  })
+
+  it('records only the profiled async context', async () => {
+    enableQueryCapture()
+    let releaseSibling = () => {}
+    const sibling = (async () => {
+      await new Promise<void>(resolve => {
+        releaseSibling = resolve
+      })
+      captureAnnotatedQuery('sibling')
+    })()
+
+    const { queries } = await runWithCapturedQueries(async () => {
+      releaseSibling()
+      await sibling
+      captureAnnotatedQuery('inside')
+    })
+
+    expect(queries.map(query => query.text)).toEqual(['/* inside */ SELECT 1'])
+    expect(getCapturedQueries().map(query => query.text)).toEqual(['/* sibling */ SELECT 1'])
   })
 
   it('disables and clears capture when snapshot cloning fails', () => {

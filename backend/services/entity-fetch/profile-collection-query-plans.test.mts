@@ -2,12 +2,11 @@ import assert from 'node:assert'
 import { beforeAll, beforeEach, describe, it } from 'vitest'
 import {
   analyzeCommunityMembershipsForTest,
+  captureScopedTestQueries,
   collectPlanNodes,
   createTestUserDirect,
-  enableQueryCapture,
   explainCapturedTestQuery,
   insertTestCommunityMembershipsForUser,
-  stopTestQueryCapture,
   type CapturedTestQuery,
 } from '@voucha/test-helpers'
 import { listUserMemberCommunities } from '@services/communities/members/member-communities'
@@ -29,14 +28,16 @@ describe('profile collection query plans', () => {
       insertTestCommunityMembershipsForUser(owner.id, noiseMember.id, 10_000),
     ])
     await analyzeCommunityMembershipsForTest()
-    enableQueryCapture()
-    let queries: CapturedTestQuery[] = []
-    try {
-      await listUserMemberCommunities(member.id, member, { limit: 25 })
-    } finally {
-      queries = stopTestQueryCapture()
-    }
-    assert.equal(queries.length, 1)
+    const queries = await captureScopedTestQueries(() =>
+      listUserMemberCommunities(member.id, member, { limit: 25 }),
+    )
+    assert.equal(
+      queries.length,
+      1,
+      `expected one membership query, captured ${queries.length}: ${queries
+        .map(query => query.text.split('\n', 1)[0])
+        .join(' || ')}`,
+    )
     capturedQuery = queries[0]!
   })
 

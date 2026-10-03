@@ -2,17 +2,16 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import assert from 'node:assert'
 import {
   analyzeHouseholdTablesForTest,
+  captureScopedTestQueries,
   createTestUserDirect,
   createTestUsersDirect,
   deleteTestHouseholdsForOwners,
-  enableQueryCapture,
   explainCapturedTestQuery,
   insertTestHousehold,
   insertTestHouseholdMembers,
   insertTestHouseholdMemberships,
   insertTestHouseholdsForOwner,
   planIndexNames,
-  stopTestQueryCapture,
   type CapturedTestQuery,
 } from '@voucha/test-helpers'
 import { getHouseholdMemberships, getHouseholdsByUser } from './household-lists.mts'
@@ -107,13 +106,13 @@ describe('household pagination query plans', () => {
 })
 
 async function captureQuery(run: () => Promise<unknown>): Promise<CapturedTestQuery> {
-  enableQueryCapture()
-  let queries: CapturedTestQuery[] = []
-  try {
-    await run()
-  } finally {
-    queries = stopTestQueryCapture()
-  }
-  assert.equal(queries.length, 1)
+  const queries = await captureScopedTestQueries(run)
+  assert.equal(
+    queries.length,
+    1,
+    `expected one household query, captured ${queries.length}: ${queries
+      .map(query => query.text.split('\n', 1)[0])
+      .join(' || ')}`,
+  )
   return queries[0]!
 }

@@ -17,8 +17,9 @@
   caught from `read`/`write`/a transaction; services use it instead of re-deriving the code check
 - `createAsyncGeneratorFromCursor(...)` / `executeHandlerWithCursorInBatches(...)` — stream large
   result sets with `pg-cursor`
-- `enableQueryCapture()` / `getCapturedQueries()` / `explainAnalyze()` — capture and replay SQL
-  for plan analysis
+- `enableQueryCapture()` / `getCapturedQueries()` / `runWithCapturedQueries()` /
+  `explainAnalyze()` — capture and replay SQL for plan analysis. Scoped capture records only the
+  profiled async context.
 - `runMigrations()` — apply SQL migrations, views, and idempotent schema operations through the
   migration runner exports
 
