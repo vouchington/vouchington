@@ -91,9 +91,13 @@ to be the caller's own words, so every free-text field is sanitized, the title, 
 aliases as titles, and the Markdown, the proposed topic Markdown, the rejection reason and the
 stored approval error also fenced as `external-content` from `topic_recommendation`. The approval
 error is the message of whatever failed an approval, so it can quote an alias or slug an
-administrator typed. The nested `created_by` and `updated_by`
-users get the `get_user` treatment: names sanitized, a bio fenced. Identifiers, slugs, hostnames and
-URLs keep the formats the service validated. An empty title or Markdown stays an empty string, the
+administrator typed. The text the post carries beside the recommendation gets the same rule: the AI
+summary, the rendered HTML and the clearance reason are fenced, and the names of the topics and
+hashtags attached to the post and the image captions are sanitized as titles, because a topic name
+or a hashtag is another user's text too. A test lists every string field of the documented post as
+text or a validated format, so a field the post gains is text until it is classified. The nested
+`created_by` and `updated_by` users get the `get_user` treatment: names sanitized, a bio fenced.
+Identifiers, slugs, hostnames and URLs keep the formats the service validated. An empty title or Markdown stays an empty string, the
 documented type. That text is for reading, not to send back to an update tool.
 
 The posts are read from the primary database, not the entity cache, so an edit made a moment ago is

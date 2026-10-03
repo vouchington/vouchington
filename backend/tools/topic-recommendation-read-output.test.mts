@@ -67,6 +67,8 @@ describe('toMcpRecommendation', () => {
     post_type: 'topic_recommendation',
     title: HOSTILE,
     markdown: HOSTILE,
+    ai_summary_markdown: '',
+    clearance_reason: null,
     updated_by: staff,
     topic_recommendation: extension,
   } as unknown as TopicRecommendationPost

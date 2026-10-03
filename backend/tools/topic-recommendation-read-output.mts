@@ -6,6 +6,7 @@ import {
 } from '@services/topic-recommendations'
 import type { BasicUser } from '@services/users/types'
 import { externalText, sanitizedTitle } from './mcp-read-output.mts'
+import { sanitizedPostText } from './topic-recommendation-post-text.mts'
 import { toDocumentedRecommendationPost } from './topic-recommendation-tool-support.mts'
 
 const SOURCE = 'topic_recommendation'
@@ -47,7 +48,8 @@ async function sanitizedUser(user: BasicUser | null | undefined) {
 /**
  * One recommendation as an MCP client receives it: the documented post with its free text
  * sanitized (titles, names, aliases) or sanitized and fenced as external content (Markdown, the
- * rejection reason, the stored approval error, a user's bio). The approval error is the message of
+ * rejection reason, the stored approval error, a user's bio, and the text the post carries beside
+ * the recommendation: see `sanitizedPostText`). The approval error is the message of
  * whatever failed an administrator's approval, so it can quote an alias or slug an administrator
  * typed. That includes the submitter's own text: an administrator can
  * edit a pending recommendation, `updated_by_id` names only the last editor, and an administrator's
@@ -69,6 +71,7 @@ export async function toMcpRecommendation(
     approvalError,
     createdBy,
     updatedBy,
+    postText,
   ] = await Promise.all([
     sanitizedTitle(documented.title),
     fencedText(documented.markdown, 'markdown'),
@@ -79,9 +82,11 @@ export async function toMcpRecommendation(
     externalText(extension.approval_error_message, SOURCE, 'approval_error_message'),
     sanitizedUser(documented.created_by),
     sanitizedUser(documented.updated_by),
+    sanitizedPostText(documented),
   ])
   return {
     ...documented,
+    ...postText,
     title,
     markdown,
     ...(documented.created_by === undefined ? {} : { created_by: createdBy ?? null }),
