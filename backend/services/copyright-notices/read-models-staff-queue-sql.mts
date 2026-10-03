@@ -1,4 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
+import { automatedAssessmentSql } from './automated-assessment-sql.mts'
 import { unassessedCourtFilingSql } from './unassessed-court-filing-sql.mts'
 import { pendingCopyrightEnforcementSql } from './enforcement-pending-sql.mts'
 
@@ -7,7 +8,9 @@ import { pendingCopyrightEnforcementSql } from './enforcement-pending-sql.mts'
  * deadline, 1 deadline past escalation or unassessed court filing, 2 other work), the oldest open item's `waiting_since`,
  * and its distinct `reasons`. Callers append their own `SELECT ... FROM queue_key`.
  */
-export function copyrightStaffQueueKeysSql(): SQLStatement {
+export function copyrightStaffQueueKeysSql({
+  paging = false,
+}: { paging?: boolean } = {}): SQLStatement {
   return sql`
     WITH open_item AS (
       SELECT intake.copyright_notice_id, 'form_intake_review'::text AS reason,
@@ -55,14 +58,14 @@ export function copyrightStaffQueueKeysSql(): SQLStatement {
       LEFT JOIN copyright_notice_legal_hold_resolutions resolution
         ON resolution.copyright_notice_legal_hold_assessment_id = assessment.id
       WHERE submission.kind = 'court_or_ccb_hold'
-        AND (assessment.id IS NULL OR (
+        AND (assessment.id IS NULL OR (NOT ${paging} AND (
           resolution.id IS NULL
           AND assessment.from_original_claimant
           AND assessment.proceeding_kind IS NOT NULL
           AND assessment.commenced_at IS NOT NULL
           AND assessment.received_by_designated_agent_at IS NOT NULL
           AND assessment.same_material
-        ))
+        )))
       UNION ALL
       SELECT target.copyright_notice_id, 'action_failed', intent.updated_at
       FROM copyright_notice_action_intents intent
@@ -75,7 +78,9 @@ export function copyrightStaffQueueKeysSql(): SQLStatement {
       // Includes the automated assessments the switch, an earlier on-period or a suspended claimant is
       // holding back, so staff see them.
       pendingCopyrightEnforcementSql(
-        "DISTINCT submission.copyright_notice_id, 'enforcement_pending'::text, assessment.created_at",
+        paging
+          ? `DISTINCT submission.copyright_notice_id, 'enforcement_pending'::text, CASE WHEN ${automatedAssessmentSql().text} THEN submission.received_at ELSE assessment.created_at END`
+          : "DISTINCT submission.copyright_notice_id, 'enforcement_pending'::text, assessment.created_at",
         'all',
       ),
     )
