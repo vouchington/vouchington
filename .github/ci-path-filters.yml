@@ -199,6 +199,21 @@ ts-shared:
 workflow-action-changes:
   - '.github/workflows/**'
   - '.github/actions/**'
+i18n-route-bounds:
+  - '.github/ci-path-filters.yml'
+  - 'localization/catalog/**'
+  - 'web/**'
+  - 'static-code-analysis/i18n-extract/**'
+  - 'test-helpers/**'
+  - 'ci/tooling-test-env.mts'
+  - 'ci/with-node-test-options'
+  - 'package.json'
+  - 'pnpm-lock.yaml'
+  - 'pnpm-workspace.yaml'
+  - '.npmrc'
+  - '.nvmrc'
+  - 'vitest.config.mts'
+  - 'tsconfig*.json'
 tooling:
   - '.github/ci-*.yml'
   - '.github/ci-path-filters.yml'

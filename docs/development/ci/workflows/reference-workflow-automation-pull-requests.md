@@ -9,6 +9,12 @@ static checks, full owned suites, and final area gate; on pull requests only, th
 patch-coverage check also runs, because each queued entry was already gated at its pull request. A skipped
 area reports success. Codecov uploads full LCOV only as informational evidence, in merge groups too.
 
+The dedicated `i18n-route-bounds` filter also selects the bounds job inside the Tooling workflow
+for catalog, web, extraction-check, and test/configuration inputs. When the tooling area is otherwise
+unselected, only that job runs: regular tooling, other tooling suites, coverage, and Codecov skip.
+The required `tooling` gate still blocks on a bounds failure. Full tooling and nightly runs include
+the bounds job as before.
+
 ```mermaid
 flowchart LR
   event[Pull request or merge group] --> static[static]
@@ -22,12 +28,14 @@ flowchart LR
   event --> cloudflare-worker[cloudflare-worker]
   event --> lambdas[lambdas]
   event --> tooling[tooling]
+  tooling -->|catalog/web or tooling inputs| i18nBounds[i18n route bounds]
   event --> gitleaks[gitleaks]
   backend --> backendGate[backend gate]
   web --> webGate[web gate]
   cloudflare-worker --> cloudflare-worker-gate[cloudflare-worker gate]
   lambdas --> lambdasGate[lambdas gate]
   tooling --> toolingGate[tooling gate]
+  i18nBounds --> toolingGate
   event -. pull requests only .-> label-pr[PR labeling]
   static & backend & web & cloudflare-worker & lambdas & tooling -. failed Dependabot PR run .-> fix-dependabot[Dependabot failure triage]
   event -. queue dequeue on CI failure or timeout .-> merge-queue-ejection[Queue ejection triage]

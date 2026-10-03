@@ -9,6 +9,12 @@ its full suite and never runs for docs-only pull requests. `test-backend-unit`, 
 matrix. See [VITEST.md](VITEST.md) for the canonical project → workflow/job ownership table and
 [area test suites](../../ci.md#area-test-suites) for the trigger model.
 
+The all-route localization bounds project also runs independently for its catalog, web, extraction,
+and test/configuration inputs. The Tooling workflow passes `run_tooling: false` to
+`tests-tooling.yml` for a bounds-only run, so no regular tooling tests or coverage artifacts are
+produced. Direct reusable and manual invocations default to running both jobs. See the
+[pull-request routing](reference-workflow-automation-pull-requests.md).
+
 The PR and merge-group orchestrator calls `checks-static.yml` once per application area and gates
 that area's tests on static success. No test waits on another: shared TypeScript, backend, web,
 API, and full-stack web-integration suites, both Playwright suites, and Docker validation all start
