@@ -1,4 +1,4 @@
-import { spawnSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -79,6 +79,41 @@ describe('dev/tmux-name', () => {
     expect(result.status).toBe(1)
     expect(result.stderr).toContain('pane belongs to a different worktree')
     expect(result.log).not.toContain('rename-window')
+  })
+
+  it('does not let exported Git worktree variables hide a different pane root', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'voucha-git-env-pane-'))
+    dirs.push(dir)
+    const gitDir = execFileSync('git', ['-C', worktree, 'rev-parse', '--absolute-git-dir'], {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        GIT_DIR: undefined,
+        GIT_WORK_TREE: undefined,
+        GIT_COMMON_DIR: undefined,
+      },
+    }).trim()
+    const poisonedGitEnv = {
+      GIT_DIR: gitDir,
+      GIT_WORK_TREE: worktree,
+      GIT_COMMON_DIR: gitDir,
+      GIT_CONFIG_COUNT: '1',
+      GIT_CONFIG_KEY_0: 'core.worktree',
+      GIT_CONFIG_VALUE_0: worktree,
+      FAKE_TMUX_PANE_PATH: dir,
+    }
+
+    const rejected = run(['agent-workflow'], poisonedGitEnv)
+    expect(rejected.status).toBe(1)
+    expect(rejected.stderr).toContain('pane belongs to a different worktree')
+    expect(rejected.log).not.toContain('rename-window')
+
+    const accepted = run(['agent-workflow'], {
+      ...poisonedGitEnv,
+      FAKE_TMUX_PANE_PATH: worktree,
+    })
+    expect(accepted.status).toBe(0)
+    expect(accepted.log).toContain('rename-window -t %1 -- agent-workflow')
   })
 
   it('refuses a stale pane before any mutation', () => {
