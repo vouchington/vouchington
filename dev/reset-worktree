@@ -66,6 +66,33 @@ source "$REPO_ROOT/dev/lib/worktree-resource-env.sh"
 # shellcheck source=lib/git-index-lock.sh
 source "$REPO_ROOT/dev/lib/git-index-lock.sh"
 
+# Only the supervisor holds the lock. Its worker and all descendants share
+# a process group, including the lockf wrapper on macOS.
+reset_worker=""
+cancel_reset() {
+    local exit_code="$1"
+    trap '' INT TERM HUP
+    reset_worker="${reset_worker:-${!:-}}"
+    if [ -n "$reset_worker" ]; then
+        kill -TERM -- "-$reset_worker" 2>/dev/null || true
+        kill -KILL -- "-$reset_worker" 2>/dev/null || true
+        wait "$reset_worker" 2>/dev/null || true
+    fi
+    exit "$exit_code"
+}
+run_reset_supervised() {
+    trap 'cancel_reset 130' INT
+    trap 'cancel_reset 143' TERM
+    trap 'cancel_reset 129' HUP
+    set -m
+    (set +m; "$@") 9>&- &
+    reset_worker=$!
+    set +m
+    wait "$reset_worker"
+}
+reset_under_lockf=false
+[ "${_RESET_WORKTREE_UNDER_LOCKF:-}" != "$REPO_ROOT" ] || reset_under_lockf=true
+
 # Keep the entire reset exclusive to this worktree (#10849). The lock file
 # can remain between runs and needs no stale-lock cleanup.
 mkdir -p "$REPO_ROOT/.local"
@@ -75,7 +102,7 @@ if [ "${_RESET_WORKTREE_UNDER_LOCKF:-}" != "$REPO_ROOT" ]; then
         flock -n 9 || { echo "Error: another ./dev/reset-worktree is running for this worktree." >&2; exit 1; }
     elif command -v lockf >/dev/null 2>&1; then
         # macOS lockf runs a command while it owns the named file lock.
-        _RESET_WORKTREE_UNDER_LOCKF="$REPO_ROOT" lockf -s -k -t 0 "$REPO_ROOT/.local/reset-worktree.lock" "$REPO_ROOT/dev/reset-worktree" "$@" && exit 0
+        run_reset_supervised env _RESET_WORKTREE_UNDER_LOCKF="$REPO_ROOT" lockf -s -k -t 0 "$REPO_ROOT/.local/reset-worktree.lock" "$REPO_ROOT/dev/reset-worktree" "$@" && exit 0
         lockf_status=$?
         if [ "$lockf_status" -eq 75 ]; then
             echo "Error: another ./dev/reset-worktree is running for this worktree." >&2
@@ -89,6 +116,7 @@ if [ "${_RESET_WORKTREE_UNDER_LOCKF:-}" != "$REPO_ROOT" ]; then
 fi
 unset _RESET_WORKTREE_UNDER_LOCKF
 
+reset_worktree() {
 # Refuse when the working tree is dirty unless --force
 if ! $FORCE; then
     if ! git -C "$REPO_ROOT" diff-index --quiet HEAD -- 2>/dev/null; then
@@ -237,3 +265,13 @@ echo "  .env is preserved so backend/web re-init reuses the same ports."
 echo "  Pick a meaningful branch name when starting new work; rename off"
 echo "  '$NEW_BRANCH' immediately."
 echo ""
+
+}
+
+if $reset_under_lockf; then
+    # The outer supervisor owns this process group; do not create a nested
+    # group that would escape its cancellation cleanup.
+    reset_worktree
+else
+    run_reset_supervised reset_worktree
+fi

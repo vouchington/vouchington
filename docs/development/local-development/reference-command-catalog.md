@@ -60,6 +60,16 @@ Voucha database, Valkey, and protected-main ownership rules remain in
 primitive used by higher-level workflows. Prefer `./dev/reset` for a complete developer reset;
 invoke `db-clean` directly only when a documented workflow specifically needs that lower-level step.
 
+PostgreSQL access must already work without interactive password prompts. Host provisioning
+creates the local development role and configures authentication; on Linux, repair it with
+[`linux/configure-postgres.sh`](https://github.com/vouchington/vouchington-machines/blob/main/linux/configure-postgres.sh)
+in vouchington-machines. Initialization and teardown database commands fail immediately when
+credentials are missing and default to a ten-second connection timeout (`PGCONNECT_TIMEOUT`
+can override it). Initialization stops when it cannot list databases, before attempting creation.
+Teardown accepts an absent database, but preserves tracking files and reports other drop failures
+so it can be retried safely after repairing access. Cancelling reset terminates its child processes
+before releasing the worktree lock.
+
 ### State-changing diagnostics and optional tooling
 
 - `./dev/ci-local <target> [--dry-run]` — Runs the selected CI-equivalent command in the current

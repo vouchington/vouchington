@@ -112,7 +112,7 @@ describe('initialize generated DATABASE_URL', () => {
     })
 
     expect(output).toBe(
-      'psql:localhost:15432:--dbname=postgres -lqt\ncreate:localhost:15432:voucha-feature-db-url-port-create',
+      'psql:localhost:15432:--dbname=postgres -lqt --no-password\ncreate:localhost:15432:voucha-feature-db-url-port-create --no-password',
     )
   })
 

@@ -1,7 +1,8 @@
-import { spawn } from 'node:child_process'
+import { execFile, spawn } from 'node:child_process'
 import { once } from 'node:events'
-import { lstat, rm } from 'node:fs/promises'
+import { chmod, lstat, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import {
@@ -11,6 +12,8 @@ import {
   makeRepo,
   runResetWorktree,
 } from '../test-helpers/reset-worktree.mts'
+
+const execFileAsync = promisify(execFile)
 
 describe('reset-worktree concurrency (#10849)', () => {
   afterEach(cleanupResetWorktreeTestDirs)
@@ -45,6 +48,77 @@ describe('reset-worktree concurrency (#10849)', () => {
     expectResetSuccess(completed)
     expect((await lstat(lockPath)).isFile()).toBe(true)
   })
+
+  it.each(['flock', 'lockf'])(
+    'cancels %s teardown descendants and allows a reset retry',
+    async lock => {
+      const cwd = await makeRepo()
+      const binDir = await makeFakeBin()
+      const childFile = join(cwd, 'database-child.pid')
+      const bashEnv = join(cwd, 'bash-env')
+      if (lock === 'lockf' && process.platform === 'linux') {
+        // Exercise macOS wrapper supervision using a Linux lock owner with
+        // the same lockf argv contract and inherited lock behavior.
+        await writeFile(
+          bashEnv,
+          `command() {
+  if [ "$1" = -v ] && [ "$2" = flock ]; then return 1; fi
+  builtin command "$@"
+}
+`,
+        )
+        await writeFile(
+          join(binDir, 'lockf'),
+          '#!/usr/bin/env bash\nexec /usr/bin/flock -n "$5" "${@:6}"\n',
+        )
+        await chmod(join(binDir, 'lockf'), 0o755)
+      }
+
+      await writeFile(
+        join(binDir, 'dropdb'),
+        `#!/usr/bin/env bash
+trap '' TERM
+/bin/sleep 60 &
+echo "$!" > "$DATABASE_CHILD_FILE"
+wait
+`,
+      )
+      const reset = spawn('bash', [join(cwd, 'dev', 'reset-worktree')], {
+        cwd,
+        env: {
+          ...process.env,
+          PATH: `${binDir}:/usr/bin:/bin`,
+          FAKE_COMMAND_LOG: join(cwd, 'commands.log'),
+          DATABASE_CHILD_FILE: childFile,
+          BASH_ENV: bashEnv,
+        },
+        stdio: 'ignore',
+      })
+      const exited = once(reset, 'exit')
+      try {
+        await expect.poll(async () => readFile(childFile, 'utf8').catch(() => '')).not.toBe('')
+        const pid = Number(await readFile(childFile, 'utf8'))
+        reset.kill('SIGTERM')
+        expect((await exited)[0]).toBe(143)
+        await expect
+          .poll(async () => {
+            try {
+              await execFileAsync('kill', ['-0', String(pid)])
+              return false
+            } catch {
+              return true
+            }
+          })
+          .toBe(true)
+        await writeFile(join(binDir, 'dropdb'), '#!/usr/bin/env bash\nexit 0\n')
+        expectResetSuccess(await runResetWorktree({ binDir, cwd }))
+      } finally {
+        reset.kill('SIGKILL')
+        const pid = Number(await readFile(childFile, 'utf8').catch(() => ''))
+        if (pid) await execFileAsync('kill', ['-KILL', String(pid)]).catch(() => undefined)
+      }
+    },
+  )
 
   it('keeps the help path free of lock-file side effects', async () => {
     const cwd = await makeRepo({ withEnv: false })

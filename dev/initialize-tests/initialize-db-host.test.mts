@@ -68,7 +68,7 @@ describe('initialize database host handling', () => {
     )
 
     expect(output).toContain(
-      'psql:localhost:15432:postgres://localhost:15432/voucha-feature-db-reset-host-port -Atqc',
+      'psql:localhost:15432:postgres://localhost:15432/voucha-feature-db-reset-host-port --no-password',
     )
     expect(output).toContain('drop:localhost:15432:voucha-feature-db-reset-host-port')
     expect(output).toContain('create:localhost:15432:voucha-feature-db-reset-host-port')

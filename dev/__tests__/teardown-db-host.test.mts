@@ -128,6 +128,30 @@ describe('dev/teardown database host handling', () => {
     expect(log).toContain('dropdb env PGHOST=localhost PGPORT=15432 args=voucha-test')
   })
 
+  it('reports authentication failure and retains partial-initialization tracking for retry', async () => {
+    const cwd = await makeRepo('postgres://localhost:15432/voucha-test')
+    await writeFile(join(cwd, '.initialized'), 'monorepo\n')
+    const binDir = await makeFakeBin()
+    await writeFile(
+      join(binDir, 'dropdb'),
+      `#!/usr/bin/env bash
+case "$*" in
+  *--no-password*--if-exists*) echo 'fe_sendauth: no password supplied' >&2; exit 1 ;;
+  *) exit 0 ;;
+esac
+`,
+    )
+    await expect(runTeardown(cwd, binDir)).rejects.toMatchObject({
+      code: 1,
+      stderr: expect.stringContaining('fe_sendauth: no password supplied'),
+    })
+    expect(await readFile(join(cwd, '.initialized'), 'utf8')).toBe('monorepo\n')
+    await access(join(cwd, '.valkey-port'))
+    await writeFile(join(binDir, 'dropdb'), '#!/usr/bin/env bash\nexit 0\n')
+    await runTeardown(cwd, binDir)
+    await expect(access(join(cwd, '.valkey-port'))).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
   it('uses DATABASE_URL host and port before explicit PGHOST or PGPORT', async () => {
     const cwd = await makeRepo('postgres://localhost:15432/voucha-test')
     const log = await runTeardown(cwd, await makeFakeBin(), {
