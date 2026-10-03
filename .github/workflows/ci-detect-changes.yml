@@ -99,6 +99,8 @@ jobs:
       area-lambdas: ${{ steps.areas.outputs.lambdas }}
       area-tooling: ${{ steps.areas.outputs.tooling }}
     steps:
+      # Full history keeps both parents of a pull request's merge commit (the docs-only check diffs
+      # HEAD^1..HEAD) and the merge-queue range's merge base.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
@@ -118,11 +120,16 @@ jobs:
         id: docs-check
         if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
         run: |
-          # A merge queue range includes every queued entry. PRs retain their API-backed range.
+          # A merge queue range deliberately includes every queued entry, so a group is tested as
+          # main will be. A pull request is classified from its own layer, the same scope as the PR
+          # API file list paths-filter reads: the checked-out merge commit's first parent is the
+          # base tip, or on a native stack the lower layer's test merge. Do not diff against
+          # github.base_ref: every layer reports the stack base there, so an upper layer would be
+          # judged on all the lower layers' files too.
           if [ "$EVENT_NAME" = "merge_group" ]; then
             CHANGED=$(git diff --name-only "$MERGE_QUEUE_BASE_SHA" "$MERGE_QUEUE_HEAD_SHA")
           else
-            CHANGED=$(git diff --name-only "origin/${PR_BASE_REF}...HEAD")
+            CHANGED=$(git diff --name-only HEAD^1..HEAD)
           fi
           NON_DOCS=$(echo "$CHANGED" | grep -vE '\.mdx?$' || true)
           TEST_FIXTURE_DOCS=$(echo "$CHANGED" | grep -E '^(\.github/workflows/(README|AGENTS)\.md|docs/development/ci/workflows/(README|VITEST|WORKFLOWS|AUTHORING|JOBS|reference-step-timeouts|reference-artifact-rerun-safety|reference-github-actions-concurrency-locks|reference-harness-automation-accepted-risk|reference-fixed-branch-automation-prs|reference-fix-main-dependency-policy|reference-workflow-automation-(map|always-run|pull-requests|main)|reference-core-ci|reference-vitest|reference-playwright-and-storybook|reference-deploy-and-release|reference-harness-automation|reference-workflow-change-preflight|reference-maintenance-security-and-utilities)\.md|\.agents/skills/.+\.mdx?|AGENTS\.md|docs/development/(ci|reference-ci-classifying-transient-infrastructure-failures|reference-ci-ci-job-conditions|reference-ci-ci-job-timeout-budgets|reference-ci-test-workflows|reference-ci-standalone-workflow-checks|dependency-updates|first-party-dependencies|reference-dependency-updates-(first-party-release-gate-exemptions|frozen-install-policy|supply-chain-policy))\.md|docs/checklists/github-actions\.md|docs/prompts/.+\.mdx?|docs/development/local-development/(README|reference-bedrock-embeddings-local|reference-command-catalog)\.md|docs/overview/architecture/backend/README\.md|backend/agents/(AGENTS|README)\.md|docs/overview/architecture/ai-agents/reference-tests\.md|docs/development/postgresql/(reference-migrations-views-and-config-driven|schema-snapshot/README)\.md|docs/development/postgresql/schema-snapshot/markdown/.+\.mdx?|docs/overview/architecture/agent-tools/.+|docs/overview/infrastructure/reference-deployment-ci-cd-flow\.md)$' || true)
@@ -137,7 +144,6 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           MERGE_QUEUE_BASE_SHA: ${{ steps.merge-queue-range.outputs.base }}
           MERGE_QUEUE_HEAD_SHA: ${{ steps.merge-queue-range.outputs.head }}
-          PR_BASE_REF: ${{ github.base_ref }}
       - name: Check for trusted secret context
         id: trusted-context
         run: |
@@ -168,7 +174,8 @@ jobs:
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
           BASE_REPO: ${{ github.repository }}
       # Full runs (nightly schedule, manual dispatch) select every area without a diff; a schedule
-      # payload carries no base for paths-filter to compare against.
+      # payload carries no base for paths-filter to compare against. On pull requests the action
+      # ignores base/ref and reads the PR API file list, which is the layer's own files.
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'

@@ -3,9 +3,9 @@ name: CI area patch coverage
 # Blocking patch-coverage gate for one area workflow. It merges the full LCOV its suites uploaded in
 # this run and checks the change against only the .coverage-rules.yml rules the area owns
 # (ci/coverage-area-rules.mts), so a shared file blocks exactly once. Area workflows call it on
-# pull requests only: a merge group's diff is the pull request's diff, so re-checking it in the
-# queue would add a job per area and an ejection path for nothing. See
-# docs/development/reference-ci-coverage-gates.md.
+# pull requests only: each queued entry was already gated at its own pull request, and the combined
+# queued range would charge it with other entries' lines, adding a job per area and an ejection
+# path for nothing. See docs/development/reference-ci-coverage-gates.md.
 on:
   workflow_call:
     inputs:
@@ -26,8 +26,9 @@ jobs:
       actions: read
       contents: read
     steps:
-      # A pull-request merge commit has the base as its first parent, so HEAD^1..HEAD is exactly the
-      # change under review.
+      # A pull-request merge commit's first parent is the base tip, or on a native stack the lower
+      # layer's test merge, so HEAD^1..HEAD is exactly the layer under review. Not github.base_ref:
+      # every layer of a stack reports the stack base there.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 2

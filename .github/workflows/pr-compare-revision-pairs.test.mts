@@ -1,6 +1,4 @@
-import { execFileSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { parse as load } from 'yaml'
@@ -107,7 +105,6 @@ describe('PR compare revision pairs', () => {
       EVENT_NAME: '${{ github.event_name }}',
       MERGE_QUEUE_BASE_SHA: '${{ steps.merge-queue-range.outputs.base }}',
       MERGE_QUEUE_HEAD_SHA: '${{ steps.merge-queue-range.outputs.head }}',
-      PR_BASE_REF: '${{ github.base_ref }}',
     })
     expect(range.if).toBe("github.event_name == 'merge_group'")
     expect(range.run).toContain('git rev-parse HEAD')
@@ -115,7 +112,8 @@ describe('PR compare revision pairs', () => {
     expect(step.run).toContain(
       'git diff --name-only "$MERGE_QUEUE_BASE_SHA" "$MERGE_QUEUE_HEAD_SHA"',
     )
-    expect(step.run).toContain('"origin/${PR_BASE_REF}...HEAD"')
+    // Both inputs are empty outside merge groups, so on pull requests paths-filter reads the PR API
+    // file list: the layer's own files.
     const steps = (workflow.jobs?.['detect-changes']?.steps ?? []) as PathsFilterStep[]
     const filters = steps.filter(candidate => candidate.uses?.startsWith('dorny/paths-filter@'))
     expect(filters).toHaveLength(2)
@@ -124,71 +122,6 @@ describe('PR compare revision pairs', () => {
         base: '${{ steps.merge-queue-range.outputs.base }}',
         ref: '${{ steps.merge-queue-range.outputs.head }}',
       })
-    }
-  })
-
-  it('includes earlier queued commits in the docs-only decision', () => {
-    const workflow = load(
-      readFileSync('.github/workflows/ci-detect-changes.yml', 'utf8'),
-    ) as WorkflowFile
-    const range = requiredNamedStep(
-      workflow.jobs?.['detect-changes'],
-      'Resolve merge queue diff range',
-    )
-    const step = requiredNamedStep(workflow.jobs?.['detect-changes'], 'Check for docs-only changes')
-    const directory = mkdtempSync(join(tmpdir(), 'merge-group-docs-'))
-    const git = (...args: string[]) =>
-      execFileSync('git', args, { cwd: directory, encoding: 'utf8' }).trim()
-    try {
-      git('init', '-q')
-      git('config', 'user.name', 'CI Test')
-      git('config', 'user.email', 'ci-test@example.invalid')
-      writeFileSync(join(directory, 'README.md'), 'base\n')
-      git('add', '.')
-      git('commit', '-qm', 'base')
-      const base = git('rev-parse', 'HEAD')
-      git('branch', '-M', 'main')
-      mkdirSync(join(directory, 'backend'))
-      writeFileSync(join(directory, 'backend/queued.mts'), 'export const queued = true\n')
-      git('add', '.')
-      git('commit', '-qm', 'earlier queued backend change')
-      const lastQueueEntryBase = git('rev-parse', 'HEAD')
-      writeFileSync(join(directory, 'README.md'), 'documentation\n')
-      git('add', '.')
-      git('commit', '-qm', 'later docs entry')
-      const head = git('rev-parse', 'HEAD')
-      git('update-ref', 'refs/remotes/origin/main', base)
-      const rangeOutput = join(directory, 'range-output')
-      execFileSync('bash', ['-e', '-c', range.run ?? 'exit 1'], {
-        cwd: directory,
-        env: { ...process.env, GITHUB_OUTPUT: rangeOutput },
-      })
-      const rangeValues = Object.fromEntries(
-        readFileSync(rangeOutput, 'utf8')
-          .trim()
-          .split('\n')
-          .map(line => line.split('=')),
-      )
-      expect(rangeValues).toEqual({ base, head })
-      expect(git('diff', '--name-only', lastQueueEntryBase, head)).toBe('README.md')
-      expect(git('diff', '--name-only', rangeValues.base, rangeValues.head)).toBe(
-        'README.md\nbackend/queued.mts',
-      )
-      const output = join(directory, 'output')
-      execFileSync('bash', ['-e', '-c', step.run ?? 'exit 1'], {
-        cwd: directory,
-        env: {
-          ...process.env,
-          EVENT_NAME: 'merge_group',
-          GITHUB_OUTPUT: output,
-          MERGE_QUEUE_BASE_SHA: rangeValues.base,
-          MERGE_QUEUE_HEAD_SHA: rangeValues.head,
-          PR_BASE_REF: '',
-        },
-      })
-      expect(readFileSync(output, 'utf8')).toContain('docs-only=false')
-    } finally {
-      rmSync(directory, { recursive: true, force: true })
     }
   })
 

@@ -6,7 +6,7 @@ Pull requests and merge groups start independent required checks: `static`, `bac
 `cloudflare-worker`, `lambdas`, `tooling`, and `gitleaks`. Each area workflow uses
 [`ci-detect-changes.yml`](../../../../.github/workflows/ci-detect-changes.yml) to select its own area. Selected areas run their
 static checks, full owned suites, and final area gate; on pull requests only, the full-LCOV
-patch-coverage check also runs, because a merge group's diff is the pull request's diff. A skipped
+patch-coverage check also runs, because each queued entry was already gated at its pull request. A skipped
 area reports success. Codecov uploads full LCOV only as informational evidence, in merge groups too.
 
 ```mermaid

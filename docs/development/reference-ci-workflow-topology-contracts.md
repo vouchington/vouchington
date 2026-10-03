@@ -30,18 +30,23 @@ retained callee closure, and is never included in schema-version-1 JSON.
 
 The PR docs-only classifier in
 [`ci-detect-changes.yml`](../../.github/workflows/ci-detect-changes.yml) diffs **pair 2** revisions:
-`origin/${PR_BASE_REF}...HEAD` after checking out GitHub's `refs/pull/N/merge`. That is the merge parent versus the merge commit, so
-already-merged `main` files are on both sides and cancel out. Do not pass
-`pull_request.base.sha` as `base` while `head` is `github.sha`: the recorded base SHA can lag the
-merge parent and the changed-path set then includes commits that already landed on main
-(formerly filed as jonathanong/filaments#11711). Pair 1
+`HEAD^1..HEAD` after checking out GitHub's `refs/pull/N/merge`. That is the merge commit's first
+parent versus the merge commit, so already-merged `main` files are on both sides and cancel out. The
+first parent is the base tip for a standalone pull request and the lower layer's test merge on a
+native stack, so the diff is the layer's own change. Do not use `origin/${github.base_ref}`: every
+layer of a native stack reports the stack base there, and an upper layer would be classified on all
+the lower layers' files too. Do not pass `pull_request.base.sha` as `base` while `head` is
+`github.sha`: the recorded base SHA can lag the merge parent and the changed-path set then includes
+commits that already landed on main (formerly filed as jonathanong/filaments#11711). Pair 1
 (`pull_request.base.sha` vs `pull_request.head.sha`) remains valid for consumers that are not
-looking at the merge checkout, such as gitleaks PR scans and patch coverage.
+looking at the merge checkout, such as gitleaks PR scans. Patch coverage reads pair 2 through
+`HEAD^1`. A merge group intentionally uses the combined queued range instead; see
+[change-detection diff scope](reference-ci-ci-job-conditions.md#change-detection-diff-scope).
 
 ```mermaid
 flowchart LR
   pair1["pair 1: base.sha vs head.sha"] --> allowed[allowed]
-  pair2["pair 2: origin/base_ref vs HEAD"] --> allowed
+  pair2["pair 2: merge first parent vs HEAD"] --> allowed
   mixed["mixed: base.sha vs github.sha"] --> forbidden[forbidden]
 ```
 
