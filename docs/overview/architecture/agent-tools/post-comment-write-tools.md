@@ -20,7 +20,7 @@ Articles and blog posts keep the existing administrator restriction; official an
 create reviews or data points. These tools never grant administrator mutation authority over
 another member's content.
 
-Image attachment edits use the separate REST post-images endpoint and are not accepted by `update_post`.
+Image attachment edits use the separate REST post-images endpoint. `update_post` rejects images and immutable type, thread, community and source URL fields; creation derives `root_id` from its parent. Comments inherit their thread audience and reject audience edits.
 Community creation accepts a canonical UUID `community_id`; exact retries consult admission before mutable community access checks.
 
 Creation requires a UUID `idempotency_key`. The
@@ -37,7 +37,7 @@ input rules, trust restrictions, review requirements, edit window, slug authoriz
 community membership and enabled types, and locked-thread rules. MCP additionally requires
 exact ownership for edits and deletion. Reply and mutation targets must be publicly readable
 or the caller's own private content; comment ancestry and visibility are checked on the primary
-store, fail closed when the root or target is absent, and preserve deleted intermediate placeholders.
+store, fail closed when the root or target is absent, and preserve deleted intermediate placeholders. Mutation transactions retain the active-account and ancestry locks through the write; community creation rechecks enabled types under the settings row lock.
 
 Created rows retain MCP and OAuth-client provenance. Create and update return the shared
 sanitized, fenced MCP Post shape, including persisted text that was not part of the current edit.

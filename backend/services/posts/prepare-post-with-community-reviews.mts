@@ -18,7 +18,8 @@ import { persistPostSourceUrlRelation } from './create/source-url-relation.mts'
 import { lockActivePostAuthorImageAdmission } from './create/active-author.mts'
 import { preparePostImageDeliveryMutation } from './media-delivery.mts'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
-import { lockDelegatedPostThread, loadWritablePost } from './delegated-write-access.mts'
+import { loadWritablePost, assertDelegatedCommunityPostAllowed } from './authorization.mts'
+import { lockDelegatedPostThread, lockDelegatedPostCommunity } from './delegated-write-locks.mts'
 import { finalizePreparedPost } from './create/finalize.mts'
 export const preparePostWithCommunityReviews = async (
   creator: PrivateUser,
@@ -43,6 +44,10 @@ export const preparePostWithCommunityReviews = async (
       input.images?.map(image => image.image_id) ?? [],
     )
     const options = { query }
+    if (delegated && input.community_id) {
+      await lockDelegatedPostCommunity(query, input.community_id)
+      await assertDelegatedCommunityPostAllowed(input.community_id, defaults.postType, options)
+    }
     if (delegated && input.parent_id) {
       await lockDelegatedPostThread(query, input.parent_id)
       await loadWritablePost(creator, input.parent_id, false, options)

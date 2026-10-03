@@ -126,9 +126,6 @@
                   },
                   "type": "array"
                 },
-                "root_id": {
-                  "type": "string"
-                },
                 "slug": {
                   "type": "string"
                 },
@@ -325,9 +322,6 @@
                   },
                   "type": "array"
                 },
-                "community_id": {
-                  "type": "string"
-                },
                 "data_point_vertical": {
                   "type": "string"
                 },
@@ -347,28 +341,8 @@
                 "markdown": {
                   "type": "string"
                 },
-                "parent_id": {
-                  "type": "string"
-                },
-                "post_type": {
-                  "enum": [
-                    "article",
-                    "blog_post",
-                    "comment",
-                    "data_point",
-                    "discussion",
-                    "link",
-                    "review",
-                    "story",
-                    "topic_recommendation"
-                  ],
-                  "type": "string"
-                },
                 "privacy": {
                   "enum": ["private", "public"],
-                  "type": "string"
-                },
-                "root_id": {
                   "type": "string"
                 },
                 "slug": {
@@ -376,12 +350,6 @@
                 },
                 "structured_data": {},
                 "title": {
-                  "type": "string"
-                },
-                "url": {
-                  "type": "string"
-                },
-                "url_id": {
                   "type": "string"
                 },
                 "id": {

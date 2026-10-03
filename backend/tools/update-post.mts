@@ -43,6 +43,12 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
     const { id, ...changes } = args
     const post = await loadWritablePost(user, id)
     assert(changes.slug === undefined || isAdminUser(user), 403, 'Only admins can set a post slug')
+    assert(
+      post.post_type !== 'comment' ||
+        (changes.broadcast === undefined && changes.privacy === undefined),
+      422,
+      'Comments inherit their thread audience',
+    )
     assertPostUpdatePreflight(user, post, changes)
     const membershipPlan =
       changes.structured_data !== undefined ||

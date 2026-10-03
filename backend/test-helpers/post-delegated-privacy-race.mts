@@ -27,3 +27,24 @@ export async function withConcurrentPostPrivacyChangeForTest<T>(
   }
   return await pending
 }
+
+/** Commit a disabled community type only after creation reaches its settings row fence. */
+export async function withConcurrentCommunityReviewDisableForTest<T>(
+  communityId: string,
+  operation: () => Promise<T>,
+): Promise<T> {
+  await using query = await beginTransaction()
+  const processId = await getTestPostgresBackendProcessId(query)
+  await query(sql`/* withConcurrentCommunityReviewDisableForTest */
+    UPDATE communities SET allow_review_posts = false WHERE id = ${communityId}`)
+  const pending = operation()
+  try {
+    await waitForTestPostgresLockWaiter(processId, 'lockDelegatedPostCommunity')
+    await query.commit()
+  } catch (err) {
+    await query.rollback()
+    await pending.catch(() => undefined)
+    throw err
+  }
+  return await pending
+}

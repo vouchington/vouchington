@@ -24,7 +24,13 @@ export function postWriteParameters(
     Object.entries(properties).filter(
       ([name]) =>
         !['hp_website', 'hp_phone', 'cf_turnstile_response', 'recaptcha_token'].includes(name) &&
-        !(operation.startsWith('PATCH:') && name === 'images'),
+        !(operation.startsWith('POST:') && name === 'root_id') &&
+        !(
+          operation.startsWith('PATCH:') &&
+          ['images', 'post_type', 'parent_id', 'root_id', 'community_id', 'url', 'url_id'].includes(
+            name,
+          )
+        ),
     ),
   )
   if (operation.startsWith('POST:'))
@@ -35,4 +41,4 @@ export function postWriteParameters(
   return { ...schema, type: 'object', properties: fields, additionalProperties: false }
 }
 
-export { loadWritablePost } from '@services/posts/delegated-write-access'
+export { loadWritablePost } from '@services/posts/authorization'

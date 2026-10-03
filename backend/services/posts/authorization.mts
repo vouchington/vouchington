@@ -1,3 +1,15 @@
+import createHttpError from 'http-errors'
+import { getCommentAncestorsByAny } from '@services/comments/ancestors'
+import { getPostByAny } from './get.mts'
+import { canViewPostsBatch } from './check-privacy-access.mts'
+import type { QueryOptions } from '@data-stores/psql'
+import { getCommunityOrThrow } from '@services/communities/get'
+import {
+  communityAllowsPostType,
+  isCommunityRootPostType,
+} from '@services/communities/post-type-settings'
+import assert from 'http-assert'
+
 import type { PrivateUser } from '@services/users/types'
 import { hasOAuthAccount } from '@services/user-rate-limits/trust-tier'
 import { assertCanContribute } from '@services/contribution-gating/assert'
@@ -101,4 +113,55 @@ export function currentUserCanCreatePost(currentUser: PrivateUser): boolean {
   const hasUsername = !!currentUser.username
   const hasEmail = !!currentUser.email_address
   return hasOAuth || (hasUsername && hasEmail)
+}
+
+/** Delegated access covers public threads and only the caller's own private records. */
+export async function loadWritablePost(
+  user: PrivateUser,
+  id: string,
+  requireOwnership = true,
+  options: QueryOptions = { readOnly: false },
+): Promise<Post> {
+  const post = await getPostByAny(id, options)
+  if (
+    !post ||
+    (requireOwnership && (post.post_type === 'story' || post.post_type === 'topic_recommendation'))
+  )
+    throw createHttpError(404, 'Post not found')
+  const nodes =
+    post.post_type === 'comment' ? await getCommentAncestorsByAny(post.id, options) : [post]
+  if (nodes.at(-1)?.id !== post.id || nodes[0]?.id !== (post.root_id ?? post.id))
+    throw createHttpError(404, 'Post not found')
+  if (nodes.some(node => node.post_type === 'topic_recommendation'))
+    throw createHttpError(404, 'Post not found')
+  const live = nodes.filter(node => !node.deleted_at)
+  const chain = await Promise.all(live.map(node => getPostByAny(node.id, options)))
+  if (chain.some(node => !node) || !chain.some(node => node?.id === post.id))
+    throw createHttpError(404, 'Post not found')
+  const posts = chain.filter((node): node is Post => Boolean(node))
+  const [asOwner, asPublic] = await Promise.all([
+    canViewPostsBatch(user, posts, options),
+    canViewPostsBatch(null, posts, options),
+  ])
+  if (
+    !posts.every(
+      node => asOwner.get(node.id) && (asPublic.get(node.id) || node.created_by_id === user.id),
+    )
+  )
+    throw createHttpError(404, 'Post not found')
+  if (requireOwnership && post.created_by_id !== user.id) throw createHttpError(403, 'Forbidden')
+  return post
+}
+
+export async function assertDelegatedCommunityPostAllowed(
+  communityId: string,
+  postType: string,
+  options: QueryOptions,
+): Promise<void> {
+  const community = await getCommunityOrThrow(communityId, options)
+  assert(
+    isCommunityRootPostType(postType) && communityAllowsPostType(community, postType),
+    403,
+    `${postType} posts are not enabled for this community`,
+  )
 }

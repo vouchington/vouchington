@@ -29,7 +29,7 @@ import {
   prepareLockedHashtagIntentChanges,
   type PostHashtagIntent,
 } from './update/hashtag-intent.mts'
-import { loadWritablePost } from './delegated-write-access.mts'
+import { loadWritablePost } from './authorization.mts'
 import { mapPostUpdateError } from './update/post-update-error.mts'
 
 export const updatePost = async (
