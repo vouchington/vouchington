@@ -138,7 +138,7 @@
     "unicorn/prefer-array-flat": "error",
     "unicorn/prefer-array-flat-map": "error",
     "unicorn/prefer-array-index-of": "off", // Policy: findIndex predicates are allowed even for equality searches.
-    "unicorn/prefer-array-some": "off", // Staged #1692: 2 findings / 2 files; scan 2026-10-01.
+    "unicorn/prefer-array-some": "error",
     "unicorn/prefer-at": "off", // Staged #1692: 31 findings / 21 files; scan 2026-10-01.
     "unicorn/prefer-bigint-literals": "off", // Staged #1692: 1 findings / 1 files; scan 2026-10-01.
     "unicorn/prefer-blob-reading-methods": "error",

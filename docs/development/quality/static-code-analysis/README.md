@@ -438,6 +438,8 @@ type-aware TypeScript rules are active. The full lint command is `pnpm run oxlin
 
 `unicorn/prefer-import-meta-properties` is enforced wherever the root configuration is inherited, including backend and tooling workspaces. Use native `import.meta.dirname` and `import.meta.filename` rather than reconstructing them from `import.meta.url`.
 
+`unicorn/prefer-array-some` is enforced as an error for boolean-only searches: use `.some(predicate)` instead of allocating a filtered array just to read its length. When callers also need the matching IDs, compute `.filter()` once and reuse its result. The installed-Oxlint fixture at [`prefer-array-some-oxlint.test.mts`](../../../../static-code-analysis/__tests__/prefer-array-some-oxlint.test.mts) proves that boolean-only `.filter().length` is rejected and named filtered-array reuse is accepted; run it with `pnpm exec vitest run --project static-analysis-ast-grep static-code-analysis/__tests__/prefer-array-some-oxlint.test.mts`.
+
 Clean import safety rules remain errors; module-style rules deliberately allow named exports, namespace and parent imports, Node builtins, framework default exports, and side-effect imports. Export consistency, duplicate imports, and dependency cycles are enforced; computed namespace lookups remain allowed for registries. SDK and CommonJS-compatible default export shapes remain permitted. Two resolver limitations use narrow documented export suppressions. Resolving imports also exposes canonical package and service entrypoint barrels to `oxc/no-barrel-file`; that rule stays off because `index.mts` barrels are the backend module contract.
 
 Each selected area coverage job consumes only its own full-LCOV artifacts and runs

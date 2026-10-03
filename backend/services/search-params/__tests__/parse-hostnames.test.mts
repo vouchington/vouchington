@@ -1,4 +1,6 @@
+import { randomUUID } from 'node:crypto'
 import { it, expect, describe } from 'vitest'
+import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
 import { parseHostnamesSearchParams } from '../parse-hostnames.mts'
 
 describe('parse-hostnames', () => {
@@ -19,6 +21,33 @@ describe('parse-hostnames', () => {
     expect(result.blocked).toBe(false)
     expect(result.crawlable).toBeUndefined()
     expect(result.limit).toBe(50)
+    expect(result).not.toHaveProperty('topic_ids')
+  })
+
+  it('includes resolved plural topic ids', async () => {
+    const user = await createTestUser({ administrator: true })
+    expect(user).toBeTruthy()
+    const suffix = randomUUID()
+    const slug = `parse-hostnames-${suffix}`
+    const topicId = await insertTestTopic({
+      name: `Parse Hostnames ${suffix}`,
+      slug,
+      createdById: user!.id,
+    })
+
+    const result = await parseHostnamesSearchParams({ topics: [slug] }, null)
+
+    expect(result.shouldReturnEmpty).toBe(false)
+    expect(result.topic_ids).toEqual([topicId])
+  })
+
+  it('omits unresolved plural topic ids', async () => {
+    const slug = `missing-parse-hostnames-${randomUUID()}`
+
+    const result = await parseHostnamesSearchParams({ topics: [slug] }, null)
+
+    expect(result.shouldReturnEmpty).toBe(true)
+    expect(result).not.toHaveProperty('topic_ids')
   })
 
   it('parseHostnamesSearchParams parses query and hostname strings', async () => {

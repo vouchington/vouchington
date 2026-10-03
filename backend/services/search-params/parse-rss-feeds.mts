@@ -154,6 +154,7 @@ export async function resolveRssFeedsSearchParams(
         : parseBooleanish(discoverableParam)
 
   const topicIds = [...new Set(resolvedTopicIds.filter((id): id is string => !!id))]
+  const publisherTypeIds = resolvedPublisherTypeIds.filter((id): id is string => !!id)
   const textSearchQuery = hashtagSearch.textSearchQuery
 
   const searchOptions: RssFeedsSearchOptions = {
@@ -165,9 +166,7 @@ export async function resolveRssFeedsSearchParams(
       ? { include_descendants: parseBooleanish(includeDescendants) }
       : {}),
     ...(resolvedPublisherTypeId ? { publisher_type_id: resolvedPublisherTypeId } : {}),
-    ...(resolvedPublisherTypeIds.filter((id): id is string => !!id).length > 0
-      ? { publisher_type_ids: resolvedPublisherTypeIds.filter((id): id is string => !!id) }
-      : {}),
+    ...(publisherTypeIds.length > 0 ? { publisher_type_ids: publisherTypeIds } : {}),
     ...(publisherTypeMatch === 'all' ? { publisher_type_match: 'all' as const } : {}),
     ...(requestedTextSearchQuery
       ? { text_search_query: stringFromUnknown(requestedTextSearchQuery) }
