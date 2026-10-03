@@ -457,9 +457,16 @@ nothing until you do all of the following, in order.
    `s3:DeleteObjectVersion` and `s3:DeleteObject` on `S3_BUCKET_COPYRIGHT_EVIDENCE`
    ([#1229](https://github.com/vouchington/vouchington/issues/1229)). Without them every erasure
    fails and nothing changes, which is safe but noisy.
-3. **Confirm the account data export tolerates erased rows** (#1754). The export decrypts a case's
-   text, and an erased column is the literal `erased`, which does not decrypt. Until the export
-   skips erased cases, an account that owns one cannot be exported, so do not enable the switch.
+3. **Confirm the account data export tolerates erased rows** ([#1754](https://github.com/vouchington/vouchington/issues/1754)).
+   An erased column is the literal `erased`, which does not decrypt. The export reads it as
+   `[erased by the retention policy]` instead of failing, and the sweep clears the claimant,
+   requester and submitter links in the same transaction that erases a case, so the export of an
+   account that was party to an erased case loses that case's own filings. The other party's
+   `copyright-cases.csv` row stays, with `erased_by_retention_at` set and no claimant attribution.
+   Before enabling the switch, request an
+   [account data export](../requirements/users/ACCOUNT-DATA-EXPORT.md#copyright-records) for an
+   account that was party to a case the sweep has erased (in staging after a first run) and confirm
+   it completes. Do not enable the switch if it fails.
 4. **Check for open legal process.** An open [preservation hold](#dmca-512h-subpoenas) on an
    account keeps every case that account is party to out of the sweep, and the period restarts
    when the hold is released. The sweep cannot see legal process that no hold records: a request

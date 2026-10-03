@@ -23,7 +23,8 @@ export const COPYRIGHT_CASE_TIMELINE_EVENT_TYPES = [
  * hosted image) exactly as the participant read model shows them to a non-staff member: the
  * public claimant attribution, each target's visibility and restriction status, and the member
  * timeline. It never selects the other party's legal name, address, contact, email or signature,
- * staff rationale, notes or staff-only timeline events.
+ * staff rationale, notes or staff-only timeline events. `erased_by_retention_at` is set once the
+ * retention sweep has erased the case's evidence and personal data, and is empty before that.
  */
 export function streamCopyrightCases(userId: string) {
   return createAsyncGeneratorFromCursor(sql`/* streamCopyrightCases */
@@ -32,6 +33,8 @@ export function streamCopyrightCases(userId: string) {
       notice.jurisdiction, notice.received_at, notice.accepted_at, notice.provisional_withholding_at,
       (SELECT count(*)::integer FROM copyright_notice_targets counted
         WHERE counted.copyright_notice_id = notice.id) AS target_count,
+      (SELECT erasure.created_at FROM copyright_notice_retention_erasures erasure
+        WHERE erasure.copyright_notice_id = notice.id) AS erased_by_retention_at,
       claimant.id AS claimant_user_id,
       CASE WHEN claimant.id IS NOT NULL THEN
         COALESCE(claimant.display_account->>'name', claimant.username, 'Voucha member')
