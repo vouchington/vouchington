@@ -24,10 +24,12 @@ upstream lacks.
 - **Worker-attachment guard.** Fails a file that leaves an unexpected live worker attached on an `isolate: false` fork.
 - **Flush timeout diagnostics.** `TestQueueFlushTimeoutError` reports worker concurrency, active counts and the stuck job's state.
 
-The shim reads these private fields of `glide-mq/testing`, verified against 0.16.0: `queue.jobs` (record
-state), `queue.workers`, and, for diagnostics only, `queue.waitingQueue` and `worker.concurrency`. Re-check
-them on every glide-mq bump; the flush tests (`test-helpers/glide-mq-vitest-flush*.test.mts`) fail if the
-first two change.
+The worker checks use the public API: `queue.getWorkers()` decides whether a flush has anything to wait for,
+and the worker-attachment guard compares `WorkerInfo.id`s. The shim still reads these internal fields of
+`glide-mq/testing`, verified against 0.16.0: `queue.jobs` (record state) and `job._record` (job identity),
+and, for diagnostics only, `queue.workers`, `queue.waitingQueue` and `worker.concurrency` (`WorkerInfo` has
+no `concurrency` or worker handle). Re-check them on every glide-mq bump; the flush tests
+(`test-helpers/glide-mq-vitest-flush*.test.mts`) fail if the non-diagnostic ones change.
 
 ## Job States and Lookups
 

@@ -1,4 +1,3 @@
-import type { TestWorker } from 'glide-mq/testing'
 import type { TestRunner } from 'vitest'
 import {
   captureAttachedTestWorkers,
@@ -18,7 +17,7 @@ function createWorkerAttachmentLeakError(queueNames: string[]): Error {
 }
 
 export default class GlideMqWorkerAttachmentGuardRunner extends SharedDbScopeGuardRunner {
-  #baselines = new Map<string, ReadonlySet<TestWorker>>()
+  #baselines = new Map<string, ReadonlySet<string>>()
 
   override async importFile(
     filepath: string,
@@ -29,12 +28,12 @@ export default class GlideMqWorkerAttachmentGuardRunner extends SharedDbScopeGua
       return
     }
 
-    const baseline = captureAttachedTestWorkers()
+    const baseline = await captureAttachedTestWorkers()
     this.#baselines.set(filepath, baseline)
     try {
       await super.importFile(filepath, source)
     } catch (err) {
-      const queueNames = getUnexpectedAttachedTestWorkerQueueNames(baseline)
+      const queueNames = await getUnexpectedAttachedTestWorkerQueueNames(baseline)
       if (queueNames.length === 0) throw err
       const leakError = createWorkerAttachmentLeakError(queueNames)
       throw new Error(
@@ -51,7 +50,7 @@ export default class GlideMqWorkerAttachmentGuardRunner extends SharedDbScopeGua
       const baseline = this.#baselines.get(suite.filepath)
       if (!baseline) throw new Error('GlideMQ worker attachment guard baseline was not initialized')
 
-      const queueNames = getUnexpectedAttachedTestWorkerQueueNames(baseline)
+      const queueNames = await getUnexpectedAttachedTestWorkerQueueNames(baseline)
       if (queueNames.length === 0) return
       throw createWorkerAttachmentLeakError(queueNames)
     } catch (err) {

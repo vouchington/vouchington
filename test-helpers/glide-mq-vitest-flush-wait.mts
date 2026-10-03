@@ -82,17 +82,18 @@ const nowMs = () => Number(process.hrtime.bigint() / 1_000_000n)
  * is deduplicated; `Job.waitUntilFinished` polls every 500ms and resolves 'failed' instead of
  * throwing; `Worker.drain()` closes the worker, which tests keep attached.
  */
-export function flushJobs(
+export async function flushJobs(
   queue: ShimTestQueue,
   jobIds: string[],
   expectedDeadLetterJobIds: Set<string>,
   flushTimeoutMs = DEFAULT_FLUSH_TIMEOUT_MS,
   failureOf: FailureLookup = () => undefined,
 ): Promise<void> {
-  if (queue.workers.size === 0) return Promise.resolve()
-  if (inspectJobs(queue, jobIds, expectedDeadLetterJobIds, failureOf).length === 0) {
-    return Promise.resolve()
-  }
+  // `getWorkers()` reads the attached set when called, so this no-op decision matches a direct
+  // read; only the continuation moves one microtask later, and the `check()` below re-reads the
+  // job state after registering, so no settle is missed.
+  if ((await queue.getWorkers()).length === 0) return
+  if (inspectJobs(queue, jobIds, expectedDeadLetterJobIds, failureOf).length === 0) return
   const deadline = nowMs() + flushTimeoutMs
 
   return new Promise((resolve, reject) => {
