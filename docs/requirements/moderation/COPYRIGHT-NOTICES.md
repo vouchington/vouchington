@@ -366,7 +366,10 @@ Staff issue that token once, with an expiry no more than 30 days after issue. Th
 the issuing staff member, and issue and revocation each append a lifecycle event that names the
 acting staff member. The guest sends the token in the Copyright-Guest-Capability header. Mail, a
 thread, or a token for another case does not authorize a correction, withdrawal, or court filing.
-Each guest filing records the capability that authorized it. A correction does not move the
+Each guest filing records the capability that authorized it. Guest court or CCB filings store the
+encrypted JSON statement `{ "summary": <statement> }`, matching email-admitted holds so staff case
+and queue projections can read either source. Supplements and withdrawals retain their encrypted
+plain-text statements. A correction does not move the
 original receipt time or an existing restoration deadline. A withdrawal records the filing and
 leaves existing restrictions in place until staff assess it. Receiving a withdrawal, whether filed
 by a guest or admitted from claimant email, revokes every live capability on the case in the same
