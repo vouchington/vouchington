@@ -138,3 +138,12 @@ export async function countTestCopyrightLifecycleEvents(input: {
   `)
   return rows[0]?.count ?? 0
 }
+
+export async function failTestCopyrightActionIntent(intentId: string): Promise<void> {
+  const { rowCount } = await write(sql`/* failTestCopyrightActionIntent */
+    UPDATE copyright_notice_action_intents SET state = 'failed', claimed_at = NULL,
+      completed_at = CURRENT_TIMESTAMP, completed_at_reason = 'failed', next_attempt_at = NULL,
+      lease_token = NULL
+    WHERE id = ${intentId} AND state IN ('pending', 'claimed')`)
+  if (!rowCount) throw new Error('Copyright action intent was not marked failed')
+}

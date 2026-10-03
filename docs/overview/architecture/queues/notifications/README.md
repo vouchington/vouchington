@@ -38,7 +38,9 @@ Glide Queue system for reconciling notifications and delivering browser push mes
 - `processCheckCopyrightReviewTarget` runs every five minutes. It reads
   `copyright.reviewTargetMinutes`, counts copyright cases and received emails waiting past that
   target and open counter-notice deadlines past escalation or restoration, and sends one tagged
-  Sentry warning with counts and notice or email intake IDs. It sends nothing when every count is
+  Sentry warning with counts and notice or email intake IDs. Paging excludes assessed holds and
+  fully held deadlines, keeps unassessed filings actionable, and times automated pending requests
+  from receipt; staff queue display is unchanged. It sends nothing when every count is
   zero. See the
   [copyright runbook](../../../../runbooks/copyright-notices.md#review-target-page).
 - `processSweepCopyrightEvidenceRetention` runs hourly at minute 17. It calls
