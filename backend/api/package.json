@@ -253,9 +253,9 @@
     "valkyries": "^0.8.1"
   },
   "devDependencies": {
-    "@aws-sdk/client-cloudfront": "^3.1144.0",
-    "@aws-sdk/client-dynamodb": "^3.1144.0",
-    "@aws-sdk/client-s3": "^3.1144.0",
+    "@aws-sdk/client-cloudfront": "^3.1145.0",
+    "@aws-sdk/client-dynamodb": "^3.1145.0",
+    "@aws-sdk/client-s3": "^3.1145.0",
     "@modules/structured-decisions": "workspace:^",
     "@services/ap-post-likes": "workspace:^",
     "@services/openai-agents": "workspace:^",
