@@ -20,6 +20,10 @@ import {
 } from './request-validation-route-ast.mts'
 
 import { routeKey, type Route } from './request-validation-route-catalog.mts'
+import {
+  recordValidatorCarrierFamilies,
+  recordVoteFactoryCarrierFamilies,
+} from './request-validation-route-families.mts'
 type ValidatorAssertion = typeof assertTrustedValidator
 type VoteFactoryAssertion = typeof assertTrustedVoteFactory
 
@@ -100,38 +104,14 @@ export function discoverRuntimeValidatedOperationsForProgram(
           if (!key) throw new Error(`${name} in ${operation} has a non-static operation key`)
           if (key !== operation) throw new Error(`${name} in ${operation} validates ${key}`)
           validated.add(operation)
-          const families = assertions.carrierFamilies?.get(operation) ?? new Set<string>()
-          if (name === 'validateRequestContract') {
-            const optionsArgument = node.arguments[2]
-            const options = optionsArgument && resolveExpression(optionsArgument, checker)
-            if (options && ts.isObjectLiteralExpression(options)) {
-              for (const property of options.properties) {
-                const family =
-                  ts.isPropertyAssignment(property) || ts.isShorthandPropertyAssignment(property)
-                    ? ts.isIdentifier(property.name)
-                      ? property.name.text
-                      : undefined
-                    : undefined
-                if (family) families.add(family)
-                const carrierExpression = ts.isPropertyAssignment(property)
-                  ? property.initializer
-                  : ts.isShorthandPropertyAssignment(property)
-                    ? property.name
-                    : undefined
-                if (family && carrierExpression) {
-                  const origins = requestCarrierOrigins(carrierExpression, checker, carrierBindings)
-                  if (['query', 'path', 'body'].includes(family) && !origins.has(family)) {
-                    throw new Error(
-                      `${operation} ${family} option lacks handler ${family} input lineage`,
-                    )
-                  }
-                }
-              }
-            }
-          } else {
-            families.add('query')
-          }
-          assertions.carrierFamilies?.set(operation, families)
+          recordValidatorCarrierFamilies(
+            name,
+            node,
+            operation,
+            checker,
+            carrierBindings,
+            assertions.carrierFamilies,
+          )
           return
         }
         if (name === 'createVoteHandler' || name === 'createVoteClearHandler') {
@@ -144,6 +124,7 @@ export function discoverRuntimeValidatedOperationsForProgram(
           if (!key) throw new Error(`${name} in ${operation} has no requestContractOperation`)
           if (key !== operation) throw new Error(`${name} in ${operation} validates ${key}`)
           validated.add(operation)
+          recordVoteFactoryCarrierFamilies(name, operation, assertions.carrierFamilies)
           return
         }
         if (ts.isIdentifier(node.expression)) {

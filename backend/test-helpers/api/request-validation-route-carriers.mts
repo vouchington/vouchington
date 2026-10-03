@@ -34,3 +34,23 @@ export function assertQueryCarrierCoverage(
   }
   if (errors.length > 0) throw new Error(errors.join('\n'))
 }
+
+export function assertDeclaredCarrierFamiliesValidated(
+  runtimeValidated: ReadonlySet<string>,
+  runtimeCarrierFamilies: ReadonlyMap<string, ReadonlySet<string>>,
+  generatedOperations: Readonly<Record<string, unknown>>,
+  specializedQueryInputs: Readonly<Record<string, readonly string[]>>,
+): void {
+  const errors: string[] = []
+  for (const operation of runtimeValidated) {
+    const generated = generatedOperations[operation] as Record<string, unknown> | undefined
+    if (!generated) continue
+    const validated = runtimeCarrierFamilies.get(operation) ?? new Set<string>()
+    for (const family of ['path', 'query', 'body']) {
+      if (!Object.hasOwn(generated, family) || validated.has(family)) continue
+      if (family === 'query' && specializedQueryInputs[operation]) continue
+      errors.push(`${operation} has a generated ${family} carrier without runtime validation`)
+    }
+  }
+  if (errors.length > 0) throw new Error(errors.join('\n'))
+}

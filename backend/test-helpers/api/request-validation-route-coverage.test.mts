@@ -4,7 +4,10 @@ import type { OpenApiDocument } from 'vouchington-tooling/openapi-document'
 import { COLD_OPENAPI_BUILD_TIMEOUT_MS } from '../api-fixtures/cold-build-budget.mts'
 import { buildOpenApiDocument } from '../api-fixtures/openapi/build-openapi-document.mts'
 import { buildRequestContractsBundle } from '../api-fixtures/openapi/request-contract-bundle.mts'
-import { assertQueryCarrierCoverage } from './request-validation-route-carriers.mts'
+import {
+  assertDeclaredCarrierFamiliesValidated,
+  assertQueryCarrierCoverage,
+} from './request-validation-route-carriers.mts'
 import { discoverInlineUuidQueryAssertions } from './request-validation-route-specialized.mts'
 import { discoverRuntimeValidatedOperations } from './request-validation-route-validation-catalog.mts'
 import { discoverThirdPartyRoutes, routeKey } from './request-validation-route-catalog.mts'
@@ -73,6 +76,14 @@ describe('third-party route request validation inventory', () => {
         SPECIALIZED_QUERY_INPUTS,
       ),
     ).not.toThrow()
+    expect(() =>
+      assertDeclaredCarrierFamiliesValidated(
+        runtimeValidated,
+        runtimeCarrierFamilies,
+        bundle.operations,
+        SPECIALIZED_QUERY_INPUTS,
+      ),
+    ).not.toThrow()
     expect({
       carrierless: unclassified.filter(key => !bundle.operations[key]),
       carrierBearing: unclassified.filter(key => bundle.operations[key]),
@@ -114,5 +125,25 @@ describe('third-party route request validation inventory', () => {
         {},
       ),
     ).toThrow(/reads undeclared query key new_filter/)
+  })
+
+  it('rejects declared path and body carriers omitted from runtime validation', () => {
+    expect(() =>
+      assertDeclaredCarrierFamiliesValidated(
+        new Set(['GET:/api/v1/search']),
+        new Map([['GET:/api/v1/search', new Set(['query'])]]),
+        {
+          'GET:/api/v1/search': {
+            path: { properties: { id: { type: 'string' } } },
+            query: { properties: { term: { type: 'string' } } },
+            body: { properties: { input: { type: 'string' } } },
+          },
+        },
+        {},
+      ),
+    ).toThrow(
+      'GET:/api/v1/search has a generated path carrier without runtime validation\n' +
+        'GET:/api/v1/search has a generated body carrier without runtime validation',
+    )
   })
 })
