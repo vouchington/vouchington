@@ -9,7 +9,7 @@ import { createNoIndexMetadata } from '@/lib/seo/metadata'
 import { PageWithAside } from '@/components/page-with-aside'
 import { PostsDiscoveryAside } from '@/components/asides/posts-discovery-aside'
 import { getEligibleCommunityPostOptions } from '@/components/posts/post-form/community-options'
-import { isOfficialAccount } from '@/lib/auth/official-account'
+import { isPlatformAccount } from '@/lib/auth/account-type'
 import { getTranslations } from '@/lib/i18n/get-translations'
 
 export const dynamic = 'force-dynamic'
@@ -34,7 +34,7 @@ export default async function CreateReviewPage({ searchParams }: CreateReviewPag
     getEligibleCommunityPostOptions('review', requestedCommunitySlug),
   ])
 
-  const isOfficial = isOfficialAccount(user)
+  const isOfficial = isPlatformAccount(user)
   const isGated = isContributionGated(contributionData)
 
   const topic = topicData?.topic

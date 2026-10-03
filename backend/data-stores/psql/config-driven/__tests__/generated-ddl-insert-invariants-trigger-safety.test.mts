@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { initSqlAst } from 'vouchington-tooling/sql-ast'
 
 import { loadSqlParserModule } from '../../migration-runner/sql-statements.mts'
+import { replayUnsafeTrigger } from '../../../../test-helpers/data-stores/psql/config-driven/on-conflict-triggers.mts'
 import { findFirstUnguardedInsertViolation } from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-insert-invariants.mts'
 import {
   generatedDependenciesForTable,
@@ -49,13 +50,37 @@ describe('generated-ddl-insert-invariants + real schema.json trigger data', () =
     ).toBeNull()
   })
 
-  it('accepts agents.deleted_at = NULL only via the moderation-lock function allowlist', () => {
+  it('still accepts the moderation-lock trigger in isolation', () => {
+    const moderationLockTriggers = triggerTextsForTable('agents')?.filter(trigger =>
+      trigger.includes('fn_lock_agent_moderation_transparency_agent'),
+    )
+    expect(moderationLockTriggers).toHaveLength(1)
+    expect(
+      replayUnsafeTrigger(
+        moderationLockTriggers!,
+        new Set(['deleted_at', 'activated_at']),
+        new Set(),
+        undefined,
+      ),
+    ).toBe(false)
+  })
+
+  it('rejects an agent replay despite moderation-lock allowance when account validation runs before insert', () => {
     expect(
       findFirstUnguardedInsertViolation(
         'INSERT INTO agents (id, deleted_at, activated_at) VALUES (1, NULL, now()) ' +
           'ON CONFLICT (id) DO UPDATE SET ' +
           'deleted_at = NULL, ' +
           'activated_at = COALESCE(agents.activated_at, CURRENT_TIMESTAMP);',
+      ),
+    ).not.toBeNull()
+  })
+
+  it('accepts a guarded agent insert that avoids replaying before-insert account validation', () => {
+    expect(
+      findFirstUnguardedInsertViolation(
+        'INSERT INTO agents (id, system_user_id, agent_type) ' +
+          "SELECT 1, 2, 'moderator' WHERE NOT EXISTS (SELECT 1 FROM agents WHERE id = 1);",
       ),
     ).toBeNull()
   })

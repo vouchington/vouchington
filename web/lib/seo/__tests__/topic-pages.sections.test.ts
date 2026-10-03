@@ -25,8 +25,18 @@ const mockTopic: Topic = {
   noindex: false,
   allow_reviews: true,
   created_at: '2024-01-01T00:00:00Z',
-  created_by: { id: 'user-1', display_name: 'Test User', display_name_url_id: null },
-  updated_by: { id: 'user-1', display_name: 'Test User', display_name_url_id: null },
+  created_by: {
+    account_type: null,
+    id: 'user-1',
+    display_name: 'Test User',
+    display_name_url_id: null,
+  },
+  updated_by: {
+    account_type: null,
+    id: 'user-1',
+    display_name: 'Test User',
+    display_name_url_id: null,
+  },
 }
 
 const mockSourceTopic: Topic = {

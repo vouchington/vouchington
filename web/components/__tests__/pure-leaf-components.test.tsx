@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { VoteStoreProvider } from '@/lib/votes/vote-store-provider'
-import { AgentBadge } from '@/components/shared/agent-badge'
+import { UserAccountBadge } from '@/components/shared/user-account-badge'
 import { RssFeedLink } from '@/components/shared/rss-feed-link'
 import { SearchInput, SearchInputShell } from '@/components/shared/search-input'
 import { DataPointResultBadge, DataPointRow } from '@/components/posts/data-point-detail-fields'
@@ -16,10 +16,10 @@ import { FollowTopicsAsideContent } from '@/components/asides/follow-topics-asid
 import { UpgradeMembershipAsideContent } from '@/components/asides/upgrade-membership-aside-content'
 
 describe('pure leaf component contracts', () => {
-  it('renders AgentBadge and RssFeedLink data-pw hooks', () => {
+  it('renders UserAccountBadge and RssFeedLink data-pw hooks', () => {
     render(
       <>
-        <AgentBadge />
+        <UserAccountBadge accountType='ai_agent' />
         <RssFeedLink
           href='https://example.com/feed.xml'
           label='RSS'
@@ -27,7 +27,7 @@ describe('pure leaf component contracts', () => {
       </>,
     )
 
-    expect(screen.getByText('agent')).toHaveAttribute('data-pw', 'agent-badge')
+    expect(screen.getByText('AI Agent')).toHaveAttribute('data-pw', 'user-account-badge')
     expect(screen.getByLabelText('RSS')).toHaveAttribute('data-pw', 'rss-feed-link')
   })
 

@@ -73,7 +73,7 @@ function humanOutcomeSelect(subject: (typeof SUBJECT_RELATIONS)[number]): string
         FROM (
           SELECT DISTINCT ON (vote.user_id) vote.user_id, vote.score
           FROM ${subject.votes} vote
-          JOIN users voter ON voter.id = vote.user_id AND NOT voter.is_system
+          JOIN users voter ON voter.id = vote.user_id AND voter.platform_account_kind IS NULL
           WHERE vote.entity_relation_id = relation.id
           ORDER BY vote.user_id, vote.id DESC
         ) latest

@@ -2,6 +2,7 @@ import { timestamp, user } from './data.mts'
 
 export const author = {
   __entity_type: 'user',
+  account_type: null,
   id: user.id,
   username: user.username,
   roles: [],
@@ -10,6 +11,7 @@ export const author = {
 
 export const otherUser = {
   __entity_type: 'user',
+  account_type: null,
   id: 'comment-user-2',
   username: 'commenter',
   roles: [],

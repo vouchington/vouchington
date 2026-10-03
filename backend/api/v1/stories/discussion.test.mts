@@ -11,7 +11,7 @@ import {
   executeTestAdmittedPost,
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
-import { upsertSystemAdministrator } from '@services/users/system-users'
+import { upsertSystemUser } from '@services/users/system-users'
 import { setRssFeedDiscoverabilityAsSystem } from '@services/rss-feeds/discoverability'
 import { FEED_NOT_DISCOVERABLE } from '@modules/on-error/error-codes'
 import { runContributionAdmission } from '@services/contribution-gating/admission'
@@ -30,7 +30,7 @@ describe('discussion', () => {
   beforeAll(async () => {
     const [testUser, _systemAdmin, feed, testUrlId] = await Promise.all([
       createTestUserWithAge(CONTRIBUTING_USER_AGE_MS),
-      upsertSystemAdministrator('story-teller'),
+      upsertSystemUser('story-teller'),
       createTestRssFeed({}),
       createTestUrlWithHostname(),
     ])

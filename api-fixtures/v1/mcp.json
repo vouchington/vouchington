@@ -2235,6 +2235,22 @@
                                   "__entity_type": {
                                     "const": "user"
                                   },
+                                  "account_type": {
+                                    "anyOf": [
+                                      {
+                                        "const": "ai_agent"
+                                      },
+                                      {
+                                        "const": "official"
+                                      },
+                                      {
+                                        "const": "system"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
                                   "id": {
                                     "type": "string"
                                   },
@@ -2247,9 +2263,6 @@
                                         "type": "string"
                                       }
                                     ]
-                                  },
-                                  "is_agent": {
-                                    "type": "boolean"
                                   },
                                   "markdown": {
                                     "anyOf": [
@@ -2394,7 +2407,7 @@
                                     ]
                                   }
                                 },
-                                "required": ["__entity_type", "id", "roles"],
+                                "required": ["__entity_type", "account_type", "id", "roles"],
                                 "type": "object"
                               },
                               {
@@ -2948,6 +2961,22 @@
                                   "__entity_type": {
                                     "const": "user"
                                   },
+                                  "account_type": {
+                                    "anyOf": [
+                                      {
+                                        "const": "ai_agent"
+                                      },
+                                      {
+                                        "const": "official"
+                                      },
+                                      {
+                                        "const": "system"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
                                   "id": {
                                     "type": "string"
                                   },
@@ -2960,9 +2989,6 @@
                                         "type": "string"
                                       }
                                     ]
-                                  },
-                                  "is_agent": {
-                                    "type": "boolean"
                                   },
                                   "markdown": {
                                     "anyOf": [
@@ -3107,7 +3133,7 @@
                                     ]
                                   }
                                 },
-                                "required": ["__entity_type", "id", "roles"],
+                                "required": ["__entity_type", "account_type", "id", "roles"],
                                 "type": "object"
                               },
                               {
@@ -10236,8 +10262,21 @@
                             }
                           ]
                         },
-                        "is_official_account": {
-                          "type": "boolean"
+                        "account_type": {
+                          "anyOf": [
+                            {
+                              "const": "ai_agent"
+                            },
+                            {
+                              "const": "official"
+                            },
+                            {
+                              "const": "system"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "required": [
@@ -10247,7 +10286,7 @@
                         "verification_status",
                         "verified_badge_visible",
                         "verified_display_name",
-                        "is_official_account"
+                        "account_type"
                       ],
                       "additionalProperties": false
                     }
@@ -12651,8 +12690,21 @@
                               }
                             ]
                           },
-                          "is_official_account": {
-                            "type": "boolean"
+                          "account_type": {
+                            "anyOf": [
+                              {
+                                "const": "ai_agent"
+                              },
+                              {
+                                "const": "official"
+                              },
+                              {
+                                "const": "system"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           }
                         },
                         "required": [
@@ -12662,7 +12714,7 @@
                           "verification_status",
                           "verified_badge_visible",
                           "verified_display_name",
-                          "is_official_account"
+                          "account_type"
                         ],
                         "additionalProperties": false
                       }
@@ -14309,6 +14361,22 @@
                             "__entity_type": {
                               "const": "user"
                             },
+                            "account_type": {
+                              "anyOf": [
+                                {
+                                  "const": "ai_agent"
+                                },
+                                {
+                                  "const": "official"
+                                },
+                                {
+                                  "const": "system"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "id": {
                               "type": "string"
                             },
@@ -14321,9 +14389,6 @@
                                   "type": "string"
                                 }
                               ]
-                            },
-                            "is_agent": {
-                              "type": "boolean"
                             },
                             "markdown": {
                               "anyOf": [
@@ -14464,7 +14529,7 @@
                               ]
                             }
                           },
-                          "required": ["__entity_type", "id", "roles"],
+                          "required": ["__entity_type", "account_type", "id", "roles"],
                           "type": "object"
                         },
                         {
@@ -15018,6 +15083,22 @@
                             "__entity_type": {
                               "const": "user"
                             },
+                            "account_type": {
+                              "anyOf": [
+                                {
+                                  "const": "ai_agent"
+                                },
+                                {
+                                  "const": "official"
+                                },
+                                {
+                                  "const": "system"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "id": {
                               "type": "string"
                             },
@@ -15030,9 +15111,6 @@
                                   "type": "string"
                                 }
                               ]
-                            },
-                            "is_agent": {
-                              "type": "boolean"
                             },
                             "markdown": {
                               "anyOf": [
@@ -15173,7 +15251,7 @@
                               ]
                             }
                           },
-                          "required": ["__entity_type", "id", "roles"],
+                          "required": ["__entity_type", "account_type", "id", "roles"],
                           "type": "object"
                         },
                         {
@@ -16238,6 +16316,22 @@
                                   "__entity_type": {
                                     "const": "user"
                                   },
+                                  "account_type": {
+                                    "anyOf": [
+                                      {
+                                        "const": "ai_agent"
+                                      },
+                                      {
+                                        "const": "official"
+                                      },
+                                      {
+                                        "const": "system"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
                                   "id": {
                                     "type": "string"
                                   },
@@ -16250,9 +16344,6 @@
                                         "type": "string"
                                       }
                                     ]
-                                  },
-                                  "is_agent": {
-                                    "type": "boolean"
                                   },
                                   "markdown": {
                                     "anyOf": [
@@ -16400,7 +16491,7 @@
                                     ]
                                   }
                                 },
-                                "required": ["__entity_type", "id", "roles"],
+                                "required": ["__entity_type", "account_type", "id", "roles"],
                                 "type": "object"
                               },
                               {
@@ -16437,6 +16528,22 @@
                                   "__entity_type": {
                                     "const": "user"
                                   },
+                                  "account_type": {
+                                    "anyOf": [
+                                      {
+                                        "const": "ai_agent"
+                                      },
+                                      {
+                                        "const": "official"
+                                      },
+                                      {
+                                        "const": "system"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
                                   "id": {
                                     "type": "string"
                                   },
@@ -16449,9 +16556,6 @@
                                         "type": "string"
                                       }
                                     ]
-                                  },
-                                  "is_agent": {
-                                    "type": "boolean"
                                   },
                                   "markdown": {
                                     "anyOf": [
@@ -16599,7 +16703,7 @@
                                     ]
                                   }
                                 },
-                                "required": ["__entity_type", "id", "roles"],
+                                "required": ["__entity_type", "account_type", "id", "roles"],
                                 "type": "object"
                               },
                               {
@@ -16670,6 +16774,22 @@
                                   "__entity_type": {
                                     "const": "user"
                                   },
+                                  "account_type": {
+                                    "anyOf": [
+                                      {
+                                        "const": "ai_agent"
+                                      },
+                                      {
+                                        "const": "official"
+                                      },
+                                      {
+                                        "const": "system"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
                                   "id": {
                                     "type": "string"
                                   },
@@ -16682,9 +16802,6 @@
                                         "type": "string"
                                       }
                                     ]
-                                  },
-                                  "is_agent": {
-                                    "type": "boolean"
                                   },
                                   "markdown": {
                                     "anyOf": [
@@ -16832,7 +16949,7 @@
                                     ]
                                   }
                                 },
-                                "required": ["__entity_type", "id", "roles"],
+                                "required": ["__entity_type", "account_type", "id", "roles"],
                                 "type": "object"
                               },
                               {
@@ -16904,6 +17021,22 @@
                                   "__entity_type": {
                                     "const": "user"
                                   },
+                                  "account_type": {
+                                    "anyOf": [
+                                      {
+                                        "const": "ai_agent"
+                                      },
+                                      {
+                                        "const": "official"
+                                      },
+                                      {
+                                        "const": "system"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
                                   "id": {
                                     "type": "string"
                                   },
@@ -16916,9 +17049,6 @@
                                         "type": "string"
                                       }
                                     ]
-                                  },
-                                  "is_agent": {
-                                    "type": "boolean"
                                   },
                                   "markdown": {
                                     "anyOf": [
@@ -17066,7 +17196,7 @@
                                     ]
                                   }
                                 },
-                                "required": ["__entity_type", "id", "roles"],
+                                "required": ["__entity_type", "account_type", "id", "roles"],
                                 "type": "object"
                               },
                               {
@@ -17103,6 +17233,22 @@
                                   "__entity_type": {
                                     "const": "user"
                                   },
+                                  "account_type": {
+                                    "anyOf": [
+                                      {
+                                        "const": "ai_agent"
+                                      },
+                                      {
+                                        "const": "official"
+                                      },
+                                      {
+                                        "const": "system"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
                                   "id": {
                                     "type": "string"
                                   },
@@ -17115,9 +17261,6 @@
                                         "type": "string"
                                       }
                                     ]
-                                  },
-                                  "is_agent": {
-                                    "type": "boolean"
                                   },
                                   "markdown": {
                                     "anyOf": [
@@ -17265,7 +17408,7 @@
                                     ]
                                   }
                                 },
-                                "required": ["__entity_type", "id", "roles"],
+                                "required": ["__entity_type", "account_type", "id", "roles"],
                                 "type": "object"
                               },
                               {
@@ -17336,6 +17479,22 @@
                                   "__entity_type": {
                                     "const": "user"
                                   },
+                                  "account_type": {
+                                    "anyOf": [
+                                      {
+                                        "const": "ai_agent"
+                                      },
+                                      {
+                                        "const": "official"
+                                      },
+                                      {
+                                        "const": "system"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
                                   "id": {
                                     "type": "string"
                                   },
@@ -17348,9 +17507,6 @@
                                         "type": "string"
                                       }
                                     ]
-                                  },
-                                  "is_agent": {
-                                    "type": "boolean"
                                   },
                                   "markdown": {
                                     "anyOf": [
@@ -17498,7 +17654,7 @@
                                     ]
                                   }
                                 },
-                                "required": ["__entity_type", "id", "roles"],
+                                "required": ["__entity_type", "account_type", "id", "roles"],
                                 "type": "object"
                               },
                               {
@@ -17605,6 +17761,22 @@
                             "__entity_type": {
                               "const": "user"
                             },
+                            "account_type": {
+                              "anyOf": [
+                                {
+                                  "const": "ai_agent"
+                                },
+                                {
+                                  "const": "official"
+                                },
+                                {
+                                  "const": "system"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "id": {
                               "type": "string"
                             },
@@ -17617,9 +17789,6 @@
                                   "type": "string"
                                 }
                               ]
-                            },
-                            "is_agent": {
-                              "type": "boolean"
                             },
                             "markdown": {
                               "anyOf": [
@@ -17763,7 +17932,7 @@
                               ]
                             }
                           },
-                          "required": ["__entity_type", "id", "roles"],
+                          "required": ["__entity_type", "account_type", "id", "roles"],
                           "type": "object"
                         },
                         {
@@ -17800,6 +17969,22 @@
                             "__entity_type": {
                               "const": "user"
                             },
+                            "account_type": {
+                              "anyOf": [
+                                {
+                                  "const": "ai_agent"
+                                },
+                                {
+                                  "const": "official"
+                                },
+                                {
+                                  "const": "system"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "id": {
                               "type": "string"
                             },
@@ -17812,9 +17997,6 @@
                                   "type": "string"
                                 }
                               ]
-                            },
-                            "is_agent": {
-                              "type": "boolean"
                             },
                             "markdown": {
                               "anyOf": [
@@ -17958,7 +18140,7 @@
                               ]
                             }
                           },
-                          "required": ["__entity_type", "id", "roles"],
+                          "required": ["__entity_type", "account_type", "id", "roles"],
                           "type": "object"
                         },
                         {
@@ -18029,6 +18211,22 @@
                             "__entity_type": {
                               "const": "user"
                             },
+                            "account_type": {
+                              "anyOf": [
+                                {
+                                  "const": "ai_agent"
+                                },
+                                {
+                                  "const": "official"
+                                },
+                                {
+                                  "const": "system"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "id": {
                               "type": "string"
                             },
@@ -18041,9 +18239,6 @@
                                   "type": "string"
                                 }
                               ]
-                            },
-                            "is_agent": {
-                              "type": "boolean"
                             },
                             "markdown": {
                               "anyOf": [
@@ -18187,7 +18382,7 @@
                               ]
                             }
                           },
-                          "required": ["__entity_type", "id", "roles"],
+                          "required": ["__entity_type", "account_type", "id", "roles"],
                           "type": "object"
                         },
                         {
@@ -18354,6 +18549,22 @@
                             "__entity_type": {
                               "const": "user"
                             },
+                            "account_type": {
+                              "anyOf": [
+                                {
+                                  "const": "ai_agent"
+                                },
+                                {
+                                  "const": "official"
+                                },
+                                {
+                                  "const": "system"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "id": {
                               "type": "string"
                             },
@@ -18366,9 +18577,6 @@
                                   "type": "string"
                                 }
                               ]
-                            },
-                            "is_agent": {
-                              "type": "boolean"
                             },
                             "markdown": {
                               "anyOf": [
@@ -18512,7 +18720,7 @@
                               ]
                             }
                           },
-                          "required": ["__entity_type", "id", "roles"],
+                          "required": ["__entity_type", "account_type", "id", "roles"],
                           "type": "object"
                         },
                         {
@@ -18549,6 +18757,22 @@
                             "__entity_type": {
                               "const": "user"
                             },
+                            "account_type": {
+                              "anyOf": [
+                                {
+                                  "const": "ai_agent"
+                                },
+                                {
+                                  "const": "official"
+                                },
+                                {
+                                  "const": "system"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "id": {
                               "type": "string"
                             },
@@ -18561,9 +18785,6 @@
                                   "type": "string"
                                 }
                               ]
-                            },
-                            "is_agent": {
-                              "type": "boolean"
                             },
                             "markdown": {
                               "anyOf": [
@@ -18707,7 +18928,7 @@
                               ]
                             }
                           },
-                          "required": ["__entity_type", "id", "roles"],
+                          "required": ["__entity_type", "account_type", "id", "roles"],
                           "type": "object"
                         },
                         {
@@ -18778,6 +18999,22 @@
                             "__entity_type": {
                               "const": "user"
                             },
+                            "account_type": {
+                              "anyOf": [
+                                {
+                                  "const": "ai_agent"
+                                },
+                                {
+                                  "const": "official"
+                                },
+                                {
+                                  "const": "system"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "id": {
                               "type": "string"
                             },
@@ -18790,9 +19027,6 @@
                                   "type": "string"
                                 }
                               ]
-                            },
-                            "is_agent": {
-                              "type": "boolean"
                             },
                             "markdown": {
                               "anyOf": [
@@ -18936,7 +19170,7 @@
                               ]
                             }
                           },
-                          "required": ["__entity_type", "id", "roles"],
+                          "required": ["__entity_type", "account_type", "id", "roles"],
                           "type": "object"
                         },
                         {
@@ -19063,6 +19297,22 @@
                             "__entity_type": {
                               "const": "user"
                             },
+                            "account_type": {
+                              "anyOf": [
+                                {
+                                  "const": "ai_agent"
+                                },
+                                {
+                                  "const": "official"
+                                },
+                                {
+                                  "const": "system"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "id": {
                               "type": "string"
                             },
@@ -19075,9 +19325,6 @@
                                   "type": "string"
                                 }
                               ]
-                            },
-                            "is_agent": {
-                              "type": "boolean"
                             },
                             "markdown": {
                               "anyOf": [
@@ -19221,7 +19468,7 @@
                               ]
                             }
                           },
-                          "required": ["__entity_type", "id", "roles"],
+                          "required": ["__entity_type", "account_type", "id", "roles"],
                           "type": "object"
                         },
                         {
@@ -19258,6 +19505,22 @@
                             "__entity_type": {
                               "const": "user"
                             },
+                            "account_type": {
+                              "anyOf": [
+                                {
+                                  "const": "ai_agent"
+                                },
+                                {
+                                  "const": "official"
+                                },
+                                {
+                                  "const": "system"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "id": {
                               "type": "string"
                             },
@@ -19270,9 +19533,6 @@
                                   "type": "string"
                                 }
                               ]
-                            },
-                            "is_agent": {
-                              "type": "boolean"
                             },
                             "markdown": {
                               "anyOf": [
@@ -19416,7 +19676,7 @@
                               ]
                             }
                           },
-                          "required": ["__entity_type", "id", "roles"],
+                          "required": ["__entity_type", "account_type", "id", "roles"],
                           "type": "object"
                         },
                         {
@@ -19487,6 +19747,22 @@
                             "__entity_type": {
                               "const": "user"
                             },
+                            "account_type": {
+                              "anyOf": [
+                                {
+                                  "const": "ai_agent"
+                                },
+                                {
+                                  "const": "official"
+                                },
+                                {
+                                  "const": "system"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "id": {
                               "type": "string"
                             },
@@ -19499,9 +19775,6 @@
                                   "type": "string"
                                 }
                               ]
-                            },
-                            "is_agent": {
-                              "type": "boolean"
                             },
                             "markdown": {
                               "anyOf": [
@@ -19645,7 +19918,7 @@
                               ]
                             }
                           },
-                          "required": ["__entity_type", "id", "roles"],
+                          "required": ["__entity_type", "account_type", "id", "roles"],
                           "type": "object"
                         },
                         {
@@ -27657,6 +27930,22 @@
                     "__entity_type": {
                       "const": "user"
                     },
+                    "account_type": {
+                      "anyOf": [
+                        {
+                          "const": "ai_agent"
+                        },
+                        {
+                          "const": "official"
+                        },
+                        {
+                          "const": "system"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "apple_account": {
                       "anyOf": [
                         {
@@ -27915,9 +28204,6 @@
                           "type": "string"
                         }
                       ]
-                    },
-                    "is_agent": {
-                      "type": "boolean"
                     },
                     "likes_visibility": {
                       "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
@@ -28384,6 +28670,7 @@
                   },
                   "required": [
                     "__entity_type",
+                    "account_type",
                     "cards_visibility",
                     "community_digest_frequency",
                     "community_memberships_visibility",
@@ -28457,6 +28744,22 @@
                     "__entity_type": {
                       "const": "user"
                     },
+                    "account_type": {
+                      "anyOf": [
+                        {
+                          "const": "ai_agent"
+                        },
+                        {
+                          "const": "official"
+                        },
+                        {
+                          "const": "system"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "apple_account": {
                       "anyOf": [
                         {
@@ -28715,9 +29018,6 @@
                           "type": "string"
                         }
                       ]
-                    },
-                    "is_agent": {
-                      "type": "boolean"
                     },
                     "likes_visibility": {
                       "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
@@ -29184,6 +29484,7 @@
                   },
                   "required": [
                     "__entity_type",
+                    "account_type",
                     "cards_visibility",
                     "community_digest_frequency",
                     "community_memberships_visibility",

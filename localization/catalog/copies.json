@@ -6362,6 +6362,9 @@
 {"descriptor":null,"id":"copy.settings.language.useSiteDefault"},
 {"descriptor":null,"id":"copy.settings.notificationSettings.loadError"},
 {"descriptor":null,"id":"copy.settings.notificationSettings.loadErrorFallback"},
+{"descriptor":null,"id":"copy.shared.accountType.aiAgent"},
+{"descriptor":null,"id":"copy.shared.accountType.official"},
+{"descriptor":null,"id":"copy.shared.accountType.system"},
 {"descriptor":{"cases":["action","alias","appeal","candidate","click","conversation","domain","email","field","hostname","image","item","key","link","member","message","moderator","note","participant","page","post","positiveVote","negativeVote","prefix","loadedReport","queueItem","listItem","report","reporter","comment","view","rating","review","discussion","result","signup","source","topic","url","user","visit","visitor"],"kind":"select-plural","numberParameters":["count"],"selectParameter":"unit","valueParameter":"count"},"id":"copy.shared.countLabel.format"},
 {"descriptor":null,"id":"copy.shared.oauth.consent.sensitivePermissionsHeading"},
 {"descriptor":{"cases":["minute","hour","day","week","month","year"],"kind":"select-plural","numberParameters":[],"selectParameter":"unit","valueParameter":"value"},"id":"copy.shared.timeAgo.relativeDuration"}

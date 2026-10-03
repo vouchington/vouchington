@@ -48,7 +48,7 @@ describe('user read tool output schemas', () => {
       'verification_status',
       'verified_badge_visible',
       'verified_display_name',
-      'is_official_account',
+      'account_type',
     ])
     for (const [field, schema] of Object.entries(user)) {
       expect(schema).toEqual(documentedUser(field))

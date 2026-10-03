@@ -146,7 +146,7 @@ describe('NewsItemClusterList', () => {
         'item-1': makeItem('item-1', 'Shared Article'),
       },
       users: {
-        'user-1': { id: 'user-1', username: 'sharer' },
+        'user-1': { account_type: null, id: 'user-1', username: 'sharer' },
       },
       rss_feed_item_elections: {},
       page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
@@ -231,8 +231,8 @@ describe('NewsItemClusterList', () => {
         'item-1': makeItem('item-1', 'Shared Article'),
       },
       users: {
-        'user-1': { id: 'user-1', username: 'sharer-one' },
-        'user-2': { id: 'user-2', username: 'sharer-two' },
+        'user-1': { account_type: null, id: 'user-1', username: 'sharer-one' },
+        'user-2': { account_type: null, id: 'user-2', username: 'sharer-two' },
       },
       rss_feed_item_elections: {},
       page_info: { has_next_page: false, end_cursor: null, start_cursor: null },

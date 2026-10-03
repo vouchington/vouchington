@@ -3,7 +3,7 @@ import {
   getPrivateUserByAny,
   getPublicUserByIdOrSlug,
   isAdminUser,
-  isOfficialAccount,
+  isPlatformAccount,
 } from '@services/users'
 import { isUserTagTopicId } from '@services/topics/user-tag-topics'
 import type { PrivateUser } from '@services/users/types'
@@ -14,8 +14,11 @@ export async function assertUserTagAllowed(
   targetUserIdOrSlug: string,
   topicId: string,
 ): Promise<string> {
-  if (!isAdminUser(currentUser) && isOfficialAccount(currentUser)) {
-    throw createHttpError(403, 'Official accounts cannot create community trust signals.')
+  if (!isAdminUser(currentUser) && isPlatformAccount(currentUser)) {
+    throw createHttpError(
+      403,
+      'Official and automated accounts cannot create community trust signals.',
+    )
   }
   const [publicTarget, curatedTopic] = await Promise.all([
     getPublicUserByIdOrSlug(targetUserIdOrSlug, { readOnly: false }),

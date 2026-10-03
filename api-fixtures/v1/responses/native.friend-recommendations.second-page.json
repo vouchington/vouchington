@@ -21,6 +21,7 @@
   "users": {
     "019fafc1-308d-7db5-b834-6bbf641bf0e7": {
       "__entity_type": "user",
+      "account_type": null,
       "id": "019fafc1-308d-7db5-b834-6bbf641bf0e7",
       "profile_image_id": null,
       "roles": [],
@@ -28,6 +29,7 @@
     },
     "user-1": {
       "__entity_type": "user",
+      "account_type": null,
       "id": "user-1",
       "profile_image_id": null,
       "roles": [],

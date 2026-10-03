@@ -159,7 +159,7 @@ export const makeComment = (
   parent_id: parentId,
   created_by_id: 'user-1',
   created_by: username
-    ? { __entity_type: 'user', id: 'user-1', username, profile_image_id: null }
+    ? { account_type: null, __entity_type: 'user', id: 'user-1', username, profile_image_id: null }
     : undefined,
   created_at: `2024-01-0${id.slice(-1)}T00:00:00Z`,
   updated_at: '2024-01-01T00:00:00Z',

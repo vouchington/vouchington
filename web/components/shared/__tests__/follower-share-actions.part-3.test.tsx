@@ -24,8 +24,8 @@ describe('FollowerShareActions', () => {
     mockAuth.currentUser = { id: 'user-1' } as User
     vi.mocked(fetchFollowerUsers).mockResolvedValue({
       results: [
-        { id: 'user-2', username: 'alpha' },
-        { id: 'user-3', username: 'beta' },
+        { account_type: null, id: 'user-2', username: 'alpha' },
+        { account_type: null, id: 'user-3', username: 'beta' },
       ],
       page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
     })

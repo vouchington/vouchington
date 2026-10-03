@@ -81,10 +81,7 @@ const dataWithResults: ReferralClickLogResponseBody = {
     },
   },
   users: {
-    [userId]: {
-      id: userId,
-      username: 'johndoe',
-    },
+    [userId]: { account_type: null, id: userId, username: 'johndoe' },
   },
   page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
 }

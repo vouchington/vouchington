@@ -17,7 +17,7 @@ export async function isFederationEnabledForUser(
     FROM users
     WHERE id = ${userId}
       AND deleted_at IS NULL
-      AND is_system = FALSE
+      AND platform_account_kind IS NULL
   `)
   return rows[0]?.fediverse_federation_enabled ?? false
 }

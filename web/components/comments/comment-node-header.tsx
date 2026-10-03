@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { ChevronUp } from 'lucide-react'
-import { UserOfficialBadge } from '@/components/shared/user-official-badge'
+import { UserAccountBadge } from '@/components/shared/user-account-badge'
 import { TimeAgo } from '@/components/shared/time-ago'
 import { UserAvatar } from '@/components/shared/user-avatar'
 import { UserLink } from '@/components/users/user-link'
@@ -75,9 +75,9 @@ export function CommentNodeHeader(props: CommentNodeHeaderProps) {
       </Button>
       <CommentAuthorAvatar {...props} />
       <CommentAuthorName {...props} />
-      {post.created_by?.is_official_account && (
+      {post.created_by?.account_type && (
         <span className='pointer-events-none relative'>
-          <UserOfficialBadge isOfficial={post.created_by.is_official_account} />
+          <UserAccountBadge accountType={post.created_by.account_type} />
         </span>
       )}
       <Link

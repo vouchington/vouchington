@@ -53,7 +53,9 @@ export async function searchCommunities(
   const searchQuery = sql`/* searchCommunities */
     SELECT `
     .append(communityColumns('c'))
-    .append(', u.id AS owner_id, u.username AS owner_username')
+    .append(
+      ', u.id AS owner_id, u.username AS owner_username, (SELECT e.account_type FROM view_embedded_users e WHERE e.id = u.id) AS owner_account_type',
+    )
 
   searchQuery.append(buildCommunityImagePlacementSelect())
 

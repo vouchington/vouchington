@@ -1,4 +1,4 @@
-import { UserOfficialBadge } from '@/components/shared/user-official-badge'
+import { UserAccountBadge } from '@/components/shared/user-account-badge'
 import { TimeAgo } from '@/components/shared/time-ago'
 import { UserAvatar } from '@/components/shared/user-avatar'
 import { UserLink } from '@/components/users/user-link'
@@ -14,7 +14,7 @@ export function PostDetailMetadata({
   authorName: string
   author?: Pick<
     PublicUser,
-    'id' | 'username' | 'profile_image_id' | 'profile_image_placement' | 'is_official_account'
+    'id' | 'username' | 'profile_image_id' | 'profile_image_placement' | 'account_type'
   > | null
   createdAt: string
   bylineLabel: string
@@ -39,7 +39,7 @@ export function PostDetailMetadata({
       ) : (
         byline
       )}
-      <UserOfficialBadge isOfficial={author?.is_official_account} />
+      <UserAccountBadge accountType={author?.account_type} />
       <span>{separatorLabel}</span>
       <TimeAgo date={createdAt} />
     </div>

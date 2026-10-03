@@ -13,6 +13,22 @@
       }
     },
     "schemas": {
+      "AccountType": {
+        "anyOf": [
+          {
+            "const": "ai_agent"
+          },
+          {
+            "const": "official"
+          },
+          {
+            "const": "system"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
       "AddEmailAddressRequest": {
         "additionalProperties": false,
         "properties": {
@@ -763,6 +779,9 @@
           "__entity_type": {
             "const": "user"
           },
+          "account_type": {
+            "$ref": "#/components/schemas/AccountType"
+          },
           "id": {
             "type": "string"
           },
@@ -775,9 +794,6 @@
                 "type": "string"
               }
             ]
-          },
-          "is_agent": {
-            "type": "boolean"
           },
           "markdown": {
             "anyOf": [
@@ -905,7 +921,7 @@
             ]
           }
         },
-        "required": ["__entity_type", "id", "roles"],
+        "required": ["__entity_type", "account_type", "id", "roles"],
         "type": "object"
       },
       "BatchDisputeAnnotationsRequest": {
@@ -2584,6 +2600,9 @@
       "CommunityOwner": {
         "additionalProperties": false,
         "properties": {
+          "account_type": {
+            "$ref": "#/components/schemas/AccountType"
+          },
           "id": {
             "type": "string"
           },
@@ -2598,7 +2617,7 @@
             ]
           }
         },
-        "required": ["id", "username"],
+        "required": ["account_type", "id", "username"],
         "type": "object"
       },
       "CommunityPinnedPost": {
@@ -7524,6 +7543,9 @@
                 "__entity_type": {
                   "const": "user"
                 },
+                "account_type": {
+                  "$ref": "#/components/schemas/AccountType"
+                },
                 "display_account": {
                   "anyOf": [
                     {
@@ -7536,9 +7558,6 @@
                 },
                 "id": {
                   "type": "string"
-                },
-                "is_official_account": {
-                  "type": "boolean"
                 },
                 "lingua_rs_detected_language": {
                   "anyOf": [
@@ -7695,7 +7714,7 @@
                   ]
                 }
               },
-              "required": ["__entity_type", "id", "roles"],
+              "required": ["__entity_type", "account_type", "id", "roles"],
               "type": "object"
             },
             "type": "array"
@@ -12182,11 +12201,14 @@
         ],
         "type": "object"
       },
-      "Omit_BasicUser__individual_id_____is_agent_": {
+      "Omit_BasicUser_individual_id": {
         "additionalProperties": false,
         "properties": {
           "__entity_type": {
             "const": "user"
+          },
+          "account_type": {
+            "$ref": "#/components/schemas/AccountType"
           },
           "id": {
             "type": "string"
@@ -12317,7 +12339,7 @@
             ]
           }
         },
-        "required": ["__entity_type", "id", "roles"],
+        "required": ["__entity_type", "account_type", "id", "roles"],
         "type": "object"
       },
       "Omit_ClusteredModerationReportsResponse__results_____duplicate_clusters_": {
@@ -15976,6 +15998,9 @@
               "__entity_type": {
                 "const": "user"
               },
+              "account_type": {
+                "$ref": "#/components/schemas/AccountType"
+              },
               "display_account": {
                 "anyOf": [
                   {
@@ -15991,9 +16016,6 @@
               },
               "id": {
                 "type": "string"
-              },
-              "is_official_account": {
-                "type": "boolean"
               },
               "lingua_rs_detected_language": {
                 "anyOf": [
@@ -16143,7 +16165,14 @@
                 ]
               }
             },
-            "required": ["__entity_type", "display_name", "id", "markdown", "roles"],
+            "required": [
+              "__entity_type",
+              "account_type",
+              "display_name",
+              "id",
+              "markdown",
+              "roles"
+            ],
             "type": "object"
           }
         },
@@ -16764,6 +16793,9 @@
             "__entity_type": {
               "const": "user"
             },
+            "account_type": {
+              "$ref": "#/components/schemas/AccountType"
+            },
             "display_account": {
               "anyOf": [
                 {
@@ -16776,9 +16808,6 @@
             },
             "id": {
               "type": "string"
-            },
-            "is_official_account": {
-              "type": "boolean"
             },
             "lingua_rs_detected_language": {
               "anyOf": [
@@ -16935,7 +16964,7 @@
               ]
             }
           },
-          "required": ["__entity_type", "id", "roles"],
+          "required": ["__entity_type", "account_type", "id", "roles"],
           "type": "object"
         },
         "properties": {},
@@ -17375,6 +17404,9 @@
       "ReferralLinkFeedUserRow": {
         "additionalProperties": false,
         "properties": {
+          "account_type": {
+            "$ref": "#/components/schemas/AccountType"
+          },
           "display_name": {
             "anyOf": [
               {
@@ -17402,12 +17434,15 @@
             "type": "string"
           }
         },
-        "required": ["display_name", "id", "profile_image_id", "username"],
+        "required": ["account_type", "display_name", "id", "profile_image_id", "username"],
         "type": "object"
       },
       "ReferralLinkUser": {
         "additionalProperties": false,
         "properties": {
+          "account_type": {
+            "$ref": "#/components/schemas/AccountType"
+          },
           "display_name": {
             "anyOf": [
               {
@@ -17425,7 +17460,7 @@
             "type": "string"
           }
         },
-        "required": ["display_name", "id", "username"],
+        "required": ["account_type", "display_name", "id", "username"],
         "type": "object"
       },
       "ReferralLinkValidation": {
@@ -25682,6 +25717,9 @@
                                   "__entity_type": {
                                     "const": "user"
                                   },
+                                  "account_type": {
+                                    "$ref": "#/components/schemas/AccountType"
+                                  },
                                   "display_account": {
                                     "anyOf": [
                                       {
@@ -25694,9 +25732,6 @@
                                   },
                                   "id": {
                                     "type": "string"
-                                  },
-                                  "is_official_account": {
-                                    "type": "boolean"
                                   },
                                   "lingua_rs_detected_language": {
                                     "anyOf": [
@@ -25853,7 +25888,7 @@
                                     ]
                                   }
                                 },
-                                "required": ["__entity_type", "id", "roles"],
+                                "required": ["__entity_type", "account_type", "id", "roles"],
                                 "type": "object"
                               },
                               {
@@ -32299,6 +32334,9 @@
                             "__entity_type": {
                               "const": "user"
                             },
+                            "account_type": {
+                              "$ref": "#/components/schemas/AccountType"
+                            },
                             "apple_account": {
                               "anyOf": [
                                 {
@@ -32427,9 +32465,6 @@
                                   "type": "string"
                                 }
                               ]
-                            },
-                            "is_agent": {
-                              "type": "boolean"
                             },
                             "likes_visibility": {
                               "$ref": "#/components/schemas/UserPrivacyAudience"
@@ -32799,6 +32834,7 @@
                           },
                           "required": [
                             "__entity_type",
+                            "account_type",
                             "cards_visibility",
                             "community_digest_frequency",
                             "community_memberships_visibility",
@@ -32914,6 +32950,9 @@
                       "properties": {
                         "__entity_type": {
                           "const": "user"
+                        },
+                        "account_type": {
+                          "$ref": "#/components/schemas/AccountType"
                         },
                         "apple_account": {
                           "anyOf": [
@@ -33043,9 +33082,6 @@
                               "type": "string"
                             }
                           ]
-                        },
-                        "is_agent": {
-                          "type": "boolean"
                         },
                         "likes_visibility": {
                           "$ref": "#/components/schemas/UserPrivacyAudience"
@@ -33410,6 +33446,7 @@
                       },
                       "required": [
                         "__entity_type",
+                        "account_type",
                         "cards_visibility",
                         "community_digest_frequency",
                         "community_memberships_visibility",
@@ -58890,6 +58927,9 @@
                         "__entity_type": {
                           "const": "user"
                         },
+                        "account_type": {
+                          "$ref": "#/components/schemas/AccountType"
+                        },
                         "apple_account": {
                           "anyOf": [
                             {
@@ -59018,12 +59058,6 @@
                               "type": "string"
                             }
                           ]
-                        },
-                        "is_agent": {
-                          "type": "boolean"
-                        },
-                        "is_official_account": {
-                          "type": "boolean"
                         },
                         "likes_visibility": {
                           "$ref": "#/components/schemas/UserPrivacyAudience"
@@ -59388,6 +59422,7 @@
                       },
                       "required": [
                         "__entity_type",
+                        "account_type",
                         "cards_visibility",
                         "community_digest_frequency",
                         "community_memberships_visibility",
@@ -59399,7 +59434,6 @@
                         "followers_visibility",
                         "follows_visibility",
                         "id",
-                        "is_official_account",
                         "likes_visibility",
                         "moderation_email_cadence",
                         "moderation_email_days_of_week",
@@ -59447,519 +59481,544 @@
                   "additionalProperties": false,
                   "properties": {
                     "identity": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "__entity_type": {
-                          "const": "user"
-                        },
-                        "apple_account": {
-                          "anyOf": [
-                            {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "__entity_type": {
+                              "const": "user"
                             },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "bad_faith_reporter_at": {
-                          "anyOf": [
-                            {
-                              "type": "null"
+                            "account_type": {
+                              "$ref": "#/components/schemas/AccountType"
                             },
-                            {
+                            "apple_account": {
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "bad_faith_reporter_at": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "bluesky_account": {
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/BlueskyAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "cards_visibility": {
+                              "$ref": "#/components/schemas/UserPrivacyAudience"
+                            },
+                            "community_digest_frequency": {
+                              "enum": ["daily", "none", "weekly"],
                               "type": "string"
-                            }
-                          ]
-                        },
-                        "bluesky_account": {
-                          "anyOf": [
-                            {
-                              "$ref": "#/components/schemas/BlueskyAccountInfo"
                             },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "cards_visibility": {
-                          "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
-                          "type": "string"
-                        },
-                        "community_digest_frequency": {
-                          "enum": ["daily", "none", "weekly"],
-                          "type": "string"
-                        },
-                        "community_memberships_visibility": {
-                          "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
-                          "type": "string"
-                        },
-                        "country": {
-                          "anyOf": [
-                            {
-                              "type": "null"
+                            "community_memberships_visibility": {
+                              "$ref": "#/components/schemas/UserPrivacyAudience"
                             },
-                            {
+                            "country": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "default_post_broadcast": {
+                              "enum": ["everyone", "followers", "mutual_followers", "users"],
                               "type": "string"
-                            }
-                          ]
-                        },
-                        "default_post_broadcast": {
-                          "enum": ["everyone", "followers", "mutual_followers", "users"],
-                          "type": "string"
-                        },
-                        "default_post_privacy": {
-                          "enum": ["private", "public"],
-                          "type": "string"
-                        },
-                        "direct_messages_audience": {
-                          "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
-                          "type": "string"
-                        },
-                        "email_address": {
-                          "anyOf": [
-                            {
-                              "type": "null"
                             },
-                            {
+                            "default_post_privacy": {
+                              "enum": ["private", "public"],
                               "type": "string"
-                            }
-                          ]
-                        },
-                        "engagement_emails_enabled": {
-                          "type": "boolean"
-                        },
-                        "facebook_account": {
-                          "anyOf": [
-                            {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
                             },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "fediverse_federation_enabled": {
-                          "type": "boolean"
-                        },
-                        "followers_visibility": {
-                          "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
-                          "type": "string"
-                        },
-                        "follows_visibility": {
-                          "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
-                          "type": "string"
-                        },
-                        "github_account": {
-                          "anyOf": [
-                            {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            "direct_messages_audience": {
+                              "$ref": "#/components/schemas/UserPrivacyAudience"
                             },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "google_account": {
-                          "anyOf": [
-                            {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            "email_address": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
                             },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "hn_discussions": {
-                          "type": "boolean"
-                        },
-                        "id": {
-                          "type": "string"
-                        },
-                        "individual_id": {
-                          "anyOf": [
-                            {
-                              "type": "null"
+                            "engagement_emails_enabled": {
+                              "type": "boolean"
                             },
-                            {
+                            "facebook_account": {
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "fediverse_federation_enabled": {
+                              "type": "boolean"
+                            },
+                            "followers_visibility": {
+                              "$ref": "#/components/schemas/UserPrivacyAudience"
+                            },
+                            "follows_visibility": {
+                              "$ref": "#/components/schemas/UserPrivacyAudience"
+                            },
+                            "github_account": {
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "google_account": {
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "hn_discussions": {
+                              "type": "boolean"
+                            },
+                            "id": {
                               "type": "string"
-                            }
-                          ]
-                        },
-                        "is_agent": {
-                          "type": "boolean"
-                        },
-                        "is_official_account": {
-                          "type": "boolean"
-                        },
-                        "likes_visibility": {
-                          "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
-                          "type": "string"
-                        },
-                        "lingua_rs_detected_language": {
-                          "anyOf": [
-                            {
-                              "type": "null"
                             },
-                            {
+                            "individual_id": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "likes_visibility": {
+                              "$ref": "#/components/schemas/UserPrivacyAudience"
+                            },
+                            "lingua_rs_detected_language": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "linkedin_account": {
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "markdown": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "membership_plan": {
+                              "anyOf": [
+                                {
+                                  "const": "plus"
+                                },
+                                {
+                                  "const": "pro"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "microsoft_account": {
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "moderation_email_cadence": {
+                              "enum": ["daily", "selected_days", "weekly"],
                               "type": "string"
-                            }
-                          ]
-                        },
-                        "linkedin_account": {
-                          "anyOf": [
-                            {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
                             },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "markdown": {
-                          "anyOf": [
-                            {
-                              "type": "null"
+                            "moderation_email_days_of_week": {
+                              "items": {
+                                "type": "number"
+                              },
+                              "type": "array"
                             },
-                            {
+                            "moderation_email_time_of_day": {
                               "type": "string"
-                            }
-                          ]
-                        },
-                        "membership_plan": {
-                          "anyOf": [
-                            {
-                              "const": "plus"
                             },
-                            {
-                              "const": "pro"
+                            "moderation_email_timezone": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
                             },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "microsoft_account": {
-                          "anyOf": [
-                            {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            "moderation_emails_enabled": {
+                              "type": "boolean"
                             },
-                            {
-                              "type": "null"
+                            "news_digest_frequency": {
+                              "enum": ["daily", "none", "weekly"],
+                              "type": "string"
+                            },
+                            "pending_verification_session_id": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "phone_number": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "processing_restricted_at": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "profile_image_id": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "profile_image_placement": {
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/ImagePlacementTuple"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "public_verified_name_display": {
+                              "enum": [
+                                "first_name_last_initial",
+                                "first_name",
+                                "full_name",
+                                "hidden"
+                              ],
+                              "type": "string"
+                            },
+                            "rewards_program_statuses_visibility": {
+                              "$ref": "#/components/schemas/UserPrivacyAudience"
+                            },
+                            "roles": {
+                              "items": {
+                                "type": "string"
+                              },
+                              "type": "array"
+                            },
+                            "rss_feed_follows_visibility": {
+                              "$ref": "#/components/schemas/UserPrivacyAudience"
+                            },
+                            "spending_categories_visibility": {
+                              "$ref": "#/components/schemas/UserPrivacyAudience"
+                            },
+                            "suspended_at": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "suspended_by_id": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "suspended_reason": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "third_party_marketing": {
+                              "anyOf": [
+                                {
+                                  "const": false
+                                },
+                                {
+                                  "const": true
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "topic_follows_visibility": {
+                              "$ref": "#/components/schemas/UserPrivacyAudience"
+                            },
+                            "ui_locale": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "use_display_name_from": {
+                              "anyOf": [
+                                {
+                                  "const": "apple"
+                                },
+                                {
+                                  "const": "facebook"
+                                },
+                                {
+                                  "const": "github"
+                                },
+                                {
+                                  "const": "google"
+                                },
+                                {
+                                  "const": "linkedin"
+                                },
+                                {
+                                  "const": "microsoft"
+                                },
+                                {
+                                  "const": "username"
+                                },
+                                {
+                                  "const": "x"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "username": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "verification_completed_at": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "verification_provider": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "verification_status": {
+                              "anyOf": [
+                                {
+                                  "const": "duplicate_id"
+                                },
+                                {
+                                  "const": "failed"
+                                },
+                                {
+                                  "const": "identity_pending"
+                                },
+                                {
+                                  "const": "payment_pending"
+                                },
+                                {
+                                  "const": "unverified"
+                                },
+                                {
+                                  "const": "verified"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "verified_badge_visible": {
+                              "anyOf": [
+                                {
+                                  "const": false
+                                },
+                                {
+                                  "const": true
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "verified_display_name": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "verified_first_name": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "verified_full_name": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "verified_last_name_initial": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "x_account": {
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             }
-                          ]
-                        },
-                        "moderation_email_cadence": {
-                          "enum": ["daily", "selected_days", "weekly"],
-                          "type": "string"
-                        },
-                        "moderation_email_days_of_week": {
-                          "items": {
-                            "type": "number"
                           },
-                          "type": "array"
+                          "required": [
+                            "__entity_type",
+                            "account_type",
+                            "cards_visibility",
+                            "community_digest_frequency",
+                            "community_memberships_visibility",
+                            "default_post_broadcast",
+                            "default_post_privacy",
+                            "direct_messages_audience",
+                            "engagement_emails_enabled",
+                            "fediverse_federation_enabled",
+                            "followers_visibility",
+                            "follows_visibility",
+                            "id",
+                            "likes_visibility",
+                            "moderation_email_cadence",
+                            "moderation_email_days_of_week",
+                            "moderation_email_time_of_day",
+                            "moderation_email_timezone",
+                            "moderation_emails_enabled",
+                            "news_digest_frequency",
+                            "rewards_program_statuses_visibility",
+                            "roles",
+                            "rss_feed_follows_visibility",
+                            "spending_categories_visibility",
+                            "topic_follows_visibility"
+                          ],
+                          "type": "object"
                         },
-                        "moderation_email_time_of_day": {
-                          "type": "string"
-                        },
-                        "moderation_email_timezone": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "moderation_emails_enabled": {
-                          "type": "boolean"
-                        },
-                        "news_digest_frequency": {
-                          "enum": ["daily", "none", "weekly"],
-                          "type": "string"
-                        },
-                        "pending_verification_session_id": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "phone_number": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "processing_restricted_at": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "profile_image_id": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "profile_image_placement": {
-                          "anyOf": [
-                            {
-                              "$ref": "#/components/schemas/ImagePlacementTuple"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "public_verified_name_display": {
-                          "enum": ["first_name_last_initial", "first_name", "full_name", "hidden"],
-                          "type": "string"
-                        },
-                        "rewards_program_statuses_visibility": {
-                          "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
-                          "type": "string"
-                        },
-                        "roles": {
-                          "items": {
-                            "type": "string"
-                          },
-                          "type": "array"
-                        },
-                        "rss_feed_follows_visibility": {
-                          "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
-                          "type": "string"
-                        },
-                        "spending_categories_visibility": {
-                          "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
-                          "type": "string"
-                        },
-                        "suspended_at": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "suspended_by_id": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "suspended_reason": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "third_party_marketing": {
-                          "anyOf": [
-                            {
-                              "const": false
-                            },
-                            {
-                              "const": true
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "topic_follows_visibility": {
-                          "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
-                          "type": "string"
-                        },
-                        "ui_locale": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "use_display_name_from": {
-                          "anyOf": [
-                            {
-                              "const": "apple"
-                            },
-                            {
-                              "const": "facebook"
-                            },
-                            {
-                              "const": "github"
-                            },
-                            {
-                              "const": "google"
-                            },
-                            {
-                              "const": "linkedin"
-                            },
-                            {
-                              "const": "microsoft"
-                            },
-                            {
-                              "const": "username"
-                            },
-                            {
-                              "const": "x"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "username": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "verification_completed_at": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "verification_provider": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "verification_status": {
-                          "anyOf": [
-                            {
-                              "const": "duplicate_id"
-                            },
-                            {
-                              "const": "failed"
-                            },
-                            {
-                              "const": "identity_pending"
-                            },
-                            {
-                              "const": "payment_pending"
-                            },
-                            {
-                              "const": "unverified"
-                            },
-                            {
-                              "const": "verified"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "verified_badge_visible": {
-                          "anyOf": [
-                            {
-                              "const": false
-                            },
-                            {
-                              "const": true
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "verified_display_name": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "verified_first_name": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "verified_full_name": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "verified_last_name_initial": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "x_account": {
-                          "anyOf": [
-                            {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
+                        {
+                          "type": "null"
                         }
-                      },
-                      "required": ["is_official_account"],
-                      "type": "object"
+                      ]
                     }
                   },
                   "required": ["identity"],
@@ -76050,6 +76109,9 @@
                                 "__entity_type": {
                                   "const": "user"
                                 },
+                                "account_type": {
+                                  "$ref": "#/components/schemas/AccountType"
+                                },
                                 "apple_account": {
                                   "anyOf": [
                                     {
@@ -76178,9 +76240,6 @@
                                       "type": "string"
                                     }
                                   ]
-                                },
-                                "is_agent": {
-                                  "type": "boolean"
                                 },
                                 "likes_visibility": {
                                   "$ref": "#/components/schemas/UserPrivacyAudience"
@@ -76550,6 +76609,7 @@
                               },
                               "required": [
                                 "__entity_type",
+                                "account_type",
                                 "cards_visibility",
                                 "community_digest_frequency",
                                 "community_memberships_visibility",
@@ -76582,6 +76642,9 @@
                                 "__entity_type": {
                                   "const": "user"
                                 },
+                                "account_type": {
+                                  "$ref": "#/components/schemas/AccountType"
+                                },
                                 "display_account": {
                                   "anyOf": [
                                     {
@@ -76594,9 +76657,6 @@
                                 },
                                 "id": {
                                   "type": "string"
-                                },
-                                "is_official_account": {
-                                  "type": "boolean"
                                 },
                                 "lingua_rs_detected_language": {
                                   "anyOf": [
@@ -76753,7 +76813,7 @@
                                   ]
                                 }
                               },
-                              "required": ["__entity_type", "id", "roles"],
+                              "required": ["__entity_type", "account_type", "id", "roles"],
                               "type": "object"
                             }
                           ]
@@ -76779,6 +76839,9 @@
                                 "properties": {
                                   "__entity_type": {
                                     "const": "user"
+                                  },
+                                  "account_type": {
+                                    "$ref": "#/components/schemas/AccountType"
                                   },
                                   "apple_account": {
                                     "anyOf": [
@@ -76908,9 +76971,6 @@
                                         "type": "string"
                                       }
                                     ]
-                                  },
-                                  "is_agent": {
-                                    "type": "boolean"
                                   },
                                   "likes_visibility": {
                                     "$ref": "#/components/schemas/UserPrivacyAudience"
@@ -77280,6 +77340,7 @@
                                 },
                                 "required": [
                                   "__entity_type",
+                                  "account_type",
                                   "cards_visibility",
                                   "community_digest_frequency",
                                   "community_memberships_visibility",
@@ -77315,6 +77376,9 @@
                                   "__entity_type": {
                                     "const": "user"
                                   },
+                                  "account_type": {
+                                    "$ref": "#/components/schemas/AccountType"
+                                  },
                                   "display_account": {
                                     "anyOf": [
                                       {
@@ -77327,9 +77391,6 @@
                                   },
                                   "id": {
                                     "type": "string"
-                                  },
-                                  "is_official_account": {
-                                    "type": "boolean"
                                   },
                                   "lingua_rs_detected_language": {
                                     "anyOf": [
@@ -77486,7 +77547,7 @@
                                     ]
                                   }
                                 },
-                                "required": ["__entity_type", "id", "roles"],
+                                "required": ["__entity_type", "account_type", "id", "roles"],
                                 "type": "object"
                               },
                               "type": "array"
@@ -77579,6 +77640,9 @@
                               "properties": {
                                 "__entity_type": {
                                   "const": "user"
+                                },
+                                "account_type": {
+                                  "$ref": "#/components/schemas/AccountType"
                                 },
                                 "apple_account": {
                                   "anyOf": [
@@ -77708,9 +77772,6 @@
                                       "type": "string"
                                     }
                                   ]
-                                },
-                                "is_agent": {
-                                  "type": "boolean"
                                 },
                                 "likes_visibility": {
                                   "$ref": "#/components/schemas/UserPrivacyAudience"
@@ -78080,6 +78141,7 @@
                               },
                               "required": [
                                 "__entity_type",
+                                "account_type",
                                 "cards_visibility",
                                 "community_digest_frequency",
                                 "community_memberships_visibility",
@@ -78112,6 +78174,9 @@
                                 "__entity_type": {
                                   "const": "user"
                                 },
+                                "account_type": {
+                                  "$ref": "#/components/schemas/AccountType"
+                                },
                                 "display_account": {
                                   "anyOf": [
                                     {
@@ -78124,9 +78189,6 @@
                                 },
                                 "id": {
                                   "type": "string"
-                                },
-                                "is_official_account": {
-                                  "type": "boolean"
                                 },
                                 "lingua_rs_detected_language": {
                                   "anyOf": [
@@ -78283,7 +78345,7 @@
                                   ]
                                 }
                               },
-                              "required": ["__entity_type", "id", "roles"],
+                              "required": ["__entity_type", "account_type", "id", "roles"],
                               "type": "object"
                             }
                           ]
@@ -78336,6 +78398,9 @@
                           "properties": {
                             "__entity_type": {
                               "const": "user"
+                            },
+                            "account_type": {
+                              "$ref": "#/components/schemas/AccountType"
                             },
                             "apple_account": {
                               "anyOf": [
@@ -78465,9 +78530,6 @@
                                   "type": "string"
                                 }
                               ]
-                            },
-                            "is_agent": {
-                              "type": "boolean"
                             },
                             "likes_visibility": {
                               "$ref": "#/components/schemas/UserPrivacyAudience"
@@ -78837,6 +78899,7 @@
                           },
                           "required": [
                             "__entity_type",
+                            "account_type",
                             "cards_visibility",
                             "community_digest_frequency",
                             "community_memberships_visibility",
@@ -78937,519 +79000,544 @@
                   "additionalProperties": false,
                   "properties": {
                     "user": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "__entity_type": {
-                          "const": "user"
-                        },
-                        "apple_account": {
-                          "anyOf": [
-                            {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "__entity_type": {
+                              "const": "user"
                             },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "bad_faith_reporter_at": {
-                          "anyOf": [
-                            {
-                              "type": "null"
+                            "account_type": {
+                              "$ref": "#/components/schemas/AccountType"
                             },
-                            {
+                            "apple_account": {
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "bad_faith_reporter_at": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "bluesky_account": {
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/BlueskyAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "cards_visibility": {
+                              "$ref": "#/components/schemas/UserPrivacyAudience"
+                            },
+                            "community_digest_frequency": {
+                              "enum": ["daily", "none", "weekly"],
                               "type": "string"
-                            }
-                          ]
-                        },
-                        "bluesky_account": {
-                          "anyOf": [
-                            {
-                              "$ref": "#/components/schemas/BlueskyAccountInfo"
                             },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "cards_visibility": {
-                          "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
-                          "type": "string"
-                        },
-                        "community_digest_frequency": {
-                          "enum": ["daily", "none", "weekly"],
-                          "type": "string"
-                        },
-                        "community_memberships_visibility": {
-                          "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
-                          "type": "string"
-                        },
-                        "country": {
-                          "anyOf": [
-                            {
-                              "type": "null"
+                            "community_memberships_visibility": {
+                              "$ref": "#/components/schemas/UserPrivacyAudience"
                             },
-                            {
+                            "country": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "default_post_broadcast": {
+                              "enum": ["everyone", "followers", "mutual_followers", "users"],
                               "type": "string"
-                            }
-                          ]
-                        },
-                        "default_post_broadcast": {
-                          "enum": ["everyone", "followers", "mutual_followers", "users"],
-                          "type": "string"
-                        },
-                        "default_post_privacy": {
-                          "enum": ["private", "public"],
-                          "type": "string"
-                        },
-                        "direct_messages_audience": {
-                          "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
-                          "type": "string"
-                        },
-                        "email_address": {
-                          "anyOf": [
-                            {
-                              "type": "null"
                             },
-                            {
+                            "default_post_privacy": {
+                              "enum": ["private", "public"],
                               "type": "string"
-                            }
-                          ]
-                        },
-                        "engagement_emails_enabled": {
-                          "type": "boolean"
-                        },
-                        "facebook_account": {
-                          "anyOf": [
-                            {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
                             },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "fediverse_federation_enabled": {
-                          "type": "boolean"
-                        },
-                        "followers_visibility": {
-                          "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
-                          "type": "string"
-                        },
-                        "follows_visibility": {
-                          "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
-                          "type": "string"
-                        },
-                        "github_account": {
-                          "anyOf": [
-                            {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            "direct_messages_audience": {
+                              "$ref": "#/components/schemas/UserPrivacyAudience"
                             },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "google_account": {
-                          "anyOf": [
-                            {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            "email_address": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
                             },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "hn_discussions": {
-                          "type": "boolean"
-                        },
-                        "id": {
-                          "type": "string"
-                        },
-                        "individual_id": {
-                          "anyOf": [
-                            {
-                              "type": "null"
+                            "engagement_emails_enabled": {
+                              "type": "boolean"
                             },
-                            {
+                            "facebook_account": {
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "fediverse_federation_enabled": {
+                              "type": "boolean"
+                            },
+                            "followers_visibility": {
+                              "$ref": "#/components/schemas/UserPrivacyAudience"
+                            },
+                            "follows_visibility": {
+                              "$ref": "#/components/schemas/UserPrivacyAudience"
+                            },
+                            "github_account": {
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "google_account": {
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "hn_discussions": {
+                              "type": "boolean"
+                            },
+                            "id": {
                               "type": "string"
-                            }
-                          ]
-                        },
-                        "is_agent": {
-                          "type": "boolean"
-                        },
-                        "is_official_account": {
-                          "type": "boolean"
-                        },
-                        "likes_visibility": {
-                          "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
-                          "type": "string"
-                        },
-                        "lingua_rs_detected_language": {
-                          "anyOf": [
-                            {
-                              "type": "null"
                             },
-                            {
+                            "individual_id": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "likes_visibility": {
+                              "$ref": "#/components/schemas/UserPrivacyAudience"
+                            },
+                            "lingua_rs_detected_language": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "linkedin_account": {
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "markdown": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "membership_plan": {
+                              "anyOf": [
+                                {
+                                  "const": "plus"
+                                },
+                                {
+                                  "const": "pro"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "microsoft_account": {
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "moderation_email_cadence": {
+                              "enum": ["daily", "selected_days", "weekly"],
                               "type": "string"
-                            }
-                          ]
-                        },
-                        "linkedin_account": {
-                          "anyOf": [
-                            {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
                             },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "markdown": {
-                          "anyOf": [
-                            {
-                              "type": "null"
+                            "moderation_email_days_of_week": {
+                              "items": {
+                                "type": "number"
+                              },
+                              "type": "array"
                             },
-                            {
+                            "moderation_email_time_of_day": {
                               "type": "string"
-                            }
-                          ]
-                        },
-                        "membership_plan": {
-                          "anyOf": [
-                            {
-                              "const": "plus"
                             },
-                            {
-                              "const": "pro"
+                            "moderation_email_timezone": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
                             },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "microsoft_account": {
-                          "anyOf": [
-                            {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            "moderation_emails_enabled": {
+                              "type": "boolean"
                             },
-                            {
-                              "type": "null"
+                            "news_digest_frequency": {
+                              "enum": ["daily", "none", "weekly"],
+                              "type": "string"
+                            },
+                            "pending_verification_session_id": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "phone_number": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "processing_restricted_at": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "profile_image_id": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "profile_image_placement": {
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/ImagePlacementTuple"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "public_verified_name_display": {
+                              "enum": [
+                                "first_name_last_initial",
+                                "first_name",
+                                "full_name",
+                                "hidden"
+                              ],
+                              "type": "string"
+                            },
+                            "rewards_program_statuses_visibility": {
+                              "$ref": "#/components/schemas/UserPrivacyAudience"
+                            },
+                            "roles": {
+                              "items": {
+                                "type": "string"
+                              },
+                              "type": "array"
+                            },
+                            "rss_feed_follows_visibility": {
+                              "$ref": "#/components/schemas/UserPrivacyAudience"
+                            },
+                            "spending_categories_visibility": {
+                              "$ref": "#/components/schemas/UserPrivacyAudience"
+                            },
+                            "suspended_at": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "suspended_by_id": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "suspended_reason": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "third_party_marketing": {
+                              "anyOf": [
+                                {
+                                  "const": false
+                                },
+                                {
+                                  "const": true
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "topic_follows_visibility": {
+                              "$ref": "#/components/schemas/UserPrivacyAudience"
+                            },
+                            "ui_locale": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "use_display_name_from": {
+                              "anyOf": [
+                                {
+                                  "const": "apple"
+                                },
+                                {
+                                  "const": "facebook"
+                                },
+                                {
+                                  "const": "github"
+                                },
+                                {
+                                  "const": "google"
+                                },
+                                {
+                                  "const": "linkedin"
+                                },
+                                {
+                                  "const": "microsoft"
+                                },
+                                {
+                                  "const": "username"
+                                },
+                                {
+                                  "const": "x"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "username": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "verification_completed_at": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "verification_provider": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "verification_status": {
+                              "anyOf": [
+                                {
+                                  "const": "duplicate_id"
+                                },
+                                {
+                                  "const": "failed"
+                                },
+                                {
+                                  "const": "identity_pending"
+                                },
+                                {
+                                  "const": "payment_pending"
+                                },
+                                {
+                                  "const": "unverified"
+                                },
+                                {
+                                  "const": "verified"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "verified_badge_visible": {
+                              "anyOf": [
+                                {
+                                  "const": false
+                                },
+                                {
+                                  "const": true
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "verified_display_name": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "verified_first_name": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "verified_full_name": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "verified_last_name_initial": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "x_account": {
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             }
-                          ]
-                        },
-                        "moderation_email_cadence": {
-                          "enum": ["daily", "selected_days", "weekly"],
-                          "type": "string"
-                        },
-                        "moderation_email_days_of_week": {
-                          "items": {
-                            "type": "number"
                           },
-                          "type": "array"
+                          "required": [
+                            "__entity_type",
+                            "account_type",
+                            "cards_visibility",
+                            "community_digest_frequency",
+                            "community_memberships_visibility",
+                            "default_post_broadcast",
+                            "default_post_privacy",
+                            "direct_messages_audience",
+                            "engagement_emails_enabled",
+                            "fediverse_federation_enabled",
+                            "followers_visibility",
+                            "follows_visibility",
+                            "id",
+                            "likes_visibility",
+                            "moderation_email_cadence",
+                            "moderation_email_days_of_week",
+                            "moderation_email_time_of_day",
+                            "moderation_email_timezone",
+                            "moderation_emails_enabled",
+                            "news_digest_frequency",
+                            "rewards_program_statuses_visibility",
+                            "roles",
+                            "rss_feed_follows_visibility",
+                            "spending_categories_visibility",
+                            "topic_follows_visibility"
+                          ],
+                          "type": "object"
                         },
-                        "moderation_email_time_of_day": {
-                          "type": "string"
-                        },
-                        "moderation_email_timezone": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "moderation_emails_enabled": {
-                          "type": "boolean"
-                        },
-                        "news_digest_frequency": {
-                          "enum": ["daily", "none", "weekly"],
-                          "type": "string"
-                        },
-                        "pending_verification_session_id": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "phone_number": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "processing_restricted_at": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "profile_image_id": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "profile_image_placement": {
-                          "anyOf": [
-                            {
-                              "$ref": "#/components/schemas/ImagePlacementTuple"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "public_verified_name_display": {
-                          "enum": ["first_name_last_initial", "first_name", "full_name", "hidden"],
-                          "type": "string"
-                        },
-                        "rewards_program_statuses_visibility": {
-                          "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
-                          "type": "string"
-                        },
-                        "roles": {
-                          "items": {
-                            "type": "string"
-                          },
-                          "type": "array"
-                        },
-                        "rss_feed_follows_visibility": {
-                          "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
-                          "type": "string"
-                        },
-                        "spending_categories_visibility": {
-                          "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
-                          "type": "string"
-                        },
-                        "suspended_at": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "suspended_by_id": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "suspended_reason": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "third_party_marketing": {
-                          "anyOf": [
-                            {
-                              "const": false
-                            },
-                            {
-                              "const": true
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "topic_follows_visibility": {
-                          "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
-                          "type": "string"
-                        },
-                        "ui_locale": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "use_display_name_from": {
-                          "anyOf": [
-                            {
-                              "const": "apple"
-                            },
-                            {
-                              "const": "facebook"
-                            },
-                            {
-                              "const": "github"
-                            },
-                            {
-                              "const": "google"
-                            },
-                            {
-                              "const": "linkedin"
-                            },
-                            {
-                              "const": "microsoft"
-                            },
-                            {
-                              "const": "username"
-                            },
-                            {
-                              "const": "x"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "username": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "verification_completed_at": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "verification_provider": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "verification_status": {
-                          "anyOf": [
-                            {
-                              "const": "duplicate_id"
-                            },
-                            {
-                              "const": "failed"
-                            },
-                            {
-                              "const": "identity_pending"
-                            },
-                            {
-                              "const": "payment_pending"
-                            },
-                            {
-                              "const": "unverified"
-                            },
-                            {
-                              "const": "verified"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "verified_badge_visible": {
-                          "anyOf": [
-                            {
-                              "const": false
-                            },
-                            {
-                              "const": true
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "verified_display_name": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "verified_first_name": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "verified_full_name": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "verified_last_name_initial": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "x_account": {
-                          "anyOf": [
-                            {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
+                        {
+                          "type": "null"
                         }
-                      },
-                      "required": ["is_official_account"],
-                      "type": "object"
+                      ]
                     }
                   },
                   "required": ["user"],
@@ -80649,6 +80737,9 @@
                           "__entity_type": {
                             "const": "user"
                           },
+                          "account_type": {
+                            "$ref": "#/components/schemas/AccountType"
+                          },
                           "display_account": {
                             "anyOf": [
                               {
@@ -80661,9 +80752,6 @@
                           },
                           "id": {
                             "type": "string"
-                          },
-                          "is_official_account": {
-                            "type": "boolean"
                           },
                           "lingua_rs_detected_language": {
                             "anyOf": [
@@ -80820,7 +80908,7 @@
                             ]
                           }
                         },
-                        "required": ["__entity_type", "id", "roles"],
+                        "required": ["__entity_type", "account_type", "id", "roles"],
                         "type": "object"
                       },
                       "type": "array"
@@ -81331,6 +81419,9 @@
                         "__entity_type": {
                           "const": "user"
                         },
+                        "account_type": {
+                          "$ref": "#/components/schemas/AccountType"
+                        },
                         "apple_account": {
                           "anyOf": [
                             {
@@ -81459,9 +81550,6 @@
                               "type": "string"
                             }
                           ]
-                        },
-                        "is_agent": {
-                          "type": "boolean"
                         },
                         "likes_visibility": {
                           "$ref": "#/components/schemas/UserPrivacyAudience"
@@ -81826,6 +81914,7 @@
                       },
                       "required": [
                         "__entity_type",
+                        "account_type",
                         "cards_visibility",
                         "community_digest_frequency",
                         "community_memberships_visibility",
@@ -81899,6 +81988,9 @@
                         "__entity_type": {
                           "const": "user"
                         },
+                        "account_type": {
+                          "$ref": "#/components/schemas/AccountType"
+                        },
                         "apple_account": {
                           "anyOf": [
                             {
@@ -82027,9 +82119,6 @@
                               "type": "string"
                             }
                           ]
-                        },
-                        "is_agent": {
-                          "type": "boolean"
                         },
                         "likes_visibility": {
                           "$ref": "#/components/schemas/UserPrivacyAudience"
@@ -82394,6 +82483,7 @@
                       },
                       "required": [
                         "__entity_type",
+                        "account_type",
                         "cards_visibility",
                         "community_digest_frequency",
                         "community_memberships_visibility",

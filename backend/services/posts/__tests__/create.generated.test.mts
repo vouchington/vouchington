@@ -254,7 +254,7 @@ describe('create.generated', () => {
     ).rejects.toMatchObject({
       status: 403,
       code: OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN,
-      message: 'Official accounts cannot create community reviews or data points.',
+      message: 'Official and automated accounts cannot create community reviews or data points.',
     })
   })
 

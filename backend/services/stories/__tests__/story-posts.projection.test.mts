@@ -21,7 +21,7 @@ import {
   getEntityRelationElectionVote,
   updateEntityRelationElectionVoteStatsFromPrimary,
 } from '@services/elections-votes/entity-relation'
-import { getSystemUserByUsername, upsertSystemAdministrator } from '@services/users/system-users'
+import { getSystemUserByUsername, upsertSystemUser } from '@services/users/system-users'
 import { createStoryPost } from '../story-posts.mts'
 import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
 import { elections } from '../../../queues/elections/queues.mts'
@@ -36,7 +36,7 @@ describe('story post projection', () => {
   let testUser: PrivateUser
 
   beforeAll(async () => {
-    await upsertSystemAdministrator('story-teller')
+    await upsertSystemUser('story-teller')
     const feedHostname = `story-projection-${randomUUID()}.example.test`
     feedId = (
       await createTestRssFeed({

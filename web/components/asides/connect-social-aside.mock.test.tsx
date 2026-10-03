@@ -39,11 +39,7 @@ import { ConnectSocialAside } from './connect-social-aside'
 
 const mockGetCurrentUser = vi.mocked(getCurrentUser)
 
-const baseUser: User = {
-  id: 'user-1',
-  username: 'testuser',
-  roles: [],
-}
+const baseUser: User = { account_type: null, id: 'user-1', username: 'testuser', roles: [] }
 
 describe('ConnectSocialAside', () => {
   beforeEach(() => {

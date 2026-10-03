@@ -110,17 +110,13 @@ describe('UserProfileHeader', () => {
     )
   })
 
-  it('shows neutral official badge for redacted official payloads', () => {
-    render(<UserProfileHeader user={{ ...baseUser, is_official_account: true }} />)
-    expect(screen.getByText('official')).toBeDefined()
-    expect(screen.queryByTestId('agent-badge')).toBeNull()
-  })
-
-  it('derives the agent badge for private user payloads', () => {
-    render(
-      <UserProfileHeader user={{ ...baseUser, is_agent: true, is_official_account: undefined }} />,
-    )
-    expect(screen.getByTestId('agent-badge')).toBeDefined()
+  it.each([
+    ['official', 'Official'],
+    ['system', 'System'],
+    ['ai_agent', 'AI Agent'],
+  ] as const)('shows the public %s author label', (account_type, label) => {
+    render(<UserProfileHeader user={{ ...baseUser, account_type }} />)
+    expect(screen.getByText(label)).toBeDefined()
   })
 
   it('renders profile links when profileLinks is non-empty', () => {

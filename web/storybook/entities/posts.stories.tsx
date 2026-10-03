@@ -115,7 +115,7 @@ function PostAsides() {
           id: publicUsers[0]!.id,
           username: publicUsers[0]!.username!,
           profile_image_id: publicUsers[0]!.profile_image_id ?? null,
-          is_official_account: publicUsers[0]!.is_official_account,
+          account_type: publicUsers[0]!.account_type,
         }}
         aside={{
           about_html:

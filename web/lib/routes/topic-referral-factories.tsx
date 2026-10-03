@@ -23,7 +23,7 @@ import {
   getTopic,
 } from '@/lib/api/server'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
-import { isAdmin, isOfficialAccount } from '@/lib/auth/official-account'
+import { isAdmin, isPlatformAccount } from '@/lib/auth/account-type'
 import { getTranslations } from '@/lib/i18n/get-translations'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
 import { createTopicSectionMetadata, createTopicSectionStructuredData } from '@/lib/seo/topic-pages'
@@ -82,7 +82,7 @@ export function createTopicReferralLinksPage(slug: string) {
     )
 
     const existingLink = myLinks?.results?.[0] ?? null
-    const isOfficial = isOfficialAccount(currentUser)
+    const isOfficial = isPlatformAccount(currentUser)
 
     return (
       <>

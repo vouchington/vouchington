@@ -8,6 +8,7 @@ export type CommunityFeedCategory = 'posts' | 'news' | 'news_sources' | 'news_to
 export type CommunityOwner = {
   id: string
   username: string | null
+  account_type: import('@services/users/types').PublicUser['account_type']
 }
 
 export type SearchCommunitiesResult = {

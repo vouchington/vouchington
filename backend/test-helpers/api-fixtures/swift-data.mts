@@ -68,6 +68,7 @@ export const swiftNotification = {
 
 export const friendUser = {
   __entity_type: 'user',
+  account_type: null,
   id: 'friend-1',
   username: 'friend',
   display_account: { name: 'Friendly User' },
@@ -112,8 +113,8 @@ export const swiftRssFeedSource = {
   hostname: null,
   topic: {
     ...topic,
-    created_by: { ...topic.created_by, __entity_type: 'user' },
-    updated_by: { ...topic.updated_by, __entity_type: 'user' },
+    created_by: { ...topic.created_by, __entity_type: 'user', account_type: null },
+    updated_by: { ...topic.updated_by, __entity_type: 'user', account_type: null },
   },
   podcast_show: null,
 }

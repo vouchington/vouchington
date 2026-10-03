@@ -19,7 +19,7 @@ import {
 } from '@/lib/api/server'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { getModmailInboxServer } from '@/lib/api/server/modmail'
-import { isAdmin, isModerationStaff } from '@/lib/auth/official-account'
+import { isAdmin, isModerationStaff } from '@/lib/auth/account-type'
 import { ModQueue } from '@/components/communities/mod-queue'
 import { CommunityAgentPromptHistory } from '@/components/communities/community-agent-prompt-history'
 import { CommunityAgentPromptsPanel } from '@/components/communities/community-agent-prompts-panel'

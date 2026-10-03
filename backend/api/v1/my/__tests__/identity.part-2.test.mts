@@ -140,8 +140,7 @@ describe('GET /api/v1/users/:id - display_account visibility based on use_displa
     expect(response.body.user.display_account.name).toBeNull()
     expect(response.body.user).not.toHaveProperty('individual_id')
     expect(response.body.user.roles).toEqual([])
-    expect(response.body.user).not.toHaveProperty('is_agent')
-    expect(response.body.user.is_official_account).toBe(false)
+    expect(response.body.user.account_type).toBeNull()
   })
 })
 

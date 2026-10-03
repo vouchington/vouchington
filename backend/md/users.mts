@@ -18,7 +18,7 @@ app.route('/md/users/:idOrUsername').get(async (ctx: Context) => {
   const frontmatter = toFrontmatter({
     username,
     url,
-    is_official_account: user.is_official_account ?? false,
+    account_type: user.account_type,
   })
 
   const displayName = user.username ?? 'Anonymous'

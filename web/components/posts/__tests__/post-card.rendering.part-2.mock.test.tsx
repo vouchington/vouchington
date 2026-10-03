@@ -180,7 +180,7 @@ describe('PostCard', () => {
     })
     it('card view: shared byline gets pr-14 for authenticated non-owner', () => {
       mockPostCardUser.current = { id: 'user-3' } as User
-      const sharedByUser: PublicUser = { id: 'user-2', username: 'sharer' }
+      const sharedByUser: PublicUser = { account_type: null, id: 'user-2', username: 'sharer' }
       const { container } = render(
         <PostCard
           post={mockPost}
@@ -193,7 +193,7 @@ describe('PostCard', () => {
     })
     it('card view: shared byline has no pr-14 for post owner', () => {
       mockPostCardUser.current = { id: 'user-1' } as User
-      const sharedByUser: PublicUser = { id: 'user-2', username: 'sharer' }
+      const sharedByUser: PublicUser = { account_type: null, id: 'user-2', username: 'sharer' }
       const { container } = render(
         <PostCard
           post={mockPost}

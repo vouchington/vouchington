@@ -33,4 +33,5 @@ _none_
 
 **Triggers:**
 
+- `trigger_user_roles_account_kind`: `CREATE TRIGGER trigger_user_roles_account_kind BEFORE INSERT OR UPDATE OF user_id ON public.user_roles FOR EACH ROW EXECUTE FUNCTION fn_require_role_user_is_not_system()`
 - `trigger_user_roles_updated_at`: `CREATE TRIGGER trigger_user_roles_updated_at BEFORE UPDATE ON public.user_roles FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

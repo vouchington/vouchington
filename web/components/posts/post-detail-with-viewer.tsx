@@ -1,4 +1,4 @@
-import { isModerationStaff } from '@/lib/auth/official-account'
+import { isModerationStaff } from '@/lib/auth/account-type'
 import type { Translator } from '@ts-shared/ui-messages'
 import type { PostResponseBody } from '@/types/api-responses'
 import type { Post, PostCommunity, PostElection } from '@/types/posts'

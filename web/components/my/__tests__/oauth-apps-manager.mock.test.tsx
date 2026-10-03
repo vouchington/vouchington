@@ -264,7 +264,7 @@ describe('OAuthAppsManager', () => {
 
     render(
       <AuthProvider
-        initialUser={{ id: 'admin-user', roles: ['administrator'], isOfficialAccount: true }}
+        initialUser={{ id: 'admin-user', roles: ['administrator'], account_type: 'official' }}
       >
         <OAuthAppsManager
           initialData={emptyPage}

@@ -3,7 +3,7 @@ import sql from 'sql-template-strings'
 import type { BasicUser, PrivateUser, UserPrivacyAudience } from '@services/users/types'
 import { DELETED_USER_ID } from '@services/users/constants'
 
-export { isOfficialAccount } from '@ts-shared/utils/official-account'
+export { isPlatformAccount } from '@ts-shared/utils/account-type'
 
 export function currentUserCanAccessUser(
   currentUser: PrivateUser | null,

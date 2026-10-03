@@ -48,7 +48,7 @@ export async function applyPostClassifierEffects(
   const taggedTopicIds = getPositiveTopicIds(lease, outcomes)
   if (taggedTopicIds.length > 0) {
     await upsertEntityRelation(
-      { __entity_type: 'user', id: lease.resolved.actorId, roles: [] },
+      { __entity_type: 'user', account_type: 'ai_agent', id: lease.resolved.actorId, roles: [] },
       getEntityRelationMetadataOrThrow({
         subjectType: 'post',
         objectType: 'topic',

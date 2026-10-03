@@ -25,26 +25,26 @@ describe('system-user seed reclaim (real DB)', () => {
     const squatterId = squatter.id
 
     // Mirrors the shape every real generator appends after buildSystemUserUpsertSQL(): grant a
-    // role by username lookup, gated on is_system = TRUE.
-    const sql = `${buildSystemUserUpsertSQL(reservedUsername)}
+    // role by username lookup, gated on platform_account_kind = 'official'.
+    const sql = `${buildSystemUserUpsertSQL(reservedUsername, 'official')}
 
 INSERT INTO user_roles (user_id, role_type_id)
 SELECT u.id, urt.id FROM users u
 JOIN user_roles_types urt ON urt.slug = 'moderator'
-WHERE u.username = '${reservedUsername}' AND u.is_system = TRUE
+WHERE u.username = '${reservedUsername}' AND u.platform_account_kind = 'official'
 ON CONFLICT (user_id, role_type_id) DO NOTHING;`
 
     await runConfigDrivenStatementsInTransaction(sql, undefined)
 
     const squatterState = await getLocalTestUserRaw(squatterId)
     expect(squatterState?.username).toMatch(/^reclaimed-[0-9a-f]{32}$/)
-    expect(squatterState?.is_system).toBe(false)
+    expect(squatterState?.platform_account_kind).toBeNull()
 
     const squatterRoleCount = await countAllLocalUserRoleAssignments(squatterId)
     expect(squatterRoleCount).toBe(0)
 
     const systemState = await getLocalTestUserRawByUsername(reservedUsername)
-    expect(systemState?.is_system).toBe(true)
+    expect(systemState?.platform_account_kind).toBe('official')
     expect(systemState?.id).not.toBe(squatterId)
 
     const systemRoleCount = await countLocalUserRoleAssignments(systemState!.id, 'moderator')
@@ -56,7 +56,7 @@ ON CONFLICT (user_id, role_type_id) DO NOTHING;`
     await runConfigDrivenStatementsInTransaction(generateSeedAdminUserSQL(), undefined)
 
     const jong = await getLocalTestUserRawByUsername('jong')
-    expect(jong?.is_system).toBe(true)
+    expect(jong?.platform_account_kind).toBe('official')
 
     const roleCount = await countLocalUserRoleAssignments(jong!.id, 'administrator')
     expect(roleCount).toBe(1)
@@ -70,7 +70,7 @@ ON CONFLICT (user_id, role_type_id) DO NOTHING;`
     const sql = buildSystemUserUpsertSQL(reservedUsername)
     await runConfigDrivenStatementsInTransaction(sql, undefined)
     const existing = await getLocalTestUserRawByUsername(reservedUsername)
-    expect(existing?.is_system).toBe(true)
+    expect(existing?.platform_account_kind).toBe('system')
 
     await runConfigDrivenStatementsInTransaction(sql, undefined)
     const replayed = await getLocalTestUserRawByUsername(reservedUsername)

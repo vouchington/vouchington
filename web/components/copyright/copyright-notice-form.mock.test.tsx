@@ -13,7 +13,7 @@ vi.mock(import('@/lib/auth/context'), () => ({
       id: 'claimant-user',
       username: 'current-claimant',
       roles: [],
-      isOfficialAccount: false,
+      account_type: null,
     },
     isAuthenticated: true,
   }),

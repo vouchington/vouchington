@@ -68,6 +68,7 @@ vi.mock(import('../user-preservation-hold-card'), () => ({
 }))
 
 const activeUser: User = {
+  account_type: null,
   id: 'user-1',
   username: 'alice',
   email_address: 'tests+alice@voucha.ai',

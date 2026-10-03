@@ -1,6 +1,7 @@
 import type { PublicUser, User } from './types'
 
 export const storyCurrentUser: User = {
+  account_type: null,
   id: 'user-story-current',
   username: 'cardholder',
   roles: ['user'],
@@ -9,6 +10,7 @@ export const storyCurrentUser: User = {
 }
 export const publicUsers: PublicUser[] = [
   {
+    account_type: null,
     id: 'user-alex',
     username: 'alex',
     profile_image_id: null,
@@ -18,7 +20,7 @@ export const publicUsers: PublicUser[] = [
     id: 'user-agent',
     username: 'voucha-agent',
     profile_image_id: null,
-    is_official_account: true,
+    account_type: 'ai_agent',
   },
-  { id: 'user-empty', username: 'newmember', profile_image_id: null },
+  { account_type: null, id: 'user-empty', username: 'newmember', profile_image_id: null },
 ]

@@ -7,7 +7,7 @@ import {
   insertTestStoryRssFeedItemsBatch,
   insertTestUrlDirect,
 } from '@voucha/test-helpers'
-import { getSystemUserByUsername, upsertSystemAdministrator } from '@services/users/system-users'
+import { getSystemUserByUsername, upsertSystemUser } from '@services/users/system-users'
 import { createStoryPost } from '../story-posts.mts'
 import { refreshStoryPostForStory } from '../refresh-story-post.mts'
 import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
@@ -24,7 +24,7 @@ import {
 
 describe('story post related URL projection votes', () => {
   beforeAll(async () => {
-    await upsertSystemAdministrator('story-teller')
+    await upsertSystemUser('story-teller')
   })
 
   it('restores the story-teller vote for an existing projected relation', async () => {

@@ -28,7 +28,7 @@ END $post_classifier_topics$;
 INSERT INTO classifiers (slug, primitive, candidate_kind, activated_at, created_by_id)
 SELECT '${POST_CLASSIFIER_SLUG}', 'noul', 'topic', CURRENT_TIMESTAMP, actor.id
 FROM users actor
-WHERE actor.username = '${POST_CLASSIFIER_SYSTEM_USERNAME}' AND actor.is_system = TRUE
+WHERE actor.username = '${POST_CLASSIFIER_SYSTEM_USERNAME}' AND actor.platform_account_kind = 'system'
 ON CONFLICT (slug) DO NOTHING;
 
 UPDATE classifier_prompt_versions
@@ -52,7 +52,7 @@ SELECT classifier.id, $post_classifier_prompt$${POST_CLASSIFIER_PROMPT}$post_cla
   ${LOWER}, ${UPPER}, CURRENT_TIMESTAMP, actor.id
 FROM classifiers classifier
 JOIN users actor ON actor.username = '${POST_CLASSIFIER_SYSTEM_USERNAME}'
-  AND actor.is_system = TRUE
+  AND actor.platform_account_kind = 'system'
 WHERE classifier.slug = '${POST_CLASSIFIER_SLUG}'
   AND NOT EXISTS (
     SELECT 1 FROM classifier_prompt_versions prompt
@@ -67,7 +67,7 @@ INSERT INTO classifier_candidates (
 SELECT classifier.id, 'topic', topic.id, actor.id
 FROM classifiers classifier
 JOIN users actor ON actor.username = '${POST_CLASSIFIER_SYSTEM_USERNAME}'
-  AND actor.is_system = TRUE
+  AND actor.platform_account_kind = 'system'
 JOIN (VALUES ${topicValues}) AS required(slug) ON TRUE
 JOIN topics topic ON topic.slug = required.slug AND topic.topic_type = 'topic'
   AND topic.deleted_at IS NULL AND topic.merged_into_topic_id IS NULL
@@ -95,7 +95,7 @@ JOIN topics topic ON topic.id = candidate.topic_id
   AND topic.slug IN (${topicSlugs.map(slug => `'${slug}'`).join(', ')})
   AND topic.deleted_at IS NULL AND topic.merged_into_topic_id IS NULL
 JOIN users actor ON actor.username = '${POST_CLASSIFIER_SYSTEM_USERNAME}'
-  AND actor.is_system = TRUE
+  AND actor.platform_account_kind = 'system'
 WHERE classifier.slug = '${POST_CLASSIFIER_SLUG}'
   AND NOT EXISTS (
     SELECT 1 FROM classifier_candidate_thresholds threshold

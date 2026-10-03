@@ -39,8 +39,7 @@ describe('view-users', () => {
     expect(row?.display_account).toBeNull()
     expect(row).not.toHaveProperty('individual_id')
     expect(row?.roles).toEqual([])
-    expect(row).not.toHaveProperty('is_agent')
-    expect(row?.is_official_account).toBe(false)
+    expect(row?.account_type).toBeNull()
   })
 
   it('view_embedded_users returns display_account via CASE scalar subquery when use_display_name_from is set', async () => {
@@ -77,7 +76,6 @@ describe('view-users', () => {
     expect(createdBy?.username).toBe(user.username)
     expect(createdBy).not.toHaveProperty('individual_id')
     expect(createdBy?.roles).toEqual([])
-    expect(createdBy).not.toHaveProperty('is_agent')
-    expect(createdBy?.is_official_account).toBe(false)
+    expect(createdBy?.account_type).toBeNull()
   })
 })

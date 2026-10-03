@@ -193,7 +193,7 @@ describe('PostCard', () => {
 
   describe('Staff reviewer visibility on rejected posts', () => {
     it('shows "Under review" badge to moderator on rejected post', () => {
-      mockCurrentUser = { id: 'mod-user', roles: ['moderator'] } as User
+      mockCurrentUser = { account_type: null, id: 'mod-user', roles: ['moderator'] } as User
       const { container } = render(
         <PostCard post={{ ...mockPost, clearance_status: 'rejected' }} />,
       )
@@ -203,7 +203,7 @@ describe('PostCard', () => {
     })
 
     it('shows "Under review" badge to administrator on rejected post', () => {
-      mockCurrentUser = { id: 'admin-user', roles: ['administrator'] } as User
+      mockCurrentUser = { account_type: null, id: 'admin-user', roles: ['administrator'] } as User
       const { container } = render(
         <PostCard post={{ ...mockPost, clearance_status: 'rejected' }} />,
       )
@@ -211,7 +211,7 @@ describe('PostCard', () => {
     })
 
     it('renders a plain-text excerpt to staff when a rejected post has no HTML excerpt', () => {
-      mockCurrentUser = { id: 'mod-user', roles: ['moderator'] } as User
+      mockCurrentUser = { account_type: null, id: 'mod-user', roles: ['moderator'] } as User
       mockGenerateExcerpt.mockReturnValue('Staff-visible plain excerpt')
 
       render(
@@ -229,7 +229,7 @@ describe('PostCard', () => {
     })
 
     it('shows ContentUnavailableNotice to non-author non-staff on rejected post', () => {
-      mockCurrentUser = { id: 'other-user', roles: [] } as User
+      mockCurrentUser = { account_type: null, id: 'other-user', roles: [] } as User
       const { container } = render(
         <PostCard post={{ ...mockPost, clearance_status: 'rejected' }} />,
       )
@@ -247,7 +247,7 @@ describe('PostCard', () => {
 
   describe('Images and DataPoint suppressed on rejected posts', () => {
     it('does not render post-card-images for a rejected post (non-staff viewer)', () => {
-      mockCurrentUser = { id: 'other-user', roles: [] } as User
+      mockCurrentUser = { account_type: null, id: 'other-user', roles: [] } as User
       const postWithImages: Post = {
         ...mockPost,
         clearance_status: 'rejected',
@@ -267,7 +267,7 @@ describe('PostCard', () => {
     })
 
     it('does not render DataPointDetail for a rejected post', () => {
-      mockCurrentUser = { id: 'other-user', roles: [] } as User
+      mockCurrentUser = { account_type: null, id: 'other-user', roles: [] } as User
       const dataPointPost: Post = {
         ...mockPost,
         post_type: 'data_point',

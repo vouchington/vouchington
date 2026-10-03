@@ -15,6 +15,7 @@
   "users": {
     "user-1": {
       "__entity_type": "user",
+      "account_type": null,
       "id": "user-1",
       "profile_image_id": null,
       "roles": [],

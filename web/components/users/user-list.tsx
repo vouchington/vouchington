@@ -8,7 +8,7 @@ import { EntityBookmarkButton } from '@/components/shared/entity-bookmark-button
 import { UserAvatar } from '@/components/shared/user-avatar'
 import { userHref } from '@/lib/links/entity-href'
 import type { UserSearchResult } from '@/types/user'
-import { UserOfficialBadge } from '@/components/shared/user-official-badge'
+import { UserAccountBadge } from '@/components/shared/user-account-badge'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import {
   RelationManagementAction,
@@ -113,7 +113,7 @@ export function UserList({
               <div className='min-w-0 flex-1'>
                 <div className='flex items-center gap-1.5'>
                   <p className='truncate font-medium'>{displayName}</p>
-                  <UserOfficialBadge isOfficial={user.is_official_account} />
+                  <UserAccountBadge accountType={user.account_type} />
                 </div>
                 {handle ? <p className='truncate text-sm text-muted-foreground'>{handle}</p> : null}
               </div>

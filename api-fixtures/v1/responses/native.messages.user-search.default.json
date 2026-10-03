@@ -7,6 +7,7 @@
   "results": [
     {
       "__entity_type": "user",
+      "account_type": null,
       "display_account": {
         "name": "Bob Brown"
       },
@@ -24,6 +25,7 @@
     },
     {
       "__entity_type": "user",
+      "account_type": null,
       "id": "00000000-0000-7000-8000-000000000004",
       "lingua_rs_detected_language": null,
       "markdown": null,

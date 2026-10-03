@@ -7,7 +7,7 @@ function renderAs(roles: string[] | null) {
   return render(
     <AuthContext
       value={{
-        currentUser: roles ? { id: 'u1', roles, isOfficialAccount: false } : null,
+        currentUser: roles ? { id: 'u1', roles, account_type: null } : null,
         isAuthenticated: roles !== null,
       }}
     >

@@ -94,7 +94,7 @@ export async function applyTopicClassifierDecisionRelations(
   const positiveTopicIds = [...scores].flatMap(([topicId, score]) => (score === 1 ? [topicId] : []))
   if (positiveTopicIds.length > 0) {
     await upsertEntityRelation(
-      { __entity_type: 'user', id: sharedActorId, roles: [] },
+      { __entity_type: 'user', account_type: 'ai_agent', id: sharedActorId, roles: [] },
       relation,
       { id: subjectId },
       positiveTopicIds.map(id => ({ id })),

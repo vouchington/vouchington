@@ -4,7 +4,13 @@ export const unclassifiedTopicId = '00000000-0000-7000-8000-00000000f003'
 export const unclassifiedHostnameId = '00000000-0000-7000-8000-00000000f004'
 export const unknownRegistrationsTopicId = '00000000-0000-7000-8000-00000000f005'
 const unknownRegistrationsHostnameId = '00000000-0000-7000-8000-00000000f006'
-const fixtureUser = { __entity_type: 'user', id: 'user-1', username: 'testuser', roles: [] }
+const fixtureUser = {
+  __entity_type: 'user',
+  account_type: null,
+  id: 'user-1',
+  username: 'testuser',
+  roles: [],
+}
 
 export const instanceTopic = {
   __entity_type: 'topic',

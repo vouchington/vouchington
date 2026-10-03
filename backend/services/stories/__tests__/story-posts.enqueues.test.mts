@@ -22,7 +22,7 @@ import {
 import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
 import type { PrivateUser } from '@services/users/types'
 import { ai_agents } from '@queues/ai-agents/queues'
-import { upsertSystemAdministrator } from '@services/users/system-users'
+import { upsertSystemUser } from '@services/users/system-users'
 import { createStoryPost } from '../story-posts.mts'
 import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
 
@@ -45,7 +45,7 @@ async function drainStoryPostRelatedUrlProjection(postId: string): Promise<void>
 describe('story-posts', () => {
   beforeAll(async () => {
     // Ensure @story-teller system user exists (same as seed script)
-    await upsertSystemAdministrator('story-teller')
+    await upsertSystemUser('story-teller')
 
     feedId = (await createTestRssFeed({})).id
     urlId = await createTestUrlWithHostname()
@@ -201,7 +201,7 @@ describe('story-posts', () => {
       })
       await setTestItemStoryId(itemId, story.id)
     }
-    const storyTeller = await upsertSystemAdministrator('story-teller')
+    const storyTeller = await upsertSystemUser('story-teller')
     const penaltiesBeforeCreation = await getTestPenaltiesByUserId(storyTeller.id)
 
     const { post } = await createStoryPost(story.id, testUser)

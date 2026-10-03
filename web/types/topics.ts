@@ -1,3 +1,4 @@
+import type { AccountType } from '@ts-shared/utils/account-type'
 /**
  * Topic types for frontend rendering.
  *
@@ -132,7 +133,7 @@ export interface BasicUser {
   username?: string | null
   display_name?: string | null
   display_name_url_id?: string | null
-  is_official_account?: boolean
+  account_type: AccountType
   display_account?: { name: string | null } | null
 }
 

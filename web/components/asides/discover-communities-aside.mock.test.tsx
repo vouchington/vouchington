@@ -38,7 +38,7 @@ describe('DiscoverCommunitiesAside', () => {
   })
 
   it('renders nothing when user is already a community member', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: [] })
+    mockGetCurrentUser.mockResolvedValue({ account_type: null, id: 'user-1', roles: [] })
     mockHasJoinedCommunity.mockResolvedValue(true)
     const result = await DiscoverCommunitiesAside()
     const { container } = render(result as ReactElement)
@@ -46,7 +46,7 @@ describe('DiscoverCommunitiesAside', () => {
   })
 
   it('renders popular communities when user has not joined any community', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: [] })
+    mockGetCurrentUser.mockResolvedValue({ account_type: null, id: 'user-1', roles: [] })
     mockHasJoinedCommunity.mockResolvedValue(false)
     const result = await DiscoverCommunitiesAside()
     render(result as ReactElement)

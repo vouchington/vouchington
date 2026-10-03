@@ -8,7 +8,7 @@ import { upsertPostElectionVotes } from '@services/elections-votes/post'
 import { getDeletedPostByAny, getPostByAny } from '@services/posts/get'
 import { createPostModerationContent } from '@services/posts/content'
 import { getPostModerationInput } from '@services/posts/moderation-input'
-import { isOfficialAccount } from '@services/users'
+import { isPlatformAccount } from '@services/users'
 import { getPrivateUserByAny } from '@services/users/get'
 import { enqueueDetectBanEvasion } from '@queues/ban-evasion/enqueues'
 import { isFirstCommunityPost } from '@services/communities/ban-evasion'
@@ -48,7 +48,7 @@ export const processPostCreated = async (
   const moderationDeduplicationKey = makeModerationDeduplicationKey(post, content_sha256)
   if (post.created_by_id) {
     const creator = await getPrivateUserByAny(post.created_by_id)
-    if (creator && !isOfficialAccount(creator)) {
+    if (creator && !isPlatformAccount(creator)) {
       await upsertPostElectionVotes(post.created_by_id, [{ entityId: post.id, score: 1 }])
     }
     await autoSubscribePostCreator(post, creator)

@@ -25,6 +25,7 @@ export const posts = postTitles.map(([post_type, title], index) => ({
   root_id: post_type === 'comment' ? 'post-discussion' : null,
   created_by_id: publicUsers[0]!.id,
   created_by: {
+    account_type: null,
     __entity_type: 'user',
     id: publicUsers[0]!.id,
     username: publicUsers[0]!.username!,

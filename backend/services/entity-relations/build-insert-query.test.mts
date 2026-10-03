@@ -5,6 +5,7 @@ import { buildInsertQuery } from './build-insert-query.mts'
 
 const creator: BasicUser = {
   __entity_type: 'user',
+  account_type: null,
   id: '01900000-0000-7000-8000-000000000001',
   roles: [],
 }

@@ -1,5 +1,21 @@
 {
   "components": {
+    "AccountType": {
+      "anyOf": [
+        {
+          "const": "ai_agent"
+        },
+        {
+          "const": "official"
+        },
+        {
+          "const": "system"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "AddEmailAddressRequest": {
       "additionalProperties": false,
       "properties": {
@@ -750,6 +766,9 @@
         "__entity_type": {
           "const": "user"
         },
+        "account_type": {
+          "$ref": "#/components/schemas/AccountType"
+        },
         "id": {
           "type": "string"
         },
@@ -762,9 +781,6 @@
               "type": "string"
             }
           ]
-        },
-        "is_agent": {
-          "type": "boolean"
         },
         "markdown": {
           "anyOf": [
@@ -892,7 +908,7 @@
           ]
         }
       },
-      "required": ["__entity_type", "id", "roles"],
+      "required": ["__entity_type", "account_type", "id", "roles"],
       "type": "object"
     },
     "BatchDisputeAnnotationsRequest": {
@@ -2567,6 +2583,9 @@
     "CommunityOwner": {
       "additionalProperties": false,
       "properties": {
+        "account_type": {
+          "$ref": "#/components/schemas/AccountType"
+        },
         "id": {
           "type": "string"
         },
@@ -2581,7 +2600,7 @@
           ]
         }
       },
-      "required": ["id", "username"],
+      "required": ["account_type", "id", "username"],
       "type": "object"
     },
     "CommunityPinnedPost": {
@@ -7502,6 +7521,9 @@
               "__entity_type": {
                 "const": "user"
               },
+              "account_type": {
+                "$ref": "#/components/schemas/AccountType"
+              },
               "display_account": {
                 "anyOf": [
                   {
@@ -7514,9 +7536,6 @@
               },
               "id": {
                 "type": "string"
-              },
-              "is_official_account": {
-                "type": "boolean"
               },
               "lingua_rs_detected_language": {
                 "anyOf": [
@@ -7673,7 +7692,7 @@
                 ]
               }
             },
-            "required": ["__entity_type", "id", "roles"],
+            "required": ["__entity_type", "account_type", "id", "roles"],
             "type": "object"
           },
           "type": "array"
@@ -12155,11 +12174,14 @@
       ],
       "type": "object"
     },
-    "Omit_BasicUser__individual_id_____is_agent_": {
+    "Omit_BasicUser_individual_id": {
       "additionalProperties": false,
       "properties": {
         "__entity_type": {
           "const": "user"
+        },
+        "account_type": {
+          "$ref": "#/components/schemas/AccountType"
         },
         "id": {
           "type": "string"
@@ -12290,7 +12312,7 @@
           ]
         }
       },
-      "required": ["__entity_type", "id", "roles"],
+      "required": ["__entity_type", "account_type", "id", "roles"],
       "type": "object"
     },
     "Omit_ClusteredModerationReportsResponse__results_____duplicate_clusters_": {
@@ -15943,6 +15965,9 @@
             "__entity_type": {
               "const": "user"
             },
+            "account_type": {
+              "$ref": "#/components/schemas/AccountType"
+            },
             "display_account": {
               "anyOf": [
                 {
@@ -15958,9 +15983,6 @@
             },
             "id": {
               "type": "string"
-            },
-            "is_official_account": {
-              "type": "boolean"
             },
             "lingua_rs_detected_language": {
               "anyOf": [
@@ -16110,7 +16132,7 @@
               ]
             }
           },
-          "required": ["__entity_type", "display_name", "id", "markdown", "roles"],
+          "required": ["__entity_type", "account_type", "display_name", "id", "markdown", "roles"],
           "type": "object"
         }
       },
@@ -16731,6 +16753,9 @@
           "__entity_type": {
             "const": "user"
           },
+          "account_type": {
+            "$ref": "#/components/schemas/AccountType"
+          },
           "display_account": {
             "anyOf": [
               {
@@ -16743,9 +16768,6 @@
           },
           "id": {
             "type": "string"
-          },
-          "is_official_account": {
-            "type": "boolean"
           },
           "lingua_rs_detected_language": {
             "anyOf": [
@@ -16902,7 +16924,7 @@
             ]
           }
         },
-        "required": ["__entity_type", "id", "roles"],
+        "required": ["__entity_type", "account_type", "id", "roles"],
         "type": "object"
       },
       "properties": {},
@@ -17342,6 +17364,9 @@
     "ReferralLinkFeedUserRow": {
       "additionalProperties": false,
       "properties": {
+        "account_type": {
+          "$ref": "#/components/schemas/AccountType"
+        },
         "display_name": {
           "anyOf": [
             {
@@ -17369,12 +17394,15 @@
           "type": "string"
         }
       },
-      "required": ["display_name", "id", "profile_image_id", "username"],
+      "required": ["account_type", "display_name", "id", "profile_image_id", "username"],
       "type": "object"
     },
     "ReferralLinkUser": {
       "additionalProperties": false,
       "properties": {
+        "account_type": {
+          "$ref": "#/components/schemas/AccountType"
+        },
         "display_name": {
           "anyOf": [
             {
@@ -17392,7 +17420,7 @@
           "type": "string"
         }
       },
-      "required": ["display_name", "id", "username"],
+      "required": ["account_type", "display_name", "id", "username"],
       "type": "object"
     },
     "ReferralLinkValidation": {

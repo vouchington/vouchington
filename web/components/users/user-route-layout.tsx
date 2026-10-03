@@ -8,7 +8,7 @@ import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 import { createBreadcrumbSchema } from '@/lib/seo/structured-data'
 import { getDisplayName, isProfileOwner } from '@/lib/users/user-helpers'
 import { UserDetailLayout } from './user-detail-layout'
-import { isAdmin, isOfficialAccount } from '@/lib/auth/official-account'
+import { isAdmin, isPlatformAccount } from '@/lib/auth/account-type'
 
 interface UserRouteLayoutProps {
   idOrUsername: string
@@ -51,9 +51,9 @@ export async function UserRouteLayout({ idOrUsername, children }: UserRouteLayou
         viewer={{ isAdmin: viewerIsAdmin, isOwner }}
         asides={{
           isVisible: currentUser != null && currentUser.id !== user.id,
-          canCreateTrustSignal: currentUser != null && !isOfficialAccount(currentUser),
+          canCreateTrustSignal: currentUser != null && !isPlatformAccount(currentUser),
           canManageUserTags:
-            currentUser != null && (!isOfficialAccount(currentUser) || viewerIsAdmin),
+            currentUser != null && (!isPlatformAccount(currentUser) || viewerIsAdmin),
         }}
       >
         {children}

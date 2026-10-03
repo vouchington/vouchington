@@ -25,12 +25,13 @@ vi.mock(import('@/lib/api/client/podcast-episode-chapters'), () => ({
 }))
 
 const testUser: User = {
+  account_type: null,
   id: 'user-1',
   username: 'tester',
   email_address: 'tests+tester@voucha.ai',
   roles: ['user'],
 }
-const clientTestUser = { id: testUser.id, roles: testUser.roles, isOfficialAccount: false }
+const clientTestUser = { id: testUser.id, roles: testUser.roles, account_type: null }
 
 function makeEpisode(id: string): PodcastEpisode {
   return {

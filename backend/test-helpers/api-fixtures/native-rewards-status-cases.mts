@@ -44,7 +44,13 @@ const rewardsProgramStatusTopic = {
   aliases: [],
   allow_reviews: true,
   created_at: '2026-01-01T00:00:00Z',
-  created_by: { __entity_type: 'user', id: 'user-1', roles: [], username: 'testuser' },
+  created_by: {
+    __entity_type: 'user',
+    account_type: null,
+    id: 'user-1',
+    roles: [],
+    username: 'testuser',
+  },
   hero_image_id: null,
   homepage_url_id: null,
   hostname: null,
@@ -60,7 +66,13 @@ const rewardsProgramStatusTopic = {
   rewards_program_id: null,
   slug: one.rewards_program_status.slug,
   topic_type: 'rewards_program_status',
-  updated_by: { __entity_type: 'user', id: 'user-1', roles: [], username: 'testuser' },
+  updated_by: {
+    __entity_type: 'user',
+    account_type: null,
+    id: 'user-1',
+    roles: [],
+    username: 'testuser',
+  },
 }
 const consumers = ['web', 'swift-core', 'swift-ui', 'dotnet-core'] as const
 const shared = {

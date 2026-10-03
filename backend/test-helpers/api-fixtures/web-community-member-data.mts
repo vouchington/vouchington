@@ -1,6 +1,7 @@
 import { community, timestamp, user } from './data.mts'
 
 export const communityOwner = {
+  account_type: null,
   id: user.id,
   username: user.username,
 }

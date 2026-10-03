@@ -107,11 +107,13 @@ describe('TopicCard', () => {
     rewards_program_id: null,
     referral_program_id: null,
     created_by: {
+      account_type: null,
       id: 'user-1',
       display_name: 'John Doe',
       display_name_url_id: 'john-doe',
     },
     updated_by: {
+      account_type: null,
       id: 'user-1',
       display_name: 'John Doe',
       display_name_url_id: 'john-doe',

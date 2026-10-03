@@ -5,7 +5,7 @@ import { PostForm } from '@/components/posts/post-form'
 import { EditPostPageBody } from './edit-post-page-body'
 import { getPostSlugFromType } from '@/lib/route-configs'
 import { toDataPointTopic } from './post-form/initial-state'
-import { isOfficialAccount } from '@/lib/auth/official-account'
+import { isPlatformAccount } from '@/lib/auth/account-type'
 import { getTranslations } from '@/lib/i18n/get-translations'
 
 interface Props {
@@ -49,7 +49,7 @@ export async function EditPostPage({ id, postType, title }: Props) {
     ? toDataPointTopic(dataPointTopicData.topic)
     : undefined
   const isOfficialConsumerTrustPost =
-    isOfficialAccount(user) && (postType === 'review' || postType === 'data_point')
+    isPlatformAccount(user) && (postType === 'review' || postType === 'data_point')
   const initialDiscussionCategories =
     postType === 'discussion'
       ? (post.post_explicit_categories ?? []).map(category =>

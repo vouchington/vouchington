@@ -12,8 +12,8 @@ describe('0635-00-05-seed-story-clustering-classifier SQL shape', () => {
   it('reclaims and upserts the story-clustering-classifier system user', () => {
     const generated = generateSeedStoryClusteringClassifierSQL()
     expect(generated).toContain("'story-clustering-classifier'")
-    expect(generated).toContain('is_system = FALSE')
-    expect(generated).toContain('is_system = TRUE')
+    expect(generated).toContain('platform_account_kind IS NULL')
+    expect(generated).toContain("platform_account_kind = 'system'")
   })
 
   it('inserts a story-kind Choice classifier without ever updating it', () => {
@@ -55,7 +55,7 @@ describe('0635-00-05-seed-story-clustering-classifier (real DB)', () => {
 
     const user = await getLocalTestUserRawByUsername('story-clustering-classifier')
     expect(user).not.toBeNull()
-    expect(user!.is_system).toBe(true)
-    expect(await countLocalAgentsForSystemUsername('story-clustering-classifier')).toBe(0)
+    expect(user!.platform_account_kind).toBe('system')
+    expect(await countLocalAgentsForSystemUsername('story-clustering-classifier')).toBe(1)
   })
 })

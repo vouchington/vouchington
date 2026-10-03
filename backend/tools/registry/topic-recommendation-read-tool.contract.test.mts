@@ -37,7 +37,7 @@ const asCaller = (user: TestUser, plan: 'plus' | null = null): McpContractCaller
 })
 
 const withoutUndocumentedUserFields = (user: Body) => {
-  const { display_account: _account, is_official_account: _official, ...documented } = user
+  const { display_account: _account, ...documented } = user
   return documented
 }
 
@@ -111,7 +111,7 @@ describe('list_my_topic_recommendations contract — real DB', () => {
     const rest = await request.get(`/api/v1/topic-recommendations/${pending.id}`).expect(200)
     const { [INTERNAL_POST_COLUMN]: internal, markdown: written, ...restPost } = rest.body.post
     // Like update_topic_recommendation, the tool keeps the properties the documented Post lists, so
-    // the two user fields the nested created_by and updated_by users carry stay out.
+    // the undocumented display-account fields stay out; account_type is part of the contract.
     const documented = {
       ...restPost,
       created_by: withoutUndocumentedUserFields(restPost.created_by),

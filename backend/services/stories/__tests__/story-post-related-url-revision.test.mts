@@ -9,7 +9,7 @@ import {
 import type { PrivateUser } from '@services/users/types'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
-import { upsertSystemAdministrator } from '@services/users/system-users'
+import { upsertSystemUser } from '@services/users/system-users'
 import { upsertRssFeedItems } from '@services/rss-feed-items/upsert'
 import { getRssFeedItemById } from '@services/rss-feed-items/get'
 import { createStoryPost } from '../story-posts.mts'
@@ -28,7 +28,7 @@ const projectionDependencies = {
 
 describe('story post RSS URL revisions', () => {
   beforeAll(async () => {
-    await upsertSystemAdministrator('story-teller')
+    await upsertSystemUser('story-teller')
     testUser = await createTestUserDirect()
   })
 

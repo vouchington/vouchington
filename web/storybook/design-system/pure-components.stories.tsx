@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { createTranslator } from '@ts-shared/ui-messages'
 import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
-import { AgentBadge } from '@/components/shared/agent-badge'
+import { UserAccountBadge } from '@/components/shared/user-account-badge'
 import { RssFeedLink } from '@/components/shared/rss-feed-link'
 import { SearchInput, SearchInputShell } from '@/components/shared/search-input'
 import { HashtagSearchInput } from '@/components/shared/hashtag-search-input'
@@ -28,7 +28,6 @@ const meta = {
 
 export default meta
 type Story = StoryObj<typeof meta>
-
 const t = createTranslator('en', await loadJsonMessages('en'))
 
 const Frame = ({ children }: { children: React.ReactNode }) => (
@@ -43,7 +42,9 @@ export const SharedBadgesAndLinks: Story = {
   render: () => (
     <Frame>
       <div className='flex items-center gap-3'>
-        <AgentBadge />
+        <UserAccountBadge accountType='official' />
+        <UserAccountBadge accountType='system' />
+        <UserAccountBadge accountType='ai_agent' />
         <RssFeedLink href='https://example.com/feed.xml' />
       </div>
       <RssFeedLink

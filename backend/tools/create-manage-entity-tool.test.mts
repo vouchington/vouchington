@@ -20,7 +20,12 @@ describe('createManageEntityTool', () => {
       updateFn: () => Promise.resolve(null),
       removeFn: () => Promise.resolve(null),
     })
-    const basicUser: BasicUser = { __entity_type: 'user', id: user.id, roles: [] }
+    const basicUser: BasicUser = {
+      __entity_type: 'user',
+      account_type: null,
+      id: user.id,
+      roles: [],
+    }
 
     const result = await tool.function(basicUser)({ action: 'add' })
 
@@ -42,6 +47,7 @@ describe('createManageEntityTool', () => {
     })
     const user: BasicUser = {
       __entity_type: 'user',
+      account_type: null,
       id: randomUUID(),
       roles: [],
     }

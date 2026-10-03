@@ -1,3 +1,4 @@
+import type { AccountType } from '@ts-shared/utils/account-type'
 /* oxlint-disable max-lines -- User entity shape intentionally mirrors the backend private-user projection. */
 import type { UserPrivateMetricsCount } from './user-metrics'
 export type { MfaStatus, TotpAuthenticator } from './mfa'
@@ -45,8 +46,7 @@ export interface User {
   profile_image_id?: string | null
   profile_image_placement?: ImagePlacementTuple | null
   markdown?: string
-  is_agent?: boolean
-  is_official_account?: boolean
+  account_type: AccountType
   verification_status?: IdentityVerificationStatus | null
   verified_badge_visible?: boolean | null
   verified_display_name?: string | null
@@ -136,7 +136,7 @@ export interface PublicUser {
   roles?: readonly string[]
   profile_image_id?: string | null
   profile_image_placement?: ImagePlacementTuple | null
-  is_official_account?: boolean
+  account_type: AccountType
   verification_status?: IdentityVerificationStatus | null
   verified_badge_visible?: boolean | null
   verified_display_name?: string | null

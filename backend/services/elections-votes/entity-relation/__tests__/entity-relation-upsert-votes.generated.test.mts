@@ -155,7 +155,7 @@ describe('upsert.generated (votes)', () => {
 
   it('upsertEntityRelation auto-votes for official accounts on structural relations', async () => {
     // Official accounts (e.g. administrators) are permitted to curate structural
-    // entity relations; the isOfficialAccount guard was removed in #4685.
+    // entity relations; the isPlatformAccount guard was removed in #4685.
     const user = await createTestUser({ administrator: true })
     const topic = await createTestTopic()
     const post = await createTestPost()

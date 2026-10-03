@@ -22,7 +22,7 @@ import {
   updateTestTopicAliasCategoryMappingOwner,
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
-import { upsertSystemAdministrator } from '@services/users/system-users'
+import { upsertSystemUser } from '@services/users/system-users'
 import type { PrivateUser } from '@services/users/types'
 import { upsertRssFeedItemCategories } from '@services/rss-feed-items/categories'
 import { backfillCategoriesForTopicAliases } from '@services/rss-feed-items/backfill-categories-for-topic-aliases'
@@ -79,7 +79,7 @@ async function createStoryItemWithoutPost() {
 
 describe('RSS category story-post publication', () => {
   beforeAll(async () => {
-    await upsertSystemAdministrator('story-teller')
+    await upsertSystemUser('story-teller')
     const [feed, createdUrlId, createdUser] = await Promise.all([
       createTestRssFeed({}),
       createTestUrlWithHostname(),

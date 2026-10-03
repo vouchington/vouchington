@@ -688,7 +688,8 @@
         "username": "bob",
         "verification_status": null,
         "verified_badge_visible": null,
-        "verified_display_name": null
+        "verified_display_name": null,
+        "account_type": null
       },
       {
         "__entity_type": "user",
@@ -702,7 +703,8 @@
         "username": "bonnie",
         "verification_status": null,
         "verified_badge_visible": null,
-        "verified_display_name": null
+        "verified_display_name": null,
+        "account_type": null
       }
     ]
   },

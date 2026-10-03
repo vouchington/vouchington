@@ -12,7 +12,7 @@ const mockSetAdmissionActor = vi
 const testUser: ClientAuthUser = {
   id: 'user-1',
   roles: ['user'],
-  isOfficialAccount: false,
+  account_type: null,
 }
 
 function AuthStateLabel() {

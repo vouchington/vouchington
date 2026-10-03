@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { UserOfficialBadge } from '@/components/shared/user-official-badge'
+import { UserAccountBadge } from '@/components/shared/user-account-badge'
 import { EntityActionIcons } from '@/components/shared/entity-action-icons'
 import { HideButton } from '@/components/shared/hide-button'
 import { SaveButton } from '@/components/shared/save-button'
@@ -106,7 +106,7 @@ export function PostCardFooter({
           className='hover:text-foreground'
         />
       ) : null}
-      <UserOfficialBadge isOfficial={post.created_by?.is_official_account} />
+      <UserAccountBadge accountType={post.created_by?.account_type} />
       <TimeAgo date={post.created_at} />
       {isAuthenticated && !hideBookmarkActions ? (
         <SaveButton

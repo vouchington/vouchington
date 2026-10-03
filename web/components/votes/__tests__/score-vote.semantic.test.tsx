@@ -106,7 +106,7 @@ describe('ScoreVote semantic control', () => {
 
   it('disables an official account clear action when the vote surface is closed', () => {
     render(
-      <AuthProvider initialUser={{ id: 'agent-1', roles: ['user'], isOfficialAccount: true }}>
+      <AuthProvider initialUser={{ id: 'agent-1', roles: ['user'], account_type: 'official' }}>
         <ScoreVote
           electionId='election-1'
           entityType='post'
@@ -137,7 +137,7 @@ describe('ScoreVote semantic control', () => {
   it('lets an official who can also cast Clear an existing ballot', async () => {
     render(
       <AuthProvider
-        initialUser={{ id: 'admin-1', roles: ['administrator'], isOfficialAccount: true }}
+        initialUser={{ id: 'admin-1', roles: ['administrator'], account_type: 'official' }}
       >
         <ScoreVote
           electionId='election-1'

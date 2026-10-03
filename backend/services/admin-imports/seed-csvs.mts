@@ -2,9 +2,11 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { parseCsvRows } from '@modules/csv'
 import { mintUUIDv7 } from '@modules/utils/ids'
-import { upsertSystemAdministrator } from '@services/users/system-users'
+import { upsertSystemUser } from '@services/users/system-users'
 import { getPrivateUserByAny } from '@services/users/get'
 import { processTopicRow } from './process-topic-row.mts'
+import { runSystemTopicSeedImport } from '@services/topics/seed-import-authority'
+import type { PrivateUser } from '@services/users/types'
 import type { ImportRow } from './types.mts'
 
 const SEED_DIR = join(import.meta.dirname, '..', '..', '..', 'seed')
@@ -52,12 +54,16 @@ export function readSeedCsvRows(): Record<string, string>[] {
  * instead of the full shipped catalog.
  */
 export async function seedTopicsFromRows(
+  actor: PrivateUser,
   allRows: Record<string, string>[],
 ): Promise<SeedCsvsResult> {
-  const systemUser = await upsertSystemAdministrator('system')
-  const admin = await getPrivateUserByAny(systemUser.id)
-  if (!admin) throw new Error('BUG: system admin user not found after upsert')
+  return runSystemTopicSeedImport(actor, () => importSeedRows(actor, allRows))
+}
 
+async function importSeedRows(
+  actor: PrivateUser,
+  allRows: Record<string, string>[],
+): Promise<SeedCsvsResult> {
   const errors: SeedCsvsResult['errors'] = []
 
   // Pass 1: create / update every topic (establishes within-file parent relations)
@@ -65,7 +71,7 @@ export async function seedTopicsFromRows(
     const row = allRows[i]!
     try {
       // oxlint-disable-next-line no-await-in-loop -- each seed row records its own result before the next row can be classified for retry
-      await processTopicRow(admin, makeSyntheticRow(row, i))
+      await processTopicRow(actor, makeSyntheticRow(row, i))
     } catch (err) {
       errors.push({ slug: row.slug?.trim() || `row-${i}`, error: err })
     }
@@ -85,7 +91,7 @@ export async function seedTopicsFromRows(
     const slug = row.slug?.trim() || `row-${originalIndex}`
     try {
       // oxlint-disable-next-line no-await-in-loop -- retry rows remain serialized so a successful retry clears the matching first-pass error
-      await processTopicRow(admin, makeSyntheticRow(row, originalIndex))
+      await processTopicRow(actor, makeSyntheticRow(row, originalIndex))
       // If pass 1 recorded an error for this row but pass 2 succeeded, clear it
       const errorIdx = errors.findIndex(e => e.slug === slug)
       if (errorIdx >= 0) errors.splice(errorIdx, 1)
@@ -109,10 +115,13 @@ export async function seedTopicsFromRows(
  * contention with the rest of that project's concurrent DB workload; the isolated project that
  * avoided it required `maxWorkers: 1`, which this repo no longer permits (see #9121). Its two
  * halves are independently covered: `readSeedCsvRows` by `seed-csvs-catalog.test.mts`,
- * `seedTopicsFromRows` by `seed-csvs.test.mts`'s fixture. This one-line composition is not.
+ * `seedTopicsFromRows` by `seed-csvs.test.mts`'s fixture. The bootstrap actor lookup and composition are not.
  */
 /* c8 ignore start -- see comment above; full-catalog DB import, exercised by the real seed script, not by tests (#8972) */
 export async function seedTopicsFromCsvs(): Promise<SeedCsvsResult> {
-  return seedTopicsFromRows(readSeedCsvRows())
+  const systemUser = await upsertSystemUser('system')
+  const actor = await getPrivateUserByAny(systemUser.id, { readOnly: false })
+  if (!actor) throw new Error('BUG: system seed actor not found after upsert')
+  return seedTopicsFromRows(actor, readSeedCsvRows())
 }
 /* c8 ignore stop */

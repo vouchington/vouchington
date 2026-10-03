@@ -11,8 +11,8 @@ describe('0635-00-06-seed-autotagger-agent-classifier SQL shape', () => {
   it('reclaims and upserts the reserved autotagger system user', () => {
     const generated = generateSeedAutotaggerAgentClassifierSQL()
     expect(generated).toContain("'autotagger'")
-    expect(generated).toContain('is_system = FALSE')
-    expect(generated).toContain('is_system = TRUE')
+    expect(generated).toContain('platform_account_kind IS NULL')
+    expect(generated).toContain("platform_account_kind = 'system'")
   })
 
   it('inserts a topic-kind Noul classifier without ever updating it', () => {
@@ -54,6 +54,6 @@ describe('0635-00-06-seed-autotagger-agent-classifier (real DB)', () => {
 
     const user = await getLocalTestUserRawByUsername('autotagger')
     expect(user).not.toBeNull()
-    expect(user!.is_system).toBe(true)
+    expect(user!.platform_account_kind).toBe('system')
   })
 })

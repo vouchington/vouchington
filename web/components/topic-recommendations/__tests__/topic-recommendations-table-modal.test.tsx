@@ -19,7 +19,7 @@ const mockRouterRefresh = mockNav.refresh
 describe('TopicRecommendationsTable — modal actions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    tableAuth.currentUser = { id: 'user-1', roles: [] } as User
+    tableAuth.currentUser = { account_type: null, id: 'user-1', roles: [] } as User
   })
 
   function renderTable({
@@ -31,7 +31,7 @@ describe('TopicRecommendationsTable — modal actions', () => {
     isAdmin?: boolean
     tableData?: PostsResponseBody
   } = {}) {
-    tableAuth.currentUser = { id: currentUserId, roles: [] } as User
+    tableAuth.currentUser = { account_type: null, id: currentUserId, roles: [] } as User
     return render(
       <TopicRecommendationsTable
         data={tableData}

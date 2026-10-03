@@ -17,7 +17,7 @@ vi.mock(
 import { searchUsersExcluding } from '../search-users-excluding'
 
 function makeUser(id: string): UserSearchResult {
-  return { id, username: id }
+  return { account_type: null, id, username: id }
 }
 
 function makePage(

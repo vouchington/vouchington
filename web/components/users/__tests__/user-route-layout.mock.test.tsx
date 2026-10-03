@@ -102,7 +102,7 @@ describe('UserRouteLayout', () => {
   })
 
   it('allows a non-official viewer to manage user-tag relations', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'viewer-1', roles: ['user'] })
+    mockGetCurrentUser.mockResolvedValue({ id: 'viewer-1', roles: ['user'], account_type: null })
 
     render(await UserRouteLayout({ idOrUsername: 'alice', children: <div>content</div> }))
 
@@ -112,7 +112,11 @@ describe('UserRouteLayout', () => {
   })
 
   it('prevents a non-admin official viewer from managing user-tag relations', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'viewer-1', roles: ['investor'] })
+    mockGetCurrentUser.mockResolvedValue({
+      id: 'viewer-1',
+      roles: ['investor'],
+      account_type: 'official',
+    })
 
     render(await UserRouteLayout({ idOrUsername: 'alice', children: <div>content</div> }))
 
@@ -122,7 +126,11 @@ describe('UserRouteLayout', () => {
   })
 
   it('allows an administrator official viewer to manage user-tag relations', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'viewer-1', roles: ['administrator'] })
+    mockGetCurrentUser.mockResolvedValue({
+      id: 'viewer-1',
+      roles: ['administrator'],
+      account_type: 'official',
+    })
 
     render(await UserRouteLayout({ idOrUsername: 'alice', children: <div>content</div> }))
 

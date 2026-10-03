@@ -17,7 +17,12 @@ describe('requirePrivateToolUser', () => {
   })
 
   it('rejects missing hydrated users', async () => {
-    const currentUser: BasicUser = { __entity_type: 'user', id: randomUUID(), roles: [] }
+    const currentUser: BasicUser = {
+      __entity_type: 'user',
+      account_type: null,
+      id: randomUUID(),
+      roles: [],
+    }
 
     await expect(requirePrivateToolUser(currentUser)).rejects.toMatchObject({ status: 401 })
   })

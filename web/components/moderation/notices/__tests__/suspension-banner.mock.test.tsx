@@ -20,6 +20,7 @@ vi.mock(
 import { SuspensionBanner } from '../suspension-banner'
 
 const makeUser = (overrides: Partial<User> = {}): User => ({
+  account_type: null,
   id: 'user-1',
   roles: [],
   suspended_at: null,

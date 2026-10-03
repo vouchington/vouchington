@@ -6586,6 +6586,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      oxfmt:
+        specifier: ^0.71.0
+        version: 0.71.0
 
   backend/services/media-delivery-safety:
     dependencies:
@@ -10440,6 +10443,9 @@ importers:
       '@modules/csv':
         specifier: workspace:^
         version: link:../../modules/csv
+      '@services/agents':
+        specifier: workspace:^
+        version: link:../agents
       '@services/bluesky-accounts':
         specifier: workspace:^
         version: link:../bluesky-accounts

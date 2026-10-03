@@ -79,7 +79,9 @@ describe('PrivacyForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockOnError.mockReturnValue('Failed to update privacy setting')
-    vi.mocked(updateMyUser).mockResolvedValue({ user: { id: 'user-1', roles: [] } })
+    vi.mocked(updateMyUser).mockResolvedValue({
+      user: { account_type: null, id: 'user-1', roles: [] },
+    })
   })
 
   it('updates string privacy settings for the current user', async () => {

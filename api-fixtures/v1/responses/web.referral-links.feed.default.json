@@ -17,6 +17,7 @@
   ],
   "users": {
     "user-1": {
+      "account_type": null,
       "display_name": "Test User",
       "id": "user-1",
       "profile_image_id": null,

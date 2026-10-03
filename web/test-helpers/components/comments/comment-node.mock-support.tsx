@@ -71,11 +71,11 @@ vi.mock(
 )
 
 vi.mock(
-  import('@/components/shared/agent-badge'),
+  import('@/components/shared/user-account-badge'),
   () =>
     ({
-      AgentBadge: () => <span>Agent</span>,
-    }) as unknown as typeof import('@/components/shared/agent-badge'),
+      UserAccountBadge: () => <span>Agent</span>,
+    }) as unknown as typeof import('@/components/shared/user-account-badge'),
 )
 
 vi.mock(

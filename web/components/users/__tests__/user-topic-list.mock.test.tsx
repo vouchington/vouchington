@@ -55,8 +55,18 @@ function makeTopic(overrides?: Partial<Topic>): Topic {
     hero_image_id: null,
     rewards_program_id: null,
     referral_program_id: null,
-    created_by: { id: 'user-1', display_name: 'Test', display_name_url_id: 'test' },
-    updated_by: { id: 'user-1', display_name: 'Test', display_name_url_id: 'test' },
+    created_by: {
+      account_type: null,
+      id: 'user-1',
+      display_name: 'Test',
+      display_name_url_id: 'test',
+    },
+    updated_by: {
+      account_type: null,
+      id: 'user-1',
+      display_name: 'Test',
+      display_name_url_id: 'test',
+    },
     ...overrides,
   }
 }

@@ -93,8 +93,8 @@ export async function insertTestCommunityAgentPrompt(
     WITH prompt_id AS (
       SELECT uuidv7() AS id
     ), new_system_user AS (
-      INSERT INTO users (username)
-      SELECT 'test-agent-' || RIGHT(REPLACE(p.id::text, '-', ''), 12)
+      INSERT INTO users (username, platform_account_kind)
+      SELECT 'test-agent-' || RIGHT(REPLACE(p.id::text, '-', ''), 12), 'system'
       FROM prompt_id p
       RETURNING id
     ), new_agent AS (

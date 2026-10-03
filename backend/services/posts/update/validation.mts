@@ -8,7 +8,7 @@ import { assertValidReviewContent } from '../validate-review-content.mts'
 import type { Post, UpdatePostChanges } from '../types.mts'
 import { createCodedError } from '@modules/on-error/create-coded-error'
 import { OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN } from '@modules/on-error/error-codes'
-import { isOfficialAccount } from '@services/users'
+import { isPlatformAccount } from '@services/users'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { assertWithinTagAddLimit } from '@services/tag-limits'
 import type { ContributionLimitMembershipPlan } from '@services/contribution-gating/limit-types'
@@ -71,12 +71,12 @@ export function assertPostUpdatePreflight(
     hashtagIntent
   ) {
     if (
-      isOfficialAccount(creator) &&
+      isPlatformAccount(creator) &&
       (post.post_type === 'review' || post.post_type === 'data_point')
     ) {
       throw createCodedError(
         403,
-        'Official accounts cannot edit community reviews or data points.',
+        'Official and automated accounts cannot edit community reviews or data points.',
         OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN,
       )
     }

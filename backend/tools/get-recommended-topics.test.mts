@@ -43,7 +43,12 @@ describe('get_recommended_topics tool — real DB', () => {
   })
 
   it('hydrates BasicUser callers before loading recommendations', async () => {
-    const basicUser: BasicUser = { __entity_type: 'user', id: user.id, roles: [] }
+    const basicUser: BasicUser = {
+      __entity_type: 'user',
+      account_type: null,
+      id: user.id,
+      roles: [],
+    }
     const execute = getRecommendedTopicsTool.function(basicUser)
     const result = await execute({ limit: 1 })
 
@@ -52,7 +57,12 @@ describe('get_recommended_topics tool — real DB', () => {
   })
 
   it('rejects unknown current users', async () => {
-    const basicUser: BasicUser = { __entity_type: 'user', id: randomUUID(), roles: [] }
+    const basicUser: BasicUser = {
+      __entity_type: 'user',
+      account_type: null,
+      id: randomUUID(),
+      roles: [],
+    }
     const execute = getRecommendedTopicsTool.function(basicUser)
 
     await expect(execute({})).rejects.toMatchObject({ status: 401 })

@@ -131,3 +131,7 @@ in observe mode. This prevents an unknown channel from being recorded.
 schema together as one current contract. There is no historical untracked-row state or separate
 Contract stage. [#706](https://github.com/vouchington/vouchington/issues/706) owns public “via API”
 and “via MCP” labels and staff visibility; these columns remain private until that stage.
+
+## AI authorship disclosure
+
+AI disclosure belongs to the author: public `account_type='ai_agent'` renders **AI Agent** on each author display. Automated accounts without a live agent render **System**; reserved people and qualifying role-bearing members render **Official**. See [account permissions](../trust-safety/reference-trust-system-official-accounts-and-material-connections.md#official-account-permissions). `created_via='system'` means no request made the write and remains internal; it never renders a provenance channel label.

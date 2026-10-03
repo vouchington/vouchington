@@ -78,6 +78,7 @@ export function makeRecommendationTableFixture(): {
     root_id: null,
     created_by_id: 'user-1',
     created_by: {
+      account_type: null,
       __entity_type: 'user',
       id: 'user-1',
       username: 'tester',

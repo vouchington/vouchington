@@ -59,10 +59,7 @@ vi.mock(
     }) as unknown as typeof import('@/lib/auth/context'),
 )
 
-const baseUser: User = {
-  id: 'user-1',
-  roles: ['user'],
-}
+const baseUser: User = { account_type: null, id: 'user-1', roles: ['user'] }
 
 const activeMembership: CommunityMember = {
   __entity_type: 'community_member',

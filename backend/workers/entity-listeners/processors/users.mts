@@ -36,6 +36,6 @@ export const processAutoFollowReferrer = async ({
     predicate: 'follow',
     objectType: 'user',
   })
-  const creator = { __entity_type: 'user' as const, id: newUserId, roles: [] }
+  const creator = { __entity_type: 'user' as const, account_type: null, id: newUserId, roles: [] }
   await upsertEntityRelation(creator, followRelation, { id: newUserId }, [{ id: referrerId }])
 }

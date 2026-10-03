@@ -3,7 +3,6 @@ import type { BasicUser } from './types.mts'
 import { isSlug } from '@modules/utils'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import { addUserRole } from './roles-permissions.mts'
 import { getPrivateUserByAny } from './get.mts'
 import {
   AUTOTAGGER_AGENT_SYSTEM_USERNAME,
@@ -33,28 +32,31 @@ const systemUsers = new Map<string, SystemUserRow>()
  * Any authenticated user can rename themselves via PATCH /api/v1/my/identity, so a reserved
  * username can be squatted before this runs. Reclaim it from any non-system holder (renaming them
  * out of the way using their own full UUIDv7, so no two reclaimed squatters can collide) before
- * upserting the system row with is_system = TRUE, so ownership is structural rather than trusted
+ * upserting the explicitly classified platform identity, so ownership is structural rather than trusted
  * by username string alone.
  */
-export const upsertSystemUser = async (username: string): Promise<SystemUserRow> => {
+export const upsertSystemUser = async (
+  username: string,
+  kind: 'official' | 'system' = 'system',
+): Promise<SystemUserRow> => {
   assert(isSlug(username), 422, 'Username must be a valid slug')
   await using query = await beginTransaction()
   await write(
     sql`/* upsertSystemUser */
         UPDATE users
         SET username = 'reclaimed-' || replace(id::text, '-', '')
-        WHERE LOWER(username) = LOWER(${username}) AND is_system = FALSE
+        WHERE LOWER(username) = LOWER(${username}) AND platform_account_kind IS NULL
       `,
     { query },
   )
   const { rows } = await write<SystemUserRow>(
     sql`/* upsertSystemUser */
-        INSERT INTO users (username, is_system, vote_weight_admin_set_at)
-        VALUES (${username}, TRUE, CURRENT_TIMESTAMP)
+        INSERT INTO users (username, platform_account_kind, vote_weight_admin_set_at)
+        VALUES (${username}, ${kind}, CURRENT_TIMESTAMP)
         ON CONFLICT ((LOWER(username))) WHERE username IS NOT NULL
-        DO UPDATE SET username = EXCLUDED.username, is_system = TRUE,
+        DO UPDATE SET username = EXCLUDED.username, platform_account_kind = ${kind},
           vote_weight_admin_set_at = COALESCE(users.vote_weight_admin_set_at, CURRENT_TIMESTAMP)
-        WHERE users.is_system = TRUE
+        WHERE users.platform_account_kind IS NOT NULL
         RETURNING id, username, use_display_name_from
       `,
     { query },
@@ -62,12 +64,6 @@ export const upsertSystemUser = async (username: string): Promise<SystemUserRow>
   const result = rows[0]
   await query.commit()
   return result
-}
-
-export const upsertSystemAdministrator = async (username: string): Promise<SystemUserRow> => {
-  const user = await upsertSystemUser(username)
-  await addUserRole(user.id, 'administrator')
-  return user
 }
 
 export const upsertAdminEmailAddresses = async (
@@ -105,7 +101,7 @@ export const getSystemUserByUsername = async (username: string): Promise<SystemU
   const { rows } = await read<SystemUserRow>(sql`/* getSystemUserByUsername */
     SELECT id, username, use_display_name_from
     FROM users
-    WHERE username = ${username} AND is_system = TRUE
+    WHERE username = ${username} AND platform_account_kind = 'system'
     LIMIT 1
   `)
   const user = rows[0] || null

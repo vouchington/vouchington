@@ -96,10 +96,6 @@ vi.mock(import('@/components/shared/rss-feed-link'), () => ({
   RssFeedLink: () => <div data-testid='rss-feed-link' />,
 }))
 
-vi.mock(import('@/components/shared/agent-badge'), () => ({
-  AgentBadge: () => <div data-testid='agent-badge' />,
-}))
-
 vi.mock(import('@/components/users/identity-verified-badge'), () => ({
   IdentityVerifiedBadge: () => <div data-testid='identity-verified-badge' />,
 }))
@@ -143,6 +139,7 @@ const baseUser: User = {
   display_account: { name: 'Alice Example' },
   profile_image_id: null,
   roles: [],
+  account_type: null,
 }
 
 function resetUserProfileHeaderDoubles() {

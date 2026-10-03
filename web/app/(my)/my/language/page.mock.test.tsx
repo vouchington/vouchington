@@ -15,6 +15,7 @@ const requireCurrentUserMock = vi.hoisted(() => vi.fn<() => Promise<User>>())
 const languageFormPropsMock = vi.hoisted(() => vi.fn<VitestLooseMock>())
 
 const serverUser: User = {
+  account_type: null,
   id: 'user-1',
   roles: ['user'],
   username: 'private-username',

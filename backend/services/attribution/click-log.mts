@@ -31,6 +31,7 @@ export async function getReferralClickLog(
       users.id AS user__id,
       users.username AS user__username,
       users.profile_image_id AS user__profile_image_id,
+      (SELECT account_type FROM view_embedded_users e WHERE e.id = users.id) AS user__account_type,
       (
         SELECT COALESCE(ARRAY_AGG(user_roles_types.slug), ARRAY[]::TEXT[])
         FROM user_roles
@@ -75,6 +76,7 @@ export async function getReferralClickLog(
       const userId = row.user__id as string
       users[userId] = {
         __entity_type: 'user',
+        account_type: row.user__account_type as PublicUser['account_type'],
         id: userId,
         username: (row.user__username as string | undefined) ?? undefined,
         roles: [],

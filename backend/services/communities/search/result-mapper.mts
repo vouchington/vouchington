@@ -9,6 +9,7 @@ import type {
 type CommunitySearchRow = Community & {
   owner_id: string | null
   owner_username: string | null
+  owner_account_type: CommunityOwner['account_type']
   member_count?: number
   post_count?: number
   list_item_count?: number
@@ -64,7 +65,11 @@ export function mapCommunitySearchResult(
     })
 
     if (row.owner_id && !usersMap[row.owner_id]) {
-      usersMap[row.owner_id] = { id: row.owner_id, username: row.owner_username }
+      usersMap[row.owner_id] = {
+        id: row.owner_id,
+        username: row.owner_username,
+        account_type: row.owner_account_type,
+      }
     }
 
     if (options.needsMetrics && row.member_count !== undefined) {

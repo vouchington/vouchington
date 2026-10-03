@@ -1,3 +1,5 @@
+import type { AccountType } from '@ts-shared/utils/account-type'
+
 export const VALID_REFERRAL_LINKS_FEED_TYPES = ['follow_users', 'mutual_follows'] as const
 export type ReferralLinksFeedType = (typeof VALID_REFERRAL_LINKS_FEED_TYPES)[number]
 
@@ -12,6 +14,7 @@ export type ReferralLinkFeedRow = {
 }
 
 export type ReferralLinkFeedUserRow = {
+  account_type: AccountType
   id: string
   username: string
   display_name: string | null

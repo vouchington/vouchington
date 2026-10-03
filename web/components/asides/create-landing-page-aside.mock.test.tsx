@@ -57,7 +57,7 @@ describe('CreateLandingPageAside', () => {
   })
 
   it('renders nothing when user already has a landing page', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: [] })
+    mockGetCurrentUser.mockResolvedValue({ account_type: null, id: 'user-1', roles: [] })
     mockHasLandingPage.mockResolvedValue(true)
     const result = await CreateLandingPageAside()
     const { container } = render(result as ReactElement)
@@ -65,7 +65,7 @@ describe('CreateLandingPageAside', () => {
   })
 
   it('renders landing page nudge when user has none', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: [] })
+    mockGetCurrentUser.mockResolvedValue({ account_type: null, id: 'user-1', roles: [] })
     mockHasLandingPage.mockResolvedValue(false)
     const result = await CreateLandingPageAside()
     render(result as ReactElement)
@@ -74,7 +74,7 @@ describe('CreateLandingPageAside', () => {
   })
 
   it('links to /my/landing-pages', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: [] })
+    mockGetCurrentUser.mockResolvedValue({ account_type: null, id: 'user-1', roles: [] })
     mockHasLandingPage.mockResolvedValue(false)
     const result = await CreateLandingPageAside()
     render(result as ReactElement)

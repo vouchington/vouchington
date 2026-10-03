@@ -27,7 +27,7 @@ export async function getCurrentPostClassifierActorId(
 ): Promise<string> {
   const { rows } = await query<{ id: string }>(sql`/* getCurrentPostClassifierActorId */
     SELECT id FROM users WHERE username = 'post-classifier'
-      AND is_system = TRUE AND deleted_at IS NULL
+      AND platform_account_kind = 'system' AND deleted_at IS NULL
     FOR SHARE
   `)
   if (!rows[0]) throw new Error('post classifier system actor is missing')

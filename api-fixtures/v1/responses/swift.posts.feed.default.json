@@ -89,6 +89,7 @@
   "users": {
     "user-1": {
       "__entity_type": "user",
+      "account_type": null,
       "created_at": "2026-01-01T00:00:00Z",
       "id": "user-1",
       "name": "Test User",

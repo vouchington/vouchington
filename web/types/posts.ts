@@ -1,3 +1,4 @@
+import type { AccountType } from '@ts-shared/utils/account-type'
 /**
  * Post types for frontend rendering.
  *
@@ -34,7 +35,7 @@ export interface PostCreatedBy {
   username: string
   profile_image_id: string | null
   profile_image_placement?: import('./user').ImagePlacementTuple | null
-  is_official_account?: boolean
+  account_type: AccountType
 }
 
 export interface PostCommunity {

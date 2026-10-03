@@ -8,7 +8,7 @@ export async function getTotalUserCount(): Promise<number> {
     SELECT COUNT(*)::INTEGER AS count
     FROM users
     WHERE deleted_at IS NULL
-      AND is_system = FALSE
+      AND platform_account_kind IS NULL
   `)
   return rows[0]?.count ?? 0
 }

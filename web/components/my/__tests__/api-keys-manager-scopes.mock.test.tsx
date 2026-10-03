@@ -62,7 +62,7 @@ const scopeCatalog: ScopeCatalogEntry[] = (scopeCatalogFixture as ScopeCatalogRe
 function asAdmin(children: ReactNode) {
   return (
     <AuthProvider
-      initialUser={{ id: 'admin-user', roles: ['administrator'], isOfficialAccount: true }}
+      initialUser={{ id: 'admin-user', roles: ['administrator'], account_type: 'official' }}
     >
       {children}
     </AuthProvider>

@@ -41,6 +41,7 @@ export const nativeFriendRecommendationApiFixtureCases: ApiFixtureCase[] = [
       users: {
         [user.id]: {
           __entity_type: 'user',
+          account_type: null,
           id: user.id,
           username: user.username,
           roles: [],
@@ -82,6 +83,7 @@ export const nativeFriendRecommendationApiFixtureCases: ApiFixtureCase[] = [
       users: {
         [user.id]: {
           __entity_type: 'user',
+          account_type: null,
           id: user.id,
           username: user.username,
           roles: [],
@@ -89,6 +91,7 @@ export const nativeFriendRecommendationApiFixtureCases: ApiFixtureCase[] = [
         },
         [secondFriendId]: {
           __entity_type: 'user',
+          account_type: null,
           id: secondFriendId,
           username: 'secondfriend',
           roles: [],

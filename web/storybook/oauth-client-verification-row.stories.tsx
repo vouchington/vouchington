@@ -19,6 +19,7 @@ const unverifiedClient: AdminOAuthClientListItem = {
   scopes: ['mcp.user:read', 'mcp.user:write'],
   owner_user_id: 'storybook-owner',
   owner: {
+    account_type: null,
     __entity_type: 'user',
     id: 'storybook-owner',
     username: 'storybook-owner',

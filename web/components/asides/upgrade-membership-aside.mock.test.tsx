@@ -57,7 +57,7 @@ describe('UpgradeMembershipAside', () => {
   })
 
   it('renders nothing when user has active membership', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: [] })
+    mockGetCurrentUser.mockResolvedValue({ account_type: null, id: 'user-1', roles: [] })
     mockGetMembership.mockResolvedValue({
       membership: { status: 'active' },
     } as Awaited<ReturnType<typeof getMembership>>)
@@ -67,7 +67,7 @@ describe('UpgradeMembershipAside', () => {
   })
 
   it('renders upgrade CTA for authenticated free-tier users', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: [] })
+    mockGetCurrentUser.mockResolvedValue({ account_type: null, id: 'user-1', roles: [] })
     mockGetMembership.mockResolvedValue({
       membership: null,
     } as Awaited<ReturnType<typeof getMembership>>)
@@ -78,7 +78,7 @@ describe('UpgradeMembershipAside', () => {
   })
 
   it('links to /plans', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: [] })
+    mockGetCurrentUser.mockResolvedValue({ account_type: null, id: 'user-1', roles: [] })
     mockGetMembership.mockResolvedValue({
       membership: null,
     } as Awaited<ReturnType<typeof getMembership>>)
@@ -88,7 +88,7 @@ describe('UpgradeMembershipAside', () => {
   })
 
   it('renders nothing when getMembership fails', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: [] })
+    mockGetCurrentUser.mockResolvedValue({ account_type: null, id: 'user-1', roles: [] })
     mockGetMembership.mockRejectedValue(new Error('API error'))
     const result = await UpgradeMembershipAside()
     const { container } = render(result as ReactElement)

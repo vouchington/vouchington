@@ -1,3 +1,4 @@
+import { makeAsideUser } from '@/test-helpers/aside-user'
 import type { ReactElement, ReactNode } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
@@ -57,7 +58,7 @@ describe('FollowTopicsAside', () => {
   })
 
   it('renders nothing when user already follows topics', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: [], username: 'alice' })
+    mockGetCurrentUser.mockResolvedValue(makeAsideUser())
     mockFollowsAnyTopic.mockResolvedValue(true)
     const result = await FollowTopicsAside()
     const { container } = render(result as ReactElement)
@@ -65,7 +66,7 @@ describe('FollowTopicsAside', () => {
   })
 
   it('renders follow topics nudge when user has not followed any topic', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: [], username: 'alice' })
+    mockGetCurrentUser.mockResolvedValue(makeAsideUser())
     mockFollowsAnyTopic.mockResolvedValue(false)
     const result = await FollowTopicsAside()
     render(result as ReactElement)
@@ -74,7 +75,7 @@ describe('FollowTopicsAside', () => {
   })
 
   it('links to /topics', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: [], username: 'alice' })
+    mockGetCurrentUser.mockResolvedValue(makeAsideUser())
     mockFollowsAnyTopic.mockResolvedValue(false)
     const result = await FollowTopicsAside()
     render(result as ReactElement)

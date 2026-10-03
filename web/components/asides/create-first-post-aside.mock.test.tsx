@@ -1,3 +1,4 @@
+import { makeAsideUser } from '@/test-helpers/aside-user'
 import type { ReactElement, ReactNode } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
@@ -57,7 +58,7 @@ describe('CreateFirstPostAside', () => {
   })
 
   it('renders nothing when user has already created a post', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: [], username: 'alice' })
+    mockGetCurrentUser.mockResolvedValue(makeAsideUser())
     mockHasCreatedPost.mockResolvedValue(true)
     const result = await CreateFirstPostAside()
     const { container } = render(result as ReactElement)
@@ -65,7 +66,7 @@ describe('CreateFirstPostAside', () => {
   })
 
   it('renders first post nudge when user has not yet posted', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: [], username: 'alice' })
+    mockGetCurrentUser.mockResolvedValue(makeAsideUser())
     mockHasCreatedPost.mockResolvedValue(false)
     const result = await CreateFirstPostAside()
     render(result as ReactElement)
@@ -74,7 +75,7 @@ describe('CreateFirstPostAside', () => {
   })
 
   it('links to /reviews/create', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: [], username: 'alice' })
+    mockGetCurrentUser.mockResolvedValue(makeAsideUser())
     mockHasCreatedPost.mockResolvedValue(false)
     const result = await CreateFirstPostAside()
     render(result as ReactElement)

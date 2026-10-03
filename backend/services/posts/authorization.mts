@@ -10,7 +10,7 @@ import {
 } from '@modules/on-error/error-codes'
 import type { CreatePostInput, Post } from './types.mts'
 import type { CommunityMemberRole } from '@services/communities/types'
-import { isOfficialAccount } from '@services/users'
+import { isPlatformAccount } from '@services/users'
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000
 
@@ -46,11 +46,11 @@ export function assertOfficialAccountCanCreatePost(
   currentUser: PrivateUser,
   postType: CreatePostInput['post_type'],
 ): void {
-  if (!isOfficialAccount(currentUser) || (postType !== 'review' && postType !== 'data_point'))
+  if (!isPlatformAccount(currentUser) || (postType !== 'review' && postType !== 'data_point'))
     return
   throw createCodedError(
     403,
-    'Official accounts cannot create community reviews or data points.',
+    'Official and automated accounts cannot create community reviews or data points.',
     OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN,
   )
 }

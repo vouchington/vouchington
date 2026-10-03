@@ -9,6 +9,7 @@ describe('UserList', () => {
         users={[
           {
             id: '550e8400-e29b-41d4-a716-446655440000',
+            account_type: null,
           },
         ]}
         emptyTitle='No users'
@@ -24,7 +25,7 @@ describe('UserList', () => {
   it('does not render an avatar when profile_image_id is absent', async () => {
     render(
       <UserList
-        users={[{ id: 'user-1', username: 'alice' }]}
+        users={[{ account_type: null, id: 'user-1', username: 'alice' }]}
         emptyTitle='No users'
         emptyDescription='Nothing to show.'
       />,
@@ -36,7 +37,9 @@ describe('UserList', () => {
   it('renders avatar on the right when profile_image_id is set', async () => {
     const { container } = render(
       <UserList
-        users={[{ id: 'user-1', username: 'alice', profile_image_id: 'img-xyz' }]}
+        users={[
+          { account_type: null, id: 'user-1', username: 'alice', profile_image_id: 'img-xyz' },
+        ]}
         emptyTitle='No users'
         emptyDescription='Nothing to show.'
       />,
@@ -53,7 +56,7 @@ describe('UserList', () => {
   it('shows mute button for other users when currentUserId is set', async () => {
     render(
       <UserList
-        users={[{ id: 'user-other', username: 'bob' }]}
+        users={[{ account_type: null, id: 'user-other', username: 'bob' }]}
         emptyTitle='No users'
         emptyDescription='Nothing to show.'
         currentUserId='user-viewer'
@@ -65,7 +68,7 @@ describe('UserList', () => {
   it("does not show mute button for the viewer's own row", async () => {
     render(
       <UserList
-        users={[{ id: 'user-viewer', username: 'alice' }]}
+        users={[{ account_type: null, id: 'user-viewer', username: 'alice' }]}
         emptyTitle='No users'
         emptyDescription='Nothing to show.'
         currentUserId='user-viewer'
@@ -77,7 +80,7 @@ describe('UserList', () => {
   it('does not show mute button when currentUserId is absent (unauthenticated)', async () => {
     render(
       <UserList
-        users={[{ id: 'user-other', username: 'bob' }]}
+        users={[{ account_type: null, id: 'user-other', username: 'bob' }]}
         emptyTitle='No users'
         emptyDescription='Nothing to show.'
       />,

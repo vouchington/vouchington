@@ -18,7 +18,7 @@ import { recommendationsResponse } from './topics-story-recommendations'
 
 const storyContentUpdate = {
   updated_at: '2026-05-05T00:00:00.000Z',
-  updated_by: { id: 'user-0', username: 'jong', display_account: null },
+  updated_by: { account_type: null, id: 'user-0', username: 'jong', display_account: null },
 }
 
 const t = createTranslator('en', await loadJsonMessages('en'))

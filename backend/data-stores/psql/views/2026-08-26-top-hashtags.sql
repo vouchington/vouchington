@@ -24,14 +24,14 @@ CREATE MATERIALIZED VIEW mv_top_hashtags AS
         SELECT 1
         FROM users contributor
         WHERE contributor.id = source.contributor_id
-          AND contributor.is_system = FALSE
+          AND contributor.platform_account_kind IS NULL
           AND contributor.deleted_at IS NULL
       )
       AND EXISTS (
         SELECT 1
         FROM users post_creator
         WHERE post_creator.id = p.created_by_id
-          AND post_creator.is_system = FALSE
+          AND post_creator.platform_account_kind IS NULL
       )
       AND NOT EXISTS (
         SELECT 1

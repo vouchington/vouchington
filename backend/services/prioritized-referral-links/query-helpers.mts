@@ -97,12 +97,17 @@ export async function collectUsers(
   const userIds = rows.flatMap(r => (r.user_id && !users[r.user_id] ? [r.user_id] : []))
   if (userIds.length === 0) return
   const { rows: userRows } = await read(sql`/* collectUsers */
-    SELECT id, username, display_account->>'name' AS display_name
+    SELECT id, username, account_type, display_account->>'name' AS display_name
     FROM view_users_public
     WHERE id = ANY(${userIds})
   `)
   for (const u of userRows) {
-    users[u.id] = { id: u.id, username: u.username, display_name: u.display_name ?? null }
+    users[u.id] = {
+      id: u.id,
+      username: u.username,
+      account_type: u.account_type,
+      display_name: u.display_name ?? null,
+    }
   }
 }
 

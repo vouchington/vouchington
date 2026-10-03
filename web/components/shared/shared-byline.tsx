@@ -4,12 +4,12 @@ import Link from 'next/link'
 import { formatUtcDate } from '@ts-shared/utils/format'
 import { cn } from '@/lib/utils'
 import type { PublicUser } from '@/types/user'
-import { UserOfficialBadge } from '@/components/shared/user-official-badge'
+import { UserAccountBadge } from '@/components/shared/user-account-badge'
 import { userHref } from '@/lib/links/entity-href'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface SharedBylineProps {
-  sharedByUser?: Pick<PublicUser, 'id' | 'username' | 'is_official_account'>
+  sharedByUser?: Pick<PublicUser, 'id' | 'username' | 'account_type'>
   sharedAt?: string
   className?: string
 }
@@ -31,7 +31,7 @@ export function SharedByline({ sharedByUser, sharedAt, className }: SharedByline
       >
         @{sharedByUser.username}
       </Link>
-      <UserOfficialBadge isOfficial={sharedByUser.is_official_account} />
+      <UserAccountBadge accountType={sharedByUser.account_type} />
       {sharedAt ? <span>· {formatUtcDate(sharedAt)}</span> : null}
     </div>
   )

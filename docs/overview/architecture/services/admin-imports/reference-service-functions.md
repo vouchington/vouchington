@@ -21,3 +21,9 @@ import {
 - **`getImportBatch(batchId)`** — Returns batch or `null`.
 - **`getImportRowsByBatchId(batchId)`** — Returns all rows for a batch.
 - **`getImportBatchProgress(batchId)`** — Returns `{ total, completed, failed, pending }`.
+
+Administrative CSV imports require an administrator at `importAdminTopics`; the batch retains
+the uploader's `created_by_id`, and the worker reloads that user for every processed row. Seed
+CSV imports instead use an explicit role-free system actor. Only the internal seed callback
+grants that exact actor topic create/update authority; it expires when the callback completes,
+including on failure. Seed imports neither grant staff roles nor substitute actors in user imports.

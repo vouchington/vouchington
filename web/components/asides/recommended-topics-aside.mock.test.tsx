@@ -55,7 +55,12 @@ describe('RecommendedTopicsAside', () => {
   })
 
   it('renders nothing when results are empty', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'u1', roles: [], username: 'alice' })
+    mockGetCurrentUser.mockResolvedValue({
+      account_type: null,
+      id: 'u1',
+      roles: [],
+      username: 'alice',
+    })
     mockGetRecommendedTopics.mockResolvedValue(emptyData)
     const result = await RecommendedTopicsAside()
     const { container } = render(result as ReactElement)
@@ -63,7 +68,12 @@ describe('RecommendedTopicsAside', () => {
   })
 
   it('renders content when authenticated and results exist', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'u1', roles: [], username: 'alice' })
+    mockGetCurrentUser.mockResolvedValue({
+      account_type: null,
+      id: 'u1',
+      roles: [],
+      username: 'alice',
+    })
     mockGetRecommendedTopics.mockResolvedValue(mockData)
     const result = await RecommendedTopicsAside()
     render(result as ReactElement)
@@ -72,7 +82,12 @@ describe('RecommendedTopicsAside', () => {
   })
 
   it('excludes blocked topics server-side and shows eligible ones', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'u1', roles: [], username: 'alice' })
+    mockGetCurrentUser.mockResolvedValue({
+      account_type: null,
+      id: 'u1',
+      roles: [],
+      username: 'alice',
+    })
     mockGetRecommendedTopics.mockResolvedValue({
       results: [
         { __entity_type: 'topic', id: 'topic-1', score: 0.9, reason: 'algo' },
@@ -93,7 +108,12 @@ describe('RecommendedTopicsAside', () => {
   })
 
   it('excludes followed and dismissed topics server-side', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'u1', roles: [], username: 'alice' })
+    mockGetCurrentUser.mockResolvedValue({
+      account_type: null,
+      id: 'u1',
+      roles: [],
+      username: 'alice',
+    })
     mockGetRecommendedTopics.mockResolvedValue({
       results: [
         { __entity_type: 'topic', id: 'topic-1', score: 0.9, reason: 'algo' },
@@ -120,7 +140,12 @@ describe('RecommendedTopicsAside', () => {
   })
 
   it('renders nothing when topics record has no matching entries', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'u1', roles: [], username: 'alice' })
+    mockGetCurrentUser.mockResolvedValue({
+      account_type: null,
+      id: 'u1',
+      roles: [],
+      username: 'alice',
+    })
     mockGetRecommendedTopics.mockResolvedValue({
       ...emptyData,
       results: [{ __entity_type: 'topic', id: 'topic-orphan', score: 0.5, reason: 'algo' }],

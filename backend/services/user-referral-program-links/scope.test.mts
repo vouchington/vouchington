@@ -28,6 +28,7 @@ const baseLink: UserReferralLink = {
 function createUser(id: string, roles: string[] = []): PrivateUser {
   return {
     __entity_type: 'user',
+    account_type: null,
     id,
     roles,
     cards_visibility: 'everyone',

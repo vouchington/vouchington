@@ -83,7 +83,9 @@ describe('LanguageForm', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(updateMyUser).mockResolvedValue({ user: { id: 'user-1', roles: [] } })
+    vi.mocked(updateMyUser).mockResolvedValue({
+      user: { account_type: null, id: 'user-1', roles: [] },
+    })
   })
 
   it('saves a selected country for the current user', async () => {

@@ -133,8 +133,8 @@ export const UserVariations: Story = {
           <StoryCard
             key={user.id}
             title={
-              user.is_official_account
-                ? 'official account'
+              user.account_type
+                ? user.account_type
                 : user.display_account
                   ? 'display account'
                   : 'member'

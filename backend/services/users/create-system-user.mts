@@ -8,8 +8,8 @@ export async function createAgentSystemUser(
 ): Promise<{ id: string }> {
   const { rows } = await write<{ id: string }>(
     sql`/* createAgentSystemUser */
-    INSERT INTO users (username)
-    VALUES (${username})
+    INSERT INTO users (username, platform_account_kind)
+    VALUES (${username}, 'system')
     RETURNING id
     `,
     options,

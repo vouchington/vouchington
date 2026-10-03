@@ -10,7 +10,7 @@ import { PageWithAside } from '@/components/page-with-aside'
 import { PostsDiscoveryAside } from '@/components/asides/posts-discovery-aside'
 import { toDataPointTopic } from '@/components/posts/post-form/initial-state'
 import { getEligibleCommunityPostOptions } from '@/components/posts/post-form/community-options'
-import { isOfficialAccount } from '@/lib/auth/official-account'
+import { isPlatformAccount } from '@/lib/auth/account-type'
 import { getTranslations } from '@/lib/i18n/get-translations'
 
 export const dynamic = 'force-dynamic'
@@ -36,7 +36,7 @@ export default async function CreateDataPointPage({ searchParams }: CreateDataPo
     getEligibleCommunityPostOptions('data_point', requestedCommunitySlug),
   ])
 
-  const isOfficial = isOfficialAccount(user)
+  const isOfficial = isPlatformAccount(user)
   const isGated = isContributionGated(contributionData)
 
   const initialDataPointTopic = topicData ? toDataPointTopic(topicData.topic) : undefined

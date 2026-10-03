@@ -63,7 +63,7 @@ export async function readCategoryDataChunk(
         AND hashtag_relation.deleted_at IS NULL
       LEFT JOIN users categorizer
         ON categorizer.username = ${RSS_FEED_CATEGORIZER_USERNAME}
-        AND categorizer.is_system IS TRUE
+        AND categorizer.platform_account_kind = 'system'
       LEFT JOIN LATERAL (
         SELECT vote.score > 0 AND (
           topic_relation.votes_score_up <> 0 OR

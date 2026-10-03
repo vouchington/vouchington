@@ -57,7 +57,7 @@ describe('update.review-content-validation', () => {
     ).rejects.toMatchObject({
       status: 403,
       code: OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN,
-      message: 'Official accounts cannot edit community reviews or data points.',
+      message: 'Official and automated accounts cannot edit community reviews or data points.',
     })
   })
 })
