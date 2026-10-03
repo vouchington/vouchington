@@ -19,7 +19,8 @@ which runs every I/O-capable queue, including the SQS consumers. The entrypoint 
 an explicit include list from the policy, so infrastructure passes only the class. `all` and `cpu`
 are rejected because they would run CPU-only queues here. `QUEUES` remains the name-level selector
 for local development and image smoke tests, and setting both variables, or an unknown class, fails at
-startup. `queue-class.test.mts` pins the class to the policy's queues.
+startup. Schedules follow the same selection, so a schedule for an I/O-capable queue is defined
+here. `queue-class.test.mts` pins the class to the policy's queues and schedules.
 
 ## Files
 

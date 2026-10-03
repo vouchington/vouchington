@@ -32,8 +32,9 @@ merged local development worker.
 require explicit inclusion; `cpu` runs only the CPU-only queues. The entrypoint resolves the class to
 an explicit include list from the policy, so infrastructure passes only the class. `QUEUES` remains
 the name-level selector for local development and image smoke tests, and setting both variables, or
-an unknown class such as `io`, fails at startup. `queue-class.test.mts` pins each class to the
-policy's queues.
+an unknown class such as `io`, fails at startup. Schedules follow the same selection, so `cpu`
+registers only the CPU-only schedules (plus the always-run `heartbeat`) and leaves the I/O ones to
+worker-io. `queue-class.test.mts` pins each class to the policy's queues and schedules.
 
 ## Grafana IRM heartbeat
 

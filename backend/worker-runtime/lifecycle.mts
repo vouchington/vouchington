@@ -78,8 +78,9 @@ export async function initializeWorkerRuntime(
   dependencies: WorkerRuntimeDependencies = defaultDependencies,
 ): Promise<WorkerRuntime> {
   try {
-    // Resolved once so both runtimes select from the same list: a class expands to an explicit
-    // include list, which also reaches explicit-inclusion definitions that unset QUEUES skips.
+    // Resolved once so workers, SQS consumers and schedules select from the same list: a class
+    // expands to an explicit include list, which also reaches explicit-inclusion definitions that
+    // unset QUEUES skips. Every consumer takes this value, never process.env.QUEUES.
     const queues = resolveQueueSelection(dependencies.env, config.queueClasses)
     const sqsQueueNames = config.sqsConsumerDefinitions.map(definition => definition.queueName)
     const workerQueueNames = config.workerDefinitions.map(definition => definition.queueName)
@@ -112,7 +113,7 @@ export async function initializeWorkerRuntime(
         }
 
         const results = await Promise.allSettled([
-          dependencies.upsertSchedules(config.scheduleDefinitions),
+          dependencies.upsertSchedules(config.scheduleDefinitions, queues),
           dependencies.setup(),
         ])
         for (const result of results) {

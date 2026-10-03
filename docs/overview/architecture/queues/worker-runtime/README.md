@@ -21,7 +21,8 @@ Two loading paths exist:
 
 `lifecycle.mts` resolves the process's queue selection once, with `resolveQueueSelection` from
 [`worker-queue-class.mts`](../../../../../backend/modules/worker-queue-inventory/worker-queue-class.mts),
-and passes the same selection to the GlideMQ and SQS loaders. `WORKER_QUEUE_CLASS` (`all`, `cpu`,
+and passes the same selection to the GlideMQ and SQS loaders and to schedule registration, so no
+path reads `process.env.QUEUES` itself. `WORKER_QUEUE_CLASS` (`all`, `cpu`,
 `io`) expands to an explicit include list from the policy, which both reaches queues that require
 explicit inclusion and lets one list select SQS consumers alongside GlideMQ workers. Each
 entrypoint states which classes it accepts (`worker-cpu`: `all`, `cpu`; `worker-io`: `io`). Without

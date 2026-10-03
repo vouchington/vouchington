@@ -10,6 +10,7 @@ import { upsertSchedules as upsertNotificationSchedules } from '@queues/notifica
 import { upsertSchedules as upsertOAuthAuthorizationExchangeSchedules } from '@queues/oauth-authorization-exchange/enqueues/schedules'
 import { upsertSchedules as upsertEmailSchedules } from '@queues/emails/enqueues/schedules'
 import { upsertSchedules as upsertEntityListenerSchedules } from '@queues/entity-listeners/enqueues/schedules'
+import { upsertSchedules as upsertOpenAiModerationSchedules } from '@queues/openai-moderation/enqueues/schedules'
 import { upsertSchedules as upsertPsqlSchedules } from '@queues/psql/enqueues/schedules'
 import { upsertSchedules as upsertRssFeedSchedules } from '@queues/rss-feeds/enqueues/schedules'
 import { upsertSchedules as upsertRssFeedItemCategorySchedules } from '@queues/rss-feed-item-categories/enqueues/schedules'
@@ -47,6 +48,9 @@ describe('worker-io SCHEDULE_DEFINITIONS load functions', () => {
     await expect(byQueue('user-deletions').load()).resolves.toBe(upsertUserDeletionSchedules)
     await expect(byQueue('oauth-authorization-exchange').load()).resolves.toBe(
       upsertOAuthAuthorizationExchangeSchedules,
+    )
+    await expect(byQueue('openai_moderation_omni_single').load()).resolves.toBe(
+      upsertOpenAiModerationSchedules,
     )
     await expect(byQueue('bloom-filters').load()).resolves.toBe(upsertBloomFilterSchedules)
     await expect(byQueue('find-your-friends').load()).resolves.toBe(upsertFindYourFriendsSchedules)

@@ -80,6 +80,11 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
       ),
   },
   {
+    queueName: 'openai_moderation_omni_single',
+    load: () =>
+      import('@queues/openai-moderation/enqueues/schedules').then(module => module.upsertSchedules),
+  },
+  {
     queueName: 'bloom-filters',
     load: () =>
       import('@queues/bloom-filters/enqueues/schedules').then(module => module.upsertSchedules),

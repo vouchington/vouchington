@@ -1,6 +1,7 @@
 import { describe } from 'vitest'
 
 import { registerWorkerQueueClassTests } from '../../test-helpers/entrypoints/worker-queue-class-selection.mts'
+import { SCHEDULE_DEFINITIONS } from './definitions.mts'
 import { initializeWorkerRuntime } from './runtime.mts'
 
 describe('worker-io WORKER_QUEUE_CLASS selection', () => {
@@ -11,5 +12,7 @@ describe('worker-io WORKER_QUEUE_CLASS selection', () => {
     rejected: ['all', 'cpu', 'gpu'],
     fullClass: 'io',
     explicitInclusionQueues: [],
+    expectedSchedules: { io: SCHEDULE_DEFINITIONS.map(definition => definition.queueName) },
+    alwaysRunSchedules: [],
   })
 })
