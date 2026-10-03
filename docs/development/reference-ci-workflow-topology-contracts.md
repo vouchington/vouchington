@@ -117,12 +117,14 @@ outputs. Expressions and inherited secrets remain opaque; contract checks are sk
 is remote, missing, non-callable, or ambiguous, and output checks recognize only complete static
 `needs.<call-job>.outputs.<name>` dot or quoted-bracket chains. This conservative boundary avoids
 speculative or cascading diagnostics while actionlint continues to own malformed YAML declarations.
-The table-driven policy exercised by
-[`ci/check-live-workflow-topology.mts`](../../ci/check-live-workflow-topology.mts) loads that
+The `workflow-topology-policy` rule in [`.no-mistakes.yml`](../../.no-mistakes.yml) loads that
 graph once and fails closed on workflow/job inventory drift, missing or stale lock intent and
-unlocked-workflow rationale, pending, cancellation, and scope mismatches against the typed lock
-intent, exact lock-group collisions (including expression templates), reusable caller drift,
-required or forbidden routes, exact aggregate fan-ins, and eligibility ordering. Workflow-specific
+unlocked-workflow rationale, pending, cancellation, and scope mismatches against the declared lock
+intent, exact lock-group collisions (including expression templates), reusable caller drift, and
+required routes. It also supports forbidden routes, exact aggregate fan-ins, artifact edges, and
+ordered steps; this repository leaves those options empty. The rest of
+[`ci/check-live-workflow-topology.mts`](../../ci/check-live-workflow-topology.mts) covers
+permissions, secrets, and JOBS.md freshness. Workflow-specific
 tests retain conditions, inputs,
 outputs, secrets, permissions, runners, scripts, and runtime mechanics instead of duplicating graph
 assertions. See

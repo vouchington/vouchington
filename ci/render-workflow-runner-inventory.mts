@@ -2,8 +2,8 @@
  * Regenerates the workflow -> job -> runner -> timeout table in
  * docs/development/ci/workflows/JOBS.md from the live `no-mistakes` workflow topology (`loadRepoTopology()`)
  * -- never by parsing workflow YAML directly, so this inventory can never drift out of sync with
- * the same source no-mistakes's own CI policies use (see
- * .github/workflows/workflow-topology-policy-inventory.mts for a sibling consumer). Mirrors
+ * the same source no-mistakes's own CI policies use (see the `workflow-topology-policy` rule in
+ * .no-mistakes.yml for a sibling consumer). Mirrors
  * ci/vitest/generate-ownership-table.mts: splice a generated region between markers, delegate
  * final formatting to oxfmt's `format()` API so table padding never drifts from `oxfmt --check`.
  *

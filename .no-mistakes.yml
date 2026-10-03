@@ -2262,6 +2262,358 @@ rules:
       nestedTimeoutSeconds: 90
       forbidNestedInComposite: true
 
+  - name: GitHub Actions workflow topology stays within policy
+    rule: workflow-topology-policy
+    scope: repository
+    options:
+      jobInventory:
+        .github/workflows/actionlint.yml: [actionlint]
+        .github/workflows/backend.yml:
+          [
+            backend,
+            backend-smoke,
+            changes,
+            codecov,
+            coverage,
+            publish-backend-images,
+            static-backend,
+            test-backend-credentialed,
+            test-backend-modules,
+            test-backend-unit,
+            test-explain-analyze,
+            test-postgres-schema,
+            validate-backend-images,
+          ]
+        .github/workflows/cancel-dequeued-merge-group-runs.yml: [cancel]
+        .github/workflows/cancel-replaced-merge-group-runs.yml: [cancel]
+        .github/workflows/checks-backend-smoke.yml: [smoke]
+        .github/workflows/checks-static.yml:
+          [static-backend, static-cloudflare, static-lambdas, static-web]
+        .github/workflows/ci-area-coverage.yml: [coverage]
+        .github/workflows/ci-detect-changes.yml: [detect-changes]
+        .github/workflows/ci-upload-codecov.yml: [upload-codecov]
+        .github/workflows/cleanup-artifacts.yml: [cleanup-sweep]
+        .github/workflows/cloudflare-worker.yml:
+          [
+            changes,
+            cloudflare-worker,
+            codecov,
+            coverage,
+            static-cloudflare-worker,
+            test-cloudflare-worker,
+          ]
+        .github/workflows/dispatch-completed-deploy.yml: [dispatch]
+        .github/workflows/docs-publish.yml: [publish]
+        .github/workflows/explain-analyze.yml: [explain-analyze]
+        .github/workflows/fix-dependabot.yml:
+          [
+            check-duplicates,
+            comment-session,
+            dispatch,
+            escalate,
+            render-prompt,
+            revalidate-dispatch,
+            triage-and-rerun,
+          ]
+        .github/workflows/fix-issue.yml: [comment-session, dispatch, escalate, gate, render-prompt]
+        .github/workflows/fix-main-self-retry.yml: [escalate-retry-failure, retry]
+        .github/workflows/fix-main.yml:
+          [
+            classify-self-failure,
+            dispatch,
+            escalate,
+            related-candidates,
+            render-prompt,
+            triage-and-rerun,
+          ]
+        .github/workflows/ghcr-cleanup.yml: [cleanup]
+        .github/workflows/gitleaks.yml: [gitleaks]
+        .github/workflows/harness-dispatch.yml: [dispatch]
+        .github/workflows/initialize-smoke-test.yml: [initialize-smoke-test]
+        .github/workflows/label-pr.yml: [label]
+        .github/workflows/lambdas.yml:
+          [changes, codecov, coverage, lambdas, static-lambdas, test-lambdas]
+        .github/workflows/lint-links.yml: [lint-links]
+        .github/workflows/main-backend.yml:
+          [backend-deploy-intent, detect-image-publication, publish-backend-images]
+        .github/workflows/main-cloudflare-worker.yml: [publish-cloudflare-worker]
+        .github/workflows/main-lambdas.yml: [publish-image-resize]
+        .github/workflows/main-storybook.yml: [publish-storybook]
+        .github/workflows/main-web.yml:
+          [detect-image-publication, publish-web-images, web-deploy-intent]
+        .github/workflows/merge-queue-ejection.yml:
+          [comment-session, dispatch, escalate, render-prompt]
+        .github/workflows/nightly.yml: [backend, cloudflare-worker, lambdas, static, tooling, web]
+        .github/workflows/plan-completion.yml: [audit]
+        .github/workflows/plan.yml: [comment-session, dispatch, escalate, gate, render-prompt]
+        .github/workflows/pnpm-dedupe.yml: [dedupe]
+        .github/workflows/postgresql-snapshot-update.yml: [generate, prepare, publish]
+        .github/workflows/publish-backend-images.yml: [build, resolve-main-images]
+        .github/workflows/publish-web-images.yml: [build, resolve-main-images]
+        .github/workflows/scheduled-prompts.yml: [dispatch, select-prompt]
+        .github/workflows/shepherd.yml:
+          [checkpoint-dispatch, dispatch, escalate, gate, render-prompt]
+        .github/workflows/static-code-analysis.yml: [no-mistakes, static-code-analysis]
+        .github/workflows/static.yml: [static, static-code-analysis]
+        .github/workflows/storybook.yml: [storybook]
+        .github/workflows/sync-articles.yml: [publish]
+        .github/workflows/tests-backend-credentialed.yml: [backend-credentialed-tests]
+        .github/workflows/tests-backend-modules.yml: [backend-modules]
+        .github/workflows/tests-backend-unit.yml: [backend-tests, prep]
+        .github/workflows/tests-cloudflare-worker.yml: [cloudflare-worker-tests]
+        .github/workflows/tests-lambdas.yml: [lambdas-tests]
+        .github/workflows/tests-playwright-credentialed.yml: [playwright-credentialed-tests]
+        .github/workflows/tests-playwright.yml: [playwright-tests, shards]
+        .github/workflows/tests-portability.yml: [portability-linux, portability-macos]
+        .github/workflows/tests-postgres-schema.yml: [postgres-schema-tests]
+        .github/workflows/tests-tooling.yml: [i18n-route-bounds, tooling]
+        .github/workflows/tests-ts-shared.yml: [ts-shared]
+        .github/workflows/tests-web-api.yml: [prep, web-api-tests]
+        .github/workflows/tests-web-integration.yml: [prep, web-integration-tests]
+        .github/workflows/tests-web.yml: [prep, web-tests]
+        .github/workflows/tooling.yml:
+          [
+            changes,
+            codecov,
+            coverage,
+            initialize-smoke-test,
+            test-portability,
+            test-tooling,
+            test-ts-shared,
+            tooling,
+          ]
+        .github/workflows/web.yml:
+          [
+            changes,
+            codecov,
+            coverage,
+            publish-web-images,
+            static-web,
+            storybook,
+            test-playwright,
+            test-playwright-credentialed,
+            test-web,
+            test-web-api,
+            test-web-integration,
+            validate-web-images,
+            web,
+          ]
+        ci/no-mistakes-workflows/ci-path-coverage.yml: [detect-changes]
+      requiredJobs:
+        - '.github/workflows/static.yml#static'
+        - '.github/workflows/backend.yml#backend'
+        - '.github/workflows/web.yml#web'
+        - '.github/workflows/cloudflare-worker.yml#cloudflare-worker'
+        - '.github/workflows/lambdas.yml#lambdas'
+        - '.github/workflows/tooling.yml#tooling'
+        - '.github/workflows/gitleaks.yml#gitleaks'
+      requiredDirectEdges:
+        - - '.github/workflows/main-backend.yml#detect-image-publication'
+          - '.github/workflows/main-backend.yml#backend-deploy-intent'
+        - - '.github/workflows/main-backend.yml#detect-image-publication'
+          - '.github/workflows/main-backend.yml#publish-backend-images'
+        - - '.github/workflows/main-web.yml#detect-image-publication'
+          - '.github/workflows/main-web.yml#web-deploy-intent'
+        - - '.github/workflows/main-web.yml#detect-image-publication'
+          - '.github/workflows/main-web.yml#publish-web-images'
+      exactCallerJobs:
+        .github/workflows/backend.yml:
+          - '.github/workflows/nightly.yml#backend'
+        .github/workflows/checks-backend-smoke.yml:
+          - '.github/workflows/backend.yml#backend-smoke'
+        .github/workflows/checks-static.yml:
+          - '.github/workflows/backend.yml#static-backend'
+          - '.github/workflows/cloudflare-worker.yml#static-cloudflare-worker'
+          - '.github/workflows/lambdas.yml#static-lambdas'
+          - '.github/workflows/web.yml#static-web'
+        .github/workflows/ci-area-coverage.yml:
+          - '.github/workflows/backend.yml#coverage'
+          - '.github/workflows/cloudflare-worker.yml#coverage'
+          - '.github/workflows/lambdas.yml#coverage'
+          - '.github/workflows/tooling.yml#coverage'
+          - '.github/workflows/web.yml#coverage'
+        .github/workflows/ci-detect-changes.yml:
+          - '.github/workflows/backend.yml#changes'
+          - '.github/workflows/cloudflare-worker.yml#changes'
+          - '.github/workflows/lambdas.yml#changes'
+          - '.github/workflows/tooling.yml#changes'
+          - '.github/workflows/web.yml#changes'
+        .github/workflows/ci-upload-codecov.yml:
+          - '.github/workflows/backend.yml#codecov'
+          - '.github/workflows/cloudflare-worker.yml#codecov'
+          - '.github/workflows/lambdas.yml#codecov'
+          - '.github/workflows/tooling.yml#codecov'
+          - '.github/workflows/web.yml#codecov'
+        .github/workflows/cloudflare-worker.yml:
+          - '.github/workflows/nightly.yml#cloudflare-worker'
+        .github/workflows/explain-analyze.yml:
+          - '.github/workflows/backend.yml#test-explain-analyze'
+        .github/workflows/harness-dispatch.yml:
+          - '.github/workflows/fix-dependabot.yml#dispatch'
+          - '.github/workflows/fix-issue.yml#dispatch'
+          - '.github/workflows/fix-main.yml#dispatch'
+          - '.github/workflows/merge-queue-ejection.yml#dispatch'
+          - '.github/workflows/plan.yml#dispatch'
+          - '.github/workflows/scheduled-prompts.yml#dispatch'
+          - '.github/workflows/shepherd.yml#dispatch'
+        .github/workflows/initialize-smoke-test.yml:
+          - '.github/workflows/tooling.yml#initialize-smoke-test'
+        .github/workflows/lambdas.yml:
+          - '.github/workflows/nightly.yml#lambdas'
+        .github/workflows/publish-backend-images.yml:
+          - '.github/workflows/backend.yml#publish-backend-images'
+          - '.github/workflows/backend.yml#validate-backend-images'
+          - '.github/workflows/main-backend.yml#publish-backend-images'
+        .github/workflows/publish-web-images.yml:
+          - '.github/workflows/main-web.yml#publish-web-images'
+          - '.github/workflows/web.yml#publish-web-images'
+          - '.github/workflows/web.yml#validate-web-images'
+        .github/workflows/static-code-analysis.yml:
+          - '.github/workflows/static.yml#static-code-analysis'
+        .github/workflows/static.yml:
+          - '.github/workflows/nightly.yml#static'
+        .github/workflows/storybook.yml:
+          - '.github/workflows/web.yml#storybook'
+        .github/workflows/tests-backend-credentialed.yml:
+          - '.github/workflows/backend.yml#test-backend-credentialed'
+        .github/workflows/tests-backend-modules.yml:
+          - '.github/workflows/backend.yml#test-backend-modules'
+        .github/workflows/tests-backend-unit.yml:
+          - '.github/workflows/backend.yml#test-backend-unit'
+        .github/workflows/tests-cloudflare-worker.yml:
+          - '.github/workflows/cloudflare-worker.yml#test-cloudflare-worker'
+        .github/workflows/tests-lambdas.yml:
+          - '.github/workflows/lambdas.yml#test-lambdas'
+        .github/workflows/tests-playwright-credentialed.yml:
+          - '.github/workflows/web.yml#test-playwright-credentialed'
+        .github/workflows/tests-playwright.yml:
+          - '.github/workflows/web.yml#test-playwright'
+        .github/workflows/tests-portability.yml:
+          - '.github/workflows/tooling.yml#test-portability'
+        .github/workflows/tests-postgres-schema.yml:
+          - '.github/workflows/backend.yml#test-postgres-schema'
+        .github/workflows/tests-tooling.yml:
+          - '.github/workflows/tooling.yml#test-tooling'
+        .github/workflows/tests-ts-shared.yml:
+          - '.github/workflows/tooling.yml#test-ts-shared'
+        .github/workflows/tests-web-api.yml:
+          - '.github/workflows/web.yml#test-web-api'
+        .github/workflows/tests-web-integration.yml:
+          - '.github/workflows/web.yml#test-web-integration'
+        .github/workflows/tests-web.yml:
+          - '.github/workflows/web.yml#test-web'
+        .github/workflows/tooling.yml:
+          - '.github/workflows/nightly.yml#tooling'
+        .github/workflows/web.yml:
+          - '.github/workflows/nightly.yml#web'
+      unlockedWorkflowReasons:
+        .github/workflows/checks-backend-smoke.yml: 'parallel-safe idempotent manual tests'
+        .github/workflows/checks-static.yml: 'parallel-safe idempotent manual tests'
+        .github/workflows/ci-area-coverage.yml: 'short-lived read-only area coverage check'
+        .github/workflows/ci-detect-changes.yml: 'short-lived read-only CI classification'
+        .github/workflows/ci-upload-codecov.yml: 'independent informational coverage upload'
+        .github/workflows/explain-analyze.yml: 'parallel-safe idempotent manual tests'
+        .github/workflows/initialize-smoke-test.yml: 'parallel-safe idempotent manual tests'
+        .github/workflows/label-pr.yml: 'idempotent PR labeling'
+        .github/workflows/publish-backend-images.yml: "runs under its area or main caller's concurrency"
+        .github/workflows/publish-web-images.yml: "runs under its area or main caller's concurrency"
+        .github/workflows/static-code-analysis.yml: "runs under its caller's concurrency"
+        .github/workflows/tests-backend-credentialed.yml: 'parallel-safe idempotent manual tests'
+        .github/workflows/tests-backend-modules.yml: 'parallel-safe idempotent manual tests'
+        .github/workflows/tests-backend-unit.yml: 'parallel-safe idempotent manual tests'
+        .github/workflows/tests-cloudflare-worker.yml: 'parallel-safe idempotent manual tests'
+        .github/workflows/tests-lambdas.yml: 'parallel-safe idempotent manual tests'
+        .github/workflows/tests-playwright-credentialed.yml: "runs under its caller's concurrency"
+        .github/workflows/tests-playwright.yml: "runs under its caller's concurrency"
+        .github/workflows/tests-portability.yml: "runs under its caller's concurrency"
+        .github/workflows/tests-postgres-schema.yml: 'parallel-safe idempotent manual tests'
+        .github/workflows/tests-tooling.yml: 'parallel-safe idempotent manual tests'
+        .github/workflows/tests-ts-shared.yml: 'parallel-safe idempotent manual tests'
+        .github/workflows/tests-web-api.yml: 'parallel-safe idempotent manual tests'
+        .github/workflows/tests-web-integration.yml: 'parallel-safe idempotent manual tests'
+        .github/workflows/tests-web.yml: 'parallel-safe idempotent manual tests'
+        ci/no-mistakes-workflows/ci-path-coverage.yml: 'static-analysis projection; GitHub never executes it'
+      concurrencyPolicy:
+        .github/workflows/actionlint.yml:
+          { pending: coalesce-latest, cancellation: conditional, scope: [pull-request, sha] }
+        .github/workflows/backend.yml:
+          { pending: coalesce-latest, cancellation: conditional, scope: [pull-request, sha, event] }
+        .github/workflows/cancel-dequeued-merge-group-runs.yml:
+          { pending: coalesce-latest, cancellation: retain-running, scope: [pull-request] }
+        .github/workflows/cancel-replaced-merge-group-runs.yml:
+          { pending: coalesce-latest, cancellation: retain-running, scope: [sha] }
+        .github/workflows/cleanup-artifacts.yml:
+          { pending: coalesce-latest, cancellation: retain-running, scope: [fixed-resource] }
+        .github/workflows/cloudflare-worker.yml:
+          { pending: coalesce-latest, cancellation: conditional, scope: [pull-request, sha, event] }
+        .github/workflows/dispatch-completed-deploy.yml:
+          { pending: coalesce-latest, cancellation: retain-running, scope: [event] }
+        .github/workflows/docs-publish.yml:
+          { pending: coalesce-latest, cancellation: retain-running, scope: [run] }
+        .github/workflows/fix-dependabot.yml:
+          { pending: coalesce-latest, cancellation: retain-running, scope: [ref, event] }
+        .github/workflows/fix-issue.yml:
+          { pending: coalesce-latest, cancellation: retain-running, scope: [event] }
+        .github/workflows/fix-main-self-retry.yml:
+          { pending: coalesce-latest, cancellation: retain-running, scope: [run] }
+        .github/workflows/fix-main.yml:
+          { pending: coalesce-latest, cancellation: cancel-running, scope: [sha, event] }
+        .github/workflows/ghcr-cleanup.yml:
+          { pending: coalesce-latest, cancellation: retain-running, scope: [fixed-resource] }
+        .github/workflows/gitleaks.yml:
+          { pending: coalesce-latest, cancellation: conditional, scope: [pull-request, sha] }
+        .github/workflows/harness-dispatch.yml:
+          { pending: coalesce-latest, cancellation: retain-running, scope: [input-resource] }
+        .github/workflows/lambdas.yml:
+          { pending: coalesce-latest, cancellation: conditional, scope: [pull-request, sha, event] }
+        .github/workflows/lint-links.yml:
+          { pending: coalesce-latest, cancellation: conditional, scope: [pull-request, sha] }
+        .github/workflows/main-backend.yml:
+          { pending: coalesce-latest, cancellation: retain-running, scope: [run] }
+        .github/workflows/main-cloudflare-worker.yml:
+          { pending: coalesce-latest, cancellation: retain-running, scope: [fixed-resource] }
+        .github/workflows/main-lambdas.yml:
+          { pending: coalesce-latest, cancellation: retain-running, scope: [fixed-resource] }
+        .github/workflows/main-storybook.yml:
+          { pending: coalesce-latest, cancellation: retain-running, scope: [fixed-resource] }
+        .github/workflows/main-web.yml:
+          { pending: coalesce-latest, cancellation: retain-running, scope: [run] }
+        .github/workflows/merge-queue-ejection.yml:
+          { pending: coalesce-latest, cancellation: retain-running, scope: [pull-request, sha] }
+        .github/workflows/nightly.yml:
+          { pending: coalesce-latest, cancellation: retain-running, scope: [fixed-resource] }
+        .github/workflows/plan-completion.yml:
+          { pending: coalesce-latest, cancellation: retain-running, scope: [fixed-resource] }
+        .github/workflows/plan.yml:
+          { pending: coalesce-latest, cancellation: retain-running, scope: [event] }
+        .github/workflows/pnpm-dedupe.yml:
+          { pending: coalesce-latest, cancellation: retain-running, scope: [fixed-resource] }
+        .github/workflows/postgresql-snapshot-update.yml:
+          {
+            pending: coalesce-latest,
+            cancellation: retain-running,
+            scope: [run, event, input-resource],
+          }
+        .github/workflows/scheduled-prompts.yml:
+          {
+            pending: coalesce-latest,
+            cancellation: retain-running,
+            scope: [sha, event, input-resource],
+          }
+        .github/workflows/shepherd.yml:
+          { pending: coalesce-latest, cancellation: retain-running, scope: [event] }
+        .github/workflows/static.yml:
+          { pending: coalesce-latest, cancellation: conditional, scope: [pull-request, sha, event] }
+        .github/workflows/storybook.yml:
+          { pending: coalesce-latest, cancellation: conditional, scope: [sha, input-resource] }
+        .github/workflows/sync-articles.yml:
+          { pending: coalesce-latest, cancellation: retain-running, scope: [run] }
+        .github/workflows/tooling.yml:
+          { pending: coalesce-latest, cancellation: conditional, scope: [pull-request, sha, event] }
+        .github/workflows/web.yml:
+          { pending: coalesce-latest, cancellation: conditional, scope: [pull-request, sha, event] }
+      forbidConcurrencyGroupCollisions: true
+
   - name: btree indexes are not a strict prefix of another live index
     rule: postgres-redundant-index
     scope: repository
