@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/nextjs'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { RUNTIME_PUBLIC_CONFIG_READY_EVENT } from './lib/runtime-public-config'
 import {
   clearRuntimePublicConfigForTest,
@@ -29,36 +29,20 @@ function getInitOptions(): Record<string, unknown> {
   return options as Record<string, unknown>
 }
 
+import './instrumentation-client'
+
 describe('client Sentry instrumentation', () => {
-  const listeners: Array<{ type: string; listener: EventListenerOrEventListenerObject }> = []
-  beforeEach(() => {
-    vi.resetModules()
-    const addEventListener = window.addEventListener
-    vi.spyOn(window, 'addEventListener').mockImplementation((type, listener, options) => {
-      listeners.push({ type, listener })
-      addEventListener.call(window, type, listener, options)
-    })
-    localStorage.clear()
-    mockSentryInit.mockClear()
-    delete sentryInitCall.options
-  })
   afterEach(() => {
     localStorage.setItem('cookie-consent', 'essential')
     window.dispatchEvent(new Event('cookie-consent-changed'))
-    listeners.splice(0).forEach(({ type, listener }) => window.removeEventListener(type, listener))
-    vi.restoreAllMocks()
     clearRuntimePublicConfigForTest()
   })
 
-  it('does not initialize without consent', async () => {
-    await import('./instrumentation-client')
+  it('waits for consent then registers request metadata scrubbing', async () => {
+    expect(mockSentryInit).not.toHaveBeenCalled()
     window.dispatchEvent(new Event(RUNTIME_PUBLIC_CONFIG_READY_EVENT))
     expect(mockSentryInit).not.toHaveBeenCalled()
-  })
-
-  it('registers request metadata scrubbing', async () => {
     localStorage.setItem('cookie-consent', 'all')
-    await import('./instrumentation-client')
     window.dispatchEvent(new Event('cookie-consent-changed'))
     expect(sentryInitCall.options).toBeUndefined()
     setRuntimePublicConfigForTest({
