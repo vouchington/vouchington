@@ -5,52 +5,56 @@
 These routes validate their declared path, query, body and header carriers with
 `validateRequestContract` after authentication and authorization and before the service call.
 [Request validation](reference-request-validation.md) owns the ordering and the generated
-contract mechanics. This page records which operations are covered, which are skipped, and which
-status each malformed input keeps or changes.
+contract mechanics. This page records the covered operations, where a path stays free-form, and
+which status each malformed input keeps or changes.
 
 Unauthenticated malformed calls keep returning 401 with no schema diagnostic. A 422 names only the
 carrier (`Invalid request body` or `Invalid request query`).
 
 ## Validated operations
 
-| Group                          | Operations                                                                                                                                 | Contract                                                                                                                             |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Votes                          | `PUT`/`DELETE` vote on agent moderations, entity relations, hostnames and `users/:id/vouch-vote`; `GET` votes on the first three           | Closed `{choice}` body; `after`/`limit` query. The shared vote handler validates after the entity lookup by design.                  |
-| Attestation and attribution    | `POST app-attestation/attest`, `POST app-attestation/challenge`, `POST attribution/referrer`                                               | Closed bodies with required keys.                                                                                                    |
-| Bookmarks and entity relations | Bookmark `GET`/`PUT`/`DELETE`; entity-relation `GET`/`POST` by predicate                                                                   | Path carriers; the `GET` declares `sort`, `positiveNetVoteScore`, `minNetVoteScore`, `after`, `limit`.                               |
-| Feeds by type                  | `GET feeds/posts/:feed_type`, `referral_links`, `rss_feed_items`                                                                           | `after`, `limit`, `community`, `sort`, `media_type`, `has_related_posts`, `min_score_*` as each route uses them.                     |
-| Hostnames                      | `GET hostnames`, `GET`/`PATCH hostnames/:id`, `POST hostnames`                                                                             | Closed bodies; `blocked`, `crawlable`, `hostname`, `after`, `limit` query. `PATCH` validates before the 404 lookup.                  |
-| Households                     | `GET`/`POST households`, `GET`/`PATCH`/`DELETE households/:id`, memberships `GET`/`POST`/`DELETE`                                          | Closed bodies (create and update take no fields); `access`, `after`, `limit` query.                                                  |
-| Imports, landing pages, media  | `GET imports/:batchId/stream`, landing-page `visits`/`clicks`, `POST markdown/preview`, podcast `chapters` and `playback-position`         | Path UUIDs; closed bodies; `position_seconds` required.                                                                              |
-| Lists                          | `GET`/`POST lists`, `GET`/`PATCH`/`DELETE lists/:id`, `import`, `items` (`GET`, `POST`, `DELETE` for posts and RSS feed items)             | Closed bodies; `after`, `limit`, `media_type`, `read` query. `GET /api/v1/lists` is covered beyond the original set.                 |
-| Stories and URLs               | `POST stories/:storyId/discussions`, `GET urls/:id`, `GET urls/:id/crawls`, `GET urls/:id/crawls/:crawlId`                                 | `Idempotency-Key` header is a UUID; `after`/`limit` query.                                                                           |
-| Users                          | `PATCH users/:idOrSlug`, `GET users` (search), collections for posts, users, rss-feeds, rss-feed-items, urls, domains, topics, communities | `PATCH` body is a closed object; collections take `after`, `limit` and the extras each route reads (`q`, `feed_type`, `media_type`). |
+| Group                          | Operations                                                                                                                                                            | Contract                                                                                                                                                                                      |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Votes                          | `PUT`/`DELETE` vote on agent moderations, entity relations, hostnames and `users/:id/vouch-vote`; `GET` votes on the first three                                      | Closed `{choice}` body; `after`/`limit` query. The shared vote handler validates after the entity lookup by design.                                                                           |
+| Attestation and attribution    | `POST app-attestation/attest`, `POST app-attestation/challenge`, `POST attribution/referrer`                                                                          | Closed bodies with required keys.                                                                                                                                                             |
+| Bookmarks and entity relations | Bookmark `GET`/`PUT`/`DELETE`; entity-relation `GET`/`POST` by predicate                                                                                              | Path carriers; the `GET` declares `sort`, `positiveNetVoteScore`, `minNetVoteScore`, `after`, `limit`.                                                                                        |
+| Feeds by type                  | `GET feeds/posts/:feed_type`, `referral_links`, `rss_feed_items`                                                                                                      | `after`, `limit`, `community`, `sort`, `media_type`, `has_related_posts`, `min_score_*` as each route uses them.                                                                              |
+| Hostnames                      | `GET hostnames`, `GET`/`PATCH hostnames/:id`, `POST hostnames`                                                                                                        | Closed bodies; `blocked`, `crawlable`, `hostname`, `after`, `limit` query. `PATCH` validates before the 404 lookup.                                                                           |
+| Households                     | `GET`/`POST households`, `GET`/`PATCH`/`DELETE households/:id`, memberships `GET`/`POST`/`DELETE`                                                                     | Closed bodies (create and update take no fields); `access`, `after`, `limit` query.                                                                                                           |
+| Imports, landing pages, media  | `GET imports/:batchId/stream`, landing-page `visits`/`clicks`, `POST markdown/preview`, podcast `chapters` and `playback-position`                                    | Path UUIDs; closed bodies; `position_seconds` required.                                                                                                                                       |
+| Lists                          | `GET`/`POST lists`, `GET`/`PATCH`/`DELETE lists/:id`, `import`, `items` (`GET`, `POST`, `DELETE` for posts and RSS feed items)                                        | Closed bodies; `after`, `limit`, `media_type`, `read` query. `GET /api/v1/lists` is covered beyond the original set.                                                                          |
+| Stories and URLs               | `POST stories/:storyId/discussions`, `GET urls/:id`, `GET urls/:id/crawls`, `GET urls/:id/crawls/:crawlId`                                                            | `Idempotency-Key` header is a UUID; `after`/`limit` query.                                                                                                                                    |
+| Users                          | `PATCH users/:idOrSlug`, `GET`/`DELETE users/:idOrSlug`, `GET users/:id/vouch-context`, data-request `GET`/`POST`/stream, landing-page `GET`s, search and collections | `PATCH` body is closed; search includes the lenient `include_bio` flag; collections take `after`, `limit` and their route-specific filters. All routes validate their generated path carrier. |
 
 `users/:idOrSlug/users/:listType` rejects a repeated `q`, which was previously ignored.
 `users/:idOrSlug/rss-feeds/:listType` now declares `limit`, `after` and `feed_type` in OpenAPI.
+`GET /api/v1/users/:idOrSlug` validates the recognized `include_bio=0|1` query value while retaining
+the prior behavior of ignoring unrecognized values and unrelated query keys.
 
-## Skipped operations
+## Free-form path carriers
 
-A path-only free-form id-or-slug carrier is a plain string, so the generated contract cannot
-reject anything the handler does not already resolve to a 404. These operations are skipped. The
+A path-only free-form id-or-slug carrier is a plain string, so generated validation checks that the
+route receives a string without constraining its domain-specific lookup. The catalog and
 [coverage test](../../../backend/test-helpers/api-fixtures/openapi/content-routes-request-contract-coverage.test.mts)
-fails when one of them gains a body, query or header carrier, so it is validated in the same change.
+keep these routes on the runtime-validation path and ensure their generated path shape remains
+present.
 
-| Operation                                               | Reason                                                    |
-| ------------------------------------------------------- | --------------------------------------------------------- |
-| `DELETE /api/v1/topics/:idOrSlug`                       | Unconditionally answers 405 and reads nothing.            |
-| `GET`/`DELETE /api/v1/users/:idOrSlug`                  | Free-form id-or-slug path only.                           |
-| `GET /api/v1/users/:id/vouch-context`                   | Free-form id-or-username path only.                       |
-| `GET`/`POST /api/v1/users/:idOrSlug/data-request`       | Free-form id-or-slug path only.                           |
-| `GET /api/v1/users/:idOrSlug/data-request/stream`       | Server-sent-event route with no query carrier; see below. |
-| `GET /api/v1/users/:username/landing-page`, `.../:slug` | Free-form username and slug paths only.                   |
+| Operation                                               | Reason                                                                 |
+| ------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `DELETE /api/v1/topics/:idOrSlug`                       | Validates the path before preserving its intentional 405 response.     |
+| `DELETE /api/v1/users/:idOrSlug`                        | Free-form id-or-slug path.                                             |
+| `GET /api/v1/users/:id/vouch-context`                   | Free-form id-or-username path.                                         |
+| `GET`/`POST /api/v1/users/:idOrSlug/data-request`       | Free-form id-or-slug path.                                             |
+| `GET /api/v1/users/:idOrSlug/data-request/stream`       | Validates the path; `request_id` remains a route-specific query check. |
+| `GET /api/v1/users/:username/landing-page`, `.../:slug` | Free-form username and slug paths.                                     |
 
 ### Server-sent-event query carriers
 
-`apiQuery` needs a registered response route, and SSE routes have none, so the generator throws
-for `apiQuery` on them. The data-request stream asserts that `request_id` is a UUID inside the
-handler and answers 422 (`Invalid request ID`). A malformed id previously reached PostgreSQL and
-returned a 500. Follow-up: tooling support for SSE query carriers.
+SSE routes have no registered response route, so the generator cannot emit an `apiQuery` carrier
+for the data-request stream. That route still validates its path through the shared runtime adapter
+and asserts that `request_id` is a UUID inside the handler, answering 422 (`Invalid request ID`).
+A malformed id previously reached PostgreSQL and returned a 500. Follow-up: tooling support for SSE
+query carriers.
 
 ## Status decisions
 

@@ -63,19 +63,13 @@ export const QUERY_CARRIERS: Readonly<Record<string, readonly string[]>> = {
   'GET:/api/v1/users/:idOrSlug/users/:listType': ['after', 'limit', 'q'],
 }
 
-/**
- * Operations recorded as skipped: their only declared carrier is a free-form string path, so a
- * generated contract cannot reject anything the handler does not already resolve to a 404. When
- * one of them gains a body, query or header carrier the ratchet fails, so it is validated in the
- * same change instead of drifting.
- */
-export const SKIPPED_OPERATIONS: Readonly<Record<string, string>> = {
-  'DELETE:/api/v1/topics/:idOrSlug': 'unconditionally answers 405 and reads nothing',
-  'DELETE:/api/v1/users/:idOrSlug': 'free-form id-or-slug path only',
-  'GET:/api/v1/users/:idOrSlug': 'free-form id-or-slug path only',
-  'GET:/api/v1/users/:id/vouch-context': 'free-form id-or-username path only',
-  'GET:/api/v1/users/:idOrSlug/data-request': 'free-form id-or-slug path only',
-  'POST:/api/v1/users/:idOrSlug/data-request': 'free-form id-or-slug path only',
+/** Operations whose validated path carrier remains a free-form string by design. */
+export const STRING_PATH_OPERATIONS: Readonly<Record<string, string>> = {
+  'DELETE:/api/v1/topics/:idOrSlug': 'unconditionally answers 405 and reads no other input',
+  'DELETE:/api/v1/users/:idOrSlug': 'free-form id-or-slug path',
+  'GET:/api/v1/users/:id/vouch-context': 'free-form id-or-username path',
+  'GET:/api/v1/users/:idOrSlug/data-request': 'free-form id-or-slug path',
+  'POST:/api/v1/users/:idOrSlug/data-request': 'free-form id-or-slug path',
   'GET:/api/v1/users/:idOrSlug/data-request/stream':
     'server-sent-event route: no response registration, so no query carrier; request_id is checked in the handler',
   'GET:/api/v1/users/:username/landing-page': 'free-form username path only',
