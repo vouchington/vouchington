@@ -1,17 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import {
-  INTEGRITY_FLAG_STATUSES as SHARED_INTEGRITY_FLAG_STATUSES,
-  REPORT_INTEGRITY_FLAG_TYPES as SHARED_REPORT_INTEGRITY_FLAG_TYPES,
-  REPORT_INTEGRITY_RESOLUTIONS as SHARED_REPORT_INTEGRITY_RESOLUTIONS,
-  REPORT_INTEGRITY_FLAG_TYPES,
-  REPORT_INTEGRITY_RESOLUTIONS,
-} from '@ts-shared/utils/moderation-catalogs'
+import { INTEGRITY_FLAG_STATUSES as SHARED_INTEGRITY_FLAG_STATUSES } from '@ts-shared/utils/moderation-catalogs'
 import { INTEGRITY_FLAG_STATUSES } from './config.mts'
 
 describe('report integrity config', () => {
   it('re-exports shared moderation catalogs', () => {
     expect(INTEGRITY_FLAG_STATUSES).toBe(SHARED_INTEGRITY_FLAG_STATUSES)
-    expect(REPORT_INTEGRITY_FLAG_TYPES).toBe(SHARED_REPORT_INTEGRITY_FLAG_TYPES)
-    expect(REPORT_INTEGRITY_RESOLUTIONS).toBe(SHARED_REPORT_INTEGRITY_RESOLUTIONS)
   })
 })
