@@ -291,10 +291,16 @@ questions it asks about. The report answers it from the same rows, with no secon
 - **Content versions.** `contentVersions` sums a classifier's runs for one subject at one input
   digest (and community publication) with `runs`, `billedRuns`, `providerCalls`,
   `persistedDecisionCalls`, `retries`, cost and latency. `efficiency` sums them per classifier.
-- **The verdict is per receipt.** The KPI holds while `maxProviderCallsPerRun` is at most one and
-  `runsOverOneCall` is zero. Calls come from `classifier_runs.provider_attempts_started` and the
-  ledger rows, never queue jobs. A retry whose earlier attempt the provider refused still shows one
-  call, with the refused attempt in `attemptsWithoutRecordedResponse` and `retries`.
+- **The verdict is per receipt.** The KPI is breached when `maxProviderCallsPerRun` is above one
+  (`runsOverOneCall`), and it holds only when no breach is found and `unfinishedRuns` is zero. A run
+  with the outcome `incomplete` can still reserve an attempt and bill a second call, so a window
+  that holds one reports `INCONCLUSIVE` with the count instead of `holds`; a breach stays final
+  whatever else is still running. Calls come from `classifier_runs.provider_attempts_started` and
+  the ledger rows, never queue jobs. A retry whose earlier attempt the provider refused still shows
+  one call, with the refused attempt in `attemptsWithoutRecordedResponse` and `retries`.
+- **Cost is a floor when a call is unpriced.** The ledger leaves a billed call it could not price
+  out of the cost sum. `unpricedCalls` counts them, and the text report prints `at least <cost>`
+  with the number excluded instead of a total that looks exact.
 - **Re-classification is a configuration change.** An unchanged content digest under an unchanged
   configuration digest resolves to the same receipt, so a retrigger, a redelivery, a lease expiry
   after persisting and a changed C6 candidate set all replay it without a call. A second billed run
@@ -321,9 +327,12 @@ questions it asks about. The report answers it from the same rows, with no secon
 
 **Fixture evidence.** `describeClassifierCallEfficiency` (in `backend/test-helpers`) runs the same
 four scenarios for C5, C6, C8 and C9 through the real worker path with a deterministic provider that
-bills a fixed cost: one call for a content version at one and at the scope's largest fan-out, no
-second call across a lease expiry after persisting, a redelivery and a retrigger, one billed call
-after a refused attempt, and no call after the candidate set changed. Each asserts the provider's own
+bills a fixed cost: one call for a content version at one and at a large fan-out, no second call
+across a lease expiry after persisting, a redelivery and a retrigger, one billed call after a
+refused attempt, and no call after the candidate set changed. The large fan-out is the scope's cap
+(C8 asks 30 questions) or, for C6, the default Pro topic limit of ten, which an operator can raise
+with no hard cap: C6 sends every question in one request and never splits it, so a larger set is
+still one call, and a request too large for the provider fails the run instead of billing a second. Each asserts the provider's own
 request count and the ledger rows as well as the report. The scope files add C5's local-only run
 (zero calls), C8's rule edit (one re-classification), an edited post (a new content version) and
 that an unpublish is neither billed nor applied twice.
@@ -334,12 +343,17 @@ same values); for a deployed environment export that environment's `DATABASE_URL
 drop the flag:
 
 ```sh
-node --env-file=.env backend/scripts/classifier-call-efficiency.mts --from <ISO time> [--to <ISO time>] [--json]
+node --env-file=.env backend/scripts/classifier-call-efficiency.mts --from <UTC time> [--to <UTC time>] [--json]
 ```
 
 It prints one block per classifier: the KPI verdict, calls per content version, retries,
 re-classifications, cost and latency, then the content versions over one call or re-classified.
-`--json` prints the whole report. Choose `--from` at the cutover and read windows no larger than the
+A classifier of the active catalog (the `classifiers` rows that are activated and not deactivated
+or deleted) with no run in the window gets a block too: `no requests and no runs in the window` when
+its producer was silent, so a quiet classifier is not mistaken for a healthy one. `--json` prints
+the whole report. `--from` and `--to` are UTC ISO times such as `2026-10-01T00:00:00Z` (optional
+milliseconds); anything else, including a time with no zone or an offset and a date that does not
+exist such as `2026-02-30`, is refused instead of moving the window. Choose `--from` at the cutover and read windows no larger than the
 run cap, since a window past it is refused. Recording the measured post-cutover figures for the
 [Epic C](https://github.com/vouchington/vouchington/issues/177) close-out is a follow-up that needs
 a deployed environment; this page states the method and no figures.

@@ -30,7 +30,18 @@ export async function readClassifierUsageReport(
     contentVersions,
     efficiency: summarizeClassifierEfficiency(contentVersions),
     requests: await readClassifierRequestCounts(window),
+    classifiers: await readActiveClassifierSlugs(),
   }
+}
+
+/** The active catalog, so a classifier that saw no request and no run still shows in the report. */
+async function readActiveClassifierSlugs(): Promise<string[]> {
+  const { rows } = await write<{ slug: string }>(sql`/* readActiveClassifierSlugs */
+    SELECT slug FROM classifiers
+    WHERE activated_at IS NOT NULL AND deactivated_at IS NULL AND deleted_at IS NULL
+    ORDER BY slug
+  `)
+  return rows.map(row => row.slug)
 }
 
 type RequestCountRow = { classifier: string; total: number }

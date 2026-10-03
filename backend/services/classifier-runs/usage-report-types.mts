@@ -124,6 +124,10 @@ export type ClassifierContentVersionUsage = {
   attemptsWithoutRecordedResponse: number
   /** Provider calls whose outcomes were persisted: the responses the content version used. */
   persistedDecisionCalls: number
+  /** Runs that have not finished: they can still call the provider, so the version can still grow. */
+  unfinishedRuns: number
+  /** Billed responses the ledger could not price: `costMicrounits` leaves them out. */
+  unpricedCalls: number
   costMicrounits: string
   latencyMsTotal: number
   latencySamples: number
@@ -152,6 +156,13 @@ export type ClassifierEfficiency = {
   retries: number
   sweepEnqueues: number
   attemptsWithoutRecordedResponse: number
+  /**
+   * Runs with outcome `incomplete`. Settled runs (completed, superseded, failed) can no longer
+   * call the provider; an unfinished one can, so a verdict that holds is only final without them.
+   */
+  unfinishedRuns: number
+  /** Billed responses the ledger could not price: `costMicrounits` leaves them out. */
+  unpricedCalls: number
   costMicrounits: string
   latencyMsTotal: number
   latencySamples: number
@@ -166,4 +177,6 @@ export type ClassifierUsageReport = {
   efficiency: ClassifierEfficiency[]
   /** Durable dispatch requests per classifier slug. Diagnostic only; never a KPI. */
   requests: Record<string, number>
+  /** Every active classifier in the catalog, so the report can say which ones saw no activity. */
+  classifiers: string[]
 }

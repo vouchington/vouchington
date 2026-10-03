@@ -164,12 +164,38 @@ describe('summarizeClassifierEfficiency (deterministic fixtures)', () => {
         retries: 1,
         sweepEnqueues: 0,
         attemptsWithoutRecordedResponse: 1,
+        unfinishedRuns: 0,
+        unpricedCalls: 0,
         costMicrounits: '4000',
         latencyMsTotal: 400,
         latencySamples: 2,
         localDetectorRuns: 1,
       },
     ])
+  })
+
+  it('counts the runs that are still unfinished, which can still call the provider', () => {
+    const [efficiency] = summarizeClassifierEfficiency(
+      summarizeClassifierContentVersions([
+        run({ runId: 'a', subjectId: 'p1' }),
+        run({ runId: 'b', subjectId: 'p2', outcome: 'incomplete' }),
+        run({ runId: 'c', subjectId: 'p2', outcome: 'incomplete', configurationSha256: 'cc' }),
+        run({ runId: 'd', subjectId: 'p3', outcome: 'superseded', providerCalls: 0 }),
+      ]),
+    )
+
+    expect(efficiency).toMatchObject({ runs: 4, unfinishedRuns: 2, maxProviderCallsPerRun: 1 })
+  })
+
+  it('adds up the billed calls the ledger could not price', () => {
+    const versions = summarizeClassifierContentVersions([
+      run({ runId: 'a', unpricedCalls: 1 }),
+      run({ runId: 'b', unpricedCalls: 2, configurationSha256: 'cc' }),
+    ])
+    const [efficiency] = summarizeClassifierEfficiency(versions)
+
+    expect(versions[0]).toMatchObject({ unpricedCalls: 3, unfinishedRuns: 0 })
+    expect(efficiency).toMatchObject({ unpricedCalls: 3, costMicrounits: '4000' })
   })
 
   it('reads a configuration change as a re-classification, not as a second call per receipt', () => {

@@ -1,3 +1,4 @@
+import { write } from '@data-stores/psql'
 import { createClassifierDecisionCall } from '@voucha/test-helpers/data-stores/psql/classifier-fixture-operations'
 import {
   createSyntheticFixture,
@@ -23,6 +24,7 @@ import {
   type PostClassifierExecutionFixture,
 } from '@voucha/test-helpers/data-stores/psql/post-classifier/execution'
 import { localOutcomeFor } from '@voucha/test-helpers/data-stores/psql/post-classifier/outcomes'
+import sql from 'sql-template-strings'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { startClassifierProviderAttempt } from './run-attempt.mts'
 import { supersedeStaleClassifierRun } from './run-supersession.mts'
@@ -237,6 +239,7 @@ describe('classifier usage report: one classifier over many runs (real PG)', () 
     const report = await readClassifierUsageReport(windowAroundNow())
 
     expect(report.requests[setup.slug]).toBe(2)
+    expect(report.classifiers).toContain(setup.slug)
     expect(report.groups.filter(group => group.classifier === setup.slug)).toEqual([
       expect.objectContaining({
         runs: 3,
@@ -248,6 +251,19 @@ describe('classifier usage report: one classifier over many runs (real PG)', () 
         localCostMicrounits: '0',
       }),
     ])
+  })
+
+  it('lists only the active classifiers of the catalog, so silent ones show and retired ones do not', async () => {
+    const active = await createSyntheticFixture()
+    const retired = await createSyntheticFixture()
+    await write(sql`/* retireSyntheticClassifierForUsageReport */
+      UPDATE classifiers SET deactivated_at = CURRENT_TIMESTAMP WHERE slug = ${retired.slug}
+    `)
+
+    const { classifiers } = await readClassifierUsageReport(windowAroundNow())
+
+    expect(classifiers).toContain(active.slug)
+    expect(classifiers).not.toContain(retired.slug)
   })
 
   it('reports a superseded run under its own outcome, not as a failure', async () => {

@@ -8,7 +8,12 @@ import {
 } from './data-stores/psql/classifier-runs/autotagger-fixture.mts'
 import { readSubjectTopicRelationFacts } from './data-stores/psql/classifier-runs/subject-topic-relations.mts'
 
-/** C6: one question per captured topic, asked in one provider call however many topics there are. */
+/**
+ * C6: one question per captured topic, asked in one provider call however many topics there are.
+ * Ten is the default Pro topic limit (`post_pro_max_topics`), which an operator can raise: the run
+ * sends every question in one request and never splits it, so a larger set is still one call (a
+ * request too large for the provider fails the run instead of billing a second call).
+ */
 export const taggingEfficiencyDriver: EfficiencyDriver = {
   slug: TAGGING_CLASSIFIER_SLUG,
   scope: 'C6 tagging classifier',

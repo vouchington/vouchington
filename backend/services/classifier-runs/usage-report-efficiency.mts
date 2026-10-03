@@ -42,7 +42,8 @@ export function summarizeClassifierContentVersions(
 
 /**
  * One classifier's content versions summed. The D3 KPI is per receipt (one content version under
- * one configuration): it holds when `maxProviderCallsPerRun` is at most one. `reclassifications`
+ * one configuration): it holds when `maxProviderCallsPerRun` is at most one, and that is final only
+ * once `unfinishedRuns` is zero, because an unfinished run can still call the provider. `reclassifications`
  * counts configuration changes that re-billed the same content; it is read alongside the KPI and is
  * never a breach by itself, because each of those receipts was still allowed one call.
  */
@@ -82,6 +83,8 @@ function emptyVersion(run: ClassifierRunUsage): ClassifierContentVersionUsage {
     runsOverOneCall: 0,
     attemptsWithoutRecordedResponse: 0,
     persistedDecisionCalls: 0,
+    unfinishedRuns: 0,
+    unpricedCalls: 0,
     costMicrounits: '0',
     latencyMsTotal: 0,
     latencySamples: 0,
@@ -101,6 +104,8 @@ function addRun(entry: VersionEntry, run: ClassifierRunUsage): void {
   if (run.providerCalls > 1) version.runsOverOneCall += 1
   version.attemptsWithoutRecordedResponse += run.attemptsWithoutRecordedResponse
   version.persistedDecisionCalls += run.shardCount
+  if (run.outcome === 'incomplete') version.unfinishedRuns += 1
+  version.unpricedCalls += run.unpricedCalls
   version.latencyMsTotal += run.latencyMsTotal
   version.latencySamples += run.latencySamples
   if (run.localDetector !== null) version.localDetectorRuns += 1
@@ -121,6 +126,8 @@ function emptyEfficiency(classifier: string): ClassifierEfficiency {
     retries: 0,
     sweepEnqueues: 0,
     attemptsWithoutRecordedResponse: 0,
+    unfinishedRuns: 0,
+    unpricedCalls: 0,
     costMicrounits: '0',
     latencyMsTotal: 0,
     latencySamples: 0,
@@ -146,6 +153,8 @@ function addVersion(
   efficiency.retries += version.retries
   efficiency.sweepEnqueues += version.sweepEnqueues
   efficiency.attemptsWithoutRecordedResponse += version.attemptsWithoutRecordedResponse
+  efficiency.unfinishedRuns += version.unfinishedRuns
+  efficiency.unpricedCalls += version.unpricedCalls
   efficiency.latencyMsTotal += version.latencyMsTotal
   efficiency.latencySamples += version.latencySamples
   efficiency.localDetectorRuns += version.localDetectorRuns

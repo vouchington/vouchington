@@ -46,7 +46,10 @@ export type EfficiencyDriver = {
   slug: string
   /** Names the scope in test titles. */
   scope: string
-  /** The candidate counts a content version is seeded with: one, and the most the scope allows. */
+  /**
+   * The candidate counts a content version is seeded with: one, and a large one (the scope's
+   * default maximum, or the cap it enforces when it has one).
+   */
   fanOuts: readonly [number, number]
   /** How many questions the one call carries for a seed of `fanOut` candidates. */
   questions(fanOut: number): number

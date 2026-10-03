@@ -48,28 +48,51 @@ function listVersions(versions: readonly ClassifierContentVersionUsage[]): strin
   return lines
 }
 
+/**
+ * A breach is final whatever else is still running. Without one, the KPI only holds for good once
+ * every run is settled: an unfinished run can still reserve an attempt and bill a second call.
+ */
+function verdict({
+  maxProviderCallsPerRun,
+  unfinishedRuns,
+}: Pick<ClassifierEfficiency, 'maxProviderCallsPerRun' | 'unfinishedRuns'>): string {
+  if (maxProviderCallsPerRun > 1) return 'BREACHED'
+  if (unfinishedRuns === 0) return 'holds'
+  return `INCONCLUSIVE (no breach so far, ${unfinishedRuns} unfinished runs can still call the provider)`
+}
+
+/** The ledger leaves a call it could not price out of the sum, so the total is then a floor. */
+function cost({ costMicrounits, unpricedCalls }: ClassifierEfficiency): string {
+  const total = dollars(costMicrounits)
+  if (unpricedCalls === 0) return total
+  return `at least ${total} (excludes ${unpricedCalls} unpriced billed calls)`
+}
+
 function describeClassifier(
   efficiency: ClassifierEfficiency,
   versions: readonly ClassifierContentVersionUsage[],
   requests: number,
 ): string[] {
-  const holds = efficiency.maxProviderCallsPerRun <= 1
   return [
     efficiency.classifier,
-    `  KPI (at most one billed call per receipt): ${holds ? 'holds' : 'BREACHED'}`,
+    `  KPI (at most one billed call per receipt): ${verdict(efficiency)}`,
     `  content versions ${efficiency.contentVersions}, runs ${efficiency.runs}, billed runs ${efficiency.billedRuns}`,
     `  billed provider calls ${efficiency.providerCalls}, most in one run ${efficiency.maxProviderCallsPerRun}, runs over one call ${efficiency.runsOverOneCall}`,
     `  calls per content version: ${callsPerContentVersion(versions)}`,
     `  re-classifications (configuration changed): ${efficiency.reclassifications}`,
     `  attempts ${efficiency.attemptsStarted}, retries ${efficiency.retries}, attempts without a recorded response ${efficiency.attemptsWithoutRecordedResponse}`,
-    `  cost ${dollars(efficiency.costMicrounits)}, latency ${latency(efficiency)}`,
+    `  cost ${cost(efficiency)}, latency ${latency(efficiency)}`,
     `  local detector runs (never billed): ${efficiency.localDetectorRuns}`,
     `  diagnostic only: ${requests} requested content versions, ${efficiency.sweepEnqueues} sweep re-enqueues of unfinished runs`,
   ]
 }
 
-/** A classifier whose subjects asked for runs in the window but reserved none: the sweep is behind. */
-function describeRequestOnlyClassifier(classifier: string, requests: number): string[] {
+/**
+ * A classifier that reserved no run in the window. With requests, its subjects asked and the sweep
+ * is behind; with none, its producer was silent, which the other blocks must not hide.
+ */
+function describeIdleClassifier(classifier: string, requests: number): string[] {
+  if (requests === 0) return [classifier, '  no requests and no runs in the window']
   return [
     classifier,
     '  no run was reserved in the window',
@@ -80,8 +103,9 @@ function describeRequestOnlyClassifier(classifier: string, requests: number): st
 /**
  * @public Cross-workspace read boundary: `backend/scripts/classifier-call-efficiency.mts` prints it.
  *
- * The report as text, one block per classifier: the D3 KPI verdict first, then the figures that
- * back it. A replay bills nothing and writes nothing, and neither diagnostic figure counts it
+ * The report as text, one block per classifier, active catalog included: the D3 KPI verdict first
+ * (holds, BREACHED, or INCONCLUSIVE while a run is unfinished), then the figures that back it.
+ * A replay bills nothing and writes nothing, and neither diagnostic figure counts it
  * (`requested content versions` are request rows created in the window, which a retrigger of
  * unchanged content reuses), so the zero-bill evidence is `runsOverOneCall` staying at zero.
  */
@@ -103,11 +127,10 @@ export function formatClassifierUsageReport(report: ClassifierUsageReport): stri
       lines.push('  re-classified content:', ...listVersions(reclassified))
   }
   const withRuns = new Set(report.efficiency.map(({ classifier }) => classifier))
-  for (const [classifier, requests] of Object.entries(report.requests).toSorted(([a], [b]) =>
-    a.localeCompare(b),
-  )) {
+  const seen = new Set([...report.classifiers, ...Object.keys(report.requests)])
+  for (const classifier of [...seen].toSorted((a, b) => a.localeCompare(b))) {
     if (!withRuns.has(classifier)) {
-      lines.push('', ...describeRequestOnlyClassifier(classifier, requests))
+      lines.push('', ...describeIdleClassifier(classifier, report.requests[classifier] ?? 0))
     }
   }
   return `${lines.join('\n')}\n`

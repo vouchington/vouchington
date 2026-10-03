@@ -20,6 +20,7 @@ const UNBILLED: Partial<ClassifierRunUsage> = {
 function reportOf(
   runs: ClassifierRunUsage[],
   requests: Record<string, number> = {},
+  classifiers: string[] = [],
 ): ClassifierUsageReport {
   const contentVersions = summarizeClassifierContentVersions(runs)
   return {
@@ -32,6 +33,7 @@ function reportOf(
     contentVersions,
     efficiency: summarizeClassifierEfficiency(contentVersions),
     requests,
+    classifiers,
   }
 }
 
@@ -75,6 +77,67 @@ describe('formatClassifierUsageReport (deterministic fixtures)', () => {
 
     expect(text).toContain('No classifier runs were reserved.')
     expect(text).toContain('story-clustering\n  no run was reserved in the window')
+  })
+
+  it('lists a catalog classifier with no requests and no runs instead of hiding it', () => {
+    const text = formatClassifierUsageReport(
+      reportOf([run({ runId: 'a' })], { 'story-clustering': 4 }, [
+        'tagging',
+        'post-classifier',
+        'community-moderation',
+        'story-clustering',
+      ]),
+    )
+
+    expect(text).toContain('community-moderation\n  no requests and no runs in the window\n')
+    expect(text).toContain('tagging\n  no requests and no runs in the window\n')
+    expect(text).toContain('story-clustering\n  no run was reserved in the window')
+    expect(text.indexOf('community-moderation')).toBeLessThan(text.indexOf('story-clustering'))
+    expect(text.indexOf('story-clustering')).toBeLessThan(text.indexOf('tagging'))
+    expect(text.match(/^post-classifier$/gm)).toHaveLength(1)
+  })
+
+  it('lists the whole catalog as silent when the window has nothing at all', () => {
+    const text = formatClassifierUsageReport(reportOf([], {}, ['post-classifier']))
+
+    expect(text).toContain('No classifier runs were reserved.')
+    expect(text).toContain('post-classifier\n  no requests and no runs in the window\n')
+  })
+
+  it('does not call the KPI settled while a run is unfinished', () => {
+    const text = formatClassifierUsageReport(
+      reportOf([
+        run({ runId: 'a' }),
+        run({ runId: 'b', subjectId: 'other', outcome: 'incomplete' }),
+        run({ runId: 'c', subjectId: 'third', outcome: 'incomplete' }),
+      ]),
+    )
+
+    expect(text).toContain(
+      'KPI (at most one billed call per receipt): INCONCLUSIVE (no breach so far, 2 unfinished runs can still call the provider)',
+    )
+    expect(text).not.toContain('): holds')
+    expect(text).not.toContain('BREACHED')
+  })
+
+  it('keeps a breach final even while another run is unfinished', () => {
+    const text = formatClassifierUsageReport(
+      reportOf([
+        run({ runId: 'a', providerCalls: 2 }),
+        run({ runId: 'b', subjectId: 'other', outcome: 'incomplete' }),
+      ]),
+    )
+
+    expect(text).toContain('KPI (at most one billed call per receipt): BREACHED')
+    expect(text).not.toContain('INCONCLUSIVE')
+  })
+
+  it('states the cost as a floor when the ledger could not price a billed call', () => {
+    const text = formatClassifierUsageReport(
+      reportOf([run({ runId: 'a', unpricedCalls: 1 }), run({ runId: 'b', subjectId: 'other' })]),
+    )
+
+    expect(text).toContain('cost at least $0.004000 (excludes 1 unpriced billed calls), latency')
   })
 
   it('lists a receipt that billed twice as a breach', () => {
