@@ -46,6 +46,7 @@ export type CreateBillingPortalSessionPayload = {
   customerId: string
   returnUrl: string
   idempotencyKey: string
+  cancellationSubscriptionId?: string
 }
 export type CancelSubscriptionAtPeriodEndPayload = {
   subscriptionId: string

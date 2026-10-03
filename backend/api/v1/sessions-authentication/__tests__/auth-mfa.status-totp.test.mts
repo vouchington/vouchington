@@ -149,7 +149,7 @@ describe('MFA API Routes', () => {
         .expect(429)
     }, 20_000)
 
-    it('returns 403 for a suspended user with a valid TOTP code', async () => {
+    it('returns an authenticated session for a suspended user with a valid TOTP code', async () => {
       const { mfaUser, attemptId } = await createTotpMfaLoginAttempt('susp')
 
       // Suspend after the login attempt is created to simulate the race window
@@ -160,9 +160,9 @@ describe('MFA API Routes', () => {
       const res = await req
         .post('/api/v1/auth/mfa/totp/verification')
         .send({ login_attempt_id: attemptId, code })
-        .expect(403)
+        .expect(200)
 
-      expect(res.body.message).toBe('Account suspended')
+      expect(res.body.user.id).toBe(mfaUser.id)
 
       await unsuspendTestUser(mfaUser.id)
     }, 20_000)

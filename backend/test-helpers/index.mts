@@ -3,6 +3,7 @@ export * from './entities/index.mts'
 export {
   countPostRelatedTopics,
   getTestRelationDeletedAt,
+  getTestPostCategoryRelationIds,
   hasPostRelatedTopic,
   insertScoredPostTopicCategoryRelation,
   setScoredPostTopicCategoryRelationScore,

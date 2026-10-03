@@ -2,6 +2,7 @@ import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { RateLimiter } from '@data-stores/valkey-rate-limiter'
 import { addRecentlyViewed } from '@services/recently-viewed'
+import { assertNotSuspended } from '@services/users/suspension-guard'
 import { hasGlobalPrivacyControlHeaders, isUUID } from '@modules/utils'
 import onError from '@modules/on-error'
 import { decodeJwt } from 'jose'
@@ -14,6 +15,7 @@ const viewRateLimiter = new RateLimiter({
 
 app.route('/api/v1/rss-feeds/:rssFeedId/views').post(async (ctx: Context) => {
   await ctx.applyRouteRateLimit('POST:/api/v1/rss-feeds/:rssFeedId/views')
+  assertNotSuspended(await ctx.getCurrentUser())
 
   const { rssFeedId } = ctx.params
   ctx.assert(rssFeedId && isUUID(rssFeedId), 400, 'Invalid rssFeedId')

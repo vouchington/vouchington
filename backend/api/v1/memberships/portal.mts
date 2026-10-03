@@ -1,6 +1,9 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import {
+  requireAuthForSuspendedException,
+  validateRequestContract,
+} from '../../response-helpers.mts'
 import { getManageableStripeSubscriptionByUserId } from '@services/memberships'
 import { createBillingPortalSession } from '../../stripe-helpers.mts'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
@@ -8,7 +11,10 @@ import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
 type BillingPortalSessionRequest = { return_url: string }
 
 app.route('/api/v1/memberships/billing-portal-sessions').post(async (ctx: Context) => {
-  const currentUser = await requireAuth(ctx, 'POST:/api/v1/memberships/billing-portal-sessions')
+  const currentUser = await requireAuthForSuspendedException(
+    ctx,
+    'POST:/api/v1/memberships/billing-portal-sessions',
+  )
 
   const body = (await ctx.request.json('1mb')) as BillingPortalSessionRequest
   validateRequestContract(ctx, 'POST:/api/v1/memberships/billing-portal-sessions', { body })
@@ -21,6 +27,7 @@ app.route('/api/v1/memberships/billing-portal-sessions').post(async (ctx: Contex
   const session = await createBillingPortalSession({
     customerId: subscription.customerId,
     returnUrl: `${baseUrl}${body.return_url}`,
+    cancellationSubscriptionId: currentUser.suspended_at ? subscription.subscriptionId : undefined,
   })
 
   ctx.json({ portal_session: { url: session.url } })

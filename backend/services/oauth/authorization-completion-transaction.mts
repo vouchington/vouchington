@@ -1,5 +1,8 @@
 import { beginTransaction } from '@data-stores/psql'
-import { connectOAuthAccountToUser } from '@services/oauth-accounts'
+import {
+  connectOAuthAccountToUser,
+  assertOAuthAccountConnectionUserActive,
+} from '@services/oauth-accounts'
 import { preparePersistedOAuthAccountFlow } from './flows.mts'
 import {
   assertCompletionCaller,
@@ -29,6 +32,9 @@ export async function completeOAuthAuthorizationTransaction(
   async function completeAuthorizationInTransaction(): Promise<CompletionTransactionResult> {
     const authorization = await getAuthorizationForCompletion(options.flowId, query)
     assertCompletionCaller(authorization, options)
+    if (authorization.purpose === 'connect') {
+      await assertOAuthAccountConnectionUserActive(query, authorization.initiating_user_id!)
+    }
 
     if (authorization.expires_at.getTime() <= Date.now()) {
       if (authorization.status !== 'completed') {

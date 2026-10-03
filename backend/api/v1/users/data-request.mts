@@ -1,12 +1,9 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { isUUID } from '@modules/utils'
-import { requireAuth } from '../../response-helpers.mts'
-import {
-  getPrivateUserByIdOrSlug,
-  currentUserCanAccessDataRequest,
-  assertNotSuspended,
-} from '@services/users'
+import { requireAuth, requireAuthForSuspendedException } from '../../response-helpers.mts'
+import { assertNotSuspended } from '@services/users/suspension-guard'
+import { getPrivateUserByIdOrSlug, currentUserCanAccessDataRequest } from '@services/users'
 import {
   createDataRequestOrConflict,
   getDataRequestById,
@@ -38,11 +35,14 @@ function activeRequestConflict(existing: UserDataRequest | null) {
 }
 
 app.route('/api/v1/users/:idOrSlug/data-request').post(async (ctx: Context) => {
-  const currentUser = await requireAuth(ctx, 'POST:/api/v1/users/:idOrSlug/data-request')
-  assertNotSuspended(currentUser)
+  const currentUser = await requireAuthForSuspendedException(
+    ctx,
+    'POST:/api/v1/users/:idOrSlug/data-request',
+  )
 
   const user = await getPrivateUserByIdOrSlug(ctx.params.idOrSlug!)
   ctx.assert(user, 404, 'User not found')
+  if (currentUser.id !== user.id) assertNotSuspended(currentUser)
   ctx.assert(currentUserCanAccessDataRequest(currentUser, user.id), 403, 'Forbidden')
 
   const createResult = await createDataRequestOrConflict(user.id, currentUser.id)

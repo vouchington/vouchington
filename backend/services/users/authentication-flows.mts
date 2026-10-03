@@ -96,7 +96,6 @@ export async function loginWithEmailAddressToken(options: {
     })
 
     const claims = await getEnrichedSessionClaims(user)
-    if (claims?.suspended) throw createHttpError(403, 'Account suspended')
 
     if (await userHasMfa(user.id)) {
       const loginAttemptId = await createLoginAttempt({

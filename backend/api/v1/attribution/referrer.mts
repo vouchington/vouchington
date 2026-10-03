@@ -2,6 +2,7 @@ import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { RateLimiter } from '@data-stores/valkey-rate-limiter'
 import { createSessionReferralAttribution } from '@services/attribution'
+import { assertNotSuspended } from '@services/users/suspension-guard'
 import { resolveUtmSource } from '@ts-shared/utm'
 import { isHttpError } from 'http-errors'
 import { hasGlobalPrivacyControlHeaders } from '@modules/utils'
@@ -34,6 +35,7 @@ const MAX_LANDING_URL_LENGTH = 2048
 app.route('/api/v1/attribution/referrer').post(async (ctx: Context) => {
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   await ctx.applyRouteRateLimit('POST:/api/v1/attribution/referrer')
+  assertNotSuspended(await ctx.getCurrentUser())
 
   const body = (await ctx.request.json('100kb')) as AttributionReferrerBody
   validateRequestContract(ctx, 'POST:/api/v1/attribution/referrer', { body })

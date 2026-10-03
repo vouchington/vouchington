@@ -266,7 +266,7 @@ describe('flows warm and cold paths', () => {
       expectAttestedSessionLifetime(result.st)
     })
 
-    it('cold path: issues anon session when a real user is suspended', async () => {
+    it('cold path: retains an authenticated session when a real user is suspended', async () => {
       const user = await createTestUser()
       const { deviceToken, sessionToken } = await makeWarmPathTokens(user.id)
       await markJwtStale(user.id)
@@ -277,8 +277,8 @@ describe('flows warm and cold paths', () => {
         deviceToken,
         sessionToken,
       })
-      // real user found but suspended → revoke + anon session
-      expect(result.uid).toBeNull()
+      expect(result.uid).toBe(user.id)
+      expect(result.st).not.toBe(sessionToken)
 
       await unsuspendTestUser(user.id)
     }, 20_000)

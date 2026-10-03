@@ -11,7 +11,7 @@ import {
 import { boundedString } from '@services/copyright-notices/http-input'
 import { assertNotSuspended } from '@services/users'
 import {
-  getOptionalAuthAndRateLimit,
+  getOptionalProtocolAuthAndRateLimit,
   requireAuthAndRateLimit,
   validateRequestContract,
   validateUUIDParam,
@@ -155,7 +155,7 @@ app.route('/api/v1/copyright-notices/:id/guest-filings').post(async (ctx: Contex
       },
     },
   })
-  await getOptionalAuthAndRateLimit(ctx, 'POST:/api/v1/copyright-notices/:id/guest-filings')
+  await getOptionalProtocolAuthAndRateLimit(ctx, 'POST:/api/v1/copyright-notices/:id/guest-filings')
   const body = (await ctx.request.json('1mb')) as CopyrightGuestFilingRequest
   await verifyCaptchaOrAttestation(ctx, body, { actionTag: 'copyright-notices.guest-filing' })
   if (!isGuestFilingKind(body.kind)) ctx.throw(422, 'kind is not a guest filing')

@@ -41,6 +41,7 @@ import type { PrivateUser } from '@services/users/types'
 import {
   getOptionalAuthAndRateLimit,
   requireAuth,
+  requireAuthForSuspendedException,
   setAnonymousPublicCacheHeaders,
   validateRequestContract,
 } from '../../response-helpers.mts'
@@ -112,9 +113,13 @@ app
     ctx.json({ user: { ...updated, is_official_account: isOfficialAccount(updated) } })
   })
   .delete(async (ctx: Context) => {
-    const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/users/:idOrSlug')
+    const currentUser = await requireAuthForSuspendedException(
+      ctx,
+      'DELETE:/api/v1/users/:idOrSlug',
+    )
     const user = await getPrivateUserByIdOrSlug(ctx.params.idOrSlug!)
     ctx.assert(user, 404, 'User not found')
+    if (currentUser.id !== user.id) assertNotSuspended(currentUser)
     await deleteUser(currentUser, user)
     ctx.setStatus(202)
     ctx.json(apiResponse('DELETE:/api/v1/users/:idOrSlug', { logout: currentUser.id === user.id }))

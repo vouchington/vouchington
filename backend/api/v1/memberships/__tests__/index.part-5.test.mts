@@ -1,6 +1,11 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestMembership, createTestUser } from '@voucha/test-helpers'
+import {
+  createTestMembership,
+  createTestUser,
+  suspendTestUser,
+  unsuspendTestUser,
+} from '@voucha/test-helpers'
 import * as stripePortal from '@modules/stripe/portal'
 import type { PrivateUser } from '@services/users/types'
 import { STRIPE_PROVIDER_ENVIRONMENT } from '@voucha/config'
@@ -89,6 +94,37 @@ describe('membership management routes', () => {
 
       expect(response.body.portal_session).toHaveProperty('url')
       expect(stripePortal.createBillingPortalSession).toHaveBeenCalledOnce()
+    })
+
+    it('limits a suspended member portal session to their subscription cancellation', async () => {
+      const portalUser = await createTestUser()
+      const subscriptionId = `sub_test_cancel_${Date.now()}_${portalUser.id}`
+      await createTestMembership({
+        user_id: portalUser.id,
+        stripe_customer_id: 'cus_test_cancel',
+        stripe_subscription_id: subscriptionId,
+        provider_environment: STRIPE_PROVIDER_ENVIRONMENT,
+        provider_application_id: DEFAULT_STRIPE_MEMBERSHIP_APPLICATION_CONTEXT.applicationId,
+      })
+      const request = createRequest()
+      await request.authenticateAs(portalUser)
+      await suspendTestUser(portalUser.id)
+      try {
+        const response = await request
+          .post('/api/v1/memberships/billing-portal-sessions')
+          .send({ return_url: '/my/membership' })
+          .expect(200)
+
+        expect(response.body.portal_session.url).toBe('https://billing.stripe.com/mock')
+        expect(stripePortal.createBillingPortalSession).toHaveBeenCalledWith(
+          'cus_test_cancel',
+          expect.stringMatching(/\/my\/membership$/),
+          expect.any(String),
+          subscriptionId,
+        )
+      } finally {
+        await unsuspendTestUser(portalUser.id)
+      }
     })
   })
 })

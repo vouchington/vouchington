@@ -9,6 +9,8 @@ import {
   getActiveTestUserSessions,
   getTestUserRaw,
   setTestUserVoteWeightRecalculatedAt,
+  suspendTestUser,
+  unsuspendTestUser,
 } from '@voucha/test-helpers'
 import { getTestOAuthAuthorization } from '@voucha/test-helpers/entities/oauth-authorizations'
 import {
@@ -192,6 +194,23 @@ describe('OAuth authorization completion', () => {
         )
       expect(jobs).toHaveLength(1)
     })
+
+    await suspendTestUser(userId)
+    try {
+      await expect(
+        completeOAuthAuthorization({
+          flowId,
+          completionToken,
+          completionTokenSource: 'body',
+          completionProofVerifier: proofVerifier,
+          currentUserId: userId,
+          deviceId,
+          sessionId,
+        }),
+      ).rejects.toMatchObject({ status: 403, code: 'ACCOUNT_SUSPENDED' })
+    } finally {
+      await unsuspendTestUser(userId)
+    }
   })
 
   it('leaves a durable vote-weight recovery marker when completion commits before effects run', async () => {

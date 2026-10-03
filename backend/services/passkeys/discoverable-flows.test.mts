@@ -133,19 +133,19 @@ describe('discoverable passkey flows', () => {
     expect(result.sessionToken.payload.uid).toBe(user.id)
   }, 20_000)
 
-  it('throws 403 when the loaded passkey account is suspended', async () => {
+  it('mints a session when the loaded passkey account is suspended', async () => {
     const user = await createTestUser()
     await suspendTestUser(user.id)
     const suspendedUser = (await getTestPrivateUserById(user.id))!
     const device = await createTestUser()
 
-    await expect(
-      issueDiscoverablePasskeyLogin({
-        userId: user.id,
-        user: suspendedUser,
-        deviceId: device.id,
-      }),
-    ).rejects.toMatchObject({ status: 403, message: 'Account suspended' })
+    const result = await issueDiscoverablePasskeyLogin({
+      userId: user.id,
+      user: suspendedUser,
+      deviceId: device.id,
+    })
+    expect(result.userId).toBe(user.id)
+    expect(result.sessionToken.payload.uid).toBe(user.id)
 
     await unsuspendTestUser(user.id)
   }, 20_000)

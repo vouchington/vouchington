@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import {
-  getOptionalAuthAndRateLimit,
+  getOptionalProtocolAuthAndRateLimit,
   requireAuth,
   validateRequestContract,
 } from '../../response-helpers.mts'
@@ -52,11 +52,11 @@ app.route('/api/v1/auth/oauth/:provider/connect').delete(async ctx => {
 })
 
 // POST /api/v1/auth/oauth/:provider/continue - Login or signup with OAuth. This is a public
-// route: getOptionalAuthAndRateLimit() (rate limit + optional auth) runs before
+// route: getOptionalProtocolAuthAndRateLimit() (rate limit + optional auth) runs before
 // assertValidProvider() so probing an invalid :provider segment can't skip the rate limiter
 // (issue #322).
 app.route('/api/v1/auth/oauth/:provider/continue').post(async ctx => {
-  const currentUser = await getOptionalAuthAndRateLimit(
+  const currentUser = await getOptionalProtocolAuthAndRateLimit(
     ctx,
     'POST:/api/v1/auth/oauth/:provider/continue',
   )

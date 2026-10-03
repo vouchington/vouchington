@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import {
-  getOptionalAuthAndRateLimit,
+  getOptionalProtocolAuthAndRateLimit,
   parseJsonBody,
   validateRequestContract,
   validateUUIDParam,
@@ -11,7 +11,6 @@ import {
   acknowledgeOAuthAuthorizationCompletion,
   completeOAuthAuthorization,
 } from '@services/oauth'
-import { assertNotSuspended } from '@services/users/suspension'
 import type { Context } from '@jongleberry/api-server'
 import { getDeviceContext } from './device-context.mts'
 
@@ -22,11 +21,10 @@ type CompleteOAuthAuthorizationBody = {
 }
 
 app.route('/api/v1/auth/oauth/authorizations/:flowId/complete').post(async (ctx: Context) => {
-  const currentUser = await getOptionalAuthAndRateLimit(
+  const currentUser = await getOptionalProtocolAuthAndRateLimit(
     ctx,
     'POST:/api/v1/auth/oauth/authorizations/:flowId/complete',
   )
-  if (currentUser) assertNotSuspended(currentUser)
   const flowId = validateUUIDParam(ctx, 'flowId')
   const body = apiRequest(
     'POST:/api/v1/auth/oauth/authorizations/:flowId/complete',
