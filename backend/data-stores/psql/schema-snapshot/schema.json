@@ -21154,7 +21154,7 @@
         "chk_copyright_eu_transparency_reports__period": "CHECK ((period_started_at < period_ended_at))"
       },
       "columns": {
-        "copyright_territorial_policy_approval_id": {
+        "copyright_jurisdiction_policy_approval_id": {
           "collation": null,
           "comment": "eu_dsa policy approval this report was produced under.",
           "defaultExpression": null,
@@ -21323,12 +21323,12 @@
       "comment": "Counts of stored EU copyright facts for a caller-supplied period. EU only. The period is not a statutory clock.",
       "foreignKeys": {
         "fk_copyright_eu_transparency_reports__approval": {
-          "columns": ["copyright_territorial_policy_approval_id", "jurisdiction"],
-          "definition": "FOREIGN KEY (copyright_territorial_policy_approval_id, jurisdiction) REFERENCES copyright_territorial_policy_approvals(id, jurisdiction) ON DELETE RESTRICT",
+          "columns": ["copyright_jurisdiction_policy_approval_id", "jurisdiction"],
+          "definition": "FOREIGN KEY (copyright_jurisdiction_policy_approval_id, jurisdiction) REFERENCES copyright_jurisdiction_policy_approvals(id, jurisdiction) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id", "jurisdiction"],
-          "referencedTable": "copyright_territorial_policy_approvals",
+          "referencedTable": "copyright_jurisdiction_policy_approvals",
           "validated": true
         },
         "fk_copyright_eu_transparency_reports__reported_by": {
@@ -21366,13 +21366,13 @@
         "idx_copyright_eu_transparency_reports__policy": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_eu_transparency_reports__policy ON public.copyright_eu_transparency_reports USING btree (copyright_territorial_policy_approval_id, jurisdiction)",
+          "definition": "CREATE INDEX idx_copyright_eu_transparency_reports__policy ON public.copyright_eu_transparency_reports USING btree (copyright_jurisdiction_policy_approval_id, jurisdiction)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "copyright_territorial_policy_approval_id",
+              "column": "copyright_jurisdiction_policy_approval_id",
               "descending": false,
-              "expression": "copyright_territorial_policy_approval_id",
+              "expression": "copyright_jurisdiction_policy_approval_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             },
@@ -21422,6 +21422,392 @@
         "trigger_copyright_eu_transparency_reports_immutable": "CREATE TRIGGER trigger_copyright_eu_transparency_reports_immutable BEFORE DELETE OR UPDATE ON public.copyright_eu_transparency_reports FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()"
       },
       "uniqueConstraints": {}
+    },
+    "copyright_jurisdiction_policy_approvals": {
+      "checkConstraints": {
+        "chk_copyright_jurisdiction_policy_approvals__jurisdiction": "CHECK ((jurisdiction = ANY (ARRAY['eu_dsa'::text, 'uk'::text])))",
+        "chk_copyright_jurisdiction_policy_approvals__version": "CHECK ((policy_version ~ '^[a-z0-9][a-z0-9._-]{0,63}$'::text))"
+      },
+      "columns": {
+        "approved_at": {
+          "collation": null,
+          "comment": "When an operator approved this policy version.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "approved_by_id": {
+          "collation": null,
+          "comment": "Operator who approved this policy version. Null after that account is deleted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "jurisdiction": {
+          "collation": null,
+          "comment": "Contract family this approval activates: eu_dsa or uk.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "text"
+        },
+        "policy_version": {
+          "collation": null,
+          "comment": "Identifier of the approved contract text. Unique per jurisdiction.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Operator approval that makes one EU or UK copyright contract applicable. Absence or withdrawal fails closed.",
+      "foreignKeys": {
+        "fk_copyright_jurisdiction_policy_approvals__approved_by": {
+          "columns": ["approved_by_id"],
+          "definition": "FOREIGN KEY (approved_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_jurisdiction_policy_approvals_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_jurisdiction_policy_approvals_pkey ON public.copyright_jurisdiction_policy_approvals USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_jurisdiction_policy_approvals__approved_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_jurisdiction_policy_approvals__approved_by ON public.copyright_jurisdiction_policy_approvals USING btree (approved_by_id) WHERE (approved_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "approved_by_id",
+              "descending": false,
+              "expression": "approved_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(approved_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "uq_copyright_jurisdiction_policy_approvals__id_jurisdiction": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_copyright_jurisdiction_policy_approvals__id_jurisdiction ON public.copyright_jurisdiction_policy_approvals USING btree (id, jurisdiction)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "jurisdiction",
+              "descending": false,
+              "expression": "jurisdiction",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_copyright_jurisdiction_policy_approvals__version": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_copyright_jurisdiction_policy_approvals__version ON public.copyright_jurisdiction_policy_approvals USING btree (jurisdiction, policy_version)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "jurisdiction",
+              "descending": false,
+              "expression": "jurisdiction",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "policy_version",
+              "descending": false,
+              "expression": "policy_version",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_jurisdiction_policy_approvals_immutable": "CREATE TRIGGER trigger_copyright_jurisdiction_policy_approvals_immutable BEFORE DELETE OR UPDATE ON public.copyright_jurisdiction_policy_approvals FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()",
+        "trigger_copyright_jurisdiction_policy_approvals_updated_at": "CREATE TRIGGER trigger_copyright_jurisdiction_policy_approvals_updated_at BEFORE UPDATE ON public.copyright_jurisdiction_policy_approvals FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "uq_copyright_jurisdiction_policy_approvals__id_jurisdiction": {
+          "columns": ["id", "jurisdiction"],
+          "definition": "UNIQUE (id, jurisdiction)"
+        },
+        "uq_copyright_jurisdiction_policy_approvals__version": {
+          "columns": ["jurisdiction", "policy_version"],
+          "definition": "UNIQUE (jurisdiction, policy_version)"
+        }
+      }
+    },
+    "copyright_jurisdiction_policy_withdrawals": {
+      "checkConstraints": {},
+      "columns": {
+        "copyright_jurisdiction_policy_approval_id": {
+          "collation": null,
+          "comment": "Approval this withdrawal retires. One withdrawal per approval.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "withdrawn_at": {
+          "collation": null,
+          "comment": "When an operator withdrew the approval.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "withdrawn_by_id": {
+          "collation": null,
+          "comment": "Operator who withdrew the approval. Null after that account is deleted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        }
+      },
+      "comment": "Withdrawal of one jurisdiction policy approval. A withdrawn approval fails closed.",
+      "foreignKeys": {
+        "copyright_jurisdiction_policy_copyright_jurisdiction_polic_fkey": {
+          "columns": ["copyright_jurisdiction_policy_approval_id"],
+          "definition": "FOREIGN KEY (copyright_jurisdiction_policy_approval_id) REFERENCES copyright_jurisdiction_policy_approvals(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_jurisdiction_policy_approvals",
+          "validated": true
+        },
+        "fk_copyright_jurisdiction_policy_withdrawals__withdrawn_by": {
+          "columns": ["withdrawn_by_id"],
+          "definition": "FOREIGN KEY (withdrawn_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_jurisdiction_policy_copyright_jurisdiction_policy_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_jurisdiction_policy_copyright_jurisdiction_policy_key ON public.copyright_jurisdiction_policy_withdrawals USING btree (copyright_jurisdiction_policy_approval_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_jurisdiction_policy_approval_id",
+              "descending": false,
+              "expression": "copyright_jurisdiction_policy_approval_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_jurisdiction_policy_withdrawals_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_jurisdiction_policy_withdrawals_pkey ON public.copyright_jurisdiction_policy_withdrawals USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_jurisdiction_policy_withdrawals__withdrawn_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_jurisdiction_policy_withdrawals__withdrawn_by ON public.copyright_jurisdiction_policy_withdrawals USING btree (withdrawn_by_id) WHERE (withdrawn_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "withdrawn_by_id",
+              "descending": false,
+              "expression": "withdrawn_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(withdrawn_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_jurisdiction_policy_withdrawals_immutable": "CREATE TRIGGER trigger_copyright_jurisdiction_policy_withdrawals_immutable BEFORE DELETE OR UPDATE ON public.copyright_jurisdiction_policy_withdrawals FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()"
+      },
+      "uniqueConstraints": {
+        "copyright_jurisdiction_policy_copyright_jurisdiction_policy_key": {
+          "columns": ["copyright_jurisdiction_policy_approval_id"],
+          "definition": "UNIQUE (copyright_jurisdiction_policy_approval_id)"
+        }
+      }
     },
     "copyright_legal_hold_restrictions": {
       "checkConstraints": {},
@@ -33033,6 +33419,17 @@
         "chk_copyright_territorial_notice_receipts__url": "CHECK (((char_length(hosted_use_url) >= 1) AND (char_length(hosted_use_url) <= 2048)))"
       },
       "columns": {
+        "copyright_jurisdiction_policy_approval_id": {
+          "collation": null,
+          "comment": "Unwithdrawn policy approval of the same jurisdiction that made this receipt acceptable.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
         "copyright_notice_id": {
           "collation": null,
           "comment": "Copyright notice this receipt records. One receipt per notice.",
@@ -33042,17 +33439,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "copyright_territorial_policy_approval_id": {
-          "collation": null,
-          "comment": "Unwithdrawn policy approval of the same jurisdiction that made this receipt acceptable.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
           "type": "uuid"
         },
         "created_at": {
@@ -33169,12 +33555,12 @@
       "comment": "EU or UK notice receipt. Administrative facts only; no US restoration clock and no merits decision.",
       "foreignKeys": {
         "fk_copyright_territorial_notice_receipts__approval": {
-          "columns": ["copyright_territorial_policy_approval_id", "jurisdiction"],
-          "definition": "FOREIGN KEY (copyright_territorial_policy_approval_id, jurisdiction) REFERENCES copyright_territorial_policy_approvals(id, jurisdiction) ON DELETE RESTRICT",
+          "columns": ["copyright_jurisdiction_policy_approval_id", "jurisdiction"],
+          "definition": "FOREIGN KEY (copyright_jurisdiction_policy_approval_id, jurisdiction) REFERENCES copyright_jurisdiction_policy_approvals(id, jurisdiction) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id", "jurisdiction"],
-          "referencedTable": "copyright_territorial_policy_approvals",
+          "referencedTable": "copyright_jurisdiction_policy_approvals",
           "validated": true
         },
         "fk_copyright_territorial_notice_receipts__notice": {
@@ -33221,13 +33607,13 @@
         "idx_copyright_territorial_notice_receipts__policy": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_territorial_notice_receipts__policy ON public.copyright_territorial_notice_receipts USING btree (copyright_territorial_policy_approval_id, jurisdiction)",
+          "definition": "CREATE INDEX idx_copyright_territorial_notice_receipts__policy ON public.copyright_territorial_notice_receipts USING btree (copyright_jurisdiction_policy_approval_id, jurisdiction)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "copyright_territorial_policy_approval_id",
+              "column": "copyright_jurisdiction_policy_approval_id",
               "descending": false,
-              "expression": "copyright_territorial_policy_approval_id",
+              "expression": "copyright_jurisdiction_policy_approval_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             },
@@ -33455,392 +33841,6 @@
         "trigger_copyright_territorial_notice_routings_immutable": "CREATE TRIGGER trigger_copyright_territorial_notice_routings_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_notice_routings FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()"
       },
       "uniqueConstraints": {}
-    },
-    "copyright_territorial_policy_approvals": {
-      "checkConstraints": {
-        "chk_copyright_territorial_policy_approvals__jurisdiction": "CHECK ((jurisdiction = ANY (ARRAY['eu_dsa'::text, 'uk'::text])))",
-        "chk_copyright_territorial_policy_approvals__version": "CHECK ((policy_version ~ '^[a-z0-9][a-z0-9._-]{0,63}$'::text))"
-      },
-      "columns": {
-        "approved_at": {
-          "collation": null,
-          "comment": "When an operator approved this policy version.",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "timestamp with time zone"
-        },
-        "approved_by_id": {
-          "collation": null,
-          "comment": "Operator who approved this policy version. Null after that account is deleted.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
-          "type": "uuid"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 6,
-          "type": "timestamp with time zone"
-        },
-        "id": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "jurisdiction": {
-          "collation": null,
-          "comment": "Contract family this approval activates: eu_dsa or uk.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "text"
-        },
-        "policy_version": {
-          "collation": null,
-          "comment": "Identifier of the approved contract text. Unique per jurisdiction.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "text"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 7,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "Operator approval that makes one EU or UK copyright contract applicable. Absence or withdrawal fails closed.",
-      "foreignKeys": {
-        "fk_copyright_territorial_policy_approvals__approved_by": {
-          "columns": ["approved_by_id"],
-          "definition": "FOREIGN KEY (approved_by_id) REFERENCES users(id) ON DELETE SET NULL",
-          "onDelete": "set null",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "users",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "copyright_territorial_policy_approvals_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_territorial_policy_approvals_pkey ON public.copyright_territorial_policy_approvals USING btree (id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_copyright_territorial_policy_approvals__approved_by": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_territorial_policy_approvals__approved_by ON public.copyright_territorial_policy_approvals USING btree (approved_by_id) WHERE (approved_by_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "approved_by_id",
-              "descending": false,
-              "expression": "approved_by_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(approved_by_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "uq_copyright_territorial_policy_approvals__id_jurisdiction": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX uq_copyright_territorial_policy_approvals__id_jurisdiction ON public.copyright_territorial_policy_approvals USING btree (id, jurisdiction)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "jurisdiction",
-              "descending": false,
-              "expression": "jurisdiction",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "uq_copyright_territorial_policy_approvals__version": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX uq_copyright_territorial_policy_approvals__version ON public.copyright_territorial_policy_approvals USING btree (jurisdiction, policy_version)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "jurisdiction",
-              "descending": false,
-              "expression": "jurisdiction",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            },
-            {
-              "column": "policy_version",
-              "descending": false,
-              "expression": "policy_version",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["id"],
-        "definition": "PRIMARY KEY (id)"
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_copyright_territorial_policy_approvals_immutable": "CREATE TRIGGER trigger_copyright_territorial_policy_approvals_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_policy_approvals FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()",
-        "trigger_copyright_territorial_policy_approvals_updated_at": "CREATE TRIGGER trigger_copyright_territorial_policy_approvals_updated_at BEFORE UPDATE ON public.copyright_territorial_policy_approvals FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-      },
-      "uniqueConstraints": {
-        "uq_copyright_territorial_policy_approvals__id_jurisdiction": {
-          "columns": ["id", "jurisdiction"],
-          "definition": "UNIQUE (id, jurisdiction)"
-        },
-        "uq_copyright_territorial_policy_approvals__version": {
-          "columns": ["jurisdiction", "policy_version"],
-          "definition": "UNIQUE (jurisdiction, policy_version)"
-        }
-      }
-    },
-    "copyright_territorial_policy_withdrawals": {
-      "checkConstraints": {},
-      "columns": {
-        "copyright_territorial_policy_approval_id": {
-          "collation": null,
-          "comment": "Approval this withdrawal retires. One withdrawal per approval.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
-          "type": "timestamp with time zone"
-        },
-        "id": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
-          "type": "timestamp with time zone"
-        },
-        "withdrawn_at": {
-          "collation": null,
-          "comment": "When an operator withdrew the approval.",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "timestamp with time zone"
-        },
-        "withdrawn_by_id": {
-          "collation": null,
-          "comment": "Operator who withdrew the approval. Null after that account is deleted.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4,
-          "type": "uuid"
-        }
-      },
-      "comment": "Withdrawal of one territorial policy approval. A withdrawn approval fails closed.",
-      "foreignKeys": {
-        "copyright_territorial_policy__copyright_territorial_policy_fkey": {
-          "columns": ["copyright_territorial_policy_approval_id"],
-          "definition": "FOREIGN KEY (copyright_territorial_policy_approval_id) REFERENCES copyright_territorial_policy_approvals(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "copyright_territorial_policy_approvals",
-          "validated": true
-        },
-        "fk_copyright_territorial_policy_withdrawals__withdrawn_by": {
-          "columns": ["withdrawn_by_id"],
-          "definition": "FOREIGN KEY (withdrawn_by_id) REFERENCES users(id) ON DELETE SET NULL",
-          "onDelete": "set null",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "users",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "copyright_territorial_policy__copyright_territorial_policy__key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_territorial_policy__copyright_territorial_policy__key ON public.copyright_territorial_policy_withdrawals USING btree (copyright_territorial_policy_approval_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_territorial_policy_approval_id",
-              "descending": false,
-              "expression": "copyright_territorial_policy_approval_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "copyright_territorial_policy_withdrawals_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_territorial_policy_withdrawals_pkey ON public.copyright_territorial_policy_withdrawals USING btree (id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_copyright_territorial_policy_withdrawals__withdrawn_by": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_territorial_policy_withdrawals__withdrawn_by ON public.copyright_territorial_policy_withdrawals USING btree (withdrawn_by_id) WHERE (withdrawn_by_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "withdrawn_by_id",
-              "descending": false,
-              "expression": "withdrawn_by_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(withdrawn_by_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["id"],
-        "definition": "PRIMARY KEY (id)"
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_copyright_territorial_policy_withdrawals_immutable": "CREATE TRIGGER trigger_copyright_territorial_policy_withdrawals_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_policy_withdrawals FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()"
-      },
-      "uniqueConstraints": {
-        "copyright_territorial_policy__copyright_territorial_policy__key": {
-          "columns": ["copyright_territorial_policy_approval_id"],
-          "definition": "UNIQUE (copyright_territorial_policy_approval_id)"
-        }
-      }
     },
     "copyright_territorial_redress_decisions": {
       "checkConstraints": {

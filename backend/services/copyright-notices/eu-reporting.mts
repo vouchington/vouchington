@@ -4,7 +4,7 @@ import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { assertReportingPeriod } from './territorial-fields.mts'
-import { lockCurrentCopyrightTerritorialPolicy } from './territorial-policy.mts'
+import { lockCurrentCopyrightJurisdictionPolicy } from './jurisdiction-policy.mts'
 
 const JURISDICTION = 'eu_dsa'
 
@@ -28,14 +28,14 @@ export async function compileEuCopyrightTransparencyReport(
   assert(currentUserCanReviewCopyrightNotices(actor), 403, 'Forbidden')
   assertReportingPeriod(periodStartedAt, periodEndedAt)
   await using transaction = await beginTransaction()
-  const approval = await lockCurrentCopyrightTerritorialPolicy(JURISDICTION, transaction)
+  const approval = await lockCurrentCopyrightJurisdictionPolicy(JURISDICTION, transaction)
   const { rows: counts } = await transaction<
     Omit<EuCopyrightTransparencyReport, 'id' | 'period_started_at' | 'period_ended_at'>
   >(sql`/* compileEuCopyrightTransparencyReport:counts */
     SELECT
       (SELECT count(*)::integer FROM copyright_territorial_notice_receipts receipt
         WHERE receipt.jurisdiction = ${JURISDICTION}
-          AND receipt.copyright_territorial_policy_approval_id = ${approval.id}
+          AND receipt.copyright_jurisdiction_policy_approval_id = ${approval.id}
           AND receipt.received_at >= ${periodStartedAt}
           AND receipt.received_at < ${periodEndedAt}) AS receipt_count,
       (SELECT count(*)::integer FROM copyright_territorial_decisions statement
@@ -43,7 +43,7 @@ export async function compileEuCopyrightTransparencyReport(
           ON receipt.copyright_notice_id = statement.copyright_notice_id
           AND receipt.jurisdiction = statement.jurisdiction
         WHERE statement.jurisdiction = ${JURISDICTION}
-          AND receipt.copyright_territorial_policy_approval_id = ${approval.id}
+          AND receipt.copyright_jurisdiction_policy_approval_id = ${approval.id}
           AND statement.decided_at >= ${periodStartedAt}
           AND statement.decided_at < ${periodEndedAt}) AS statement_of_reasons_count,
       (SELECT count(*)::integer FROM copyright_territorial_redress_requests redress
@@ -51,7 +51,7 @@ export async function compileEuCopyrightTransparencyReport(
           ON receipt.copyright_notice_id = redress.copyright_notice_id
           AND receipt.jurisdiction = redress.jurisdiction
         WHERE redress.jurisdiction = ${JURISDICTION}
-          AND receipt.copyright_territorial_policy_approval_id = ${approval.id}
+          AND receipt.copyright_jurisdiction_policy_approval_id = ${approval.id}
           AND redress.received_at >= ${periodStartedAt}
           AND redress.received_at < ${periodEndedAt}) AS redress_request_count,
       (SELECT count(*)::integer FROM copyright_territorial_redress_decisions decision
@@ -61,7 +61,7 @@ export async function compileEuCopyrightTransparencyReport(
           ON receipt.copyright_notice_id = redress.copyright_notice_id
           AND receipt.jurisdiction = redress.jurisdiction
         WHERE redress.jurisdiction = ${JURISDICTION}
-          AND receipt.copyright_territorial_policy_approval_id = ${approval.id}
+          AND receipt.copyright_jurisdiction_policy_approval_id = ${approval.id}
           AND decision.decided_at >= ${periodStartedAt}
           AND decision.decided_at < ${periodEndedAt}) AS redress_decision_count,
       (SELECT count(*)::integer FROM copyright_eu_supervised_complaints complaint
@@ -69,7 +69,7 @@ export async function compileEuCopyrightTransparencyReport(
           ON receipt.copyright_notice_id = complaint.copyright_notice_id
           AND receipt.jurisdiction = complaint.jurisdiction
         WHERE complaint.jurisdiction = ${JURISDICTION}
-          AND receipt.copyright_territorial_policy_approval_id = ${approval.id}
+          AND receipt.copyright_jurisdiction_policy_approval_id = ${approval.id}
           AND complaint.received_at >= ${periodStartedAt}
           AND complaint.received_at < ${periodEndedAt}) AS supervised_complaint_count,
       (SELECT count(*)::integer FROM copyright_territorial_escalations escalation
@@ -77,7 +77,7 @@ export async function compileEuCopyrightTransparencyReport(
           ON receipt.copyright_notice_id = escalation.copyright_notice_id
           AND receipt.jurisdiction = escalation.jurisdiction
         WHERE escalation.jurisdiction = ${JURISDICTION}
-          AND receipt.copyright_territorial_policy_approval_id = ${approval.id}
+          AND receipt.copyright_jurisdiction_policy_approval_id = ${approval.id}
           AND escalation.escalated_at >= ${periodStartedAt}
           AND escalation.escalated_at < ${periodEndedAt}) AS escalation_count
   `)
@@ -86,7 +86,7 @@ export async function compileEuCopyrightTransparencyReport(
   const { rows } = await transaction<EuCopyrightTransparencyReport>(
     sql`/* compileEuCopyrightTransparencyReport */
     INSERT INTO copyright_eu_transparency_reports (
-      jurisdiction, copyright_territorial_policy_approval_id, period_started_at, period_ended_at,
+      jurisdiction, copyright_jurisdiction_policy_approval_id, period_started_at, period_ended_at,
       receipt_count, statement_of_reasons_count, redress_request_count, redress_decision_count,
       supervised_complaint_count, escalation_count, reported_by_id
     ) VALUES (

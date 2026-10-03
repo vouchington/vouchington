@@ -4,7 +4,7 @@ import { readCopyrightTerritorialContractShape } from '@voucha/test-helpers/data
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import {
   TERRITORIAL_SURFACES,
-  approveTerritorialPolicy,
+  approveJurisdictionPolicy,
   createTerritorialActors,
   seedDeterminedTerritorialNotice,
   seedPendingTerritorialNotice,
@@ -29,7 +29,7 @@ describe.each(TERRITORIAL_SURFACES)('$label staff request contracts', surface =>
 
     it('rejects a malformed id, then records the failure for a real notice', async () => {
       const actors = await createTerritorialActors()
-      await approveTerritorialPolicy(actors.administrator, surface.jurisdiction)
+      await approveJurisdictionPolicy(actors.administrator, surface.jurisdiction)
       const noticeId = await seedPendingTerritorialNotice(surface.jurisdiction, actors.claimant)
 
       await actors.staffRequest
@@ -54,7 +54,7 @@ describe.each(TERRITORIAL_SURFACES)('$label staff request contracts', surface =>
 
     it('rejects an unknown key before recording the reasons', async () => {
       const actors = await createTerritorialActors()
-      await approveTerritorialPolicy(actors.administrator, surface.jurisdiction)
+      await approveJurisdictionPolicy(actors.administrator, surface.jurisdiction)
       const noticeId = await seedPendingTerritorialNotice(surface.jurisdiction, actors.claimant)
       const url = `${surface.base}/${noticeId}/${surface.determinationPath}`
       const body = { [surface.determinationField]: 'Staff reasons for the restriction' }
@@ -115,7 +115,7 @@ describe.each(TERRITORIAL_SURFACES)('$label staff request contracts', surface =>
 
     it('rejects an unknown key before recording the decision', async () => {
       const actors = await createTerritorialActors()
-      await approveTerritorialPolicy(actors.administrator, surface.jurisdiction)
+      await approveJurisdictionPolicy(actors.administrator, surface.jurisdiction)
       const { noticeId, redressId } = await seedTerritorialRedress(surface.jurisdiction, actors)
       const url = `${surface.base}/${noticeId}/redress-requests/${redressId}/decisions`
 
@@ -172,7 +172,7 @@ describe.each(TERRITORIAL_SURFACES)('$label staff request contracts', surface =>
   // The claimant owns the notice but is not staff, so the route turns the decision away first.
   it('keeps the staff 403 ahead of the schema diagnostic for the notice claimant', async () => {
     const actors = await createTerritorialActors()
-    await approveTerritorialPolicy(actors.administrator, surface.jurisdiction)
+    await approveJurisdictionPolicy(actors.administrator, surface.jurisdiction)
     const noticeId = await seedDeterminedTerritorialNotice(surface.jurisdiction, actors)
 
     await actors.claimantRequest
@@ -196,7 +196,7 @@ describe('EU transparency report request contract', () => {
 
   it('rejects an unknown key before compiling a report', async () => {
     const { staff, staffRequest, administrator } = await createTerritorialActors()
-    await approveTerritorialPolicy(administrator, 'eu_dsa')
+    await approveJurisdictionPolicy(administrator, 'eu_dsa')
     const body = {
       period_start: new Date(Date.now() - 60_000).toISOString(),
       period_end: new Date(Date.now() + 60_000).toISOString(),
@@ -227,8 +227,8 @@ describe('EU transparency report request contract', () => {
   })
 })
 
-describe('territorial policy request contracts', () => {
-  const policies = '/api/v1/copyright-territorial-policies'
+describe('jurisdiction policy request contracts', () => {
+  const policies = '/api/v1/copyright-jurisdiction-policies'
 
   it('keeps 401 and 403 ahead of the schema diagnostic on both routes', async () => {
     const { anonymousRequest, strangerRequest, staffRequest } = await createTerritorialActors()
@@ -290,7 +290,7 @@ describe('territorial policy request contracts', () => {
 
   it('rejects a malformed withdrawal id, then withdraws a real approval', async () => {
     const { administrator, administratorRequest } = await createTerritorialActors()
-    const approval = await approveTerritorialPolicy(administrator, 'eu_dsa')
+    const approval = await approveJurisdictionPolicy(administrator, 'eu_dsa')
 
     await administratorRequest.post(`${policies}/not-a-uuid/withdrawals`).expect(422)
     await administratorRequest.post(`${policies}/${approval.id}/withdrawals`).expect(201)

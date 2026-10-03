@@ -9,7 +9,7 @@ The staff guest-capability routes and the guest filing route under
 mechanics; the [Copyright Notices API](v1/copyright-notices/README.md) owns the legal flow. This page
 records the covered operations, the order each handler keeps, and which status each malformed input
 keeps or changes. Other copyright route families (notice, appeal, and counter-notice submission,
-repeat-infringer and staff queue, moderator review, email intake, EU, UK, and territorial policy)
+repeat-infringer and staff queue, moderator review, email intake, EU, UK, and jurisdiction policy)
 are owned by their own changes and are not covered here.
 
 An unauthenticated or unauthorized malformed call keeps its bare `401` or `403` with no schema

@@ -129,17 +129,17 @@ and incident procedures rather than the intake switch to manage a downstream out
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
 | New intake        | `POST /api/v1/copyright-notices` (signed-in and guest form), `POST /api/v1/copyright-eu-notices`, `POST /api/v1/copyright-uk-notices`, `POST /api/v1/copyright-email-intakes/:id/approvals` | 503                     |
 | In-case responses | Appeals, counter-notices, guest filings (supplement, withdrawal, court/CCB hold), EU and UK redress, EU supervised complaints                                                               | Open                    |
-| Staff             | Every other staff decision, review, replay, capability, repeat-infringer, territorial-policy, and report route, including recording or rejecting a matched email reply                      | Open                    |
+| Staff             | Every other staff decision, review, replay, capability, repeat-infringer, jurisdiction-policy, and report route, including recording or rejecting a matched email reply                     | Open                    |
 
 [`intake-kill-switch-routes.test.mts`](../../backend/api/v1/copyright-notices/intake-kill-switch-routes.test.mts)
 fails when a non-GET copyright route has no class. Approving an emailed notice creates a new case,
 so it is closed with the forms. Staff approval of an already received form intake is a staff
 decision, so it can still open a case while the switch is off. New EU and UK notices need the
-switch and an unwithdrawn territorial policy approval. Turning the switch on does not approve
+switch and an unwithdrawn jurisdiction policy approval. Turning the switch on does not approve
 either jurisdiction.
 
 Never approve `uk` without counsel's written sign-off. Approval and withdrawal are administrator-only:
-`POST /api/v1/copyright-territorial-policies` and `.../:id/withdrawals`. Basis recorded by the owner
+`POST /api/v1/copyright-jurisdiction-policies` and `.../:id/withdrawals`. Basis recorded by the owner
 on 2026-09-28: Online Safety Act 2023 s.59 excludes intellectual property, and e-Commerce Regulations
 2002 reg. 19 is met by the global pipeline. Counsel has not yet confirmed this basis; it is tracked
 in [#1230](https://github.com/vouchington/vouchington/issues/1230).
@@ -220,7 +220,7 @@ evidence retention, and repeat-infringer enforcement. The placeholder-free publi
 page must state that the channel is inactive until a real registration and monitored contact exist.
 
 Do not advertise EU or UK statutory intake until counsel completes representative appointment and
-the applicability review. Those contracts stay unavailable until an unwithdrawn territorial policy
+the applicability review. Those contracts stay unavailable until an unwithdrawn jurisdiction policy
 approval is recorded. The public form still accepts only `us_dmca`.
 
 The application repository creates placement-bound URLs and durable PostgreSQL action intents, but

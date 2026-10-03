@@ -17,7 +17,7 @@ async function insertNotice(
     WITH actor AS (
       INSERT INTO users DEFAULT VALUES RETURNING id
     ), approval AS (
-      INSERT INTO copyright_territorial_policy_approvals (
+      INSERT INTO copyright_jurisdiction_policy_approvals (
         jurisdiction, policy_version, approved_by_id
       )
       SELECT ${jurisdiction}, ${version}, id FROM actor
@@ -61,7 +61,7 @@ async function insertReceipt(
 ): Promise<string> {
   const { rows } = await transaction<{ id: string }>(sql`/* insertTerritorialReceipt */
     INSERT INTO copyright_territorial_notice_receipts (
-      copyright_notice_id, jurisdiction, copyright_territorial_policy_approval_id,
+      copyright_notice_id, jurisdiction, copyright_jurisdiction_policy_approval_id,
       requester_user_id, idempotency_key, request_sha256, hosted_use_url, grounds_ciphertext
     ) VALUES (
       ${fixture.noticeId}, ${jurisdiction}, ${fixture.approvalId}, ${fixture.userId},

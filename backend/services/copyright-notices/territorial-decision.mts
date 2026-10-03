@@ -6,7 +6,7 @@ import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { assertBoundedText, type TerritorialCopyrightJurisdiction } from './territorial-fields.mts'
 import { territorialLabels } from './territorial-labels.mts'
-import { lockCurrentCopyrightTerritorialPolicy } from './territorial-policy.mts'
+import { lockCurrentCopyrightJurisdictionPolicy } from './jurisdiction-policy.mts'
 
 export type TerritorialCopyrightDecision = {
   id: string
@@ -43,7 +43,7 @@ export async function recordTerritorialCopyrightDecision(
   `,
   )
   assert(!existing[0], 409, labels.decisionExists)
-  await lockCurrentCopyrightTerritorialPolicy(jurisdiction, transaction)
+  await lockCurrentCopyrightJurisdictionPolicy(jurisdiction, transaction)
   const { rows } = await transaction<TerritorialCopyrightDecision>(
     sql`/* recordTerritorialCopyrightDecision */
     INSERT INTO copyright_territorial_decisions (

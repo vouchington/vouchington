@@ -1,9 +1,9 @@
-// Expected compiler-built request carriers for the EU, UK, and territorial-policy copyright routes.
+// Expected compiler-built request carriers for the EU, UK, and jurisdiction-policy copyright routes.
 // The coverage test compares these against the committed request-contract bundle.
 
 const EU = '/api/v1/copyright-eu-notices'
 const UK = '/api/v1/copyright-uk-notices'
-const POLICIES = '/api/v1/copyright-territorial-policies'
+const POLICIES = '/api/v1/copyright-jurisdiction-policies'
 const REDRESS_DECISION = '/redress-requests/:redressId/decisions'
 
 export const EU_NOTICE = `POST:${EU}`

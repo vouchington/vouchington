@@ -142,8 +142,8 @@ export const ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
   'POST:/api/v1/copyright-uk-notices/:id/redress-requests/:redressId/decisions': {
     category: 'sensitive',
   },
-  'POST:/api/v1/copyright-territorial-policies': { category: 'sensitive' },
-  'POST:/api/v1/copyright-territorial-policies/:id/withdrawals': { category: 'sensitive' },
+  'POST:/api/v1/copyright-jurisdiction-policies': { category: 'sensitive' },
+  'POST:/api/v1/copyright-jurisdiction-policies/:id/withdrawals': { category: 'sensitive' },
   'POST:/api/v1/copyright-notices/:id/appeals': { category: 'sensitive', ttlSeconds: 3600 },
   'POST:/api/v1/copyright-notices/:id/counter-notices': {
     category: 'sensitive',

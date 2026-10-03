@@ -6,7 +6,7 @@
 -- store US restoration clocks, placement keys, or lifecycle metadata. No policy row is seeded: the
 -- contracts stay unavailable until a separate approval exists.
 
-CREATE TABLE IF NOT EXISTS copyright_territorial_policy_approvals (
+CREATE TABLE IF NOT EXISTS copyright_jurisdiction_policy_approvals (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   jurisdiction text NOT NULL,
   policy_version text NOT NULL,
@@ -14,18 +14,18 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_policy_approvals (
   approved_by_id uuid,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT uq_copyright_territorial_policy_approvals__version UNIQUE (jurisdiction, policy_version),
-  CONSTRAINT uq_copyright_territorial_policy_approvals__id_jurisdiction UNIQUE (id, jurisdiction),
-  CONSTRAINT chk_copyright_territorial_policy_approvals__jurisdiction CHECK (jurisdiction IN ('eu_dsa', 'uk')),
-  CONSTRAINT chk_copyright_territorial_policy_approvals__version CHECK (
+  CONSTRAINT uq_copyright_jurisdiction_policy_approvals__version UNIQUE (jurisdiction, policy_version),
+  CONSTRAINT uq_copyright_jurisdiction_policy_approvals__id_jurisdiction UNIQUE (id, jurisdiction),
+  CONSTRAINT chk_copyright_jurisdiction_policy_approvals__jurisdiction CHECK (jurisdiction IN ('eu_dsa', 'uk')),
+  CONSTRAINT chk_copyright_jurisdiction_policy_approvals__version CHECK (
     policy_version ~ '^[a-z0-9][a-z0-9._-]{0,63}$'
   )
 );
 
-CREATE TABLE IF NOT EXISTS copyright_territorial_policy_withdrawals (
+CREATE TABLE IF NOT EXISTS copyright_jurisdiction_policy_withdrawals (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_territorial_policy_approval_id uuid NOT NULL UNIQUE
-    REFERENCES copyright_territorial_policy_approvals (id) ON DELETE RESTRICT,
+  copyright_jurisdiction_policy_approval_id uuid NOT NULL UNIQUE
+    REFERENCES copyright_jurisdiction_policy_approvals (id) ON DELETE RESTRICT,
   withdrawn_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   withdrawn_by_id uuid,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_notice_receipts (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL,
   jurisdiction text NOT NULL,
-  copyright_territorial_policy_approval_id uuid NOT NULL,
+  copyright_jurisdiction_policy_approval_id uuid NOT NULL,
   requester_user_id uuid,
   idempotency_key text NOT NULL,
   request_sha256 bytea NOT NULL,
@@ -50,8 +50,8 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_notice_receipts (
     requester_user_id, jurisdiction, idempotency_key
   ),
   CONSTRAINT fk_copyright_territorial_notice_receipts__approval
-    FOREIGN KEY (copyright_territorial_policy_approval_id, jurisdiction)
-    REFERENCES copyright_territorial_policy_approvals (id, jurisdiction) ON DELETE RESTRICT,
+    FOREIGN KEY (copyright_jurisdiction_policy_approval_id, jurisdiction)
+    REFERENCES copyright_jurisdiction_policy_approvals (id, jurisdiction) ON DELETE RESTRICT,
   CONSTRAINT chk_copyright_territorial_notice_receipts__jurisdiction CHECK (jurisdiction IN ('eu_dsa', 'uk')),
   CONSTRAINT chk_copyright_territorial_notice_receipts__idempotency CHECK (char_length(idempotency_key) = 36),
   CONSTRAINT chk_copyright_territorial_notice_receipts__sha CHECK (octet_length(request_sha256) = 32),
@@ -200,7 +200,7 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_escalations (
 CREATE TABLE IF NOT EXISTS copyright_eu_transparency_reports (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   jurisdiction text NOT NULL,
-  copyright_territorial_policy_approval_id uuid NOT NULL,
+  copyright_jurisdiction_policy_approval_id uuid NOT NULL,
   period_started_at timestamptz NOT NULL,
   period_ended_at timestamptz NOT NULL,
   receipt_count integer NOT NULL,
@@ -214,8 +214,8 @@ CREATE TABLE IF NOT EXISTS copyright_eu_transparency_reports (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_copyright_eu_transparency_reports__approval
-    FOREIGN KEY (copyright_territorial_policy_approval_id, jurisdiction)
-    REFERENCES copyright_territorial_policy_approvals (id, jurisdiction) ON DELETE RESTRICT,
+    FOREIGN KEY (copyright_jurisdiction_policy_approval_id, jurisdiction)
+    REFERENCES copyright_jurisdiction_policy_approvals (id, jurisdiction) ON DELETE RESTRICT,
   CONSTRAINT chk_copyright_eu_transparency_reports__jurisdiction CHECK (jurisdiction = 'eu_dsa'),
   CONSTRAINT chk_copyright_eu_transparency_reports__period CHECK (period_started_at < period_ended_at),
   CONSTRAINT chk_copyright_eu_transparency_reports__counts CHECK (
@@ -228,24 +228,24 @@ CREATE TABLE IF NOT EXISTS copyright_eu_transparency_reports (
   )
 );
 
-COMMENT ON TABLE copyright_territorial_policy_approvals IS
+COMMENT ON TABLE copyright_jurisdiction_policy_approvals IS
   'Operator approval that makes one EU or UK copyright contract applicable. Absence or withdrawal fails closed.';
-COMMENT ON COLUMN copyright_territorial_policy_approvals.jurisdiction IS
+COMMENT ON COLUMN copyright_jurisdiction_policy_approvals.jurisdiction IS
   'Contract family this approval activates: eu_dsa or uk.';
-COMMENT ON COLUMN copyright_territorial_policy_approvals.policy_version IS
+COMMENT ON COLUMN copyright_jurisdiction_policy_approvals.policy_version IS
   'Identifier of the approved contract text. Unique per jurisdiction.';
-COMMENT ON COLUMN copyright_territorial_policy_approvals.approved_at IS
+COMMENT ON COLUMN copyright_jurisdiction_policy_approvals.approved_at IS
   'When an operator approved this policy version.';
-COMMENT ON COLUMN copyright_territorial_policy_approvals.approved_by_id IS
+COMMENT ON COLUMN copyright_jurisdiction_policy_approvals.approved_by_id IS
   'Operator who approved this policy version. Null after that account is deleted.';
 
-COMMENT ON TABLE copyright_territorial_policy_withdrawals IS
-  'Withdrawal of one territorial policy approval. A withdrawn approval fails closed.';
-COMMENT ON COLUMN copyright_territorial_policy_withdrawals.copyright_territorial_policy_approval_id IS
+COMMENT ON TABLE copyright_jurisdiction_policy_withdrawals IS
+  'Withdrawal of one jurisdiction policy approval. A withdrawn approval fails closed.';
+COMMENT ON COLUMN copyright_jurisdiction_policy_withdrawals.copyright_jurisdiction_policy_approval_id IS
   'Approval this withdrawal retires. One withdrawal per approval.';
-COMMENT ON COLUMN copyright_territorial_policy_withdrawals.withdrawn_at IS
+COMMENT ON COLUMN copyright_jurisdiction_policy_withdrawals.withdrawn_at IS
   'When an operator withdrew the approval.';
-COMMENT ON COLUMN copyright_territorial_policy_withdrawals.withdrawn_by_id IS
+COMMENT ON COLUMN copyright_jurisdiction_policy_withdrawals.withdrawn_by_id IS
   'Operator who withdrew the approval. Null after that account is deleted.';
 
 COMMENT ON TABLE copyright_territorial_notice_receipts IS
@@ -254,7 +254,7 @@ COMMENT ON COLUMN copyright_territorial_notice_receipts.copyright_notice_id IS
   'Copyright notice this receipt records. One receipt per notice.';
 COMMENT ON COLUMN copyright_territorial_notice_receipts.jurisdiction IS
   'Jurisdiction of the notice and of the policy approval: eu_dsa or uk. Both foreign keys must agree.';
-COMMENT ON COLUMN copyright_territorial_notice_receipts.copyright_territorial_policy_approval_id IS
+COMMENT ON COLUMN copyright_territorial_notice_receipts.copyright_jurisdiction_policy_approval_id IS
   'Unwithdrawn policy approval of the same jurisdiction that made this receipt acceptable.';
 COMMENT ON COLUMN copyright_territorial_notice_receipts.requester_user_id IS
   'Signed-in requester. Null for a guest or after account deletion.';
@@ -368,7 +368,7 @@ COMMENT ON TABLE copyright_eu_transparency_reports IS
   'Counts of stored EU copyright facts for a caller-supplied period. EU only. The period is not a statutory clock.';
 COMMENT ON COLUMN copyright_eu_transparency_reports.jurisdiction IS
   'Always eu_dsa. The composite foreign key requires an eu_dsa policy approval.';
-COMMENT ON COLUMN copyright_eu_transparency_reports.copyright_territorial_policy_approval_id IS
+COMMENT ON COLUMN copyright_eu_transparency_reports.copyright_jurisdiction_policy_approval_id IS
   'eu_dsa policy approval this report was produced under.';
 COMMENT ON COLUMN copyright_eu_transparency_reports.period_started_at IS
   'Start of the caller-supplied reporting period. Not a statutory clock.';
@@ -391,17 +391,17 @@ COMMENT ON COLUMN copyright_eu_transparency_reports.reported_at IS
 COMMENT ON COLUMN copyright_eu_transparency_reports.reported_by_id IS
   'User who recorded the report. Null after that account is deleted.';
 
-ALTER TABLE copyright_territorial_policy_approvals
-  ADD CONSTRAINT fk_copyright_territorial_policy_approvals__approved_by
+ALTER TABLE copyright_jurisdiction_policy_approvals
+  ADD CONSTRAINT fk_copyright_jurisdiction_policy_approvals__approved_by
   FOREIGN KEY (approved_by_id) REFERENCES users (id) ON DELETE SET NULL NOT VALID;
-ALTER TABLE copyright_territorial_policy_approvals
-  VALIDATE CONSTRAINT fk_copyright_territorial_policy_approvals__approved_by;
+ALTER TABLE copyright_jurisdiction_policy_approvals
+  VALIDATE CONSTRAINT fk_copyright_jurisdiction_policy_approvals__approved_by;
 
-ALTER TABLE copyright_territorial_policy_withdrawals
-  ADD CONSTRAINT fk_copyright_territorial_policy_withdrawals__withdrawn_by
+ALTER TABLE copyright_jurisdiction_policy_withdrawals
+  ADD CONSTRAINT fk_copyright_jurisdiction_policy_withdrawals__withdrawn_by
   FOREIGN KEY (withdrawn_by_id) REFERENCES users (id) ON DELETE SET NULL NOT VALID;
-ALTER TABLE copyright_territorial_policy_withdrawals
-  VALIDATE CONSTRAINT fk_copyright_territorial_policy_withdrawals__withdrawn_by;
+ALTER TABLE copyright_jurisdiction_policy_withdrawals
+  VALIDATE CONSTRAINT fk_copyright_jurisdiction_policy_withdrawals__withdrawn_by;
 
 ALTER TABLE copyright_territorial_notice_receipts
   ADD CONSTRAINT fk_copyright_territorial_notice_receipts__notice
@@ -470,12 +470,12 @@ ALTER TABLE copyright_eu_transparency_reports
 ALTER TABLE copyright_eu_transparency_reports
   VALIDATE CONSTRAINT fk_copyright_eu_transparency_reports__reported_by;
 
-CREATE INDEX IF NOT EXISTS idx_copyright_territorial_policy_approvals__approved_by
-  ON copyright_territorial_policy_approvals (approved_by_id) WHERE approved_by_id IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_copyright_territorial_policy_withdrawals__withdrawn_by
-  ON copyright_territorial_policy_withdrawals (withdrawn_by_id) WHERE withdrawn_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_copyright_jurisdiction_policy_approvals__approved_by
+  ON copyright_jurisdiction_policy_approvals (approved_by_id) WHERE approved_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_copyright_jurisdiction_policy_withdrawals__withdrawn_by
+  ON copyright_jurisdiction_policy_withdrawals (withdrawn_by_id) WHERE withdrawn_by_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_copyright_territorial_notice_receipts__policy
-  ON copyright_territorial_notice_receipts (copyright_territorial_policy_approval_id, jurisdiction);
+  ON copyright_territorial_notice_receipts (copyright_jurisdiction_policy_approval_id, jurisdiction);
 CREATE INDEX IF NOT EXISTS idx_copyright_territorial_notice_receipts__requester
   ON copyright_territorial_notice_receipts (requester_user_id) WHERE requester_user_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_copyright_territorial_decisions__decided_by
@@ -491,7 +491,7 @@ CREATE INDEX IF NOT EXISTS idx_copyright_eu_supervised_complaints__recorded_by
 CREATE INDEX IF NOT EXISTS idx_copyright_territorial_escalations__notice
   ON copyright_territorial_escalations (copyright_notice_id, jurisdiction);
 CREATE INDEX IF NOT EXISTS idx_copyright_eu_transparency_reports__policy
-  ON copyright_eu_transparency_reports (copyright_territorial_policy_approval_id, jurisdiction);
+  ON copyright_eu_transparency_reports (copyright_jurisdiction_policy_approval_id, jurisdiction);
 CREATE INDEX IF NOT EXISTS idx_copyright_eu_transparency_reports__reported_by
   ON copyright_eu_transparency_reports (reported_by_id) WHERE reported_by_id IS NOT NULL;
 
@@ -546,11 +546,11 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER trigger_copyright_territorial_policy_approvals_immutable
-  BEFORE UPDATE OR DELETE ON copyright_territorial_policy_approvals
+CREATE TRIGGER trigger_copyright_jurisdiction_policy_approvals_immutable
+  BEFORE UPDATE OR DELETE ON copyright_jurisdiction_policy_approvals
   FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation();
-CREATE TRIGGER trigger_copyright_territorial_policy_withdrawals_immutable
-  BEFORE UPDATE OR DELETE ON copyright_territorial_policy_withdrawals
+CREATE TRIGGER trigger_copyright_jurisdiction_policy_withdrawals_immutable
+  BEFORE UPDATE OR DELETE ON copyright_jurisdiction_policy_withdrawals
   FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation();
 CREATE TRIGGER trigger_copyright_territorial_notice_receipts_immutable
   BEFORE UPDATE OR DELETE ON copyright_territorial_notice_receipts
@@ -583,8 +583,8 @@ CREATE TRIGGER trigger_copyright_eu_transparency_reports_immutable
   BEFORE UPDATE OR DELETE ON copyright_eu_transparency_reports
   FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation();
 
-CREATE TRIGGER trigger_copyright_territorial_policy_approvals_updated_at
-  BEFORE UPDATE ON copyright_territorial_policy_approvals
+CREATE TRIGGER trigger_copyright_jurisdiction_policy_approvals_updated_at
+  BEFORE UPDATE ON copyright_jurisdiction_policy_approvals
   FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 CREATE TRIGGER trigger_copyright_territorial_notice_acknowledgments_updated_at
   BEFORE UPDATE ON copyright_territorial_notice_acknowledgments

@@ -112,10 +112,10 @@ export { readCopyrightReviewTargetBreaches } from './review-target-breaches.mts'
 export { getCopyrightReviewTargetMinutes } from './config.mts'
 export { sweepCopyrightEvidenceRetention } from './retention-erasure.mts'
 export {
-  currentUserCanApproveCopyrightTerritorialPolicy,
-  recordCopyrightTerritorialPolicyApproval,
-  withdrawCopyrightTerritorialPolicyApproval,
-} from './territorial-policy.mts'
+  currentUserCanApproveCopyrightJurisdictionPolicy,
+  recordCopyrightJurisdictionPolicyApproval,
+  withdrawCopyrightJurisdictionPolicyApproval,
+} from './jurisdiction-policy.mts'
 export {
   acknowledgeUkCopyrightNotice,
   recordUkCopyrightAcknowledgmentFailure,

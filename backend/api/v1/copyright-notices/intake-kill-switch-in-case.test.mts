@@ -189,7 +189,7 @@ describe('copyright in-case responses with intake switched off', () => {
       ['uk', 'uk'],
     ]) {
       await admin
-        .post('/api/v1/copyright-territorial-policies')
+        .post('/api/v1/copyright-jurisdiction-policies')
         .send({
           jurisdiction,
           policy_version: `${prefix}-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
