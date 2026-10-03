@@ -129,6 +129,73 @@ describe('useDataRequestStream request lifetime', () => {
     expect(setError).not.toHaveBeenCalled()
   })
 
+  it.each(['ready', 'forbidden'])(
+    'ignores an old reconnect refresh returning %s after request change',
+    async outcome => {
+      const refresh = deferredResponse()
+      const fetchMock = vi.fn<VitestLooseMock>().mockReturnValue(refresh.promise)
+      vi.stubGlobal('fetch', fetchMock)
+      const applyRequest = vi.fn<(value: DataRequest | null) => void>()
+      const setError = vi.fn<(value: string | null) => void>()
+      const { rerender } = renderHook(
+        ({ current }) =>
+          useDataRequestStream({ userId: 'user-1', request: current, applyRequest, setError }),
+        { initialProps: { current: request('old-request') } },
+      )
+      const oldStream = MockEventSource.instances[0]!
+
+      act(() => oldStream.emitConnectionError())
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      rerender({ current: request('new-request') })
+      expect(oldStream.closed).toBe(true)
+      expect(MockEventSource.instances[1]?.closed).toBe(false)
+
+      await act(async () => {
+        refresh.resolve(
+          outcome === 'ready'
+            ? createJsonResponse(200, { ...request('old-request'), status: 'ready' })
+            : createJsonResponse(403, { error: 'Forbidden' }),
+        )
+        await refresh.promise
+      })
+
+      expect(applyRequest).not.toHaveBeenCalled()
+      expect(setError).not.toHaveBeenCalled()
+      expect(MockEventSource.instances[1]?.closed).toBe(false)
+    },
+  )
+
+  it.each(['lagging', 'unavailable'])(
+    'shows a failed export when the status event arrives but REST is %s',
+    async outcome => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn<VitestLooseMock>()
+          .mockResolvedValue(
+            outcome === 'lagging'
+              ? createJsonResponse(200, request('current'))
+              : createJsonResponse(500, { error: 'Refresh unavailable' }),
+          ),
+      )
+      const applyRequest = vi.fn<(value: DataRequest | null) => void>()
+      const setError = vi.fn<(value: string | null) => void>()
+      renderHook(() =>
+        useDataRequestStream({
+          userId: 'user-1',
+          request: request('current'),
+          applyRequest,
+          setError,
+        }),
+      )
+
+      await act(async () => MockEventSource.instances[0]!.emit('status', { status: 'failed' }))
+
+      expect(applyRequest).toHaveBeenCalledWith({ ...request('current'), status: 'failed' })
+      expect(setError).toHaveBeenCalledWith('Your data export failed. Please try again.')
+    },
+  )
+
   it.each(['success', 'failure'])(
     'ignores an old download-link retry %s after request change',
     async outcome => {
@@ -178,4 +245,34 @@ describe('useDataRequestStream request lifetime', () => {
       expect(vi.getTimerCount()).toBe(0)
     },
   )
+
+  it('reports when an active ready export cannot fetch its download link', async () => {
+    const fetchMock = vi
+      .fn<VitestLooseMock>()
+      .mockResolvedValueOnce(createJsonResponse(200, { ...request('current'), status: 'ready' }))
+      .mockRejectedValue(new Error('link unavailable'))
+    vi.stubGlobal('fetch', fetchMock)
+    const applyRequest = vi.fn<(value: DataRequest | null) => void>()
+    const setError = vi.fn<(value: string | null) => void>()
+    renderHook(() =>
+      useDataRequestStream({
+        userId: 'user-1',
+        request: request('current'),
+        applyRequest,
+        setError,
+      }),
+    )
+
+    vi.useFakeTimers()
+    await act(async () => MockEventSource.instances[0]!.emit('status', { status: 'ready' }))
+    expect(setError).not.toHaveBeenCalled()
+    await act(async () => vi.advanceTimersByTimeAsync(15_000))
+
+    expect(fetchMock).toHaveBeenCalledTimes(4)
+    expect(setError).toHaveBeenCalledWith(
+      'Your export is ready but the download link could not be fetched. Please refresh.',
+    )
+    expect(applyRequest).not.toHaveBeenCalled()
+    expect(vi.getTimerCount()).toBe(0)
+  })
 })
