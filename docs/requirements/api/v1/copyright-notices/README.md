@@ -143,6 +143,12 @@ decision, including an earlier legal-process one, is `409`, and so is an unresol
 reply. It is not replay-safe on purpose: a repeat reports the conflict so staff do not believe a
 second matter was recorded.
 
+The email-intake decision bodies, approvals, rejections, correspondence, and correspondence
+rejections, are closed: an unknown key, or a key of the wrong type that no field parser read, is a
+`422` before any service call. The field parsers keep their order, so every existing field-named
+`422`, the unknown-intake `404`, and every decision outcome is unchanged; see
+[request validation](../../reference-copyright-email-intake-request-validation.md).
+
 Staff repeat-infringer actions are separate from that queue payload.
 `GET /api/v1/copyright-notices/:id/repeat-infringer-accounts` lists incidents for one case.
 Reviewers record incident dispositions and warning or no-action review outcomes. Administrators

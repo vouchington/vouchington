@@ -3002,6 +3002,195 @@
         ],
         "type": "object"
       },
+      "CopyrightEmailApprovalRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "accuracy_authority_under_penalty_of_perjury": {
+            "const": true
+          },
+          "claimant_contact": {
+            "type": "string"
+          },
+          "claimant_display_name": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "claimant_email": {
+            "type": "string"
+          },
+          "electronic_signature": {
+            "type": "string"
+          },
+          "good_faith_belief": {
+            "const": true
+          },
+          "jurisdiction": {
+            "const": "us_dmca"
+          },
+          "manual_fallback_reason": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "recommendation_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/CopyrightNoticeTargetRequest"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": false
+          },
+          "work_description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accuracy_authority_under_penalty_of_perjury",
+          "claimant_contact",
+          "claimant_display_name",
+          "claimant_email",
+          "electronic_signature",
+          "good_faith_belief",
+          "jurisdiction",
+          "rationale",
+          "targets",
+          "work_description"
+        ],
+        "type": "object"
+      },
+      "CopyrightEmailCorrespondenceRejectionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": ["appeal", "counter_notice", "court_or_ccb_hold", "supplement", "withdrawal"],
+            "type": "string"
+          },
+          "manual_fallback_reason": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "recommendation_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": ["kind", "rationale"],
+        "type": "object"
+      },
+      "CopyrightEmailCorrespondenceRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "appeal_reason": {
+            "type": "string"
+          },
+          "consent_to_federal_jurisdiction": {
+            "const": true
+          },
+          "consent_to_service_of_process": {
+            "const": true
+          },
+          "electronic_signature": {
+            "type": "string"
+          },
+          "good_faith_misidentification_under_penalty_of_perjury": {
+            "const": true
+          },
+          "kind": {
+            "enum": ["appeal", "counter_notice", "court_or_ccb_hold", "supplement", "withdrawal"],
+            "type": "string"
+          },
+          "manual_fallback_reason": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "recommendation_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "submission_summary": {
+            "type": "string"
+          },
+          "target_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "telephone": {
+            "type": "string"
+          }
+        },
+        "required": ["kind", "rationale"],
+        "type": "object"
+      },
       "CopyrightEmailIntakeQueueResponse": {
         "additionalProperties": false,
         "properties": {
@@ -3053,6 +3242,61 @@
           }
         },
         "required": ["reason"],
+        "type": "object"
+      },
+      "CopyrightEmailRejectionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "manual_fallback_reason": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "recommendation_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reply_email": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "response_kind": {
+            "enum": ["needs_information", "rejected"],
+            "type": "string"
+          },
+          "response_message": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": ["rationale"],
         "type": "object"
       },
       "CopyrightEmailSesVerdict": {
@@ -42551,6 +42795,15 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyrightEmailApprovalRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "content": {
@@ -42605,6 +42858,15 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyrightEmailCorrespondenceRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {
@@ -42729,6 +42991,15 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyrightEmailCorrespondenceRejectionRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {
@@ -42880,6 +43151,15 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyrightEmailRejectionRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {

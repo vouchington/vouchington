@@ -53,3 +53,5 @@ behavior.
   rejections the service still decides (ownership and territorial availability `403`, `404`, `409`).
 - [Copyright repeat-infringer and staff queue routes](reference-copyright-staff-request-validation.md)
   record their handler order, kept statuses, and the administrator-action ordering note.
+- [Copyright email-intake routes](reference-copyright-email-intake-request-validation.md) record
+  their handler order, the parsers that run before the contract, and the unknown-key `422` changes.

@@ -6,7 +6,7 @@ import type { ApiArrayContract } from '../../response-contract.mts'
 // run first so each rejection keeps its field-named message. Statutory attestations are the
 // literal `true`: an unaccepted declaration is never a valid submission.
 
-type CopyrightNoticeTargetRequest = {
+export type CopyrightNoticeTargetRequest = {
   post_id: ApiUuidContract
   image_id: ApiUuidContract
   target_url: string
