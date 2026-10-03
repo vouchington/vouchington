@@ -1,9 +1,10 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
+import { unassessedCourtFilingSql } from './unassessed-court-filing-sql.mts'
 import { pendingCopyrightEnforcementSql } from './enforcement-pending-sql.mts'
 
 /**
  * Opens a `queue_key` CTE with one row per actionable case: the case's urgency tier (0 missed
- * deadline, 1 deadline past escalation, 2 other work), the oldest open item's `waiting_since`,
+ * deadline, 1 deadline past escalation or unassessed court filing, 2 other work), the oldest open item's `waiting_since`,
  * and its distinct `reasons`. Callers append their own `SELECT ... FROM queue_key`.
  */
 export function copyrightStaffQueueKeysSql(): SQLStatement {
@@ -69,14 +70,16 @@ export function copyrightStaffQueueKeysSql(): SQLStatement {
       JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
       WHERE intent.state = 'failed'
       UNION ALL
-      `.append(
-    // Includes the automated assessments the switch, an earlier on-period or a suspended claimant is
-    // holding back, so staff see them.
-    pendingCopyrightEnforcementSql(
-      "DISTINCT submission.copyright_notice_id, 'enforcement_pending'::text, assessment.created_at",
-      'all',
-    ),
-  ).append(sql`
+      `
+    .append(
+      // Includes the automated assessments the switch, an earlier on-period or a suspended claimant is
+      // holding back, so staff see them.
+      pendingCopyrightEnforcementSql(
+        "DISTINCT submission.copyright_notice_id, 'enforcement_pending'::text, assessment.created_at",
+        'all',
+      ),
+    )
+    .append(sql`
       UNION ALL
       SELECT intent.copyright_notice_id, 'delivery_failed',
         COALESCE(intent.bounced_at, intent.failed_at, intent.updated_at)
@@ -105,7 +108,9 @@ export function copyrightStaffQueueKeysSql(): SQLStatement {
       SELECT open_item.copyright_notice_id AS id,
         CASE
           WHEN bool_or(open_item.reason = 'deadline_missed') THEN 0
-          WHEN bool_or(open_item.reason = 'deadline_due') THEN 1
+          WHEN bool_or(open_item.reason = 'deadline_due') OR `)
+    .append(unassessedCourtFilingSql(sql``.append('open_item.copyright_notice_id')))
+    .append(sql` THEN 1
           ELSE 2
         END AS urgency,
         min(open_item.since) AS waiting_since,

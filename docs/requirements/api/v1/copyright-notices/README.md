@@ -58,7 +58,7 @@ claimant or affected poster the same case-facing events and gives staff the unfi
 
 The staff review queue uses the same bounded `after` and `limit` contract. Its cursor is scoped to
 the actionable queue and orders by `(urgency, waiting_since, id)`: a missed restoration deadline
-first, then a deadline past escalation, then all other open work, each oldest wait first. Every
+first, then a deadline past escalation or an unassessed court or CCB filing, then all other open work, each oldest wait first. Every
 queued case, including one whose only open item is a deadline past escalation, remains reachable
 after the first page. Each item adds `reasons` (the distinct open-item kinds), `waiting_since` (the
 oldest open item's time), and `next_deadline` (the earliest open deadline's `escalation_at` and

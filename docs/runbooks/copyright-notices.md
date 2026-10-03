@@ -26,7 +26,7 @@ These are product response targets, not representations of safe-harbor eligibili
 ## Queue triage
 
 The staff case queue (Moderation sidebar, Copyright, Case Queue) lists missed restoration deadlines
-first, then deadlines past escalation, then other open work, each oldest wait first. Work it top
+first, then deadlines past escalation or unassessed court or CCB filings, then other open work, each oldest wait first. Work it top
 down. Each case shows why it is queued and how long its oldest open item has waited. The email
 intake queue shows each message's wait age.
 
@@ -313,7 +313,12 @@ Notes for operators:
    statutory template and persist the delivery intent.
 4. Review all case correspondence before restoration and record the exact targets each filing
    covers. Restoration of the whole case stays refused while any admitted court or CCB filing has
-   no assessment. A threat, unrelated filing, different claimant, different material, non-commenced
+   no assessment. Assess the filing by the earliest open counter-notice deadline's `escalation_at`
+   (start of business day 14), leaving day 14 to restore if it is rejected. Without an open deadline,
+   the urgent filing remains subject to `reviewTargetMinutes`. Compare the email sender or guest
+   capability holder with the original notice: a qualifying filing must come from the person who
+   submitted the notification, or their authorised agent. A not-qualifying assessment releases
+   restoration. A threat, unrelated filing, different claimant, different material, non-commenced
    matter, or CCB filing outside the qualifying claim and counterclaim categories is not a hold.
 5. Resolve a hold only with an immutable resolution record and staff rationale.
 
@@ -512,7 +517,7 @@ that is a data-subject request for counsel, not something this switch handles.
 Urgent work has no per-case alert rows or acknowledgements. Two mechanisms surface it:
 
 - queue urgency: the staff case queue lists missed restoration deadlines first, then deadlines past
-  escalation, then other open work (see [Queue triage](#queue-triage)); and
+  escalation or unassessed court or CCB filings, then other open work (see [Queue triage](#queue-triage)); and
 - the [review-target page](#review-target-page): a five-minute sweep sends a Sentry warning while
   work is late, and the Sentry alert rule that would route it to on-call is not set up yet.
 

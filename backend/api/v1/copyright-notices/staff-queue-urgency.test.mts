@@ -6,7 +6,11 @@ import {
   insertReviewedCopyrightFormIntake,
 } from '@voucha/test-helpers/data-stores/psql/copyright-staff-queue'
 import { createCopyrightFormFixture } from '@services/copyright-notices/route-test-fixtures'
-import { createCopyrightFormIntake } from '@services/copyright-notices'
+import {
+  appendCopyrightGuestFiling,
+  issueCopyrightGuestCapability,
+  createCopyrightFormIntake,
+} from '@services/copyright-notices'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { getIsolatedDatabaseCaseMode } from '../../../../test-helpers/vitest-isolated-database-cases.mts'
 import { runIsolatedDatabaseCase } from '../../../../test-helpers/vitest-isolated-database-case.mts'
@@ -67,6 +71,19 @@ describe('copyright staff queue urgency', () => {
     vi.useRealTimers()
     const due = await createGuestNotice()
     const missed = await createGuestNotice()
+    const filingCase = await createGuestNotice()
+    const capability = await issueCopyrightGuestCapability({
+      currentUser: moderator,
+      noticeId: filingCase,
+      expiresAt: new Date(Date.now() + day),
+    })
+    await appendCopyrightGuestFiling({
+      noticeId: filingCase,
+      token: capability.token,
+      now: new Date(),
+      kind: 'court_or_ccb_hold',
+      statement: 'An action has been filed.',
+    })
     for (const [noticeId, state] of [
       [due, 'due'],
       [missed, 'missed'],
@@ -82,8 +99,13 @@ describe('copyright staff queue urgency', () => {
     await request.authenticateAs(moderator)
 
     const page = (await request.get(queuePath).expect(200)).body as QueuePage
-    expect(page.copyright_notices.map(notice => notice.id)).toEqual([missed, due, olderIntake])
-    const [missedCase, dueCase, intakeCase] = page.copyright_notices
+    expect(page.copyright_notices.map(notice => notice.id)).toEqual([
+      missed,
+      due,
+      filingCase,
+      olderIntake,
+    ])
+    const [missedCase, dueCase, unassessedCase, intakeCase] = page.copyright_notices
     expect(missedCase).toMatchObject({
       reasons: ['deadline_missed'],
       next_deadline: {
@@ -96,6 +118,8 @@ describe('copyright staff queue urgency', () => {
     expect(Date.parse(dueCase!.next_deadline!.escalation_at)).toBeLessThan(Date.now())
     expect(Date.parse(dueCase!.next_deadline!.restoration_deadline_at)).toBeGreaterThan(Date.now())
     expect(dueCase!.waiting_since).toBe(dueCase!.next_deadline!.escalation_at)
+    expect(unassessedCase).toMatchObject({ id: filingCase, next_deadline: null })
+    expect(unassessedCase!.reasons).toContain('legal_hold_review')
     expect(intakeCase).toMatchObject({ reasons: ['form_intake_review'], next_deadline: null })
     expect(Date.parse(intakeCase!.waiting_since)).toBeLessThan(
       Date.parse(missedCase!.waiting_since),
@@ -112,7 +136,7 @@ describe('copyright staff queue urgency', () => {
       after = onePage.page_info.end_cursor
       if (!onePage.page_info.has_next_page) break
     }
-    expect(walked).toEqual([missed, due, olderIntake])
+    expect(walked).toEqual([missed, due, filingCase, olderIntake])
     expect(after).toBeNull()
   }, 240_000)
 })

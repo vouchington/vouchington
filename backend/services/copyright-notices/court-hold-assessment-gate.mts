@@ -1,5 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
+import { unassessedCourtFilingSql } from './unassessed-court-filing-sql.mts'
 
 type CopyrightQuery = TransactionQuery
 
@@ -12,20 +13,12 @@ export async function noticeHasUnassessedCourtOrCcbFiling(
   await query(sql`/* noticeHasUnassessedCourtOrCcbFiling:lockNotice */
     SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE
   `)
-  const { rows } = await query<{ blocked: boolean }>(sql`
+  const { rows } = await query<{ blocked: boolean }>(
+    sql`
     /* noticeHasUnassessedCourtOrCcbFiling */
-    SELECT EXISTS (
-      SELECT 1
-      FROM copyright_notice_submissions submission
-      WHERE submission.copyright_notice_id = ${noticeId}
-        AND submission.kind = 'court_or_ccb_hold'
-        AND NOT EXISTS (
-          SELECT 1
-          FROM copyright_notice_legal_hold_assessments assessment
-          WHERE assessment.copyright_notice_submission_id = submission.id
-        )
-    ) AS blocked
-  `)
+    SELECT `.append(unassessedCourtFilingSql(sql`${noticeId}`)).append(sql` AS blocked
+  `),
+  )
   return rows[0]?.blocked ?? true
 }
 

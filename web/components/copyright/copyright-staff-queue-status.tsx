@@ -23,6 +23,7 @@ const urgentReasons = new Set<CopyrightStaffQueueReason>(['deadline_due', 'deadl
 /** Why a case is queued, how long its oldest open item has waited, and its next deadline. */
 export function CopyrightStaffQueueStatus({ notice }: { notice: CopyrightStaffQueueItem }) {
   const deadline = notice.next_deadline
+  const unassessedFiling = notice.legal_holds.some(hold => hold.assessment === null)
   return (
     <div className='mt-2 space-y-1 text-sm'>
       <ul
@@ -31,8 +32,16 @@ export function CopyrightStaffQueueStatus({ notice }: { notice: CopyrightStaffQu
       >
         {notice.reasons.map(reason => (
           <li key={reason}>
-            <Badge variant={urgentReasons.has(reason) ? 'destructive' : 'secondary'}>
-              {reasonLabels[reason]}
+            <Badge
+              variant={
+                urgentReasons.has(reason) || (unassessedFiling && reason === 'legal_hold_review')
+                  ? 'destructive'
+                  : 'secondary'
+              }
+            >
+              {unassessedFiling && reason === 'legal_hold_review'
+                ? 'Filing awaiting assessment'
+                : reasonLabels[reason]}
             </Badge>
           </li>
         ))}
@@ -40,6 +49,11 @@ export function CopyrightStaffQueueStatus({ notice }: { notice: CopyrightStaffQu
       <p className='text-muted-foreground'>
         Queued <TimeAgo date={notice.waiting_since} />
       </p>
+      {unassessedFiling && deadline && (
+        <p className='text-muted-foreground'>
+          Assess the filing by {new Date(deadline.escalation_at).toLocaleString()}
+        </p>
+      )}
       {deadline && (
         <p className='text-muted-foreground'>
           Next deadline: escalation {new Date(deadline.escalation_at).toLocaleString()} ·

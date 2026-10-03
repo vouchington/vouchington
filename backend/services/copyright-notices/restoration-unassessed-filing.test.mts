@@ -13,6 +13,7 @@ import {
   acceptCounterNoticeForRestoration,
   createCopyrightRestorationHoldFixture,
 } from './evidence-and-holds-restoration-hold-fixtures.mts'
+import { readCopyrightStaffQueueCursorRows } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 const counterNoticeBody = {
@@ -67,6 +68,61 @@ async function recordCourtFiling(noticeId: string) {
 }
 
 describe('unassessed court or CCB filings', () => {
+  it('queues an unassessed filing as urgent then returns it to ordinary work once assessed', async () => {
+    const { moderator, notice, target } = await createCopyrightRestorationHoldFixture().then(
+      fixture => ({
+        ...fixture,
+        target: fixture.aggregate.targets[0]!,
+      }),
+    )
+    const filing = await recordCourtFiling(notice.id)
+    expect((await readCopyrightStaffQueueCursorRows([notice.id]))[0]?.urgency).toBe(1)
+    await appendCopyrightLegalHoldAssessment({
+      currentUser: moderator,
+      submissionId: filing.id,
+      assessedAt: new Date(),
+      fromOriginalClaimant: false,
+      proceedingKind: null,
+      ccbClaimKind: null,
+      commencedAt: null,
+      receivedByDesignatedAgentAt: null,
+      sameMaterial: false,
+      targetIds: [target.id],
+      rationale: 'No qualifying proceeding.',
+    })
+    expect((await readCopyrightStaffQueueCursorRows([notice.id]))[0]?.urgency).not.toBe(1)
+  })
+
+  it('does not block restoration when an otherwise qualifying filing was not from the original claimant', async () => {
+    const { deadline, moderator, notice, now, restriction, target } = await openRestorationWindow()
+    const filing = await recordCourtFiling(notice.id)
+    await appendCopyrightLegalHoldAssessment({
+      currentUser: moderator,
+      submissionId: filing.id,
+      assessedAt: now,
+      fromOriginalClaimant: false,
+      proceedingKind: 'federal_court',
+      ccbClaimKind: null,
+      commencedAt: new Date(now.getTime() - 120_000),
+      receivedByDesignatedAgentAt: new Date(now.getTime() - 60_000),
+      sameMaterial: true,
+      targetIds: [target.id],
+      rationale: 'Sender is not claimant or authorised agent.',
+    })
+    expect(
+      (
+        await createEligibleCopyrightRestoreIntent({
+          noticeId: notice.id,
+          targetId: target.id,
+          restrictionId: restriction.id,
+          deadlineId: deadline.id,
+          expectedPlacementRevision: target.placement_revision,
+          now,
+        })
+      ).action,
+    ).toBe('restore')
+  })
+
   it('blocks the case until an assessment records that the filing does not qualify', async () => {
     const { deadline, moderator, notice, now, restriction, target } = await openRestorationWindow()
     const filing = await recordCourtFiling(notice.id)
