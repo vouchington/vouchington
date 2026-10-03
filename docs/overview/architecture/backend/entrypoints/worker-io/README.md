@@ -18,9 +18,10 @@ Local development does not start this process. CPU-only queues must not be added
 which runs every I/O-capable queue, including the SQS consumers. The entrypoint resolves the class to
 an explicit include list from the policy, so infrastructure passes only the class. `all` and `cpu`
 are rejected because they would run CPU-only queues here. `QUEUES` remains the name-level selector
-for local development and image smoke tests, and setting both variables, or an unknown class, fails at
-startup. Schedules follow the same selection, so a schedule for an I/O-capable queue is defined
-here. `queue-class.test.mts` pins the class to the policy's queues and schedules.
+for local development and image smoke tests, but it may name only queues this entrypoint defines
+(a CPU-only queue is unknown here). Setting both variables, an unknown class, or an unknown `QUEUES`
+name fails at startup. Schedules follow the same selection, so a schedule for an I/O-capable queue is
+defined here. `queue-class.test.mts` pins the class to the policy's queues and schedules.
 
 ## Files
 

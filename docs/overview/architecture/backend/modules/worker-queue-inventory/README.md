@@ -12,7 +12,9 @@ administration.
   class to an explicit include list from the policy (`all` is the CPU-only plus I/O-capable queues,
   `cpu` the CPU-only queues, `io` the I/O-capable queues) and `resolveQueueSelection` applies the
   entrypoint's accepted classes, rejecting unknown classes and `WORKER_QUEUE_CLASS` combined with
-  `QUEUES`. Infrastructure passes only the class; the app owns the queue lists.
+  `QUEUES`. Without a class it also rejects any `QUEUES` name (included or excluded) that the
+  caller's known queue names do not contain. Infrastructure passes only the class; the app owns the
+  queue lists.
 - `UNIVERSAL_WORKER_QUEUE_NAMES` owns queues loaded outside placement selection.
 - `SQS_CONSUMER_QUEUE_NAMES` projects the policy's SQS classification for queues that are not GlideMQ queues.
 - `policyManagedGlideQueueNames()` is the exact API dashboard inventory contract.

@@ -1,9 +1,8 @@
 import Sentry from './sentry.mts'
 
 // Log to console when Sentry is disabled (development, CI) but not in test mode.
-// Mirrors the identical pattern in index.mts, valkey-saturation.mts, and
-// worker-queue-topology-skew.mts — kept local to avoid changing the export surface of
-// on-error/index.mts.
+// Mirrors the identical pattern in index.mts and valkey-saturation.mts — kept local to avoid
+// changing the export surface of on-error/index.mts.
 function shouldLogToConsole(): boolean {
   const env = process.env.NODE_ENV || 'development'
   if (env === 'test') return false

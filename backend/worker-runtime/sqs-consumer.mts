@@ -1,7 +1,6 @@
 import { EventEmitter } from 'node:events'
 import { DeleteMessageCommand, ReceiveMessageCommand } from '@aws-sdk/client-sqs'
 import { SQSClient } from '@modules/aws'
-import { recordWorkerQueueTopologySkew } from '@modules/on-error'
 import { isQueueSelected, parseQueueSelection } from '@vouchington/worker-runtime'
 
 const MAX_NUMBER_OF_MESSAGES = 10
@@ -37,21 +36,17 @@ export type SqsConsumerDefinition = {
 
 // `queues` is the process's resolved queue selection (`resolveQueueSelection` in
 // worker-queue-class.mts), passed explicitly so the environment is read in exactly one place.
+// That function already rejected any name no runtime in this process knows. The selection is shared
+// with the glide-mq workers, so a name that isn't an SQS consumer is expected here and ignored.
 export function selectedSqsConsumerDefinitions(
   definitions: SqsConsumerDefinition[],
   queues: string | undefined,
-  onUnknownIncludes: (unknownQueueNames: readonly string[]) => void = recordWorkerQueueTopologySkew,
-  // Queue names selected via the same queue selection but consumed by a sibling runtime in this
-  // process (e.g. glide-mq workers in worker-runtime.mts), not by any SqsConsumerDefinition here.
-  // Mirrors worker-runtime.mts's identically-named parameter for the same reason: a queue class
-  // puts every policy-known queue name into one include list shared by both runtimes.
-  queueNamesOwnedByOtherRuntimes: readonly string[] = [],
 ): SqsConsumerDefinition[] {
-  const knownQueueNames = [...definitions.map(d => d.queueName), ...queueNamesOwnedByOtherRuntimes]
-  const selection = parseQueueSelection(queues, knownQueueNames, {
-    dropUnknownIncludes: true,
-    onUnknownIncludes,
-  })
+  const selection = parseQueueSelection(
+    queues,
+    definitions.map(definition => definition.queueName),
+    { dropUnknownIncludes: true },
+  )
   return definitions.filter(definition => {
     if (definition.requiresExplicitInclusion && selection.mode !== 'include') return false
     return isQueueSelected(selection, definition.queueName)
@@ -61,16 +56,9 @@ export function selectedSqsConsumerDefinitions(
 export function loadSqsConsumers(
   definitions: SqsConsumerDefinition[],
   queues: string | undefined,
-  onUnknownIncludes: (unknownQueueNames: readonly string[]) => void = recordWorkerQueueTopologySkew,
-  queueNamesOwnedByOtherRuntimes: readonly string[] = [],
 ): Promise<SqsConsumer[]> {
   return Promise.all(
-    selectedSqsConsumerDefinitions(
-      definitions,
-      queues,
-      onUnknownIncludes,
-      queueNamesOwnedByOtherRuntimes,
-    ).map(definition => definition.load()),
+    selectedSqsConsumerDefinitions(definitions, queues).map(definition => definition.load()),
   ).then(consumers => consumers.filter(consumer => consumer != null))
 }
 

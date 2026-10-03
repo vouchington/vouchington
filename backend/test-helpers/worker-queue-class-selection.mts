@@ -49,7 +49,6 @@ export function registerWorkerQueueClassTests(options: {
           .filter(name => workerQueuePolicy.sqsConsumerQueues.includes(name))
           .toSorted(),
       )
-      expect(outcome.unknownIncludes).toEqual([])
     },
   )
 
@@ -141,12 +140,26 @@ export function registerWorkerQueueClassTests(options: {
     )
   })
 
-  test('leaves QUEUES-only selection unchanged: unknown included names are dropped and reported', async () => {
-    const outcome = await runEntrypoint(initializeEntrypoint, { QUEUES: 'emails,retired-queue' })
+  test.each([
+    ['an included name', 'emails,retired-queue'],
+    ['an excluded name', '-emails,-retired-queue'],
+  ])(
+    'rejects QUEUES naming an unknown queue (%s) before loading anything',
+    async (_label, queues) => {
+      const outcome = await runEntrypoint(initializeEntrypoint, { QUEUES: queues })
 
-    expect(outcome.failure).toBeUndefined()
-    expect(loadedQueues(outcome)).toEqual(['emails'])
-    // Both runtimes parse the same list, so each reports the dropped name.
-    expect(new Set(outcome.unknownIncludes.flat())).toEqual(new Set(['retired-queue']))
-  })
+      expectFailedBeforeLoading(outcome)
+      expect(outcome.failure).toMatchObject({ code: 'UNKNOWN_QUEUE_NAMES' })
+    },
+  )
+
+  test.each(['heartbeat', '-heartbeat'])(
+    'accepts QUEUES=%s: the universal worker is a known queue that bypasses selection',
+    async queues => {
+      const outcome = await runEntrypoint(initializeEntrypoint, { QUEUES: queues })
+
+      expect(outcome.failure).toBeUndefined()
+      expect(outcome.reportedErrors).toEqual([])
+    },
+  )
 }

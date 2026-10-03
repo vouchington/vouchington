@@ -38,35 +38,14 @@ describe('selectedSqsConsumerDefinitions', () => {
     expect(names).not.toContain('bedrock-batch-sqs')
   })
 
-  it('drops an unknown include-mode queue name instead of throwing, and reports it', () => {
-    const onUnknownIncludes = vi.fn<(unknownQueueNames: readonly string[]) => void>()
-    const selected = selectedSqsConsumerDefinitions(
-      DEFINITIONS,
-      'bedrock-batch-sqs,queue-monitoring',
-      onUnknownIncludes,
-    )
+  it('ignores a selected name that is not an SQS consumer, such as a sibling glide-mq queue', () => {
+    // A queue class puts every policy queue name into one include list shared by both runtimes, so
+    // this runtime sees glide-mq names it never implements. Unknown names were already rejected
+    // when the selection was resolved.
+    const selected = selectedSqsConsumerDefinitions(DEFINITIONS, 'bedrock-batch-sqs,emails')
     const names = selected.map(d => d.queueName)
 
     expect(names).toEqual(['bedrock-batch-sqs'])
-    expect(onUnknownIncludes).toHaveBeenCalledExactlyOnceWith(['queue-monitoring'])
-  })
-
-  it('does not report a queue name owned by a sibling runtime as unknown, and does not select it', () => {
-    // Regression: a queueClass: 'all' deployment puts every policy-known queue name into one
-    // QUEUES include list, including glide-mq queue names this SqsConsumerDefinition array never
-    // implements. Without queueNamesOwnedByOtherRuntimes those would be reported as topology skew
-    // on every boot.
-    const onUnknownIncludes = vi.fn<(unknownQueueNames: readonly string[]) => void>()
-    const selected = selectedSqsConsumerDefinitions(
-      DEFINITIONS,
-      'bedrock-batch-sqs,emails',
-      onUnknownIncludes,
-      ['emails'],
-    )
-    const names = selected.map(d => d.queueName)
-
-    expect(names).toEqual(['bedrock-batch-sqs'])
-    expect(onUnknownIncludes).not.toHaveBeenCalled()
   })
 
   it('calls load on selected definitions and returns their resolved consumers', async () => {

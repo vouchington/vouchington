@@ -4,9 +4,8 @@ Source entrypoint: [backend/worker-runtime/README.md](../../../../../backend/wor
 
 Shared Vouchington composition layer loaded by both `worker-cpu` and `worker-io` entrypoints. The
 published `@vouchington/worker-runtime` package owns generic queue parsing, GlideMQ worker
-selection/loading, and schedule registration. This package injects Vouchington topology-skew
-reporting and retains Vouchington-specific SQS, observability, lifecycle, inventory, and universal
-worker composition.
+selection/loading, and schedule registration. This package retains Vouchington-specific SQS,
+observability, lifecycle, inventory, and universal worker composition.
 
 ## Worker Loading
 
@@ -26,8 +25,10 @@ path reads `process.env.QUEUES` itself. `WORKER_QUEUE_CLASS` (`all`, `cpu`,
 `io`) expands to an explicit include list from the policy, which both reaches queues that require
 explicit inclusion and lets one list select SQS consumers alongside GlideMQ workers. Each
 entrypoint states which classes it accepts (`worker-cpu`: `all`, `cpu`; `worker-io`: `io`). Without
-a class, `QUEUES` is used as before. Setting both, an unknown class, or a class the entrypoint does
-not accept fails at startup.
+a class, `QUEUES` selects queues by name, and every name it lists (an include `name` or an exclude
+`-name`) must be a queue this process defines: its worker definitions, SQS consumer definitions, or
+universal workers. Setting both, an unknown class, a class the entrypoint does not accept, or a
+`QUEUES` name the process does not know fails at startup with an error listing the unknown names.
 
 ### Universal Workers
 
@@ -49,9 +50,10 @@ policy-managed queue for cross-cutting administration such as Valkey diagnostics
 ## Entrypoint Lifecycle
 
 `lifecycle.mts` owns the startup sequence shared by the CPU and IO entrypoints. It derives the
-cross-runtime queue exclusions, loads policy workers, universal workers, and SQS consumers in
-parallel, then returns a starter that wires observability and runs schedule registration alongside
-service setup. Entrypoints provide only their definitions and optional process-specific hooks.
+queues the process can run, resolves and validates the queue selection against them, loads policy
+workers, universal workers, and SQS consumers in parallel, then returns a starter that wires
+observability and runs schedule registration alongside service setup. Entrypoints provide only their
+definitions and optional process-specific hooks.
 
 ```mermaid
 flowchart LR
@@ -79,17 +81,16 @@ enforce class alignment, full coverage of the local entrypoints, and the invaria
 
 ## Files
 
-| File                    | Purpose                                                                |
-| ----------------------- | ---------------------------------------------------------------------- |
-| `lifecycle.mts`         | Shared worker loading, startup, reporting, and process hook sequence   |
-| `worker-runtime.mts`    | Vouchington topology-skew reporting adapter for package worker loading |
-| `universal-workers.mts` | `UNIVERSAL_WORKER_DEFINITIONS`, `loadUniversalWorkers`                 |
-| `observability.mts`     | `addWorkerEventListeners`, job-completion logging                      |
-| `scrub-job-data.mts`    | `scrubJobData` — PII/secret redaction for logged job payloads          |
-| `setup.mts`             | `setup` — Valkey/glide-mq connection initialization                    |
-| `logger.mts`            | Shared worker-runtime logger                                           |
-| `sqs-consumer.mts`      | Queue selection, loading, consumer factory, and lifecycle              |
-| `index.mts`             | Re-exports package queue/schedule contracts and local composition      |
+| File                    | Purpose                                                              |
+| ----------------------- | -------------------------------------------------------------------- |
+| `lifecycle.mts`         | Shared worker loading, startup, reporting, and process hook sequence |
+| `universal-workers.mts` | `UNIVERSAL_WORKER_DEFINITIONS`, `loadUniversalWorkers`               |
+| `observability.mts`     | `addWorkerEventListeners`, job-completion logging                    |
+| `scrub-job-data.mts`    | `scrubJobData` — PII/secret redaction for logged job payloads        |
+| `setup.mts`             | `setup` — Valkey/glide-mq connection initialization                  |
+| `logger.mts`            | Shared worker-runtime logger                                         |
+| `sqs-consumer.mts`      | Queue selection, loading, consumer factory, and lifecycle            |
+| `index.mts`             | Re-exports package queue/schedule contracts and local composition    |
 
 ## Observability
 
