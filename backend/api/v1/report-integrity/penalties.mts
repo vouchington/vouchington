@@ -1,6 +1,13 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { createPaginationParser } from '@modules/pagination'
+import {
+  createPaginationParser,
+  defineQueryContract,
+  queryEnum,
+  queryUuid,
+} from '@modules/pagination'
+import { apiQuery } from '../../response-contract.mts'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { isUUID } from '@modules/utils'
 import { currentUserCanApplyReportAbusePenalty } from '@services/report-integrity/authorization'
 import {
@@ -18,9 +25,15 @@ const penaltiesParser = createPaginationParser({
   cursor: { type: 'simple' },
   limit: { default: 25, max: 100 },
 })
+const penaltiesQuery = defineQueryContract({
+  status: queryEnum(['active', 'revoked']),
+  user_id: queryUuid(),
+  source_flag_id: queryUuid(),
+})
 
 // GET /api/v1/report-integrity/penalties
 app.route('/api/v1/report-integrity/penalties').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/report-integrity/penalties', penaltiesParser, penaltiesQuery)
   await requireAuthAndRateLimit(
     ctx,
     currentUserCanApplyReportAbusePenalty,
@@ -32,6 +45,19 @@ app.route('/api/v1/report-integrity/penalties').get(async (ctx: Context) => {
   ctx.assert(!status || status === 'active' || status === 'revoked', 422, 'Invalid status')
   ctx.assert(!user_id || isUUID(user_id), 422, 'Invalid user_id')
   ctx.assert(!source_flag_id || isUUID(source_flag_id), 422, 'Invalid source_flag_id')
+
+  const query = prepareQueryForValidation(ctx.query, {
+    ...penaltiesParser.queryContract,
+    ...penaltiesQuery.queryContract,
+  })
+  if (ctx.query.limit !== undefined) query.limit = limit
+  // Empty filters are accepted as absent by the existing handler.
+  const validationQuery = Object.fromEntries(
+    Object.entries(query).filter(([, value]) => value !== ''),
+  )
+  validateRequestContract(ctx, 'GET:/api/v1/report-integrity/penalties', {
+    query: validationQuery,
+  })
 
   const statusFilter = status === 'active' || status === 'revoked' ? status : undefined
   const result = await getReportAbusePenalties({

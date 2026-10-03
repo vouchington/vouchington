@@ -1,6 +1,8 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { createPaginationParser } from '@modules/pagination'
+import { createPaginationParser, defineQueryContract, queryEnum } from '@modules/pagination'
+import { apiQuery } from '../../response-contract.mts'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { isUUID } from '@modules/utils'
 import {
   currentUserCanApplyVoteRingPenalty,
@@ -27,9 +29,11 @@ const flagsParser = createPaginationParser({
   cursor: { type: 'simple' },
   limit: { default: 25, max: 100 },
 })
+const flagsQuery = defineQueryContract({ status: queryEnum(INTEGRITY_FLAG_STATUSES) })
 
 // GET /api/v1/vote-integrity/flags
 app.route('/api/v1/vote-integrity/flags').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/vote-integrity/flags', flagsParser, flagsQuery)
   await requireAuthAndRateLimit(
     ctx,
     currentUserCanReviewVoteIntegrityFlags,
@@ -41,6 +45,15 @@ app.route('/api/v1/vote-integrity/flags').get(async (ctx: Context) => {
   const statusFilter = INTEGRITY_FLAG_STATUSES.includes(status as IntegrityFlagStatus)
     ? (status as IntegrityFlagStatus)
     : undefined
+  const query = prepareQueryForValidation(ctx.query, {
+    ...flagsParser.queryContract,
+    ...flagsQuery.queryContract,
+  })
+  if (ctx.query.limit !== undefined) query.limit = limit
+  const validationQuery = Object.fromEntries(
+    Object.entries(query).filter(([key]) => key !== 'status' || statusFilter !== undefined),
+  )
+  validateRequestContract(ctx, 'GET:/api/v1/vote-integrity/flags', { query: validationQuery })
 
   const result = await getVoteIntegrityFlags({
     status: statusFilter,

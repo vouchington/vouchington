@@ -24,7 +24,12 @@ import { searchUrls } from '@services/urls/search'
 import { searchRssFeeds } from '@services/rss-feeds'
 import { proxyRssFeedCoverArt } from '@services/rss-feeds/proxy-cover-art'
 import { isUUID } from '@modules/utils'
-import { createPaginationParser } from '@modules/pagination'
+import {
+  createPaginationParser,
+  defineQueryContract,
+  queryInteger,
+  queryString,
+} from '@modules/pagination'
 import { isAdminUser } from '@services/users'
 import { apiQuery, apiResponse } from '../../response-contract.mts'
 import {
@@ -39,13 +44,25 @@ import { readHostnameChanges } from './hostname-update.mts'
 import type { UpdateHostnameBody } from './hostname-update-types.mts'
 import './hostname-vote-routes.mts'
 
+const blockedHostnamesQuery = defineQueryContract({
+  limit: queryInteger({ minimum: 1, maximum: 100, default: 25 }),
+  after: queryString(),
+})
+
 // GET /api/v1/hostnames/blocked - Admin: list all site-wide blocked hostnames
 app.route('/api/v1/hostnames/blocked').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/hostnames/blocked', blockedHostnamesQuery)
   await requireAuthAndRateLimit(ctx, isAdminUser, 'GET:/api/v1/hostnames/blocked')
 
   const rawLimit = parseInt(ctx.query.limit as string, 10)
-  const limit = Number.isFinite(rawLimit) ? rawLimit : 25
+  const limit = Math.max(1, Math.min(100, Number.isFinite(rawLimit) ? rawLimit : 25))
   const after = ctx.query.after as string | undefined
+  validateRequestContract(ctx, 'GET:/api/v1/hostnames/blocked', {
+    query: {
+      limit,
+      ...(after ? { after } : {}),
+    },
+  })
 
   const { results, page_info } = await searchBlockedHostnames({ limit, after })
   ctx.json({ results, page_info })

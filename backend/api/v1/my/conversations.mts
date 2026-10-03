@@ -15,6 +15,8 @@ import {
 } from '@services/conversations-messages'
 import { getConversationMessagesByConversationId } from '@services/conversations-messages/messages'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { apiQuery } from '../../response-contract.mts'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { assertNotSuspended } from '@services/users'
 import { assertDailySpendCapNotBreached } from '@services/ai-usage'
 import {
@@ -33,12 +35,16 @@ type UpdateConversationTitleRequest = { title: string }
 
 // GET /api/v1/my/conversations
 app.route('/api/v1/my/conversations').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/my/conversations', simplePaginationParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/conversations')
 
   const { after: encodedAfter, limit } = simplePaginationParser.parse(ctx.query)
   const after = encodedAfter
     ? decodeUuidCursor(encodedAfter, isSimpleCursor, 'Invalid conversation cursor')
     : undefined
+  const query = prepareQueryForValidation(ctx.query, simplePaginationParser.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = limit
+  validateRequestContract(ctx, 'GET:/api/v1/my/conversations', { query })
 
   const conversations = await getConversationsByCreatedById(currentUser.id, {
     after,
