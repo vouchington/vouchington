@@ -97,11 +97,41 @@ describe('dev/tmux-name', () => {
     const quotedGit = `'${realGit.replaceAll("'", "'\\''")}'`
     writeFileSync(
       join(dir, 'git'),
-      `#!/bin/sh\nGIT_TEST_ASSUME_DIFFERENT_OWNER=1 exec ${quotedGit} "$@"\n`,
+      `#!/bin/sh\nGIT_CONFIG_NOSYSTEM=1 GIT_TEST_ASSUME_DIFFERENT_OWNER=1 exec ${quotedGit} "$@"\n`,
       {
         mode: 0o755,
       },
     )
+    const ownerProbe = spawnSync(
+      realGit,
+      ['-C', join(worktree, 'dev'), 'rev-parse', '--show-toplevel'],
+      {
+        encoding: 'utf8',
+        env: {
+          PATH: process.env.PATH,
+          HOME: dir,
+          GIT_CONFIG_NOSYSTEM: '1',
+          GIT_CONFIG_GLOBAL: '/dev/null',
+          GIT_TEST_ASSUME_DIFFERENT_OWNER: '1',
+        },
+      },
+    )
+    const untrusted =
+      ownerProbe.status === 0
+        ? undefined
+        : run(['agent-workflow'], {
+            HOME: dir,
+            PATH: `${dir}:${process.env.PATH ?? ''}`,
+            AGENT_TMUX_WORKTREE: join(worktree, 'dev'),
+            FAKE_TMUX_PANE_PATH: join(worktree, 'dev', 'test-helpers'),
+          })
+    if (untrusted === undefined) {
+      console.warn(
+        'Git does not support GIT_TEST_ASSUME_DIFFERENT_OWNER; skipping untrusted assertion',
+      )
+    }
+    expect(untrusted?.status ?? 1).toBe(1)
+    expect(untrusted?.log ?? '').not.toContain('rename-window')
     execFileSync(realGit, [
       'config',
       '--file',
