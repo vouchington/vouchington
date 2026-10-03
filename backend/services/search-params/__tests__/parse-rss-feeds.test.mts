@@ -134,7 +134,7 @@ describe('parse-rss-feeds', () => {
     const getTopicIdsByAnyCachedBatchMock = vi
       .fn<typeof getTopicIdsByAnyCachedBatch>()
       .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([null])
 
     const { shouldReturnEmpty, searchOptions } = await parseRssFeedsSearchParams(
       { publisher_types: ['missing-type'] },
