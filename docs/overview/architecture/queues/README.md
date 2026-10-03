@@ -31,7 +31,8 @@ policy-managed queues.
 [`post-publication`](post-publication/README.md) is an IO worker queue with one global
 reconciliation ordering key. Its five-minute scheduler and operator backfill drain
 `post_publication_dirty_work`; the processor applies only replay-safe cache, topic-rating, and
-sitemap projections before its generation-fenced acknowledgement. See the
+sitemap projections, including landing-pages family refreshes for review targets, before its
+generation-fenced acknowledgement. See the
 [worker contract](workers/post-publication/README.md) for lease and retry semantics.
 The dispatcher uses an expiring throttle without a stable terminal job ID, keeping later operator
 and backfill triggers replayable even while completed job history is retained.

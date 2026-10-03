@@ -3,7 +3,8 @@
 Source entrypoint: [backend/workers/post-publication/README.md](../../../../../../backend/workers/post-publication/README.md)
 
 The worker serially drains coalesced publication repair work. It expands only current primary
-state, applies strict cache, rating, and sitemap effects, and advances the leased generation's
+state, applies strict cache, rating, and sitemap effects (including one landing-pages family refresh
+for each bounded page with review targets), and advances the leased generation's
 parent cursors only after those effects succeed. A failed effect leaves the repair request intact
 for a safe retry.
 

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { getCurrentUtcDay } from '@ts-shared/utils/dates'
 import {
   enqueueUpdateFamilySitemap,
+  enqueueUpdateLandingPagesSitemapForReconciliation,
   enqueueUpdatePostDaySitemapForReconciliation,
 } from './enqueues.mts'
 import { getSitemapsOrderingKeyForDay } from './config.mts'
@@ -62,5 +63,22 @@ describe('enqueues.generated', () => {
       })
       expect(job.opts.deduplication).toBeUndefined()
     }
+  })
+
+  it('accepts each reconciliation landing-pages rebuild despite the family throttle', async () => {
+    await enqueueUpdateFamilySitemap('landing-pages')
+    await enqueueUpdateLandingPagesSitemapForReconciliation()
+    await enqueueUpdateLandingPagesSitemapForReconciliation()
+
+    const jobs = (await Promise.all(QUEUE_STATES.map(state => sitemaps.getJobs(state)))).flat()
+    const matchingJobs = jobs.filter(
+      job =>
+        job.name === 'processUpdateFamilySitemap' &&
+        (job.data as { family?: string }).family === 'landing-pages',
+    )
+    expect(matchingJobs).toHaveLength(3)
+    expect(matchingJobs.filter(job => job.opts.deduplication === undefined)).toHaveLength(2)
+    for (const job of matchingJobs)
+      expect(job.opts.ordering).toEqual({ key: 'indexes', concurrency: 1 })
   })
 })
