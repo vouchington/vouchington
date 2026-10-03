@@ -5,6 +5,7 @@ export {
   getTestRelationDeletedAt,
   hasPostRelatedTopic,
   insertScoredPostTopicCategoryRelation,
+  listPostTopicCategoryRelationIds,
   setScoredPostTopicCategoryRelationScore,
   softDeleteScoredPostTopicCategoryRelation,
 } from './entities/entity-relations-posts.mts'

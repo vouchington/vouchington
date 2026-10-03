@@ -76,6 +76,16 @@ export async function countPostRelatedTopics(postId: string): Promise<number> {
   return rows[0]?.count ?? 0
 }
 
+/** Ids of every post→category→topic relation row of the post, whatever its deletion state. */
+export async function listPostTopicCategoryRelationIds(postId: string): Promise<string[]> {
+  const { rows } = await read<{ id: string }>(
+    sql`/* listPostTopicCategoryRelationIds */ SELECT id FROM `
+      .append(POST_TOPIC_CATEGORY_RELATION_TABLE)
+      .append(sql` WHERE subject_id = ${postId}`),
+  )
+  return rows.map(row => row.id)
+}
+
 export async function hasPostRelatedTopic(postId: string, topicId: string): Promise<boolean> {
   const rows = await getEntityRelation(POST_TOPIC_CATEGORY_RELATION_TABLE, postId, topicId)
   return rows.length > 0

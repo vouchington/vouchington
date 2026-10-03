@@ -11,6 +11,7 @@ import {
   hardDeleteTestPosts,
   hardDeleteTestTopics,
   insertTestTopicsAndExplicitPostCategories,
+  listPostTopicCategoryRelationIds,
   listTestPostPublicationImpactTopicIds,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
@@ -20,6 +21,7 @@ import {
   enableQueryCapture,
   stopTestQueryCapture,
   countCapturedQueriesByAnnotation,
+  filterCapturedQueriesByBoundIds,
 } from '@voucha/test-helpers/query-capture'
 
 describe('post update publication capture', () => {
@@ -85,12 +87,18 @@ describe('post update publication capture', () => {
     } finally {
       queries = stopTestQueryCapture()
     }
+    // Capture is process-global and this file shares a fork with live workers, so a debounced
+    // recompute that an earlier file left behind can fire inside the window: judge only the
+    // queries that bind this post's own category relations.
+    const relationIds = await listPostTopicCategoryRelationIds(post.id)
+    expect(relationIds).toHaveLength(1_001)
+    const ownQueries = filterCapturedQueriesByBoundIds(queries, relationIds)
     expect(
-      countCapturedQueriesByAnnotation(queries, 'updateEntityRelationVoteStatsIfChanged'),
+      countCapturedQueriesByAnnotation(ownQueries, 'updateEntityRelationVoteStatsIfChanged'),
     ).toBe(0)
     expect(
       countCapturedQueriesByAnnotation(
-        queries,
+        ownQueries,
         'updateEntityRelationElectionVoteStatsFromPrimaryBatch',
       ),
     ).toBe(2)
