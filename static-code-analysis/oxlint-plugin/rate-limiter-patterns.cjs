@@ -1,6 +1,5 @@
 'use strict'
 
-const { literalMemberCandidates } = require('./rate-limiter-literals.cjs')
 const { patternCandidateDefinitelyDefined } = require('./rate-limiter-pattern-defaults.cjs')
 const { patternRestBindingValues } = require('./rate-limiter-pattern-rest.cjs')
 

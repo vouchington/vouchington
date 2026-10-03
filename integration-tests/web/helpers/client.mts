@@ -157,10 +157,6 @@ export class WebIntegrationClient {
     this.cookies.clear()
   }
 
-  getCookie(name: string): string | undefined {
-    return this.cookies.get(name)
-  }
-
   setCookie(name: string, value: string): void {
     this.cookies.set(name, value)
   }

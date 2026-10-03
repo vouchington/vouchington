@@ -160,13 +160,6 @@ export class BatchFileBuilder {
       // Ignore errors
     }
   }
-  getFilePath(): string {
-    return this.filePath
-  }
-  getEntityIdsFilePath(): string {
-    return this.entityIdsFilePath
-  }
-
   getEntityCount(): number {
     return this.entityCount
   }
