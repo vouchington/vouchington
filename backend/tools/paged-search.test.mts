@@ -26,6 +26,17 @@ describe('findPageOrNull', () => {
     await expect(findPageOrNull(undefined, refuse(error))).rejects.toBe(error)
   })
 
+  it('turns an empty cursor into null without running the lookup', async () => {
+    let lookups = 0
+    const find = async () => {
+      lookups += 1
+      return { results: [] }
+    }
+
+    await expect(findPageOrNull('', find)).resolves.toBeNull()
+    expect(lookups).toBe(0)
+  })
+
   it('lets other statuses and non-HTTP errors propagate even with a cursor', async () => {
     const server = createHttpError(500, 'relevance_tier missing from query result')
     const plain = new Error('connection lost')

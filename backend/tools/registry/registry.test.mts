@@ -22,6 +22,7 @@ const NON_TOOL_FILES = new Set([
   'mcp-community-output.mts',
   'mcp-hostname-output.mts',
   'mcp-list-output.mts',
+  'mcp-notification-output.mts',
   'mcp-post-access.mts',
   'mcp-post-output.mts',
   'mcp-read-output.mts',
