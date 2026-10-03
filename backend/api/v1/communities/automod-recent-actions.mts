@@ -10,11 +10,17 @@ import {
 import {
   recordAutomodActionFeedback,
   searchRecentAutomodActions,
-  type AutomodFeedbackAction,
-  type AutomodFeedbackOutcome,
-  type RecentAutomodActionSourceType,
 } from '@services/moderation-training'
 import { communityAutomodActionsQuery } from './query-contracts-helpers.mts'
+import {
+  isAutomodFeedbackAction,
+  isAutomodFeedbackOutcome,
+  parseLimit,
+  parseMaxConfidence,
+  parsePostType,
+  parseSourceType,
+  parseWindowHours,
+} from './automod-recent-actions-helpers.mts'
 
 app.route('/api/v1/communities/:idOrSlug/automod/recent-actions').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/communities/:idOrSlug/automod/recent-actions', communityAutomodActionsQuery)
@@ -125,59 +131,3 @@ app
     ctx.setStatus(201)
     ctx.json({ feedback, applied_action: feedback.applied_action })
   })
-
-function parseWindowHours(value: unknown): number {
-  if (value === '24h') return 24
-  if (value === '7d') return 24 * 7
-  return 48
-}
-
-function parseLimit(value: unknown): number {
-  if (value === undefined) return 25
-  const limit = Number(value)
-  return Number.isFinite(limit) && limit > 0 ? Math.min(Math.floor(limit), 100) : 25
-}
-
-function parseMaxConfidence(value: unknown): number | null {
-  if (value === undefined || value === null || value === '') return null
-  const parsed = Number(value)
-  return Number.isFinite(parsed) ? parsed : null
-}
-
-function parseSourceType(value: unknown): RecentAutomodActionSourceType | null {
-  return typeof value === 'string' && isRecentAutomodActionSourceType(value) ? value : null
-}
-
-function parsePostType(value: unknown): string | null {
-  return typeof value === 'string' && isRecentAutomodPostType(value) ? value : null
-}
-
-function isRecentAutomodActionSourceType(value: string): value is RecentAutomodActionSourceType {
-  return (
-    value === 'agent_moderation' ||
-    value === 'openai_omni' ||
-    value === 'spam_detection' ||
-    value === 'community_prompt'
-  )
-}
-
-function isRecentAutomodPostType(value: string) {
-  return (
-    value === 'discussion' ||
-    value === 'review' ||
-    value === 'data_point' ||
-    value === 'story' ||
-    value === 'topic_recommendation' ||
-    value === 'comment' ||
-    value === 'article' ||
-    value === 'blog_post'
-  )
-}
-
-function isAutomodFeedbackOutcome(value: unknown): value is AutomodFeedbackOutcome {
-  return value === 'false_positive' || value === 'true_positive'
-}
-
-function isAutomodFeedbackAction(value: unknown): value is AutomodFeedbackAction {
-  return value === 'reinstate' || value === 'keep_removed' || value === 'label_only'
-}
