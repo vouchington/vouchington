@@ -24,7 +24,7 @@ const timedOut = dispatchJob([{ name: 'Dispatch session', conclusion: 'cancelled
 type Scenario = { dispatchResult: string; sessionId?: string; jobs: unknown[] | 'fail' }
 
 // Fake gh: the jobs lookup runs the workflow's real --jq filter through jq; every other call is
-// recorded so the test can see whether the failure comment was posted.
+// recorded so the test can see which comment was posted.
 function run({ dispatchResult, sessionId = '', jobs }: Scenario) {
   const dir = mkdtempSync(join(tmpdir(), 'merge-queue-ejection-escalate-'))
   const fixture = join(dir, 'jobs.json')
@@ -59,8 +59,13 @@ esac
         FAKE_CALLS: calls,
       },
     })
-    const posted = readFileSync(calls, 'utf8').includes('pr comment 5')
-    return { status: result.status, stdout: result.stdout, posted }
+    const recorded = readFileSync(calls, 'utf8')
+    return {
+      status: result.status,
+      stdout: result.stdout,
+      posted: recorded.includes('pr comment 5'),
+      marked: recorded.includes('merge-queue-ejection-triage pr='),
+    }
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
@@ -72,11 +77,12 @@ describe('merge-queue ejection escalate for a coalesced dispatch', () => {
     expect(escalate?.if).toContain("needs.dispatch.result == 'cancelled'")
   })
 
-  it('stays quiet when dispatch was cancelled with zero steps', () => {
+  it('posts an unmarked notice when dispatch was cancelled with zero steps', () => {
     const result = run({ dispatchResult: 'cancelled', jobs: [coalesced] })
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('::notice::Dispatch was cancelled by concurrency coalescing')
-    expect(result.posted).toBe(false)
+    expect(result.posted).toBe(true)
+    expect(result.marked).toBe(false)
   })
 
   it.each([
@@ -89,9 +95,13 @@ describe('merge-queue ejection escalate for a coalesced dispatch', () => {
     ['a dispatch failure', { dispatchResult: 'failure', jobs: [coalesced] }],
     ['a known session id', { dispatchResult: 'cancelled', sessionId: 's1', jobs: [coalesced] }],
     ['a render failure', { dispatchResult: 'skipped', jobs: [] }],
-  ] as const)('still comments for %s', (_name, scenario) => {
+  ] as const)('posts the failure comment for %s', (_name, scenario) => {
     const result = run(scenario as Scenario)
     expect(result.status).toBe(0)
+    expect(result.stdout).not.toContain(
+      '::notice::Dispatch was cancelled by concurrency coalescing',
+    )
     expect(result.posted).toBe(true)
+    expect(result.marked).toBe(false)
   })
 })
