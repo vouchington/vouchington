@@ -126,11 +126,7 @@ function rowValues(label: string) {
 }
 
 function makeTopic(overrides: Pick<Topic, 'id' | 'name' | 'slug'>): Topic {
-  const user = {
-    id: 'user-1',
-    username: 'tester',
-    display_name: 'Tester',
-  }
+  const user = { account_type: null, id: 'user-1', username: 'tester', display_name: 'Tester' }
 
   return {
     __entity_type: 'topic',

@@ -10,7 +10,7 @@ import {
 } from '@voucha/test-helpers'
 import type { DailyAiCostTotal } from '@services/ai-usage'
 import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
-import { upsertSystemAdministrator } from '@services/users/system-users'
+import { upsertSystemUser } from '@services/users/system-users'
 import { createStoryPost } from '@services/stories/story-posts'
 import type { SpendCapBreachContext } from '@modules/on-error/spend-cap-breach'
 import type { AIAgentJobData, StoryPostJobData } from '@queues/ai-agents/types'
@@ -82,7 +82,7 @@ function createDailyTotalLoader(totalMicrounits: number): () => Promise<DailyAiC
 
 describe('processAIAgentWorkerJob -- story-post spend-cap recovery exemption', () => {
   beforeAll(async () => {
-    await upsertSystemAdministrator('spend-cap-story-teller')
+    await upsertSystemUser('spend-cap-story-teller')
     feedId = (await createTestRssFeed({})).id
     urlId = await createTestUrlWithHostname()
   }, 30_000)

@@ -505,7 +505,8 @@ DO $$ BEGIN
   CREATE TYPE agent_types AS ENUM (
   'moderator',
   'autotagger',
-  'storyteller'
+  'storyteller',
+  'classifier'
 );
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
@@ -553,6 +554,38 @@ CREATE TABLE IF NOT EXISTS agents (
   deleted_at TIMESTAMPTZ,
   deleted_by_id UUID REFERENCES users ON DELETE SET NULL
 );
+
+-- Agent identities must always belong to automated platform accounts.
+CREATE OR REPLACE FUNCTION fn_require_agent_system_account()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE account_kind platform_account_kinds;
+BEGIN
+  SELECT platform_account_kind INTO account_kind FROM users WHERE id = NEW.system_user_id FOR UPDATE;
+  IF account_kind IS DISTINCT FROM 'system' THEN
+    RAISE EXCEPTION 'Agents require a system account' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE OR REPLACE TRIGGER trigger_agents_system_account
+BEFORE INSERT OR UPDATE OF system_user_id ON agents
+FOR EACH ROW EXECUTE FUNCTION fn_require_agent_system_account();
+
+CREATE OR REPLACE FUNCTION fn_validate_platform_account_kind_change()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.platform_account_kind = 'system' AND EXISTS (SELECT 1 FROM user_roles WHERE user_id = NEW.id) THEN
+    RAISE EXCEPTION 'System accounts cannot hold roles' USING ERRCODE = '23514';
+  END IF;
+  IF NEW.platform_account_kind IS DISTINCT FROM 'system' AND EXISTS (SELECT 1 FROM agents WHERE system_user_id = NEW.id) THEN
+    RAISE EXCEPTION 'Agents require a system account' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE OR REPLACE TRIGGER trigger_users_platform_account_kind
+BEFORE UPDATE OF platform_account_kind ON users
+FOR EACH ROW EXECUTE FUNCTION fn_validate_platform_account_kind_change();
 
 -- Index for finding active agents by type
 CREATE INDEX IF NOT EXISTS idx_agents__active_by_type

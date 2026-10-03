@@ -207,47 +207,47 @@ describe('PostDetailOverflowMenu', () => {
   })
 
   it('renders null when authenticated as the post owner with no special permissions', () => {
-    mockCurrentUser = { id: 'author-1', roles: [] } as User
+    mockCurrentUser = { account_type: null, id: 'author-1', roles: [] } as User
     const { container } = render(<PostDetailOverflowMenu post={basePost} />)
     expect(container.firstChild).toBeNull()
   })
 
   it('renders share and send items for authenticated non-owner on shareable post', () => {
-    mockCurrentUser = { id: 'viewer-1', roles: [] } as User
+    mockCurrentUser = { account_type: null, id: 'viewer-1', roles: [] } as User
     render(<PostDetailOverflowMenu post={basePost} />)
     expect(screen.getByTestId('follower-share-menu-share')).toBeDefined()
     expect(screen.getByTestId('follower-share-menu-send')).toBeDefined()
   })
 
   it('renders Report item for authenticated non-owner', () => {
-    mockCurrentUser = { id: 'viewer-1', roles: [] } as User
+    mockCurrentUser = { account_type: null, id: 'viewer-1', roles: [] } as User
     render(<PostDetailOverflowMenu post={basePost} />)
     expect(screen.getByTestId('report-menu-item')).toBeDefined()
   })
 
   it('renders Edit link when user can edit', () => {
-    mockCurrentUser = { id: 'author-1', roles: [] } as User
+    mockCurrentUser = { account_type: null, id: 'author-1', roles: [] } as User
     const post: Post = { ...basePost, can_edit_content: true }
     render(<PostDetailOverflowMenu post={post} />)
     expect(screen.getByRole('link', { name: /edit/i })).toBeDefined()
   })
 
   it('renders Delete item when user can delete', () => {
-    mockCurrentUser = { id: 'author-1', roles: [] } as User
+    mockCurrentUser = { account_type: null, id: 'author-1', roles: [] } as User
     const post: Post = { ...basePost, can_delete: true }
     render(<PostDetailOverflowMenu post={post} />)
     expect(screen.getByTestId('post-delete-trigger')).toBeDefined()
   })
 
   it('renders Lock item when user can lock', () => {
-    mockCurrentUser = { id: 'author-1', roles: ['administrator'] } as User
+    mockCurrentUser = { account_type: null, id: 'author-1', roles: ['administrator'] } as User
     const post: Post = { ...basePost, can_lock: true }
     render(<PostDetailOverflowMenu post={post} />)
     expect(screen.getByTestId('post-lock-button')).toBeDefined()
   })
 
   it('renders Unpublish item when user can unpublish and post has a community', () => {
-    mockCurrentUser = { id: 'author-1', roles: [] } as User
+    mockCurrentUser = { account_type: null, id: 'author-1', roles: [] } as User
     const post: Post = {
       ...basePost,
       community_id: 'community-1',
@@ -258,7 +258,7 @@ describe('PostDetailOverflowMenu', () => {
   })
 
   it('renders the More actions trigger button when any item is available', () => {
-    mockCurrentUser = { id: 'viewer-1', roles: [] } as User
+    mockCurrentUser = { account_type: null, id: 'viewer-1', roles: [] } as User
     render(<PostDetailOverflowMenu post={basePost} />)
     expect(screen.getByRole('button', { name: /more actions/i })).toBeDefined()
   })

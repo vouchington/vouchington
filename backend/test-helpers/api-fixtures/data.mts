@@ -4,6 +4,7 @@ export const pageInfo = { has_next_page: false, start_cursor: null, end_cursor: 
 
 export const user = {
   __entity_type: 'user',
+  account_type: null,
   id: 'user-1',
   username: 'testuser',
   roles: [],
@@ -33,8 +34,20 @@ export const topic = {
   referral_program_id: null,
   referral_program_slug: null,
   lingua_rs_detected_language: null,
-  created_by: { __entity_type: 'user', id: user.id, username: user.username, roles: [] },
-  updated_by: { __entity_type: 'user', id: user.id, username: user.username, roles: [] },
+  created_by: {
+    __entity_type: 'user',
+    account_type: null,
+    id: user.id,
+    username: user.username,
+    roles: [],
+  },
+  updated_by: {
+    __entity_type: 'user',
+    account_type: null,
+    id: user.id,
+    username: user.username,
+    roles: [],
+  },
 }
 
 const rssFeedTopic = {

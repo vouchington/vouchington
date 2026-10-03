@@ -79,7 +79,7 @@ export type BasicUser = {
   profile_image_id?: string | null
   profile_image_placement?: ImagePlacementTuple | null
   markdown?: string | null
-  is_agent?: boolean
+  account_type: import('@ts-shared/utils/account-type').AccountType
   verification_status?: IdentityVerificationStatus | null
   verified_badge_visible?: boolean | null
   verified_display_name?: string | null
@@ -89,9 +89,8 @@ export type PublicDisplayAccount = {
   name: string | null
 }
 
-export type PublicUser = Omit<BasicUser, 'individual_id' | 'is_agent'> & {
+export type PublicUser = Omit<BasicUser, 'individual_id'> & {
   display_account?: PublicDisplayAccount | null
-  is_official_account?: boolean
   public_verified_name_display?: PublicVerifiedNameDisplay | null
   lingua_rs_detected_language?: string | null
 }

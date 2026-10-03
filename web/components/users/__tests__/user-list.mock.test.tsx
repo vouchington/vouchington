@@ -55,15 +55,15 @@ vi.mock(import('@/components/shared/entity-bookmark-button'), () => ({
   ),
 }))
 
-vi.mock(import('@/components/shared/agent-badge'), () => ({
-  AgentBadge: () => <span data-testid='agent-badge' />,
+vi.mock(import('@/components/shared/user-account-badge'), () => ({
+  UserAccountBadge: () => <span data-testid='user-account-badge' />,
 }))
 
 describe('UserList — management list', () => {
   it('does not show row mute button when relationAction is set', async () => {
     render(
       <UserList
-        users={[{ id: 'user-other', username: 'bob' }]}
+        users={[{ account_type: null, id: 'user-other', username: 'bob' }]}
         emptyTitle='No users'
         emptyDescription='Nothing to show.'
         currentUserId='user-viewer'
@@ -83,7 +83,7 @@ describe('UserList — management list', () => {
   it('renders a card per user in searchMode', async () => {
     render(
       <UserList
-        users={[{ id: 'user-alice', username: 'alice' }]}
+        users={[{ account_type: null, id: 'user-alice', username: 'alice' }]}
         emptyTitle='No users'
         emptyDescription='Nothing to show.'
         searchMode

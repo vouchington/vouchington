@@ -6,7 +6,7 @@
 
 Each row describes one action on one entity: its UI label, predicate (from [entity-relations.md](../overview/architecture/entity-relations.md)), description, API endpoint, and primary component.
 
-Accounts with Voucha roles, `is_agent`, or reserved system usernames are **official accounts**. Official accounts are excluded from **sentiment trust-signal actions** (post/topic/feed votes, user vouch, reviews, data points, personal referral endorsements). They may vote on **structural entity relations** (tags, categories, FAQs, related links) and publish **official platform referral links** (admin-only, surfaced as "Use our official links"). See [Official Account Permissions](trust-safety/reference-trust-system-official-accounts-and-material-connections.md#official-account-permissions) for the full matrix.
+Official people and automated platform accounts are identified by public `account_type` (`official`, `system`, or `ai_agent`). All three kinds are excluded from **sentiment trust-signal actions** (post/topic/feed votes, user vouch, reviews, data points, personal referral endorsements). They may vote on **structural entity relations** (tags, categories, FAQs, related links); official administrators may publish **official platform referral links**. See [Official Account Permissions](trust-safety/reference-trust-system-official-accounts-and-material-connections.md#official-account-permissions).
 
 ### Contents
 

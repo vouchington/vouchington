@@ -168,6 +168,7 @@ vi.mock(
 )
 
 export const testUser: User = {
+  account_type: null,
   id: 'u1',
   username: 'testuser',
   email_address: 'tests+test@voucha.ai',

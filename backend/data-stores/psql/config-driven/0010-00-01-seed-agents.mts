@@ -12,8 +12,6 @@ const AGENT_SYSTEM_USERS = [
   BAN_EVASION_SYSTEM_USERNAME,
   'rss-feed-auto-updater',
   'story-teller',
-  // Official Voucha account — owns platform-level referral links.
-  'voucha',
   ...MODERATOR_CONFIGS.map(c => c.slug),
 ]
 
@@ -28,6 +26,24 @@ export default function generateSeedAgentsSQL(): string {
   // 2. Upsert each agent system user (no admin role).
   for (const username of AGENT_SYSTEM_USERS) {
     parts.push(buildSystemUserUpsertSQL(username))
+  }
+
+  parts.push(buildSystemUserUpsertSQL('voucha', 'official'))
+
+  // Classifier actors are AI accounts, independently of activation.
+  for (const username of [
+    'post-classifier',
+    'autotagger-classifier',
+    'story-clustering-classifier',
+    'rss-feed-categorizer',
+    'rss-feed-collaborative-categorizer',
+    'automod',
+  ]) {
+    parts.push(buildSystemUserUpsertSQL(username))
+    parts.push(`INSERT INTO agents (system_user_id, agent_type, created_by_id)
+      SELECT actor.id, 'classifier', (SELECT id FROM users WHERE username = 'system')
+      FROM users actor WHERE actor.username = '${username}' AND actor.platform_account_kind = 'system'
+      ON CONFLICT (system_user_id) DO UPDATE SET agent_type = 'classifier', deleted_at = NULL;`)
   }
 
   // 3. Upsert moderator agent rows.

@@ -1,5 +1,7 @@
+import { execFile } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
+import { promisify } from 'node:util'
 import { SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
 import { ALL_TOOLS } from '@voucha/tools/registry/index'
 import { isToolMcpEligible, listToolsForSurface } from '@voucha/tools/registry/select'
@@ -37,6 +39,16 @@ const toJson = (value: unknown): string => `${JSON.stringify(value, null, 2)}\n`
 // Regenerate every artifact below with `pnpm run mcp:catalog`.
 describe('generated MCP catalog artifacts', () => {
   const catalog = buildMcpCatalog(ALL_TOOLS)
+
+  it('the production CLI verifies the published artifacts without changing them', async () => {
+    const paths = [MCP_CATALOG_PATH, CATALOG_MARKDOWN_PATH, CLIENT_MANIFEST_PATH]
+    const before = await Promise.all(paths.map(path => readFile(path, 'utf8')))
+    await promisify(execFile)(process.execPath, [
+      repoPath('backend/services/mcp-tools/catalog/generate.mts'),
+      '--check',
+    ])
+    expect(await Promise.all(paths.map(path => readFile(path, 'utf8')))).toEqual(before)
+  })
 
   it('api-fixtures/v1/mcp.json matches the registry', async () => {
     await expect(await formatted(MCP_CATALOG_PATH, toJson(catalog))).toMatchFileSnapshot(

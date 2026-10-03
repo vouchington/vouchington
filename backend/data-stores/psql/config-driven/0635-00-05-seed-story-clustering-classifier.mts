@@ -56,7 +56,7 @@ export default function generateSeedStoryClusteringClassifierSQL(): string {
 INSERT INTO classifiers (slug, primitive, candidate_kind, activated_at, created_by_id)
 SELECT '${STORY_CLUSTERING_CLASSIFIER_SLUG}', 'choice', 'story', CURRENT_TIMESTAMP, u.id
 FROM users u
-WHERE u.username = '${STORY_CLUSTERING_CLASSIFIER_SYSTEM_USERNAME}' AND u.is_system = TRUE
+WHERE u.username = '${STORY_CLUSTERING_CLASSIFIER_SYSTEM_USERNAME}' AND u.platform_account_kind = 'system'
 ON CONFLICT (slug) DO NOTHING;
 
 UPDATE classifier_prompt_versions
@@ -81,7 +81,7 @@ SELECT
   c.id, $story_clustering_prompt$${PROMPT}$story_clustering_prompt$, '${MODEL_NAME}', '${MODEL_PROVIDER}',
   ${DEFAULT_LOWER_THRESHOLD}, ${DEFAULT_UPPER_THRESHOLD}, CURRENT_TIMESTAMP, u.id
 FROM classifiers c
-JOIN users u ON u.username = '${STORY_CLUSTERING_CLASSIFIER_SYSTEM_USERNAME}' AND u.is_system = TRUE
+JOIN users u ON u.username = '${STORY_CLUSTERING_CLASSIFIER_SYSTEM_USERNAME}' AND u.platform_account_kind = 'system'
 WHERE c.slug = '${STORY_CLUSTERING_CLASSIFIER_SLUG}'
 AND NOT EXISTS (
   SELECT 1 FROM classifier_prompt_versions pv

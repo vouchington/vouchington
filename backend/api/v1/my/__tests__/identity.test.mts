@@ -42,7 +42,7 @@ describe('GET /api/v1/my/identity', () => {
     expect(response.body.identity.id).toBe(user.id)
     expect(response.body.identity.username).toBe(user.username)
     expect(response.body.identity.email_address).toBeDefined()
-    expect(response.body.identity.is_official_account).toBe(false)
+    expect(response.body.identity.account_type).toBeNull()
   })
 })
 

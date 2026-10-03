@@ -32,7 +32,7 @@ vi.mock(
 describe('TopicRecommendationsTable', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    tableAuth.currentUser = { id: 'user-1', roles: [] } as User
+    tableAuth.currentUser = { account_type: null, id: 'user-1', roles: [] } as User
   })
 
   function renderTable({
@@ -44,7 +44,7 @@ describe('TopicRecommendationsTable', () => {
     isAdmin?: boolean
     tableData?: PostsResponseBody
   } = {}) {
-    tableAuth.currentUser = { id: currentUserId, roles: [] } as User
+    tableAuth.currentUser = { account_type: null, id: currentUserId, roles: [] } as User
     return render(
       <TopicRecommendationsTable
         data={tableData}

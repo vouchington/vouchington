@@ -124,7 +124,7 @@ Each story can have one "official" item — the canonical source (e.g., a compan
 
 ## Story Posts
 
-Each story can have one story post. Story posts are a dedicated post type (`post_type='story'`) created by the `@story-teller` system user. Any authenticated user can initiate story post creation.
+Each story can have one story post. Story posts are a dedicated post type (`post_type='story'`) created by the `@story-teller` system account, whose live agent gives it the public **AI Agent** author label. Any authenticated user can initiate story post creation.
 
 Story posts differ from regular posts:
 

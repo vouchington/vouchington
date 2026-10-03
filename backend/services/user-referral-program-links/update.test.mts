@@ -142,7 +142,7 @@ describe('update', () => {
       {
         status: 403,
         code: OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN,
-        message: 'Official accounts cannot edit personal referral-link endorsements.',
+        message: 'Official and automated accounts cannot edit personal referral-link endorsements.',
       },
     )
   })

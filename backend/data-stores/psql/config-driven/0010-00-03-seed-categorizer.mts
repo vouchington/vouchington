@@ -23,7 +23,7 @@ export default function generateSeedCategorizerSQL(): string {
 
 UPDATE users
 SET vote_weight = 0.01
-WHERE username = '${username}' AND is_system = TRUE;`,
+WHERE username = '${username}' AND platform_account_kind = 'system';`,
     )
     .join('\n\n')
 }

@@ -33,11 +33,11 @@ vi.mock(import('lucide-react'), () =>
 )
 
 vi.mock(
-  import('@/components/shared/agent-badge'),
+  import('@/components/shared/user-account-badge'),
   () =>
     ({
-      AgentBadge: () => null,
-    }) as unknown as typeof import('@/components/shared/agent-badge'),
+      UserAccountBadge: () => null,
+    }) as unknown as typeof import('@/components/shared/user-account-badge'),
 )
 
 vi.mock(import('@/components/shared/hide-button'), () => ({

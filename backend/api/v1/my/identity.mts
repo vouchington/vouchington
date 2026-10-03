@@ -2,7 +2,6 @@ import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { updateUsername, updateProfileImageId } from '@services/my/identity'
 import { assertNotSuspended } from '@services/users/suspension'
-import { isOfficialAccount } from '@services/users/authorization'
 import { getUserPrivateByAnyCached } from '@services/entity-fetch'
 import { updateUserFields } from '@services/users/update-fields'
 import type { OAuthProvider } from '@services/oauth'
@@ -25,7 +24,7 @@ app.route('/api/v1/my/identity').get(async (ctx: Context) => {
 
   ctx.json(
     apiResponse('GET:/api/v1/my/identity', {
-      identity: { ...identity, is_official_account: isOfficialAccount(identity) },
+      identity,
     }),
   )
 })
@@ -51,5 +50,5 @@ app.route('/api/v1/my/identity').patch(async (ctx: Context) => {
   }
 
   const identity = await getUserPrivateByAnyCached(currentUser.id)
-  ctx.json({ identity: { ...identity, is_official_account: isOfficialAccount(identity) } })
+  ctx.json({ identity })
 })

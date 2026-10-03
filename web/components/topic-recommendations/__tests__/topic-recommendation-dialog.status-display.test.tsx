@@ -37,7 +37,7 @@ const reviewerUsers: Record<string, PublicUser> = {
   'user-admin': {
     id: 'user-admin',
     username: 'adminuser',
-    is_official_account: true,
+    account_type: 'official',
     profile_image_id: null,
   },
 }

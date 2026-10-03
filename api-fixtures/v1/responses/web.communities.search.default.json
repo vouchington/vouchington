@@ -85,6 +85,7 @@
   ],
   "users": {
     "user-1": {
+      "account_type": null,
       "id": "user-1",
       "username": "testuser"
     }

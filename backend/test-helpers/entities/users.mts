@@ -115,8 +115,8 @@ export async function getTestUserRoleSlugs(userId: string): Promise<string[]> {
   return rows.map(row => row.slug)
 }
 
-// is_system = TRUE so callers that look this fixture up via getSystemUserByUsername /
-// getModerationSystemUserId / getRssFeedAutoUpdaterUserId (all is_system-gated to close the
+// platform_account_kind = 'system' so callers that look this fixture up via getSystemUserByUsername /
+// getModerationSystemUserId / getRssFeedAutoUpdaterUserId (all platform_account_kind-gated to close the
 // reserved-username squatting vector) resolve it. ON CONFLICT DO UPDATE self-heals a row that
 // db:migrate's real seed generators already created for a reserved username such as
 // MODERATION_SYSTEM_USERNAME, and always returns a row via RETURNING, so no SELECT fallback needed.
@@ -124,11 +124,13 @@ export async function createSystemUser(username: string): Promise<BasicUser> {
   assert(isSlug(username), `Username "${username}" must be a valid slug`)
   type Row = { id: string; username: string; use_display_name_from: string | null }
   const { rows } = await write<Row>(sql`/* createSystemUser */
-    INSERT INTO users (username, is_system) VALUES (${username}, TRUE)
+    INSERT INTO users (username, platform_account_kind) VALUES (${username}, 'system')
     ON CONFLICT ((LOWER(username))) WHERE username IS NOT NULL
-    DO UPDATE SET is_system = TRUE
-    WHERE users.is_system = TRUE
+    DO UPDATE SET platform_account_kind = 'system'
+    WHERE users.platform_account_kind = 'system'
     RETURNING id, username, use_display_name_from
   `)
-  return { ...rows[0]!, __entity_type: 'user', roles: [] } as BasicUser
+  const user = await getTestPrivateUserById(rows[0]!.id)
+  assert(user)
+  return user
 }

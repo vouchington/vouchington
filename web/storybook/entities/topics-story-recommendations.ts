@@ -94,11 +94,7 @@ export const rejectedRecommendationPost = {
 } satisfies (typeof posts)[number]
 
 export const storyReviewerUsers: Record<string, PublicUser> = {
-  'user-alex': {
-    id: 'user-alex',
-    username: 'alex',
-    profile_image_id: null,
-  },
+  'user-alex': { account_type: null, id: 'user-alex', username: 'alex', profile_image_id: null },
 }
 
 export const recommendationsMultiStatusResponse = {

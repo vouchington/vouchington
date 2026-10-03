@@ -130,7 +130,9 @@ export async function getCommunity(
 function selectCommunityWithOwner(select: SQLStatement): SQLStatement {
   return select
     .append(communityColumns('c'))
-    .append(', u.id AS owner_id, u.username AS owner_username')
+    .append(
+      ', u.id AS owner_id, u.username AS owner_username, (SELECT e.account_type FROM view_embedded_users e WHERE e.id = u.id) AS owner_account_type',
+    )
     .append(buildCommunityImagePlacementSelect())
     .append(' FROM communities c LEFT JOIN users u ON u.id = c.created_by_id')
 }

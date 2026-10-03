@@ -77,6 +77,7 @@ vi.mock(
 )
 
 const author = {
+  account_type: null,
   __entity_type: 'user' as const,
   id: 'author-1',
   username: 'story-teller',

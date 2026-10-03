@@ -61,6 +61,6 @@ export const topicResult = {
   hero_image_id: null,
   rewards_program_id: null,
   referral_program_id: null,
-  created_by: { id: 'user-1', display_name: null, display_name_url_id: null },
-  updated_by: { id: 'user-1', display_name: null, display_name_url_id: null },
+  created_by: { account_type: null, id: 'user-1', display_name: null, display_name_url_id: null },
+  updated_by: { account_type: null, id: 'user-1', display_name: null, display_name_url_id: null },
 }

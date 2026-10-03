@@ -29,7 +29,14 @@ function decodeOgPath(url: string): { pathname: string; params: unknown; sig: st
 
 function buildLandingPage(items: LandingPageItem[]): PublicLandingPage {
   return {
-    user: { id: 'user-1', roles: [], username: 'alice', display_name: 'Alice', markdown: '' },
+    user: {
+      account_type: null,
+      id: 'user-1',
+      roles: [],
+      username: 'alice',
+      display_name: 'Alice',
+      markdown: '',
+    },
     landing_page: {
       id: 'lp-1',
       user_id: 'user-1',

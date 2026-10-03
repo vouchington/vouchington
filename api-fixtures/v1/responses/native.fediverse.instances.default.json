@@ -69,6 +69,7 @@
       "created_at": "2026-01-01T00:00:00Z",
       "created_by": {
         "__entity_type": "user",
+        "account_type": null,
         "id": "user-1",
         "roles": [],
         "username": "testuser"
@@ -95,6 +96,7 @@
       "topic_type": "fediverse_instance",
       "updated_by": {
         "__entity_type": "user",
+        "account_type": null,
         "id": "user-1",
         "roles": [],
         "username": "testuser"
@@ -107,6 +109,7 @@
       "created_at": "2026-01-01T00:00:00Z",
       "created_by": {
         "__entity_type": "user",
+        "account_type": null,
         "id": "user-1",
         "roles": [],
         "username": "testuser"
@@ -133,6 +136,7 @@
       "topic_type": "fediverse_instance",
       "updated_by": {
         "__entity_type": "user",
+        "account_type": null,
         "id": "user-1",
         "roles": [],
         "username": "testuser"

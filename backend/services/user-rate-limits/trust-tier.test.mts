@@ -11,6 +11,7 @@ const TWENTY_FIVE_HOURS_AGO = new Date(Date.now() - 25 * 60 * 60 * 1000)
 function createMockUser(overrides: Partial<PrivateUser> = {}): PrivateUser {
   return {
     __entity_type: 'user',
+    account_type: null,
     id: overrides.id ?? uuidv7ForDate(TWENTY_FIVE_HOURS_AGO),
     roles: [],
     cards_visibility: 'everyone',

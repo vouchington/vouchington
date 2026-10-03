@@ -61,7 +61,7 @@ interface NewsItemCardProps {
   thumbnailUrl?: string
   /** Backend-selected crawl embed sidecar for this RSS item. */
   embed?: UrlEmbed
-  sharedByUser?: Pick<PublicUser, 'id' | 'username' | 'is_official_account'>
+  sharedByUser?: Pick<PublicUser, 'id' | 'username' | 'account_type'>
   sharedAt?: string
   /** Optional content at the bottom of the card. Accepts a ReactNode or a render-prop
    *  receiving `modalHref` (so callers can include a Show more link in the action row). */

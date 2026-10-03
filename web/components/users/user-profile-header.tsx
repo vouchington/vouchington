@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { UserAvatar } from '@/components/shared/user-avatar'
 import { RssFeedLink } from '@/components/shared/rss-feed-link'
-import { UserOfficialBadge } from '@/components/shared/user-official-badge'
+import { UserAccountBadge } from '@/components/shared/user-account-badge'
 import { Button } from '@/components/ui/button'
 import { MARKDOWN_CONTENT_FEATURES_UTM } from '@/components/shared/markdown-content-features'
 import { MarkdownContent } from '@/components/shared/markdown-content'
@@ -16,7 +16,7 @@ import { useAuth } from '@/lib/auth/context'
 import type { User, UserMetrics, ProfileLink } from '@/types/user'
 import { createUserPathname, userHref } from '@/lib/links/entity-href'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { isOfficialAccount } from '@/lib/auth/official-account'
+import { isPlatformAccount } from '@/lib/auth/account-type'
 import type { FollowButton as FollowButtonComponent } from '@/components/shared/follow-button'
 
 const FollowButton = dynamic<Parameters<typeof FollowButtonComponent>[0]>(() =>
@@ -30,8 +30,7 @@ interface UserProfileHeaderProps {
     | 'username'
     | 'profile_image_id'
     | 'profile_image_placement'
-    | 'is_official_account'
-    | 'is_agent'
+    | 'account_type'
     | 'display_account'
     | 'verification_status'
     | 'verified_badge_visible'
@@ -58,7 +57,6 @@ export function UserProfileHeader({
   const avatarLabel =
     user.username || displayName || t('extracted.users.userProfileHeader.user_b512d97e')
   const canFollow = currentUserId !== user.id
-  const showOfficialBadge = user.is_official_account ?? isOfficialAccount(user)
   const summaryItems = [
     metrics?.count.reviews
       ? t('shared.countLabel.format', { count: metrics.count.reviews, unit: 'review' })
@@ -104,10 +102,7 @@ export function UserProfileHeader({
                 })}
               </Link>
             )}
-            <UserOfficialBadge
-              isOfficial={showOfficialBadge}
-              isAgent={user.is_agent}
-            />
+            <UserAccountBadge accountType={user.account_type} />
             {user.verification_status === 'verified' && user.verified_badge_visible && (
               <IdentityVerifiedBadge />
             )}
@@ -135,7 +130,7 @@ export function UserProfileHeader({
                 entityId={user.id}
                 tooltip={t('extracted.users.userProfileHeader.theyLlBeNotifiedWhenYou_4020b06b')}
                 onChange={isFollowing => {
-                  if (isFollowing && currentUser && !isOfficialAccount(currentUser)) {
+                  if (isFollowing && currentUser && !isPlatformAccount(currentUser)) {
                     router.refresh()
                   }
                 }}

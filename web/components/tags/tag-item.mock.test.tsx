@@ -227,7 +227,7 @@ describe('TagItem — voting', () => {
     })
     const { unmount } = render(
       <AuthProvider
-        initialUser={{ id: 'official-1', roles: ['investor'], isOfficialAccount: true }}
+        initialUser={{ id: 'official-1', roles: ['investor'], account_type: 'official' }}
       >
         <TagItem
           relation={relation}
@@ -244,7 +244,7 @@ describe('TagItem — voting', () => {
     unmount()
     render(
       <AuthProvider
-        initialUser={{ id: 'official-1', roles: ['investor'], isOfficialAccount: true }}
+        initialUser={{ id: 'official-1', roles: ['investor'], account_type: 'official' }}
       >
         <TagItem
           relation={relation}
@@ -268,7 +268,7 @@ describe('TagItem — voting', () => {
     })
     render(
       <AuthProvider
-        initialUser={{ id: 'admin-1', roles: ['administrator'], isOfficialAccount: true }}
+        initialUser={{ id: 'admin-1', roles: ['administrator'], account_type: 'official' }}
       >
         <TagItem
           relation={relation}

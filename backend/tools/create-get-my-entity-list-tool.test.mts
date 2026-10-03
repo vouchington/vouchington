@@ -87,7 +87,12 @@ describe('createGetMyEntityListTool', () => {
         return Promise.resolve([])
       },
     })
-    const basicUser: BasicUser = { __entity_type: 'user', id: user.id, roles: [] }
+    const basicUser: BasicUser = {
+      __entity_type: 'user',
+      account_type: null,
+      id: user.id,
+      roles: [],
+    }
 
     await expect(tool.function(basicUser)({})).resolves.toEqual({ success: true, result: [] })
     expect(receivedUsers[0]?.email_address).toBe(user.email_address)

@@ -49,6 +49,7 @@
   },
   "membership": null,
   "user": {
+    "account_type": null,
     "id": "user-1",
     "username": "testuser"
   }

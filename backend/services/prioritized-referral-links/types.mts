@@ -1,3 +1,5 @@
+import type { AccountType } from '@ts-shared/utils/account-type'
+
 export type PrioritizedReferralLink = {
   id: string
   user_id: string | null // null for official links
@@ -15,6 +17,7 @@ export type PrioritizedReferralLink = {
 }
 
 export type ReferralLinkUser = {
+  account_type: AccountType
   id: string
   username: string
   display_name: string | null

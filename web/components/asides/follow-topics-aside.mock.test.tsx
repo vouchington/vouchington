@@ -57,7 +57,12 @@ describe('FollowTopicsAside', () => {
   })
 
   it('renders nothing when user already follows topics', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: [], username: 'alice' })
+    mockGetCurrentUser.mockResolvedValue({
+      account_type: null,
+      id: 'user-1',
+      roles: [],
+      username: 'alice',
+    })
     mockFollowsAnyTopic.mockResolvedValue(true)
     const result = await FollowTopicsAside()
     const { container } = render(result as ReactElement)
@@ -65,7 +70,12 @@ describe('FollowTopicsAside', () => {
   })
 
   it('renders follow topics nudge when user has not followed any topic', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: [], username: 'alice' })
+    mockGetCurrentUser.mockResolvedValue({
+      account_type: null,
+      id: 'user-1',
+      roles: [],
+      username: 'alice',
+    })
     mockFollowsAnyTopic.mockResolvedValue(false)
     const result = await FollowTopicsAside()
     render(result as ReactElement)
@@ -74,7 +84,12 @@ describe('FollowTopicsAside', () => {
   })
 
   it('links to /topics', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: [], username: 'alice' })
+    mockGetCurrentUser.mockResolvedValue({
+      account_type: null,
+      id: 'user-1',
+      roles: [],
+      username: 'alice',
+    })
     mockFollowsAnyTopic.mockResolvedValue(false)
     const result = await FollowTopicsAside()
     render(result as ReactElement)

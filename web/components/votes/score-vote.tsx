@@ -2,6 +2,7 @@
 'use client'
 
 import Link from 'next/link'
+import { isPlatformAccount } from '@/lib/auth/account-type'
 import { Button } from '@/components/ui/button'
 import { useOptionalAuth } from '@/lib/auth/context'
 import { useTranslations } from '@/lib/i18n/use-translations'
@@ -51,7 +52,7 @@ export function ScoreVote({ 'data-pw': dataPw = 'score-vote', ...props }: ScoreV
     onError: props.onError,
   })
   const choices = visiblePolicyChoices(policy, vote.currentVote)
-  if (auth?.currentUser?.isOfficialAccount && !props.allowOfficialAccounts) {
+  if (isPlatformAccount(auth?.currentUser) && !props.allowOfficialAccounts) {
     if (vote.currentVote === null) return null
     return (
       <ClearOnlyVote
@@ -93,7 +94,7 @@ export function ScoreVote({ 'data-pw': dataPw = 'score-vote', ...props }: ScoreV
   }
 
   const officialClear =
-    auth?.currentUser?.isOfficialAccount && vote.currentVote !== null ? (
+    isPlatformAccount(auth?.currentUser) && vote.currentVote !== null ? (
       <ClearButton
         dataPw={dataPw}
         disabled={props.disabled}

@@ -57,10 +57,10 @@ describe('post classifier config-driven seed (real DB)', () => {
       expect(offset).toBeGreaterThan(previousQuestionOffset)
       previousQuestionOffset = offset
     }
-    expect((await getLocalTestUserRawByUsername(POST_CLASSIFIER_SYSTEM_USERNAME))?.is_system).toBe(
-      true,
-    )
-    expect(await countLocalAgentsForSystemUsername(POST_CLASSIFIER_SYSTEM_USERNAME)).toBe(0)
+    expect(
+      (await getLocalTestUserRawByUsername(POST_CLASSIFIER_SYSTEM_USERNAME))?.platform_account_kind,
+    ).toBe('system')
+    expect(await countLocalAgentsForSystemUsername(POST_CLASSIFIER_SYSTEM_USERNAME)).toBe(1)
   })
 
   it('keeps manual candidate bounds for an unchanged prompt and rotates prompt history', async () => {

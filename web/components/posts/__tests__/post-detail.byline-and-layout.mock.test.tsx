@@ -226,6 +226,7 @@ describe('PostDetail byline and layout', () => {
       title: 'Linked author',
       created_by_id: 'user-abc',
       created_by: {
+        account_type: null,
         __entity_type: 'user' as const,
         id: 'user-abc',
         username: 'story-teller',

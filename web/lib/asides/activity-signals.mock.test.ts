@@ -19,9 +19,12 @@ const mockGetUserProfile = vi.mocked(getUserProfile)
 const mockGetMyLandingPages = vi.mocked(getMyLandingPages)
 const mockGetMyCommunities = vi.mocked(getMyCommunities)
 
-const testUser = { id: 'user-1', username: 'testuser', roles: [] } as Parameters<
-  typeof hasCreatedPost
->[0]
+const testUser = {
+  account_type: null,
+  id: 'user-1',
+  username: 'testuser',
+  roles: [],
+} as Parameters<typeof hasCreatedPost>[0]
 
 function makeProfileWithCount(count: {
   reviews?: number

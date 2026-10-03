@@ -15,6 +15,7 @@ function makeCommentPost(overrides: Partial<Post> = {}): Post {
     parent_id: 'root-1',
     created_by_id: 'user-1',
     created_by: {
+      account_type: null,
       __entity_type: 'user',
       id: 'user-1',
       username: 'alice',

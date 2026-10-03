@@ -46,8 +46,18 @@ function makeTopic(id: string): Topic {
     hero_image_id: null,
     rewards_program_id: null,
     referral_program_id: null,
-    created_by: { id: 'user-1', display_name: 'User', display_name_url_id: 'user' },
-    updated_by: { id: 'user-1', display_name: 'User', display_name_url_id: 'user' },
+    created_by: {
+      account_type: null,
+      id: 'user-1',
+      display_name: 'User',
+      display_name_url_id: 'user',
+    },
+    updated_by: {
+      account_type: null,
+      id: 'user-1',
+      display_name: 'User',
+      display_name_url_id: 'user',
+    },
   }
 }
 

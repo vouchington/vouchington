@@ -1,6 +1,7 @@
 {
   "identity": {
     "__entity_type": "user",
+    "account_type": null,
     "bluesky_account": {
       "did": "did:plc:z72i7hdynmk6r22z27h6tvur",
       "handle": "alice.bsky.social"
@@ -17,7 +18,6 @@
     "followers_visibility": "everyone",
     "follows_visibility": "everyone",
     "id": "user-abc",
-    "is_official_account": false,
     "likes_visibility": "everyone",
     "markdown": null,
     "membership_plan": null,

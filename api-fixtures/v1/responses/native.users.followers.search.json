@@ -10,6 +10,7 @@
   "results": [
     {
       "__entity_type": "user",
+      "account_type": null,
       "display_account": {
         "name": "Friendly User"
       },

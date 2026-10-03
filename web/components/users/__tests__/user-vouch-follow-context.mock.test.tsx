@@ -51,15 +51,13 @@ vi.mock(import('@/lib/api/server'), () => ({
 }))
 
 const sampleUser: PublicUser = {
+  account_type: null,
   id: 'user-2',
   username: 'voucher',
   profile_image_id: null,
 }
 
-const currentUser: User = {
-  id: 'me',
-  username: 'me',
-} as unknown as User
+const currentUser: User = { account_type: null, id: 'me', username: 'me' } as unknown as User
 
 const emptySection: FollowContextUsers = { total: 0, users: [] }
 

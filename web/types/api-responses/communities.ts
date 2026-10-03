@@ -1,3 +1,4 @@
+import type { AccountType } from '@ts-shared/utils/account-type'
 /* oxlint-disable max-lines -- community API response contracts stay colocated for cross-fixture exactness checks */
 import type * as Api from './shared'
 import type { PublicUrl } from './urls-onboarding-and-trends'
@@ -35,6 +36,7 @@ export interface CommunitiesSearchResult {
 }
 
 export interface CommunityOwner {
+  account_type: AccountType
   id: string
   username: string | null
 }

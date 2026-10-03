@@ -70,7 +70,7 @@ vi.mock(
   import('next/headers'),
   () => ({ headers: mockHeaders }) as unknown as typeof import('next/headers'),
 )
-vi.mock(import('@/lib/auth/official-account'), () => ({
+vi.mock(import('@/lib/auth/account-type'), () => ({
   isAdmin: mockIsAdmin,
   isModerationStaff: mockIsModerationStaff,
 }))

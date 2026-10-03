@@ -3,7 +3,7 @@
 -- edited-in-place: added ui_locale and language detection columns for bio
 -- edited-in-place: folded oauth-retention-cleanup-indexes idempotent
 -- edited-in-place: folded moderator/developer role seeds from 0380-00-00-moderator-role, 0400-00-00-developer-role
--- edited-in-place: added is_system flag for reserved system-username reclaim
+-- edited-in-place: classified reserved official and automated platform accounts
 -- edited-in-place: partitioned session_referral_attributions by RANGE (id)
 -- Merged from: 0001-00-00-users-and-auth.sql, 0002-00-00-oauth-urls.sql
 
@@ -19,6 +19,11 @@
 -- ============================================================================
 -- ENUMs
 -- ============================================================================
+
+DO $$ BEGIN
+  CREATE TYPE platform_account_kinds AS ENUM ('official', 'system');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 DO $$ BEGIN
   CREATE TYPE user_display_name_source AS ENUM (
@@ -129,7 +134,7 @@ CREATE TABLE IF NOT EXISTS users (
   username TEXT DEFAULT NULL,
   CHECK (username IS NULL OR char_length(username) <= 255),
   CHECK (username IS NULL OR username = TRIM(username)),
-  is_system BOOLEAN NOT NULL DEFAULT FALSE, -- TRUE only for platform/agent accounts; never set from any user-writable path
+  platform_account_kind platform_account_kinds, -- Reserved identity; never set from user-writable paths
 
   -- user profile
   markdown TEXT NOT NULL DEFAULT '',
@@ -265,7 +270,7 @@ CREATE INDEX IF NOT EXISTS users_lingua_rs_pending_idx
   WHERE lingua_rs_input_sha256 IS NULL;
 
 COMMENT ON TABLE users IS 'User accounts. Core identity table for all registered users.';
-COMMENT ON COLUMN users.is_system IS 'Marks a row as a system-owned account (for example, jong admin or autotagger). Reserved-username seed generators reclaim the username from any non-system holder before upserting here, and role or lookup gates require is_system = TRUE so a squatter can never inherit a system identity.';
+COMMENT ON COLUMN users.platform_account_kind IS 'Reserved platform identity: official for people, system for automation, NULL for members and the deleted tombstone.';
 COMMENT ON COLUMN users.hn_discussions IS 'Whether this user opts in to Hacker News discussion imports.';
 COMMENT ON COLUMN users.use_display_name_from IS 'Which source to use for the displayed name (username, facebook, x, etc.).';
 COMMENT ON COLUMN users.username IS 'Unique username chosen by the user. NULL if not yet set. Case-insensitive (stored lowercase).';
@@ -594,6 +599,22 @@ CREATE TABLE IF NOT EXISTS user_roles (
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Automated accounts never receive human/staff role authority.
+CREATE OR REPLACE FUNCTION fn_require_role_user_is_not_system()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE account_kind platform_account_kinds;
+BEGIN
+  SELECT platform_account_kind INTO account_kind FROM users WHERE id = NEW.user_id FOR UPDATE;
+  IF account_kind = 'system' THEN
+    RAISE EXCEPTION 'System accounts cannot hold roles' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE OR REPLACE TRIGGER trigger_user_roles_account_kind
+BEFORE INSERT OR UPDATE OF user_id ON user_roles
+FOR EACH ROW EXECUTE FUNCTION fn_require_role_user_is_not_system();
 
 CREATE OR REPLACE TRIGGER trigger_user_roles_updated_at
 BEFORE UPDATE ON user_roles

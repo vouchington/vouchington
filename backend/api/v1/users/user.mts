@@ -7,7 +7,6 @@ import {
   getPrivateUserByAny,
   getPrivateUserByIdOrSlug,
   isAdminUser,
-  isOfficialAccount,
   updateUser,
   deleteUser,
   assertNotSuspended,
@@ -110,7 +109,7 @@ app
     const body = (await ctx.request.json('1mb')) as UpdateUserOptions
     validateRequestContract(ctx, 'PATCH:/api/v1/users/:idOrSlug', { body })
     const updated = await updateUser(currentUser, ctx.params.idOrSlug!, body)
-    ctx.json({ user: { ...updated, is_official_account: isOfficialAccount(updated) } })
+    ctx.json({ user: updated })
   })
   .delete(async (ctx: Context) => {
     const currentUser = await requireAuthForSuspendedException(

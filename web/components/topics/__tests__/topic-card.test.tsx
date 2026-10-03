@@ -69,7 +69,7 @@ describe('TopicCard', () => {
 
   describe('hideBookmarkActions', () => {
     it('suppresses FollowButton and mute EntityBookmarkButton when hideBookmarkActions=true', () => {
-      setTopicCardUser({ id: 'user-1', roles: [] })
+      setTopicCardUser({ account_type: null, id: 'user-1', roles: [] })
       render(
         <TopicCard
           topic={mockTopic}
@@ -81,7 +81,7 @@ describe('TopicCard', () => {
     })
 
     it('renders FollowButton and mute EntityBookmarkButton when hideBookmarkActions=false and signed in', async () => {
-      setTopicCardUser({ id: 'user-1', roles: [] })
+      setTopicCardUser({ account_type: null, id: 'user-1', roles: [] })
       render(
         <TopicCard
           topic={mockTopic}

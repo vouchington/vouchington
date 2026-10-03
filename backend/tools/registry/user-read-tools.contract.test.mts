@@ -72,7 +72,7 @@ describe('get_user and search_users — real DB', () => {
           verification_status: null,
           verified_badge_visible: null,
           verified_display_name: null,
-          is_official_account: false,
+          account_type: null,
         },
       }
 
@@ -110,7 +110,7 @@ describe('get_user and search_users — real DB', () => {
           'verification_status',
           'verified_badge_visible',
           'verified_display_name',
-          'is_official_account',
+          'account_type',
         ].toSorted(),
       )
     })
@@ -195,7 +195,7 @@ describe('get_user and search_users — real DB', () => {
         verification_status: null,
         verified_badge_visible: null,
         verified_display_name: null,
-        is_official_account: false,
+        account_type: null,
       })
     })
 

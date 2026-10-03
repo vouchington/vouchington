@@ -87,7 +87,7 @@ describe('NewsItemCard rendering', () => {
     render(
       <NewsItemCard
         item={mockItem}
-        sharedByUser={{ id: 'user-1', username: 'sharer' }}
+        sharedByUser={{ account_type: null, id: 'user-1', username: 'sharer' }}
       />,
     )
     expect(screen.getByText('Shared by')).toBeDefined()

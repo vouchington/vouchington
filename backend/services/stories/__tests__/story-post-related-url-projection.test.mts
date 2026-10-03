@@ -8,7 +8,7 @@ import {
   insertTestStoryRssFeedItemsBatch,
   insertTestUrlDirect,
 } from '@voucha/test-helpers'
-import { getSystemUserByUsername, upsertSystemAdministrator } from '@services/users/system-users'
+import { getSystemUserByUsername, upsertSystemUser } from '@services/users/system-users'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { softDeleteEntityRelation } from '@services/entity-relations/delete'
@@ -22,7 +22,7 @@ let testUser: PrivateUser
 
 describe('story post related URL projection', () => {
   beforeAll(async () => {
-    await upsertSystemAdministrator('story-teller')
+    await upsertSystemUser('story-teller')
     testUser = await createTestUserDirect()
   })
 

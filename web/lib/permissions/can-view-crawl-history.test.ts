@@ -4,7 +4,7 @@ import type { User } from '@/types/user'
 import type { SubscriptionMembership } from '@/types/api-responses'
 
 function makeUser(overrides: Partial<User> = {}): User {
-  return { id: 'u1', roles: [], ...overrides }
+  return { account_type: null, id: 'u1', roles: [], ...overrides }
 }
 
 function makeMembership(overrides: Partial<SubscriptionMembership> = {}): SubscriptionMembership {
@@ -58,7 +58,7 @@ describe('canCurrentUserViewCrawlHistory', () => {
   it('allows administrators without a paid membership', () => {
     expect(
       canCurrentUserViewCrawlHistory(
-        makeUser({ roles: ['administrator'], membership_plan: null }),
+        makeUser({ account_type: null, roles: ['administrator'], membership_plan: null }),
         null,
       ),
     ).toBe(true)

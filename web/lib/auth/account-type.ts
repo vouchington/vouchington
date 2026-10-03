@@ -1,4 +1,4 @@
-export { isOfficialAccount } from '@ts-shared/utils/official-account'
+export { isPlatformAccount } from '@ts-shared/utils/account-type'
 
 export function isAdmin(user: { roles?: readonly string[] } | null | undefined): boolean {
   return !!user?.roles?.includes('administrator')

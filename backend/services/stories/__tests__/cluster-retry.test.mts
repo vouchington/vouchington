@@ -17,7 +17,7 @@ import {
   setTestItemStoryId,
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
-import { upsertSystemAdministrator } from '@services/users/system-users'
+import { upsertSystemUser } from '@services/users/system-users'
 import { settleStoryPostTopicVoteCapture } from '../../../test-helpers/services/stories/post-topic-vote-capture.mts'
 import {
   acknowledgePostPublicationDirtyWork,
@@ -52,7 +52,7 @@ describe('story clustering retry', () => {
   beforeAll(async () => {
     const feed = await createTestRssFeed({})
     feedId = feed.id
-    await upsertSystemAdministrator('story-teller')
+    await upsertSystemUser('story-teller')
   })
 
   it('replays post-commit completion when a story refresh is retried', async () => {

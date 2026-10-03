@@ -1,11 +1,11 @@
-import { isOfficialAccount } from './official-account'
+import type { AccountType } from '@ts-shared/utils/account-type'
 import { userHref } from '@/lib/links/entity-href'
 import type { ImagePlacementTuple, User } from '@/types/user'
 
 export interface ClientAuthUser {
   id: string
   roles: string[]
-  isOfficialAccount: boolean
+  account_type: AccountType
 }
 
 export interface ProfileMenuUser {
@@ -24,7 +24,7 @@ export function toClientAuthUser(user: User): ClientAuthUser {
   return {
     id: user.id,
     roles: user.roles,
-    isOfficialAccount: isOfficialAccount(user),
+    account_type: user.account_type,
   }
 }
 

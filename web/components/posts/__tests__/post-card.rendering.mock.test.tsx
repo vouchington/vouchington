@@ -207,7 +207,7 @@ describe('PostCard', () => {
   describe('hideBookmarkActions', () => {
     it('suppresses FollowerShareActions when hideBookmarkActions=true', () => {
       // viewer is authenticated and different from post owner so shareable=true normally
-      mockPostCardUser.current = { id: 'viewer-99', roles: [] } as User
+      mockPostCardUser.current = { account_type: null, id: 'viewer-99', roles: [] } as User
       render(
         <PostCard
           post={mockPost}
@@ -217,7 +217,7 @@ describe('PostCard', () => {
       expect(screen.queryByTestId('follower-share-actions')).toBeNull()
     })
     it('renders FollowerShareActions when hideBookmarkActions is not set and shareable', () => {
-      mockPostCardUser.current = { id: 'viewer-99', roles: [] } as User
+      mockPostCardUser.current = { account_type: null, id: 'viewer-99', roles: [] } as User
       render(<PostCard post={mockPost} />)
       expect(screen.getByTestId('follower-share-actions')).toBeDefined()
     })

@@ -42,10 +42,14 @@ export async function createLocalTestUserWithUsername(
 export async function getLocalTestUserRaw(userId: string): Promise<{
   id: string
   username: string | null
-  is_system: boolean
+  platform_account_kind: 'official' | 'system' | null
 } | null> {
-  const { rows } = await read<{ id: string; username: string | null; is_system: boolean }>(sql`
-    SELECT id, username, is_system FROM users WHERE id = ${userId}
+  const { rows } = await read<{
+    id: string
+    username: string | null
+    platform_account_kind: 'official' | 'system' | null
+  }>(sql`
+    SELECT id, username, platform_account_kind FROM users WHERE id = ${userId}
   `)
   return rows[0] ?? null
 }
@@ -55,10 +59,14 @@ export async function getLocalTestUserRaw(userId: string): Promise<{
 export async function getLocalTestUserRawByUsername(username: string): Promise<{
   id: string
   username: string | null
-  is_system: boolean
+  platform_account_kind: 'official' | 'system' | null
 } | null> {
-  const { rows } = await read<{ id: string; username: string | null; is_system: boolean }>(sql`
-    SELECT id, username, is_system FROM users WHERE username = ${username}
+  const { rows } = await read<{
+    id: string
+    username: string | null
+    platform_account_kind: 'official' | 'system' | null
+  }>(sql`
+    SELECT id, username, platform_account_kind FROM users WHERE username = ${username}
   `)
   return rows[0] ?? null
 }

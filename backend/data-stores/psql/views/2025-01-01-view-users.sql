@@ -58,31 +58,20 @@ CREATE OR REPLACE VIEW view_embedded_users AS
     ) AS profile_image_placement,
     ARRAY[]::text[] AS roles,
 
-    COALESCE(
-      (
-      users.username IN (
-        'system',
-        'autotagger',
-        'rss-feed-auto-updater',
-        'story-teller',
-        'voucha'
-      )
-      OR EXISTS (
-        SELECT 1
-        FROM user_roles
-        LEFT JOIN user_roles_types ON user_roles_types.id = user_roles.role_type_id
+    CASE
+      WHEN users.platform_account_kind = 'system' THEN
+        CASE WHEN EXISTS (
+          SELECT 1 FROM agents
+          WHERE agents.system_user_id = users.id AND agents.deleted_at IS NULL
+        ) THEN 'ai_agent' ELSE 'system' END
+      WHEN users.platform_account_kind = 'official' OR EXISTS (
+        SELECT 1 FROM user_roles
+        JOIN user_roles_types ON user_roles_types.id = user_roles.role_type_id
         WHERE user_roles.user_id = users.id
           AND user_roles_types.slug IN ('administrator', 'investor')
-      )
-      OR EXISTS (
-        SELECT 1
-        FROM agents
-        WHERE agents.system_user_id = users.id
-          AND agents.deleted_at IS NULL
-      )
-      ),
-      FALSE
-    ) AS is_official_account
+      ) THEN 'official'
+      ELSE NULL
+    END AS account_type
   FROM users
   WHERE users.deleted_at IS NULL
 ;
@@ -233,11 +222,7 @@ CREATE OR REPLACE VIEW view_users_private AS
       FROM github_accounts gha WHERE gha.user_id = users.id
     ) AS github_account,
 
-    EXISTS (
-      SELECT 1 FROM agents
-      WHERE agents.system_user_id = users.id
-        AND agents.deleted_at IS NULL
-    ) AS is_agent,
+    (SELECT e.account_type FROM view_embedded_users e WHERE e.id = users.id) AS account_type,
 
     paid_membership.plan AS membership_plan,
 

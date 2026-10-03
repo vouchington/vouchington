@@ -16,6 +16,7 @@ export const nativeUserProfileHeaderApiFixtureCases: ApiFixtureCase[] = [
     body: {
       user: {
         __entity_type: 'user',
+        account_type: null,
         id: 'user-abc',
         username: 'alice',
         profile_image_id: '00000000-0000-7000-8000-000000000201',
@@ -138,6 +139,7 @@ export const nativeUserProfileHeaderApiFixtureCases: ApiFixtureCase[] = [
     body: {
       user: {
         __entity_type: 'user',
+        account_type: null,
         id: 'user-restricted',
         username: 'restricted',
         profile_image_id: '00000000-0000-7000-8000-000000000201',

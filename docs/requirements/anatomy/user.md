@@ -141,3 +141,5 @@ Blocking a user implicitly removes any active follow on that user.
 - [post](./post.md) — posts authored by this user
 - [community](./community.md) — communities the user belongs to
 - [referral-link](./referral-link.md) — referral links owned by this user
+
+Public, embedded and private user projections share nullable `account_type` (`official`, `system`, `ai_agent`). It exposes affiliation, not private roles or linked-provider identities. See [account permissions](../trust-safety/reference-trust-system-official-accounts-and-material-connections.md#official-account-permissions).

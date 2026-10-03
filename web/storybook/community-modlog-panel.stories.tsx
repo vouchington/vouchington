@@ -53,6 +53,7 @@ const dataWithActions: ModlogResponseBody = {
   },
   users: {
     '019000000000000000000000021': {
+      account_type: null,
       id: '019000000000000000000000021',
       username: 'moderator_jane',
     },

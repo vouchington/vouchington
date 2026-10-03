@@ -37,16 +37,19 @@ const withStatsData: CommunityModeratorStatsResponseBody = {
   ],
   users: {
     'user-mod-1': {
+      account_type: null,
       id: 'user-mod-1',
       username: 'alice_mod',
       profile_image_id: null,
     },
     'user-mod-2': {
+      account_type: null,
       id: 'user-mod-2',
       username: 'bob_mod',
       profile_image_id: null,
     },
     'user-mod-3': {
+      account_type: null,
       id: 'user-mod-3',
       username: 'carol_mod',
       profile_image_id: null,
@@ -97,11 +100,13 @@ const withOtherActionsData: CommunityModeratorStatsResponseBody = {
   ],
   users: {
     'user-mod-1': {
+      account_type: null,
       id: 'user-mod-1',
       username: 'alice_mod',
       profile_image_id: null,
     },
     'user-mod-2': {
+      account_type: null,
       id: 'user-mod-2',
       username: 'bob_mod',
       profile_image_id: null,

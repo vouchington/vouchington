@@ -24,7 +24,7 @@ export async function getCommunitiesByIdBatch(
     )
     SELECT ${communityColumns('c')},
       u.id AS owner_id,
-      u.username AS owner_username,
+      u.username AS owner_username, (SELECT e.account_type FROM view_embedded_users e WHERE e.id = u.id) AS owner_account_type,
       input_data.input_order
     FROM communities c
     JOIN input_data ON input_data.input_value = c.id

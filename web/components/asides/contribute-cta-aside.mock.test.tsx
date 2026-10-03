@@ -54,7 +54,7 @@ describe('ContributeCtaAside', () => {
   })
 
   it('renders contribution links for authenticated users', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: [] })
+    mockGetCurrentUser.mockResolvedValue({ account_type: null, id: 'user-1', roles: [] })
     const result = await ContributeCtaAside()
     render(result as ReactElement)
     expect(screen.getByRole('heading', { name: 'Share your experience' })).toBeDefined()
@@ -64,7 +64,7 @@ describe('ContributeCtaAside', () => {
   })
 
   it('write a review link points to /reviews/create', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: [] })
+    mockGetCurrentUser.mockResolvedValue({ account_type: null, id: 'user-1', roles: [] })
     const result = await ContributeCtaAside()
     render(result as ReactElement)
     expect(screen.getByRole('link', { name: /Write a review/ }).getAttribute('href')).toBe(
@@ -73,7 +73,7 @@ describe('ContributeCtaAside', () => {
   })
 
   it('start a discussion link points to /discussions/create', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: [] })
+    mockGetCurrentUser.mockResolvedValue({ account_type: null, id: 'user-1', roles: [] })
     const result = await ContributeCtaAside()
     render(result as ReactElement)
     expect(screen.getByRole('link', { name: /Start a discussion/ }).getAttribute('href')).toBe(
@@ -82,7 +82,7 @@ describe('ContributeCtaAside', () => {
   })
 
   it('add a data point link points to /data-points/create', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: [] })
+    mockGetCurrentUser.mockResolvedValue({ account_type: null, id: 'user-1', roles: [] })
     const result = await ContributeCtaAside()
     render(result as ReactElement)
     expect(screen.getByRole('link', { name: /Add a data point/ }).getAttribute('href')).toBe(

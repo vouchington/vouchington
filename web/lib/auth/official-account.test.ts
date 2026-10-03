@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isAdmin, isModerationStaff } from './official-account'
+import { isAdmin, isModerationStaff } from './account-type'
 
 describe('isAdmin', () => {
   it('returns false for null', () => {

@@ -10,6 +10,7 @@ export const savedPostsEndCursor =
 
 const publicUser = (id: string) => ({
   __entity_type: 'user',
+  account_type: null,
   id,
   username: id,
   roles: [],

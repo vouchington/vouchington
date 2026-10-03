@@ -57,7 +57,12 @@ describe('FindPeopleAside', () => {
   })
 
   it('renders nothing when user already follows someone', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: [], username: 'alice' })
+    mockGetCurrentUser.mockResolvedValue({
+      account_type: null,
+      id: 'user-1',
+      roles: [],
+      username: 'alice',
+    })
     mockFollowsAnyUser.mockResolvedValue(true)
     const result = await FindPeopleAside()
     const { container } = render(result as ReactElement)
@@ -65,7 +70,12 @@ describe('FindPeopleAside', () => {
   })
 
   it('renders find people nudge when user follows no one', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: [], username: 'alice' })
+    mockGetCurrentUser.mockResolvedValue({
+      account_type: null,
+      id: 'user-1',
+      roles: [],
+      username: 'alice',
+    })
     mockFollowsAnyUser.mockResolvedValue(false)
     const result = await FindPeopleAside()
     render(result as ReactElement)
@@ -74,7 +84,12 @@ describe('FindPeopleAside', () => {
   })
 
   it('links to /users', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: [], username: 'alice' })
+    mockGetCurrentUser.mockResolvedValue({
+      account_type: null,
+      id: 'user-1',
+      roles: [],
+      username: 'alice',
+    })
     mockFollowsAnyUser.mockResolvedValue(false)
     const result = await FindPeopleAside()
     render(result as ReactElement)

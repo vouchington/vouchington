@@ -5,7 +5,7 @@ import {
   currentUserCanDeleteUser,
   currentUserCanUpdateUser,
   currentUserCanViewUserContent,
-  isOfficialAccount,
+  isPlatformAccount,
   isOwnerOrAdmin,
 } from './authorization.mts'
 
@@ -47,17 +47,16 @@ describe('authorization', () => {
     })
   })
 
-  describe('isOfficialAccount', () => {
-    it('returns false for anonymous users and normal users', () => {
-      expect(isOfficialAccount(null)).toBe(false)
-      expect(isOfficialAccount({ roles: [] })).toBe(false)
-      expect(isOfficialAccount({ roles: ['user'] })).toBe(false)
-    })
-
-    it('returns true for official role users, agents, and reserved system usernames', () => {
-      expect(isOfficialAccount({ roles: ['investor'] })).toBe(true)
-      expect(isOfficialAccount({ roles: [], is_agent: true })).toBe(true)
-      expect(isOfficialAccount({ roles: [], username: 'system' })).toBe(true)
+  describe('isPlatformAccount', () => {
+    it.each(['official', 'system', 'ai_agent'] as const)(
+      'restricts %s trust signals',
+      account_type => {
+        expect(isPlatformAccount({ account_type })).toBe(true)
+      },
+    )
+    it('permits member trust signals and rejects no anonymous identity', () => {
+      expect(isPlatformAccount(null)).toBe(false)
+      expect(isPlatformAccount({ account_type: null })).toBe(false)
     })
   })
 

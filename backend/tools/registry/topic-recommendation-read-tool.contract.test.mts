@@ -37,7 +37,7 @@ const asCaller = (user: TestUser, plan: 'plus' | null = null): McpContractCaller
 })
 
 const withoutUndocumentedUserFields = (user: Body) => {
-  const { display_account: _account, is_official_account: _official, ...documented } = user
+  const { display_account: _account, account_type: _accountType, ...documented } = user
   return documented
 }
 

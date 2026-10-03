@@ -85,10 +85,12 @@ export async function assertSharedSystemActor(
   await query(sql`/* lockClassifierTopicVoteActor */
     SELECT fn_lock_active_user_for_mutation(${sharedActorId}::uuid)
   `)
-  const { rows } = await query<{ is_system: boolean }>(sql`/* readClassifierTopicVoteActor */
-    SELECT is_system FROM users WHERE id = ${sharedActorId}::uuid
+  const { rows } = await query<{
+    platform_account_kind: 'official' | 'system' | null
+  }>(sql`/* readClassifierTopicVoteActor */
+    SELECT platform_account_kind FROM users WHERE id = ${sharedActorId}::uuid
   `)
-  if (!rows[0]?.is_system) {
+  if (rows[0]?.platform_account_kind !== 'system') {
     throw new Error('Classifier topic votes require a system actor')
   }
 }

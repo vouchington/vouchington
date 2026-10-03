@@ -11,7 +11,7 @@ import {
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
 import { createStoryPost } from '../story-posts.mts'
-import { upsertSystemAdministrator } from '@services/users/system-users'
+import { upsertSystemUser } from '@services/users/system-users'
 import type { PrivateUser } from '@services/users/types'
 
 function sha256(data: unknown): Buffer {
@@ -30,7 +30,7 @@ describe('adminAssignItemToStory', () => {
     ])
     feedId = feed.id
     urlId = testUrlId
-    await upsertSystemAdministrator('story-teller')
+    await upsertSystemUser('story-teller')
     storyPostUser = await createTestUserDirect()
   })
 

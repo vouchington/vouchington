@@ -20,7 +20,11 @@ test.describe('Storybook pure component stories', () => {
     await skipIfStorybookBundleIsStale(page)
     await openStory(page, 'design-system-pure-components--shared-badges-and-links')
 
-    await expect(page.getByTestId('agent-badge')).toBeVisible()
+    await expect(page.getByTestId('user-account-badge')).toHaveText([
+      'Official',
+      'System',
+      'AI Agent',
+    ])
     await expect(page.getByTestId('rss-feed-link')).toBeVisible()
     await expect(page.getByTestId('separator')).toBeVisible()
     await expect(page.getByTestId('search-input-shell')).toBeVisible()

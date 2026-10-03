@@ -7,6 +7,7 @@ describe('toClientAuthUser', () => {
     const privateUser: User = {
       id: 'user-1',
       roles: ['administrator'],
+      account_type: 'official',
       username: 'private-name',
       email_address: 'tests+client-auth-projection-b72d@voucha.ai',
       suspended_reason: 'private reason',
@@ -15,31 +16,23 @@ describe('toClientAuthUser', () => {
     expect(toClientAuthUser(privateUser)).toStrictEqual({
       id: 'user-1',
       roles: ['administrator'],
-      isOfficialAccount: true,
+      account_type: 'official',
     })
     expect(Object.keys(toClientAuthUser(privateUser)).toSorted()).toStrictEqual([
+      'account_type',
       'id',
-      'isOfficialAccount',
       'roles',
     ])
   })
 
-  it.each([
-    { source: { is_agent: true }, label: 'agent flag' },
-    { source: { username: 'system' }, label: 'reserved system username' },
-  ])('derives official-account status from the $label', ({ source }) => {
-    expect(
-      toClientAuthUser({
-        id: 'user-1',
-        roles: ['user'],
-        ...source,
-      }),
-    ).toStrictEqual({
-      id: 'user-1',
-      roles: ['user'],
-      isOfficialAccount: true,
-    })
-  })
+  it.each(['official', 'system', 'ai_agent', null] as const)(
+    'preserves the canonical account type %s without deriving it from identity',
+    account_type => {
+      expect(
+        toClientAuthUser({ id: 'user-1', roles: ['user'], username: 'system', account_type }),
+      ).toStrictEqual({ id: 'user-1', roles: ['user'], account_type })
+    },
+  )
 })
 
 describe('toProfileMenuUser', () => {
@@ -48,6 +41,7 @@ describe('toProfileMenuUser', () => {
       toProfileMenuUser({
         id: 'user-1',
         roles: ['user'],
+        account_type: null,
         username: '   ',
         email_address: 'tests+profile-whitespace-d94f@voucha.ai',
       }),
@@ -65,6 +59,7 @@ describe('toProfileMenuUser', () => {
       toProfileMenuUser({
         id: 'user-1',
         roles: ['user'],
+        account_type: null,
         username: '  padded-user  ',
         email_address: 'tests+profile-padded-e05a@voucha.ai',
       }),

@@ -19,7 +19,7 @@ import {
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
 import { createHash, randomUUID } from 'node:crypto'
-import { upsertSystemAdministrator } from '@services/users/system-users'
+import { upsertSystemUser } from '@services/users/system-users'
 import { createStoryPost } from './story-posts.mts'
 import { refreshStoryPostForStory } from './refresh-story-post.mts'
 import {
@@ -77,7 +77,7 @@ describe('assign', () => {
   }
 
   beforeAll(async () => {
-    await upsertSystemAdministrator('story-teller')
+    await upsertSystemUser('story-teller')
     storyPostUser = await createTestUserDirect()
     // Pre-warm the DB connection by creating one item at setup
     await makeTestItem()

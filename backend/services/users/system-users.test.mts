@@ -73,7 +73,7 @@ describe('upsertSystemUser', () => {
   // Security regression: PATCH /api/v1/my/identity lets any authenticated user rename
   // themselves to a reserved username before a deploy runs the system-user seed. Reclaim must
   // rename the squatter out of the way (never delete/merge them) and hand the reserved
-  // username to a fresh is_system row, so the squatter never inherits the system identity.
+  // username to a fresh platform_account_kind row, so the squatter never inherits the system identity.
   it('reclaims a reserved username from a non-system squatter', async () => {
     const username = safeUsername('reclaim-target')
     const squatter = await createTestUserDirect({ username })
@@ -85,10 +85,10 @@ describe('upsertSystemUser', () => {
 
     const reclaimedSquatter = await getTestUserRaw(squatter!.id)
     expect(reclaimedSquatter?.username).toMatch(/^reclaimed-[0-9a-f]{32}$/)
-    expect(reclaimedSquatter?.is_system).toBe(false)
+    expect(reclaimedSquatter?.platform_account_kind).toBeNull()
 
     const systemRow = await getTestUserRaw(systemUser.id)
-    expect(systemRow?.is_system).toBe(true)
+    expect(systemRow?.platform_account_kind).toBe('system')
   })
 
   it('does not touch an existing system user holding the username', async () => {
@@ -101,7 +101,7 @@ describe('upsertSystemUser', () => {
     expect(second.id).toBe(first.id)
     const row = await getTestUserRaw(first.id)
     expect(row?.username).toBe(username)
-    expect(row?.is_system).toBe(true)
+    expect(row?.platform_account_kind).toBe('system')
   })
 })
 

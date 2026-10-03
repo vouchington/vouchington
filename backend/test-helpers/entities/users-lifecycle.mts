@@ -104,11 +104,11 @@ export async function getTestUserRaw(userId: string): Promise<{
   username: string | null
   markdown: string
   deleted_at: Date | null
-  is_system: boolean
+  platform_account_kind: 'official' | 'system' | null
   vote_weight_recalculated_at: Date | null
 } | null> {
   const { rows } = await read(sql`
-    SELECT id, username, markdown, deleted_at, is_system, vote_weight_recalculated_at
+    SELECT id, username, markdown, deleted_at, platform_account_kind, vote_weight_recalculated_at
     FROM users
     WHERE id = ${userId}
   `)
@@ -118,7 +118,7 @@ export async function getTestUserRaw(userId: string): Promise<{
       username: string | null
       markdown: string
       deleted_at: Date | null
-      is_system: boolean
+      platform_account_kind: 'official' | 'system' | null
       vote_weight_recalculated_at: Date | null
     }) ?? null
   )

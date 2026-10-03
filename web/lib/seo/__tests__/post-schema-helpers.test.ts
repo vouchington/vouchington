@@ -35,6 +35,7 @@ describe('post-schema-helpers', () => {
             root_id: null,
             created_by_id: 'user1',
             created_by: {
+              account_type: null,
               __entity_type: 'user',
               id: 'user1',
               username: 'alice',
@@ -84,6 +85,7 @@ describe('post-schema-helpers', () => {
             root_id: null,
             created_by_id: 'user2',
             created_by: {
+              account_type: null,
               __entity_type: 'user',
               id: 'user2',
               username: 'bob',
@@ -140,6 +142,7 @@ describe('post-schema-helpers', () => {
           root_id: null,
           created_by_id: `user${i}`,
           created_by: {
+            account_type: null,
             __entity_type: 'user',
             id: `user${i}`,
             username: `user${i}`,
@@ -191,6 +194,7 @@ describe('post-schema-helpers', () => {
             root_id: null,
             created_by_id: 'user1',
             created_by: {
+              account_type: null,
               __entity_type: 'user',
               id: 'user1',
               username: 'alice',
@@ -218,6 +222,7 @@ describe('post-schema-helpers', () => {
             root_id: null,
             created_by_id: 'user2',
             created_by: {
+              account_type: null,
               __entity_type: 'user',
               id: 'user2',
               username: 'bob',

@@ -107,7 +107,8 @@ describe('create', () => {
       {
         status: 403,
         code: OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN,
-        message: 'Official accounts cannot publish personal referral-link endorsements.',
+        message:
+          'Official and automated accounts cannot publish personal referral-link endorsements.',
       },
     )
   })

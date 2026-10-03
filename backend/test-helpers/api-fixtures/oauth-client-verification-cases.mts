@@ -34,6 +34,7 @@ export const oauthClientVerificationApiFixtureCases: ApiFixtureCase[] = [
           ...adminClient,
           owner: {
             __entity_type: 'user',
+            account_type: null,
             id: ownerId,
             username: 'fixture-user',
             roles: [],

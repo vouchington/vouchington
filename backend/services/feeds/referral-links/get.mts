@@ -84,6 +84,7 @@ export async function getReferralLinksFeed(
       u.url,
       urpl.label,
       vup.username,
+      vup.account_type,
       vup.display_account->>'name' AS display_name,
       vup.profile_image_id
     FROM user_referral_program_links urpl
@@ -168,6 +169,7 @@ export async function getReferralLinksFeed(
       users[row.user_id] = {
         id: row.user_id,
         username: row.username,
+        account_type: row.account_type,
         display_name: row.display_name,
         profile_image_id: row.profile_image_id,
       }

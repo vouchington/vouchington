@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import type { PublicUser } from '@/types/user'
 
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -43,11 +44,7 @@ vi.mock(
     ({ UserAvatar: () => <div /> }) as unknown as typeof import('@/components/shared/user-avatar'),
 )
 
-function page(
-  results: { id: string; username: string }[],
-  hasNextPage: boolean,
-  endCursor: string | null,
-) {
+function page(results: PublicUser[], hasNextPage: boolean, endCursor: string | null) {
   return {
     results,
     page_info: { has_next_page: hasNextPage, end_cursor: endCursor, start_cursor: null },
@@ -68,12 +65,14 @@ describe('FollowerSendPicker', () => {
 
   it('appends unique follower results from the next cursor page', async () => {
     vi.mocked(fetchFollowerUsers)
-      .mockResolvedValueOnce(page([{ id: 'alpha', username: 'alpha' }], true, 'cursor-1'))
+      .mockResolvedValueOnce(
+        page([{ account_type: null, id: 'alpha', username: 'alpha' }], true, 'cursor-1'),
+      )
       .mockResolvedValueOnce(
         page(
           [
-            { id: 'alpha', username: 'alpha' },
-            { id: 'beta', username: 'beta' },
+            { account_type: null, id: 'alpha', username: 'alpha' },
+            { account_type: null, id: 'beta', username: 'beta' },
           ],
           false,
           null,
@@ -108,14 +107,18 @@ describe('FollowerSendPicker', () => {
   it('ignores a stale cursor page after the query changes', async () => {
     let resolveNextPage!: (value: ReturnType<typeof page>) => void
     vi.mocked(fetchFollowerUsers)
-      .mockResolvedValueOnce(page([{ id: 'alpha', username: 'alpha' }], true, 'cursor-1'))
+      .mockResolvedValueOnce(
+        page([{ account_type: null, id: 'alpha', username: 'alpha' }], true, 'cursor-1'),
+      )
       .mockImplementationOnce(
         () =>
           new Promise(resolve => {
             resolveNextPage = resolve
           }),
       )
-      .mockResolvedValueOnce(page([{ id: 'beta', username: 'beta' }], false, null))
+      .mockResolvedValueOnce(
+        page([{ account_type: null, id: 'beta', username: 'beta' }], false, null),
+      )
 
     render(
       <FollowerSendPicker
@@ -130,7 +133,9 @@ describe('FollowerSendPicker', () => {
     await waitFor(() => expect(fetchFollowerUsers).toHaveBeenCalledTimes(2))
 
     await search('beta')
-    await act(async () => resolveNextPage(page([{ id: 'stale', username: 'stale' }], false, null)))
+    await act(async () =>
+      resolveNextPage(page([{ account_type: null, id: 'stale', username: 'stale' }], false, null)),
+    )
 
     expect(screen.getByText('beta')).toBeInTheDocument()
     expect(screen.queryByText('stale')).not.toBeInTheDocument()
@@ -138,9 +143,13 @@ describe('FollowerSendPicker', () => {
 
   it('preserves results and retries a failed cursor page', async () => {
     vi.mocked(fetchFollowerUsers)
-      .mockResolvedValueOnce(page([{ id: 'alpha', username: 'alpha' }], true, 'cursor-1'))
+      .mockResolvedValueOnce(
+        page([{ account_type: null, id: 'alpha', username: 'alpha' }], true, 'cursor-1'),
+      )
       .mockRejectedValueOnce(new Error('network unavailable'))
-      .mockResolvedValueOnce(page([{ id: 'beta', username: 'beta' }], false, null))
+      .mockResolvedValueOnce(
+        page([{ account_type: null, id: 'beta', username: 'beta' }], false, null),
+      )
 
     render(
       <FollowerSendPicker

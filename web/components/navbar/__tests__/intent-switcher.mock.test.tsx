@@ -82,7 +82,7 @@ describe('IntentSwitcher', () => {
 
   it('shows moderation intent to authenticated non-admin user (WS2)', () => {
     vi.mocked(useAuth).mockReturnValueOnce({
-      currentUser: { id: 'user-1', roles: [], isOfficialAccount: false },
+      currentUser: { id: 'user-1', roles: [], account_type: null },
       isAuthenticated: true,
     })
     render(<IntentSwitcher variant='navbar' />)
@@ -109,7 +109,7 @@ describe('IntentSwitcher', () => {
 
   it('logged-in: news item links to /feed/news (first auth-gated item)', () => {
     vi.mocked(useAuth).mockReturnValueOnce({
-      currentUser: { id: 'user-1', roles: [], isOfficialAccount: false },
+      currentUser: { id: 'user-1', roles: [], account_type: null },
       isAuthenticated: true,
     })
     render(<IntentSwitcher variant='navbar' />)

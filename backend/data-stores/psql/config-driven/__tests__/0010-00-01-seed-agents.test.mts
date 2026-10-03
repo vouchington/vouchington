@@ -12,9 +12,9 @@ describe('0010-00-01-seed-agents idempotent', () => {
 
   it('reclaims agent system usernames from non-system squatters before upserting', () => {
     const sql = generateSeedAgentsSQL()
-    expect(sql).toContain('is_system = FALSE')
+    expect(sql).toContain('platform_account_kind IS NULL')
     expect(sql).toContain("reclaimed-' || replace(id::text, '-', '')")
-    expect(sql).toContain('is_system = TRUE')
+    expect(sql).toContain("platform_account_kind = 'system'")
   })
 
   it('generates SQL for all agent system users', () => {
@@ -88,15 +88,17 @@ describe('0010-00-01-seed-agents idempotent', () => {
     const sql = generateSeedCategorizerSQL()
     expect(sql).toContain("'rss-feed-categorizer'")
     expect(sql).toContain("'rss-feed-collaborative-categorizer'")
-    // Routes through buildSystemUserUpsertSQL: reclaim any squatter, then upsert with is_system.
-    expect(sql).toContain('is_system = FALSE')
-    expect(sql).toContain('is_system = TRUE')
+    // Routes through buildSystemUserUpsertSQL: reclaim any squatter, then upsert with platform_account_kind.
+    expect(sql).toContain('platform_account_kind IS NULL')
+    expect(sql).toContain("platform_account_kind = 'system'")
     // Follow-up statement pins the literal 0.01 weight (not the default-weight 1 used by
     // AGENT_SYSTEM_USERS loop), scoped to the system row only.
     expect(sql).toContain('SET vote_weight = 0.01')
-    expect(sql).toContain("WHERE username = 'rss-feed-categorizer' AND is_system = TRUE")
     expect(sql).toContain(
-      "WHERE username = 'rss-feed-collaborative-categorizer' AND is_system = TRUE",
+      "WHERE username = 'rss-feed-categorizer' AND platform_account_kind = 'system'",
+    )
+    expect(sql).toContain(
+      "WHERE username = 'rss-feed-collaborative-categorizer' AND platform_account_kind = 'system'",
     )
   })
 

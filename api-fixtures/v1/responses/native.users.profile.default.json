@@ -21,6 +21,7 @@
   ],
   "user": {
     "__entity_type": "user",
+    "account_type": null,
     "cards_visibility": "everyone",
     "community_digest_frequency": "weekly",
     "community_memberships_visibility": "everyone",

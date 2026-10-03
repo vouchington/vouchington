@@ -13,7 +13,7 @@ import {
   isTestPostgresQueryWaitingForLock,
   expireTestStoryPostProjectionLeaseAfterLock,
 } from '@voucha/test-helpers'
-import { upsertSystemAdministrator } from '@services/users/system-users'
+import { upsertSystemUser } from '@services/users/system-users'
 import { createStoryPost } from '../story-posts.mts'
 import { refreshStoryPostForStory } from '../refresh-story-post.mts'
 import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
@@ -32,7 +32,7 @@ import {
 
 describe('story post related URL projection relations', () => {
   beforeAll(async () => {
-    await upsertSystemAdministrator('story-teller')
+    await upsertSystemUser('story-teller')
   })
 
   it('persists the initial related URL vote aggregate before acknowledging its receipt', async () => {

@@ -66,6 +66,10 @@ export async function createTestAgent(options: CreateTestAgentOptions = {}) {
   })
   if (!systemUser) throw new Error('Failed to create agent system user')
 
+  await write(
+    sql`/* classifyTestAgentUser */ UPDATE users SET platform_account_kind = 'system' WHERE id = ${systemUser.id}`,
+  )
+
   // Insert into agents table
   const { rows } = await write(sql`
     INSERT INTO agents (system_user_id, agent_type)
@@ -106,14 +110,14 @@ export async function createTestAgent(options: CreateTestAgentOptions = {}) {
  * always created and activated so the caller gets a known-good prompt id.
  */
 export async function setupTestAutotaggerAgent(): Promise<TestAgentPrompt> {
-  // Upsert autotagger system user. is_system = TRUE so getSystemUserByUsername('autotagger')
-  // (is_system-gated to close the reserved-username squatting vector) resolves this fixture.
+  // Upsert autotagger system user. platform_account_kind = 'system' so getSystemUserByUsername('autotagger')
+  // (platform_account_kind-gated to close the reserved-username squatting vector) resolves this fixture.
   const { rows: userRows } = await write(sql`
-    INSERT INTO users (username, is_system)
-    VALUES ('autotagger', TRUE)
+    INSERT INTO users (username, platform_account_kind)
+    VALUES ('autotagger', 'system')
     ON CONFLICT ((LOWER(username))) WHERE username IS NOT NULL
-    DO UPDATE SET username = EXCLUDED.username, is_system = TRUE
-    WHERE users.is_system = TRUE
+    DO UPDATE SET username = EXCLUDED.username, platform_account_kind = 'system'
+    WHERE users.platform_account_kind = 'system'
     RETURNING id
   `)
   const autotaggerUserId = userRows[0].id as string

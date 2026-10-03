@@ -3,7 +3,7 @@ import { canCurrentUserSeeDownvotes } from './can-see-downvotes'
 import type { User } from '@/types/user'
 
 function makeUser(overrides: Partial<User> = {}): User {
-  return { id: 'u1', roles: [], ...overrides }
+  return { account_type: null, id: 'u1', roles: [], ...overrides }
 }
 
 describe('canCurrentUserSeeDownvotes', () => {
@@ -28,12 +28,16 @@ describe('canCurrentUserSeeDownvotes', () => {
   })
 
   it('returns true for administrator regardless of membership_plan', () => {
-    expect(canCurrentUserSeeDownvotes(makeUser({ roles: ['administrator'] }))).toBe(true)
+    expect(
+      canCurrentUserSeeDownvotes(makeUser({ account_type: null, roles: ['administrator'] })),
+    ).toBe(true)
   })
 
   it('returns true for administrator with null membership_plan', () => {
     expect(
-      canCurrentUserSeeDownvotes(makeUser({ roles: ['administrator'], membership_plan: null })),
+      canCurrentUserSeeDownvotes(
+        makeUser({ account_type: null, roles: ['administrator'], membership_plan: null }),
+      ),
     ).toBe(true)
   })
 })

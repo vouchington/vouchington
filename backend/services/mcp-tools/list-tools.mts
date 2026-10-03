@@ -12,6 +12,7 @@ type UserForListing = {
 }
 
 type UserForMcpContext = {
+  account_type: import('@services/users/types').BasicUser['account_type']
   id: string
   username?: string | null
   roles: readonly string[]
@@ -21,6 +22,7 @@ type UserForMcpContext = {
 
 export function buildMcpContextUser(owner: UserForMcpContext): {
   __entity_type: 'user'
+  account_type: import('@services/users/types').BasicUser['account_type']
   id: string
   username?: string
   roles: readonly string[]
@@ -29,6 +31,7 @@ export function buildMcpContextUser(owner: UserForMcpContext): {
 } {
   return {
     __entity_type: 'user',
+    account_type: owner.account_type,
     id: owner.id,
     username: owner.username ?? undefined,
     roles: owner.roles,

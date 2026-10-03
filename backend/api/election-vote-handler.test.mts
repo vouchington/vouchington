@@ -212,7 +212,9 @@ describe('election-vote-handler', () => {
         .send({ choice: 'like' })
         .expect(403)
       expect(response.body.code).toBe(OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN)
-      expect(response.body.message).toBe('Official accounts cannot create community trust signals.')
+      expect(response.body.message).toBe(
+        'Official and automated accounts cannot create community trust signals.',
+      )
     }, 60_000)
 
     it('returns 204 on dislike and then Neutral retract', async () => {

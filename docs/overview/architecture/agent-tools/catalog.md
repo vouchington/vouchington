@@ -4,6 +4,12 @@ This table is generated from `backend/tools/registry/`. Run `pnpm run mcp:catalo
 repository root after adding or modifying tools; see
 [Generated Artifacts](README.md#generated-artifacts).
 
+Generation reads the tool registry, whose handler imports initialize backend runtime resources;
+use the current worktree backend environment. The command closes those resources when it finishes. Use
+`pnpm run mcp:catalog -- --check` to verify the MCP catalog, table, and client manifest without
+writing files. Backend catalog tests retain their normal test project and validate exposure,
+REST equivalents, and schemas.
+
 <!-- BEGIN GENERATED -->
 
 | Tool                              | Title                           | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Surfaces              | Plan | Required scopes                                           | Hints                          | REST Equivalent                                                                                                                                                                                                                                                                    |

@@ -13,6 +13,7 @@
       "id": "00000000-0000-7000-8000-000000000721",
       "owner": {
         "__entity_type": "user",
+        "account_type": null,
         "id": "00000000-0000-7000-8000-000000000001",
         "profile_image_id": null,
         "roles": [],

@@ -15,7 +15,7 @@ import {
   updatePostModerationData,
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
-import { upsertSystemAdministrator } from '@services/users/system-users'
+import { upsertSystemUser } from '@services/users/system-users'
 import { createStoryPost } from '@services/stories/story-posts'
 import { getPostByAny } from '@services/posts/get'
 import { processStoryPost, wouldStoryPostCallOpenAI } from './process-story-post.mts'
@@ -32,7 +32,7 @@ let urlId: string
 
 describe('process-story-post', () => {
   beforeAll(async () => {
-    await upsertSystemAdministrator('story-teller')
+    await upsertSystemUser('story-teller')
     feedId = (await createTestRssFeed({})).id
     urlId = await createTestUrlWithHostname()
   })

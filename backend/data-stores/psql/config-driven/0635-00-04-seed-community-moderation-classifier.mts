@@ -31,7 +31,7 @@ const PROMPT = `Does the content above clearly break this community rule? Answer
 export default function generateSeedCommunityModerationClassifierSQL(): string {
   return `DO $community_moderation_actor$ BEGIN
   IF NOT EXISTS (
-    SELECT 1 FROM users WHERE username = '${MODERATION_SYSTEM_USERNAME}' AND is_system = TRUE
+    SELECT 1 FROM users WHERE username = '${MODERATION_SYSTEM_USERNAME}' AND platform_account_kind = 'system'
   ) THEN
     RAISE EXCEPTION 'community moderation classifier seed requires the ${MODERATION_SYSTEM_USERNAME} system user';
   END IF;
@@ -40,7 +40,7 @@ END $community_moderation_actor$;
 INSERT INTO classifiers (slug, primitive, candidate_kind, activated_at, created_by_id)
 SELECT '${COMMUNITY_MODERATION_CLASSIFIER_SLUG}', 'noul', 'community_prompt', CURRENT_TIMESTAMP, u.id
 FROM users u
-WHERE u.username = '${MODERATION_SYSTEM_USERNAME}' AND u.is_system = TRUE
+WHERE u.username = '${MODERATION_SYSTEM_USERNAME}' AND u.platform_account_kind = 'system'
 ON CONFLICT (slug) DO NOTHING;
 
 UPDATE classifier_prompt_versions
@@ -65,7 +65,7 @@ SELECT c.id, $community_moderation_prompt$${PROMPT}$community_moderation_prompt$
   '${MODEL_NAME}', '${MODEL_PROVIDER}',
   ${DEFAULT_LOWER_THRESHOLD}, ${DEFAULT_UPPER_THRESHOLD}, CURRENT_TIMESTAMP, u.id
 FROM classifiers c
-JOIN users u ON u.username = '${MODERATION_SYSTEM_USERNAME}' AND u.is_system = TRUE
+JOIN users u ON u.username = '${MODERATION_SYSTEM_USERNAME}' AND u.platform_account_kind = 'system'
 WHERE c.slug = '${COMMUNITY_MODERATION_CLASSIFIER_SLUG}'
   AND NOT EXISTS (
     SELECT 1 FROM classifier_prompt_versions pv

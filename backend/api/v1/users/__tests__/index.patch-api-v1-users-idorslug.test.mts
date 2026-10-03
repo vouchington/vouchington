@@ -20,7 +20,7 @@ describe('Users API Routes', () => {
 
       expect(response.body.user.id).toBe(user!.id)
       expect(response.body.user.username).toBe(updatedUsername)
-      expect(response.body.user.is_official_account).toBe(false)
+      expect(response.body.user.account_type).toBeNull()
     })
 
     it('should allow updating topic_follows_visibility, rss_feed_follows_visibility, and community_memberships_visibility', async () => {

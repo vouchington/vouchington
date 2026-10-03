@@ -67,7 +67,7 @@ vi.mock(
 )
 
 function makeUser(id: string): UsersSearchResponseBody['results'][number] {
-  return { id, username: id, is_official_account: false }
+  return { id, username: id, account_type: null }
 }
 
 function makePage(

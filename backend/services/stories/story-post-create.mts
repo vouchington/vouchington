@@ -86,7 +86,7 @@ export async function createStoryPostInTransaction(
   const { rows: activeAuthorRows } = await query<{ id: string }>(
     sql`/* createStoryPost:activeAuthor */
         SELECT id FROM users
-        WHERE id = ${storyTellerUser.id} AND is_system = TRUE AND deleted_at IS NULL`,
+        WHERE id = ${storyTellerUser.id} AND platform_account_kind = 'system' AND deleted_at IS NULL`,
   )
   assert(activeAuthorRows[0], 409, 'System user @story-teller is not active')
   await lockStoryLifecycles(query, [storyId])

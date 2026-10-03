@@ -23,7 +23,7 @@ describe('RootAppShell auth boundary', () => {
       roles: ['user'],
       username: 'private-name',
       email_address: 'tests+root-shell-boundary-c83e@voucha.ai',
-      is_agent: true,
+      account_type: 'ai_agent',
       suspended_reason: 'private reason',
     }
 
@@ -43,7 +43,7 @@ describe('RootAppShell auth boundary', () => {
     expect((authProvider!.props as { initialUser: unknown }).initialUser).toStrictEqual({
       id: 'user-1',
       roles: ['user'],
-      isOfficialAccount: true,
+      account_type: 'ai_agent',
     })
   })
 })

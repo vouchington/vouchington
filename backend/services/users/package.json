@@ -67,6 +67,7 @@
   },
   "devDependencies": {
     "@modules/csv": "workspace:^",
+    "@services/agents": "workspace:^",
     "@services/bluesky-accounts": "workspace:^",
     "@services/lists": "workspace:^",
     "@types/http-errors": "^2.0.5",

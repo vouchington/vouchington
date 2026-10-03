@@ -54,7 +54,11 @@ const communitiesResponse: CommunitiesSearchResponseBody = {
   page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
   communities: Object.fromEntries(communityEntities.map(community => [community.id, community])),
   users: {
-    [storyCurrentUser.id]: { id: storyCurrentUser.id, username: storyCurrentUser.username ?? null },
+    [storyCurrentUser.id]: {
+      account_type: null,
+      id: storyCurrentUser.id,
+      username: storyCurrentUser.username ?? null,
+    },
   },
   community_metrics: communityMetrics,
   community_memberships: {},
@@ -109,6 +113,7 @@ const ownerMembers = {
   },
   users: {
     [storyCurrentUser.id]: {
+      account_type: null,
       id: storyCurrentUser.id,
       username: storyCurrentUser.username,
       profile_image_id: null,

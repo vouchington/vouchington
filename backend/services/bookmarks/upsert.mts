@@ -21,7 +21,7 @@ import {
   enqueueBulkRefreshUserMetricsById,
 } from '@queues/entity-metrics-cache-refresh/enqueues'
 import { upsertUserVouchElectionVotes } from '@services/elections-votes/user-vouch'
-import { getPublicUserByAny, isAdminUser, isOfficialAccount } from '@services/users'
+import { getPublicUserByAny, isAdminUser, isPlatformAccount } from '@services/users'
 import { getUserActivePlan } from '@services/memberships'
 import { getContributionStatus } from '@services/contribution-gating/assert'
 import { getContributionQuota } from '@services/contribution-gating/quota'
@@ -120,7 +120,7 @@ export const bookmarkEntity = async (
     if (
       entityTypeName === 'user' &&
       entity.id.toLowerCase() !== user.id.toLowerCase() &&
-      !isOfficialAccount(user)
+      !isPlatformAccount(user)
     ) {
       try {
         const membershipPlan = await getUserActivePlan(user.id)

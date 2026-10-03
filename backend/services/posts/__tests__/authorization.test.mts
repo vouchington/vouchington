@@ -5,6 +5,7 @@ import type { PrivateUser } from '@services/users/types'
 function makeUser(overrides: Partial<PrivateUser> = {}): PrivateUser {
   return {
     __entity_type: 'user',
+    account_type: null,
     id: 'test-id',
     roles: [],
     cards_visibility: 'everyone',

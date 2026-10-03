@@ -1,4 +1,10 @@
-const fixtureUser = { __entity_type: 'user', id: 'user-1', username: 'testuser', roles: [] }
+const fixtureUser = {
+  __entity_type: 'user',
+  account_type: null,
+  id: 'user-1',
+  username: 'testuser',
+  roles: [],
+}
 
 export const nativeHostname = {
   __entity_type: 'hostname',

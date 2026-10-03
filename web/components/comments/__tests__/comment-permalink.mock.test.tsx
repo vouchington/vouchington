@@ -120,6 +120,7 @@ function makeTargetComment(rootPost: Post, overrides: Partial<Post> = {}): Post 
     root_id: 'root-1',
     markdown: 'Comment body',
     created_by: {
+      account_type: null,
       __entity_type: 'user',
       id: 'user-1',
       username: 'author',

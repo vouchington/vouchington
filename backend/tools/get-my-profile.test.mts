@@ -142,7 +142,12 @@ describe('get_my_profile tool — real DB', () => {
 
   it('hydrates BasicUser callers before loading private profile data', async () => {
     const profileUser = await createTestUser()
-    const basicUser: BasicUser = { __entity_type: 'user', id: profileUser.id, roles: [] }
+    const basicUser: BasicUser = {
+      __entity_type: 'user',
+      account_type: null,
+      id: profileUser.id,
+      roles: [],
+    }
     const execute = getMyProfileTool.function(basicUser)
 
     const result = await execute({})
@@ -152,7 +157,12 @@ describe('get_my_profile tool — real DB', () => {
   })
 
   it('rejects unknown current users', async () => {
-    const basicUser: BasicUser = { __entity_type: 'user', id: randomUUID(), roles: [] }
+    const basicUser: BasicUser = {
+      __entity_type: 'user',
+      account_type: null,
+      id: randomUUID(),
+      roles: [],
+    }
     const execute = getMyProfileTool.function(basicUser)
 
     await expect(execute({})).rejects.toMatchObject({ status: 401 })

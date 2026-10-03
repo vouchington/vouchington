@@ -12,6 +12,7 @@ const newAccountId = uuidv7({ msecs: Date.now() - 2 * ONE_DAY_MS })
 function makeMockUser(overrides: Partial<PrivateUser> = {}): PrivateUser {
   return {
     __entity_type: 'user',
+    account_type: null,
     id: uuidv7(),
     roles: [],
     username: 'testuser',

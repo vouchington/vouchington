@@ -16,7 +16,7 @@ export const swiftIdentitySessionApiFixtureCases: ApiFixtureCase[] = [
         id: 'user-abc',
         username: 'alice',
         roles: ['user'],
-        is_official_account: false,
+        account_type: null,
         profile_image_id: '00000000-0000-7000-8000-000000000201',
         profile_image_placement: {
           image_id: '00000000-0000-7000-8000-000000000201',

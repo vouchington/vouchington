@@ -7,7 +7,7 @@ import {
 } from '@voucha/test-helpers'
 import { createStoryPost } from '../story-posts.mts'
 import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
-import { upsertSystemAdministrator } from '@services/users/system-users'
+import { upsertSystemUser } from '@services/users/system-users'
 import {
   claimStoryPostRelatedUrlProjectionWork,
   releaseStoryPostRelatedUrlProjectionWork,
@@ -15,7 +15,7 @@ import {
 
 describe('story post related URL projection fairness', () => {
   beforeAll(async () => {
-    await upsertSystemAdministrator('story-teller')
+    await upsertSystemUser('story-teller')
   })
 
   it('rotates dispatcher claims across pending posts', async () => {

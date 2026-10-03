@@ -7,6 +7,7 @@ import { IDENTITY_REQUIRED } from '@modules/on-error/error-codes'
 function createMockUser(overrides: Partial<PrivateUser> = {}): PrivateUser {
   return {
     __entity_type: 'user',
+    account_type: null,
     id: overrides.id ?? uuidv7(),
     roles: [],
     username: 'testuser',

@@ -11,6 +11,7 @@ const USER_MUTE_RELATION = getEntityRelationMetadataOrThrow({
 
 const SYSTEM_USER_FOR_RELATIONS = {
   __entity_type: 'user' as const,
+  account_type: null,
   id: '',
   roles: [] as const,
 }

@@ -3,7 +3,7 @@ import {
   NEUTRAL_REQUIRES_EXISTING_BALLOT,
   OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN,
 } from '@modules/on-error/error-codes'
-import { isOfficialAccount } from '@services/users'
+import { isPlatformAccount } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
 
 export function assertOfficialVoteMutationAccess(
@@ -11,10 +11,10 @@ export function assertOfficialVoteMutationAccess(
   isClear: boolean,
   officialAccountAllowed: boolean,
 ): void {
-  if (!isClear && !officialAccountAllowed && isOfficialAccount(currentUser)) {
+  if (!isClear && !officialAccountAllowed && isPlatformAccount(currentUser)) {
     throw createCodedError(
       403,
-      'Official accounts cannot create community trust signals.',
+      'Official and automated accounts cannot create community trust signals.',
       OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN,
     )
   }

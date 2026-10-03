@@ -67,11 +67,12 @@ vi.mock(import('@/components/shared/rss-feed-link'), () => ({
   RssFeedLink: () => <div />,
 }))
 
-vi.mock(import('@/components/shared/user-official-badge'), () => ({
-  UserOfficialBadge: () => <div />,
+vi.mock(import('@/components/shared/user-account-badge'), () => ({
+  UserAccountBadge: () => <div />,
 }))
 
 const user = {
+  account_type: null,
   id: 'user-abc',
   username: 'alice',
   display_account: { name: 'Alice Example' },
@@ -106,7 +107,7 @@ describe('UserProfileHeader follow vouch refresh', () => {
   })
 
   it('does not refresh vouch context for an official account follow', async () => {
-    mockCurrentUser = { id: 'user-xyz', roles: ['administrator'] } as User
+    mockCurrentUser = { account_type: 'official', id: 'user-xyz', roles: ['administrator'] } as User
     render(<UserProfileHeader user={user} />)
 
     await screen.findByTestId('follow-button')

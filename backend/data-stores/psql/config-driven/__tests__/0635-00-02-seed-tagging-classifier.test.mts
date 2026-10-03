@@ -12,8 +12,8 @@ describe('0635-00-02-seed-tagging-classifier SQL shape', () => {
   it('reclaims and upserts the autotagger-classifier system user', () => {
     const generated = generateSeedTaggingClassifierSQL()
     expect(generated).toContain("'autotagger-classifier'")
-    expect(generated).toContain('is_system = FALSE')
-    expect(generated).toContain('is_system = TRUE')
+    expect(generated).toContain('platform_account_kind IS NULL')
+    expect(generated).toContain("platform_account_kind = 'system'")
   })
 
   it('inserts the classifier without ever updating it', () => {
@@ -57,9 +57,9 @@ describe('0635-00-02-seed-tagging-classifier (real DB)', () => {
 
     const user = await getLocalTestUserRawByUsername('autotagger-classifier')
     expect(user).not.toBeNull()
-    expect(user!.is_system).toBe(true)
+    expect(user!.platform_account_kind).toBe('system')
 
     const agentCount = await countLocalAgentsForSystemUsername('autotagger-classifier')
-    expect(agentCount).toBe(0)
+    expect(agentCount).toBe(1)
   })
 })

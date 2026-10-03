@@ -4,6 +4,7 @@ import { SuspensionBanner } from '@/components/moderation/notices/suspension-ban
 import type { User } from '@/types/user'
 
 const suspendedUser: User = {
+  account_type: null,
   id: 'user-1',
   roles: [],
   suspended_at: '2026-06-01T00:00:00Z',

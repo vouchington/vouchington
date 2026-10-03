@@ -31,8 +31,8 @@ export const referralProgramTopic = {
   referral_program_id: null,
   referral_program_slug: null,
   lingua_rs_detected_language: null,
-  created_by: { id: user.id, username: user.username, roles: [] },
-  updated_by: { id: user.id, username: user.username, roles: [] },
+  created_by: { id: user.id, username: user.username, roles: [], account_type: null },
+  updated_by: { id: user.id, username: user.username, roles: [], account_type: null },
 }
 
 export const referralLink = {
@@ -61,6 +61,7 @@ export const referralLink = {
 }
 
 export const referralLinkFeedUser = {
+  account_type: null,
   id: user.id,
   username: user.username,
   display_name: user.name,
@@ -68,6 +69,7 @@ export const referralLinkFeedUser = {
 }
 
 export const referralLinkUser = {
+  account_type: null,
   id: user.id,
   username: user.username,
   display_name: user.name,
@@ -101,6 +103,7 @@ export const prioritizedReferralLink = {
 
 export const referralClickLogUser = {
   __entity_type: 'user',
+  account_type: null,
   id: 'user-2',
   username: 'newmember',
   roles: [],

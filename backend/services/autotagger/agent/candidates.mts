@@ -52,7 +52,7 @@ export async function captureAutotaggerAgentCandidateTopicIds(
       FROM relation__user__follow__topic follow
       JOIN view_current_paid_memberships membership ON membership.user_id = follow.subject_id
       JOIN users follower
-        ON follower.id = follow.subject_id AND follower.deleted_at IS NULL AND follower.is_system = FALSE
+        ON follower.id = follow.subject_id AND follower.deleted_at IS NULL AND follower.platform_account_kind IS NULL
       WHERE follow.deleted_at IS NULL
         AND NOT EXISTS (
           SELECT 1 FROM user_roles staff_role

@@ -162,10 +162,7 @@ function makeFeed(overrides: Partial<ViewRssFeed> = {}): ViewRssFeed {
   }
 }
 
-const mockUser: User = {
-  id: 'u1',
-  roles: [],
-}
+const mockUser: User = { account_type: null, id: 'u1', roles: [] }
 
 describe('SourceListItem voting and subscribe interactions', () => {
   it('renders TopicVouchDisavowVote when topicElection is present', () => {

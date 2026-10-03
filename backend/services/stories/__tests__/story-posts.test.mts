@@ -14,7 +14,7 @@ import {
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
 import type { PrivateUser } from '@services/users/types'
-import { upsertSystemAdministrator } from '@services/users/system-users'
+import { upsertSystemUser } from '@services/users/system-users'
 import { createStoryPost } from '../story-posts.mts'
 import { lockAuthorPublicationLifecycle } from '@services/post-publication'
 import { canViewPost } from '@services/posts/check-privacy-access'
@@ -46,7 +46,7 @@ async function insertItem(storyId: string, titlePrefix = 'Test Article', itemUrl
 
 describe('story posts', () => {
   beforeAll(async () => {
-    await upsertSystemAdministrator('story-teller')
+    await upsertSystemUser('story-teller')
     const [user, other, feed, testUrlId] = await Promise.all([
       createTestUserDirect(),
       createTestUserDirect(),

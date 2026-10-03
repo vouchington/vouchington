@@ -16,17 +16,17 @@ vi.mock(
       EntityAutocomplete: ({
         onSelect,
       }: {
-        onSelect: (
-          item: { id: string; username?: string },
-          helpers: { setQuery: (q: string) => void },
-        ) => void
+        onSelect: (item: UserSearchResult, helpers: { setQuery: (q: string) => void }) => void
         [k: string]: unknown
       }) => (
         <button
           type='button'
           data-testid='entity-autocomplete'
           onClick={() =>
-            onSelect({ id: 'u-new', username: 'newuser' }, { setQuery: vi.fn<VitestLooseMock>() })
+            onSelect(
+              { account_type: null, id: 'u-new', username: 'newuser' },
+              { setQuery: vi.fn<VitestLooseMock>() },
+            )
           }
         >
           Add
@@ -68,7 +68,7 @@ import { RecipientPicker } from '../recipient-picker'
 import type { UserSearchResult } from '@/types/user'
 
 function makeUser(id: string, username: string): UserSearchResult {
-  return { id, username, profile_image_id: null }
+  return { account_type: null, id, username, profile_image_id: null }
 }
 
 describe('RecipientPicker', () => {
@@ -123,6 +123,6 @@ describe('RecipientPicker', () => {
       />,
     )
     fireEvent.click(screen.getByTestId('entity-autocomplete'))
-    expect(onAdd).toHaveBeenCalledWith({ id: 'u-new', username: 'newuser' })
+    expect(onAdd).toHaveBeenCalledWith({ account_type: null, id: 'u-new', username: 'newuser' })
   })
 })

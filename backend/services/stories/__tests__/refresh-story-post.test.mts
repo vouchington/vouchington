@@ -20,7 +20,7 @@ import {
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
 import type { PrivateUser } from '@services/users/types'
-import { upsertSystemAdministrator } from '@services/users/system-users'
+import { upsertSystemUser } from '@services/users/system-users'
 import { elections } from '../../../queues/elections/queues.mts'
 import { notifications } from '@queues/notifications/queues'
 import { createStoryPost } from '../story-posts.mts'
@@ -60,7 +60,7 @@ async function insertItem(storyId: string, itemUrlId = urlId) {
 
 describe('refreshStoryPostForStory', () => {
   beforeAll(async () => {
-    await upsertSystemAdministrator('story-teller')
+    await upsertSystemUser('story-teller')
     const [user, feed, testUrlId] = await Promise.all([
       createTestUserDirect(),
       createTestRssFeed({}),
@@ -110,7 +110,7 @@ describe('refreshStoryPostForStory', () => {
     await drainStoryPostRelatedUrlProjection(post.id)
     await expect(getPostRelatedUrlIds(post.id)).resolves.toContain(blockedUrlId)
     await updateUrlHostnameBlocked(hostnameId, true)
-    const storyTeller = await upsertSystemAdministrator('story-teller')
+    const storyTeller = await upsertSystemUser('story-teller')
     const penaltiesBeforeRefresh = await getTestPenaltiesByUserId(storyTeller.id)
 
     await expect(refreshStoryPostForStory(story.id)).resolves.toMatchObject({ postId: post.id })
@@ -139,7 +139,7 @@ describe('refreshStoryPostForStory', () => {
     const { post } = await createStoryPost(story.id, testUser)
     await drainStoryPostRelatedUrlProjection(post.id)
     await expect(getPostRelatedUrlIds(post.id)).resolves.not.toContain(referralUrlId)
-    const storyTeller = await upsertSystemAdministrator('story-teller')
+    const storyTeller = await upsertSystemUser('story-teller')
     const penaltiesBeforeRefresh = await getTestPenaltiesByUserId(storyTeller.id)
 
     await expect(refreshStoryPostForStory(story.id)).resolves.toMatchObject({ postId: post.id })
