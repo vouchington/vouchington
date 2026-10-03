@@ -108,6 +108,7 @@ describe('classifier usage report: remote runs (real PG)', () => {
 
     expect(await usageOf(setup)).toMatchObject({
       outcome: 'incomplete',
+      batchId: setup.lease.decisionBatchId,
       shardCount: 0,
       candidateCount: 0,
       providerCalls: 2,
@@ -290,10 +291,9 @@ describe('classifier usage report: one classifier over many runs (real PG)', () 
       superseded: 1,
       incomplete: 1,
     })
-    // The superseded run is revived under the same receipt if its content returns, so it can still
-    // call the provider, exactly as the incomplete replacement can.
+    // Synthetic runs are local-only (no batch), so neither of them can reach the provider.
     expect(report.efficiency.find(row => row.classifier === setup.slug)).toMatchObject({
-      unfinishedRuns: 2,
+      unfinishedRuns: 0,
     })
   })
 })

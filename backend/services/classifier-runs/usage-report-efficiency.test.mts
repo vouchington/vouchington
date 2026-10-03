@@ -200,10 +200,23 @@ describe('summarizeClassifierEfficiency (deterministic fixtures)', () => {
         run({ runId: 'b', subjectId: 'p2', outcome: 'superseded', outcomesPersisted: true }),
         run({ runId: 'c', subjectId: 'p3', outcome: 'failed:attempts-exhausted' }),
         run({ runId: 'd', subjectId: 'p4', outcome: 'completed' }),
+        run({ runId: 'e', subjectId: 'p5', outcome: 'incomplete', outcomesPersisted: false }),
+        run({ runId: 'f', subjectId: 'p6', outcome: 'superseded', outcomesPersisted: false }),
       ]),
     )
 
-    expect(efficiency).toMatchObject({ runs: 4, unfinishedRuns: 0 })
+    expect(efficiency).toMatchObject({ runs: 6, unfinishedRuns: 2 })
+  })
+
+  it('never counts a local-only run as unfinished, since it has no batch to call the provider with', () => {
+    const [efficiency] = summarizeClassifierEfficiency(
+      summarizeClassifierContentVersions([
+        run({ runId: 'a', subjectId: 'p1', outcome: 'incomplete', batchId: null }),
+        run({ runId: 'b', subjectId: 'p2', outcome: 'superseded', batchId: null }),
+      ]),
+    )
+
+    expect(efficiency).toMatchObject({ runs: 2, unfinishedRuns: 0 })
   })
 
   it('adds up the billed calls the ledger could not price', () => {

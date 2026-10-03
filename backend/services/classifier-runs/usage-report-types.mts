@@ -159,11 +159,11 @@ export type ClassifierEfficiency = {
   sweepEnqueues: number
   attemptsWithoutRecordedResponse: number
   /**
-   * Runs that can still reserve a provider attempt: `incomplete` or `superseded`, with outcomes not
-   * yet durable. A superseded run is revived under the same receipt when its content and
-   * configuration become current again. Completed and failed runs, and any run whose outcomes are
-   * durable (a claim only replays them), cannot call the provider, so a verdict that holds is only
-   * final without these.
+   * Runs that can still reserve a provider attempt: remote (a batch was reserved with the receipt),
+   * `incomplete` or `superseded`, with outcomes not yet durable. A superseded run is revived under
+   * the same receipt when its content and configuration become current again. Completed and failed
+   * runs, local-only runs and any run whose outcomes are durable (a claim only replays them) cannot
+   * call the provider, so a verdict that holds is only final without these.
    */
   unfinishedRuns: number
   /** Billed responses the ledger could not price: `costMicrounits` leaves them out. */

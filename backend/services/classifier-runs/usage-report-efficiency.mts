@@ -93,11 +93,14 @@ function emptyVersion(run: ClassifierRunUsage): ClassifierContentVersionUsage {
 }
 
 /**
- * A run can still reserve a provider attempt while it is neither completed nor failed and its
- * outcomes are not durable: a claim then replays instead of calling. A superseded run counts, since
- * the same update that leases it revives it once its content and configuration are current again.
+ * A run can still reserve a provider attempt while it has a remote batch, is neither completed nor
+ * failed, and its outcomes are not durable: a claim then replays instead of calling. The batch is
+ * fixed when the receipt is reserved, so a local-only run (no batch) never reaches the provider. A
+ * superseded run counts, since the same update that leases it revives it once its content and
+ * configuration are current again.
  */
 function canStillCallProvider(run: ClassifierRunUsage): boolean {
+  if (run.batchId === null) return false
   return (run.outcome === 'incomplete' || run.outcome === 'superseded') && !run.outcomesPersisted
 }
 

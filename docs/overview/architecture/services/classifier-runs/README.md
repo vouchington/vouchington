@@ -292,10 +292,11 @@ questions it asks about. The report answers it from the same rows, with no secon
   digest (and community publication) with `runs`, `billedRuns`, `providerCalls`,
   `persistedDecisionCalls`, `retries`, cost and latency. `efficiency` sums them per classifier.
 - **The verdict is per receipt.** The KPI is breached when `maxProviderCallsPerRun` is above one
-  (`runsOverOneCall`), and it holds only when no breach is found and `unfinishedRuns` is zero. A run
-  that is `incomplete` or `superseded` with its outcomes not yet durable can still reserve an
-  attempt and bill a second call (a superseded run is revived under the same receipt when its
-  content and configuration become current again; a run with durable outcomes only replays them), so
+  (`runsOverOneCall`), and it holds only when no breach is found and `unfinishedRuns` is zero. A
+  remote run that is `incomplete` or `superseded` with its outcomes not yet durable can still
+  reserve an attempt and bill a second call (a superseded run is revived under the same receipt when
+  its content and configuration become current again; a run with durable outcomes only replays them,
+  and a local-only run, which has no batch, never reaches the provider), so
   a window that holds one reports `INCONCLUSIVE` with the count instead of `holds`; a breach stays
   final whatever else is still running. Calls come from `classifier_runs.provider_attempts_started` and
   the ledger rows, never queue jobs. A retry whose earlier attempt the provider refused still shows
