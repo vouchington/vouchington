@@ -38,8 +38,8 @@ this change; it stays in the remaining copyright route work.
 
 Each handler keeps the order it had before the contract existed and adds the contract call after the
 field parsers, before the first service or database call: content type (`415`), authentication and
-staff role (`401`, `403`), rate limit, suspension, path UUID (`422`), body read, `rationale` (`422`),
-the route's field parsers (`422`), contract (`422`), service.
+staff role (`401`, `403`), rate limit, suspension, path UUID (`422`), body read, non-object body
+(`422`), `rationale` (`422`), the route's field parsers (`422`), contract (`422`), service.
 
 - Appeal reviews: `decisions` (a non-empty array of at most twenty objects, each with a UUID
   `restriction_id` and a `confirm` or `reverse` `action`), `recommendation_id`, then
@@ -50,14 +50,20 @@ the route's field parsers (`422`), contract (`422`), service.
   rules, then `target_ids`. The target id parser ran while the service arguments were built, so
   hoisting it above the contract keeps its order relative to the service call.
 
-The shared `parseCopyrightReviewRequest` helper is unchanged.
+The shared `parseCopyrightReviewRequest` helper gains only the non-object body check, ahead of its
+first field read (see the
+[email-intake page](reference-copyright-email-intake-request-validation.md#statuses)).
 
 ## Statuses
 
 The route-level field parsers run before the contract, so the contract only adds `422` for input the
-parsers never looked at. Every one of these changes is a malformed body that was previously accepted
-and ignored; none is a legal-workflow contract, and a valid request behaves exactly as before.
+parsers never looked at. Apart from the non-object body, every one of these changes is a malformed
+body that was previously accepted and ignored; none is a legal-workflow contract, and a valid
+request behaves exactly as before.
 
+- A JSON `null` body on any of the three routes now returns `422` (`Invalid request body`).
+  Previously the shared reader read `rationale` from it and answered `500`. An array or scalar body
+  was already `422`, and now carries `Invalid request body` instead of `rationale is required`.
 - An unknown top-level key on any of the three bodies now returns `422` (`Invalid request body`).
   Previously it was silently dropped.
 - An unknown key inside an appeal `decisions[]` item now returns `422`.

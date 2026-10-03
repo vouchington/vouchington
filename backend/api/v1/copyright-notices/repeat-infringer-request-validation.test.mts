@@ -107,6 +107,27 @@ describe('repeat-infringer request contracts', () => {
     await administrator.post(url).send(body).expect(409)
   })
 
+  // A JSON `null` used to throw a TypeError (500) when a handler read `rationale` from it.
+  it.each(['null', '[]'])('answers 422 on the body %s for every decision route', async raw => {
+    const { poster, noticeId, account, reviewId, staff, administrator } =
+      await repeatInfringerFixture()
+    const routes = [
+      [staff, `${INCIDENTS}/${account.incident_id}/dispositions`],
+      [staff, `${REVIEWS}/${reviewId}/outcomes`],
+      [administrator, `${ACCOUNTS}/${poster.id}/reinstatements`],
+    ] as const
+
+    for (const [client, url] of routes) {
+      const response = await client
+        .post(url)
+        .set('Content-Type', 'application/json')
+        .send(raw)
+        .expect(422)
+      expect(response.body.message).toBe('Invalid request body')
+    }
+    expect(await readAccount(staff, noticeId)).toEqual(account)
+  })
+
   it('shows a moderator the schema 422 before the administrator-only 403', async () => {
     const { reviewId, staff } = await repeatInfringerFixture()
     const url = `${REVIEWS}/${reviewId}/outcomes`

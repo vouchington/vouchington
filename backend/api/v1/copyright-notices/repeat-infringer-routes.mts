@@ -33,9 +33,20 @@ const dispositions = new Set<CopyrightRepeatInfringerDispositionRequest['disposi
   'abusive',
 ])
 
+// A JSON `null`, array or scalar has no fields to read; refuse it before the first field read so it
+// answers 422 instead of throwing a TypeError (500). Each handler keeps its own typed
+// `ctx.request.json` cast, which is how the request-contract compiler finds the body type.
+function assertObjectBody(ctx: Context, body: unknown) {
+  ctx.assert(
+    body !== null && typeof body === 'object' && !Array.isArray(body),
+    422,
+    'Invalid request body',
+  )
+}
+
 // Every handler keeps its admission order (content type, authentication and role, rate limit,
-// suspension, field-named parsers, path id) and adds the generated contract immediately before the
-// first service call.
+// suspension, non-object body, field-named parsers, path id) and adds the generated contract
+// immediately before the first service call.
 app.route('/api/v1/copyright-notices/:id/repeat-infringer-accounts').get(async (ctx: Context) => {
   setPrivateNoStoreCacheHeaders(ctx)
   const currentUser = await requireAuthAndRateLimit(
@@ -68,6 +79,7 @@ app
     )
     assertNotSuspended(currentUser)
     const body = (await ctx.request.json('1mb')) as CopyrightRepeatInfringerDispositionRequest
+    assertObjectBody(ctx, body)
     ctx.assert(boundedString(body.rationale, 10_000), 422, 'rationale is required')
     ctx.assert(
       dispositions.has(body.disposition),
@@ -101,6 +113,7 @@ app.route('/api/v1/copyright-repeat-infringer-reviews/:id/outcomes').post(async 
   )
   assertNotSuspended(currentUser)
   const body = (await ctx.request.json('1mb')) as CopyrightRepeatInfringerOutcomeRequest
+  assertObjectBody(ctx, body)
   ctx.assert(boundedString(body.rationale, 10_000), 422, 'rationale is required')
   ctx.assert(
     reviewDecisions.has(body.outcome),
@@ -135,6 +148,7 @@ app
     )
     assertNotSuspended(currentUser)
     const body = (await ctx.request.json('1mb')) as CopyrightRepeatInfringerReinstatementRequest
+    assertObjectBody(ctx, body)
     ctx.assert(boundedString(body.rationale, 10_000), 422, 'rationale is required')
     const accountUserId = validateUUIDParam(ctx, 'accountUserId')
     validateRequestContract(
