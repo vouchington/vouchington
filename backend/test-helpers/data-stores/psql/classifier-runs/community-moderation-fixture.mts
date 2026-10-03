@@ -7,7 +7,10 @@ import {
   reserveClassifierRun,
   requestClassifierRuns,
 } from '../../../../services/classifier-runs/index.mts'
-import { createCommunityModerationRunAdapter } from '../../../../services/community-agent-prompts/index.mts'
+import {
+  createCommunityModerationRunAdapter,
+  SLOT_LIMITS_BY_PLAN,
+} from '../../../../services/community-agent-prompts/index.mts'
 import { createPostModerationContent } from '../../../../services/posts/content.mts'
 import { getPostByAny } from '../../../../services/posts/get.mts'
 import type { Post } from '../../../../services/posts/types.mts'
@@ -40,10 +43,17 @@ async function currentModerationDigest(postId: string): Promise<Buffer> {
   return createPostModerationContent(post).content_sha256
 }
 
+async function createProMember() {
+  const member = await createTestUser()
+  await createTestMembership({ user_id: member.id, plan: 'pro' })
+  return member
+}
+
 /**
  * A published community post for C8: the community's creator holds a pro plan with `ruleTexts`
- * active prompts (one per rule text), the post is approved, unrejected and published in the
- * community, and its moderation digest is set so it is the request identity.
+ * active prompts (one per rule text, from further pro members past the creator's slot limit), the
+ * post is approved, unrejected and published in the community, and its moderation digest is set
+ * so it is the request identity.
  */
 export async function createCommunityModerationFixture(
   options: {
@@ -54,18 +64,26 @@ export async function createCommunityModerationFixture(
   } = {},
 ) {
   const ruleTexts = options.ruleTexts ?? ['No spam', 'No harassment']
-  const creator = await createTestUser()
-  await createTestMembership({ user_id: creator.id, plan: 'pro' })
+  const creator = await createProMember()
   const author = await createTestUser()
   const community = await insertTestCommunity({ createdById: creator.id })
   await insertTestCommunityMember({ communityId: community.id, userId: creator.id, role: 'owner' })
   if (options.automodAction)
     await setTestCommunityAutomodAction(community.id, options.automodAction)
+  // A pro member's active prompts stop at their slot limit, so a rule set past one member's slots
+  // is spread over more pro members, as a community with several contributors would have it.
+  const extraCreators = await Promise.all(
+    Array.from(
+      { length: Math.max(Math.ceil(ruleTexts.length / SLOT_LIMITS_BY_PLAN.pro) - 1, 0) },
+      () => createProMember(),
+    ),
+  )
+  const promptCreators = [creator, ...extraCreators]
   const prompts = await Promise.all(
-    ruleTexts.map(prompt =>
+    ruleTexts.map((prompt, index) =>
       insertTestCommunityAgentPrompt({
         communityId: community.id,
-        createdById: creator.id,
+        createdById: promptCreators[Math.floor(index / SLOT_LIMITS_BY_PLAN.pro)]!.id,
         prompt,
         slotAllocated: true,
       }),

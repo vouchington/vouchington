@@ -249,8 +249,9 @@ classifier. It adds no metrics path: provider figures come from the
 counted). For each run reserved in a half-open window it returns the classifier, primitive,
 provider, model, prompt version, scope, batch id, shard count, retained candidate count, outcome,
 attempts, retries, sweep enqueues, provider calls, tokens, priced and unpriced calls, provider cost
-and latency. The same rows are summed per classifier, prompt version and scope, next to a count of
-durable requests per classifier.
+and latency. The same rows are summed per classifier, prompt version and scope, per content version
+and per classifier for [call efficiency](#call-efficiency-d3-kpi), next to a count of durable
+requests per classifier.
 
 - **Window.** Runs are selected by reservation time, an index range on the run `id`. A ledger row is
   joined with only a lower bound, because a retry is billed after its run was reserved and can land
@@ -270,17 +271,96 @@ durable requests per classifier.
   provider call per shard under one batch.
 - **Candidates.** The candidate count is the number of results the batch retained, so a run that
   never decided retains none.
-- **Diagnostic counters.** The job figures are the durable ones: requests per classifier, attempts
-  and retries per run, and sweep enqueues that added a job. They describe work, not value, and are
-  never a KPI. Queue job counts in Valkey are not durable, so the report does not read them.
+- **Diagnostic counters.** The job figures are the durable ones: requests per classifier (request
+  rows created in the window), attempts and retries per run, and sweep enqueues that added a job.
+  They describe work, not value, and are never a KPI. Queue job counts in Valkey are not durable, so the report does not read them.
 - **Reasoning-agent residual calls.** The reasoning pass (C7) is a classifier of its own, so its
   provider calls, tokens, cost and requests are a group beside the first stage's.
 - **No savings.** The report computes none. A before and after comparison of fan-out is the
   consumer's, from two windows of measured runs, and a figure with no measured baseline is reported
   as unmeasured.
 
-The report is read-only. Its first consumer is the Epic C KPI check (#223); until that check lands
-the function has no production caller.
+The report is read-only. Its consumer is the Epic C call-efficiency check below.
+
+### Call efficiency (D3 KPI)
+
+The Epic C KPI is at most one billed provider call per receipt: a classifier's run for one subject at
+one content version under one configuration, whatever the rules, topics, neighbors or toggled
+questions it asks about. The report answers it from the same rows, with no second metrics path:
+
+- **Content versions.** `contentVersions` sums a classifier's runs for one subject at one input
+  digest (and community publication) with `runs`, `billedRuns`, `providerCalls`,
+  `persistedDecisionCalls`, `retries`, cost and latency. `efficiency` sums them per classifier.
+- **The verdict is per receipt.** The KPI is breached when `maxProviderCallsPerRun` is above one
+  (`runsOverOneCall`), and it holds only when no breach is found and `unfinishedRuns` is zero. A
+  remote run that is `incomplete` or `superseded` with its outcomes not yet durable can still
+  reserve an attempt and bill a second call (a superseded run is revived under the same receipt when
+  its content and configuration become current again; a run with durable outcomes only replays them,
+  and a local-only run, which has no batch, never reaches the provider), so
+  a window that holds one reports `INCONCLUSIVE` with the count instead of `holds`; a breach stays
+  final whatever else is still running. Calls come from `classifier_runs.provider_attempts_started` and
+  the ledger rows, never queue jobs. A retry whose earlier attempt the provider refused still shows
+  one call, with the refused attempt in `attemptsWithoutRecordedResponse` and `retries`.
+- **Cost is a floor when a call is unpriced.** The ledger leaves a billed call it could not price
+  out of the cost sum. `unpricedCalls` counts them, and the text report prints `at least <cost>`
+  with the number excluded instead of a total that looks exact.
+- **Re-classification is a configuration change.** An unchanged content digest under an unchanged
+  configuration digest resolves to the same receipt, so a retrigger, a redelivery, a lease expiry
+  after persisting and a changed C6 candidate set all replay it without a call. A second billed run
+  of the same content means the configuration changed (a C8 rule edit, a new prompt version): it is
+  counted in `reclassifications` and read next to the KPI, never as a breach, because each receipt
+  was still allowed one call.
+- **The one case that can exceed it.** A crash or lease loss after the provider billed but before
+  the outcomes persist can spend another attempt within the attempt cap. That appears as
+  `runsOverOneCall` above zero with `persistedDecisionCalls` of one.
+- **Replays have no counter.** A replay (a retrigger, a redelivery, a lease expiry after
+  persisting) bills nothing and writes nothing, and neither diagnostic figure counts it. `requests`
+  counts the request rows created in the window, one per classifier, subject and content digest,
+  and a retrigger of unchanged content reuses its row. `sweepEnqueues` counts the recovery sweep's
+  re-enqueues of a run that had not finished. The evidence that replays did not bill is the KPI
+  itself, `maxProviderCallsPerRun` staying at one, and the fixtures assert the provider's own
+  request count. A durable replay count would be new instrumentation (#1804).
+- **Deleted subjects leave the window.** A run is deleted with its post or RSS item (a cascading
+  foreign key), so a window read after a deletion no longer shows that subject's runs or attempts,
+  and can look cleaner than it was. The ledger rows stay, with `classifier_run_id` cleared, so the
+  cost is still in the ledger by workload and day but is no longer attributed to a receipt. Read
+  the report soon after the window closes (#1804).
+- **Local detection is apart.** C5's local detector appears as `localDetectorRuns` and never as a
+  call.
+
+**Fixture evidence.** `describeClassifierCallEfficiency` (in `backend/test-helpers`) runs the same
+four scenarios for C5, C6, C8 and C9 through the real worker path with a deterministic provider that
+bills a fixed cost: one call for a content version at one and at a large fan-out, no second call
+across a lease expiry after persisting, a redelivery and a retrigger, one billed call after a
+refused attempt, and no call after the candidate set changed. The large fan-out is the scope's cap
+(C8 asks 30 questions) or, for C6, the default Pro topic limit of ten, which an operator can raise
+with no hard cap: C6 sends every question in one request and never splits it, so a larger set is
+still one call, and a request too large for the provider fails the run instead of billing a second. Each asserts the provider's own
+request count and the ledger rows as well as the report. The scope files add C5's local-only run
+(zero calls), C8's rule edit (one re-classification), an edited post (a new content version) and
+that an unpublish is neither billed nor applied twice.
+
+**Running it against an environment.** From a checkout, as for the other operational scripts. The
+report only reads. `--env-file=.env` loads the local `.env` (`source .env && node ...` reads the
+same values); for a deployed environment export that environment's `DATABASE_URL` in the shell and
+drop the flag:
+
+```sh
+node --env-file=.env backend/scripts/classifier-call-efficiency.mts --from <UTC time> [--to <UTC time>] [--json]
+```
+
+It prints one block per classifier: the KPI verdict, calls per content version, retries,
+re-classifications, cost and latency, then the content versions over one call or re-classified.
+A classifier that was active at some point in the window (activated before its end and not
+deactivated or deleted before its start, from the retained lifecycle timestamps, not its state
+today) with no run in the window gets a block too: `no requests and no runs in the window` when
+its producer was silent, so a quiet classifier is not mistaken for a healthy one. `--json` prints
+the whole report. `--from` and `--to` are UTC ISO times such as `2026-10-01T00:00:00Z` (optional
+milliseconds); anything else, including a time with no zone or an offset and a date that does not
+exist such as `2026-02-30`, is refused instead of moving the window. Choose `--from` at the cutover and read windows no larger than the
+run cap, since a window past it is refused. Recording the measured post-cutover figures for the
+[Epic C](https://github.com/vouchington/vouchington/issues/177) close-out is a follow-up that needs
+a deployed environment; this page states the method and no figures.
 
 ## Adding a classifier
 

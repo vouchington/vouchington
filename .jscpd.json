@@ -21,6 +21,7 @@
       "backend/entrypoints/worker-cpu/serve.mts",
       "backend/modules/structured-decisions/benchmark.mts",
       "backend/scripts/backfill-rss-feed-item-source-publications.mts",
+      "backend/scripts/classifier-call-efficiency.mts",
       "backend/scripts/seed-source/run.mts",
       "backend/types/lib-dom-absent.mts",
       "ci/transient-retry/rerun-known-transient.mts",

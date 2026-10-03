@@ -1395,6 +1395,7 @@ rules:
         - .no-data.mock
         - .real-glide.mock
         - .actions.mock
+        - .call-efficiency.mock
         - .mock
         - .generated
         - .routes

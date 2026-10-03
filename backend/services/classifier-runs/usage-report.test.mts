@@ -14,6 +14,7 @@ import {
   completeRunWithoutTags,
   recordBilledCall,
   reservedAtMs,
+  retireClassifier,
   startProviderAttempts,
   windowAroundNow,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/usage-report-fixture'
@@ -61,6 +62,7 @@ describe('classifier usage report: remote runs (real PG)', () => {
     expect(run).toMatchObject({
       classifier: 'post-classifier',
       outcome: 'completed',
+      outcomesPersisted: true,
       batchId: setup.lease.decisionBatchId,
       promptVersionId: setup.lease.resolved.configuration.remote!.promptVersionId,
       provider: expect.any(String),
@@ -106,6 +108,7 @@ describe('classifier usage report: remote runs (real PG)', () => {
 
     expect(await usageOf(setup)).toMatchObject({
       outcome: 'incomplete',
+      batchId: setup.lease.decisionBatchId,
       shardCount: 0,
       candidateCount: 0,
       providerCalls: 2,
@@ -237,6 +240,7 @@ describe('classifier usage report: one classifier over many runs (real PG)', () 
     const report = await readClassifierUsageReport(windowAroundNow())
 
     expect(report.requests[setup.slug]).toBe(2)
+    expect(report.classifiers).toContain(setup.slug)
     expect(report.groups.filter(group => group.classifier === setup.slug)).toEqual([
       expect.objectContaining({
         runs: 3,
@@ -250,6 +254,26 @@ describe('classifier usage report: one classifier over many runs (real PG)', () 
     ])
   })
 
+  it('lists the classifiers active during the window, wherever the window lies', async () => {
+    const active = await createSyntheticFixture()
+    const retired = await createSyntheticFixture()
+    await retireClassifier(retired.slug)
+    const hour = 3_600_000
+    const now = Date.now()
+    const classifiersIn = async (from: number, to: number) =>
+      (await readClassifierUsageReport({ from: new Date(from), to: new Date(to) })).classifiers
+
+    expect(await classifiersIn(now - 120_000, now + 60_000)).toEqual(
+      expect.arrayContaining([active.slug, retired.slug]),
+    )
+    const later = await classifiersIn(now + hour, now + 2 * hour)
+    expect(later).toContain(active.slug)
+    expect(later).not.toContain(retired.slug)
+    const earlier = await classifiersIn(now - 2 * hour, now - hour)
+    expect(earlier).not.toContain(active.slug)
+    expect(earlier).not.toContain(retired.slug)
+  })
+
   it('reports a superseded run under its own outcome, not as a failure', async () => {
     const setup = await createSyntheticFixture()
     await requestSyntheticRun(setup)
@@ -259,10 +283,17 @@ describe('classifier usage report: one classifier over many runs (real PG)', () 
 
     const report = await readClassifierUsageReport(windowAroundNow())
 
-    expect(report.runs.find(run => run.runId === replaced.runId)?.outcome).toBe('superseded')
+    expect(report.runs.find(run => run.runId === replaced.runId)).toMatchObject({
+      outcome: 'superseded',
+      outcomesPersisted: false,
+    })
     expect(report.groups.find(group => group.classifier === setup.slug)?.outcomes).toEqual({
       superseded: 1,
       incomplete: 1,
+    })
+    // Synthetic runs are local-only (no batch), so neither of them can reach the provider.
+    expect(report.efficiency.find(row => row.classifier === setup.slug)).toMatchObject({
+      unfinishedRuns: 0,
     })
   })
 })

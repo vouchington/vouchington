@@ -1,41 +1,8 @@
+import { classifierRunUsage } from '@voucha/test-helpers/classifier-run-usage'
 import { describe, expect, it } from 'vitest'
 import { summarizeClassifierUsage } from './usage-report-summary.mts'
-import type { ClassifierRunUsage } from './usage-report-types.mts'
 
-const BASE: ClassifierRunUsage = {
-  runId: 'run',
-  classifier: 'post-classifier',
-  primitive: 'noul',
-  batchId: 'batch',
-  promptVersionId: 'prompt-1',
-  provider: 'TypeSafe',
-  model: 'typesafe/jev-1.13',
-  scopeCategory: 'global',
-  scopeCommunityId: null,
-  shardCount: 1,
-  candidateCount: 3,
-  outcome: 'completed',
-  attemptsStarted: 1,
-  retries: 0,
-  sweepEnqueues: 0,
-  providerCalls: 1,
-  attemptsWithoutRecordedResponse: 0,
-  inputTokens: 100,
-  cachedInputTokens: 40,
-  outputTokens: 10,
-  pricedCalls: 1,
-  unpricedCalls: 0,
-  costMicrounits: '2000',
-  latencyMsTotal: 200,
-  latencyMsMax: 200,
-  latencySamples: 1,
-  localDetector: null,
-}
-
-const run = (overrides: Partial<ClassifierRunUsage>): ClassifierRunUsage => ({
-  ...BASE,
-  ...overrides,
-})
+const run = classifierRunUsage
 
 describe('summarizeClassifierUsage (deterministic fixtures)', () => {
   it('sums the fan-out and the provider figures of runs that share a group', () => {

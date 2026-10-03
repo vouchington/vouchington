@@ -23,7 +23,9 @@ specific to a classifier; a classifier supplies only `ClassifierRunInputs`:
   the request leaves. At the attempt cap the run ends terminal `attempts-exhausted`. The billing
   hooks fire once per reserved attempt, and each billed response is recorded in the usage ledger
   against the run (`classifierRunId`) with its latency, which is what the
-  [usage report](../../services/classifier-runs/README.md#usage-report) reads.
+  [usage report](../../services/classifier-runs/README.md#usage-report) reads. The receipt is the
+  unit of the call-efficiency KPI: at most one billed call per receipt, which the per-scope
+  [fixture suite and report](../../services/classifier-runs/README.md#call-efficiency-d3-kpi) check.
 - **Recorded failure, never a crash.** A `createClient` throw (for example a missing
   `OPENROUTER_API_KEY`) ends the remote half as terminal `client-unavailable`, keeps the local
   outcome and raises one `classifier_run_alarm` Sentry message that names the error class and never
