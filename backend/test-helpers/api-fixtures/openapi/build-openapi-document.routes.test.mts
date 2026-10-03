@@ -100,14 +100,12 @@ describe('OpenAPI catalog response helpers', () => {
     expect(doc.paths['/api/v1/events']!.get!.responses['200']).toHaveProperty(
       'content.text/event-stream',
     )
-    expect(doc.paths['/api/v1/mcp']!.get!.responses['405']).toEqual({
-      $ref: '#/components/responses/Error',
+    expect(doc.paths['/api/v1/mcp']!.get!.responses).toEqual({
+      405: { $ref: '#/components/responses/Error' },
+      default: { $ref: '#/components/responses/Error' },
     })
-    expect(doc.paths['/api/v1/mcp']!.get).toMatchObject({
-      'x-schema-unavailable': true,
-      'x-schema-unavailable-reason': 'registered route has no success response',
-    })
-    expect(doc['x-unavailable-routes']).toContain('GET:/api/v1/mcp')
+    expect(doc.paths['/api/v1/mcp']!.get).not.toHaveProperty('x-schema-unavailable')
+    expect(doc['x-unavailable-routes']).not.toContain('GET:/api/v1/mcp')
     expect(doc.paths['/api/v1/unknown']!.get!.responses['200']).toBeUndefined()
     expect(doc.paths['/api/v1/callback']!.get!.responses['302']).toEqual({
       description: 'Found',
