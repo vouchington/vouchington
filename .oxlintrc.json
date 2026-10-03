@@ -429,7 +429,7 @@
     "prefer-rest-params": "error",
     "prefer-spread": "error",
     "prefer-template": "error",
-    "radix": "off",
+    "radix": "error", // parseInt requires an explicit radix. Full-repo scan 2026-10-03: 0 findings.
     "require-await": "off",
     "sort-imports": "off",
     "sort-keys": "off",

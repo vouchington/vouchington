@@ -669,6 +669,12 @@ asserts those severities and demonstrates both rejected conversions and accepted
 object counterparts. Consumer fixes preserve each value's actual boundary rather than suppressing
 the rules.
 
+`radix` is enforced at error level in the root
+[`../.oxlintrc.json`](../../../../.oxlintrc.json). `parseInt` and `Number.parseInt` must pass an
+explicit radix. A full-repo scan on 2026-10-03 found no existing violations. The
+[`radix-oxlint` fixture](../../../../static-code-analysis/oxlint-plugin/radix-oxlint.test.mts)
+asserts that severity and rejects a missing radix while accepting decimal and hexadecimal calls.
+
 `no-mistakes/no-inline-noop-promise-catch` is enforced for production `backend/**` and `web/**`
 under [`../.oxlintrc.json`](../../../../.oxlintrc.json). Its four test-helper/test-file exclusions keep
 test-only rejection swallowing out of the production inventory. The authoritative 2026-09-10 scan
