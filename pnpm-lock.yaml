@@ -2063,8 +2063,8 @@ importers:
         specifier: ^0.4.0
         version: 0.4.0
       '@atproto-labs/handle-resolver-node':
-        specifier: ^0.2.8
-        version: 0.2.10
+        specifier: ^0.2.11
+        version: 0.2.11
       '@atproto/jwk':
         specifier: ^0.7.4
         version: 0.7.4
@@ -13206,7 +13206,7 @@ importers:
         version: 3.1144.0
       '@sentry/aws-serverless':
         specifier: ^11.2.0
-        version: 11.2.0(@babel/core@7.29.7(supports-color@10.2.2))(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28))
+        version: 11.2.0
       '@ts-shared/deploy-environment':
         specifier: workspace:^
         version: link:../../ts-shared/deploy-environment
@@ -13704,8 +13704,12 @@ packages:
     resolution: {integrity: sha512-ro/J/cnqIp4bnSzDl8N3SkruvQcE3Pze+1H70mKdFfyFcdhPr+7O4lggl4VCbhI84Yqgz47c0xC6F/Yl39SxDA==}
     engines: {node: '>=22'}
 
-  '@atproto-labs/handle-resolver-node@0.2.10':
-    resolution: {integrity: sha512-xUAXZ3yTYzOmjgF0PyD4R8yXa0EtCxBextrEuSw7/7UwJgcWnSgHn05SBhrgYiLqqhLcDfJVMJ00u+wv/z8m5A==}
+  '@atproto-labs/handle-resolver-node@0.2.11':
+    resolution: {integrity: sha512-stwXuolGIs8ULdLRCwr616A4268CP2jTYOKZOlR7rzMLKjMNaxYVFktbqWUtqKq1nqdqaKxSk+MZNTFrqCjaHQ==}
+    engines: {node: '>=22'}
+
+  '@atproto-labs/handle-resolver@0.4.10':
+    resolution: {integrity: sha512-hsYYvGhi6Tv6f4Fti//i/vllVIb/wrJaOcbT3Yh7oo10VxBKAyxzVaB7mIJcho2YJ5kHd2kbCYYPWLw8pvm/bg==}
     engines: {node: '>=22'}
 
   '@atproto-labs/handle-resolver@0.4.9':
@@ -13742,6 +13746,10 @@ packages:
 
   '@atproto/did@0.5.5':
     resolution: {integrity: sha512-ibCxTPsPQtrtX+iidnE0bkMBHuoWFBdVfPFfCAlUKY6HfkqdUUxItzvQu9AMucYDhP6vJ15HLVj+QhNY2jtIvw==}
+    engines: {node: '>=22'}
+
+  '@atproto/did@0.5.6':
+    resolution: {integrity: sha512-8bLfOnaoWBmg9S8naqzk5mG8zYAXfSKT4odB5OHcCAd1o7p6RFb0Rk9WGobEgboKtxP2CIeul6mzI5PUT4v6Gg==}
     engines: {node: '>=22'}
 
   '@atproto/jwk-jose@0.2.4':
@@ -18965,6 +18973,11 @@ packages:
 
   ajv-formats@2.1.1:
     resolution: {integrity: sha512-Wx0Kx52hxE7C18hkMEggYlEifqWZtYaRgouJor+WMdPnQyEK13vgEWyVNup7SoeeoLMsr4kf5h6dOW11I15MUA==}
+    peerDependencies:
+      ajv: ^8.0.0
+    peerDependenciesMeta:
+      ajv:
+        optional: true
 
   ajv-formats@3.0.1:
     resolution: {integrity: sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ==}
@@ -22957,11 +22970,18 @@ snapshots:
     dependencies:
       '@atproto-labs/pipe': 0.2.4
 
-  '@atproto-labs/handle-resolver-node@0.2.10':
+  '@atproto-labs/handle-resolver-node@0.2.11':
     dependencies:
       '@atproto-labs/fetch-node': 0.4.0
-      '@atproto-labs/handle-resolver': 0.4.9
-      '@atproto/did': 0.5.5
+      '@atproto-labs/handle-resolver': 0.4.10
+      '@atproto/did': 0.5.6
+
+  '@atproto-labs/handle-resolver@0.4.10':
+    dependencies:
+      '@atproto-labs/simple-store': 0.5.1
+      '@atproto-labs/simple-store-memory': 0.2.6
+      '@atproto/did': 0.5.6
+      zod: 3.25.76
 
   '@atproto-labs/handle-resolver@0.4.9':
     dependencies:
@@ -23013,6 +23033,10 @@ snapshots:
     dependencies:
       zod: 3.25.76
 
+  '@atproto/did@0.5.6':
+    dependencies:
+      zod: 3.25.76
+
   '@atproto/jwk-jose@0.2.4':
     dependencies:
       '@atproto/jwk': 0.7.4
@@ -23057,7 +23081,7 @@ snapshots:
   '@atproto/oauth-client-node@0.5.7':
     dependencies:
       '@atproto-labs/did-resolver': 0.3.9
-      '@atproto-labs/handle-resolver-node': 0.2.10
+      '@atproto-labs/handle-resolver-node': 0.2.11
       '@atproto-labs/simple-store': 0.5.1
       '@atproto/did': 0.5.5
       '@atproto/jwk': 0.7.4
@@ -26718,7 +26742,7 @@ snapshots:
       domhandler: 5.0.3
       selderee: 0.12.0
 
-  '@sentry/aws-serverless@11.2.0(@babel/core@7.29.7(supports-color@10.2.2))(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28))':
+  '@sentry/aws-serverless@11.2.0':
     dependencies:
       '@sentry/conventions': 0.24.0
       '@sentry/core': 11.2.0
@@ -28005,8 +28029,8 @@ snapshots:
       - supports-color
       - zod
 
-  ajv-formats@2.1.1:
-    dependencies:
+  ajv-formats@2.1.1(ajv@8.20.0):
+    optionalDependencies:
       ajv: 8.20.0
     optional: true
 
@@ -31223,7 +31247,7 @@ snapshots:
     dependencies:
       '@types/json-schema': 7.0.15
       ajv: 8.20.0
-      ajv-formats: 2.1.1
+      ajv-formats: 2.1.1(ajv@8.20.0)
       ajv-keywords: 5.1.0(ajv@8.20.0)
     optional: true
 
