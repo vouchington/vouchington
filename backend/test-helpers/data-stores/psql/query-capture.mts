@@ -33,3 +33,15 @@ export function captureQueryAfterStop(): void {
 export function captureUncloneableValuesQuery(values: readonly unknown[]): void {
   maybeCaptureQuery('/* cloneFailure */ SELECT $1', values)
 }
+
+export function captureQueryInsideOperation(): void {
+  maybeCaptureQuery('/* insideOperation */ SELECT 1')
+}
+
+export function captureQueryOutsideOperation(): void {
+  maybeCaptureQuery('/* outsideOperation */ SELECT 2')
+}
+
+export function captureQueryFromPriorCapture(): void {
+  maybeCaptureQuery('/* priorCapture */ SELECT 1')
+}

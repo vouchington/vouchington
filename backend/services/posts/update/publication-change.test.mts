@@ -18,8 +18,7 @@ import {
 import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import {
-  enableQueryCapture,
-  stopTestQueryCapture,
+  withCapturedTestQueries,
   countCapturedQueriesByAnnotation,
 } from '@voucha/test-helpers/query-capture'
 
@@ -79,17 +78,13 @@ describe('post update publication capture', () => {
     })
     const title = `Publication topic footprint updated ${suffix}`
 
-    enableQueryCapture()
-    let queries: ReturnType<typeof stopTestQueryCapture>
-    try {
-      await expect(updatePost(administrator, post, { title })).resolves.toMatchObject({ title })
-    } finally {
-      queries = stopTestQueryCapture()
-    }
+    const { queries } = await withCapturedTestQueries(() =>
+      expect(updatePost(administrator, post, { title })).resolves.toMatchObject({ title }),
+    )
     const relationIds = new Set(await getTestPostCategoryRelationIds(post.id))
     expect(relationIds.size).toBe(1_001)
-    // Capture is process-wide: unrelated election workers can run during this request.
-    // Both stats queries put their target relation ID (or batch of IDs) in the first parameter.
+    // Other tests share this worker. Contextual capture drops their async contexts, and these
+    // stats queries put the target relation id (or batch of ids) in the first parameter.
     const postQueries = queries.filter(query => {
       const targets = query.values[0]
       return Array.isArray(targets)

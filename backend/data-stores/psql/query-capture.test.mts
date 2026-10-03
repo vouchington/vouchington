@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { stopTestQueryCapture } from '../../test-helpers/query-capture.mts'
+import { stopTestQueryCapture, withCapturedTestQueries } from '../../test-helpers/query-capture.mts'
 
 import {
   clearCapturedQueries,
@@ -13,6 +13,9 @@ import {
   captureQueryAfterDisable,
   captureQueryAfterStop,
   captureQueryBeforeStop,
+  captureQueryFromPriorCapture,
+  captureQueryInsideOperation,
+  captureQueryOutsideOperation,
   captureSqlTemplateQuery,
   captureStringQuery,
   captureUncloneableValuesQuery,
@@ -98,5 +101,44 @@ describe('query capture', () => {
 
     captureQueryAfterStop()
     expect(getCapturedQueries()).toEqual([])
+  })
+
+  it('omits queries scheduled outside the captured operation', async () => {
+    const outsideQueryDone = new Promise<void>(resolve => {
+      setImmediate(() => {
+        captureQueryOutsideOperation()
+        resolve()
+      })
+    })
+
+    const { queries } = await withCapturedTestQueries(async () => {
+      captureQueryInsideOperation()
+      await outsideQueryDone
+    })
+
+    expect(queries.map(query => query.text)).toEqual(['/* insideOperation */ SELECT 1'])
+  })
+
+  it('omits a previous capture descendant from the next snapshot', async () => {
+    let releasePriorQuery: () => void = () => {}
+    const priorQueryReleased = new Promise<void>(resolve => {
+      releasePriorQuery = resolve
+    })
+    let priorQueryFinished = Promise.resolve()
+
+    await withCapturedTestQueries(async () => {
+      priorQueryFinished = (async () => {
+        await priorQueryReleased
+        captureQueryFromPriorCapture()
+      })()
+    })
+
+    const { queries } = await withCapturedTestQueries(async () => {
+      captureQueryInsideOperation()
+      releasePriorQuery()
+      await priorQueryFinished
+    })
+
+    expect(queries.map(query => query.text)).toEqual(['/* insideOperation */ SELECT 1'])
   })
 })
