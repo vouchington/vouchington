@@ -8,9 +8,9 @@ General-purpose, user-aware rate limiting with thresholds that adjust based on u
 
 ### Trust Tier (0–5)
 
-Computed by `computeTrustTier` from: a linked OAuth account, account age, paid membership plan, and identity verification. A confirmed bad-faith reporter penalty subtracts from the score. MFA and passkeys are not trust signals. Higher trust = higher rate limits.
+Computed by `computeTrustTier`; see the canonical [trust-tier definition](services/user-rate-limits/README.md#trust-tier) for scoring signals and penalties. Higher trust = higher rate limits.
 
-**New account cooling period**: accounts less than 24 hours old are clamped to tier 0, regardless of OAuth or membership signals. This happens inside `computeTrustTier` before any other signals are evaluated. Admins return tier 5 before the clamp is evaluated.
+The [special cases](services/user-rate-limits/README.md#special-cases) define the new-account cooling period and administrator override.
 
 ### Categories
 
