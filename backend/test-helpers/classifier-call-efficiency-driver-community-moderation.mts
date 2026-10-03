@@ -1,5 +1,6 @@
 import { COMMUNITY_MODERATION_CLASSIFIER_SLUG } from '@voucha/types/entities/community-moderation-classifier'
 import { CLASSIFIER_RUN_ATTEMPTS } from '../queues/ai-agents/config.mts'
+import { MAX_COMMUNITY_MODERATION_QUESTIONS } from '../services/community-agent-prompts/index.mts'
 import { createCommunityModerationRegistration } from '../workers/ai-agents/processors/classifier-run-community-moderation.mts'
 import { executeLeasedRun, type EfficiencyDriver } from './classifier-call-efficiency-run.mts'
 import {
@@ -7,11 +8,14 @@ import {
   readCommunityModerationProjection,
 } from './data-stores/psql/classifier-runs/community-moderation-fixture.mts'
 
-/** C8: a community's whole rule set is one question set in one call, per post content version. */
+/**
+ * C8: a community's whole rule set is one question set in one call, per post content version. The
+ * largest fan-out is the per-call question cap, so a rule set at the cap is still one call.
+ */
 export const communityModerationEfficiencyDriver: EfficiencyDriver = {
   slug: COMMUNITY_MODERATION_CLASSIFIER_SLUG,
   scope: 'C8 community moderation classifier',
-  fanOuts: [1, 10],
+  fanOuts: [1, MAX_COMMUNITY_MODERATION_QUESTIONS],
   questions: ruleCount => ruleCount,
   async seed(ruleCount) {
     const ruleTexts = Array.from({ length: ruleCount }, (_, index) => `No rule breaking ${index}`)

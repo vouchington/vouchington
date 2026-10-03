@@ -271,9 +271,9 @@ requests per classifier.
   provider call per shard under one batch.
 - **Candidates.** The candidate count is the number of results the batch retained, so a run that
   never decided retains none.
-- **Diagnostic counters.** The job figures are the durable ones: requests per classifier, attempts
-  and retries per run, and sweep enqueues that added a job. They describe work, not value, and are
-  never a KPI. Queue job counts in Valkey are not durable, so the report does not read them.
+- **Diagnostic counters.** The job figures are the durable ones: requests per classifier (request
+  rows created in the window), attempts and retries per run, and sweep enqueues that added a job.
+  They describe work, not value, and are never a KPI. Queue job counts in Valkey are not durable, so the report does not read them.
 - **Reasoning-agent residual calls.** The reasoning pass (C7) is a classifier of its own, so its
   provider calls, tokens, cost and requests are a group beside the first stage's.
 - **No savings.** The report computes none. A before and after comparison of fan-out is the
@@ -304,9 +304,18 @@ questions it asks about. The report answers it from the same rows, with no secon
 - **The one case that can exceed it.** A crash or lease loss after the provider billed but before
   the outcomes persist can spend another attempt within the attempt cap. That appears as
   `runsOverOneCall` above zero with `persistedDecisionCalls` of one.
-- **Replays have no counter.** A replay bills nothing and writes nothing, so the evidence that
-  replays did not bill is the KPI staying at one while `requests` and `sweepEnqueues`, which are
-  diagnostic only, count the repeats.
+- **Replays have no counter.** A replay (a retrigger, a redelivery, a lease expiry after
+  persisting) bills nothing and writes nothing, and neither diagnostic figure counts it. `requests`
+  counts the request rows created in the window, one per classifier, subject and content digest,
+  and a retrigger of unchanged content reuses its row. `sweepEnqueues` counts the recovery sweep's
+  re-enqueues of a run that had not finished. The evidence that replays did not bill is the KPI
+  itself, `maxProviderCallsPerRun` staying at one, and the fixtures assert the provider's own
+  request count. A durable replay count would be new instrumentation (#1804).
+- **Deleted subjects leave the window.** A run is deleted with its post or RSS item (a cascading
+  foreign key), so a window read after a deletion no longer shows that subject's runs or attempts,
+  and can look cleaner than it was. The ledger rows stay, with `classifier_run_id` cleared, so the
+  cost is still in the ledger by workload and day but is no longer attributed to a receipt. Read
+  the report soon after the window closes (#1804).
 - **Local detection is apart.** C5's local detector appears as `localDetectorRuns` and never as a
   call.
 

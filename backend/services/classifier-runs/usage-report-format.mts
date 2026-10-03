@@ -64,7 +64,16 @@ function describeClassifier(
     `  attempts ${efficiency.attemptsStarted}, retries ${efficiency.retries}, attempts without a recorded response ${efficiency.attemptsWithoutRecordedResponse}`,
     `  cost ${dollars(efficiency.costMicrounits)}, latency ${latency(efficiency)}`,
     `  local detector runs (never billed): ${efficiency.localDetectorRuns}`,
-    `  diagnostic only: ${requests} durable requests, ${efficiency.sweepEnqueues} sweep enqueues`,
+    `  diagnostic only: ${requests} requested content versions, ${efficiency.sweepEnqueues} sweep re-enqueues of unfinished runs`,
+  ]
+}
+
+/** A classifier whose subjects asked for runs in the window but reserved none: the sweep is behind. */
+function describeRequestOnlyClassifier(classifier: string, requests: number): string[] {
+  return [
+    classifier,
+    '  no run was reserved in the window',
+    `  diagnostic only: ${requests} requested content versions`,
   ]
 }
 
@@ -72,8 +81,9 @@ function describeClassifier(
  * @public Cross-workspace read boundary: `backend/scripts/classifier-call-efficiency.mts` prints it.
  *
  * The report as text, one block per classifier: the D3 KPI verdict first, then the figures that
- * back it. Replays leave no counter of their own (a replay bills nothing and writes nothing), so
- * the zero-bill evidence is `runsOverOneCall` staying at zero while requests and sweeps repeat.
+ * back it. A replay bills nothing and writes nothing, and neither diagnostic figure counts it
+ * (`requested content versions` are request rows created in the window, which a retrigger of
+ * unchanged content reuses), so the zero-bill evidence is `runsOverOneCall` staying at zero.
  */
 export function formatClassifierUsageReport(report: ClassifierUsageReport): string {
   const lines = [
@@ -91,6 +101,14 @@ export function formatClassifierUsageReport(report: ClassifierUsageReport): stri
     const reclassified = versions.filter(version => version.reclassifications > 0)
     if (reclassified.length > 0)
       lines.push('  re-classified content:', ...listVersions(reclassified))
+  }
+  const withRuns = new Set(report.efficiency.map(({ classifier }) => classifier))
+  for (const [classifier, requests] of Object.entries(report.requests).toSorted(([a], [b]) =>
+    a.localeCompare(b),
+  )) {
+    if (!withRuns.has(classifier)) {
+      lines.push('', ...describeRequestOnlyClassifier(classifier, requests))
+    }
   }
   return `${lines.join('\n')}\n`
 }

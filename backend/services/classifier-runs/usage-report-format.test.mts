@@ -52,8 +52,29 @@ describe('formatClassifierUsageReport (deterministic fixtures)', () => {
     expect(text).toContain('KPI (at most one billed call per receipt): holds')
     expect(text).toContain('calls per content version: 0 calls: 1, 1 call: 1, 2+ calls: 0')
     expect(text).toContain('cost $0.002000, latency 200 ms mean over 1 calls')
-    expect(text).toContain('diagnostic only: 7 durable requests, 0 sweep enqueues')
+    expect(text).toContain(
+      'diagnostic only: 7 requested content versions, 0 sweep re-enqueues of unfinished runs',
+    )
     expect(text).not.toContain('receipts over one call')
+  })
+
+  it('lists a classifier that has requests but reserved no run in the window', () => {
+    const text = formatClassifierUsageReport(
+      reportOf([run({ runId: 'a' })], { 'story-clustering': 4, 'post-classifier': 1 }),
+    )
+
+    expect(text).toContain(
+      'story-clustering\n  no run was reserved in the window\n  diagnostic only: 4 requested content versions\n',
+    )
+    expect(text).toContain('diagnostic only: 1 requested content versions, 0 sweep re-enqueues')
+    expect(text.indexOf('post-classifier')).toBeLessThan(text.indexOf('story-clustering'))
+  })
+
+  it('still lists request-only classifiers when no run was reserved at all', () => {
+    const text = formatClassifierUsageReport(reportOf([], { 'story-clustering': 2 }))
+
+    expect(text).toContain('No classifier runs were reserved.')
+    expect(text).toContain('story-clustering\n  no run was reserved in the window')
   })
 
   it('lists a receipt that billed twice as a breach', () => {
