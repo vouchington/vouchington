@@ -101,8 +101,10 @@ Approval creates the type-specific extension row (`topics__referral_programs` or
 `update_topic_recommendation` and `withdraw_topic_recommendation` are MCP-only twins of the PATCH
 and DELETE routes. They call the same service commands, so the creator-or-admin and pending-only
 rules hold, and they need the `topic-recommendations:read` and `topic-recommendations:write` scopes
-and a Plus plan. Creating, listing, approving and rejecting have no tool, and `dismiss_recommendation`
-stays a REST-only bookmark predicate. See [Write tools for relations, referral links and topic recommendations](../../../../overview/architecture/agent-tools/relation-referral-recommendation-write-tools.md).
+and a Plus plan. `list_my_topic_recommendations` lists the caller's own recommendations of any status
+(scope `topic-recommendations:read`, free plan); it sanitizes and fences their text and scopes its
+cursor to the caller and status, so the cursor is not interchangeable with this list's. Creating, approving and rejecting have no tool, and
+`dismiss_recommendation` stays a REST-only bookmark predicate. See [Write tools for relations, referral links and topic recommendations](../../../../overview/architecture/agent-tools/relation-referral-recommendation-write-tools.md).
 
 ## Performance
 

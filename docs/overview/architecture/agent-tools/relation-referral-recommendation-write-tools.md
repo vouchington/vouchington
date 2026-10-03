@@ -21,10 +21,11 @@ call. The generated [tool catalog](catalog.md) holds each description, hint and 
 | `withdraw_topic_recommendation` | `DELETE /api/v1/topic-recommendations/:id`          | Pending only; withdrawing a withdrawn one is not found                     |
 
 Referral link tools use `referral-links:read` and `referral-links:write`; recommendation tools use
-`topic-recommendations:read` and `topic-recommendations:write`. The recommendation read scope has
-no read tool yet. Every tool refuses a suspended account before any change, and validates its
-arguments (a closed schema, so unknown fields fail) before it runs. Ownership and the domain checks
-stay in the service commands and throw the status and message the route sends. Official accounts,
+`topic-recommendations:read` and `topic-recommendations:write`. The read scope belongs to
+[`list_my_topic_recommendations`](own-data-read-tools.md#topic-recommendations). Every tool refuses
+a suspended account before any change, and validates its arguments (a closed schema, so unknown
+fields fail) before it runs. Ownership and the domain checks stay in the service commands and
+throw the status and message the route sends. Official accounts,
 administrators included, cannot create or edit a personal referral link, as on REST, so
 `create_referral_link` takes no `user_id`; an administrator can still activate, deactivate and delete
 another user's link. `create_referral_link` records the request's [content
@@ -65,22 +66,30 @@ whose change was already made.
 
 ## REST write inventory
 
-| REST write                                                                                                     | Tool or decision                                                                                      |
-| -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType`                                   | `add_entity_relation` (existing)                                                                      |
-| `PATCH /api/v1/posts/:idOrSlug` (remove a hashtag)                                                             | `remove_entity_relation`                                                                              |
-| `PUT` and `DELETE /api/v1/entity-relations/:id/vote`                                                           | No tool: the vote handlers are request-bound and there is no shared request-free command; a follow-up |
-| `POST`, `PATCH`, `DELETE /api/v1/referral-links`, `.../:linkId`                                                | `create_referral_link`, `update_referral_link`, `delete_referral_link`                                |
-| `POST` and `DELETE /api/v1/referral-links/:linkId/activations`                                                 | `activate_referral_link`, `deactivate_referral_link`                                                  |
-| `POST /api/v1/referral-links/:linkId/unfurls`                                                                  | `request_referral_link_unfurl`                                                                        |
-| `POST`, `PATCH`, `DELETE /api/v1/referral-link-validations`, `.../rules`                                       | No tool: topic curation under `currentUserCanUpdateTopic`, not the caller's own links                 |
-| `POST /api/v1/referral-programs/:id/official-referral-links`, `DELETE /api/v1/official-referral-links/:linkId` | No tool: administrator-only (`currentUserCanManageOfficialReferralLink`); admin tools                 |
-| `PUT /api/v1/crawlers/referral-program`                                                                        | No tool: administrator-only crawler setup; admin tools                                                |
-| `PATCH /api/v1/topics/:idOrSlug/referral-program`                                                              | No tool: topic curation under `currentUserCanUpdateTopic`; a topic write tool, not a link tool        |
-| `POST /api/v1/topic-recommendations`                                                                           | No tool: CAPTCHA and contribution admission are request-bound                                         |
-| `PATCH`, `DELETE /api/v1/topic-recommendations/:id`                                                            | `update_topic_recommendation`, `withdraw_topic_recommendation`                                        |
-| `POST /api/v1/topic-recommendations/:id/approvals`, `.../rejections`                                           | No tool: administrator review (admin tools)                                                           |
-| `PUT /api/v1/bookmarks/:entityType/:entityId/dismiss_recommendation`                                           | No tool: stays REST-only                                                                              |
+| REST write                                                                                                     | Tool or decision                                                                                       |
+| -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType`                                   | `add_entity_relation` (existing)                                                                       |
+| `PATCH /api/v1/posts/:idOrSlug` (remove a hashtag)                                                             | `remove_entity_relation`                                                                               |
+| `PUT` and `DELETE /api/v1/entity-relations/:id/vote`                                                           | No tool: the vote handlers are request-bound and there is no shared request-free command; a follow-up  |
+| `POST`, `PATCH`, `DELETE /api/v1/referral-links`, `.../:linkId`                                                | `create_referral_link`, `update_referral_link`, `delete_referral_link`                                 |
+| `POST` and `DELETE /api/v1/referral-links/:linkId/activations`                                                 | `activate_referral_link`, `deactivate_referral_link`                                                   |
+| `POST /api/v1/referral-links/:linkId/unfurls`                                                                  | `request_referral_link_unfurl`                                                                         |
+| `POST`, `PATCH`, `DELETE /api/v1/referral-link-validations`, `.../rules`                                       | No tool: topic curation under `currentUserCanUpdateTopic`, not the caller's own links                  |
+| `POST /api/v1/referral-programs/:id/official-referral-links`, `DELETE /api/v1/official-referral-links/:linkId` | No tool: administrator-only (`currentUserCanManageOfficialReferralLink`); admin tools                  |
+| `PUT /api/v1/crawlers/referral-program`                                                                        | No tool: administrator-only crawler setup; admin tools                                                 |
+| `PATCH /api/v1/topics/:idOrSlug/referral-program`                                                              | No tool: topic curation under `currentUserCanUpdateTopic`; a topic write tool, not a link tool         |
+| `POST /api/v1/topic-recommendations`                                                                           | No tool: CAPTCHA, `Idempotency-Key` admission and quotas are request-bound, with no policy for a token |
+| `PATCH`, `DELETE /api/v1/topic-recommendations/:id`                                                            | `update_topic_recommendation`, `withdraw_topic_recommendation`                                         |
+| `POST /api/v1/topic-recommendations/:id/approvals`, `.../rejections`                                           | No tool: administrator review (admin tools)                                                            |
+| `PUT /api/v1/bookmarks/:entityType/:entityId/dismiss_recommendation`                                           | No tool: stays REST-only                                                                               |
+
+`POST /api/v1/topic-recommendations` has no tool because its admission is bound to the HTTP
+request: it verifies a Turnstile or App Attest proof, takes the `Idempotency-Key` header through
+`admitRouteContribution` and counts the contribution against quotas. An API key or OAuth token
+carries none of those, and no policy says what replaces them for a delegated credential, so a
+create tool would drop the abuse controls or invent its own. It waits for that decision (#1749).
+The only request-free admission today is the user data import's
+`admitImportedTopicRecommendation`, which is not a policy for an agent.
 
 The result schemas come from the generated OpenAPI components (`UserReferralLink`, `Post`), and
 `backend/tools/registry/referral-link-recommendation-output-schema.test.mts` pins them to the documented REST

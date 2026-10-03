@@ -6,7 +6,9 @@ import getMyNotificationsTool from '../get-my-notifications.mts'
 import getMyPreferencesTool from '../get-my-preferences.mts'
 import getMyProfileLinksTool from '../get-my-profile-links.mts'
 import getMyUnreadNotificationsTool from '../get-my-unread-notifications.mts'
+import listMyTopicRecommendationsTool from '../list-my-topic-recommendations.mts'
 import updateMyPreferencesTool from '../update-my-preferences.mts'
+import updateTopicRecommendationTool from '../update-topic-recommendation.mts'
 
 type Shape = { properties?: Record<string, unknown>; oneOf?: Shape[] }
 
@@ -93,5 +95,17 @@ describe('own-data read tool output schemas stay pinned to the documented REST t
     for (const [field, schema] of Object.entries(settings)) {
       expect(schema).toEqual(documented[field])
     }
+  })
+
+  // The REST list documents an untyped body, so each recommendation takes the post schema the
+  // update tool returns, which referral-link-recommendation-output-schema.test.mts pins to PATCH.
+  it('returns each recommendation as the post update_topic_recommendation returns', () => {
+    const posts = properties(listMyTopicRecommendationsTool.meta?.outputSchema)['posts'] as {
+      additionalProperties: unknown
+    }
+
+    expect(posts.additionalProperties).toEqual(
+      properties(updateTopicRecommendationTool.meta?.outputSchema)['post'],
+    )
   })
 })
