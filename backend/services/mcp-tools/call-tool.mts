@@ -81,9 +81,7 @@ export async function callMcpTool(
         status: err.status,
         code: admissionCode ?? code,
         message: err.message,
-        retryable:
-          admissionCode === CONTRIBUTION_ADMISSION_IN_PROGRESS ||
-          admissionCode === CONTRIBUTION_QUOTA_EXCEEDED,
+        retryable: admissionCode === CONTRIBUTION_ADMISSION_IN_PROGRESS,
         ...(admissionCode && Number.isInteger(retryAfterSeconds) && retryAfterSeconds > 0
           ? { retryAfterSeconds }
           : {}),

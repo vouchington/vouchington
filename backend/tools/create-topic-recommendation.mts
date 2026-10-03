@@ -14,6 +14,7 @@ import {
   type TopicRecommendationPost,
 } from '@services/topic-recommendations'
 import type { Tool } from '@services/openai-agents/tool-types'
+import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { requireActiveToolUser } from './private-user.mts'
 import updateTool from './update-topic-recommendation.mts'
 import { TOPIC_RECOMMENDATION_RESULT_SCHEMA } from './topic-recommendation-tool-support.mts'
@@ -55,14 +56,16 @@ const tool: Tool<Args, { success: true; post: TopicRecommendationPost }> = {
     api: [{ method: 'POST', path: '/api/v1/topic-recommendations' }],
     outputSchema: TOPIC_RECOMMENDATION_RESULT_SCHEMA,
   },
-  function: currentUser => async args => {
+  function: currentUser => async (args, invocationContext) => {
     const user = await requireActiveToolUser(currentUser)
+    const authority = getDelegatedToolAuthority(user, invocationContext)
     if (!currentUserCanCreatePost(user))
       throw createCodedError(403, 'An identity is required to create posts', IDENTITY_REQUIRED)
     const { idempotency_key, ...body } = args
     const membershipPlan = await getUserActivePlan(user.id)
     assertValidCreateTopicRecommendationInput(body)
     const post = await admitDelegatedContribution({
+      authority,
       currentUser: user,
       membershipPlan,
       source: 'topic_recommendation',

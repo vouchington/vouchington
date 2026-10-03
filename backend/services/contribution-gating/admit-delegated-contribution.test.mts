@@ -13,6 +13,7 @@ import { contributionLimitConfig } from './limits-config.mts'
 async function input() {
   const user = await createTestUser()
   return {
+    authority: { kind: 'delegated' as const, credentialOwnerId: user.id },
     currentUser: (await getTestPrivateUserById(user.id))!,
     membershipPlan: 'plus' as const,
     source: 'topic_recommendation' as const,
@@ -32,6 +33,20 @@ describe('delegated contribution admission — real store', () => {
   afterAll(async () => {
     await closeScopedDynamicConfigContext([contributionLimitConfig])
   })
+  it('refuses absent or mismatched authority before claiming admission', async () => {
+    const args = await input()
+    await expect(
+      admitDelegatedContribution({ ...args, authority: undefined as never }),
+    ).rejects.toMatchObject({ status: 403 })
+    await expect(
+      admitDelegatedContribution({
+        ...args,
+        authority: { kind: 'delegated', credentialOwnerId: crypto.randomUUID() },
+      }),
+    ).rejects.toMatchObject({ status: 403 })
+    await expect(admitDelegatedContribution(args)).resolves.toHaveProperty('post.id')
+  })
+
   it('returns a concurrent claim with the REST code and retry delay', async () => {
     const args = await input()
     const started = Promise.withResolvers<void>()

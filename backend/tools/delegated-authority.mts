@@ -10,7 +10,7 @@ import type { ToolInvocationContext } from '@services/openai-agents/tool-types'
 export function getDelegatedToolAuthority(
   currentUser: PrivateUser,
   invocationContext: ToolInvocationContext | undefined,
-): EntityRelationActionAuthority {
+): Extract<EntityRelationActionAuthority, { kind: 'delegated' }> {
   if (!invocationContext) throw createHttpError(403, 'Delegated tool context is required')
   if (invocationContext.credentialOwnerId !== currentUser.id)
     throw createHttpError(403, 'Forbidden')

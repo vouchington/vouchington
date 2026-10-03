@@ -29,6 +29,20 @@ async function caller() {
 }
 
 describe('MCP recommendation creation — real admission', () => {
+  it('refuses direct calls without delegated invocation context or with another owner', async () => {
+    const user = await caller()
+    await expect(createTool.function(user)(args())).rejects.toMatchObject({
+      status: 403,
+      message: 'Delegated tool context is required',
+    })
+    await expect(
+      createTool.function(user)(args(), {
+        credentialOwnerId: crypto.randomUUID(),
+        grantedScopes: SCOPES,
+      }),
+    ).rejects.toMatchObject({ status: 403, message: 'Forbidden' })
+  })
+
   it('records the issuing OAuth client with the MCP channel', async () => {
     const user = await caller()
     const { client } = await createTestPendingOAuthAuthorization(user)
@@ -40,7 +54,8 @@ describe('MCP recommendation creation — real admission', () => {
         client: null,
         oauthClientId: clientId,
       },
-      () => createTool.function(user)(args()),
+      () =>
+        createTool.function(user)(args(), { credentialOwnerId: user.id, grantedScopes: SCOPES }),
     )
     expect(await readTestContentProvenance('posts', result.post.id)).toEqual({
       createdVia: 'mcp',
@@ -54,6 +69,7 @@ describe('MCP recommendation creation — real admission', () => {
     const started = Promise.withResolvers<void>()
     const release = Promise.withResolvers<void>()
     const first = admitDelegatedContribution({
+      authority: { kind: 'delegated', credentialOwnerId: user.id },
       currentUser: user,
       membershipPlan: 'plus',
       source: 'topic_recommendation',
@@ -87,7 +103,7 @@ describe('MCP recommendation creation — real admission', () => {
       await first
     }
   })
-  it('creates a sanitized recommendation and replays the same durable REST identity', async () => {
+  it('creates a recommendation and replays the same durable REST identity', async () => {
     const user = await caller()
     const input = args()
     const first = await callStructuredMcpTool(user, TOOL, input, SCOPES)
@@ -124,6 +140,18 @@ describe('MCP recommendation creation — real admission', () => {
       ).toContain('Invalid tool arguments')
     },
   )
+
+  it('reports UUID URNs passing schema format as a non-retryable invalid input', async () => {
+    const text = await callRejectedMcpTool(
+      await caller(),
+      TOOL,
+      { ...body(), idempotency_key: `urn:uuid:${crypto.randomUUID()}` },
+      SCOPES,
+    )
+    expect(JSON.parse(text)).toEqual({
+      error: { status: 422, code: 'INVALID_INPUT', message: 'Invalid UUID', retryable: false },
+    })
+  })
 
   it('requires write consent and the Plus plan', async () => {
     const user = await caller()

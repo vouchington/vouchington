@@ -110,3 +110,5 @@ tools, so the two cannot drift.
 Admin tools reuse domain service validation and history paths with explicit actor identity. They are exclusive to `admin_mcp`, require administrator role and their catalogued OAuth scopes, and do not depend on membership plans. Calls enforce the same scope policy used by listing. Expected 4xx failures return a typed `isError` payload with status, code, message, and `retryable: false`; unexpected failures retain the generic error and telemetry path.
 
 The shared admin factory marks user-authored and AI-derived text as untrusted external content and omits credential and verification secrets from both results and schemas. See [scope policy](../../backend/modules/scopes/README.md) and [training evidence](../moderation-training/README.md).
+
+User write tools preserve admission error codes. Concurrent admission returns `retryable: true` with its retry delay; exhausted capacity and key reuse return `retryable: false`.

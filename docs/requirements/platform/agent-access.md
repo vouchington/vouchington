@@ -62,7 +62,7 @@ still apply, including the REST administrator capacity exemption. Each tool requ
 `idempotency_key`, fed into the same durable admission identity as its REST route. Equal
 keys and bodies replay the original result; changed bodies return `IDEMPOTENCY_KEY_REUSED`.
 An active claim returns `CONTRIBUTION_ADMISSION_IN_PROGRESS` and `retryAfterSeconds`;
-exhausted capacity returns `CONTRIBUTION_QUOTA_EXCEEDED`.
+exhausted capacity returns `CONTRIBUTION_QUOTA_EXCEEDED` with `retryable: false` because admission does not supply a capacity retry delay.
 
 `admitDelegatedContribution` in `backend/services/contribution-gating/` owns this policy.
 Domain authorization and preparation use the existing service commands, and created content
