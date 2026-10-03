@@ -16,7 +16,6 @@ describe('SES inbound enqueues', () => {
     const data: SesInboundProcessJobData = {
       sesMessageId,
       objectKey: `copyright-incoming/${sesMessageId}`,
-      intakeKind: 'copyright',
     }
 
     const job = await enqueueSesInboundProcess(data)
@@ -48,7 +47,6 @@ describe('SES inbound enqueues', () => {
     const current = {
       sesMessageId: 'ses-current',
       objectKey: 'copyright-incoming/ses-current',
-      intakeKind: 'copyright' as const,
     }
     const currentId = getSesInboundProcessJobOptions(current).jobId
     const retryCurrent = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
@@ -75,7 +73,6 @@ describe('SES inbound enqueues', () => {
     const data: SesInboundProcessJobData = {
       sesMessageId,
       objectKey: `copyright-incoming/${sesMessageId}`,
-      intakeKind: 'copyright',
     }
 
     await expect(enqueueOrRetryBulkSesInboundProcess([data])).resolves.toBe(0)

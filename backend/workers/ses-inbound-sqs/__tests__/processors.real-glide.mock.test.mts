@@ -2,7 +2,10 @@ import { randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createSqsConsumer, type SqsConsumerPort, type SqsMessage } from '@backend/worker-runtime'
 import { sesInboundQueue } from '@queues/ses-inbound/queues'
-import { getSesInboundProcessJobOptions } from '@ts-shared/ses-inbound-contract'
+import {
+  createSesInboundProcessJobId,
+  getSesInboundProcessJobOptions,
+} from '@ts-shared/ses-inbound-contract'
 import { processSesInboundSqsMessage } from '../processors.mts'
 
 // This file intentionally exercises real glide-mq rather than mocking it; the passthrough only
@@ -74,7 +77,6 @@ describe('processSesInboundSqsMessage', () => {
     const jobId = getSesInboundProcessJobOptions({
       sesMessageId,
       objectKey,
-      intakeKind: 'copyright',
     }).jobId
     createdJobIds.push(jobId)
     const message = s3EventMessage([objectCreatedRecord(objectKey)])
@@ -96,7 +98,7 @@ describe('processSesInboundSqsMessage', () => {
     const job = await sesInboundQueue.getJob(jobId)
     expect(job).toMatchObject({
       name: 'processInboundEmail',
-      data: { sesMessageId, objectKey, intakeKind: 'copyright' },
+      data: { sesMessageId, objectKey },
     })
   })
 
@@ -106,7 +108,6 @@ describe('processSesInboundSqsMessage', () => {
     const jobId = getSesInboundProcessJobOptions({
       sesMessageId,
       objectKey,
-      intakeKind: 'copyright',
     }).jobId
     createdJobIds.push(jobId)
     const message = s3EventMessage([objectCreatedRecord(objectKey)])
@@ -120,6 +121,45 @@ describe('processSesInboundSqsMessage', () => {
 
     const job = await sesInboundQueue.getJob(jobId)
     expect(job).toMatchObject({ name: 'processInboundEmail', data: { sesMessageId, objectKey } })
+  })
+
+  it('acks a mixed event and enqueues only its copyright object', async () => {
+    const copyrightKey = `copyright-incoming/ses-${randomUUID()}`
+    const legacyKey = `incoming/ses-${randomUUID()}`
+    const copyrightJobId = createSesInboundProcessJobId(copyrightKey)
+    const legacyJobId = createSesInboundProcessJobId(legacyKey)
+    createdJobIds.push(copyrightJobId, legacyJobId)
+    const message = s3EventMessage([
+      objectCreatedRecord(legacyKey),
+      objectCreatedRecord(copyrightKey),
+    ])
+    const deleteCalls: string[] = []
+    const port = createOneShotPort([message], deleteCalls)
+    const log = vi.spyOn(console, 'info').mockImplementation(() => {})
+
+    try {
+      const consumer = createSqsConsumer({
+        name: 'test',
+        queueUrl: 'unused',
+        handleMessage: processSesInboundSqsMessage,
+        port,
+      })
+      const deleted = new Promise<SqsMessage>(resolve => consumer.once('message-deleted', resolve))
+      expect(await deleted).toEqual(message)
+      await consumer.close()
+
+      expect(deleteCalls).toEqual([message.receiptHandle])
+      expect(await sesInboundQueue.getJob(copyrightJobId)).toMatchObject({
+        name: 'processInboundEmail',
+        data: { objectKey: copyrightKey },
+      })
+      expect(await sesInboundQueue.getJob(legacyJobId)).toBeNull()
+      expect(log).toHaveBeenCalledExactlyOnceWith(
+        JSON.stringify({ bucket: BUCKET, objectKey: legacyKey }),
+      )
+    } finally {
+      log.mockRestore()
+    }
   })
 
   it('throws on a malformed payload and does not delete the message, so it redelivers toward the DLQ', async () => {
@@ -156,31 +196,35 @@ describe('processSesInboundSqsMessage', () => {
     ).rejects.toMatchObject({ status: 422 })
   })
 
-  it('throws when the object key is outside the recognized inbound prefixes, and does not delete the message', async () => {
-    // Routed through the full consumer (not a direct processSesInboundSqsMessage call) so this also
-    // proves assertSesInboundProcessJobData's own throw -- not just this processor's S3-shape
-    // asserts above it -- leaves the message undeleted and DLQ-routable, matching the malformed-
-    // payload test above.
-    const message = s3EventMessage([objectCreatedRecord('other/bad-key')])
-    const deleteCalls: string[] = []
-    const port = createOneShotPort([message], deleteCalls)
-
-    const consumer = createSqsConsumer({
-      name: 'test',
-      queueUrl: 'unused',
-      handleMessage: processSesInboundSqsMessage,
-      port,
+  it.each([
+    {
+      name: 'wrong event source',
+      record: { ...objectCreatedRecord('copyright-incoming/msg'), eventSource: 'other' },
+    },
+    {
+      name: 'missing key',
+      record: {
+        ...objectCreatedRecord('copyright-incoming/msg'),
+        s3: { bucket: { name: BUCKET }, object: {} },
+      },
+    },
+    { name: 'bad URL encoding', record: objectCreatedRecord('copyright-incoming%2Fbad%ZZ') },
+  ])('throws 422 for $name', async ({ record }) => {
+    await expect(processSesInboundSqsMessage(s3EventMessage([record]))).rejects.toMatchObject({
+      status: 422,
     })
-    const failed = new Promise<[SqsMessage, unknown]>(resolve =>
-      consumer.once('message-failed', (msg: SqsMessage, error: unknown) => resolve([msg, error])),
-    )
-    const [failedMessage, error] = await failed
-    await consumer.close()
-
-    expect(failedMessage).toEqual(message)
-    expect(error).toMatchObject({ message: expect.stringContaining('unknown prefix') })
-    expect(deleteCalls).toEqual([])
   })
+
+  it.each(['copyright-incoming/', 'copyright-incoming/folder/id'])(
+    'throws 422 without enqueuing a malformed copyright key %s',
+    async objectKey => {
+      const jobId = createSesInboundProcessJobId(objectKey)
+      await expect(
+        processSesInboundSqsMessage(s3EventMessage([objectCreatedRecord(objectKey)])),
+      ).rejects.toMatchObject({ status: 422 })
+      expect(await sesInboundQueue.getJob(jobId)).toBeNull()
+    },
+  )
 
   it('throws a 422 when message.body is not valid JSON', async () => {
     await expect(

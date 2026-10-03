@@ -22,12 +22,8 @@ export type CopyrightEmailDependencies = {
   recordCopyrightEmailParse: typeof recordCopyrightEmailParse
 }
 
-export type CopyrightSesInboundProcessJobData = SesInboundProcessJobData & {
-  intakeKind: 'copyright'
-}
-
 export async function processCopyrightInboundEmail(
-  data: CopyrightSesInboundProcessJobData,
+  data: SesInboundProcessJobData,
   dependencies: CopyrightEmailDependencies,
 ): Promise<void> {
   const { intake, sourceIdentity } = await preserveCopyrightEvidence(data, dependencies)

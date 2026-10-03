@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { sentryCaptureMessageMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
-import { UnrecoverableError } from '@modules/queue-errors'
 import { SES_INBOUND_RECONCILE_JOB_NAME } from '@ts-shared/ses-inbound-contract'
 import { processSesInboundEmail, reconcileSesInboundEmails } from './processors.mts'
 import { listCopyrightSesInboundObjects } from './processors/s3.mts'
@@ -66,20 +65,19 @@ function createDependencySpies() {
   } satisfies ProcessDependencies
 }
 
-describe('processSesInboundEmail intake kind boundary', () => {
-  it('fails a support job terminally before any copy, write, parse, enqueue or source change', async () => {
+describe('processSesInboundEmail key boundary', () => {
+  it('rejects a non-copyright key before any copy, write, parse, enqueue or source change', async () => {
     const dependencies = createDependencySpies()
 
     await expect(
       processSesInboundEmail(
         {
-          sesMessageId: 'ses-support-message',
-          objectKey: 'incoming/ses-support-message',
-          intakeKind: 'support',
+          sesMessageId: 'ses-unhandled-message',
+          objectKey: 'incoming/ses-unhandled-message',
         },
         dependencies,
       ),
-    ).rejects.toBeInstanceOf(UnrecoverableError)
+    ).rejects.toThrow('unknown prefix')
 
     // Neither delete nor move may run: the source object stays at its original key.
     expect(dependencies.deleteSesInboundObject).not.toHaveBeenCalled()
@@ -98,7 +96,6 @@ describe('processSesInboundEmail intake kind boundary', () => {
         {
           sesMessageId: 'ses-copyright-message',
           objectKey: 'copyright-incoming/ses-copyright-message',
-          intakeKind: 'copyright',
         },
         dependencies,
       ),

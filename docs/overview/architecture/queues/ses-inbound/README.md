@@ -13,8 +13,9 @@ package's `enqueueSesInboundProcess()`.
 `processInboundEmail` reads copyright mail from `copyright-incoming/` in the private inbound-email
 bucket. `reconcileInboundEmail` scans that prefix every five minutes, bulk-enqueues missing jobs, and retries retained failed jobs for objects still present.
 The worker preserves the complete source as copyright evidence before deleting a successfully
-processed object. Terminally invalid copyright objects move to `failed/`. A job whose `intakeKind` is
-not `copyright` (an `incoming/` object) fails terminally before any I/O and its object stays in place.
+processed object. Terminally invalid copyright objects move to `failed/`. The SQS producer skips
+legacy `incoming/` objects without enqueuing them; the contract rejects non-copyright keys before
+the worker performs any I/O.
 
 Manual and scheduled reconciliation jobs use the shared `ses-inbound-reconciliation` ordering key
 with concurrency one, so retained-job removal and stable-ID re-enqueue cannot overlap.

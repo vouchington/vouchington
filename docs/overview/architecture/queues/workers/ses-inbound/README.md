@@ -13,9 +13,9 @@ replay-safe advisory extraction job. Initial messages and replies use that extra
 admitted case through encrypted threading headers is held for moderator correspondence classification after the
 agent recommendation; no restriction or outbound message runs automatically.
 
-Copyright routing is trusted only when the SQS producer supplies `intakeKind: copyright` for an
-object under `copyright-incoming/`; MIME recipient headers cannot select the legal path. The copy
-pins the source version and ETag and uses a content-addressed evidence key. Configure
+Copyright routing is trusted only for an S3 object under `copyright-incoming/`; MIME recipient
+headers cannot select the legal path. The copy pins the source version and ETag and uses a
+content-addressed evidence key. Configure
 `S3_BUCKET_COPYRIGHT_EVIDENCE` with private encryption, versioning, audited least-privilege worker
 access, and an approved retention policy before enabling intake. Malformed MIME remains preserved
 as a failed parse for staff review.
@@ -45,13 +45,10 @@ verdicts on the email review page; an authentication failure is a risk note and 
 notice. A virus `fail` quarantines the original: see
 [Quarantined originals](../../../../../runbooks/copyright-notices.md#quarantined-originals).
 
-The worker rejects every job whose `intakeKind` is not `copyright` as its first step, before any S3
-read, copy, intake write, parse, or enqueue. Support intake is retired (#375), so an `incoming/`
-object is never copied to evidence or parsed. The rejection is a terminal `UnrecoverableError` and
-the object is neither moved to `failed/` nor deleted, because the move deletes the original and
-`failed/` expires after 30 days. It stays at `incoming/` (which has no lifecycle expiry) and the
-reconciler never lists it. The upstream producer still enqueues a job for each `incoming/` object,
-so each one fails terminally once.
+The SQS producer acknowledges legacy `incoming/` events without enqueuing a job. The contract
+also rejects any non-copyright object key before the worker performs S3 reads, copies, intake
+writes, parsing, or enqueues. These legacy objects stay at `incoming/`, which has no lifecycle
+expiry pending the infrastructure cleanup in #1229; the reconciler never lists them.
 
 `COPYRIGHT_INTAKE_ENABLED` does not gate ingest. While it is false, the worker and the reconciler
 still copy, parse, thread-link, and delete each source object, so every email (a new notice or a

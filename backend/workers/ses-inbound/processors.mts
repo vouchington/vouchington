@@ -5,7 +5,6 @@ import { enqueueCopyrightEmailIntakeAndWait } from '@queues/ai-agents/enqueues/c
 import { createCopyrightEmailIntake, recordCopyrightEmailParse } from '@services/copyright-notices'
 import {
   assertSesInboundProcessJobData,
-  getSesInboundKindFromObjectKey,
   getSesMessageIdFromObjectKey,
   SES_INBOUND_RECONCILE_JOB_NAME,
   type SesInboundProcessJobData,
@@ -14,7 +13,6 @@ import { parseSesInboundMime, SesInboundTerminalError } from './processors/mime.
 import {
   processCopyrightInboundEmail,
   type CopyrightEmailDependencies,
-  type CopyrightSesInboundProcessJobData,
 } from './processors/copyright-email.mts'
 import {
   deleteSesInboundObject,
@@ -45,7 +43,6 @@ export async function processSesInboundEmail(
   dependencies?: Partial<ProcessDependencies>,
 ): Promise<void> {
   assertSesInboundProcessJobData(data)
-  assertCopyrightSesInboundJob(data)
   const deps = {
     copySesInboundObjectToCopyrightEvidence,
     createCopyrightEmailIntake,
@@ -99,7 +96,6 @@ async function enqueueAllInboundPages(
     const jobs = page.objectKeys.map(objectKey => ({
       sesMessageId: getSesMessageIdFromObjectKey(objectKey),
       objectKey,
-      intakeKind: getSesInboundKindFromObjectKey(objectKey),
     }))
     if (jobs.length > 0) {
       // oxlint-disable-next-line no-await-in-loop -- the durable scan cursor advances only after this page is enqueued.
@@ -109,16 +105,4 @@ async function enqueueAllInboundPages(
     continuationToken = page.nextContinuationToken
   } while (continuationToken)
   return enqueued
-}
-
-// Support intake is retired (#375), so this worker only handles copyright jobs. Reject any other
-// kind before any dependency call. Leave its source object where it is: moving it to `failed/`
-// deletes the original, and `failed/` expires after 30 days.
-function assertCopyrightSesInboundJob(
-  data: SesInboundProcessJobData,
-): asserts data is CopyrightSesInboundProcessJobData {
-  if (data.intakeKind === 'copyright') return
-  throw new UnrecoverableError(
-    `SES inbound intake kind ${data.intakeKind} is not processed; its source object is left in place`,
-  )
 }

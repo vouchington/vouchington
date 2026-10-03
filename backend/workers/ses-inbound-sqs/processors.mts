@@ -5,7 +5,7 @@ import {
   createSesInboundProcessJobId,
   decodeS3EventObjectKey,
   getSesMessageIdFromObjectKey,
-  getSesInboundKindFromObjectKey,
+  SES_INBOUND_COPYRIGHT_PREFIX,
   type SesInboundProcessJobData,
 } from '@ts-shared/ses-inbound-contract'
 
@@ -36,10 +36,11 @@ function isS3TestEvent(event: S3Event & S3TestEvent): boolean {
 
 // The S3 bucket notification (vouchington-infra/opentofu/sqs-event-ingress.tf, vouchington-infra/opentofu/ses-inbound.tf:
 // aws_s3_bucket_notification.ses_inbound) targets this queue directly -- this consumer parses the
-// S3 ObjectCreated event and reuses the unmodified @ts-shared/ses-inbound-contract functions and
-// the @queues/ses-inbound/enqueues producer to hand off to the downstream ses_inbound glide-mq
-// queue/worker/reconciler. A malformed or unrecognized message throws (via http-assert) rather than
-// being swallowed, so SQS redelivery/maxReceiveCount routes it to this queue's DLQ
+// S3 ObjectCreated event and uses @ts-shared/ses-inbound-contract functions and
+// the @queues/ses-inbound/enqueues producer to hand copyright objects to the downstream
+// ses_inbound glide-mq queue/worker/reconciler. Legacy non-copyright keys are acknowledged and
+// skipped. Malformed event envelopes throw (via http-assert), so SQS redelivery/maxReceiveCount
+// routes them to this queue's DLQ
 // (vouchington-infra/opentofu/sqs-event-ingress.tf: aws_sqs_queue.ses_inbound_dlq) instead of silently dropping it.
 export async function processSesInboundSqsMessage(message: SqsMessage): Promise<void> {
   let event: S3Event & S3TestEvent
@@ -84,13 +85,26 @@ function parseS3Event(event: S3Event): SesInboundProcessJobData[] {
       'SES inbound S3 event record missing s3.object.key',
     )
 
-    const objectKey = decodeS3EventObjectKey(encodedKey)
-    const sesMessageId = getSesMessageIdFromObjectKey(objectKey)
+    let objectKey: string
+    try {
+      objectKey = decodeS3EventObjectKey(encodedKey)
+    } catch {
+      assert(false, 422, 'SES inbound S3 event object key is not valid URL encoding')
+    }
+    if (!objectKey.startsWith(SES_INBOUND_COPYRIGHT_PREFIX)) {
+      console.info(JSON.stringify({ bucket: bucketName, objectKey }))
+      continue
+    }
+    let sesMessageId: string
+    try {
+      sesMessageId = getSesMessageIdFromObjectKey(objectKey)
+    } catch {
+      assert(false, 422, 'SES inbound S3 event has an invalid copyright object key')
+    }
     const logicalId = createSesInboundProcessJobId(objectKey)
     payloads.set(logicalId, {
       sesMessageId,
       objectKey,
-      intakeKind: getSesInboundKindFromObjectKey(objectKey),
     })
   }
   return [...payloads.values()]
