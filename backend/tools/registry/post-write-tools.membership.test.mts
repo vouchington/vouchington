@@ -11,7 +11,7 @@ import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers
 import {
   withConcurrentCommunityMembershipRemovalForTest,
   withConcurrentCommunityArchiveForTest,
-} from '@voucha/test-helpers/post-delegated-privacy-race'
+} from '@voucha/test-helpers/post-delegated-write-race'
 import { loadWritablePost } from '@services/posts/authorization'
 import { getPostByAny } from '@services/posts'
 import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'

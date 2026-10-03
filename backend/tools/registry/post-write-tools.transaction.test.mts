@@ -15,7 +15,7 @@ import {
   withConcurrentCommunityReviewDisableForTest,
   withConcurrentCommunityDeletionForTest,
   withConcurrentCommunityArchiveForTest,
-} from '@voucha/test-helpers/post-delegated-privacy-race'
+} from '@voucha/test-helpers/post-delegated-write-race'
 import { loadWritablePost } from '@services/posts/authorization'
 import { deletePost, getPostByAny } from '@services/posts'
 
