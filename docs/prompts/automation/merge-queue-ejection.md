@@ -22,7 +22,8 @@ Keep the runs whose `conclusion` is not `skipped`; the workflow already skipped 
 other than a CI failure or timeout. Each run's `head_sha` is the ejected head. Map it to its pull
 request with `gh api repos/{{REPOSITORY}}/commits/<head_sha>/pulls` and keep the pull request whose
 `head.sha` equals it and whose base is `main`. When several runs map to one pull request and head,
-keep the newest.
+the newest is the entry. Check each older run against the untriaged rules below; for each one that is
+still untriaged, also fingerprint its failing merge-group run and report it in the same entry.
 
 An entry is untriaged when all of these hold:
 
@@ -39,13 +40,20 @@ longer qualifies.
 ## Find stack layers
 
 A native stack layer's base branch is the head branch of the layer below it. When a layer leaves the
-queue, GitHub removes every layer above it with reason `stack_invalidated` at the same moment. For
-each entry, list `gh pr list --repo {{REPOSITORY}} --state open --base <entry head branch> --json
-number,headRefName,headRefOid`, and repeat upward from every layer you include. Include a layer only
-when its latest `RemovedFromMergeQueueEvent` has reason `stack_invalidated` and a `createdAt` within
-about a minute of the latest removal of the layer below it, its `mergeQueueEntry` is null, it is not
-an entry itself, and none of its comments containing its triage marker was created at or after that
-removal. A stack layer's own CI did not fail; do not classify it.
+queue, GitHub removes every layer above it at the same moment. The GraphQL removal reason for such a
+cascade is a lowercase string such as `stack_invalidated` or `stack_out_of_order`, and GitHub may add
+others. For each entry, list `gh pr list --repo {{REPOSITORY}} --state open --base <entry head branch>
+--json number,headRefName,headRefOid`, and repeat upward from every layer you include. Include a layer
+only when all of these hold:
+
+- its latest `RemovedFromMergeQueueEvent` has a `createdAt` within about a minute of the latest
+  removal of the layer below it;
+- that removal's reason is not the layer's own failure, timeout, or merge, such as `failed_checks`
+  or `merged`;
+- its `mergeQueueEntry` is null, and it is not an entry itself;
+- none of its comments containing its triage marker was created at or after that removal.
+
+A stack layer's own CI did not fail; do not classify it.
 
 ## Find the failing merge-group run
 
@@ -68,14 +76,17 @@ stable error text, and check whether the same fingerprint appears in other recen
 nightly runs that did not include the entry.
 
 Group the entries that share a fingerprint. An entry whose own change is the root cause stays a group
-of one. Then choose exactly one outcome per group, and open at most one fix PR or issue per group:
+of one. Then choose exactly one outcome per group, and open at most one fix PR or issue per group.
+Finishing a group's outcome finishes only that group: continue with the next group, then report and
+sweep. End the session early only when you cannot continue at all, such as lost `gh` access.
 
 1. **The pull request is the root cause.** Its own change fails deterministically, or conflicts with
-   an entry ahead of it or with `main`. Post the analysis comment below and stop. Do not fix it.
+   an entry ahead of it or with `main`. Post the analysis comment below; this group is done. Do not
+   fix it.
 2. **A flaky test.** The failure is nondeterministic and not caused by any entry in the group. Search
    open pull requests and issues for the same test first. If a focused fix already exists, reference
-   it in the comments and stop. Otherwise find or file one issue for the flake, then create one draft
-   fix PR from `main` that closes it. Create the fix branch from `{{MAIN_SHA}}`, never from a
+   it in the comments; this group is done. Otherwise find or file one issue for the flake, then create
+   one draft fix PR from `main` that closes it. Create the fix branch from `{{MAIN_SHA}}`, never from a
    fetched pull-request ref, and before creating the PR require `git log {{MAIN_SHA}}..HEAD` to list
    only your own commits. When the fix adds or tightens an assertion, first show that
    the assertion fails against the pre-fix source, per
@@ -109,8 +120,10 @@ A comment contains a pull request's marker when it contains
 markers that end with `main=<sha>`.
 
 Immediately before posting each comment, re-fetch that pull request. Skip it when it is no longer
-open and unmerged at the head you recorded, or when a comment containing its marker was created at or
-after its removal. Triage can take tens of minutes, so the discovery-time check is stale by then.
+open and unmerged at the head you recorded, when its `mergeQueueEntry` is no longer null, or when a
+comment containing its marker was created at or after its removal. Triage can take tens of minutes,
+so the discovery-time check is stale by then. A fix PR or issue for a flaky test or CI defect does
+not need this recheck: the defect remains even after the ejected pull request moves on.
 
 - An entry's comment states the outcome, the failing run and job, the evidence, the PR or issue you
   opened or found, and the other entries that share its root cause.
@@ -128,8 +141,9 @@ about 75 minutes have passed since the session started. Leave anything found aft
 next session.
 
 An ejection that joins this session after its last pass, or that the bound leaves behind, gets only
-the session link from the workflow. A session that another ejection starts within 24 hours covers
-it through its discovery window, which also retries ejections whose earlier session failed.
+the session link from the workflow. An ejection whose dispatch GitHub cancelled while coalescing gets
+a notice without a triage marker instead. A session that another ejection starts within 24 hours
+covers both through its discovery window, which also retries ejections whose earlier session failed.
 
 For any PR body this workflow is authorized to create or update, follow the
 [PR-description standard](../../../.agents/skills/pr-description/SKILL.md): keep `## Summary`
