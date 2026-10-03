@@ -1,21 +1,28 @@
 import app from '../../app.mts'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { createPaginationParser, defineQueryContract, queryString } from '@modules/pagination'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { searchUrls } from '@services/urls'
 import {
   currentUserCanFilterHostnameModeration,
   stripHostnameElectionFields,
   toPublicViewHostname,
 } from '@services/urls-hostnames'
-import { createPaginationParser } from '@modules/pagination'
 import { parsePositiveBigintIdParam } from '@ts-shared/utils/bigint-ids'
-import { apiResponse } from '../../response-contract.mts'
 
 const urlsParser = createPaginationParser({
   cursor: { type: 'simple' },
   limit: { min: 1, max: 100, default: 50 },
 })
+const urlsFilters = defineQueryContract({
+  query: queryString(),
+  hostnameId: queryString(),
+  contentTypeId: queryString({ description: 'Positive PostgreSQL bigint identifier.' }),
+})
 
 app.route('/api/v1/urls').get(async ctx => {
+  apiQuery('GET:/api/v1/urls', urlsParser, urlsFilters)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/urls')
 
   const paginationOptions = urlsParser.parse(ctx.query)
@@ -25,6 +32,17 @@ app.route('/api/v1/urls').get(async ctx => {
   const contentTypeId = ctx.query.contentTypeId
     ? parsePositiveBigintIdParam(ctx.query, 'contentTypeId')
     : undefined
+  const validationQuery = prepareQueryForValidation(ctx.query, {
+    ...urlsParser.queryContract,
+    ...urlsFilters.queryContract,
+  })
+  if (ctx.query.limit !== undefined) validationQuery.limit = paginationOptions.limit
+  const validatedQuery = Object.fromEntries(
+    Object.entries(validationQuery).filter(
+      ([key]) => key !== 'contentTypeId' || contentTypeId !== undefined,
+    ),
+  )
+  validateRequestContract(ctx, 'GET:/api/v1/urls', { query: validatedQuery })
 
   const canSeeModeration = currentUserCanFilterHostnameModeration(currentUser)
   const searchOptions = {

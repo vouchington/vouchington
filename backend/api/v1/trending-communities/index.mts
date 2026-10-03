@@ -1,6 +1,8 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
+import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
+import { apiQuery } from '../../response-contract.mts'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { getTrendingCommunities } from '@services/trending-communities'
 import { getTrendingCommunitiesCached } from '@services/entity-fetch/search-caches'
 import { createPaginationParser } from '@modules/pagination'
@@ -14,9 +16,13 @@ const trendingCommunitiesParser = createPaginationParser({
 
 // GET /api/v1/trending-communities
 app.route('/api/v1/trending-communities').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/trending-communities', trendingCommunitiesParser)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/trending-communities')
 
   const parsed = trendingCommunitiesParser.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, trendingCommunitiesParser.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = parsed.limit
+  validateRequestContract(ctx, 'GET:/api/v1/trending-communities', { query })
   const limit = currentUser ? parsed.limit : clampAnonLimit(parsed.limit)
 
   const searchOptions = {

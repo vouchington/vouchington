@@ -5,6 +5,15 @@ import {
   type CommunityRootPostType,
   type CommunitySortMode,
 } from '@services/communities'
+import {
+  defineQueryContract,
+  queryBoolean,
+  queryCsvArray,
+  queryEnum,
+  queryInteger,
+  queryString,
+  queryUuid,
+} from '@modules/pagination'
 
 export function parseEligiblePostType(
   ctx: Context,
@@ -21,10 +30,29 @@ export function parseEligiblePostType(
   return eligiblePostTypeParam
 }
 
-const VALID_SORT_MODES: CommunitySortMode[] = ['name', 'members', 'virtual_subscriptions']
-const VALID_LIST_TYPES = ['follow', 'mute']
-const VALID_LIST_SCOPES = ['mine']
-const VALID_FEED_CATEGORIES = ['posts', 'news', 'news_sources', 'news_topics'] as const
+export const VALID_SORT_MODES = [
+  'name',
+  'members',
+  'virtual_subscriptions',
+] as const satisfies readonly CommunitySortMode[]
+export const VALID_LIST_TYPES = ['follow', 'mute'] as const
+export const VALID_LIST_SCOPES = ['mine'] as const
+export const VALID_FEED_CATEGORIES = ['posts', 'news', 'news_sources', 'news_topics'] as const
+
+export const communitiesQuery = defineQueryContract({
+  q: queryString(),
+  limit: queryInteger({ minimum: 1, maximum: 100, default: 20 }),
+  after: queryString(),
+  member_id: queryEnum(['me']),
+  eligible_post_type: queryEnum(['discussion', 'review', 'data_point']),
+  sort: queryEnum(VALID_SORT_MODES),
+  list_type: queryEnum(VALID_LIST_TYPES),
+  list_scope: queryEnum(VALID_LIST_SCOPES),
+  feed_category: queryEnum(VALID_FEED_CATEGORIES),
+  has_list_type: queryBoolean(),
+  has_list_items: queryBoolean(),
+  topic: queryCsvArray(queryUuid(), { description: 'Repeated topic UUID query values.' }),
+})
 
 export interface CommunitiesListQuery {
   sort: CommunitySortMode
@@ -33,9 +61,7 @@ export interface CommunitiesListQuery {
   feedCategory: (typeof VALID_FEED_CATEGORIES)[number] | undefined
 }
 
-// Validates the GET /api/v1/communities sort/list_type/list_scope/feed_category query params.
-// These are plain string enums with no generated OpenAPI query schema of their own (the operation
-// only declares path/body carriers), so they stay hand-validated here.
+// Preserve route-specific 400/401 checks before the generated query boundary.
 export function parseCommunitiesListQuery(
   ctx: Context,
   currentUser: PrivateUser | null,
@@ -50,12 +76,12 @@ export function parseCommunitiesListQuery(
       : 'name'
 
   const listTypeParam = ctx.query.list_type as string | undefined
-  if (listTypeParam && !VALID_LIST_TYPES.includes(listTypeParam)) {
+  if (listTypeParam && !(VALID_LIST_TYPES as readonly string[]).includes(listTypeParam)) {
     ctx.throw(400, `Invalid list_type value. Must be one of: ${VALID_LIST_TYPES.join(', ')}`)
   }
 
   const listScopeParam = ctx.query.list_scope as string | undefined
-  if (listScopeParam && !VALID_LIST_SCOPES.includes(listScopeParam)) {
+  if (listScopeParam && !(VALID_LIST_SCOPES as readonly string[]).includes(listScopeParam)) {
     ctx.throw(400, `Invalid list_scope value. Must be one of: ${VALID_LIST_SCOPES.join(', ')}`)
   }
   if (listScopeParam === 'mine') ctx.assert(currentUser, 401, 'Unauthorized')

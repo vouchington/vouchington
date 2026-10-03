@@ -17,13 +17,32 @@ import {
   type TopicRecommendationStatus,
 } from '@services/topic-recommendations'
 import app from '../../../app.mts'
-import { requireAuth } from '../../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
+import { apiQuery } from '../../../response-contract.mts'
+import { defineQueryContract, queryString } from '@modules/pagination'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 import { topicRecommendationsParser } from './shared.mts'
 
+const topicRecommendationsFilters = defineQueryContract({
+  status: queryString(),
+  q: queryString(),
+})
+
 app.route('/api/v1/topic-recommendations').get(async (ctx: Context) => {
+  apiQuery(
+    'GET:/api/v1/topic-recommendations',
+    topicRecommendationsParser,
+    topicRecommendationsFilters,
+  )
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/topic-recommendations')
   const pagination = topicRecommendationsParser.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, {
+    ...topicRecommendationsParser.queryContract,
+    ...topicRecommendationsFilters.queryContract,
+  })
+  if (ctx.query.limit !== undefined) query.limit = pagination.limit
+  validateRequestContract(ctx, 'GET:/api/v1/topic-recommendations', { query })
 
   const result = await searchTopicRecommendations({
     status: ctx.query.status as TopicRecommendationStatus | undefined,

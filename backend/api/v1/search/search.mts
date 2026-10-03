@@ -1,14 +1,20 @@
 import app from '../../app.mts'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
-import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
+import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
+import { apiQuery } from '../../response-contract.mts'
+import { defineQueryContract, queryNumber, queryString } from '@modules/pagination'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { searchOmnisearch } from '@services/search'
 import { resolveHashtagTopicSearch } from '@services/search-params'
 import { clampAnonLimit } from '@modules/search-utils'
+
+const searchQuery = defineQueryContract({ q: queryString(), limit: queryNumber() })
 
 // GET /api/v1/search — combined omnisearch across all five verticals.
 // Returns a lightweight payload with only the fields the command-search dialog renders.
 // Individual vertical failures degrade to [] for that vertical.
 app.route('/api/v1/search').get(async ctx => {
+  apiQuery('GET:/api/v1/search', searchQuery)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/search')
 
   const rawQ = ctx.query.q as string | undefined
@@ -16,6 +22,10 @@ app.route('/api/v1/search').get(async ctx => {
   if (!currentUser) {
     limit = clampAnonLimit(limit)
   }
+  if (!Number.isFinite(limit)) limit = 3
+  const query = prepareQueryForValidation(ctx.query, searchQuery.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = limit
+  validateRequestContract(ctx, 'GET:/api/v1/search', { query })
 
   const hashtagResult = await resolveHashtagTopicSearch(rawQ)
   const textSearchQuery = hashtagResult.textSearchQuery

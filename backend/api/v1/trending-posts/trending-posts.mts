@@ -1,6 +1,9 @@
 import { streamJsonObject } from '@jongleberry/api-server'
 import app from '../../app.mts'
-import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
+import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
+import { apiQuery } from '../../response-contract.mts'
+import { defineQueryContract, queryEnum, queryNumber, queryUuid } from '@modules/pagination'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import {
   getTrendingPosts,
   trendingPostsPaginationParser,
@@ -26,7 +29,15 @@ import {
   type TrendingTimeRange,
 } from '@ts-shared/feed-capabilities'
 
+const trendingPostsFilters = defineQueryContract({
+  time_range: queryEnum(VALID_TRENDING_TIME_RANGES, { default: 'day' }),
+  post_type: queryEnum(VALID_TRENDING_POST_TYPES),
+  topic_id: queryUuid(),
+  min_score: queryNumber(),
+})
+
 app.route('/api/v1/trending-posts').get(async ctx => {
+  apiQuery('GET:/api/v1/trending-posts', trendingPostsPaginationParser, trendingPostsFilters)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/trending-posts')
 
   const paginationOptions = trendingPostsPaginationParser.parse(ctx.query)
@@ -64,6 +75,15 @@ app.route('/api/v1/trending-posts').get(async ctx => {
   if (minScore !== undefined && minScore < 0) {
     ctx.throw(400, 'Min score must be >= 0')
   }
+  const query = prepareQueryForValidation(ctx.query, {
+    ...trendingPostsPaginationParser.queryContract,
+    ...trendingPostsFilters.queryContract,
+  })
+  if (ctx.query.limit !== undefined) query.limit = paginationOptions.limit
+  const validationQuery = Object.fromEntries(
+    Object.entries(query).filter(([key]) => key !== 'min_score' || minScore !== undefined),
+  )
+  validateRequestContract(ctx, 'GET:/api/v1/trending-posts', { query: validationQuery })
 
   const searchOptions = {
     ...paginationOptions,
