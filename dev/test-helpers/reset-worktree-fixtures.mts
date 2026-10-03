@@ -15,6 +15,7 @@ const gitWorktreesPath = join(scriptDir, '..', publishedHelper)
 const gitWorktreesAdapterPath = join(scriptDir, 'lib/git-worktrees.sh')
 const worktreeResourceEnvPath = join(scriptDir, 'lib/worktree-resource-env.sh')
 const gitIndexLockPath = join(scriptDir, 'lib/git-index-lock.sh')
+const tmuxTargetPath = join(scriptDir, 'lib/tmux-target.sh')
 const tmuxNamePath = join(scriptDir, 'tmux-name')
 const testDirs: string[] = []
 export async function makeRepo({
@@ -45,6 +46,7 @@ export async function makeRepo({
     ['git-worktrees-recovery.sh', join(scriptDir, 'lib/git-worktrees-recovery.sh')],
     ['worktree-resource-env.sh', worktreeResourceEnvPath],
     ['git-index-lock.sh', gitIndexLockPath],
+    ['tmux-target.sh', tmuxTargetPath],
   ] as const) {
     await writeFile(join(dir, 'dev', 'lib', name), await readFile(src, 'utf8'))
   }

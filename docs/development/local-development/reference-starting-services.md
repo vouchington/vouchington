@@ -70,4 +70,11 @@ worker window runs with `WORKER_QUEUE_CLASS=all` and names no queues, so the wor
 queue list. A `QUEUES` value that reaches the window (for example from `.env`) makes that worker
 exit at startup, because `WORKER_QUEUE_CLASS` and `QUEUES` are mutually exclusive.
 
-Use `./dev/tmux-name <name>` to rename the current agent tmux window and pane title (targets `$TMUX_PANE`); pass an empty name to clear the pane title and restore automatic window naming.
+Use `./dev/tmux-name <name>` from an interactive tmux pane to rename its window and pane title.
+The command identifies the pane through the controlling terminal, then checks that the pane
+belongs to this worktree. For a direct, GUI, or background launch without a controlling terminal,
+provide all three binding values:
+`./dev/tmux-name --socket <tmux-socket-path> --pane %<id> --worktree <checkout-path> <name>`.
+`AGENT_TMUX_SOCKET`, `AGENT_TMUX_PANE`, and `AGENT_TMUX_WORKTREE` provide the same binding for
+name-only calls; a complete CLI binding takes precedence. An incomplete binding is rejected.
+Pass an empty name to clear the pane title and restore automatic window naming.

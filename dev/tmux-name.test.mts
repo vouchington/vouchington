@@ -1,88 +1,113 @@
-import { execFile } from 'node:child_process'
-
-import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-
+import { spawnSync } from 'node:child_process'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-
-import { join } from 'node:path'
-
+import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-
-import { promisify } from 'node:util'
-
 import { afterEach, describe, expect, it } from 'vitest'
 
+const scriptPath = fileURLToPath(new URL('./tmux-name', import.meta.url))
+const fakeTmux = fileURLToPath(new URL('./test-helpers/tmux-target-fake.sh', import.meta.url))
+const worktree = resolve(fileURLToPath(new URL('..', import.meta.url)))
 describe('dev/tmux-name', () => {
-  const scriptPath = fileURLToPath(new URL('./tmux-name', import.meta.url))
+  const dirs: string[] = []
 
-  const testDirs: string[] = []
+  afterEach(() => dirs.splice(0).forEach(dir => rmSync(dir, { recursive: true, force: true })))
 
-  afterEach(async () => {
-    await Promise.all(testDirs.splice(0).map(dir => rm(dir, { force: true, recursive: true })))
-  })
-
-  async function makeFakeBin() {
-    const dir = await mkdtemp(join(tmpdir(), 'voucha-tmux-name-bin-'))
-    testDirs.push(dir)
-
-    await writeFile(
-      join(dir, 'tmux'),
-      `#!/usr/bin/env bash
-log="\${FAKE_COMMAND_LOG:?}"
-printf 'tmux %s\\n' "$*" >> "$log"
-case "$1" in
-  display-message) printf '@0\\n' ;;
-esac
-`,
-    )
-    await chmod(join(dir, 'tmux'), 0o755)
-
-    return dir
-  }
-
-  async function runTmuxName(name: string, env: Record<string, string> = {}) {
-    const execFileAsync = promisify(execFile)
-    const dir = await mkdtemp(join(tmpdir(), 'voucha-tmux-name-'))
-    testDirs.push(dir)
-
-    const logPath = join(dir, 'commands.log')
-    await writeFile(logPath, '')
-    const binDir = await makeFakeBin()
-    const result = await execFileAsync('bash', [scriptPath, name], {
+  function run(args: string[], override: NodeJS.ProcessEnv = {}) {
+    const dir = mkdtempSync(join(tmpdir(), 'voucha-tmux-name-'))
+    dirs.push(dir)
+    const log = join(dir, 'commands.log')
+    writeFileSync(log, '')
+    const socket = join(dir, 'tmux.sock')
+    const result = spawnSync('bash', [scriptPath, ...args], {
+      encoding: 'utf8',
       env: {
         ...process.env,
-        ...env,
-        FAKE_COMMAND_LOG: logPath,
-        PATH: `${binDir}:/usr/bin:/bin`,
+        TMUX: undefined,
+        TMUX_PANE: undefined,
+        AGENT_TMUX_SOCKET: socket,
+        AGENT_TMUX_PANE: '%1',
+        AGENT_TMUX_WORKTREE: worktree,
+        VOUCHA_TMUX_BIN: fakeTmux,
+        FAKE_TMUX_PANE_PATH: worktree,
+        FAKE_TMUX_LOG: log,
+        ...override,
       },
     })
-
-    return { log: await readFile(logPath, 'utf8'), stderr: result.stderr, stdout: result.stdout }
+    return { ...result, log: readFileSync(log, 'utf8'), socket }
   }
 
-  it('re-enables automatic tmux window naming and clears the pane title for an empty name', async () => {
-    const { log } = await runTmuxName('', { TMUX_PANE: '%0' })
-
-    expect(log).toContain('tmux display-message -p -t %0 #{window_id}')
-    expect(log).toContain('tmux set-window-option -t @0 automatic-rename on')
-    expect(log).toContain('tmux select-pane -t %0 -T ')
-    expect(log).not.toContain('tmux rename-window')
+  it('restores automatic naming and clears the verified pane title', () => {
+    const result = run([''])
+    expect(result.status).toBe(0)
+    expect(result.log).toContain(`-S ${result.socket} set-window-option -t %1 automatic-rename on`)
+    expect(result.log).toContain(`-S ${result.socket} select-pane -t %1 -T `)
+    expect(result.log).not.toContain('rename-window')
   })
 
-  it('renames the tmux window and pane title for a non-empty name', async () => {
-    const { log } = await runTmuxName('agent-workflow', { TMUX_PANE: '%0' })
-
-    expect(log).toContain('tmux display-message -p -t %0 #{window_id}')
-    expect(log).toContain('tmux rename-window -t @0 agent-workflow')
-    expect(log).toContain('tmux select-pane -t %0 -T agent-workflow')
-    expect(log).not.toContain('tmux set-window-option')
+  it('renames the verified pane window and title without caching a window ID', () => {
+    const result = run(['agent-workflow'])
+    expect(result.status).toBe(0)
+    expect(result.log).toContain(`-S ${result.socket} rename-window -t %1 -- agent-workflow`)
+    expect(result.log).toContain(`-S ${result.socket} select-pane -t %1 -T agent-workflow`)
+    expect(result.log).not.toContain('window_id')
   })
 
-  it('exits without tmux calls outside tmux', async () => {
-    const { log, stderr, stdout } = await runTmuxName('agent-workflow', { TMUX_PANE: '' })
+  it('accepts a complete CLI binding in place of an incomplete environment binding', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'voucha-tmux-cli-'))
+    dirs.push(dir)
+    const socket = join(dir, 'override.sock')
+    const result = run(['--socket', socket, '--pane', '%7', '--worktree', worktree, 'cli-name'], {
+      AGENT_TMUX_SOCKET: '/bad/ambient.sock',
+      AGENT_TMUX_PANE: undefined,
+    })
+    expect(result.status).toBe(0)
+    expect(result.log).toContain(`-S ${socket} rename-window -t %7 -- cli-name`)
+  })
 
-    expect(log).toBe('')
-    expect(stderr).toBe('')
-    expect(stdout).toBe('')
+  it('refuses partial binding and never mutates tmux', () => {
+    const result = run(['agent-workflow'], { AGENT_TMUX_WORKTREE: undefined })
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('incomplete explicit binding')
+    expect(result.log).toBe('')
+  })
+
+  it('refuses a pane belonging to a different linked worktree', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'voucha-other-worktree-'))
+    dirs.push(dir)
+    const result = run(['agent-workflow'], { FAKE_TMUX_PANE_PATH: dir })
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('pane belongs to a different worktree')
+    expect(result.log).not.toContain('rename-window')
+  })
+
+  it('refuses a stale pane before any mutation', () => {
+    const result = run(['agent-workflow'], { FAKE_TMUX_PANE_MISSING: '1' })
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('pane is missing or unavailable')
+    expect(result.log).not.toContain('rename-window')
+    expect(result.log).not.toContain('select-pane')
+  })
+
+  it('does not use an inherited TMUX_PANE without a verified socket and terminal', () => {
+    const result = run(['agent-workflow'], {
+      AGENT_TMUX_SOCKET: undefined,
+      AGENT_TMUX_PANE: undefined,
+      AGENT_TMUX_WORKTREE: undefined,
+      TMUX_PANE: '%1',
+    })
+    expect(result.status).toBe(1)
+    expect(result.log).toBe('')
+  })
+
+  it('is a silent no-op with no tmux context', () => {
+    const result = run(['agent-workflow'], {
+      AGENT_TMUX_SOCKET: undefined,
+      AGENT_TMUX_PANE: undefined,
+      AGENT_TMUX_WORKTREE: undefined,
+    })
+    expect(result.status).toBe(0)
+    expect(result.stderr).toBe('')
+    expect(result.log).toBe('')
   })
 })

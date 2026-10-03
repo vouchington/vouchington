@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { readFileSync, rmSync } from 'node:fs'
 import * as path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 
@@ -29,27 +29,32 @@ function runScript({
   const tmpEnv = makeTempDir()
   return spawnSync('node', [scriptPath, ...args], {
     encoding: 'utf8',
-    env: { ...process.env, SANDBOX_RUNTIME: '1', TMPDIR: tmpEnv, ...env },
+    env: {
+      ...process.env,
+      SANDBOX_RUNTIME: '1',
+      TMPDIR: tmpEnv,
+      TMUX: undefined,
+      TMUX_PANE: undefined,
+      AGENT_TMUX_SOCKET: undefined,
+      AGENT_TMUX_PANE: undefined,
+      AGENT_TMUX_WORKTREE: undefined,
+      ...env,
+    },
     input,
     timeout: 10_000,
   })
 }
 
-function writeFakeTmux(paneTitle: string): string {
+function fakeTmuxBinding() {
   const dir = makeTempDir()
-  const tmuxCommand = path.join(dir, 'tmux')
-  writeFileSync(
-    tmuxCommand,
-    [
-      '#!/bin/bash',
-      'case "$1" in',
-      `  display-message) printf '%s\\n' ${JSON.stringify(paneTitle)} ;;`,
-      'esac',
-      '',
-    ].join('\n'),
-    { mode: 0o755 },
-  )
-  return tmuxCommand
+  return {
+    AGENT_TMUX_SOCKET: path.join(dir, 'tmux.sock'),
+    AGENT_TMUX_PANE: '%1',
+    AGENT_TMUX_WORKTREE: worktreeRoot,
+    VOUCHA_TMUX_BIN: path.join(worktreeRoot, 'dev', 'test-helpers', 'tmux-target-fake.sh'),
+    FAKE_TMUX_PANE_PATH: worktreeRoot,
+    FAKE_TMUX_TITLE: 'old-task',
+  }
 }
 
 describe('dev/codex-hooks/post-tool-use-command.mts (merged PostToolUse hook subprocess)', () => {
@@ -131,10 +136,9 @@ describe('dev/codex-hooks/post-tool-use-command.mts (merged PostToolUse hook sub
   })
 
   it('emits only the tmux reminder on stdout, even when the same call also fires a journal milestone', () => {
-    const tmuxCommand = writeFakeTmux('old-task')
     const result = runScript({
       args: ['claude'],
-      env: { TMUX_PANE: '%1', VOUCHA_TMUX_BIN: tmuxCommand },
+      env: fakeTmuxBinding(),
       input: JSON.stringify({
         session_id: `e2e-post-tool-use-command-reminder-${randomUUID()}`,
         tool_input: { command: 'gh pr create --title x --body y' },
@@ -156,10 +160,9 @@ describe('dev/codex-hooks/post-tool-use-command.mts (merged PostToolUse hook sub
   // Cursor runs this same Claude-compat entrypoint with its own `Shell` tool name and a JSON-string
   // `tool_output`; readHookPayload normalizes both, so the exit-code gate still applies.
   function runCursorPrCreate(exitCode: number) {
-    const tmuxCommand = writeFakeTmux('old-task')
     return runScript({
       args: ['claude'],
-      env: { TMUX_PANE: '%1', VOUCHA_TMUX_BIN: tmuxCommand },
+      env: fakeTmuxBinding(),
       input: JSON.stringify({
         cursor_version: 'present',
         tool_input: { command: 'gh pr create --title x --body y' },

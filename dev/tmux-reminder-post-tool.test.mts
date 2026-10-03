@@ -9,8 +9,8 @@ import type { HookPayload } from './codex-hooks/types.mts'
 import { renderPostToolReminder, type PostToolTmuxOptions } from './tmux-reminder-post-tool.mts'
 
 // Checked-in stand-in: executing a script this test just wrote can fail with
-// ETXTBSY, and paneTitle would treat that as an empty title.
-const paneTitleTmux = fileURLToPath(new URL('./test-helpers/pane-title-tmux.sh', import.meta.url))
+// ETXTBSY, and the title lookup would treat that as missing.
+const paneTitleTmux = fileURLToPath(new URL('./test-helpers/tmux-target-fake.sh', import.meta.url))
 
 function withFakeTmux(
   paneTitle: string,
@@ -18,7 +18,7 @@ function withFakeTmux(
 ): string | null {
   return run({
     env: { ...process.env, VOUCHA_FAKE_PANE_TITLE: paneTitle },
-    tmuxCommand: paneTitleTmux,
+    spawnPaneTitle: () => ({ error: null, status: 0, stdout: `${paneTitle}\n` }),
   })
 }
 
@@ -28,7 +28,7 @@ describe('renderPostToolReminder', () => {
       tool_input: { command: './dev/reset-worktree' },
       tool_name: 'Bash',
     }
-    expect(renderPostToolReminder(payload, '')).toBeNull()
+    expect(renderPostToolReminder(payload, { env: {} })).toBeNull()
   })
 
   it('does not ask agents to rename reset-worktree windows to reset', () => {
@@ -36,16 +36,14 @@ describe('renderPostToolReminder', () => {
       tool_input: { command: './dev/reset-worktree' },
       tool_name: 'Bash',
     }
-    expect(withFakeTmux('', options => renderPostToolReminder(payload, '%1', options))).toBeNull()
+    expect(withFakeTmux('', options => renderPostToolReminder(payload, options))).toBeNull()
   })
 
   it('reads Cursor Shell post-tool payloads for reset-worktree', () => {
     const payload = readHookPayload(
       JSON.stringify({ tool_input: { command: './dev/reset-worktree' }, tool_name: 'Shell' }),
     )
-    const reminder = withFakeTmux('old-task', options =>
-      renderPostToolReminder(payload, '%1', options),
-    )
+    const reminder = withFakeTmux('old-task', options => renderPostToolReminder(payload, options))
     expect(reminder).toContain('./dev/tmux-name ""')
   })
 
@@ -54,9 +52,7 @@ describe('renderPostToolReminder', () => {
       toolInput: { command: './dev/reset-worktree' },
       toolName: 'run_terminal_command',
     }
-    const reminder = withFakeTmux('old-task', options =>
-      renderPostToolReminder(payload, '%1', options),
-    )
+    const reminder = withFakeTmux('old-task', options => renderPostToolReminder(payload, options))
     expect(reminder).toContain('./dev/tmux-name ""')
   })
 
@@ -65,9 +61,7 @@ describe('renderPostToolReminder', () => {
       tool_input: { command: './dev/reset-worktree' },
       tool_name: 'Bash',
     }
-    const reminder = withFakeTmux('old-task', options =>
-      renderPostToolReminder(payload, '%1', options),
-    )
+    const reminder = withFakeTmux('old-task', options => renderPostToolReminder(payload, options))
     expect(reminder).toContain('./dev/tmux-name ""')
     expect(reminder).not.toContain('./dev/tmux-name reset')
   })
@@ -77,9 +71,7 @@ describe('renderPostToolReminder', () => {
       tool_input: { command: './dev/reset-worktree --help' },
       tool_name: 'Bash',
     }
-    expect(
-      withFakeTmux('old-task', options => renderPostToolReminder(payload, '%1', options)),
-    ).toBeNull()
+    expect(withFakeTmux('old-task', options => renderPostToolReminder(payload, options))).toBeNull()
   })
 
   it('does not remind after ./dev/reset-worktree -h', () => {
@@ -87,9 +79,7 @@ describe('renderPostToolReminder', () => {
       tool_input: { command: './dev/reset-worktree -h' },
       tool_name: 'Bash',
     }
-    expect(
-      withFakeTmux('old-task', options => renderPostToolReminder(payload, '%1', options)),
-    ).toBeNull()
+    expect(withFakeTmux('old-task', options => renderPostToolReminder(payload, options))).toBeNull()
   })
 
   it('still reminds when a help invocation is followed by a real reset in the same command', () => {
@@ -97,37 +87,33 @@ describe('renderPostToolReminder', () => {
       tool_input: { command: './dev/reset-worktree --help; ./dev/reset-worktree --force' },
       tool_name: 'Bash',
     }
-    const reminder = withFakeTmux('old-task', options =>
-      renderPostToolReminder(payload, '%1', options),
-    )
+    const reminder = withFakeTmux('old-task', options => renderPostToolReminder(payload, options))
     expect(reminder).toContain('./dev/tmux-name ""')
   })
 
   it('reminds on ExitPlanMode without needing a command', () => {
     const payload: HookPayload = { tool_name: 'ExitPlanMode' }
-    const reminder = renderPostToolReminder(payload, '%1')
+    const reminder = withFakeTmux('', options => renderPostToolReminder(payload, options))
     expect(reminder).toContain('Plan accepted')
   })
 
   it('reminds to set the -pr<N> suffix after a git push with no suffix set yet', () => {
     const payload: HookPayload = { tool_input: { command: 'git push' }, tool_name: 'Bash' }
-    const reminder = withFakeTmux('my-feature', options =>
-      renderPostToolReminder(payload, '%1', options),
-    )
+    const reminder = withFakeTmux('my-feature', options => renderPostToolReminder(payload, options))
     expect(reminder).toContain('git push on PR branch')
   })
 
   it('stays silent for a git push once the -pr<N> suffix is already set', () => {
     const payload: HookPayload = { tool_input: { command: 'git push' }, tool_name: 'Bash' }
     expect(
-      withFakeTmux('my-feature-pr123', options => renderPostToolReminder(payload, '%1', options)),
+      withFakeTmux('my-feature-pr123', options => renderPostToolReminder(payload, options)),
     ).toBeNull()
   })
 
   it('stays silent when a transient tmux spawn failure is followed by a -pr<N> title', () => {
     const payload: HookPayload = { tool_input: { command: 'git push' }, tool_name: 'Bash' }
     let attempts = 0
-    const reminder = renderPostToolReminder(payload, '%1', {
+    const reminder = renderPostToolReminder(payload, {
       spawnPaneTitle: () => {
         attempts += 1
         if (attempts === 1) {
@@ -142,10 +128,10 @@ describe('renderPostToolReminder', () => {
     expect(attempts).toBe(2)
   })
 
-  it('still reminds when tmux cannot be spawned', () => {
+  it('stays silent when the pane cannot be verified', () => {
     const payload: HookPayload = { tool_input: { command: 'git push' }, tool_name: 'Bash' }
     let attempts = 0
-    const reminder = renderPostToolReminder(payload, '%1', {
+    const reminder = renderPostToolReminder(payload, {
       spawnPaneTitle: () => {
         attempts += 1
         const error = new Error('spawn ENOENT') as NodeJS.ErrnoException
@@ -153,7 +139,7 @@ describe('renderPostToolReminder', () => {
         return { error, status: null, stdout: '' }
       },
     })
-    expect(reminder).toContain('git push on PR branch')
+    expect(reminder).toBeNull()
     expect(attempts).toBe(1)
   })
 
@@ -162,18 +148,18 @@ describe('renderPostToolReminder', () => {
       tool_input: { command: 'gh pr create --title x --body y' },
       tool_name: 'Bash',
     }
-    const reminder = renderPostToolReminder(payload, '%1')
+    const reminder = withFakeTmux('', options => renderPostToolReminder(payload, options))
     expect(reminder).toContain('PR created')
   })
 
   it('ignores an unrelated Bash command', () => {
     const payload: HookPayload = { tool_input: { command: 'ls -la' }, tool_name: 'Bash' }
-    expect(renderPostToolReminder(payload, '%1')).toBeNull()
+    expect(renderPostToolReminder(payload)).toBeNull()
   })
 
   it('ignores tools other than Bash/run_terminal_command/ExitPlanMode', () => {
     const payload: HookPayload = { tool_input: { command: 'x' }, tool_name: 'Read' }
-    expect(renderPostToolReminder(payload, '%1')).toBeNull()
+    expect(renderPostToolReminder(payload)).toBeNull()
   })
 
   it('stays silent after a failed gh pr create when a real exit code is available (Cursor)', () => {
@@ -182,7 +168,7 @@ describe('renderPostToolReminder', () => {
       tool_name: 'Bash',
       tool_response: { exit_code: 1 },
     }
-    expect(renderPostToolReminder(payload, '%1')).toBeNull()
+    expect(renderPostToolReminder(payload)).toBeNull()
   })
 
   it('still reminds after gh pr create when the exit code is explicitly 0 (Cursor)', () => {
@@ -191,7 +177,9 @@ describe('renderPostToolReminder', () => {
       tool_name: 'Bash',
       tool_response: { exit_code: 0 },
     }
-    expect(renderPostToolReminder(payload, '%1')).toContain('PR created')
+    expect(withFakeTmux('', options => renderPostToolReminder(payload, options))).toContain(
+      'PR created',
+    )
   })
 
   it('stays silent after a failed gh pr create when a real exit code is available (Grok toolResult)', () => {
@@ -200,7 +188,7 @@ describe('renderPostToolReminder', () => {
       toolName: 'run_terminal_command',
       toolResult: { exit_code: 1 },
     }
-    expect(renderPostToolReminder(payload, '%1')).toBeNull()
+    expect(renderPostToolReminder(payload)).toBeNull()
   })
 
   it('still reminds after gh pr create when the Grok toolResult exit code is explicitly 0', () => {
@@ -209,7 +197,9 @@ describe('renderPostToolReminder', () => {
       toolName: 'run_terminal_command',
       toolResult: { exit_code: 0 },
     }
-    expect(renderPostToolReminder(payload, '%1')).toContain('PR created')
+    expect(withFakeTmux('', options => renderPostToolReminder(payload, options))).toContain(
+      'PR created',
+    )
   })
 
   it('reminds when no exit code is available at all (Claude/Codex)', () => {
@@ -218,7 +208,9 @@ describe('renderPostToolReminder', () => {
       tool_name: 'Bash',
       tool_response: { stdout: '', stderr: '' },
     }
-    expect(renderPostToolReminder(payload, '%1')).toContain('PR created')
+    expect(withFakeTmux('', options => renderPostToolReminder(payload, options))).toContain(
+      'PR created',
+    )
   })
 
   it('reads the pane title from VOUCHA_TMUX_BIN instead of the first tmux on PATH', () => {
@@ -234,10 +226,15 @@ describe('renderPostToolReminder', () => {
       { mode: 0o755 },
     )
     vi.stubEnv('PATH', `${decoyDir}:${originalPath}`)
-    vi.stubEnv('VOUCHA_FAKE_PANE_TITLE', 'my-feature-pr123')
+    vi.stubEnv('FAKE_TMUX_TITLE', 'my-feature-pr123')
+    vi.stubEnv('FAKE_TMUX_PANE_PATH', fileURLToPath(new URL('..', import.meta.url)))
     vi.stubEnv('VOUCHA_TMUX_BIN', paneTitleTmux)
+    const socket = join(decoyDir, 'tmux.sock')
+    vi.stubEnv('AGENT_TMUX_SOCKET', socket)
+    vi.stubEnv('AGENT_TMUX_PANE', '%1')
+    vi.stubEnv('AGENT_TMUX_WORKTREE', fileURLToPath(new URL('..', import.meta.url)))
     try {
-      expect(renderPostToolReminder(payload, '%1')).toBeNull()
+      expect(renderPostToolReminder(payload)).toBeNull()
       expect(existsSync(marker)).toBe(false)
     } finally {
       vi.unstubAllEnvs()

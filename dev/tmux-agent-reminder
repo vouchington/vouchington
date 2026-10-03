@@ -13,11 +13,22 @@ set -euo pipefail
 # from the merged dev/codex-hooks/post-tool-use-command.mts entrypoint — see
 # dev/reference-agent-session-hooks.md.
 #
-# Silently exits 0 when not inside tmux.
+# Silently exits 0 when no tmux context is available.
 
 EVENT="${1:-}"
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+# shellcheck source=dev/lib/tmux-target.sh
+# shellcheck disable=SC1091
+source "$REPO_ROOT/dev/lib/tmux-target.sh"
+tmux_target_socket=''
+tmux_target_pane=''
+TMUX_TARGET_BIN="${VOUCHA_TMUX_BIN:-${TMUX_TARGET_BIN:-tmux}}"
 
-if [ -z "${TMUX_PANE:-}" ]; then
+if tmux_target_resolve "$REPO_ROOT" "${AGENT_TMUX_SOCKET:-}" "${AGENT_TMUX_PANE:-}" "${AGENT_TMUX_WORKTREE:-}"; then
+  :
+else
+  # Hook reminders are advisory. The resolver diagnoses invalid bindings and
+  # the hook leaves the agent's work alone.
   exit 0
 fi
 
@@ -26,8 +37,7 @@ fi
 cat >/dev/null
 
 pane_title() {
-  local tmux_bin="${VOUCHA_TMUX_BIN:-tmux}"
-  "$tmux_bin" display-message -p -t "$TMUX_PANE" '#{pane_title}' 2>/dev/null || true
+  "$TMUX_TARGET_BIN" -S "$tmux_target_socket" display-message -p -t "$tmux_target_pane" '#{pane_title}' 2>/dev/null || true
 }
 
 POLICY="Run: ./dev/tmux-name <name>  (must run unsandboxed: Claude/Codex dangerouslyDisableSandbox; Cursor disable sandbox)

@@ -1,35 +1,33 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-usage() { echo "Usage: ./dev/tmux-name <name>"; }
-if [ "$#" -eq 1 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then usage; exit 0; fi
-
-if [ "$#" -ne 1 ]; then
-  usage >&2
-  exit 2
-fi
-if [[ "$1" == -* ]]; then
-  echo "Error: unknown option: $1" >&2
-  usage >&2
-  exit 2
-fi
-
-name="$1"
-
-if [ -z "${TMUX_PANE:-}" ]; then
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+if [ "$#" -eq 1 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then
+  echo 'Usage: ./dev/tmux-name [--socket PATH --pane %ID --worktree PATH] NAME'
   exit 0
 fi
+# shellcheck source=dev/lib/tmux-target.sh
+# shellcheck disable=SC1091
+source "$REPO_ROOT/dev/lib/tmux-target.sh"
+tmux_target_socket=''
+tmux_target_pane=''
 
-if ! command -v tmux >/dev/null 2>&1; then
-  echo "Error: tmux is not installed." >&2
-  exit 1
-fi
+# Keep the existing test and hook binary seam while sharing the generic resolver.
+TMUX_TARGET_BIN="${VOUCHA_TMUX_BIN:-${TMUX_TARGET_BIN:-tmux}}"
 
-window_id="$(tmux display-message -p -t "$TMUX_PANE" '#{window_id}')"
-
-if [ -z "$name" ]; then
-  tmux set-window-option -t "$window_id" automatic-rename on
+if tmux_target_parse "$REPO_ROOT" "$@"; then
+  :
 else
-  tmux rename-window -t "$window_id" "$name"
+  resolve_status=$?
+  # An interactive command outside tmux has no target. Invalid, partial, stale,
+  # and mismatched bindings retain the resolver's diagnostic.
+  if [ "$resolve_status" -eq 3 ]; then exit 0; fi
+  exit "$resolve_status"
 fi
-tmux select-pane -t "$TMUX_PANE" -T "$name"
+
+if [ -z "$tmux_target_name" ]; then
+  "$TMUX_TARGET_BIN" -S "$tmux_target_socket" set-window-option -t "$tmux_target_pane" automatic-rename on
+else
+  "$TMUX_TARGET_BIN" -S "$tmux_target_socket" rename-window -t "$tmux_target_pane" -- "$tmux_target_name"
+fi
+"$TMUX_TARGET_BIN" -S "$tmux_target_socket" select-pane -t "$tmux_target_pane" -T "$tmux_target_name"
