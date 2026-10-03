@@ -51,14 +51,12 @@ describe('SES copyright inbound routing while intake is switched off', () => {
       {
         sesMessageId: 'ses-copyright-a',
         objectKey: 'copyright-incoming/ses-copyright-a',
-        intakeKind: 'copyright',
       },
     ])
     expect(enqueueOrRetry).toHaveBeenNthCalledWith(2, [
       {
         sesMessageId: 'ses-copyright-b',
         objectKey: 'copyright-incoming/ses-copyright-b',
-        intakeKind: 'copyright',
       },
     ])
   })
@@ -67,7 +65,6 @@ describe('SES copyright inbound routing while intake is switched off', () => {
     const data = {
       sesMessageId: 'ses-copyright-message',
       objectKey: 'copyright-incoming/ses-copyright-message',
-      intakeKind: 'copyright' as const,
     }
     const sesVerdicts = {
       spf: 'fail',
@@ -185,7 +182,6 @@ describe('SES copyright inbound routing while intake is switched off', () => {
     const data = {
       sesMessageId: 'ses-malformed-copyright',
       objectKey: 'copyright-incoming/ses-malformed-copyright',
-      intakeKind: 'copyright' as const,
     }
     const intake = {
       id: 'failed-intake-id',

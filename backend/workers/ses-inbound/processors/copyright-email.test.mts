@@ -46,7 +46,6 @@ describe('processCopyrightInboundEmail', () => {
       {
         sesMessageId: intake.ses_message_id,
         objectKey: 'copyright-incoming/ses-untrusted',
-        intakeKind: 'copyright',
       },
       dependencies,
     )
