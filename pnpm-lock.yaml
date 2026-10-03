@@ -86,8 +86,8 @@ importers:
         specifier: ^18.4.0
         version: 18.4.0
       eslint-plugin-no-mistakes:
-        specifier: ^0.68.0
-        version: 0.68.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
+        specifier: ^0.69.0
+        version: 0.69.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
       eslint-plugin-playwright:
         specifier: ^2.12.0
         version: 2.12.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
@@ -119,8 +119,8 @@ importers:
         specifier: ^6
         version: 6.38.0
       no-mistakes:
-        specifier: ^0.68.0
-        version: 0.68.0
+        specifier: ^0.69.0
+        version: 0.69.0
       oxfmt:
         specifier: ^0.71.0
         version: 0.71.0
@@ -12978,8 +12978,8 @@ importers:
         specifier: ^3.3.1
         version: 3.3.1
       no-mistakes:
-        specifier: ^0.68.0
-        version: 0.68.0
+        specifier: ^0.69.0
+        version: 0.69.0
       picomatch:
         specifier: ^4.0.4
         version: 4.0.7
@@ -13184,7 +13184,7 @@ importers:
         version: 3.1143.0
       '@sentry/aws-serverless':
         specifier: ^11.1.0
-        version: 11.1.0(@babel/core@7.29.7(supports-color@10.2.2))(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28))
+        version: 11.1.0
       '@ts-shared/deploy-environment':
         specifier: workspace:^
         version: link:../../ts-shared/deploy-environment
@@ -13235,8 +13235,8 @@ importers:
         specifier: ^8.20.0
         version: 8.20.0
       no-mistakes:
-        specifier: ^0.68.0
-        version: 0.68.0
+        specifier: ^0.69.0
+        version: 0.69.0
       oxfmt:
         specifier: ^0.71.0
         version: 0.71.0
@@ -18931,6 +18931,11 @@ packages:
 
   ajv-formats@2.1.1:
     resolution: {integrity: sha512-Wx0Kx52hxE7C18hkMEggYlEifqWZtYaRgouJor+WMdPnQyEK13vgEWyVNup7SoeeoLMsr4kf5h6dOW11I15MUA==}
+    peerDependencies:
+      ajv: ^8.0.0
+    peerDependenciesMeta:
+      ajv:
+        optional: true
 
   ajv-formats@3.0.1:
     resolution: {integrity: sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ==}
@@ -19720,8 +19725,8 @@ packages:
     resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
     engines: {node: '>=12'}
 
-  eslint-plugin-no-mistakes@0.68.0:
-    resolution: {integrity: sha512-ci9IxXKhW3bAAVAUEBVkM5JFk/+EFdbQy6FV5jMINldC/K+vlQBPIgRz7ntnW15i97/CRugJ4FIWDBFPa+dtGA==}
+  eslint-plugin-no-mistakes@0.69.0:
+    resolution: {integrity: sha512-TKBnop6hJAt14MLgzM7zAyzk1OymjCXd4kUyK+lpQ9IaLtW38l9e0l0VBpRnvBW+6z4AjZg/nWoxVsST1KIoBA==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
     peerDependencies:
       eslint: '>=9'
@@ -21067,30 +21072,30 @@ packages:
       sass:
         optional: true
 
-  no-mistakes-darwin-arm64@0.68.0:
-    resolution: {integrity: sha512-/+sNg6YEKfXuWyawUVbX4I1RqX33pJCuV4yCGaOijmlOWMTOQfAUYqMuM5iUJnqsNLADNJTbhCCHcXTMMOMV7Q==}
+  no-mistakes-darwin-arm64@0.69.0:
+    resolution: {integrity: sha512-TpfotDhcMRDGFEe++wP3081zWXNyZtXijyk1UB3BL+uYgWzitR5EE0yNigXuNjBC/DI/5T5hbGfMih3XtoMhUw==}
     cpu: [arm64]
     os: [darwin]
 
-  no-mistakes-linux-arm64-gnu@0.68.0:
-    resolution: {integrity: sha512-rNQHK7YyAWOHssdWHAqR9d+zDyW0h5za0RmlTc+owyGJZkSTfjVpVhEkW4X+8zQ+x/2Nz7J0FygtfyhAx02Rtg==}
+  no-mistakes-linux-arm64-gnu@0.69.0:
+    resolution: {integrity: sha512-qZIc6m6YrKn227PR4CFALlW/6EmRG4hCvcwMLLcNScDi0q3AcbWQ6Rxg8NfqDgk2Ch1Kxk5syh7rdJpTKXVsuA==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-linux-x64-gnu@0.68.0:
-    resolution: {integrity: sha512-29XluHN70MN/DK8Kd0UV8ho2fFo7gkwjQbBI8meZq47zeQLUrEZLq7g7cVgqSbm/iXXC2VE78TxQ9gEUG1CUHQ==}
+  no-mistakes-linux-x64-gnu@0.69.0:
+    resolution: {integrity: sha512-nvqCph9GTGwVghXtmykwSnCN50VojqAF1vuAEB8WucYaTnrP1dmDa2ZlPJvOEeSWYGINn8kZCcAVY4F1yJvrIw==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-win32-x64-msvc@0.68.0:
-    resolution: {integrity: sha512-PDZYguEtqJGf/j2uTjqpyLhjr0crSbEYaahwKjIkhoC3AeC5wAVjvX0LWYuM4F8SUofJpvI7QfYTohYolVVIkQ==}
+  no-mistakes-win32-x64-msvc@0.69.0:
+    resolution: {integrity: sha512-JemvaO4P/ln55CHuNxcIeQN9Wn4E8h9fzCVR6cwbnQs04D/KkQ+3l+k6VN/MdkU6ugVehFBWZ1p4SVHp2sl/0g==}
     cpu: [x64]
     os: [win32]
 
-  no-mistakes@0.68.0:
-    resolution: {integrity: sha512-AK/j6hfMAtT5M29jgBBy80NgMd5y8Bbb5xxxd6adttdNta7gAjspSYd3YrQJeTvDHE2HcnvNZ8Jkhto10FfbKg==}
+  no-mistakes@0.69.0:
+    resolution: {integrity: sha512-eKXOJV5ETBZ8M1tImOkVL6KQ3hfKkBRrTvlWm6lhm/0IA2WwfE62VIhLneSJo1yIJQ6d8BoX4eLKGSpqnGgs+w==}
     hasBin: true
 
   node-app-attest@1.0.1:
@@ -26657,7 +26662,7 @@ snapshots:
       domhandler: 5.0.3
       selderee: 0.12.0
 
-  '@sentry/aws-serverless@11.1.0(@babel/core@7.29.7(supports-color@10.2.2))(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28))':
+  '@sentry/aws-serverless@11.1.0':
     dependencies:
       '@sentry/conventions': 0.24.0
       '@sentry/core': 11.1.0
@@ -27944,8 +27949,8 @@ snapshots:
       - supports-color
       - zod
 
-  ajv-formats@2.1.1:
-    dependencies:
+  ajv-formats@2.1.1(ajv@8.20.0):
+    optionalDependencies:
       ajv: 8.20.0
     optional: true
 
@@ -28710,7 +28715,7 @@ snapshots:
 
   escape-string-regexp@5.0.0: {}
 
-  eslint-plugin-no-mistakes@0.68.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
+  eslint-plugin-no-mistakes@0.69.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
     dependencies:
       eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
 
@@ -30220,24 +30225,24 @@ snapshots:
       - '@babel/core'
       - babel-plugin-macros
 
-  no-mistakes-darwin-arm64@0.68.0:
+  no-mistakes-darwin-arm64@0.69.0:
     optional: true
 
-  no-mistakes-linux-arm64-gnu@0.68.0:
+  no-mistakes-linux-arm64-gnu@0.69.0:
     optional: true
 
-  no-mistakes-linux-x64-gnu@0.68.0:
+  no-mistakes-linux-x64-gnu@0.69.0:
     optional: true
 
-  no-mistakes-win32-x64-msvc@0.68.0:
+  no-mistakes-win32-x64-msvc@0.69.0:
     optional: true
 
-  no-mistakes@0.68.0:
+  no-mistakes@0.69.0:
     optionalDependencies:
-      no-mistakes-darwin-arm64: 0.68.0
-      no-mistakes-linux-arm64-gnu: 0.68.0
-      no-mistakes-linux-x64-gnu: 0.68.0
-      no-mistakes-win32-x64-msvc: 0.68.0
+      no-mistakes-darwin-arm64: 0.69.0
+      no-mistakes-linux-arm64-gnu: 0.69.0
+      no-mistakes-linux-x64-gnu: 0.69.0
+      no-mistakes-win32-x64-msvc: 0.69.0
 
   node-app-attest@1.0.1:
     dependencies:
@@ -31155,7 +31160,7 @@ snapshots:
     dependencies:
       '@types/json-schema': 7.0.15
       ajv: 8.20.0
-      ajv-formats: 2.1.1
+      ajv-formats: 2.1.1(ajv@8.20.0)
       ajv-keywords: 5.1.0(ajv@8.20.0)
     optional: true
 
