@@ -13,7 +13,6 @@ import {
   type UpdateUserOptions,
 } from '@services/users'
 import { getUserMetricsByAnyCached, getUserProfileMetricsByAny } from '@services/entity-fetch'
-import { getFollowedUsersByElectionVote } from '@services/users/follow-context'
 import { listProfileLinks } from '@services/my/profile-links'
 import {
   createVoteClearHandler,
@@ -29,14 +28,20 @@ import { createVoteStatsNoopReconciler } from '@services/elections-votes/shared'
 import { enqueueBulkUpdateUserVouchElectionVoteStats } from '@queues/elections/enqueues'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import renderMarkdown from '@services/markdown'
+import { defineQueryContract, queryEnum } from '@modules/pagination'
 import {
   apiNoRequestBody,
   apiOpenApiNoContent,
+  apiQuery,
   apiRequestContract,
   apiResponse,
 } from '../../response-contract.mts'
+
+const userProfileQueryContract = defineQueryContract({
+  include_bio: queryEnum(['0', '1'] as const),
+})
 import type { ElectionVoteRequest } from '@voucha/types/entities/election'
-import type { PrivateUser } from '@services/users/types'
+import { getUserVouchContextResponse } from './user-vouch-context.mts'
 import {
   getOptionalAuthAndRateLimit,
   requireAuth,
@@ -49,6 +54,13 @@ app
   .route('/api/v1/users/:idOrSlug')
   .get(async (ctx: Context) => {
     const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/users/:idOrSlug')
+    const includeBio = ctx.query.include_bio === '1'
+    const recognizedIncludeBio = ctx.query.include_bio === '1' || ctx.query.include_bio === '0'
+    apiQuery('GET:/api/v1/users/:idOrSlug', userProfileQueryContract)
+    validateRequestContract(ctx, 'GET:/api/v1/users/:idOrSlug', {
+      path: ctx.params,
+      query: recognizedIncludeBio ? { include_bio: ctx.query.include_bio } : {},
+    })
     const idOrSlug = ctx.params.idOrSlug!
 
     // Check if user is requesting their own profile (by ID or username)
@@ -70,7 +82,6 @@ app
       ctx.assert(resolvedUser, 404, 'User not found')
     }
 
-    const includeBio = ctx.query.include_bio === '1'
     const isAdminViewer = isAdminUser(currentUser ?? null)
     const [user_metrics, profile_links, user_bio_html, user_vouch_election] = await Promise.all([
       currentUser
@@ -116,6 +127,7 @@ app
       ctx,
       'DELETE:/api/v1/users/:idOrSlug',
     )
+    validateRequestContract(ctx, 'DELETE:/api/v1/users/:idOrSlug', { path: ctx.params })
     const user = await getPrivateUserByIdOrSlug(ctx.params.idOrSlug!)
     ctx.assert(user, 404, 'User not found')
     if (currentUser.id !== user.id) assertNotSuspended(currentUser)
@@ -167,6 +179,7 @@ app.route('/api/v1/users/:id/vouch-vote').delete(async ctx => {
 
 app.route('/api/v1/users/:id/vouch-context').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/users/:id/vouch-context')
+  validateRequestContract(ctx, 'GET:/api/v1/users/:id/vouch-context', { path: ctx.params })
   const target = await getPublicUserByAny(ctx.params.id!)
   ctx.assert(target, 404, 'User not found')
 
@@ -181,12 +194,3 @@ app.route('/api/v1/users/:id/vouch-context').get(async (ctx: Context) => {
 
   ctx.json(apiResponse('GET:/api/v1/users/:id/vouch-context', response))
 })
-
-async function getUserVouchContextResponse(currentUser: PrivateUser, targetId: string) {
-  const [positive_by_following, negative_by_following, election_vote] = await Promise.all([
-    getFollowedUsersByElectionVote(currentUser, targetId, 'user_vouch_votes', 1),
-    getFollowedUsersByElectionVote(currentUser, targetId, 'user_vouch_votes', -1),
-    getUserVouchElectionVote(currentUser.id, targetId),
-  ])
-  return { positive_by_following, negative_by_following, election_vote }
-}
