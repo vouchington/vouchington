@@ -61,6 +61,12 @@ runner-local worker configuration.
   vars reach the script through `env:` and are read as quoted shell variables, so text derived from
   an event or a third-party action's output is data rather than shell syntax.
   `workflow-script-expressions.test.mts` owns the allowlist and enforces it.
+- **Write-capable checkout tokens stay out of `.git/config`.** `actions/checkout` persists
+  `GITHUB_TOKEN` by default. A job whose token includes any write scope other than `id-token`
+  sets `persist-credentials: false` on every checkout. Steps that call `gh` or update a branch
+  pass that token explicitly. A reusable-workflow job that declares no `permissions` inherits its
+  caller, which may be able to write, so it follows the same rule.
+  `checkout-credentials.test.mts` enforces it.
 - **`$GITHUB_ENV`/`$GITHUB_PATH` poisoning is inherent to GitHub Actions.** Any step in a job can
   write to either file and influence later steps in the same job; no stdout guard covers a direct
   file write. Secret-bearing jobs stay gated by `trusted-secret-context` as above, which bounds the
