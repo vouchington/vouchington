@@ -405,12 +405,17 @@ any count below is above zero, it sends one Sentry warning named `copyright_revi
 Its `reason` tag has the same value, and one boolean tag per count shows which counts are set:
 
 - `waiting_past_target` counts notices with a staff-queue item open longer than
-  `reviewTargetMinutes`. It uses the queue's own items, so the page and the queue agree:
+  `reviewTargetMinutes`. It uses the queue's actionable paging view:
   - a form intake awaiting review, an appeal or counter-notice with no moderator review, or a court
-    or CCB filing awaiting assessment or resolution, timed from receipt;
+    or CCB filing awaiting assessment, timed from receipt. An assessed qualifying hold awaiting
+    resolution does not count;
   - an active restriction with no human review, timed from when it was imposed;
-  - a failed media action or failed or bounced delivery, timed from the failure; and
-  - a compliant assessment with a target it has not yet restricted, timed from the assessment.
+  - an unreviewed staydown match, timed from when the match was created;
+  - a failed media action or failed or bounced delivery, timed from the failure on the same
+    `reviewTargetMinutes` timer; and
+  - a compliant assessment with a target it has not yet restricted, timed from the assessment for
+    staff assessments, or from notice receipt for automated assessments. Each notice counts once,
+    including requests pending while automated enforcement is disabled.
 
   Deadline items are left out here because the two counts below cover them.
 
@@ -449,8 +454,10 @@ Until they exist, the warning appears only as a Sentry issue. The job has no thr
 five-minute schedule, so a breach repeats every sweep until it clears.
 
 A qualifying court or CCB hold blocks the restore but does not cancel or resolve the deadline. A
-deadline held open that way keeps paging as a missed restoration deadline. Only a completed restore
-or a superseding assessment clears it.
+deadline stops paging while every still-restricted counter-notice target is covered by an
+unresolved qualifying hold and no court or CCB filing on the case remains unassessed. It pages
+again after resolution if restoration is still incomplete. Unassessed filings never silence the
+missed-escalation or restoration-deadline page; the staff queue display remains unchanged.
 
 ## Evidence retention deletion
 
