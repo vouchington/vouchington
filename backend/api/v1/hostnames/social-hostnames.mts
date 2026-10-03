@@ -7,8 +7,10 @@ import {
   getTopicByAnyCachedBatch,
 } from '@services/entity-fetch'
 import { indexById } from '@modules/utils'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { apiQuery } from '../../response-contract.mts'
 import { createPaginationParser } from '@modules/pagination'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 const socialHostnamesParser = createPaginationParser({
   cursor: { type: 'score' },
@@ -16,11 +18,15 @@ const socialHostnamesParser = createPaginationParser({
 })
 
 app.route('/api/v1/hostnames/social').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/hostnames/social', socialHostnamesParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/hostnames/social')
 
   ctx.set('Cache-Control', 'private, no-store')
 
   const paginationOptions = socialHostnamesParser.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, socialHostnamesParser.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = paginationOptions.limit
+  validateRequestContract(ctx, 'GET:/api/v1/hostnames/social', { query })
 
   const { results, page_info } = await getFriendTrustedHostnames(currentUser.id, paginationOptions)
 

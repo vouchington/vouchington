@@ -119,6 +119,7 @@ app
     ctx.json({ topic: updated })
   })
   .delete((ctx: Context) => {
+    validateRequestContract(ctx, 'DELETE:/api/v1/topics/:idOrSlug', { path: ctx.params })
     ctx.set('Allow', 'GET, PATCH')
     ctx.throw(405, 'Topic deletion is intentionally unsupported. Merge topics instead.')
   })

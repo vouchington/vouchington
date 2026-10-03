@@ -25,12 +25,19 @@ import { searchCommunitiesCached } from '@services/entity-fetch/search-caches'
 import { indexById } from '@modules/utils'
 import { clampAnonLimit } from '@modules/search-utils'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
-import { parseCommunitiesListQuery, parseEligiblePostType } from './list-query.mts'
+import {
+  parseCommunitiesListQuery,
+  parseEligiblePostType,
+  communitiesQuery,
+} from './list-query.mts'
+import { apiQuery } from '../../response-contract.mts'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 const VALID_MEMBER_ROSTER_VISIBILITIES = ['public', 'users', 'members', 'moderators']
 app
   .route('/api/v1/communities')
   .get(async (ctx: Context) => {
+    apiQuery('GET:/api/v1/communities', communitiesQuery)
     const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/communities')
 
     const rawQ = ctx.query.q as string | undefined
@@ -54,8 +61,6 @@ app
       limit = clampAnonLimit(limit)
     }
 
-    const hashtagQuery = await resolveCommunityHashtagQuery(rawQ)
-
     const topicParam = ctx.query.topic
     const topicParams = Array.isArray(topicParam)
       ? (topicParam as string[])
@@ -68,6 +73,16 @@ app
         ctx.throw(400, 'Invalid topic UUID format')
       }
     }
+    const query = prepareQueryForValidation(ctx.query, communitiesQuery.queryContract)
+    if (limit !== undefined) query.limit = limit
+    if (ctx.query.has_list_type !== undefined) query.has_list_type = hasListType
+    if (ctx.query.has_list_items !== undefined) query.has_list_items = hasListItems
+    const validationQuery = Object.fromEntries(
+      Object.entries(query).filter(([, value]) => value !== ''),
+    )
+    validateRequestContract(ctx, 'GET:/api/v1/communities', { query: validationQuery })
+
+    const hashtagQuery = await resolveCommunityHashtagQuery(rawQ)
     const topicIds = [...new Set([...hashtagQuery.topicIds, ...topicParams])]
 
     const communitySearch = {

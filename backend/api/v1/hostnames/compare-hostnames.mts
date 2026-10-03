@@ -1,6 +1,9 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
+import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
+import { apiQuery } from '../../response-contract.mts'
+import { defineQueryContract, queryString } from '@modules/pagination'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import {
   getUrlHostnameByAnyCachedBatch,
@@ -14,7 +17,10 @@ import {
 } from '@services/urls-hostnames'
 import { indexById } from '@modules/utils'
 
+const compareHostnamesQuery = defineQueryContract({ ids: queryString() })
+
 app.route('/api/v1/hostnames/compare').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/hostnames/compare', compareHostnamesQuery)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/hostnames/compare')
 
   const rawIds = ctx.query.ids ? String(ctx.query.ids) : ''
@@ -26,6 +32,9 @@ app.route('/api/v1/hostnames/compare').get(async (ctx: Context) => {
 
   ctx.assert(ids.length > 0, 400, 'ids must contain at least one value')
   ctx.assert(ids.length <= 10, 400, 'ids must contain at most 10 values')
+  validateRequestContract(ctx, 'GET:/api/v1/hostnames/compare', {
+    query: prepareQueryForValidation(ctx.query, compareHostnamesQuery.queryContract),
+  })
 
   const canSeeModeration = currentUserCanFilterHostnameModeration(currentUser)
 

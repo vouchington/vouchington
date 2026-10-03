@@ -16,6 +16,8 @@ import {
 import { isAdminUser } from '@services/users'
 import { isUUID } from '@modules/utils'
 import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
+import { apiQuery } from '../../response-contract.mts'
+import { defineQueryContract, queryInteger, queryString, queryUuid } from '@modules/pagination'
 import type { ApiUuidContract } from '../../request-contract-types.mts'
 
 type UpsertReferralProgramCrawlerRequest = {
@@ -26,7 +28,15 @@ type UpsertReferralProgramCrawlerRequest = {
   content_selectors?: string[]
 }
 
+const crawlersQuery = defineQueryContract({
+  hostname_id: queryUuid(),
+  referral_program_id: queryUuid(),
+  limit: queryInteger({ minimum: 1, maximum: 100, default: 25 }),
+  after: queryString(),
+})
+
 app.route('/api/v1/crawlers').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/crawlers', crawlersQuery)
   await requireAuthAndRateLimit(ctx, isAdminUser, 'GET:/api/v1/crawlers')
 
   const { hostname_id, referral_program_id } = ctx.query as {
@@ -35,8 +45,16 @@ app.route('/api/v1/crawlers').get(async (ctx: Context) => {
   }
 
   if (!hostname_id && !referral_program_id) {
-    const limit = typeof ctx.query.limit === 'string' ? Number.parseInt(ctx.query.limit, 10) : 25
+    const parsedLimit =
+      typeof ctx.query.limit === 'string' ? Number.parseInt(ctx.query.limit, 10) : 25
+    const limit = Number.isNaN(parsedLimit) || parsedLimit < 1 ? 25 : Math.min(parsedLimit, 100)
     const after = typeof ctx.query.after === 'string' ? ctx.query.after : null
+    validateRequestContract(ctx, 'GET:/api/v1/crawlers', {
+      query: {
+        limit,
+        ...(after ? { after } : {}),
+      },
+    })
     const { results, page_info } = await searchCrawlers({ limit, after })
     ctx.json({ results, page_info })
     return
@@ -44,12 +62,16 @@ app.route('/api/v1/crawlers').get(async (ctx: Context) => {
 
   if (referral_program_id) {
     ctx.assert(isUUID(referral_program_id), 400, 'Invalid referral_program_id')
+    validateRequestContract(ctx, 'GET:/api/v1/crawlers', {
+      query: { referral_program_id },
+    })
     const crawlers = await getCrawlersByReferralProgramId(referral_program_id)
     ctx.json({ results: crawlers })
     return
   }
 
   ctx.assert(isUUID(hostname_id!), 400, 'Invalid hostname_id')
+  validateRequestContract(ctx, 'GET:/api/v1/crawlers', { query: { hostname_id } })
   const crawlers = await getCrawlersForHostname(hostname_id!)
   ctx.json({ results: crawlers })
 })

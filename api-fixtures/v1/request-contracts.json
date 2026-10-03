@@ -26034,6 +26034,26 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/admin/warnings": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "userId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/agent-moderations/:id/votes": {
       "path": {
         "properties": {
@@ -26164,6 +26184,20 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/availability": {
+      "query": {
+        "properties": {
+          "kind": {
+            "enum": ["topic-slug", "topic-name", "community-slug", "post-slug", "username"],
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/bookmarks/:entityType/:entityId": {
       "path": {
         "properties": {
@@ -26175,6 +26209,62 @@
           }
         },
         "required": ["entityType", "entityId"],
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/communities": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "eligible_post_type": {
+            "enum": ["discussion", "review", "data_point"],
+            "type": "string"
+          },
+          "feed_category": {
+            "enum": ["posts", "news", "news_sources", "news_topics"],
+            "type": "string"
+          },
+          "has_list_items": {
+            "type": "boolean"
+          },
+          "has_list_type": {
+            "type": "boolean"
+          },
+          "limit": {
+            "default": 20,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "list_scope": {
+            "enum": ["mine"],
+            "type": "string"
+          },
+          "list_type": {
+            "enum": ["follow", "mute"],
+            "type": "string"
+          },
+          "member_id": {
+            "enum": ["me"],
+            "type": "string"
+          },
+          "q": {
+            "type": "string"
+          },
+          "sort": {
+            "enum": ["name", "members", "virtual_subscriptions"],
+            "type": "string"
+          },
+          "topic": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
         "type": "object"
       }
     },
@@ -26760,6 +26850,30 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/crawlers": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "hostname_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "referral_program_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/crawlers/:id": {
       "path": {
         "properties": {
@@ -26768,6 +26882,17 @@
           }
         },
         "required": ["id"],
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/curated-aside-items": {
+      "query": {
+        "properties": {
+          "type": {
+            "enum": ["topic", "source", "community"],
+            "type": "string"
+          }
+        },
         "type": "object"
       }
     },
@@ -26910,6 +27035,39 @@
             "maximum": 100,
             "minimum": 1,
             "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/fediverse/instances": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "integration_status": {
+            "enum": ["pending", "approved", "blocked"],
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "open_registrations": {
+            "type": "boolean"
+          },
+          "q": {
+            "type": "string"
+          },
+          "software": {
+            "type": "string"
+          },
+          "sort": {
+            "enum": ["new", "best", "relevance"],
+            "type": "string"
           }
         },
         "type": "object"
@@ -27224,6 +27382,67 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/hostnames/blocked": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/hostnames/compare": {
+      "query": {
+        "properties": {
+          "ids": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/hostnames/social": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/hostnames/top": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "topic": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/households": {
       "query": {
         "properties": {
@@ -27380,6 +27599,43 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/lists/contains": {
+      "query": {
+        "properties": {
+          "entity_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "item_type": {
+            "enum": ["rss_feed_item", "post"],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/localization": {
+      "query": {
+        "properties": {
+          "consumer": {
+            "type": "string"
+          },
+          "locales": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "selectors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/membership-verifications/:verificationId": {
       "path": {
         "properties": {
@@ -27511,6 +27767,22 @@
               "fediverse_instance"
             ],
             "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/my/conversations": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
           }
         },
         "type": "object"
@@ -28153,6 +28425,48 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/recommended-topics": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "rss_feed": {
+            "type": "boolean"
+          },
+          "sort": {
+            "enum": ["score", "best"],
+            "type": "string"
+          },
+          "spending_category": {
+            "type": "boolean"
+          },
+          "topic_types": {
+            "items": {
+              "enum": [
+                "topic",
+                "rewards_program",
+                "rewards_program_status",
+                "referral_program",
+                "card",
+                "bank_account",
+                "rss_feed",
+                "fediverse_instance"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/referral-link-validations": {
       "query": {
         "properties": {
@@ -28243,6 +28557,26 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/report-integrity/flags": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "status": {
+            "enum": ["pending", "resolved"],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/report-integrity/flags/:id": {
       "path": {
         "properties": {
@@ -28251,6 +28585,34 @@
           }
         },
         "required": ["id"],
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/report-integrity/penalties": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "source_flag_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": ["active", "revoked"],
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
         "type": "object"
       }
     },
@@ -28622,6 +28984,19 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/search": {
+      "query": {
+        "properties": {
+          "limit": {
+            "type": "number"
+          },
+          "q": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/stories/:id": {
       "path": {
         "properties": {
@@ -28651,6 +29026,28 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/topic-recommendations": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "q": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/topic-recommendations/:id": {
       "path": {
         "properties": {
@@ -28659,6 +29056,25 @@
           }
         },
         "required": ["id"],
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/topic-recommendations/duplicates": {
+      "query": {
+        "properties": {
+          "topic_aliases": {
+            "type": "string"
+          },
+          "topic_markdown": {
+            "type": "string"
+          },
+          "topic_slug": {
+            "type": "string"
+          },
+          "topic_title": {
+            "type": "string"
+          }
+        },
         "type": "object"
       }
     },
@@ -29024,6 +29440,54 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/trending-communities": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 10,
+            "maximum": 50,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/trending-posts": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 20,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "min_score": {
+            "type": "number"
+          },
+          "post_type": {
+            "enum": ["discussion", "review", "data_point", "story"],
+            "type": "string"
+          },
+          "time_range": {
+            "default": "day",
+            "enum": ["day", "week", "month"],
+            "type": "string"
+          },
+          "topic_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/trending-referral-programs": {
       "query": {
         "properties": {
@@ -29035,6 +29499,55 @@
             "maximum": 50,
             "minimum": 1,
             "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/trending-topics": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 20,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "min_score": {
+            "type": "number"
+          },
+          "time_range": {
+            "default": "day",
+            "enum": ["day", "week", "month"],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/urls": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "contentTypeId": {
+            "type": "string"
+          },
+          "hostnameId": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "query": {
+            "type": "string"
           }
         },
         "type": "object"
@@ -29125,6 +29638,15 @@
           }
         },
         "required": ["idOrSlug"],
+        "type": "object"
+      },
+      "query": {
+        "properties": {
+          "include_bio": {
+            "enum": ["0", "1"],
+            "type": "string"
+          }
+        },
         "type": "object"
       }
     },
@@ -29458,6 +29980,26 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/vote-integrity/flags": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "status": {
+            "enum": ["pending", "resolved"],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/vote-integrity/flags/:id": {
       "path": {
         "properties": {
@@ -29469,6 +30011,38 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/vote-integrity/penalties": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "source": {
+            "enum": ["flag"],
+            "type": "string"
+          },
+          "source_flag_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": ["active", "revoked"],
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/vote-integrity/penalties/:id": {
       "path": {
         "properties": {
@@ -29477,6 +30051,22 @@
           }
         },
         "required": ["id"],
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/web-search": {
+      "query": {
+        "properties": {
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "query": {
+            "type": "string"
+          }
+        },
         "type": "object"
       }
     },

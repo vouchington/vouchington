@@ -31,6 +31,13 @@ validates, so clamping and the parser's `400` survive and only the filters are c
 A lenient filter (an unknown enum that falls back to its default, or an ignored key) is validated
 from its settled value so it cannot answer `422`.
 
+The route inventory also covers ordinary query readers that previously had no declared query
+carrier, including public search and trending feeds, communities, hostnames, localization,
+recommendations, and staff integrity lists. Each declares its consumed query shape with
+`apiQuery` and validates the same settled values it passes to its service. Existing authentication,
+role checks, cursor parsing, and route-specific `400` preconditions run first; a malformed typed
+query value that reaches the generated boundary answers `422` before service work.
+
 A typed raw-body declaration or explicit request-contract marker must emit a meaningful body
 schema: invoking the adapter against an empty object is not coverage. Compiler-built request-bundle
 assertions in [API fixtures](../../../backend/test-helpers/api-fixtures/openapi/write-openapi.test.mts) verify
@@ -40,7 +47,7 @@ behavior.
 ## Coverage by route family
 
 - [Content, list, household and public user routes](reference-content-routes-request-validation.md)
-  record the validated operations, the skipped path-only operations, and the 400-versus-422
+  record the validated operations, free-form path carriers, and the 400-versus-422
   decisions for that family.
 - [Staff, admin, and operations routes](reference-staff-operations-request-validation.md) record
   their status changes, carrier skips, and specialized ingress.
