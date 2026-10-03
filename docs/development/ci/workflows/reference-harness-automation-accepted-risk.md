@@ -93,7 +93,7 @@ dispatched shortly before the repoint and still queued/running can resume agains
 Command via its own concurrency ID's deduplicated create response
 (`vouchington:plan:<issue>`, `vouchington:fix:<issue>`,
 `vouchington:dependabot:<pr>:<sha>`, `vouchington:fix-main-review:<pr>:<sha>` for existing-PR reviews,
-`vouchington:fix-main:<workflow_id>:<sha>` otherwise, `vouchington:mq-eject:<pr>:<head_sha>`, and
+`vouchington:fix-main:<workflow_id>:<sha>` otherwise, `vouchington:mq-eject`, and
 `vouchington:scheduled:<prompt_name>`) until the next full-principal drain runs, and — unlike
 `/plan` — the other five share the repointed
 `HARNESS_TARGET`/`HARNESS_FALLBACKS` directly, with no surface-specific override.

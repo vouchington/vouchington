@@ -10,17 +10,17 @@ trusted host with repository-scoped git and GitHub CLI credentials.
 
 ## Workflow map
 
-| Caller                                                                         | Trigger                                                | Repository-owned controls                                                                                | Agent completion                                                                             |
-| ------------------------------------------------------------------------------ | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| [Fix Main](../../../../.github/workflows/fix-main.yml)                         | failed main workflow                                   | exact run/attempt/conclusion, transient triage, concurrency-id dedupe                                    | one draft fix PR                                                                             |
-| [Fix Main Self Retry](../../../../.github/workflows/fix-main-self-retry.yml)   | Fix Main's own completed run failed                    | run-attempt ceiling, transient triage, no self-resubscription, unhandled-disposition escalation fallback | rerun of Fix Main's failed job(s), or a fallback `needs-human` issue                         |
-| [Merge Queue Ejection](../../../../.github/workflows/merge-queue-ejection.yml) | merge queue removed a PR for `CI_FAILURE`/`CI_TIMEOUT` | reason filter, no PR checkout, concurrency-id dedupe                                                     | one flaky-test fix PR from `main` or one issue, plus one comment on the PR; never changes it |
-| [Fix Dependabot](../../../../.github/workflows/fix-dependabot.yml)             | failed Dependabot PR                                   | bot/fork/ref/SHA checks, transient triage, dedupe                                                        | exact-lease update to that PR branch                                                         |
-| [Fix Issue](../../../../.github/workflows/fix-issue.yml)                       | authorized standalone `/fix`                           | association, issue state, concurrency-id dedupe                                                          | one draft fix PR, or one `## Automation stopped` issue comment                               |
-| [Plan](../../../../.github/workflows/plan.yml)                                 | authorized standalone `/plan`                          | association and issue state                                                                              | one issue plan comment, no code changes                                                      |
-| [Shepherd](../../../../.github/workflows/shepherd.yml)                         | authorized standalone `/shepherd`                      | association, same-repo PR, exact head, durable checkpoint                                                | iterate the existing PR only                                                                 |
-| [Scheduled Prompts](../../../../.github/workflows/scheduled-prompts.yml)       | schedule/manual                                        | catalog selection, completion mode, concurrency-id dedupe                                                | one draft PR or bounded issue maintenance                                                    |
-| [Harness Dispatch](../../../../.github/workflows/harness-dispatch.yml)         | reusable call                                          | immutable client checkout, explicit schema, provider routing                                             | session id, URL, and created flag                                                            |
+| Caller                                                                         | Trigger                                                | Repository-owned controls                                                                                | Agent completion                                                                                                               |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| [Fix Main](../../../../.github/workflows/fix-main.yml)                         | failed main workflow                                   | exact run/attempt/conclusion, transient triage, concurrency-id dedupe                                    | one draft fix PR                                                                                                               |
+| [Fix Main Self Retry](../../../../.github/workflows/fix-main-self-retry.yml)   | Fix Main's own completed run failed                    | run-attempt ceiling, transient triage, no self-resubscription, unhandled-disposition escalation fallback | rerun of Fix Main's failed job(s), or a fallback `needs-human` issue                                                           |
+| [Merge Queue Ejection](../../../../.github/workflows/merge-queue-ejection.yml) | merge queue removed a PR for `CI_FAILURE`/`CI_TIMEOUT` | reason filter, no PR checkout, queue-wide concurrency-id dedupe                                          | per root cause, one flaky-test fix PR from `main` or one issue; one comment per ejected PR and stack layer; never changes them |
+| [Fix Dependabot](../../../../.github/workflows/fix-dependabot.yml)             | failed Dependabot PR                                   | bot/fork/ref/SHA checks, transient triage, dedupe                                                        | exact-lease update to that PR branch                                                                                           |
+| [Fix Issue](../../../../.github/workflows/fix-issue.yml)                       | authorized standalone `/fix`                           | association, issue state, concurrency-id dedupe                                                          | one draft fix PR, or one `## Automation stopped` issue comment                                                                 |
+| [Plan](../../../../.github/workflows/plan.yml)                                 | authorized standalone `/plan`                          | association and issue state                                                                              | one issue plan comment, no code changes                                                                                        |
+| [Shepherd](../../../../.github/workflows/shepherd.yml)                         | authorized standalone `/shepherd`                      | association, same-repo PR, exact head, durable checkpoint                                                | iterate the existing PR only                                                                                                   |
+| [Scheduled Prompts](../../../../.github/workflows/scheduled-prompts.yml)       | schedule/manual                                        | catalog selection, completion mode, concurrency-id dedupe                                                | one draft PR or bounded issue maintenance                                                                                      |
+| [Harness Dispatch](../../../../.github/workflows/harness-dispatch.yml)         | reusable call                                          | immutable client checkout, explicit schema, provider routing                                             | session id, URL, and created flag                                                                                              |
 
 ```mermaid
 flowchart LR
@@ -147,7 +147,7 @@ never available to caller checkout or prompt-rendering jobs; only each caller's 
 forwards it, by explicit name, into the `harness-dispatch.yml` call. Caller concurrency IDs are
 namespaced with `vouchington:` (`vouchington:shepherd:<PR>`, `vouchington:plan:<issue>`,
 `vouchington:fix:<issue>`, `vouchington:dependabot:<pr>:<sha>`, `vouchington:fix-main-review:<pr>:<sha>` /
-`vouchington:fix-main:<workflow_id>:<sha>`, `vouchington:mq-eject:<pr>:<head_sha>`,
+`vouchington:fix-main:<workflow_id>:<sha>`, `vouchington:mq-eject`,
 `vouchington:scheduled:<prompt_name>`).
 
 The request/response contract itself — bounded request timeouts, typed `AutoHarnessError`/
@@ -223,15 +223,29 @@ completed deploy`, so Automation Fix Main can never legally subscribe to itself,
 - Merge Queue Ejection runs on `pull_request_target` `dequeued` and dispatches only when
   `github.event.reason` is `CI_FAILURE` or `CI_TIMEOUT`, so a manual dequeue or a merge never starts a
   session. `pull_request_target` runs the workflow from `main`, and no job checks out, installs, or
-  executes pull-request content: the PR number, URL, head SHA, and reason reach the session only as
-  prompt text. The session checks out `main` at the event's `github.sha`, so a flaky-test fix PR never
-  carries the ejected PR's commits. It never pushes to, edits, merges, enqueues, or dequeues the
-  ejected PR: if the PR is the root cause it comments its analysis and stops; otherwise it opens one
-  flaky-test fix PR from `main`, files or updates one CI or architecture issue, or reports a
-  transient. Its comment carries a PR/head/main marker, so a repeat ejection at the same PR head and
-  `main` tip does not post twice. The concurrency id `vouchington:mq-eject:<pr>:<head_sha>` dedupes
-  only while a session is queued or running, so a re-ejection of the same head after that session
-  finishes starts a fresh triage. Fix Main still owns failures on `main` itself.
+  executes pull-request content: the seed PR's number, URL, head SHA, and reason reach the session
+  only as prompt text, and the session reads every other ejection through authenticated `gh`. The
+  session checks out `main` at the event's `github.sha`, so a flaky-test fix PR never carries an
+  ejected PR's commits. The concurrency id is the constant `vouchington:mq-eject`, so an ejection
+  while a session is queued or running joins that session (`created=false`), and the
+  `comment-session` job links it on the new PR. The session discovers ejections from this
+  workflow's non-skipped runs of the last 24 hours and treats one as untriaged while its PR is open
+  and unmerged at the ejected head, not re-enqueued, and without a triage marker newer than the
+  removal; any other entry is skipped without stopping the session. For each entry it also walks up
+  the native stack and includes every layer GitHub removed as `stack_invalidated` at the same moment.
+  It groups entries by failure fingerprint and, per group, comments its analysis when the PR is the
+  root cause, opens one flaky-test fix PR from `main`, files or updates one CI or architecture issue,
+  or reports a transient. It never pushes to, edits, merges, enqueues, or dequeues an ejected PR or
+  stack layer. Each of them gets at most one comment per removal, carrying a PR/head marker and
+  rechecked against the live PR immediately before posting; a stack layer's comment points to the
+  failing layer's triage. Before exiting it repeats discovery, bounded to three passes and about 75
+  minutes so a busy queue cannot run the shared session into its timeout. An ejection that joins
+  after the last pass, or that the bound leaves behind, gets only the session link until the next
+  ejection's session sweeps it; that 24-hour sweep also retries ejections whose session failed.
+  Ejections that arrive after a session finished start a new one, which relies on searching open PRs
+  and issues to avoid a duplicate fix. Its failure comment stays quiet when the `dispatch` job was
+  cancelled by concurrency coalescing, as for Dependabot below. Fix Main still owns failures on
+  `main` itself.
 - Dependabot revalidates the exact open bot-authored PR ref/SHA immediately before dispatch. The
   agent modifies that branch only; it cannot create a second PR. Its failure comment stays quiet
   when the `dispatch` job was cancelled by concurrency coalescing (cancelled with zero steps, no

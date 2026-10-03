@@ -164,9 +164,11 @@ completion. Detailed transient markers and look-alikes are in [Classifying Trans
 Failures](reference-ci-classifying-transient-infrastructure-failures.md).
 
 When the merge queue removes a pull request because its merge-group CI failed or timed out,
-[Merge Queue Ejection](../../.github/workflows/merge-queue-ejection.yml) dispatches an Auto Harness
-triage session from `main`. It fixes a flaky test in a new PR, files a CI or architecture issue, or
-comments its analysis on the ejected PR; it never changes that PR. See
+[Merge Queue Ejection](../../.github/workflows/merge-queue-ejection.yml) dispatches one queue-wide
+Auto Harness triage session from `main`; ejections while it is queued or running join it. The
+session triages every untriaged ejection of the last day, groups them by root cause, and explains
+each stack layer removed with them. Per root cause it fixes a flaky test in a new PR, files a CI or
+architecture issue, or comments its analysis on the ejected PRs; it never changes an ejected PR. See
 [Auto Harness automation](ci/workflows/reference-harness-automation.md#completion-specific-safeguards).
 
 A queue entry that is replaced or dequeued leaves merge-group runs that nothing else cancels.
