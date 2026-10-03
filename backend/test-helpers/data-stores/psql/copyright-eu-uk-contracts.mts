@@ -58,6 +58,7 @@ export async function readTerritorialClockColumnNames(): Promise<string[]> {
         table_name LIKE 'copyright_eu_%'
         OR table_name LIKE 'copyright_uk_%'
         OR table_name LIKE 'copyright_territorial_%'
+      OR table_name LIKE 'copyright_jurisdiction_policy_%'
       )
       AND column_name IN (
         'earliest_restoration_at',
@@ -80,6 +81,7 @@ export async function readTerritorialContractTableNames(): Promise<string[]> {
       table_name LIKE 'copyright_eu_%'
       OR table_name LIKE 'copyright_uk_%'
       OR table_name LIKE 'copyright_territorial_%'
+      OR table_name LIKE 'copyright_jurisdiction_policy_%'
     )
     ORDER BY table_name
   `)
