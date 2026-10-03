@@ -232,15 +232,16 @@ completed deploy`, so Automation Fix Main can never legally subscribe to itself,
   workflow's non-skipped runs of the last 24 hours and treats one as untriaged while its PR is open
   and unmerged at the ejected head, not re-enqueued, and without a triage marker newer than the
   removal; any other entry is skipped without stopping the session. For each entry it also walks up
-  the native stack and includes every layer GitHub removed at the same moment for a reason other than
-  its own failure or merge, such as `stack_invalidated`. It groups entries by failure fingerprint
+  the native stack and includes every layer GitHub removed at the same moment with a stack cascade
+  reason (`stack_*`, such as `stack_invalidated`). It groups entries by failure fingerprint
   and, per group, comments its analysis when the PR is the root cause, opens one flaky-test fix PR
   from `main`, files or updates one CI or architecture issue, or reports a transient; finishing one
   group moves on to the next. It never pushes to, edits, merges, enqueues, or dequeues an ejected PR or
   stack layer. Each of them gets at most one comment per removal, carrying a PR/head marker and
   rechecked against the live PR, including its queue entry, immediately before posting; a stack
-  layer's comment points to the failing layer's triage. Before exiting it repeats discovery, bounded to three passes and about 75
-  minutes so a busy queue cannot run the shared session into its timeout. An ejection that joins
+  layer's comment points to the failing layer's triage and is skipped when that triage is. Before
+  exiting it repeats discovery, bounded to three passes and about 75 minutes so a busy queue cannot
+  run the shared session into its timeout. An ejection that joins
   after the last pass, or that the bound leaves behind, gets only the session link; a session that
   another ejection starts within 24 hours sweeps it, and that sweep also retries ejections whose
   session failed.

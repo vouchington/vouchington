@@ -40,16 +40,16 @@ longer qualifies.
 ## Find stack layers
 
 A native stack layer's base branch is the head branch of the layer below it. When a layer leaves the
-queue, GitHub removes every layer above it at the same moment. The GraphQL removal reason for such a
-cascade is a lowercase string such as `stack_invalidated` or `stack_out_of_order`, and GitHub may add
-others. For each entry, list `gh pr list --repo {{REPOSITORY}} --state open --base <entry head branch>
---json number,headRefName,headRefOid`, and repeat upward from every layer you include. Include a layer
+queue, GitHub removes every layer above it at the same moment, with a GraphQL removal reason that
+names the stack, such as `stack_invalidated` or `stack_out_of_order`. For each entry, list
+`gh pr list --repo {{REPOSITORY}} --state open --base <entry head branch> --json
+number,headRefName,headRefOid`, and repeat upward from every layer you include. Include a layer
 only when all of these hold:
 
 - its latest `RemovedFromMergeQueueEvent` has a `createdAt` within about a minute of the latest
   removal of the layer below it;
-- that removal's reason is not the layer's own failure, timeout, or merge, such as `failed_checks`
-  or `merged`;
+- that removal's reason starts with `stack_`; a layer removed for any other reason, such as its own
+  failure or a manual removal, is not part of this cascade;
 - its `mergeQueueEntry` is null, and it is not an entry itself;
 - none of its comments containing its triage marker was created at or after that removal.
 
@@ -57,14 +57,17 @@ A stack layer's own CI did not fail; do not classify it.
 
 ## Find the failing merge-group run
 
-Apply this to each entry. Merge-group runs have `event` `merge_group` and a `head_branch` of the form
-`gh-readonly-queue/main/pr-<N>-<base sha>`. The entry's latest removal from the merge queue in its
-timeline gives the ejection time. Page through
+Apply this to each entry, and separately to each older untriaged removal reported with it.
+Merge-group runs have `event` `merge_group` and a `head_branch` of the form
+`gh-readonly-queue/main/pr-<N>-<base sha>`. The ejection time is the matching removal in the pull
+request's timeline: the latest removal for the entry, or the removal closest to an older run's
+`created_at` for an older removal. Page through
 `gh api "repos/{{REPOSITORY}}/actions/runs?event=merge_group&per_page=100&page=<n>"`, newest first,
 and keep the runs whose `head_branch` starts with `gh-readonly-queue/main/pr-<N>-`. Stop at the first
-page whose runs were all created more than a day before the ejection. The newest group's failed or
-timed-out runs caused this ejection. A group commit also contains every queue entry ahead of this
-pull request: compare the pull request's own diff with the group's base before blaming either side.
+page whose runs were all created more than a day before the ejection. The newest group created
+before the ejection time has the failed or timed-out runs that caused it. A group commit also
+contains every queue entry ahead of this pull request: compare the pull request's own diff with the
+group's base before blaming either side.
 
 ## Classify and group root causes
 
@@ -122,8 +125,10 @@ markers that end with `main=<sha>`.
 Immediately before posting each comment, re-fetch that pull request. Skip it when it is no longer
 open and unmerged at the head you recorded, when its `mergeQueueEntry` is no longer null, or when a
 comment containing its marker was created at or after its removal. Triage can take tens of minutes,
-so the discovery-time check is stale by then. A fix PR or issue for a flaky test or CI defect does
-not need this recheck: the defect remains even after the ejected pull request moves on.
+so the discovery-time check is stale by then. When you skip an entry's comment, also skip the
+comments on its stack layers, because there is no triage comment for them to link. A fix PR or
+issue for a flaky test or CI defect does not need this recheck: the defect remains even after the
+ejected pull request moves on.
 
 - An entry's comment states the outcome, the failing run and job, the evidence, the PR or issue you
   opened or found, and the other entries that share its root cause.
