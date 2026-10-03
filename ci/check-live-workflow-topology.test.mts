@@ -4,7 +4,7 @@ import { liveTopologyAuditErrors } from './check-live-workflow-topology.mts'
 import { makeTopology, makeWorkflow } from './workflow-topology-test-fixtures.mts'
 
 describe('live topology audit', () => {
-  it('surfaces topology diagnostics before policy or inventory checks', () => {
+  it('surfaces topology diagnostics before permission or inventory checks', () => {
     expect(
       liveTopologyAuditErrors(
         makeTopology({
