@@ -9,8 +9,8 @@ import {
   loadTopicRecommendation,
   TOPIC_RECOMMENDATION_ID_SCHEMA,
   TOPIC_RECOMMENDATION_RESULT_SCHEMA,
-  toDocumentedRecommendationPost,
 } from './topic-recommendation-tool-support.mts'
+import { toMcpRecommendation } from './topic-recommendation-read-output.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
 
 type UpdateTopicRecommendationArgs = UpdateTopicRecommendationInput & { id: string }
@@ -67,7 +67,7 @@ const tool: Tool<UpdateTopicRecommendationArgs, { success: true; post: TopicReco
       const user = await requireActiveToolUser(currentUser)
       const { id, ...changes } = args
       const post = await updateTopicRecommendation(user, await loadTopicRecommendation(id), changes)
-      return { success: true, post: toDocumentedRecommendationPost(post) }
+      return { success: true, post: await toMcpRecommendation(post) }
     },
   }
 
