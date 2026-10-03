@@ -10,9 +10,10 @@ tmux_target_root() {
   local directory git_root
   directory=$(cd -- "$1" && pwd -P) || return 1
   # Git's inherited repository selectors and runtime config can make -C
-  # report a different checkout. Discover solely from the physical directory.
+  # report a different checkout. Keep normal global/system config (including
+  # safe.directory) while dropping exported Git overrides.
   if command -v git >/dev/null 2>&1 && git_root=$(
-    env -i PATH="${PATH:-/usr/bin:/bin}" GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null \
+    env -i PATH="${PATH:-/usr/bin:/bin}" HOME="${HOME:-}" XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-}" \
       git -C "$directory" rev-parse --show-toplevel 2>/dev/null
   ); then
     (cd -- "$git_root" && pwd -P)

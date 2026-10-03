@@ -81,6 +81,46 @@ describe('dev/tmux-name', () => {
     expect(result.log).not.toContain('rename-window')
   })
 
+  it('accepts a pane and binding in subdirectories of the same Git worktree', () => {
+    const result = run(['agent-workflow'], {
+      AGENT_TMUX_WORKTREE: join(worktree, 'dev'),
+      FAKE_TMUX_PANE_PATH: join(worktree, 'dev', 'test-helpers'),
+    })
+    expect(result.status).toBe(0)
+    expect(result.log).toContain('rename-window -t %1 -- agent-workflow')
+  })
+
+  it('uses the caller’s global safe.directory config for Git root discovery', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'voucha-tmux-safe-directory-'))
+    dirs.push(dir)
+    const realGit = execFileSync('sh', ['-c', 'command -v git'], { encoding: 'utf8' }).trim()
+    const quotedGit = `'${realGit.replaceAll("'", "'\\''")}'`
+    writeFileSync(
+      join(dir, 'git'),
+      `#!/bin/sh\nGIT_TEST_ASSUME_DIFFERENT_OWNER=1 exec ${quotedGit} "$@"\n`,
+      {
+        mode: 0o755,
+      },
+    )
+    execFileSync(realGit, [
+      'config',
+      '--file',
+      join(dir, '.gitconfig'),
+      '--add',
+      'safe.directory',
+      worktree,
+    ])
+
+    const result = run(['agent-workflow'], {
+      HOME: dir,
+      PATH: `${dir}:${process.env.PATH ?? ''}`,
+      AGENT_TMUX_WORKTREE: join(worktree, 'dev'),
+      FAKE_TMUX_PANE_PATH: join(worktree, 'dev', 'test-helpers'),
+    })
+    expect(result.status).toBe(0)
+    expect(result.log).toContain('rename-window -t %1 -- agent-workflow')
+  })
+
   it('does not let exported Git worktree variables hide a different pane root', () => {
     const dir = mkdtempSync(join(tmpdir(), 'voucha-git-env-pane-'))
     dirs.push(dir)
