@@ -10,11 +10,6 @@ export const EXPORT_COPYRIGHT_ERASED_CIPHERTEXT = 'erased'
 /** Written into an export cell whose content the retention sweep has erased. */
 export const EXPORT_COPYRIGHT_ERASED_TEXT = '[erased by the retention policy]'
 
-/** A plaintext copyright column's value, or the erased marker once the retention sweep erased it. */
-export function exportedCopyrightText(value: string): string {
-  return value === EXPORT_COPYRIGHT_ERASED_CIPHERTEXT ? EXPORT_COPYRIGHT_ERASED_TEXT : value
-}
-
 /**
  * Decrypts a stored copyright text, or returns the erased marker once the sweep has erased it. The
  * sweep clears the owner link in the same transaction as the text, so an export reaches an erased

@@ -95,7 +95,9 @@ work in [#1230](https://github.com/vouchington/vouchington/issues/1230).
   before) and no claimant attribution. The export never fails on erased text: a filed notice,
   appeal or counter-notice that still reaches an erased column reads `[erased by the retention policy]`
   in each erased cell, and a ciphertext that is neither erased nor decryptable still fails the
-  export.
+  export. Plaintext claimant names and work descriptions use the case’s retention-erasure record
+  to identify erased cells, so a live value of `erased` remains unchanged. Ciphertext columns use
+  the sweep’s sentinel, which cannot be valid encrypted content.
 
 ## Data Request Lifecycle
 
