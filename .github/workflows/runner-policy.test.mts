@@ -45,6 +45,7 @@ describe('classifyRunsOnValue (synthetic)', () => {
 
   it('rejects a literal label outside the closed set', () => {
     expect(classifyRunsOnValue('self-hosted')).toMatchObject({ kind: 'literal', allowed: false })
+    expect(classifyRunsOnValue('macos-latest')).toMatchObject({ kind: 'literal', allowed: false })
     expect(classifyRunsOnValue('ubicloud-standard-4-arm')).toMatchObject({
       kind: 'literal',
       allowed: false,
@@ -59,12 +60,15 @@ describe('classifyRunsOnValue (synthetic)', () => {
     expect(result.resolvedLabels).toEqual(['ubuntu-latest', 'ubuntu-slim'])
   })
 
-  it('rejects a matrix expression with any disallowed candidate', () => {
-    const result = classifyRunsOnValue('${{ matrix.os }}', {
-      os: ['ubuntu-latest', 'self-hosted'],
-    })
-    expect(result).toMatchObject({ kind: 'matrix', allowed: false })
-  })
+  it.each(['self-hosted', 'macos-latest'])(
+    'rejects a matrix expression containing %s',
+    disallowedLabel => {
+      const result = classifyRunsOnValue('${{ matrix.os }}', {
+        os: ['ubuntu-latest', disallowedLabel],
+      })
+      expect(result).toMatchObject({ kind: 'matrix', allowed: false })
+    },
+  )
 
   it('rejects a matrix expression with no matrix context to resolve it', () => {
     expect(classifyRunsOnValue('${{ matrix.os }}')).toMatchObject({
@@ -160,14 +164,6 @@ describe('workflow runner policy (real workflows)', () => {
       'tests-web.yml#prep',
       'tests-web.yml#web-tests',
     ])
-  })
-
-  it('restricts macos-latest to the gated portability-macos job', () => {
-    const macJobs = allJobEntries().filter(({ job }) => job['runs-on'] === 'macos-latest')
-    expect(macJobs.map(({ file, jobName }) => `${file}#${jobName}`)).toEqual([
-      'tests-portability.yml#portability-macos',
-    ])
-    expect(macJobs[0]?.job.if).toBe("vars.CI_PORTABILITY_MACOS_ENABLED == 'true'")
   })
 
   it('never gives an ubuntu-slim job Docker, services, or Node/pnpm setup', () => {

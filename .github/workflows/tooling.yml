@@ -47,7 +47,7 @@ jobs:
       actions: read
       contents: read
 
-  # Minimal host-sensitive canaries on both supported CI operating systems.
+  # Minimal host-sensitive canaries on Linux.
   test-portability:
     needs: [changes]
     if: needs.changes.outputs.area-tooling == 'true'
@@ -91,7 +91,7 @@ jobs:
     uses: ./.github/workflows/ci-upload-codecov.yml
     with:
       uploads: >-
-        [{"flag":"ts-shared","pattern":"lcov-full-ts-shared*"},{"flag":"tooling","pattern":"lcov-full-tooling*"},{"flag":"portability-macos","pattern":"lcov-full-portability-macos*"},{"flag":"portability-linux","pattern":"lcov-full-portability-linux*"}]
+        [{"flag":"ts-shared","pattern":"lcov-full-ts-shared*"},{"flag":"tooling","pattern":"lcov-full-tooling*"},{"flag":"portability-linux","pattern":"lcov-full-portability-linux*"}]
     permissions:
       actions: read
       contents: read

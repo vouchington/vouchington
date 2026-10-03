@@ -22,7 +22,7 @@ const BEGIN = '<!-- BEGIN GENERATED: vitest-ownership -->'
 const END = '<!-- END GENERATED -->'
 
 // Job labels that are plain identifiers (no spaces) render as code, e.g. `tooling`; descriptive
-// labels render as prose, e.g. Linux + macOS portability.
+// labels render as prose, e.g. Linux portability.
 function renderJobLabel(jobLabel: string): string {
   const parenMatch = /^(\S+)\s+(\(.+\))$/.exec(jobLabel)
   if (parenMatch) return `\`${parenMatch[1]}\` ${parenMatch[2]}`

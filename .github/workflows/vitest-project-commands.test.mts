@@ -76,7 +76,7 @@ describe('durable Vitest workflow commands', () => {
     expect(toolingWorkflowProjectNames).toContain('static-analysis-ast-grep')
 
     const portability = readFileSync('.github/workflows/tests-portability.yml', 'utf8')
-    expect(portability.match(/pnpm run test:portability -- --bail=3/g)).toHaveLength(2)
+    expect(portability.match(/pnpm run test:portability -- --bail=3/g)).toHaveLength(1)
     expect(portability).toContain(
       "VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}",
     )
@@ -93,9 +93,9 @@ describe('durable Vitest workflow commands', () => {
     )
   })
 
-  it('installs the full workspace for both portability jobs', () => {
+  it('installs the full workspace for the Linux portability job', () => {
     const portability = readFileSync('.github/workflows/tests-portability.yml', 'utf8')
-    expect(portability.match(/uses: \.\/\.github\/actions\/setup-node-pnpm/g)).toHaveLength(2)
+    expect(portability.match(/uses: \.\/\.github\/actions\/setup-node-pnpm/g)).toHaveLength(1)
     expect(portability).not.toContain('pnpm install ')
   })
 

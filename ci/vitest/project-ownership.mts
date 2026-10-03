@@ -42,7 +42,7 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
   {
     orchestratorJob: 'test-portability',
     workflow: 'tests-portability.yml',
-    jobLabel: 'Linux + macOS portability',
+    jobLabel: 'Linux portability',
     // Derived from VITEST_PROJECT_GROUPS.portability, not re-enumerated — see run-vitest-project-group.mts.
     invocation: 'portability-group',
     projects: noCredential(VITEST_PROJECT_GROUPS.portability),

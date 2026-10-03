@@ -35,10 +35,10 @@ describe('artifact-upload-outcome.mts call sites', () => {
   it('all use the identical run string and a well-formed env block', () => {
     const steps = outcomeSteps()
 
-    // Fourteen full-LCOV uploads across the thirteen producer workflows.
+    // Thirteen full-LCOV uploads across the thirteen producer workflows.
     // A correctly-shaped new producer legitimately bumps these counts — update them deliberately
     // rather than treating the failure as a defect.
-    expect(steps).toHaveLength(14)
+    expect(steps).toHaveLength(13)
 
     for (const step of steps) {
       expect(step.run).toBe(EXPECTED_RUN)
