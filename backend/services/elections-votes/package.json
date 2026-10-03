@@ -62,6 +62,7 @@
   },
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@modules/on-error": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/elections": "workspace:^",
