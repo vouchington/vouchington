@@ -72,7 +72,7 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
 // `reconcile-background-responses` cancels orphaned leases that are still billing OpenAI;
 // blocking it on the spend cap would increase spend, not bound it. `auto-dispatch-judgement` is
 // exempt for the same reason: it only applies an already-computed judgement (remove content, warn
-// a user, escalate, resolve a report) -- it never calls OpenAI itself, and blocking it on the cap
+// a user, escalate, resolve a report) -- it never calls a model itself, and blocking it on the cap
 // would leave harmful content live and reports unactioned.
 // `autotagger-rss-feed-item` only runs the collaborative-follower pass, which reads follow and vote
 // relations and never calls a model, so it is spend-free. C6's model call is the shared

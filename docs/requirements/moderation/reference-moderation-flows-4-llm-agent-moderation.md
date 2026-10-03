@@ -41,7 +41,9 @@ act on a flag, through the community-level `communities.automod_action` setting.
 4. On flag, applies `communities.automod_action`: `record_only` (default) does nothing more,
    `review_queue` flags the review for moderators, and `unpublish` unpublishes the post as automod
    unless `platform_override_at` is set
-5. Records LLM token usage and cost to `ai_usage_ledger` (fire-and-forget; flex-tier calls only)
+5. Records the billed token usage and cost to `ai_usage_records` for any service tier. A ledger
+   write failure latches that UTC day's accounting as uncertain, and while the daily AI spend cap is
+   enabled the latch rejects further AI calls for the day
 
 The fixed-label built-in agents apply through the post classifier
 (`backend/agents/post-classifier/`), which records durable receipts and applies topic votes and
@@ -49,8 +51,10 @@ tags after clearance approval.
 
 Automated review-queue moves are attributed to `automod` in `post_clearance_changes`. They do not create modlog rows because `in_review` is a triage state, not a terminal action.
 
-**AI cost tracking:** Token usage and estimated cost for each OpenAI flex-tier moderation call are
-recorded in `ai_usage_ledger` per community. Local-model paths (ai-generated) do not record usage. The prompt test and automod simulate dry
+**AI cost tracking:** Token usage and estimated cost for each community moderation provider call
+(the seeded classifier's OpenRouter transport) are recorded in `ai_usage_records` per community, and
+each call is admitted under the daily AI spend cap first. The local `ai-generated`
+detector makes no provider call and records no usage. The prompt test and automod simulate dry
 runs record theirs under the `community-moderation-dry-run` workload. Administrators can view
 per-community cost totals at `/admin/ai-costs` (GET `/api/v1/admin/ai-costs`). The response represents each unbounded scale-six
 `total_cost.amount` as a canonical integer string so same-community sums remain exact beyond the
