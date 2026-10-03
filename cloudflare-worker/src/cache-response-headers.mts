@@ -18,10 +18,3 @@ export const stripCacheHeaders = (headers: Headers): Headers => {
   }
   return sanitizedHeaders
 }
-
-export const stripCacheResponseHeaders = (response: Response): Response =>
-  new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers: stripCacheHeaders(response.headers),
-  })

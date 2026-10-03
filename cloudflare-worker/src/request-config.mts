@@ -1,4 +1,3 @@
-import type { BotTier } from './bot-tier.mts'
 import { parseStaticCachedPaths, toPositiveNumber } from './cache-policy.mts'
 import type { Env } from './types.mts'
 
@@ -15,16 +14,6 @@ export type WorkerRequestConfig = {
   sitemapCacheTtlSeconds: number
   staticCachedPaths: Set<string>
   staticCacheTtlSeconds: number
-}
-
-export type WorkerRequestState = {
-  botTier: BotTier | null
-  countryCode: string | null
-  cspNonce: string
-  ip: string | null
-  requestId: string
-  url: URL
-  webCsp: string
 }
 
 export function getWorkerRequestConfig(env: Env): WorkerRequestConfig {

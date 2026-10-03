@@ -4,9 +4,8 @@ import * as stripeIdentity from './identity.mts'
 import { listStripeSubscriptionInvoices } from './invoices.mts'
 import { createBillingPortalSession } from './portal.mts'
 import { createStripeRefund } from './refunds.mts'
-import { cancelStripeSubscription, cancelStripeSubscriptionImmediately } from './subscriptions.mts'
+import { cancelStripeSubscriptionImmediately } from './subscriptions.mts'
 import type {
-  CancelSubscriptionAtPeriodEndPayload,
   CancelSubscriptionImmediatelyPayload,
   CreateBillingPortalSessionPayload,
   CreateIdentityCheckoutSessionPayload,
@@ -14,7 +13,6 @@ import type {
   CreateRefundPayload,
   ListSubscriptionInvoicesPayload,
   RetrieveIdentityVerificationSessionUrlPayload,
-  SanitizeCustomerPayload,
   StripeBillingPortalSessionResult,
   StripeCheckoutSessionResult,
   StripeInvoiceSummary,
@@ -77,13 +75,6 @@ export async function createBillingPortalSessionOperation(
   return { url: session.url }
 }
 
-export async function cancelSubscriptionAtPeriodEndOperation(
-  payload: CancelSubscriptionAtPeriodEndPayload,
-): Promise<null> {
-  await cancelStripeSubscription(payload.subscriptionId, payload.idempotencyKey)
-  return null
-}
-
 export function retrieveIdentityVerificationSessionUrlOperation(
   payload: RetrieveIdentityVerificationSessionUrlPayload,
 ): Promise<string | null> {
@@ -135,15 +126,6 @@ export async function cancelSubscriptionImmediatelyOperation(
   payload: CancelSubscriptionImmediatelyPayload,
 ): Promise<null> {
   await cancelStripeSubscriptionImmediately(payload.subscriptionId)
-  return null
-}
-
-export async function sanitizeCustomerOperation(payload: SanitizeCustomerPayload): Promise<null> {
-  await stripeCustomers.sanitizeStripeCustomer(
-    payload.customerId,
-    undefined,
-    payload.idempotencyKey,
-  )
   return null
 }
 

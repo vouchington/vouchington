@@ -10,17 +10,6 @@ export function getStripeSubscription(id: string): Promise<Stripe.Response<Strip
 }
 
 /* no-mistakes: integration=stripe */
-export function cancelStripeSubscription(
-  id: string,
-  idempotencyKey?: string,
-): Promise<Stripe.Response<Stripe.Subscription>> {
-  const stripe = getStripeClient()
-  const params = { cancel_at_period_end: true }
-  if (!idempotencyKey) return stripe.subscriptions.update(id, params)
-  return stripe.subscriptions.update(id, params, { idempotencyKey })
-}
-
-/* no-mistakes: integration=stripe */
 export async function cancelStripeSubscriptionImmediately(
   id: string,
 ): Promise<Stripe.Response<Stripe.Subscription>> {

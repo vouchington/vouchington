@@ -3,30 +3,6 @@
   "findings": [
     {
       "category": "unused-export",
-      "path": "backend/api/stripe-helpers.mts",
-      "parent": "",
-      "name": "cancelSubscriptionAtPeriodEnd",
-      "symbolKind": "function",
-      "count": 1
-    },
-    {
-      "category": "unused-export",
-      "path": "backend/api/stripe-helpers.mts",
-      "parent": "",
-      "name": "sanitizeCustomer",
-      "symbolKind": "function",
-      "count": 1
-    },
-    {
-      "category": "unused-export",
-      "path": "backend/scripts/explain-analyze/run-support.mts",
-      "parent": "",
-      "name": "seedSessionId",
-      "symbolKind": "variable",
-      "count": 1
-    },
-    {
-      "category": "unused-export",
       "path": "backend/types/entities/post-classifier.mts",
       "parent": "",
       "name": "PostClassifierLabel",
@@ -42,115 +18,11 @@
       "count": 1
     },
     {
-      "category": "unused-export",
-      "path": "cloudflare-worker/src/cache-response-headers.mts",
-      "parent": "",
-      "name": "stripCacheResponseHeaders",
-      "symbolKind": "function",
-      "count": 1
-    },
-    {
-      "category": "unused-export",
-      "path": "cloudflare-worker/src/inline-responses.mts",
-      "parent": "",
-      "name": "isStaticInlineResponsePath",
-      "symbolKind": "function",
-      "count": 1
-    },
-    {
-      "category": "unused-export",
-      "path": "cloudflare-worker/src/markdown-aliases.mts",
-      "parent": "",
-      "name": "isMarkdownAliasRoute",
-      "symbolKind": "function",
-      "count": 1
-    },
-    {
-      "category": "unused-export",
-      "path": "cloudflare-worker/src/request-config.mts",
-      "parent": "",
-      "name": "WorkerRequestState",
-      "symbolKind": "typeAlias",
-      "count": 1
-    },
-    {
-      "category": "unused-export",
-      "path": "cloudflare-worker/src/specification-documents.mts",
-      "parent": "",
-      "name": "MARKDOWN_SOURCE_PATHS",
-      "symbolKind": "variable",
-      "count": 1
-    },
-    {
-      "category": "unused-export",
-      "path": "ts-shared/ui-messages/message-descriptors.mts",
-      "parent": "",
-      "name": "MESSAGE_DESCRIPTORS",
-      "symbolKind": "variable",
-      "count": 1
-    },
-    {
-      "category": "unused-export",
-      "path": "ts-shared/ui-messages/time-ago-nouns.mts",
-      "parent": "",
-      "name": "phraseEs",
-      "symbolKind": "function",
-      "count": 1
-    },
-    {
-      "category": "unused-export",
-      "path": "ts-shared/ui-messages/time-ago-nouns.mts",
-      "parent": "",
-      "name": "phraseFr",
-      "symbolKind": "function",
-      "count": 1
-    },
-    {
-      "category": "unused-export",
-      "path": "ts-shared/ui-messages/time-ago-nouns.mts",
-      "parent": "",
-      "name": "phrasePt",
-      "symbolKind": "function",
-      "count": 1
-    },
-    {
-      "category": "unused-export",
-      "path": "ts-shared/ui-messages/time-ago-nouns.mts",
-      "parent": "",
-      "name": "TimeAgoPhrase",
-      "symbolKind": "typeAlias",
-      "count": 1
-    },
-    {
       "category": "unused-member",
       "path": "web/components/ui/error-boundary.tsx",
       "parent": "ErrorBoundary",
       "name": "getDerivedStateFromError",
       "symbolKind": "method",
-      "count": 1
-    },
-    {
-      "category": "unused-symbol",
-      "path": "ts-shared/ui-messages/message-descriptors.mts",
-      "parent": "",
-      "name": "countLabelCases",
-      "symbolKind": "function",
-      "count": 1
-    },
-    {
-      "category": "unused-symbol",
-      "path": "ts-shared/ui-messages/message-descriptors.mts",
-      "parent": "",
-      "name": "selectPlural",
-      "symbolKind": "function",
-      "count": 1
-    },
-    {
-      "category": "unused-symbol",
-      "path": "ts-shared/ui-messages/message-descriptors.mts",
-      "parent": "",
-      "name": "timeAgoCases",
-      "symbolKind": "function",
       "count": 1
     }
   ]

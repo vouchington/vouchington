@@ -8,7 +8,6 @@ import * as portal from './portal.mts'
 import * as refunds from './refunds.mts'
 import * as subscriptions from './subscriptions.mts'
 import {
-  cancelSubscriptionAtPeriodEndOperation,
   cancelSubscriptionImmediatelyOperation,
   createBillingPortalSessionOperation,
   createIdentityCheckoutSessionOperation,
@@ -16,7 +15,6 @@ import {
   createRefundOperation,
   listSubscriptionInvoicesOperation,
   retrieveIdentityVerificationSessionUrlOperation,
-  sanitizeCustomerOperation,
 } from './operations.mts'
 
 describe('Stripe operations', () => {
@@ -91,13 +89,10 @@ describe('Stripe operations', () => {
     )
   })
 
-  it('maps portal, cancellation, identity URL, refund, and sanitization results to JSON-safe values', async () => {
+  it('maps portal, immediate cancellation, identity URL, and refund results to JSON-safe values', async () => {
     const createPortal = vi.spyOn(portal, 'createBillingPortalSession').mockResolvedValue({
       url: 'https://portal.test',
     } as never)
-    const cancelAtPeriodEnd = vi
-      .spyOn(subscriptions, 'cancelStripeSubscription')
-      .mockResolvedValue({ id: 'sub_1' } as never)
     const cancelImmediately = vi
       .spyOn(subscriptions, 'cancelStripeSubscriptionImmediately')
       .mockResolvedValue({ id: 'sub_1' } as never)
@@ -111,9 +106,6 @@ describe('Stripe operations', () => {
       amount: 500,
       currency: 'usd',
     } as never)
-    const sanitizeCustomer = vi
-      .spyOn(customers, 'sanitizeStripeCustomer')
-      .mockResolvedValue({ id: 'cus_1' } as never)
 
     await expect(
       createBillingPortalSessionOperation({
@@ -141,12 +133,6 @@ describe('Stripe operations', () => {
       'sub_1',
     )
     await expect(
-      cancelSubscriptionAtPeriodEndOperation({
-        subscriptionId: 'sub_1',
-        idempotencyKey: 'later-key',
-      }),
-    ).resolves.toBeNull()
-    await expect(
       cancelSubscriptionImmediatelyOperation({
         subscriptionId: 'sub_1',
       }),
@@ -163,22 +149,17 @@ describe('Stripe operations', () => {
       amount: 500,
       currency: 'usd',
     })
-    await expect(
-      sanitizeCustomerOperation({ customerId: 'cus_1', idempotencyKey: 'sanitize-key' }),
-    ).resolves.toBeNull()
     expect(createPortal).toHaveBeenCalledWith(
       'cus_1',
       'https://example.com',
       'portal-key',
       undefined,
     )
-    expect(cancelAtPeriodEnd).toHaveBeenCalledWith('sub_1', 'later-key')
     expect(cancelImmediately).toHaveBeenCalledWith('sub_1')
     expect(createRefund).toHaveBeenCalledWith({
       chargeId: 'ch_1',
       idempotencyKey: 'refund-key',
     })
-    expect(sanitizeCustomer).toHaveBeenCalledWith('cus_1', undefined, 'sanitize-key')
   })
 
   it('maps subscription invoices and payments to JSON-safe summaries', async () => {

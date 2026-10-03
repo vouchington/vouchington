@@ -1,10 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as stripeClientModule from '@modules/stripe/client'
-import {
-  cancelStripeSubscription,
-  cancelStripeSubscriptionImmediately,
-  getStripeSubscription,
-} from './subscriptions.mts'
+import { cancelStripeSubscriptionImmediately, getStripeSubscription } from './subscriptions.mts'
 
 describe('stripe subscriptions module', () => {
   beforeEach(() => {
@@ -27,16 +23,6 @@ describe('stripe subscriptions module', () => {
     })
   })
 
-  it('marks subscriptions to cancel at period end', async () => {
-    const update = vi.fn<VitestLooseMock>().mockResolvedValue({ id: 'sub_456' })
-    vi.spyOn(stripeClientModule, 'getStripeClient').mockReturnValue({
-      subscriptions: { update },
-    } as never)
-
-    await expect(cancelStripeSubscription('sub_456')).resolves.toEqual({ id: 'sub_456' })
-    expect(update).toHaveBeenCalledWith('sub_456', { cancel_at_period_end: true })
-  })
-
   it('cancels subscriptions immediately', async () => {
     const cancel = vi.fn<VitestLooseMock>().mockResolvedValue({ id: 'sub_789' })
     const retrieve = vi.fn<VitestLooseMock>()
@@ -47,21 +33,6 @@ describe('stripe subscriptions module', () => {
     await expect(cancelStripeSubscriptionImmediately('sub_789')).resolves.toEqual({ id: 'sub_789' })
     expect(cancel).toHaveBeenCalledWith('sub_789')
     expect(retrieve).not.toHaveBeenCalled()
-  })
-
-  it('passes an idempotency key for scheduled cancellation', async () => {
-    const update = vi.fn<VitestLooseMock>().mockResolvedValue({ id: 'sub_scheduled' })
-    vi.spyOn(stripeClientModule, 'getStripeClient').mockReturnValue({
-      subscriptions: { update },
-    } as never)
-
-    await cancelStripeSubscription('sub_scheduled', 'scheduled-key')
-
-    expect(update).toHaveBeenCalledWith(
-      'sub_scheduled',
-      { cancel_at_period_end: true },
-      { idempotencyKey: 'scheduled-key' },
-    )
   })
 
   it('converges when DELETE fails after the subscription was canceled', async () => {

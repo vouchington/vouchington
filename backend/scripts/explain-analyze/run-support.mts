@@ -32,7 +32,6 @@ export const heavyFollowUser = {
   roles: [] as readonly string[],
 } as PrivateUser
 
-export const seedSessionId = `${SEED_PREFIX}-1100-7000-8000-000000000000`
 // posts moved off the fixed SEED_PREFIX instant onto a per-day real-clock timestamp (see
 // seed-data/common.mts); this is the only way to name a specific seeded post's id from here.
 export const seedPostId = seedUuid(0, '05')
