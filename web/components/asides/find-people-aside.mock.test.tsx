@@ -1,3 +1,4 @@
+import { makeAsideUser } from '@/test-helpers/aside-user'
 import type { ReactElement, ReactNode } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
@@ -57,12 +58,7 @@ describe('FindPeopleAside', () => {
   })
 
   it('renders nothing when user already follows someone', async () => {
-    mockGetCurrentUser.mockResolvedValue({
-      account_type: null,
-      id: 'user-1',
-      roles: [],
-      username: 'alice',
-    })
+    mockGetCurrentUser.mockResolvedValue(makeAsideUser())
     mockFollowsAnyUser.mockResolvedValue(true)
     const result = await FindPeopleAside()
     const { container } = render(result as ReactElement)
@@ -70,12 +66,7 @@ describe('FindPeopleAside', () => {
   })
 
   it('renders find people nudge when user follows no one', async () => {
-    mockGetCurrentUser.mockResolvedValue({
-      account_type: null,
-      id: 'user-1',
-      roles: [],
-      username: 'alice',
-    })
+    mockGetCurrentUser.mockResolvedValue(makeAsideUser())
     mockFollowsAnyUser.mockResolvedValue(false)
     const result = await FindPeopleAside()
     render(result as ReactElement)
@@ -84,12 +75,7 @@ describe('FindPeopleAside', () => {
   })
 
   it('links to /users', async () => {
-    mockGetCurrentUser.mockResolvedValue({
-      account_type: null,
-      id: 'user-1',
-      roles: [],
-      username: 'alice',
-    })
+    mockGetCurrentUser.mockResolvedValue(makeAsideUser())
     mockFollowsAnyUser.mockResolvedValue(false)
     const result = await FindPeopleAside()
     render(result as ReactElement)
