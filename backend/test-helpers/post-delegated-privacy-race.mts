@@ -113,3 +113,26 @@ export async function withConcurrentActorSuspensionForTest<T>(
   }
   return await pending
 }
+
+/** Revoke membership only after the write waits on its active membership row. */
+export async function withConcurrentCommunityMembershipRemovalForTest<T>(
+  communityId: string,
+  userId: string,
+  operation: () => Promise<T>,
+): Promise<T> {
+  await using query = await beginTransaction()
+  const processId = await getTestPostgresBackendProcessId(query)
+  await query(sql`/* withConcurrentCommunityMembershipRemovalForTest */
+    UPDATE community_members SET removed_at = CURRENT_TIMESTAMP, removed_by_id = ${userId}
+    WHERE community_id = ${communityId} AND user_id = ${userId} AND removed_at IS NULL`)
+  const pending = operation()
+  try {
+    await waitForTestPostgresLockWaiter(processId, 'lockDelegatedPostCommunity.membership')
+    await query.commit()
+  } catch (err) {
+    await query.rollback()
+    await pending.catch(() => undefined)
+    throw err
+  }
+  return await pending
+}

@@ -50,11 +50,11 @@ export const preparePostWithCommunityReviews = async (
     const options = { query }
     if (delegated) await assertDelegatedPostActorActive(creator.id, options)
     if (delegated && input.community_id) {
-      await lockDelegatedPostCommunity(query, input.community_id)
+      await lockDelegatedPostCommunity(query, input.community_id, creator.id)
       await assertDelegatedCommunityPostAllowed(input.community_id, defaults.postType, options)
     }
     if (delegated && input.parent_id) {
-      await lockDelegatedPostThread(query, input.parent_id)
+      await lockDelegatedPostThread(query, input.parent_id, creator.id)
       const parent = await loadWritablePost(creator, input.parent_id, false, options)
       if (parent.community_id)
         await assertDelegatedCommunityPostAllowed(parent.community_id, defaults.postType, options)

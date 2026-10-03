@@ -1,3 +1,4 @@
+import { lockCommunityUser } from '@services/communities/bans/lock'
 import createHttpError from 'http-errors'
 import { getCommentAncestorsByAny } from '@services/comments/ancestors'
 import { getPostByAny } from './get.mts'
@@ -10,6 +11,7 @@ import sql from 'sql-template-strings'
 export async function lockDelegatedPostThread(
   query: TransactionQuery,
   postId: string,
+  actorId: string,
 ): Promise<void> {
   const post = await getPostByAny(postId, { query })
   if (!post) throw createHttpError(404, 'Post not found')
@@ -17,7 +19,7 @@ export async function lockDelegatedPostThread(
     post.post_type === 'comment' ? await getCommentAncestorsByAny(postId, { query }) : [post]
   if (nodes.at(-1)?.id !== post.id || nodes[0]?.id !== (post.root_id ?? post.id))
     throw createHttpError(404, 'Post not found')
-  if (post.community_id) await lockDelegatedPostCommunity(query, post.community_id)
+  if (post.community_id) await lockDelegatedPostCommunity(query, post.community_id, actorId)
   const ids = nodes.map(node => node.id).toSorted()
   await runSequentially([
     () => lockPostPublicationPostScopes(query, ids),
@@ -35,7 +37,17 @@ export async function lockDelegatedPostThread(
 export async function lockDelegatedPostCommunity(
   query: TransactionQuery,
   communityId: string,
+  actorId: string,
 ): Promise<void> {
+  await runSequentially([
+    () => lockCommunityUser(communityId, actorId, { query }),
+    // leaveCommunity uses only this row UPDATE; removals/bans also hold the pair advisory fence.
+    () =>
+      query(sql`/* lockDelegatedPostCommunity.membership */
+    SELECT id FROM community_members
+    WHERE community_id = ${communityId} AND user_id = ${actorId} AND removed_at IS NULL
+    FOR UPDATE`),
+  ])
   const { rowCount } = await query(sql`/* lockDelegatedPostCommunity */
     SELECT id FROM communities WHERE id = ${communityId} AND deleted_at IS NULL FOR UPDATE`)
   if (rowCount !== 1) throw createHttpError(404, 'Post not found')
