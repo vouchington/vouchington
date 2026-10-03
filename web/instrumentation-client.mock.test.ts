@@ -33,10 +33,10 @@ describe('client Sentry instrumentation', () => {
   const listeners: Array<{ type: string; listener: EventListenerOrEventListenerObject }> = []
   beforeEach(() => {
     vi.resetModules()
-    const addEventListener = window.addEventListener.bind(window)
+    const addEventListener = window.addEventListener
     vi.spyOn(window, 'addEventListener').mockImplementation((type, listener, options) => {
       listeners.push({ type, listener })
-      addEventListener(type, listener, options)
+      addEventListener.call(window, type, listener, options)
     })
     localStorage.clear()
     mockSentryInit.mockClear()
