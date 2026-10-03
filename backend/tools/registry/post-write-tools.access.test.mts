@@ -9,6 +9,10 @@ import {
   insertLegacyContributionAdmissionConsumptionForTest,
 } from '@voucha/test-helpers'
 import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
+import {
+  setAccountTypeTestUserKind,
+  createAccountTypeTestAgent,
+} from '@voucha/test-helpers/account-types'
 import { listScopeCatalog } from '@modules/scopes'
 import { lockPost } from '@services/posts'
 import { contributionLimitConfig } from '@services/contribution-gating/limits-config'
@@ -89,21 +93,21 @@ describe('post MCP write guards — real services', () => {
     }
   })
 
-  it.each(['review', 'data_point'])(
-    'refuses official-account %s contributions',
-    async post_type => {
-      const user = await createTestUser({ administrator: true })
-      await createTestMembership({ user_id: user.id, plan: 'plus' })
-      expect(
-        await callRejectedMcpTool(
-          { ...user, membership_plan: 'plus' },
-          'create_post',
-          input({ post_type }),
-          SCOPES,
-        ),
-      ).toContain('Official accounts')
-    },
-  )
+  it.each([
+    ['official', 'review'],
+    ['system', 'review'],
+    ['ai_agent', 'review'],
+    ['official', 'data_point'],
+    ['system', 'data_point'],
+    ['ai_agent', 'data_point'],
+  ] as const)('refuses %s account %s contributions', async (kind, post_type) => {
+    const user = await caller()
+    await setAccountTypeTestUserKind(user.id, kind === 'ai_agent' ? 'system' : kind)
+    if (kind === 'ai_agent') await createAccountTypeTestAgent(user.id)
+    expect(await callRejectedMcpTool(user, 'create_post', input({ post_type }), SCOPES)).toContain(
+      'cannot create community reviews or data points',
+    )
+  })
 
   it('preserves deleted ancestor placeholders and refuses locked threads', async () => {
     const user = await caller()

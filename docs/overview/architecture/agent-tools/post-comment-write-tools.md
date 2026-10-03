@@ -16,7 +16,7 @@ covers the new write scope; no separate frontend permission contract is needed.
 
 Story creation uses its dedicated workflow and is excluded. Replies to readable public stories
 remain ordinary comments. Topic recommendations use the [dedicated recommendation tools](relation-referral-recommendation-write-tools.md).
-Articles and blog posts keep the existing administrator restriction; official accounts cannot
+Articles and blog posts keep the existing administrator restriction; official and automated accounts cannot
 create reviews or data points. These tools never grant administrator mutation authority over
 another member's content.
 
