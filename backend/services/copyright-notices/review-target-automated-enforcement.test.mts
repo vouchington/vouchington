@@ -8,6 +8,7 @@ import {
   insertUnreviewedCopyrightSubmission,
 } from '@voucha/test-helpers/data-stores/psql/copyright-review-target'
 import { createCopyrightNoticeSchemaFixture } from '@voucha/test-helpers/data-stores/psql/copyright-notice-schema'
+import { automatedAssessmentSql } from './automated-assessment-sql.mts'
 import { appendCopyrightSubmissionAssessment, readCopyrightReviewTargetBreaches } from './index.mts'
 
 async function oldForm() {
@@ -84,4 +85,13 @@ describe('automated enforcement paging age', () => {
       expect.arrayContaining([automated, filing.noticeId]),
     )
   })
+})
+
+describe('automated assessment SQL alias boundary', () => {
+  it.each(['assessment; DROP TABLE notices', 'assessment.id', 'ASSESSMENT', '1assessment', ''])(
+    'rejects unsafe alias %s before composing SQL',
+    alias => {
+      expect(() => automatedAssessmentSql(alias)).toThrow('Invalid copyright SQL alias')
+    },
+  )
 })
