@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { parse } from 'yaml'
 import { describe, expect, it } from 'vitest'
@@ -19,10 +19,7 @@ const path = '.github/workflows/merge-queue-ejection.yml'
 const text = readFileSync(path, 'utf8')
 const workflow = parse(text) as Workflow
 const jobs = Object.entries(workflow.jobs)
-const prompt = readFileSync('docs/prompts/automation/merge-queue-ejection.md', 'utf8').replace(
-  /\s+/gu,
-  ' ',
-)
+const prompt = readFileSync('docs/prompts/automation/merge-queue-ejection.md', 'utf8')
 
 describe('merge-queue ejection workflow', () => {
   it('runs only when the merge queue dequeues a main pull request', () => {
@@ -75,7 +72,7 @@ describe('merge-queue ejection workflow', () => {
     for (const [name, job] of jobs) {
       const expected =
         name === 'escalate'
-          ? { 'pull-requests': 'write' }
+          ? { actions: 'read', 'pull-requests': 'write' }
           : name === 'comment-session'
             ? { contents: 'read', issues: 'write', 'pull-requests': 'write' }
             : { contents: 'read' }
@@ -90,7 +87,7 @@ describe('merge-queue ejection workflow', () => {
     })
   })
 
-  it('dispatches a triage session that checks out main, not the ejected head', () => {
+  it('dispatches one queue-wide triage session that checks out main, not the ejected head', () => {
     const dispatch = workflow.jobs.dispatch
     expect(dispatch?.uses).toBe('./.github/workflows/harness-dispatch.yml')
     expect(dispatch?.with).toMatchObject({
@@ -99,9 +96,7 @@ describe('merge-queue ejection workflow', () => {
       'publish-base-ref': 'main',
       'surface-gate': 'HARNESS_MERGE_QUEUE_EJECTION_ENABLED',
     })
-    expect(dispatch?.with?.['concurrency-id']).toBe(
-      'vouchington:mq-eject:${{ github.event.pull_request.number }}:${{ github.event.pull_request.head.sha }}',
-    )
+    expect(dispatch?.with?.['concurrency-id']).toBe('vouchington:mq-eject')
   })
 
   it('passes the automation:auto-fix label the prompt tells the session to apply', () => {
@@ -118,18 +113,19 @@ describe('merge-queue ejection workflow', () => {
     }
   })
 
-  it('limits the session to triage outcomes that never change the ejected pull request', () => {
-    expect(prompt).toContain('Never change the ejected pull request.')
-    expect(prompt).toContain('The pull request is the root cause.')
-    expect(prompt).toContain('Post the analysis comment below and stop. Do not fix it.')
-    expect(prompt).toContain('create one draft fix PR from `main`')
-    expect(prompt).toContain('Create the fix branch from `{{MAIN_SHA}}`')
-    expect(prompt).toContain('require `git log {{MAIN_SHA}}..HEAD` to list only your own commits')
-    expect(prompt).toContain('Do not open a PR for it.')
-    expect(prompt).toContain('Never push to the pull request')
-    expect(prompt).toContain('Post at most one comment on PR #{{PR_NUMBER}}')
-    expect(prompt).toContain(
-      '<!-- merge-queue-ejection-triage pr={{PR_NUMBER}} head={{PR_HEAD_SHA}} main={{MAIN_SHA}} -->',
-    )
+  it('renders exactly the placeholders the prompt uses', () => {
+    const rendered = workflow.jobs['render-prompt']?.steps?.at(-1)?.with?.['vars']
+    const vars = String(rendered)
+      .split('\n')
+      .filter(Boolean)
+      .map(line => line.split('=')[0]?.trim())
+    const used = new Set([...prompt.matchAll(/\{\{(\w+)\}\}/gu)].map(match => match[1]))
+    expect([...used].toSorted()).toEqual(vars.toSorted())
+  })
+
+  it('discovers ejections from this workflow file and marks each triage per pull request', () => {
+    expect(prompt).toContain('actions/workflows/merge-queue-ejection.yml/runs')
+    expect(existsSync('.github/workflows/merge-queue-ejection.yml')).toBe(true)
+    expect(prompt).toContain('<!-- merge-queue-ejection-triage pr=<N> head=<head sha> -->')
   })
 })

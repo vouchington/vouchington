@@ -1,9 +1,12 @@
 name: Automation Merge Queue Ejection
+run-name: 'Merge queue ejection #${{ github.event.pull_request.number }} (${{ github.event.reason }})'
 
 # Triggered when the merge queue removes a pull request because its merge-group CI failed or timed
-# out. Dispatches Auto Harness to triage the failure from main: fix a flaky test in a new PR, file
-# a CI or architecture issue, or comment its analysis on the ejected PR. The session never changes
-# the ejected PR.
+# out. Dispatches one queue-wide Auto Harness session: an ejection while it is queued or running
+# joins it instead of starting another. The session triages every untriaged ejection of the last
+# day from main, groups them by root cause, and explains each stack layer removed with them. Per
+# root cause it fixes a flaky test in a new PR, files a CI or architecture issue, or comments its
+# analysis on the ejected PRs. The session never changes an ejected PR.
 #
 # pull_request_target runs this file from main with main's GITHUB_SHA. No job checks out, installs,
 # or executes pull-request content; PR fields reach the session only as prompt text.
@@ -67,14 +70,14 @@ jobs:
       surface-gate: HARNESS_MERGE_QUEUE_EJECTION_ENABLED
       agent-ref: ${{ github.sha }}
       expected-head-sha: ${{ github.sha }}
-      concurrency-id: vouchington:mq-eject:${{ github.event.pull_request.number }}:${{ github.event.pull_request.head.sha }}
+      concurrency-id: vouchington:mq-eject
       completion-mode: pr-issue-or-comment
       publish-contract: merge-queue-ejection
       publish-base-ref: main
       pr-label: automation:auto-fix
       slack-source: |
-        *Source:* merge queue removed PR #${{ github.event.pull_request.number }} (`${{ github.event.reason }}`)
-        *Pull request:* ${{ github.event.pull_request.html_url }}
+        *Source:* merge queue removed PR #${{ github.event.pull_request.number }} (`${{ github.event.reason }}`); the session triages every untriaged ejection
+        *Seed pull request:* ${{ github.event.pull_request.html_url }}
         *Main tip:* `${{ github.sha }}`
       prompt: ${{ needs.render-prompt.outputs.prompt }}
 
@@ -113,17 +116,36 @@ jobs:
     runs-on: ubuntu-slim
     timeout-minutes: 2
     permissions:
+      actions: read
       pull-requests: write
     env:
       GH_TOKEN: ${{ github.token }}
       PR_NUMBER: ${{ github.event.pull_request.number }}
       REASON: ${{ github.event.reason }}
       SESSION_ID: ${{ needs.dispatch.outputs.session-id }}
+      DISPATCH_RESULT: ${{ needs.dispatch.result }}
       THIS_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
     steps:
       - name: Comment failure on the ejected pull request
         run: |
           set -euo pipefail
+          # Every ejection shares one concurrency id, so harness-dispatch.yml serializes them with
+          # cancel-in-progress: false, and GitHub keeps only one pending run per concurrency group: it
+          # cancels the other pending dispatch jobs. A coalesced job is cancelled with zero steps; a
+          # real timeout-minutes cancellation would have executed steps. The surviving run's session
+          # sweeps this ejection, so this run must stay quiet. Fail open: if the jobs lookup fails,
+          # post the comment.
+          if [[ "$DISPATCH_RESULT" == "cancelled" && -z "$SESSION_ID" ]]; then
+            if coalesced="$(
+              gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs?per_page=100" --jq \
+                '[.jobs[] | select(.name | startswith("Harness dispatch"))]
+                 | (length > 0) and all(.conclusion == "cancelled" and ((.steps // []) | length) == 0)'
+            )" && [[ "$coalesced" == "true" ]]; then
+              echo "::notice::Dispatch was cancelled by concurrency coalescing before running any step; the surviving run's session sweeps this ejection. Suppressing failure comment."
+              exit 0
+            fi
+          fi
+
           BODY="The merge queue removed this PR (\`$REASON\`), and automated triage could not start.
 
           **Triage run:** $THIS_RUN_URL"
@@ -133,5 +155,5 @@ jobs:
           fi
           BODY="$BODY
 
-          Inspect the failed merge-group run before re-enqueueing."
+          If another ejection starts triage within a day, that session also sweeps this PR. Until then, inspect the failed merge-group run before re-enqueueing."
           gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body "$BODY"
