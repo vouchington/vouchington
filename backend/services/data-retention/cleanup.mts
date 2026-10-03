@@ -12,8 +12,8 @@ import {
   cleanupSoftDeletedUserBatch,
   deleteOldReferralAttributionBatch,
   deleteOrphanedOAuthAccountBatch,
-  normalizePositiveInteger,
 } from './cleanup-batches.mts'
+import type { DataRetentionLimits } from './config.mts'
 import {
   cleanupAbandonedBlueskyLinkSessions,
   cleanupExpiredBlueskyLinkCompletions,
@@ -21,7 +21,13 @@ import {
 import { cleanupExpiredOAuthAuthorizations } from './cleanup-oauth-authorizations.mts'
 import { cleanupExpiredOAuthAuthorizationServerArtifacts } from './cleanup-oauth-authorization-server.mts'
 import { cleanupTerminalNotificationPushIntents } from './cleanup-notification-push-intents.mts'
-import { getRetentionCutoffDate, normalizeRetentionDays } from './cleanup-options.mts'
+import {
+  applyRetentionLimits,
+  getRetentionCutoffDate,
+  normalizeRetentionDays,
+  type OptionalRetentionLimits,
+} from './cleanup-options.mts'
+import { assertPositiveInteger, normalizePositiveInteger } from './normalize-positive-integer.mts'
 import { runBoundedBatches } from './run-bounded-batches.mts'
 import { pruneExpiredContributionAdmissions } from '@services/contribution-gating/admission'
 import { pruneExpiredContributionAdmissionConsumptions } from '@services/contribution-gating/admission-quota'
@@ -57,7 +63,7 @@ export async function cleanupAnalyticsLocalFiles(): Promise<void> {
 type CleanupOptions = {
   retentionDays?: number
   batchSize?: number
-  maxBatches?: number
+  maxBatches: number
   lowerBoundDate?: Date
   now?: Date
 }
@@ -72,21 +78,25 @@ type ExpiryCleanupOptions = Pick<
   'batchSize' | 'maxBatches' | 'lowerBoundDate' | 'now'
 >
 
+// Each cleanup in a run takes its batch size and per-run cap from the required run limits; a
+// per-cleanup option can override either one (tests use this to scope windows and shrink limits).
 type DataRetentionCleanupOptions = {
   retainedIdentityRootIds?: Partial<Record<RetainedIdentityFamily, readonly string[]>>
   retainedRelationIdentityKeys?: Readonly<Record<string, readonly RetainedRelationIdentityKey[]>>
   retainedMediaBindingIds?: readonly string[]
-  softDeletedUsers?: CleanupOptions
-  oldReferralAttributions?: CleanupOptions
-  orphanedOAuthAccounts?: CleanupOptions
-  expiredOAuthAuthorizations?: ExpiryCleanupOptions & { authorizationIds?: readonly string[] }
-  expiredOAuthServerArtifacts?: ExpiryCleanupOptions
-  expiredBlueskyLinkCompletions?: Omit<CleanupOptions, 'retentionDays'>
-  abandonedBlueskyLinkSessions?: Omit<CleanupOptions, 'retentionDays'>
-  expiredContributionAdmissions?: ExpiryCleanupOptions
-  expiredContributionQuotaConsumptions?: ExpiryCleanupOptions
-  expiredTopicImportAttempts?: ExpiryCleanupOptions
-  terminalNotificationPushIntents?: CleanupOptions
+  softDeletedUsers?: OptionalRetentionLimits<CleanupOptions>
+  oldReferralAttributions?: OptionalRetentionLimits<CleanupOptions>
+  orphanedOAuthAccounts?: OptionalRetentionLimits<CleanupOptions>
+  expiredOAuthAuthorizations?: OptionalRetentionLimits<ExpiryCleanupOptions> & {
+    authorizationIds?: readonly string[]
+  }
+  expiredOAuthServerArtifacts?: OptionalRetentionLimits<ExpiryCleanupOptions>
+  expiredBlueskyLinkCompletions?: OptionalRetentionLimits<Omit<CleanupOptions, 'retentionDays'>>
+  abandonedBlueskyLinkSessions?: OptionalRetentionLimits<Omit<CleanupOptions, 'retentionDays'>>
+  expiredContributionAdmissions?: OptionalRetentionLimits<ExpiryCleanupOptions>
+  expiredContributionQuotaConsumptions?: OptionalRetentionLimits<ExpiryCleanupOptions>
+  expiredTopicImportAttempts?: OptionalRetentionLimits<ExpiryCleanupOptions>
+  terminalNotificationPushIntents?: OptionalRetentionLimits<CleanupOptions>
 }
 
 type DataRetentionCleanupResult = {
@@ -107,39 +117,51 @@ type DataRetentionCleanupResult = {
 }
 
 export async function runDataRetentionCleanup(
+  limits: DataRetentionLimits,
   options: DataRetentionCleanupOptions = {},
 ): Promise<DataRetentionCleanupResult> {
+  const withLimits = <T extends { batchSize?: number; maxBatches?: number }>(
+    overrides: T | undefined,
+  ) => applyRetentionLimits(limits, overrides)
+  // Topic-import attempts keep their own small batch (each row can retain a 4 MiB response), so the
+  // shared batch size can only lower it.
+  const topicImportLimits = {
+    ...limits,
+    batchSize: Math.min(limits.batchSize, TOPIC_IMPORT_ATTEMPT_DELETION_BATCH_SIZE),
+  }
   // Ephemeral broker rows reference users and provider accounts. Remove expired rows first so a
   // long-interrupted cleanup run cannot retain avoidable references ahead of parent cleanup.
   const expiredOAuthAuthorizations = await cleanupExpiredOAuthAuthorizations(
-    options.expiredOAuthAuthorizations,
+    withLimits(options.expiredOAuthAuthorizations),
   )
   const expiredOAuthServerArtifacts = await cleanupExpiredOAuthAuthorizationServerArtifacts(
-    options.expiredOAuthServerArtifacts,
+    withLimits(options.expiredOAuthServerArtifacts),
   )
   // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
-  const softDeletedUsers = await cleanupSoftDeletedUsers(options.softDeletedUsers)
+  const softDeletedUsers = await cleanupSoftDeletedUsers(withLimits(options.softDeletedUsers))
   const oldReferralAttributions = await cleanupOldReferralAttributions(
-    options.oldReferralAttributions,
+    withLimits(options.oldReferralAttributions),
   )
-  const orphanedOAuthAccounts = await cleanupOrphanedOAuthAccounts(options.orphanedOAuthAccounts)
+  const orphanedOAuthAccounts = await cleanupOrphanedOAuthAccounts(
+    withLimits(options.orphanedOAuthAccounts),
+  )
   const expiredBlueskyLinkCompletions = await cleanupExpiredBlueskyLinkCompletions(
-    options.expiredBlueskyLinkCompletions,
+    withLimits(options.expiredBlueskyLinkCompletions),
   )
   const abandonedBlueskyLinkSessions = await cleanupAbandonedBlueskyLinkSessions(
-    options.abandonedBlueskyLinkSessions,
+    withLimits(options.abandonedBlueskyLinkSessions),
   )
   const expiredContributionAdmissions = await cleanupExpiredContributionAdmissions(
-    options.expiredContributionAdmissions,
+    withLimits(options.expiredContributionAdmissions),
   )
   const expiredContributionQuotaConsumptions = await cleanupExpiredContributionQuotaConsumptions(
-    options.expiredContributionQuotaConsumptions,
+    withLimits(options.expiredContributionQuotaConsumptions),
   )
   const expiredTopicImportAttempts = await cleanupExpiredTopicImportAttempts(
-    options.expiredTopicImportAttempts,
+    applyRetentionLimits(topicImportLimits, options.expiredTopicImportAttempts),
   )
   const terminalNotificationPushIntents = await cleanupTerminalNotificationPushIntents(
-    options.terminalNotificationPushIntents,
+    withLimits(options.terminalNotificationPushIntents),
   )
   const retainedRelationIdentities = await cleanupRetainedRelationIdentities(
     1_000,
@@ -174,7 +196,7 @@ export async function runDataRetentionCleanup(
 }
 
 export async function cleanupExpiredContributionAdmissions(
-  options: ExpiryCleanupOptions = {},
+  options: ExpiryCleanupOptions,
 ): Promise<CleanupResult> {
   return runBoundedBatches(options, async batchSize =>
     pruneExpiredContributionAdmissions(options.now, batchSize, options.lowerBoundDate),
@@ -182,7 +204,7 @@ export async function cleanupExpiredContributionAdmissions(
 }
 
 export async function cleanupExpiredContributionQuotaConsumptions(
-  options: ExpiryCleanupOptions = {},
+  options: ExpiryCleanupOptions,
 ): Promise<CleanupResult> {
   return runBoundedBatches(options, async batchSize =>
     pruneExpiredContributionAdmissionConsumptions(options.now, batchSize, options.lowerBoundDate),
@@ -190,7 +212,7 @@ export async function cleanupExpiredContributionQuotaConsumptions(
 }
 
 export async function cleanupExpiredTopicImportAttempts(
-  options: ExpiryCleanupOptions = {},
+  options: ExpiryCleanupOptions,
 ): Promise<CleanupResult> {
   return runBoundedBatches(
     {
@@ -202,9 +224,7 @@ export async function cleanupExpiredTopicImportAttempts(
   )
 }
 
-export async function cleanupSoftDeletedUsers(
-  options: CleanupOptions = {},
-): Promise<CleanupResult> {
+export async function cleanupSoftDeletedUsers(options: CleanupOptions): Promise<CleanupResult> {
   const retentionDays = normalizeRetentionDays(options.retentionDays, 90)
   const cutoffDate = getRetentionCutoffDate(retentionDays, options.now)
   return runBoundedBatches(options, async batchSize =>
@@ -213,7 +233,7 @@ export async function cleanupSoftDeletedUsers(
 }
 
 export async function cleanupOldReferralAttributions(
-  options: CleanupOptions = {},
+  options: CleanupOptions,
 ): Promise<CleanupResult> {
   const retentionDays = normalizeRetentionDays(options.retentionDays, 30)
   const cutoffDate = getRetentionCutoffDate(retentionDays, options.now)
@@ -229,11 +249,11 @@ export async function cleanupOldReferralAttributions(
 }
 
 export async function cleanupOrphanedOAuthAccounts(
-  options: CleanupOptions = {},
+  options: CleanupOptions,
 ): Promise<CleanupResult> {
   const retentionDays = normalizeRetentionDays(options.retentionDays, 90)
   const batchSize = normalizePositiveInteger(options.batchSize, DEFAULT_BATCH_SIZE, 'batchSize')
-  const maxBatches = normalizePositiveInteger(options.maxBatches, Infinity, 'maxBatches')
+  const maxBatches = assertPositiveInteger(options.maxBatches, 'maxBatches')
   const cutoffDate = getRetentionCutoffDate(retentionDays, options.now)
   const providerConfigs = Object.values(providerTableConfigs)
   let batchesRun = 0

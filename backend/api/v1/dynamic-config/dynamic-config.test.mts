@@ -53,6 +53,7 @@ describe('dynamic-config', () => {
           'rss-feed-discoverability-config',
           'rss-feed-crawl-config',
           'user-import-export-config',
+          'data-retention-config',
           'web-risk-config',
         ]),
       )

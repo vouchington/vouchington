@@ -1,11 +1,12 @@
-import { DEFAULT_BATCH_SIZE, normalizePositiveInteger } from './cleanup-batches.mts'
+import { DEFAULT_BATCH_SIZE } from './cleanup-batches.mts'
+import { assertPositiveInteger, normalizePositiveInteger } from './normalize-positive-integer.mts'
 
 export async function runBoundedBatches(
-  limits: { batchSize?: number; maxBatches?: number },
+  limits: { batchSize?: number; maxBatches: number },
   deleteBatch: (batchSize: number) => Promise<number>,
 ): Promise<{ deleted: number; hasMore: boolean }> {
   const batchSize = normalizePositiveInteger(limits.batchSize, DEFAULT_BATCH_SIZE, 'batchSize')
-  const maxBatches = normalizePositiveInteger(limits.maxBatches, Infinity, 'maxBatches')
+  const maxBatches = assertPositiveInteger(limits.maxBatches, 'maxBatches')
   let deleted = 0
   let hasMore = false
   for (let batches = 0; batches < maxBatches; batches += 1) {

@@ -44,6 +44,7 @@ describe('cleanupOldReferralAttributions', () => {
     )
 
     await cleanupOldReferralAttributions({
+      maxBatches: 10,
       now,
       lowerBoundDate: new Date(now.getTime() - 45 * DAY_MS),
     })

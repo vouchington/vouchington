@@ -6,7 +6,7 @@ import { runBoundedBatches } from './run-bounded-batches.mts'
 
 type CleanupOptions = {
   batchSize?: number
-  maxBatches?: number
+  maxBatches: number
   lowerBoundDate?: Date
   now?: Date
 }
@@ -17,7 +17,7 @@ type CleanupResult = {
 }
 
 export async function cleanupExpiredBlueskyLinkCompletions(
-  options: CleanupOptions = {},
+  options: CleanupOptions,
 ): Promise<CleanupResult> {
   return runBoundedBatches(options, async batchSize =>
     deleteExpiredBlueskyHandoffBatch(batchSize, {
@@ -28,7 +28,7 @@ export async function cleanupExpiredBlueskyLinkCompletions(
 }
 
 export async function cleanupAbandonedBlueskyLinkSessions(
-  options: CleanupOptions = {},
+  options: CleanupOptions,
 ): Promise<CleanupResult> {
   const cutoffDate = options.now ?? new Date()
   return runBoundedBatches(options, async batchSize =>

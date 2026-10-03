@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { dataRetentionConfig, type DataRetentionLimits } from '@services/data-retention/config'
 
 const cleanupPartitions = vi.fn<() => Promise<void>>()
 const createPartitions = vi.fn<() => Promise<void>>()
-const dataRetentionCleanup = vi.fn<() => Promise<void>>()
+const dataRetentionCleanup = vi.fn<(limits: DataRetentionLimits) => Promise<void>>()
 const reconcileVoteDrift = vi.fn<() => Promise<void>>()
 const refreshMaterializedView = vi.fn<(viewName: string) => Promise<void>>()
 const runConfigDriven = vi.fn<() => Promise<void>>()
@@ -34,6 +36,20 @@ describe('processPsql', () => {
     })
 
     expect(processor).toHaveBeenCalledOnce()
+  })
+
+  it('passes the data-retention-config limits to every retention cleanup', async () => {
+    dataRetentionCleanup.mockReset()
+    overrideDynamicConfigFieldsForTest(dataRetentionConfig, {
+      batch_size: 7,
+      max_batches_per_run: 3,
+    })
+
+    await processPsql('dataRetentionCleanup', undefined, {
+      dataRetentionCleanup: dataRetentionCleanup as never,
+    })
+
+    expect(dataRetentionCleanup).toHaveBeenCalledExactlyOnceWith({ batchSize: 7, maxBatches: 3 })
   })
 
   it('calls runConfigDriven when the job name is runConfigDriven', async () => {

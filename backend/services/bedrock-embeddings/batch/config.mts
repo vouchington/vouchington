@@ -1,4 +1,4 @@
-import { DynamicConfig } from '@data-stores/valkey'
+import { DynamicConfig, getBoundedPositiveIntegerField } from '@data-stores/valkey'
 
 export type RateLimitConfig = {
   MAX_INFLIGHT_JOBS: number
@@ -47,36 +47,28 @@ export const bedrockEmbeddingsBatchConfig = new DynamicConfig({
   defaultFields: DEFAULTS,
 })
 
-function positiveInteger(
-  fields: ReturnType<typeof bedrockEmbeddingsBatchConfig.getFields>,
-  field: keyof typeof DEFAULTS,
-): number {
-  const value = fields[field]
-  return typeof value === 'number' &&
-    Number.isInteger(value) &&
-    value > 0 &&
-    value <= BEDROCK_BATCH_MAX_VALUES[field]
-    ? value
-    : DEFAULTS[field]
+function positiveInteger(field: keyof typeof DEFAULTS): number {
+  return getBoundedPositiveIntegerField(bedrockEmbeddingsBatchConfig, field, {
+    defaultValue: DEFAULTS[field],
+    maxValue: BEDROCK_BATCH_MAX_VALUES[field],
+  })
 }
 
 export function getRateLimitConfig(): RateLimitConfig {
-  const fields = bedrockEmbeddingsBatchConfig.getFields()
-  const pi = (field: keyof typeof DEFAULTS) => positiveInteger(fields, field)
   return {
-    MAX_INFLIGHT_JOBS: pi('max_inflight_jobs'),
-    MAX_REQUESTS_PER_HOUR: pi('max_requests_per_hour'),
-    MAX_REQUESTS_PER_BATCH: pi('max_requests_per_file'),
-    MAX_BATCH_SIZE_MB: pi('max_file_size_gb') * 1024,
-    MAX_INFLIGHT_SIZE_MB: pi('max_job_size_gb') * 1024,
-    MIN_RECORDS_PER_JOB: pi('min_records_per_job'),
+    MAX_INFLIGHT_JOBS: positiveInteger('max_inflight_jobs'),
+    MAX_REQUESTS_PER_HOUR: positiveInteger('max_requests_per_hour'),
+    MAX_REQUESTS_PER_BATCH: positiveInteger('max_requests_per_file'),
+    MAX_BATCH_SIZE_MB: positiveInteger('max_file_size_gb') * 1024,
+    MAX_INFLIGHT_SIZE_MB: positiveInteger('max_job_size_gb') * 1024,
+    MIN_RECORDS_PER_JOB: positiveInteger('min_records_per_job'),
   }
 }
 
 export function getBacklogThreshold(): number {
-  return positiveInteger(bedrockEmbeddingsBatchConfig.getFields(), 'backlog_threshold')
+  return positiveInteger('backlog_threshold')
 }
 
 export function getStaleTtlHours(): number {
-  return positiveInteger(bedrockEmbeddingsBatchConfig.getFields(), 'stale_ttl_hours')
+  return positiveInteger('stale_ttl_hours')
 }

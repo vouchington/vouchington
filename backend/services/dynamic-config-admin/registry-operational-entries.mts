@@ -1,4 +1,5 @@
 import { activityPubInboxConfig } from '@services/ap-inbox-activities/config'
+import { DATA_RETENTION_MAX_VALUES, dataRetentionConfig } from '@services/data-retention/config'
 import { kagiSmallWebImportConfig } from '@services/kagi-smallweb/import-config'
 import { moderationAiConfig, moderationAiDispatchConfig } from '@services/moderation/ai-config'
 import {
@@ -106,6 +107,28 @@ export const operationalDynamicConfigRegistryEntries = [
       },
     },
     validate: validateUserImportExportConfig,
+  }),
+  defineDynamicConfigNamespace({
+    namespace: 'data-retention-config',
+    label: 'Data Retention',
+    description: 'Per-run batch bounds for the daily data retention cleanup.',
+    config: dataRetentionConfig,
+    access: { update_roles: ['developer'] },
+    fields: {
+      batch_size: {
+        description: 'Rows each data retention cleanup deletes per batch.',
+        min_value: 1,
+        max_value: DATA_RETENTION_MAX_VALUES.batch_size,
+        integer: true,
+      },
+      max_batches_per_run: {
+        description:
+          'Maximum batches each data retention cleanup runs per daily job. A cleanup that hits the cap reports more work and resumes on the next run.',
+        min_value: 1,
+        max_value: DATA_RETENTION_MAX_VALUES.max_batches_per_run,
+        integer: true,
+      },
+    },
   }),
   defineDynamicConfigNamespace({
     namespace: 'web-risk-config',

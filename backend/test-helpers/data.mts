@@ -9,6 +9,8 @@ const TEST_EMAIL_RANDOM_LENGTH = 12
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const RETENTION_WINDOW_STEP_MS = 60 * 1000
+// Finite per-run cap for retention cleanups: a scoped window holds a handful of rows, far below it.
+const TEST_RETENTION_MAX_BATCHES = 100
 // Shared by createTestFutureUtcDay and createTestExpiryWindow -- both need the same "far enough in
 // the future, spread across a wide random namespace" anti-collision property (see each function's
 // own docstring for why).
@@ -71,6 +73,7 @@ export function safeUsername(label = 'user'): string {
 
 export type TestRetentionWindow = {
   retentionDays: number
+  maxBatches: number
   now: Date
   lowerBoundDate: Date
   upperBoundDate: Date
@@ -92,6 +95,7 @@ export function createTestExpiryWindow(): TestExpiryWindow {
   const upperBoundDate = new Date(secondEligibleDate.getTime() + RETENTION_WINDOW_STEP_MS)
 
   return {
+    maxBatches: TEST_RETENTION_MAX_BATCHES,
     now: new Date(upperBoundDate.getTime()),
     lowerBoundDate: new Date(firstEligibleDate.getTime() - RETENTION_WINDOW_STEP_MS),
     upperBoundDate,

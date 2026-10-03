@@ -254,6 +254,7 @@ describe('deleteUser Bluesky cleanup', () => {
     const heldLock = await acquireTestUserAdvisoryLock(user.id)
     const cleanup = cleanupExpiredBlueskyLinkCompletions({
       batchSize: 1,
+      maxBatches: window.maxBatches,
       lowerBoundDate: window.lowerBoundDate,
       now: window.now,
     })

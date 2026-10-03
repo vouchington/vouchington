@@ -7,6 +7,7 @@ import {
   refreshMaterializedView,
 } from '@data-stores/psql/migrate'
 import { runDataRetentionCleanup } from '@services/data-retention'
+import { getDataRetentionLimits } from '@services/data-retention/config'
 import { reconcilePostVoteDrift } from '@services/elections-votes/shared'
 import type { PsqlJobs, RefreshMaterializedViewData } from '@queues/psql/types'
 
@@ -38,7 +39,9 @@ export default async function processPsql(
     case 'cleanupPartitions':
       return (dependencies?.cleanupPartitions ?? cleanupPartitions)()
     case 'dataRetentionCleanup':
-      return (dependencies?.dataRetentionCleanup ?? runDataRetentionCleanup)()
+      return (dependencies?.dataRetentionCleanup ?? runDataRetentionCleanup)(
+        getDataRetentionLimits(),
+      )
     case 'refreshMaterializedView': {
       if (!data?.viewName) {
         throw new Error('refreshMaterializedView job requires data.viewName')

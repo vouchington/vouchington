@@ -15,3 +15,7 @@ Voucha-specific behavior:
 - `valkey-core/app-integration.mts` forwards `cache:call` events to the existing `valkey_cache_calls` analytics event.
 - `valkey-core/shutdown.mts` closes GlideMQ instances and then delegates Valkey primitive shutdown to `valkyries`.
 - `valkey-glide-mq/glide-mq-retry.mts` retries only client-side inflight saturation for enqueue operations.
+- `getBoundedPositiveIntegerField(config, field, { defaultValue, maxValue })` in
+  `dynamic-config-fields.mts` reads a positive-integer `DynamicConfig` tunable and returns the default
+  for a missing, non-integer, non-positive, or above-maximum value. Use it for every batch size, page
+  size, and per-run cap so a bad stored value cannot widen a bound.

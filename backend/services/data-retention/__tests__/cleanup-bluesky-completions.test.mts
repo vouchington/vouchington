@@ -21,13 +21,13 @@ const DAY_MS = 24 * 60 * 60 * 1000
 describe('runDataRetentionCleanup', () => {
   it('returns per-cleanup deletion summaries', async () => {
     const now = new Date()
+    const limits = { batchSize: 10, maxBatches: 10 }
     const emptyWindow = {
       lowerBoundDate: new Date(now.getTime() + DAY_MS),
-      maxBatches: 10,
       now,
     }
 
-    const result = await runDataRetentionCleanup({
+    const result = await runDataRetentionCleanup(limits, {
       retainedIdentityRootIds: {},
       retainedRelationIdentityKeys: {},
       retainedMediaBindingIds: [],
@@ -102,6 +102,7 @@ describe('cleanupAbandonedBlueskyLinkSessions', () => {
     await expect(
       cleanupAbandonedBlueskyLinkSessions({
         batchSize: 1,
+        maxBatches: window.maxBatches,
         lowerBoundDate: window.lowerBoundDate,
         now: window.now,
       }),
@@ -134,6 +135,7 @@ describe('cleanupExpiredBlueskyLinkCompletions', () => {
 
     await expect(
       cleanupExpiredBlueskyLinkCompletions({
+        maxBatches: window.maxBatches,
         lowerBoundDate: window.lowerBoundDate,
         now: window.now,
       }),
@@ -177,6 +179,7 @@ describe('cleanupExpiredBlueskyLinkCompletions', () => {
 
     await expect(
       cleanupExpiredBlueskyLinkCompletions({
+        maxBatches: window.maxBatches,
         lowerBoundDate: window.lowerBoundDate,
         now: window.now,
       }),

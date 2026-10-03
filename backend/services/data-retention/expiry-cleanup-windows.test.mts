@@ -24,6 +24,7 @@ describe('OAuth authorization expiry windows', () => {
     await expect(
       cleanupExpiredOAuthAuthorizations({
         lowerBoundDate: window.lowerBoundDate,
+        maxBatches: window.maxBatches,
         now: window.now,
         authorizationIds: ids,
       }),

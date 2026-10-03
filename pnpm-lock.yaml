@@ -5188,6 +5188,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
@@ -5283,6 +5286,9 @@ importers:
       '@services/copyright-notices':
         specifier: workspace:^
         version: link:../copyright-notices
+      '@services/data-retention':
+        specifier: workspace:^
+        version: link:../data-retention
       '@services/dynamic-config-audit':
         specifier: workspace:^
         version: link:../dynamic-config-audit
@@ -12508,6 +12514,10 @@ importers:
       glide-mq:
         specifier: ^0.16.0
         version: 0.16.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
+    devDependencies:
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
 
   backend/workers/report-integrity:
     dependencies:
