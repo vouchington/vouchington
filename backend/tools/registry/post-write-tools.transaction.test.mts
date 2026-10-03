@@ -5,11 +5,16 @@ import {
   insertTestPost,
   insertTestCommunity,
   insertTestCommunityMember,
+  insertTestCommunityPostReview,
   softDeleteUser,
   getPostDeletedById,
 } from '@voucha/test-helpers'
 import { callStructuredMcpTool, callRejectedMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
-import { withConcurrentCommunityReviewDisableForTest } from '@voucha/test-helpers/post-delegated-privacy-race'
+import {
+  withConcurrentCommunityReviewDisableForTest,
+  withConcurrentCommunityDeletionForTest,
+} from '@voucha/test-helpers/post-delegated-privacy-race'
+import { loadWritablePost } from '@services/posts/authorization'
 import { deletePost, getPostByAny } from '@services/posts'
 
 const SCOPES = ['posts:read', 'posts:write'] as const
@@ -151,6 +156,42 @@ describe('delegated post mutation contracts and transaction fences', () => {
           SCOPES,
         ),
       ).toMatchObject({ success: true, post: { post_type: 'discussion' } })
+    },
+  )
+  it.each(['create_post', 'update_post', 'delete_post'])(
+    'refuses %s after community deletion wins the row fence',
+    async name => {
+      const user = await caller()
+      const community = await insertTestCommunity({ createdById: user.id })
+      await insertTestCommunityMember({ communityId: community.id, userId: user.id, role: 'owner' })
+      const root = await insertTestPost({
+        title: 'Community root',
+        slug: crypto.randomUUID(),
+        markdown: 'Root',
+        createdById: user.id,
+        communityId: community.id,
+        clearanceStatus: 'approved',
+      })
+      await insertTestCommunityPostReview({
+        communityId: community.id,
+        postId: root,
+        submittedById: user.id,
+      })
+      await expect(loadWritablePost(user, root)).resolves.toMatchObject({ id: root })
+      const args =
+        name === 'create_post'
+          ? {
+              idempotency_key: crypto.randomUUID(),
+              post_type: 'comment',
+              parent_id: root,
+              markdown: 'Reply',
+            }
+          : { id: root, ...(name === 'update_post' ? { title: 'Changed' } : {}) }
+      expect(
+        await withConcurrentCommunityDeletionForTest(community.id, () =>
+          callRejectedMcpTool(user, name, args, SCOPES),
+        ),
+      ).toContain('Post not found')
     },
   )
 })

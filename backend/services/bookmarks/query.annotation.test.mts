@@ -1,22 +1,22 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
-import { enableQueryCapture, stopTestQueryCapture } from '../../test-helpers/query-capture.mts'
+import { withCapturedTestQueries } from '../../test-helpers/query-capture.mts'
 import { bookmarkEntity } from './upsert.mts'
 import { getUserBookmarkRelationsForEntityType } from './bloom-filter.mts'
 import { queryBookmarksForAllRelations, queryBookmarksForRelation } from './query.mts'
 
 describe('bookmark query root annotation', () => {
   afterEach(() => {
-    stopTestQueryCapture()
     vi.unstubAllEnvs()
   })
 
   it('preserves one annotated multi-relation statement with parameterized IDs and actual bookmarks', async () => {
     const { user, topicId, relations } = await createFixture()
     enableProductionAnnotationContract()
-    const result = await queryBookmarksForAllRelations(user.id, 'topic', relations, [topicId])
+    const { result, queries: captured } = await withCapturedTestQueries(() =>
+      queryBookmarksForAllRelations(user.id, 'topic', relations, [topicId]),
+    )
     expect(result).toEqual({ [topicId]: { follow: true } })
-    const captured = stopTestQueryCapture()
     expect(captured).toHaveLength(1)
     expect(captured[0]!.text.trimStart()).toMatch(/^\/\* queryEntityBookmarksForRelations \*\//)
     expect(captured[0]!.text).toContain(' UNION ALL ')
@@ -27,10 +27,10 @@ describe('bookmark query root annotation', () => {
     const { user, topicId, relations } = await createFixture()
     const relation = relations.find(item => item.predicate === 'follow')!
     enableProductionAnnotationContract()
-    expect(await queryBookmarksForRelation(user.id, 'topic', relation, [topicId])).toEqual([
-      { object_id: topicId, _bookmark_type: 'follow' },
-    ])
-    const captured = stopTestQueryCapture()
+    const { result, queries: captured } = await withCapturedTestQueries(() =>
+      queryBookmarksForRelation(user.id, 'topic', relation, [topicId]),
+    )
+    expect(result).toEqual([{ object_id: topicId, _bookmark_type: 'follow' }])
     expect(captured).toHaveLength(1)
     expect(captured[0]!.text.trimStart()).toMatch(/^\/\* queryEntityBookmarksForRelations \*\//)
     expect(captured[0]!.text).not.toContain(' UNION ALL ')
@@ -53,5 +53,4 @@ async function createFixture() {
 function enableProductionAnnotationContract() {
   vi.stubEnv('NODE_ENV', 'development')
   vi.stubEnv('VITEST', 'false')
-  enableQueryCapture()
 }

@@ -48,3 +48,24 @@ export async function withConcurrentCommunityReviewDisableForTest<T>(
   }
   return await pending
 }
+
+/** Delete a community only after a delegated thread write waits on its live row. */
+export async function withConcurrentCommunityDeletionForTest<T>(
+  communityId: string,
+  operation: () => Promise<T>,
+): Promise<T> {
+  await using query = await beginTransaction()
+  const processId = await getTestPostgresBackendProcessId(query)
+  await query(sql`/* withConcurrentCommunityDeletionForTest */
+    UPDATE communities SET deleted_at = CURRENT_TIMESTAMP WHERE id = ${communityId}`)
+  const pending = operation()
+  try {
+    await waitForTestPostgresLockWaiter(processId, 'lockDelegatedPostCommunity')
+    await query.commit()
+  } catch (err) {
+    await query.rollback()
+    await pending.catch(() => undefined)
+    throw err
+  }
+  return await pending
+}

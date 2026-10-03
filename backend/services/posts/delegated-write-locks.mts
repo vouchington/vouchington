@@ -17,6 +17,7 @@ export async function lockDelegatedPostThread(
     post.post_type === 'comment' ? await getCommentAncestorsByAny(postId, { query }) : [post]
   if (nodes.at(-1)?.id !== post.id || nodes[0]?.id !== (post.root_id ?? post.id))
     throw createHttpError(404, 'Post not found')
+  if (post.community_id) await lockDelegatedPostCommunity(query, post.community_id)
   const ids = nodes.map(node => node.id).toSorted()
   await runSequentially([
     () => lockPostPublicationPostScopes(query, ids),
@@ -35,6 +36,7 @@ export async function lockDelegatedPostCommunity(
   query: TransactionQuery,
   communityId: string,
 ): Promise<void> {
-  await query(sql`/* lockDelegatedPostCommunity */
+  const { rowCount } = await query(sql`/* lockDelegatedPostCommunity */
     SELECT id FROM communities WHERE id = ${communityId} AND deleted_at IS NULL FOR UPDATE`)
+  if (rowCount !== 1) throw createHttpError(404, 'Post not found')
 }
