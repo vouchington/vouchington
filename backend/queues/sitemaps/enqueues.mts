@@ -129,7 +129,10 @@ function createDispatcherEnqueue(jobName: SitemapDispatcherJobs) {
   }
 }
 
-export { enqueueUpdatePostDaySitemapForReconciliation } from './enqueues/post-publication.mts'
+export {
+  enqueueUpdateLandingPagesSitemapForReconciliation,
+  enqueueUpdatePostDaySitemapForReconciliation,
+} from './enqueues/post-publication.mts'
 
 export const enqueueBulkUpdatePostDaySitemaps = (
   entries: Array<{ postType: SitemapPostType; day: string }>,

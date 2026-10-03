@@ -1,6 +1,9 @@
 import { enqueueContinuePostPublicationReconciliation } from '@queues/post-publication/enqueues'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
-import { enqueueUpdatePostDaySitemapForReconciliation } from '@queues/sitemaps/enqueues'
+import {
+  enqueueUpdateLandingPagesSitemapForReconciliation,
+  enqueueUpdatePostDaySitemapForReconciliation,
+} from '@queues/sitemaps/enqueues'
 import { enqueueBulkRefreshPostMetricsById } from '@queues/entity-metrics-cache-refresh/enqueues'
 import {
   enqueueBulkReconcilePostNotifications,
@@ -67,6 +70,7 @@ const defaultDependencies: PostPublicationProcessorDependencies = {
   withPostPublicationReconciliationLocks,
   updateTopicRatingStats,
   enqueueUpdatePostDaySitemapForReconciliation,
+  enqueueUpdateLandingPagesSitemapForReconciliation,
   enqueueRefreshTopHashtags,
   enqueueBulkRefreshPostMetricsById,
   enqueueBulkReconcilePostNotifications,

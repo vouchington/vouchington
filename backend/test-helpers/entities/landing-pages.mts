@@ -29,6 +29,32 @@ export async function createTestLandingPageLinkItem(
   return { landingPageItemId: rows[0]!.id as string }
 }
 
+export async function createTestLandingPageReviewItem(
+  landingPageId: string,
+  reviewId: string,
+): Promise<void> {
+  await write(sql`
+    INSERT INTO user_landing_page_items (landing_page_id, item_type, review_id)
+    VALUES (${landingPageId}, 'review', ${reviewId})
+  `)
+}
+
+export async function createTestLandingPageGroupedReviewItem(
+  landingPageId: string,
+  topicId: string,
+  reviewId: string,
+): Promise<void> {
+  const { rows } = await write<{ id: string }>(sql`
+    INSERT INTO user_landing_page_items (landing_page_id, item_type, topic_id)
+    VALUES (${landingPageId}, 'topic_group', ${topicId})
+    RETURNING id
+  `)
+  await write(sql`
+    INSERT INTO user_landing_page_group_members (landing_page_item_id, member_type, review_id)
+    VALUES (${rows[0]!.id}, 'review', ${reviewId})
+  `)
+}
+
 export async function createTestLandingPageProfileLinkItem(
   userId: string,
   landingPageId: string,
