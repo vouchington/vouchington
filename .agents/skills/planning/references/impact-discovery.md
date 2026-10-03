@@ -16,10 +16,13 @@ Separate sessions only when the config, framework, environment, or intended rela
 
 Potentially verbose machine-readable results stay outside the main agent context:
 
-1. Set `umask 077`, record `${TMPDIR:-/tmp}` as `impact_parent`, create one session directory under
-   it with `mktemp -d`, and enforce `chmod 700 "$impact_dir"` before writing evidence. Fail
-   immediately if creation or permission enforcement fails. Keep the changed-files manifest and
-   `plan.json` in the same private directory.
+1. Set `umask 077` and create one private session with `node dev/planning-impact-dir.mts create`.
+   Capture its JSON output in `impact_session`, then read `.directory` into `impact_dir` with
+   `jq -er`. The helper creates the directory under `${TMPDIR:-/tmp}`, enforces mode `0700`, and
+   returns a session cleanup capability in the captured JSON. Keep that JSON only in the shell
+   variable: do not print it, pass it as an argument, or enable shell xtrace while it is live. Keep
+   `TMPDIR` unchanged until cleanup. Fail immediately if creation or path extraction fails. Keep
+   the changed-files manifest and `plan.json` in the same private directory.
 2. Write one repository-relative changed path per line to `$impact_dir/changed-files.txt`, then run
    the aggregate impact driver once. Do not put additional `no-mistakes` calls in `Promise.all`,
    background jobs, or another parallel fan-out. Under Grok/Codex/Cursor `workspace-write`, also run
@@ -56,13 +59,12 @@ Use this portable aggregate-analysis shape:
 
 ```bash
 umask 077
-impact_parent=${TMPDIR:-/tmp}
-if ! impact_dir="$(mktemp -d "$impact_parent/no-mistakes-impact.XXXXXX")"; then
+if ! impact_session="$(node dev/planning-impact-dir.mts create)"; then
   echo 'Private impact directory setup failed' >&2
   exit 1
 fi
-if ! chmod 700 "$impact_dir"; then
-  echo 'Private impact directory permission setup failed' >&2
+if ! impact_dir="$(printf '%s\n' "$impact_session" | jq -er '.directory')"; then
+  echo 'Private impact directory path extraction failed' >&2
   exit 1
 fi
 printf '%s\n' <source-file-a> <source-file-b> >"$impact_dir/changed-files.txt"
@@ -118,20 +120,22 @@ The inline validator rejects empty or malformed `why.json` and appends its diagn
 
 ## Cleanup
 
-After the Plan and journal or retrospective have consumed the evidence, remove the exact private
-session directory. Fail closed if the path does not match the directory pattern created above:
+After the Plan and journal or retrospective have consumed the evidence, pass the original captured
+session JSON to the cleanup helper. It validates the direct-child path, current ownership, private
+mode, marker, session capability, and every descendant before removing the exact generated tree.
+It refuses symlinks, foreign owners, unexpected file types, missing paths, and any path outside the
+configured temp root. A validation failure leaves the directory in place for inspection; do not
+replace this operation with a broad recursive removal command.
+The directory marker stores only a path-bound digest of the capability. This prevents accidental
+cross-session cleanup, but it cannot protect against a hostile process running as the same OS user:
+that process can race filesystem validation and removal.
 
 ```bash
-case "$impact_dir" in
-  "$impact_parent"/no-mistakes-impact.[[:alnum:]][[:alnum:]][[:alnum:]][[:alnum:]][[:alnum:]][[:alnum:]])
-    rm -rf -- "$impact_dir"
-    ;;
-  *)
-    echo 'Refusing to remove unexpected impact directory' >&2
-    exit 1
-    ;;
-esac
-unset impact_dir impact_parent
+if ! printf '%s\n' "$impact_session" | node dev/planning-impact-dir.mts cleanup; then
+  echo 'Private impact directory cleanup failed' >&2
+  exit 1
+fi
+unset impact_session impact_dir
 ```
 
 ## Specialized recipes and fallback
