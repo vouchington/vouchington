@@ -14,6 +14,8 @@ const RESET_WORKTREE_INVOCATION_PATTERN =
   /(^|[;&|])\s*(\.\/)?dev\/reset-worktree(?:\s+(--help|-h))?(?=[;&|]|\s|$)/g
 const PR_SUFFIX_PATTERN = /-pr\d+$/
 const transientTmuxSpawnCodes = new Set(['EAGAIN', 'EBUSY', 'EINTR', 'EMFILE', 'ENFILE', 'ETXTBSY'])
+const transientTmuxStderrPattern =
+  /\b(?:EAGAIN|EBUSY|EINTR|EMFILE|ENFILE|ETXTBSY)\b|resource temporarily unavailable|device or resource busy|interrupted system call|too many open files|text file busy/i
 const tmuxSpawnAttempts = 3
 const readTitleScript = fileURLToPath(new URL('./tmux-read-title', import.meta.url))
 
@@ -34,6 +36,7 @@ export type PaneTitleSpawnResult = {
   error?: NodeJS.ErrnoException | null
   status: number | null
   stdout: string
+  stderr?: string
 }
 
 export type PaneTitleSpawn = (
@@ -52,8 +55,15 @@ function spawnTmux(
   args: readonly string[],
   env: NodeJS.ProcessEnv,
 ): PaneTitleSpawnResult {
-  const result = spawnSync(command, [...args], { encoding: 'utf8', env })
-  return { error: result.error, status: result.status, stdout: result.stdout }
+  // tmux diagnostics are matched below, so request stable English errno text
+  // for this helper process without changing the caller's environment.
+  const result = spawnSync(command, [...args], { encoding: 'utf8', env: { ...env, LC_ALL: 'C' } })
+  return {
+    error: result.error,
+    status: result.status,
+    stdout: result.stdout,
+    stderr: result.stderr,
+  }
 }
 
 function paneTitle(env: NodeJS.ProcessEnv, spawn: PaneTitleSpawn): string | null {
@@ -63,7 +73,9 @@ function paneTitle(env: NodeJS.ProcessEnv, spawn: PaneTitleSpawn): string | null
     const result = spawn(readTitleScript, [], env)
     if (result.status === 0) return result.stdout.trim()
     const code = result.error?.code
-    if (typeof code !== 'string' || !transientTmuxSpawnCodes.has(code)) return null
+    const retryableSpawn = typeof code === 'string' && transientTmuxSpawnCodes.has(code)
+    const retryableInnerTmux = transientTmuxStderrPattern.test(result.stderr ?? '')
+    if (!retryableSpawn && !retryableInnerTmux) return null
   }
   return null
 }

@@ -128,6 +128,45 @@ describe('renderPostToolReminder', () => {
     expect(attempts).toBe(2)
   })
 
+  it('retries a transient inner tmux failure returned by the title helper', () => {
+    const payload: HookPayload = { tool_input: { command: 'git push' }, tool_name: 'Bash' }
+    let attempts = 0
+    const reminder = renderPostToolReminder(payload, {
+      spawnPaneTitle: () => {
+        attempts += 1
+        if (attempts === 1) {
+          return {
+            error: null,
+            status: 1,
+            stdout: '',
+            stderr: 'tmux: Resource temporarily unavailable (EAGAIN)',
+          }
+        }
+        return { error: null, status: 0, stdout: 'my-feature\n' }
+      },
+    })
+    expect(reminder).toContain('git push on PR branch')
+    expect(attempts).toBe(2)
+  })
+
+  it('does not retry a verified target refusal from the title helper', () => {
+    const payload: HookPayload = { tool_input: { command: 'git push' }, tool_name: 'Bash' }
+    let attempts = 0
+    const reminder = renderPostToolReminder(payload, {
+      spawnPaneTitle: () => {
+        attempts += 1
+        return {
+          error: null,
+          status: 1,
+          stdout: '',
+          stderr: 'tmux target: pane belongs to a different worktree',
+        }
+      },
+    })
+    expect(reminder).toBeNull()
+    expect(attempts).toBe(1)
+  })
+
   it('stays silent when the pane cannot be verified', () => {
     const payload: HookPayload = { tool_input: { command: 'git push' }, tool_name: 'Bash' }
     let attempts = 0
