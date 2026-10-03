@@ -35,6 +35,7 @@ const NON_TOOL_FILES = new Set([
   'private-user.mts',
   'profile-tool-support.mts',
   'prune-to-schema.mts',
+  'post-write-tool-support.mts',
   'read-tool-output-schema.mts',
   'referral-link-tool-support.mts',
   'resolve-topic.mts',

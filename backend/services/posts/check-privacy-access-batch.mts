@@ -17,7 +17,6 @@ export async function canViewPostsBatch(
   if (posts.length === 0) return new Map()
 
   const uniquePosts = [...new Map(posts.map(post => [post.id, post])).values()]
-  const run = options.query ?? read
   const eligibility = buildDirectPostEligibilityFilter('candidate_post', 'access_post', {
     currentUserId: currentUser?.id ?? null,
     isModerationStaff: isModerationStaff(currentUser),
@@ -31,7 +30,9 @@ export async function canViewPostsBatch(
     JOIN posts candidate_post ON candidate_post.id = input.post_id
     JOIN posts access_post ON access_post.id = COALESCE(candidate_post.root_id, candidate_post.id)
     WHERE `.append(eligibility)
-  const { rows } = await run<{ post_id: string }>(query)
+  const { rows } = options.query
+    ? await options.query<{ post_id: string }>(query)
+    : await read<{ post_id: string }>(query, options)
   const visible = new Set(rows.map(row => row.post_id))
   return new Map(posts.map(post => [post.id, visible.has(post.id)]))
 }

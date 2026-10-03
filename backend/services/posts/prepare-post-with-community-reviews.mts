@@ -18,13 +18,19 @@ import { persistPostSourceUrlRelation } from './create/source-url-relation.mts'
 import { lockActivePostAuthorImageAdmission } from './create/active-author.mts'
 import { preparePostImageDeliveryMutation } from './media-delivery.mts'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
+import {
+  loadWritablePost,
+  assertDelegatedCommunityPostAllowed,
+  assertDelegatedPostActorActive,
+} from './authorization.mts'
+import { lockDelegatedPostThread, lockDelegatedPostCommunity } from './delegated-write-locks.mts'
 import { finalizePreparedPost } from './create/finalize.mts'
 export const preparePostWithCommunityReviews = async (
   creator: PrivateUser,
   provenance: ContentProvenance,
   input: CreatePostInput,
   membershipPlan: ContributionLimitMembershipPlan = null,
-  options: { query?: TransactionQuery } = {},
+  options: { query?: TransactionQuery; delegated?: boolean } = {},
 ) => {
   const isAdminCreator = creator.roles.includes('administrator')
   const defaults = await validateCreatePostInput(creator, input, membershipPlan)
@@ -34,16 +40,33 @@ export const preparePostWithCommunityReviews = async (
   let resolvedUrlHostnameId: string | undefined
   let sourceUrlId: string | undefined
   let updates: CreatePostInput = input
+  const delegated = options.delegated
   const createInTransaction = async (query: TransactionQuery) => {
     await lockActivePostAuthorImageAdmission(
       query,
       creator.id,
       input.images?.map(image => image.image_id) ?? [],
     )
-    const options = { query }
     await preparePostImageDeliveryMutation(query, {
       imageIds: input.images?.map(image => image.image_id) ?? [],
     })
+    const options = { query }
+    if (delegated) await assertDelegatedPostActorActive(creator.id, options)
+    if (delegated && input.community_id && input.parent_id) {
+      const source = await getPostByAny(input.parent_id, options)
+      if (source?.community_id)
+        throw createHttpError(422, 'Only global posts can be discussed in a community')
+    }
+    if (delegated && input.community_id) {
+      await lockDelegatedPostCommunity(query, input.community_id, creator.id)
+      await assertDelegatedCommunityPostAllowed(input.community_id, defaults.postType, options)
+    }
+    if (delegated && input.parent_id) {
+      await lockDelegatedPostThread(query, input.parent_id, creator.id)
+      const parent = await loadWritablePost(creator, input.parent_id, false, options)
+      if (parent.community_id)
+        await assertDelegatedCommunityPostAllowed(parent.community_id, defaults.postType, options)
+    }
     // Resolve url string → url_id for link posts inside the transaction so the url row
     // is visible to the INSERT. addUrl returns null for blocked/non-public hosts → 422.
     if (defaults.postType === 'link' && updates.url && !updates.url_id) {

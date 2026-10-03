@@ -1,3 +1,16 @@
+import createHttpError from 'http-errors'
+import { getPrivateUserByAny } from '@services/users/get'
+import { assertNotSuspended } from '@services/users/suspension-guard'
+import { loadPostWriteThread } from './write-thread.mts'
+import { canViewPostsBatch } from './check-privacy-access.mts'
+import type { QueryOptions } from '@data-stores/psql'
+import { getCommunityOrThrow } from '@services/communities/get'
+import {
+  communityAllowsPostType,
+  isCommunityRootPostType,
+} from '@services/communities/post-type-settings'
+import assert from 'http-assert'
+
 import type { PrivateUser } from '@services/users/types'
 import { hasOAuthAccount } from '@services/user-rate-limits/trust-tier'
 import { assertCanContribute } from '@services/contribution-gating/assert'
@@ -60,14 +73,9 @@ export function currentUserCanDeletePost(
   post: Post,
   options?: { communityMemberRole?: CommunityMemberRole | null },
 ): boolean {
-  if (!currentUser) return false
-  if (currentUser.roles.includes('administrator')) return true
-  if (post.created_by_id === currentUser.id) return true
-  // Community moderators/owners can delete community-scoped comments
-  if (post.community_id && post.post_type === 'comment' && options?.communityMemberRole) {
-    return options.communityMemberRole === 'owner' || options.communityMemberRole === 'moderator'
-  }
-  return false
+  if (currentUserCanUpdatePost(currentUser, post)) return true
+  // Community moderation adds deletion authority only for comments.
+  return post.post_type === 'comment' && canModerateCommunityPost(currentUser, post, options)
 }
 
 export function currentUserCanUnpublishFromCommunity(
@@ -75,10 +83,9 @@ export function currentUserCanUnpublishFromCommunity(
   post: Post,
   options?: { communityMemberRole?: CommunityMemberRole | null },
 ): boolean {
-  if (!currentUser) return false
-  if (!post.community_id || post.post_type === 'comment') return false
+  if (!currentUser || !post.community_id || post.post_type === 'comment') return false
   if (currentUser.roles.includes('administrator')) return true
-  return options?.communityMemberRole === 'owner' || options?.communityMemberRole === 'moderator'
+  return canModerateCommunityPost(currentUser, post, options)
 }
 
 export function currentUserCanLockPost(
@@ -86,13 +93,8 @@ export function currentUserCanLockPost(
   post: Post,
   options?: { communityMemberRole?: CommunityMemberRole | null },
 ): boolean {
-  if (!currentUser) return false
-  if (currentUser.roles.includes('administrator')) return true
-  if (post.created_by_id === currentUser.id) return true
-  if (post.community_id && options?.communityMemberRole) {
-    return options.communityMemberRole === 'owner' || options.communityMemberRole === 'moderator'
-  }
-  return false
+  if (currentUserCanUpdatePost(currentUser, post)) return true
+  return canModerateCommunityPost(currentUser, post, options)
 }
 
 export function currentUserCanCreatePost(currentUser: PrivateUser): boolean {
@@ -101,4 +103,68 @@ export function currentUserCanCreatePost(currentUser: PrivateUser): boolean {
   const hasUsername = !!currentUser.username
   const hasEmail = !!currentUser.email_address
   return hasOAuth || (hasUsername && hasEmail)
+}
+
+/** Delegated access covers public threads and only the caller's own private records. */
+export async function loadWritablePost(
+  user: PrivateUser,
+  id: string,
+  requireOwnership = true,
+  options: QueryOptions = { readOnly: false },
+): Promise<Post> {
+  const { post, nodes, posts } = await loadPostWriteThread(id, options)
+  if (requireOwnership && (post.post_type === 'story' || post.post_type === 'topic_recommendation'))
+    throw createHttpError(404, 'Post not found')
+  if (nodes.some(node => node.post_type === 'topic_recommendation'))
+    throw createHttpError(404, 'Post not found')
+  const [asOwner, asPublic] = await Promise.all([
+    canViewPostsBatch(user, posts, options),
+    canViewPostsBatch(null, posts, options),
+  ])
+  if (
+    !posts.every(
+      node => asOwner.get(node.id) && (asPublic.get(node.id) || node.created_by_id === user.id),
+    )
+  )
+    throw createHttpError(404, 'Post not found')
+  if (requireOwnership && post.created_by_id !== user.id) throw createHttpError(403, 'Forbidden')
+  return post
+}
+
+export async function assertDelegatedCommunityPostAllowed(
+  communityId: string,
+  postType: string,
+  options: QueryOptions,
+): Promise<void> {
+  const community = await getCommunityOrThrow(communityId, options)
+  assertDelegatedCommunityWritable(community)
+  if (postType === 'comment') return
+  assert(
+    isCommunityRootPostType(postType) && communityAllowsPostType(community, postType),
+    403,
+    `${postType} posts are not enabled for this community`,
+  )
+}
+
+function canModerateCommunityPost(
+  currentUser: PrivateUser | null,
+  post: Post,
+  options?: { communityMemberRole?: CommunityMemberRole | null },
+): boolean {
+  const role = options?.communityMemberRole
+  return Boolean(currentUser && post.community_id && (role === 'owner' || role === 'moderator'))
+}
+
+/** Recheck the delegated actor while its author lifecycle fence is held. */
+export async function assertDelegatedPostActorActive(
+  userId: string,
+  options: QueryOptions,
+): Promise<void> {
+  const user = await getPrivateUserByAny(userId, options)
+  if (!user) throw createHttpError(401, 'User not found')
+  assertNotSuspended(user)
+}
+
+export function assertDelegatedCommunityWritable(community: { archived_at: unknown }): void {
+  assert(!community.archived_at, 403, 'Community is archived')
 }

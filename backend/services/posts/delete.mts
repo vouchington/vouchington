@@ -3,31 +3,55 @@ import type { Post } from './types.mts'
 import type { CommunityMemberRole } from '@services/communities/types'
 import { beginTransaction } from '@data-stores/psql'
 import { enqueueOnPostDeleted } from '@queues/entity-listeners/enqueues'
-import { currentUserCanDeletePost } from './authorization.mts'
+import {
+  currentUserCanDeletePost,
+  loadWritablePost,
+  assertDelegatedPostActorActive,
+} from './authorization.mts'
 import assert from 'http-assert'
 import { createPostRevision } from '@services/post-revisions'
 import { dismissPendingReportsForDeletedEntity } from '@services/moderation-reports/resolve'
 import { dismissPendingDisputesForDeletedReview } from '@services/review-disputes/resolve'
 import { recordModeratorAction } from '@services/moderator-actions'
-import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
+import {
+  lockPostPublication,
+  recordPostPublicationChange,
+  lockAuthorPublicationLifecycle,
+} from '@services/post-publication'
 import { retirePostImagePlacements } from './image-placements.mts'
 import { preparePostImageDeliveryMutation } from './media-delivery.mts'
 import { repairFailedImageDeliveryMutation } from '@services/media-delivery-safety'
+import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/active-user-mutation-lock'
+import { lockDelegatedPostThread } from './delegated-write-locks.mts'
 import onError from '@modules/on-error'
 import { runSequentially } from '@modules/utils/run-sequentially'
 
 export const deletePost = async (
   deleter: PrivateUser,
   post: Post,
-  options?: { communityMemberRole?: CommunityMemberRole | null },
+  options?: { communityMemberRole?: CommunityMemberRole | null; delegated?: boolean },
 ) => {
   assert(currentUserCanDeletePost(deleter, post, options), 403, 'Forbidden')
   try {
     await using query = await beginTransaction()
     let rowCount: number | null = null
     await runSequentially([
+      async () => {
+        if (options?.delegated)
+          await runSequentially([
+            () => lockActiveUserSubjectsForMutation(query, [deleter.id]),
+            () => lockAuthorPublicationLifecycle(query, deleter.id),
+            () => assertDelegatedPostActorActive(deleter.id, { query }),
+          ])
+      },
       () => preparePostImageDeliveryMutation(query, { postId: post.id, imageIds: [] }),
-      () => lockPostPublication(query, post.id),
+      async () => {
+        if (options?.delegated) {
+          await lockDelegatedPostThread(query, post.id, deleter.id)
+          await loadWritablePost(deleter, post.id, true, { query })
+        }
+        await lockPostPublication(query, post.id)
+      },
       async () => {
         const result = await query(
           `/* deletePost */

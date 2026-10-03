@@ -37,7 +37,7 @@ describe('scopeResourceRows', () => {
     expect(rest).toEqual(rest.toSorted((a, b) => a.localeCompare(b)))
     expect(rows.find(row => row.resource === 'posts')).toMatchObject({
       umbrella: false,
-      write: null,
+      write: expect.objectContaining({ scope: 'posts:write', requires: 'posts:read' }),
     })
   })
 

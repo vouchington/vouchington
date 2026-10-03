@@ -8035,6 +8035,9 @@ importers:
       '@services/bedrock-embeddings':
         specifier: workspace:^
         version: link:../bedrock-embeddings
+      '@services/comments':
+        specifier: workspace:^
+        version: link:../comments
       '@services/communities':
         specifier: workspace:^
         version: link:../communities
@@ -8132,9 +8135,6 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
-      '@services/comments':
-        specifier: workspace:^
-        version: link:../comments
       '@services/entity-listener-reconciliation':
         specifier: workspace:^
         version: link:../entity-listener-reconciliation
@@ -13124,7 +13124,7 @@ importers:
         version: 2.1.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@react-email/ui':
         specifier: ^6.11.0
-        version: 6.11.0(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 6.11.0(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ts-shared/languages':
         specifier: workspace:^
         version: link:../ts-shared/languages
@@ -26550,11 +26550,11 @@ snapshots:
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
 
-  '@react-email/ui@6.11.0(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@react-email/ui@6.11.0(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       esbuild: 0.28.1
       jiti: 2.6.1
-      next: 16.3.3(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      next: 16.3.3(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
     transitivePeerDependencies:
       - '@babel/core'
       - '@opentelemetry/api'
@@ -30267,7 +30267,7 @@ snapshots:
   neo-async@2.6.2:
     optional: true
 
-  next@16.3.3(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
+  next@16.3.3(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
       '@next/env': 16.3.3
       '@swc/helpers': 0.5.23

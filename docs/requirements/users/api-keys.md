@@ -31,7 +31,7 @@ API keys use a permission-based access control system. Each key has a `permissio
 
 - `rss:read` — Access RSS feed endpoints (`/rss/posts`, `/rss/news`)
 - `topics:read` — Read topic and recommendation MCP tools
-- `posts:read` — Read post MCP tools
+- `posts:read/write` — Read posts and create, reply, edit, archive or delete own posts and comments through MCP; write requires read
 - `communities:read`, `hostnames:read`, `users:read` — Read public community, hostname and public user profile MCP tools
 - `cards:read/write` — Read or manage cards; write requires read
 - `entity-relations:read/write` — Read or add relations, add or remove tags; write requires read

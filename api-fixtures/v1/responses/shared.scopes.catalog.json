@@ -343,6 +343,15 @@
       "surfaces": ["api-key", "oauth"]
     },
     {
+      "action": "write",
+      "audience": "user",
+      "description_key": null,
+      "requires": "posts:read",
+      "resource": "posts",
+      "scope": "posts:write",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
       "action": "read",
       "audience": "user",
       "description_key": null,

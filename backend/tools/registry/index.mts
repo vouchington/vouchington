@@ -1,4 +1,4 @@
-import createTopicRecommendationTool from '../create-topic-recommendation.mts'
+import { postWriteTools } from './post-write-tools.mts'
 import { adminEditorialStoryTools } from '../admin/editorial-stories.mts'
 import { adminEditorialImportTools } from '../admin/editorial-imports.mts'
 import { adminEditorialCategoryTools } from '../admin/editorial-categories.mts'
@@ -97,7 +97,7 @@ import { ownDataReadTools } from './own-data-read-tools.mts'
 import { searchReferenceReadTools } from './search-reference-read-tools.mts'
 
 export const ALL_TOOLS: readonly Tool[] = [
-  createTopicRecommendationTool,
+  ...postWriteTools,
   ...adminEditorialStoryTools,
   ...adminEditorialImportTools,
   ...adminEditorialCategoryTools,
