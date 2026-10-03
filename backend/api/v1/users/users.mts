@@ -11,25 +11,39 @@ import {
 import { getBookmarksForEntities } from '@services/bookmarks'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import { validateUsername } from '@modules/utils'
-import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
+import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery, apiResponse } from '../../response-contract.mts'
 import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
-import { buildPageInfo, createPaginationParser, decodeScopedAliasCursor } from '@modules/pagination'
+import {
+  buildPageInfo,
+  createPaginationParser,
+  decodeScopedAliasCursor,
+  defineQueryContract,
+  queryString,
+} from '@modules/pagination'
 
 const usersSearchParser = createPaginationParser({
   cursor: { type: 'simple' },
   limit: { min: 1, max: 25, default: 10 },
 })
+const usersQuery = defineQueryContract({ username: queryString(), q: queryString() })
 
 app.route('/api/v1/users').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/users', usersSearchParser, usersQuery)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/users')
   const { username, q } = ctx.query
 
   if (q !== undefined && !username) {
-    apiQuery('GET:/api/v1/users', usersSearchParser)
     ctx.assert(currentUser, 401, 'Unauthorized')
-    const qValue = Array.isArray(q) ? (q[0] ?? '') : q
-    const options = parseAndValidatePaginatedRequest(ctx, 'GET:/api/v1/users', usersSearchParser)
+    const normalizedSearchQuery = {
+      q: Array.isArray(ctx.query.q) ? (ctx.query.q[0] ?? '') : ctx.query.q,
+    }
+    const qValue = normalizedSearchQuery.q
+    const options = parseAndValidatePaginatedRequest(ctx, 'GET:/api/v1/users', usersSearchParser, {
+      extraQueryContracts: [usersQuery.queryContract],
+      ignoredKeys: ['q'],
+    })
+    validateRequestContract(ctx, 'GET:/api/v1/users', { query: normalizedSearchQuery })
     const admin = isAdminUser(currentUser)
     const scope = usersSearchCursorScope({ query: qValue, admin })
     const after = options.after
@@ -64,6 +78,7 @@ app.route('/api/v1/users').get(async (ctx: Context) => {
   if (!username || typeof username !== 'string') {
     ctx.throw(422, 'Username or search query is required')
   }
+  validateRequestContract(ctx, 'GET:/api/v1/users', { query: { username: ctx.query.username } })
 
   // Validate and normalize username to prevent enumeration by email/phone
   const validatedUsername = validateUsername(username)

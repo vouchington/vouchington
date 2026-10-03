@@ -218,7 +218,7 @@ const expectedParameters = {
   'GET:/api/v1/topics/compare': ['slugs'],
   'GET:/api/v1/trending-referral-programs': ['after', 'limit'],
   'GET:/api/v1/urls/:id/crawls': ['after', 'limit'],
-  'GET:/api/v1/users': ['after', 'limit'],
+  'GET:/api/v1/users': ['after', 'limit', 'q', 'username'],
   'GET:/api/v1/users/:idOrSlug': ['include_bio'],
   'GET:/api/v1/users/:idOrSlug/communities/:listType': ['after', 'limit'],
   'GET:/api/v1/users/:idOrSlug/domains/:listType': ['after', 'limit'],

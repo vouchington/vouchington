@@ -30022,6 +30022,12 @@
             "maximum": 25,
             "minimum": 1,
             "type": "integer"
+          },
+          "q": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
           }
         },
         "type": "object"

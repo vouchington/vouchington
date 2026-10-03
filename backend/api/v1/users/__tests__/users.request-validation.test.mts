@@ -132,6 +132,31 @@ describe('user routes - request contract validation', () => {
   })
 
   describe('user search', () => {
+    it('keeps public username lookup ahead of a search term and unused pagination', async () => {
+      const response = await createRequest()
+        .get('/api/v1/users')
+        .query({ username: owner.username, q: 'not-a-match', limit: 'bad' })
+        .expect(200)
+      expect(response.body.user.id).toBe(owner.id)
+    })
+
+    it('uses the first repeated search term after authentication', async () => {
+      const request = createRequest()
+      await request.authenticateAs(stranger)
+      const response = await request
+        .get('/api/v1/users')
+        .query({ q: [owner.username, 'not-a-match'] })
+        .expect(200)
+      expect(response.body.results.some((user: { id: string }) => user.id === owner.id)).toBe(true)
+    })
+
+    it('keeps authentication ahead of malformed pagination with an empty username', async () => {
+      const response = await createRequest()
+        .get('/api/v1/users?username=&q=abc&limit=bad')
+        .expect(401)
+      expect(response.body.message).toBe('Unauthorized')
+    })
+
     it.each([
       ['a malformed limit', { q: 'abc', limit: 'abc' }],
       ['a repeated cursor', { q: 'abc', after: ['a', 'b'] }],
