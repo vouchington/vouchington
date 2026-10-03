@@ -53,7 +53,6 @@ function createVoteMutationHandler<VoteResult extends ElectionVoteMutationResult
 
     await ctx.applyRouteRateLimit(options.routeKey)
     assertNotSuspended(currentUser)
-
     if (options.preAssertAccess) {
       await options.preAssertAccess(ctx, currentUser)
     }
