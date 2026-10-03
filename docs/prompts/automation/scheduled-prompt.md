@@ -35,11 +35,11 @@ No source issue; scheduled prompt run.
 <!-- related-issues-validation: no-source-scheduled-prompt -->
 ```
 
-Copy only those two exact standalone lines into the visible `## Related issues` section, with no
+Put those two exact standalone lines consecutively in the visible `## Related issues` section, with no
 blank line or other content between them. In the PR body, do not wrap the pair in a code fence or
 collapsed details section. Before publication, validate the completed body with
-`node dev/pr-description.mts validate --body-file <path>`; the validator enforces this representation
-and its scheduled workspace-setup line.
+`node dev/pr-description.mts validate --body-file <path>`; the validator checks the pair's adjacency
+and placement and the exact scheduled workspace-setup line.
 
 Never run pr-shepherd in this scheduled task.
 Apply both the `automation` and `automation:scheduled` labels to the draft PR, then re-fetch it and
