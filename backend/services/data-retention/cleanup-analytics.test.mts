@@ -43,14 +43,14 @@ describe('cleanupAnalyticsLocalFiles', () => {
   it('runs analytics cleanup as part of the full retention workflow', async () => {
     process.env.ANALYTICS_BACKEND = 'firehose'
     const now = new Date()
+    const limits = { batchSize: 10, maxBatches: 10 }
     const emptyWindow = {
       lowerBoundDate: new Date(now.getTime() + 24 * 60 * 60 * 1000),
-      maxBatches: 10,
       now,
     }
 
     await expect(
-      runDataRetentionCleanup({
+      runDataRetentionCleanup(limits, {
         retainedIdentityRootIds: {},
         retainedRelationIdentityKeys: {},
         retainedMediaBindingIds: [],

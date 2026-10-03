@@ -31,6 +31,7 @@
     "@services/captcha": "workspace:^",
     "@services/contribution-gating": "workspace:^",
     "@services/copyright-notices": "workspace:^",
+    "@services/data-retention": "workspace:^",
     "@services/dynamic-config-audit": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/feature-flags": "workspace:^",

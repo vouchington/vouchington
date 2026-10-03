@@ -164,30 +164,30 @@ describe('retained elected relation cleanup', () => {
 
 describe('retention day validation', () => {
   it('rejects unsafe soft-deleted user retention windows', async () => {
-    await expect(cleanupSoftDeletedUsers({ retentionDays: 0 })).rejects.toThrow(
+    await expect(cleanupSoftDeletedUsers({ retentionDays: 0, maxBatches: 1 })).rejects.toThrow(
       'retentionDays must be a positive integer',
     )
-    await expect(cleanupSoftDeletedUsers({ retentionDays: Infinity })).rejects.toThrow(
-      'retentionDays must be a finite integer',
-    )
+    await expect(
+      cleanupSoftDeletedUsers({ retentionDays: Infinity, maxBatches: 1 }),
+    ).rejects.toThrow('retentionDays must be a positive integer')
   })
 
   it('rejects unsafe referral attribution retention windows', async () => {
-    await expect(cleanupOldReferralAttributions({ retentionDays: 0 })).rejects.toThrow(
-      'retentionDays must be a positive integer',
-    )
-    await expect(cleanupOldReferralAttributions({ retentionDays: Infinity })).rejects.toThrow(
-      'retentionDays must be a finite integer',
-    )
+    await expect(
+      cleanupOldReferralAttributions({ retentionDays: 0, maxBatches: 1 }),
+    ).rejects.toThrow('retentionDays must be a positive integer')
+    await expect(
+      cleanupOldReferralAttributions({ retentionDays: Infinity, maxBatches: 1 }),
+    ).rejects.toThrow('retentionDays must be a positive integer')
   })
 
   it('rejects unsafe OAuth account retention windows', async () => {
-    await expect(cleanupOrphanedOAuthAccounts({ retentionDays: 0 })).rejects.toThrow(
+    await expect(cleanupOrphanedOAuthAccounts({ retentionDays: 0, maxBatches: 1 })).rejects.toThrow(
       'retentionDays must be a positive integer',
     )
-    await expect(cleanupOrphanedOAuthAccounts({ retentionDays: Infinity })).rejects.toThrow(
-      'retentionDays must be a finite integer',
-    )
+    await expect(
+      cleanupOrphanedOAuthAccounts({ retentionDays: Infinity, maxBatches: 1 }),
+    ).rejects.toThrow('retentionDays must be a positive integer')
   })
 })
 
@@ -251,7 +251,7 @@ describe('cleanupSoftDeletedUsers', () => {
   }, 30_000)
 
   it('rejects invalid batch options', async () => {
-    await expect(cleanupSoftDeletedUsers({ batchSize: 0 })).rejects.toThrow(
+    await expect(cleanupSoftDeletedUsers({ batchSize: 0, maxBatches: 1 })).rejects.toThrow(
       'batchSize must be a positive integer',
     )
   })

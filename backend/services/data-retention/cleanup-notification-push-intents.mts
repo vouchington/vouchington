@@ -6,7 +6,7 @@ import { runBoundedBatches } from './run-bounded-batches.mts'
 export type TerminalNotificationPushIntentCleanupOptions = {
   retentionDays?: number
   batchSize?: number
-  maxBatches?: number
+  maxBatches: number
   lowerBoundDate?: Date
   now?: Date
 }
@@ -17,7 +17,7 @@ export type TerminalNotificationPushIntentCleanupResult = {
 }
 
 export async function cleanupTerminalNotificationPushIntents(
-  options: TerminalNotificationPushIntentCleanupOptions = {},
+  options: TerminalNotificationPushIntentCleanupOptions,
 ): Promise<TerminalNotificationPushIntentCleanupResult> {
   const retentionDays = normalizeRetentionDays(options.retentionDays, 90)
   const cutoffDate = getRetentionCutoffDate(retentionDays, options.now)

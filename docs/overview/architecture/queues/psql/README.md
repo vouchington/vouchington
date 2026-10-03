@@ -44,7 +44,7 @@ Psql jobs are always enqueued, including in tests. Tests must use the queue fixt
 ## Data Retention Cleanup
 
 - `dataRetentionCleanup` runs on the serialized `psql` worker and delegates business rules to [`@services/data-retention`](../../services/data-retention/README.md).
-- Cleanup is idempotent and uses bounded batches with short transactions/statements; repeated runs continue deleting remaining eligible rows.
+- Cleanup is idempotent and uses bounded batches with short transactions/statements. Each cleanup stops after `max_batches_per_run` batches from the `data-retention-config` DynamicConfig namespace and reports `hasMore`; repeated runs continue deleting remaining eligible rows.
 - Soft-deleted user cleanup first reassigns or nulls dependent references for the selected user batch, then hard-deletes only that batch.
 
 Monthly partition cleanup performs FK referential actions before detaching and dropping each

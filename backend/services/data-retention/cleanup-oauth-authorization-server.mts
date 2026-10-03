@@ -1,13 +1,17 @@
 import { deleteExpiredOAuthAuthorizationServerArtifactsBatch } from '@services/oauth-authorization-server'
-import { DEFAULT_BATCH_SIZE, normalizePositiveInteger } from './cleanup-batches.mts'
+import { DEFAULT_BATCH_SIZE } from './cleanup-batches.mts'
+import { assertPositiveInteger, normalizePositiveInteger } from './normalize-positive-integer.mts'
 
 type CleanupResult = { deleted: number; hasMore: boolean }
 
-export async function cleanupExpiredOAuthAuthorizationServerArtifacts(
-  options: { batchSize?: number; maxBatches?: number; lowerBoundDate?: Date; now?: Date } = {},
-): Promise<CleanupResult> {
+export async function cleanupExpiredOAuthAuthorizationServerArtifacts(options: {
+  batchSize?: number
+  maxBatches: number
+  lowerBoundDate?: Date
+  now?: Date
+}): Promise<CleanupResult> {
   const batchSize = normalizePositiveInteger(options.batchSize, DEFAULT_BATCH_SIZE, 'batchSize')
-  const maxBatches = normalizePositiveInteger(options.maxBatches, Infinity, 'maxBatches')
+  const maxBatches = assertPositiveInteger(options.maxBatches, 'maxBatches')
   let deleted = 0
   let hasMore = false
   for (let batches = 0; batches < maxBatches; batches += 1) {

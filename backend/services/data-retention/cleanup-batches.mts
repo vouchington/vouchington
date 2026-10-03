@@ -1,10 +1,10 @@
 import { assertWhitelistedSqlIdentifier, write } from '@data-stores/psql'
 import { providerTableConfigs } from '@services/oauth/providers'
 import { DELETED_USER_ID } from '@services/users/constants'
-export { normalizePositiveInteger } from './normalize-positive-integer.mts'
 import sql from 'sql-template-strings'
 import { cleanupSoftDeletedUser } from './cleanup-soft-deleted-user.mts'
-export const DEFAULT_BATCH_SIZE = 500
+import { DEFAULT_DATA_RETENTION_CONFIG } from './config.mts'
+export const DEFAULT_BATCH_SIZE = DEFAULT_DATA_RETENTION_CONFIG.batch_size
 const oauthProviderUserIdColumnByTable = new Map(
   Object.values(providerTableConfigs).map(config => [config.table, config.providerUserIdColumn]),
 )

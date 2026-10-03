@@ -16,7 +16,9 @@ boundaries, and an ineligible user releases it without deletion.
 
 ## Key exports
 
-- `runDataRetentionCleanup()` — runs all retention jobs in sequence and returns deletion counts
+- `runDataRetentionCleanup(limits, options?)` — runs all retention jobs in sequence and returns
+  deletion counts. `limits` (`{ batchSize, maxBatches }`) is required and supplies every cleanup's
+  batch size and per-run cap; the scheduled job passes `getDataRetentionLimits()` from `config.mts`
 - `cleanupSoftDeletedUsers()` — hard-deletes users soft-deleted more than 90 days ago, but leaves a
   user with an incomplete `user_deletion_requests` lifecycle or administrator refund operation
   intact; this prevents retention from bypassing durable privacy, provider-cleanup, and refund
@@ -71,21 +73,34 @@ independent global cursors. Explicit root IDs, relation `(subjectId, relationId)
 IDs select only those identities in one page without changing a global cursor; shared-database
 tests use these scopes so their cleanup cannot sweep unrelated fixtures.
 
-Age-based cleanup functions accept optional
-`{ retentionDays, batchSize, maxBatches, lowerBoundDate, now }` options. Explicit-expiry cleanup
-functions accept `{ batchSize, maxBatches, lowerBoundDate, now }`. Bounds are inclusive at the
+Age-based cleanup functions accept
+`{ retentionDays, batchSize, maxBatches, lowerBoundDate, now }` options, and explicit-expiry cleanup
+functions accept `{ batchSize, maxBatches, lowerBoundDate, now }`. `maxBatches` is required and must
+be a positive integer; an uncapped run is a type error and `Infinity` is rejected. Inside
+`runDataRetentionCleanup()` a per-cleanup option may override the run's `batchSize` or
+`maxBatches`. Bounds are inclusive at the
 lower edge. OAuth authorization expiry is inclusive at `now`; Bluesky expiry is
 strictly before `now`. Without an injected `now`, OAuth uses PostgreSQL `CURRENT_TIMESTAMP` for
 each batch, topic-import attempt cleanup uses the PostgreSQL clock for each batch, Bluesky
 completion cleanup creates a JavaScript time for each batch, and abandoned Bluesky sessions
-capture one JavaScript time per cleanup run. Production defaults drain all currently eligible rows
-with `batchSize = 500`; topic-import attempts use 25 because each retained response may be 4 MiB.
+capture one JavaScript time per cleanup run.
+
+The `data-retention-config` DynamicConfig namespace sets the scheduled run's limits.
+`batch_size` (default 500, hard maximum 5,000) is the rows one cleanup deletes per batch, and
+`max_batches_per_run` (default 200, hard maximum 2,000) is the batches each cleanup may run per
+daily job. A missing, non-integer, non-positive, or above-maximum stored value falls back to the
+default, so a bad edit cannot raise a bound past its maximum. At the defaults one cleanup deletes at
+most 100,000 rows per run and the run issues at most 11 x 200 batches. A cleanup that hits its cap
+reports `hasMore: true`; its eligible rows stay in place, so the next daily run resumes without a
+cursor. Topic-import attempts keep their own 25-row batch because each retained response may be
+4 MiB, and the shared `batch_size` can only lower it.
 
 Cleanups whose batch delete returns a row count share `runBoundedBatches()`: it validates
-`batchSize` and `maxBatches`, keeps deleting while each batch is full, and reports `hasMore` when
-the last batch was full, including when `maxBatches` stopped the run. Orphaned OAuth account
-cleanup shares one batch budget across providers, and OAuth authorization-server cleanup's batch
-returns its own `hasMore`, so neither uses it.
+`batchSize` and the required `maxBatches`, keeps deleting while each batch is full, and reports
+`hasMore` when the last batch was full, including when `maxBatches` stopped the run. Orphaned OAuth
+account cleanup shares one batch budget across providers, and OAuth authorization-server cleanup's
+batch returns its own `hasMore`, so neither uses it; both validate `maxBatches` with
+`assertPositiveInteger()`.
 
 Tests use `createTestRetentionWindow()` for relative-age rules and `createTestExpiryWindow()` for
 direct expiry timestamps. Both scope deletion to test-owned SQL windows; the expiry helper makes

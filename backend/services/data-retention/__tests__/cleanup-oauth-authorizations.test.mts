@@ -51,6 +51,7 @@ describe('cleanupExpiredOAuthAuthorizations', () => {
       cleanupExpiredOAuthAuthorizations({
         batchSize: 10,
         lowerBoundDate: window.lowerBoundDate,
+        maxBatches: window.maxBatches,
         now: window.now,
         authorizationIds: authorizationIds.slice(0, 4),
       }),

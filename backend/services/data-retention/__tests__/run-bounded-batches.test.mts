@@ -12,10 +12,9 @@ describe('runBoundedBatches', () => {
   it('keeps deleting while batches are full and stops after the first partial batch', async () => {
     const deleteBatch = createDeleteBatch(3, 3, 2, 3)
 
-    await expect(runBoundedBatches({ batchSize: 3 }, deleteBatch)).resolves.toEqual({
-      deleted: 8,
-      hasMore: false,
-    })
+    await expect(runBoundedBatches({ batchSize: 3, maxBatches: 10 }, deleteBatch)).resolves.toEqual(
+      { deleted: 8, hasMore: false },
+    )
     expect(deleteBatch.mock.calls).toEqual([[3], [3], [3]])
   })
 
@@ -32,7 +31,7 @@ describe('runBoundedBatches', () => {
   it('stops after one empty batch requested at the default batch size', async () => {
     const deleteBatch = createDeleteBatch(0, DEFAULT_BATCH_SIZE)
 
-    await expect(runBoundedBatches({}, deleteBatch)).resolves.toEqual({
+    await expect(runBoundedBatches({ maxBatches: 5 }, deleteBatch)).resolves.toEqual({
       deleted: 0,
       hasMore: false,
     })
@@ -42,12 +41,24 @@ describe('runBoundedBatches', () => {
   it('rejects invalid limits before deleting anything', async () => {
     const deleteBatch = createDeleteBatch(1)
 
-    await expect(runBoundedBatches({ batchSize: 0 }, deleteBatch)).rejects.toThrow(
+    await expect(runBoundedBatches({ batchSize: 0, maxBatches: 1 }, deleteBatch)).rejects.toThrow(
       'batchSize must be a positive integer',
     )
-    await expect(runBoundedBatches({ maxBatches: 1.5 }, deleteBatch)).rejects.toThrow(
-      'maxBatches must be a positive integer',
-    )
+    for (const maxBatches of [1.5, 0, -1, Infinity, Number.NaN]) {
+      await expect(runBoundedBatches({ maxBatches }, deleteBatch)).rejects.toThrow(
+        'maxBatches must be a positive integer',
+      )
+    }
+    expect(deleteBatch).not.toHaveBeenCalled()
+  })
+
+  it('requires a per-run cap at the type level and at runtime', async () => {
+    const deleteBatch = createDeleteBatch(1)
+
+    // @ts-expect-error maxBatches is required; an uncapped loop is a type error
+    const uncapped = runBoundedBatches({ batchSize: 1 }, deleteBatch)
+
+    await expect(uncapped).rejects.toThrow('maxBatches must be a positive integer')
     expect(deleteBatch).not.toHaveBeenCalled()
   })
 })

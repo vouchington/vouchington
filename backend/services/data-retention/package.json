@@ -22,6 +22,7 @@
   "dependencies": {
     "@data-stores/analytics": "workspace:^",
     "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/contribution-gating": "workspace:^",
     "@services/oauth": "workspace:^",

@@ -27,6 +27,7 @@ const REGISTRY_ORDER = [
   'bedrock-embeddings-batch-config',
   'rss-feed-crawl-config',
   'user-import-export-config',
+  'data-retention-config',
   'web-risk-config',
   'moderation-ai-config',
   'moderation-ai-dispatch-config',
