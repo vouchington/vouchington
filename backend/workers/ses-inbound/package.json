@@ -25,10 +25,10 @@
     "@services/copyright-notices": "workspace:^",
     "@ts-shared/ses-inbound-contract": "workspace:^",
     "glide-mq": "^0.16.0",
-    "mailparser": "^3.9.30"
+    "mailparser": "^3.9.33"
   },
   "devDependencies": {
-    "@types/mailparser": "^3.4.6",
+    "@types/mailparser": "^3.9.0",
     "@voucha/test-helpers": "workspace:^"
   }
 }

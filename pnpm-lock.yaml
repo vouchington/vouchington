@@ -12674,12 +12674,12 @@ importers:
         specifier: ^0.16.0
         version: 0.16.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
       mailparser:
-        specifier: ^3.9.30
-        version: 3.9.30
+        specifier: ^3.9.33
+        version: 3.9.33
     devDependencies:
       '@types/mailparser':
-        specifier: ^3.4.6
-        version: 3.4.6
+        specifier: ^3.9.0
+        version: 3.9.0
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -18354,8 +18354,8 @@ packages:
   '@types/jsrsasign@10.5.15':
     resolution: {integrity: sha512-3stUTaSRtN09PPzVWR6aySD9gNnuymz+WviNHoTb85dKu+BjaV4uBbWWGykBBJkfwPtcNZVfTn2lbX00U+yhpQ==}
 
-  '@types/mailparser@3.4.6':
-    resolution: {integrity: sha512-wVV3cnIKzxTffaPH8iRnddX1zahbYB1ZEoAxyhoBo3TBCBuK6nZ8M8JYO/RhsCuuBVOw/DEN/t/ENbruwlxn6Q==}
+  '@types/mailparser@3.9.0':
+    resolution: {integrity: sha512-YnhrRiRVDiEAphFvd72hKa1n8y2b9Q3rgSQiONZQyhQz67h5g4MZHNApET3XWXVEFdInWtHqDHKEwnyjxU3QVw==}
 
   '@types/mdast@4.0.4':
     resolution: {integrity: sha512-kGaNbPh1k7AFzgpud/gMdvIm5xuECykRR+JnWKQno9TAXVa6WIVCGTPvYGekIDL4uwCZQSYbUxNBSb1aUo79oA==}
@@ -18912,8 +18912,8 @@ packages:
   '@xtuc/long@4.2.2':
     resolution: {integrity: sha512-NuHqBY1PB/D8xU6s/thBgOAiAP7HOYDQ32+BFZILJ8ivkUkAHQnWfn6WhL79Owj1qmUnoN/YPhktdIoucipkAQ==}
 
-  '@zone-eu/mailsplit@5.4.18':
-    resolution: {integrity: sha512-ufNquC1VWilkF6IUyy7+qYA19Q1JXNkeiiSIgS9+f7ojNs5ijHLg03FUcXDCR2tDDJ51zSoPNTsUu4DQz613KQ==}
+  '@zone-eu/mailsplit@5.4.19':
+    resolution: {integrity: sha512-nDWzw+X3tqfwd7DpDThAjg3KqtrNA6bG2gkrf6m2j1JBaGyyKAZzu1TguzB4GEco+HYpXAbXZ7kbl4Sn8H1vXw==}
 
   accepts@1.3.8:
     resolution: {integrity: sha512-PYAthTa2m2VKxuvSD3DPC/Gy+U+sOA1LAuT8mkmRuvw+NACSaeXEQ+NHcVF7rONl6qcaxV3Uuemwawk+7+SJLw==}
@@ -20557,14 +20557,14 @@ packages:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
     engines: {node: '>= 0.8.0'}
 
-  libbase64@1.3.0:
-    resolution: {integrity: sha512-GgOXd0Eo6phYgh0DJtjQ2tO8dc0IVINtZJeARPeiIJqge+HdsWSuaDTe8ztQ7j/cONByDZ3zeB325AHiv5O0dg==}
+  libbase64@1.3.1:
+    resolution: {integrity: sha512-1b9LXEjEtXj35YKOR9RqNKBootlb37qbIzmqiw4MsP52cjOsfR6i/AYU1Y8qN4kV2TJQmLJ5aiXn45qI6h+Szw==}
 
-  libmime@5.4.5:
-    resolution: {integrity: sha512-5xZSF0j71GqXMEolQAnS/gOD4nHrAhf9nPWdqvfIXXeFODx0T4BlO9XudlXe9AgDKAoOkR2YeFagQ1Dwy1v6RQ==}
+  libmime@5.4.6:
+    resolution: {integrity: sha512-Cgx1vHd76GTwDaLNsl0K44CjNFfhkX/1bMcoruoWr8Ugcl0/zMw7x/8NpZERIOcpGyzlQo10tOEw9goGsv2Wlg==}
 
-  libqp@2.1.1:
-    resolution: {integrity: sha512-0Wd+GPz1O134cP62YU2GTOPNA7Qgl09XwCqM5zpBv87ERCXdfDtyKXvV7c9U22yWJh44QZqBocFnXN11K96qow==}
+  libqp@2.1.2:
+    resolution: {integrity: sha512-rp+U80tl9Os4K7GnVbPzPRmghPu6eqB8rcF+ontvNAnoga0JhMFG/bkTD/reC8yoznKMgOc5/ttZHJasiWeFPw==}
 
   lightningcss-android-arm64@1.32.0:
     resolution: {integrity: sha512-YK7/ClTt4kAK0vo6w3X+Pnm0D2cf2vPHbhOXdoNti1Ga0al1P4TBZhwjATvjNwLEBCnKvjJc2jQgHXH0NEwlAg==}
@@ -20810,8 +20810,8 @@ packages:
   magicast@0.5.5:
     resolution: {integrity: sha512-UicdXN8zQ3JHlxVq+28afMXPr1z7WNY6+7EJnzTdQWkTAlMLF5fNCCKxJHBQwGaNGR11581EiQmQzx73+MvszA==}
 
-  mailparser@3.9.30:
-    resolution: {integrity: sha512-jtLxunaB3fxrX4x0scARwHd9Ctj3uWKt/Ps3Ge+DUnfdHf8LtQMF8ENUpptprxde+mwfGW0PSanb4hMfyE/xxg==}
+  mailparser@3.9.33:
+    resolution: {integrity: sha512-+ZYhApN4f7B8+jokb7VZeml8lxYHixVJ3tJTB5iPG9/MJpy8YmBHGdy+AWJ9dmtUX6t0xlu4rxwj1b7eWCvbDA==}
     engines: {node: '>=20.0.0'}
 
   make-dir@4.0.0:
@@ -21167,6 +21167,10 @@ packages:
 
   nodemailer@10.0.12:
     resolution: {integrity: sha512-PQ46oNbNMuH/Sno7B5IWIU9etytwrO0xdTFvWXpIQFRXhBAXtzD48243AS+BCbQQTPD8y3fqUrgLn0tSo77gvg==}
+    engines: {node: '>=20.0.0'}
+
+  nodemailer@10.0.13:
+    resolution: {integrity: sha512-SzG86OlvcW/NNhUFC6uROMwRTL4n7MswfQqC/T8mhkmnY1YVa23zUEMYi4ijSeXSl9GLz9ZeTJDUatEDuY5FeQ==}
     engines: {node: '>=20.0.0'}
 
   nofilter@3.1.0:
@@ -27355,7 +27359,7 @@ snapshots:
 
   '@types/jsrsasign@10.5.15': {}
 
-  '@types/mailparser@3.4.6':
+  '@types/mailparser@3.9.0':
     dependencies:
       '@types/node': 26.6.3
       iconv-lite: 0.6.3
@@ -27961,11 +27965,11 @@ snapshots:
   '@xtuc/long@4.2.2':
     optional: true
 
-  '@zone-eu/mailsplit@5.4.18':
+  '@zone-eu/mailsplit@5.4.19':
     dependencies:
-      libbase64: 1.3.0
-      libmime: 5.4.5
-      libqp: 2.1.1
+      libbase64: 1.3.1
+      libmime: 5.4.6
+      libqp: 2.1.2
 
   accepts@1.3.8:
     dependencies:
@@ -29613,16 +29617,16 @@ snapshots:
       prelude-ls: 1.2.1
       type-check: 0.4.0
 
-  libbase64@1.3.0: {}
+  libbase64@1.3.1: {}
 
-  libmime@5.4.5:
+  libmime@5.4.6:
     dependencies:
       encoding-japanese: 2.4.0
       iconv-lite: 0.7.3
-      libbase64: 1.3.0
-      libqp: 2.1.1
+      libbase64: 1.3.1
+      libqp: 2.1.2
 
-  libqp@2.1.1: {}
+  libqp@2.1.2: {}
 
   lightningcss-android-arm64@1.32.0:
     optional: true
@@ -29803,16 +29807,16 @@ snapshots:
       '@babel/types': 7.29.8
       source-map-js: 1.2.1
 
-  mailparser@3.9.30:
+  mailparser@3.9.33:
     dependencies:
-      '@zone-eu/mailsplit': 5.4.18
+      '@zone-eu/mailsplit': 5.4.19
       encoding-japanese: 2.4.0
       he: 1.2.0
       html-to-text: 10.0.1
       iconv-lite: 0.7.3
-      libmime: 5.4.5
+      libmime: 5.4.6
       linkify-it: 5.0.2
-      nodemailer: 10.0.12
+      nodemailer: 10.0.13
       punycode.js: 2.3.1
       tlds: 1.261.0
 
@@ -30333,6 +30337,8 @@ snapshots:
   node-releases@2.0.56: {}
 
   nodemailer@10.0.12: {}
+
+  nodemailer@10.0.13: {}
 
   nofilter@3.1.0: {}
 
