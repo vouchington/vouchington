@@ -57,6 +57,29 @@ ensure_database_exists
     expect(result.stdout).not.toContain('unexpected-createdb')
   })
 
+  it('lists databases without client-generated catalog queries or trimming names', async () => {
+    const cwd = await makeWorktreeDir('feature-db-client-catalog')
+    const result = await runInitializeHelperStatus({
+      cwd,
+      script: `
+DATABASE_URL=postgres://localhost:15432/%20voucha%20space%20
+DB_NAME=' voucha space '
+psql() {
+  case "$*" in
+    *-lqt*) echo 'column d.daticulocale does not exist' >&2; return 1 ;;
+    *'SELECT datname FROM pg_catalog.pg_database'*) printf ' voucha space \n' ;;
+    *) echo unexpected-query >&2; return 1 ;;
+  esac
+}
+createdb() { echo unexpected-createdb; return 1; }
+ensure_database_exists
+`,
+    })
+    expect(result.code).toBe(0)
+    expect(result.stderr).toBe('')
+    expect(result.stdout).not.toContain('unexpected-createdb')
+  })
+
   it('treats a createdb "already exists" race as idempotent, not fatal', async () => {
     const cwd = await makeWorktreeDir('feature-db-createdb-exists-race')
 
