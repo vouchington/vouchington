@@ -19,6 +19,11 @@ are triaged with [merge-queue-ejection.md](automation/merge-queue-ejection.md). 
 See the complete [Scheduled Prompt Catalog](SCHEDULED.md) for all scheduled prompt files and
 their scope boundaries; do not maintain a second partial prompt list here.
 
+PR-mode scheduled prompts may complete with one draft PR or a verified no-op after their full
+required audit and checks. Skipped setup, diagnostics, or required scope means the run is incomplete,
+not a no-op. The shared [scheduled prompt template](automation/scheduled-prompt.md) defines the
+outcome report and validates scheduled no-source references before publication.
+
 These templates are Vitest fixtures, not docs-only markdown. `TEST_FIXTURE_DOCS` in
 [`ci-detect-changes.yml`](../../.github/workflows/ci-detect-changes.yml) keeps a pull request that
 touches any markdown file under this whole tree (`docs/prompts/.+\.mdx?`) from being
