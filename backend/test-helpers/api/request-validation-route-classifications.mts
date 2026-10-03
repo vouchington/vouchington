@@ -1,17 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest'
-
-import type { OpenApiDocument } from 'vouchington-tooling/openapi-document'
-import { COLD_OPENAPI_BUILD_TIMEOUT_MS } from '../cold-build-budget.mts'
-import { buildOpenApiDocument } from './build-openapi-document.mts'
-import { buildRequestContractsBundle } from './request-contract-bundle.mts'
-import {
-  discoverRuntimeValidatedOperations,
-  discoverThirdPartyRoutes,
-  routeKey,
-} from './request-validation-route-coverage.mts'
-import { discoverSourceInputOperations } from './request-validation-route-input.mts'
-
-const SPECIALIZED_INGRESS = {
+export const SPECIALIZED_INGRESS = {
   'POST:/api/v1/mcp': {
     parser: 'MCP SDK JSON-RPC transport',
     evidence: 'backend/api/v1/mcp/mcp.test.mts',
@@ -51,9 +38,15 @@ const SPECIALIZED_INGRESS = {
   },
 } as const
 
+export const SPECIALIZED_QUERY_INPUTS = {
+  'GET:/api/v1/auth/oauth/:provider/broker-callback': ['state', 'code', 'error'],
+  'POST:/api/v1/email-unsubscribe': ['token'],
+  'GET:/api/v1/users/:idOrSlug/data-request/stream': ['request_id'],
+} as const
+
 // A newly added route with no validator must be reviewed and placed here only when its source and
 // generated contract both prove it has no request input to validate.
-const NO_INPUT_OPERATIONS: readonly string[] = [
+export const NO_INPUT_OPERATIONS: readonly string[] = [
   'DELETE:/api/v1/admin/mcp',
   'DELETE:/api/v1/auth/bluesky/link',
   'DELETE:/api/v1/mcp',
@@ -109,63 +102,3 @@ const NO_INPUT_OPERATIONS: readonly string[] = [
   'POST:/api/v1/my/identity-verification/checkout-sessions',
   'POST:/api/v1/my/notifications/read-all',
 ]
-
-let document: OpenApiDocument
-let runtimeValidated: Set<string>
-
-describe('third-party route request validation inventory', () => {
-  beforeAll(() => {
-    document = buildOpenApiDocument()
-    runtimeValidated = discoverRuntimeValidatedOperations()
-  }, COLD_OPENAPI_BUILD_TIMEOUT_MS)
-
-  it('classifies every registered REST and MCP route exactly once', () => {
-    const routes = discoverThirdPartyRoutes()
-    const keys = routes.map(routeKey)
-    const noInput = new Set(NO_INPUT_OPERATIONS)
-    const specialized = new Set(Object.keys(SPECIALIZED_INGRESS))
-    expect(new Set(keys).size).toBe(keys.length)
-    expect([...runtimeValidated].filter(key => !keys.includes(key))).toEqual([])
-    expect(runtimeValidated).not.toContain('GET:/api/v1/auth/oauth/providers')
-    expect([...specialized].filter(key => !keys.includes(key))).toEqual([])
-    expect([...noInput].filter(key => !keys.includes(key))).toEqual([])
-    expect([...runtimeValidated].filter(key => specialized.has(key) || noInput.has(key))).toEqual(
-      [],
-    )
-    expect([...specialized].filter(key => noInput.has(key))).toEqual([])
-
-    const unclassified = keys.filter(
-      key => !runtimeValidated.has(key) && !specialized.has(key) && !noInput.has(key),
-    )
-    const sourceInputs = discoverSourceInputOperations()
-    expect(sourceInputs).toContain('GET:/api/v1/localization')
-    expect([...sourceInputs].filter(key => noInput.has(key))).toEqual([])
-    expect(
-      [...sourceInputs].filter(key => !runtimeValidated.has(key) && !specialized.has(key)),
-    ).toEqual([])
-    const bundle = buildRequestContractsBundle(document)
-    expect({
-      carrierless: unclassified.filter(key => !bundle.operations[key]),
-      carrierBearing: unclassified.filter(key => bundle.operations[key]),
-    }).toEqual({ carrierless: [], carrierBearing: [] })
-    expect(keys.toSorted()).toEqual([...runtimeValidated, ...specialized, ...noInput].toSorted())
-  })
-
-  it('keeps no-input entries free of generated request carriers', () => {
-    const bundle = buildRequestContractsBundle(document)
-    for (const operation of NO_INPUT_OPERATIONS) {
-      expect(bundle.operations[operation]).toBeUndefined()
-    }
-  })
-
-  it('keeps the specialized parser exclusions tied to focused boundary tests', async () => {
-    const { access, readFile } = await import('node:fs/promises')
-    for (const exclusion of Object.values(SPECIALIZED_INGRESS)) {
-      expect(exclusion.parser).not.toBe('')
-      const evidenceUrl = new URL(`../../../../${exclusion.evidence}`, import.meta.url)
-      await expect(access(evidenceUrl)).resolves.toBeUndefined()
-      const evidence = await readFile(evidenceUrl, 'utf8')
-      expect(evidence).toContain(exclusion.proof)
-    }
-  })
-})

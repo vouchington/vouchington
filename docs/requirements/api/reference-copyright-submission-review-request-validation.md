@@ -83,7 +83,7 @@ request behaves exactly as before.
   request-contract entry for it and a `validateRequestContract` call would have nothing to check.
   It authenticates as copyright staff, then replays failed media-delivery registry records. This is
   the carrier-free skip described in
-  [Skipped operations](reference-content-routes-request-validation.md#skipped-operations); the
+  [carrier-free operations](reference-content-routes-request-validation.md#carrier-free-operations); the
   coverage test fails if the route gains a body, path, or query carrier, so it is validated in the
   same change. Existing route-replay coverage keeps its `403` and `200` behavior.
 - The repeat-infringer routes (the notice accounts read, dispositions, outcomes, and reinstatements)

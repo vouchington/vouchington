@@ -20,7 +20,7 @@ import {
 import { getUserPublicByAnyCachedBatch } from '@services/entity-fetch'
 import { indexById, isUUID } from '@modules/utils'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
-import { communityMembersQuery, communityPageQueryInput } from './query-contracts.mts'
+import { communityMembersQuery, communityPageQueryInput } from './query-contracts-helpers.mts'
 
 app
   .route('/api/v1/communities/:idOrSlug/members')

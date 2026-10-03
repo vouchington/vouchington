@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import { apiQuery } from '../../response-contract.mts'
-import { communityPageQuery, communityPageQueryInput } from './query-contracts.mts'
+import { communityPageQuery, communityPageQueryInput } from './query-contracts-helpers.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {

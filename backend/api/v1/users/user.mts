@@ -41,7 +41,7 @@ const userProfileQueryContract = defineQueryContract({
   include_bio: queryEnum(['0', '1'] as const),
 })
 import type { ElectionVoteRequest } from '@voucha/types/entities/election'
-import { getUserVouchContextResponse } from './user-vouch-context.mts'
+import { getUserVouchContextResponse } from './user-vouch-context-helpers.mts'
 import {
   getOptionalAuthAndRateLimit,
   requireAuth,

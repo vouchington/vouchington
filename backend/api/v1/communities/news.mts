@@ -37,7 +37,7 @@ import {
   communityNewsParser,
   communityNewsQuery,
   communityNewsQueryInput,
-} from './query-contracts.mts'
+} from './query-contracts-helpers.mts'
 
 app.route('/api/v1/communities/:idOrSlug/news').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/communities/:idOrSlug/news', communityNewsParser, communityNewsQuery)

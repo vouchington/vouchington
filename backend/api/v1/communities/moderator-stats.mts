@@ -9,7 +9,7 @@ import {
 } from '@services/moderator-actions'
 import { getUserPublicByAnyCachedBatch } from '@services/entity-fetch'
 import { isModerationStaff } from '@services/users'
-import { communityModeratorStatsQuery } from './query-contracts.mts'
+import { communityModeratorStatsQuery } from './query-contracts-helpers.mts'
 
 const VALID_WINDOWS = [30, 90] as const
 type WindowDays = (typeof VALID_WINDOWS)[number]

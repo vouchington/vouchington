@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock<typeof import('node:fs')>(import('node:fs'), async importOriginal => importOriginal())
-import { localizationRoute } from './route.mts'
+import { localizationRoute } from './localization-route-helpers.mts'
 import { setLocalizationDatabaseForTests } from '@services/localization/database'
 import { installSampleLocalizationDatabase } from '@voucha/test-helpers/services/localization/fixtures'
 

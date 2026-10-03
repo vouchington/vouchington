@@ -12,7 +12,7 @@ import {
 } from '@services/communities'
 import { indexById } from '@modules/utils'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
-import { communityApplicationsQuery, communityPageQueryInput } from './query-contracts.mts'
+import { communityApplicationsQuery, communityPageQueryInput } from './query-contracts-helpers.mts'
 
 app
   .route('/api/v1/communities/:idOrSlug/applications')

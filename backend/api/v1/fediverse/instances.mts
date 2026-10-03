@@ -41,7 +41,7 @@ import {
   parseIntegrationStatus,
   prepareFediverseInstanceQuery,
   type FediverseInstancesQuery,
-} from './instances-query.mts'
+} from './instances-query-helpers.mts'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 type PublicFediverseInstanceAttributes = Omit<
   FediverseInstanceAttributes,

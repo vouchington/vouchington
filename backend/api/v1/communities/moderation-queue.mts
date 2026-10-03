@@ -13,7 +13,7 @@ import {
   encodeCommunityModerationQueueCursor,
   type CommunityModerationQueueSource,
 } from '@services/communities/publications/moderation-queue'
-import { communityModerationQueueQuery } from './query-contracts.mts'
+import { communityModerationQueueQuery } from './query-contracts-helpers.mts'
 
 /**
  * GET /api/v1/communities/:idOrSlug/moderation-queue

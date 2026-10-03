@@ -14,7 +14,7 @@ import {
   type AutomodFeedbackOutcome,
   type RecentAutomodActionSourceType,
 } from '@services/moderation-training'
-import { communityAutomodActionsQuery } from './query-contracts.mts'
+import { communityAutomodActionsQuery } from './query-contracts-helpers.mts'
 
 app.route('/api/v1/communities/:idOrSlug/automod/recent-actions').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/communities/:idOrSlug/automod/recent-actions', communityAutomodActionsQuery)

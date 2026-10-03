@@ -148,6 +148,25 @@ export function resolvedName(
   return symbol ? resolveAlias(symbol, checker).getName() : undefined
 }
 
+export function hasCarrierRoot(expression: ts.Expression, family: string): boolean {
+  let found = false
+  const rootName = family === 'path' ? 'params' : family
+  const visit = (node: ts.Node): void => {
+    if (
+      (ts.isPropertyAccessExpression(node) && node.name.text === rootName) ||
+      (ts.isElementAccessExpression(node) &&
+        node.argumentExpression &&
+        ts.isStringLiteralLike(node.argumentExpression) &&
+        node.argumentExpression.text === rootName)
+    ) {
+      found = true
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(expression)
+  return found
+}
+
 export function resolveAlias(symbol: ts.Symbol, checker: ts.TypeChecker): ts.Symbol {
   return symbol.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol
 }

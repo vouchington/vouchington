@@ -1,20 +1,24 @@
 import ts from 'typescript'
 
-import { loadRegisteredRouteCatalog } from '../backend-contract-catalog.mts'
-import { loadBackendProgram } from '../backend-program.mts'
+import { isExecutedAdmissionCallback } from './request-validation-route-execution.mts'
+import { contextRoot, isQueryRoot } from './request-validation-route-input-roots.mts'
 import {
   findRegistration,
-  resolveAlias,
   resolveHandlerNodes,
   resolvedName,
 } from './request-validation-route-ast.mts'
 
-/** Finds request input consumed by the registered handler, excluding sibling routes in a module. */
-export function discoverSourceInputOperations(): Set<string> {
-  const { program, routeFiles } = loadBackendProgram()
+import type { Route } from './request-validation-route-catalog.mts'
+
+export function discoverSourceInputOperationsForProgram(
+  program: ts.Program,
+  routeFiles: readonly ts.SourceFile[],
+  routes: readonly Route[],
+  queryReads?: Map<string, Set<string>>,
+): Set<string> {
   const checker = program.getTypeChecker()
   const operations = new Set<string>()
-  for (const route of loadRegisteredRouteCatalog()) {
+  for (const route of routes) {
     if (!route.routeTemplate.startsWith('/api/v1/')) continue
     const [fileName, lineText] = route.source.split(':')
     const source = fileName
@@ -33,6 +37,7 @@ export function discoverSourceInputOperations(): Set<string> {
     if (route.routeTemplate.includes(':')) operations.add(operation)
     for (const handler of handlers) {
       const contextSymbols = new Set<ts.Symbol>()
+      const querySymbols = new Set<ts.Symbol>()
       if (ts.isFunctionLike(handler)) {
         const contextParameter = handler.parameters[0]?.name
         if (contextParameter && ts.isIdentifier(contextParameter)) {
@@ -45,6 +50,8 @@ export function discoverSourceInputOperations(): Set<string> {
         operation,
         operations,
         routeFiles,
+        queryReads,
+        querySymbols,
       })
     }
   }
@@ -56,6 +63,8 @@ type Inspection = {
   operation: string
   operations: Set<string>
   routeFiles: readonly ts.SourceFile[]
+  queryReads?: Map<string, Set<string>>
+  querySymbols: Set<ts.Symbol>
 }
 
 function inspectRouteNode(
@@ -65,12 +74,37 @@ function inspectRouteNode(
   visitedCalls: Set<ts.Symbol>,
   inspection: Inspection,
 ): void {
-  const { checker, operation, operations, routeFiles } = inspection
+  const { checker, operation, operations, routeFiles, querySymbols } = inspection
   if (!root && ts.isFunctionLike(node) && !isExecutedAdmissionCallback(node, checker)) return
   if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) {
     const initializer = contextRoot(node.initializer, checker, contexts)
     const symbol = checker.getSymbolAtLocation(node.name)
     if (initializer && symbol) contexts.add(symbol)
+    if (symbol && isQueryRoot(node.initializer, checker, contexts, querySymbols)) {
+      querySymbols.add(symbol)
+    }
+  }
+  if (
+    ts.isVariableDeclaration(node) &&
+    ts.isObjectBindingPattern(node.name) &&
+    node.initializer &&
+    isQueryRoot(node.initializer, checker, contexts, querySymbols)
+  ) {
+    operations.add(operation)
+    for (const element of node.name.elements) {
+      if (!element.dotDotDotToken) {
+        const property = element.propertyName ?? element.name
+        const key =
+          ts.isIdentifier(property) || ts.isStringLiteralLike(property) ? property.text : '*'
+        const reads = inspection.queryReads?.get(operation) ?? new Set<string>()
+        reads.add(key)
+        inspection.queryReads?.set(operation, reads)
+      }
+      if (ts.isIdentifier(element.name)) {
+        const symbol = checker.getSymbolAtLocation(element.name)
+        if (symbol) querySymbols.add(symbol)
+      }
+    }
   }
   if (ts.isPropertyAccessExpression(node)) {
     const directContext = contextRoot(node.expression, checker, contexts)
@@ -93,6 +127,23 @@ function inspectRouteNode(
           'blob',
         ].includes(node.name.text))
     if (inputProperty) operations.add(operation)
+    if (isQueryRoot(node.expression, checker, contexts, querySymbols)) {
+      const reads = inspection.queryReads?.get(operation) ?? new Set<string>()
+      reads.add(node.name.text)
+      inspection.queryReads?.set(operation, reads)
+    }
+  }
+  if (ts.isElementAccessExpression(node) && contextRoot(node.expression, checker, contexts)) {
+    operations.add(operation)
+    if (isQueryRoot(node.expression, checker, contexts, querySymbols)) {
+      const key =
+        node.argumentExpression && ts.isStringLiteralLike(node.argumentExpression)
+          ? node.argumentExpression.text
+          : '*'
+      const reads = inspection.queryReads?.get(operation) ?? new Set<string>()
+      reads.add(key)
+      inspection.queryReads?.set(operation, reads)
+    }
   }
   if (ts.isCallExpression(node)) {
     const name = resolvedName(node.expression, checker)
@@ -117,6 +168,13 @@ function inspectRouteNode(
             const rootSymbol = argument && contextRoot(argument, checker, contexts)
             const parameterSymbol = name && checker.getSymbolAtLocation(name)
             if (rootSymbol && parameterSymbol) nested.add(parameterSymbol)
+            if (
+              argument &&
+              parameterSymbol &&
+              isQueryRoot(argument, checker, contexts, querySymbols)
+            ) {
+              inspection.querySymbols.add(parameterSymbol)
+            }
           })
           const calls = new Set(visitedCalls).add(target)
           if (implementation.body)
@@ -126,62 +184,4 @@ function inspectRouteNode(
     }
   }
   ts.forEachChild(node, child => inspectRouteNode(child, contexts, false, visitedCalls, inspection))
-}
-
-function contextRoot(
-  expression: ts.Expression,
-  checker: ts.TypeChecker,
-  contexts: Set<ts.Symbol>,
-): boolean {
-  if (ts.isParenthesizedExpression(expression))
-    return contextRoot(expression.expression, checker, contexts)
-  if (ts.isIdentifier(expression)) {
-    const symbol = checker.getSymbolAtLocation(expression)
-    return !!symbol && contexts.has(symbol)
-  }
-  if (ts.isPropertyAccessExpression(expression)) {
-    return contextRoot(expression.expression, checker, contexts)
-  }
-  return false
-}
-
-/** Only these callbacks are invoked by the route helper that receives them. */
-export function isExecutedAdmissionCallback(node: ts.Node, checker: ts.TypeChecker): boolean {
-  if (
-    !ts.isFunctionDeclaration(node) &&
-    !ts.isMethodDeclaration(node) &&
-    !ts.isArrowFunction(node) &&
-    !ts.isFunctionExpression(node)
-  )
-    return false
-  const property = node.parent
-  const name =
-    ts.isPropertyAssignment(property) && ts.isIdentifier(property.name)
-      ? property.name.text
-      : undefined
-  if (
-    !ts.isPropertyAssignment(property) ||
-    !['beforeCapacity', 'beforeCommit', 'execute'].includes(name ?? '')
-  ) {
-    return false
-  }
-  const object = property.parent
-  const call = object.parent
-  if (
-    !ts.isObjectLiteralExpression(object) ||
-    !ts.isCallExpression(call) ||
-    !call.arguments.includes(object)
-  ) {
-    return false
-  }
-  const symbol = ts.isIdentifier(call.expression)
-    ? checker.getSymbolAtLocation(call.expression)
-    : undefined
-  const target = symbol && resolveAlias(symbol, checker)
-  return !!target?.declarations?.some(declaration =>
-    declaration
-      .getSourceFile()
-      .fileName.replaceAll('\\', '/')
-      .endsWith('/backend/services/contribution-gating/admit-route-contribution.mts'),
-  )
 }

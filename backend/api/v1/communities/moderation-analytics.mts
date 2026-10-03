@@ -8,7 +8,7 @@ import type { ModerationAnalyticsRange } from '@services/moderation-analytics/ty
 import { currentUserCanViewCommunityModlog } from '@services/moderator-actions'
 import { isModerationStaff } from '@services/users'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
-import { communityModerationAnalyticsQuery } from './query-contracts.mts'
+import { communityModerationAnalyticsQuery } from './query-contracts-helpers.mts'
 
 const VALID_RANGES = new Set<ModerationAnalyticsRange>(['today', '7d', '30d', '90d', 'all'])
 

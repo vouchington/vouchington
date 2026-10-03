@@ -90,7 +90,7 @@ before.
 - `POST /copyright-media-delivery/replays` reads no body, path, or query, so the compiler emits no
   request-contract entry for it and a `validateRequestContract` call would have nothing to check.
   It is the carrier-free skip described in
-  [Skipped operations](reference-content-routes-request-validation.md#skipped-operations) and in the
+  [carrier-free operations](reference-content-routes-request-validation.md#carrier-free-operations) and in the
   [submission review page](reference-copyright-submission-review-request-validation.md#operations-that-need-no-change);
   that page's coverage test fails if the route gains a request carrier.
 

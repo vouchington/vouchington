@@ -48,6 +48,17 @@ present.
 | `GET /api/v1/users/:idOrSlug/data-request/stream`       | Validates the path; `request_id` remains a route-specific query check. |
 | `GET /api/v1/users/:username/landing-page`, `.../:slug` | Free-form username and slug paths.                                     |
 
+## Carrier-free operations
+
+The route inventory includes a reviewed class for operations with no request path, query, body,
+or header input. The compiler-built inventory test verifies each listed operation has no generated
+request-contract entry and that source inspection finds no request input in its registered handler.
+An operation that gains a request carrier must leave this class and receive runtime validation or a
+named specialized parser.
+
+The full inventory is frozen in
+[`request-validation-route-coverage.test.mts`](../../../backend/test-helpers/api/request-validation-route-coverage.test.mts).
+
 ### Server-sent-event query carriers
 
 SSE routes have no registered response route, so the generator cannot emit an `apiQuery` carrier

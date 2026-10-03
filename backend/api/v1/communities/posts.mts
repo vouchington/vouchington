@@ -23,7 +23,7 @@ import {
   communityPageQuery,
   communityPageQueryInput,
   communityPostsQuery,
-} from './query-contracts.mts'
+} from './query-contracts-helpers.mts'
 type CachedPost = Awaited<ReturnType<typeof getPostByAnyCachedBatch>>[number]
 async function buildLinkEmbedsSidecar(
   posts: CachedPost[],
