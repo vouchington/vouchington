@@ -56,6 +56,10 @@ export async function appendCopyrightGuestFiling(input: {
 }): Promise<{ id: string; kind: GuestFilingKind; received_at: Date }> {
   assert(input.statement.trim().length > 0, 422, 'Guest filing statement is required')
   assert(guestFilingKinds.includes(input.kind), 422, 'Unsupported guest filing')
+  const submissionBody =
+    input.kind === 'court_or_ccb_hold'
+      ? JSON.stringify({ summary: input.statement })
+      : input.statement
   const submissionId = uuidv7()
   await using transaction = await beginTransaction()
   const capabilityId = await lockGuestCapability(transaction, input)
@@ -67,7 +71,7 @@ export async function appendCopyrightGuestFiling(input: {
       body_ciphertext, copyright_notice_guest_capability_id
     ) VALUES (
       ${submissionId}, ${input.noticeId}, ${input.kind}, ${input.now}, 'guest_form', NULL,
-      ${encryptSecret(input.statement, copyrightSubmissionPurpose(submissionId))}, ${capabilityId}
+      ${encryptSecret(submissionBody, copyrightSubmissionPurpose(submissionId))}, ${capabilityId}
     )
     RETURNING id, kind, received_at
   `,
