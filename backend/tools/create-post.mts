@@ -1,4 +1,5 @@
 import assert from 'http-assert'
+import { isAdminUser } from '@services/users'
 import {
   loadCommunityForViewer,
   getCommunityOrThrow,
@@ -84,7 +85,7 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
     const admitted = await admitDelegatedContribution<AdmittedPost>({
       currentUser: user,
       membershipPlan,
-      source: contributionPolicySourceForPostType(postType, user.roles.includes('administrator')),
+      source: contributionPolicySourceForPostType(postType, isAdminUser(user)),
       scope: community ? `community:${community.id}` : 'global',
       postType,
       idempotencyKey: idempotency_key,
@@ -101,11 +102,7 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
             `${postType} posts are not enabled for this community`,
           )
         }
-        assert(
-          body.slug === undefined || user.roles.includes('administrator'),
-          403,
-          'Only admins can set a post slug',
-        )
+        assert(body.slug === undefined || isAdminUser(user), 403, 'Only admins can set a post slug')
         assertCanCreateAdminOnlyPostType(user, postType)
         assertOfficialAccountCanCreatePost(user, body.post_type)
         await validateCreatePostInput(user, body, membershipPlan)

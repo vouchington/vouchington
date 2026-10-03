@@ -1,6 +1,5 @@
 import contracts from '@voucha/api-fixtures/v1/request-contracts.json' with { type: 'json' }
 import createHttpError from 'http-errors'
-import { write } from '@data-stores/psql'
 import { getCommentAncestorsByAny } from '@services/comments'
 import { getPostByAny, type Post } from '@services/posts'
 import { canViewPostsBatch } from '@services/posts/check-privacy-access'
@@ -65,8 +64,8 @@ export async function loadWritablePost(
     throw createHttpError(404, 'Post not found')
   const posts = chain.filter((node): node is Post => Boolean(node))
   const [asOwner, asPublic] = await Promise.all([
-    canViewPostsBatch(user, posts, { query: write }),
-    canViewPostsBatch(null, posts, { query: write }),
+    canViewPostsBatch(user, posts, { readOnly: false }),
+    canViewPostsBatch(null, posts, { readOnly: false }),
   ])
   if (
     !posts.every(

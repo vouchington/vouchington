@@ -1,4 +1,5 @@
 import assert from 'http-assert'
+import { isAdminUser } from '@services/users'
 import { updatePost, type UpdatePostChanges } from '@services/posts'
 import { assertPostUpdatePreflight } from '@services/posts/update/validation'
 import { getUserActivePlan } from '@services/memberships'
@@ -41,11 +42,7 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
     const user = await requireActiveToolUser(currentUser)
     const { id, ...changes } = args
     const post = await loadWritablePost(user, id)
-    assert(
-      changes.slug === undefined || user.roles.includes('administrator'),
-      403,
-      'Only admins can set a post slug',
-    )
+    assert(changes.slug === undefined || isAdminUser(user), 403, 'Only admins can set a post slug')
     assertPostUpdatePreflight(user, post, changes)
     const membershipPlan =
       changes.structured_data !== undefined ||

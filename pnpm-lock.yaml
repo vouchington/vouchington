@@ -10812,9 +10812,6 @@ importers:
 
   backend/tools:
     dependencies:
-      '@data-stores/psql':
-        specifier: workspace:^
-        version: link:../data-stores/psql
       '@jongleberry/vurst-prompt':
         specifier: ^0.4.3
         version: 0.4.3
