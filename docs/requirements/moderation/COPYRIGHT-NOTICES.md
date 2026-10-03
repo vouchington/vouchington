@@ -530,7 +530,8 @@ Before accepting EU notices, appoint any required DSA legal representative and c
 implement Article 16 notice handling and Article 17 statements of reasons, assess Article 24(5)
 transparency reporting, and obtain counsel's Article 17 DSM analysis. Before accepting UK notices,
 complete a UK copyright and Online Safety Act applicability assessment and publish the resulting
-process. These are activation requirements, not claims of current compliance.
+process. Follow the [UK approval rule](../../runbooks/copyright-notices.md#intake-activation).
+These are activation requirements, not claims of current compliance.
 
 ## US counter-notice timing
 
@@ -807,5 +808,7 @@ Before accepting live notices, the operator must register and publish the actual
 agent, appoint any required EU/UK representatives, approve retention and repeat-infringer policies,
 staff the response targets, provision a versioned encrypted evidence bucket and least-privilege
 SES/worker IAM, and obtain US legal review. EU/UK intake additionally requires the representatives
-and legal review described above. Placeholder addresses, credentials, or registration claims are
+and legal review described above, including the
+[UK approval rule](../../runbooks/copyright-notices.md#intake-activation).
+Placeholder addresses, credentials, or registration claims are
 forbidden. See the [copyright operations runbook](../../runbooks/copyright-notices.md).
