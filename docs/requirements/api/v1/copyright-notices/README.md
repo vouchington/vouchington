@@ -168,6 +168,14 @@ before any service call. Every field-named `422`, the unknown-submission `404`, 
 counter-notice, and legal-hold outcome is unchanged; see
 [request validation](../../reference-copyright-submission-review-request-validation.md).
 
+The form-intake review, restriction review, and legal-hold resolution bodies
+(`POST /api/v1/copyright-form-intakes/:id/reviews`,
+`POST /api/v1/copyright-notices/:id/restrictions/:restrictionId/reviews`, and
+`POST /api/v1/copyright-legal-hold-assessments/:id/resolutions`) are closed the same way: an unknown
+key is a `422` before any service call, and a JSON `null` restriction review body is a `422` rather
+than a `500`. The image-similarity `limit` stays lenient and never answers `422`; see
+[request validation](../../reference-copyright-staff-decision-request-validation.md).
+
 Staff issue a one-case guest capability with `POST /api/v1/copyright-notices/:id/guest-capabilities`.
 The expiry must be no more than 30 days after issue, and the token is returned only in that
 response. `GET /api/v1/copyright-notices/:id/guest-capabilities` lists the case's capabilities

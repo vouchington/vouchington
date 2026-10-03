@@ -3449,6 +3449,19 @@
       "required": ["elements", "risk_notes", "suggested_action", "summary"],
       "type": "object"
     },
+    "CopyrightFormIntakeReviewRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "accepted": {
+          "type": "boolean"
+        },
+        "rationale": {
+          "type": "string"
+        }
+      },
+      "required": ["accepted", "rationale"],
+      "type": "object"
+    },
     "CopyrightGuestCapabilityIssueRequest": {
       "additionalProperties": false,
       "properties": {
@@ -3699,6 +3712,20 @@
         "resolved_at",
         "resolved_by_id"
       ],
+      "type": "object"
+    },
+    "CopyrightLegalHoldResolutionRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "rationale": {
+          "type": "string"
+        },
+        "resolution_kind": {
+          "enum": ["dismissed", "proceeding_ended", "superseded"],
+          "type": "string"
+        }
+      },
+      "required": ["rationale", "resolution_kind"],
       "type": "object"
     },
     "CopyrightNoticeFormRequest": {
@@ -4007,6 +4034,20 @@
         "lifted_at",
         "lifted_by_id"
       ],
+      "type": "object"
+    },
+    "CopyrightRestrictionReviewRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "enum": ["confirm", "reverse"],
+          "type": "string"
+        },
+        "rationale": {
+          "type": "string"
+        }
+      },
+      "required": ["action", "rationale"],
       "type": "object"
     },
     "CopyrightStaffDisposition": {
@@ -26663,6 +26704,16 @@
         },
         "required": ["id", "targetId"],
         "type": "object"
+      },
+      "query": {
+        "properties": {
+          "limit": {
+            "maximum": 50,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
       }
     },
     "GET:/api/v1/copyright-notices/review-queue": {
@@ -31500,6 +31551,9 @@
       }
     },
     "POST:/api/v1/copyright-form-intakes/:id/reviews": {
+      "body": {
+        "$ref": "#/components/schemas/CopyrightFormIntakeReviewRequest"
+      },
       "path": {
         "properties": {
           "id": {
@@ -31511,6 +31565,9 @@
       }
     },
     "POST:/api/v1/copyright-legal-hold-assessments/:id/resolutions": {
+      "body": {
+        "$ref": "#/components/schemas/CopyrightLegalHoldResolutionRequest"
+      },
       "path": {
         "properties": {
           "id": {
@@ -31652,7 +31709,7 @@
     },
     "POST:/api/v1/copyright-notices/:id/restrictions/:restrictionId/reviews": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CopyrightRestrictionReviewRequest"
       },
       "path": {
         "properties": {

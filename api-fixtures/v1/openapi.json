@@ -3471,6 +3471,19 @@
         "required": ["elements", "risk_notes", "suggested_action", "summary"],
         "type": "object"
       },
+      "CopyrightFormIntakeReviewRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "accepted": {
+            "type": "boolean"
+          },
+          "rationale": {
+            "type": "string"
+          }
+        },
+        "required": ["accepted", "rationale"],
+        "type": "object"
+      },
       "CopyrightGuestCapabilityIssueRequest": {
         "additionalProperties": false,
         "properties": {
@@ -3721,6 +3734,20 @@
           "resolved_at",
           "resolved_by_id"
         ],
+        "type": "object"
+      },
+      "CopyrightLegalHoldResolutionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "rationale": {
+            "type": "string"
+          },
+          "resolution_kind": {
+            "enum": ["dismissed", "proceeding_ended", "superseded"],
+            "type": "string"
+          }
+        },
+        "required": ["rationale", "resolution_kind"],
         "type": "object"
       },
       "CopyrightNoticeFormRequest": {
@@ -4029,6 +4056,20 @@
           "lifted_at",
           "lifted_by_id"
         ],
+        "type": "object"
+      },
+      "CopyrightRestrictionReviewRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": ["confirm", "reverse"],
+            "type": "string"
+          },
+          "rationale": {
+            "type": "string"
+          }
+        },
+        "required": ["action", "rationale"],
         "type": "object"
       },
       "CopyrightStaffDisposition": {
@@ -43711,6 +43752,15 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyrightFormIntakeReviewRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {
@@ -43768,6 +43818,15 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyrightLegalHoldResolutionRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "content": {
@@ -45730,7 +45789,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CopyrightRestrictionReviewRequest"
               }
             }
           }
@@ -45822,6 +45881,17 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "description": "Maximum candidates to return. A malformed or out-of-range value is ignored.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 50,
+              "minimum": 1,
+              "type": "integer"
             }
           }
         ],
