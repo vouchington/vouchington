@@ -55,3 +55,6 @@ behavior.
   record their handler order, kept statuses, and the administrator-action ordering note.
 - [Copyright email-intake routes](reference-copyright-email-intake-request-validation.md) record
   their handler order, the parsers that run before the contract, and the unknown-key `422` changes.
+- [Copyright submission review routes](reference-copyright-submission-review-request-validation.md)
+  record their handler order, the unknown-key `422` changes, and the carrier-free media-delivery
+  replay skip.

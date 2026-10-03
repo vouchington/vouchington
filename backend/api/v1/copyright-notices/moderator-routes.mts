@@ -48,6 +48,11 @@ import type {
   CopyrightEmailCorrespondenceRequest,
   CopyrightEmailRejectionRequest,
 } from './email-intake-request-types.mts'
+import type {
+  CopyrightAppealReviewRequest,
+  CopyrightCounterNoticeReviewRequest,
+  CopyrightLegalHoldAssessmentRequest,
+} from './submission-review-request-types.mts'
 import {
   parseCopyrightCorrespondenceSubmission,
   parseCopyrightManualFallbackReason,
@@ -333,6 +338,10 @@ app.route('/api/v1/copyright-email-intakes/:id/rejections').post(async (ctx: Con
 })
 
 app.route('/api/v1/copyright-submissions/:id/appeal-reviews').post(async (ctx: Context) => {
+  apiRequestContract<
+    'POST:/api/v1/copyright-submissions/:id/appeal-reviews',
+    CopyrightAppealReviewRequest
+  >('POST:/api/v1/copyright-submissions/:id/appeal-reviews')
   const {
     currentUser,
     intakeId: submissionId,
@@ -367,6 +376,10 @@ app.route('/api/v1/copyright-submissions/:id/appeal-reviews').post(async (ctx: C
   })
   const recommendationId = parseCopyrightRecommendationId(ctx, body)
   const manualFallbackReason = parseCopyrightManualFallbackReason(ctx, body)
+  validateRequestContract(ctx, 'POST:/api/v1/copyright-submissions/:id/appeal-reviews', {
+    path: ctx.params,
+    body,
+  })
   const result = await reviewCopyrightAppeal({
     submissionId,
     currentUser,
@@ -382,6 +395,10 @@ app.route('/api/v1/copyright-submissions/:id/appeal-reviews').post(async (ctx: C
 })
 
 app.route('/api/v1/copyright-submissions/:id/counter-notice-reviews').post(async (ctx: Context) => {
+  apiRequestContract<
+    'POST:/api/v1/copyright-submissions/:id/counter-notice-reviews',
+    CopyrightCounterNoticeReviewRequest
+  >('POST:/api/v1/copyright-submissions/:id/counter-notice-reviews')
   const {
     currentUser,
     intakeId: submissionId,
@@ -391,6 +408,10 @@ app.route('/api/v1/copyright-submissions/:id/counter-notice-reviews').post(async
     'POST:/api/v1/copyright-submissions/:id/counter-notice-reviews',
   )
   ctx.assert(typeof body.accepted === 'boolean', 422, 'accepted must be a boolean')
+  validateRequestContract(ctx, 'POST:/api/v1/copyright-submissions/:id/counter-notice-reviews', {
+    path: ctx.params,
+    body,
+  })
   const result = await reviewCopyrightCounterNotice({
     submissionId,
     currentUser,
@@ -405,6 +426,10 @@ app.route('/api/v1/copyright-submissions/:id/counter-notice-reviews').post(async
 })
 
 app.route('/api/v1/copyright-submissions/:id/legal-hold-assessments').post(async (ctx: Context) => {
+  apiRequestContract<
+    'POST:/api/v1/copyright-submissions/:id/legal-hold-assessments',
+    CopyrightLegalHoldAssessmentRequest
+  >('POST:/api/v1/copyright-submissions/:id/legal-hold-assessments')
   const {
     currentUser,
     intakeId: submissionId,
@@ -449,6 +474,11 @@ app.route('/api/v1/copyright-submissions/:id/legal-hold-assessments').post(async
     422,
     'ccb_claim_kind is required only for a CCB proceeding',
   )
+  const targetIds = parseCopyrightTargetIds(body.target_ids)
+  validateRequestContract(ctx, 'POST:/api/v1/copyright-submissions/:id/legal-hold-assessments', {
+    path: ctx.params,
+    body,
+  })
   const assessment = await appendCopyrightLegalHoldAssessment({
     currentUser,
     submissionId,
@@ -459,7 +489,7 @@ app.route('/api/v1/copyright-submissions/:id/legal-hold-assessments').post(async
     commencedAt,
     receivedByDesignatedAgentAt,
     sameMaterial: body.same_material,
-    targetIds: parseCopyrightTargetIds(body.target_ids),
+    targetIds,
     rationale: body.rationale as string,
   })
   ctx.setStatus(201)

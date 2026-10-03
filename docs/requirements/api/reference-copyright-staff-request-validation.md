@@ -37,8 +37,8 @@ verifies order, status, and no-write behavior against the real database.
 Each handler keeps the order it had before the contract existed and adds the contract call last.
 
 - Disposition, outcome, and reinstatement: content type (`415`), authentication and staff role
-  (`401`, `403`), rate limit, suspension, body read, field parsers (`422`), path UUID (`422`),
-  contract (`422`), service.
+  (`401`, `403`), rate limit, suspension, body read, non-object body (`422`), field parsers
+  (`422`), path UUID (`422`), contract (`422`), service.
 - Account list: authentication and staff role, rate limit, suspension, path UUID (`422`), contract
   (`422`), service.
 - Staff queue: authentication (`401`), suspension, staff role (`403`), pagination parser (`400`),
@@ -51,15 +51,21 @@ to an administrator action sees `422` rather than `403`, as field-parser rejecti
 ## Statuses
 
 The route-level field parsers run before the contract, so every rejection that existed keeps its
-status and its field-named message. The contract only adds `422` for a body key the parsers did not
-look at.
+status and its field-named message, except the non-object body below. The contract only adds `422`
+for a body key the parsers did not look at.
 
 - A missing or over-long `rationale`, a `disposition` outside `withdrawn`, `duplicate`, and
   `abusive`, an `outcome` outside `warning`, `no_action`, `restrict`, and `terminate`, and a
   malformed path id keep their existing `422` and message.
+- A JSON `null` body on a disposition, outcome, or reinstatement now returns `422`
+  (`Invalid request body`). Previously the handler read `rationale` from it and answered `500`. An
+  array or scalar body was already `422`, and now carries `Invalid request body` instead of
+  `rationale is required`. The check runs after authentication, so unauthorized callers still see a
+  bare `401` or `403`.
 - A `rationale` that is not a string stays `422` ('rationale is required'); the 10,000-character
   limit is enforced by `boundedString`, not by the schema.
-- No status code changes for a valid request, and none for an invalid request that already failed.
+- No status code changes for a valid request, and none for an invalid request that already answered
+  with a `4xx`.
 
 ## Carriers the generated schema does not check
 
