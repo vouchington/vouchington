@@ -19,10 +19,13 @@ import { listAiUsageRecordsForClassifierRun } from './entities/ai-usage.mts'
 import { withReservedAiUsageDay } from './with-reserved-ai-usage-day.mts'
 
 /**
- * The D3 call-efficiency scenarios every fixed classifier scope shares. Each asserts the provider's
- * own request count and the ledger rows as well as what the C12 usage report says, so a report that
- * miscounted could not pass them. The window is taken before the reserved day fakes `Date`, and
- * every ledger read is inside that day: releasing it deletes the rows it holds.
+ * The D3 call-efficiency scenarios the four scopes #223 names share (C5, C6, C8 and C9). Each
+ * asserts the provider's own request count and the ledger rows as well as what the C12 usage
+ * report says, so a report that miscounted could not pass them. C7, the reasoning pass, is not one
+ * of the four: it runs the same `executeTopicRun` as C6, which this suite covers through C6, and
+ * its own worker test proves one billed call, replay and the attempt cap. The window is taken
+ * before the reserved day fakes `Date`, and every ledger read is inside that day: releasing it
+ * deletes the rows it holds.
  */
 export function describeClassifierCallEfficiency(driver: EfficiencyDriver): void {
   const [fewer] = driver.fanOuts

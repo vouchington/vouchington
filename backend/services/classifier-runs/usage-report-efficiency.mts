@@ -43,7 +43,7 @@ export function summarizeClassifierContentVersions(
 /**
  * One classifier's content versions summed. The D3 KPI is per receipt (one content version under
  * one configuration): it holds when `maxProviderCallsPerRun` is at most one, and that is final only
- * once `unfinishedRuns` is zero, because an unfinished run can still call the provider. `reclassifications`
+ * once `unfinishedRuns` is zero, because such a run can still call the provider. `reclassifications`
  * counts configuration changes that re-billed the same content; it is read alongside the KPI and is
  * never a breach by itself, because each of those receipts was still allowed one call.
  */
@@ -92,6 +92,15 @@ function emptyVersion(run: ClassifierRunUsage): ClassifierContentVersionUsage {
   }
 }
 
+/**
+ * A run can still reserve a provider attempt while it is neither completed nor failed and its
+ * outcomes are not durable: a claim then replays instead of calling. A superseded run counts, since
+ * the same update that leases it revives it once its content and configuration are current again.
+ */
+function canStillCallProvider(run: ClassifierRunUsage): boolean {
+  return (run.outcome === 'incomplete' || run.outcome === 'superseded') && !run.outcomesPersisted
+}
+
 function addRun(entry: VersionEntry, run: ClassifierRunUsage): void {
   const { version } = entry
   version.runs += 1
@@ -104,7 +113,7 @@ function addRun(entry: VersionEntry, run: ClassifierRunUsage): void {
   if (run.providerCalls > 1) version.runsOverOneCall += 1
   version.attemptsWithoutRecordedResponse += run.attemptsWithoutRecordedResponse
   version.persistedDecisionCalls += run.shardCount
-  if (run.outcome === 'incomplete') version.unfinishedRuns += 1
+  if (canStillCallProvider(run)) version.unfinishedRuns += 1
   version.unpricedCalls += run.unpricedCalls
   version.latencyMsTotal += run.latencyMsTotal
   version.latencySamples += run.latencySamples

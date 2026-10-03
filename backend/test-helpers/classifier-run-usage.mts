@@ -19,6 +19,7 @@ const COMPLETED_RUN: ClassifierRunUsage = {
   shardCount: 1,
   candidateCount: 3,
   outcome: 'completed',
+  outcomesPersisted: true,
   attemptsStarted: 1,
   retries: 0,
   sweepEnqueues: 0,

@@ -108,8 +108,8 @@ describe('formatClassifierUsageReport (deterministic fixtures)', () => {
     const text = formatClassifierUsageReport(
       reportOf([
         run({ runId: 'a' }),
-        run({ runId: 'b', subjectId: 'other', outcome: 'incomplete' }),
-        run({ runId: 'c', subjectId: 'third', outcome: 'incomplete' }),
+        run({ runId: 'b', subjectId: 'other', outcome: 'incomplete', outcomesPersisted: false }),
+        run({ runId: 'c', subjectId: 'third', outcome: 'superseded', outcomesPersisted: false }),
       ]),
     )
 
@@ -124,7 +124,7 @@ describe('formatClassifierUsageReport (deterministic fixtures)', () => {
     const text = formatClassifierUsageReport(
       reportOf([
         run({ runId: 'a', providerCalls: 2 }),
-        run({ runId: 'b', subjectId: 'other', outcome: 'incomplete' }),
+        run({ runId: 'b', subjectId: 'other', outcome: 'incomplete', outcomesPersisted: false }),
       ]),
     )
 

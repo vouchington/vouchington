@@ -174,17 +174,36 @@ describe('summarizeClassifierEfficiency (deterministic fixtures)', () => {
     ])
   })
 
-  it('counts the runs that are still unfinished, which can still call the provider', () => {
+  it('counts the runs that can still call the provider as unfinished', () => {
     const [efficiency] = summarizeClassifierEfficiency(
       summarizeClassifierContentVersions([
         run({ runId: 'a', subjectId: 'p1' }),
-        run({ runId: 'b', subjectId: 'p2', outcome: 'incomplete' }),
-        run({ runId: 'c', subjectId: 'p2', outcome: 'incomplete', configurationSha256: 'cc' }),
-        run({ runId: 'd', subjectId: 'p3', outcome: 'superseded', providerCalls: 0 }),
+        run({ runId: 'b', subjectId: 'p2', outcome: 'incomplete', outcomesPersisted: false }),
+        run({
+          runId: 'c',
+          subjectId: 'p2',
+          outcome: 'incomplete',
+          outcomesPersisted: false,
+          configurationSha256: 'cc',
+        }),
+        run({ runId: 'd', subjectId: 'p3', outcome: 'superseded', outcomesPersisted: false }),
       ]),
     )
 
-    expect(efficiency).toMatchObject({ runs: 4, unfinishedRuns: 2, maxProviderCallsPerRun: 1 })
+    expect(efficiency).toMatchObject({ runs: 4, unfinishedRuns: 3, maxProviderCallsPerRun: 1 })
+  })
+
+  it('does not count a run that cannot reach the provider again as unfinished', () => {
+    const [efficiency] = summarizeClassifierEfficiency(
+      summarizeClassifierContentVersions([
+        run({ runId: 'a', subjectId: 'p1', outcome: 'incomplete', outcomesPersisted: true }),
+        run({ runId: 'b', subjectId: 'p2', outcome: 'superseded', outcomesPersisted: true }),
+        run({ runId: 'c', subjectId: 'p3', outcome: 'failed:attempts-exhausted' }),
+        run({ runId: 'd', subjectId: 'p4', outcome: 'completed' }),
+      ]),
+    )
+
+    expect(efficiency).toMatchObject({ runs: 4, unfinishedRuns: 0 })
   })
 
   it('adds up the billed calls the ledger could not price', () => {

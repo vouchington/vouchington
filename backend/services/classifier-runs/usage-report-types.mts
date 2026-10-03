@@ -35,6 +35,8 @@ export type ClassifierRunUsage = {
   candidateCount: number
   /** `completed`, `superseded`, `incomplete` or `failed:<terminal failure kind>`. */
   outcome: string
+  /** The run's outcomes are durable, so a claim only replays them and never calls the provider. */
+  outcomesPersisted: boolean
   /** Provider calls reserved under lease (`provider_attempts_started`). */
   attemptsStarted: number
   /** Reserved attempts after the first one. */
@@ -124,7 +126,7 @@ export type ClassifierContentVersionUsage = {
   attemptsWithoutRecordedResponse: number
   /** Provider calls whose outcomes were persisted: the responses the content version used. */
   persistedDecisionCalls: number
-  /** Runs that have not finished: they can still call the provider, so the version can still grow. */
+  /** Runs that can still call the provider, so the version can still grow. See the efficiency type. */
   unfinishedRuns: number
   /** Billed responses the ledger could not price: `costMicrounits` leaves them out. */
   unpricedCalls: number
@@ -157,8 +159,11 @@ export type ClassifierEfficiency = {
   sweepEnqueues: number
   attemptsWithoutRecordedResponse: number
   /**
-   * Runs with outcome `incomplete`. Settled runs (completed, superseded, failed) can no longer
-   * call the provider; an unfinished one can, so a verdict that holds is only final without them.
+   * Runs that can still reserve a provider attempt: `incomplete` or `superseded`, with outcomes not
+   * yet durable. A superseded run is revived under the same receipt when its content and
+   * configuration become current again. Completed and failed runs, and any run whose outcomes are
+   * durable (a claim only replays them), cannot call the provider, so a verdict that holds is only
+   * final without these.
    */
   unfinishedRuns: number
   /** Billed responses the ledger could not price: `costMicrounits` leaves them out. */
@@ -177,6 +182,6 @@ export type ClassifierUsageReport = {
   efficiency: ClassifierEfficiency[]
   /** Durable dispatch requests per classifier slug. Diagnostic only; never a KPI. */
   requests: Record<string, number>
-  /** Every active classifier in the catalog, so the report can say which ones saw no activity. */
+  /** Every classifier active at some point in the window, so the report can name the silent ones. */
   classifiers: string[]
 }

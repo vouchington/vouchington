@@ -30,15 +30,22 @@ export async function readClassifierUsageReport(
     contentVersions,
     efficiency: summarizeClassifierEfficiency(contentVersions),
     requests: await readClassifierRequestCounts(window),
-    classifiers: await readActiveClassifierSlugs(),
+    classifiers: await readClassifiersActiveDuring(window),
   }
 }
 
-/** The active catalog, so a classifier that saw no request and no run still shows in the report. */
-async function readActiveClassifierSlugs(): Promise<string[]> {
-  const { rows } = await write<{ slug: string }>(sql`/* readActiveClassifierSlugs */
+/**
+ * The classifiers whose active interval overlaps the window, so one that saw no request and no run
+ * still shows in the report, wherever the window lies. The lifecycle is retained and only moves
+ * forward (activated once, then deactivated once), so a classifier that was retired since, or
+ * activated only after the window, is judged by its state during it and not by its state today.
+ */
+async function readClassifiersActiveDuring(window: ClassifierUsageWindow): Promise<string[]> {
+  const { rows } = await write<{ slug: string }>(sql`/* readClassifiersActiveDuring */
     SELECT slug FROM classifiers
-    WHERE activated_at IS NOT NULL AND deactivated_at IS NULL AND deleted_at IS NULL
+    WHERE activated_at IS NOT NULL
+      AND activated_at < ${window.to}
+      AND COALESCE(LEAST(deactivated_at, deleted_at), 'infinity'::timestamptz) > ${window.from}
     ORDER BY slug
   `)
   return rows.map(row => row.slug)

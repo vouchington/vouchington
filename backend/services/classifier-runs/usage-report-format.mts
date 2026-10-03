@@ -50,7 +50,8 @@ function listVersions(versions: readonly ClassifierContentVersionUsage[]): strin
 
 /**
  * A breach is final whatever else is still running. Without one, the KPI only holds for good once
- * every run is settled: an unfinished run can still reserve an attempt and bill a second call.
+ * every run is settled: an unfinished run (one that can still reserve an attempt, including a
+ * superseded one that could be revived) can bill a second call.
  */
 function verdict({
   maxProviderCallsPerRun,
@@ -103,8 +104,9 @@ function describeIdleClassifier(classifier: string, requests: number): string[] 
 /**
  * @public Cross-workspace read boundary: `backend/scripts/classifier-call-efficiency.mts` prints it.
  *
- * The report as text, one block per classifier, active catalog included: the D3 KPI verdict first
- * (holds, BREACHED, or INCONCLUSIVE while a run is unfinished), then the figures that back it.
+ * The report as text, one block per classifier, those active in the window included: the D3 KPI
+ * verdict first (holds, BREACHED, or INCONCLUSIVE while a run is unfinished), then the figures that
+ * back it.
  * A replay bills nothing and writes nothing, and neither diagnostic figure counts it
  * (`requested content versions` are request rows created in the window, which a retrigger of
  * unchanged content reuses), so the zero-bill evidence is `runsOverOneCall` staying at zero.

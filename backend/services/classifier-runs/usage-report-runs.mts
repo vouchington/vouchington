@@ -32,6 +32,7 @@ type RunRow = {
   shard_count: number
   candidate_count: number
   outcome: string
+  outcomes_persisted: boolean
   attempts_started: number
   sweep_enqueues: number
   provider_calls: number
@@ -100,6 +101,7 @@ export async function readClassifierRunUsage(
         WHEN run.superseded_at IS NOT NULL THEN 'superseded'
         ELSE 'incomplete'
       END AS outcome,
+      run.outcomes_persisted_at IS NOT NULL AS outcomes_persisted,
       run.provider_attempts_started AS attempts_started,
       run.sweep_enqueue_count AS sweep_enqueues,
       usage.provider_calls,
@@ -161,6 +163,7 @@ function toRunUsage(row: RunRow): ClassifierRunUsage {
     shardCount: row.shard_count,
     candidateCount: row.candidate_count,
     outcome: row.outcome,
+    outcomesPersisted: row.outcomes_persisted,
     attemptsStarted: row.attempts_started,
     retries: Math.max(row.attempts_started - 1, 0),
     sweepEnqueues: row.sweep_enqueues,
