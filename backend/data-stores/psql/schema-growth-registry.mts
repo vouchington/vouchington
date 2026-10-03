@@ -52,7 +52,7 @@ const monthlyRange = (key: string): PartitionPolicy => ({
 
 const UNBOUNDED_RECONSIDERATION_EXCEPTIONS = new Map([
   [
-    'ai_usage_openai_response_keys',
+    'ai_usage_provider_response_keys',
     'Only if the replacement preserves global response-id uniqueness across every ledger partition.',
   ],
   [

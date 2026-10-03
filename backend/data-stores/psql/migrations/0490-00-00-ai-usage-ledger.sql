@@ -39,8 +39,8 @@ CREATE TABLE IF NOT EXISTS ai_usage_records (
 
 -- Global uniqueness cannot be enforced on response_id inside the range-partitioned ledger because
 -- PostgreSQL requires every unique constraint on a partitioned parent to include its partition
--- key. This non-partitioned map is the durable idempotency gate for OpenAI Responses API usage.
-CREATE TABLE IF NOT EXISTS ai_usage_openai_response_keys (
+-- key. This non-partitioned map is the durable idempotency gate for provider-reported usage.
+CREATE TABLE IF NOT EXISTS ai_usage_provider_response_keys (
   response_id TEXT PRIMARY KEY,
   ai_usage_record_id UUID NOT NULL UNIQUE
     REFERENCES ai_usage_records (id) ON DELETE CASCADE
@@ -67,7 +67,7 @@ CREATE INDEX IF NOT EXISTS idx_ai_usage_records__currency_code
   WHERE currency_code IS NOT NULL;
 
 COMMENT ON TABLE ai_usage_records IS 'Append-only per-call LLM usage and cost ledger for every agent that calls OpenAI, not only community moderation.';
-COMMENT ON TABLE ai_usage_openai_response_keys IS 'Global idempotency map from an OpenAI Responses API response id to its single partitioned ai_usage_records row.';
+COMMENT ON TABLE ai_usage_provider_response_keys IS 'Global idempotency map from a provider response or decision id to its single partitioned ai_usage_records row.';
 
 COMMENT ON COLUMN ai_usage_records.community_id IS 'The community the call is scoped to, if any; NULL for agents that run outside a community.';
 COMMENT ON COLUMN ai_usage_records.post_id IS 'The post that was moderated; nullable if the post has been deleted or the call was not post-scoped.';
@@ -82,5 +82,5 @@ COMMENT ON COLUMN ai_usage_records.latency_ms IS 'Milliseconds from the request 
 COMMENT ON COLUMN ai_usage_records.pricing_status IS 'Whether pricing was known when this usage record was written.';
 COMMENT ON COLUMN ai_usage_records.cost_microunits IS 'Estimated cost in millionths of the major currency unit; NULL when unpriced.';
 COMMENT ON COLUMN ai_usage_records.currency_code IS 'Currency of the estimated cost; NULL when unpriced.';
-COMMENT ON COLUMN ai_usage_openai_response_keys.response_id IS 'OpenAI Responses API response id; the primary key prevents duplicate ledger rows across UUIDv7 ledger partitions.';
-COMMENT ON COLUMN ai_usage_openai_response_keys.ai_usage_record_id IS 'The one ai_usage_records row reserved for this OpenAI response id.';
+COMMENT ON COLUMN ai_usage_provider_response_keys.response_id IS 'Provider response or decision id; the primary key prevents duplicate ledger rows across UUIDv7 ledger partitions.';
+COMMENT ON COLUMN ai_usage_provider_response_keys.ai_usage_record_id IS 'The one ai_usage_records row reserved for this provider response or decision id.';

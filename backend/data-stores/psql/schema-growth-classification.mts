@@ -184,7 +184,7 @@ export function buildUnboundedUnpartitionedTables(
       'Bounded ActivityPub inbox delivery queue: terminal outcomes delete rows, unverified rows expire after one hour, operational failures expire seven days after their immutable first failure, and bounded cleanup removes expired rows. Size tracks recent inbox backlog, not retained history.',
     ],
     [
-      'ai_usage_openai_response_keys',
+      'ai_usage_provider_response_keys',
       'Permanent global response-id idempotency keys cannot be partitioned without weakening cross-partition uniqueness; the primary-key lookup remains selective.',
     ],
     [

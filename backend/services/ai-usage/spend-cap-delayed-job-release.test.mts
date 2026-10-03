@@ -2,12 +2,12 @@ import { describe, expect, it, vi } from 'vitest'
 import type { Job } from 'glide-mq'
 import type { workerQueueCommandClient } from '@data-stores/valkey-glide-mq'
 import {
-  completeOpenAiSpendCapDelayedJobRelease,
-  releaseOpenAiSpendCapDelayedJobs,
+  completeSpendCapDelayedJobRelease,
+  releaseSpendCapDelayedJobs,
 } from './spend-cap-delayed-job-release.mts'
-import { openAiSpendCapDelayedRegistryKey } from './spend-cap-delayed-jobs.mts'
+import { spendCapDelayedRegistryKey } from './spend-cap-delayed-jobs.mts'
 
-describe('completeOpenAiSpendCapDelayedJobRelease', () => {
+describe('completeSpendCapDelayedJobRelease', () => {
   it.each([
     [1, true],
     [0, false],
@@ -20,7 +20,7 @@ describe('completeOpenAiSpendCapDelayedJobRelease', () => {
     const hscan = vi.fn<Pick<typeof workerQueueCommandClient, 'hscan'>['hscan']>()
 
     await expect(
-      completeOpenAiSpendCapDelayedJobRelease(day, 'generation-a', 'lease-a', {
+      completeSpendCapDelayedJobRelease(day, 'generation-a', 'lease-a', {
         invokeScript,
         hlen,
         hscan,
@@ -28,21 +28,21 @@ describe('completeOpenAiSpendCapDelayedJobRelease', () => {
     ).resolves.toBe(expected)
 
     expect(invokeScript).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
-      keys: [openAiSpendCapDelayedRegistryKey(day)],
+      keys: [spendCapDelayedRegistryKey(day)],
       args: ['generation-a', 'lease-a'],
     })
   })
 })
 
-describe('releaseOpenAiSpendCapDelayedJobs', () => {
+describe('releaseSpendCapDelayedJobs', () => {
   it('passes the classified delay day into the atomic promotion script', async () => {
     const day = '2026-08-16'
     const jobId = 'job-a'
     const job = {
       id: jobId,
-      data: { openAiSpendCapDelayedDay: day },
+      data: { spendCapDelayedDay: day },
       getState: async () => 'delayed' as const,
-    } as Pick<Job<{ openAiSpendCapDelayedDay?: string }>, 'id' | 'data' | 'getState'>
+    } as Pick<Job<{ spendCapDelayedDay?: string }>, 'id' | 'data' | 'getState'>
     const invokeScript = vi
       .fn<Pick<typeof workerQueueCommandClient, 'invokeScript'>['invokeScript']>()
       .mockResolvedValue(1)
@@ -52,19 +52,19 @@ describe('releaseOpenAiSpendCapDelayedJobs', () => {
       .mockResolvedValue(['0', [`job:${jobId}`, 'marked']])
 
     await expect(
-      releaseOpenAiSpendCapDelayedJobs(
+      releaseSpendCapDelayedJobs(
         day,
         'lease-a',
         {
           name: 'ai_agents',
-          getJob: async () => job as Job<{ openAiSpendCapDelayedDay?: string }>,
+          getJob: async () => job as Job<{ spendCapDelayedDay?: string }>,
         },
         { invokeScript, hlen, hscan },
       ),
     ).resolves.toEqual({ released: 1, hasPending: false, cursor: '0' })
 
     expect(invokeScript).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
-      keys: expect.arrayContaining([openAiSpendCapDelayedRegistryKey(day)]),
+      keys: expect.arrayContaining([spendCapDelayedRegistryKey(day)]),
       args: ['lease-a', day, `job:${jobId}`, jobId],
     })
   })

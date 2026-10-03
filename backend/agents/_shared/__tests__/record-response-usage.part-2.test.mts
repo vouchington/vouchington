@@ -74,7 +74,7 @@ describe('recordAgentResponseUsage settlement barrier', () => {
       async () => response,
       { agentSlug: 'settlement-test' },
       {
-        assertOpenAiSpendCapNotBreached: async () => null,
+        assertDailySpendCapNotBreached: async () => null,
         recordAgentResponseUsage: recorder,
       },
     )

@@ -1,11 +1,11 @@
 import { Worker, type Job } from 'glide-mq'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
-import onError, { recordOpenAiSpendCapBreach } from '@modules/on-error'
+import onError, { recordSpendCapBreach } from '@modules/on-error'
 import { handleOpenAIRateLimit } from '@modules/openai-utils/rate-limit'
 import { getWorkerConcurrency, parseEnvPositiveInt } from '@modules/queue-config'
 import { runWithJobTokenAccumulator } from '@agents/_shared'
 import { wouldStoryPostCallOpenAI } from '../processors/process-story-post.mts'
-import { delayForOpenAiSpendCap } from '../processors/spend-cap-delay.mts'
+import { delayForSpendCap } from '../processors/spend-cap-delay.mts'
 import {
   AI_AGENT_JOB_PRODUCES_SPEND,
   AI_AGENTS_QUEUE_NAME,
@@ -13,54 +13,54 @@ import {
   type AIAgentJobName,
 } from '@queues/ai-agents/config'
 import {
-  evaluateOpenAiSpendCapBreach,
+  evaluateSpendCapBreach,
   getAccountingUncertaintySource,
   getDailyAiCostTotalMicrounits,
-  getOpenAiSpendCapFields,
-  openAiSpendCapConfig,
-  OpenAiSpendCapBreachError,
+  getSpendCapFields,
+  spendCapConfig,
+  SpendCapBreachError,
 } from '@services/ai-usage'
 import { processAIAgent } from '../processors.mts'
 import { classifierRunBackoffMs } from '../processors/classifier-run-backoff.mts'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
-import { registerOpenAiSpendCapRecheck } from '../processors/spend-cap-recheck.mts'
+import { registerSpendCapRecheck } from '../processors/spend-cap-recheck.mts'
 
 type AIAgentsWorkerDeps = {
   WorkerCtor: typeof Worker
   processAIAgent: typeof processAIAgent
   handleOpenAIRateLimit: (error: unknown, worker: Worker) => Promise<unknown>
-  waitForOpenAiSpendCapConfig: () => Promise<void>
-  getOpenAiSpendCapFields: typeof getOpenAiSpendCapFields
+  waitForSpendCapConfig: () => Promise<void>
+  getSpendCapFields: typeof getSpendCapFields
   getDailyAiCostTotalMicrounits: typeof getDailyAiCostTotalMicrounits
   getAccountingUncertaintySource: typeof getAccountingUncertaintySource
-  recordOpenAiSpendCapBreach: typeof recordOpenAiSpendCapBreach
-  reportOpenAiSpendCapRegistrationFailure: typeof onError
+  recordSpendCapBreach: typeof recordSpendCapBreach
+  reportSpendCapRegistrationFailure: typeof onError
   queueName: typeof AI_AGENTS_QUEUE_NAME
   connection: typeof workerQueueConnection
   prefix: typeof workerQueuePrefix
   concurrency: number
   openAIRateLimitPerMinute: number
   openAITokenLimitPerMinute: number
-  registerOpenAiSpendCapRecheck: typeof registerOpenAiSpendCapRecheck
+  registerSpendCapRecheck: typeof registerSpendCapRecheck
 }
 
 const defaultDeps: AIAgentsWorkerDeps = {
   WorkerCtor: Worker,
   processAIAgent,
   handleOpenAIRateLimit,
-  waitForOpenAiSpendCapConfig: () => openAiSpendCapConfig.waitForInitialization(),
-  getOpenAiSpendCapFields,
+  waitForSpendCapConfig: () => spendCapConfig.waitForInitialization(),
+  getSpendCapFields,
   getDailyAiCostTotalMicrounits,
   getAccountingUncertaintySource,
-  recordOpenAiSpendCapBreach,
-  reportOpenAiSpendCapRegistrationFailure: onError,
+  recordSpendCapBreach,
+  reportSpendCapRegistrationFailure: onError,
   queueName: AI_AGENTS_QUEUE_NAME,
   connection: workerQueueConnection,
   prefix: workerQueuePrefix,
   concurrency: getWorkerConcurrency('aiAgents', { baseline: 5 }),
   openAIRateLimitPerMinute: parseEnvPositiveInt('OPENAI_RPM', 60),
   openAITokenLimitPerMinute: parseEnvPositiveInt('OPENAI_TPM', 500_000),
-  registerOpenAiSpendCapRecheck,
+  registerSpendCapRecheck,
 }
 
 export async function processAIAgentWorkerJob(
@@ -73,15 +73,15 @@ export async function processAIAgentWorkerJob(
   // Daily spend ceiling (#8773) before the OpenAI-error catch. reconcile-* jobs stay exempt so they
   // can still cancel orphaned billed responses. A breach parks only this job until the queried day
   // boundary; the marked coordinator promotes it when enforcement relaxes.
-  if (jobProducesOpenAiSpend(job)) {
-    const breach = await evaluateOpenAiSpendCapBreach({
-      waitForOpenAiSpendCapConfig: dependencies.waitForOpenAiSpendCapConfig,
-      getOpenAiSpendCapFields: dependencies.getOpenAiSpendCapFields,
+  if (jobProducesSpend(job)) {
+    const breach = await evaluateSpendCapBreach({
+      waitForSpendCapConfig: dependencies.waitForSpendCapConfig,
+      getSpendCapFields: dependencies.getSpendCapFields,
       getDailyAiCostTotalMicrounits: dependencies.getDailyAiCostTotalMicrounits,
       getAccountingUncertaintySource: dependencies.getAccountingUncertaintySource,
     })
-    if (breach && (await jobWouldIncurOpenAiSpend(job))) {
-      dependencies.recordOpenAiSpendCapBreach({
+    if (breach && (await jobWouldIncurSpend(job))) {
+      dependencies.recordSpendCapBreach({
         agentJobName: job.name,
         dailyTotalMicrounits: breach.totalMicrounits,
         dailyCapMicrounits: breach.dailyCapMicrounits,
@@ -90,11 +90,11 @@ export async function processAIAgentWorkerJob(
           uncertaintySource: breach.uncertaintySource,
         }),
       })
-      await delayForOpenAiSpendCap(
+      await delayForSpendCap(
         job,
         breach.day,
-        dependencies.registerOpenAiSpendCapRecheck,
-        dependencies.reportOpenAiSpendCapRegistrationFailure,
+        dependencies.registerSpendCapRecheck,
+        dependencies.reportSpendCapRegistrationFailure,
       )
     }
   }
@@ -106,26 +106,26 @@ export async function processAIAgentWorkerJob(
       totalTokens => job.reportTokens(totalTokens),
     )
   } catch (err: unknown) {
-    if (err instanceof OpenAiSpendCapBreachError) {
+    if (err instanceof SpendCapBreachError) {
       // Mid-loop recheck already recorded the breach; park like the pre-dispatch path.
-      await delayForOpenAiSpendCap(
+      await delayForSpendCap(
         job,
         err.breach.day,
-        dependencies.registerOpenAiSpendCapRecheck,
-        dependencies.reportOpenAiSpendCapRegistrationFailure,
+        dependencies.registerSpendCapRecheck,
+        dependencies.reportSpendCapRegistrationFailure,
       )
     }
     return dependencies.handleOpenAIRateLimit(err, worker)
   }
 }
 
-function jobProducesOpenAiSpend(job: Job<AIAgentJobData>): boolean {
+function jobProducesSpend(job: Job<AIAgentJobData>): boolean {
   return AI_AGENT_JOB_PRODUCES_SPEND[job.name as AIAgentJobName]
 }
 
 // DB predicates run only after the cheap static filter and an active breach, so spend-free
 // story-post retries do not pay a round trip on every dispatch.
-async function jobWouldIncurOpenAiSpend(job: Job<AIAgentJobData>): Promise<boolean> {
+async function jobWouldIncurSpend(job: Job<AIAgentJobData>): Promise<boolean> {
   if (job.name === 'story-post') {
     const storyPostData = job.data as import('@queues/ai-agents/types').StoryPostJobData
     return wouldStoryPostCallOpenAI(storyPostData.post_id, storyPostData.force ?? false)

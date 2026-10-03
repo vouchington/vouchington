@@ -9,11 +9,11 @@ import {
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import { AI_AGENTS_QUEUE_NAME } from '@queues/ai-agents/config'
 import {
-  beginOpenAiSpendCapDelayedJobRelease,
-  openAiSpendCapDelayedRegistryKey,
-  registerOpenAiSpendCapDelayedJob,
-  registerOpenAiSpendCapDelayedJobAfterFreshBreach,
-  releaseOpenAiSpendCapDelayedJobs,
+  beginSpendCapDelayedJobRelease,
+  spendCapDelayedRegistryKey,
+  registerSpendCapDelayedJob,
+  registerSpendCapDelayedJobAfterFreshBreach,
+  releaseSpendCapDelayedJobs,
 } from '@services/ai-usage'
 
 // This project deliberately restores real GlideMQ instead of the default in-memory worker shim.
@@ -37,10 +37,10 @@ async function removeOwnedJobs(
   }
 }
 
-describe('daily OpenAI spend-cap rollover with real GlideMQ', () => {
+describe('daily AI spend-cap rollover with real GlideMQ', () => {
   it('prevents a revoked lease from releasing a fresh registration', async () => {
     const day = `test-${randomUUID()}`
-    const registryKey = openAiSpendCapDelayedRegistryKey(day)
+    const registryKey = spendCapDelayedRegistryKey(day)
     const queue = aiAgentsQueue()
     const ownedJobs: Job<AIAgentJobData>[] = []
 
@@ -57,21 +57,19 @@ describe('daily OpenAI spend-cap rollover with real GlideMQ', () => {
       if (!initialJob || !delayedJob || !freshJob) throw new Error('Expected lease test jobs')
       ownedJobs.push(initialJob, delayedJob, freshJob)
 
-      const initialRegistration = await registerOpenAiSpendCapDelayedJob(initialJob, day)
-      await expect(registerOpenAiSpendCapDelayedJob(delayedJob, day)).resolves.toMatchObject({
+      const initialRegistration = await registerSpendCapDelayedJob(initialJob, day)
+      await expect(registerSpendCapDelayedJob(delayedJob, day)).resolves.toMatchObject({
         accepted: true,
       })
       await delayedJob.changeDelay(60 * 60 * 1000)
-      const lease = await beginOpenAiSpendCapDelayedJobRelease(day, initialRegistration.generation)
+      const lease = await beginSpendCapDelayedJobRelease(day, initialRegistration.generation)
       if (!lease) throw new Error('Expected first release lease')
-      await expect(
-        registerOpenAiSpendCapDelayedJobAfterFreshBreach(freshJob, day),
-      ).resolves.toEqual({
+      await expect(registerSpendCapDelayedJobAfterFreshBreach(freshJob, day)).resolves.toEqual({
         accepted: true,
         generation: initialRegistration.generation,
       })
 
-      await expect(releaseOpenAiSpendCapDelayedJobs(day, lease, queue)).resolves.toEqual({
+      await expect(releaseSpendCapDelayedJobs(day, lease, queue)).resolves.toEqual({
         released: 0,
         hasPending: true,
         cursor: '0',
@@ -92,7 +90,7 @@ describe('daily OpenAI spend-cap rollover with real GlideMQ', () => {
 
   it('atomically re-registers a fresh breach after release begins', async () => {
     const day = `test-${randomUUID()}`
-    const registryKey = openAiSpendCapDelayedRegistryKey(day)
+    const registryKey = spendCapDelayedRegistryKey(day)
     const queue = aiAgentsQueue()
     const ownedJobs: Job<AIAgentJobData>[] = []
 
@@ -106,30 +104,28 @@ describe('daily OpenAI spend-cap rollover with real GlideMQ', () => {
       if (!firstJob || !freshJob) throw new Error('Expected re-registration test jobs')
       ownedJobs.push(firstJob, freshJob)
 
-      const firstRegistration = await registerOpenAiSpendCapDelayedJob(firstJob, day)
+      const firstRegistration = await registerSpendCapDelayedJob(firstJob, day)
       expect(firstRegistration.accepted).toBe(true)
       await expect(
-        beginOpenAiSpendCapDelayedJobRelease(day, firstRegistration.generation),
+        beginSpendCapDelayedJobRelease(day, firstRegistration.generation),
       ).resolves.toEqual(expect.any(String))
-      await expect(registerOpenAiSpendCapDelayedJob(freshJob, day)).resolves.toEqual({
+      await expect(registerSpendCapDelayedJob(freshJob, day)).resolves.toEqual({
         accepted: false,
         generation: firstRegistration.generation,
       })
 
-      await expect(
-        registerOpenAiSpendCapDelayedJobAfterFreshBreach(freshJob, day),
-      ).resolves.toEqual({
+      await expect(registerSpendCapDelayedJobAfterFreshBreach(freshJob, day)).resolves.toEqual({
         accepted: true,
         generation: firstRegistration.generation,
       })
-      expect(freshJob.data.openAiSpendCapDelayedDay).toBe(day)
+      expect(freshJob.data.spendCapDelayedDay).toBe(day)
       await expect(workerQueueCommandClient.hget(registryKey, '__mode')).resolves.toBe('collecting')
       await expect(workerQueueCommandClient.hget(registryKey, `job:${freshJob.id}`)).resolves.toBe(
         'marked',
       )
       await expect(workerQueueCommandClient.hlen(registryKey)).resolves.toBe(4)
       await expect(
-        beginOpenAiSpendCapDelayedJobRelease(day, firstRegistration.generation),
+        beginSpendCapDelayedJobRelease(day, firstRegistration.generation),
       ).resolves.toEqual(expect.any(String))
     } finally {
       try {
@@ -142,7 +138,7 @@ describe('daily OpenAI spend-cap rollover with real GlideMQ', () => {
 
   it('removes only its registering reservation when registration cannot persist the job marker', async () => {
     const day = `test-${randomUUID()}`
-    const registryKey = openAiSpendCapDelayedRegistryKey(day)
+    const registryKey = spendCapDelayedRegistryKey(day)
     const registrationError = new Error('marker persistence failed')
     const markedJob = {
       id: randomUUID(),
@@ -158,10 +154,10 @@ describe('daily OpenAI spend-cap rollover with real GlideMQ', () => {
     } as unknown as Job<AIAgentJobData>
 
     try {
-      await expect(registerOpenAiSpendCapDelayedJob(markedJob, day)).resolves.toMatchObject({
+      await expect(registerSpendCapDelayedJob(markedJob, day)).resolves.toMatchObject({
         accepted: true,
       })
-      await expect(registerOpenAiSpendCapDelayedJob(job, day)).rejects.toBe(registrationError)
+      await expect(registerSpendCapDelayedJob(job, day)).rejects.toBe(registrationError)
       await expect(workerQueueCommandClient.hlen(registryKey)).resolves.toBe(3)
     } finally {
       await workerQueueCommandClient.unlink([registryKey])
@@ -171,7 +167,7 @@ describe('daily OpenAI spend-cap rollover with real GlideMQ', () => {
   it('retains MARKED waiting and active jobs before rollover, then removes them as naturally promoted after it', async () => {
     const queueName = `ai_agents_spend_cap_rollover_${randomUUID()}`
     const day = `test-${randomUUID()}`
-    const registryKey = openAiSpendCapDelayedRegistryKey(day)
+    const registryKey = spendCapDelayedRegistryKey(day)
     const queue = new Queue<AIAgentJobData>(queueName, connection)
     let releaseActiveJob: (() => void) | undefined
     const activeJobReleased = new Promise<void>(resolve => {
@@ -195,19 +191,19 @@ describe('daily OpenAI spend-cap rollover with real GlideMQ', () => {
       const waitingJob = await queue.add('report-judgement', {} as AIAgentJobData)
       if (!activeJob || !waitingJob) throw new Error('Expected rollover test jobs')
 
-      const registration = await registerOpenAiSpendCapDelayedJob(activeJob, day)
+      const registration = await registerSpendCapDelayedJob(activeJob, day)
       expect(registration.accepted).toBe(true)
-      await expect(registerOpenAiSpendCapDelayedJob(waitingJob, day)).resolves.toMatchObject({
+      await expect(registerSpendCapDelayedJob(waitingJob, day)).resolves.toMatchObject({
         accepted: true,
       })
       await activeJobStarted
       await expect(activeJob.getState()).resolves.toBe('active')
       await expect(waitingJob.getState()).resolves.toBe('waiting')
-      const lease = await beginOpenAiSpendCapDelayedJobRelease(day, registration.generation)
+      const lease = await beginSpendCapDelayedJobRelease(day, registration.generation)
       if (!lease) throw new Error('Expected release lease')
 
       await expect(
-        releaseOpenAiSpendCapDelayedJobs(day, lease, queue, undefined, '0', false),
+        releaseSpendCapDelayedJobs(day, lease, queue, undefined, '0', false),
       ).resolves.toEqual({
         released: 0,
         hasPending: true,
@@ -216,7 +212,7 @@ describe('daily OpenAI spend-cap rollover with real GlideMQ', () => {
       await expect(workerQueueCommandClient.hlen(registryKey)).resolves.toBe(5)
 
       await expect(
-        releaseOpenAiSpendCapDelayedJobs(day, lease, queue, undefined, '0', true),
+        releaseSpendCapDelayedJobs(day, lease, queue, undefined, '0', true),
       ).resolves.toEqual({
         released: 0,
         hasPending: false,
@@ -235,32 +231,32 @@ describe('daily OpenAI spend-cap rollover with real GlideMQ', () => {
   it('retains REGISTERING waiting jobs before rollover and removes them after it', async () => {
     const queueName = `ai_agents_spend_cap_registering_${randomUUID()}`
     const day = `test-${randomUUID()}`
-    const registryKey = openAiSpendCapDelayedRegistryKey(day)
+    const registryKey = spendCapDelayedRegistryKey(day)
     const queue = new Queue<AIAgentJobData>(queueName, connection)
 
     try {
       const markedJob = await queue.add('report-judgement', {} as AIAgentJobData)
       const registeringJob = await queue.add('report-judgement', {
-        openAiSpendCapDelayedDay: day,
+        spendCapDelayedDay: day,
       } as AIAgentJobData)
       if (!markedJob || !registeringJob) throw new Error('Expected registering test jobs')
 
-      const registration = await registerOpenAiSpendCapDelayedJob(markedJob, day)
+      const registration = await registerSpendCapDelayedJob(markedJob, day)
       expect(registration.accepted).toBe(true)
       await workerQueueCommandClient.hset(registryKey, {
         [`job:${registeringJob.id}`]: 'registering',
       })
       await expect(registeringJob.getState()).resolves.toBe('waiting')
-      const lease = await beginOpenAiSpendCapDelayedJobRelease(day, registration.generation)
+      const lease = await beginSpendCapDelayedJobRelease(day, registration.generation)
       if (!lease) throw new Error('Expected release lease')
 
       await expect(
-        releaseOpenAiSpendCapDelayedJobs(day, lease, queue, undefined, '0', false),
+        releaseSpendCapDelayedJobs(day, lease, queue, undefined, '0', false),
       ).resolves.toEqual({ released: 0, hasPending: true, cursor: '0' })
       await expect(workerQueueCommandClient.hlen(registryKey)).resolves.toBe(5)
 
       await expect(
-        releaseOpenAiSpendCapDelayedJobs(day, lease, queue, undefined, '0', true),
+        releaseSpendCapDelayedJobs(day, lease, queue, undefined, '0', true),
       ).resolves.toEqual({ released: 0, hasPending: false, cursor: '0' })
       await expect(workerQueueCommandClient.hlen(registryKey)).resolves.toBe(3)
     } finally {

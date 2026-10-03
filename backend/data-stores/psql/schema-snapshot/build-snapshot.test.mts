@@ -15,7 +15,7 @@ describe('buildSchemaSnapshot', () => {
           comment: null,
         },
         {
-          table_name: 'ai_usage_openai_response_keys',
+          table_name: 'ai_usage_provider_response_keys',
           relkind: 'r',
           partition_strategy: '',
           partition_key: null,
@@ -45,7 +45,7 @@ describe('buildSchemaSnapshot', () => {
         accessClass: 'target-scoped',
       },
     })
-    expect(snapshot.tables.ai_usage_openai_response_keys).toMatchObject({
+    expect(snapshot.tables.ai_usage_provider_response_keys).toMatchObject({
       growth: 'unbounded',
       partition: null,
     })

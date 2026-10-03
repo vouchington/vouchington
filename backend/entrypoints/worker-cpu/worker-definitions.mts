@@ -45,10 +45,10 @@ export const CPU_ONLY_WORKER_DEFINITIONS: WorkerDefinition[] = [
     load: () => import('@workers/ai-agents/workers').then(module => module.ai_agents),
   },
   {
-    queueName: 'openai-spend-cap-rechecks',
+    queueName: 'ai-spend-cap-rechecks',
     load: () =>
       import('@workers/ai-agents/workers/spend-cap-recheck').then(
-        module => module.openAiSpendCapRechecks,
+        module => module.spendCapRechecks,
       ),
   },
   {

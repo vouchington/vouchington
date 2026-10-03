@@ -140,7 +140,7 @@ export async function countAiUsageRecordsForAgent(
 export async function countAiUsageRecordsForResponseId(responseId: string): Promise<number> {
   const { rows } = await read<{ count: string }>(sql`/* countAiUsageRecordsForResponseId */
     SELECT COUNT(*) AS count
-    FROM ai_usage_openai_response_keys key
+    FROM ai_usage_provider_response_keys key
     INNER JOIN ai_usage_records record ON record.id = key.ai_usage_record_id
     WHERE key.response_id = ${responseId}
   `)
@@ -150,7 +150,7 @@ export async function countAiUsageRecordsForResponseId(responseId: string): Prom
 export async function countAiUsageOpenAIResponseKeys(responseId: string): Promise<number> {
   const { rows } = await read<{ count: string }>(sql`/* countAiUsageOpenAIResponseKeys */
     SELECT COUNT(*) AS count
-    FROM ai_usage_openai_response_keys
+    FROM ai_usage_provider_response_keys
     WHERE response_id = ${responseId}
   `)
   return Number(rows[0]?.count ?? 0)

@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { Response } from 'undici'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { StructuredDecisionFetch } from '@modules/structured-decisions'
-import { openAiSpendCapConfig, OpenAiSpendCapBreachError } from '@services/ai-usage'
+import { spendCapConfig, SpendCapBreachError } from '@services/ai-usage'
 import { findAiUsageRecordForPost, pollUntilNotNull } from '@voucha/test-helpers'
 import { createAutotaggerPostFixture } from '@voucha/test-helpers/data-stores/psql/classifier-runs/autotagger-fixture'
 import { listAiUsageRecordsForClassifierRun } from '@voucha/test-helpers/entities/ai-usage'
@@ -37,8 +37,8 @@ describe('createAutotaggerClient', () => {
   let classifierRunId: string
   beforeAll(async () => {
     classifierRunId = await reserveSyntheticRunId()
-    await openAiSpendCapConfig.waitForInitialization()
-    restoreSpendCap = overrideDynamicConfigFieldsForTest(openAiSpendCapConfig, { enabled: false })
+    await spendCapConfig.waitForInitialization()
+    restoreSpendCap = overrideDynamicConfigFieldsForTest(spendCapConfig, { enabled: false })
   })
   afterAll(() => restoreSpendCap?.())
 
@@ -105,7 +105,7 @@ describe('createAutotaggerClient', () => {
         { fetch, apiKey: 'test-provider-key' },
       )
 
-      await expect(client.decide(request)).rejects.toBeInstanceOf(OpenAiSpendCapBreachError)
+      await expect(client.decide(request)).rejects.toBeInstanceOf(SpendCapBreachError)
 
       expect(fetch).not.toHaveBeenCalled()
       expect(beforeAttempt).not.toHaveBeenCalled()

@@ -33,7 +33,7 @@ import { spam_detection } from '@queues/spam-detection/queues'
 import { storyPostRelatedUrlProjections } from '@queues/story-post-related-url-projections/queues'
 import { voteIntegrityQueue } from '@queues/vote-integrity/queues'
 import { voteWeightQueue } from '@queues/vote-weight/queues'
-import { ai_agents as aiAgentsQueue, openAiSpendCapRechecks } from '@queues/ai-agents/queues'
+import { ai_agents as aiAgentsQueue, spendCapRechecks } from '@queues/ai-agents/queues'
 import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
 import { blueskyFollowPropagation } from '@queues/bluesky-follow-propagation/queues'
 import { activitypubInbox } from '@queues/activitypub-inbox/queues'
@@ -87,7 +87,7 @@ const allQueues = [
   voteIntegrityQueue,
   voteWeightQueue,
   aiAgentsQueue,
-  openAiSpendCapRechecks,
+  spendCapRechecks,
   activitypubDelivery,
   blueskyFollowPropagation,
   activitypubInbox,

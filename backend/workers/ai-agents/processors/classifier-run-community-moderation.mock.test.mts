@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchStructuredDecisionProvider } from '@modules/structured-decisions/transport'
-import { openAiSpendCapConfig } from '@services/ai-usage'
+import { spendCapConfig } from '@services/ai-usage'
 import { requestCommunityModerationRunForPost } from '@services/communities/publications/moderation-run'
 import { classifierRunJobFor } from '@voucha/test-helpers/classifier-run-worker'
 import {
@@ -50,8 +50,8 @@ const processRun = (run: Parameters<typeof toClassifierRunJobData>[1]) =>
 describe('C8 community moderation through the shared lifecycle (real PG, mocked provider)', () => {
   let restoreSpendCap: (() => void) | undefined
   beforeAll(async () => {
-    await openAiSpendCapConfig.waitForInitialization()
-    restoreSpendCap = overrideDynamicConfigFieldsForTest(openAiSpendCapConfig, { enabled: false })
+    await spendCapConfig.waitForInitialization()
+    restoreSpendCap = overrideDynamicConfigFieldsForTest(spendCapConfig, { enabled: false })
   })
   beforeEach(() => {
     asked = []

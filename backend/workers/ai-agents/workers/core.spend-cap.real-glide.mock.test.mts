@@ -7,31 +7,28 @@ import {
   workerQueuePrefix,
 } from '@data-stores/valkey-glide-mq'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
-import { openAiSpendCapRecheckDeduplicationId } from '@queues/ai-agents/enqueues/spend-cap-recheck'
-import { openAiSpendCapRechecks } from '@queues/ai-agents/queues'
+import { spendCapRecheckDeduplicationId } from '@queues/ai-agents/enqueues/spend-cap-recheck'
+import { spendCapRechecks } from '@queues/ai-agents/queues'
 import {
-  processOpenAiSpendCapRecheckJob,
-  registerOpenAiSpendCapRecheck,
+  processSpendCapRecheckJob,
+  registerSpendCapRecheck,
 } from '../processors/spend-cap-recheck.mts'
-import {
-  openAiSpendCapDelayedRegistryKey,
-  releaseOpenAiSpendCapDelayedJobs,
-} from '@services/ai-usage'
+import { spendCapDelayedRegistryKey, releaseSpendCapDelayedJobs } from '@services/ai-usage'
 
 // This project deliberately restores real GlideMQ instead of the default in-memory worker shim.
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
 
-describe('daily OpenAI spend-cap coordination with real GlideMQ', () => {
+describe('daily AI spend-cap coordination with real GlideMQ', () => {
   it('drops missing and stale registry entries while draining', async () => {
     const queueName = `ai_agents_spend_cap_cleanup_${randomUUID()}`
     const day = `test-${randomUUID()}`
-    const registryKey = openAiSpendCapDelayedRegistryKey(day)
+    const registryKey = spendCapDelayedRegistryKey(day)
     const queue = new Queue<AIAgentJobData>(queueName, connection)
     try {
       const staleJob = await queue.add('report-judgement', {
-        openAiSpendCapDelayedDay: `other-${randomUUID()}`,
+        spendCapDelayedDay: `other-${randomUUID()}`,
       } as AIAgentJobData)
       if (!staleJob) throw new Error('Expected stale spend-cap job')
       await workerQueueCommandClient.hset(registryKey, {
@@ -41,7 +38,7 @@ describe('daily OpenAI spend-cap coordination with real GlideMQ', () => {
         'job:missing': 'marked',
         [`job:${staleJob.id}`]: 'marked',
       })
-      await expect(releaseOpenAiSpendCapDelayedJobs(day, 'lease-a', queue)).resolves.toEqual({
+      await expect(releaseSpendCapDelayedJobs(day, 'lease-a', queue)).resolves.toEqual({
         released: 0,
         hasPending: false,
         cursor: '0',
@@ -57,15 +54,15 @@ describe('daily OpenAI spend-cap coordination with real GlideMQ', () => {
   it('registers a real agent job and enqueues its dedicated coordinator', async () => {
     const queueName = `ai_agents_spend_cap_register_${randomUUID()}`
     const day = `${1_000 + Math.floor(Math.random() * 1_000)}-08-16`
-    const registryKey = openAiSpendCapDelayedRegistryKey(day)
+    const registryKey = spendCapDelayedRegistryKey(day)
     const queue = new Queue<AIAgentJobData>(queueName, connection)
     try {
       const job = await queue.add('report-judgement', {} as AIAgentJobData)
       if (!job) throw new Error('Expected spend-cap registration job')
-      await expect(registerOpenAiSpendCapRecheck(job, day, Date.now())).resolves.toBe(true)
-      expect(job.data.openAiSpendCapDelayedDay).toBe(day)
+      await expect(registerSpendCapRecheck(job, day, Date.now())).resolves.toBe(true)
+      expect(job.data.spendCapDelayedDay).toBe(day)
     } finally {
-      const coordinators = await openAiSpendCapRechecks.getJobs('waiting')
+      const coordinators = await spendCapRechecks.getJobs('waiting')
       await Promise.all(
         coordinators
           .filter(candidate => candidate.data.day === day)
@@ -78,7 +75,7 @@ describe('daily OpenAI spend-cap coordination with real GlideMQ', () => {
   })
   it('uses the production release drain when a coordinator owns a release lease', async () => {
     const day = `${3_000 + Math.floor(Math.random() * 6_000)}-08-16`
-    const registryKey = openAiSpendCapDelayedRegistryKey(day)
+    const registryKey = spendCapDelayedRegistryKey(day)
     const job = {
       data: { day, generation: `generation-${randomUUID()}` },
       moveToDelayed: async () => undefined,
@@ -86,11 +83,11 @@ describe('daily OpenAI spend-cap coordination with real GlideMQ', () => {
     } as unknown as Job<{ day: string; generation: string }>
     try {
       await expect(
-        processOpenAiSpendCapRecheckJob(job, {
-          waitForOpenAiSpendCapConfig: async () => undefined,
-          getOpenAiSpendCapFields: () => ({ enabled: false, daily_cap_microunits: 1 }),
-          beginOpenAiSpendCapDelayedJobRelease: async () => 'lease-a',
-          completeOpenAiSpendCapDelayedJobRelease: async () => true,
+        processSpendCapRecheckJob(job, {
+          waitForSpendCapConfig: async () => undefined,
+          getSpendCapFields: () => ({ enabled: false, daily_cap_microunits: 1 }),
+          beginSpendCapDelayedJobRelease: async () => 'lease-a',
+          completeSpendCapDelayedJobRelease: async () => true,
         }),
       ).resolves.toBeUndefined()
     } finally {
@@ -169,7 +166,7 @@ describe('daily OpenAI spend-cap coordination with real GlideMQ', () => {
         { generation: 'generation-a' },
         {
           deduplication: {
-            id: openAiSpendCapRecheckDeduplicationId(day, 'generation-a'),
+            id: spendCapRecheckDeduplicationId(day, 'generation-a'),
             mode: 'simple',
           },
         },
@@ -184,7 +181,7 @@ describe('daily OpenAI spend-cap coordination with real GlideMQ', () => {
         { generation: 'generation-b' },
         {
           deduplication: {
-            id: openAiSpendCapRecheckDeduplicationId(day, 'generation-b'),
+            id: spendCapRecheckDeduplicationId(day, 'generation-b'),
             mode: 'simple',
           },
         },

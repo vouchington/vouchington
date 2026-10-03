@@ -29,9 +29,9 @@ five-minute recovery schedule uses that same dispatcher, which is also available
 `user-deletion-recovery` operator backfill. Required provider work remains in PostgreSQL until it
 succeeds, so terminal queue failure cannot silently mark deletion complete.
 
-### OpenAI spend-cap coordinator
+### AI spend-cap coordinator
 
-`openai-spend-cap-rechecks` is an early-release optimization over the durable `ai_agents` delay,
+`ai-spend-cap-rechecks` is an early-release optimization over the durable `ai_agents` delay,
 not the source of truth for whether work survives. Every registered agent job remains delayed to
 its queried UTC midnight, so it becomes eligible at rollover independently. The coordinator retries
 once per minute for all 2,880 minutes in the registry's two-day retention window.

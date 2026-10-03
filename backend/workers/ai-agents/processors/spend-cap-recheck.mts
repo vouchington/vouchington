@@ -1,139 +1,139 @@
 import type { Job } from 'glide-mq'
 import {
-  evaluateOpenAiSpendCapBreach,
-  beginOpenAiSpendCapDelayedJobRelease,
-  completeOpenAiSpendCapDelayedJobRelease,
+  evaluateSpendCapBreach,
+  beginSpendCapDelayedJobRelease,
+  completeSpendCapDelayedJobRelease,
   getDailyAiCostTotalMicrounits,
-  getOpenAiSpendCapFields,
-  openAiSpendCapConfig,
-  registerOpenAiSpendCapDelayedJob,
-  registerOpenAiSpendCapDelayedJobAfterFreshBreach,
+  getSpendCapFields,
+  spendCapConfig,
+  registerSpendCapDelayedJob,
+  registerSpendCapDelayedJobAfterFreshBreach,
   refreshDailyAiCostTotalMicrounits,
-  reopenOpenAiSpendCapDelayedJobRegistration,
-  releaseOpenAiSpendCapDelayedJobs,
+  reopenSpendCapDelayedJobRegistration,
+  releaseSpendCapDelayedJobs,
 } from '@services/ai-usage'
 import {
-  enqueueOpenAiSpendCapRecheck,
-  enqueueOpenAiSpendCapRecheckBestEffort,
+  enqueueSpendCapRecheck,
+  enqueueSpendCapRecheckBestEffort,
 } from '@queues/ai-agents/enqueues/spend-cap-recheck'
 import { ai_agents } from '@queues/ai-agents/queues'
-import type { AIAgentJobData, OpenAiSpendCapRecheckJobData } from '@queues/ai-agents/types'
+import type { AIAgentJobData, SpendCapRecheckJobData } from '@queues/ai-agents/types'
 import { getDayBounds } from '@ts-shared/utils/dates'
 
 const RECHECK_INTERVAL_MS = 60_000
 const POST_ROLLOVER_DRAIN_DELAY_MS = 1_000
 
 type RecheckDependencies = {
-  waitForOpenAiSpendCapConfig: () => Promise<void>
-  getOpenAiSpendCapFields: typeof getOpenAiSpendCapFields
+  waitForSpendCapConfig: () => Promise<void>
+  getSpendCapFields: typeof getSpendCapFields
   getDailyAiCostTotalMicrounits: typeof getDailyAiCostTotalMicrounits
-  beginOpenAiSpendCapDelayedJobRelease: typeof beginOpenAiSpendCapDelayedJobRelease
-  completeOpenAiSpendCapDelayedJobRelease: typeof completeOpenAiSpendCapDelayedJobRelease
-  reopenOpenAiSpendCapDelayedJobRegistration: typeof reopenOpenAiSpendCapDelayedJobRegistration
-  releaseOpenAiSpendCapDelayedJobs: (
+  beginSpendCapDelayedJobRelease: typeof beginSpendCapDelayedJobRelease
+  completeSpendCapDelayedJobRelease: typeof completeSpendCapDelayedJobRelease
+  reopenSpendCapDelayedJobRegistration: typeof reopenSpendCapDelayedJobRegistration
+  releaseSpendCapDelayedJobs: (
     day: string,
     lease: string,
     cursor: string,
     dayHasEnded: boolean,
-  ) => ReturnType<typeof releaseOpenAiSpendCapDelayedJobs>
+  ) => ReturnType<typeof releaseSpendCapDelayedJobs>
 }
 
 type RegistrationDependencies = {
-  registerOpenAiSpendCapDelayedJob: typeof registerOpenAiSpendCapDelayedJob
-  registerOpenAiSpendCapDelayedJobAfterFreshBreach: typeof registerOpenAiSpendCapDelayedJobAfterFreshBreach
-  enqueueOpenAiSpendCapRecheck: typeof enqueueOpenAiSpendCapRecheck
-  evaluateOpenAiSpendCapBreach: typeof evaluateOpenAiSpendCapBreach
+  registerSpendCapDelayedJob: typeof registerSpendCapDelayedJob
+  registerSpendCapDelayedJobAfterFreshBreach: typeof registerSpendCapDelayedJobAfterFreshBreach
+  enqueueSpendCapRecheck: typeof enqueueSpendCapRecheck
+  evaluateSpendCapBreach: typeof evaluateSpendCapBreach
   refreshDailyAiCostTotalMicrounits: typeof refreshDailyAiCostTotalMicrounits
 }
 
 const defaultRegistrationDependencies: RegistrationDependencies = {
-  registerOpenAiSpendCapDelayedJob,
-  registerOpenAiSpendCapDelayedJobAfterFreshBreach,
-  enqueueOpenAiSpendCapRecheck,
-  evaluateOpenAiSpendCapBreach,
+  registerSpendCapDelayedJob,
+  registerSpendCapDelayedJobAfterFreshBreach,
+  enqueueSpendCapRecheck,
+  evaluateSpendCapBreach,
   refreshDailyAiCostTotalMicrounits,
 }
 
 const defaultDependencies: RecheckDependencies = {
-  waitForOpenAiSpendCapConfig: () => openAiSpendCapConfig.waitForInitialization(),
-  getOpenAiSpendCapFields,
+  waitForSpendCapConfig: () => spendCapConfig.waitForInitialization(),
+  getSpendCapFields,
   getDailyAiCostTotalMicrounits,
-  beginOpenAiSpendCapDelayedJobRelease,
-  completeOpenAiSpendCapDelayedJobRelease,
-  reopenOpenAiSpendCapDelayedJobRegistration,
-  releaseOpenAiSpendCapDelayedJobs: (day, lease, cursor, dayHasEnded) =>
-    releaseOpenAiSpendCapDelayedJobs(day, lease, ai_agents, undefined, cursor, dayHasEnded),
+  beginSpendCapDelayedJobRelease,
+  completeSpendCapDelayedJobRelease,
+  reopenSpendCapDelayedJobRegistration,
+  releaseSpendCapDelayedJobs: (day, lease, cursor, dayHasEnded) =>
+    releaseSpendCapDelayedJobs(day, lease, ai_agents, undefined, cursor, dayHasEnded),
 }
 
-export function getOpenAiSpendCapRecheckAt(day: string, now = Date.now()): number {
+export function getSpendCapRecheckAt(day: string, now = Date.now()): number {
   return Math.min(getDayBounds(day).endMs, now + RECHECK_INTERVAL_MS)
 }
 
 /** Register the exact ai_agents job before core parks it at the queried day boundary. */
-export async function registerOpenAiSpendCapRecheck(
+export async function registerSpendCapRecheck(
   job: Job<AIAgentJobData>,
   day: string,
   now = Date.now(),
   deps: Partial<RegistrationDependencies> = {},
 ): Promise<boolean> {
   const dependencies = { ...defaultRegistrationDependencies, ...deps }
-  const registration = await dependencies.registerOpenAiSpendCapDelayedJob(job, day)
+  const registration = await dependencies.registerSpendCapDelayedJob(job, day)
   if (registration.accepted) {
-    const delayMs = Math.max(0, getOpenAiSpendCapRecheckAt(day, now) - now)
-    await enqueueOpenAiSpendCapRecheckBestEffort(
+    const delayMs = Math.max(0, getSpendCapRecheckAt(day, now) - now)
+    await enqueueSpendCapRecheckBestEffort(
       day,
       registration.generation,
       delayMs,
-      dependencies.enqueueOpenAiSpendCapRecheck,
+      dependencies.enqueueSpendCapRecheck,
     )
     return true
   }
-  const currentBreach = await dependencies.evaluateOpenAiSpendCapBreach({
+  const currentBreach = await dependencies.evaluateSpendCapBreach({
     getDailyAiCostTotalMicrounits: dependencies.refreshDailyAiCostTotalMicrounits,
   })
   if (currentBreach?.day !== day) {
-    await enqueueOpenAiSpendCapRecheckBestEffort(
+    await enqueueSpendCapRecheckBestEffort(
       day,
       registration.generation,
       0,
-      dependencies.enqueueOpenAiSpendCapRecheck,
+      dependencies.enqueueSpendCapRecheck,
     )
     return false
   }
-  const reopenedRegistration = await dependencies.registerOpenAiSpendCapDelayedJobAfterFreshBreach(
+  const reopenedRegistration = await dependencies.registerSpendCapDelayedJobAfterFreshBreach(
     job,
     day,
   )
   if (!reopenedRegistration.accepted) {
-    throw new Error('Fresh OpenAI spend-cap breach did not reopen delayed-job registration')
+    throw new Error('Fresh AI spend-cap breach did not reopen delayed-job registration')
   }
-  await enqueueOpenAiSpendCapRecheckBestEffort(
+  await enqueueSpendCapRecheckBestEffort(
     day,
     reopenedRegistration.generation,
     0,
-    dependencies.enqueueOpenAiSpendCapRecheck,
+    dependencies.enqueueSpendCapRecheck,
   )
   return true
 }
 
-export async function processOpenAiSpendCapRecheckJob(
-  job: Job<OpenAiSpendCapRecheckJobData>,
+export async function processSpendCapRecheckJob(
+  job: Job<SpendCapRecheckJobData>,
   deps: Partial<RecheckDependencies> = {},
 ): Promise<void> {
   const dependencies = { ...defaultDependencies, ...deps }
   const { day, generation } = job.data
   const dayEnd = getDayBounds(day).endMs
-  const breach = await evaluateOpenAiSpendCapBreach(dependencies)
+  const breach = await evaluateSpendCapBreach(dependencies)
   const breachCheckedAt = Date.now()
   if (breach?.day === day && breachCheckedAt < dayEnd) {
-    const reopened = await dependencies.reopenOpenAiSpendCapDelayedJobRegistration(day, generation)
+    const reopened = await dependencies.reopenSpendCapDelayedJobRegistration(day, generation)
     if (!reopened) return
-    await job.moveToDelayed(getOpenAiSpendCapRecheckAt(day, breachCheckedAt))
+    await job.moveToDelayed(getSpendCapRecheckAt(day, breachCheckedAt))
   }
 
-  const lease = await dependencies.beginOpenAiSpendCapDelayedJobRelease(day, generation)
+  const lease = await dependencies.beginSpendCapDelayedJobRelease(day, generation)
   if (!lease) return
-  const drain = await dependencies.releaseOpenAiSpendCapDelayedJobs(
+  const drain = await dependencies.releaseSpendCapDelayedJobs(
     day,
     lease,
     job.data.cursor ?? '0',
@@ -143,10 +143,6 @@ export async function processOpenAiSpendCapRecheckJob(
     await job.updateData({ ...job.data, cursor: drain.cursor })
     await job.moveToDelayed(Date.now() + POST_ROLLOVER_DRAIN_DELAY_MS)
   }
-  const completed = await dependencies.completeOpenAiSpendCapDelayedJobRelease(
-    day,
-    generation,
-    lease,
-  )
+  const completed = await dependencies.completeSpendCapDelayedJobRelease(day, generation, lease)
   if (!completed) await job.moveToDelayed(Date.now() + POST_ROLLOVER_DRAIN_DELAY_MS)
 }

@@ -27,7 +27,7 @@ for keyIndex = 6, #KEYS do
     and state == 'delayed'
     and decodedOk
     and type(decoded) == 'table'
-    and decoded.openAiSpendCapDelayedDay == ARGV[2]
+    and decoded.spendCapDelayedDay == ARGV[2]
   then
     redis.call('ZREM', KEYS[3], jobId)
     local priority = tonumber(redis.call('HGET', KEYS[keyIndex], 'priority')) or 0

@@ -1,9 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import {
-  getAccountingUncertaintySource,
-  OpenAiSpendCapBreachError,
-} from '../services/ai-usage/index.mts'
+import { getAccountingUncertaintySource, SpendCapBreachError } from '../services/ai-usage/index.mts'
 import { describeClassifierPermanentFailures } from './classifier-provider-failure-permanent-tests.mts'
 import {
   billed,
@@ -92,7 +89,7 @@ export function describeClassifierProviderFailures(driver: ClassifierFailureDriv
         })
         await expect(getAccountingUncertaintySource(day)).resolves.toBe('unknown_billed_attempt')
         await expect(run.claim()).resolves.toBe('claimed')
-        await expect(run.execute(retry)).rejects.toBeInstanceOf(OpenAiSpendCapBreachError)
+        await expect(run.execute(retry)).rejects.toBeInstanceOf(SpendCapBreachError)
 
         expect(retry).not.toHaveBeenCalled()
         expect(await run.facts()).toMatchObject({

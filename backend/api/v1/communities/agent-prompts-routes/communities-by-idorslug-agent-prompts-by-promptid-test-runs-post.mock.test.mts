@@ -13,7 +13,7 @@ import {
 import { answerCommunityQuestions } from '@voucha/test-helpers/data-stores/psql/classifier-runs/community-moderation-provider'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import type { PrivateUser } from '@services/users/types'
-import { openAiSpendCapConfig } from '@services/ai-usage'
+import { spendCapConfig } from '@services/ai-usage'
 import { fetchStructuredDecisionProvider } from '@modules/structured-decisions/transport'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
@@ -66,8 +66,8 @@ describe('POST /api/v1/communities/:idOrSlug/agent-prompts/:promptId/test-runs',
   // so the success paths can't flake on unrelated ai_usage_records rows from other tests sharing
   // today's UTC window.
   async function withSpendCapDisabled(run: () => Promise<void>) {
-    await openAiSpendCapConfig.waitForInitialization()
-    const restore = overrideDynamicConfigFieldsForTest(openAiSpendCapConfig, { enabled: false })
+    await spendCapConfig.waitForInitialization()
+    const restore = overrideDynamicConfigFieldsForTest(spendCapConfig, { enabled: false })
     try {
       await run()
     } finally {
@@ -166,10 +166,10 @@ describe('POST /api/v1/communities/:idOrSlug/agent-prompts/:promptId/test-runs',
   })
 
   it('returns 429 and does not call the provider when the daily spend cap is breached', async () => {
-    await openAiSpendCapConfig.waitForInitialization()
+    await spendCapConfig.waitForInitialization()
     // 0 is the true kill-switch value (#8773 review round 4): totalMicrounits is never negative, so
     // this breaches on the very first call regardless of what other tests have written today.
-    const restore = overrideDynamicConfigFieldsForTest(openAiSpendCapConfig, {
+    const restore = overrideDynamicConfigFieldsForTest(spendCapConfig, {
       daily_cap_microunits: 0,
     })
     try {

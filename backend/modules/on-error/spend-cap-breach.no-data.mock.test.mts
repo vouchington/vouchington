@@ -40,7 +40,7 @@ const breachContext = {
 
 // lastSpendCapBreachReportedAt is module-level throttle state -- vi.resetModules() plus a dynamic
 // import per test gives each test a fresh, unthrottled instance.
-describe('recordOpenAiSpendCapBreach', () => {
+describe('recordSpendCapBreach', () => {
   beforeEach(() => {
     vi.resetModules()
     vi.useFakeTimers()
@@ -52,17 +52,17 @@ describe('recordOpenAiSpendCapBreach', () => {
   })
 
   it('captures a Sentry message with the breach context and skips console output in test mode', async () => {
-    const { recordOpenAiSpendCapBreach } = await import('./openai-spend-cap-breach.mts')
+    const { recordSpendCapBreach } = await import('./spend-cap-breach.mts')
     const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {
-      recordOpenAiSpendCapBreach(breachContext)
+      recordSpendCapBreach(breachContext)
 
       expect(consoleWarn).not.toHaveBeenCalled()
       expect(captureMessage).toHaveBeenCalledOnce()
-      expect(captureMessage).toHaveBeenCalledWith('openai_spend_cap_breach', {
+      expect(captureMessage).toHaveBeenCalledWith('ai_spend_cap_breach', {
         level: 'warning',
         tags: {
-          reason: 'openai_spend_cap_breach',
+          reason: 'ai_spend_cap_breach',
           agent_job_name: 'report-judgement',
           breach_reason: 'cap_exceeded',
         },
@@ -77,11 +77,11 @@ describe('recordOpenAiSpendCapBreach', () => {
     vi.stubEnv('NODE_ENV', 'development')
     const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {
-      const { recordOpenAiSpendCapBreach } = await import('./openai-spend-cap-breach.mts')
-      recordOpenAiSpendCapBreach(breachContext)
+      const { recordSpendCapBreach } = await import('./spend-cap-breach.mts')
+      recordSpendCapBreach(breachContext)
 
       expect(consoleWarn).toHaveBeenCalledWith(
-        '[ai-usage] daily OpenAI spend cap breached',
+        '[ai-usage] daily AI spend cap breached',
         breachContext,
       )
     } finally {
@@ -95,11 +95,11 @@ describe('recordOpenAiSpendCapBreach', () => {
     vi.stubEnv('CI', 'true')
     const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {
-      const { recordOpenAiSpendCapBreach } = await import('./openai-spend-cap-breach.mts')
-      recordOpenAiSpendCapBreach(breachContext)
+      const { recordSpendCapBreach } = await import('./spend-cap-breach.mts')
+      recordSpendCapBreach(breachContext)
 
       expect(consoleWarn).toHaveBeenCalledWith(
-        '[ai-usage] daily OpenAI spend cap breached',
+        '[ai-usage] daily AI spend cap breached',
         breachContext,
       )
     } finally {
@@ -113,8 +113,8 @@ describe('recordOpenAiSpendCapBreach', () => {
     vi.stubEnv('CI', '')
     const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {
-      const { recordOpenAiSpendCapBreach } = await import('./openai-spend-cap-breach.mts')
-      recordOpenAiSpendCapBreach(breachContext)
+      const { recordSpendCapBreach } = await import('./spend-cap-breach.mts')
+      recordSpendCapBreach(breachContext)
 
       expect(consoleWarn).not.toHaveBeenCalled()
     } finally {
@@ -127,14 +127,14 @@ describe('recordOpenAiSpendCapBreach', () => {
     vi.stubEnv('NODE_ENV', 'production')
     vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'))
     try {
-      const { recordOpenAiSpendCapBreach } = await import('./openai-spend-cap-breach.mts')
+      const { recordSpendCapBreach } = await import('./spend-cap-breach.mts')
 
-      recordOpenAiSpendCapBreach(breachContext)
-      recordOpenAiSpendCapBreach(breachContext)
+      recordSpendCapBreach(breachContext)
+      recordSpendCapBreach(breachContext)
       expect(captureMessage).toHaveBeenCalledOnce()
 
       vi.advanceTimersByTime(60_000)
-      recordOpenAiSpendCapBreach(breachContext)
+      recordSpendCapBreach(breachContext)
 
       expect(captureMessage).toHaveBeenCalledTimes(2)
     } finally {

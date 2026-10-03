@@ -1,7 +1,7 @@
 import {
-  assertOpenAiSpendCapNotBreached,
+  assertDailySpendCapNotBreached,
   latchAccountingUncertainty,
-  OpenAiSpendCapBreachError,
+  SpendCapBreachError,
 } from '@services/ai-usage'
 import onError from '@modules/on-error'
 import { createBackgroundResponseRegistrationHooks } from './record-response-background-hooks.mts'
@@ -47,10 +47,9 @@ interface RecordAgentResponseUsageDeps {
 }
 
 /**
- * Settles cost-ledger recording for a single completed OpenAI call. Shared by
- * callRecordingAgentResponseUsage (below), which direct calls and the tool loop
- * (run-tool-loop/record-usage.mts's callRecordingToolLoopUsage) both go through, so they share one
- * recording policy.
+ * Settles cost-ledger recording for a single completed provider call. Shared by
+ * callRecordingAgentResponseUsage (below), which every agent call site goes through, so they
+ * share one recording policy.
  *
  * Records from `response.model`/`response.service_tier` — what OpenAI actually served — not the
  * requested model/tier, falling back to a distinguishable sentinel when either is missing so a
@@ -90,9 +89,9 @@ export async function recordAgentResponseUsage(
     (response.id !== undefined && !isStorableResponseId(response.id)) ||
     (registrationId !== undefined && !isStorableResponseId(registrationId))
   if (hasInvalidId) {
-    onError(new Error(`OpenAI usage has an unusable response id: ${agentSlug}`))
+    onError(new Error(`AI usage has an unusable response id: ${agentSlug}`))
   } else if (responseId === undefined) {
-    onError(new Error(`OpenAI usage cannot be made idempotent without a response id: ${agentSlug}`))
+    onError(new Error(`AI usage cannot be made idempotent without a response id: ${agentSlug}`))
   }
 
   try {
@@ -109,9 +108,7 @@ export async function recordAgentResponseUsage(
       createdAt,
     })
   } catch (err) {
-    onError(
-      err instanceof Error ? err : new Error('OpenAI usage ledger write failed', { cause: err }),
-    )
+    onError(err instanceof Error ? err : new Error('AI usage ledger write failed', { cause: err }))
     const requestDay = getUtcDayFromDate(registration?.lease?.createdAt ?? createdAt ?? new Date())
     await latchUncertainty({ requestDay, source: 'ledger_write_failed' })
   }
@@ -128,7 +125,7 @@ type CallRecordingAgentResponseUsageParams = Omit<
 /**
  * Calls fn and records the ledger row for a resolved response or a thrown
  * OpenAIResponseNotCompletedError (which still billed tokens). Centralizes the
- * try/catch/record/rethrow shape every direct (non-tool-loop) OpenAI call site duplicated.
+ * try/catch/record/rethrow shape every agent call site duplicated.
  *
  * fn runs inside a background-response-hooks scope
  * (backend/modules/openai-utils/background-response-context.mts): createOpenAIResponse always
@@ -143,25 +140,24 @@ type CallRecordingAgentResponseUsageParams = Omit<
  * fn stays unconstrained because several callers inject `Promise<unknown>` test doubles. The real
  * implementation returns OpenAIResponse; the cast below keeps that knowledge in one place.
  *
- * Rechecks the daily OpenAI spend cap immediately before dispatching fn, mirroring
- * run-tool-loop/spend-cap-check.mts's assertSpendCapNotBreachedForIteration -- this is the shared
- * recording/call boundary every direct (non-tool-loop) agent call site funnels through, closing the
- * concurrent-admission gap between a job's pre-dispatch check and its actual model call. Throws
- * OpenAiSpendCapBreachError, caught the same way as processAIAgentWorkerJob's pre-dispatch check.
+ * Rechecks the daily AI spend cap immediately before dispatching fn -- this is the shared
+ * recording/call boundary every agent call site funnels through, closing the concurrent-admission
+ * gap between a job's pre-dispatch check and its actual model call. Throws SpendCapBreachError,
+ * caught the same way as processAIAgentWorkerJob's pre-dispatch check.
  */
 export async function callRecordingAgentResponseUsage<T>(
   fn: () => Promise<T>,
   params: CallRecordingAgentResponseUsageParams,
   deps: {
-    assertOpenAiSpendCapNotBreached?: typeof assertOpenAiSpendCapNotBreached
+    assertDailySpendCapNotBreached?: typeof assertDailySpendCapNotBreached
     latchAccountingUncertainty?: typeof latchAccountingUncertainty
     recordAgentResponseUsage?: typeof recordAgentResponseUsage
   } = {},
 ): Promise<T> {
-  const checkSpendCap = deps.assertOpenAiSpendCapNotBreached ?? assertOpenAiSpendCapNotBreached
+  const checkSpendCap = deps.assertDailySpendCapNotBreached ?? assertDailySpendCapNotBreached
   const recordUsage = deps.recordAgentResponseUsage ?? recordAgentResponseUsage
   const breach = await checkSpendCap(params.agentSlug)
-  if (breach) throw new OpenAiSpendCapBreachError(breach)
+  if (breach) throw new SpendCapBreachError(breach)
   const requestStartedAt = new Date()
   const attemptHooks = createOpenAIResponseAttemptHooks(params.agentSlug, deps)
 

@@ -16,7 +16,7 @@ import {
 import { getConversationMessagesByConversationId } from '@services/conversations-messages/messages'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { assertNotSuspended } from '@services/users'
-import { assertOpenAiSpendCapNotBreached } from '@services/ai-usage'
+import { assertDailySpendCapNotBreached } from '@services/ai-usage'
 import {
   getConversationTitleGenerationInput,
   generateChatTitleFromInput,
@@ -164,8 +164,8 @@ app.route('/api/v1/my/conversations/:conversationId/title').post(async (ctx: Con
     // enforcing the spend cap here would 429 a request that was always going to be free.
     title = 'New Conversation'
   } else {
-    const spendCapBreach = await assertOpenAiSpendCapNotBreached('chat-generate-title')
-    ctx.assert(!spendCapBreach, 429, 'Daily OpenAI spend cap reached, try again after UTC midnight')
+    const spendCapBreach = await assertDailySpendCapNotBreached('chat-generate-title')
+    ctx.assert(!spendCapBreach, 429, 'Daily AI spend cap reached, try again after UTC midnight')
     title = await generateChatTitleFromInput(titleInput, currentUser.id)
   }
 

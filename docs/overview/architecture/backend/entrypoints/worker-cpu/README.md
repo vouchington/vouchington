@@ -16,7 +16,7 @@ Rust NAPI addons and Lightpanda cloud browser crawling. Local development runs e
 | `crawl_browser`                                | Lightpanda cloud headless browser (`requiresExplicitInclusion`)                |
 | `images`                                       | Sharp image processing                                                         |
 | `ai_agents`                                    | `@jongleberry/vurst-ai` text classification                                    |
-| `openai-spend-cap-rechecks`                    | Limiter-independent release coordinator for spend-capped `ai_agents` jobs      |
+| `ai-spend-cap-rechecks`                        | Limiter-independent release coordinator for spend-capped `ai_agents` jobs      |
 | `bedrock_embeddings_nova_multimodal_v1_single` | Bedrock embeddings — Rust `htmlToEmbeddingText` via `@services/rss-feed-items` |
 | `bedrock-embeddings-batch`                     | Bedrock batch embeddings (scheduled) — same Rust dep                           |
 

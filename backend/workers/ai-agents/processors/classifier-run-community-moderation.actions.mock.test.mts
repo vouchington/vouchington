@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchStructuredDecisionProvider } from '@modules/structured-decisions/transport'
-import { openAiSpendCapConfig } from '@services/ai-usage'
+import { spendCapConfig } from '@services/ai-usage'
 import { getModerationSystemUserId } from '@services/users/system-users'
 import {
   getCommunityPostReviewAutomodState,
@@ -57,8 +57,8 @@ const stateOf = async (fixture: { postId: string; community: { id: string } }) =
 describe('C8 community actions applied in the completion transaction (real PG, mocked provider)', () => {
   let restoreSpendCap: (() => void) | undefined
   beforeAll(async () => {
-    await openAiSpendCapConfig.waitForInitialization()
-    restoreSpendCap = overrideDynamicConfigFieldsForTest(openAiSpendCapConfig, { enabled: false })
+    await spendCapConfig.waitForInitialization()
+    restoreSpendCap = overrideDynamicConfigFieldsForTest(spendCapConfig, { enabled: false })
   })
   beforeEach(() => {
     vi.stubEnv('OPENROUTER_API_KEY', 'test-provider-key')

@@ -21,8 +21,8 @@ function usageResponse(inputTokens: number, outputTokens: number) {
 // (core.spend-cap.test.mts) -- disable it so these stay pure unit tests, with no dependency on
 // live Valkey/Postgres state.
 const spendCapDisabled = {
-  waitForOpenAiSpendCapConfig: () => Promise.resolve(),
-  getOpenAiSpendCapFields: () => ({ enabled: false, daily_cap_microunits: 0 }),
+  waitForSpendCapConfig: () => Promise.resolve(),
+  getSpendCapFields: () => ({ enabled: false, daily_cap_microunits: 0 }),
 }
 
 describe('processAIAgentWorkerJob', () => {

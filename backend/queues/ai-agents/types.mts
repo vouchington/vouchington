@@ -69,11 +69,11 @@ export type AutoDispatchJudgementJobData = {
   community_id: string | null
 }
 
-export type OpenAiSpendCapDelayedData = {
-  openAiSpendCapDelayedDay?: string
+export type SpendCapDelayedData = {
+  spendCapDelayedDay?: string
 }
 
-export type OpenAiSpendCapRecheckJobData = {
+export type SpendCapRecheckJobData = {
   day: string
   generation: string
   cursor?: string
@@ -94,4 +94,4 @@ export type AIAgentJobData = (
   | ReconcileClassifierRunsJobData
   | AutoDispatchJudgementJobData
 ) &
-  OpenAiSpendCapDelayedData
+  SpendCapDelayedData

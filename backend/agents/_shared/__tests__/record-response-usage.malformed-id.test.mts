@@ -6,12 +6,12 @@ import {
 } from '@voucha/test-helpers'
 import { unlinkTestAiUsageUncertaintyKey } from '@voucha/test-helpers/ai-usage-uncertainty-key'
 import {
-  evaluateOpenAiSpendCapBreach,
+  evaluateSpendCapBreach,
   getAccountingUncertaintyKey,
   getAccountingUncertaintySource,
   getDailyAiCostTotalMicrounits,
-  getOpenAiSpendCapFields,
-  openAiSpendCapConfig,
+  getSpendCapFields,
+  spendCapConfig,
 } from '@services/ai-usage'
 import { clearDailyAiCostTotalCacheForTesting } from '@services/ai-usage/daily-total'
 import { deleteBackgroundResponseRegistration } from '@services/openai-background-responses'
@@ -65,7 +65,7 @@ function reportedError(index = 0): Error {
 
 function expectRedactedUsageDiagnostic(slug: string, index = 0): void {
   const error = reportedError(index)
-  expect(error).toMatchObject({ message: `OpenAI usage has an unusable response id: ${slug}` })
+  expect(error).toMatchObject({ message: `AI usage has an unusable response id: ${slug}` })
   expect(error).not.toHaveProperty('cause')
 }
 
@@ -237,11 +237,11 @@ describe('recordAgentResponseUsage response ID storage', () => {
       const total = await getDailyAiCostTotalMicrounits(day)
       expect(total.totalMicrounits).toBeGreaterThan(0)
       expect(total.hasUnpricedRows).toBe(false)
-      await openAiSpendCapConfig.waitForInitialization()
-      const cap = getOpenAiSpendCapFields()
+      await spendCapConfig.waitForInitialization()
+      const cap = getSpendCapFields()
       expect(cap.enabled).toBe(true)
       expect(cap.daily_cap_microunits).toBeGreaterThan(total.totalMicrounits)
-      await expect(evaluateOpenAiSpendCapBreach()).resolves.toBeNull()
+      await expect(evaluateSpendCapBreach()).resolves.toBeNull()
       expect(sentryCaptureExceptionMock).toHaveBeenCalledTimes(1)
       expectRedactedUsageDiagnostic(slug)
     })

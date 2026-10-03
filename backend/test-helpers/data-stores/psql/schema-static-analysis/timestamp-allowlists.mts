@@ -94,7 +94,7 @@ export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
     'Immutable aggregate projection; released_at records the only lifecycle transition and rows never update.',
   ],
   [
-    'ai_usage_openai_response_keys',
+    'ai_usage_provider_response_keys',
     'Permanent response-id reservation rows are inserted atomically with one ledger row and never updated.',
   ],
   [

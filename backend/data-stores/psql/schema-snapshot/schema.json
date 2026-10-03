@@ -3379,14 +3379,14 @@
         }
       }
     },
-    "ai_usage_openai_response_keys": {
+    "ai_usage_provider_response_keys": {
       "checkConstraints": {
-        "ai_usage_openai_response_keys_response_id_check": "CHECK (((response_id = TRIM(BOTH FROM response_id)) AND ((char_length(response_id) >= 1) AND (char_length(response_id) <= 100))))"
+        "ai_usage_provider_response_keys_response_id_check": "CHECK (((response_id = TRIM(BOTH FROM response_id)) AND ((char_length(response_id) >= 1) AND (char_length(response_id) <= 100))))"
       },
       "columns": {
         "ai_usage_record_id": {
           "collation": null,
-          "comment": "The one ai_usage_records row reserved for this OpenAI response id.",
+          "comment": "The one ai_usage_records row reserved for this provider response or decision id.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -3397,7 +3397,7 @@
         },
         "response_id": {
           "collation": null,
-          "comment": "OpenAI Responses API response id; the primary key prevents duplicate ledger rows across UUIDv7 ledger partitions.",
+          "comment": "Provider response or decision id; the primary key prevents duplicate ledger rows across UUIDv7 ledger partitions.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -3407,9 +3407,9 @@
           "type": "text"
         }
       },
-      "comment": "Global idempotency map from an OpenAI Responses API response id to its single partitioned ai_usage_records row.",
+      "comment": "Global idempotency map from a provider response or decision id to its single partitioned ai_usage_records row.",
       "foreignKeys": {
-        "ai_usage_openai_response_keys_ai_usage_record_id_fkey": {
+        "ai_usage_provider_response_keys_ai_usage_record_id_fkey": {
           "columns": ["ai_usage_record_id"],
           "definition": "FOREIGN KEY (ai_usage_record_id) REFERENCES ai_usage_records(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED",
           "onDelete": "cascade",
@@ -3421,10 +3421,10 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "ai_usage_openai_response_keys_ai_usage_record_id_key": {
+        "ai_usage_provider_response_keys_ai_usage_record_id_key": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX ai_usage_openai_response_keys_ai_usage_record_id_key ON public.ai_usage_openai_response_keys USING btree (ai_usage_record_id)",
+          "definition": "CREATE UNIQUE INDEX ai_usage_provider_response_keys_ai_usage_record_id_key ON public.ai_usage_provider_response_keys USING btree (ai_usage_record_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -3441,10 +3441,10 @@
           "unique": true,
           "valid": true
         },
-        "ai_usage_openai_response_keys_pkey": {
+        "ai_usage_provider_response_keys_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX ai_usage_openai_response_keys_pkey ON public.ai_usage_openai_response_keys USING btree (response_id)",
+          "definition": "CREATE UNIQUE INDEX ai_usage_provider_response_keys_pkey ON public.ai_usage_provider_response_keys USING btree (response_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -3471,7 +3471,7 @@
       "relationKind": "table",
       "triggers": {},
       "uniqueConstraints": {
-        "ai_usage_openai_response_keys_ai_usage_record_id_key": {
+        "ai_usage_provider_response_keys_ai_usage_record_id_key": {
           "columns": ["ai_usage_record_id"],
           "definition": "UNIQUE (ai_usage_record_id)"
         }
@@ -64436,7 +64436,7 @@
         },
         "response_id": {
           "collation": null,
-          "comment": "OpenAI response id from response.created; the primary key identifies one current lease while ai_usage_openai_response_keys separately gates accounting.",
+          "comment": "OpenAI response id from response.created; the primary key identifies one current lease while ai_usage_provider_response_keys separately gates accounting.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,

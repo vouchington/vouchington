@@ -8,7 +8,7 @@
     "unfurl_referral_links",
     "images",
     "ai_agents",
-    "openai-spend-cap-rechecks",
+    "ai-spend-cap-rechecks",
     "bedrock_embeddings_nova_multimodal_v1_single",
     "bedrock-embeddings-batch",
     "language_detection"

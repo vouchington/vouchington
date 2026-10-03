@@ -6,17 +6,17 @@ const abortDelayedJobRegistrationScript = registerWorkerQueueScript(
 )
 
 type RegistryScriptClient = Pick<typeof workerQueueCommandClient, 'invokeScript'>
-export type OpenAiSpendCapRegistration = {
+export type SpendCapRegistration = {
   accepted: boolean
   generation: string
   alreadyMarked?: boolean
 }
 
-export function normalizeOpenAiSpendCapRegistration(result: unknown): OpenAiSpendCapRegistration {
+export function normalizeSpendCapRegistration(result: unknown): SpendCapRegistration {
   if (!Array.isArray(result) || result.length !== 3) {
-    throw new Error('Invalid OpenAI spend-cap registration result')
+    throw new Error('Invalid AI spend-cap registration result')
   }
-  const registration: OpenAiSpendCapRegistration = {
+  const registration: SpendCapRegistration = {
     accepted: Number(result[0]) === 1,
     generation: String(result[1]),
   }
@@ -24,7 +24,7 @@ export function normalizeOpenAiSpendCapRegistration(result: unknown): OpenAiSpen
   return registration
 }
 
-export async function abortOpenAiSpendCapDelayedJobRegistration(
+export async function abortSpendCapDelayedJobRegistration(
   key: string,
   field: string,
   generation: string,
@@ -40,7 +40,7 @@ export async function abortOpenAiSpendCapDelayedJobRegistration(
   } catch (err) {
     const failure = new AggregateError(
       [error, toError(err)],
-      'Failed to register an OpenAI spend-cap delayed job and abort its reservation',
+      'Failed to register an AI spend-cap delayed job and abort its reservation',
     )
     failure.cause = error
     throw failure

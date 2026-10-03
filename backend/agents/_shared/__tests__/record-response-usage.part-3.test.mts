@@ -28,15 +28,15 @@ describe('callRecordingAgentResponseUsage attempt hooks', () => {
         return response()
       },
       { agentSlug: 'openrouter-foreground-test', responseProvider: 'openrouter' },
-      { assertOpenAiSpendCapNotBreached: async () => null, recordAgentResponseUsage: recorder },
+      { assertDailySpendCapNotBreached: async () => null, recordAgentResponseUsage: recorder },
     )
 
     expect(recorder).toHaveBeenCalledOnce()
   })
 
   it('installs hooks while keeping attempt one on the initial spend-cap guard only', async () => {
-    const assertOpenAiSpendCapNotBreached = vi.fn<(agentSlug: string) => Promise<null>>()
-    assertOpenAiSpendCapNotBreached.mockResolvedValue(null)
+    const assertDailySpendCapNotBreached = vi.fn<(agentSlug: string) => Promise<null>>()
+    assertDailySpendCapNotBreached.mockResolvedValue(null)
     const recorder = vi.fn<typeof recordAgentResponseUsage>().mockResolvedValue(undefined)
     let hooksInstalled = false
 
@@ -50,18 +50,18 @@ describe('callRecordingAgentResponseUsage attempt hooks', () => {
           return response()
         },
         { agentSlug: 'attempt-hooks-test' },
-        { assertOpenAiSpendCapNotBreached, recordAgentResponseUsage: recorder },
+        { assertDailySpendCapNotBreached, recordAgentResponseUsage: recorder },
       ),
     ).resolves.toEqual(response())
 
     expect(hooksInstalled).toBe(true)
-    expect(assertOpenAiSpendCapNotBreached).toHaveBeenCalledExactlyOnceWith('attempt-hooks-test')
+    expect(assertDailySpendCapNotBreached).toHaveBeenCalledExactlyOnceWith('attempt-hooks-test')
     expect(recorder).toHaveBeenCalledOnce()
   })
 
   it('rechecks the cap before a free retry continues into the provider', async () => {
     const retryGuardSettled = Promise.withResolvers<void>()
-    const assertOpenAiSpendCapNotBreached = vi
+    const assertDailySpendCapNotBreached = vi
       .fn<(agentSlug: string) => Promise<null>>()
       .mockResolvedValueOnce(null)
       .mockImplementationOnce(async () => {
@@ -79,10 +79,10 @@ describe('callRecordingAgentResponseUsage attempt hooks', () => {
         return response()
       },
       { agentSlug: 'attempt-hooks-test' },
-      { assertOpenAiSpendCapNotBreached, recordAgentResponseUsage: recorder },
+      { assertDailySpendCapNotBreached, recordAgentResponseUsage: recorder },
     )
 
-    await vi.waitFor(() => expect(assertOpenAiSpendCapNotBreached).toHaveBeenCalledTimes(2))
+    await vi.waitFor(() => expect(assertDailySpendCapNotBreached).toHaveBeenCalledTimes(2))
     expect(retryContinued).toBe(false)
     retryGuardSettled.resolve()
     await expect(call).resolves.toEqual(response())
@@ -107,7 +107,7 @@ describe('callRecordingAgentResponseUsage attempt hooks', () => {
       },
       { agentSlug: 'attempt-hooks-test' },
       {
-        assertOpenAiSpendCapNotBreached: async () => null,
+        assertDailySpendCapNotBreached: async () => null,
         latchAccountingUncertainty,
         recordAgentResponseUsage: vi.fn<typeof recordAgentResponseUsage>(),
       },
@@ -134,7 +134,7 @@ describe('callRecordingAgentResponseUsage attempt hooks', () => {
         },
         { agentSlug: 'attempt-hooks-test' },
         {
-          assertOpenAiSpendCapNotBreached: async () => null,
+          assertDailySpendCapNotBreached: async () => null,
           latchAccountingUncertainty: async () => {
             throw latchError
           },

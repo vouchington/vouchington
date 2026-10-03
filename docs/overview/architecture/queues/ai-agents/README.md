@@ -3,7 +3,7 @@
 Source entrypoint: [backend/queues/ai-agents/README.md](../../../../../backend/queues/ai-agents/README.md)
 
 Unified queue package for AI agent workloads. OpenAI-backed agent jobs run through `ai_agents`
-with shared RPM and TPM limits. The limiter-independent `openai-spend-cap-rechecks` queue owns the
+with shared RPM and TPM limits. The limiter-independent `ai-spend-cap-rechecks` queue owns the
 single coordinator that releases jobs when an operator relaxes the daily cap.
 
 ## Summary
@@ -26,8 +26,8 @@ single coordinator that releases jobs when an operator relaxes the daily cap.
 - **Queue name**: `ai_agents`
 - **Concurrency**: `getWorkerConcurrency('aiAgents', { baseline: 5 })` — `WORKER_CONCURRENCY_AI_AGENTS` env var overrides the baseline, clamped to `WORKER_CONCURRENCY_MAX` (default 25)
 - **Rate limits**: `OPENAI_RPM` env var (default: 60 req/min), `OPENAI_TPM` env var (default: 500,000 tokens/min)
-- **Spend cap**: `openai-spend-cap` `DynamicConfig` bounds the daily dollar total across all agents (default $10/day), independent of the rate limits above; see [Daily spend cap](../workers/ai-agents/README.md#daily-spend-cap)
-- **Spend-cap coordinator**: `openai-spend-cap-rechecks`, concurrency 1, no OpenAI RPM/TPM limiter; it drains at most 100 registered `ai_agents` jobs per pass
+- **Spend cap**: `ai-spend-cap` `DynamicConfig` bounds the daily dollar total across all agents (default $10/day), independent of the rate limits above; see [Daily spend cap](../workers/ai-agents/README.md#daily-spend-cap)
+- **Spend-cap coordinator**: `ai-spend-cap-rechecks`, concurrency 1, no OpenAI RPM/TPM limiter; it drains at most 100 registered `ai_agents` jobs per pass
 - **Lock duration**: 300,000 ms (5 min); stalled interval: 30,000 ms (default)
 - **Enqueue files**: `enqueues/*.mts` — one file per job category
 - **Coordinator enqueue**: [`enqueues/spend-cap-recheck.mts`](../../../../../backend/queues/ai-agents/enqueues/spend-cap-recheck.mts) — one simple-deduplicated job per queried UTC day

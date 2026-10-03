@@ -30,7 +30,7 @@ const REGISTRY_ORDER = [
   'web-risk-config',
   'moderation-ai-config',
   'moderation-ai-dispatch-config',
-  'openai-spend-cap',
+  'ai-spend-cap',
   'manual-tag-limits',
   'autotagger-paid-limits',
   'kagi-smallweb-config',

@@ -4,7 +4,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { createStoryClusteringClient, executeStoryClusteringRun } from '@agents/story-clustering'
 import { fetchStructuredDecisionProvider } from '@modules/structured-decisions/transport'
 import { CLASSIFIER_RUN_ATTEMPTS } from '@queues/ai-agents/config'
-import { openAiSpendCapConfig } from '@services/ai-usage'
+import { spendCapConfig } from '@services/ai-usage'
 import { claimClassifierRun } from '@services/classifier-runs'
 import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
 import { createStoryClusteringRunAdapter } from '@services/stories'
@@ -90,8 +90,8 @@ async function drain(attempt: () => Promise<string>, times: number): Promise<str
 describe('C9 story clustering through the shared lifecycle (real PG, mocked provider)', () => {
   let restoreSpendCap: (() => void) | undefined
   beforeAll(async () => {
-    await openAiSpendCapConfig.waitForInitialization()
-    restoreSpendCap = overrideDynamicConfigFieldsForTest(openAiSpendCapConfig, { enabled: false })
+    await spendCapConfig.waitForInitialization()
+    restoreSpendCap = overrideDynamicConfigFieldsForTest(spendCapConfig, { enabled: false })
   })
   beforeEach(() => {
     askedCriteria = []

@@ -1,12 +1,12 @@
 import type { Job } from 'glide-mq'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import { getDayBounds } from '@ts-shared/utils/dates'
-import type { registerOpenAiSpendCapRecheck } from './spend-cap-recheck.mts'
+import type { registerSpendCapRecheck } from './spend-cap-recheck.mts'
 
-export async function delayForOpenAiSpendCap(
+export async function delayForSpendCap(
   job: Job<AIAgentJobData>,
   day: string,
-  register: typeof registerOpenAiSpendCapRecheck,
+  register: typeof registerSpendCapRecheck,
   reportRegistrationFailure: (error: Error) => void,
 ): Promise<void> {
   let parkAtDayBoundary = true

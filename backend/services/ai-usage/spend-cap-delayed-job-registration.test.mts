@@ -1,16 +1,16 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { workerQueueCommandClient } from '@data-stores/valkey-glide-mq'
 import {
-  abortOpenAiSpendCapDelayedJobRegistration,
-  normalizeOpenAiSpendCapRegistration,
+  abortSpendCapDelayedJobRegistration,
+  normalizeSpendCapRegistration,
 } from './spend-cap-delayed-job-registration.mts'
 
-describe('OpenAI spend-cap delayed-job registration result handling', () => {
+describe('AI spend-cap delayed-job registration result handling', () => {
   it.each([undefined, [], [1, 'generation-a'], [1, 'generation-a', 0, 'extra']])(
     'rejects malformed registration result %j',
     result => {
-      expect(() => normalizeOpenAiSpendCapRegistration(result)).toThrow(
-        'Invalid OpenAI spend-cap registration result',
+      expect(() => normalizeSpendCapRegistration(result)).toThrow(
+        'Invalid AI spend-cap registration result',
       )
     },
   )
@@ -23,7 +23,7 @@ describe('OpenAI spend-cap delayed-job registration result handling', () => {
       .mockRejectedValue(abortError)
 
     await expect(
-      abortOpenAiSpendCapDelayedJobRegistration(
+      abortSpendCapDelayedJobRegistration(
         'registry-key',
         'job:job-a',
         'generation-a',
