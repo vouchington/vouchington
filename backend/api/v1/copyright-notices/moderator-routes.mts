@@ -599,7 +599,15 @@ async function parseCopyrightReviewRequest(ctx: Context, routeId: string) {
   )
   assertNotSuspended(currentUser)
   const intakeId = validateUUIDParam(ctx, 'id')
-  const body = (await ctx.request.json('1mb')) as Record<string, unknown>
+  const parsedBody: unknown = await ctx.request.json('1mb')
+  // A JSON `null`, array or scalar has no fields to read; refuse it before the first field read
+  // so it answers 422 instead of throwing a TypeError (500).
+  ctx.assert(
+    parsedBody !== null && typeof parsedBody === 'object' && !Array.isArray(parsedBody),
+    422,
+    'Invalid request body',
+  )
+  const body = parsedBody as Record<string, unknown>
   ctx.assert(boundedString(body.rationale, 10_000), 422, 'rationale is required')
   return { currentUser, intakeId, body }
 }

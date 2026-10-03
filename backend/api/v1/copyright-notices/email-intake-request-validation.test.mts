@@ -60,6 +60,24 @@ describe('copyright email intake request contracts', () => {
     })
   })
 
+  describe('non-object bodies', () => {
+    // A JSON `null` used to throw a TypeError (500) when the shared review reader read a field.
+    it.each(DECISION_ROUTES.flatMap(route => ['null', '[]'].map(raw => [route, raw])))(
+      'answers 422 on %s for the body %s and records no decision',
+      async (route, raw) => {
+        const intake = await createParsedCopyrightEmailIntake()
+        const staff = await createStaff()
+        const response = await staff
+          .post(`${INTAKES}/${intake.id}/${route}`)
+          .set('Content-Type', 'application/json')
+          .send(raw)
+          .expect(422)
+        expect(response.body.message).toBe(INVALID_BODY)
+        await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.toEqual([])
+      },
+    )
+  })
+
   describe('GET /copyright-email-intakes/:id and /:id/raw', () => {
     it.each(['', '/raw'])('rejects a malformed id on the read %s', async suffix => {
       const staff = await createStaff()

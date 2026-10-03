@@ -45,8 +45,8 @@ field parsers, before the first service or database call.
 
 - Approvals, rejections, correspondence, and correspondence-rejections: content type (`415`),
   authentication and staff role (`401`, `403`), rate limit, suspension, path UUID (`422`), body read,
-  `rationale` (`422`), the route's field parsers (`422`), contract (`422`), service. Approvals also
-  resolve every hosted image placement after the contract.
+  non-object body (`422`), `rationale` (`422`), the route's field parsers (`422`), contract (`422`),
+  service. Approvals also resolve every hosted image placement after the contract.
 - Intake detail and original download: authentication and staff role, rate limit, suspension, path
   UUID (`422`), contract (`422`), service.
 - Reply replay: authentication and staff role, rate limit, suspension, path UUID (`422`), contract
@@ -57,8 +57,9 @@ field parsers, before the first service or database call.
 The parsers that were inline in the decision handlers (`recommendation_id`, `manual_fallback_reason`,
 `reply_email`, and the correspondence target ids and submission) now run before the contract call,
 in their original order, so every rejection that existed keeps its status and field-named message.
-The shared `parseCopyrightReviewRequest` helper is unchanged; the form-intake, legal-hold, and other
-routes that call it are untouched.
+The shared `parseCopyrightReviewRequest` helper gains only the non-object body check, ahead of its
+first field read. The form-intake and legal-hold routes that also call it get that check and nothing
+else: they declare no contract and keep every other status and message.
 
 ## Statuses
 
@@ -66,6 +67,11 @@ The route-level field parsers run before the contract, so the contract only adds
 parsers never looked at. Every one of these changes is a malformed body that was previously accepted
 and ignored; none is a legal-workflow contract, and a valid request behaves exactly as before.
 
+- A JSON `null` body on any of the four decision routes now returns `422` (`Invalid request body`).
+  Previously the shared reader read `rationale` from it and answered `500`. An array or scalar body
+  was already `422`, and now carries `Invalid request body` instead of `rationale is required`. The
+  check runs before any field read and after authentication, so unauthorized callers still see a
+  bare `401` or `403`.
 - An unknown top-level key on any of the four decision bodies now returns `422`
   (`Invalid request body`). Previously it was silently dropped.
 - An unknown key inside an approval `targets[]` item now returns `422`.
