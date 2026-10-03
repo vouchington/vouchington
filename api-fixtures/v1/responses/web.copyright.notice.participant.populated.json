@@ -15,6 +15,7 @@
         "delivery_kind": "claimant_decision_notice",
         "id": "00000000-0000-7000-8000-0000000008f2",
         "sent_at": "2026-07-01T12:02:00.000Z",
+        "state": "sent",
         "text": "A person confirmed the image restriction. See the case page for redress routes."
       }
     ],

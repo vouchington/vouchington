@@ -80,7 +80,7 @@ generated contract before releasing a client that adopts the optional logout bin
 ## Copyright statement handoff
 
 The participant case contract now requires `statements`, with immutable email text, delivery kind,
-and nullable sent time. Web displays these notices; Swift and .NET must regenerate from the updated
+canonical delivery state, and nullable sent time. Failed and bounced delivery must be shown as terminal outcomes rather than pending. Web displays these notices; Swift and .NET must regenerate from the updated
 participant fixtures and render only the server-projected participant texts. Staff responses use an
 empty array and public member cases have no statement field. Native copyright UI remains deferred
 to #853 and #854; this producer change does not complete those client surfaces.

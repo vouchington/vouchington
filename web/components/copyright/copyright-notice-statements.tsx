@@ -15,9 +15,16 @@ export function CopyrightNoticeStatements({
           className='rounded border p-3'
         >
           <p className='text-sm text-muted-foreground'>
-            {statement.sent_at
-              ? `Sent ${new Date(statement.sent_at).toLocaleString()}`
-              : 'Delivery pending'}
+            {statement.state === 'failed'
+              ? 'Delivery failed'
+              : statement.state === 'bounced'
+                ? 'Delivery could not be completed'
+                : statement.sent_at
+                  ? `Sent ${new Date(statement.sent_at).toLocaleString()}`
+                  : 'Delivery pending'}
+            {statement.sent_at && (statement.state === 'failed' || statement.state === 'bounced')
+              ? ` · Sent ${new Date(statement.sent_at).toLocaleString()}`
+              : null}
           </p>
           <p className='whitespace-pre-wrap'>{statement.text}</p>
         </article>

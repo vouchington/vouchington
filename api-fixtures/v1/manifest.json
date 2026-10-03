@@ -13361,7 +13361,7 @@
     },
     "GET:/api/v1/copyright-notices/:id/participant": {
       "bodyKind": "content",
-      "hash": "53cd8dafc6a3ca32e69a873e778b4769c04b60aae909f34d4266124f66f10a5b",
+      "hash": "e78e757689b5123c3287a4c0e8f0b7a3c3945605edc2880347e4f20607b6a762",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -13393,6 +13393,34 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "state": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "bounced"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "claimed"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "failed"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "pending"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "sent"
                     }
                   ]
                 }
@@ -89851,7 +89879,7 @@
       ],
       "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000000804/participant",
       "responseSchema": {
-        "hash": "fea29dd486fa6c9ede59efca88a2784d3b6568c9b24be71067248d302ad0ff5c",
+        "hash": "9d8cc312d81b7afe6f43f43b2fce40da55f4e95d5045258486b94ad6d2e72bc9",
         "key": "web.copyright.notice.participant.populated"
       },
       "route": {

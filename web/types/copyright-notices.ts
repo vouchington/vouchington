@@ -1,3 +1,4 @@
+import type { CopyrightParticipantStatement } from './copyright-statements'
 import type { CopyrightStaffClaimant } from './copyright-claimant-misuse'
 import type { CopyrightStaydownMatch } from './copyright-staydown'
 
@@ -30,13 +31,12 @@ export type CopyrightNoticeDetail = CopyrightNoticeSummary & {
 }
 
 export type CopyrightParticipantNoticeDetail = CopyrightNoticeDetail & {
-  statements: Array<{ id: string; delivery_kind: string; sent_at: string | null; text: string }>
+  statements: CopyrightParticipantStatement[]
   viewer_role: 'claimant' | 'poster' | 'staff'
   respondable_target_ids: string[]
   submissions: Array<{ id: string; kind: string; received_at: string; source_kind: string }>
 }
 
-/** Deliberately excludes participant submissions before a public case page renders its controls. */
 export type CopyrightNoticeResponseEligibility = Pick<
   CopyrightParticipantNoticeDetail,
   'viewer_role' | 'respondable_target_ids'

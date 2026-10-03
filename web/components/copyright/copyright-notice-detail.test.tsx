@@ -137,6 +137,7 @@ describe('CopyrightNoticeDetailView', () => {
           {
             id: 'statement-123',
             delivery_kind: 'poster_review_notice',
+            state: 'pending',
             sent_at: null,
             text: 'Stored decision evidence.',
           },

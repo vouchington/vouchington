@@ -1,3 +1,4 @@
+import type { CopyrightDeliveryIntentRecord } from './delivery-types.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
@@ -7,6 +8,7 @@ import { liveCopyrightCiphertext } from './erased-ciphertext.mts'
 export type CopyrightParticipantStatement = {
   id: string
   delivery_kind: string
+  state: CopyrightDeliveryIntentRecord['state']
   sent_at: Date | null
   text: string
 }
@@ -21,11 +23,12 @@ export async function selectCopyrightParticipantStatements(
   const { rows } = await transaction<{
     id: string
     delivery_kind: string
+    state: CopyrightDeliveryIntentRecord['state']
     sent_at: Date | null
     correspondence_id: string
     body_ciphertext: string
   }>(sql`/* selectCopyrightParticipantStatements */
-    SELECT intent.id, intent.delivery_kind, intent.sent_at, correspondence.id AS correspondence_id, correspondence.body_ciphertext
+    SELECT intent.id, intent.delivery_kind, intent.state, intent.sent_at, correspondence.id AS correspondence_id, correspondence.body_ciphertext
     FROM copyright_notice_delivery_intents intent
     JOIN copyright_notice_correspondence_messages correspondence ON correspondence.id = intent.copyright_notice_correspondence_message_id
     WHERE intent.copyright_notice_id = ${noticeId} AND intent.channel = 'email'
@@ -43,6 +46,7 @@ export async function selectCopyrightParticipantStatements(
           {
             id: row.id,
             delivery_kind: row.delivery_kind,
+            state: row.state,
             sent_at: row.sent_at,
             text: decryptSecret(body, copyrightCorrespondencePurpose(row.correspondence_id)),
           },

@@ -1,3 +1,4 @@
+import { failTestCopyrightDeliveryIntent } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
 import { completeCopyrightMandatoryHumanReview } from './human-review.mts'
@@ -78,6 +79,17 @@ describe('statement recipient scope and lifecycle', () => {
         row => row.recipient_role === 'poster',
       ),
     ).toEqual(initial)
+  })
+  it('projects terminal failed delivery without changing immutable statement text', async () => {
+    const { notice, targets } = await createMultiOwnerStatementFixture()
+    const poster = targets[0].owner
+    const before = (await getCopyrightParticipantNoticeDetail(notice.id, poster))!.statements[0]!
+    expect(before.state).toBe('pending')
+    await failTestCopyrightDeliveryIntent(before.id)
+    expect((await getCopyrightParticipantNoticeDetail(notice.id, poster))!.statements[0]).toEqual({
+      ...before,
+      state: 'failed',
+    })
   })
   it('retains claimant email while suppressing new deleted-account in-app delivery', async () => {
     const claimant = await createTestUser()

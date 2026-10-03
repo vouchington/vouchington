@@ -3874,11 +3874,15 @@
             }
           ]
         },
+        "state": {
+          "enum": ["bounced", "claimed", "failed", "pending", "sent"],
+          "type": "string"
+        },
         "text": {
           "type": "string"
         }
       },
-      "required": ["delivery_kind", "id", "sent_at", "text"],
+      "required": ["delivery_kind", "id", "sent_at", "state", "text"],
       "type": "object"
     },
     "CopyrightPublicNotice": {

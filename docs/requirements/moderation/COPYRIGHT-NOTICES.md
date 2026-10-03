@@ -129,12 +129,12 @@ private evidence, and staff rationale. Only supported US copyright grounds are r
 Each affected poster receives one immutable email and in-app obligation per event. The notifier receives
 one decision pair per notice, using the retained receipt email address for email delivery; guest and
 email-only notifiers receive email only. Stable event keys reuse the original text on retry. The private
-participant response exposes only that participant's stored email statements and their `sent_at`
-(or null while unsent); staff receive an empty statement list and erased bodies are omitted. Public
+participant response exposes only that participant's stored email statements, canonical delivery state, and `sent_at`
+(or null while unsent). Failed and bounced outcomes remain visible even when a prior sent timestamp is retained; staff receive an empty statement list and erased bodies are omitted. Public
 member cases never expose these texts. Web renders them under “Notices sent to you”.
 
 A successful first parse of a new email queues an arrival receipt only while intake is enabled, with
-stored DMARC pass, no spam or virus failure, and no reply references. It sends to the parsed sender.
+stored DMARC pass, no spam or virus failure, no reply references, and no already-recorded staff decision. It sends to the parsed sender.
 Receipt and later rejection or information-request obligations coexist; staff reply status and replay
 exclude arrival receipts. Promotion keeps the arrival receipt and says that the message is now a case
 when a receipt already exists in a nonfailed, nonbounced state. Otherwise it uses the ordinary case
