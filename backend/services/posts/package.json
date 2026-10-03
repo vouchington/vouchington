@@ -38,6 +38,7 @@
     "@queues/rss-feed-discoverability": "workspace:^",
     "@queues/spam-detection": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",
+    "@services/comments": "workspace:^",
     "@services/communities": "workspace:^",
     "@services/contribution-gating": "workspace:^",
     "@services/crawlers": "workspace:^",
@@ -72,7 +73,6 @@
   },
   "devDependencies": {
     "@data-stores/valkey": "workspace:^",
-    "@services/comments": "workspace:^",
     "@services/entity-listener-reconciliation": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^",

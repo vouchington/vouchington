@@ -13,13 +13,14 @@ import { lockPostPublication, recordPostPublicationChange } from '@services/post
 import { retirePostImagePlacements } from './image-placements.mts'
 import { preparePostImageDeliveryMutation } from './media-delivery.mts'
 import { repairFailedImageDeliveryMutation } from '@services/media-delivery-safety'
+import { lockDelegatedPostThread, loadWritablePost } from './delegated-write-access.mts'
 import onError from '@modules/on-error'
 import { runSequentially } from '@modules/utils/run-sequentially'
 
 export const deletePost = async (
   deleter: PrivateUser,
   post: Post,
-  options?: { communityMemberRole?: CommunityMemberRole | null },
+  options?: { communityMemberRole?: CommunityMemberRole | null; delegated?: boolean },
 ) => {
   assert(currentUserCanDeletePost(deleter, post, options), 403, 'Forbidden')
   try {
@@ -27,7 +28,13 @@ export const deletePost = async (
     let rowCount: number | null = null
     await runSequentially([
       () => preparePostImageDeliveryMutation(query, { postId: post.id, imageIds: [] }),
-      () => lockPostPublication(query, post.id),
+      async () => {
+        if (options?.delegated) {
+          await lockDelegatedPostThread(query, post.id)
+          await loadWritablePost(deleter, post.id, true, { query })
+        }
+        await lockPostPublication(query, post.id)
+      },
       async () => {
         const result = await query(
           `/* deletePost */

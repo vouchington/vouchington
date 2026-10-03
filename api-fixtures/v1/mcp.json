@@ -341,25 +341,6 @@
                     }
                   ]
                 },
-                "images": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "caption": {
-                        "type": "string"
-                      },
-                      "image_id": {
-                        "type": "string"
-                      },
-                      "order_index": {
-                        "type": "number"
-                      }
-                    },
-                    "required": ["image_id", "order_index"],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
                 "is_anonymous": {
                   "type": "boolean"
                 },

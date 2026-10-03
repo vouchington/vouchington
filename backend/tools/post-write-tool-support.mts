@@ -1,9 +1,4 @@
 import contracts from '@voucha/api-fixtures/v1/request-contracts.json' with { type: 'json' }
-import createHttpError from 'http-errors'
-import { getCommentAncestorsByAny } from '@services/comments'
-import { getPostByAny, type Post } from '@services/posts'
-import { canViewPostsBatch } from '@services/posts/check-privacy-access'
-import type { PrivateUser } from '@services/users/types'
 import { inlineSchemaReferences } from './route-response-schema.mts'
 import { mcpPostSchema } from './mcp-post-output.mts'
 import { successSchema } from './output-schema-shapes.mts'
@@ -28,7 +23,8 @@ export function postWriteParameters(
   const fields = Object.fromEntries(
     Object.entries(properties).filter(
       ([name]) =>
-        !['hp_website', 'hp_phone', 'cf_turnstile_response', 'recaptcha_token'].includes(name),
+        !['hp_website', 'hp_phone', 'cf_turnstile_response', 'recaptcha_token'].includes(name) &&
+        !(operation.startsWith('PATCH:') && name === 'images'),
     ),
   )
   if (operation.startsWith('POST:'))
@@ -39,39 +35,4 @@ export function postWriteParameters(
   return { ...schema, type: 'object', properties: fields, additionalProperties: false }
 }
 
-/** Delegated access covers public threads and only the caller's own private records. */
-export async function loadWritablePost(
-  user: PrivateUser,
-  id: string,
-  requireOwnership = true,
-): Promise<Post> {
-  const post = await getPostByAny(id, { readOnly: false })
-  if (
-    !post ||
-    (requireOwnership && (post.post_type === 'story' || post.post_type === 'topic_recommendation'))
-  )
-    throw createHttpError(404, 'Post not found')
-  if (requireOwnership && post.created_by_id !== user.id) throw createHttpError(403, 'Forbidden')
-  const nodes =
-    post.post_type === 'comment'
-      ? await getCommentAncestorsByAny(post.id, { readOnly: false })
-      : [post]
-  if (nodes.at(-1)?.id !== post.id || nodes[0]?.id !== (post.root_id ?? post.id))
-    throw createHttpError(404, 'Post not found')
-  const live = nodes.filter(node => !node.deleted_at)
-  const chain = await Promise.all(live.map(node => getPostByAny(node.id, { readOnly: false })))
-  if (chain.some(node => !node) || !chain.some(node => node?.id === post.id))
-    throw createHttpError(404, 'Post not found')
-  const posts = chain.filter((node): node is Post => Boolean(node))
-  const [asOwner, asPublic] = await Promise.all([
-    canViewPostsBatch(user, posts, { readOnly: false }),
-    canViewPostsBatch(null, posts, { readOnly: false }),
-  ])
-  if (
-    !posts.every(
-      node => asOwner.get(node.id) && (asPublic.get(node.id) || node.created_by_id === user.id),
-    )
-  )
-    throw createHttpError(404, 'Post not found')
-  return post
-}
+export { loadWritablePost } from '@services/posts/delegated-write-access'

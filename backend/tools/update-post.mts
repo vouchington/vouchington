@@ -53,7 +53,7 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
         : null
     return {
       success: true,
-      post: await toMcpPost(await updatePost(user, post, changes, membershipPlan)),
+      post: await toMcpPost(await updatePost(user, post, changes, membershipPlan, undefined, true)),
     }
   },
 }

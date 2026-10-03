@@ -8035,6 +8035,9 @@ importers:
       '@services/bedrock-embeddings':
         specifier: workspace:^
         version: link:../bedrock-embeddings
+      '@services/comments':
+        specifier: workspace:^
+        version: link:../comments
       '@services/communities':
         specifier: workspace:^
         version: link:../communities
@@ -8132,9 +8135,6 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
-      '@services/comments':
-        specifier: workspace:^
-        version: link:../comments
       '@services/entity-listener-reconciliation':
         specifier: workspace:^
         version: link:../entity-listener-reconciliation

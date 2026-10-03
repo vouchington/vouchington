@@ -10,7 +10,7 @@ covers the new write scope; no separate frontend permission contract is needed.
 | Create discussion, review, data point, link, article or blog post | `create_post`                                        | `POST /api/v1/posts`                       | `preparePostWithCommunityReviews`                   |
 | Create a community post                                           | `create_post` with `community_id`                    | `POST /api/v1/communities/:idOrSlug/posts` | Same prepared post service and community guards     |
 | Reply to a post or comment                                        | `create_post` with `post_type: comment`, `parent_id` | `POST /api/v1/posts`                       | Same prepared post service and comment-scope guards |
-| Edit title, content, structured data, categories or media         | `update_post`                                        | `PATCH /api/v1/posts/:idOrSlug`            | `assertPostUpdatePreflight`, `updatePost`           |
+| Edit title, content, structured data or categories                | `update_post`                                        | `PATCH /api/v1/posts/:idOrSlug`            | `assertPostUpdatePreflight`, `updatePost`           |
 | Archive or unarchive                                              | `update_post` with `archive: true/false`             | Same PATCH route                           | Same update service                                 |
 | Delete own post or comment                                        | `delete_post`                                        | `DELETE /api/v1/posts/:idOrSlug`           | `deletePost`                                        |
 
@@ -19,6 +19,9 @@ remain ordinary comments. Topic recommendations use the [dedicated recommendatio
 Articles and blog posts keep the existing administrator restriction; official and automated accounts cannot
 create reviews or data points. These tools never grant administrator mutation authority over
 another member's content.
+
+Image attachment edits use the separate REST post-images endpoint and are not accepted by `update_post`.
+Community creation accepts a canonical UUID `community_id`; exact retries consult admission before mutable community access checks.
 
 Creation requires a UUID `idempotency_key`. The
 [delegated contribution admission policy](../../../requirements/platform/agent-access.md#delegated-contribution-admission)
@@ -30,7 +33,7 @@ changed bodies fail with `IDEMPOTENCY_KEY_REUSED`, active claims report
 `CONTRIBUTION_QUOTA_EXCEEDED`. Delegated credentials do not accept first-party challenge fields.
 
 Suspension and identity checks run before mutation. Existing services enforce each post type's
-input rules, trust restrictions, review requirements, edit window, slug and media authorization,
+input rules, trust restrictions, review requirements, edit window, slug authorization,
 community membership and enabled types, and locked-thread rules. MCP additionally requires
 exact ownership for edits and deletion. Reply and mutation targets must be publicly readable
 or the caller's own private content; comment ancestry and visibility are checked on the primary

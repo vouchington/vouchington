@@ -13,6 +13,9 @@ import {
   insertTestPostStory,
 } from '@voucha/test-helpers'
 import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
+import { withConcurrentPostPrivacyChangeForTest } from '@voucha/test-helpers/post-delegated-privacy-race'
+import { getCommunityMember } from '@services/communities/members/get'
+import { deleteCommunity } from '@services/communities/delete'
 import { getPostByAny } from '@services/posts'
 
 const SCOPES = ['posts:read', 'posts:write'] as const
@@ -60,7 +63,6 @@ describe('post MCP write guards — real services', () => {
       await callRejectedMcpTool(await caller(), 'create_post', input(fields), SCOPES),
     ).toContain(message)
   })
-
   it('allows replies to public story posts while rejecting their creation', async () => {
     const [user, author] = await Promise.all([caller(), caller()])
     const id = await insertTestPost({
@@ -95,7 +97,6 @@ describe('post MCP write guards — real services', () => {
       ).toContain('Post not found')
     },
   )
-
   it('fails closed on a malformed comment root instead of authorizing its public parent', async () => {
     const user = await caller()
     const makeRoot = () =>
@@ -126,7 +127,6 @@ describe('post MCP write guards — real services', () => {
       ),
     ).toContain('Post not found')
   })
-
   it('refuses a reply to another owner’s private comment chain', async () => {
     const [user, author] = await Promise.all([caller(), caller()])
     const root = await insertTestPost({
@@ -186,4 +186,115 @@ describe('post MCP write guards — real services', () => {
       ),
     ).toContain('cannot post')
   })
+  it('replays community creation after the community is deleted', async () => {
+    const user = await caller()
+    const community = await insertTestCommunity({ createdById: user.id })
+    await insertTestCommunityMember({ communityId: community.id, userId: user.id, role: 'owner' })
+    const args = input({ community_id: community.id })
+    const result = await callStructuredMcpTool(user, 'create_post', args, SCOPES)
+    await deleteCommunity(
+      user,
+      community.id,
+      await getCommunityMember(community.id, user.id, { readOnly: false }),
+    )
+    expect(await callStructuredMcpTool(user, 'create_post', args, SCOPES)).toEqual(result)
+  })
+
+  it('rejects unsupported image edits instead of reporting success', async () => {
+    expect(
+      await callRejectedMcpTool(
+        await caller(),
+        'update_post',
+        {
+          id: crypto.randomUUID(),
+          images: [],
+        },
+        SCOPES,
+      ),
+    ).toContain('Invalid tool arguments')
+  })
+
+  it.each(['update_post', 'delete_post'])('hides inaccessible foreign %s targets', async name => {
+    const [user, author] = await Promise.all([caller(), caller()])
+    const id = await insertTestPost({
+      title: 'Private',
+      slug: crypto.randomUUID(),
+      markdown: 'Private',
+      createdById: author.id,
+      privacy: 'private',
+      broadcast: 'users',
+      clearanceStatus: 'approved',
+    })
+    expect(await callRejectedMcpTool(user, name, { id }, SCOPES)).toContain('Post not found')
+  })
+
+  it('rejects recommendation roots and comments in their dedicated workflow', async () => {
+    const user = await caller()
+    const root = await insertTestPost({
+      postType: 'topic_recommendation',
+      title: 'Recommendation',
+      slug: crypto.randomUUID(),
+      markdown: 'Recommendation rationale',
+      createdById: user.id,
+      clearanceStatus: 'approved',
+    })
+    const comment = await insertTestPost({
+      postType: 'comment',
+      title: '',
+      slug: crypto.randomUUID(),
+      markdown: 'Workflow comment',
+      createdById: user.id,
+      rootId: root,
+      parentId: root,
+      clearanceStatus: 'approved',
+    })
+    for (const id of [root, comment]) {
+      expect(
+        await callRejectedMcpTool(
+          user,
+          'create_post',
+          input({ post_type: 'comment', parent_id: id }),
+          SCOPES,
+        ),
+      ).toContain('Post not found')
+      expect(
+        await callRejectedMcpTool(user, 'update_post', { id, markdown: 'Changed' }, SCOPES),
+      ).toContain('Post not found')
+      expect(await callRejectedMcpTool(user, 'delete_post', { id }, SCOPES)).toContain(
+        'Post not found',
+      )
+    }
+  })
+  it.each(['create_post', 'update_post', 'delete_post'])(
+    'rechecks %s thread access after waiting for a concurrent privacy transaction',
+    async name => {
+      const [user, author] = await Promise.all([caller(), caller()])
+      const root = await insertTestPost({
+        title: 'Public until revoked',
+        slug: crypto.randomUUID(),
+        markdown: 'Public',
+        createdById: author.id,
+        clearanceStatus: 'approved',
+      })
+      const comment = await insertTestPost({
+        postType: 'comment',
+        title: '',
+        slug: crypto.randomUUID(),
+        markdown: 'Own reply',
+        createdById: user.id,
+        rootId: root,
+        parentId: root,
+        clearanceStatus: 'approved',
+      })
+      const args =
+        name === 'create_post'
+          ? input({ post_type: 'comment', parent_id: comment })
+          : { id: comment, ...(name === 'update_post' ? { markdown: 'Changed' } : {}) }
+      expect(
+        await withConcurrentPostPrivacyChangeForTest(root, () =>
+          callRejectedMcpTool(user, name, args, SCOPES),
+        ),
+      ).toContain('Post not found')
+    },
+  )
 })

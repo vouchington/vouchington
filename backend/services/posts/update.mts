@@ -1,8 +1,7 @@
 import type { PrivateUser } from '@services/users/types'
 import type { Post, UpdatePostChanges } from './types.mts'
 import type { ContributionLimitMembershipPlan } from '@services/contribution-gating/limit-types'
-import { beginTransaction } from '@data-stores/psql'
-import type { TransactionQuery } from '@data-stores/psql/types'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { createPostSlug } from './slugs.mts'
 import { getPostByAny } from './get.mts'
 import createHttpError from 'http-errors'
@@ -30,6 +29,7 @@ import {
   prepareLockedHashtagIntentChanges,
   type PostHashtagIntent,
 } from './update/hashtag-intent.mts'
+import { loadWritablePost } from './delegated-write-access.mts'
 import { mapPostUpdateError } from './update/post-update-error.mts'
 
 export const updatePost = async (
@@ -38,9 +38,9 @@ export const updatePost = async (
   requestedChanges: UpdatePostChanges,
   membershipPlan: ContributionLimitMembershipPlan = null,
   hashtagIntent?: PostHashtagIntent,
+  delegated = false,
 ) => {
   await assertValidPostUpdate(creator, post, requestedChanges, membershipPlan, !!hashtagIntent)
-
   let changed = false
   let contentChanged = false
   let shouldEnqueuePostUpdated = false
@@ -49,7 +49,6 @@ export const updatePost = async (
   let syncHashtagCategories = false
   async function updatePostInTransaction() {
     await using query = await beginTransaction()
-
     async function updatePostRows(query: TransactionQuery) {
       const activeCategoryOwnerId = await lockPostUpdateMutationScopes(
         query,
@@ -57,11 +56,13 @@ export const updatePost = async (
         creator.id,
         requestedChanges,
         hashtagIntent,
+        delegated,
       )
       const options = { query }
       await query(sql`/* updatePost.lock */ SELECT id FROM posts WHERE id = ${post.id} FOR UPDATE`)
       const currentPost = await getPostByAny(post.id, options)
       if (!currentPost) throw createHttpError(404, 'Post not found')
+      if (delegated) await loadWritablePost(creator, post.id, true, options)
       if (hashtagIntent)
         effectiveChanges = await prepareLockedHashtagIntentChanges(
           creator,
@@ -168,8 +169,7 @@ export const updatePost = async (
         syncHashtagCategories,
       })
 
-      // Keep the clearance reset in this transaction, so edited content is never visible as approved
-      // before re-moderation runs.
+      // Reset clearance atomically so edited content requires moderation.
       if (contentChanged) {
         await resetPostClearance(post.id, creator.id, options)
       }

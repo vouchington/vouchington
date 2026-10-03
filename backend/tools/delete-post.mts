@@ -31,7 +31,7 @@ const tool: Tool<{ id: string }, { success: true }> = {
     currentUser =>
     async ({ id }) => {
       const user = await requireActiveToolUser(currentUser)
-      await deletePost(user, await loadWritablePost(user, id))
+      await deletePost(user, await loadWritablePost(user, id), { delegated: true })
       return { success: true }
     },
 }

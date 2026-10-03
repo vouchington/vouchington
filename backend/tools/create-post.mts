@@ -1,4 +1,5 @@
 import assert from 'http-assert'
+import { validateUUID } from '@modules/utils'
 import { isAdminUser } from '@services/users'
 import {
   loadCommunityForViewer,
@@ -74,27 +75,26 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
       throw createCodedError(403, 'An identity is required to create posts', IDENTITY_REQUIRED)
     const membershipPlan = await getAuthorizedPostContributionMembershipPlan(user)
     const { idempotency_key, ...body } = args
-    const community = body.community_id
-      ? (await loadCommunityForViewer(user, body.community_id)).community
-      : null
+    const communityId = body.community_id
+    if (communityId) validateUUID(communityId)
     const postType = body.post_type ?? 'discussion'
-    if (community) {
+    if (communityId) {
       assert(isCommunityRootPostType(postType), 422, 'Unsupported community post_type')
-      body.community_id = community.id
     }
     const admitted = await admitDelegatedContribution<AdmittedPost>({
       currentUser: user,
       membershipPlan,
       source: contributionPolicySourceForPostType(postType, isAdminUser(user)),
-      scope: community ? `community:${community.id}` : 'global',
+      scope: communityId ? `community:${communityId}` : 'global',
       postType,
       idempotencyKey: idempotency_key,
-      intent: community
-        ? { route: 'communities.posts.create', community_id: community.id, body }
+      intent: communityId
+        ? { route: 'communities.posts.create', community_id: communityId, body }
         : { route: 'posts.create', body },
       beforeCapacity: async () => {
-        if (community) {
-          const currentCommunity = await getCommunityOrThrow(community.id, { readOnly: false })
+        if (communityId) {
+          await loadCommunityForViewer(user, communityId)
+          const currentCommunity = await getCommunityOrThrow(communityId, { readOnly: false })
           assert(
             isCommunityRootPostType(postType) &&
               communityAllowsPostType(currentCommunity, postType),
@@ -115,9 +115,9 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
             getRequestContentProvenance(),
             body,
             membershipPlan,
-            { query },
+            { query, delegated: true },
           )
-          if (community) return prepared
+          if (communityId) return prepared
           return {
             response: prepared.response.post,
             finalize: async () => (await prepared.finalize()).post,
