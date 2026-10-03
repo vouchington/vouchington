@@ -52,7 +52,7 @@ describe('initialize database host handling', () => {
     )
 
     expect(output).toBe(
-      'psql:localhost:15432:--dbname=postgres -lqt\ncreate:localhost:15432:voucha-feature-db-create-host-port',
+      'psql:localhost:15432:--dbname=postgres --no-password\ncreate:localhost:15432:voucha-feature-db-create-host-port',
     )
   })
 
@@ -68,7 +68,7 @@ describe('initialize database host handling', () => {
     )
 
     expect(output).toContain(
-      'psql:localhost:15432:postgres://localhost:15432/voucha-feature-db-reset-host-port -Atqc',
+      'psql:localhost:15432:postgres://localhost:15432/voucha-feature-db-reset-host-port --no-password',
     )
     expect(output).toContain('drop:localhost:15432:voucha-feature-db-reset-host-port')
     expect(output).toContain('create:localhost:15432:voucha-feature-db-reset-host-port')
@@ -88,7 +88,7 @@ describe('initialize database host handling', () => {
     )
 
     expect(output).toBe(
-      'psql:dbhost:15432:--dbname=postgres -lqt\ncreate:dbhost:15432:voucha-default',
+      'psql:dbhost:15432:--dbname=postgres --no-password\ncreate:dbhost:15432:voucha-default',
     )
   })
 
@@ -109,7 +109,7 @@ ENV
     )
 
     expect(output).toBe(
-      'psql:localhost::--dbname=postgres -lqt\ncreate:localhost::voucha-feature-db-ignore-stale-url',
+      'psql:localhost::--dbname=postgres --no-password\ncreate:localhost::voucha-feature-db-ignore-stale-url',
     )
   })
 
@@ -121,10 +121,10 @@ ENV
     DB_NAME="voucha space"
     ensure_database_exists >/dev/null
     `,
-      stubPsql(recordPsqlTarget, "printf ' voucha space | owner\\n'"),
+      stubPsql(recordPsqlTarget, "printf 'voucha space\\n'"),
     )
 
-    expect(output).toBe('psql:localhost:15432:--dbname=postgres -lqt')
+    expect(output).toBe('psql:localhost:15432:--dbname=postgres --no-password')
   })
 
   it('skips stale schema reset for non-local database targets without opt-in', async () => {
@@ -153,7 +153,7 @@ ENV
     )
 
     expect(output).toBe(
-      'psql:localhost:15432:--dbname=postgres -lqt\ncreate:localhost:15432:voucha-custom-from-env',
+      'psql:localhost:15432:--dbname=postgres --no-password\ncreate:localhost:15432:voucha-custom-from-env',
     )
   })
 })

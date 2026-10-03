@@ -35,7 +35,8 @@ Operating-system and host provisioning is intentionally not a `dev/` entrypoint.
 - `./dev/reset-worktree [--force]` — Current disposable worktree with dependencies installed; fetches
   `origin/main` before teardown, then returns it to a fresh branch and runs monorepo initialization
   (`pnpm install` follows the reset). `--force` permits discarding uncommitted changes. A second reset
-  of the same worktree fails immediately; see
+  of the same worktree fails immediately. Reset runs without terminal input; configure Git
+  authentication and SSH host trust beforehand. See
   [git-worktree-locks.md](../git-worktree-locks.md).
 - `./dev/rebase-onto-main [--stack] [--upstack]` — Current worktree. Runs `git fetch origin main`,
   then `git rebase origin/main`, both with `git -C` anchored at the repository that contains
@@ -59,6 +60,16 @@ Voucha database, Valkey, and protected-main ownership rules remain in
 `./dev/db-clean` (also `pnpm run db:clean`) is the destructive database/Valkey implementation
 primitive used by higher-level workflows. Prefer `./dev/reset` for a complete developer reset;
 invoke `db-clean` directly only when a documented workflow specifically needs that lower-level step.
+
+PostgreSQL access must already work without interactive password prompts. Host provisioning
+creates the local development role and configures authentication; on Linux, repair it with
+[`linux/configure-postgres.sh`](https://github.com/vouchington/vouchington-machines/blob/main/linux/configure-postgres.sh)
+in vouchington-machines. Initialization and teardown database commands fail immediately when
+credentials are missing and default to a ten-second connection timeout (`PGCONNECT_TIMEOUT`
+can override it). Initialization stops when it cannot list databases, before attempting creation.
+Teardown accepts an absent database, but preserves tracking files and reports other drop failures
+so it can be retried safely after repairing access. Cancelling reset terminates its child processes
+before releasing the worktree lock.
 
 ### State-changing diagnostics and optional tooling
 

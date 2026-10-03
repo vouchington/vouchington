@@ -969,7 +969,7 @@ EOF
 database_has_migrations_table() {
     local database_url=$1
 
-    psql "$database_url" -Atqc "
+    PGCONNECT_TIMEOUT="${PGCONNECT_TIMEOUT:-10}" psql "$database_url" --no-password -Atqc "
         SELECT CASE
           WHEN to_regclass('migrations') IS NOT NULL THEN 't'
           ELSE 'f'
@@ -1009,8 +1009,8 @@ reset_database_if_schema_mismatch() {
 
         echo -e "${YELLOW}Detected stale $DEV_DB_TARGET_DB_NAME schema: $stale_schema_reason; resetting database before migrations${NC}"
 
-        dropdb "$DEV_DB_TARGET_DB_NAME"
-        createdb "$DEV_DB_TARGET_DB_NAME"
+        PGCONNECT_TIMEOUT="${PGCONNECT_TIMEOUT:-10}" dropdb "$DEV_DB_TARGET_DB_NAME" --no-password
+        PGCONNECT_TIMEOUT="${PGCONNECT_TIMEOUT:-10}" createdb "$DEV_DB_TARGET_DB_NAME" --no-password
         echo -e "${GREEN}✓ Reset database $DEV_DB_TARGET_DB_NAME${NC}"
     )
 }
@@ -1109,25 +1109,18 @@ ensure_database_exists() {
         exit 1
     fi
 
-    if ! psql --dbname=postgres -lqt 2>"$psql_err_file" | cut -d \| -f 1 | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | grep -Fqx -- "$DB_NAME"; then
-        if grep -q "No such file\|Connection refused\|could not connect" "$psql_err_file" 2>/dev/null; then
-            print_database_connection_error "$mode"
-            rm -f "$psql_err_file" "$createdb_err_file"
-            exit 1
-        fi
-        # The listing above didn't fail with a recognized connection error but also didn't
-        # include $DB_NAME, yet still wrote to stderr (e.g. a transient `psql -lqt` warning) —
-        # surface it so a run that falls through to createdb below explains why, instead of going
-        # quiet. This pipeline has no `pipefail`, so `$?` above reflects grep's exit status, not
-        # psql's; this note is the only signal of a non-fatal psql-side anomaly on this path.
-        if [ -s "$psql_err_file" ]; then
-            echo -e "${YELLOW}Note: 'psql -lqt' did not list $DB_NAME; its stderr was:${NC}" >&2
-            cat "$psql_err_file" >&2
-        fi
-        if ! createdb "$DB_NAME" 2>"$createdb_err_file"; then
+    local database_list
+    if ! database_list=$(PGCONNECT_TIMEOUT="${PGCONNECT_TIMEOUT:-10}" psql --dbname=postgres --no-password -Atqc "SELECT datname FROM pg_catalog.pg_database" 2>"$psql_err_file"); then
+        print_database_connection_error "$mode"
+        cat "$psql_err_file" >&2
+        rm -f "$psql_err_file" "$createdb_err_file"
+        exit 1
+    fi
+    if ! printf '%s\n' "$database_list" | grep -Fqx -- "$DB_NAME"; then
+        if ! PGCONNECT_TIMEOUT="${PGCONNECT_TIMEOUT:-10}" createdb "$DB_NAME" --no-password 2>"$createdb_err_file"; then
             if grep -q "already exists" "$createdb_err_file" 2>/dev/null; then
                 # ensure_database_exists's post-condition ("the database exists") is already
-                # satisfied. The psql -lqt listing above is only an optimization to skip this
+                # satisfied. The database catalog query above is only an optimization to skip this
                 # createdb round-trip; createdb itself is authoritative on whether the database
                 # exists, regardless of why the listing missed it. Treating this as fatal broke
                 # the intentionally idempotent double-invocation across `./dev/initialize backend`
@@ -1188,6 +1181,7 @@ print_database_connection_error() {
     else
         echo -e "${YELLOW}Confirm that the host PostgreSQL 18 service is running and the configured database target is reachable.${NC}"
     fi
+    echo "Database access must work without prompting. For Linux host authentication repair, run linux/configure-postgres.sh in vouchington-machines." >&2
     echo -e "${YELLOW}Inspect DATABASE_URL in .env, correct its host or port if needed, then retry: source .env && ./dev/initialize $mode${NC}"
 }
 

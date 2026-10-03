@@ -1,7 +1,8 @@
-import { spawn } from 'node:child_process'
+import { execFile, spawn } from 'node:child_process'
 import { once } from 'node:events'
-import { lstat, rm } from 'node:fs/promises'
+import { chmod, lstat, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import {
@@ -11,6 +12,8 @@ import {
   makeRepo,
   runResetWorktree,
 } from '../test-helpers/reset-worktree.mts'
+
+const execFileAsync = promisify(execFile)
 
 describe('reset-worktree concurrency (#10849)', () => {
   afterEach(cleanupResetWorktreeTestDirs)
@@ -44,6 +47,167 @@ describe('reset-worktree concurrency (#10849)', () => {
     const completed = await runResetWorktree({ binDir, cwd })
     expectResetSuccess(completed)
     expect((await lstat(lockPath)).isFile()).toBe(true)
+  })
+
+  it.each(['flock', 'lockf'])(
+    'cancels %s teardown descendants and allows a reset retry',
+    async lock => {
+      const cwd = await makeRepo()
+      const binDir = await makeFakeBin()
+      const childFile = join(cwd, 'database-child.pid')
+      const bashEnv = join(cwd, 'bash-env')
+      if (lock === 'lockf' && process.platform === 'linux') {
+        // Exercise macOS wrapper supervision using a Linux lock owner with
+        // the same lockf argv contract and inherited lock behavior.
+        await writeFile(
+          bashEnv,
+          `command() {
+  if [ "$1" = -v ] && [ "$2" = flock ]; then return 1; fi
+  builtin command "$@"
+}
+`,
+        )
+        await writeFile(
+          join(binDir, 'lockf'),
+          '#!/usr/bin/env bash\nexec /usr/bin/flock -n "$5" "${@:6}"\n',
+        )
+        await chmod(join(binDir, 'lockf'), 0o755)
+      }
+
+      await writeFile(
+        join(binDir, 'dropdb'),
+        `#!/usr/bin/env bash
+trap '' TERM
+/bin/sleep 60 &
+echo "$!" > "$DATABASE_CHILD_FILE"
+wait
+`,
+      )
+      const reset = spawn('bash', [join(cwd, 'dev', 'reset-worktree')], {
+        cwd,
+        env: {
+          ...process.env,
+          PATH: `${binDir}:/usr/bin:/bin`,
+          FAKE_COMMAND_LOG: join(cwd, 'commands.log'),
+          DATABASE_CHILD_FILE: childFile,
+          BASH_ENV: bashEnv,
+        },
+        stdio: 'ignore',
+      })
+      const exited = once(reset, 'exit')
+      try {
+        await expect.poll(async () => readFile(childFile, 'utf8').catch(() => '')).not.toBe('')
+        const pid = Number(await readFile(childFile, 'utf8'))
+        reset.kill('SIGTERM')
+        expect((await exited)[0]).toBe(143)
+        await expect
+          .poll(async () => {
+            try {
+              await execFileAsync('kill', ['-0', String(pid)])
+              return false
+            } catch {
+              return true
+            }
+          })
+          .toBe(true)
+        await writeFile(join(binDir, 'dropdb'), '#!/usr/bin/env bash\nexit 0\n')
+        expectResetSuccess(await runResetWorktree({ binDir, cwd }))
+      } finally {
+        reset.kill('SIGKILL')
+        const pid = Number(await readFile(childFile, 'utf8').catch(() => ''))
+        if (pid) await execFileAsync('kill', ['-KILL', String(pid)]).catch(() => undefined)
+      }
+    },
+  )
+
+  it('allows TERM cleanup before forcibly stopping remaining children', async () => {
+    const cwd = await makeRepo()
+    const binDir = await makeFakeBin()
+    const lockFile = join(cwd, 'git-index.lock')
+    await writeFile(
+      join(binDir, 'dropdb'),
+      `#!/usr/bin/env bash
+trap '/bin/sleep 0.1; rm -f "$GIT_INDEX_LOCK"; exit 0' TERM
+printf 'active git write' > "$GIT_INDEX_LOCK"
+/bin/sleep 60 &
+wait
+`,
+    )
+    const reset = spawn('bash', [join(cwd, 'dev', 'reset-worktree')], {
+      cwd,
+      env: {
+        ...process.env,
+        PATH: `${binDir}:/usr/bin:/bin`,
+        FAKE_COMMAND_LOG: join(cwd, 'commands.log'),
+        GIT_INDEX_LOCK: lockFile,
+      },
+      stdio: 'ignore',
+    })
+    const exited = once(reset, 'exit')
+    try {
+      await expect.poll(async () => readFile(lockFile, 'utf8').catch(() => '')).not.toBe('')
+      reset.kill('SIGTERM')
+      expect((await exited)[0]).toBe(143)
+      await expect(lstat(lockFile)).rejects.toMatchObject({ code: 'ENOENT' })
+    } finally {
+      reset.kill('SIGTERM')
+    }
+  })
+
+  it('fails terminal reads instead of suspending a background reset worker', async () => {
+    const cwd = await makeRepo({ withEnv: false })
+    const binDir = await makeFakeBin()
+    const gitPath = join(binDir, 'git')
+    const gitScript = await readFile(gitPath, 'utf8')
+    await writeFile(
+      gitPath,
+      gitScript.replace(
+        "    printf 'git fetch origin main",
+        `    read -r terminal_input </dev/tty || exit 1
+    printf 'git fetch origin main`,
+      ),
+    )
+    // A real controlling terminal reproduces SIGTTIN; pipes cannot.
+    const result = await execFileAsync(
+      'python3',
+      [
+        '-c',
+        `
+import os, pty, select, signal, sys, time
+pid, fd = pty.fork()
+if pid == 0:
+    os.execvp('bash', ['bash', sys.argv[1]])
+output = b''
+deadline = time.monotonic() + 5
+while time.monotonic() < deadline:
+    if select.select([fd], [], [], 0.05)[0]:
+        try:
+            output += os.read(fd, 65536)
+        except OSError:
+            pass
+    child, status = os.waitpid(pid, os.WNOHANG)
+    if child:
+        print(os.waitstatus_to_exitcode(status))
+        print(output.decode(errors='replace'))
+        sys.exit(0)
+os.kill(pid, signal.SIGTERM)
+os.waitpid(pid, 0)
+raise RuntimeError('reset worker suspended on terminal input')
+`,
+        join(cwd, 'dev', 'reset-worktree'),
+      ],
+      {
+        cwd,
+        env: {
+          ...process.env,
+          PATH: `${binDir}:${process.env.PATH}`,
+          FAKE_COMMAND_LOG: join(cwd, 'commands.log'),
+        },
+      },
+    )
+    expect(result.stdout.split('\n')[0]).toBe('1')
+    expect(result.stdout).toContain('Input/output error')
+    expect(await readFile(join(cwd, 'commands.log'), 'utf8')).not.toContain('checkout -B')
   })
 
   it('keeps the help path free of lock-file side effects', async () => {

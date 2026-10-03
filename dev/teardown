@@ -105,10 +105,11 @@ echo ""
 # Drop PostgreSQL database
 if [ -n "$DB_NAME" ]; then
     echo -e "${YELLOW}Dropping database $DB_NAME...${NC}"
-    if dropdb "$DB_NAME" 2>/dev/null; then
-        echo -e "${GREEN}✓ Database dropped${NC}"
+    if PGCONNECT_TIMEOUT="${PGCONNECT_TIMEOUT:-10}" dropdb "$DB_NAME" --no-password --if-exists; then
+        echo -e "${GREEN}✓ Database dropped (or already absent)${NC}"
     else
-        echo -e "${YELLOW}  Database may not exist or already dropped${NC}"
+        echo -e "${RED}Error: Could not drop database $DB_NAME; tracking files preserved for retry.${NC}" >&2
+        exit 1
     fi
     echo ""
 fi

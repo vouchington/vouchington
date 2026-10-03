@@ -6,7 +6,7 @@
 detect_recently_viewed_schema_drift() {
   local database_url=$1 stale_recently_viewed_schema
 
-  stale_recently_viewed_schema=$(psql "$database_url" -Atqc "
+  stale_recently_viewed_schema=$(PGCONNECT_TIMEOUT="${PGCONNECT_TIMEOUT:-10}" psql "$database_url" --no-password -Atqc "
       SELECT CASE
         WHEN EXISTS (
           SELECT 1
@@ -40,7 +40,7 @@ detect_recently_viewed_schema_drift() {
 detect_community_auto_tagger_schema_drift() {
   local database_url=$1 stale_community_auto_tagger_schema
 
-  stale_community_auto_tagger_schema=$(psql "$database_url" -Atqc "
+  stale_community_auto_tagger_schema=$(PGCONNECT_TIMEOUT="${PGCONNECT_TIMEOUT:-10}" psql "$database_url" --no-password -Atqc "
       SELECT CASE
         WHEN EXISTS (
           SELECT 1
@@ -61,7 +61,7 @@ detect_community_auto_tagger_schema_drift() {
 detect_posts_language_schema_drift() {
   local database_url=$1 stale_posts_language_schema
 
-  stale_posts_language_schema=$(psql "$database_url" -Atqc "
+  stale_posts_language_schema=$(PGCONNECT_TIMEOUT="${PGCONNECT_TIMEOUT:-10}" psql "$database_url" --no-password -Atqc "
       -- Keep in sync with dev/check-db-backed-test-setup/schema-probe.mts.
       SELECT CASE
         WHEN EXISTS (
