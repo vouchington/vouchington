@@ -2,7 +2,7 @@
 
 [Back to CI Reference](ci.md#coverage-gates)
 
-Patch coverage below threshold is a pull-request blocker. It is not checked in merge groups: a merge group's diff is the pull request's diff. [`.coverage-rules.yml`](../../.coverage-rules.yml)
+Patch coverage below threshold is a pull-request blocker. It is not checked in merge groups: each queued entry was already gated at its own pull request. [`.coverage-rules.yml`](../../.coverage-rules.yml)
 contains first-match-wins patch thresholds and exemptions. Each positive rule belongs to one area.
 The selected area uploads full LCOV from its owned suites, then its `coverage` job runs
 `coverage-check` only with that area's rules. A changed file under a positive-threshold rule with no
@@ -35,10 +35,10 @@ Moved files do not require tests solely because their path changed: `coverage-ch
 
 ## Area patch coverage
 
-Each area workflow (for example [`backend.yml`](../../.github/workflows/backend.yml)) has a `coverage` job that calls [`ci-area-coverage.yml`](../../.github/workflows/ci-area-coverage.yml) on pull requests only. Its result feeds the area's required gate, so low patch coverage blocks the pull request. In a merge group, on nightly and on manual dispatch the job is skipped and the gate passes it, because the merge-group diff equals the pull request's diff and a second check would only add a job per area and an ejection path. Suites still upload full LCOV and the informational `codecov` job still runs in merge groups, which keeps Codecov's `main` baseline current.
+Each area workflow (for example [`backend.yml`](../../.github/workflows/backend.yml)) has a `coverage` job that calls [`ci-area-coverage.yml`](../../.github/workflows/ci-area-coverage.yml) on pull requests only. Its result feeds the area's required gate, so low patch coverage blocks the pull request. In a merge group, on nightly and on manual dispatch the job is skipped and the gate passes it, because each entry's layer was already gated at its own pull request, and the combined queued range would charge an entry with the other entries' lines, adding a job per area and an ejection path for nothing. Suites still upload full LCOV and the informational `codecov` job still runs in merge groups, which keeps Codecov's `main` baseline current.
 
 - **Input:** the `lcov-full-*` artifacts its own suites published in the same run. Each suite retries its upload once and fails with `FULL_LCOV_EXHAUSTED` when neither attempt persists, so an empty download is a broken upload and fails the job.
-- **Diff:** `HEAD^1..HEAD`. A pull-request merge commit has the base as its first parent.
+- **Diff:** `HEAD^1..HEAD`, the layer's own change. The merge commit's first parent is the base tip, or on a native stack the lower layer's test merge, so lines from layers below are never patch lines. Never use `github.base_ref`: every layer of a stack reports the stack base there. See [diff scope](reference-ci-ci-job-conditions.md#change-detection-diff-scope).
 - **Rules:** every positive-threshold rule in `.coverage-rules.yml` names its owning `area`. [`ci/coverage-area-rules.mts`](../../ci/coverage-area-rules.mts) keeps the owning area's thresholds and zeroes every other positive rule in place. A file that several areas' suites exercise therefore blocks exactly once, in its owner's gate, and first-match order still lets a narrower rule owned by another area shadow a broader one.
 - **When it runs:** only on pull requests, after the area's static checks succeed and no coverage-producing suite failed or was cancelled. A failed suite already fails the gate, and its partial LCOV would only add a misleading coverage failure.
 

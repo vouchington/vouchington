@@ -134,8 +134,9 @@ describe('area coverage wiring', () => {
     },
   )
 
-  // A merge group's diff is the pull request's diff, so re-checking it in the queue would only add
-  // a job per area and an ejection path. Queue runs still upload every suite's LCOV to Codecov.
+  // Each queued entry was already gated at its pull request, and the combined queued range would
+  // charge it with other entries' lines, adding a job per area and an ejection path. Queue runs
+  // still upload every suite's LCOV to Codecov.
   it.each(areas)('$area runs the blocking patch coverage on pull requests only', ({ jobs }) => {
     const [, coverage] = jobCalling(jobs, areaCoverageWorkflow)
     const [, codecov] = jobCalling(jobs, codecovWorkflow)
