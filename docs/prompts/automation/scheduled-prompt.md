@@ -13,7 +13,10 @@ Audit the selected scope and make at most one evidence-backed, independently mer
 
 At the end, report exactly one outcome: `Outcome: draft PR`, `Outcome: verified no-op`, or
 `Outcome: incomplete`. A verified no-op is a successful completion when the full prompt-defined
-audit and required checks completed and no safe change qualified. Include the audited scope, setup
+audit and required checks completed, no safe change qualified, and the selected prompt permits
+no-op completion. If the selected prompt explicitly requires a real patch, report `Outcome: incomplete`
+when none qualifies, stating that the audit completed but its patch-only completion requirement was
+not met. Include the audited scope, setup
 and checks completed with their results, concrete candidates considered, and why each was excluded.
 An incomplete setup, skipped required check, or unexamined required scope is not a no-op; name the
 blocker and report `Outcome: incomplete`. Do not create a log-only PR for either outcome.
@@ -37,9 +40,10 @@ No source issue; scheduled prompt run.
 
 Put those two exact standalone lines consecutively in the visible `## Related issues` section, with no
 blank line or other content between them. In the PR body, do not wrap the pair in a code fence or
-collapsed details section. Before publication, validate the completed body with
-`node dev/pr-description.mts validate --body-file <path>`; the validator checks the pair's adjacency
-and placement and the exact scheduled workspace-setup line.
+collapsed details section. Before publication, confirm the exact scheduled workspace-setup line
+in every body and validate it with `node dev/pr-description.mts validate --body-file <path>`.
+For a no-source body, the validator checks the pair's adjacency and placement and the exact
+scheduled workspace-setup line.
 
 Never run pr-shepherd in this scheduled task.
 Apply both the `automation` and `automation:scheduled` labels to the draft PR, then re-fetch it and
