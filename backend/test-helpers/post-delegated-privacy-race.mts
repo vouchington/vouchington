@@ -69,3 +69,47 @@ export async function withConcurrentCommunityDeletionForTest<T>(
   }
   return await pending
 }
+
+/** Archive a community only after a delegated reply waits on its live row. */
+export async function withConcurrentCommunityArchiveForTest<T>(
+  communityId: string,
+  operation: () => Promise<T>,
+): Promise<T> {
+  await using query = await beginTransaction()
+  const processId = await getTestPostgresBackendProcessId(query)
+  await query(sql`/* withConcurrentCommunityArchiveForTest */
+    UPDATE communities SET archived_at = CURRENT_TIMESTAMP WHERE id = ${communityId}`)
+  const pending = operation()
+  try {
+    await waitForTestPostgresLockWaiter(processId, 'lockDelegatedPostCommunity')
+    await query.commit()
+  } catch (err) {
+    await query.rollback()
+    await pending.catch(() => undefined)
+    throw err
+  }
+  return await pending
+}
+
+/** Commit suspension after a delegated write reaches the canonical author lifecycle fence. */
+export async function withConcurrentActorSuspensionForTest<T>(
+  userId: string,
+  operation: () => Promise<T>,
+): Promise<T> {
+  await using query = await beginTransaction()
+  await query(sql`/* withConcurrentActorSuspensionForTest.fence */
+    SELECT pg_advisory_xact_lock(hashtextextended(${`author:${userId.toLowerCase()}`}, 0))`)
+  const processId = await getTestPostgresBackendProcessId(query)
+  await query(sql`/* withConcurrentActorSuspensionForTest */
+    INSERT INTO user_suspensions (user_id, suspended_by_id) VALUES (${userId}, ${userId})`)
+  const pending = operation()
+  try {
+    await waitForTestPostgresLockWaiter(processId, 'lockPostPublicationScope')
+    await query.commit()
+  } catch (err) {
+    await query.rollback()
+    await pending.catch(() => undefined)
+    throw err
+  }
+  return await pending
+}

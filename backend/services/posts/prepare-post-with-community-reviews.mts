@@ -18,7 +18,11 @@ import { persistPostSourceUrlRelation } from './create/source-url-relation.mts'
 import { lockActivePostAuthorImageAdmission } from './create/active-author.mts'
 import { preparePostImageDeliveryMutation } from './media-delivery.mts'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
-import { loadWritablePost, assertDelegatedCommunityPostAllowed } from './authorization.mts'
+import {
+  loadWritablePost,
+  assertDelegatedCommunityPostAllowed,
+  assertDelegatedPostActorActive,
+} from './authorization.mts'
 import { lockDelegatedPostThread, lockDelegatedPostCommunity } from './delegated-write-locks.mts'
 import { finalizePreparedPost } from './create/finalize.mts'
 export const preparePostWithCommunityReviews = async (
@@ -44,13 +48,16 @@ export const preparePostWithCommunityReviews = async (
       input.images?.map(image => image.image_id) ?? [],
     )
     const options = { query }
+    if (delegated) await assertDelegatedPostActorActive(creator.id, options)
     if (delegated && input.community_id) {
       await lockDelegatedPostCommunity(query, input.community_id)
       await assertDelegatedCommunityPostAllowed(input.community_id, defaults.postType, options)
     }
     if (delegated && input.parent_id) {
       await lockDelegatedPostThread(query, input.parent_id)
-      await loadWritablePost(creator, input.parent_id, false, options)
+      const parent = await loadWritablePost(creator, input.parent_id, false, options)
+      if (parent.community_id)
+        await assertDelegatedCommunityPostAllowed(parent.community_id, defaults.postType, options)
     }
     await preparePostImageDeliveryMutation(query, {
       imageIds: input.images?.map(image => image.image_id) ?? [],

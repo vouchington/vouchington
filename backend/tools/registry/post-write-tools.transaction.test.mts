@@ -11,8 +11,10 @@ import {
 } from '@voucha/test-helpers'
 import { callStructuredMcpTool, callRejectedMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import {
+  withConcurrentActorSuspensionForTest,
   withConcurrentCommunityReviewDisableForTest,
   withConcurrentCommunityDeletionForTest,
+  withConcurrentCommunityArchiveForTest,
 } from '@voucha/test-helpers/post-delegated-privacy-race'
 import { loadWritablePost } from '@services/posts/authorization'
 import { deletePost, getPostByAny } from '@services/posts'
@@ -192,6 +194,67 @@ describe('delegated post mutation contracts and transaction fences', () => {
           callRejectedMcpTool(user, name, args, SCOPES),
         ),
       ).toContain('Post not found')
+    },
+  )
+  it('refuses a reply after community archiving wins the row fence', async () => {
+    const user = await caller()
+    const community = await insertTestCommunity({ createdById: user.id })
+    await insertTestCommunityMember({ communityId: community.id, userId: user.id, role: 'owner' })
+    const parent = await insertTestPost({
+      title: 'Open community thread',
+      slug: crypto.randomUUID(),
+      markdown: 'Root',
+      createdById: user.id,
+      communityId: community.id,
+      clearanceStatus: 'approved',
+    })
+    await insertTestCommunityPostReview({
+      communityId: community.id,
+      postId: parent,
+      submittedById: user.id,
+    })
+    expect(
+      await withConcurrentCommunityArchiveForTest(community.id, () =>
+        callRejectedMcpTool(
+          user,
+          'create_post',
+          {
+            idempotency_key: crypto.randomUUID(),
+            post_type: 'comment',
+            parent_id: parent,
+            markdown: 'Reply',
+          },
+          SCOPES,
+        ),
+      ),
+    ).toContain('Community is archived')
+  })
+})
+
+describe('delegated actor suspension fences', () => {
+  it.each(['create_post', 'update_post', 'delete_post'] as const)(
+    '%s refuses suspension committed after preflight',
+    async tool => {
+      const user = await caller()
+      const id = await insertTestPost({
+        title: 'Owned root',
+        slug: crypto.randomUUID(),
+        markdown: 'Before',
+        createdById: user.id,
+        clearanceStatus: 'approved',
+      })
+      const args =
+        tool === 'create_post'
+          ? { idempotency_key: crypto.randomUUID(), title: 'Refused' }
+          : tool === 'update_post'
+            ? { id, title: 'Refused' }
+            : { id }
+      const result = await withConcurrentActorSuspensionForTest(user.id, () =>
+        callRejectedMcpTool(user, tool, args, SCOPES),
+      )
+      expect(result).toContain('Your account has been suspended')
+      const post = await getPostByAny(id, { readOnly: false })
+      expect(post?.title).toBe('Owned root')
     },
   )
 })

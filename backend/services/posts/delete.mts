@@ -3,13 +3,21 @@ import type { Post } from './types.mts'
 import type { CommunityMemberRole } from '@services/communities/types'
 import { beginTransaction } from '@data-stores/psql'
 import { enqueueOnPostDeleted } from '@queues/entity-listeners/enqueues'
-import { currentUserCanDeletePost, loadWritablePost } from './authorization.mts'
+import {
+  currentUserCanDeletePost,
+  loadWritablePost,
+  assertDelegatedPostActorActive,
+} from './authorization.mts'
 import assert from 'http-assert'
 import { createPostRevision } from '@services/post-revisions'
 import { dismissPendingReportsForDeletedEntity } from '@services/moderation-reports/resolve'
 import { dismissPendingDisputesForDeletedReview } from '@services/review-disputes/resolve'
 import { recordModeratorAction } from '@services/moderator-actions'
-import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
+import {
+  lockPostPublication,
+  recordPostPublicationChange,
+  lockAuthorPublicationLifecycle,
+} from '@services/post-publication'
 import { retirePostImagePlacements } from './image-placements.mts'
 import { preparePostImageDeliveryMutation } from './media-delivery.mts'
 import { repairFailedImageDeliveryMutation } from '@services/media-delivery-safety'
@@ -29,7 +37,12 @@ export const deletePost = async (
     let rowCount: number | null = null
     await runSequentially([
       async () => {
-        if (options?.delegated) await lockActiveUserSubjectsForMutation(query, [deleter.id])
+        if (options?.delegated)
+          await runSequentially([
+            () => lockActiveUserSubjectsForMutation(query, [deleter.id]),
+            () => lockAuthorPublicationLifecycle(query, deleter.id),
+            () => assertDelegatedPostActorActive(deleter.id, { query }),
+          ])
       },
       () => preparePostImageDeliveryMutation(query, { postId: post.id, imageIds: [] }),
       async () => {

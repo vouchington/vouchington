@@ -1,4 +1,6 @@
 import createHttpError from 'http-errors'
+import { getPrivateUserByAny } from '@services/users/get'
+import { assertNotSuspended } from '@services/users/suspension-guard'
 import { loadPostWriteThread } from './write-thread.mts'
 import { canViewPostsBatch } from './check-privacy-access.mts'
 import type { QueryOptions } from '@data-stores/psql'
@@ -135,6 +137,8 @@ export async function assertDelegatedCommunityPostAllowed(
   options: QueryOptions,
 ): Promise<void> {
   const community = await getCommunityOrThrow(communityId, options)
+  assert(!community.archived_at, 403, 'Community is archived')
+  if (postType === 'comment') return
   assert(
     isCommunityRootPostType(postType) && communityAllowsPostType(community, postType),
     403,
@@ -149,4 +153,14 @@ function canModerateCommunityPost(
 ): boolean {
   const role = options?.communityMemberRole
   return Boolean(currentUser && post.community_id && (role === 'owner' || role === 'moderator'))
+}
+
+/** Recheck the delegated actor while its author lifecycle fence is held. */
+export async function assertDelegatedPostActorActive(
+  userId: string,
+  options: QueryOptions,
+): Promise<void> {
+  const user = await getPrivateUserByAny(userId, options)
+  if (!user) throw createHttpError(401, 'User not found')
+  assertNotSuspended(user)
 }

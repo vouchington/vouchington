@@ -1,3 +1,6 @@
+import { lockAuthorPublicationLifecycle } from '@services/post-publication'
+import { runSequentially } from '@modules/utils/run-sequentially'
+import { assertDelegatedPostActorActive } from './authorization.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import { lockDelegatedPostThread } from './delegated-write-locks.mts'
 import sql from 'sql-template-strings'
@@ -64,7 +67,12 @@ export async function lockPostUpdateMutationScopes(
     editorId,
     postUpdateMayAffectCategories(changes, !!hashtagIntent),
   )
-  if (delegated) await lockDelegatedPostThread(query, postId)
+  if (delegated)
+    await runSequentially([
+      () => lockAuthorPublicationLifecycle(query, editorId),
+      () => assertDelegatedPostActorActive(editorId, { query }),
+      () => lockDelegatedPostThread(query, postId),
+    ])
   await lockPostUpdatePublicationScopes(query, postId, hashtagIntent)
   return ownerId
 }
