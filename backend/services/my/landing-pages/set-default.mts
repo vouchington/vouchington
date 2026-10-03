@@ -1,6 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { getLandingPageRowForUser } from './reads.mts'
+import { getLandingPageRowForUser, getLockedLandingPageRowForUser } from './reads.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 import type { LandingPage } from './types.mts'
 
@@ -22,11 +22,24 @@ async function updateLandingPageDefault(
   userId: string,
   pageId: string,
 ): Promise<LandingPage> {
-  await getLandingPageRowForUser(userId, pageId, { query })
+  await getLockedLandingPageRowForUser(userId, pageId, query)
+  await replaceLandingPageDefault(query, userId, pageId)
+  return getLandingPageRowForUser(userId, pageId, { query })
+}
+
+async function replaceLandingPageDefault(
+  query: Awaited<ReturnType<typeof beginTransaction>>,
+  userId: string,
+  pageId: string,
+): Promise<void> {
   await query(sql`/* setMyLandingPageDefault */
       UPDATE user_landing_pages
-      SET is_default = CASE WHEN id = ${pageId} THEN TRUE ELSE FALSE END
-      WHERE user_id = ${userId}
+      SET is_default = FALSE
+      WHERE user_id = ${userId} AND is_default
     `)
-  return getLandingPageRowForUser(userId, pageId, { query })
+  await query(sql`/* setMyLandingPageDefault */
+      UPDATE user_landing_pages
+      SET is_default = TRUE
+      WHERE id = ${pageId} AND user_id = ${userId}
+    `)
 }

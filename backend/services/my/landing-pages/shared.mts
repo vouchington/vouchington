@@ -58,6 +58,11 @@ export async function getUsernameForLandingPages(
   return username
 }
 
+/** Serialize page count and default changes using the same per-user transaction lock. */
+export async function lockUserLandingPages(query: TransactionQuery, userId: string): Promise<void> {
+  await query(sql`/* lockUserLandingPages */ SELECT pg_advisory_xact_lock(hashtext(${userId}))`)
+}
+
 export async function promoteOldestRemainingLandingPage(
   userId: string,
   query: TransactionQuery,

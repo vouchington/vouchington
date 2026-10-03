@@ -34,7 +34,7 @@ Landing pages let users build curated profile pages showcasing their content. Ea
 
 ## Architecture Notes
 
-- Landing page creation uses `pg_advisory_xact_lock` to prevent race conditions on the max page count check
+- Creation, default selection, and deletion share a per-user transaction advisory lock, serializing the page-count check and default changes. Default selection validates ownership, clears the previous default, then promotes the requested page in one transaction so the immediate unique index never sees two defaults.
 - Item replacement is fully transactional: all existing items are deleted and new items inserted in one transaction
 - Topic groups contain nested entries (reviews and/or referral links) that are stored as separate rows with a parent topic reference
 - Public pages resolve the user's display name and markdown bio alongside the page content
