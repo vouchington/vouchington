@@ -1,12 +1,11 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useEffectEvent } from 'react'
 import { ApiError } from '@/lib/api/error'
 import type { DataRequest } from '@/lib/api/client/users'
+import { createDownloadLinkRetry, needsDownloadLinkRetry } from './data-request-download-link-retry'
 import { loadDataRequest, type StreamPayload } from './data-request-utils'
 
-const DOWNLOAD_LINK_RETRY_DELAY_MS = 5000
-const DOWNLOAD_LINK_RETRY_LIMIT = 3
 const TERMINAL_STATUSES = new Set(['ready', 'failed', 'expired'])
 
 interface UseDataRequestStreamOptions {
@@ -14,10 +13,6 @@ interface UseDataRequestStreamOptions {
   request: DataRequest | null
   applyRequest: (data: DataRequest | null) => void
   setError: (error: string | null) => void
-}
-
-function needsDownloadLinkRetry(request: DataRequest | null): boolean {
-  return request?.status === 'ready' && !request.download_url
 }
 
 function shouldKeepStreamReconnecting(request: DataRequest | null): boolean {
@@ -30,41 +25,13 @@ export function useDataRequestStream({
   applyRequest,
   setError,
 }: UseDataRequestStreamOptions): void {
-  const esRef = useRef<EventSource | null>(null)
-  const downloadLinkRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const downloadLinkRetryCountRef = useRef(0)
-  const requestRef = useRef(request)
-  requestRef.current = request
-
-  function clearDownloadLinkRetry() {
-    if (downloadLinkRetryRef.current !== null) {
-      clearTimeout(downloadLinkRetryRef.current)
-      downloadLinkRetryRef.current = null
-    }
-    downloadLinkRetryCountRef.current = 0
-  }
-
-  function scheduleDownloadLinkRetry() {
-    if (downloadLinkRetryRef.current !== null) return
-    if (downloadLinkRetryCountRef.current >= DOWNLOAD_LINK_RETRY_LIMIT) {
-      setError('Your export is ready but the download link could not be fetched. Please refresh.')
-      return
-    }
-    downloadLinkRetryCountRef.current += 1
-    downloadLinkRetryRef.current = setTimeout(() => {
-      downloadLinkRetryRef.current = null
-      loadDataRequest(userId)
-        .then(updated => {
-          if (needsDownloadLinkRetry(updated)) {
-            scheduleDownloadLinkRetry()
-            return
-          }
-          clearDownloadLinkRetry()
-          applyRequest(updated)
-        })
-        .catch(() => scheduleDownloadLinkRetry())
-    }, DOWNLOAD_LINK_RETRY_DELAY_MS)
-  }
+  const currentRequest = useEffectEvent(() => request)
+  const matchesCurrentIdentity = useEffectEvent(
+    (streamUserId: string, streamRequestId: string) =>
+      userId === streamUserId && request?.id === streamRequestId,
+  )
+  const applyCurrentRequest = useEffectEvent(applyRequest)
+  const setCurrentError = useEffectEvent(setError)
 
   const requestId = request?.id
   const isStreamActive = Boolean(
@@ -72,19 +39,23 @@ export function useDataRequestStream({
   )
 
   useEffect(() => {
-    if (!isStreamActive) {
-      esRef.current?.close()
-      esRef.current = null
-      clearDownloadLinkRetry()
-      return
-    }
+    if (!isStreamActive) return
+
+    let active = true
+    const isCurrent = () => active && matchesCurrentIdentity(userId, requestId!)
+    const downloadLinkRetry = createDownloadLinkRetry({
+      isCurrent,
+      load: () => loadDataRequest(userId),
+      apply: updated => applyCurrentRequest(updated),
+      setError: message => setCurrentError(message),
+    })
 
     const es = new EventSource(
       `/api/v1/users/${userId}/data-request/stream?request_id=${encodeURIComponent(requestId!)}`,
     )
-    esRef.current = es
 
     function onStatus(event: MessageEvent) {
+      if (!isCurrent()) return
       let data: StreamPayload
       try {
         data = JSON.parse(event.data) as StreamPayload
@@ -94,9 +65,12 @@ export function useDataRequestStream({
 
       loadDataRequest(userId)
         .then(updated => {
+          if (!isCurrent()) return
           applyStreamUpdate(data, updated)
         })
-        .catch(() => applyStreamFallback(data))
+        .catch(() => {
+          if (isCurrent()) applyStreamFallback(data)
+        })
     }
 
     function applyStreamUpdate(data: StreamPayload, updated: DataRequest | null) {
@@ -105,10 +79,10 @@ export function useDataRequestStream({
         return
       }
       if (needsDownloadLinkRetry(updated)) {
-        scheduleDownloadLinkRetry()
+        downloadLinkRetry.schedule()
         return
       }
-      applyRequest(
+      applyCurrentRequest(
         updated && data.download_url && !updated.download_url
           ? { ...updated, download_url: data.download_url }
           : updated,
@@ -117,35 +91,35 @@ export function useDataRequestStream({
 
     function applyTerminalPayload(data: StreamPayload) {
       if (data.status === 'ready' && !data.download_url) {
-        scheduleDownloadLinkRetry()
+        downloadLinkRetry.schedule()
         return
       }
-      const currentRequest = requestRef.current
-      if (!currentRequest) return
-      applyRequest({
-        ...currentRequest,
+      const latestRequest = currentRequest()
+      if (!latestRequest) return
+      applyCurrentRequest({
+        ...latestRequest,
         status: data.status as DataRequest['status'],
-        download_url: data.download_url ?? currentRequest.download_url,
+        download_url: data.download_url ?? latestRequest.download_url,
       })
-      if (data.status === 'failed') setError('Your data export failed. Please try again.')
-      else setError(null)
+      if (data.status === 'failed') setCurrentError('Your data export failed. Please try again.')
+      else setCurrentError(null)
     }
 
     function applyStreamFallback(data: StreamPayload) {
-      const currentRequest = requestRef.current
-      if (!currentRequest) return
+      const latestRequest = currentRequest()
+      if (!latestRequest) return
       if (data.status === 'failed') {
-        applyRequest({ ...currentRequest, status: data.status as DataRequest['status'] })
-        setError('Your data export failed. Please try again.')
+        applyCurrentRequest({ ...latestRequest, status: data.status as DataRequest['status'] })
+        setCurrentError('Your data export failed. Please try again.')
       } else if (data.status === 'ready' && !data.download_url) {
-        scheduleDownloadLinkRetry()
+        downloadLinkRetry.schedule()
       } else {
-        applyRequest({
-          ...currentRequest,
+        applyCurrentRequest({
+          ...latestRequest,
           status: data.status as DataRequest['status'],
-          download_url: data.download_url ?? currentRequest.download_url,
+          download_url: data.download_url ?? latestRequest.download_url,
         })
-        setError(null)
+        setCurrentError(null)
       }
     }
 
@@ -154,22 +128,25 @@ export function useDataRequestStream({
     // recovered from durable state, not treated as user-facing failure. `EventSource`
     // reconnects natively as long as `close()` is not called, so a routine cycle stays warm.
     function onSseError() {
+      if (!isCurrent()) return
       loadDataRequest(userId)
         .then(updated => {
+          if (!isCurrent()) return
           // `!updated` (e.g. a 404 — the export was deleted mid-stream) falls through to the
           // same no-op as pending/processing: EventSource keeps reconnecting with no user-visible
           // feedback. Accepted trade-off, not an oversight — pre-dates this change.
           if (shouldKeepStreamReconnecting(updated)) return
           if (needsDownloadLinkRetry(updated)) {
-            scheduleDownloadLinkRetry()
+            downloadLinkRetry.schedule()
             return
           }
-          applyRequest(updated)
+          applyCurrentRequest(updated)
           es.close()
         })
         .catch(err => {
+          if (!isCurrent()) return
           if (!(err instanceof ApiError) || err.status >= 500 || err.status === 429) return
-          setError('Failed to track export status. Please refresh.')
+          setCurrentError('Failed to track export status. Please refresh.')
           es.close()
         })
     }
@@ -178,12 +155,11 @@ export function useDataRequestStream({
     es.addEventListener('error', onSseError as EventListener)
 
     return () => {
+      active = false
       es.removeEventListener('status', onStatus)
       es.removeEventListener('error', onSseError as EventListener)
       es.close()
-      clearDownloadLinkRetry()
-      esRef.current = null
+      downloadLinkRetry.clear()
     }
-    // oxlint-disable-next-line react-hooks/exhaustive-deps -- retry helpers use refs and the current userId from this effect
   }, [isStreamActive, requestId, userId])
 }

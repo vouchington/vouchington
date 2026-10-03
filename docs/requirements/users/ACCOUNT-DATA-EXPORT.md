@@ -11,7 +11,11 @@ satisfies GDPR "Right to Data Portability" and CCPA "Right to Know" requirements
   settings account-data section.
 - Only one active export request is allowed at a time for each requester.
 - Export is prepared as a background job and may take a few minutes.
-- User is notified in the UI when the export is ready (polls for status every 5 seconds).
+- The web UI receives export status through a server-sent event stream and fetches the latest request
+  after each event. If a ready export lacks a download link, it retries fetching the link every 5 seconds.
+- When the user switches accounts or requests or leaves the page, pending refreshes and retries
+  from the old stream cannot change the displayed request or error; an active stream still reconnects
+  after a temporary connection failure.
 - The download is a ZIP file containing CSV files for each data category:
   - `profile.csv` – username, display preferences, bio, privacy/processing settings, marketing consent, created date
   - `posts.csv` – all non-deleted posts created by the user
