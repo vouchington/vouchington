@@ -36,8 +36,8 @@ against the base ref; that range would charge an upper layer with every lower la
 
 - **Layer:** the merge commit's first parent is the base tip for a standalone pull request and the
   lower layer's test merge on a native stack, so `HEAD^1..HEAD` is the layer's own change. The API
-  file list is the same set, so docs-only and the path filters agree. A lower layer landing or a
-  stack rebase changes the first parent without changing the layer's files. Repeated validation of
+  file list has the same layer scope, so docs-only and the path filters agree. A lower layer landing
+  or a stack rebase changes the first parent without changing the layer's files. Repeated validation of
   a lower layer's area on an upper layer is not intended on pull requests.
 - **Combined queue range:** intentional. A merge group tests the queued entries together, as `main`
   will contain them, so one entry's code makes the group select that area even when a later entry
