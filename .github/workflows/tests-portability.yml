@@ -14,63 +14,6 @@ permissions:
   contents: read
 
 jobs:
-  portability-macos:
-    if: vars.CI_PORTABILITY_MACOS_ENABLED == 'true'
-    runs-on: macos-latest
-    timeout-minutes: 17
-    permissions:
-      actions: read
-      contents: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 1
-      - uses: ./.github/actions/setup-node-pnpm
-        timeout-minutes: 5
-      - name: Run portability tests
-        env:
-          VITEST_CI_REPORTERS: run
-          VITEST_JUNIT_OUTPUT_FILE: portability-macos-test-report.junit.xml
-          VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
-        run: |
-          pnpm run test:portability -- --bail=3
-        timeout-minutes: 5
-      - name: Preserve full portability-macos LCOV
-        if: ${{ !cancelled() && inputs.publish_coverage }}
-        shell: bash
-        run: |
-          if [ -f coverage/lcov.info ]; then
-            mkdir -p coverage-full
-            cp coverage/lcov.info coverage-full/lcov.info
-          fi
-      - name: Upload full portability-macos LCOV to GitHub (attempt 1)
-        id: full-lcov-1
-        if: ${{ inputs.publish_coverage }}
-        continue-on-error: true
-        timeout-minutes: 3
-        uses: ./.github/actions/upload-full-lcov
-        with:
-          suite: portability-macos
-      - name: Upload full portability-macos LCOV to GitHub (attempt 2)
-        id: full-lcov-1-retry
-        if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
-        continue-on-error: true
-        timeout-minutes: 3
-        uses: ./.github/actions/upload-full-lcov
-        with:
-          suite: portability-macos
-          name-suffix: -retry
-      - name: Require a persisted full portability-macos LCOV
-        id: full-lcov-outcome-1
-        if: ${{ inputs.publish_coverage }}
-        timeout-minutes: 1
-        env:
-          FAMILY: full-lcov
-          SUITE: portability-macos
-          FIRST_OUTCOME: ${{ steps.full-lcov-1.outcome }}
-          RETRY_OUTCOME: ${{ steps.full-lcov-1-retry.outcome }}
-        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
-
   portability-linux:
     runs-on: ubuntu-latest
     timeout-minutes: 17

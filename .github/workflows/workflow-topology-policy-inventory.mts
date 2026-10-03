@@ -78,7 +78,7 @@ export const jobInventory = {
   '.github/workflows/tests-lambdas.yml': jobs('lambdas-tests'),
   '.github/workflows/tests-playwright-credentialed.yml': jobs('playwright-credentialed-tests'),
   '.github/workflows/tests-playwright.yml': jobs('playwright-tests shards'),
-  '.github/workflows/tests-portability.yml': jobs('portability-linux portability-macos'),
+  '.github/workflows/tests-portability.yml': jobs('portability-linux'),
   '.github/workflows/tests-postgres-schema.yml': jobs('postgres-schema-tests'),
   '.github/workflows/tests-tooling.yml': jobs('i18n-route-bounds tooling'),
   '.github/workflows/tests-ts-shared.yml': jobs('ts-shared'),

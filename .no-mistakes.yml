@@ -2174,10 +2174,6 @@ rules:
         # pre-revert coverage-transport budget.
         - job: '.github/workflows/tests-portability.yml#portability-linux'
           maxMinutes: 17
-        # Fail-safe ceiling for setup/test/GitHub-artifact-upload steps, retained from the
-        # pre-revert coverage-transport budget.
-        - job: '.github/workflows/tests-portability.yml#portability-macos'
-          maxMinutes: 17
         # Step budgets sum ~23m; real max ~1.3m (n=24) via proxy data. See #8078.
         - job: '.github/workflows/tests-postgres-schema.yml#postgres-schema-tests'
           maxMinutes: 20

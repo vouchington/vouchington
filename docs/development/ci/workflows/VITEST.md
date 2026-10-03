@@ -41,8 +41,8 @@ Reporter policy:
 | `i18n-extract-codemod`             | `tests-tooling.yml`              | `tooling`                         | None                     |
 | `docker-deploy`                    | `tests-tooling.yml`              | `tooling`                         | None                     |
 | `i18n-route-bounds`                | `tests-tooling.yml`              | `i18n-route-bounds`               | None                     |
-| `lambdas-portability`              | `tests-portability.yml`          | Linux + macOS portability         | None                     |
-| `cloudflare-worker-portability`    | `tests-portability.yml`          | Linux + macOS portability         | None                     |
+| `lambdas-portability`              | `tests-portability.yml`          | Linux portability                 | None                     |
+| `cloudflare-worker-portability`    | `tests-portability.yml`          | Linux portability                 | None                     |
 | `backend/data-stores/analytics`    | `tests-backend-modules.yml`      | `backend-modules`                 | None                     |
 | `backend/services/analytics`       | `tests-backend-modules.yml`      | `backend-modules`                 | None                     |
 | `backend-modules`                  | `tests-backend-modules.yml`      | `backend-modules`                 | None                     |

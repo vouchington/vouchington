@@ -143,7 +143,6 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `tests-playwright.yml`                 | `playwright-tests`              | matrix | `ubuntu-24.04-arm`                    | 30            |
 | `tests-playwright.yml`                 | `shards`                        | job    | `ubuntu-24.04-arm`                    | 20            |
 | `tests-portability.yml`                | `portability-linux`             | job    | `ubuntu-latest`                       | 17            |
-| `tests-portability.yml`                | `portability-macos`             | job    | `macos-latest`                        | 17            |
 | `tests-postgres-schema.yml`            | `postgres-schema-tests`         | job    | `ubuntu-latest`                       | 20            |
 | `tests-tooling.yml`                    | `i18n-route-bounds`             | job    | `ubuntu-latest`                       | 10            |
 | `tests-tooling.yml`                    | `tooling`                       | job    | `ubuntu-latest`                       | 32            |
