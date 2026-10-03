@@ -215,7 +215,9 @@ echo -e "${YELLOW}Initializing monorepo tools...${NC}"
 echo ""
 
 # Clear tmux pane/window so the prior task label doesn't persist
-"$REPO_ROOT/dev/tmux-name" ""
+if ! "$REPO_ROOT/dev/tmux-name" ""; then
+    echo "Warning: tmux title cleanup was skipped because the pane binding could not be verified." >&2
+fi
 
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}✓ Worktree reset complete${NC}"

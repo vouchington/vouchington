@@ -34,11 +34,9 @@ function emitReminder(message: string): Promise<void> {
 }
 
 async function renderReminder(payload: HookPayload): Promise<string | null> {
-  const tmuxPane = process.env.TMUX_PANE ?? ''
-  if (tmuxPane === '') return null
   try {
     const { renderPostToolReminder } = await import('../tmux-reminder-post-tool.mts')
-    return renderPostToolReminder(payload, tmuxPane)
+    return renderPostToolReminder(payload)
   } catch {
     return null
   }

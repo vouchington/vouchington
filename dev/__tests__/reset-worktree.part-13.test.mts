@@ -31,4 +31,23 @@ printf 'tmux-name argc=%s arg0=<%s>\\n' "$#" "\${1-}" >> "$log"
     const tmuxNameLines = result.log.split('\n').filter(line => line.startsWith('tmux-name '))
     expect(tmuxNameLines).toEqual(['tmux-name argc=1 arg0=<>'])
   })
+
+  it(
+    'completes reset when title cleanup refuses an unverified pane',
+    { timeout: 30_000 },
+    async () => {
+      const cwd = await makeRepo({ withEnv: false })
+      const binDir = await makeFakeBin()
+      await writeFile(
+        join(cwd, 'dev', 'tmux-name'),
+        '#!/usr/bin/env bash\necho "tmux target: pane belongs to a different worktree" >&2\nexit 1\n',
+      )
+      await chmod(join(cwd, 'dev', 'tmux-name'), 0o755)
+
+      const result = await runResetWorktree({ binDir, cwd, env: { TMUX_PANE: undefined } })
+      expectResetSuccess(result)
+      expect(result.stderr).toContain('pane belongs to a different worktree')
+      expect(result.stderr).toContain('tmux title cleanup was skipped')
+    },
+  )
 })

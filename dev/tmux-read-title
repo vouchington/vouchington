@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+# shellcheck source=dev/lib/tmux-target.sh
+# shellcheck disable=SC1091
+source "$REPO_ROOT/dev/lib/tmux-target.sh"
+tmux_target_socket=''
+tmux_target_pane=''
+TMUX_TARGET_BIN="${VOUCHA_TMUX_BIN:-${TMUX_TARGET_BIN:-tmux}}"
+
+# A title read uses the same pane/worktree check as tmux-name.
+tmux_target_resolve "$REPO_ROOT" "${AGENT_TMUX_SOCKET:-}" "${AGENT_TMUX_PANE:-}" "${AGENT_TMUX_WORKTREE:-}"
+"$TMUX_TARGET_BIN" -S "$tmux_target_socket" display-message -p -t "$tmux_target_pane" '#{pane_title}'
