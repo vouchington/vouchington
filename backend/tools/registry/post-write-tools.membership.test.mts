@@ -7,7 +7,7 @@ import {
   insertTestCommunityPostReview,
   insertTestPost,
 } from '@voucha/test-helpers'
-import { callRejectedMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
+import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import {
   withConcurrentCommunityMembershipRemovalForTest,
   withConcurrentCommunityArchiveForTest,
@@ -86,7 +86,7 @@ describe('delegated private community membership fences', () => {
 
 describe('delegated archived community mutations', () => {
   it.each(['update_post', 'delete_post'] as const)(
-    '%s refuses community archival after preflight',
+    '%s preserves own-user REST mutation access after community archival',
     async tool => {
       const user = { ...(await createTestUser()), membership_plan: 'plus' as const }
       await createTestMembership({ user_id: user.id, plan: 'plus' })
@@ -107,15 +107,16 @@ describe('delegated archived community mutations', () => {
       })
       expect(
         await withConcurrentCommunityArchiveForTest(community.id, () =>
-          callRejectedMcpTool(
+          callStructuredMcpTool(
             user,
             tool,
-            { id, ...(tool === 'update_post' ? { title: 'Refused' } : {}) },
+            { id, ...(tool === 'update_post' ? { title: 'Updated' } : {}) },
             SCOPES,
           ),
         ),
-      ).toContain('Community is archived')
-      expect((await getPostByAny(id, { readOnly: false }))?.title).toBe('Owned root')
+      ).toMatchObject({ success: true })
+      const post = await getPostByAny(id, { readOnly: false })
+      expect(post?.title ?? null).toBe(tool === 'delete_post' ? null : 'Updated')
     },
   )
 })

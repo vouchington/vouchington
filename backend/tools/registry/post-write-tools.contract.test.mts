@@ -113,7 +113,8 @@ describe('post and comment MCP writes — real services', () => {
     const clientId = await oauthClientRowId(client.client_id)
     const result = await runWithCredentialRequestContext(
       { interface: 'mcp', credential: 'oauth', client: null, oauthClientId: clientId },
-      () => createTool.function(user)(input()),
+      () =>
+        createTool.function(user)(input(), { credentialOwnerId: user.id, grantedScopes: SCOPES }),
     )
     expect(await readTestContentProvenance('posts', result.post.id)).toEqual({
       createdVia: 'mcp',

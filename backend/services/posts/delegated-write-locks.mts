@@ -1,4 +1,3 @@
-import { assertDelegatedCommunityWritable } from './authorization.mts'
 import { lockCommunityUser } from '@services/communities/bans/lock'
 import createHttpError from 'http-errors'
 import { getCommentAncestorsByAny } from '@services/comments/ancestors'
@@ -30,7 +29,7 @@ export async function lockDelegatedPostThread(
       FROM unnest(${ids}::uuid[]) AS input(id) ORDER BY id`),
     () =>
       query(sql`/* lockDelegatedPostThread.rows */
-      SELECT id FROM posts WHERE id = ANY(${ids}::uuid[]) ORDER BY id FOR UPDATE`),
+      SELECT id FROM posts WHERE id = ANY(${ids}::uuid[]) ORDER BY id FOR NO KEY UPDATE`),
   ])
 }
 
@@ -47,11 +46,10 @@ export async function lockDelegatedPostCommunity(
       query(sql`/* lockDelegatedPostCommunity.membership */
     SELECT id FROM community_members
     WHERE community_id = ${communityId} AND user_id = ${actorId} AND removed_at IS NULL
-    FOR UPDATE`),
+    FOR NO KEY UPDATE`),
   ])
   const { rows } = await query<{ archived_at: Date | null }>(sql`/* lockDelegatedPostCommunity */
-    SELECT archived_at FROM communities WHERE id = ${communityId} AND deleted_at IS NULL FOR UPDATE`)
+    SELECT archived_at FROM communities WHERE id = ${communityId} AND deleted_at IS NULL FOR NO KEY UPDATE`)
   const community = rows[0]
   if (!community) throw createHttpError(404, 'Post not found')
-  assertDelegatedCommunityWritable(community)
 }

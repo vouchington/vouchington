@@ -24,6 +24,7 @@ import {
   getAuthorizedPostContributionMembershipPlan,
 } from '@services/posts/authorization'
 import type { Tool } from '@services/openai-agents/tool-types'
+import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { requireActiveToolUser } from './private-user.mts'
 import { toMcpPost, type McpPost } from './mcp-post-output.mts'
 import {
@@ -69,8 +70,9 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
     ],
     outputSchema: POST_WRITE_RESULT_SCHEMA,
   },
-  function: currentUser => async args => {
+  function: currentUser => async (args, invocationContext) => {
     const user = await requireActiveToolUser(currentUser)
+    const authority = getDelegatedToolAuthority(user, invocationContext)
     if (!currentUserCanCreatePost(user))
       throw createCodedError(403, 'An identity is required to create posts', IDENTITY_REQUIRED)
     const membershipPlan = await getAuthorizedPostContributionMembershipPlan(user)
@@ -82,6 +84,7 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
       assert(isCommunityRootPostType(postType), 422, 'Unsupported community post_type')
     }
     const admitted = await admitDelegatedContribution<AdmittedPost>({
+      authority,
       currentUser: user,
       membershipPlan,
       source: contributionPolicySourceForPostType(postType, isAdminUser(user)),

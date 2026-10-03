@@ -45,4 +45,4 @@ Delete returns `{ success: true }`. Metadata describes creation as idempotent th
 key, updates as non-idempotent, and deletion as destructive and idempotent; the registry and catalog
 checks validate these hints and output schemas.
 
-Delegated MCP writes reject archived communities under the retained community row fence, including edits and deletions. Archived content remains readable.
+Delegated creation and replies reject archived communities under the retained community row fence. Own-user edits and deletions preserve REST access in archived communities.

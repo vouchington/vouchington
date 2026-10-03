@@ -47,6 +47,9 @@ export const preparePostWithCommunityReviews = async (
       creator.id,
       input.images?.map(image => image.image_id) ?? [],
     )
+    await preparePostImageDeliveryMutation(query, {
+      imageIds: input.images?.map(image => image.image_id) ?? [],
+    })
     const options = { query }
     if (delegated) await assertDelegatedPostActorActive(creator.id, options)
     if (delegated && input.community_id && input.parent_id) {
@@ -64,9 +67,6 @@ export const preparePostWithCommunityReviews = async (
       if (parent.community_id)
         await assertDelegatedCommunityPostAllowed(parent.community_id, defaults.postType, options)
     }
-    await preparePostImageDeliveryMutation(query, {
-      imageIds: input.images?.map(image => image.image_id) ?? [],
-    })
     // Resolve url string → url_id for link posts inside the transaction so the url row
     // is visible to the INSERT. addUrl returns null for blocked/non-public hosts → 422.
     if (defaults.postType === 'link' && updates.url && !updates.url_id) {
