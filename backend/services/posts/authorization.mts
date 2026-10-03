@@ -1,6 +1,5 @@
 import createHttpError from 'http-errors'
-import { getCommentAncestorsByAny } from '@services/comments/ancestors'
-import { getPostByAny } from './get.mts'
+import { loadPostWriteThread } from './write-thread.mts'
 import { canViewPostsBatch } from './check-privacy-access.mts'
 import type { QueryOptions } from '@data-stores/psql'
 import { getCommunityOrThrow } from '@services/communities/get'
@@ -72,14 +71,9 @@ export function currentUserCanDeletePost(
   post: Post,
   options?: { communityMemberRole?: CommunityMemberRole | null },
 ): boolean {
-  if (!currentUser) return false
-  if (currentUser.roles.includes('administrator')) return true
-  if (post.created_by_id === currentUser.id) return true
-  // Community moderators/owners can delete community-scoped comments
-  if (post.community_id && post.post_type === 'comment' && options?.communityMemberRole) {
-    return options.communityMemberRole === 'owner' || options.communityMemberRole === 'moderator'
-  }
-  return false
+  if (currentUserCanUpdatePost(currentUser, post)) return true
+  // Community moderation adds deletion authority only for comments.
+  return post.post_type === 'comment' && canModerateCommunityPost(currentUser, post, options)
 }
 
 export function currentUserCanUnpublishFromCommunity(
@@ -87,10 +81,9 @@ export function currentUserCanUnpublishFromCommunity(
   post: Post,
   options?: { communityMemberRole?: CommunityMemberRole | null },
 ): boolean {
-  if (!currentUser) return false
-  if (!post.community_id || post.post_type === 'comment') return false
+  if (!currentUser || !post.community_id || post.post_type === 'comment') return false
   if (currentUser.roles.includes('administrator')) return true
-  return options?.communityMemberRole === 'owner' || options?.communityMemberRole === 'moderator'
+  return canModerateCommunityPost(currentUser, post, options)
 }
 
 export function currentUserCanLockPost(
@@ -98,13 +91,8 @@ export function currentUserCanLockPost(
   post: Post,
   options?: { communityMemberRole?: CommunityMemberRole | null },
 ): boolean {
-  if (!currentUser) return false
-  if (currentUser.roles.includes('administrator')) return true
-  if (post.created_by_id === currentUser.id) return true
-  if (post.community_id && options?.communityMemberRole) {
-    return options.communityMemberRole === 'owner' || options.communityMemberRole === 'moderator'
-  }
-  return false
+  if (currentUserCanUpdatePost(currentUser, post)) return true
+  return canModerateCommunityPost(currentUser, post, options)
 }
 
 export function currentUserCanCreatePost(currentUser: PrivateUser): boolean {
@@ -122,23 +110,11 @@ export async function loadWritablePost(
   requireOwnership = true,
   options: QueryOptions = { readOnly: false },
 ): Promise<Post> {
-  const post = await getPostByAny(id, options)
-  if (
-    !post ||
-    (requireOwnership && (post.post_type === 'story' || post.post_type === 'topic_recommendation'))
-  )
-    throw createHttpError(404, 'Post not found')
-  const nodes =
-    post.post_type === 'comment' ? await getCommentAncestorsByAny(post.id, options) : [post]
-  if (nodes.at(-1)?.id !== post.id || nodes[0]?.id !== (post.root_id ?? post.id))
+  const { post, nodes, posts } = await loadPostWriteThread(id, options)
+  if (requireOwnership && (post.post_type === 'story' || post.post_type === 'topic_recommendation'))
     throw createHttpError(404, 'Post not found')
   if (nodes.some(node => node.post_type === 'topic_recommendation'))
     throw createHttpError(404, 'Post not found')
-  const live = nodes.filter(node => !node.deleted_at)
-  const chain = await Promise.all(live.map(node => getPostByAny(node.id, options)))
-  if (chain.some(node => !node) || !chain.some(node => node?.id === post.id))
-    throw createHttpError(404, 'Post not found')
-  const posts = chain.filter((node): node is Post => Boolean(node))
   const [asOwner, asPublic] = await Promise.all([
     canViewPostsBatch(user, posts, options),
     canViewPostsBatch(null, posts, options),
@@ -164,4 +140,13 @@ export async function assertDelegatedCommunityPostAllowed(
     403,
     `${postType} posts are not enabled for this community`,
   )
+}
+
+function canModerateCommunityPost(
+  currentUser: PrivateUser | null,
+  post: Post,
+  options?: { communityMemberRole?: CommunityMemberRole | null },
+): boolean {
+  const role = options?.communityMemberRole
+  return Boolean(currentUser && post.community_id && (role === 'owner' || role === 'moderator'))
 }
