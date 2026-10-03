@@ -47,7 +47,6 @@ exports backend/modules/on-error/error-codes.mts AGENT_RESPONSE_MAX_CONCURRENT
 exports backend/modules/on-error/error-codes.mts AGENT_RESPONSE_QUOTA_EXCEEDED
 exports backend/modules/on-error/error-codes.mts AUTH_REQUIRED
 exports backend/modules/on-error/error-codes.mts BAD_GATEWAY
-exports backend/modules/on-error/error-codes.mts FORBIDDEN
 exports backend/modules/on-error/error-codes.mts INTERNAL_ERROR
 exports backend/modules/on-error/error-codes.mts INVALID_CONTENT_TYPE
 exports backend/modules/on-error/error-codes.mts MEMBERSHIP_REQUIRED
