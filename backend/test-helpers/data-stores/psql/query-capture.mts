@@ -41,3 +41,7 @@ export function captureQueryInsideOperation(): void {
 export function captureQueryOutsideOperation(): void {
   maybeCaptureQuery('/* outsideOperation */ SELECT 2')
 }
+
+export function captureQueryFromPriorCapture(): void {
+  maybeCaptureQuery('/* priorCapture */ SELECT 1')
+}
