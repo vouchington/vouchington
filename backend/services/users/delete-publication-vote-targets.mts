@@ -42,6 +42,7 @@ export async function getPublicationVoteTargetScopes(
   }
 
   // ast-grep-ignore: no-three-sequential-awaits -- one transaction client serializes the scope-specific whitelisted reads.
+  // oxlint-disable-next-line react-doctor/async-parallel -- TransactionQuery must serialize these reads on one transaction client.
   const postIds = await getPublicationVoteTargetScopeIds(query, postTargetsByTable, 'subject_id')
   const topicAliasIds = await getPublicationVoteTargetScopeIds(
     query,

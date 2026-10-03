@@ -50,34 +50,36 @@ export async function readTestPublicationBridgeTraversalBound(limit: number): Pr
 }
 
 export async function readTestPublicationConcreteSchema() {
-  const { rows: columns } = await read<{
-    table_name: string
-    column_name: string
-    is_nullable: string
-  }>(
-    `/* readTestPublicationConcreteColumns */ SELECT table_name, column_name, is_nullable FROM information_schema.columns
+  const [{ rows: columns }, { rows: constraints }, { rows: receiptIndexes }] = await Promise.all([
+    read<{
+      table_name: string
+      column_name: string
+      is_nullable: string
+    }>(
+      `/* readTestPublicationConcreteColumns */ SELECT table_name, column_name, is_nullable FROM information_schema.columns
      WHERE table_name IN ('post_publication_dirty_work_keys', 'post_publication_identity_snapshot_keys', 'post_publication_projection_receipts')`,
-  )
-  const { rows: constraints } = await read<{
-    owner: string
-    target: string
-    delete_action: string
-    columns: string[]
-  }>(
-    `/* readTestPublicationConcreteForeignKeys */ SELECT conrelid::regclass::text AS owner, confrelid::regclass::text AS target,
+    ),
+    read<{
+      owner: string
+      target: string
+      delete_action: string
+      columns: string[]
+    }>(
+      `/* readTestPublicationConcreteForeignKeys */ SELECT conrelid::regclass::text AS owner, confrelid::regclass::text AS target,
       confdeltype::text AS delete_action, ARRAY(SELECT attname::text FROM unnest(conkey) n(attnum)
       JOIN pg_attribute a ON a.attrelid=conrelid AND a.attnum=n.attnum) AS columns
      FROM pg_constraint WHERE contype='f' AND conrelid::regclass::text LIKE 'post_publication_%'`,
-  )
-  const { rows: receiptIndexes } = await read<{ table_name: string; indexed: boolean }>(
-    `/* readTestPublicationReceiptPrimaryIndexes */
+    ),
+    read<{ table_name: string; indexed: boolean }>(
+      `/* readTestPublicationReceiptPrimaryIndexes */
     SELECT tree.relid::regclass::text AS table_name, EXISTS (
       SELECT 1 FROM pg_index idx JOIN pg_attribute attribute ON attribute.attrelid=idx.indrelid
       AND attribute.attnum=idx.indkey[0]
       WHERE idx.indrelid=tree.relid AND idx.indisprimary AND idx.indisvalid AND idx.indisready
       AND attribute.attname='post_identity_id'
     ) AS indexed FROM pg_partition_tree('post_publication_projection_receipts'::regclass) tree`,
-  )
+    ),
+  ])
   return { columns, constraints, receiptIndexes }
 }
 
