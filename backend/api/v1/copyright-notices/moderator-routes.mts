@@ -2,6 +2,7 @@
 import app from '../../app.mts'
 import { Readable } from 'node:stream'
 import type { Context } from '@jongleberry/api-server'
+import { defineQueryContract, queryInteger } from '@modules/pagination'
 import { isUUID } from '@modules/utils'
 import { enqueueSendCopyrightNoticeEmail } from '@queues/emails/enqueues'
 import { enqueueDeliverCopyrightNotice } from '@queues/notifications/enqueues'
@@ -41,13 +42,23 @@ import {
   validateUUIDParam,
 } from '../../response-helpers.mts'
 import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
-import { apiOpenApiRawResponse, apiRequestContract } from '../../response-contract.mts'
+import {
+  apiNoRequestBody,
+  apiOpenApiRawResponse,
+  apiQuery,
+  apiRequestContract,
+} from '../../response-contract.mts'
 import type {
   CopyrightEmailApprovalRequest,
   CopyrightEmailCorrespondenceRejectionRequest,
   CopyrightEmailCorrespondenceRequest,
   CopyrightEmailRejectionRequest,
 } from './email-intake-request-types.mts'
+import type {
+  CopyrightFormIntakeReviewRequest,
+  CopyrightLegalHoldResolutionRequest,
+  CopyrightRestrictionReviewRequest,
+} from './staff-decision-request-types.mts'
 import type {
   CopyrightAppealReviewRequest,
   CopyrightCounterNoticeReviewRequest,
@@ -105,9 +116,22 @@ app.route('/api/v1/copyright-email-intakes/:id/raw').get(async (ctx: Context) =>
   )
 })
 
+// The limit stays lenient: a malformed or out-of-range value is ignored and the default applies, so
+// the contract validates the value the parser settled on rather than the raw query string.
+const similarityCandidateQueryContract = defineQueryContract({
+  limit: queryInteger(
+    { minimum: 1, maximum: 50 },
+    { description: 'Maximum candidates to return. A malformed or out-of-range value is ignored.' },
+  ),
+})
+
 app
   .route('/api/v1/copyright-notices/:id/targets/:targetId/image-similarity-candidates')
   .get(async (ctx: Context) => {
+    apiQuery(
+      'GET:/api/v1/copyright-notices/:id/targets/:targetId/image-similarity-candidates',
+      similarityCandidateQueryContract,
+    )
     setPrivateNoStoreCacheHeaders(ctx)
     const currentUser = await requireAuthAndRateLimit(
       ctx,
@@ -118,6 +142,11 @@ app
     const noticeId = validateUUIDParam(ctx, 'id')
     const targetId = validateUUIDParam(ctx, 'targetId')
     const limit = parseCopyrightSimilarityCandidateLimit(ctx.query.limit)
+    validateRequestContract(
+      ctx,
+      'GET:/api/v1/copyright-notices/:id/targets/:targetId/image-similarity-candidates',
+      { path: ctx.params, query: limit === undefined ? {} : { limit } },
+    )
     const result = await findCopyrightImageSimilarityCandidates({ noticeId, targetId, limit })
     ctx.assert(result.sourceImageId, 404, 'Copyright notice target not found')
     if (result.availability === 'unavailable') void enqueueMissingSourceImageEmbedding()
@@ -136,6 +165,7 @@ app
 app
   .route('/api/v1/copyright-notices/:id/delivery-intents/:intentId/replays')
   .post(async (ctx: Context) => {
+    apiNoRequestBody('POST:/api/v1/copyright-notices/:id/delivery-intents/:intentId/replays')
     setPrivateNoStoreCacheHeaders(ctx)
     const currentUser = await requireAuthAndRateLimit(
       ctx,
@@ -145,6 +175,11 @@ app
     assertNotSuspended(currentUser)
     const noticeId = validateUUIDParam(ctx, 'id')
     const intentId = validateUUIDParam(ctx, 'intentId')
+    validateRequestContract(
+      ctx,
+      'POST:/api/v1/copyright-notices/:id/delivery-intents/:intentId/replays',
+      { path: ctx.params },
+    )
     const replayed = await replayFailedCopyrightDeliveryIntent({
       intentId,
       noticeId,
@@ -157,6 +192,7 @@ app
 app
   .route('/api/v1/copyright-notices/:id/staydown-matches/:matchId/reviews')
   .post(async (ctx: Context) => {
+    apiNoRequestBody('POST:/api/v1/copyright-notices/:id/staydown-matches/:matchId/reviews')
     setPrivateNoStoreCacheHeaders(ctx)
     const currentUser = await requireAuthAndRateLimit(
       ctx,
@@ -164,9 +200,16 @@ app
       'POST:/api/v1/copyright-notices/:id/staydown-matches/:matchId/reviews',
     )
     assertNotSuspended(currentUser)
+    const noticeId = validateUUIDParam(ctx, 'id')
+    const matchId = validateUUIDParam(ctx, 'matchId')
+    validateRequestContract(
+      ctx,
+      'POST:/api/v1/copyright-notices/:id/staydown-matches/:matchId/reviews',
+      { path: ctx.params },
+    )
     const reviewed = await reviewCopyrightStaydownMatch({
-      noticeId: validateUUIDParam(ctx, 'id'),
-      matchId: validateUUIDParam(ctx, 'matchId'),
+      noticeId,
+      matchId,
       actorUserId: currentUser.id,
     })
     ctx.json({ reviewed })
@@ -185,12 +228,18 @@ app
     assertNotSuspended(currentUser)
     const noticeId = validateUUIDParam(ctx, 'id')
     const restrictionId = validateUUIDParam(ctx, 'restrictionId')
-    const body = (await ctx.request.json('1mb')) as Record<string, unknown>
+    const body = (await ctx.request.json('1mb')) as CopyrightRestrictionReviewRequest
+    assertObjectBody(ctx, body)
     ctx.assert(boundedString(body.rationale, 10_000), 422, 'rationale is required')
     ctx.assert(
       body.action === 'confirm' || body.action === 'reverse',
       422,
       'action must be confirm or reverse',
+    )
+    validateRequestContract(
+      ctx,
+      'POST:/api/v1/copyright-notices/:id/restrictions/:restrictionId/reviews',
+      { path: ctx.params, body },
     )
     const restriction = await completeCopyrightMandatoryHumanReview({
       currentUser,
@@ -206,6 +255,7 @@ app
 app
   .route('/api/v1/copyright-notices/:id/action-intents/:intentId/replays')
   .post(async (ctx: Context) => {
+    apiNoRequestBody('POST:/api/v1/copyright-notices/:id/action-intents/:intentId/replays')
     setPrivateNoStoreCacheHeaders(ctx)
     const currentUser = await requireAuthAndRateLimit(
       ctx,
@@ -215,6 +265,11 @@ app
     assertNotSuspended(currentUser)
     const noticeId = validateUUIDParam(ctx, 'id')
     const intentId = validateUUIDParam(ctx, 'intentId')
+    validateRequestContract(
+      ctx,
+      'POST:/api/v1/copyright-notices/:id/action-intents/:intentId/replays',
+      { path: ctx.params },
+    )
     const replayed = await replayFailedCopyrightActionIntent({
       intentId,
       noticeId,
@@ -282,11 +337,19 @@ app.route('/api/v1/copyright-email-intakes/:id/approvals').post(async (ctx: Cont
 })
 
 app.route('/api/v1/copyright-form-intakes/:id/reviews').post(async (ctx: Context) => {
+  apiRequestContract<
+    'POST:/api/v1/copyright-form-intakes/:id/reviews',
+    CopyrightFormIntakeReviewRequest
+  >('POST:/api/v1/copyright-form-intakes/:id/reviews')
   const { currentUser, intakeId, body } = await parseCopyrightReviewRequest(
     ctx,
     'POST:/api/v1/copyright-form-intakes/:id/reviews',
   )
   ctx.assert(typeof body.accepted === 'boolean', 422, 'accepted must be a boolean')
+  validateRequestContract(ctx, 'POST:/api/v1/copyright-form-intakes/:id/reviews', {
+    path: ctx.params,
+    body,
+  })
   const reviewed = await reviewCopyrightFormIntake({
     intakeId,
     currentUser,
@@ -497,6 +560,10 @@ app.route('/api/v1/copyright-submissions/:id/legal-hold-assessments').post(async
 })
 
 app.route('/api/v1/copyright-legal-hold-assessments/:id/resolutions').post(async (ctx: Context) => {
+  apiRequestContract<
+    'POST:/api/v1/copyright-legal-hold-assessments/:id/resolutions',
+    CopyrightLegalHoldResolutionRequest
+  >('POST:/api/v1/copyright-legal-hold-assessments/:id/resolutions')
   const {
     currentUser,
     intakeId: assessmentId,
@@ -512,6 +579,10 @@ app.route('/api/v1/copyright-legal-hold-assessments/:id/resolutions').post(async
     'resolution_kind',
   )
   ctx.assert(resolutionKind, 422, 'resolution_kind is required')
+  validateRequestContract(ctx, 'POST:/api/v1/copyright-legal-hold-assessments/:id/resolutions', {
+    path: ctx.params,
+    body,
+  })
   const resolution = await resolveCopyrightLegalHold({
     currentUser,
     assessmentId,
@@ -630,16 +701,20 @@ async function parseCopyrightReviewRequest(ctx: Context, routeId: string) {
   assertNotSuspended(currentUser)
   const intakeId = validateUUIDParam(ctx, 'id')
   const parsedBody: unknown = await ctx.request.json('1mb')
-  // A JSON `null`, array or scalar has no fields to read; refuse it before the first field read
-  // so it answers 422 instead of throwing a TypeError (500).
-  ctx.assert(
-    parsedBody !== null && typeof parsedBody === 'object' && !Array.isArray(parsedBody),
-    422,
-    'Invalid request body',
-  )
+  assertObjectBody(ctx, parsedBody)
   const body = parsedBody as Record<string, unknown>
   ctx.assert(boundedString(body.rationale, 10_000), 422, 'rationale is required')
   return { currentUser, intakeId, body }
+}
+
+// A JSON `null`, array or scalar has no fields to read; refuse it before the first field read so it
+// answers 422 instead of throwing a TypeError (500).
+function assertObjectBody(ctx: Context, body: unknown) {
+  ctx.assert(
+    body !== null && typeof body === 'object' && !Array.isArray(body),
+    422,
+    'Invalid request body',
+  )
 }
 
 async function enqueueMissingSourceImageEmbedding(): Promise<void> {

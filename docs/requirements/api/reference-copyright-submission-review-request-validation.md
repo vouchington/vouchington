@@ -31,8 +31,9 @@ verify the emitted carriers, and
 [`submission-review-request-validation.test.mts`](../../../backend/api/v1/copyright-notices/submission-review-request-validation.test.mts)
 verifies order, status, and no-write behavior against the real database.
 
-`POST /copyright-legal-hold-assessments/:id/resolutions` shares the body reader but is not part of
-this change; it stays in the remaining copyright route work.
+`POST /copyright-legal-hold-assessments/:id/resolutions` shares the body reader but is validated with
+the other remaining staff decision routes; see
+[staff decision request validation](reference-copyright-staff-decision-request-validation.md).
 
 ## Handler order
 

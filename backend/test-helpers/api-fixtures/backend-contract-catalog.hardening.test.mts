@@ -33,6 +33,7 @@ const expectedParameters = {
   'GET:/api/v1/copyright-email-intakes/review-queue': ['after', 'limit'],
   'GET:/api/v1/copyright-notices': ['after', 'limit'],
   'GET:/api/v1/copyright-notices/:id/guest-capabilities': ['after', 'limit'],
+  'GET:/api/v1/copyright-notices/:id/targets/:targetId/image-similarity-candidates': ['limit'],
   'GET:/api/v1/copyright-notices/review-queue': ['after', 'limit'],
   'GET:/api/v1/currencies': ['after', 'limit'],
   'GET:/api/v1/disputes': ['after', 'limit', 'mine', 'status'],

@@ -7,9 +7,10 @@ validate their path, query, and JSON body with `validateRequestContract` immedia
 service call. [Request validation](reference-request-validation.md) owns the ordering and the
 generated contract mechanics; the [Copyright Notices API](v1/copyright-notices/README.md) owns the
 legal flow. This page records the covered operations, the order each handler keeps, and which status
-each malformed input keeps or changes. Other copyright route families (notice, appeal, and
-counter-notice submission, guest capabilities, moderator review, email intake, EU, UK, and territorial
-policy) are owned by their own changes and are not covered here.
+each malformed input keeps or changes. Other copyright route families have their own pages, listed
+under [Coverage by route family](reference-request-validation.md#coverage-by-route-family); the form-intake,
+restriction, and legal-hold resolution reviews, image-similarity candidates, and replay routes are on
+the [staff decision page](reference-copyright-staff-decision-request-validation.md).
 
 An unauthenticated or unauthorized malformed call keeps its bare `401` or `403` with no schema
 diagnostic. A contract `422` names only the carrier (`Invalid request body` or `Invalid request query`).

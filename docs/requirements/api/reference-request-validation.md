@@ -58,3 +58,6 @@ behavior.
 - [Copyright submission review routes](reference-copyright-submission-review-request-validation.md)
   record their handler order, the unknown-key `422` changes, and the carrier-free media-delivery
   replay skip.
+- [Copyright staff decision routes](reference-copyright-staff-decision-request-validation.md) record
+  the form-intake, restriction, and legal-hold resolution bodies, the lenient image-similarity
+  `limit`, the body-free replay and staydown routes, and the one `500` to `422` change.
