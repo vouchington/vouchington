@@ -6,7 +6,6 @@ import {
   decryptExportedCopyrightJson,
   decryptExportedCopyrightText,
   erasedExportFields,
-  exportedCopyrightText,
 } from './stream-copyright-erased.mts'
 import {
   type AppealBody,
@@ -55,6 +54,7 @@ describe('copyright export rows that tolerate erased content', () => {
       notice_id: ids.notice_id,
       received_at: ids.received_at,
       jurisdiction: 'us_dmca',
+      erased_by_retention_at: null,
       claimant_display_name: 'Claimant Legal Name',
       claimant_contact_ciphertext: encryptSecret('1 Claimant Road', purpose),
       work_description: 'Original photograph',
@@ -78,8 +78,6 @@ describe('copyright export rows that tolerate erased content', () => {
       decryptExportedCopyrightJson<{ a: number }>(encryptSecret('{"a":1}', 'purpose'), 'purpose'),
     ).toEqual({ a: 1 })
     expect(decryptExportedCopyrightJson(ERASED, 'purpose')).toBeNull()
-    expect(exportedCopyrightText('Original photograph')).toBe('Original photograph')
-    expect(exportedCopyrightText(ERASED)).toBe(EXPORT_COPYRIGHT_ERASED_TEXT)
     expect(EXPORT_COPYRIGHT_ERASED_TEXT).toContain('retention policy')
     expect(erasedExportFields(['a', 'b'])).toEqual({
       a: EXPORT_COPYRIGHT_ERASED_TEXT,
@@ -110,9 +108,30 @@ describe('copyright export rows that tolerate erased content', () => {
     })
   })
 
+  it.each([
+    { erasedAt: null, expected: ERASED },
+    { erasedAt: ids.received_at, expected: EXPORT_COPYRIGHT_ERASED_TEXT },
+  ])(
+    'uses the retention marker for literal erased plaintext ($erasedAt)',
+    ({ erasedAt, expected }) => {
+      const exported = filedNoticeExportRow(
+        filedRow({
+          claimant_display_name: ERASED,
+          work_description: ERASED,
+          erased_by_retention_at: erasedAt,
+        }),
+      )
+      expect(exported).toMatchObject({
+        claimant_display_name: expected,
+        work_description: expected,
+      })
+    },
+  )
+
   it('exports an erased filed notice with the same columns and the erasure stated in each', () => {
     const erased = filedNoticeExportRow(
       filedRow({
+        erased_by_retention_at: ids.received_at,
         claimant_display_name: ERASED,
         claimant_contact_ciphertext: ERASED,
         work_description: ERASED,
