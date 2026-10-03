@@ -32,7 +32,8 @@ All of the above, plus:
 
 Provision host dependencies with
 [vouchington-machines](https://github.com/vouchington/vouchington-machines),
-then use Voucha's initializer for checkout-owned dependencies and services. See
+run `./configure-agents.sh` from that repository to write the agent sandbox, approval, and model
+config, then use Voucha's initializer for checkout-owned dependencies and services. See
 [system-dependencies.md](system-dependencies.md) for the ownership boundary and required host
 capabilities.
 

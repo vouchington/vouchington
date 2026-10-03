@@ -8,8 +8,9 @@ startup and browser validation, use the
 
 Provision the host with
 [vouchington-machines](https://github.com/vouchington/vouchington-machines),
-then see the [system dependency contract](system-dependencies.md) for the capabilities Voucha
-expects.
+then run `./configure-agents.sh` from that repository so Claude, Codex, Cursor, and Grok get the
+machine sandbox and approval config. See the [system dependency contract](system-dependencies.md)
+for the capabilities Voucha expects.
 
 ## Shared Secrets
 

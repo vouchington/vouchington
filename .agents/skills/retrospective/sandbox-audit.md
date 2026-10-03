@@ -61,13 +61,14 @@ not just that the prefix looks plausible. Repo scoping (above) filters by where 
 by whether the named command belongs to this repo; and even within this repo, a transcript can be
 stale (a script renamed or removed since the session ran).
 
-**Genuine bypass candidate, and you judge it read-only/safe:** add it to the escalation allowlist across **all three surfaces** that must stay consistent:
+**Settings files.** Host sandbox and approval policy (generic exclusions such as `git *` and `gh *`, read-only allows, network, credential deny list) lives in the machine's user settings, written by [vouchington-machines](https://github.com/vouchington/vouchington-machines/blob/main/docs/agent-config.md) `./configure-agents.sh`. This checkout's `.claude/settings.json` keeps only `dev/` script exclusions and narrow project allows. The tool reads one settings file, so pass `--settings-path ~/.claude/settings.json` to judge whether a generic command is covered, and run it again with the default project path to judge `dev/` commands. A command covered only by the file you did not pass shows as uncovered.
 
-- `sandbox.excludedCommands` in `.claude/settings.json`
-- `permissions.allow` in `.claude/settings.json` (the matching `Bash(...)` entry, `./dev/` and `node dev/` commands included; see [Claude review-skip for dev/ commands](../../../docs/development/agent-sandbox.md#claude-review-skip-for-dev-commands))
-- a matching `prefix_rule(pattern=[...], decision="allow")` in `.codex/rules/default.rules`
+**Genuine bypass candidate, and you judge it read-only/safe:** the owner depends on the command.
 
-`dev/agent-sandbox-config.test.mts` enforces this three-surface consistency and also asserts narrowness — it must keep failing on broad prefixes like `git` or `gh` alone. Any addition must be a specific command family (e.g. `git log`, not `git`), and the test must still pass after the change.
+- A checked-in `dev/` script that must leave the OS sandbox: add it across all three project surfaces. `sandbox.excludedCommands` and the narrow `permissions.allow` pair in `.claude/settings.json` (see [Claude review-skip for dev/ commands](../../../docs/development/agent-sandbox.md#claude-review-skip-for-dev-commands)), plus a matching `prefix_rule(pattern=[...], decision="allow")` in `.codex/rules/default.rules`.
+- A generic tool or command family (`git log`, `pnpm exec`, `docker`): propose the change in vouchington-machines, not here. This checkout must not add it.
+
+`dev/agent-sandbox-config.test.mts` enforces that boundary: every project exclusion and Codex allow names a `dev/` script, host keys stay out of project config, and the test must still pass after any change.
 
 **Genuine bypass candidate needing network access you're not sure is safe to blanket-allow:** don't add it to the allowlist just because it appeared once. Escalation is the correct behavior for a command that will always need a human or auto-mode judgment call (e.g. an unfamiliar `curl` target). Flag it in the retro for a human to decide instead of allowlisting it silently.
 
@@ -81,6 +82,6 @@ This is a prefix boundary, not a full-command boundary: for a short two-token co
 
 ### Related
 
-- [`dev/agent-sandbox-config.test.mts`](../../../dev/agent-sandbox-config.test.mts) is the consistency guard for the escalation allowlist across `.claude/settings.json` and `.codex/rules/default.rules`.
+- [`dev/agent-sandbox-config.test.mts`](../../../dev/agent-sandbox-config.test.mts) is the ownership guard: it keeps host runtime policy out of project config and requires each Codex outside-sandbox allow to be a `dev/` script covered by a Claude project exclusion.
 - [`dev/codex-hooks/policy.mts`](../../../dev/codex-hooks/policy.mts) is where a runtime block (rather than a static `permissions.deny` entry) gets implemented when a command needs to be caught by pattern rather than by exact prefix.
-- [Agent Sandbox](../../../docs/development/agent-sandbox.md) is the policy-rationale counterpart to this doc: why `git`/`gh`/`docker`/`pnpm` stay excluded (including the E2BIG argument this doc makes about read-only git), and why the credentialed-CI threat this data drives escalation-list decisions around is already contained for Claude.
+- [Agent Sandbox](../../../docs/development/agent-sandbox.md) is the policy-ownership counterpart to this doc: the split between this checkout and vouchington-machines, the project `dev/` exclusions, and the hook threat model. The rationale for why generic tools (`git`, `gh`, `docker`, `pnpm`) stay excluded is machine policy.

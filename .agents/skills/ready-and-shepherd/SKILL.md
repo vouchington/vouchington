@@ -134,14 +134,14 @@ returns and surrounding whitespace only for the trigger comparison, and reject t
 file if its entire normalized content is `/shepherd`. This comment does not invoke
 the shepherd; Step 6 posts the exact standalone trigger afterward.
 
-`gh *` is sandbox-excluded by default (see
+`gh *` is sandbox-excluded by the machine policy (see
 [agent-sandbox.md](../../../docs/development/agent-sandbox.md)), but this
 `gh pr comment` call has been observed to still fail with a
 `~/.config/gh` permission error. If that happens, retry the same call with the
 OS-sandbox bypass rather than treating it as a real failure: in Claude Code, use
 `dangerouslyDisableSandbox: true`; in Codex, rerun with `sandbox_permissions:
-"require_escalated"`. A matching Codex allow prefix also runs outside the sandbox; a compound
-command or an invocation without a matching allow may still need the explicit retry.
+"require_escalated"`. A compound command that the machine policy does not exclude may still need
+the explicit retry.
 
 ## Step 4 — Mark ready
 
@@ -281,8 +281,8 @@ Same caveat as the Step 3 steering comment: if the `gh pr view` state check or
 the `gh api` dispatch fails with a `~/.config/gh` permission error, retry the
 whole Step 6 block, or the state check plus dispatch, with the OS-sandbox
 bypass. In Claude Code, use `dangerouslyDisableSandbox: true`; in Codex, rerun
-with `sandbox_permissions: "require_escalated"`. A matching Codex allow prefix also runs outside
-the sandbox; the compound block or `gh api` invocation may lack a matching allow.
+with `sandbox_permissions: "require_escalated"`. The compound block may not match a machine-policy
+exclusion, so it can still need the explicit retry.
 
 ## Step 7 — Record the asynchronous handoff
 

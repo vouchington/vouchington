@@ -1,20 +1,6 @@
 {
   "permissions": {
     "allow": [
-      "Shell(pnpm)",
-      "Shell(git)",
-      "Shell(gh)",
-      "Shell(node)",
-      "Shell(cargo)",
-      "Shell(docker)",
-      "Shell(npx)",
-      "Shell(pr-shepherd)",
-      "Shell(no-mistakes)",
-      "Shell(rustfmt)",
-      "Shell(selene)",
-      "Shell(tmux)",
-      "Shell(mise)",
-      "Shell(jq)",
       "Mcp(agent-blackboard:entry_append)",
       "Mcp(agent-blackboard:entry_get)",
       "Mcp(agent-blackboard:session_archive)",
