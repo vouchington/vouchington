@@ -78,7 +78,7 @@ vi.mock(import('@/lib/route-configs'), () => ({
 
 import { EditPostPage } from '../edit-post-page'
 
-const user = { id: 'user-1', roles: [] as string[] }
+const user = { id: 'user-1', roles: [] as string[], account_type: null }
 
 function makeDataPointPost(overrides: Record<string, unknown> = {}) {
   return {
@@ -232,7 +232,11 @@ describe('EditPostPage — data_point topic hydration', () => {
   })
 
   it('blocks official accounts from editing consumer-trust posts', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: ['administrator'] })
+    mockGetCurrentUser.mockResolvedValue({
+      id: 'user-1',
+      roles: ['administrator'],
+      account_type: 'official',
+    })
     mockGetPost.mockResolvedValue(makeDataPointPost())
 
     const result = await EditPostPage({ id: 'post-1', postType: 'data_point', title: 'Edit' })
