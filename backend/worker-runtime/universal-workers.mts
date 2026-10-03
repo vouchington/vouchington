@@ -10,7 +10,7 @@ export const UNIVERSAL_WORKER_DEFINITIONS: WorkerDefinition[] = [
 ]
 
 // `requiresExplicitInclusion` on a WorkerDefinition entry is not evaluated here;
-// universal workers load unconditionally and bypass the QUEUES filter.
+// universal workers load unconditionally and bypass queue selection (WORKER_QUEUE_CLASS and QUEUES).
 export function loadUniversalWorkers(): Promise<Worker[]> {
   return Promise.all(UNIVERSAL_WORKER_DEFINITIONS.map(d => d.load()))
 }

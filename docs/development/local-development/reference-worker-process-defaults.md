@@ -2,7 +2,7 @@
 
 [Back to Dev Environment Reference](README.md#worker-process-defaults)
 
-`./dev/tmux` starts one `worker-cpu` process with every policy-managed queue from [`backend/modules/worker-queue-inventory/worker-queue-policy.json`](../../../backend/modules/worker-queue-inventory/worker-queue-policy.json). `crawl_browser` connects to the Lightpanda cloud SaaS (`LIGHTPANDA_CDP_URL`, no local binary or port); set `LIGHTPANDA_TOKEN` (e.g. via `~/voucha.env`) to exercise real crawls locally. Override with env caps:
+`./dev/tmux` starts one `worker-cpu` process with `WORKER_QUEUE_CLASS=all`, which the worker expands to every policy-managed queue from [`backend/modules/worker-queue-inventory/worker-queue-policy.json`](../../../backend/modules/worker-queue-inventory/worker-queue-policy.json). `crawl_browser` connects to the Lightpanda cloud SaaS (`LIGHTPANDA_CDP_URL`, no local binary or port); set `LIGHTPANDA_TOKEN` (e.g. via `~/voucha.env`) to exercise real crawls locally. Override with env caps:
 
 - `NODE_OPTIONS=--max-old-space-size=3072` — V8 old-generation heap cap (3 GB).
 - `UV_THREADPOOL_SIZE=8` — libuv worker pool for Rust N-API `AsyncTask` work and Node I/O.

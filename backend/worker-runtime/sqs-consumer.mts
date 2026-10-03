@@ -35,14 +35,16 @@ export type SqsConsumerDefinition = {
   requiresExplicitInclusion?: boolean
 }
 
+// `queues` is the process's resolved queue selection (`resolveQueueSelection` in
+// worker-queue-class.mts), passed explicitly so the environment is read in exactly one place.
 export function selectedSqsConsumerDefinitions(
   definitions: SqsConsumerDefinition[],
-  queues = process.env.QUEUES,
+  queues: string | undefined,
   onUnknownIncludes: (unknownQueueNames: readonly string[]) => void = recordWorkerQueueTopologySkew,
-  // Queue names selected via the same QUEUES env var but consumed by a sibling runtime in this
+  // Queue names selected via the same queue selection but consumed by a sibling runtime in this
   // process (e.g. glide-mq workers in worker-runtime.mts), not by any SqsConsumerDefinition here.
-  // Mirrors worker-runtime.mts's identically-named parameter for the same reason: a queueClass:
-  // A worker runtime can put every policy-known queue name into one QUEUES include list.
+  // Mirrors worker-runtime.mts's identically-named parameter for the same reason: a queue class
+  // puts every policy-known queue name into one include list shared by both runtimes.
   queueNamesOwnedByOtherRuntimes: readonly string[] = [],
 ): SqsConsumerDefinition[] {
   const knownQueueNames = [...definitions.map(d => d.queueName), ...queueNamesOwnedByOtherRuntimes]
@@ -58,7 +60,7 @@ export function selectedSqsConsumerDefinitions(
 
 export function loadSqsConsumers(
   definitions: SqsConsumerDefinition[],
-  queues = process.env.QUEUES,
+  queues: string | undefined,
   onUnknownIncludes: (unknownQueueNames: readonly string[]) => void = recordWorkerQueueTopologySkew,
   queueNamesOwnedByOtherRuntimes: readonly string[] = [],
 ): Promise<SqsConsumer[]> {

@@ -1,6 +1,11 @@
 import type { Worker } from 'glide-mq'
 import onError from '@modules/on-error'
 import {
+  resolveQueueSelection,
+  type QueueSelectionEnv,
+  type WorkerQueueClass,
+} from '@modules/worker-queue-inventory/worker-queue-class'
+import {
   upsertSchedules,
   type ScheduleDefinition,
   type WorkerDefinition,
@@ -17,6 +22,8 @@ export type WorkerRuntimeHooks = {
 }
 
 export type WorkerRuntimeConfig = {
+  // The WORKER_QUEUE_CLASS values this entrypoint accepts; any other class fails at startup.
+  queueClasses: readonly WorkerQueueClass[]
   workerDefinitions: WorkerDefinition[]
   sqsConsumerDefinitions: SqsConsumerDefinition[]
   scheduleDefinitions: ScheduleDefinition[]
@@ -38,6 +45,7 @@ export type WorkerRuntimeDependencies = {
   upsertSchedules: typeof upsertSchedules
   setup: typeof setup
   onError: typeof onError
+  env: QueueSelectionEnv
 }
 
 const defaultDependencies = {
@@ -49,6 +57,7 @@ const defaultDependencies = {
   upsertSchedules,
   setup,
   onError,
+  env: process.env,
 } satisfies WorkerRuntimeDependencies
 
 function toError(reason: unknown): Error {
@@ -69,16 +78,19 @@ export async function initializeWorkerRuntime(
   dependencies: WorkerRuntimeDependencies = defaultDependencies,
 ): Promise<WorkerRuntime> {
   try {
+    // Resolved once so both runtimes select from the same list: a class expands to an explicit
+    // include list, which also reaches explicit-inclusion definitions that unset QUEUES skips.
+    const queues = resolveQueueSelection(dependencies.env, config.queueClasses)
     const sqsQueueNames = config.sqsConsumerDefinitions.map(definition => definition.queueName)
     const workerQueueNames = config.workerDefinitions.map(definition => definition.queueName)
     const [workers, sqsConsumers] = await Promise.all([
       Promise.all([
-        dependencies.loadWorkers(config.workerDefinitions, undefined, undefined, sqsQueueNames),
+        dependencies.loadWorkers(config.workerDefinitions, queues, undefined, sqsQueueNames),
         dependencies.loadUniversalWorkers(),
       ]).then(([runtimeWorkers, universalWorkers]) => [...runtimeWorkers, ...universalWorkers]),
       dependencies.loadSqsConsumers(
         config.sqsConsumerDefinitions,
-        undefined,
+        queues,
         undefined,
         workerQueueNames,
       ),

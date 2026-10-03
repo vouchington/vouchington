@@ -61,9 +61,7 @@ describe('dev/tmux --no-attach', () => {
 
   it.each([
     { step: 'localization catalog', emptyOutputFrom: 'local-catalog.mts', reuse: false },
-    { step: 'worker queue', emptyOutputFrom: 'dev-all-queues', reuse: false },
     { step: 'localization catalog', emptyOutputFrom: 'local-catalog.mts', reuse: true },
-    { step: 'worker queue', emptyOutputFrom: 'dev-all-queues', reuse: true },
   ])(
     'fails naming the $step step when its helper prints nothing (session reuse: $reuse)',
     async ({ step, emptyOutputFrom, reuse }) => {
@@ -101,7 +99,8 @@ describe('dev/tmux --no-attach', () => {
     expect(result).toEqual(expect.objectContaining({ code: 0 }))
     expect(result.stdout).toContain('Services already running in tmux session')
     expect(createdWindowNames(result.log)).toEqual([])
-    expect(result.nodeLog).not.toContain('worker-queue-policy-cli.mts')
+    expect(result.nodeLog).not.toContain('local-catalog.mts')
+    expect(result.log).not.toContain('WORKER_QUEUE_CLASS')
     expect(result.log).not.toContain('respawn-pane')
     expect(result.log).toMatch(/^pgrep -P \d+ \.$/m)
   })
@@ -123,7 +122,6 @@ describe('dev/tmux --no-attach', () => {
     expect(respawns[0]).toMatch(/:backend/)
     expect(result.log).not.toMatch(/respawn-pane .*:nextjs/)
     expect(result.log).not.toMatch(/respawn-pane .*:worker/)
-    expect(result.nodeLog).toContain('worker-queue-policy-cli.mts')
     expect(result.nodeLog).toContain('local-catalog.mts')
   })
 
@@ -139,7 +137,6 @@ describe('dev/tmux --no-attach', () => {
 
     expect(result).toEqual(expect.objectContaining({ code: 0 }))
     expect(result.log).toMatch(/respawn-pane -k .*:lambdas/)
-    expect(result.nodeLog).not.toContain('worker-queue-policy-cli.mts')
     expect(result.nodeLog).not.toContain('local-catalog.mts')
   })
 
@@ -159,7 +156,7 @@ describe('dev/tmux --no-attach', () => {
     expect(result).toEqual(expect.objectContaining({ code: 0 }))
     expect(createdWindowNames(result.log)).toEqual(['worker'])
     expect(result.log).not.toContain('respawn-pane')
-    expect(result.nodeLog).toContain('worker-queue-policy-cli.mts')
+    expect(result.log).toContain('WORKER_QUEUE_CLASS=all')
   })
 
   it('does not respawn after waiting for a ready 0-to-1 transition', async () => {

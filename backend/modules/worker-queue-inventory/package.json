@@ -16,10 +16,10 @@
       "import": "./worker-queue-policy.mts",
       "default": "./worker-queue-policy.mts"
     },
-    "./worker-queue-policy-cli": {
-      "types": "./worker-queue-policy-cli.mts",
-      "import": "./worker-queue-policy-cli.mts",
-      "default": "./worker-queue-policy-cli.mts"
+    "./worker-queue-class": {
+      "types": "./worker-queue-class.mts",
+      "import": "./worker-queue-class.mts",
+      "default": "./worker-queue-class.mts"
     }
   },
   "scripts": {},

@@ -27,6 +27,8 @@ export function initializeWorkerRuntime(
   dependencies: WorkerCpuDependencies = defaultWorkerCpuDependencies,
 ): Promise<WorkerRuntime> {
   return dependencies.initializeWorkerRuntime({
+    // worker-cpu runs every queue locally ("all") and in production runs only the CPU-only ones.
+    queueClasses: ['all', 'cpu'],
     workerDefinitions: WORKER_DEFINITIONS,
     sqsConsumerDefinitions: SQS_CONSUMER_DEFINITIONS,
     scheduleDefinitions: SCHEDULE_DEFINITIONS,

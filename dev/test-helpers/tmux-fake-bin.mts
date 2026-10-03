@@ -4,15 +4,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, afterEach, beforeAll } from 'vitest'
-import { workerQueuePolicy } from '../../backend/modules/worker-queue-inventory/worker-queue-policy.mts'
 
 const fakeTmuxPath = fileURLToPath(new URL('./fake-tmux.sh', import.meta.url))
 const fakePgrepPath = fileURLToPath(new URL('./fake-pgrep.sh', import.meta.url))
-
-const defaultQueues = [
-  ...workerQueuePolicy.cpuOnlyQueues,
-  ...workerQueuePolicy.ioCapableQueues,
-].join(',')
 
 // Each template file is executed once in beforeAll (30s hook budget) so no test's 10s dev/tmux run
 // pays a fresh file's first-exec cost; see docs/development/reference-tests-vitest-projects.md.
@@ -28,15 +22,8 @@ const NODE_SCRIPT = `#!/bin/bash
 printf '%s\n' "$*" >> "\${FAKE_NODE_LOG:?}"
 [[ -n "\${FAKE_NODE_EMPTY:-}" && "$*" == *"\${FAKE_NODE_EMPTY}"* ]] && exit 0
 [[ "$*" == *"dev/localization/local-catalog.mts"* ]] && { printf '%s\n' "$(pwd)/.local/localization/catalog.sqlite"; exit 0; }
-case "\${2:-}" in
-  dev-all-queues)
-    printf '%s\n' '${defaultQueues}'
-    ;;
-  *)
-    printf 'node\n' >> "\${FAKE_EXEC_LOG:?}"; for arg in "$@"; do printf 'node-arg\t%s\n' "$arg" >> "\${FAKE_NODE_ARG_LOG:?}"; done
-    printf 'node-env\tIMAGE_LAMBDA_PORT=%s\n' "\${IMAGE_LAMBDA_PORT:-}" >> "\${FAKE_NODE_ARG_LOG:?}"; printf 'node-env\tLOCALIZATION_SQLITE_PATH=%s\n' "\${LOCALIZATION_SQLITE_PATH:-}" >> "\${FAKE_NODE_ARG_LOG:?}"
-    ;;
-esac
+printf 'node\n' >> "\${FAKE_EXEC_LOG:?}"; for arg in "$@"; do printf 'node-arg\t%s\n' "$arg" >> "\${FAKE_NODE_ARG_LOG:?}"; done
+printf 'node-env\tIMAGE_LAMBDA_PORT=%s\n' "\${IMAGE_LAMBDA_PORT:-}" >> "\${FAKE_NODE_ARG_LOG:?}"; printf 'node-env\tLOCALIZATION_SQLITE_PATH=%s\n' "\${LOCALIZATION_SQLITE_PATH:-}" >> "\${FAKE_NODE_ARG_LOG:?}"
 `
 
 const PASSTHROUGH_TARGETS: Record<string, string> = {

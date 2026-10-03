@@ -12,14 +12,25 @@ worker composition.
 
 Two loading paths exist:
 
-| Path              | File                       | Description                                                                                                       |
-| ----------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| **Policy-driven** | `worker-queue-policy.json` | Workers for queues in `WORKER_DEFINITIONS`. Filtered by `QUEUES` env var. Enforced by cpu/io partition invariant. |
-| **Universal**     | `universal-workers.mts`    | Workers loaded unconditionally on every deployment, bypassing `QUEUES` and the cpu/io partition.                  |
+| Path              | File                       | Description                                                                                                                       |
+| ----------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| **Policy-driven** | `worker-queue-policy.json` | Workers for queues in `WORKER_DEFINITIONS`. Filtered by `WORKER_QUEUE_CLASS` or `QUEUES`. Enforced by cpu/io partition invariant. |
+| **Universal**     | `universal-workers.mts`    | Workers loaded unconditionally on every deployment, bypassing queue selection and the cpu/io partition.                           |
+
+### Queue Selection
+
+`lifecycle.mts` resolves the process's queue selection once, with `resolveQueueSelection` from
+[`worker-queue-class.mts`](../../../../../backend/modules/worker-queue-inventory/worker-queue-class.mts),
+and passes the same selection to the GlideMQ and SQS loaders. `WORKER_QUEUE_CLASS` (`all`, `cpu`,
+`io`) expands to an explicit include list from the policy, which both reaches queues that require
+explicit inclusion and lets one list select SQS consumers alongside GlideMQ workers. Each
+entrypoint states which classes it accepts (`worker-cpu`: `all`, `cpu`; `worker-io`: `io`). Without
+a class, `QUEUES` is used as before. Setting both, an unknown class, or a class the entrypoint does
+not accept fails at startup.
 
 ### Universal Workers
 
-Universal workers run regardless of the `QUEUES` environment variable. Use universal workers for
+Universal workers run regardless of `WORKER_QUEUE_CLASS` and `QUEUES`. Use universal workers for
 cross-cutting concerns such as liveness heartbeats.
 
 Currently registered universal workers:

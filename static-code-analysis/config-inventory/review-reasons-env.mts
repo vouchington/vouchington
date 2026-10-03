@@ -186,6 +186,7 @@ export const ENV_REVIEW_REASONS = new Map<string, string>([
     'Integration-test service origin; keep environment-scoped for local stack wiring.',
   ],
   ['WORKER_LOG_DIR', 'Runtime log path; keep environment-scoped for filesystem placement.'],
+  ['WORKER_QUEUE_CLASS', 'Worker queue class selector; keep environment-scoped, read at startup.'],
   ['WRANGLER_CACHE_DIR', 'Wrangler cache path; keep environment-scoped for developer machines.'],
   ['WRANGLER_LOG_PATH', 'Wrangler log path; keep environment-scoped for developer machines.'],
   [

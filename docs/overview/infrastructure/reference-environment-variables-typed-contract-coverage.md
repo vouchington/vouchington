@@ -29,6 +29,7 @@ setup summaries:
 - `UV_THREADPOOL_SIZE`
 - `VALKEY_CONTAINER`
 - `WORKER_PORT`
+- `WORKER_QUEUE_CLASS`
 
 ## Adding Third-Party Integrations
 

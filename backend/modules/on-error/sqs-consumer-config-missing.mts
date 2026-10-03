@@ -17,7 +17,7 @@ function shouldLogToConsole(): boolean {
  * consumer.
  *
  * Expected in local development, where AWS-backed SQS consumers are unconditionally selected by
- * ./dev/tmux's generated QUEUES list but have no local queue URL by default. In a deployed
+ * ./dev/tmux's WORKER_QUEUE_CLASS=all selection but have no local queue URL by default. In a deployed
  * environment the same gap is a real misconfiguration; the queue's own *_queue_age CloudWatch
  * alarm (vouchington-infra/opentofu/monitoring.tf) is the durable detector for "nothing is reading this queue" if
  * this message is missed.

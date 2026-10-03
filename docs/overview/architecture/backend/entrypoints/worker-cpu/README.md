@@ -25,6 +25,16 @@ The full queue-classification policy lives in
 CPU-only queues can run only in this entrypoint; IO-capable queues are also loaded here by the
 merged local development worker.
 
+## Queue class
+
+`WORKER_QUEUE_CLASS` selects the queues this process runs, and `runtime.mts` accepts `all` or
+`cpu`. `all` runs every CPU-only and I/O-capable queue, including the SQS consumers and queues that
+require explicit inclusion; `cpu` runs only the CPU-only queues. The entrypoint resolves the class to
+an explicit include list from the policy, so infrastructure passes only the class. `QUEUES` remains
+the name-level selector for local development and image smoke tests, and setting both variables, or
+an unknown class such as `io`, fails at startup. `queue-class.test.mts` pins each class to the
+policy's queues.
+
 ## Grafana IRM heartbeat
 
 When `GRAFANA_IRM_HEARTBEAT_URL` is present, the worker-cpu process posts to

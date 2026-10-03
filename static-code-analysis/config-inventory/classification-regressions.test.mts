@@ -19,6 +19,7 @@ describe('config inventory classification regressions', () => {
         'process.env.HSTS_PRELOAD',
         'process.env.RSS_CACHE_TTL_SECONDS',
         'process.env.QUEUES',
+        'process.env.WORKER_QUEUE_CLASS',
         'process.env.ANALYTICS_BACKEND',
         'process.env.DATABASE_PORT',
         'process.env.VALKEY_REQUEST_TIMEOUT_MS',
@@ -102,6 +103,11 @@ describe('config inventory classification regressions', () => {
           name: 'QUEUES',
           classifications: expect.not.arrayContaining(['dynamic-config-candidate']),
           reviewReason: expect.stringContaining('Worker process topology selector'),
+        }),
+        expect.objectContaining({
+          name: 'WORKER_QUEUE_CLASS',
+          classifications: expect.not.arrayContaining(['dynamic-config-candidate']),
+          reviewReason: expect.stringContaining('Worker queue class'),
         }),
         expect.objectContaining({
           name: 'ANALYTICS_BACKEND',

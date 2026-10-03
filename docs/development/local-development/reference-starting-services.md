@@ -65,7 +65,9 @@ even when invoked from a subdirectory. Healthy reuse skips that rebuild. After e
 stop the tmux session and run `./dev/tmux` again; the catalog-and-package revision check rebuilds
 the database before those processes start. Restoring a dead `backend` or `worker` window rebuilds
 the catalog for that restart only. `./dev/tmux` exits 1 with a named error, instead of launching
-windows with an empty `LOCALIZATION_SQLITE_PATH` or `QUEUES`, when the catalog helper or the
-worker-queue policy CLI prints nothing.
+windows with an empty `LOCALIZATION_SQLITE_PATH`, when the catalog helper prints nothing. The
+worker window runs with `WORKER_QUEUE_CLASS=all` and names no queues, so the worker resolves its own
+queue list. A `QUEUES` value that reaches the window (for example from `.env`) makes that worker
+exit at startup, because `WORKER_QUEUE_CLASS` and `QUEUES` are mutually exclusive.
 
 Use `./dev/tmux-name <name>` to rename the current agent tmux window and pane title (targets `$TMUX_PANE`); pass an empty name to clear the pane title and restore automatic window naming.

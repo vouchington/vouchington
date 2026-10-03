@@ -12,6 +12,15 @@ IO-capable queues are listed in
 [`../../modules/worker-queue-inventory/worker-queue-policy.json`](../../../../../../backend/modules/worker-queue-inventory/worker-queue-policy.json).
 Local development does not start this process. CPU-only queues must not be added here.
 
+## Queue class
+
+`WORKER_QUEUE_CLASS` selects the queues this process runs, and `runtime.mts` accepts only `io`,
+which runs every I/O-capable queue, including the SQS consumers. The entrypoint resolves the class to
+an explicit include list from the policy, so infrastructure passes only the class. `all` and `cpu`
+are rejected because they would run CPU-only queues here. `QUEUES` remains the name-level selector
+for local development and image smoke tests, and setting both variables, or an unknown class, fails at
+startup. `queue-class.test.mts` pins the class to the policy's queues.
+
 ## Files
 
 - `index.mts` — process entrypoint and exported runtime controls

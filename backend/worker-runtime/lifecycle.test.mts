@@ -19,6 +19,7 @@ function makeSqsConsumer(name: string): SqsConsumer {
 
 function makeConfig(hooks?: WorkerRuntimeHooks): WorkerRuntimeConfig {
   return {
+    queueClasses: ['all'],
     workerDefinitions: [{ queueName: 'worker-queue' }] as never,
     sqsConsumerDefinitions: [{ queueName: 'sqs-queue' }] as never,
     scheduleDefinitions: [{ queueName: 'schedule-queue' }] as never,
@@ -38,6 +39,7 @@ function makeDependencies(
     upsertSchedules: async () => {},
     setup: async () => {},
     onError: () => {},
+    env: {},
     ...overrides,
   }
 }
