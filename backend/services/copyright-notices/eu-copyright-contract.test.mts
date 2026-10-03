@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import {
-  concealTerritorialPolicyApprovals,
-  insertTerritorialPolicyApproval,
-  insertTerritorialPolicyWithdrawal,
+  concealJurisdictionPolicyApprovals,
+  insertJurisdictionPolicyApproval,
+  insertJurisdictionPolicyWithdrawal,
   readCopyrightTerritorialContractShape,
   withRolledBackTerritorialTransaction,
 } from '@voucha/test-helpers/data-stores/psql/copyright-eu-uk-contracts'
@@ -21,9 +21,9 @@ import { recordEuCopyrightRedressDecision, submitEuCopyrightRedress } from './eu
 import { compileEuCopyrightTransparencyReport } from './eu-reporting.mts'
 import { recordEuCopyrightSupervisedComplaint } from './eu-supervised-complaint.mts'
 import {
-  recordCopyrightTerritorialPolicyApproval,
-  withdrawCopyrightTerritorialPolicyApproval,
-} from './territorial-policy.mts'
+  recordCopyrightJurisdictionPolicyApproval,
+  withdrawCopyrightJurisdictionPolicyApproval,
+} from './jurisdiction-policy.mts'
 import type { TerritorialNoticeRequest } from './territorial-fields.mts'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 
@@ -44,7 +44,7 @@ async function euActors() {
     createTestUser({ administrator: true }),
     createTestUser(),
   ])
-  const approval = await recordCopyrightTerritorialPolicyApproval(administrator, {
+  const approval = await recordCopyrightJurisdictionPolicyApproval(administrator, {
     jurisdiction: 'eu_dsa',
     policyVersion: `eu-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
   })
@@ -55,7 +55,7 @@ describe('EU copyright notice contracts', () => {
   it('fails closed without an approved policy and keeps the US aggregate on us_dmca', async () => {
     const claimant = await createTestUser()
     await withRolledBackTerritorialTransaction(async transaction => {
-      await concealTerritorialPolicyApprovals(transaction, 'eu_dsa', claimant.id)
+      await concealJurisdictionPolicyApprovals(transaction, 'eu_dsa', claimant.id)
       await expect(
         receiveEuCopyrightNoticeInTransaction(
           claimant,
@@ -64,7 +64,7 @@ describe('EU copyright notice contracts', () => {
           transaction,
         ),
       ).rejects.toMatchObject({ status: 403, message: 'EU copyright notices are not available' })
-      const approvalId = await insertTerritorialPolicyApproval(
+      const approvalId = await insertJurisdictionPolicyApproval(
         transaction,
         'eu_dsa',
         `eu-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
@@ -77,7 +77,7 @@ describe('EU copyright notice contracts', () => {
         transaction,
       )
       expect(opened.route_destination).toBe('staff_queue')
-      await insertTerritorialPolicyWithdrawal(transaction, approvalId, claimant.id)
+      await insertJurisdictionPolicyWithdrawal(transaction, approvalId, claimant.id)
       await expect(
         receiveEuCopyrightNoticeInTransaction(
           claimant,
@@ -233,9 +233,9 @@ describe('EU copyright notice contracts', () => {
 
   it('rejects a second withdrawal of the same policy approval', async () => {
     const { administrator, approval } = await euActors()
-    await withdrawCopyrightTerritorialPolicyApproval(administrator, approval.id)
+    await withdrawCopyrightJurisdictionPolicyApproval(administrator, approval.id)
     await expect(
-      withdrawCopyrightTerritorialPolicyApproval(administrator, approval.id),
+      withdrawCopyrightJurisdictionPolicyApproval(administrator, approval.id),
     ).rejects.toMatchObject({ status: 409 })
   })
 })

@@ -11,7 +11,7 @@ import {
   type TerritorialCopyrightJurisdiction,
 } from './territorial-fields.mts'
 import { territorialLabels } from './territorial-labels.mts'
-import { lockCurrentCopyrightTerritorialPolicy } from './territorial-policy.mts'
+import { lockCurrentCopyrightJurisdictionPolicy } from './jurisdiction-policy.mts'
 import {
   insertTerritorialRedressDecision,
   insertTerritorialRedressRequest,
@@ -58,7 +58,7 @@ export async function submitTerritorialCopyrightRedress(
     await transaction.commit()
     return { id: existing[0].id, is_duplicate: true }
   }
-  await lockCurrentCopyrightTerritorialPolicy(jurisdiction, transaction)
+  await lockCurrentCopyrightJurisdictionPolicy(jurisdiction, transaction)
   const { rows } = await transaction<{ id: string }>(
     insertTerritorialRedressRequest(
       jurisdiction,
@@ -95,7 +95,7 @@ export async function recordTerritorialCopyrightRedressDecision(
     selectExistingTerritorialRedressDecision(redressId),
   )
   assert(!existing[0], 409, labels.redressDecisionExists)
-  await lockCurrentCopyrightTerritorialPolicy(jurisdiction, transaction)
+  await lockCurrentCopyrightJurisdictionPolicy(jurisdiction, transaction)
   const { rows } = await transaction<TerritorialCopyrightRedressDecision>(
     insertTerritorialRedressDecision(
       redressId,

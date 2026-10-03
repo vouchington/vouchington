@@ -29,7 +29,7 @@ import type {
 
 // Every handler keeps its admission order (kill switch, content type, authentication, suspension,
 // CAPTCHA, Idempotency-Key, field-named parsers, path id) and adds the generated contract
-// immediately before the first service call. The service still decides ownership, territorial
+// immediately before the first service call. The service still decides ownership, jurisdiction
 // availability, and existence, so those rejections stay behind a malformed body, as a missing
 // field already did. The staff routes live in `eu-copyright-staff-routes.mts`.
 app.route('/api/v1/copyright-eu-notices').post(async (ctx: Context) => {

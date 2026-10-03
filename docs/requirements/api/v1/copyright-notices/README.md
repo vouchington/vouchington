@@ -8,7 +8,7 @@ it directly at submission. A target the claimant cannot open receives the same `
 that does not exist, so the route does not reveal hidden posts. Staff approval of an emailed notice
 is not gated by viewability and resolves any existing hosted placement. EU and UK notices are
 separate routes and stay
-unavailable until an administrator records an unwithdrawn territorial policy approval. Duplicate post and image pairs receive a validation error
+unavailable until an administrator records an unwithdrawn jurisdiction policy approval. Duplicate post and image pairs receive a validation error
 before persistence. Signed-in and guest claimants may submit a notice, but only a deterministically
 complete signed-in notice with a durable `not_obviously_invalid` anti-spam recommendation is
 eligible for provisional restriction. The recommendation is not a legal merits
@@ -20,7 +20,7 @@ bucket, copyright sender and reply-to addresses, or media-delivery enforcement i
 `POST /api/v1/copyright-notices`, `POST /api/v1/copyright-eu-notices`, and
 `POST /api/v1/copyright-uk-notices` return `503` before authentication. Staff approval of an
 emailed notice, `POST /api/v1/copyright-email-intakes/:id/approvals`, returns the same `503` because
-it opens a new case. New EU and UK notices need this switch in addition to the territorial policy
+it opens a new case. New EU and UK notices need this switch in addition to the jurisdiction policy
 approval. In-case responses (appeals, counter-notices, guest filings, EU and UK redress, EU
 supervised complaints) and every other staff route stay available so existing cases keep their
 statutory paths. Email is still ingested and listed in the staff email intake queue while the switch
@@ -196,13 +196,13 @@ checked by the route and never passed to the schema validator, so it cannot appe
 Existing field-named `422` and the capability `403` are unchanged; see
 [request validation](../../reference-copyright-guest-request-validation.md).
 
-The EU, UK, and territorial policy routes validate their path and JSON body against closed
+The EU, UK, and jurisdiction policy routes validate their path and JSON body against closed
 generated schemas: an unknown body key answers 422 before anything is written, and the
 field-named 422 messages for missing or mistyped fields are unchanged. `cf_turnstile_response` is
 an optional string on the notice and redress bodies; an explicit `null` or non-string value now
 answers 422 instead of being ignored when CAPTCHA verification does not read it (an attested
 caller or an always-approve configuration). Authentication, staff role, and the kill switch
-answer before the schema. The service still decides ownership, territorial availability, and
+answer before the schema. The service still decides ownership, jurisdiction availability, and
 existence, so a malformed body answers 422 before those 403, 404, and 409 outcomes. See
 [Copyright EU, UK, and territorial request validation](../../reference-copyright-territorial-request-validation.md).
 

@@ -32,7 +32,7 @@ export function insertReceiptQuery(
 ) {
   return sql`/* receiveTerritorialCopyrightNotice:receipt */
     INSERT INTO copyright_territorial_notice_receipts (
-      copyright_notice_id, jurisdiction, copyright_territorial_policy_approval_id,
+      copyright_notice_id, jurisdiction, copyright_jurisdiction_policy_approval_id,
       requester_user_id, idempotency_key, request_sha256, hosted_use_url, grounds_ciphertext
     ) VALUES (
       ${noticeId}, ${jurisdiction}, ${approvalId}, ${actorId}, ${idempotencyKey}, ${requestSha256},

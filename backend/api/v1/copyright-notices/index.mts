@@ -28,7 +28,7 @@ import './moderator-routes.mts'
 import './repeat-infringer-routes.mts'
 import './staff-queue-route.mts'
 import './submission-routes.mts'
-import './territorial-policy-routes.mts'
+import './jurisdiction-policy-routes.mts'
 import './uk-copyright-routes.mts'
 
 const acceptedCopyrightNoticesParser = createPaginationParser({

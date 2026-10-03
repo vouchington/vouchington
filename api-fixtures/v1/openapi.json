@@ -3544,6 +3544,36 @@
         "enum": ["dismissed", "proceeding_ended", "superseded"],
         "type": "string"
       },
+      "CopyrightJurisdictionPolicyApproval": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "jurisdiction": {
+            "$ref": "#/components/schemas/TerritorialCopyrightJurisdiction"
+          },
+          "policy_version": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "jurisdiction", "policy_version"],
+        "type": "object"
+      },
+      "CopyrightJurisdictionPolicyRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "jurisdiction": {
+            "enum": ["eu_dsa", "uk"],
+            "type": "string"
+          },
+          "policy_version": {
+            "type": "string"
+          }
+        },
+        "required": ["jurisdiction", "policy_version"],
+        "type": "object"
+      },
       "CopyrightLegalHoldAssessmentRecord": {
         "additionalProperties": false,
         "properties": {
@@ -4330,36 +4360,6 @@
           }
         },
         "required": ["contact", "content_description", "grounds", "hosted_use_url"],
-        "type": "object"
-      },
-      "CopyrightTerritorialPolicyApproval": {
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "jurisdiction": {
-            "$ref": "#/components/schemas/TerritorialCopyrightJurisdiction"
-          },
-          "policy_version": {
-            "type": "string"
-          }
-        },
-        "required": ["id", "jurisdiction", "policy_version"],
-        "type": "object"
-      },
-      "CopyrightTerritorialPolicyRequest": {
-        "additionalProperties": false,
-        "properties": {
-          "jurisdiction": {
-            "enum": ["eu_dsa", "uk"],
-            "type": "string"
-          },
-          "policy_version": {
-            "type": "string"
-          }
-        },
-        "required": ["jurisdiction", "policy_version"],
         "type": "object"
       },
       "CopyrightTerritorialRedressDecisionRequest": {
@@ -43842,6 +43842,86 @@
         }
       }
     },
+    "/api/v1/copyright-jurisdiction-policies": {
+      "post": {
+        "operationId": "post_api_v1_copyright-jurisdiction-policies",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyrightJurisdictionPolicyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_jurisdiction_policy": {
+                      "$ref": "#/components/schemas/CopyrightJurisdictionPolicyApproval"
+                    }
+                  },
+                  "required": ["copyright_jurisdiction_policy"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-jurisdiction-policies/{id}/withdrawals": {
+      "post": {
+        "operationId": "post_api_v1_copyright-jurisdiction-policies_id_withdrawals",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_jurisdiction_policy_withdrawal": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["copyright_jurisdiction_policy_withdrawal"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/api/v1/copyright-legal-hold-assessments/{id}/resolutions": {
       "post": {
         "operationId": "post_api_v1_copyright-legal-hold-assessments_id_resolutions",
@@ -46315,86 +46395,6 @@
                     }
                   },
                   "required": ["copyright_legal_hold_assessment"],
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Created"
-          },
-          "default": {
-            "$ref": "#/components/responses/Error"
-          }
-        }
-      }
-    },
-    "/api/v1/copyright-territorial-policies": {
-      "post": {
-        "operationId": "post_api_v1_copyright-territorial-policies",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CopyrightTerritorialPolicyRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "copyright_territorial_policy": {
-                      "$ref": "#/components/schemas/CopyrightTerritorialPolicyApproval"
-                    }
-                  },
-                  "required": ["copyright_territorial_policy"],
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Created"
-          },
-          "default": {
-            "$ref": "#/components/responses/Error"
-          }
-        }
-      }
-    },
-    "/api/v1/copyright-territorial-policies/{id}/withdrawals": {
-      "post": {
-        "operationId": "post_api_v1_copyright-territorial-policies_id_withdrawals",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "copyright_territorial_policy_withdrawal": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        }
-                      },
-                      "required": ["id"],
-                      "type": "object"
-                    }
-                  },
-                  "required": ["copyright_territorial_policy_withdrawal"],
                   "type": "object"
                 }
               }
