@@ -26,19 +26,6 @@ export function hasAnalyticsConsent(): boolean {
 }
 
 export function subscribeToCookieConsent(listener: () => void): () => void {
-  const onStorage = (event: StorageEvent) => {
-    if (event.key !== COOKIE_CONSENT_STORAGE_KEY && event.key !== null) return
-    try {
-      if (event.storageArea !== localStorage) return
-    } catch {
-      // Reconcile to fail closed when browser storage becomes unavailable.
-    }
-    listener()
-  }
   window.addEventListener(COOKIE_CONSENT_CHANGED_EVENT, listener)
-  window.addEventListener('storage', onStorage)
-  return () => {
-    window.removeEventListener(COOKIE_CONSENT_CHANGED_EVENT, listener)
-    window.removeEventListener('storage', onStorage)
-  }
+  return () => window.removeEventListener(COOKIE_CONSENT_CHANGED_EVENT, listener)
 }

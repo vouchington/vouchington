@@ -1,4 +1,3 @@
-import { dispatchStorageEvent } from '@/test-helpers/storage-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { COOKIE_CONSENT_CHANGED_EVENT, writeCookieConsent } from './lib/privacy/cookie-consent'
 import {
@@ -111,15 +110,6 @@ describe('consent-gated Sentry lifecycle', () => {
     change('essential')
     expect(client.disable).toHaveBeenCalledTimes(1)
     change('essential')
-    expect(client.close).toHaveBeenCalledTimes(1)
-  })
-  it.each(['essential', null])('closes on cross-tab storage revocation %s', value => {
-    writeCookieConsent('all')
-    const client = start()
-    if (value === null) localStorage.clear()
-    else localStorage.setItem('cookie-consent', value)
-    dispatchStorageEvent(value === null ? null : 'cookie-consent', localStorage)
-    expect(client.disable).toHaveBeenCalledTimes(1)
     expect(client.close).toHaveBeenCalledTimes(1)
   })
   it('does not initialize again after close', () => {
