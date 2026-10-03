@@ -44,3 +44,5 @@ sanitized, fenced MCP Post shape, including persisted text that was not part of 
 Delete returns `{ success: true }`. Metadata describes creation as idempotent through its required
 key, updates as non-idempotent, and deletion as destructive and idempotent; the registry and catalog
 checks validate these hints and output schemas.
+
+Delegated MCP writes reject archived communities under the retained community row fence, including edits and deletions. Archived content remains readable.

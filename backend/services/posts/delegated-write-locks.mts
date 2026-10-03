@@ -1,3 +1,4 @@
+import { assertDelegatedCommunityWritable } from './authorization.mts'
 import { lockCommunityUser } from '@services/communities/bans/lock'
 import createHttpError from 'http-errors'
 import { getCommentAncestorsByAny } from '@services/comments/ancestors'
@@ -48,7 +49,9 @@ export async function lockDelegatedPostCommunity(
     WHERE community_id = ${communityId} AND user_id = ${actorId} AND removed_at IS NULL
     FOR UPDATE`),
   ])
-  const { rowCount } = await query(sql`/* lockDelegatedPostCommunity */
-    SELECT id FROM communities WHERE id = ${communityId} AND deleted_at IS NULL FOR UPDATE`)
-  if (rowCount !== 1) throw createHttpError(404, 'Post not found')
+  const { rows } = await query<{ archived_at: Date | null }>(sql`/* lockDelegatedPostCommunity */
+    SELECT archived_at FROM communities WHERE id = ${communityId} AND deleted_at IS NULL FOR UPDATE`)
+  const community = rows[0]
+  if (!community) throw createHttpError(404, 'Post not found')
+  assertDelegatedCommunityWritable(community)
 }

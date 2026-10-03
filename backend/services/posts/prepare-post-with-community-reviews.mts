@@ -49,6 +49,11 @@ export const preparePostWithCommunityReviews = async (
     )
     const options = { query }
     if (delegated) await assertDelegatedPostActorActive(creator.id, options)
+    if (delegated && input.community_id && input.parent_id) {
+      const source = await getPostByAny(input.parent_id, options)
+      if (source?.community_id)
+        throw createHttpError(422, 'Only global posts can be discussed in a community')
+    }
     if (delegated && input.community_id) {
       await lockDelegatedPostCommunity(query, input.community_id, creator.id)
       await assertDelegatedCommunityPostAllowed(input.community_id, defaults.postType, options)

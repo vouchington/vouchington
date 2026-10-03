@@ -137,7 +137,7 @@ export async function assertDelegatedCommunityPostAllowed(
   options: QueryOptions,
 ): Promise<void> {
   const community = await getCommunityOrThrow(communityId, options)
-  assert(!community.archived_at, 403, 'Community is archived')
+  assertDelegatedCommunityWritable(community)
   if (postType === 'comment') return
   assert(
     isCommunityRootPostType(postType) && communityAllowsPostType(community, postType),
@@ -163,4 +163,8 @@ export async function assertDelegatedPostActorActive(
   const user = await getPrivateUserByAny(userId, options)
   if (!user) throw createHttpError(401, 'User not found')
   assertNotSuspended(user)
+}
+
+export function assertDelegatedCommunityWritable(community: { archived_at: unknown }): void {
+  assert(!community.archived_at, 403, 'Community is archived')
 }

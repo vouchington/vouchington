@@ -1,6 +1,7 @@
 import createHttpError from 'http-errors'
 import { getCommentAncestorsByAny } from '@services/comments/ancestors'
 import type { QueryOptions } from '@data-stores/psql'
+import { getPostsByAnyBatch } from './get-batch.mts'
 import { getPostByAny } from './get.mts'
 import type { Post } from './types.mts'
 
@@ -13,7 +14,10 @@ export async function loadPostWriteThread(id: string, options: QueryOptions) {
   if (nodes.at(-1)?.id !== post.id || nodes[0]?.id !== (post.root_id ?? post.id))
     throw createHttpError(404, 'Post not found')
   const live = nodes.filter(node => !node.deleted_at)
-  const chain = await Promise.all(live.map(node => getPostByAny(node.id, options)))
+  const chain = await getPostsByAnyBatch(
+    live.map(node => node.id),
+    options,
+  )
   if (chain.some(node => !node) || !chain.some(node => node?.id === post.id))
     throw createHttpError(404, 'Post not found')
   return { post, nodes, posts: chain.filter((node): node is Post => Boolean(node)) }
