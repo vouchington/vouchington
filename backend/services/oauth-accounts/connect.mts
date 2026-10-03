@@ -76,8 +76,13 @@ export async function assertOAuthAccountConnectionUserActive(
   userId: string,
 ): Promise<void> {
   // Deletion takes this advisory lock before the user row; keep the same lock order.
-  await query('SELECT fn_lock_active_user_for_mutation($1)', [userId])
-  await query('SELECT id FROM users WHERE id = $1 FOR UPDATE', [userId])
+  await query('/* lockOAuthAccountConnectionUser */ SELECT fn_lock_active_user_for_mutation($1)', [
+    userId,
+  ])
+  await query(
+    '/* lockOAuthAccountConnectionUserRow */ SELECT id FROM users WHERE id = $1 FOR UPDATE',
+    [userId],
+  )
   // A suspension insert's users FK conflicts with FOR UPDATE. Read in a fresh statement after
   // obtaining the row lock so a suspension that committed while we waited is visible.
   const { rows } = await query<{ suspended: boolean }>(
