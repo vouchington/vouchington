@@ -181,9 +181,18 @@ describe('simulateCommunityPromptOnPosts', () => {
     await withReservedAiUsageDay(1_000_000, async () => {
       const signals: AbortSignal[] = []
       const hangs = stalls(signals)
+      let stalled = () => {}
+      const oneStalled = new Promise<void>(resolve => (stalled = resolve))
       const fetch = vi.fn<StructuredDecisionFetch>(async (url, init) => {
-        if (fetch.mock.calls.length === 1) return new Response('', { status: 400 })
-        return hangs(url, init)
+        if (fetch.mock.calls.length === 1) {
+          // The calls reach the provider in no fixed order, and a call that has not reached it when
+          // the preview aborts never starts. Fail only once another call is in flight to cancel.
+          await oneStalled
+          return new Response('', { status: 400 })
+        }
+        const pending = hangs(url, init)
+        stalled()
+        return pending
       })
       const posts = Array.from({ length: 12 }, (_, index) => post(`p${index}`))
 
