@@ -94,7 +94,7 @@ describe('copyright staff decision request contracts', () => {
       await staff.post(restrictionUrl(id, 'not-a-uuid')).send(RESTRICTION_REVIEW).expect(422)
     })
 
-    it.each(['null', '[]'])('answers 422, not 500, for the JSON body %s', async raw => {
+    it.each(['null', '[]', '5'])('answers 422, not 500, for the JSON body %s', async raw => {
       const staff = await createStaff()
       for (const url of urls()) {
         const response = await staff
