@@ -3,6 +3,7 @@
 import { PenSquare, Search } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { Kbd, KbdGroup } from '@/components/ui/kbd'
 import { useIsMac } from '@/hooks/use-is-mac'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
@@ -29,14 +30,14 @@ export function NavbarSearchButton({ onOpenSearch }: NavbarSearchButtonProps) {
       >
         <Search className='mr-2 h-4 w-4 shrink-0' />
         <span className='truncate'>{t('extracted.navbar.topbarActions.search_7f553822')}</span>
-        <kbd className='pointer-events-none ml-auto hidden h-5 shrink-0 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-xs font-medium opacity-100 sm:inline-flex'>
-          {isMac ? (
-            <span className='text-xs'>{t('extracted.navbar.topbarActions.text_70b4b62a')}</span>
-          ) : (
-            t('extracted.navbar.topbarActions.ctrl_b075c3a0')
-          )}
-          K
-        </kbd>
+        <KbdGroup className='ml-auto hidden shrink-0 sm:inline-flex'>
+          <Kbd>
+            {isMac
+              ? t('extracted.navbar.topbarActions.text_70b4b62a')
+              : t('extracted.navbar.topbarActions.ctrl_b075c3a0')}
+          </Kbd>
+          <Kbd>K</Kbd>
+        </KbdGroup>
       </span>
     </Button>
   )

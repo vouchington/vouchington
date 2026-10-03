@@ -8,6 +8,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog'
+import { Kbd } from '@/components/ui/kbd'
 import { KEYBOARD_SHORTCUTS, formatShortcut, type KeyboardShortcut } from '@/lib/keyboard-shortcuts'
 import { useIsMac } from '@/hooks/use-is-mac'
 import { useTranslations } from '@/lib/i18n/use-translations'
@@ -59,9 +60,7 @@ export function KeyboardShortcutsDialog({
                           className='flex items-center justify-between'
                         >
                           <span className='text-sm text-foreground'>{t(shortcut.description)}</span>
-                          <kbd className='pointer-events-none ml-4 inline-flex h-5 shrink-0 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-xs font-medium'>
-                            {formatShortcut(shortcut, isMac)}
-                          </kbd>
+                          <Kbd className='ml-4 shrink-0'>{formatShortcut(shortcut, isMac)}</Kbd>
                         </div>,
                       ],
                 )}

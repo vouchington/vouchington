@@ -55,6 +55,7 @@ import { Button } from '../button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../card'
 import { CheckboxCard } from '../checkbox-card'
 import { Input } from '../input'
+import { Kbd, KbdGroup } from '../kbd'
 import { Label } from '../label'
 import { Menubar, MenubarContent, MenubarItem, MenubarMenu, MenubarTrigger } from '../menubar'
 import { Separator } from '../separator'
@@ -107,6 +108,33 @@ describe('pure ui primitive data-pw contracts', () => {
     ]) {
       expect(container.querySelector(`[data-pw="${id}"]`)).not.toBeNull()
     }
+  })
+
+  it('renders Kbd and KbdGroup data-pw', () => {
+    const { container } = render(
+      <KbdGroup>
+        <Kbd>⌘</Kbd>
+        <Kbd>K</Kbd>
+      </KbdGroup>,
+    )
+    expect(container.querySelector('[data-pw="kbd-group"]')).not.toBeNull()
+    expect(container.querySelectorAll('[data-pw="kbd"]')).toHaveLength(2)
+  })
+
+  it('lets a responsive display override replace the default inline-flex', () => {
+    const { container } = render(
+      <>
+        <KbdGroup className='ml-auto hidden shrink-0 sm:inline-flex' />
+        <Kbd className='ml-1 hidden sm:inline-flex'>R</Kbd>
+      </>,
+    )
+    const group = container.querySelector('[data-pw="kbd-group"]')
+    const key = container.querySelector('[data-pw="kbd"]')
+
+    expect(group).toHaveClass('hidden', 'sm:inline-flex')
+    expect(group).not.toHaveClass('inline-flex')
+    expect(key).toHaveClass('hidden', 'sm:inline-flex')
+    expect(key).not.toHaveClass('inline-flex')
   })
 
   it('renders Input and Skeleton data-pw', () => {

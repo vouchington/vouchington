@@ -25,6 +25,17 @@ test.describe('Storybook design system component stories', () => {
     await expect(page.getByTestId('alert-description').first()).toBeVisible()
   })
 
+  test('renders keyboard key primitives', async ({ page }) => {
+    test.skip(
+      !(await storybookBundleHasStory(page, 'design-system-components-kbd--shortcuts')),
+      'Full-stack Storybook bundle predates the keyboard key primitive story.',
+    )
+    await openStory(page, 'design-system-components-kbd--shortcuts')
+
+    await expect(page.getByTestId('kbd-group')).toBeVisible()
+    await expect(page.getByTestId('kbd').first()).toBeVisible()
+  })
+
   test('renders badge, button, and card primitives', async ({ page }) => {
     await skipIfStorybookBundleIsStale(page)
 
