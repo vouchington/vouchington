@@ -2,10 +2,15 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
+import {
+  copyrightReceiptText,
+  copyrightNeedsInformationText,
+  copyrightIntakeRejectionText,
+} from './statement-of-reasons-wording.mts'
 import { insertCopyrightDeliveryRecipient } from './delivery-intents.mts'
 import type { CopyrightEmailIntakeDeliveryKind } from './delivery-types.mts'
 
-export type CopyrightEmailIntakeResponseKind = 'rejected' | 'needs_information'
+export type CopyrightEmailIntakeResponseKind = 'rejected' | 'needs_information' | 'received'
 
 /**
  * Queues the one private reply to a declined email intake as a delivery intent with no case. The
@@ -21,6 +26,18 @@ export async function createCopyrightEmailIntakeResponseInTransaction(
   },
   transaction: TransactionQuery,
 ): Promise<string> {
+  const { rows } = await transaction<{
+    received_at: Date
+    ai_guidance: boolean
+  }>(sql`/* createCopyrightEmailIntakeResponseInTransaction:facts */
+    SELECT received_at, EXISTS (SELECT 1 FROM copyright_notice_email_intake_recommendations
+      WHERE copyright_notice_email_intake_id = ${input.intakeId}) AS ai_guidance
+    FROM copyright_notice_email_intakes WHERE id = ${input.intakeId}
+  `)
+  const rejectedText =
+    input.responseKind === 'rejected'
+      ? copyrightIntakeRejectionText(rows[0]!.received_at, rows[0]!.ai_guidance)
+      : null
   const id = uuidv7()
   const deliveryKind: CopyrightEmailIntakeDeliveryKind = `email_intake_${input.responseKind}`
   await transaction(sql`/* createCopyrightEmailIntakeResponseInTransaction */
@@ -29,8 +46,8 @@ export async function createCopyrightEmailIntakeResponseInTransaction(
       idempotency_key, body_ciphertext
     ) VALUES (
       ${id}, ${input.intakeId}, 'correspondent', ${deliveryKind}, 'email',
-      ${`copyright-email-intake-response:${input.intakeId}`},
-      ${encryptSecret(responseBody(input.responseKind, input.responseMessage), bodyPurpose(id))}
+      ${input.responseKind === 'received' ? `copyright-email-intake-receipt:${input.intakeId}` : `copyright-email-intake-response:${input.intakeId}`},
+      ${encryptSecret(responseBody(input.responseKind, input.responseMessage, rejectedText), bodyPurpose(id))}
     )
   `)
   await insertCopyrightDeliveryRecipient(input.recipientEmail, id, transaction)
@@ -48,10 +65,12 @@ function bodyPurpose(intentId: string): string {
   return `copyright-delivery-body:${intentId}`
 }
 
-function responseBody(kind: CopyrightEmailIntakeResponseKind, responseMessage: string | null) {
-  const prefix =
-    kind === 'rejected'
-      ? 'We could not accept your copyright notice.'
-      : 'We need more information before we can evaluate your copyright notice.'
+function responseBody(
+  kind: CopyrightEmailIntakeResponseKind,
+  responseMessage: string | null,
+  rejectedText: string | null,
+) {
+  if (kind === 'received') return copyrightReceiptText()
+  const prefix = kind === 'rejected' ? rejectedText! : copyrightNeedsInformationText
   return responseMessage ? `${prefix}\n\n${responseMessage.trim()}` : prefix
 }

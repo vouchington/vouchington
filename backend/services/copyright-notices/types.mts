@@ -13,6 +13,7 @@ export type CopyrightCorrespondenceKind =
   | 'receipt'
   | 'request_information'
   | 'restriction_notice'
+  | 'decision_notice'
   | 'counter_notice_forwarding'
   | 'restoration_notice'
   | 'status_update'

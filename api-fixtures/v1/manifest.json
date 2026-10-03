@@ -13361,13 +13361,79 @@
     },
     "GET:/api/v1/copyright-notices/:id/participant": {
       "bodyKind": "content",
-      "hash": "0af7d2ab4683e0f42402b6e1d7416a96971e9e5470eb57557e9d949a86008235",
+      "hash": "e78e757689b5123c3287a4c0e8f0b7a3c3945605edc2880347e4f20607b6a762",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
       "routeTemplate": "/api/v1/copyright-notices/:id/participant",
       "schema": {
         "definitions": {
+          "CopyrightParticipantStatement": {
+            "additionalProperties": false,
+            "properties": {
+              "delivery_kind": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "sent_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "state": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "bounced"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "claimed"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "failed"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "pending"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "sent"
+                    }
+                  ]
+                }
+              },
+              "text": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          },
           "CopyrightPublicNotice": {
             "additionalProperties": false,
             "properties": {
@@ -13465,6 +13531,16 @@
                         "schema": {
                           "items": {
                             "type": "string"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "statements": {
+                        "required": true,
+                        "schema": {
+                          "items": {
+                            "name": "CopyrightParticipantStatement",
+                            "type": "ref"
                           },
                           "type": "array"
                         }
@@ -89803,7 +89879,7 @@
       ],
       "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000000804/participant",
       "responseSchema": {
-        "hash": "531c0ad893619477bcabc808a6fc99f510bcf4c40e7b2aad97701d4625cb0127",
+        "hash": "9d8cc312d81b7afe6f43f43b2fce40da55f4e95d5045258486b94ad6d2e72bc9",
         "key": "web.copyright.notice.participant.populated"
       },
       "route": {
@@ -89831,7 +89907,7 @@
       ],
       "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000000804/participant",
       "responseSchema": {
-        "hash": "b931233288238ab122ac15480c8a89657fe6c158cbf54f8b80102870a1d31ddb",
+        "hash": "e5cc40cf4621e26b2be97ba94c2ef15d00f415319b200bb27e6833ed41a31ec5",
         "key": "web.copyright.notice.participant.null-claimant"
       },
       "route": {

@@ -5,6 +5,7 @@ import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
+import { createCopyrightReviewOutcomeNoticesInTransaction } from './review-outcome-notices.mts'
 import { recordClaimantMisuseEvent } from './claimant-misuse-ledger.mts'
 import { calculateUsCounterNoticeRestorationWindow } from './deadlines.mts'
 import { createCounterNoticeForwardingInTransaction } from './counter-notice-forwarding.mts'
@@ -154,6 +155,17 @@ export async function reviewCopyrightAppeal(input: {
       ) RETURNING id
     `)
     assert(rows[0], 500, 'Copyright appeal review was not recorded')
+    if (restriction.human_reviewed_at === null) {
+      // oxlint-disable-next-line no-await-in-loop -- notices follow each first human review in the same transaction.
+      await createCopyrightReviewOutcomeNoticesInTransaction(
+        {
+          noticeId: appeal.copyright_notice_id,
+          restrictionId: decision.restrictionId,
+          action: decision.action,
+        },
+        transaction,
+      )
+    }
     reviewIds.push(rows[0].id)
     if (decision.action === 'reverse') reversalRestrictionIds.push(decision.restrictionId)
   }

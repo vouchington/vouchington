@@ -77,6 +77,14 @@ logout, and treat a worker binding mismatch as disabled. Native clients do not o
 state and continue using the supported no-body logout request. Deploy the server migration and
 generated contract before releasing a client that adopts the optional logout binding.
 
+## Copyright statement handoff
+
+The participant case contract now requires `statements`, with immutable email text, delivery kind,
+canonical delivery state, and nullable sent time. Failed and bounced delivery must be shown as terminal outcomes rather than pending. Web displays these notices; Swift and .NET must regenerate from the updated
+participant fixtures and render only the server-projected participant texts. Staff responses use an
+empty array and public member cases have no statement field. Native copyright UI remains deferred
+to #853 and #854; this producer change does not complete those client surfaces.
+
 ## Copyright claimant attribution handoff
 
 Vouchington stages the required nullable claimant public-profile contract in the web API fixtures.

@@ -3877,6 +3877,36 @@
         "required": ["image_id", "post_id", "target_url"],
         "type": "object"
       },
+      "CopyrightParticipantStatement": {
+        "additionalProperties": false,
+        "properties": {
+          "delivery_kind": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "sent_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "state": {
+            "enum": ["bounced", "claimed", "failed", "pending", "sent"],
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["delivery_kind", "id", "sent_at", "state", "text"],
+        "type": "object"
+      },
       "CopyrightPublicNotice": {
         "additionalProperties": false,
         "properties": {
@@ -45735,6 +45765,12 @@
                           },
                           "type": "array"
                         },
+                        "statements": {
+                          "items": {
+                            "$ref": "#/components/schemas/CopyrightParticipantStatement"
+                          },
+                          "type": "array"
+                        },
                         "submissions": {
                           "items": {
                             "additionalProperties": false,
@@ -45819,6 +45855,7 @@
                         "provisional_withholding_at",
                         "received_at",
                         "respondable_target_ids",
+                        "statements",
                         "submissions",
                         "target_count",
                         "targets",

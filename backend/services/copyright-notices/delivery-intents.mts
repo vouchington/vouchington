@@ -312,7 +312,7 @@ export function replayFailedCopyrightEmailIntakeReplyIntent(input: {
   actorUserId: string
 }): Promise<string | null> {
   return resetFailedCopyrightDeliveryIntent(
-    sql`copyright_notice_email_intake_id = ${input.intakeId}`,
+    sql`copyright_notice_email_intake_id = ${input.intakeId} AND delivery_kind IN ('email_intake_rejected', 'email_intake_needs_information')`,
     input.actorUserId,
   )
 }

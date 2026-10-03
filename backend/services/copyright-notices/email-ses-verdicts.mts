@@ -11,3 +11,7 @@ export type CopyrightEmailSesVerdicts = {
   spam: CopyrightEmailSesVerdict
   virus: CopyrightEmailSesVerdict
 }
+
+export function isAuthenticatedCopyrightEmail(verdicts: CopyrightEmailSesVerdicts): boolean {
+  return verdicts.dmarc === 'pass' && verdicts.spam !== 'fail' && verdicts.virus !== 'fail'
+}

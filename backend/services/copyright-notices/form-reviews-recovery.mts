@@ -1,5 +1,6 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { createCopyrightClaimantDecisionNoticeInTransaction } from './claimant-decision-notices.mts'
 import { recordClaimantMisuseEvent } from './claimant-misuse-ledger.mts'
 import { reverseAutomatedCopyrightRestrictions } from './form-reviews-reversal.mts'
 import {
@@ -132,6 +133,10 @@ export async function recoverRejectedCopyrightFormReviewEffect(intakeId: string)
       event: { outcome: 'notice_rejected', assessmentId: recoveredAssessment[0]!.id },
     })
   }
+  await createCopyrightClaimantDecisionNoticeInTransaction(
+    { noticeId: state.notice_id, event: 'not_accepted' },
+    transaction,
+  )
   await transaction.commit()
   await reverseAutomatedCopyrightRestrictions(
     state.notice_id,

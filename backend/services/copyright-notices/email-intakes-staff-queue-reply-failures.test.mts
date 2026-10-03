@@ -1,3 +1,5 @@
+import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
+import { readCopyrightEmailIntakeResponses } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { failTestCopyrightDeliveryIntent } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
@@ -15,6 +17,7 @@ import {
 import { createParsedCopyrightEmailIntake } from './email-intake-test-fixtures.mts'
 
 describe('copyright email intake queue reply failures', () => {
+  useCopyrightIntakeEnvironment()
   it('lists a declined intake whose reply failed or bounced with its reason and wait, and hides the rest', async () => {
     if (getIsolatedDatabaseCaseMode('copyright-staff-email-intake-reply-failures') === 'parent') {
       await runIsolatedDatabaseCase('copyright-staff-email-intake-reply-failures')
@@ -30,6 +33,10 @@ describe('copyright email intake queue reply failures', () => {
     const failed = await declineTestCopyrightEmailIntake({ receivedAt: at(3) })
     const sent = await declineTestCopyrightEmailIntake({ receivedAt: at(4) })
     const bounced = await declineTestCopyrightEmailIntake({ receivedAt: at(5) })
+    const pendingReceipt = (await readCopyrightEmailIntakeResponses(pending.intakeId)).find(
+      row => row.delivery_kind === 'email_intake_received',
+    )!
+    await failTestCopyrightDeliveryIntent(pendingReceipt.id)
     await failTestCopyrightDeliveryIntent(failed.intentId)
     const { leaseToken } = await prepareCopyrightEmailDelivery(sent.intentId)
     await markCopyrightDeliveryIntentSent({

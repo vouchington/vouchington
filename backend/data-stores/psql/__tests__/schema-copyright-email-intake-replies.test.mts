@@ -1,6 +1,7 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import {
   createCopyrightEmailIntakeReplyRow,
+  createCopyrightEmailIntakeReceiptRow,
   createCopyrightEmailIntakeRow,
   rejectReplyBodyMutation,
   rejectReplyDeletion,
@@ -11,7 +12,7 @@ import {
   rejectReplyToClaimant,
   rejectReplyWithCaseDeliveryKind,
   rejectReplyWithoutBody,
-  rejectSecondReplyForIntake,
+  rejectSameReplyKindForIntake,
 } from '../../../test-helpers/data-stores/psql/copyright-email-intake-reply-schema.mts'
 import { onGracefulShutdown } from '../index.mts'
 
@@ -34,10 +35,11 @@ describe('copyright email intake reply delivery intents', () => {
     await expect(insert(intakeId)).rejects.toMatchObject(checkViolation)
   })
 
-  it('allows exactly one reply per declined intake', async () => {
+  it('allows one receipt and reply but rejects the same kind twice', async () => {
     const intakeId = await createCopyrightEmailIntakeRow()
     await createCopyrightEmailIntakeReplyRow(intakeId)
-    await expect(rejectSecondReplyForIntake(intakeId)).rejects.toMatchObject({ code: '23505' })
+    await createCopyrightEmailIntakeReceiptRow(intakeId)
+    await expect(rejectSameReplyKindForIntake(intakeId)).rejects.toMatchObject({ code: '23505' })
   })
 
   it('keeps the intake and the stored body of a reply immutable, and the reply retained', async () => {

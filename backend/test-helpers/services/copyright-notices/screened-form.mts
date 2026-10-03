@@ -51,7 +51,15 @@ export async function createClearScreenedForm(targetCount = 1, people: FormPeopl
 export type FormPeople = { claimant?: PrivateUser; poster?: { id: string } }
 
 /** A complete signed-in structured form whose screening has not run yet. */
-export async function createSignedInCopyrightForm(targetCount = 1, people: FormPeople = {}) {
+export function createSignedInCopyrightForm(targetCount = 1, people: FormPeople = {}) {
+  return createForm(targetCount, people, false)
+}
+
+export function createGuestCopyrightForm(targetCount = 1, people: FormPeople = {}) {
+  return createForm(targetCount, people, true)
+}
+
+async function createForm(targetCount: number, people: FormPeople, guest: boolean) {
   const [claimant, poster] = await Promise.all([
     people.claimant ?? createTestUser(),
     people.poster ?? createTestUser(),
@@ -67,8 +75,8 @@ export async function createSignedInCopyrightForm(targetCount = 1, people: FormP
   )
   await Promise.all(imageIds.map(imageId => insertTestPostImage({ postId, imageId })))
   return createCopyrightFormIntake({
-    currentUser: claimant,
-    requesterIdentity: `user:${claimant.id}`,
+    currentUser: guest ? null : claimant,
+    requesterIdentity: guest ? `guest:${crypto.randomUUID()}` : `user:${claimant.id}`,
     idempotencyKey: crypto.randomUUID(),
     request: {
       jurisdiction: 'us_dmca',

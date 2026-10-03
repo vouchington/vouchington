@@ -1,3 +1,4 @@
+import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { describe, expect, it } from 'vitest'
 import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
@@ -22,6 +23,14 @@ describe('copyright notice overlapping legal holds', () => {
         ...createTestCopyrightDeliveryDependencies(publish),
       }),
     ).resolves.toBe('applied')
+
+    expect(
+      (await readTestCopyrightStatementIntents(notice.id)).filter(
+        row => row.delivery_kind === 'poster_restoration_notice' && row.channel === 'email',
+      ),
+    ).toEqual([
+      expect.objectContaining({ text: expect.stringContaining('Restoration is authorized.') }),
+    ])
 
     const firstHold = await createQualifyingHold({
       moderator,

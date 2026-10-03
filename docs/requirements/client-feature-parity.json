@@ -2758,6 +2758,7 @@
             "web/app/(public)/copyright/notices/[id]/counter-notice/page.tsx",
             "web/app/(public)/copyright/notices/[id]/guest/page.tsx",
             "web/components/copyright/copyright-notice-detail.tsx",
+            "web/components/copyright/copyright-notice-statements.tsx",
             "web/components/copyright/copyright-notice-form.tsx",
             "web/components/copyright/copyright-notice-target-picker.tsx",
             "web/components/copyright/copyright-guest-receipt.tsx",
@@ -2789,7 +2790,7 @@
         }
       },
       "gap": {
-        "summary": "Swift and .NET render no copyright policy page, case list or detail, notice form (signed in or signed out), appeal, counter-notice, or guest filing. Native claimant-profile consumption stays deferred to the linked related issues. The tracking issue is the interim DMCA native owner until a dedicated native copyright issue exists.",
+        "summary": "Swift and .NET render no copyright policy page, case list or detail, participant decision statements, notice form (signed in or signed out), appeal, counter-notice, or guest filing. Native claimant-profile consumption stays deferred to the linked related issues. The tracking issue is the interim DMCA native owner until a dedicated native copyright issue exists.",
         "trackingIssue": "https://github.com/vouchington/vouchington/issues/1229",
         "relatedIssues": ["vouchington/vouchington#853", "vouchington/vouchington#854"]
       }

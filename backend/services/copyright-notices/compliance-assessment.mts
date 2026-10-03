@@ -3,6 +3,7 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
+import { createCopyrightClaimantDecisionNoticeInTransaction } from './claimant-decision-notices.mts'
 import { recordClaimantMisuseEvent } from './claimant-misuse-ledger.mts'
 import type {
   CopyrightNoticeSubmissionAssessmentRecord,
@@ -146,6 +147,14 @@ export async function appendCopyrightSubmissionAssessmentInTransaction(
       recordedAt: input.assessedAt,
       event: { outcome: 'notice_rejected', assessmentId: assessment.id },
     })
+    await createCopyrightClaimantDecisionNoticeInTransaction(
+      {
+        noticeId: submissionRows[0].copyright_notice_id,
+        event: 'not_accepted',
+        assessmentId: assessment.id,
+      },
+      transaction,
+    )
   }
   if (input.targetIds) {
     const { rows: scopedTargets } = await transaction<{ id: string }>(

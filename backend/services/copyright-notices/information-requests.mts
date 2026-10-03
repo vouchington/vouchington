@@ -1,6 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
-import type { TransactionQuery } from '@data-stores/psql/types'
-import { decryptSecret, encryptSecret } from '@modules/token-secrets'
+import { encryptSecret } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -11,6 +10,7 @@ import {
   createOutboundCopyrightCorrespondence,
 } from './correspondence.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
+import { getCopyrightClaimantEmail } from './claimant-email.mts'
 
 /**
  * Records a staff request for more information and queues it to the claimant on the notice. A
@@ -73,26 +73,4 @@ export async function requestCopyrightGuestInformation(input: {
   )
   await transaction.commit()
   return { id: correspondence.id }
-}
-
-/** The claimant email the filing recorded, retained encrypted with the notice's receipt delivery. */
-async function getCopyrightClaimantEmail(
-  noticeId: string,
-  transaction: TransactionQuery,
-): Promise<string | null> {
-  const { rows } = await transaction<{ id: string; email_ciphertext: string }>(
-    sql`/* getCopyrightClaimantEmail */
-    SELECT receipt.id, recipient.email_ciphertext
-    FROM copyright_notice_delivery_intents receipt
-    JOIN copyright_notice_delivery_recipients recipient
-      ON recipient.copyright_notice_delivery_intent_id = receipt.id
-    WHERE receipt.copyright_notice_id = ${noticeId}
-      AND receipt.recipient_role = 'claimant' AND receipt.channel = 'email'
-      AND receipt.delivery_kind = 'claimant_receipt'
-    ORDER BY receipt.id
-    LIMIT 1
-  `,
-  )
-  const row = rows[0]
-  return row ? decryptSecret(row.email_ciphertext, `copyright-delivery-recipient:${row.id}`) : null
 }
