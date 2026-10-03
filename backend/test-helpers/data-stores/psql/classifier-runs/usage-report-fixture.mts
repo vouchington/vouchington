@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto'
+import { write } from '@data-stores/psql'
+import sql from 'sql-template-strings'
 import { recordAiUsage } from '../../../../services/ai-usage/index.mts'
 import {
   type ClassifierUsageWindow,
@@ -14,6 +16,13 @@ import { localOutcomeFor, remoteDecisionFor } from '../post-classifier/outcomes.
 export function windowAroundNow(): ClassifierUsageWindow {
   const now = Date.now()
   return { from: new Date(now - 120_000), to: new Date(now + 60_000) }
+}
+
+/** Takes a classifier out of the active catalog, as retiring one does. */
+export async function retireClassifier(slug: string): Promise<void> {
+  await write(sql`/* retireClassifierForUsageReportTest */
+    UPDATE classifiers SET deactivated_at = CURRENT_TIMESTAMP WHERE slug = ${slug}
+  `)
 }
 
 /** The millisecond a run was reserved, read back out of its UUIDv7 id. */

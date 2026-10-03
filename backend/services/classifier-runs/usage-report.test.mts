@@ -1,4 +1,3 @@
-import { write } from '@data-stores/psql'
 import { createClassifierDecisionCall } from '@voucha/test-helpers/data-stores/psql/classifier-fixture-operations'
 import {
   createSyntheticFixture,
@@ -15,6 +14,7 @@ import {
   completeRunWithoutTags,
   recordBilledCall,
   reservedAtMs,
+  retireClassifier,
   startProviderAttempts,
   windowAroundNow,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/usage-report-fixture'
@@ -24,7 +24,6 @@ import {
   type PostClassifierExecutionFixture,
 } from '@voucha/test-helpers/data-stores/psql/post-classifier/execution'
 import { localOutcomeFor } from '@voucha/test-helpers/data-stores/psql/post-classifier/outcomes'
-import sql from 'sql-template-strings'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { startClassifierProviderAttempt } from './run-attempt.mts'
 import { supersedeStaleClassifierRun } from './run-supersession.mts'
@@ -256,9 +255,7 @@ describe('classifier usage report: one classifier over many runs (real PG)', () 
   it('lists only the active classifiers of the catalog, so silent ones show and retired ones do not', async () => {
     const active = await createSyntheticFixture()
     const retired = await createSyntheticFixture()
-    await write(sql`/* retireSyntheticClassifierForUsageReport */
-      UPDATE classifiers SET deactivated_at = CURRENT_TIMESTAMP WHERE slug = ${retired.slug}
-    `)
+    await retireClassifier(retired.slug)
 
     const { classifiers } = await readClassifierUsageReport(windowAroundNow())
 
