@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
+import { runIsolatedDatabaseCase } from '../../../test-helpers/vitest-isolated-database-case.mts'
 import { createTestUser } from '@voucha/test-helpers'
 import {
   concealJurisdictionPolicyApprovals,
@@ -173,6 +175,11 @@ describe('EU copyright notice contracts', () => {
   })
 
   it('requires a staff statement before redress and reports only stored facts', async () => {
+    if (getIsolatedDatabaseCaseMode('copyright-eu-transparency-report') === 'parent') {
+      await runIsolatedDatabaseCase('copyright-eu-transparency-report')
+      return
+    }
+
     const { claimant, staff, stranger } = await euActors()
     const periodStart = new Date(Date.now() - 60_000)
     const receipt = await receiveEuCopyrightNotice(claimant, crypto.randomUUID(), noticeRequest())
