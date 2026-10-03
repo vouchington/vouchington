@@ -32,6 +32,7 @@
 - `moderator`
 - `autotagger`
 - `storyteller`
+- `classifier`
 
 ## `api_key_types`
 
@@ -564,6 +565,11 @@
 
 - `singleDevice`
 - `multiDevice`
+
+## `platform_account_kinds`
+
+- `official`
+- `system`
 
 ## `podcast_itunes_types`
 

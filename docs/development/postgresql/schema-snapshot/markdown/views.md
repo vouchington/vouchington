@@ -73,9 +73,9 @@ Rolling 30-day top-hashtag recommendations from public posts and discoverable RS
              JOIN relation__post__category__topic_alias relation ON (((relation.subject_id = source.post_id) AND (relation.object_id = source.topic_alias_id) AND (relation.deleted_at IS NULL) AND (relation.votes_score_net > (0)::double precision))))
           WHERE ((p.post_type <> 'topic_recommendation'::post_types) AND (EXISTS ( SELECT 1
                    FROM users contributor
-                  WHERE ((contributor.id = source.contributor_id) AND (contributor.is_system = false) AND (contributor.deleted_at IS NULL)))) AND (EXISTS ( SELECT 1
+                  WHERE ((contributor.id = source.contributor_id) AND (contributor.platform_account_kind IS NULL) AND (contributor.deleted_at IS NULL)))) AND (EXISTS ( SELECT 1
                    FROM users post_creator
-                  WHERE ((post_creator.id = p.created_by_id) AND (post_creator.is_system = false)))) AND (NOT (EXISTS ( SELECT 1
+                  WHERE ((post_creator.id = p.created_by_id) AND (post_creator.platform_account_kind IS NULL)))) AND (NOT (EXISTS ( SELECT 1
                    FROM user_suspensions suspension
                   WHERE ((suspension.user_id = source.contributor_id) AND (suspension.lifted_at IS NULL))))) AND (p.id >= uuidv7('-30 days'::interval)))
         ), eligible_rss_hashtags AS (
@@ -325,12 +325,20 @@ UNION ALL
           ORDER BY placement.id DESC
          LIMIT 1) AS profile_image_placement,
     ARRAY[]::text[] AS roles,
-    COALESCE(((username = ANY (ARRAY['system'::text, 'autotagger'::text, 'rss-feed-auto-updater'::text, 'story-teller'::text, 'voucha'::text])) OR (EXISTS ( SELECT 1
-           FROM (user_roles
-             LEFT JOIN user_roles_types ON ((user_roles_types.id = user_roles.role_type_id)))
-          WHERE ((user_roles.user_id = users.id) AND (user_roles_types.slug = ANY (ARRAY['administrator'::text, 'investor'::text]))))) OR (EXISTS ( SELECT 1
-           FROM agents
-          WHERE ((agents.system_user_id = users.id) AND (agents.deleted_at IS NULL))))), false) AS is_official_account
+        CASE
+            WHEN (platform_account_kind = 'system'::platform_account_kinds) THEN
+            CASE
+                WHEN (EXISTS ( SELECT 1
+                   FROM agents
+                  WHERE ((agents.system_user_id = users.id) AND (agents.deleted_at IS NULL)))) THEN 'ai_agent'::text
+                ELSE 'system'::text
+            END
+            WHEN ((platform_account_kind = 'official'::platform_account_kinds) OR (EXISTS ( SELECT 1
+               FROM (user_roles
+                 JOIN user_roles_types ON ((user_roles_types.id = user_roles.role_type_id)))
+              WHERE ((user_roles.user_id = users.id) AND (user_roles_types.slug = ANY (ARRAY['administrator'::text, 'investor'::text])))))) THEN 'official'::text
+            ELSE NULL::text
+        END AS account_type
    FROM users
   WHERE (deleted_at IS NULL);
 ```
@@ -1212,9 +1220,9 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
     ( SELECT jsonb_build_object('id', gha.github_user_id, 'name', (gha.github_user_data ->> 'name'::text), 'email_address', gha.github_user_email_address) AS jsonb_build_object
            FROM github_accounts gha
           WHERE (gha.user_id = users.id)) AS github_account,
-    (EXISTS ( SELECT 1
-           FROM agents
-          WHERE ((agents.system_user_id = users.id) AND (agents.deleted_at IS NULL)))) AS is_agent,
+    ( SELECT e.account_type
+           FROM view_embedded_users e
+          WHERE (e.id = users.id)) AS account_type,
     paid_membership.plan AS membership_plan,
     users.verification_status,
     users.verification_provider,
@@ -1281,7 +1289,7 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
     e.profile_image_id,
     e.profile_image_placement,
     e.roles,
-    e.is_official_account,
+    e.account_type,
     u.markdown,
         CASE
             WHEN ((u.verification_status = 'verified'::identity_verification_statuses) AND (u.verified_badge_visible = true)) THEN u.verification_status

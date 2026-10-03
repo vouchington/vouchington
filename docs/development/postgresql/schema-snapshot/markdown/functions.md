@@ -1048,6 +1048,14 @@ CREATE OR REPLACE FUNCTION public.fn_release_next_moderation_transparency_daily_
  LANGUAGE plpgsql
 ```
 
+## `fn_require_agent_system_account`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_require_agent_system_account()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_require_classifier_activation_lifecycle`
 
 ```sql
@@ -1164,6 +1172,14 @@ CREATE OR REPLACE FUNCTION public.fn_require_mipr_case_op_context()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_require_mipr_succeeded_refund_observation_context()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_require_role_user_is_not_system`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_require_role_user_is_not_system()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -1390,6 +1406,14 @@ CREATE OR REPLACE FUNCTION public.fn_user_deletion_has_remaining_owned_data(targ
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_validate_admin_import_row_target()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_validate_platform_account_kind_change`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_validate_platform_account_kind_change()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
