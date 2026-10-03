@@ -1,4 +1,7 @@
-import { documentedResponseProperty } from '@voucha/test-helpers/openapi-documented-response'
+import {
+  documentedResponseProperty,
+  documentedObjectProperties,
+} from '@voucha/test-helpers/openapi-documented-response'
 import { describe, expect, it } from 'vitest'
 import getMyBioTool from '../get-my-bio.mts'
 import getMyEmailPreferencesTool from '../get-my-email-preferences.mts'
@@ -85,7 +88,7 @@ describe('own-data read tool output schemas stay pinned to the documented REST t
 
   it('returns the settings update_my_preferences returns, from the private user schema', () => {
     const settings = properties(properties(getMyPreferencesTool.meta?.outputSchema)['settings'])
-    const documented = properties(
+    const documented = documentedObjectProperties(
       documentedResponseProperty('patch', '/api/v1/users/{idOrSlug}', '200', 'user'),
     )
 

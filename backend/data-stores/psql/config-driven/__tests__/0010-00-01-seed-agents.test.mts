@@ -41,11 +41,16 @@ describe('0010-00-01-seed-agents idempotent', () => {
     expect(sql).toContain('INSERT INTO agents__moderators (agent_id, slug, is_baseline)')
   })
 
-  it('generates moderator agent rows with ON CONFLICT', () => {
+  it('guards moderator agent inserts before conflict checks', () => {
     const sql = generateSeedAgentsSQL()
     expect(sql).toContain('INSERT INTO agents')
     expect(sql).toContain("'moderator'")
-    expect(sql).toContain('ON CONFLICT (system_user_id)')
+    expect(sql).toContain('ON CONFLICT (system_user_id) DO NOTHING')
+    expect(sql).toContain(
+      'AND NOT EXISTS (SELECT 1 FROM agents existing WHERE existing.system_user_id = u.id)',
+    )
+    expect(sql).toContain('UPDATE agents a SET agent_type')
+    expect(sql).toContain('a.agent_type IS DISTINCT FROM')
   })
 
   it('generates autotagger agent row', () => {
@@ -53,13 +58,13 @@ describe('0010-00-01-seed-agents idempotent', () => {
     // The autotagger agent INSERT selects by username to get the system_user_id
     expect(sql).toContain("WHERE u.username = 'autotagger'")
     // The agent_type value is inline in the SELECT
-    expect(sql).toContain("'autotagger',")
+    expect(sql).toContain("'autotagger'")
   })
 
   it('generates storyteller agent row for story-teller', () => {
     const sql = generateSeedAgentsSQL()
     expect(sql).toContain("WHERE u.username = 'story-teller'")
-    expect(sql).toContain("'storyteller',")
+    expect(sql).toContain("'storyteller'")
   })
 
   it('does not recreate the retired Wikipedia recommender identity or agent type', () => {

@@ -40,59 +40,16 @@ export default function generateSeedAgentsSQL(): string {
     'automod',
   ]) {
     parts.push(buildSystemUserUpsertSQL(username))
-    parts.push(`INSERT INTO agents (system_user_id, agent_type, created_by_id)
-      SELECT actor.id, 'classifier', (SELECT id FROM users WHERE username = 'system')
-      FROM users actor WHERE actor.username = '${username}' AND actor.platform_account_kind = 'system'
-      ON CONFLICT (system_user_id) DO UPDATE SET agent_type = 'classifier', deleted_at = NULL;`)
+    parts.push(buildAgentSeedSQL(username, 'classifier', false))
   }
 
-  // 3. Upsert moderator agent rows.
   for (const config of MODERATOR_CONFIGS) {
-    parts.push(`
-INSERT INTO agents (system_user_id, agent_type, activated_at, created_by_id)
-SELECT
-  u.id,
-  'moderator',
-  CURRENT_TIMESTAMP,
-  (SELECT id FROM users WHERE username = 'system')
-FROM users u
-WHERE u.username = '${config.slug}'
-ON CONFLICT (system_user_id) DO UPDATE SET
-  activated_at = COALESCE(agents.activated_at, CURRENT_TIMESTAMP),
-  deactivated_at = NULL,
-  deleted_at = NULL;`)
+    parts.push(buildAgentSeedSQL(config.slug, 'moderator', true))
   }
+  parts.push(buildAgentSeedSQL('autotagger', 'autotagger', true))
+  parts.push(buildAgentSeedSQL('story-teller', 'storyteller', true))
 
-  // 4. Upsert the autotagger agent row (agent_type: 'autotagger').
-  parts.push(`
-INSERT INTO agents (system_user_id, agent_type, activated_at, created_by_id)
-SELECT
-  u.id,
-  'autotagger',
-  CURRENT_TIMESTAMP,
-  (SELECT id FROM users WHERE username = 'system')
-FROM users u
-WHERE u.username = 'autotagger'
-ON CONFLICT (system_user_id) DO UPDATE SET
-  activated_at = COALESCE(agents.activated_at, CURRENT_TIMESTAMP),
-  deactivated_at = NULL,
-  deleted_at = NULL;`)
-
-  parts.push(`
-INSERT INTO agents (system_user_id, agent_type, activated_at, created_by_id)
-SELECT
-  u.id,
-  'storyteller',
-  CURRENT_TIMESTAMP,
-  (SELECT id FROM users WHERE username = 'system')
-FROM users u
-WHERE u.username = 'story-teller'
-ON CONFLICT (system_user_id) DO UPDATE SET
-  activated_at = COALESCE(agents.activated_at, CURRENT_TIMESTAMP),
-  deactivated_at = NULL,
-  deleted_at = NULL;`)
-
-  // 5. Upsert agents__moderators rows. The C5 classifiers are record-only (the community action is
+  // Upsert agents__moderators rows. The C5 classifiers are record-only (the community action is
   // communities.automod_action). Their prompt, model and provider are seeded by
   // 0635-00-03-seed-post-classifier, so no per-moderator agent_prompts rows exist.
   for (const config of MODERATOR_CONFIGS) {
@@ -111,4 +68,27 @@ ON CONFLICT (agent_id) DO UPDATE SET
   }
 
   return parts.join('\n')
+}
+
+function buildAgentSeedSQL(username: string, agentType: string, activate: boolean): string {
+  const activation = activate ? ', activated_at' : ''
+  const activationValue = activate ? ', CURRENT_TIMESTAMP' : ''
+  const lifecycleUpdates = activate
+    ? ', activated_at = COALESCE(a.activated_at, CURRENT_TIMESTAMP), deactivated_at = NULL'
+    : ''
+  const lifecycleChanges = activate
+    ? ' OR a.activated_at IS NULL OR a.deactivated_at IS NOT NULL'
+    : ''
+  return `
+INSERT INTO agents (system_user_id, agent_type, created_by_id${activation})
+SELECT u.id, '${agentType}', (SELECT id FROM users WHERE username = 'system')${activationValue}
+FROM users u
+WHERE u.username = '${username}' AND u.platform_account_kind = 'system'
+  AND NOT EXISTS (SELECT 1 FROM agents existing WHERE existing.system_user_id = u.id)
+ON CONFLICT (system_user_id) DO NOTHING;
+
+UPDATE agents a SET agent_type = '${agentType}', deleted_at = NULL${lifecycleUpdates}
+FROM users u
+WHERE a.system_user_id = u.id AND u.username = '${username}' AND u.platform_account_kind = 'system'
+  AND (a.agent_type IS DISTINCT FROM '${agentType}' OR a.deleted_at IS NOT NULL${lifecycleChanges});`
 }

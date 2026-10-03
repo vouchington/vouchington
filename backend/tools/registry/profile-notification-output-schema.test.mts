@@ -1,4 +1,7 @@
-import { documentedResponseProperty } from '@voucha/test-helpers/openapi-documented-response'
+import {
+  documentedResponseProperty,
+  documentedObjectProperties,
+} from '@voucha/test-helpers/openapi-documented-response'
 import { describe, expect, it } from 'vitest'
 import addMyProfileLinkTool from '../add-my-profile-link.mts'
 import deleteMyProfileLinkTool from '../delete-my-profile-link.mts'
@@ -55,7 +58,7 @@ describe('profile, notification and preference tool output schemas stay pinned t
     const identity = properties(
       properties(updateMyDisplayIdentityTool.meta?.outputSchema)['identity'],
     )
-    const documented = properties(
+    const documented = documentedObjectProperties(
       documentedResponseProperty('patch', '/api/v1/my/identity', '200', 'identity'),
     )
 
@@ -67,7 +70,7 @@ describe('profile, notification and preference tool output schemas stay pinned t
 
   it('takes every setting from the private user the users route returns', () => {
     const settings = properties(properties(updateMyPreferencesTool.meta?.outputSchema)['settings'])
-    const documented = properties(
+    const documented = documentedObjectProperties(
       documentedResponseProperty('patch', '/api/v1/users/{idOrSlug}', '200', 'user'),
     )
 

@@ -44,3 +44,15 @@ export function documentedResponseProperty(
     throw new Error(`${method.toUpperCase()} ${path} ${status} documents no ${property} property`)
   return properties[property]
 }
+
+/** Object properties, preserving the documented shape while selecting its sole non-null branch. */
+export function documentedObjectProperties(schema: unknown): Record<string, unknown> {
+  const shape = schema as JsonSchema
+  if (shape['properties']) return shape['properties'] as Record<string, unknown>
+  const branches = shape['anyOf'] as JsonSchema[] | undefined
+  const nonNull = branches?.filter(branch => branch['type'] !== 'null')
+  const object = nonNull?.length === 1 ? nonNull[0] : undefined
+  if (object?.['type'] !== 'object' || !object['properties'])
+    throw new Error('Expected one documented object schema branch')
+  return object['properties'] as Record<string, unknown>
+}
