@@ -6,11 +6,11 @@
 
 General-purpose, user-aware rate limiting with thresholds that adjust based on user trust signals.
 
-### Trust Tier (1–5)
+### Trust Tier (0–5)
 
-Computed from: auth method (OAuth), MFA (passkeys), account age, and membership tier. Higher trust = higher rate limits.
+Computed by `computeTrustTier`; see the canonical [trust-tier definition](services/user-rate-limits/README.md#trust-tier) for scoring signals and penalties. Higher trust = higher rate limits.
 
-**New account cooling period**: accounts less than 24 hours old are clamped to tier 0, regardless of OAuth or membership signals. This happens inside `computeTrustTier` before any other signals are evaluated. Admins bypass the clamp.
+The [special cases](services/user-rate-limits/README.md#special-cases) define the new-account cooling period and administrator override.
 
 ### Categories
 

@@ -27,7 +27,7 @@ Each request generates composite Valkey keys. All dimensions are checked atomica
 
 ### Rate Limit Thresholds
 
-**Authenticated users**: trust tier thresholds from `@services/user-rate-limits/config` × route `multiplier`. Trust tier (1–5) is computed from OAuth accounts, MFA (passkeys), account age, and membership tier.
+**Authenticated users**: trust tier thresholds from `@services/user-rate-limits/config` × route `multiplier`. See the canonical [trust-tier definition](../user-rate-limits/README.md#trust-tier) for scoring and special cases.
 
 **Anonymous users**: DynamicConfig `anon_{category}` thresholds × route `multiplier`.
 
