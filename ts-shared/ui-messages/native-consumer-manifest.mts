@@ -29,7 +29,6 @@ import { NATIVE_CONSUMER_MANIFEST_CLAIMS_23 } from './native-consumer-manifest/c
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_24 } from './native-consumer-manifest/claims-24.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_25 } from './native-consumer-manifest/claims-25.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_27 } from './native-consumer-manifest/claims-27.mts'
-import { NATIVE_CONSUMER_MANIFEST_CLAIMS_API_KEY_LIFECYCLE } from './native-consumer-manifest/claims-api-key-lifecycle.mts'
 import type { NativeConsumerManifestEntry } from './native-consumer-manifest/types.mts'
 
 export type {
@@ -70,7 +69,6 @@ const NATIVE_CONSUMER_MANIFEST_CLAIM_SLICES: readonly (readonly NativeConsumerMa
   NATIVE_CONSUMER_MANIFEST_CLAIMS_24,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_25,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_27,
-  NATIVE_CONSUMER_MANIFEST_CLAIMS_API_KEY_LIFECYCLE,
 ]
 
 export const NATIVE_CONSUMER_MANIFEST =

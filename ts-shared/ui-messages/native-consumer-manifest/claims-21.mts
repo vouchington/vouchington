@@ -3,19 +3,6 @@ import type { NativeConsumerManifestEntry } from './types.mts'
 /** Canonical native consumer claims, kept in code-point key order. */
 export const NATIVE_CONSUMER_MANIFEST_CLAIMS_21 = [
   {
-    key: 'native.swift.routeMetadata.staffEngineeringAgentsAgentsDescription',
-    consumers: ['swift'],
-  },
-  { key: 'native.swift.routeMetadata.staffEngineeringAgentsAgentsTitle', consumers: ['swift'] },
-  {
-    key: 'native.swift.routeMetadata.staffEngineeringAgentsConversationDescription',
-    consumers: ['swift'],
-  },
-  {
-    key: 'native.swift.routeMetadata.staffEngineeringAgentsConversationTitle',
-    consumers: ['swift'],
-  },
-  {
     key: 'native.swift.routeMetadata.staffEngineeringAiCostsAiCostsDescription',
     consumers: ['swift'],
   },
