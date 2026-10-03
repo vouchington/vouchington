@@ -30,6 +30,8 @@ export function makeSdkResponse(overrides: ResponseOverrides): Response {
     },
     error: null,
     incomplete_details: null,
+    // Null is the SDK's implicit Standard fallback, not an explicit Cyber program selection.
+    access_programs: null,
     ...overrides,
   } satisfies Response
   return response
