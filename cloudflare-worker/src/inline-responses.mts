@@ -18,19 +18,6 @@ import {
 } from './websocket.mts'
 import type { Env } from './types.mts'
 
-export function isStaticInlineResponsePath(pathname: string): boolean {
-  return (
-    pathname === '/robots.txt' ||
-    pathname === '/llms.txt' ||
-    pathname === '/llms-full.txt' ||
-    pathname === '/.well-known/security.txt' ||
-    pathname === '/.well-known/api-catalog' ||
-    pathname === '/.well-known/traffic-advice' ||
-    pathname === '/.well-known/agent-card.json' ||
-    pathname === '/.well-known/agent-skills.json'
-  )
-}
-
 export function getGeoBlockedResponse(request: Request, env: Env): Response | null {
   const blockedCountries = parseBlockedCountries(env.GEO_BLOCKED_COUNTRIES)
   if (isGeoBlocked(request.headers, blockedCountries)) {

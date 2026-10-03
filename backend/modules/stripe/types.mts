@@ -48,10 +48,6 @@ export type CreateBillingPortalSessionPayload = {
   idempotencyKey: string
   cancellationSubscriptionId?: string
 }
-export type CancelSubscriptionAtPeriodEndPayload = {
-  subscriptionId: string
-  idempotencyKey: string
-}
 export type RetrieveIdentityVerificationSessionUrlPayload = { sessionId: string }
 export type ListSubscriptionInvoicesPayload = { subscriptionId: string; limit: number }
 export type CreateRefundPayload = {
@@ -62,4 +58,3 @@ export type CreateRefundPayload = {
   metadata?: Record<string, string>
 }
 export type CancelSubscriptionImmediatelyPayload = { subscriptionId: string }
-export type SanitizeCustomerPayload = { customerId: string; idempotencyKey: string }

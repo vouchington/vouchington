@@ -60,6 +60,3 @@ export function getMarkdownAliasOriginPath(pathname: string): string | null {
 
   return null
 }
-
-export const isMarkdownAliasRoute = (pathname: string): boolean =>
-  getMarkdownAliasOriginPath(pathname) !== null

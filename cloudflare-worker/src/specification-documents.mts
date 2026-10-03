@@ -7,8 +7,6 @@ import {
 import { getSiteOrigin } from './discovery-origin.mts'
 import type { Env } from './types.mts'
 
-export const MARKDOWN_SOURCE_PATHS = ['/md/posts', '/md/topics', '/md/users/{username}'] as const
-
 export const WELL_KNOWN_PATHS = new Set([
   '/.well-known/security.txt',
   '/.well-known/api-catalog',
