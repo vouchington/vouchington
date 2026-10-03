@@ -46,8 +46,9 @@ names the stack, such as `stack_invalidated` or `stack_out_of_order`. For each e
 number,headRefName,headRefOid`, and repeat upward from every layer you include. Include a layer
 only when all of these hold:
 
-- its latest `RemovedFromMergeQueueEvent` has a `createdAt` within about a minute of the latest
-  removal of the layer below it;
+- its latest `RemovedFromMergeQueueEvent` has a `createdAt` within about a minute of a matched
+  removal of the layer below it: the removal of any of the entry's untriaged occurrences, or the
+  matched removal of a lower stack layer;
 - that removal's reason starts with `stack_`; a layer removed for any other reason, such as its own
   failure or a manual removal, is not part of this cascade;
 - its `mergeQueueEntry` is null, and it is not an entry itself;
