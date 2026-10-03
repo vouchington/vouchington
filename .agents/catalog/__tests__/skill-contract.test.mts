@@ -11,6 +11,7 @@ const ADAPTERS = {
   'agent-workflow': 'vouchington-workflow',
   'backend-vitest-test-authoring': 'vouchington-testing',
   blackboard: 'vouchington-workflow',
+  'bounded-iteration': 'vouchington-database',
   'git-commit-checklist': 'vouchington-workflow',
   'github-actions-checklist': 'vouchington-workflow',
   'github-issue': 'vouchington-workflow',

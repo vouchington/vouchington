@@ -3,7 +3,8 @@
 Use this checklist when adding or changing a Voucha GlideMQ queue, worker, processor, flow, job
 payload, retry policy, scheduler, backfill, or worker placement. Generic GlideMQ API syntax belongs
 in the installed `glide-mq` skill; this page owns Voucha's package, durability, and validation
-contracts.
+contracts. A scheduler, backfill, or cleanup that reads rows also follows the
+[bounded-iteration skill](../../.agents/skills/bounded-iteration/SKILL.md).
 
 ```mermaid
 flowchart LR

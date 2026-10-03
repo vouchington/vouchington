@@ -35,8 +35,9 @@ The following local adapters are overlays, not standalone workflows:
 `review-github-issue-taxonomy`, `revisit-followups`, `stacked-prs`, and
 `static-analysis-checklist`. The testing adapters are `vitest-test-authoring`,
 `backend-vitest-test-authoring`, `web-vitest-test-authoring`, `playwright-authoring`,
-`storybook-authoring`. The database adapters are `postgres-node-performance-tuning`,
-`postgres-partitioning-uuid-v7`, and `postgres-schema-design`. The bijection between these adapters and
+`storybook-authoring`. The database adapters are `bounded-iteration`,
+`postgres-node-performance-tuning`, `postgres-partitioning-uuid-v7`, and
+`postgres-schema-design`. The bijection between these adapters and
 `.claude/skills` is enforced by `finite-set-consistency` (`.no-mistakes.yml`), not by a count
 here — see [`.agents/catalog/README.md`](../../.agents/catalog/README.md) for the current list.
 
