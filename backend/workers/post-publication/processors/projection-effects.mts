@@ -1,6 +1,9 @@
 import type { enqueueBulkRefreshPostMetricsById } from '@queues/entity-metrics-cache-refresh/enqueues'
 import type { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
-import type { enqueueUpdatePostDaySitemapForReconciliation } from '@queues/sitemaps/enqueues'
+import type {
+  enqueueUpdateLandingPagesSitemapForReconciliation,
+  enqueueUpdatePostDaySitemapForReconciliation,
+} from '@queues/sitemaps/enqueues'
 import type { invalidatePostStrict } from '@services/entity-cache/invalidate-strict'
 import type {
   PublicationSitemapTarget,
@@ -20,6 +23,7 @@ export type PostPublicationProjectionEffectDependencies = {
   invalidatePostPublicationTopics: typeof invalidatePostPublicationTopicsStrict
   updateTopicRatingStats: typeof updateTopicRatingStats
   enqueueUpdatePostDaySitemapForReconciliation: typeof enqueueUpdatePostDaySitemapForReconciliation
+  enqueueUpdateLandingPagesSitemapForReconciliation: typeof enqueueUpdateLandingPagesSitemapForReconciliation
   enqueueRefreshTopHashtags: typeof enqueueRefreshTopHashtags
   enqueueBulkRefreshPostMetricsById: typeof enqueueBulkRefreshPostMetricsById
   invalidateUser: Parameters<typeof applyPostPublicationIdentityEffects>[1]['invalidateUser']
@@ -60,6 +64,9 @@ export async function applyPostPublicationProjectionEffects(
     ...result.sitemapTargets.map(target =>
       deps.enqueueUpdatePostDaySitemapForReconciliation(target.postType, target.day),
     ),
+    ...(result.sitemapTargets.some(target => target.postType === 'review')
+      ? [deps.enqueueUpdateLandingPagesSitemapForReconciliation()]
+      : []),
     deps.enqueueRefreshTopHashtags(),
     deps.enqueueBulkRefreshPostMetricsById([
       ...result.posts.map(post => post.id),

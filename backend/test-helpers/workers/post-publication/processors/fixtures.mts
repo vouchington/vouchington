@@ -17,7 +17,10 @@ import type {
 import type { invalidatePostStrict } from '../../../../services/entity-cache/invalidate-strict.mts'
 import type { enqueueContinuePostPublicationReconciliation } from '@queues/post-publication/enqueues'
 import type { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
-import type { enqueueUpdatePostDaySitemapForReconciliation } from '@queues/sitemaps/enqueues'
+import type {
+  enqueueUpdateLandingPagesSitemapForReconciliation,
+  enqueueUpdatePostDaySitemapForReconciliation,
+} from '@queues/sitemaps/enqueues'
 import type {
   enqueueBulkReconcilePostNotifications,
   enqueueBulkReconcileRssFeedItemNotifications,
@@ -76,6 +79,7 @@ export function makeResult(
     rssFeedItemIds?: string[]
     hasMoreIdentityKeys?: boolean
     cursorKeyId?: string | null
+    sitemapTargets?: PublicationSitemapTarget[]
   } = { processed: 1 },
 ) {
   return {
@@ -88,9 +92,7 @@ export function makeResult(
     cursorPostId: options.cursorPostId === undefined ? post.id : options.cursorPostId,
     topicIds: options.topicIds ?? ['00000000-0000-7000-8000-000000000006'],
     hasMoreTopics: options.hasMoreTopics ?? false,
-    sitemapTargets: [
-      { postType: 'discussion', day: '2026-09-01' },
-    ] satisfies PublicationSitemapTarget[],
+    sitemapTargets: options.sitemapTargets ?? [{ postType: 'discussion', day: '2026-09-01' }],
     identityKeys: options.identityKeys ?? [
       {
         id: '00000000-0000-7000-8000-000000000009',
@@ -135,6 +137,9 @@ export function makeDependencies(result = makeResult()) {
     updateTopicRatingStats: vi.fn<typeof updateTopicRatingStats>().mockResolvedValue(undefined),
     enqueueUpdatePostDaySitemapForReconciliation: vi
       .fn<typeof enqueueUpdatePostDaySitemapForReconciliation>()
+      .mockResolvedValue(undefined),
+    enqueueUpdateLandingPagesSitemapForReconciliation: vi
+      .fn<typeof enqueueUpdateLandingPagesSitemapForReconciliation>()
       .mockResolvedValue(undefined),
     enqueueBulkRefreshPostMetricsById: vi
       .fn<typeof enqueueBulkRefreshPostMetricsById>()

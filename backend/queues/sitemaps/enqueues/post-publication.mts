@@ -7,13 +7,25 @@ import {
   SITEMAPS_ORDERING,
 } from '../config.mts'
 import { sitemaps } from '../queues.mts'
-import type { PostDayJobData, SitemapPostDayJobs } from '../types.mts'
+import type {
+  PostDayJobData,
+  SitemapFamilyJobData,
+  SitemapIndexJobs,
+  SitemapPostDayJobs,
+} from '../types.mts'
 
 const enqueueUpdatePostDaySitemapJob = createEnqueueFunction<PostDayJobData, SitemapPostDayJobs>({
   queue: sitemaps,
   queueName: QUEUE_NAME,
   jobName: 'processUpdatePostDaySitemap',
 })
+const enqueueUpdateFamilySitemapJob = createEnqueueFunction<SitemapFamilyJobData, SitemapIndexJobs>(
+  {
+    queue: sitemaps,
+    queueName: QUEUE_NAME,
+    jobName: 'processUpdateFamilySitemap',
+  },
+)
 
 /**
  * Enqueues without deduplication so acknowledgement always follows a newly accepted durable job.
@@ -30,4 +42,13 @@ export async function enqueueUpdatePostDaySitemapForReconciliation(
     ordering: SITEMAPS_ORDERING[getSitemapsOrderingKeyForDay(day)],
   })
   if (!job) throw new Error('Publication reconciliation sitemap job was not accepted')
+}
+
+/** Every acknowledged review repair needs an accepted landing-pages rebuild, including retries. */
+export async function enqueueUpdateLandingPagesSitemapForReconciliation(): Promise<void> {
+  const job = await enqueueUpdateFamilySitemapJob(
+    { family: 'landing-pages' },
+    { priority: PRIORITY_DEFAULT, ordering: SITEMAPS_ORDERING.indexes },
+  )
+  if (!job) throw new Error('Publication reconciliation landing-pages sitemap job was not accepted')
 }

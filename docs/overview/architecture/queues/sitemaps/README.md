@@ -17,10 +17,12 @@ Generates and updates XML sitemaps — per-day post sitemaps, type indexes, dyna
 - `processWeeklyBackfillMonthDispatcher` — weekly: enqueues sitemap updates for the past 30 days
 - `processMonthlyBackfillArchiveDispatcher` — monthly: enqueues sitemap updates for the full historical archive
 
-Post-publication reconciliation uses a dedicated non-deduplicated enqueue path for per-day sitemap
-updates. Every acknowledged repair therefore has a newly accepted durable sitemap job; the normal
-ordering key still serializes rebuilds within the target day lane. Other callers retain the
-60-second throttle used to collapse best-effort refresh bursts.
+Post-publication reconciliation uses dedicated non-deduplicated enqueue paths for per-day sitemap
+updates and the `landing-pages` family when a bounded page includes a review target. The latter
+also covers retained targets for deleted reviews and runs once per page, whether the review became
+public or ceased to be public. Every acknowledged repair therefore has newly accepted durable
+sitemap jobs; the normal ordering keys serialize rebuilds. Other callers retain the 60-second
+throttle used to collapse best-effort refresh bursts.
 
 ## Related
 
