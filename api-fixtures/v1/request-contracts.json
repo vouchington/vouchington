@@ -29669,6 +29669,15 @@
         },
         "required": ["idOrSlug"],
         "type": "object"
+      },
+      "query": {
+        "properties": {
+          "include_bio": {
+            "enum": ["0", "1"],
+            "type": "string"
+          }
+        },
+        "type": "object"
       }
     },
     "GET:/api/v1/users/:idOrSlug/communities/:listType": {
