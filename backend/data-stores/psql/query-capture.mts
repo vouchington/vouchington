@@ -10,6 +10,8 @@ interface CapturedQuery {
 let captureEnabled = false
 const captured: CapturedQuery[] = []
 const queryCaptureScopes = new AsyncLocalStorage<{ captured: boolean }>()
+// Plan tests share a fork with in-process workers. This audience records only the profiled call.
+const captureAudiences = new AsyncLocalStorage<CapturedQuery[]>()
 
 export function enableQueryCapture(): void {
   captureEnabled = true
@@ -32,8 +34,20 @@ export function runWithSingleQueryCapture<Result>(handler: () => Result): Result
   return queryCaptureScopes.run({ captured: false }, handler)
 }
 
+export async function runWithCapturedQueries<Result>(
+  handler: () => Promise<Result>,
+): Promise<{ result: Result; queries: CapturedQuery[] }> {
+  const bucket: CapturedQuery[] = []
+  const result = await captureAudiences.run(bucket, handler)
+  return {
+    result,
+    queries: bucket.map(query => ({ ...query, values: [...query.values] })),
+  }
+}
+
 export function maybeCaptureQuery(input: QueryInput, values?: QueryValues): void {
-  if (!captureEnabled) return
+  const audience = captureAudiences.getStore()
+  if (!audience && !captureEnabled) return
   const scope = queryCaptureScopes.getStore()
   if (scope?.captured) return
   if (scope) scope.captured = true
@@ -50,9 +64,11 @@ export function maybeCaptureQuery(input: QueryInput, values?: QueryValues): void
     return
   }
 
-  captured.push({
+  const record = {
     text,
     values: resolvedValues,
     timestamp: Date.now(),
-  })
+  }
+  if (audience) audience.push(record)
+  else captured.push(record)
 }

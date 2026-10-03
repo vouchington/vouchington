@@ -212,8 +212,9 @@ pnpm run explain:dump | your-llm-cli -p "analyze the query plans for performance
 [`backend/data-stores/psql/query-capture.mts`](../../../../backend/data-stores/psql/query-capture.mts) records SQL
 calls through the `onBeforeQuery` hook configured in
 [`setup.mts`](../../../../backend/data-stores/psql/setup.mts). The `enableQueryCapture()` /
-`disableQueryCapture()` functions toggle capture globally. Captured queries include the SQL text and
-bound parameter values.
+`disableQueryCapture()` functions toggle capture globally. `runWithCapturedQueries()` records only
+the profiled async context, so in-process workers on the same fork do not join that buffer.
+Captured queries include the SQL text and bound parameter values.
 
 ### EXPLAIN replay
 
