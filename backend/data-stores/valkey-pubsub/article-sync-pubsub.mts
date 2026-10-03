@@ -1,8 +1,9 @@
+import type { ArticleSyncResult } from '@voucha/types/article-sync'
 import { createChannelPubSub } from './channel-pubsub.mts'
 
 export type ArticleSyncStatus = {
   status: 'completed' | 'failed'
-  result?: unknown
+  result?: ArticleSyncResult
   error?: string
 }
 

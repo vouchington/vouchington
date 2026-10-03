@@ -8,10 +8,6 @@ import { promisify } from 'node:util'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import { buildOpenApiDocument } from './build-openapi-document.mts'
-import {
-  EXPECTED_UNAVAILABLE_REQUEST_ROUTES,
-  EXPECTED_UNAVAILABLE_ROUTES,
-} from './openapi-unavailable-route-ratchets.mts'
 import type {
   OpenApiDocument,
   OpenApiResponse,
@@ -50,8 +46,7 @@ function productionRequestSchema(path: string): OpenApiSchema {
 }
 
 describe('openapi document generation', () => {
-  // Build once here (see cold-build-budget.mts) — direct-call tests below read this closure;
-  // only the two writeOpenApi() tests deliberately keep building fresh to exercise the write path.
+  // Hoist once; only the two writeOpenApi() tests rebuild to exercise the write path.
   beforeAll(() => {
     doc = buildOpenApiDocument()
     buildCountAfterHoist = getBackendProgramBuildCount()
@@ -81,35 +76,23 @@ describe('openapi document generation', () => {
     COLD_OPENAPI_BUILD_TIMEOUT_MS,
   )
 
-  it('never documents more unavailable routes than the frozen ratchet allows', () => {
-    const known = new Set(EXPECTED_UNAVAILABLE_ROUTES)
-    const newlyUnavailable = doc['x-unavailable-routes'].filter(route => !known.has(route))
-
-    expect(newlyUnavailable).toEqual([])
-  })
-
-  it('never documents more unavailable request routes than the frozen ratchet allows', () => {
-    const known = new Set(EXPECTED_UNAVAILABLE_REQUEST_ROUTES)
-    const newlyUnavailable = doc['x-unavailable-request-routes'].filter(route => !known.has(route))
-
-    expect(newlyUnavailable).toEqual([])
+  it('extracts every registered response and request contract', () => {
+    expect(doc['x-unavailable-routes']).toEqual([])
+    expect(doc['x-unavailable-request-routes']).toEqual([])
   })
 
   it('spot-checks request body shapes for known routes', () => {
-    // Named-type body -> $ref (backend/api/v1/crawlers/index.mts's UpdateCrawlerUpdates cast).
     const namedTypeBody = doc.paths['/api/v1/crawlers/{id}']!.patch!.requestBody!
     expect(namedTypeBody.content['application/json'].schema).toEqual({
       $ref: '#/components/schemas/UpdateCrawlerUpdates',
     })
     expect(doc.components.schemas.UpdateCrawlerUpdates).toMatchObject({ type: 'object' })
 
-    // Inline-literal body -> a plain object schema, not a $ref.
     const inlineBody =
       doc.paths['/api/v1/admin/users/{userId}/identity-verification-attempts']!.post!.requestBody!
     expect(inlineBody.content['application/json'].schema).toMatchObject({ type: 'object' })
     expect(inlineBody.content['application/json'].schema.$ref).toBeUndefined()
 
-    // A bodyless mutation route omits requestBody entirely (not even the key present).
     expect(doc.paths['/api/v1/households/{id}']!.delete).not.toHaveProperty('requestBody')
 
     expect(productionRequestSchema('/api/v1/auth/bluesky/link').properties).toMatchObject({
@@ -236,20 +219,45 @@ describe('openapi document generation', () => {
       'text/csv',
     ])
 
-    const queueStream = doc.paths['/api/v1/mq/stream']!.get!
-    expect(queueStream.responses['200']).toMatchObject({
-      content: { 'text/event-stream': { schema: {} } },
+    for (const [path, names] of [
+      ['/api/v1/mq/stream', ['stats']],
+      ['/api/v1/users/{idOrSlug}/data-request/stream', ['status']],
+      ['/api/v1/images/{id}/state/stream', ['state']],
+      ['/api/v1/imports/{batchId}/stream', ['done', 'progress']],
+      ['/api/v1/admin/article-syncs/{jobId}/stream', ['status']],
+      ['/api/v1/admin/postgresql/stream', ['snapshot']],
+      ['/api/v1/admin/valkey/stream', ['snapshot']],
+    ] as const) {
+      const response = doc.paths[path]!.get!.responses['200'] as OpenApiResponse
+      const content = response.content!['text/event-stream'] as {
+        schema: OpenApiSchema
+        'x-sse-events': Record<string, { dataSchema: OpenApiSchema }>
+      }
+      expect(content.schema).toEqual({ type: 'string' })
+      expect(Object.keys(content['x-sse-events']).toSorted()).toEqual(names)
+      for (const event of Object.values(content['x-sse-events'])) {
+        expect(JSON.stringify(event.dataSchema)).toMatch(/"(?:type|anyOf|allOf|\$ref)":/)
+      }
+    }
+    expect(doc.components.schemas.ArticleSyncStatus.properties?.result).toEqual({
+      $ref: '#/components/schemas/ArticleSyncResult',
     })
-    expect(doc.paths['/api/v1/mcp']!.get!.responses['405']).toEqual({
-      $ref: '#/components/responses/Error',
-    })
-    expect(doc.paths['/api/v1/mcp']!.post!.responses).toEqual({
-      default: { $ref: '#/components/responses/Error' },
-    })
-    for (const path of ['/api/v1/hostnames', '/api/v1/rss-feeds', '/api/v1/search']) {
-      expect(doc.paths[path]!.get!.responses['200']).toMatchObject({
-        'x-schema-unavailable': true,
+    for (const path of ['/api/v1/mcp', '/api/v1/admin/mcp']) {
+      const responses = doc.paths[path]!.post!.responses
+      expect(Object.keys(responses).toSorted()).toEqual(['200', '202', '400', 'default'])
+      const ok = responses['200'] as OpenApiResponse
+      expect(JSON.stringify(ok.content!['application/json'].schema)).toContain('"type":"array"')
+      expect(responses['202']).not.toHaveProperty('content')
+      const badRequest = responses['400'] as OpenApiResponse
+      expect(badRequest.content!['application/json'].schema.anyOf).toContainEqual({
+        $ref: '#/components/schemas/ErrorBody',
       })
+      for (const method of ['get', 'delete']) {
+        expect(doc.paths[path]![method]!.responses).toEqual({
+          405: { $ref: '#/components/responses/Error' },
+          default: { $ref: '#/components/responses/Error' },
+        })
+      }
     }
 
     const registered = new Set(
@@ -273,9 +281,7 @@ describe('openapi document generation', () => {
   it(
     'validates as a structurally sound OpenAPI 3.1 document',
     async () => {
-      // `--extends minimal` scopes redocly to spec-validity rules (resolvable refs, valid
-      // structure), skipping documentation-completeness rules like `operation-summary` that Phase
-      // A intentionally doesn't populate (no hand-authored per-operation prose yet).
+      // Minimal checks spec validity and refs without requiring handwritten operation summaries.
       await expect(
         run('pnpm', ['exec', 'redocly', 'lint', openApiPaths.openApiPath, '--extends', 'minimal'], {
           cwd: repoRoot,
@@ -286,11 +292,8 @@ describe('openapi document generation', () => {
   )
 
   it('never re-enters loadBackendProgram() beyond the hoist and the known rebuilds', () => {
-    // Each writeOpenApi() call rebuilds the document via 5 independent loaders (response, request,
-    // query, route catalog, header), each entering loadBackendProgram() once — 10 entries for the two
-    // legitimate rebuilds above, plus 1 for the direct loadRegisteredRouteCatalog() call in
-    // 'documents real post creation...'. Any other reintroduced call trips this, even one that hits
-    // a warm cache, unlike a build-count-only assertion.
+    // The two writes enter five loaders each; registered-route coverage adds one entry.
+    // Other tests must read the hoisted document even when a loader would hit its cache.
     expect(getBackendProgramEntryCount()).toBe(entryCountAfterHoist + 11)
     expect(getBackendProgramBuildCount()).toBe(buildCountAfterHoist)
   })
