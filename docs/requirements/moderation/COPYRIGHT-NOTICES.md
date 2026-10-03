@@ -374,7 +374,8 @@ original receipt time or an existing restoration deadline. A withdrawal records 
 leaves existing restrictions in place until staff assess it. Receiving a withdrawal, whether filed
 by a guest or admitted from claimant email, revokes every live capability on the case in the same
 transaction and appends an actorless `guest_capability_revoked_by_withdrawal` event for each one. A
-court or CCB filing is classified urgent and does not itself block restoration. A capability may
+court or CCB filing is classified urgent. Until staff assess it, it blocks restoration of every
+target on the case (see Court and CCB holds). A capability may
 file at most one court or CCB hold; a second attempt is refused with a conflict. Staff may ask for
 more information without extending the capability. Staff list a case's capabilities, newest first
 with issuer, expiry, and revocation state but never the token, at
@@ -401,13 +402,13 @@ members. All mutation routes remain server-authorized even when an authenticated
 appeal or counter-notice form.
 
 The staff queue lists a case while it has any open item: an unreviewed form intake, restriction,
-appeal, counter-notice, or qualifying court or CCB filing; an unreviewed possible re-upload
+appeal, counter-notice, or unassessed court or CCB filing, or an unresolved qualifying hold; an unreviewed possible re-upload
 ([staydown matching](#staydown-matching)); a failed action or delivery; a compliant
 assessment with a target it has not yet restricted (`enforcement_pending`); or an open
 restoration deadline at or past `escalation_at`. An open deadline before escalation does not
 queue a case by itself. Each case carries its distinct
 `reasons`, the `waiting_since` time of its oldest open item, and its earliest open deadline. The
-queue orders cases by urgency: a missed restoration deadline first, then a deadline past escalation,
+queue orders cases by urgency: a missed restoration deadline first, then a deadline past escalation or an unassessed court or CCB filing,
 then all other work, each oldest wait first. Urgency depends on the clock, so a case can move to an
 earlier tier between pages. The staff pages are reached from the Moderation sidebar's Copyright
 group, and the public policy page shows its staff queue links only to administrators and moderators.
@@ -568,13 +569,16 @@ authoritative placement record before completing the fenced transition.
 A proceeding blocks restoration only when the designated agent received it before restoration and
 staff recorded all applicable facts:
 
-- it came from the original notifying claimant;
+- it came from the person who submitted the notification, or their authorised agent (17 USC 512(g)(2)(C));
 - a federal-court action or CCB proceeding was commenced, rather than threatened;
 - it identifies the same material; and
 - a CCB filing is a qualifying claim or counterclaim under 17 USC 1507(d).
 
 Until staff record that assessment, an admitted court or CCB filing blocks restoration of every
-target on the case. Recording the assessment ends that case-wide block. A qualifying assessment
+target on the case. Assess the filing by the earliest open counter-notice deadline's `escalation_at`,
+the start of business day 14, leaving that day to restore if the filing is rejected. A case with no
+open deadline remains urgent and is bounded by `reviewTargetMinutes` through its `legal_hold_review`
+item. Recording the assessment ends that case-wide block. A qualifying assessment
 then blocks only the targets it names. A restore intent that delivery already marked blocked is
 reopened for any target that assessment does not still block.
 

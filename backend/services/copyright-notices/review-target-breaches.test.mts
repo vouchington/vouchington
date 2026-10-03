@@ -6,6 +6,7 @@ import {
   insertOpenCopyrightDeadline,
   insertUnreviewedCopyrightSubmission,
 } from '@voucha/test-helpers/data-stores/psql/copyright-review-target'
+import { readCopyrightStaffQueueCursorRows } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { readCopyrightReviewTargetBreaches } from './index.mts'
 
 const HOUR_MS = 60 * 60 * 1000
@@ -24,6 +25,46 @@ async function createReviewedNotice(): Promise<{ noticeId: string; actorUserId: 
 }
 
 describe('readCopyrightReviewTargetBreaches', () => {
+  it('pages a filing still unassessed at its deadline', async () => {
+    const { noticeId, actorUserId } = await createReviewedNotice()
+    await insertOpenCopyrightDeadline({
+      noticeId,
+      actorUserId,
+      escalationAt: hoursFromNow(-2),
+      restorationDeadlineAt: hoursFromNow(-1),
+    })
+    await insertUnreviewedCopyrightSubmission({
+      noticeId,
+      kind: 'court_or_ccb_hold',
+      receivedAt: hoursFromNow(-3),
+    })
+    const breaches = await readCopyrightReviewTargetBreaches({
+      now: new Date(),
+      reviewTargetMinutes: 60,
+      noticeIds: [noticeId],
+    })
+    expect(breaches.missedEscalation).toEqual({ count: 1, noticeIds: [noticeId] })
+    expect(breaches.missedRestorationDeadline).toEqual({ count: 1, noticeIds: [noticeId] })
+  })
+
+  it('ranks and pages an unassessed filing without an open deadline', async () => {
+    const { noticeId } = await createReviewedNotice()
+    await insertUnreviewedCopyrightSubmission({
+      noticeId,
+      kind: 'court_or_ccb_hold',
+      receivedAt: hoursFromNow(-3),
+    })
+    expect((await readCopyrightStaffQueueCursorRows([noticeId]))[0]?.urgency).toBe(1)
+    const breaches = await readCopyrightReviewTargetBreaches({
+      now: new Date(),
+      reviewTargetMinutes: 60,
+      noticeIds: [noticeId],
+    })
+    expect(breaches.waitingPastTarget).toEqual({ count: 1, noticeIds: [noticeId] })
+    expect(breaches.missedEscalation).toEqual(none)
+    expect(breaches.missedRestorationDeadline).toEqual(none)
+  })
+
   it('counts nothing while the target is unset and no deadline is missed', async () => {
     const { noticeId } = await createCopyrightNoticeSchemaFixture()
 

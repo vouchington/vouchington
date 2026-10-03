@@ -80,7 +80,7 @@ export function CopyrightStaffProceedingFields({
         id='copyright-hold-original-claimant'
         onCheckedChange={checked => setFromOriginalClaimant(checked === true)}
       >
-        Filing came from the original claimant
+        Filing came from the person who submitted the notice, or their authorised agent
       </DeclarationCheckbox>
       <DeclarationCheckbox
         checked={sameMaterial}

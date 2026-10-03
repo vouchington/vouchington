@@ -58,7 +58,11 @@ describe('copyright staff legal-hold fields', () => {
     fireEvent.click(screen.getByRole('option', { name: 'Federal court' }))
     fireEvent.click(screen.getByRole('combobox', { name: 'CCB filing kind' }))
     fireEvent.click(screen.getByRole('option', { name: 'Counterclaim' }))
-    fireEvent.click(screen.getByLabelText('Filing came from the original claimant'))
+    fireEvent.click(
+      screen.getByLabelText(
+        'Filing came from the person who submitted the notice, or their authorised agent',
+      ),
+    )
     fireEvent.click(screen.getByLabelText('Filing covers the same material'))
     fireEvent.change(screen.getByLabelText('Proceeding commenced'), {
       target: { value: '2026-07-02T12:00' },
