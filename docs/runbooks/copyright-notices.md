@@ -138,6 +138,12 @@ decision, so it can still open a case while the switch is off. New EU and UK not
 switch and an unwithdrawn territorial policy approval. Turning the switch on does not approve
 either jurisdiction.
 
+Never approve `uk` without counsel's written sign-off. Approval and withdrawal are administrator-only:
+`POST /api/v1/copyright-territorial-policies` and `.../:id/withdrawals`. Basis recorded by the owner
+on 2026-09-28: Online Safety Act 2023 s.59 excludes intellectual property, and e-Commerce Regulations
+2002 reg. 19 is met by the global pipeline. Counsel has not yet confirmed this basis; it is tracked
+in [#1230](https://github.com/vouchington/vouchington/issues/1230).
+
 Designated-agent email is still ingested while the switch is off, so no inbound message waits
 unseen in `copyright-incoming/`. The SES worker and its reconcile sweep copy each message into the
 evidence bucket, parse it, link a reply to its
