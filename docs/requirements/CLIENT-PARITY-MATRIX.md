@@ -280,6 +280,21 @@ only a static manifest entry. The repository does not yet have a web admin page 
 endpoints are reachable by API and a web admin page is future work. Staff mutation
 controls stay web-only, as in the staff action history handoff below.
 
+## Queue delayed count handoff
+
+`GET /api/v1/mq/queues` rows gain `delayed` and `GET /api/v1/mq/stats` (and the `/api/v1/mq/stream`
+`stats` event) gains `totalDelayed`: GlideMQ's scheduled set, which holds unpromoted priority jobs,
+future delays and backoff retries that `waiting` excludes. Web reads only `paused` from these
+responses, so it needs no change. Swift `EngineeringQueueStats` and the five-key
+`EngineeringAggregatedQueueStats.encode(to:)`, and .NET `QueueStats` and `QueueStatsSummary`, must
+add the fields before the staged `web.admin.mq.stats.default` and `web.admin.mq.queues.default`
+fixtures reach them, or their fixture-coverage tests report dropped fields. The native Engineering
+queues pages render waiting, active, completed and failed counts, so they should render delayed
+beside waiting. Vouchington has not launched, so this ships as one current contract with no shim.
+Native delivery is tracked by
+[vouchington-clients#202](https://github.com/vouchington/vouchington-clients/issues/202); this
+repository does not edit `vouchington-clients`.
+
 ## Staff action history handoff
 
 Issue #635 extends the shared moderator-action catalog and transcript of staff actions with typed

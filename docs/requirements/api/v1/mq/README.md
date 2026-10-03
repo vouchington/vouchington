@@ -41,17 +41,34 @@ answer from the action itself. See [Staff and operations validation](../../refer
 
 ## GET /api/v1/mq/stats
 
-Returns aggregated statistics across all queues (waiting, active, completed, failed counts, queue count).
+Returns aggregated statistics across all queues.
+
+Response: `{ stats: { totalWaiting, totalActive, totalDelayed, totalCompleted, totalFailed, queueCount } }`
 
 ## GET /api/v1/mq/queues
 
 Returns per-queue statistics.
 
-Response: `{ queues: [...], total: <number> }`
+Response: `{ queues: Array<{ name, waiting, active, delayed, completed, failed, paused }>, total: <number> }`
 
 ## GET /api/v1/mq/stream
 
-Server-Sent Events stream that emits `stats` events every 2 seconds with both aggregate and per-queue statistics.
+Server-Sent Events stream that emits `stats` events every 2 seconds with both aggregate and per-queue statistics,
+using the same `stats` and `queues` shapes as the two endpoints above.
+
+## Queue count fields
+
+`waiting`, `active` and `delayed` partition a queue's unfinished work, so `waiting + active + delayed`
+is its backlog. `delayed` is the size of GlideMQ's scheduled set, which holds three kinds of job: a
+freshly enqueued priority job until the scheduler promotes it (about every five seconds), a job
+enqueued with a future `delay`, and a retry waiting out its backoff. `waiting` excludes that set,
+so a priority job appears under `delayed` first and moves to `waiting` after promotion. Each
+`total*` field is the sum of the matching per-queue field. `delayed` comes from the same
+`getJobCounts()` read as the other counts, so it adds no Valkey command to any of these three routes.
+
+`delayed` is not the CloudWatch `GlideMQWaiting` number. That publisher counts due priority jobs as
+waiting through `actionable-priority-stats.lua` and reports no delayed series, so a job never counts
+in two buckets there.
 
 ## POST /api/v1/mq/queues/:name/pause
 

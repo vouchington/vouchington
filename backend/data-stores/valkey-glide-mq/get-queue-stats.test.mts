@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createQueue } from '@data-stores/valkey-glide-mq'
 import {
   getAggregatedQueueMetricStats,
+  getAggregatedQueueStats,
   getAllQueueStats,
   getQueueBacklogDepth,
   getQueueStats,
@@ -16,6 +17,7 @@ describe('get-queue-stats', () => {
       name,
       waiting: expect.any(Number),
       active: expect.any(Number),
+      delayed: expect.any(Number),
       completed: expect.any(Number),
       failed: expect.any(Number),
       paused: expect.any(Boolean),
@@ -27,6 +29,7 @@ describe('get-queue-stats', () => {
     const result = await getQueueStats(name)
     expect(result.waiting).toBeGreaterThanOrEqual(0)
     expect(result.active).toBeGreaterThanOrEqual(0)
+    expect(result.delayed).toBeGreaterThanOrEqual(0)
     expect(result.completed).toBeGreaterThanOrEqual(0)
     expect(result.failed).toBeGreaterThanOrEqual(0)
   })
@@ -55,6 +58,7 @@ describe('get-queue-stats', () => {
       expect(stat).toMatchObject({
         waiting: expect.any(Number),
         active: expect.any(Number),
+        delayed: expect.any(Number),
         completed: expect.any(Number),
         failed: expect.any(Number),
         paused: expect.any(Boolean),
@@ -100,6 +104,31 @@ describe('get-queue-stats', () => {
       await queue.add('delayed', {}, { delay: 60_000 })
 
       await expect(getQueueBacklogDepth(name)).resolves.toBe(3)
+    } finally {
+      await queue.close()
+    }
+  })
+
+  it('reports scheduled jobs as delayed rather than waiting, and rolls them up', async () => {
+    const name = `delayed-${crypto.randomUUID()}`
+    const queue = createQueue(name)
+    try {
+      await queue.add('plain', {})
+      await queue.add('prioritized', {}, { priority: 5 })
+      await queue.add('delayed', {}, { delay: 60_000 })
+
+      const stats = await getQueueStats(name)
+      expect(stats.waiting).toBe(1)
+      expect(stats.delayed).toBe(2)
+      await expect(getAggregatedQueueStats([name])).resolves.toMatchObject({
+        totalWaiting: 1,
+        totalDelayed: 2,
+        queueCount: 1,
+      })
+      // The metric path counts due priority jobs as waiting, so it carries no delayed total.
+      await expect(getAggregatedQueueMetricStats([name])).resolves.not.toHaveProperty(
+        'totalDelayed',
+      )
     } finally {
       await queue.close()
     }

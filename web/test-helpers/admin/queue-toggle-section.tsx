@@ -20,7 +20,9 @@ export function registerQueueToggleTests(options: QueueToggleSectionOptions): vo
 
   function queueResponse(paused: boolean) {
     return {
-      queues: [{ name: queueName, waiting: 0, active: 0, completed: 0, failed: 0, paused }],
+      queues: [
+        { name: queueName, waiting: 0, active: 0, delayed: 0, completed: 0, failed: 0, paused },
+      ],
       total: 1,
     }
   }

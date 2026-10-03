@@ -3,6 +3,7 @@
     "queueCount": 2,
     "totalActive": 1,
     "totalCompleted": 170,
+    "totalDelayed": 3,
     "totalFailed": 2,
     "totalWaiting": 0
   }

@@ -2886,6 +2886,7 @@
       "queueCount": 2,
       "totalActive": 1,
       "totalCompleted": 170,
+      "totalDelayed": 3,
       "totalFailed": 2,
       "totalWaiting": 0
     }
@@ -2895,6 +2896,7 @@
       {
         "active": 1,
         "completed": 128,
+        "delayed": 2,
         "failed": 2,
         "name": "emails",
         "paused": false,
@@ -2903,6 +2905,7 @@
       {
         "active": 0,
         "completed": 42,
+        "delayed": 1,
         "failed": 0,
         "name": "psql",
         "paused": true,

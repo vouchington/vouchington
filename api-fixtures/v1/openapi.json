@@ -263,6 +263,9 @@
           "totalCompleted": {
             "type": "number"
           },
+          "totalDelayed": {
+            "type": "number"
+          },
           "totalFailed": {
             "type": "number"
           },
@@ -270,7 +273,14 @@
             "type": "number"
           }
         },
-        "required": ["queueCount", "totalActive", "totalCompleted", "totalFailed", "totalWaiting"],
+        "required": [
+          "queueCount",
+          "totalActive",
+          "totalCompleted",
+          "totalDelayed",
+          "totalFailed",
+          "totalWaiting"
+        ],
         "type": "object"
       },
       "ApiKey": {
@@ -16073,6 +16083,9 @@
           "completed": {
             "type": "number"
           },
+          "delayed": {
+            "type": "number"
+          },
           "failed": {
             "type": "number"
           },
@@ -16086,7 +16099,7 @@
             "type": "number"
           }
         },
-        "required": ["active", "completed", "failed", "name", "paused", "waiting"],
+        "required": ["active", "completed", "delayed", "failed", "name", "paused", "waiting"],
         "type": "object"
       },
       "QueueVolumeMetrics": {

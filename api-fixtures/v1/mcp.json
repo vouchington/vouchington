@@ -33284,6 +33284,9 @@
                     "totalCompleted": {
                       "type": "number"
                     },
+                    "totalDelayed": {
+                      "type": "number"
+                    },
                     "totalFailed": {
                       "type": "number"
                     },
@@ -33295,6 +33298,7 @@
                     "queueCount",
                     "totalActive",
                     "totalCompleted",
+                    "totalDelayed",
                     "totalFailed",
                     "totalWaiting"
                   ],
@@ -41124,6 +41128,9 @@
                       "completed": {
                         "type": "number"
                       },
+                      "delayed": {
+                        "type": "number"
+                      },
                       "failed": {
                         "type": "number"
                       },
@@ -41137,7 +41144,15 @@
                         "type": "number"
                       }
                     },
-                    "required": ["active", "completed", "failed", "name", "paused", "waiting"],
+                    "required": [
+                      "active",
+                      "completed",
+                      "delayed",
+                      "failed",
+                      "name",
+                      "paused",
+                      "waiting"
+                    ],
                     "type": "object"
                   },
                   "type": "array"

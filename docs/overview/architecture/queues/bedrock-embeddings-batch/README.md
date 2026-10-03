@@ -14,14 +14,14 @@ For the dedup contract, centralized table semantics, race outcomes, and bloom fi
 
 ## Scheduler
 
-| Job                                                | Schedule      | Description                                                                                                                                                             |
-| -------------------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `creation_dispatcher`                              | `*/5 * * * *` | Scans DB for entities where `input_sha256 IS NULL OR input_sha256 != content_sha256` and no lock exists; enqueues creation jobs                                         |
-| `poll_dispatcher`                                  | `* * * * *`   | Queries all pending batches in `bedrock_embeddings_batches`; enqueues polling jobs                                                                                      |
-| `backlog_dispatcher`                               | `* * * * *`   | Reads single-queue depth via `getQueueStats`; if `waiting + active >= backlog_threshold` (default 1000, Dynamic Config), enqueues an extra `creation_dispatcher`        |
-| `stale_cleanup_dispatcher`                         | `0 * * * *`   | Finds batches stuck in `Submitted`/`InProgress` past `stale_ttl_hours` (default 24h, Dynamic Config); reconciles terminal-state batches or force-stops and cancels them |
-| `reconcile_existing_{topics,posts,rss_feed_items}` | `* * * * *`   | Copy reusable text embeddings from the centralized table in bounded pages, independent of Bedrock capacity                                                              |
-| `post_trigger_recovery`                            | `* * * * *`   | Retry ban-evasion queue delivery for current first-community-post embeddings                                                                                            |
+| Job                                                | Schedule      | Description                                                                                                                                                                       |
+| -------------------------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `creation_dispatcher`                              | `*/5 * * * *` | Scans DB for entities where `input_sha256 IS NULL OR input_sha256 != content_sha256` and no lock exists; enqueues creation jobs                                                   |
+| `poll_dispatcher`                                  | `* * * * *`   | Queries all pending batches in `bedrock_embeddings_batches`; enqueues polling jobs                                                                                                |
+| `backlog_dispatcher`                               | `* * * * *`   | Reads single-queue depth via `getQueueBacklogDepth`; if `waiting + active + delayed >= backlog_threshold` (default 1000, Dynamic Config), enqueues an extra `creation_dispatcher` |
+| `stale_cleanup_dispatcher`                         | `0 * * * *`   | Finds batches stuck in `Submitted`/`InProgress` past `stale_ttl_hours` (default 24h, Dynamic Config); reconciles terminal-state batches or force-stops and cancels them           |
+| `reconcile_existing_{topics,posts,rss_feed_items}` | `* * * * *`   | Copy reusable text embeddings from the centralized table in bounded pages, independent of Bedrock capacity                                                                        |
+| `post_trigger_recovery`                            | `* * * * *`   | Retry ban-evasion queue delivery for current first-community-post embeddings                                                                                                      |
 
 The four reconciliation roots run every minute in production and are clamped to hourly on staging.
 The admin backfill `bedrock-embedding-reconciliation` starts all four roots. Each root is throttled
