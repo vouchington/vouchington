@@ -80,7 +80,6 @@ export interface CommunityAutomodAction {
   action_at: string
   confidence_score: number | null
   flagged: boolean
-  reason: string | null
   categories: string[]
   model_output: unknown
   current_state: CommunityAutomodActionCurrentState

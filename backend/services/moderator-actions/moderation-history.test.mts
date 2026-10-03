@@ -272,7 +272,7 @@ describe('moderation staff history transactions', () => {
         postId,
         promptId,
         agentId: agent.id,
-        results: { flagged: false, reason: 'Synthetic' },
+        results: { flagged: false },
         flagged: false,
       })
       const moderationId = ((await getPostLLMModerations(postId)) as Array<{ id: string }>)[0]!.id

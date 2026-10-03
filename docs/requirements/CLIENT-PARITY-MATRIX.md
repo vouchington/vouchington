@@ -231,6 +231,35 @@ shim. Native delivery is tracked by
 [vouchington-clients#201](https://github.com/vouchington/vouchington-clients/issues/201); this
 repository does not edit `vouchington-clients`.
 
+## Classifier moderation reason handoff
+
+#1814 removes the last classifier `reason`. The community prompt classifier answers with a
+probability, so `agent_moderations.results` no longer carries `reason`: the `AgentModerationResults`
+object in `GET /api/v1/communities/:communitySlug/posts/:postId/moderation-results` and in the
+admin moderation data on `GET /api/v1/posts` now requires only `flagged`. The community automod
+recent-actions response (`GET /api/v1/communities/:communitySlug/automod/recent-actions`) drops
+`automod_actions[].reason`, and `POST /api/v1/communities/:idOrSlug/agent-prompts/:promptId/test-runs`
+no longer accepts `expected_reason`; its body is a closed object, so a request that still sends the
+field gets 422. Web drops the reason line from the admin moderation dialog and the reason badge from
+the automod review row. The AI-generated detector keeps its own `reason`, stored in
+`post_classifier_local_outcomes`, which is not part of this contract.
+
+Native state, read from `vouchington-clients` at `afcc3af`: no decoder reads
+`AgentModerationResults`, so the moderation-results change needs nothing. Swift
+`CommunityAutomodAction.reason` (`CommunityAgentPromptModels.swift`) is optional and decodes a
+missing key as `nil`; .NET `CommunityAutomodAction.Reason` (`ApiModels.Communities.Admin.cs`) is
+nullable and the serializer does not require constructor parameters. Both clients already fall back
+to the post type or the confidence score, because the server wrote an empty string that the query
+returned as `null`, so nothing renders differently. `expected_reason` stays as an optional
+parameter on Swift `Endpoint+CommunityAgents.swift` and .NET `ApiRequest.Communities.Actions.cs`
+(`CommunityAgentPromptTestRunRequest`); both omit it when unset and no production call site sets it,
+so current builds keep working, but any caller that sets it now fails with 422. The clients should
+delete the dead fields and parameter and the tests that pin them. Vouchington has not launched, so
+this ships as one current contract with no shim. The change fits the scope of
+[vouchington-clients#201](https://github.com/vouchington/vouchington-clients/issues/201), which
+already lists the simulate and test-run `reason` removal; this repository does not edit
+`vouchington-clients`.
+
 ## Semantic post search candidate window
 
 #1549 keeps REST post search and MCP `search_posts` on the same approximate, capped candidate

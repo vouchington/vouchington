@@ -76,7 +76,6 @@ export function CommunityAutomodReviewAction({
           ) : null}
         </div>
         <div className='flex flex-wrap gap-1'>
-          {action.reason ? <Badge variant='outline'>{action.reason}</Badge> : null}
           {action.categories.slice(0, 5).map(category => (
             <Badge
               key={category}

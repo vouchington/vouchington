@@ -93,7 +93,7 @@ describe('post_moderation_context — listModerationReports (staff tier)', () =>
       promptId,
       agentId: agent.id,
       flagged: true,
-      results: { flagged: true, reason: 'violence', categories: ['violence'] },
+      results: { flagged: true, categories: ['violence'] },
     })
     const topicId = await insertTestTopic({
       name: `PMC Topic ${suffix}`,
@@ -178,7 +178,7 @@ describe('post_moderation_context — listRedactedModerationReports (public tier
       promptId,
       agentId: agent.id,
       flagged: true,
-      results: { flagged: true, reason: 'violence', categories: ['violence'] },
+      results: { flagged: true, categories: ['violence'] },
     })
     const topicId = await insertTestTopic({
       name: `PMC Pub Topic ${suffix}`,

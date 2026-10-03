@@ -74,12 +74,6 @@ export default function AdminModerationButton({
                       {m.flagged ? 'Flagged' : 'OK'}
                     </span>
                   </div>
-                  <p
-                    className='text-muted-foreground'
-                    data-pw='moderation-reason'
-                  >
-                    {m.results.reason}
-                  </p>
                   {hasConfidenceMetadata(m.results) ? (
                     <p
                       className='mt-1 text-xs text-muted-foreground'

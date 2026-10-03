@@ -54,7 +54,7 @@ async function seedFlaggedPostModerationQueueContext(
     promptId,
     agentId: agent.id,
     flagged: true,
-    results: { flagged: true, reason: 'violence', categories: ['violence'] },
+    results: { flagged: true, categories: ['violence'] },
   })
   const topicId = await insertTestTopic({
     name: input.topicName,

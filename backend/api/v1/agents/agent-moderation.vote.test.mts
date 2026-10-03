@@ -42,7 +42,7 @@ describe('agent-moderation.vote', () => {
         postId,
         promptId,
         agentId: agent.id,
-        results: { flagged: false, reason: 'Looks clean' },
+        results: { flagged: false },
         flagged: false,
       })
 
@@ -130,7 +130,7 @@ describe('agent-moderation.vote', () => {
         postId,
         promptId: prompt.id,
         agentId: prompt.agent_id,
-        results: { flagged: true, reason: 'Community prompt flagged this' },
+        results: { flagged: true },
         flagged: true,
       })
       const moderations = (await getPostLLMModerations(postId)) as Array<{ id: string }>

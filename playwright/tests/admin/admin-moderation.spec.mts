@@ -54,7 +54,7 @@ test.beforeAll(async () => {
     postId: commentId,
     promptId,
     agentId: agent.id,
-    results: { flagged: false, reason: 'Ephemeral moderation result' },
+    results: { flagged: false },
     flagged: false,
   })
 
@@ -146,9 +146,7 @@ test.describe('Admin Moderation', () => {
 
     const dialog = page.getByRole('dialog')
     await expect(dialog.getByTestId('moderation-results-title')).toBeVisible()
-    await expect(
-      dialog.getByTestId('moderation-reason').filter({ hasText: 'Normal comment' }),
-    ).toBeVisible()
+    await expect(dialog.getByText('OK', { exact: true }).first()).toBeVisible()
   })
 
   test('admin can vote on an ephemeral moderation result', async ({ page }) => {
@@ -188,9 +186,7 @@ test.describe('Admin Moderation', () => {
 
     const dialog = page.getByRole('dialog')
     await expect(dialog.getByTestId('moderation-results-title')).toBeVisible()
-    await expect(
-      dialog.getByTestId('moderation-reason').filter({ hasText: 'Detected as AI-generated' }),
-    ).toBeVisible()
+    await expect(dialog.getByText('Flagged', { exact: true }).first()).toBeVisible()
     await expect(
       dialog
         .getByTestId('moderation-confidence')

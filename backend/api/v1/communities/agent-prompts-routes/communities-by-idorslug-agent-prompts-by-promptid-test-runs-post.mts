@@ -41,7 +41,6 @@ app
       text: string
       save_for_training?: boolean
       expected_flagged?: boolean
-      expected_reason?: string
     }
     validateRequestContract(
       ctx,
@@ -81,7 +80,6 @@ app
           classifier_model_provider: dryRun.modelProvider,
           test_text: body.text,
           expected_flagged: body.expected_flagged,
-          expected_reason: body.expected_reason ?? null,
           actual_flagged: verdict.flagged,
           actual_probability: verdict.probability,
         },

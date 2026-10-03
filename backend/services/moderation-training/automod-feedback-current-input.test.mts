@@ -59,7 +59,7 @@ describe('automod feedback current input matching', () => {
       promptId,
       flagged: true,
       inputSha256: Buffer.alloc(32, 7),
-      results: { flagged: true, reason: 'Old content', confidence_score: 0.4 },
+      results: { flagged: true, confidence_score: 0.4 },
     })
 
     const actions = await searchRecentAutomodActions(community.id, {
@@ -121,14 +121,14 @@ describe('automod feedback current input matching', () => {
       agentId: olderPrompt.agent_id,
       promptId: olderPrompt.id,
       flagged: true,
-      results: { flagged: true, reason: 'Older unpublish', confidence_score: 0.3 },
+      results: { flagged: true, confidence_score: 0.3 },
     })
     const currentModerationId = await insertTestAgentModeration({
       postId,
       agentId: currentPrompt.agent_id,
       promptId: currentPrompt.id,
       flagged: true,
-      results: { flagged: true, reason: 'Current unpublish', confidence_score: 0.4 },
+      results: { flagged: true, confidence_score: 0.4 },
     })
 
     const actions = await searchRecentAutomodActions(community.id, {

@@ -206,7 +206,7 @@ describe('Community Agent Prompts Routes', () => {
       await request
         .post(`/api/v1/communities/${community.slug}/agent-prompts/${prompt.id}/test-runs`)
         .set('Content-Type', 'application/json')
-        .send({ text: 'sample', expected_reason: 123 })
+        .send({ text: 'sample', expected_flagged: 'yes' })
         .expect(422)
     })
   })

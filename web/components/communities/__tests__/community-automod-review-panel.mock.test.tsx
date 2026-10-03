@@ -44,7 +44,6 @@ function automodAction(overrides: Partial<CommunityAutomodAction> = {}): Communi
     action_at: '2026-06-01T12:05:00.000Z',
     confidence_score: 0.42,
     flagged: true,
-    reason: 'Possible self promotion',
     categories: ['self-promotion'],
     model_output: {},
     current_state: 'rejected',

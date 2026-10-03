@@ -58,7 +58,7 @@ describe('automod feedback transparency attribution', () => {
       agentId: agent.id,
       promptId,
       flagged: true,
-      results: { flagged: true, reason: 'Needs review' },
+      results: { flagged: true },
     })
     await recordAutomodActionFeedback({
       communityId: community.id,

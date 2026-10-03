@@ -141,7 +141,6 @@ describe('POST /api/v1/communities/:idOrSlug/agent-prompts/:promptId/test-runs',
         text: 'Sample content to moderate',
         save_for_training: true,
         expected_flagged: false,
-        expected_reason: 'Looks fine to me',
       }).expect(200)
 
       const feedback = await getLatestTestPromptTestTrainingFeedback(community.id)
@@ -152,7 +151,6 @@ describe('POST /api/v1/communities/:idOrSlug/agent-prompts/:promptId/test-runs',
         classifier_model_provider: 'openrouter',
         test_text: 'Sample content to moderate',
         expected_flagged: false,
-        expected_reason: 'Looks fine to me',
         actual_flagged: true,
         actual_probability: 0.97,
       })

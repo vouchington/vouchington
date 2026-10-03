@@ -51,7 +51,7 @@ describe('votes-upsert.generated', () => {
       promptId,
       agentId: agent.id,
       flagged: false,
-      results: { flagged: false, reason: 'Looks clean' },
+      results: { flagged: false },
     })
 
     const moderations = (await getPostLLMModerations(postId)) as Array<{ id: string }>
@@ -94,7 +94,7 @@ describe('votes-upsert.generated', () => {
       promptId,
       agentId: agent.id,
       flagged: false,
-      results: { flagged: false, reason: 'Looks clean' },
+      results: { flagged: false },
     })
 
     const moderations = (await getPostLLMModerations(postId)) as Array<{ id: string }>
@@ -138,7 +138,7 @@ describe('votes-upsert.generated', () => {
       promptId,
       agentId: agent.id,
       flagged: false,
-      results: { flagged: false, reason: 'Looks clean' },
+      results: { flagged: false },
     })
 
     const moderations = (await getPostLLMModerations(postId)) as Array<{ id: string }>

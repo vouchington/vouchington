@@ -129,7 +129,6 @@ describe('getPostModerationContextBatch', () => {
         flagged: true,
         results: {
           flagged: true,
-          reason: 'Detected harmful content',
           categories: ['violence', 'hate'],
         },
       })
@@ -244,7 +243,7 @@ describe('getPostModerationContextBatch', () => {
         promptId,
         agentId: agent.id,
         flagged: false,
-        results: { flagged: false, reason: 'No issue' },
+        results: { flagged: false },
       })
       const mod = (await getPostModerationContextBatch([postId], 'staff'))
         .get(postId)!

@@ -62,7 +62,7 @@ describe('search-post-moderations', () => {
       promptId,
       agentId,
       flagged: true,
-      results: { flagged: true, reason: `Flagged ${random}` },
+      results: { flagged: true, confidence_score: 0.87, confidence_threshold: 0.8 },
     })
 
     const results = await searchPostModerationsByPostIds([post.id])
@@ -72,7 +72,11 @@ describe('search-post-moderations', () => {
     expect(results[0].prompt_id).toBe(promptId)
     expect(results[0].id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
     expect(results[0].flagged).toBe(true)
-    expect(results[0].results.reason).toBe(`Flagged ${random}`)
+    expect(results[0].results).toEqual({
+      flagged: true,
+      confidence_score: 0.87,
+      confidence_threshold: 0.8,
+    })
     expect(results[0].moderator_slug).toBe(moderatorSlug)
     expect(typeof results[0].input_sha256).toBe('string')
     expect(results[0].input_sha256).toHaveLength(64) // 32 bytes as hex
@@ -122,17 +126,17 @@ describe('search-post-moderations', () => {
       markdown: `Content ${random}`,
       post_type: 'discussion',
     })
-    await insertTestAgentModeration({
+    const moderationId = await insertTestAgentModeration({
       postId: post.id,
       promptId,
       agentId,
       flagged: false,
-      results: { flagged: false, reason: `OK ${random}` },
+      results: { flagged: false },
     })
 
     const { results } = await searchPostModerationsByAgent(post.id, agentId)
     expect(results.length).toBeGreaterThanOrEqual(1)
-    const match = results.find(r => r.results.reason === `OK ${random}`)
+    const match = results.find(r => r.id === moderationId)
     expect(match).toBeDefined()
     expect(match?.post_id).toBe(post.id)
     expect(match?.agent_id).toBe(agentId)
