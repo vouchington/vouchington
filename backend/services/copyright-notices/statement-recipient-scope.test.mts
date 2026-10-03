@@ -79,6 +79,22 @@ describe('statement recipient scope and lifecycle', () => {
       ),
     ).toEqual(initial)
   })
+  it('retains claimant email while suppressing new deleted-account in-app delivery', async () => {
+    const claimant = await createTestUser()
+    const notice = await createSignedInCopyrightForm(1, { claimant })
+    await markStatementPosterDeleted(claimant.id)
+    await reviewCopyrightFormIntake({
+      intakeId: notice.intake.id,
+      currentUser: await createTestUser({ extraRoles: ['moderator'] }),
+      accepted: false,
+      rationale: 'Incomplete notice.',
+    })
+    const intents = (
+      await readTestCopyrightStatementIntents(notice.intake.copyright_notice_id)
+    ).filter(row => row.recipient_role === 'claimant')
+    expect(intents).toHaveLength(1)
+    expect(intents[0]).toMatchObject({ channel: 'email', recipient_user_id: null })
+  })
   it('rolls back a busy same-owner legal transition without waiting and succeeds on retry', async () => {
     const participant = await createTestUser()
     const { notice } = await createClearScreenedForm(1, {
@@ -100,7 +116,7 @@ describe('statement recipient scope and lifecycle', () => {
     await withStatementPosterLifecycleFence(participant.id, async () => {
       await expect(completeCopyrightMandatoryHumanReview(input)).rejects.toMatchObject({
         status: 409,
-        message: 'Poster account lifecycle transition is in progress',
+        message: 'Recipient account lifecycle transition is in progress',
       })
       const during = (await getCopyrightNoticePrivateAggregate(noticeId))!
       expect(during.restrictions[0].human_reviewed_at).toBeNull()

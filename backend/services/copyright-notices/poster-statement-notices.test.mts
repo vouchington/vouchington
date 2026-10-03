@@ -1,3 +1,5 @@
+import { processCopyrightActionIntent } from './index.mts'
+import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { markCopyrightDeliveryIntentSent } from './delivery-intents.mts'
 import { copyrightEmailSubject } from './statement-of-reasons-wording.mts'
 import { listNotifications } from '@services/notifications'
@@ -25,6 +27,39 @@ import {
 
 describe('poster statements on human imposition', () => {
   useCopyrightIntakeEnvironment()
+  it('delivers truthful immutable authorization text even when withholding delivery fails', async () => {
+    const poster = await createTestUser()
+    const notice = await createSignedInCopyrightForm(1, { poster })
+    const noticeId = notice.intake.copyright_notice_id
+    await reviewCopyrightFormIntake({
+      intakeId: notice.intake.id,
+      currentUser: await createTestUser({ extraRoles: ['moderator'] }),
+      accepted: true,
+      rationale: 'Complete notice.',
+    })
+    const before = await readTestCopyrightStatementIntents(noticeId)
+    const action = (await getCopyrightNoticePrivateAggregate(noticeId))!.actionIntents.find(
+      row => row.action === 'withhold',
+    )!
+    await expect(
+      processCopyrightActionIntent(
+        action.id,
+        new Date(),
+        createTestCopyrightDeliveryDependencies(async () => {
+          throw new Error('Edge unavailable')
+        }),
+      ),
+    ).rejects.toThrow('Edge unavailable')
+    const email = before.find(row => row.recipient_role === 'poster' && row.channel === 'email')!
+    expect(email.text).toContain('restriction is authorized')
+    expect(email.text).not.toContain('The image is withheld')
+    expect((await prepareCopyrightEmailDelivery(email.id))?.text).toBe(email.text)
+    const inApp = before.find(row => row.recipient_role === 'poster' && row.channel === 'in_app')!
+    await expect(deliverCopyrightInAppNotification(inApp.id)).resolves.toBe(true)
+    expect(Object.values((await listNotifications(poster.id)).notifications)).toEqual(
+      expect.arrayContaining([expect.objectContaining({ body: email.text!.split('\n\n')[0] })]),
+    )
+  })
   it('records both channels and in-app informed-at time', async () => {
     const poster = await createTestUser()
     const notice = await createSignedInCopyrightForm(1, { poster })

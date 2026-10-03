@@ -43,6 +43,10 @@ export async function recordCopyrightEmailParse(
   validateParseInput(input)
   const purpose = copyrightEmailIntakePurpose(intake.ses_message_id)
   await using transaction = await beginTransaction()
+  // Serialize parser receipt eligibility with staff decisions before inserting parse rows.
+  await transaction(sql`/* recordCopyrightEmailParse:lock */
+    SELECT id FROM copyright_notice_email_intakes WHERE id = ${intake.id} FOR UPDATE
+  `)
   const { rowCount } = await transaction(sql`/* recordCopyrightEmailParse */
     INSERT INTO copyright_notice_email_intake_parses (
       copyright_notice_email_intake_id, status, sender_email_ciphertext,
@@ -75,7 +79,9 @@ export async function recordCopyrightEmailParse(
     const { rows: verdicts } =
       await transaction<CopyrightEmailSesVerdicts>(sql`/* recordCopyrightEmailParse:receiptEligibility */
       SELECT spf_verdict AS spf, dkim_verdict AS dkim, dmarc_verdict AS dmarc, spam_verdict AS spam, virus_verdict AS virus
-      FROM copyright_notice_email_intakes WHERE id = ${intake.id} FOR UPDATE
+      FROM copyright_notice_email_intakes WHERE id = ${intake.id}
+        AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_reviews
+          WHERE copyright_notice_email_intake_id = ${intake.id})
     `)
     if (verdicts[0] && isAuthenticatedCopyrightEmail(verdicts[0]))
       await createCopyrightEmailIntakeResponseInTransaction(

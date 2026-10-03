@@ -1,5 +1,6 @@
 import { createTestUser } from '@voucha/test-helpers'
 import { failTestCopyrightDeliveryIntent } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
+import { recordCopyrightEmailIntakeLegalProcess } from './email-legal-process.mts'
 import { rejectCopyrightEmailIntake } from './email-rejection.mts'
 import { replayFailedCopyrightEmailIntakeReplyIntent } from './delivery-intents.mts'
 import { describe, expect, it, vi } from 'vitest'
@@ -87,6 +88,36 @@ describe('authenticated email arrival receipts', () => {
       ]),
     )
   })
+  it.each(['rejected', 'legal_process'] as const)(
+    'never queues a late arrival receipt after an unparsed intake is %s',
+    async decision => {
+      const message = await intake()
+      const moderator = await createTestUser({ extraRoles: ['moderator'] })
+      if (decision === 'legal_process')
+        await recordCopyrightEmailIntakeLegalProcess({
+          currentUser: moderator,
+          intakeId: message.id,
+          reason: 'Court process.',
+        })
+      else
+        await rejectCopyrightEmailIntake({
+          currentUser: moderator,
+          intakeId: message.id,
+          recommendationId: null,
+          manualFallbackReason: 'Manual review.',
+          rationale: 'Incomplete notice.',
+          responseKind: 'rejected',
+          responseMessage: null,
+          replyEmail: 'retained@example.test',
+        })
+      const before = await readCopyrightEmailIntakeResponses(message.id)
+      const parse = parsed()
+      await recordCopyrightEmailParse(message, parse)
+      await recordCopyrightEmailParse(message, parse)
+      expect(await readCopyrightEmailIntakeResponses(message.id)).toEqual(before)
+      expect(before.every(row => row.delivery_kind !== 'email_intake_received')).toBe(true)
+    },
+  )
   it.each(['fail', 'gray', 'processing_failed', 'unknown'] as const)(
     'sends no receipt when DMARC is %s',
     async dmarc => {

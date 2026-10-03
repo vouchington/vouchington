@@ -19,7 +19,7 @@ export function copyrightStatementText(
   const decision = copyrightStatementSummary(input)
   const facts = `This decision concerns copyright case ${input.noticeId}, received ${input.receivedAt.toISOString()}, and was taken in response to a notice. ${fields.facts.targetUrls.join(' ')}`
   const scope = fields.restriction
-    ? 'The image is withheld from visibility globally. It has not been deleted. The restriction continues until review or the applicable restoration process ends it.'
+    ? 'A global image visibility restriction is authorized. Delivery of that restriction withholds the image from visibility globally. This restriction does not delete the image. The restriction continues until review or the applicable restoration process ends it.'
     : ''
   const automation =
     fields.automation.decision === 'automatic_deadline'
@@ -56,8 +56,8 @@ export function copyrightStatementSummary(input: CopyrightStatementInput): strin
   switch (input.event) {
     case 'restricted':
       return input.audience === 'claimant'
-        ? `Your copyright notice resulted in an image restriction for case ${input.noticeId}. The reasons and redress routes are included in this notice.`
-        : `An image was restricted for copyright case ${input.noticeId}. See the case page for the reasons and redress routes.`
+        ? `Your copyright notice resulted in authorization of an image restriction for case ${input.noticeId}. The reasons and redress routes are included in this notice.`
+        : `An image restriction was authorized for copyright case ${input.noticeId}. See the case page for the reasons and redress routes.`
     case 'confirmed':
       return input.audience === 'claimant'
         ? `A person confirmed the image restriction for your copyright case ${input.noticeId}. The reasons and redress routes are included in this notice.`

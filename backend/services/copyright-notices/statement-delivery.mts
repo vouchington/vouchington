@@ -28,24 +28,26 @@ export async function createCopyrightStatementDeliveryInTransaction(
     WHERE idempotency_key IN (${input.key}, ${`${input.key}:email`})
   `)
   if (rows.length) return
-  if (input.recipientRole === 'poster') {
-    if (!input.recipientUserId || input.recipientUserId === DELETED_USER_ID) return
+  let activeRecipientUserId = input.recipientUserId
+  if (activeRecipientUserId === DELETED_USER_ID) activeRecipientUserId = null
+  if (activeRecipientUserId) {
     // Legal rows may already be locked; waiting would invert user-deletion lock order.
     // Shared readers allow parallel legal writes; deletion owns this key exclusively.
     // An exclusive lifecycle transition aborts this atomic operation with409 for retry.
     const { rows: locks } = await transaction<{
       locked: boolean
-    }>(sql`/* createCopyrightStatementDeliveryInTransaction:posterLifecycleLock */
-      SELECT pg_try_advisory_xact_lock_shared(hashtextextended(${input.recipientUserId}, 0)) AS locked
+    }>(sql`/* createCopyrightStatementDeliveryInTransaction:recipientLifecycleLock */
+      SELECT pg_try_advisory_xact_lock_shared(hashtextextended(${activeRecipientUserId}, 0)) AS locked
     `)
-    assert(locks[0]?.locked, 409, 'Poster account lifecycle transition is in progress')
+    assert(locks[0]?.locked, 409, 'Recipient account lifecycle transition is in progress')
     const { rows: accounts } = await transaction<{
       active: boolean
-    }>(sql`/* createCopyrightStatementDeliveryInTransaction:activePoster */
-      SELECT EXISTS (SELECT 1 FROM users WHERE id = ${input.recipientUserId} AND deleted_at IS NULL) AS active
+    }>(sql`/* createCopyrightStatementDeliveryInTransaction:activeRecipient */
+      SELECT EXISTS (SELECT 1 FROM users WHERE id = ${activeRecipientUserId} AND deleted_at IS NULL) AS active
     `)
-    if (!accounts[0]?.active) return
+    if (!accounts[0]?.active) activeRecipientUserId = null
   }
+  if (input.recipientRole === 'poster' && !activeRecipientUserId) return
   const correspondence = await createDeterministicCopyrightCorrespondenceInTransaction(
     {
       noticeId: input.noticeId,
@@ -55,13 +57,13 @@ export async function createCopyrightStatementDeliveryInTransaction(
     },
     transaction,
   )
-  if (input.recipientUserId)
+  if (activeRecipientUserId)
     await createCopyrightDeliveryIntent(
       {
         noticeId: input.noticeId,
         submissionId: null,
         correspondenceId: correspondence.id,
-        recipientUserId: input.recipientUserId,
+        recipientUserId: activeRecipientUserId,
         recipientRole: input.recipientRole,
         deliveryKind: input.deliveryKind,
         channel: 'in_app',
@@ -75,7 +77,7 @@ export async function createCopyrightStatementDeliveryInTransaction(
       noticeId: input.noticeId,
       submissionId: null,
       correspondenceId: correspondence.id,
-      recipientUserId: input.recipientUserId,
+      recipientUserId: activeRecipientUserId,
       recipientRole: input.recipientRole,
       deliveryKind: input.deliveryKind,
       channel: 'email',

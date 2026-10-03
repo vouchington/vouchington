@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import { copyrightCorrespondencePurpose } from './correspondence.mts'
@@ -6,7 +6,7 @@ import { liveCopyrightCiphertext } from './erased-ciphertext.mts'
 
 /** The first paragraph is the builder's stored summary, unchanged across wording revisions. */
 export async function getCopyrightStatementInAppSummary(intentId: string): Promise<string | null> {
-  const { rows } = await read<{
+  const { rows } = await write<{
     id: string
     body_ciphertext: string
   }>(sql`/* getCopyrightStatementInAppSummary */
