@@ -42,6 +42,7 @@ describe('process-topic-row (basic)', () => {
     expect(topic).not.toBeNull()
     expect(topic!.slug).toBe(`process-new-${suffix}`)
     expect(topic!.name).toBe(`Process New ${suffix}`)
+    expect(topic!.created_by?.id).toBe(admin.id)
   })
 
   it('defaults name to slug when name not provided on create', async () => {

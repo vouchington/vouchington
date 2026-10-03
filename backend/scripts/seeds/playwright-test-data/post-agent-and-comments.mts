@@ -3,7 +3,7 @@ import { approveSeedPosts } from './helpers.mts'
 
 async function seedPlaywrightAgentAndComments(query: TransactionQuery): Promise<void> {
   await query(
-    `INSERT INTO users (id, username) VALUES ('019d0000-0000-7000-8000-000000000001', 'test-reviewer') ON CONFLICT (id) DO UPDATE SET username = EXCLUDED.username`,
+    `INSERT INTO users (id, username, platform_account_kind) VALUES ('019d0000-0000-7000-8000-000000000001', 'test-reviewer', 'system') ON CONFLICT (id) DO UPDATE SET username = EXCLUDED.username, platform_account_kind = EXCLUDED.platform_account_kind`,
   )
   await query(
     `INSERT INTO agents (id, system_user_id, agent_type, activated_at) VALUES ( '019d0000-0000-7000-8000-000000000002', '019d0000-0000-7000-8000-000000000001', 'moderator', CURRENT_TIMESTAMP ) ON CONFLICT (id) DO NOTHING`,

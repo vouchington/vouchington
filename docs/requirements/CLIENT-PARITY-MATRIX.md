@@ -26,9 +26,9 @@ Lifecycle parity is additionally executable through the stable scenario IDs in
 defines the required claim and adapter workflow. Moderation operations, integrity actions, and
 saved/bookmark capabilities cite platform runners that consume that shared contract.
 
-Account-type contract coordination ([#1834](https://github.com/vouchington/vouchington/issues/1834))
+Account-type contract coordination ([vouchington#1834](https://github.com/vouchington/vouchington/issues/1834))
 is in progress: web and API use required nullable `account_type` with Official, System, and AI Agent
-labels. Native changes are prepared locally; a linked draft PR is pending publication. Canonical
+labels. Native implementation is committed locally; draft publication is blocked by missing native tools. Canonical
 native staging is blocked by the existing [localization closure issue](https://github.com/vouchington/vouchington-clients/issues/193),
 and native platform builds and full route browser verification remain unverified. This does not
 change the delivered parity claims below.
