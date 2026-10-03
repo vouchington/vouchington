@@ -7,16 +7,18 @@ export type AutotaggerCandidateTopic = { topicId: string; name: string }
 export async function readAutotaggerCandidateTopics(
   topicIds: readonly string[],
 ): Promise<AutotaggerCandidateTopic[]> {
-  // no-mistakes-disable-next-line postgres-required-predicates: the run asks exactly the question set its receipt captured, and vote application binds to the same ids, so a retry or reclaim never asks a different set after a topic changes lifecycle state
   const { rows } = await write<{
     topic_id: string
     name: string
-  }>(sql`/* readAutotaggerCandidateTopics */
+  }>(
+    // no-mistakes-disable-next-line postgres-required-predicates: the run asks exactly the question set its receipt captured, and vote application binds to the same ids, so a retry or reclaim never asks a different set after a topic changes lifecycle state
+    sql`/* readAutotaggerCandidateTopics */
     SELECT topic.id AS topic_id, topic.name
     FROM unnest(${[...topicIds]}::uuid[]) WITH ORDINALITY AS candidate (topic_id, ordinal)
     JOIN topics topic ON topic.id = candidate.topic_id
     ORDER BY candidate.ordinal
-  `)
+  `,
+  )
   if (rows.length !== topicIds.length) {
     throw new Error('tagging run candidate topics are missing')
   }

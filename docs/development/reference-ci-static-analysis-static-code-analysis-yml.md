@@ -25,7 +25,9 @@ The required `static` workflow is the always-on pre-merge static-analysis matrix
 The root `pnpm run no-mistakes` script is the canonical local full-check entrypoint. Its command
 execution deadline remains 60 seconds and no-mistakes' separate default lock-wait timeout remains
 30 seconds. CI has exactly one production CLI invocation, the static-analysis full check, which
-disables both no-mistakes' execution deadline and its machine-wide lock-wait deadline.
+disables both no-mistakes' execution deadline and its machine-wide lock-wait deadline. That job
+first runs `node ci/no-mistakes-schema-catalog.mts`, which projects the committed schema snapshot
+into the catalog shape no-mistakes 0.69 can load.
 Route-selector `--check` is a second production consumer through the Node `analyzeProject` API. The `no-mistakes` job starts in parallel with the
 `static-code-analysis` job; its CLI and route-selector checks share a hosted runner, where the local `invocation.lock` protects any overlapping invocations.
 Separate hosted jobs have isolated workspaces, so there is no cross-PR job queue; the

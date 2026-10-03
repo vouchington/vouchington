@@ -50,8 +50,8 @@ export const addAdditionalHostname = async (
   // Conflict check, update, and hostname fetch in one query.
   // The UPDATE only runs if the hostname is not the topic's own primary, not the primary
   // for another topic, and not already claimed by a different topic.
-  // no-mistakes-disable-next-line postgres-required-predicates: is_own_primary is an id-scoped lookup of the already-validated topic
   const { rows } = await write(
+    // no-mistakes-disable-next-line postgres-required-predicates: is_own_primary is an id-scoped lookup of the already-validated topic
     sql`/* addAdditionalHostname */ WITH is_own_primary AS (SELECT 1 FROM topics WHERE id = ${topicId} AND hostname_id = ${hostnameId} LIMIT 1), conflict_topic AS (SELECT id FROM topics WHERE hostname_id = ${hostnameId} AND id <> ${topicId} AND deleted_at IS NULL AND merged_into_topic_id IS NULL LIMIT 1), upd AS (UPDATE url_hostnames SET topic_id = ${topicId} WHERE id = ${hostnameId} AND NOT EXISTS (SELECT 1 FROM is_own_primary) AND NOT EXISTS (SELECT 1 FROM conflict_topic) AND (topic_id IS NULL OR topic_id = ${topicId} OR NOT EXISTS (SELECT 1 FROM topics WHERE topics.id = url_hostnames.topic_id AND topics.deleted_at IS NULL AND topics.merged_into_topic_id IS NULL)) RETURNING id) SELECT uh.hostname, uh.created_at, EXISTS (SELECT 1 FROM is_own_primary) AS is_own_primary, EXISTS (SELECT 1 FROM conflict_topic) AS is_primary_for_other, EXISTS (SELECT 1 FROM upd) AS updated FROM url_hostnames uh WHERE uh.id = ${hostnameId}`,
     options,
   )
@@ -92,8 +92,8 @@ export const removeAdditionalHostname = async (
   assert(isUUID(topicId), 422, 'topic_id must be a valid UUID')
   assert(isUUID(hostnameId), 422, 'hostname_id must be a valid UUID')
 
-  // no-mistakes-disable-next-line postgres-required-predicates: id-scoped hostname_id lookup of the already-validated topic
   const { rows } = await write(
+    // no-mistakes-disable-next-line postgres-required-predicates: id-scoped hostname_id lookup of the already-validated topic
     sql`/* removeAdditionalHostname */ UPDATE url_hostnames SET topic_id = NULL WHERE id = ${hostnameId} AND topic_id = ${topicId} AND id IS DISTINCT FROM (SELECT hostname_id FROM topics WHERE id = ${topicId}) RETURNING id`,
     options,
   )

@@ -44,17 +44,17 @@ async function clearOtherHostnameLinks(
   options: QueryOptions = {},
 ): Promise<void> {
   // Clears only the current primary hostname (via topics.hostname_id), not additional hostnames; skips if it equals the new primary.
-  await write(
-    sql`/* clearOtherHostnameLinks */
+  const clearHostnameSql = sql`/* clearOtherHostnameLinks */
       UPDATE url_hostnames
       SET topic_id = NULL
-      WHERE id = (SELECT hostname_id FROM topics WHERE id = ${topicId})
-        -- no-mistakes-disable-next-line postgres-required-predicates: id-scoped lookup of a specific, already-validated topic's hostname_id, not a listing/existence query
+      WHERE id = (SELECT hostname_id FROM
+`
+  // no-mistakes-disable-next-line postgres-required-predicates: id-scoped lookup of a specific, already-validated topic's hostname_id, not a listing/existence query
+  clearHostnameSql.append(sql`topics WHERE id = ${topicId})
         AND topic_id = ${topicId}
         AND (${hostnameId}::uuid IS NULL OR id <> ${hostnameId}::uuid)
-    `,
-    options,
-  )
+  `)
+  await write(clearHostnameSql, options)
 }
 async function updateTopicHostnameId(
   topicId: string,
