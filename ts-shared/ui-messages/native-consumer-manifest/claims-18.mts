@@ -24,7 +24,7 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_18 = [
   { key: 'native.swift.presentationValues.click', consumers: ['swift'] },
   { key: 'native.swift.presentationValues.commentThread', consumers: ['swift'] },
   { key: 'native.swift.presentationValues.dataPoint', consumers: ['swift'] },
-  { key: 'native.swift.presentationValues.deleted', consumers: ['dotnet', 'swift'] },
+  { key: 'native.swift.presentationValues.deleted', consumers: ['swift'] },
   { key: 'native.swift.presentationValues.discussion', consumers: ['swift'] },
   { key: 'native.swift.presentationValues.facebook', consumers: ['dotnet', 'swift'] },
   { key: 'native.swift.presentationValues.github', consumers: ['dotnet', 'swift'] },
