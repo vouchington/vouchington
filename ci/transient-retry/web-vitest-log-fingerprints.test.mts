@@ -1,9 +1,39 @@
+import { readFileSync } from 'node:fs'
+
+import { parse as parseYaml } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
 import { decide } from './decide.mts'
 
 import { RULES, type WorkflowRunContext } from './rules.mts'
 import { hasWebVitestSegfault } from './web-vitest-log-fingerprints.mts'
+
+// pnpm quotes arguments that contain '='. The credentialed SIGKILL fixture records that shape.
+function quotePnpmEqualsArgs(command: string): string {
+  return command.replace(/(^|\s)(--[^\s=]+=[^\s]+)/g, "$1'$2'")
+}
+
+function webTestsKilledCommand(): string {
+  const workflow = parseYaml(readFileSync('.github/workflows/tests-web.yml', 'utf8')) as {
+    jobs: { 'web-tests': { steps?: Array<{ name?: string; run?: string }> } }
+  }
+  const run = workflow.jobs['web-tests'].steps?.find(step => step.name === 'Run web tests')?.run
+  if (run === undefined) throw new Error('tests-web.yml is missing Run web tests')
+  const concrete = run
+    .replaceAll('${{ matrix.shard }}', '1')
+    .replaceAll('${{ needs.prep.outputs.shard-total }}', '3')
+  const prefix = 'pnpm exec '
+  if (!concrete.startsWith(prefix)) throw new Error(`unexpected web test command: ${concrete}`)
+  return quotePnpmEqualsArgs(concrete.slice(prefix.length))
+}
+
+function sigsegvLog(killedCommand: string): string {
+  return [
+    'VITEST_COVERAGE_ENABLED: true',
+    `ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL Command was killed with SIGSEGV (Segmentation fault): ${killedCommand}`,
+    '##[error]Process completed with exit code 1.',
+  ].join('\n')
+}
 
 const webTestsJobName = 'test-web / web-tests (1)'
 const matchingLog = [
@@ -25,13 +55,27 @@ const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
 })
 
 describe('web-vitest-sigsegv', () => {
-  it('matches the current publishing web Vitest SIGSEGV fingerprint on attempt 1', async () => {
+  it('matches the historical direct vitest invocation that still included --passWithNoTests', async () => {
     const ctx = makeCtx({
       failedJobNames: [webTestsJobName, 'web'],
       failedJobLogs: () => Promise.resolve(new Map([[webTestsJobName, matchingLog]])),
     })
 
     const result = await decide(ctx, RULES)
+    expect(result.decision).toBe('rerun')
+    expect(result.matchedRule).toBe('web-vitest-sigsegv')
+  })
+
+  it('matches the live tests-web.yml command when Vitest is killed with SIGSEGV', async () => {
+    const ctx = makeCtx({
+      failedJobNames: [webTestsJobName, 'web'],
+      failedJobLogs: () =>
+        Promise.resolve(new Map([[webTestsJobName, sigsegvLog(webTestsKilledCommand())]])),
+    })
+
+    const result = await decide(ctx, RULES)
+    expect(webTestsKilledCommand()).toContain('./ci/with-node-test-options vitest run')
+    expect(webTestsKilledCommand()).not.toContain('--passWithNoTests')
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('web-vitest-sigsegv')
   })
@@ -43,6 +87,16 @@ describe('web-vitest-sigsegv', () => {
       ),
     ).toBe(true)
   })
+
+  it.each(['web-api', 'web-integration', 'web-storybook'])(
+    'does not treat a %s SIGSEGV as the web shard command',
+    project => {
+      const command = quotePnpmEqualsArgs(
+        `./ci/with-node-test-options vitest run --bail=3 --project ${project} --shard 1/3`,
+      )
+      expect(hasWebVitestSegfault(sigsegvLog(command))).toBe(false)
+    },
+  )
 
   it('fails closed for the removed unsharded coverage command', () => {
     expect(
