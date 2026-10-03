@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   PLANNING_IMPACT_MARKER_NAME,
   cleanupPlanningImpactDirectory,
+  createPlanningImpactDirectory,
   type PlanningImpactSession,
 } from './planning-impact-dir.mts'
 
@@ -20,19 +21,21 @@ async function makeTempRoot(): Promise<string> {
 }
 
 async function createSession(root: string): Promise<PlanningImpactSession> {
-  const result = spawnSync('node', [scriptPath, 'create'], {
-    encoding: 'utf8',
-    env: { ...process.env, TMPDIR: root },
-  })
-  if (result.status !== 0) throw new Error(result.stderr || 'planning impact create failed')
-  return JSON.parse(result.stdout) as PlanningImpactSession
+  vi.stubEnv('TMPDIR', root)
+  return createPlanningImpactDirectory()
 }
 
 async function cleanupSession(
   session: PlanningImpactSession,
   root: string,
 ): Promise<{ status: number; stderr: string }> {
-  return cleanupInput(`${JSON.stringify(session)}\n`, root)
+  vi.stubEnv('TMPDIR', root)
+  try {
+    await cleanupPlanningImpactDirectory(session)
+    return { status: 0, stderr: '' }
+  } catch (err) {
+    return { status: 1, stderr: err instanceof Error ? err.message : String(err) }
+  }
 }
 
 function cleanupInput(input: string, root: string): { status: number; stderr: string } {
@@ -63,6 +66,23 @@ describe('planning-impact-dir', () => {
     expect(await cleanupSession(session, root)).toMatchObject({ status: 0 })
     await expect(lstat(session.directory)).rejects.toMatchObject({ code: 'ENOENT' })
     expect((await lstat(sibling)).isDirectory()).toBe(true)
+  })
+
+  it('creates CLI JSON and consumes the captured session from stdin', async () => {
+    const root = await makeTempRoot()
+    const result = spawnSync('node', [scriptPath, 'create'], {
+      encoding: 'utf8',
+      env: { ...process.env, TMPDIR: root },
+    })
+    expect(result.status).toBe(0)
+    const session = JSON.parse(result.stdout) as PlanningImpactSession
+    expect(session.directory).toMatch(
+      new RegExp(`^${root}/no-mistakes-impact\\.[A-Za-z0-9]{6}$`, 'u'),
+    )
+    expect(session.cleanupToken).toMatch(/^[a-f0-9]{64}$/u)
+
+    expect(cleanupInput(`${JSON.stringify(session)}\n`, root).status).toBe(0)
+    await expect(lstat(session.directory)).rejects.toMatchObject({ code: 'ENOENT' })
   })
 
   it('refuses another valid session capability without deleting either directory', async () => {

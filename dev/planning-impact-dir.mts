@@ -63,13 +63,23 @@ async function requireOwnedTree(directory: string, uid: number): Promise<void> {
   )
 }
 
-export async function createPlanningImpactDirectory(): Promise<PlanningImpactSession> {
-  const parent = tempRoot()
-  const realParent = await realpath(parent)
-  const uid = requireUid()
+async function createPrivateDirectory(parent: string): Promise<string> {
   const directory = await mkdtemp(join(parent, 'no-mistakes-impact.'))
   await chmod(directory, 0o700)
-  const status = await lstat(directory)
+  return directory
+}
+
+async function writeCleanupMarker(marker: string, digest: string): Promise<void> {
+  await writeFile(marker, `${digest}\n`, { flag: 'wx', mode: 0o600 })
+  await chmod(marker, 0o600)
+}
+
+async function validateCreatedDirectory(
+  directory: string,
+  parent: string,
+  uid: number,
+): Promise<PlanningImpactSession> {
+  const [status, realParent] = await Promise.all([lstat(directory), realpath(parent)])
   const basename = directory.slice(directory.lastIndexOf(sep) + 1)
   if (
     !status.isDirectory() ||
@@ -77,18 +87,21 @@ export async function createPlanningImpactDirectory(): Promise<PlanningImpactSes
     status.uid !== uid ||
     (status.mode & 0o7777) !== 0o700 ||
     !hasGeneratedName(basename) ||
-    (await realpath(dirname(directory))) !== realParent
+    dirname(directory) !== parent
   ) {
     throw new Error('created planning impact directory failed its safety checks')
   }
   const cleanupToken = randomBytes(32).toString('hex')
   const marker = join(directory, PLANNING_IMPACT_MARKER_NAME)
-  await writeFile(marker, `${markerDigest(cleanupToken, realParent, basename)}\n`, {
-    flag: 'wx',
-    mode: 0o600,
-  })
-  await chmod(marker, 0o600)
+  await writeCleanupMarker(marker, markerDigest(cleanupToken, realParent, basename))
   return { directory, cleanupToken }
+}
+
+export async function createPlanningImpactDirectory(): Promise<PlanningImpactSession> {
+  const parent = tempRoot()
+  const uid = requireUid()
+  const directory = await createPrivateDirectory(parent)
+  return validateCreatedDirectory(directory, parent, uid)
 }
 
 export async function cleanupPlanningImpactDirectory(input: unknown): Promise<void> {
@@ -165,12 +178,6 @@ async function readStdinJson(): Promise<unknown> {
 
 async function main(): Promise<void> {
   const [command, ...extra] = process.argv.slice(2)
-  if (command === '--help' && extra.length === 0) {
-    process.stdout.write(
-      'Usage: node dev/planning-impact-dir.mts create\n       node dev/planning-impact-dir.mts cleanup < session.json\n',
-    )
-    return
-  }
   if (extra.length !== 0) throw new Error('planning impact directory command accepts no arguments')
   if (command === 'create') {
     process.stdout.write(`${JSON.stringify(await createPlanningImpactDirectory())}\n`)
