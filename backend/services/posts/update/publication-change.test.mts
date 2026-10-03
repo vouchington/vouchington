@@ -8,6 +8,7 @@ import {
   createTestUserWithAge,
   createTopHashtagAliasForTest,
   getTestPostPublicationDirtyWorkForScope,
+  getTestPostCategoryRelationIds,
   hardDeleteTestPosts,
   hardDeleteTestTopics,
   insertTestTopicsAndExplicitPostCategories,
@@ -85,12 +86,22 @@ describe('post update publication capture', () => {
     } finally {
       queries = stopTestQueryCapture()
     }
+    const relationIds = new Set(await getTestPostCategoryRelationIds(post.id))
+    expect(relationIds.size).toBe(1_001)
+    // Capture is process-wide: unrelated election workers can run during this request.
+    // Both stats queries put their target relation ID (or batch of IDs) in the first parameter.
+    const postQueries = queries.filter(query => {
+      const targets = query.values[0]
+      return Array.isArray(targets)
+        ? targets.some(id => typeof id === 'string' && relationIds.has(id))
+        : typeof targets === 'string' && relationIds.has(targets)
+    })
     expect(
-      countCapturedQueriesByAnnotation(queries, 'updateEntityRelationVoteStatsIfChanged'),
+      countCapturedQueriesByAnnotation(postQueries, 'updateEntityRelationVoteStatsIfChanged'),
     ).toBe(0)
     expect(
       countCapturedQueriesByAnnotation(
-        queries,
+        postQueries,
         'updateEntityRelationElectionVoteStatsFromPrimaryBatch',
       ),
     ).toBe(2)
