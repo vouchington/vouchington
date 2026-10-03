@@ -41,6 +41,15 @@ describe('parse-hostnames', () => {
     expect(result.topic_ids).toEqual([topicId])
   })
 
+  it('omits unresolved plural topic ids', async () => {
+    const slug = `missing-parse-hostnames-${randomUUID()}`
+
+    const result = await parseHostnamesSearchParams({ topics: [slug] }, null)
+
+    expect(result.shouldReturnEmpty).toBe(true)
+    expect(result).not.toHaveProperty('topic_ids')
+  })
+
   it('parseHostnamesSearchParams parses query and hostname strings', async () => {
     const result = await parseHostnamesSearchParams(
       { query: 'example', hostname: 'example.com' },
