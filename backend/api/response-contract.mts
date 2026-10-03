@@ -1,3 +1,4 @@
+import type { ApiHttpResponse, ApiHttpResponseVariant } from '@voucha/types/api-http-response'
 import type { AnyQueryContractCarrier, ValidatedQueryContractCarriers } from '@modules/pagination'
 
 /**
@@ -101,4 +102,26 @@ type ApiHeaderContract = {
       }
     >
   >
+}
+
+/** A named event and its canonical payload, before SSE wire framing. */
+export type ApiSseEvent<TName extends string = string, TData = unknown> = {
+  event: TName
+  data: TData
+}
+
+/** Formats the actual frame written by a route and exposes its payload to the compiler. */
+export function apiSseFrame<const TKey extends string, const TEvent extends ApiSseEvent>(
+  _key: TKey,
+  event: TEvent,
+): string {
+  return `event: ${event.event}\ndata: ${JSON.stringify(event.data)}\n\n`
+}
+
+/** Annotates SDK response variants while preserving status, headers, bytes and body ownership. */
+export function apiOpenApiHttpResponse<
+  const TKey extends string,
+  TVariants extends ApiHttpResponseVariant,
+>(_key: TKey, response: ApiHttpResponse<TVariants>): ApiHttpResponse<TVariants> {
+  return response
 }

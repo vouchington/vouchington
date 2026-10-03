@@ -1,5 +1,5 @@
+import { apiSseFrame } from '../response-contract.mts'
 import { PassThrough } from 'node:stream'
-import type { Context } from '@jongleberry/api-server'
 import type { ChannelSubscription } from '@data-stores/valkey-pubsub'
 import { describe, expect, it, vi } from 'vitest'
 import { pipeChannelToSSE } from '../sse-helpers.mts'
@@ -24,8 +24,7 @@ describe('pipeChannelToSSE lifecycle races', () => {
     }
 
     await pipeChannelToSSE({
-      ctx: {} as Context,
-      stream: new PassThrough(),
+      emit: event => new PassThrough().write(apiSseFrame('GET:/test', event)),
       subscription,
       eventName: 'state',
       abortSignal,

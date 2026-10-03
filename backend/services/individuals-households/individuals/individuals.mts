@@ -3,6 +3,8 @@ import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 
+type Individual = { id: string; updated_at: Date }
+
 /**
  * Get the individual that represents this user
  */
@@ -12,7 +14,7 @@ async function getIndividual(currentUser: PrivateUser | null) {
   // Check if the user already has an individual in the database
   const {
     rows: [user],
-  } = await read(sql`/* getIndividual */
+  } = await read<{ individual_id: string | null }>(sql`/* getIndividual */
     SELECT individual_id
     FROM users
     WHERE id = ${currentUser.id}
@@ -25,7 +27,7 @@ async function getIndividual(currentUser: PrivateUser | null) {
 
   const {
     rows: [individual],
-  } = await read(sql`/* getIndividual */
+  } = await read<Individual>(sql`/* getIndividual */
     SELECT
       id,
       updated_at
@@ -69,20 +71,20 @@ export async function getOrCreateIndividual(currentUser: PrivateUser | null) {
 async function getRepresentativeIndividualUser(userId: string) {
   const {
     rows: [user],
-  } = await read(sql`/* getRepresentativeIndividualUser */
+  } = await read<{ individual_id: string | null }>(sql`/* getRepresentativeIndividualUser */
     SELECT individual_id
     FROM users
     WHERE id = ${userId}
     LIMIT 1
   `)
 
-  return user as { individual_id?: string | null } | undefined
+  return user
 }
 
 async function createRepresentativeIndividual(userId: string) {
   const {
     rows: [individual],
-  } = await write(sql`/* createRepresentativeIndividual */
+  } = await write<Individual>(sql`/* createRepresentativeIndividual */
     WITH new_individual AS (
       INSERT INTO individuals DEFAULT VALUES
       RETURNING *
@@ -100,7 +102,7 @@ async function createRepresentativeIndividual(userId: string) {
 async function createAdditionalIndividual() {
   const {
     rows: [individual],
-  } = await write(sql`/* createAdditionalIndividual */
+  } = await write<Individual & { created_at: Date }>(sql`/* createAdditionalIndividual */
     INSERT INTO individuals DEFAULT VALUES
     RETURNING *
   `)

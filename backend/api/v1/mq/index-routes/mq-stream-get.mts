@@ -1,3 +1,4 @@
+import { apiSseFrame } from '../../../response-contract.mts'
 import { aggregateQueueStats, getAllQueueStats } from '@data-stores/valkey-glide-mq/get-queue-stats'
 import type { Context } from '@jongleberry/api-server'
 import onError from '@modules/on-error'
@@ -23,7 +24,9 @@ app.route('/api/v1/mq/stream').get(async (ctx: Context) => {
       const queues = await getAllQueueStats(QUEUE_NAMES)
       const stats = aggregateQueueStats(queues)
       if (!lifecycleSignal.aborted && !stream.destroyed) {
-        stream.write(`event: stats\ndata: ${JSON.stringify({ stats, queues })}\n\n`)
+        stream.write(
+          apiSseFrame('GET:/api/v1/mq/stream', { event: 'stats', data: { stats, queues } }),
+        )
       }
     } catch (err) {
       onError(err as Error)

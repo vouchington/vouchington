@@ -1,5 +1,10 @@
+import type { ApiSseEvent } from '../../../response-contract.mts'
 import type { ImportProgressSubscription, ImportProgressChunk } from '@data-stores/valkey-pubsub'
 import { getRssFeedImport } from '@services/user-import-export/rss-feed-imports'
+
+export type ImportStreamEvent =
+  | ApiSseEvent<'progress', ImportProgressChunk>
+  | ApiSseEvent<'done', Record<string, never>>
 
 // Max ~4 progress frames/sec; terminal done frame is always sent immediately
 export const THROTTLE_INTERVAL_MS = 250
@@ -9,7 +14,7 @@ export async function pipeUserRssFeedImportProgressToSSE(options: {
   batchId: string
   userId: string
   initialImport: NonNullable<Awaited<ReturnType<typeof getRssFeedImport>>>
-  write: (data: string) => void
+  emit: (event: ImportStreamEvent) => void
   disconnectSignal: AbortSignal
   pollIntervalMs?: number
   readImport?: typeof getRssFeedImport
@@ -30,9 +35,9 @@ export async function pipeUserRssFeedImportProgressToSSE(options: {
       done: current.import.pending_rows === 0 || current.import.completed_at !== null,
     }
 
-    options.write(`event: progress\ndata: ${JSON.stringify(chunk)}\n\n`)
+    options.emit({ event: 'progress', data: chunk })
     if (chunk.done) {
-      options.write(`event: done\ndata: ${JSON.stringify({})}\n\n`)
+      options.emit({ event: 'done', data: {} })
       return
     }
 
@@ -62,11 +67,11 @@ function waitForNextPoll(signal: AbortSignal, pollIntervalMs: number): Promise<v
 
 export function pipeImportProgressToSSE(options: {
   subscription: ImportProgressSubscription
-  write: (data: string) => void
+  emit: (event: ImportStreamEvent) => void
   disconnectSignal: AbortSignal
   throttleIntervalMs: number
 }): Promise<void> {
-  const { subscription, write, disconnectSignal, throttleIntervalMs } = options
+  const { subscription, emit, disconnectSignal, throttleIntervalMs } = options
 
   if (disconnectSignal.aborted) return Promise.resolve()
 
@@ -90,7 +95,7 @@ export function pipeImportProgressToSSE(options: {
       const chunk = pendingChunk
       pendingChunk = null
       try {
-        write(`event: progress\ndata: ${JSON.stringify(chunk)}\n\n`)
+        emit({ event: 'progress', data: chunk })
       } catch {
         // client gone
       }
@@ -111,7 +116,7 @@ export function pipeImportProgressToSSE(options: {
       if (chunk.done) {
         flushPending()
         try {
-          write(`event: done\ndata: ${JSON.stringify({})}\n\n`)
+          emit({ event: 'done', data: {} })
         } catch {
           // client gone
         }

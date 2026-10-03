@@ -69,10 +69,19 @@ and media type, and a failed secondary variant makes the whole operation unavail
 silently disappearing.
 
 The OpenAPI document catalogs every literal API-v1 route registration independently of fixture
-coverage. Every registered method and normalized path shape appears in `paths`. SSE handlers are
-published as `text/event-stream` with an honest unavailable event-schema marker, unconditional 405
-handlers publish only the shared error response, and an otherwise unrecognized emission receives an
-operation-level unavailable marker without a fabricated success response.
+coverage. Every registered method and normalized path shape appears in `paths`. SSE frames are written through `apiSseFrame` at each concrete route's emission callback. Their
+`text/event-stream` content is a string; `x-sse-events` maps each literal event name to its
+compiler-derived `dataSchema`, including terminal events and every payload variant. Generic
+subscription helpers pass typed events to those callbacks. Keepalive comments carry no event
+payload, and routine lifecycle expiry reconnects without inventing an error event.
+
+Opaque SDK responses use `apiOpenApiHttpResponse` with the shared `ApiHttpResponse` carrier. The
+carrier describes reachable status, media and body variants without reading or replacing the
+response. Stateless MCP POST responses remain JSON (single replies or reply arrays), with bodyless
+202 notification acknowledgements and JSON-RPC errors at 200 or 400. The explicit 400 schema also
+includes framework admission errors. Unconditional 405 handlers publish only the shared error
+response. Unknown emissions and unsupported payload variants fail extraction; the generated
+response and request unavailable-route arrays must both remain empty.
 
 The default contract key is `METHOD:/route/template`. Use an explicit
 `backendResponseContractKey` only when a route has multiple response variants, and wrap that

@@ -22,6 +22,7 @@
     "@services/openai-agents": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/tools": "workspace:^",
+    "@voucha/types": "workspace:^",
     "http-errors": "^2.0.1"
   },
   "devDependencies": {

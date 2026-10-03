@@ -1,3 +1,4 @@
+import { apiSseFrame } from '../../../response-contract.mts'
 import app from '../../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
@@ -49,7 +50,7 @@ app.route('/api/v1/imports/:batchId/stream').get(async (ctx: Context) => {
         batchId,
         userId: currentUser.id,
         initialImport: userRssFeedImport!,
-        write: data => stream.write(data),
+        emit: event => stream.write(apiSseFrame('GET:/api/v1/imports/:batchId/stream', event)),
         disconnectSignal: lifecycleSignal,
       })
       return
@@ -76,17 +77,19 @@ app.route('/api/v1/imports/:batchId/stream').get(async (ctx: Context) => {
       done: progress.total > 0 && progress.pending === 0,
     }
 
-    stream.write(`event: progress\ndata: ${JSON.stringify(initialChunk)}\n\n`)
+    stream.write(
+      apiSseFrame('GET:/api/v1/imports/:batchId/stream', { event: 'progress', data: initialChunk }),
+    )
 
     // If already done at snapshot time, emit done and return
     if (initialChunk.done) {
-      stream.write(`event: done\ndata: ${JSON.stringify({})}\n\n`)
+      stream.write(apiSseFrame('GET:/api/v1/imports/:batchId/stream', { event: 'done', data: {} }))
       return
     }
 
     await pipeImportProgressToSSE({
       subscription,
-      write: data => stream.write(data),
+      emit: event => stream.write(apiSseFrame('GET:/api/v1/imports/:batchId/stream', event)),
       disconnectSignal: lifecycleSignal,
       throttleIntervalMs: THROTTLE_INTERVAL_MS,
     })

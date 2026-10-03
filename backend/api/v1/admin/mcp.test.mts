@@ -133,6 +133,7 @@ describe('POST /api/v1/admin/mcp', () => {
       const response = await postAdminMcp(token, MCP_INITIALIZED_NOTIFICATION).expect(202)
 
       expect(response.text).toBe('')
+      expect(response.headers['content-type']).toBeUndefined()
       expect(await readTestMcpCallAuditEvents(owner.id)).toEqual([
         expect.objectContaining({
           jsonrpc_method: 'notifications/initialized',

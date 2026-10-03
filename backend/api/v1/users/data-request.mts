@@ -1,3 +1,4 @@
+import { apiSseFrame } from '../../response-contract.mts'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { isUUID } from '@modules/utils'
@@ -12,7 +13,7 @@ import {
   type UserDataRequest,
 } from '@services/account-data-requests'
 import { enqueueExportRequest } from '@queues/account-data-requests/enqueues'
-import { dataRequestPubSub, type DataRequestStatus } from '@data-stores/valkey-pubsub'
+import { dataRequestPubSub, type DataRequestStreamStatus } from '@data-stores/valkey-pubsub'
 import { startSSE, pipeChannelToSSE, watchForAbortBeforeSSE } from '../../sse-helpers.mts'
 
 // An administrator can run an export for any account through the subject's own route (for example
@@ -123,7 +124,7 @@ app.route('/api/v1/users/:idOrSlug/data-request/stream').get(async (ctx: Context
     // the first read and the subscribe call (worker may have finished in that window).
     const request = (await getDataRequestById(user.id, currentUser.id, requestRef.id)) ?? requestRef
 
-    let initialValue: DataRequestStatus | undefined
+    let initialValue: DataRequestStreamStatus | undefined
     const isTerminalStatus = (s: string) => s === 'ready' || s === 'failed' || s === 'expired'
 
     if (isTerminalStatus(request.status)) {
@@ -139,12 +140,12 @@ app.route('/api/v1/users/:idOrSlug/data-request/stream').get(async (ctx: Context
     const { stream, pipelinePromise, lifecycleSignal } = startSSE(ctx)
     try {
       await pipeChannelToSSE({
-        ctx,
-        stream,
+        emit: event =>
+          stream.write(apiSseFrame('GET:/api/v1/users/:idOrSlug/data-request/stream', event)),
         subscription,
         eventName: 'status',
         abortSignal: lifecycleSignal,
-        isTerminal: (s: DataRequestStatus) => isTerminalStatus(s.status),
+        isTerminal: (s: DataRequestStreamStatus) => isTerminalStatus(s.status),
         initialValue,
       })
     } finally {
