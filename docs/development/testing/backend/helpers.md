@@ -196,10 +196,11 @@ const datasets = await Promise.all(
 
 Use `createFetchSafeTestServer()` from `@voucha/test-helpers/fetch-safe-test-server` when a
 test starts a localhost HTTP server and calls production `fetch()`/undici against it.
-`server.listen(0)` can choose Fetch-forbidden ports such as `6667`, which undici rejects before
-opening a socket, or the deterministic Playwright runner range `2200–2999`. The helper rejects both
-classes through the shared runner port binder; direct ephemeral listener binds are statically
-forbidden outside that policy owner.
+`server.listen(0)` can choose a Fetch-forbidden port such as `6667`, which undici rejects before
+opening a socket. The helper rebinds through `listenOnEphemeralPort()` until the port passes
+`isFetchSafePort`. Using the helper is a [convention](../../ci.md), not a lint guard: the
+`no-raw-ephemeral-port` rule was [retired](../../quality/static-code-analysis/README.md), so a
+direct `server.listen(0)` is not flagged.
 
 ```ts
 const server = await createFetchSafeTestServer((_req, res) => {

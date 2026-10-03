@@ -147,46 +147,46 @@ describe('attached TestWorker snapshots', () => {
     await Promise.all(workers.splice(0).map(worker => worker.close()))
   })
 
-  it('returns no unexpected queues when no workers are attached', () => {
-    const baseline = captureAttachedTestWorkers()
+  it('returns no unexpected queues when no workers are attached', async () => {
+    const baseline = await captureAttachedTestWorkers()
 
-    expect(getUnexpectedAttachedTestWorkerQueueNames(baseline)).toEqual([])
+    expect(await getUnexpectedAttachedTestWorkerQueueNames(baseline)).toEqual([])
   })
 
-  it('allows the worker captured in its baseline', () => {
+  it('allows the worker captured in its baseline', async () => {
     const worker = new TestWorker(
       getOrCreateQueue(uniqueQueueName('baseline')),
       async () => undefined,
     )
     workers.push(worker)
-    const baseline = captureAttachedTestWorkers()
+    const baseline = await captureAttachedTestWorkers()
 
-    expect(getUnexpectedAttachedTestWorkerQueueNames(baseline)).toEqual([])
+    expect(await getUnexpectedAttachedTestWorkerQueueNames(baseline)).toEqual([])
   })
 
-  it('detects a second worker attached to an allowed queue by identity', () => {
+  it('detects a second worker attached to an allowed queue by identity', async () => {
     const queueName = uniqueQueueName('same-queue')
     const queue = getOrCreateQueue(queueName)
     workers.push(new TestWorker(queue, async () => undefined))
-    const baseline = captureAttachedTestWorkers()
+    const baseline = await captureAttachedTestWorkers()
     workers.push(new TestWorker(queue, async () => undefined))
 
-    expect(getUnexpectedAttachedTestWorkerQueueNames(baseline)).toEqual([queueName])
+    expect(await getUnexpectedAttachedTestWorkerQueueNames(baseline)).toEqual([queueName])
   })
 
   it('ignores a worker after it closes', async () => {
-    const baseline = captureAttachedTestWorkers()
+    const baseline = await captureAttachedTestWorkers()
     const worker = new TestWorker(
       getOrCreateQueue(uniqueQueueName('closed')),
       async () => undefined,
     )
     await worker.close()
 
-    expect(getUnexpectedAttachedTestWorkerQueueNames(baseline)).toEqual([])
+    expect(await getUnexpectedAttachedTestWorkerQueueNames(baseline)).toEqual([])
   })
 
-  it('deduplicates and sorts queue names for multiple unexpected workers', () => {
-    const baseline = captureAttachedTestWorkers()
+  it('deduplicates and sorts queue names for multiple unexpected workers', async () => {
+    const baseline = await captureAttachedTestWorkers()
     const alpha = uniqueQueueName('alpha')
     const zeta = uniqueQueueName('zeta')
     workers.push(
@@ -195,16 +195,16 @@ describe('attached TestWorker snapshots', () => {
       new TestWorker(getOrCreateQueue(alpha), async () => undefined),
     )
 
-    expect(getUnexpectedAttachedTestWorkerQueueNames(baseline)).toEqual([alpha, zeta])
+    expect(await getUnexpectedAttachedTestWorkerQueueNames(baseline)).toEqual([alpha, zeta])
   })
 
-  it('keeps the captured baseline immutable after later attachments', () => {
-    const baseline = captureAttachedTestWorkers()
+  it('keeps the captured baseline immutable after later attachments', async () => {
+    const baseline = await captureAttachedTestWorkers()
     const queueName = uniqueQueueName('later')
     const worker = new TestWorker(getOrCreateQueue(queueName), async () => undefined)
     workers.push(worker)
 
-    expect(baseline.has(worker)).toBe(false)
-    expect(getUnexpectedAttachedTestWorkerQueueNames(baseline)).toEqual([queueName])
+    expect(baseline.has(worker.id)).toBe(false)
+    expect(await getUnexpectedAttachedTestWorkerQueueNames(baseline)).toEqual([queueName])
   })
 })

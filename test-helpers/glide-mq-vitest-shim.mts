@@ -110,6 +110,9 @@ export class Queue<D = any, R = any> {
   }
 }
 
+// `glide-mq/testing` does not export the error classes, and importing them from `glide-mq` would
+// loop back through this shim's alias. `TestWorker` matches both by `name`, so these local classes
+// behave like the real ones. Revisit once `glide-mq/testing` re-exports them.
 export class BatchError extends Error {
   readonly results: unknown[]
   constructor(results: unknown[]) {
@@ -120,12 +123,6 @@ export class BatchError extends Error {
 }
 
 export class Worker<D = any, R = any> extends TestWorker<D, R> {
-  static RateLimitError = class RateLimitError extends Error {
-    constructor() {
-      super('Rate limit exceeded')
-      this.name = 'RateLimitError'
-    }
-  }
   constructor(
     queueNameOrQueue: string | Queue<D, R>,
     processor: ((job: any) => Promise<R> | R) | ((jobs: any[]) => Promise<R[]>),

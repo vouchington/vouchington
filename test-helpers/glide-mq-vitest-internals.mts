@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
-import { type TestJob, TestQueue, type TestWorker } from 'glide-mq/testing'
+import { type TestJob, TestQueue } from 'glide-mq/testing'
 
 const testWorkerProcessorContext = new AsyncLocalStorage<true>()
 
@@ -89,29 +89,28 @@ function promoteRetriedJob(job: TestJob): void {
 
 const queues = new Map<string, ShimTestQueue>()
 
-/** Snapshot every TestWorker currently attached through the in-memory queue shim. */
-export function captureAttachedTestWorkers(): ReadonlySet<TestWorker> {
-  const workers = new Set<TestWorker>()
-  for (const queue of queues.values()) {
-    for (const worker of queue.workers) workers.add(worker)
-  }
-  return workers
+async function listAttachedWorkers(): Promise<Array<{ queueName: string; workerId: string }>> {
+  const infos = [...queues].map(async ([queueName, queue]) =>
+    (await queue.getWorkers()).map(worker => ({ queueName, workerId: worker.id })),
+  )
+  return (await Promise.all(infos)).flat()
+}
+
+/** Snapshot the id of every TestWorker currently attached through the in-memory queue shim. */
+export async function captureAttachedTestWorkers(): Promise<ReadonlySet<string>> {
+  return new Set((await listAttachedWorkers()).map(({ workerId }) => workerId))
 }
 
 /**
  * Return queue names that acquired an attached TestWorker after the supplied fork baseline.
  * Queue names, rather than workers, make the guard's remediation actionable and deterministic.
  */
-export function getUnexpectedAttachedTestWorkerQueueNames(
-  baseline: ReadonlySet<TestWorker>,
-): string[] {
-  const names = new Set<string>()
-  for (const [queueName, queue] of queues) {
-    for (const worker of queue.workers) {
-      if (!baseline.has(worker)) names.add(queueName)
-    }
-  }
-  return [...names].toSorted()
+export async function getUnexpectedAttachedTestWorkerQueueNames(
+  baseline: ReadonlySet<string>,
+): Promise<string[]> {
+  const attached = await listAttachedWorkers()
+  const unexpected = attached.filter(({ workerId }) => !baseline.has(workerId))
+  return [...new Set(unexpected.map(({ queueName }) => queueName))].toSorted()
 }
 
 export function getOrCreateQueue(name: string): ShimTestQueue {

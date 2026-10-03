@@ -7,7 +7,7 @@ import { deadLetterQueueNames, getOrCreateQueue } from './glide-mq-vitest-intern
  * it leaves alone: resume a paused queue, and cascade into the configured dead-letter queue, which
  * only the shim knows about.
  *
- * Deliberately does NOT touch `queue.workers`: workers are attached by the importing test, not
+ * Deliberately does NOT detach the attached workers: they are attached by the importing test, not
  * owned by the queue's job state, and detaching them would make `flushJobs`'s worker-less no-op
  * branch permanent. A processor promise that never settles keeps pinning its worker's concurrency
  * slot for the same reason: obliterate cannot reclaim it.

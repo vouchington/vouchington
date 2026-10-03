@@ -28,13 +28,17 @@ export type TestQueueFlushDiagnostics = {
  * so none of them could tell whether the pending job was ever picked up.
  *
  * `concurrency` has no public accessor on `TestWorker` (only `getActiveCount()` does — see
- * glide-mq's testing.d.ts), so this reads the TypeScript-private field (still present in 0.16):
- * a diagnostic-only read, not a correctness dependency, that could silently stop working on a
- * future glide-mq bump. `queue.jobs` and `queue.waitingQueue` are `@internal` but public fields; a
- * `prioritized` job also sits in `waitingQueue` until a worker's promotion pass moves it to
- * `waiting`. If any read here throws, this degrades to a partial snapshot carrying `captureError`
- * instead of throwing — a broken diagnostic must never replace the timeout error it was meant to
- * enrich.
+ * glide-mq's testing.d.ts), and `TestQueue.getWorkers()` returns `WorkerInfo`, which carries
+ * neither it nor a worker handle. So this reads the `@internal` `queue.workers` set and each
+ * worker's TypeScript-private `concurrency` (both still present in 0.16): diagnostic-only reads,
+ * not a correctness dependency, that could silently stop working on a future glide-mq bump. This
+ * is the only place left that reads `queue.workers`; move to `getWorkers()` once `WorkerInfo`
+ * exposes `concurrency` (upstream PR pending).
+ *
+ * `queue.jobs` and `queue.waitingQueue` are `@internal` but public fields; a `prioritized` job
+ * also sits in `waitingQueue` until a worker's promotion pass moves it to `waiting`. If any read
+ * here throws, this degrades to a partial snapshot carrying `captureError` instead of throwing —
+ * a broken diagnostic must never replace the timeout error it was meant to enrich.
  */
 export function captureFlushDiagnostics(
   queue: TestQueue,
