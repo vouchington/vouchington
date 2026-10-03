@@ -1,7 +1,8 @@
 # AI Agent Architecture
 
 Shared safety, tool, testing, and orchestration guidance plus package-level agent references. The
-[architecture overview](../ai-agents.md) explains the complete pipeline.
+[AI platform overview](../ai-platform.md) owns the shared classifier invariants, provider boundary
+and measurement method; [AI agents](../ai-agents.md) links the surrounding pipelines.
 
 ## Shared references
 

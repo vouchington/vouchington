@@ -2,9 +2,11 @@
 
 Source entrypoint: [backend/queues/ai-agents/README.md](../../../../../backend/queues/ai-agents/README.md)
 
-Unified queue package for AI agent workloads. OpenAI-backed agent jobs run through `ai_agents`
-with shared RPM and TPM limits. The limiter-independent `ai-spend-cap-rechecks` queue owns the
-single coordinator that releases jobs when an operator relaxes the daily cap.
+Unified queue package for fixed classifiers and focused agent workloads. Jobs run through
+`ai_agents` with shared queue limits and spend admission. The
+[AI platform overview](../../ai-platform.md) owns classifier identity, recovery and provider
+boundaries. The limiter-independent `ai-spend-cap-rechecks` queue owns the single coordinator that
+releases jobs when an operator relaxes the daily cap.
 
 ## Summary
 
@@ -18,6 +20,12 @@ single coordinator that releases jobs when an operator relaxes the daily cap.
 | `processCopyrightFormScreening`            | `copyright-form-screening`             | Screens a structured form only for obvious spam or invalidity; a clear signed-in result may provisionally restrict pending mandatory human review              |
 | `processCopyrightAppealRecommendation`     | `copyright-appeal-recommendation`      | Persists advisory appeal analysis for a moderator; it never changes a restriction or restores material                                                         |
 | `processStoryPost`                         | `story-post`                           | Generates or refreshes a story summary; entity recovery uses the awaited enqueue so queue failure retains the durable checkpoint for retry.                    |
+| `processReportJudgement`                   | `report-judgement`                     | Stores an advisory moderation report judgement through OpenRouter                                                                                              |
+| `processDisputeResolution`                 | `dispute-resolution`                   | Drafts an advisory dispute resolution through OpenRouter                                                                                                       |
+| `processAppealResolution`                  | `appeal-resolution`                    | Drafts an advisory appeal resolution through OpenRouter                                                                                                        |
+| `processBackfillReportJudgements`          | `backfill_report_judgements`           | Dispatches missing report judgements                                                                                                                           |
+| `processAutoDispatchJudgement`             | `auto-dispatch-judgement`              | Applies an eligible stored judgement through its own policy boundary                                                                                           |
+| `processReconcileAutoDispatchJudgements`   | `reconcile-auto-dispatch-judgements`   | Recovers pending automatic judgement dispatches                                                                                                                |
 | `processReconcileBackgroundResponses`      | `reconcile-background-responses`       | Crash-recovery sweep of orphaned OpenAI `background: true` responses (cancel/retrieve/record); see [Background Response Sweeper](#background-response-sweeper) |
 | `processReconcileCopyrightAgentDispatches` | `reconcile-copyright-agent-dispatches` | Re-enqueues advisory email, form-screening, and appeal gaps; applies saved clear form screens without another model run                                        |
 
@@ -46,13 +54,6 @@ row in its own transaction and enqueues `classifier-run-dispatcher` after commit
 every active community prompt in a single provider call. The community's
 `communities.automod_action` setting decides what a flag does when the run completes.
 
-There is no hosted chat job: `chat` and `reconcile-chat-runtime-generations` were removed with the
-hosted chat transport, and native chat persists through `client-generated-chat`. A `chat` or
-`reconcile-chat-runtime-generations` job still queued at deploy follows the worker's unknown-job
-path (`Unknown AI agent job: <name>`) and fails as an ordinary job failure without crashing the
-worker; the scheduled reconciler's scheduler is pruned when the manifest is upserted. The
-agentic-run storage is removed, so no run state remains that could block native chat.
-
 ## Enqueue Files
 
 - [`enqueues/autotagger.mts`](../../../../../backend/queues/ai-agents/enqueues/autotagger.mts) — autotagger jobs
@@ -63,6 +64,10 @@ agentic-run storage is removed, so no run state remains that could block native 
 - [`enqueues/classifier-run.mts`](../../../../../backend/queues/ai-agents/enqueues/classifier-run.mts) — durable classifier-run dispatch and stable-id run jobs; run jobs use the outage-sized `CLASSIFIER_RUN_ATTEMPTS` and `CLASSIFIER_RUN_BACKOFF` from `config.mts` (see [classifier-run backoff](../workers/ai-agents/README.md#classifier-run-backoff)) instead of `AI_AGENTS_DEFAULTS`
 - [`enqueues/reconcile-classifier-runs.mts`](../../../../../backend/queues/ai-agents/enqueues/reconcile-classifier-runs.mts) — five-minute cursor-paginated run and request recovery
 - [`enqueues/story-post.mts`](../../../../../backend/queues/ai-agents/enqueues/story-post.mts) — fire-and-forget creation enqueue plus an awaited recovery variant that propagates delivery failure
+- [`enqueues/report-judgement.mts`](../../../../../backend/queues/ai-agents/enqueues/report-judgement.mts) — report judgements and missing-judgement backfill
+- [`enqueues/dispute-resolution.mts`](../../../../../backend/queues/ai-agents/enqueues/dispute-resolution.mts) — dispute recommendation jobs
+- [`enqueues/appeal-resolution.mts`](../../../../../backend/queues/ai-agents/enqueues/appeal-resolution.mts) — appeal recommendation jobs
+- [`enqueues/auto-dispatch-judgement.mts`](../../../../../backend/queues/ai-agents/enqueues/auto-dispatch-judgement.mts) — stored-judgement dispatch and recovery jobs
 - [`enqueues/reconcile-background-responses.mts`](../../../../../backend/queues/ai-agents/enqueues/reconcile-background-responses.mts) — background-response sweeper job
 
 ## Copyright Agent Dispatch
@@ -90,9 +95,10 @@ already open and the form effect calls no model. Automated withholding has its o
 ## Background Response Sweeper
 
 Every OpenAI call in this queue that goes through `createOpenAIResponse()`
-(`@modules/openai-utils/create-response.mts`) — every job here — now runs with
+(`@modules/openai-utils/create-response.mts`) runs with
 `background: true` internally, so a response keeps generating and billing on OpenAI's side even if
 the worker that started it crashes, OOM-kills, or is replaced mid-call by an ECS rolling deploy.
+Jev classifier calls and the retained OpenRouter agents do not use this registry.
 `reconcile-background-responses` is the crash-recovery reconciler for that class of orphan: it runs
 every 5 minutes (`enqueues/schedules.mts`), pages durable registry rows whose PostgreSQL-clock
 lease has expired, and atomically transfers each selected row to a two-minute sweeper lease before
