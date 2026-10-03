@@ -87,6 +87,46 @@ describe('post MCP write guards — real services', () => {
     ).toMatchObject({ post: { post_type: 'comment', parent_id: id } })
   })
 
+  it.each(['update_post', 'delete_post'])(
+    'refuses missing %s targets before mutation',
+    async name => {
+      expect(
+        await callRejectedMcpTool(await caller(), name, { id: crypto.randomUUID() }, SCOPES),
+      ).toContain('Post not found')
+    },
+  )
+
+  it('fails closed on a malformed comment root instead of authorizing its public parent', async () => {
+    const user = await caller()
+    const makeRoot = () =>
+      insertTestPost({
+        title: crypto.randomUUID(),
+        slug: crypto.randomUUID(),
+        markdown: 'Root',
+        createdById: user.id,
+        clearanceStatus: 'approved',
+      })
+    const [parent, differentRoot] = await Promise.all([makeRoot(), makeRoot()])
+    const comment = await insertTestPost({
+      postType: 'comment',
+      title: '',
+      slug: crypto.randomUUID(),
+      markdown: 'Malformed retained ancestry',
+      createdById: user.id,
+      parentId: parent,
+      rootId: differentRoot,
+      clearanceStatus: 'approved',
+    })
+    expect(
+      await callRejectedMcpTool(
+        user,
+        'create_post',
+        input({ post_type: 'comment', parent_id: comment }),
+        SCOPES,
+      ),
+    ).toContain('Post not found')
+  })
+
   it('refuses a reply to another owner’s private comment chain', async () => {
     const [user, author] = await Promise.all([caller(), caller()])
     const root = await insertTestPost({

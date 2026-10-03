@@ -75,6 +75,19 @@ describe('post MCP write guards — real services', () => {
     }
   })
 
+  it('refuses an identityless credential owner before admission', async () => {
+    const user = await createTestUser({ noUsername: true })
+    await createTestMembership({ user_id: user.id, plan: 'plus' })
+    expect(
+      await callRejectedMcpTool(
+        { ...user, membership_plan: 'plus' },
+        'create_post',
+        input(),
+        SCOPES,
+      ),
+    ).toContain('identity is required')
+  })
+
   it('returns the owner post-budget code through MCP', async () => {
     const user = await caller()
     const restore = overrideDynamicConfigFieldsForTest(contributionLimitConfig, {
