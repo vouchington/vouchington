@@ -34,13 +34,21 @@ container target locally. The checked-in `WORKER_IO_AUTOMATION_ENABLED` flag in
 is false by default; setting it to `true` adds the `worker-io` target to pull-request validation but
 does not publish or deploy it. The private `vouchington-infra` receiver owns worker image builds,
 publication, retention, deployment manifests, deployed task sizing, and each task definition's
-`QUEUES` selection. Local development runs every policy-managed queue in one worker process. CPU-only
-queues can run only in `worker-cpu`, and every deployed environment must select every queue in
-exactly one worker process.
+`WORKER_QUEUE_CLASS` value. Local development runs every policy-managed queue in one worker process.
+CPU-only queues can run only in `worker-cpu`, and every deployed environment must select every queue
+in exactly one worker process.
 
-`QUEUES` controls which queue workers a process constructs. Use comma-separated queue names to
-include only those queues, or prefix every entry with `-` to run every queue except those names.
-Each production deployment (`worker-cpu`, `worker-io`) already constrains which queues it loads.
+`WORKER_QUEUE_CLASS` (`all`, `cpu`, or `io`) is how infrastructure picks the queues a worker process
+constructs. The worker expands the class to an explicit include list from
+`worker-queue-policy.json`: `cpu` is the CPU-only queues, `io` is the I/O-capable queues (including
+the SQS consumers), and `all` is both. The explicit list also reaches queues that require explicit
+inclusion, which an unset selection skips. `worker-io` accepts only `io` and `worker-cpu` accepts
+`all` or `cpu`. An unknown or unaccepted class, or setting `QUEUES` together with it, fails the
+process at startup.
+
+`QUEUES` is the name-level selector for local development and the image smoke test, and is used
+instead of the class. Use comma-separated queue names to include only those queues, or prefix every
+entry with `-` to run every queue except those names.
 
 An include-mode `QUEUES` entry the running process's compiled `WORKER_DEFINITIONS` don't recognize
 is dropped rather than treated as fatal — the process starts and runs the queues it does know,

@@ -21,6 +21,8 @@ export function initializeWorkerRuntime(
   dependencies: WorkerIoDependencies = defaultWorkerIoDependencies,
 ): Promise<WorkerRuntime> {
   return dependencies.initializeWorkerRuntime({
+    // worker-io never runs CPU-only queues, so only the I/O class is valid here.
+    queueClasses: ['io'],
     workerDefinitions: WORKER_DEFINITIONS,
     sqsConsumerDefinitions: SQS_CONSUMER_DEFINITIONS,
     scheduleDefinitions: SCHEDULE_DEFINITIONS,

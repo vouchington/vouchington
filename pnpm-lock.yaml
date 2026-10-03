@@ -1654,9 +1654,6 @@ importers:
       '@queues/language-detection':
         specifier: workspace:^
         version: link:../../queues/language-detection
-      '@queues/openai-moderation':
-        specifier: workspace:^
-        version: link:../../queues/openai-moderation
       '@queues/unfurl-referral-links':
         specifier: workspace:^
         version: link:../../queues/unfurl-referral-links
@@ -1741,6 +1738,9 @@ importers:
       '@queues/oauth-authorization-exchange':
         specifier: workspace:^
         version: link:../../queues/oauth-authorization-exchange
+      '@queues/openai-moderation':
+        specifier: workspace:^
+        version: link:../../queues/openai-moderation
       '@queues/post-publication':
         specifier: workspace:^
         version: link:../../queues/post-publication

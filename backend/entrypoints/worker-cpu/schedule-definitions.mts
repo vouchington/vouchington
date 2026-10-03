@@ -3,7 +3,7 @@ import { SCHEDULE_DEFINITIONS as IO_SCHEDULE_DEFINITIONS } from '@entrypoints/wo
 
 export const CPU_ONLY_SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
   {
-    // The heartbeat queue is universal and intentionally omitted from QUEUES. This schedule is
+    // The heartbeat queue is universal and intentionally omitted from queue selection. This schedule is
     // registered by worker-cpu only, so queue metrics have one publisher even when worker-io is
     // enabled alongside it.
     queueName: 'heartbeat',
@@ -40,11 +40,6 @@ export const CPU_ONLY_SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
   {
     queueName: 'images',
     load: () => import('@queues/images/enqueues/schedules').then(module => module.upsertSchedules),
-  },
-  {
-    queueName: 'openai_moderation_omni_single',
-    load: () =>
-      import('@queues/openai-moderation/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
     queueName: 'bedrock-embeddings-batch',

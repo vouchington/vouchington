@@ -2,7 +2,6 @@ import { mkdtemp, rm, symlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { workerQueuePolicy } from '../backend/modules/worker-queue-inventory/worker-queue-policy.mts'
 import { makeRepo, registerTmuxFakeHooks, runTmux } from './test-helpers/tmux.mts'
 
 function createdWindowNames(log: string) {
@@ -57,10 +56,7 @@ describe('dev/tmux', () => {
     ])
     expect(result.log).not.toContain('split-window')
     expect(result.log).toContain('select-window -t =voucha-')
-    expect(result.log).toContain(
-      `QUEUES=${[...workerQueuePolicy.cpuOnlyQueues, ...workerQueuePolicy.ioCapableQueues].join(',')}`,
-    )
-    expect(result.log).toContain('crawl_urls')
+    expect(result.log).toContain('WORKER_QUEUE_CLASS=all')
   })
 
   it.each([
@@ -127,16 +123,15 @@ describe('dev/tmux', () => {
     )
   })
 
-  it('keeps the complete queue policy in the worker', async () => {
+  it('asks the worker for the complete queue policy by class instead of naming queues', async () => {
     const cwd = await makeRepo()
     const binDir = await makeFakeBin()
 
     const result = await runTmux({ binDir, cwd })
 
     expect(result).toEqual(expect.objectContaining({ code: 0 }))
-    expect(result.log).toContain(
-      `QUEUES=${[...workerQueuePolicy.cpuOnlyQueues, ...workerQueuePolicy.ioCapableQueues].join(',')}`,
-    )
+    expect(result.log).toContain('WORKER_QUEUE_CLASS=all')
+    expect(result.log).not.toMatch(/\bQUEUES=/)
   })
 
   it('uses distinct session identities for same-basename worktrees', async () => {

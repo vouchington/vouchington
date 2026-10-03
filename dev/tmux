@@ -150,14 +150,8 @@ prepare_service_commands() {
       echo "Error: localization catalog step (dev/localization/local-catalog.mts) printed no catalog path." >&2
       exit 1
     fi
-    WORKER_QUEUE_POLICY_CLI="$REPO_ROOT/backend/modules/worker-queue-inventory/worker-queue-policy-cli.mts"
-    WORKER_QUEUES="$(node "$WORKER_QUEUE_POLICY_CLI" dev-all-queues)"
-    if [ -z "$WORKER_QUEUES" ]; then
-      echo "Error: worker queue step (worker-queue-policy-cli.mts dev-all-queues) printed no queues." >&2
-      exit 1
-    fi
     BODY_BACKEND="source \"$REPO_ROOT/.env\"; $NODE_OPTIONS_INIT; LOCALIZATION_SQLITE_PATH=$(quote_shell_arg "$LOCALIZATION_SQLITE_PATH") OTEL_SERVICE_NAME=voucha-api LOG_LEVEL=$LOG_LEVEL node $OTEL_NODE_IMPORT --watch \"$REPO_ROOT/backend/entrypoints/api/serve.mts\"; read"
-    BODY_WORKER="source \"$REPO_ROOT/.env\"; $NODE_OPTIONS_INIT; $WORKER_NODE_OPTIONS_INIT; LOCALIZATION_SQLITE_PATH=$(quote_shell_arg "$LOCALIZATION_SQLITE_PATH") OTEL_SERVICE_NAME=voucha-worker-cpu LOG_LEVEL=$LOG_LEVEL QUEUES=$WORKER_QUEUES UV_THREADPOOL_SIZE=\${UV_THREADPOOL_SIZE:-8} node $OTEL_NODE_IMPORT --watch \"$REPO_ROOT/backend/entrypoints/worker-cpu/serve.mts\"; read"
+    BODY_WORKER="source \"$REPO_ROOT/.env\"; $NODE_OPTIONS_INIT; $WORKER_NODE_OPTIONS_INIT; LOCALIZATION_SQLITE_PATH=$(quote_shell_arg "$LOCALIZATION_SQLITE_PATH") OTEL_SERVICE_NAME=voucha-worker-cpu LOG_LEVEL=$LOG_LEVEL WORKER_QUEUE_CLASS=all UV_THREADPOOL_SIZE=\${UV_THREADPOOL_SIZE:-8} node $OTEL_NODE_IMPORT --watch \"$REPO_ROOT/backend/entrypoints/worker-cpu/serve.mts\"; read"
     CMD_BACKEND="$(bash_lc_command "$BODY_BACKEND")"
     CMD_WORKER="$(bash_lc_command "$BODY_WORKER")"
   fi

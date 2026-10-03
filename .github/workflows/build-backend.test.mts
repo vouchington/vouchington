@@ -100,7 +100,7 @@ describe('backend image workflow', () => {
     const steps = readBuildBackendImagesSteps()
     const images = steps.find(step => step.name === 'Set backend image set')
     expect(images?.run).toContain('active_worker_images=')
-    expect(compositeAction).not.toContain('worker-queue-policy-cli')
+    expect(compositeAction).not.toContain('worker-queue-inventory')
 
     const ioMetadata = steps.find(step => step.name === 'Docker metadata (worker-io)')
     const ioSmoke = steps.find(step => step.name === 'Run worker-io smoke test')

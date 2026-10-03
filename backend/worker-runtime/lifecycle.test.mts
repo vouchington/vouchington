@@ -1,5 +1,6 @@
 import type { Worker } from 'glide-mq'
 import { describe, expect, it } from 'vitest'
+import { workerQueuePolicy } from '@modules/worker-queue-inventory/worker-queue-policy'
 import {
   initializeWorkerRuntime,
   reportWorkerLoadFailure,
@@ -19,6 +20,7 @@ function makeSqsConsumer(name: string): SqsConsumer {
 
 function makeConfig(hooks?: WorkerRuntimeHooks): WorkerRuntimeConfig {
   return {
+    queueClasses: ['all'],
     workerDefinitions: [{ queueName: 'worker-queue' }] as never,
     sqsConsumerDefinitions: [{ queueName: 'sqs-queue' }] as never,
     scheduleDefinitions: [{ queueName: 'schedule-queue' }] as never,
@@ -38,6 +40,7 @@ function makeDependencies(
     upsertSchedules: async () => {},
     setup: async () => {},
     onError: () => {},
+    env: {},
     ...overrides,
   }
 }
@@ -110,6 +113,29 @@ describe('worker lifecycle', () => {
     expect(sqsCalls).toEqual([
       [config.sqsConsumerDefinitions, undefined, undefined, ['worker-queue']],
     ])
+  })
+
+  it('hands the one resolved class selection to workers, SQS consumers and schedules', async () => {
+    const selections: Record<string, string | undefined> = {}
+    const record =
+      <Result,>(name: string, result: Result) =>
+      async (_definitions: unknown, selection?: string): Promise<Result> => {
+        selections[name] = selection
+        return result
+      }
+    const runtime = await initializeWorkerRuntime(
+      { ...makeConfig(), queueClasses: ['io'] },
+      makeDependencies({
+        env: { WORKER_QUEUE_CLASS: 'io' },
+        loadWorkers: record('workers', []),
+        loadSqsConsumers: record('sqsConsumers', []),
+        upsertSchedules: record('schedules', undefined),
+      }),
+    )
+    await runtime.startWorkerRuntime()
+
+    const queues = workerQueuePolicy.ioCapableQueues.join(',')
+    expect(selections).toEqual({ workers: queues, sqsConsumers: queues, schedules: queues })
   })
 
   it('wires listeners in order and repeats setup without repeating the success hook', async () => {
