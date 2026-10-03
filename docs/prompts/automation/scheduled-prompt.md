@@ -10,6 +10,16 @@ Scheduled prompt workflow: {{RUN_URL}}
 Before picking work, search open pull requests whose title begins with `Automation scheduled: {{PROMPT_NAME}}`. If no match exists, proceed to the implementation steps below. Only treat a match as the owning PR if it is a same-repository PR (not a fork) carrying both the `automation` and `automation:scheduled` labels; a human-owned or title-only match is not a mutation target. If a verified owning PR exists, do not open a duplicate: re-fetch its exact head SHA immediately before pushing, stop without mutation if it changed since the search, then push additional commits instead. If a match exists but fails verification, stop without mutation and report the existing PR.
 
 Audit the selected scope and make at most one evidence-backed, independently mergeable improvement. Implement it and run the required validation only when one qualifies. If the audit finds no safe, independently mergeable change, make no repository changes and report why.
+
+At the end, report exactly one outcome: `Outcome: draft PR`, `Outcome: verified no-op`, or
+`Outcome: incomplete`. A verified no-op is a successful completion when the full prompt-defined
+audit and required checks completed, no safe change qualified, and the selected prompt permits
+no-op completion. If the selected prompt explicitly requires a real patch, report `Outcome: incomplete`
+when none qualifies, stating that the audit completed but its patch-only completion requirement was
+not met. Include the audited scope, setup
+and checks completed with their results, concrete candidates considered, and why each was excluded.
+An incomplete setup, skipped required check, or unexamined required scope is not a no-op; name the
+blocker and report `Outcome: incomplete`. Do not create a log-only PR for either outcome.
 Use the relevant authoring skill and [implementation guidance](../../../.agents/skills/agent-workflow/implementation.md)
 for validation. For a bug fix, prove a necessary regression test fails before the fix and passes
 afterward. For removed deadlines or changed policy-table rows, record the replacement bound or
@@ -27,6 +37,13 @@ The title must begin with `Automation scheduled: {{PROMPT_NAME}}` and use conven
 No source issue; scheduled prompt run.
 <!-- related-issues-validation: no-source-scheduled-prompt -->
 ```
+
+Put those two exact standalone lines consecutively in the visible `## Related issues` section, with no
+blank line or other content between them. In the PR body, do not wrap the pair in a code fence or
+collapsed details section. Before publication, confirm the exact scheduled workspace-setup line
+in every body and validate it with `node dev/pr-description.mts validate --body-file <path>`.
+For a no-source body, the validator checks the pair's adjacency and placement and the exact
+scheduled workspace-setup line.
 
 Never run pr-shepherd in this scheduled task.
 Apply both the `automation` and `automation:scheduled` labels to the draft PR, then re-fetch it and
