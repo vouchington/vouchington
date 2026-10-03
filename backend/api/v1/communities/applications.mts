@@ -1,4 +1,5 @@
 import app from '../../app.mts'
+import { apiQuery } from '../../response-contract.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {
@@ -11,10 +12,12 @@ import {
 } from '@services/communities'
 import { indexById } from '@modules/utils'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
+import { communityApplicationsQuery, communityPageQueryInput } from './query-contracts.mts'
 
 app
   .route('/api/v1/communities/:idOrSlug/applications')
   .get(async (ctx: Context) => {
+    apiQuery('GET:/api/v1/communities/:idOrSlug/applications', communityApplicationsQuery)
     const currentUser = await requireAuth(ctx, 'GET:/api/v1/communities/:idOrSlug/applications')
 
     const { idOrSlug } = ctx.params as { idOrSlug: string }
@@ -25,7 +28,14 @@ app
 
     const limit = ctx.query.limit ? Number(ctx.query.limit) : undefined
     const after = ctx.query.after as string | undefined
-    const status = ctx.query.status as 'pending' | 'approved' | 'rejected' | undefined
+    const rawStatus = ctx.query.status
+    const status =
+      rawStatus === 'pending' || rawStatus === 'approved' || rawStatus === 'rejected'
+        ? rawStatus
+        : undefined
+    validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/applications', {
+      query: { ...communityPageQueryInput(ctx.query), ...(status ? { status } : {}) },
+    })
 
     const result = await searchApplications(community.id, { limit, after, status })
 

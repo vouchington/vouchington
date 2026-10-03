@@ -1,4 +1,5 @@
 import app from '../../app.mts'
+import { apiQuery } from '../../response-contract.mts'
 import type { Context } from '@jongleberry/api-server'
 import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {
@@ -13,8 +14,10 @@ import {
   type AutomodFeedbackOutcome,
   type RecentAutomodActionSourceType,
 } from '@services/moderation-training'
+import { communityAutomodActionsQuery } from './query-contracts.mts'
 
 app.route('/api/v1/communities/:idOrSlug/automod/recent-actions').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/communities/:idOrSlug/automod/recent-actions', communityAutomodActionsQuery)
   const currentUser = await requireAuth(
     ctx,
     'GET:/api/v1/communities/:idOrSlug/automod/recent-actions',
@@ -28,17 +31,31 @@ app.route('/api/v1/communities/:idOrSlug/automod/recent-actions').get(async (ctx
     path: ctx.params,
   })
 
+  const options = {
+    windowHours: parseWindowHours(ctx.query.window),
+    limit: parseLimit(ctx.query.limit),
+    after: typeof ctx.query.after === 'string' ? ctx.query.after : null,
+    sourceType: parseSourceType(ctx.query.source),
+    agentSlug: typeof ctx.query.agent === 'string' ? ctx.query.agent : null,
+    postType: parsePostType(ctx.query.post_type ?? ctx.query.content_type),
+    maxConfidence: parseMaxConfidence(ctx.query.max_confidence),
+  }
+  const query: Record<string, unknown> = {}
+  if (ctx.query.window !== undefined)
+    query.window = options.windowHours === 24 ? '24h' : options.windowHours === 168 ? '7d' : '48h'
+  if (ctx.query.limit !== undefined) query.limit = options.limit
+  if (options.after !== null) query.after = options.after
+  if (options.sourceType !== null) query.source = options.sourceType
+  if (options.agentSlug !== null) query.agent = options.agentSlug
+  if (options.postType !== null)
+    query[ctx.query.post_type === undefined ? 'content_type' : 'post_type'] = options.postType
+  if (options.maxConfidence !== null) query.max_confidence = options.maxConfidence
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/automod/recent-actions', {
+    query,
+  })
   const { actions, hasNextPage, endCursor, stats } = await searchRecentAutomodActions(
     community.id,
-    {
-      windowHours: parseWindowHours(ctx.query.window),
-      limit: parseLimit(ctx.query.limit),
-      after: typeof ctx.query.after === 'string' ? ctx.query.after : null,
-      sourceType: parseSourceType(ctx.query.source),
-      agentSlug: typeof ctx.query.agent === 'string' ? ctx.query.agent : null,
-      postType: parsePostType(ctx.query.post_type ?? ctx.query.content_type),
-      maxConfidence: parseMaxConfidence(ctx.query.max_confidence),
-    },
+    options,
   )
 
   ctx.json({

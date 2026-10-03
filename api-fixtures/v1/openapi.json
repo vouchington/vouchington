@@ -28614,6 +28614,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "consistency",
+            "required": false,
+            "schema": {
+              "enum": ["primary"],
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -37022,6 +37031,33 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": ["pending", "approved", "rejected"],
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -37429,6 +37465,94 @@
             "name": "idOrSlug",
             "required": true,
             "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "agent",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "content_type",
+            "required": false,
+            "schema": {
+              "enum": [
+                "discussion",
+                "review",
+                "data_point",
+                "story",
+                "topic_recommendation",
+                "comment",
+                "article",
+                "blog_post"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_confidence",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "post_type",
+            "required": false,
+            "schema": {
+              "enum": [
+                "discussion",
+                "review",
+                "data_point",
+                "story",
+                "topic_recommendation",
+                "comment",
+                "article",
+                "blog_post"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "source",
+            "required": false,
+            "schema": {
+              "enum": ["agent_moderation", "openai_omni", "spam_detection", "community_prompt"],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "window",
+            "required": false,
+            "schema": {
+              "enum": ["24h", "48h", "7d"],
               "type": "string"
             }
           }
@@ -37957,6 +38081,24 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
           }
         ],
         "responses": {
@@ -38181,6 +38323,24 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
           }
         ],
         "responses": {
@@ -38316,6 +38476,24 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
           }
         ],
         "responses": {
@@ -38427,6 +38605,24 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
             }
           }
         ],
@@ -38540,6 +38736,24 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
           }
         ],
         "responses": {
@@ -38652,6 +38866,24 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
           }
         ],
         "responses": {
@@ -38763,6 +38995,24 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
             }
           }
         ],
@@ -38895,6 +39145,33 @@
             "name": "idOrSlug",
             "required": true,
             "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "role",
+            "required": false,
+            "schema": {
+              "enum": ["owner", "moderator", "member"],
               "type": "string"
             }
           }
@@ -39033,6 +39310,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "range",
+            "required": false,
+            "schema": {
+              "enum": ["today", "7d", "30d", "90d", "all"],
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -39061,6 +39347,33 @@
             "name": "idOrSlug",
             "required": true,
             "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "source",
+            "required": false,
+            "schema": {
+              "enum": ["report", "community_review", "automod_flag"],
               "type": "string"
             }
           }
@@ -39740,6 +40053,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "window",
+            "required": false,
+            "schema": {
+              "enum": ["30", "90"],
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -39935,6 +40257,98 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "action_type",
+            "required": false,
+            "schema": {
+              "enum": [
+                "remove",
+                "approve",
+                "reject",
+                "ban",
+                "lift_ban",
+                "activate_restriction",
+                "lift_restriction",
+                "warn",
+                "lock",
+                "unlock",
+                "pin",
+                "unpin",
+                "tag",
+                "suspend",
+                "unsuspend",
+                "remove_member",
+                "change_role",
+                "resolve_report",
+                "dismiss_report",
+                "resolve_appeal",
+                "dismiss_appeal",
+                "topic_claim_verify",
+                "topic_claim_reject",
+                "topic_claim_revoke",
+                "report_claim",
+                "report_unclaim",
+                "report_escalate",
+                "report_deescalate",
+                "report_integrity_flag_review",
+                "report_integrity_penalty_apply",
+                "report_integrity_penalty_revoke",
+                "vote_integrity_flag_review",
+                "vote_integrity_penalty_apply",
+                "vote_integrity_penalty_revoke",
+                "vote_weight_set",
+                "vote_weight_reset",
+                "agent_moderation_vote_set",
+                "agent_moderation_vote_delete",
+                "mod_note_delete",
+                "report_judgement_rerun",
+                "appeal_resolution_draft_rerun",
+                "dispute_resolution_draft_rerun",
+                "oauth_client_verify",
+                "oauth_client_unverify",
+                "story_item_add",
+                "story_item_remove",
+                "story_official_item_set",
+                "story_rename",
+                "crawler_create",
+                "crawler_update",
+                "crawler_delete",
+                "rss_category_assign",
+                "rss_category_reject",
+                "rss_category_unreject",
+                "queue_pause",
+                "queue_resume",
+                "queue_retry_failed",
+                "scheduled_job_run",
+                "backfill_run",
+                "article_sync_run",
+                "import_batch_create",
+                "preservation_hold_place",
+                "preservation_hold_release"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
             }
           }
         ],
@@ -40404,6 +40818,59 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "feed_type",
+            "required": false,
+            "schema": {
+              "enum": ["any", "follow_rss_feeds", "follow_topics"],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "has_related_posts",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "time_range",
+            "required": false,
+            "schema": {
+              "enum": ["1d", "1w", "1m", "1y", "all"],
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -40844,6 +41311,41 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "enum": ["new", "hot"],
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -41281,6 +41783,24 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
             }
           }
         ],
@@ -42440,6 +42960,24 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
             }
           }
         ],

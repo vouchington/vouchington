@@ -56,16 +56,13 @@ schema is never checked before authentication.
   `requireAuth` plus the community lookup: a bad id is `422` for any authenticated caller once the
   community exists.
 
-## Endpoints that skip a declared carrier
+## Query normalization
 
-- `GET /api/v1/communities/:idOrSlug/reports/pending` intentionally skips query-carrier validation
-  (only `path` is validated). The generated query contract types `limit` as an integer (1-100)
-  sourced from the route's own pagination parser, but `ctx.query` always carries raw HTTP strings
-  and the shared registry performs no type coercion. The existing pagination parser also clamps an
-  out-of-range `limit` to 100 and returns `200`, and `sort` defaults to `'severity'` on any
-  unrecognized value rather than rejecting it — running the shared validator against the raw query
-  here would turn today's clamping/defaulting behavior into a `422`. See the inline comment in
-  `reports.mts` at the `apiQuery(...)` call for this operation.
+Community list routes validate the parsed values passed to their services after access checks.
+For example, `GET /api/v1/communities/:idOrSlug/reports/pending` clamps a numeric `limit` above
+100 and defaults an unrecognized `sort` to `severity`; both still return `200`. A malformed
+value that the pagination parser rejects retains its parser error. The moderator role gate still
+takes precedence over query diagnostics.
 
 ## Path-only operations
 

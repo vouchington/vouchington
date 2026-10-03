@@ -1,4 +1,6 @@
 import app from '../../app.mts'
+import { apiQuery } from '../../response-contract.mts'
+import { communityPageQuery, communityPageQueryInput } from './query-contracts.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
   parseJsonBody,
@@ -21,6 +23,7 @@ import { getUserPublicByAnyCachedBatch } from '@services/entity-fetch'
 app
   .route('/api/v1/communities/:idOrSlug/bans')
   .get(async (ctx: Context) => {
+    apiQuery('GET:/api/v1/communities/:idOrSlug/bans', communityPageQuery)
     const currentUser = await requireAuth(ctx, 'GET:/api/v1/communities/:idOrSlug/bans')
     const { idOrSlug } = ctx.params as { idOrSlug: string }
 
@@ -36,6 +39,9 @@ app
 
     const limit = ctx.query.limit ? Number(ctx.query.limit) : undefined
     const after = ctx.query.after as string | undefined
+    validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/bans', {
+      query: communityPageQueryInput(ctx.query),
+    })
 
     const result = await searchCommunityBans(community.id, { limit, after })
 

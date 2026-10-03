@@ -1,4 +1,5 @@
 import app from '../../app.mts'
+import { apiQuery } from '../../response-contract.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { getCommunityOrThrow, getCommunityMember } from '@services/communities'
@@ -9,15 +10,18 @@ import {
 } from '@services/moderator-actions'
 import { getUserPublicByAnyCachedBatch } from '@services/entity-fetch'
 import { isModerationStaff } from '@services/users'
-import { createPaginationParser } from '@modules/pagination'
+import { createPaginationParser, defineQueryContract, queryEnum } from '@modules/pagination'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 const parser = createPaginationParser({
   cursor: { type: 'simple' },
   limit: { default: 25, max: 100 },
 })
+const modlogFilters = defineQueryContract({ action_type: queryEnum(MODERATOR_ACTION_TYPES) })
 
 // GET /api/v1/communities/:idOrSlug/modlog
 app.route('/api/v1/communities/:idOrSlug/modlog').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/communities/:idOrSlug/modlog', parser, modlogFilters)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/communities/:idOrSlug/modlog')
   const { idOrSlug } = ctx.params as { idOrSlug: string }
 
@@ -45,6 +49,17 @@ app.route('/api/v1/communities/:idOrSlug/modlog').get(async (ctx: Context) => {
   const actionType = MODERATOR_ACTION_TYPES.includes(rawActionType as never)
     ? (rawActionType as (typeof MODERATOR_ACTION_TYPES)[number])
     : undefined
+  const query = prepareQueryForValidation(ctx.query, {
+    ...parser.queryContract,
+    ...modlogFilters.queryContract,
+  })
+  if (ctx.query.limit !== undefined) query.limit = limit
+  const normalizedQuery = Object.fromEntries(
+    Object.entries(query).filter(([key]) => key !== 'action_type' || actionType !== undefined),
+  )
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/modlog', {
+    query: normalizedQuery,
+  })
 
   const result = await searchModeratorActions({
     communityId: community.id,

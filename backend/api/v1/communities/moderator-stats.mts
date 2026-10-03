@@ -1,4 +1,5 @@
 import app from '../../app.mts'
+import { apiQuery } from '../../response-contract.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { getCommunityOrThrow, getCommunityMember } from '@services/communities'
@@ -8,12 +9,14 @@ import {
 } from '@services/moderator-actions'
 import { getUserPublicByAnyCachedBatch } from '@services/entity-fetch'
 import { isModerationStaff } from '@services/users'
+import { communityModeratorStatsQuery } from './query-contracts.mts'
 
 const VALID_WINDOWS = [30, 90] as const
 type WindowDays = (typeof VALID_WINDOWS)[number]
 
 // GET /api/v1/communities/:idOrSlug/moderator-stats?window=30|90
 app.route('/api/v1/communities/:idOrSlug/moderator-stats').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/communities/:idOrSlug/moderator-stats', communityModeratorStatsQuery)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/communities/:idOrSlug/moderator-stats')
   const { idOrSlug } = ctx.params as { idOrSlug: string }
 
@@ -36,6 +39,9 @@ app.route('/api/v1/communities/:idOrSlug/moderator-stats').get(async (ctx: Conte
 
   const rawWindow = ctx.query.window
   const windowDays: WindowDays = rawWindow === '90' ? 90 : 30
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/moderator-stats', {
+    query: rawWindow !== undefined ? { window: String(windowDays) } : {},
+  })
 
   const stats = await aggregateModeratorActionCounts({
     communityId: community.id,

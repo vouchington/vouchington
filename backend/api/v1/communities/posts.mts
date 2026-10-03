@@ -1,4 +1,5 @@
 import app from '../../app.mts'
+import { apiQuery } from '../../response-contract.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import {
   getOptionalAuthAndRateLimit,
@@ -18,6 +19,11 @@ import { getUrlEmbedsByUrlIds } from '@services/rss-feed-items/get-url-embed'
 import { isAdminUser } from '@services/users'
 import { indexById } from '@modules/utils'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
+import {
+  communityPageQuery,
+  communityPageQueryInput,
+  communityPostsQuery,
+} from './query-contracts.mts'
 type CachedPost = Awaited<ReturnType<typeof getPostByAnyCachedBatch>>[number]
 async function buildLinkEmbedsSidecar(
   posts: CachedPost[],
@@ -37,6 +43,7 @@ async function buildLinkEmbedsSidecar(
   return Object.keys(record).length > 0 ? record : undefined
 }
 app.route('/api/v1/communities/:idOrSlug/posts').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/communities/:idOrSlug/posts', communityPostsQuery)
   const currentUser = await getOptionalAuthAndRateLimit(
     ctx,
     'GET:/api/v1/communities/:idOrSlug/posts',
@@ -50,6 +57,13 @@ app.route('/api/v1/communities/:idOrSlug/posts').get(async (ctx: Context) => {
   const after = ctx.query.after as string | undefined
   const requestedSort = ctx.query.sort as string | undefined
   const sort = requestedSort === 'hot' ? 'hot' : 'new'
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/posts', {
+    query: {
+      ...communityPageQueryInput(ctx.query),
+      ...(ctx.query.sort !== undefined ? { sort } : {}),
+      ...(ctx.query.q !== undefined ? { q: ctx.query.q } : {}),
+    },
+  })
 
   const result = await getCommunityPostsPage(community.id, {
     currentUser: currentUser ?? null,
@@ -93,6 +107,7 @@ app.route('/api/v1/communities/:idOrSlug/posts').get(async (ctx: Context) => {
 })
 
 app.route('/api/v1/communities/:idOrSlug/posts/pending').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/communities/:idOrSlug/posts/pending', communityPageQuery)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/communities/:idOrSlug/posts/pending')
 
   const { idOrSlug } = ctx.params as { idOrSlug: string }
@@ -103,6 +118,9 @@ app.route('/api/v1/communities/:idOrSlug/posts/pending').get(async (ctx: Context
 
   const limit = ctx.query.limit ? Number(ctx.query.limit) : undefined
   const after = ctx.query.after as string | undefined
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/posts/pending', {
+    query: communityPageQueryInput(ctx.query),
+  })
 
   const result = await searchPendingPosts(community.id, { limit, after })
   const postIds = result.results.map(p => p.id as string)

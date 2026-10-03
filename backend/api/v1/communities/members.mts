@@ -1,4 +1,5 @@
 import app from '../../app.mts'
+import { apiQuery } from '../../response-contract.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import {
   getOptionalAuthAndRateLimit,
@@ -19,10 +20,12 @@ import {
 import { getUserPublicByAnyCachedBatch } from '@services/entity-fetch'
 import { indexById, isUUID } from '@modules/utils'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
+import { communityMembersQuery, communityPageQueryInput } from './query-contracts.mts'
 
 app
   .route('/api/v1/communities/:idOrSlug/members')
   .get(async (ctx: Context) => {
+    apiQuery('GET:/api/v1/communities/:idOrSlug/members', communityMembersQuery)
     const currentUser = await getOptionalAuthAndRateLimit(
       ctx,
       'GET:/api/v1/communities/:idOrSlug/members',
@@ -37,6 +40,9 @@ app
     const limit = ctx.query.limit ? Number(ctx.query.limit) : undefined
     const after = ctx.query.after as string | undefined
     const role = ctx.query.role as CommunityMemberRole | undefined
+    validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/members', {
+      query: { ...communityPageQueryInput(ctx.query), ...(role ? { role } : {}) },
+    })
 
     const result = await searchCommunityMembers(community.id, {
       after,
