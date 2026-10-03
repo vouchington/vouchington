@@ -13,6 +13,7 @@ describe('cookie consent', () => {
   })
   afterEach(() => {
     vi.restoreAllMocks()
+    vi.unstubAllGlobals()
   })
 
   it.each([null, 'essential', 'invalid', 'all'])('checks stored choice %s', value => {
@@ -30,11 +31,13 @@ describe('cookie consent', () => {
     }
   })
   it('fails closed when storage throws and tolerates writes', () => {
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
-      throw new Error('blocked')
-    })
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
-      throw new Error('blocked')
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn<Storage['getItem']>(() => {
+        throw new Error('blocked')
+      }),
+      setItem: vi.fn<Storage['setItem']>(() => {
+        throw new Error('blocked')
+      }),
     })
     expect(hasAnalyticsConsent()).toBe(false)
     expect(() => writeCookieConsent('all')).not.toThrow()
