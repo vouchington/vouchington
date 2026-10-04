@@ -77,6 +77,14 @@ CREATE OR REPLACE FUNCTION public.fn_ensure_retained_identity(family retained_id
  LANGUAGE plpgsql
 ```
 
+## `fn_guard_copyright_territorial_decision`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_territorial_decision()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)`
 
 ```sql
