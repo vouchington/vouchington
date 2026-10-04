@@ -1,3 +1,4 @@
+import { getPaginationLimits } from '@services/pagination'
 import { indexById } from '@modules/utils'
 import { getPostByAnyCachedBatch, getRssFeedItemByIdCachedBatch } from '@services/entity-fetch'
 import { getPostIdsCached, searchRssFeedItemsCached } from '@services/entity-fetch/search-caches'
@@ -6,8 +7,6 @@ import { getPublicPostIds } from '@services/posts'
 import { searchRssFeedItems } from '@services/rss-feed-items/search'
 import type { OmnisearchNewsItem, OmnisearchOptions, OmnisearchPost } from './omnisearch-types.mts'
 
-const DEFAULT_LIMIT = 3
-
 export async function searchPostsVertical(options: OmnisearchOptions): Promise<OmnisearchPost[]> {
   const {
     currentUser,
@@ -15,7 +14,7 @@ export async function searchPostsVertical(options: OmnisearchOptions): Promise<O
     hashtagTopicIds,
     hashtagAliasIds,
     hasUnknownHashtag,
-    limit = DEFAULT_LIMIT,
+    limit = getPaginationLimits(3).default,
   } = options
   if (hasUnknownHashtag) return []
   const params = {
@@ -62,7 +61,7 @@ export async function searchNewsVertical(
     hashtagTopicIds,
     hashtagAliasIds,
     hasUnknownHashtag,
-    limit = DEFAULT_LIMIT,
+    limit = getPaginationLimits(3).default,
   } = options
   if (hasUnknownHashtag) return []
   const params = {

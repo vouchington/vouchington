@@ -23,6 +23,7 @@ export {
   encodeScopedTierPreciseNameCursor,
   encodeScopedTierPreciseUuidCursor,
 } from '@vouchington/pagination'
+export type { PaginationRuntimeLimitBounds } from './parser.mts'
 export { parseBoundedIntegerLimit } from './parser.mts'
 
 // Re-export filter validators (for service layer use)

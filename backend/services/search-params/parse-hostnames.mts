@@ -1,5 +1,6 @@
 import { parseBooleanish } from '@ts-shared/utils/query'
 import {
+  type PaginationRuntimeLimitBounds,
   createPaginationParser,
   defineQueryContract,
   queryBoolean,
@@ -43,12 +44,15 @@ const hostnamesQueryContract = defineQueryContract({
  * pagination parser (keeping its 400 for a malformed limit or cursor) and touches no service, so
  * the route can validate the query before topic identifiers are resolved.
  */
-export function prepareHostnamesSearchParams(query: Record<string, unknown>) {
+export function prepareHostnamesSearchParams(
+  query: Record<string, unknown>,
+  runtimeLimits?: PaginationRuntimeLimitBounds,
+) {
   const validationQuery = prepareQueryForValidation(query, {
     ...hostnamesParser.queryContract,
     ...hostnamesQueryContract.queryContract,
   })
-  const pagination = hostnamesParser.parse(query)
+  const pagination = hostnamesParser.parse(query, runtimeLimits)
   if (query.limit !== undefined) validationQuery.limit = pagination.limit
   if (pagination.after !== undefined) validationQuery.after = pagination.after
   return { validationQuery }
@@ -57,8 +61,9 @@ export function prepareHostnamesSearchParams(query: Record<string, unknown>) {
 async function parseHostnamesSearchParamsImpl(
   query: Record<string, unknown>,
   currentUser: PrivateUser | null,
+  runtimeLimits?: PaginationRuntimeLimitBounds,
 ) {
-  const paginationOptions = hostnamesParser.parse(query)
+  const paginationOptions = hostnamesParser.parse(query, runtimeLimits)
   const canFilterModeration = currentUserCanFilterHostnameModeration(currentUser)
   const topicIdentifier = extractIdentifier(query, 'topic')
   const topicIdentifiers = extractIdentifiers(query, ['topics'], 10)

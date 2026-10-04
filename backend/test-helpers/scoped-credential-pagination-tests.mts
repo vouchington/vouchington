@@ -10,11 +10,26 @@ type InsertedCredential = { id: string }
 /** Shared passkey and TOTP list pagination. Call from a literal `describe` in the route test. */
 export function registerScopedCredentialPaginationTests(options: {
   path: string
+  configureRuntimeLimits: () => void
   insert: (userId: string, suffix: string, id?: string) => Promise<InsertedCredential>
   foreignScopePrefix: 'passkeys' | 'totp'
   tieSuffix: (which: 'high' | 'low', msecs: number) => string
 }): void {
   const { path, insert, foreignScopePrefix, tieSuffix } = options
+
+  test('uses runtime default and maximum through the shared MFA list helper', async () => {
+    const user = await createTestUser()
+    await insert(user.id, `runtime-${user.id}-a`)
+    await insert(user.id, `runtime-${user.id}-b`)
+    options.configureRuntimeLimits()
+    const request = createRequest()
+    await request.authenticateAs(user)
+    for (const suffix of ['', '?limit=100']) {
+      const response = await request.get(`${path}${suffix}`).expect(200)
+      expect(response.body.results).toHaveLength(1)
+      expect(response.body.page_info.has_next_page).toBe(true)
+    }
+  })
 
   test('returns empty results with null cursors when the user has no credentials', async () => {
     const user = await createTestUser()

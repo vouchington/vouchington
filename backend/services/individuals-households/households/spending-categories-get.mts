@@ -1,3 +1,4 @@
+import { getPaginationLimits } from '@services/pagination'
 import { currentUserCanViewUsersSpendingCategories } from '../authorization.mts'
 import { getOrCreateIndividual } from '../individuals/individuals.mts'
 import { query, type QueryOptions } from '@data-stores/psql'
@@ -68,9 +69,9 @@ export async function getHouseholdSpendingCategoriesByUserId(
   options: GetHouseholdSpendingCategoriesOptions = {},
 ): Promise<HouseholdSpendingCategoryPage> {
   assert(currentUser, 401)
+  const limit = parseBoundedIntegerLimit(options.limit, { min: 1, ...getPaginationLimits(25, 100) })
   assert(await currentUserCanViewUsersSpendingCategories(currentUser, user.id), 403)
   const individual = await getOrCreateIndividual(user)
-  const limit = parseBoundedIntegerLimit(options.limit, { default: 25, min: 1, max: 100 })
   const scope = spendingCategoryCursorScope(individual.id)
   const cursorId = options.after
     ? decodeScopedUuidCursor(options.after, scope, 'Invalid spending category cursor').id

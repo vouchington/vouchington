@@ -1,3 +1,4 @@
+import { clampAnonLimit, getPaginationLimits } from '@services/pagination'
 import app from '@voucha/api/app'
 import type { Context } from '@jongleberry/api-server'
 import { getPostIdByAnyCached } from '@services/entity-cache'
@@ -10,7 +11,7 @@ import {
 } from '@services/entity-fetch'
 import { getPostIdsCached } from '@services/entity-fetch/search-caches'
 import { parsePostsSearchParams } from '@services/search-params'
-import { clampAnonLimit } from '@modules/search-utils'
+
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS, HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import { toFrontmatter } from '@modules/utils'
 import { getPublicPostIds } from '@services/posts'
@@ -58,7 +59,10 @@ function canIndexMarkdownPost(post: Post, election: ViewPostElection | null | un
 }
 
 app.route('/md/posts').get(async (ctx: Context) => {
-  const { shouldReturnEmpty, searchOptions } = await parsePostsSearchParams(ctx.query)
+  const { shouldReturnEmpty, searchOptions } = await parsePostsSearchParams(
+    ctx.query,
+    getPaginationLimits(25),
+  )
   searchOptions.limit = clampAnonLimit(searchOptions.limit)
   searchOptions.omitLimit = false
 

@@ -1,6 +1,7 @@
+import { clampLimit } from '@services/pagination'
 import type { TopicSearchOptions, TopicSearchResult } from './types.mts'
 import { buildTopicSearchQuery } from './query-builder.mts'
-import { clampLimit, detectTopicSort } from '@modules/search-utils'
+import { detectTopicSort } from '@modules/search-utils'
 import { read } from '@data-stores/psql'
 import { getCachedSearchEmbedding } from '@services/bedrock-embeddings/search/get-cached'
 import { getTopicSearchState } from './query-builder-state.mts'

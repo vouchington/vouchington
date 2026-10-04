@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { createPaginationParser, defineQueryContract, queryEnum } from '@modules/pagination'
@@ -40,7 +41,7 @@ app.route('/api/v1/vote-integrity/flags').get(async (ctx: Context) => {
     'GET:/api/v1/vote-integrity/flags',
   )
 
-  const { after, limit } = flagsParser.parse(ctx.query)
+  const { after, limit } = parseRuntimePagination(flagsParser, ctx.query)
   const { status } = ctx.query as Record<string, string | undefined>
   const statusFilter = INTEGRITY_FLAG_STATUSES.includes(status as IntegrityFlagStatus)
     ? (status as IntegrityFlagStatus)

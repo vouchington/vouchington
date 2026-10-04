@@ -1,3 +1,4 @@
+import { clampAnonLimit, clampLimit } from '@services/pagination'
 import app from '../../app.mts'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { searchWeb, type WebSearchResult } from '@services/web-search'
@@ -10,7 +11,7 @@ import {
 import { apiQuery } from '../../response-contract.mts'
 import { defineQueryContract, queryInteger, queryString } from '@modules/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
-import { clampAnonLimit, clampLimit, DEFAULT_LIMIT } from '@modules/search-utils'
+import { DEFAULT_LIMIT } from '@modules/search-utils'
 
 const webSearchQuery = defineQueryContract({
   query: queryString(),
@@ -26,9 +27,9 @@ app.route('/api/v1/web-search').get(async ctx => {
   validationQuery.query = query
   validateRequestContract(ctx, 'GET:/api/v1/web-search', { query: validationQuery })
 
-  const parsedLimit = ctx.query.limit !== undefined ? Number(ctx.query.limit) : DEFAULT_LIMIT
+  const parsedLimit = ctx.query.limit !== undefined ? Number(ctx.query.limit) : undefined
   const limit = Math.trunc(
-    currentUser ? clampLimit(parsedLimit, DEFAULT_LIMIT) : clampAnonLimit(parsedLimit),
+    currentUser ? clampLimit(parsedLimit) : clampAnonLimit(clampLimit(parsedLimit)),
   )
 
   if (query.length < 3) {

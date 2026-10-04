@@ -1,5 +1,6 @@
+import { clampAnonLimit, getPaginationLimits } from '@services/pagination'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
-import { clampAnonLimit } from '@modules/search-utils'
+
 import { indexById } from '@modules/utils'
 import { electionVotesMapToRecord } from '@modules/utils/collections'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
@@ -37,7 +38,7 @@ import type { PostsResponseInput } from './posts-response-types.mts'
 app.route('/api/v1/posts').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/posts', parsePostsSearchParams)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/posts')
-  const preparedSearchParams = preparePostsSearchParams(ctx.query)
+  const preparedSearchParams = preparePostsSearchParams(ctx.query, getPaginationLimits(25))
   validateRequestContract(ctx, 'GET:/api/v1/posts', { query: preparedSearchParams.validationQuery })
 
   const parsedSearchParams = await resolvePostsSearchParams(preparedSearchParams)

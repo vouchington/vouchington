@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { isUUID } from '@modules/utils'
@@ -31,7 +32,7 @@ app.route('/api/v1/communities/:idOrSlug/saved-replies').get(async (ctx: Context
     path: ctx.params,
   })
 
-  const { after: encodedAfter, limit } = rankingPaginationParser.parse(ctx.query)
+  const { after: encodedAfter, limit } = parseRuntimePagination(rankingPaginationParser, ctx.query)
   const after = encodedAfter
     ? decodeUuidCursor(encodedAfter, isRankingCursor, 'Invalid saved reply cursor')
     : undefined

@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { getMinUUIDv7ForDate } from '@modules/utils'
 import { decodeUuidCursor, isScoreCursor } from '@modules/pagination'
 import {
   createRandomString,
@@ -17,10 +16,9 @@ describe('getPostIds hot-score pagination', () => {
     if (!user) throw new Error('Failed to create hot-score test user')
 
     const suffix = createRandomString(10)
-    const futureId = getMinUUIDv7ForDate(new Date('9999-12-31T23:59:59.000Z'))
     const [futurePostId, currentPostId] = await Promise.all([
       insertTestPost({
-        id: futureId,
+        createdAt: new Date('9999-12-31T23:59:59.000Z'),
         title: `Future hot post ${suffix}`,
         slug: `future-hot-post-${suffix}`,
         createdById: user.id,

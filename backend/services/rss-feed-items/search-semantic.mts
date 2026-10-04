@@ -1,3 +1,4 @@
+import { clampLimit } from '@services/pagination'
 /**
  * Semantic (embedding-based) search for RSS feed items.
  * Activated when `semantic_search_query` is provided to the public API.
@@ -8,7 +9,7 @@
  * For agent-tool similarity search (similar_post_id, etc.), see tools/search.mts.
  */
 import { read } from '@data-stores/psql'
-import { buildEmbeddingCtes, clampLimit, EMBEDDING_DISTANCE_THRESHOLD } from '@modules/search-utils'
+import { buildEmbeddingCtes, EMBEDDING_DISTANCE_THRESHOLD } from '@modules/search-utils'
 import { encodeCursor } from '@modules/pagination'
 import {
   getCachedSearchEmbedding,

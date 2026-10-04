@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
@@ -36,7 +37,7 @@ app.route('/api/v1/my/api-keys').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/my/api-keys', apiKeysParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/api-keys')
 
-  const options = apiKeysParser.parse(ctx.query)
+  const options = parseRuntimePagination(apiKeysParser, ctx.query)
   const query = prepareQueryForValidation(ctx.query, apiKeysParser.queryContract)
   if (ctx.query.limit !== undefined) query.limit = options.limit
   validateRequestContract(ctx, 'GET:/api/v1/my/api-keys', { query })

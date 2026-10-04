@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
@@ -27,7 +28,7 @@ app.route('/api/v1/stories/:id').get(async (ctx: Context) => {
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/stories/:id')
   const storyId = ctx.params.id!
   ctx.assert(isUUID(storyId), 400, 'Invalid story ID')
-  const { limit, after } = storyMembersParser.parse(ctx.query)
+  const { limit, after } = parseRuntimePagination(storyMembersParser, ctx.query)
   const exclude_item_id = ctx.query.exclude_item_id as string | undefined
   ctx.assert(
     exclude_item_id === undefined || isUUID(exclude_item_id),

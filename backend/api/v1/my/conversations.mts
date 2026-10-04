@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import {
   toConversationTranscript,
   toMessageTranscript,
@@ -38,7 +39,7 @@ app.route('/api/v1/my/conversations').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/my/conversations', simplePaginationParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/conversations')
 
-  const { after: encodedAfter, limit } = simplePaginationParser.parse(ctx.query)
+  const { after: encodedAfter, limit } = parseRuntimePagination(simplePaginationParser, ctx.query)
   const after = encodedAfter
     ? decodeUuidCursor(encodedAfter, isSimpleCursor, 'Invalid conversation cursor')
     : undefined
@@ -80,7 +81,7 @@ app.route('/api/v1/my/conversations/:conversationId/messages').get(async (ctx: C
     path: ctx.params,
   })
 
-  const { after: encodedAfter, limit } = simplePaginationParser.parse(ctx.query)
+  const { after: encodedAfter, limit } = parseRuntimePagination(simplePaginationParser, ctx.query)
   const after = encodedAfter
     ? decodeUuidCursor(encodedAfter, isSimpleCursor, 'Invalid message cursor')
     : undefined

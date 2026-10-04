@@ -12,12 +12,26 @@ import { createRandomString } from '../data.mts'
 import { insertBatchPostRelations } from './trending-topics/post-relations.mts'
 import { insertBatchRssRelations } from './trending-topics/rss-relations.mts'
 import { insertTopicWithTimestamp } from './trending-topics/topic.mts'
+import { encodeCursor } from '@modules/pagination'
 
 type CreateTrendingTopicDataOptions = {
   postTagCount: number
   rssItemTagCount: number
   netVote: number
   createdAt?: Date
+}
+
+/** Scope a descending score page immediately before one owned fixture, despite a dirty ranking. */
+export function createTrendingTopicCursorBefore(topicId: string, score: number): string {
+  const hex = (BigInt(`0x${topicId.replaceAll('-', '')}`) + 1n).toString(16).padStart(32, '0')
+  const id = [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20),
+  ].join('-')
+  return encodeCursor({ id, score })
 }
 
 export async function createTrendingTopicData(options: CreateTrendingTopicDataOptions) {

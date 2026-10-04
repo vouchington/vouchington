@@ -3,6 +3,8 @@ import manageMyCardsTool from './manage-my-cards.mts'
 import getMyCardsTool from './get-my-cards.mts'
 import { createTestUser } from '@voucha/test-helpers'
 import { insertTestCard } from '@voucha/test-helpers/entities/cards'
+import { paginationConfig } from '@services/pagination'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import type { PrivateUser } from '@services/users/types'
 
 describe('manage_my_cards tool — real DB', () => {
@@ -23,7 +25,8 @@ describe('manage_my_cards tool — real DB', () => {
     }
 
     const list = getMyCardsTool.function(paginationUser)
-    const first = await list({ limit: 1 })
+    overrideDynamicConfigFieldsForTest(paginationConfig, { default_limit: 1, max_limit: 1 })
+    const first = await list({})
     const firstPage = first.result as {
       results: Array<{ id: string }>
       page_info: { has_next_page: boolean; end_cursor: string | null }
@@ -32,7 +35,7 @@ describe('manage_my_cards tool — real DB', () => {
     expect(firstPage.page_info.has_next_page).toBe(true)
 
     const second = await list({
-      limit: 1,
+      limit: 100,
       after: firstPage.page_info.end_cursor!,
     })
     expect((second.result as { results: unknown[] }).results).toHaveLength(1)

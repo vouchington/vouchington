@@ -28,6 +28,8 @@ class InvalidCursorParameterError extends Error {
   }
 }
 
+export type PaginationRuntimeLimitBounds = { default: number; max: number }
+
 export class PaginationParser<TConfig extends PaginationConfig> {
   readonly queryContract: PaginationQueryContract<TConfig>
   readonly #core: PlatformPaginationParser<PlatformPaginationConfig>
@@ -51,7 +53,7 @@ export class PaginationParser<TConfig extends PaginationConfig> {
         max: limitMax,
         // Construction-only: parse() strips `limit` before delegating, so these
         // bounds are never applied. #limitBounds below stays authoritative,
-        // including its intentionally unclamped legacy default.
+        // including its declared static default.
         default: Math.max(limitMin, Math.min(limitMax, limitDefault)),
       },
     })
@@ -59,7 +61,10 @@ export class PaginationParser<TConfig extends PaginationConfig> {
     this.queryContract = buildPaginationQueryContract(config)
   }
 
-  parse(query: Record<string, unknown>): ParsedOptions<TConfig> {
+  parse(
+    query: Record<string, unknown>,
+    runtimeBounds?: PaginationRuntimeLimitBounds,
+  ): ParsedOptions<TConfig> {
     if (this.#cursorParamName !== 'cursor' && 'cursor' in query) {
       throw new InvalidCursorParameterError()
     }
@@ -67,7 +72,17 @@ export class PaginationParser<TConfig extends PaginationConfig> {
     const { after } = this.#core.parse(cursorQuery)
     const result: Record<string, unknown> = {}
     if (after !== undefined) result.after = after
-    result.limit = parseBoundedIntegerLimit(limit, this.#limitBounds)
+    const maximum = runtimeBounds
+      ? Math.max(this.#limitBounds.min, Math.min(this.#limitBounds.max, runtimeBounds.max))
+      : this.#limitBounds.max
+    const bounds = runtimeBounds
+      ? {
+          ...this.#limitBounds,
+          max: maximum,
+          default: Math.max(this.#limitBounds.min, Math.min(maximum, runtimeBounds.default)),
+        }
+      : this.#limitBounds
+    result.limit = parseBoundedIntegerLimit(limit, bounds)
     const filters = this.#filters
     if (!filters) return result as ParsedOptions<TConfig>
 

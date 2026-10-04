@@ -1,3 +1,4 @@
+import { clampLimit } from '@services/pagination'
 /**
  * RSS feed item search sorted by published_at.
  * Supports optional text search via the `text_search_query` option.
@@ -8,7 +9,7 @@
  */
 import { read } from '@data-stores/psql'
 import type { RssFeedItemsResult } from './types.mts'
-import { clampLimit } from '@modules/search-utils'
+
 import sql, { type SQLStatement } from 'sql-template-strings'
 import {
   buildRssFeedItemSearchPageInfo,

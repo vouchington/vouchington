@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
@@ -33,7 +34,7 @@ app.route('/api/v1/my/messages/:conversationId/messages').get(async (ctx: Contex
   const canView = await currentUserCanViewConversation(currentUser.id, conversationId)
   ctx.assert(canView, 403, 'Access denied')
 
-  const { after: encodedAfter, limit } = simplePaginationParser.parse(ctx.query)
+  const { after: encodedAfter, limit } = parseRuntimePagination(simplePaginationParser, ctx.query)
   const query = prepareQueryForValidation(ctx.query, simplePaginationParser.queryContract)
   if (ctx.query.limit !== undefined) query.limit = limit
   validateRequestContract(ctx, 'GET:/api/v1/my/messages/:conversationId/messages', {
@@ -100,7 +101,7 @@ app.route('/api/v1/my/messages/:conversationId/participants').get(async (ctx: Co
   const canView = await currentUserCanViewConversation(currentUser.id, conversationId)
   ctx.assert(canView, 403, 'Access denied')
 
-  const { after: encodedAfter, limit } = simplePaginationParser.parse(ctx.query)
+  const { after: encodedAfter, limit } = parseRuntimePagination(simplePaginationParser, ctx.query)
   const query = prepareQueryForValidation(ctx.query, simplePaginationParser.queryContract)
   if (ctx.query.limit !== undefined) query.limit = limit
   validateRequestContract(ctx, 'GET:/api/v1/my/messages/:conversationId/participants', {

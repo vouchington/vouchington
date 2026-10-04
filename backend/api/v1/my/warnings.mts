@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
@@ -10,7 +11,7 @@ app.route('/api/v1/my/warnings').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/my/warnings', userWarningsPagination)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/warnings')
 
-  const pagination = userWarningsPagination.parse(ctx.query)
+  const pagination = parseRuntimePagination(userWarningsPagination, ctx.query)
   const query = prepareQueryForValidation(ctx.query, userWarningsPagination.queryContract)
   if (ctx.query.limit !== undefined) query.limit = pagination.limit
   validateRequestContract(ctx, 'GET:/api/v1/my/warnings', { query })

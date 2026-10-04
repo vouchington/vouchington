@@ -1,7 +1,8 @@
+import { clampLimit } from '@services/pagination'
 import { read } from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
-import { clampLimit } from '@modules/search-utils'
+
 import { buildPageInfo, decodeUuidCursor, isScoreCursor } from '@modules/pagination'
 import type { TrendingRssFeedsOptions, TrendingRssFeedsResult } from './types.mts'
 

@@ -5,6 +5,7 @@ import {
   queryString,
 } from '@modules/pagination'
 import { COMMENT_ANCESTOR_PAGE_MAX_LIMIT } from '@services/comments/ancestor-page'
+import { getPaginationLimits } from '@services/pagination'
 import { prepareQueryForValidation } from './prepare-query.mts'
 
 export const commentAncestorPaginationQuery = defineQueryContract({
@@ -27,9 +28,13 @@ export function prepareCommentAncestorPagination(query: Record<string, unknown>)
     return { hasBoundedQuery, validationQuery: {}, pageQuery: null }
   }
 
+  const bounds = getPaginationLimits(
+    COMMENT_ANCESTOR_PAGE_MAX_LIMIT,
+    COMMENT_ANCESTOR_PAGE_MAX_LIMIT,
+  )
   const limit = parseBoundedIntegerLimit(query.limit, {
-    default: COMMENT_ANCESTOR_PAGE_MAX_LIMIT,
-    max: COMMENT_ANCESTOR_PAGE_MAX_LIMIT,
+    default: bounds.default,
+    max: bounds.max,
     min: 1,
   })
   const { after: rawAfter, ...queryWithoutAfter } = query

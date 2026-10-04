@@ -1,3 +1,4 @@
+import { getPaginationLimitsForContract } from '@services/pagination'
 import { getTopicParents } from '@services/topics/hierarchy'
 import { getTopicChildrenPage, topicChildrenPaginationParser } from '@services/topics/children-page'
 import type { Topic } from '@services/topics/types'
@@ -76,10 +77,13 @@ export async function getTopicHierarchyResult(
   if (!args.hierarchy) return {}
   const wantsChildren = args.hierarchy !== 'parents'
   const pagination = wantsChildren
-    ? topicChildrenPaginationParser.parse({
-        ...(args.children_after !== undefined && { after: args.children_after }),
-        ...(args.children_limit !== undefined && { limit: args.children_limit }),
-      })
+    ? topicChildrenPaginationParser.parse(
+        {
+          ...(args.children_after !== undefined && { after: args.children_after }),
+          ...(args.children_limit !== undefined && { limit: args.children_limit }),
+        },
+        getPaginationLimitsForContract(topicChildrenPaginationParser.queryContract),
+      )
     : null
 
   const [parents, children] = await Promise.all([

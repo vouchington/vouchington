@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { getTopicByAnyCached } from '@services/entity-fetch'
@@ -33,12 +34,11 @@ const aliasSearchParser = createPaginationParser({
   limit: { min: 1, max: 100, default: 24 },
 })
 const aliasSearchQueryContract = defineQueryContract({ q: queryString() })
-
 app.route('/api/v1/topics/aliases').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/topics/aliases', aliasSearchParser, aliasSearchQueryContract)
   await requireAuthAndRateLimit(ctx, currentUserCanManageTopicAliases, 'GET:/api/v1/topics/aliases')
 
-  const options = aliasSearchParser.parse(ctx.query)
+  const options = parseRuntimePagination(aliasSearchParser, ctx.query)
   const query = prepareQueryForValidation(ctx.query, {
     ...aliasSearchParser.queryContract,
     ...aliasSearchQueryContract.queryContract,
@@ -86,7 +86,7 @@ app
       currentUserCanManageTopicAliases,
       'GET:/api/v1/topics/:idOrSlug/aliases',
     )
-    const options = aliasesParser.parse(ctx.query)
+    const options = parseRuntimePagination(aliasesParser, ctx.query)
     const query = prepareQueryForValidation(ctx.query, aliasesParser.queryContract)
     if (ctx.query.limit !== undefined) query.limit = options.limit
     validateRequestContract(ctx, 'GET:/api/v1/topics/:idOrSlug/aliases', {

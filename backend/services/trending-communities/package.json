@@ -23,9 +23,9 @@
     "@data-stores/psql": "workspace:^",
     "@modules/feed-query-builders": "workspace:^",
     "@modules/pagination": "workspace:^",
-    "@modules/search-utils": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/communities": "workspace:^",
+    "@services/pagination": "workspace:^",
     "@voucha/types": "workspace:^",
     "sql-template-strings": "^2.2.2"
   },

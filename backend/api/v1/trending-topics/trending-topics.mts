@@ -1,3 +1,5 @@
+import { clampAnonLimit } from '@services/pagination'
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import { streamJsonObject } from '@jongleberry/api-server'
 import app from '../../app.mts'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
@@ -11,7 +13,6 @@ import { getBookmarksForEntities } from '@services/bookmarks/get'
 import { indexById } from '@modules/utils'
 import { parseNumberParam } from '@ts-shared/utils/query'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
-import { clampAnonLimit } from '@modules/search-utils'
 
 // Trending topics use a custom time range (day/week/month), not the standard TimeRange type
 const TIME_RANGES = ['day', 'week', 'month'] as const
@@ -26,7 +27,7 @@ app.route('/api/v1/trending-topics').get(async ctx => {
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/trending-topics')
 
   // Parse pagination options
-  const paginationOptions = trendingTopicsPaginationParser.parse(ctx.query)
+  const paginationOptions = parseRuntimePagination(trendingTopicsPaginationParser, ctx.query)
 
   // Parse trending topics specific parameters
   let timeRange: 'day' | 'week' | 'month' = 'day'

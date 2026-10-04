@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
@@ -40,7 +41,7 @@ app.route('/api/v1/report-integrity/penalties').get(async (ctx: Context) => {
     'GET:/api/v1/report-integrity/penalties',
   )
 
-  const { after, limit } = penaltiesParser.parse(ctx.query)
+  const { after, limit } = parseRuntimePagination(penaltiesParser, ctx.query)
   const { status, user_id, source_flag_id } = ctx.query as Record<string, string | undefined>
   ctx.assert(!status || status === 'active' || status === 'revoked', 422, 'Invalid status')
   ctx.assert(!user_id || isUUID(user_id), 422, 'Invalid user_id')

@@ -1,3 +1,4 @@
+import { clampAnonLimit, getPaginationLimits } from '@services/pagination'
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import {
@@ -22,7 +23,7 @@ import {
   prepareTopicsSearchParams,
   resolveTopicsSearchParams,
 } from '@services/search-params'
-import { clampAnonLimit } from '@modules/search-utils'
+
 import { getTopicElectionVotesByUser } from '@services/elections-votes/topic'
 import { assertWithinContributionActionLimit } from '@services/contribution-gating/limits'
 import { getUserActivePlan } from '@services/memberships'
@@ -36,7 +37,7 @@ app
   .get(async (ctx: Context) => {
     apiQuery('GET:/api/v1/topics', parseTopicsSearchParams)
     const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/topics')
-    const preparedSearchParams = prepareTopicsSearchParams(ctx.query)
+    const preparedSearchParams = prepareTopicsSearchParams(ctx.query, getPaginationLimits(25))
     validateRequestContract(ctx, 'GET:/api/v1/topics', {
       query: preparedSearchParams.validationQuery,
     })

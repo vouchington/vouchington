@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { indexById } from '@modules/utils'
 import { electionVotesMapToRecord } from '@modules/utils/collections'
@@ -56,7 +57,7 @@ app.route('/api/v1/posts/:idOrSlug/descendants').get(async (ctx: Context) => {
   ctx.assert(rootPost, 404, 'Post not found')
   ctx.assert(await canViewPost(currentUser, rootPost), 404, 'Post not found')
 
-  const pagination = descendantsParser.parse(ctx.query)
+  const pagination = parseRuntimePagination(descendantsParser, ctx.query)
   const { after: _rawAfter, ...queryWithoutAfter } = ctx.query
   const validationQuery = prepareQueryForValidation(
     pagination.after === undefined

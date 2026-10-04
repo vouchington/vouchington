@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
 import {
@@ -31,7 +32,7 @@ app.route('/api/v1/auth/sessions').get(async (ctx: Context) => {
 
   // The parser keeps its 400 and limit clamping; the contract then validates the values it settled
   // on. All of it runs before `registerAuthenticatedSession` so a rejected query repairs nothing.
-  const options = sessionsParser.parse(ctx.query)
+  const options = parseRuntimePagination(sessionsParser, ctx.query)
   const query = prepareQueryForValidation(ctx.query, sessionsParser.queryContract)
   if (ctx.query.limit !== undefined) query.limit = options.limit
   validateRequestContract(ctx, 'GET:/api/v1/auth/sessions', { query })

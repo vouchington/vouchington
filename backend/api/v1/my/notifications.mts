@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import { enqueueDeleteNotification } from '@queues/notifications/enqueues'
 import type { Context } from '@jongleberry/api-server'
@@ -47,7 +48,7 @@ app.route('/api/v1/my/notifications').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/my/notifications', notificationsParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/notifications')
 
-  const options = notificationsParser.parse(ctx.query)
+  const options = parseRuntimePagination(notificationsParser, ctx.query)
   const query = prepareQueryForValidation(ctx.query, notificationsParser.queryContract)
   if (ctx.query.limit !== undefined) query.limit = options.limit
   validateRequestContract(ctx, 'GET:/api/v1/my/notifications', { query })
@@ -108,7 +109,7 @@ app.route('/api/v1/my/notifications/push-subscriptions').get(async (ctx: Context
   apiQuery('GET:/api/v1/my/notifications/push-subscriptions', pushSubscriptionsParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/notifications/push-subscriptions')
 
-  const options = pushSubscriptionsParser.parse(ctx.query)
+  const options = parseRuntimePagination(pushSubscriptionsParser, ctx.query)
   const query = prepareQueryForValidation(ctx.query, pushSubscriptionsParser.queryContract)
   if (ctx.query.limit !== undefined) query.limit = options.limit
   validateRequestContract(ctx, 'GET:/api/v1/my/notifications/push-subscriptions', { query })

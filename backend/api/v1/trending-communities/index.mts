@@ -1,3 +1,5 @@
+import { clampAnonLimit } from '@services/pagination'
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
@@ -6,7 +8,7 @@ import { prepareQueryForValidation } from '@services/search-params/prepare-query
 import { getTrendingCommunities } from '@services/trending-communities'
 import { getTrendingCommunitiesCached } from '@services/entity-fetch/search-caches'
 import { createPaginationParser } from '@modules/pagination'
-import { clampAnonLimit } from '@modules/search-utils'
+
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 
 const trendingCommunitiesParser = createPaginationParser({
@@ -19,7 +21,7 @@ app.route('/api/v1/trending-communities').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/trending-communities', trendingCommunitiesParser)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/trending-communities')
 
-  const parsed = trendingCommunitiesParser.parse(ctx.query)
+  const parsed = parseRuntimePagination(trendingCommunitiesParser, ctx.query)
   const query = prepareQueryForValidation(ctx.query, trendingCommunitiesParser.queryContract)
   if (ctx.query.limit !== undefined) query.limit = parsed.limit
   validateRequestContract(ctx, 'GET:/api/v1/trending-communities', { query })

@@ -366,3 +366,5 @@ This catalog keeps package documentation directly discoverable from the owning `
 - [`../workers/vote-integrity/VALKEY_REQUESTS.md`](../../queues/workers/vote-integrity/VALKEY_REQUESTS.md)
 - [`../workers/vote-weight/README.md`](../../queues/workers/vote-weight/README.md)
 - [`../workers/vote-weight/VALKEY_REQUESTS.md`](../../queues/workers/vote-weight/VALKEY_REQUESTS.md)
+
+Runtime pagination configuration: [owning service](../../../../../backend/services/pagination/README.md).

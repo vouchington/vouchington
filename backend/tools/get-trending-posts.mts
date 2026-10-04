@@ -1,3 +1,4 @@
+import { getPaginationLimitsForContract } from '@services/pagination'
 import type { BasicUser } from '@services/users/types'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { getTrendingPosts, trendingPostsPaginationParser } from '@services/trending-posts'
@@ -90,10 +91,13 @@ const tool: Tool<ToolArgs, ToolResult> = {
       }
 
       const timeRange = args.time_range ?? 'week'
-      const pagination = trendingPostsPaginationParser.parse({
-        ...(args.after !== undefined && { after: args.after }),
-        ...(args.limit !== undefined && { limit: args.limit }),
-      })
+      const pagination = trendingPostsPaginationParser.parse(
+        {
+          ...(args.after !== undefined && { after: args.after }),
+          ...(args.limit !== undefined && { limit: args.limit }),
+        },
+        getPaginationLimitsForContract(trendingPostsPaginationParser.queryContract),
+      )
 
       const { results, page_info } = await getTrendingPosts({
         ...pagination,

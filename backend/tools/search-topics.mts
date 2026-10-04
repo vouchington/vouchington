@@ -1,3 +1,4 @@
+import { getPaginationLimits } from '@services/pagination'
 import type { BasicUser } from '@services/users/types'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { getTopicIds } from '@services/topics/search/get-ids'
@@ -71,7 +72,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     (_currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
       const page = await findPageOrNull(args.after, async () => {
-        const prepared = prepareTopicsSearchParams(pagedSearchQuery(args))
+        const prepared = prepareTopicsSearchParams(pagedSearchQuery(args), getPaginationLimits(25))
         const { shouldReturnEmpty, searchOptions } = await resolveTopicsSearchParams(prepared)
         if (shouldReturnEmpty) return { results: [], page_info: EMPTY_PAGE_INFO }
 

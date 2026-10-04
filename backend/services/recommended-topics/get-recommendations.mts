@@ -1,8 +1,9 @@
+import { clampLimit } from '@services/pagination'
 import type { PrivateUser } from '@services/users/types'
 import type { RecommendedTopicsSearchOptions, RecommendedTopicResult } from './types.mts'
 import type { PageInfo } from '@voucha/types/pagination'
 import { read } from '@data-stores/psql'
-import { clampLimit } from '@modules/search-utils'
+
 import {
   encodeCursor,
   decodeUuidCursor,

@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
@@ -48,7 +49,7 @@ app
   .get(async (ctx: Context) => {
     apiQuery('GET:/api/v1/referral-links', referralLinksParser, referralLinksQueryContract)
     const currentUser = await requireAuth(ctx, 'GET:/api/v1/referral-links')
-    const paginationOptions = referralLinksParser.parse(ctx.query)
+    const paginationOptions = parseRuntimePagination(referralLinksParser, ctx.query)
     const validationQuery = prepareQueryForValidation(ctx.query, {
       ...referralLinksParser.queryContract,
       ...referralLinksQueryContract.queryContract,

@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import type { Context } from '@jongleberry/api-server'
 import { isUUID } from '@modules/utils'
 import { createPaginationParser } from '@modules/pagination'
@@ -109,7 +110,7 @@ const topicVotesParser = createPaginationParser({
 app.route('/api/v1/topics/:id/votes').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/topics/:id/votes', topicVotesParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/topics/:id/votes')
-  const { limit, after } = topicVotesParser.parse(ctx.query)
+  const { limit, after } = parseRuntimePagination(topicVotesParser, ctx.query)
   const query = prepareQueryForValidation(ctx.query, topicVotesParser.queryContract)
   if (ctx.query.limit !== undefined) query.limit = limit
   validateRequestContract(ctx, 'GET:/api/v1/topics/:id/votes', { path: ctx.params, query })

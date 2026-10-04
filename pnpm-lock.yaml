@@ -1083,6 +1083,9 @@ importers:
       '@services/openai-moderation':
         specifier: workspace:^
         version: link:../services/openai-moderation
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../services/pagination
       '@services/passkeys':
         specifier: workspace:^
         version: link:../services/passkeys
@@ -1934,9 +1937,6 @@ importers:
       '@jongleberry/api-server':
         specifier: ^2.1.0
         version: 2.1.0
-      '@modules/search-utils':
-        specifier: workspace:^
-        version: link:../modules/search-utils
       '@modules/utils':
         specifier: workspace:^
         version: link:../modules/utils
@@ -1949,6 +1949,9 @@ importers:
       '@services/entity-fetch':
         specifier: workspace:^
         version: link:../services/entity-fetch
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../services/pagination
       '@services/posts':
         specifier: workspace:^
         version: link:../services/posts
@@ -3580,6 +3583,9 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@ts-shared/money':
         specifier: workspace:^
         version: link:../../../ts-shared/money
@@ -5016,6 +5022,9 @@ importers:
       '@services/moderator-actions':
         specifier: workspace:^
         version: link:../moderator-actions
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@services/urls-hostnames':
         specifier: workspace:^
         version: link:../urls-hostnames
@@ -5068,9 +5077,6 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
-      '@modules/search-utils':
-        specifier: workspace:^
-        version: link:../../modules/search-utils
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
@@ -5113,6 +5119,9 @@ importers:
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@services/urls':
         specifier: workspace:^
         version: link:../urls
@@ -5193,6 +5202,9 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@ts-shared/money':
         specifier: workspace:^
         version: link:../../../ts-shared/money
@@ -5470,6 +5482,9 @@ importers:
       '@services/openai-moderation':
         specifier: workspace:^
         version: link:../openai-moderation
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@services/post-clearance':
         specifier: workspace:^
         version: link:../post-clearance
@@ -6173,9 +6188,6 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
-      '@modules/search-utils':
-        specifier: workspace:^
-        version: link:../../modules/search-utils
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
@@ -6185,6 +6197,9 @@ importers:
       '@services/follower-distributions':
         specifier: workspace:^
         version: link:../follower-distributions
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@services/posts':
         specifier: workspace:^
         version: link:../posts
@@ -6277,9 +6292,9 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
-      '@modules/search-utils':
+      '@services/pagination':
         specifier: workspace:^
-        version: link:../../modules/search-utils
+        version: link:../pagination
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -6513,6 +6528,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -6692,6 +6710,9 @@ importers:
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -8009,6 +8030,22 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
+  backend/services/pagination:
+    dependencies:
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
+      '@modules/pagination':
+        specifier: workspace:^
+        version: link:../../modules/pagination
+      '@modules/search-utils':
+        specifier: workspace:^
+        version: link:../../modules/search-utils
+    devDependencies:
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+
   backend/services/passkeys:
     dependencies:
       '@data-stores/psql':
@@ -8333,6 +8370,9 @@ importers:
       '@services/moderator-actions':
         specifier: workspace:^
         version: link:../moderator-actions
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@services/post-clearance':
         specifier: workspace:^
         version: link:../post-clearance
@@ -8716,9 +8756,9 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
-      '@modules/search-utils':
+      '@services/pagination':
         specifier: workspace:^
-        version: link:../../modules/search-utils
+        version: link:../pagination
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -8744,12 +8784,12 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
-      '@modules/search-utils':
-        specifier: workspace:^
-        version: link:../../modules/search-utils
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@services/recently-viewed':
         specifier: workspace:^
         version: link:../recently-viewed
@@ -9123,6 +9163,9 @@ importers:
       '@services/moderator-actions':
         specifier: workspace:^
         version: link:../moderator-actions
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@services/post-publication':
         specifier: workspace:^
         version: link:../post-publication
@@ -9396,6 +9439,9 @@ importers:
       '@services/entity-fetch':
         specifier: workspace:^
         version: link:../entity-fetch
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@services/posts':
         specifier: workspace:^
         version: link:../posts
@@ -9429,6 +9475,9 @@ importers:
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@services/urls-hostnames':
         specifier: workspace:^
         version: link:../urls-hostnames
@@ -9903,6 +9952,9 @@ importers:
       '@services/media-delivery-safety':
         specifier: workspace:^
         version: link:../media-delivery-safety
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@services/post-publication':
         specifier: workspace:^
         version: link:../post-publication
@@ -9992,15 +10044,15 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
-      '@modules/search-utils':
-        specifier: workspace:^
-        version: link:../../modules/search-utils
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
       '@services/communities':
         specifier: workspace:^
         version: link:../communities
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -10023,15 +10075,15 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
-      '@modules/search-utils':
-        specifier: workspace:^
-        version: link:../../modules/search-utils
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@ts-shared/feed-capabilities':
         specifier: workspace:^
         version: link:../../../ts-shared/feed-capabilities
@@ -10060,9 +10112,9 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
-      '@modules/search-utils':
+      '@services/pagination':
         specifier: workspace:^
-        version: link:../../modules/search-utils
+        version: link:../pagination
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
@@ -10081,9 +10133,9 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
-      '@modules/search-utils':
+      '@services/pagination':
         specifier: workspace:^
-        version: link:../../modules/search-utils
+        version: link:../pagination
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -10118,6 +10170,9 @@ importers:
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
@@ -10179,6 +10234,9 @@ importers:
       '@services/memberships':
         specifier: workspace:^
         version: link:../memberships
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@services/urls-hostnames':
         specifier: workspace:^
         version: link:../urls-hostnames
@@ -10913,12 +10971,12 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
-      '@modules/search-utils':
-        specifier: workspace:^
-        version: link:../../modules/search-utils
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@services/urls':
         specifier: workspace:^
         version: link:../urls
@@ -11206,6 +11264,9 @@ importers:
       '@services/openai-agents':
         specifier: workspace:^
         version: link:../services/openai-agents
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../services/pagination
       '@services/post-clearance':
         specifier: workspace:^
         version: link:../services/post-clearance

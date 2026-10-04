@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
@@ -21,7 +22,7 @@ app.route('/api/v1/my/friend-recommendations').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/my/friend-recommendations', parser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/friend-recommendations')
 
-  const options = parser.parse(ctx.query)
+  const options = parseRuntimePagination(parser, ctx.query)
   const query = prepareQueryForValidation(ctx.query, parser.queryContract)
   if (ctx.query.limit !== undefined) query.limit = options.limit
   validateRequestContract(ctx, 'GET:/api/v1/my/friend-recommendations', { query })

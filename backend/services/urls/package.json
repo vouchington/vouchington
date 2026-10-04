@@ -35,6 +35,7 @@
     "@services/entity-relations": "workspace:^",
     "@services/hostname-blocking": "workspace:^",
     "@services/memberships": "workspace:^",
+    "@services/pagination": "workspace:^",
     "@services/urls-hostnames": "workspace:^",
     "@services/users": "workspace:^",
     "@services/web-risk": "workspace:^",

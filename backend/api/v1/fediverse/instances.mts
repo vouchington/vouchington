@@ -1,3 +1,4 @@
+import { clampAnonLimit, getPaginationLimits } from '@services/pagination'
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import {
@@ -25,7 +26,7 @@ import { currentUserCanModifyFediverseInstanceIntegrationStatus } from '@service
 import { indexById } from '@modules/utils'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { parseBooleanish } from '@ts-shared/utils/query'
-import { clampAnonLimit } from '@modules/search-utils'
+
 import { assertWithinContributionActionLimit } from '@services/contribution-gating/limits'
 import { getUserActivePlan } from '@services/memberships'
 import { parseTopicsSearchParams, prepareTopicsSearchParams } from '@services/search-params'
@@ -88,14 +89,17 @@ app
       ...(query.limit !== undefined && { limit: query.limit }),
     }
     const integrationStatus = parseIntegrationStatus(query.integration_status)
-    const preparedSearch = prepareTopicsSearchParams(canonicalSearchQuery)
+    const preparedSearch = prepareTopicsSearchParams(canonicalSearchQuery, getPaginationLimits(25))
     const validationLimit = currentUser
       ? preparedSearch.paginationOptions.limit
       : clampAnonLimit(preparedSearch.paginationOptions.limit)
     validateRequestContract(ctx, 'GET:/api/v1/fediverse/instances', {
       query: prepareFediverseInstanceQuery(ctx.query, validationLimit, integrationStatus),
     })
-    const parsedSearchParams = await parseTopicsSearchParams(canonicalSearchQuery)
+    const parsedSearchParams = await parseTopicsSearchParams(
+      canonicalSearchQuery,
+      getPaginationLimits(25),
+    )
     const { searchOptions } = parsedSearchParams
     searchOptions.omitLimit = false
     if (!currentUser) {

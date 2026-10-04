@@ -179,6 +179,7 @@
     "@services/oauth-authorization-server": "workspace:^",
     "@services/official-referral-program-links": "workspace:^",
     "@services/openai-moderation": "workspace:^",
+    "@services/pagination": "workspace:^",
     "@services/passkeys": "workspace:^",
     "@services/podcast-playback-positions": "workspace:^",
     "@services/post-classifier": "workspace:^",

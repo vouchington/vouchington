@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
@@ -40,7 +41,7 @@ app
       referralLinkValidationsQueryContract,
     )
     await ctx.applyRouteRateLimit('GET:/api/v1/referral-link-validations')
-    const options = referralLinkValidationsParser.parse(ctx.query)
+    const options = parseRuntimePagination(referralLinkValidationsParser, ctx.query)
     const query = prepareQueryForValidation(ctx.query, {
       ...referralLinkValidationsParser.queryContract,
       ...referralLinkValidationsQueryContract.queryContract,

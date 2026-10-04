@@ -5,6 +5,19 @@ are limited to compile-time/static catalogs and mutation-enforced semantic sets 
 cardinality is encoded and tested in backend code. Operationally small tables, current row counts,
 and unenforced top-N product expectations are not exemptions.
 
+## Runtime Page Limits
+
+`pagination-config` owns runtime defaults and effective maxima. Pure parsers receive numeric
+bounds from the API, service or tool adapter; their request/OpenAPI contracts retain static
+ceilings. A configured default above the effective maximum is clamped to that maximum.
+Invalid configuration falls back to a validated default within the static ceiling.
+
+The common 100-row profile uses `max_limit`. Existing 25-, 50- and 200-row exception profiles
+have independent configured maxima, preserving their advertised range. Existing route-default
+profiles remain distinct; anonymous search is additionally bounded by `anonymous_max_limit`.
+Clients follow `page_info` and opaque cursors even when a configured page is shorter than their
+requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATRIX.md#runtime-pagination-limits).
+
 ## API And Query Contract
 
 - Forward pagination uses `after`. Bidirectional admin tables may also use `before`.

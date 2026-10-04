@@ -51,6 +51,7 @@
     "@services/memberships": "workspace:^",
     "@services/moderation-reports": "workspace:^",
     "@services/moderator-actions": "workspace:^",
+    "@services/pagination": "workspace:^",
     "@services/post-clearance": "workspace:^",
     "@services/post-content-limits": "workspace:^",
     "@services/post-publication": "workspace:^",

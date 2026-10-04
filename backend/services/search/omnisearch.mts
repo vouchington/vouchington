@@ -1,3 +1,4 @@
+import { clampLimit, getPaginationLimits } from '@services/pagination'
 import { getTopicIds } from '@services/topics/search/get-ids'
 import {
   searchUrlHostnames,
@@ -13,8 +14,6 @@ import { getBookmarksForEntities } from '@services/bookmarks/get'
 import { searchNewsVertical, searchPostsVertical } from './omnisearch-content-verticals.mts'
 import type { OmnisearchPost, OmnisearchNewsItem, OmnisearchOptions } from './omnisearch-types.mts'
 export type { OmnisearchPost, OmnisearchNewsItem, OmnisearchOptions } from './omnisearch-types.mts'
-
-const DEFAULT_LIMIT = 3
 
 export type OmnisearchTopic = {
   id: string
@@ -54,7 +53,7 @@ async function searchTopicsVertical(options: OmnisearchOptions): Promise<Omnisea
     hashtagTopicIds,
     hashtagAliasIds,
     hasUnknownHashtag,
-    limit = DEFAULT_LIMIT,
+    limit = getPaginationLimits(3).default,
   } = options
   if (hasUnknownHashtag || hashtagAliasIds?.length) return []
   const params = {
@@ -73,7 +72,7 @@ async function searchDomainsVertical(options: OmnisearchOptions): Promise<Omnise
     hashtagTopicIds,
     hashtagAliasIds,
     hasUnknownHashtag,
-    limit = DEFAULT_LIMIT,
+    limit = getPaginationLimits(3).default,
   } = options
   if (hasUnknownHashtag || hashtagAliasIds?.length || hashtagTopicIds?.length) return []
   if (!textSearchQuery) return []
@@ -94,7 +93,7 @@ async function searchCommunitiesVertical(
     hashtagTopicIds,
     hashtagAliasIds,
     hasUnknownHashtag,
-    limit = DEFAULT_LIMIT,
+    limit = getPaginationLimits(3).default,
   } = options
   if (hasUnknownHashtag || hashtagAliasIds?.length) return []
   const params = {
@@ -126,7 +125,7 @@ async function searchCommunitiesVertical(
  * that vertical rather than failing the whole request.
  */
 export async function searchOmnisearch(options: OmnisearchOptions): Promise<OmnisearchResult> {
-  const limit = options.limit ?? DEFAULT_LIMIT
+  const limit = clampLimit(options.limit, 3)
 
   const [topicsR, postsR, newsR, domainsR, communitiesR] = await Promise.allSettled([
     searchTopicsVertical({ ...options, limit }),

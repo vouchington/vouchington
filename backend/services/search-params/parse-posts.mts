@@ -1,6 +1,7 @@
 import { isUUID } from '@modules/utils'
 import { parseBooleanish } from '@ts-shared/utils/query'
 import {
+  type PaginationRuntimeLimitBounds,
   createPaginationParser,
   defineQueryContract,
   queryBoolean,
@@ -37,7 +38,6 @@ const postsParser = createPaginationParser({
     search: true,
   },
 })
-
 const postsQueryContract = defineQueryContract({
   q: queryString(),
   topic: queryString(),
@@ -56,12 +56,15 @@ const postsQueryContract = defineQueryContract({
   story_id: queryUuid(),
 })
 
-export function preparePostsSearchParams(query: Record<string, unknown>) {
+export function preparePostsSearchParams(
+  query: Record<string, unknown>,
+  runtimeLimits?: PaginationRuntimeLimitBounds,
+) {
   const validationQuery = prepareQueryForValidation(query, {
     ...postsParser.queryContract,
     ...postsQueryContract.queryContract,
   })
-  const pagination = postsParser.parse(query)
+  const pagination = postsParser.parse(query, runtimeLimits)
   if (query.limit !== undefined) validationQuery.limit = pagination.limit
   return {
     validationQuery,
@@ -189,12 +192,9 @@ export async function resolvePostsSearchParams(
   }
 }
 
-async function parsePostsSearchParamsImpl(query: Record<string, unknown>) {
-  return resolvePostsSearchParams(preparePostsSearchParams(query))
-}
-
 export const parsePostsSearchParams = withQueryContract(
-  parsePostsSearchParamsImpl,
+  async (query: Record<string, unknown>, runtimeLimits?: PaginationRuntimeLimitBounds) =>
+    resolvePostsSearchParams(preparePostsSearchParams(query, runtimeLimits)),
   postsParser,
   postsQueryContract,
 )

@@ -1,3 +1,4 @@
+import { clampLimit } from '@services/pagination'
 import type { BasicUser } from '@services/users/types'
 import type { PostSearchOptions, PostSearchResult } from './types.mts'
 import { buildPostSearchQuery } from './query-builder.mts'
@@ -7,7 +8,6 @@ import {
   hasSemanticSearch as hasSemanticSearchFn,
   hasTextSearch as hasTextSearchFn,
   detectSearchSort,
-  clampLimit,
 } from '@modules/search-utils'
 import { buildPostRankingScoreExpression } from './query-builder-utils.mts'
 import createHttpError from 'http-errors'

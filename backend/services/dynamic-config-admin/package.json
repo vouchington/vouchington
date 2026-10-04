@@ -70,6 +70,7 @@
     "@services/oauth-x": "workspace:^",
     "@services/openai-background-responses": "workspace:^",
     "@services/openai-moderation": "workspace:^",
+    "@services/pagination": "workspace:^",
     "@services/post-clearance": "workspace:^",
     "@services/post-content-limits": "workspace:^",
     "@services/post-publication": "workspace:^",

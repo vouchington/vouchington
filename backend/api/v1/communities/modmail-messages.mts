@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { isUUID } from '@modules/utils'
@@ -51,7 +52,7 @@ app
       { path: ctx.params },
     )
 
-    const { after: encodedAfter, limit } = simplePaginationParser.parse(ctx.query)
+    const { after: encodedAfter, limit } = parseRuntimePagination(simplePaginationParser, ctx.query)
     const after = encodedAfter
       ? decodeUuidCursor(encodedAfter, isSimpleCursor, 'Invalid message cursor')
       : undefined

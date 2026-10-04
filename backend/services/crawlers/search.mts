@@ -1,3 +1,4 @@
+import { clampLimit } from '@services/pagination'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { decodeUuidCursor, isTimestampCursor, buildPageInfo } from '@modules/pagination'
@@ -11,8 +12,7 @@ export async function searchCrawlers(
     after?: string | null
   } = {},
 ): Promise<{ results: Crawler[]; page_info: PageInfo }> {
-  const parsedLimit = options.limit ?? 25
-  const limit = Number.isNaN(parsedLimit) || parsedLimit < 1 ? 25 : Math.min(parsedLimit, 100)
+  const limit = clampLimit(options.limit)
 
   let afterId: string | null = null
   if (options.after) {

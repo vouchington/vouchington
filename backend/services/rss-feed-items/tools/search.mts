@@ -1,6 +1,7 @@
+import { clampLimit } from '@services/pagination'
 import { read } from '@data-stores/psql'
 import { isUUID } from '@modules/utils'
-import { buildEmbeddingCtes, clampLimit, EMBEDDING_DISTANCE_THRESHOLD } from '@modules/search-utils'
+import { buildEmbeddingCtes, EMBEDDING_DISTANCE_THRESHOLD } from '@modules/search-utils'
 import { getCachedSearchEmbedding } from '@services/bedrock-embeddings/search/get-cached'
 import pgvector from 'pgvector/pg'
 import sql, { type SQLStatement } from 'sql-template-strings'

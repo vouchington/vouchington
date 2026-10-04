@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { getTopicByAnyCached } from '@services/entity-fetch'
@@ -33,7 +34,7 @@ app
       currentUserCanUpdateTopic,
       'GET:/api/v1/topics/:idOrSlug/additional-hostnames',
     )
-    const options = additionalHostnamesParser.parse(ctx.query)
+    const options = parseRuntimePagination(additionalHostnamesParser, ctx.query)
     const query = prepareQueryForValidation(ctx.query, additionalHostnamesParser.queryContract)
     if (ctx.query.limit !== undefined) query.limit = options.limit
     validateRequestContract(ctx, 'GET:/api/v1/topics/:idOrSlug/additional-hostnames', {

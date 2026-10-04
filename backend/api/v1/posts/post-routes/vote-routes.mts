@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import type { Context } from '@jongleberry/api-server'
 import { isUUID } from '@modules/utils'
 import { createPaginationParser } from '@modules/pagination'
@@ -32,7 +33,7 @@ app.route('/api/v1/posts/:id/votes').get(async (ctx: Context) => {
   ctx.assert(privacyPost, 404, 'Post not found')
   ctx.assert(await canViewPost(currentUser, privacyPost), 404, 'Post not found')
 
-  const { limit, after } = postVotesParser.parse(ctx.query)
+  const { limit, after } = parseRuntimePagination(postVotesParser, ctx.query)
   const { after: _rawAfter, ...queryWithoutAfter } = ctx.query
   const query = prepareQueryForValidation(
     after === undefined ? queryWithoutAfter : { ...queryWithoutAfter, after },

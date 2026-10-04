@@ -1,3 +1,4 @@
+import { paginationRegistryEntries } from './registry-pagination-entries.mts'
 import { backgroundWorkRegistryEntries9 } from './registry-background-work-entries-9.mts'
 import { backgroundWorkRegistryEntries8 } from './registry-background-work-entries-8.mts'
 import { backgroundWorkRegistryEntries7 } from './registry-background-work-entries-7.mts'
@@ -39,6 +40,7 @@ const REGISTRY_ORDER = [
   'rss-feed-crawl-config',
   'user-import-export-config',
   'data-retention-config',
+  'pagination-config',
   'moderation-analytics-work-config',
   'post-clearance-work-config',
   'users-work-config',
@@ -105,6 +107,7 @@ const REGISTRY_ORDER = [
 ] as const
 
 const unorderedRegistryEntries = [
+  ...paginationRegistryEntries,
   ...backgroundWorkEntries1,
   ...backgroundWorkEntries2,
   ...backgroundWorkEntries3,

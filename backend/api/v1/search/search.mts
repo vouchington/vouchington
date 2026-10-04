@@ -1,3 +1,4 @@
+import { clampAnonLimit, clampLimit } from '@services/pagination'
 import app from '../../app.mts'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
@@ -6,7 +7,6 @@ import { defineQueryContract, queryNumber, queryString } from '@modules/paginati
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { searchOmnisearch } from '@services/search'
 import { resolveHashtagTopicSearch } from '@services/search-params'
-import { clampAnonLimit } from '@modules/search-utils'
 
 const searchQuery = defineQueryContract({ q: queryString(), limit: queryNumber() })
 
@@ -18,11 +18,10 @@ app.route('/api/v1/search').get(async ctx => {
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/search')
 
   const rawQ = ctx.query.q as string | undefined
-  let limit = ctx.query.limit !== undefined ? Number(ctx.query.limit) : 3
+  let limit = clampLimit(ctx.query.limit !== undefined ? Number(ctx.query.limit) : undefined, 3)
   if (!currentUser) {
     limit = clampAnonLimit(limit)
   }
-  if (!Number.isFinite(limit)) limit = 3
   const query = prepareQueryForValidation(ctx.query, searchQuery.queryContract)
   if (ctx.query.limit !== undefined) query.limit = limit
   validateRequestContract(ctx, 'GET:/api/v1/search', { query })
