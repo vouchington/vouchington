@@ -64,7 +64,7 @@ export function streamCopyrightCases(userId: string) {
         ) restriction ON true
         WHERE target.copyright_notice_id = notice.id) AS targets,
       (SELECT COALESCE(json_agg(json_build_object(
-          'id', event.id, 'change_type', event.change_type, 'created_at', event.created_at
+          'id', event.id, 'event_type', event.change_type, 'created_at', event.created_at
         ) ORDER BY event.id), '[]'::json)
         FROM copyright_notice_lifecycle_changes event
         WHERE event.copyright_notice_id = notice.id
