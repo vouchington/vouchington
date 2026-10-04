@@ -1,4 +1,4 @@
-import { configure, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { configure, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/lib/api/error'
 import {
@@ -187,6 +187,43 @@ describe('CopyrightNoticeTargetPicker', () => {
     )
     fireEvent.click(screen.getByLabelText('Hosted image 2: Topic hero image'))
     expect(onChange).toHaveBeenLastCalledWith(choices)
+  })
+  it('removes the selected slot without changing another slot that shares its image', async () => {
+    const choices: CopyrightNoticeResolvedTarget[] = [
+      {
+        surface: 'topic-logo-image',
+        topic_id: 'topic-1',
+        image_id: 'image-1',
+        target_url: 'https://voucha.ai/topic/photos',
+        order_index: 0,
+        caption: 'Logo',
+      },
+      {
+        surface: 'topic-hero-image',
+        topic_id: 'topic-1',
+        image_id: 'image-1',
+        target_url: 'https://voucha.ai/topic/photos',
+        order_index: 1,
+        caption: 'Hero',
+      },
+    ]
+    mockResolveTargets.mockResolvedValue(choices)
+    const onChange = vi.fn<(targets: CopyrightNoticeResolvedTarget[]) => void>()
+    render(
+      <CopyrightNoticeTargetPicker
+        targets={choices}
+        onChange={onChange}
+      />,
+    )
+    fireEvent.change(screen.getByLabelText('Hosted use URL'), {
+      target: { value: 'https://voucha.ai/topic/photos' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Find hosted material' }))
+    const logo = await screen.findByLabelText('Hosted image 1: Logo')
+    const logoCheckbox = within(logo).getByRole('checkbox')
+    expect(logoCheckbox).toBeChecked()
+    fireEvent.click(logoCheckbox)
+    expect(onChange).toHaveBeenLastCalledWith([choices[1]])
   })
 })
 

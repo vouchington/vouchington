@@ -3,7 +3,12 @@ import {
   makeCopyrightHostedCommunityResponse,
   makeCopyrightHostedTopicResponse,
 } from '@/test-helpers/api-responses/copyright'
-import { resolveCopyrightNoticeTargets, copyrightNoticeTargetKey } from './copyright-notice-targets'
+import {
+  resolveCopyrightNoticeTargets,
+  copyrightNoticeTargetKey,
+  copyrightNoticeTargetInput,
+  type CopyrightNoticeResolvedTarget,
+} from './copyright-notice-targets'
 
 const { mockGet } = vi.hoisted(() => ({ mockGet: vi.fn<VitestLooseMock>() }))
 vi.mock(
@@ -107,5 +112,51 @@ describe('resolveCopyrightNoticeTargets', () => {
     await expect(resolveCopyrightNoticeTargets('https://voucha.ai/user/alice')).rejects.toThrow(
       'available images',
     )
+  })
+  it('rejects a topic URL whose returned topic type differs', async () => {
+    mockGet.mockResolvedValue(
+      makeCopyrightHostedTopicResponse({
+        id: 'topic-1',
+        topicType: 'category',
+        logo: image('logo'),
+        hero: null,
+      }),
+    )
+    await expect(resolveCopyrightNoticeTargets('https://voucha.ai/topic/cameras')).rejects.toThrow(
+      'This topic URL is unavailable.',
+    )
+  })
+
+  it.each([
+    [{ surface: 'post-image', post_id: 'post-1' }, 'post-image:post-1:image-1'],
+    [{ surface: 'user-profile-image', user_id: 'user-1' }, 'user-profile-image:user-1:image-1'],
+    [
+      { surface: 'user-profile-link-image', user_profile_link_id: 'link-1' },
+      'user-profile-link-image:link-1:image-1',
+    ],
+    [{ surface: 'topic-logo-image', topic_id: 'topic-1' }, 'topic-logo-image:topic-1:image-1'],
+    [{ surface: 'topic-hero-image', topic_id: 'topic-1' }, 'topic-hero-image:topic-1:image-1'],
+    [
+      { surface: 'community-profile-image', community_id: 'community-1' },
+      'community-profile-image:community-1:image-1',
+    ],
+    [
+      { surface: 'community-banner-image', community_id: 'community-1' },
+      'community-banner-image:community-1:image-1',
+    ],
+  ] as const)('uses the selected %s owner for the request and slot key', (owner, key) => {
+    const target = {
+      ...owner,
+      image_id: 'image-1',
+      target_url: 'https://voucha.ai/discussion/one',
+      order_index: 0,
+      caption: 'Chosen image',
+    } as CopyrightNoticeResolvedTarget
+    expect(copyrightNoticeTargetKey(target)).toBe(key)
+    expect(copyrightNoticeTargetInput(target)).toEqual({
+      ...owner,
+      image_id: 'image-1',
+      target_url: target.target_url,
+    })
   })
 })
