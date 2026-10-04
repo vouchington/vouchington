@@ -18,7 +18,7 @@ import { vouchaExtractOptions } from './contract-schema.mts'
 import type { HeaderContractRegistry } from './header-contract-types.mts'
 import { relativizeContractTree } from './program-paths.mts'
 import { assertUniqueResponseAttribution } from './response-contract-ambiguous-attribution.mts'
-import { discoverRequiredQueryParameters } from '../api/required-query-parameters.mts'
+import { REQUIRED_QUERY_PARAMETER_OVERRIDES } from './required-query-parameter-overrides.mts'
 import type { BackendQueryContractRegistry } from './query-contract-types.mts'
 import type { BackendRequestContract } from './request-contract-types.mts'
 import type { BackendResponseContract } from './response-contract-types.mts'
@@ -85,13 +85,9 @@ export function loadBackendQueryContracts(
       loaded.routeFiles,
       knownResponseRoutes,
     )
-    for (const [operation, names] of discoverRequiredQueryParameters(
-      loaded.program,
-      loaded.routeFiles,
-      knownResponseRoutes,
-    )) {
+    for (const [operation, names] of Object.entries(REQUIRED_QUERY_PARAMETER_OVERRIDES)) {
       const parameters = contracts[operation]?.parameters
-      if (!parameters) throw new Error(`Required query operation ${operation} was not discovered`)
+      if (!parameters) continue
       for (const name of names) {
         const descriptor = parameters[name]
         if (!descriptor) throw new Error(`Required query parameter ${operation} ${name} is missing`)
@@ -115,9 +111,9 @@ export function loadBackendHeaderContracts(
 export function loadRegisteredRouteCatalog(): RegisteredRoute[] {
   const loaded = loadBackendProgram()
   if (routes?.generation === loaded.generation) return routes.value
-  const value = relativizeContractTree(
-    discoverRegisteredRoutes(loaded.program, loaded.registeredRouteFiles),
-  )
+  const value =
+    routesFor(loaded) ??
+    relativizeContractTree(discoverRegisteredRoutes(loaded.program, loaded.routeFiles))
   routes = { generation: loaded.generation, value }
   return value
 }
@@ -142,6 +138,13 @@ function discoverAttributedResponses(
 ) {
   assertUniqueResponseAttribution(loaded.program, loaded.routeFiles)
   return discoverApiResponseContracts(loaded.program, loaded.routeFiles, requestedKeys, options)
+}
+
+function routesFor(loaded: BackendProgram): RegisteredRoute[] | undefined {
+  for (const entry of catalogs.values()) {
+    if (entry.generation === loaded.generation) return entry.value.routes
+  }
+  return undefined
 }
 
 function schemaOptions(options: DiscoveryOptions | undefined): DiscoveryOptions {

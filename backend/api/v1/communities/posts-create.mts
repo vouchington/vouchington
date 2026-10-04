@@ -77,16 +77,16 @@ app.route('/api/v1/communities/:idOrSlug/posts').post(async (ctx: Context) => {
     recaptcha_token?: string
   }
 
-  if (isHoneypotTriggered(body)) {
-    sendCommunityPostHoneypotResponse(ctx, body, community.id, currentUser.id)
-    return
-  }
-
   validateRequestContract(ctx, 'POST:/api/v1/communities/:idOrSlug/posts', {
     path: ctx.params,
     header: ctx.req.headers,
     body,
   })
+
+  if (isHoneypotTriggered(body)) {
+    sendCommunityPostHoneypotResponse(ctx, body, community.id, currentUser.id)
+    return
+  }
 
   ctx.assert(!body.community_id || body.community_id === community.id, 422, 'Invalid community_id')
   const postType = body.post_type ?? 'discussion'

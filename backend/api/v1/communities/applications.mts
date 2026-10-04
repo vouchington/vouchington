@@ -34,7 +34,10 @@ app
         ? rawStatus
         : undefined
     validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/applications', {
-      query: { ...communityPageQueryInput(ctx.query), ...(status ? { status } : {}) },
+      query: {
+        ...communityPageQueryInput(ctx.query),
+        ...(rawStatus !== undefined ? { status: rawStatus } : {}),
+      },
     })
 
     const result = await searchApplications(community.id, { limit, after, status })

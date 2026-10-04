@@ -19,6 +19,28 @@ describe('Community Applications Routes', () => {
       okSlugPrefix: 'apps-get-ok-',
       okVisibility: 'private',
     })
+
+    it('rejects an unsupported status instead of silently listing every application', async () => {
+      const owner = await createTestUser()
+      const community = await insertTestCommunity({
+        createdById: owner.id,
+        slug: `apps-invalid-status-${createRandomString(8)}`,
+        visibility: 'private',
+      })
+      await insertTestCommunityMember({
+        communityId: community.id,
+        userId: owner.id,
+        role: 'owner',
+      })
+
+      const request = createRequest()
+      await request.authenticateAs(owner)
+      const response = await request
+        .get(`/api/v1/communities/${community.slug}/applications?status=invalid`)
+        .expect(422)
+
+      expect(response.body.message).toBe('Invalid request query')
+    })
   })
 
   describe('POST /api/v1/communities/:slug/applications', () => {

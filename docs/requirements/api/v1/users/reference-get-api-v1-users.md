@@ -12,8 +12,7 @@ Query parameters:
 
 Returns `{ user }`. Returns the private view if the user is looking up themselves; otherwise the public view.
 When both `username` and `q` are present, username lookup takes precedence. An absent or empty
-username with a present `q` selects authenticated search; an invalid username outside that branch
-returns `422` before a user lookup.
+username with a present `q` selects authenticated search.
 
 ### Search (authentication required)
 
@@ -27,9 +26,8 @@ For non-admin users, `q` is a username prefix search and returns `{ results: Pub
 For admins, `q` also supports exact user ID and exact primary email lookup, and results include
 private status fields such as `email_address`, `suspended_at`, and `suspended_reason`. Requires
 authentication; returns 401 if not authenticated.
-Repeated `q` values use the first value, as before. Search pagination keeps its parser's
-`400` errors for malformed limits and cursors; the normalized search term is validated before
-searching users.
+Repeated `q` values use the first value. Search pagination keeps its parser's `400` errors for
+malformed limits and cursors.
 
 `page_info` reflects real cursor pagination over the `LOWER(username)` ordering — `has_next_page`
 and `end_cursor` are truncation-aware, not a fake terminal page. The cursor is scoped to the query

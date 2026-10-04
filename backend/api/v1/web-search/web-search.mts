@@ -22,25 +22,22 @@ app.route('/api/v1/web-search').get(async ctx => {
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/web-search')
 
   const query = ctx.query.query ? String(ctx.query.query).trim() : ''
+  const validationQuery = prepareQueryForValidation(ctx.query, webSearchQuery.queryContract)
+  validationQuery.query = query
+  validateRequestContract(ctx, 'GET:/api/v1/web-search', { query: validationQuery })
+
+  const parsedLimit = ctx.query.limit !== undefined ? Number(ctx.query.limit) : DEFAULT_LIMIT
+  const limit = Math.trunc(
+    currentUser ? clampLimit(parsedLimit, DEFAULT_LIMIT) : clampAnonLimit(parsedLimit),
+  )
 
   if (query.length < 3) {
-    validateRequestContract(ctx, 'GET:/api/v1/web-search', { query: { query } })
     if (!currentUser) {
       ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
     }
     ctx.json({ results: [], page_info: EMPTY_PAGE_INFO })
     return
   }
-
-  const parsedLimit = ctx.query.limit !== undefined ? Number(ctx.query.limit) : NaN
-  const rawLimit = !isNaN(parsedLimit) ? parsedLimit : DEFAULT_LIMIT
-  const limit = Math.trunc(
-    currentUser ? clampLimit(rawLimit, DEFAULT_LIMIT) : clampAnonLimit(rawLimit),
-  )
-  const validationQuery = prepareQueryForValidation(ctx.query, webSearchQuery.queryContract)
-  validationQuery.query = query
-  if (ctx.query.limit !== undefined) validationQuery.limit = limit
-  validateRequestContract(ctx, 'GET:/api/v1/web-search', { query: validationQuery })
 
   const { results, page_info } = await searchWeb({ query, limit })
 

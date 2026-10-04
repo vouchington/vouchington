@@ -272,6 +272,12 @@ describe('real backend API query contracts', () => {
     expect(contracts['GET:/api/v1/rss-feed-items']!.parameters.media_type).toMatchObject({
       kind: 'csv-array',
     })
+    expect(contracts['GET:/api/v1/availability']!.parameters.kind).toHaveProperty('required', true)
+    expect(contracts['GET:/api/v1/availability']!.parameters.value).toHaveProperty('required', true)
+    expect(contracts['GET:/api/v1/localization']!.parameters.consumer).toHaveProperty(
+      'required',
+      true,
+    )
   })
 
   it(

@@ -53,10 +53,11 @@ app.route('/api/v1/communities/:idOrSlug/moderation-queue').get(async (ctx: Cont
 
   const after = typeof ctx.query.after === 'string' ? ctx.query.after : undefined
   const source = parseQueueSource(ctx.query.source)
-  const query: Record<string, unknown> = {}
-  if (ctx.query.limit !== undefined) query.limit = limit
-  if (after !== undefined) query.after = after
-  if (source !== undefined) query.source = source
+  const query = {
+    limit: ctx.query.limit === undefined ? undefined : limit,
+    after: ctx.query.after,
+    source: ctx.query.source,
+  }
   validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/moderation-queue', { query })
 
   const { entries, hasNextPage } = await searchCommunityModerationQueue(community.id, {

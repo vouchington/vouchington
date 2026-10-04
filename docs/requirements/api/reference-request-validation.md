@@ -31,57 +31,29 @@ validates, so clamping and the parser's `400` survive and only the filters are c
 A lenient filter (an unknown enum that falls back to its default, or an ignored key) is validated
 from its settled value so it cannot answer `422`.
 
-The route inventory also covers ordinary query readers that previously had no declared query
-carrier, including public search and trending feeds, communities, hostnames, localization,
-recommendations, and staff integrity lists. Each declares its consumed query shape with
-`apiQuery` and validates the same settled values it passes to its service. Existing authentication,
-role checks, cursor parsing, and route-specific `400` preconditions run first; a malformed typed
-query value that reaches the generated boundary answers `422` before service work.
-
-The source-derived inventory includes every registered public REST and MCP route, including
-protocol routes outside `/api/v1`. Its specialized entries include the six previously reviewed
-MCP/admin-MCP, Apple, Google, email-unsubscribe, and OAuth broker callback cases; Bluesky's
-AT Protocol OAuth callback; seven public ActivityPub, WebFinger, and OAuth protocol routes; and
-the OAuth consent request and decision routes. The latter use authenticated session binding,
-UUID path parsing, and a dedicated decision-body parser, and are not in the generated v1 request
-bundle. Bluesky is an additional source-audited exception to the earlier six-case readiness list:
-its state is consumed by the AT Protocol SDK parser and its successful response remains the
-protocol-required redirect. The catalog also records six input-free public metadata/discovery
-routes outside `/api/v1`; any new registered route must be assigned to a validated, specialized,
-or explicitly input-free class. Runtime-validated operations are required to exist in the generated
-request bundle, while the global source inventory remains broader than the v1 OpenAPI surface.
-Generated header carriers are checked by the same family inventory. Posts and topic
-recommendations retain the admission parser's coded Idempotency-Key `400`, while copyright guest
-filings keep the capability token in its secret header and preserve its `403` response; the other
-declared request headers are passed through runtime contract validation.
-
 A typed raw-body declaration or explicit request-contract marker must emit a meaningful body
 schema: invoking the adapter against an empty object is not coverage. Compiler-built request-bundle
 assertions in [API fixtures](../../../backend/test-helpers/api-fixtures/openapi/write-openapi.test.mts) verify
 emitted carriers and schemas; route HTTP tests verify invocation order, status, and no-write
 behavior.
 
-## Coverage by route family
+## Route-family references
 
 - [Content, list, household and public user routes](reference-content-routes-request-validation.md)
-  record the validated operations, free-form path carriers, and the 400-versus-422
-  decisions for that family.
-- [Staff, admin, and operations routes](reference-staff-operations-request-validation.md) record
-  their status changes, carrier skips, and specialized ingress.
+  describe selected request and status behavior for that family.
+- [Staff, admin, and operations routes](reference-staff-operations-request-validation.md) describe
+  selected status behavior and specialized request handling.
 - [Copyright notice, appeal, and counter-notice routes](reference-copyright-submission-request-validation.md)
-  record their handler order, kept statuses, and cross-client verification.
+  describe request ordering and status behavior.
 - [Copyright guest capability and guest filing routes](reference-copyright-guest-request-validation.md)
-  record their handler order, kept statuses, and why the capability header is never validated.
-- [Copyright EU, UK, and jurisdiction policy routes](reference-copyright-territorial-request-validation.md)
-  record the closed bodies, the one explicit-null `cf_turnstile_response` acceptance change, and the
-  rejections the service still decides (ownership and jurisdiction availability `403`, `404`, `409`).
+  describe request ordering and capability-token behavior.
+- [Copyright EU, UK, and territorial policy routes](reference-copyright-territorial-request-validation.md)
+  describe request bodies and the route's legal status outcomes.
 - [Copyright repeat-infringer and staff queue routes](reference-copyright-staff-request-validation.md)
-  record their handler order, kept statuses, and the administrator-action ordering note.
-- [Copyright email-intake routes](reference-copyright-email-intake-request-validation.md) record
-  their handler order, the parsers that run before the contract, and the unknown-key `422` changes.
+  describe handler ordering and status behavior.
+- [Copyright email-intake routes](reference-copyright-email-intake-request-validation.md) describe
+  request parsing and status behavior.
 - [Copyright submission review routes](reference-copyright-submission-review-request-validation.md)
-  record their handler order, the unknown-key `422` changes, and the carrier-free media-delivery
-  replay skip.
-- [Copyright staff decision routes](reference-copyright-staff-decision-request-validation.md) record
-  the form-intake, restriction, and legal-hold resolution bodies, the lenient image-similarity
-  `limit`, the body-free replay and staydown routes, and the one `500` to `422` change.
+  describe request parsing and status behavior.
+- [Copyright staff decision routes](reference-copyright-staff-decision-request-validation.md)
+  describe request parsing and status behavior.

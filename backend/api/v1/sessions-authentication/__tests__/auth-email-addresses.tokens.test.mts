@@ -159,6 +159,18 @@ describe('Email Address Authentication Routes', () => {
       expect(response.body.email_address).toContain('hp-token')
     })
 
+    it('validates honeypot request fields before returning fake success', async () => {
+      await createRequest()
+        .post('/api/v1/auth/email-address/tokens')
+        .set('x-forwarded-for', testForwardedIp(43))
+        .send({
+          emailAddress: createUniqueTestEmail('invalid-hp-token'),
+          hp_website: 'http://spam.com',
+          unrecognized: true,
+        })
+        .expect(422)
+    })
+
     it('rate limits normalized email addresses after 4 requests', async () => {
       const baseEmail = createUniqueTestEmail('normalize')
 

@@ -47,12 +47,13 @@ app.route('/api/v1/auth/email-address/tokens').post(async (ctx: Context) => {
   }
   await applyEmailAddressRouteRateLimit(ctx, routeKey, body)
 
+  validateRequestContract(ctx, routeKey, { body })
+
   if (isHoneypotTriggered(body as Record<string, unknown>)) {
     ctx.json({ email_address: body.emailAddress || body.email_address || '' })
     return
   }
 
-  validateRequestContract(ctx, routeKey, { body })
   const emailAddress = body.emailAddress || body.email_address
   ctx.assert(emailAddress, 422, 'emailAddress is required')
   const rawUiLocale = body.uiLocale ?? body.ui_locale

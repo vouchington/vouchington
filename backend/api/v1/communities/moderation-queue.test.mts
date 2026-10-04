@@ -55,6 +55,21 @@ describe('GET /api/v1/communities/:idOrSlug/moderation-queue', () => {
     await request.get(`/api/v1/communities/${community.slug}/moderation-queue`).expect(403)
   })
 
+  it('rejects a supplied source outside the generated enum after community access checks', async () => {
+    const community = await insertTestCommunity({
+      createdById: author.id,
+      name: `Mod Queue Invalid Source ${crypto.randomUUID().slice(0, 8)}`,
+      slug: `mod-queue-invalid-source-${crypto.randomUUID().slice(0, 8)}`,
+    })
+    const request = createRequest()
+    await request.authenticateAs(siteAdmin)
+    const response = await request
+      .get(`/api/v1/communities/${community.slug}/moderation-queue?source=not_real`)
+      .expect(422)
+
+    expect(response.body.message).toBe('Invalid request query')
+  })
+
   it('returns 200 for a community member with redacted viewer_tier=member', async () => {
     const community = await insertTestCommunity({
       createdById: author.id,

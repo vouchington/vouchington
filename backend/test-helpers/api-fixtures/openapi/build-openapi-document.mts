@@ -18,6 +18,7 @@ import {
 } from '../backend-contract-catalog.mts'
 import type { HeaderContractRegistry } from '../header-contract-types.mts'
 import type { BackendQueryContractRegistry } from '../query-contract-types.mts'
+import { applyRequiredQueryParameterOverrides } from '../required-query-parameter-overrides.mts'
 import { applyMoneyContracts } from './openapi-money-contract.mts'
 
 export function buildOpenApiDocument(
@@ -40,10 +41,7 @@ export function buildOpenApiDocument(
       ? loadBackendQueryContracts(new Set(Object.keys(resolvedContracts)))
       : {})
   const registeredRoutes =
-    options?.registeredRoutes ??
-    (contracts === undefined
-      ? loadRegisteredRouteCatalog().filter(route => route.source.startsWith('backend/api/v1/'))
-      : [])
+    options?.registeredRoutes ?? (contracts === undefined ? loadRegisteredRouteCatalog() : [])
   const document = buildFromTooling({
     title: 'Voucha API',
     version: '1.0.0',
@@ -52,7 +50,7 @@ export function buildOpenApiDocument(
     queryContracts: resolvedQueryContracts as Readonly<Record<string, QueryOperationContract>>,
     registeredRoutes: registeredRoutes as readonly ToolingRegisteredRoute[],
   })
-  applyRequiredQueryParameters(document, resolvedQueryContracts)
+  applyRequiredQueryParameterOverrides(document)
   const headerContracts =
     options?.headerContracts ??
     (contracts === undefined
@@ -61,27 +59,6 @@ export function buildOpenApiDocument(
   applyHeaderContracts(document, headerContracts)
   applyMoneyContracts(document)
   return document
-}
-
-function applyRequiredQueryParameters(
-  document: OpenApiDocument,
-  contracts: BackendQueryContractRegistry,
-): void {
-  for (const [key, contract] of Object.entries(contracts)) {
-    const separator = key.indexOf(':')
-    const method = key.slice(0, separator)
-    const route = key.slice(separator + 1)
-    if (!method || !route) continue
-    const operation = document.paths[route.replace(/:([^/]+)/g, '{$1}')]?.[method.toLowerCase()]
-    for (const [name, descriptor] of Object.entries(contract.parameters)) {
-      if (!('required' in descriptor) || descriptor.required !== true) continue
-      const parameter = operation?.parameters?.find(
-        candidate => candidate.in === 'query' && candidate.name === name,
-      )
-      if (!parameter) throw new Error(`Required query parameter ${key} ${name} is unavailable`)
-      parameter.required = true
-    }
-  }
 }
 
 function applyHeaderContracts(document: OpenApiDocument, contracts: HeaderContractRegistry): void {

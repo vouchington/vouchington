@@ -253,9 +253,9 @@ describe('openapi document generation', () => {
     }
 
     const registered = new Set(
-      loadRegisteredRouteCatalog()
-        .filter(route => route.source.startsWith('backend/api/v1/'))
-        .map(route => `${route.method}:${routeShape(route.routeTemplate)}`),
+      loadRegisteredRouteCatalog().map(
+        route => `${route.method}:${routeShape(route.routeTemplate)}`,
+      ),
     )
     const generated = new Set(
       Object.entries(doc.paths).flatMap(([path, methods]) =>

@@ -143,12 +143,12 @@ auto-submit the verification step.
 
 **Rate limiting:** 2 tokens per minute per email/IP/device/session.
 
-**Errors:** `422` for an unrecognized field or wrong-typed value, checked after the rate limit and
-honeypot checks below and before sending the OTP. `emailAddress`/`cfTurnstileResponse`/`uiLocale`
+**Errors:** `422` for an unrecognized field or wrong-typed value, checked after rate limiting and
+before the honeypot response or sending the OTP. `emailAddress`/`cfTurnstileResponse`/`uiLocale`
 are accepted as aliases for `email_address`/`cf_turnstile_response`/`ui_locale` (both native clients
 and the web client use different casings for the same fields).
 
-**Honeypot:** If `hp_website` or `hp_phone` fields are non-empty, returns a fake `200 { email_address }` without creating a real token (bot detection — see [`@services/honeypot`](../../../../overview/architecture/services/honeypot/README.md)).
+**Honeypot:** After request validation, if `hp_website` or `hp_phone` fields are non-empty, returns a fake `200 { email_address }` without creating a real token (bot detection — see [`@services/honeypot`](../../../../overview/architecture/services/honeypot/README.md)).
 
 ## POST /api/v1/auth/email-address/login
 
