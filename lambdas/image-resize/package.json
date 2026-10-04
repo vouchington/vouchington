@@ -33,7 +33,7 @@
     "@ts-shared/url-signing": "workspace:^",
     "@vouchington/image-resize": "^0.2.0",
     "@vouchington/media": "^0.2.0",
-    "satori": "^0.33.5",
+    "satori": "^0.34.0",
     "sharp": "^0.35.5",
     "ssrf-guard": "^1.0.0"
   },
