@@ -68,13 +68,11 @@ hostnames, which only remove articles, so no article is reachable through privat
 Five tools read communities. Each requires the `communities:read` scope (a resource scope covered by
 the `mcp.user:read` umbrella), is read-only, and names its REST twin in `meta.api`.
 
-| Tool                         | REST twin                                        | Arguments                                                            |
-| ---------------------------- | ------------------------------------------------ | -------------------------------------------------------------------- |
-| `search_communities`         | `GET /api/v1/communities`                        | `q`, `sort` (name, members, virtual_subscriptions), `limit`, `after` |
-| `get_community`              | `GET /api/v1/communities/:idOrSlug`              | `community_id` (UUID or slug)                                        |
-| `get_community_posts`        | `GET /api/v1/communities/:idOrSlug/posts`        | `community_id`, `sort` (new, hot), `q`, `limit`, `after`             |
-| `get_community_pinned_posts` | `GET /api/v1/communities/:idOrSlug/pinned-posts` | `community_id`                                                       |
-| `get_community_members`      | `GET /api/v1/communities/:idOrSlug/members`      | `community_id`, `role` (owner, moderator, member), `limit`, `after`  |
+- `search_communities`: `GET /api/v1/communities`; `q`, `sort` (name, members, virtual_subscriptions), `limit`, `after`.
+- `get_community`: `GET /api/v1/communities/:idOrSlug`; `community_id` (UUID or slug).
+- `get_community_posts`: `GET /api/v1/communities/:idOrSlug/posts`; `community_id`, `sort` (new, hot), `q`, `limit`, `after`.
+- `get_community_pinned_posts`: `GET /api/v1/communities/:idOrSlug/pinned-posts`; `community_id`.
+- `get_community_members`: `GET /api/v1/communities/:idOrSlug/members`; `community_id`, `role` (owner, moderator, member), `limit`, `after`.
 
 Paged tools take `limit` 1 to 25 (default 20), refuse anything else as invalid params, and return
 `page_info` whose `end_cursor` is passed back as `after` with the same sort. The REST routes allow
@@ -114,19 +112,21 @@ service, including its precise timestamp and semantic cursors. RSS item and feed
 and fenced as external content. Item cursors include viewer state, so an MCP caller can round-trip
 its cursor against signed-in REST as the same user; anonymous REST mints its own cursor.
 
-- `search_rss_feeds`: `GET /api/v1/rss-feeds`; feed summaries, cursor, 25 max.
-- `get_rss_feed`: `GET /api/v1/rss-feeds/:id`; feed summary.
-- `get_recommended_rss_feeds`: `GET /api/v1/rss-feeds/recommended`; personalized IDs, scores, reasons, cursor, 100 max.
-- `get_trending_rss_feeds`: `GET /api/v1/rss-feeds/trending`; public IDs and metrics, cursor, 100 max.
-- `list_rss_feed_crawls`: `GET /api/v1/rss-feeds/:id/crawls`; paid or administrator summaries, cursor, 100 max.
-- `get_rss_feed_crawl`: `GET /api/v1/rss-feeds/:id/crawls/:crawlId` (`#paid`, `#privileged`); paid summary or administrator detail.
-- `list_rss_feed_items`: `GET /api/v1/rss-feed-items`; item summaries, cursor, 100 max.
-- `get_rss_feed_item`: `GET /api/v1/rss-feed-items/:id`; item summary and fenced article text.
-- `get_rss_feed_item_follow_context`: `GET /api/v1/rss-feed-items/:id/follow-context`; caller-followed voter IDs and counts.
-- `get_rss_feed_item_votes`: `GET /api/v1/rss-feed-items/:id/votes`; own votes or, for administrators, all votes; cursor, 100 max.
-- `get_rss_feed_item_feed`: `GET /api/v1/feeds/rss_feed_items/:feed_type`; caller feed item IDs and delivery types, cursor, 100 max.
-- `get_post_feed`: `GET /api/v1/feeds/posts/:feed_type`; caller feed post IDs and delivery types, cursor, 100 max.
-- `get_referral_link_feed`: `GET /api/v1/feeds/referral_links/:feed_type`; followed-user referral links, cursor, 100 max.
+| REST route                                                           | MCP tool                           | Result and limit                                             |
+| -------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ |
+| `GET /api/v1/rss-feeds`                                              | `search_rss_feeds`                 | Feed summaries, cursor, 25 max                               |
+| `GET /api/v1/rss-feeds/:id`                                          | `get_rss_feed`                     | Feed summary                                                 |
+| `GET /api/v1/rss-feeds/recommended`                                  | `get_recommended_rss_feeds`        | Personalized IDs, scores, reasons, cursor, 100 max           |
+| `GET /api/v1/rss-feeds/trending`                                     | `get_trending_rss_feeds`           | Public IDs and metrics, cursor, 100 max                      |
+| `GET /api/v1/rss-feeds/:id/crawls`                                   | `list_rss_feed_crawls`             | Paid or administrator summaries, cursor, 100 max             |
+| `GET /api/v1/rss-feeds/:id/crawls/:crawlId` (`#paid`, `#privileged`) | `get_rss_feed_crawl`               | Paid summary or administrator detail                         |
+| `GET /api/v1/rss-feed-items`                                         | `list_rss_feed_items`              | Item summaries, cursor, 100 max                              |
+| `GET /api/v1/rss-feed-items/:id`                                     | `get_rss_feed_item`                | Item summary and fenced article text                         |
+| `GET /api/v1/rss-feed-items/:id/follow-context`                      | `get_rss_feed_item_follow_context` | Caller-followed voter IDs and counts                         |
+| `GET /api/v1/rss-feed-items/:id/votes`                               | `get_rss_feed_item_votes`          | Own votes or, for administrators, all votes; cursor, 100 max |
+| `GET /api/v1/feeds/rss_feed_items/:feed_type`                        | `get_rss_feed_item_feed`           | Caller feed item IDs and delivery types, cursor, 100 max     |
+| `GET /api/v1/feeds/posts/:feed_type`                                 | `get_post_feed`                    | Caller feed post IDs and delivery types, cursor, 100 max     |
+| `GET /api/v1/feeds/referral_links/:feed_type`                        | `get_referral_link_feed`           | Followed-user referral links, cursor, 100 max                |
 
 The existing `search_rss_feed_items` remains an internal agent tool. Its older search service has
 no cursor, so MCP uses `list_rss_feed_items`, which accepts text, semantic and similar-item search
