@@ -11,7 +11,7 @@ import type {
 } from '@modules/structured-decisions'
 import { recordAgentResponseUsage } from './record-response-usage.mts'
 
-export type StructuredDecisionBillingSubject = {
+type StructuredDecisionBillingSubject = {
   workload: string
   /** The classifier run this client serves; every billed response is attributed to it. */
   classifierRunId: string

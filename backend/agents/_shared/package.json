@@ -30,10 +30,10 @@
     "@modules/structured-decisions": "workspace:^",
     "@services/ai-usage": "workspace:^",
     "@services/openai-background-responses": "workspace:^",
-    "@ts-shared/utils": "workspace:^",
-    "openai": "^7.25.0"
+    "@ts-shared/utils": "workspace:^"
   },
   "devDependencies": {
-    "@voucha/test-helpers": "workspace:^"
+    "@voucha/test-helpers": "workspace:^",
+    "openai": "^7.25.0"
   }
 }
