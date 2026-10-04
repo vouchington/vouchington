@@ -192,6 +192,11 @@ The API-key storage column is `scopes` and uses the same generated enum as OAuth
 continues accepting and returning `permissions` as catalogue scope strings; client DTOs and pickers
 retain that wire field. The SQL read projection resolves the public field explicitly.
 
+The `copyright-notices:read` admin MCP grant exposes structured email intakes, guest-capability
+lists, participant case detail, and the existing review queue with contact redaction. Those tools
+are exclusive to the OAuth-only admin MCP; they do not add a native client surface. Copyright
+decision tools remain outside this read-only capability until the separately gated write layer.
+
 ### Client ID Metadata Document boundary
 
 Native OAuth coordinators open the hosted browser flow rather than render consent copy. Client ID
