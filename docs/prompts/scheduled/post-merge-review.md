@@ -9,15 +9,17 @@ repository evidence confirms it.
 
 ## Action steps
 
-1. Scan every PR merged to `main` in the last 10 days. The window must be wider than the gap between
-   two runs of this prompt: `.github/workflows/scheduled-prompts.yml` runs six times a day and cycles
-   through every file in `docs/prompts/scheduled/`, so the gap is the file count divided by six days
-   (about 8 today), and longer when a run is skipped. Widen the window when the file count outgrows
-   it. Hundreds of PRs merge a week, so the query pages through all of them and prints only
-   candidates:
+1. Scan every PR merged to `main` in the last two gaps between runs of this prompt.
+   `.github/workflows/scheduled-prompts.yml` runs six times a day and cycles through the files in
+   `docs/prompts/scheduled/`, so one gap is the file count divided by six days (about 8 today), and
+   a skipped or failed run doubles it. Cover two gaps (16 days today) so one missed run loses
+   nothing. Search returns at most 1000 results and about 80 PRs merge a day, so scan one slice of
+   at most one gap at a time (`merged:<from>..<to>`, UTC dates), halving a slice whose `issueCount`
+   is over 1000. Per slice, page through the PRs, keeping the query cheap by reading only
+   `isResolved` for threads:
 
    ```bash
-   gh api graphql --paginate -f q='repo:vouchington/vouchington is:pr is:merged base:main merged:>=<UTC date 10 days ago>' -f query='
+   gh api graphql --paginate -f q='repo:vouchington/vouchington is:pr is:merged base:main merged:<from>..<to>' -f query='
    query($q: String!, $endCursor: String) {
      search(query: $q, type: ISSUE, first: 50, after: $endCursor) {
        issueCount
@@ -25,32 +27,46 @@ repository evidence confirms it.
        nodes { ... on PullRequest {
          number mergedAt
          reviews(first: 100) { totalCount nodes { databaseId url submittedAt body } }
-         reviewThreads(first: 100) {
-           totalCount
-           nodes { isResolved comments(first: 1) { totalCount nodes { databaseId url } } }
-         }
+         reviewThreads(first: 100) { totalCount nodes { isResolved } }
        } }
      }
    }' --jq '.data.search | {issueCount, prs: (.nodes | length)},
-     (.nodes[] | . as $p |
+     (.nodes[] | . as $p | ([.reviewThreads.nodes[] | select(.isResolved | not)] | length) as $open |
        (select(.reviews.totalCount > 100 or .reviewThreads.totalCount > 100) | {truncated: $p.number}),
-       (.reviewThreads.nodes[] | select(.isResolved == false and .comments.totalCount == 1)
-         | {pr: $p.number, kind: "comment", id: .comments.nodes[0].databaseId, url: .comments.nodes[0].url}),
+       (select($open > 0) | {pr: $p.number, mergedAt: $p.mergedAt, openThreads: $open}),
        (.reviews.nodes[] | select(.submittedAt > $p.mergedAt and (.body | length) > 0)
-         | {pr: $p.number, kind: "review", id: .databaseId, url: .url}))'
+         | {pr: $p.number, mergedAt: $p.mergedAt, kind: "review", id: .databaseId, url: .url}))'
    ```
 
-   Each page prints one `{issueCount, prs}` record. The `prs` values must add up to `issueCount`.
-   Search returns at most 1000 results, so when `issueCount` is over 1000, split the window into
-   `merged:<from>..<to>` slices that each stay under it and scan every slice. A
-   `{truncated: <PR>}` record means that PR has more than 100 reviews or threads, so read the
-   rest of it with `pullRequest(number:)` and `after` cursors. A `comment` candidate is an
-   unresolved thread whose only comment has no reply, whenever it was posted: a review of the final
-   commit can land minutes before the merge, and the shepherd may stop before it handles it (Codex's
-   last review of #1935 landed four minutes before that merge). A `review` candidate was submitted
-   after `mergedAt` with a non-empty body. Ignore issue comments, status comments, and resolved
-   threads. Report the cutoff, the slices, the page and PR counts against `issueCount`, any
-   truncated PR, and the candidate count. Do not claim coverage beyond this window.
+   Each page prints one `{issueCount, prs}` record, and the `prs` values of a slice must add up to
+   its `issueCount`. A `{truncated: <PR>}` record means that PR has more than 100 reviews or threads,
+   so read the rest of it with `after` cursors. A `kind: "review"` record is a review submitted after
+   `mergedAt` with a non-empty body. An `openThreads` record means the PR still has unresolved
+   threads, so read them for each such PR:
+
+   ```bash
+   gh api graphql -F n=<PR> -f query='
+   query($n: Int!) {
+     repository(owner: "vouchington", name: "vouchington") {
+       pullRequest(number: $n) {
+         number mergedAt
+         reviewThreads(first: 100) {
+           nodes { isResolved comments(first: 1) { totalCount nodes { databaseId url } } }
+         }
+       }
+     }
+   }' --jq '.data.repository.pullRequest | . as $p | .reviewThreads.nodes[]
+     | select(.isResolved == false and .comments.totalCount == 1)
+     | {pr: $p.number, mergedAt: $p.mergedAt, kind: "comment", id: .comments.nodes[0].databaseId, url: .comments.nodes[0].url}'
+   ```
+
+   A `kind: "comment"` record is an unresolved thread whose only comment has no reply, whenever it
+   was posted: a review of the final commit can land minutes before the merge, and the shepherd may
+   stop before it handles it (Codex's last review of #1935 landed four minutes before that merge).
+   The candidates are these two kinds of record; each keeps its `mergedAt`. Ignore issue comments,
+   status comments, and resolved threads. Report the cutoff, the slices, the page and PR counts
+   against `issueCount`, any truncated PR, and the candidate count. Do not claim coverage beyond
+   this window.
 
 2. Drop covered items. Search PRs and issues in every state for each candidate's stable marker
    `<!-- post-merge-review: <PR number> <comment|review> <databaseId> -->` and for its comment URL,
@@ -74,7 +90,7 @@ repository evidence confirms it.
    fixed on `main`, wrong, preference-only, a duplicate, or contradicts a documented decision or
    accepted plan.
 
-4. Take the earliest-merged PR in the window that has an actionable item and fix all of its
+4. Take the PR with the earliest `mergedAt` that has an actionable item and fix all of its
    actionable items in one change, with tests for behavior changes. The marker keeps the other
    PRs' items findable on later runs. Follow the wrapper's owning-PR rules. If the verified owning
    PR addresses a different merged PR, do not mix them: report the pending item and stop. If it
@@ -84,10 +100,13 @@ repository evidence confirms it.
 
 5. Immediately before committing or publishing, re-fetch the selected PR's threads and repeat the
    step 2 search for every handled and declined item. Drop an item that was replied to, resolved,
-   or covered since the scan. If nothing remains, stop with the no-op report.
+   or covered since the scan. If no actionable item remains, discard the patch and stop with the
+   no-op report, even when declined items remain: a PR that only records declined comments is not
+   an improvement.
 
-6. Title the PR `Automation scheduled: post-merge-review.md <type>(<scope>): address the
-post-merge review of #<merged PR>`, with the type and scope that fit the change, as in #1950's
+6. Begin the PR title with `Automation scheduled: post-merge-review.md`, then a typed
+   conventional-commit remainder that fits the change, such as
+   `fix(scope): address the post-merge review of #<merged PR>`, as #1950 did with
    `ci(automation): address the post-merge review of #1935`. Besides the wrapper's required
    sections, write the body in the shape of #1950: a `## Summary` table of comment, before, and
    after, and `## Impact`. Add `## Post-merge review items` listing each handled item as its URL
