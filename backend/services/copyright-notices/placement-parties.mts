@@ -1,7 +1,25 @@
 import sql from 'sql-template-strings'
+import { read } from '@data-stores/psql'
 import { DELETED_USER_ID } from '@services/users/constants'
 
 export type CopyrightPlacementPartyPurpose = 'notify' | 'respond' | 'inform' | 'strike' | 'retain'
+
+/** Reads the authoritative parties for one target and purpose. */
+export async function selectCopyrightPlacementPartyUserIds(
+  targetId: string,
+  purpose: CopyrightPlacementPartyPurpose,
+): Promise<string[]> {
+  const statement = sql`/* selectCopyrightPlacementPartyUserIds */
+    SELECT DISTINCT party.user_id
+    FROM copyright_notice_targets target
+    CROSS JOIN LATERAL `
+  statement.append(copyrightPlacementPartiesSql(purpose))
+  statement.append(sql` party
+    WHERE target.id = ${targetId}
+    ORDER BY party.user_id`)
+  const { rows } = await read<{ user_id: string }>(statement)
+  return rows.map(row => row.user_id)
+}
 
 /** Correlated to `target`; selects the one immutable target's parties under a single policy table. */
 export function copyrightPlacementPartiesSql(

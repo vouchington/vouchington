@@ -15,6 +15,7 @@ export const ROOT_FAMILIES = {
     table: 'retained_user_identities',
     references: [
       ['users', 'id'],
+      ['images', 'created_by_id'],
       ['image_surface_placement_activations', 'bound_by_user_id'],
       ['image_surface_placement_activations', 'uploaded_by_user_id'],
       ['user_deletion_requests', 'user_id'],

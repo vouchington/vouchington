@@ -10,6 +10,10 @@ export async function claimImageUpload(
   imageId: string,
 ): Promise<{ claimed: boolean; image: ImageUploadRecord }> {
   await using transaction = await beginTransaction()
+  await transaction(
+    `/* claimImageUpload:lockActiveUploader */ SELECT fn_lock_active_user_for_mutation($1)`,
+    [userId],
+  )
   const { rows } = await transaction<ImageUploadRecord>(
     `/* claimImageUpload:lock */
     SELECT *
@@ -60,6 +64,16 @@ export async function persistPromotedImageKey(
   s3Key: string,
 ): Promise<ImageUploadRecord> {
   await using transaction = await beginTransaction()
+  const { rows: creatorRows } = await transaction<{ created_by_id: string }>(
+    `/* persistPromotedImageKey:creator */ SELECT created_by_id FROM images WHERE id = $1`,
+    [imageId],
+  )
+  const creatorId = creatorRows[0]?.created_by_id
+  if (!creatorId) throw createHttpError(409, 'Image upload is no longer eligible for promotion')
+  await transaction(
+    `/* persistPromotedImageKey:lockActiveUploader */ SELECT fn_lock_active_user_for_mutation($1)`,
+    [creatorId],
+  )
   const { rows } = await transaction<ImageUploadRecord>(
     `/* persistPromotedImageKey:lock */
     SELECT *

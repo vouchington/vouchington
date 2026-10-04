@@ -10,7 +10,7 @@
 CREATE TABLE IF NOT EXISTS images (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
 
-  created_by_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
+  created_by_id UUID NOT NULL REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   deleted_at TIMESTAMPTZ,
@@ -94,6 +94,7 @@ WHERE profile_image_id IS NOT NULL;
 COMMENT ON COLUMN users.profile_image_id IS 'The user''s profile image. NULL if no profile image is set.';
 
 COMMENT ON TABLE images IS 'Uploaded images with S3 storage, metadata, and moderation results.';
+COMMENT ON COLUMN images.created_by_id IS 'Original uploader identity retained after account deletion for shared image provenance; never alone authorizes a deleted user.';
 COMMENT ON COLUMN images.data IS 'Raw sharp (image processing library) metadata as JSONB.';
 COMMENT ON COLUMN images.sha_256 IS 'SHA-256 hash of the original image file bytes. NULL until completion freezes and hashes the staged upload.';
 COMMENT ON COLUMN images.upload_staged_at IS 'When the private browser upload staging source was created.';

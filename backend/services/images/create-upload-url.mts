@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
 import { mintUUIDv7 } from '@modules/utils/ids'
 import { MediaError, validateMediaUpload } from '@vouchington/media'
 import { SUPPORTED_IMAGE_FORMATS } from './constants.mts'
@@ -36,7 +36,12 @@ export async function createImageUploadUrl(user: { id: string }, options: Create
   })
 
   // Source provenance and the selected presign bucket commit together in the row.
-  const { rows } = await write(
+  await using transaction = await beginTransaction()
+  await transaction(
+    `/* createImageUploadUrl:lockActiveUploader */ SELECT fn_lock_active_user_for_mutation($1)`,
+    [user.id],
+  )
+  const { rows } = await transaction(
     `/* createImageUploadUrl */
     INSERT INTO images (
       id,
@@ -58,6 +63,7 @@ export async function createImageUploadUrl(user: { id: string }, options: Create
   `,
     [imageId, s3Key, user.id],
   )
+  await transaction.commit()
 
   return {
     image_id: rows[0].id,
