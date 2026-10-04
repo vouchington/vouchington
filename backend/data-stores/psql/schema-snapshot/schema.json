@@ -102,6 +102,9 @@
     "conversation_participant_roles": {
       "values": ["owner", "admin", "member"]
     },
+    "copyright_trusted_flagger_change_types": {
+      "values": ["suspended", "reinstated", "revoked"]
+    },
     "crawl_network_errors": {
       "values": ["timeout", "dns", "ssrf"]
     },
@@ -35965,6 +35968,598 @@
           "definition": "UNIQUE (copyright_territorial_decision_id, submitted_by_user_id)"
         }
       }
+    },
+    "copyright_trusted_flagger_changes": {
+      "checkConstraints": {
+        "copyright_trusted_flagger_changes_reason_check": "CHECK (((char_length(reason) >= 1) AND (char_length(reason) <= 4000)))"
+      },
+      "columns": {
+        "change_type": {
+          "collation": null,
+          "comment": "Suspension, reinstatement or final revocation.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "copyright_trusted_flagger_change_types"
+        },
+        "changed_by_id": {
+          "collation": null,
+          "comment": "Retained identity of the administrator who recorded the transition.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "copyright_trusted_flagger_id": {
+          "collation": null,
+          "comment": "Designation whose status changed.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": "Transition time derived from the UUIDv7 identifier.",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": "UUIDv7 status-change identifier.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "reason": {
+          "collation": null,
+          "comment": "Staff reason for the recorded status transition.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "Insert timestamp; immutable rows cannot be updated.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Append-only status transitions; the latest change determines whether a designation is active, suspended or revoked.",
+      "foreignKeys": {
+        "copyright_trusted_flagger_cha_copyright_trusted_flagger_id_fkey": {
+          "columns": ["copyright_trusted_flagger_id"],
+          "definition": "FOREIGN KEY (copyright_trusted_flagger_id) REFERENCES copyright_trusted_flaggers(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_trusted_flaggers",
+          "validated": true
+        },
+        "copyright_trusted_flagger_changes_changed_by_id_fkey": {
+          "columns": ["changed_by_id"],
+          "definition": "FOREIGN KEY (changed_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_trusted_flagger_changes_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_trusted_flagger_changes_pkey ON public.copyright_trusted_flagger_changes USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_trusted_flagger_changes__changed_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_trusted_flagger_changes__changed_by_id ON public.copyright_trusted_flagger_changes USING btree (changed_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "changed_by_id",
+              "descending": false,
+              "expression": "changed_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_trusted_flagger_changes__entry_id__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_trusted_flagger_changes__entry_id__id ON public.copyright_trusted_flagger_changes USING btree (copyright_trusted_flagger_id, id DESC)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_trusted_flagger_id",
+              "descending": false,
+              "expression": "copyright_trusted_flagger_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_trusted_flagger_changes_immutable": "CREATE TRIGGER trigger_copyright_trusted_flagger_changes_immutable BEFORE DELETE OR UPDATE ON public.copyright_trusted_flagger_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
+      },
+      "uniqueConstraints": {}
+    },
+    "copyright_trusted_flagger_matches": {
+      "checkConstraints": {},
+      "columns": {
+        "copyright_notice_id": {
+          "collation": null,
+          "comment": "EU notice that matched one active designation at receipt time.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "copyright_trusted_flagger_id": {
+          "collation": null,
+          "comment": "Designation selected at receipt time, preferring intellectual-property expertise.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": "Match time derived from the UUIDv7 identifier.",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": "UUIDv7 receipt-time match identifier.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "Insert timestamp; immutable rows cannot be updated.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Immutable match captured when a signed-in linked account files an EU copyright notice; matches are recorded even while priority is off.",
+      "foreignKeys": {
+        "copyright_trusted_flagger_mat_copyright_trusted_flagger_id_fkey": {
+          "columns": ["copyright_trusted_flagger_id"],
+          "definition": "FOREIGN KEY (copyright_trusted_flagger_id) REFERENCES copyright_trusted_flaggers(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_trusted_flaggers",
+          "validated": true
+        },
+        "copyright_trusted_flagger_matches_copyright_notice_id_fkey": {
+          "columns": ["copyright_notice_id"],
+          "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notices",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_trusted_flagger_matches_copyright_notice_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_trusted_flagger_matches_copyright_notice_id_key ON public.copyright_trusted_flagger_matches USING btree (copyright_notice_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_trusted_flagger_matches_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_trusted_flagger_matches_pkey ON public.copyright_trusted_flagger_matches USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_trusted_flagger_matches__entry_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_trusted_flagger_matches__entry_id ON public.copyright_trusted_flagger_matches USING btree (copyright_trusted_flagger_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_trusted_flagger_id",
+              "descending": false,
+              "expression": "copyright_trusted_flagger_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_trusted_flagger_matches_immutable": "CREATE TRIGGER trigger_copyright_trusted_flagger_matches_immutable BEFORE DELETE OR UPDATE ON public.copyright_trusted_flagger_matches FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
+      },
+      "uniqueConstraints": {
+        "copyright_trusted_flagger_matches_copyright_notice_id_key": {
+          "columns": ["copyright_notice_id"],
+          "definition": "UNIQUE (copyright_notice_id)"
+        }
+      }
+    },
+    "copyright_trusted_flaggers": {
+      "checkConstraints": {
+        "copyright_trusted_flaggers_area_description_check": "CHECK (((char_length(area_description) >= 1) AND (char_length(area_description) <= 500)))",
+        "copyright_trusted_flaggers_area_of_expertise_check": "CHECK ((area_of_expertise = ANY (ARRAY['intellectual_property'::text, 'other'::text])))",
+        "copyright_trusted_flaggers_award_reference_check": "CHECK (((award_reference IS NULL) OR ((char_length(award_reference) >= 1) AND (char_length(award_reference) <= 2048))))",
+        "copyright_trusted_flaggers_awarding_coordinator_name_check": "CHECK (((char_length(awarding_coordinator_name) >= 1) AND (char_length(awarding_coordinator_name) <= 200)))",
+        "copyright_trusted_flaggers_awarding_member_state_check": "CHECK ((awarding_member_state ~ '^[A-Z]{2}$'::text))",
+        "copyright_trusted_flaggers_name_check": "CHECK (((char_length(name) >= 1) AND (char_length(name) <= 200)))"
+      },
+      "columns": {
+        "area_description": {
+          "collation": null,
+          "comment": "Designation wording for the area of expertise.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "text"
+        },
+        "area_of_expertise": {
+          "collation": null,
+          "comment": "Closed platform category for the designated expertise; only intellectual_property is in area for copyright notices.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "text"
+        },
+        "award_reference": {
+          "collation": null,
+          "comment": "Optional published award URL or document identifier.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "text"
+        },
+        "awarded_at": {
+          "collation": null,
+          "comment": "Date the coordinator awarded the designation.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "date"
+        },
+        "awarding_coordinator_name": {
+          "collation": null,
+          "comment": "Digital Services Coordinator that awarded the designation.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "text"
+        },
+        "awarding_member_state": {
+          "collation": null,
+          "comment": "Uppercase two-letter Member State code of the awarding coordinator.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": "Creation time derived from the UUIDv7 identifier.",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
+          "type": "timestamp with time zone"
+        },
+        "created_by_id": {
+          "collation": null,
+          "comment": "Retained identity of the administrator who recorded this designation; never an authorization source.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "uuid"
+        },
+        "id": {
+          "collation": null,
+          "comment": "UUIDv7 designation identifier.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "name": {
+          "collation": null,
+          "comment": "Entity name as published in the Commission trusted-flagger list.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "Last database update, including removal of a deleted account link.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 12,
+          "type": "timestamp with time zone"
+        },
+        "user_id": {
+          "collation": null,
+          "comment": "Live signed-in account whose EU notices can match; null after account deletion and never inferred from email.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        }
+      },
+      "comment": "Staff-recorded Digital Services Coordinator designation for a trusted flagger. The linked live account is the sole match key; its deletion removes only that link.",
+      "foreignKeys": {
+        "copyright_trusted_flaggers_created_by_id_fkey": {
+          "columns": ["created_by_id"],
+          "definition": "FOREIGN KEY (created_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        },
+        "copyright_trusted_flaggers_user_id_fkey": {
+          "columns": ["user_id"],
+          "definition": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_trusted_flaggers_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_trusted_flaggers_pkey ON public.copyright_trusted_flaggers USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_trusted_flaggers__created_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_trusted_flaggers__created_by_id ON public.copyright_trusted_flaggers USING btree (created_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_trusted_flaggers__user_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_trusted_flaggers__user_id ON public.copyright_trusted_flaggers USING btree (user_id, id DESC) WHERE (user_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_trusted_flaggers_updated_at": "CREATE TRIGGER trigger_copyright_trusted_flaggers_updated_at BEFORE UPDATE ON public.copyright_trusted_flaggers FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
     },
     "countries": {
       "checkConstraints": {

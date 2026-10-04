@@ -182,6 +182,12 @@
 - `admin`
 - `member`
 
+## `copyright_trusted_flagger_change_types`
+
+- `suspended`
+- `reinstated`
+- `revoked`
+
 ## `crawl_network_errors`
 
 - `timeout`
