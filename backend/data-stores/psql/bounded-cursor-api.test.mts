@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import sql from 'sql-template-strings'
 import {
-  createAsyncGeneratorFromCursor,
-  executeHandlerWithCursorInBatches,
-  read,
-} from './setup.mts'
+  createBoundedCursorSeriesInputForTest,
+  BOUNDED_CURSOR_SERIES_QUERY_FOR_TEST,
+} from '@voucha/test-helpers/sql-query-inputs'
+import { readBoundedCursorConnectionProbeForTest } from '@voucha/test-helpers/bounded-cursor'
+import { createAsyncGeneratorFromCursor, executeHandlerWithCursorInBatches } from './setup.mts'
 
 describe('bounded cursor execution', () => {
   it('reports progress after SQLInput handlers with second-argument options', async () => {
     const events: string[] = []
     const rows: number[] = []
     const result = await executeHandlerWithCursorInBatches<{ id: number }>(
-      sql`/* boundedCursorObject */ SELECT generate_series(1, ${4}) AS id ORDER BY id`,
+      createBoundedCursorSeriesInputForTest(),
       {
         batchSize: 1,
         maxRows: 2,
@@ -34,7 +34,7 @@ describe('bounded cursor execution', () => {
     const rows: number[] = []
     let completions = 0
     const result = await executeHandlerWithCursorInBatches<{ id: number }>(
-      '/* boundedCursorValues */ SELECT generate_series(1, $1::integer) AS id ORDER BY id',
+      BOUNDED_CURSOR_SERIES_QUERY_FOR_TEST,
       [2],
       {
         batchSize: 3,
@@ -55,7 +55,7 @@ describe('bounded cursor execution', () => {
   it('closes an early-stopped cursor and conservatively reports remaining work', async () => {
     let progress: unknown
     for await (const row of createAsyncGeneratorFromCursor<{ id: number }>(
-      sql`/* boundedCursorEarlyStop */ SELECT generate_series(1, 4) AS id`,
+      createBoundedCursorSeriesInputForTest(),
       {
         batchSize: 1,
         maxRows: 3,
@@ -68,27 +68,22 @@ describe('bounded cursor execution', () => {
       break
     }
     expect(progress).toEqual({ rowsRead: 1, hasMore: true, lastRow: { id: 1 } })
-    expect(
-      (await read<{ ready: number }>('/* boundedCursorClosed */ SELECT 1 AS ready')).rows,
-    ).toEqual([{ ready: 1 }])
+    expect(await readBoundedCursorConnectionProbeForTest()).toEqual([{ ready: 1 }])
   })
 
   it('does not acknowledge completion when a handler fails', async () => {
     let completed = false
     await expect(
-      executeHandlerWithCursorInBatches<{ id: number }>(
-        sql`/* boundedCursorFailure */ SELECT 1 AS id`,
-        {
-          batchSize: 1,
-          maxRows: 1,
-          handler: async () => {
-            throw new Error('handler failed')
-          },
-          onComplete: () => {
-            completed = true
-          },
+      executeHandlerWithCursorInBatches<{ id: number }>(createBoundedCursorSeriesInputForTest(1), {
+        batchSize: 1,
+        maxRows: 1,
+        handler: async () => {
+          throw new Error('handler failed')
         },
-      ),
+        onComplete: () => {
+          completed = true
+        },
+      }),
     ).rejects.toThrow('handler failed')
     expect(completed).toBe(false)
   })
