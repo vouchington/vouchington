@@ -1,3 +1,5 @@
+import type { BatchCreationDependencies, CreateBatchResult } from './types.mts'
+export type { BatchCreationDependencies, CreateBatchResult } from './types.mts'
 import {
   getPendingEmbeddingScanLimits,
   getEmbeddingCreationRetryDelayMs,
@@ -9,19 +11,7 @@ import { createBatch } from '@services/bedrock-embeddings-batch/orchestrator/cre
 import type { BatchJobType } from '@services/bedrock-embeddings/batch/types'
 import { getBatchCreationLimits } from '@services/bedrock-embeddings-batch/rate-limits'
 
-export type CreateBatchResult = { hasMore: boolean } & (
-  | { success: true }
-  | { reEnqueued: true; reason: string }
-  | { failed: true; reason: string; attempted: number }
-  | { empty: true }
-)
-
 type BatchEntity = { id: string; content: string; content_sha256: Buffer }
-
-export type BatchCreationDependencies = {
-  getBatchCreationLimits: typeof getBatchCreationLimits
-  createBatch: typeof createBatch
-}
 
 const defaultBatchCreationDependencies: BatchCreationDependencies = {
   getBatchCreationLimits,

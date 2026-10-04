@@ -1,3 +1,4 @@
+import type { CreateBatchResult } from '@services/bedrock-embeddings-batch/types'
 import type { EmbeddingScanCursor } from '@queues/bedrock-embeddings-batch/types'
 import { processBatch } from '@services/bedrock-embeddings-batch/orchestrator/poll'
 import {
@@ -39,7 +40,6 @@ import {
   enqueueEmbeddingsBatchCreationDispatcher,
 } from '@queues/bedrock-embeddings-batch/enqueues'
 import {
-  type CreateBatchResult,
   processBatchCreation,
   processImageBatchCreation,
 } from '@services/bedrock-embeddings-batch/utils'

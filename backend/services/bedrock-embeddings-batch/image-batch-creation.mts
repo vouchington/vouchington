@@ -7,7 +7,7 @@ import type { EmbeddingScanCursor } from '@queues/bedrock-embeddings-batch/types
 import { BatchFileBuilder } from './orchestrator/file-builder.mts'
 import { getBatchCreationLimits } from './rate-limits.mts'
 import { createBatch } from './orchestrator/create.mts'
-import type { BatchCreationDependencies, CreateBatchResult } from './utils.mts'
+import type { BatchCreationDependencies, CreateBatchResult } from './types.mts'
 import type { PendingScanOptions } from './entities/scan-options.mts'
 import onError from '@modules/on-error'
 
