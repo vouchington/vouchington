@@ -5,10 +5,7 @@ import type {
   CopyrightStatementFields,
 } from './statement-of-reasons-types.mts'
 
-export {
-  copyrightStatementNotificationCopy,
-  copyrightNotificationCopy,
-} from './statement-of-reasons-notification-copy.mts'
+export { copyrightNotificationCopy } from './statement-of-reasons-notification-copy.mts'
 
 export const COPYRIGHT_AI_ASSISTED_SENTENCE = 'Automated tools assisted with processing this case.'
 
