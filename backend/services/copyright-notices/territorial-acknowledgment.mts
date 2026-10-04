@@ -24,7 +24,7 @@ type TerritorialAcknowledgmentRow = TerritorialCopyrightAcknowledgment & {
 }
 
 export async function recordTerritorialCopyrightAcknowledgment(
-  actor: PrivateUser,
+  actor: PrivateUser | null,
   noticeId: string,
   outcome: 'acknowledged' | 'failed',
   jurisdiction: TerritorialCopyrightJurisdiction,
@@ -45,10 +45,11 @@ export async function recordTerritorialCopyrightAcknowledgment(
     'Acknowledgment is already terminal',
   )
   if (outcome === 'failed') {
-    assert(currentUserCanReviewCopyrightNotices(actor), 403, 'Forbidden')
+    assert(actor && currentUserCanReviewCopyrightNotices(actor), 403, 'Forbidden')
   } else {
     assert(
-      actor.id === current.requester_user_id || currentUserCanReviewCopyrightNotices(actor),
+      (actor?.id ?? null) === current.requester_user_id ||
+        (actor && currentUserCanReviewCopyrightNotices(actor)),
       403,
       'Forbidden',
     )

@@ -37,6 +37,7 @@ export type CopyrightEmailCorrespondenceKind =
   | 'counter_notice'
   | 'withdrawal'
   | 'court_or_ccb_hold'
+  | 'complaint'
 
 export type CopyrightEmailCorrespondenceInput = Record<string, unknown> & {
   kind: CopyrightEmailCorrespondenceKind

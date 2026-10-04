@@ -27,14 +27,23 @@ export async function createTestTerritorialRestrictionScene(
     jurisdiction,
     policyVersion: `${jurisdiction.slice(0, 2)}-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
   })
-  const receive = jurisdiction === 'eu_dsa' ? receiveEuCopyrightNotice : receiveUkCopyrightNotice
   const suffix = crypto.randomUUID()
-  const receipt = await receive(claimant, crypto.randomUUID(), {
+  const request = {
     contact: `claimant-${suffix}@example.test`,
     contentDescription: `Photograph ${suffix}`,
     grounds: `The hosted image reproduces my work ${suffix}`,
     hostedUseUrl: `https://voucha.ai/discussion/${posts[0]?.postId}`,
-  })
+  }
+  const requester = { user: claimant, identity: `user:${claimant.id}` }
+  const receipt =
+    jurisdiction === 'eu_dsa'
+      ? await receiveEuCopyrightNotice(requester, crypto.randomUUID(), {
+          ...request,
+          notifierName: `Notifier ${suffix}`,
+          notifierEmail: request.contact,
+          goodFaithStatement: true,
+        })
+      : await receiveUkCopyrightNotice(requester, crypto.randomUUID(), request)
   return {
     staff,
     claimant,

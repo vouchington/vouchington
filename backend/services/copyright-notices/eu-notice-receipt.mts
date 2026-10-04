@@ -1,30 +1,30 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
-import type { PrivateUser } from '@services/users/types'
-import type { TerritorialNoticeRequest } from './territorial-fields.mts'
+import type { EuTerritorialNoticeRequest } from './territorial-fields.mts'
 import {
   receiveTerritorialCopyrightNotice,
   receiveTerritorialCopyrightNoticeInTransaction,
   type TerritorialCopyrightNoticeReceipt,
+  type TerritorialNoticeRequester,
 } from './territorial-notice-receipt.mts'
 
 export type EuCopyrightNoticeReceipt = TerritorialCopyrightNoticeReceipt
 
 export async function receiveEuCopyrightNotice(
-  actor: PrivateUser,
+  requester: TerritorialNoticeRequester,
   idempotencyKey: string,
-  request: TerritorialNoticeRequest,
+  request: EuTerritorialNoticeRequest,
 ): Promise<EuCopyrightNoticeReceipt> {
-  return receiveTerritorialCopyrightNotice(actor, 'eu_dsa', idempotencyKey, request)
+  return receiveTerritorialCopyrightNotice(requester, 'eu_dsa', idempotencyKey, request)
 }
 
 export async function receiveEuCopyrightNoticeInTransaction(
-  actor: PrivateUser,
+  requester: TerritorialNoticeRequester,
   idempotencyKey: string,
-  request: TerritorialNoticeRequest,
+  request: EuTerritorialNoticeRequest,
   transaction: TransactionQuery,
 ): Promise<EuCopyrightNoticeReceipt> {
   return receiveTerritorialCopyrightNoticeInTransaction(
-    actor,
+    requester,
     'eu_dsa',
     idempotencyKey,
     request,

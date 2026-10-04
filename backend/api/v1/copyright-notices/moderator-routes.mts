@@ -649,6 +649,7 @@ app.route('/api/v1/copyright-email-intakes/:id/correspondence').post(async (ctx:
     'counter_notice',
     'withdrawal',
     'court_or_ccb_hold',
+    'complaint',
   ] as const
   ctx.assert(
     kinds.includes(body.kind as (typeof kinds)[number]),
@@ -707,6 +708,7 @@ app
       'counter_notice',
       'withdrawal',
       'court_or_ccb_hold',
+      'complaint',
     ] as const
     ctx.assert(
       kinds.includes(body.kind as (typeof kinds)[number]),

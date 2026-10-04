@@ -5,6 +5,7 @@ import { nativeDomainUrlApiFixtureCases } from './native-domain-url-cases.mts'
 import { nativePaidCrawlApiFixtureCases } from './native-paid-crawl-cases.mts'
 import { nativeCopyrightApiFixtureCases } from './native-copyright-cases.mts'
 import { webCopyrightGuestApiFixtureCases } from './web-copyright-guest-cases.mts'
+import { webCopyrightEuApiFixtureCases } from './web-copyright-eu-cases.mts'
 import { webCopyrightEmailIntakeApiFixtureCases } from './web-copyright-email-intake-cases.mts'
 import { nativeHouseholdApiFixtureCases } from './native-household-cases.mts'
 import { nativeCardApiFixtureCases } from './native-card-cases.mts'
@@ -51,6 +52,10 @@ function fromCaseFile(caseFile: string, cases: ApiFixtureCase[]): ResolvedApiFix
 }
 
 export const apiFixtureCases: ResolvedApiFixtureCase[] = [
+  ...fromCaseFile(
+    'backend/test-helpers/api-fixtures/web-copyright-eu-cases.mts',
+    webCopyrightEuApiFixtureCases,
+  ),
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/native-chat-cases.mts',
     nativeChatApiFixtureCases,

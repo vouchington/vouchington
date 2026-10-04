@@ -50,7 +50,11 @@ app.route('/api/v1/copyright-uk-notices').post(async (ctx: Context) => {
   const idempotencyKey = requireIdempotencyKey(ctx)
   const notice = parseTerritorialNoticeBody(body)
   validateRequestContract(ctx, 'POST:/api/v1/copyright-uk-notices', { body })
-  const receipt = await receiveUkCopyrightNotice(currentUser, idempotencyKey, notice)
+  const receipt = await receiveUkCopyrightNotice(
+    { user: currentUser, identity: `user:${currentUser.id}` },
+    idempotencyKey,
+    notice,
+  )
   const acknowledgment = await acknowledgeUkCopyrightNotice(currentUser, receipt.notice_id)
   ctx.setStatus(receipt.is_duplicate ? 200 : 201)
   ctx.json({ copyright_uk_notice: receipt, acknowledgment })

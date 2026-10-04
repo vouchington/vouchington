@@ -1,3 +1,4 @@
+import './eu-copyright-dispute-settlement-routes.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
   compileEuCopyrightTransparencyReport,

@@ -18,6 +18,7 @@ const reasonLabels: Record<CopyrightStaffQueueReason, string> = {
   deadline_missed: 'Restoration deadline missed',
   territorial_notice_review: 'Territorial notice review',
   territorial_decision_reopened: 'Territorial decision reopened',
+  territorial_redress_review: 'Territorial complaint review',
 }
 
 const urgentReasons = new Set<CopyrightStaffQueueReason>(['deadline_due', 'deadline_missed'])

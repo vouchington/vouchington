@@ -22,6 +22,7 @@ export type CopyrightStatementInput = {
   targetUrls: string[]
   automatedDecision: boolean
   aiGuidance: boolean
+  claimantHasAccount: boolean
   explanation?: string
   restorationCause?: CopyrightRestorationCause
   restorationOutcome?: CopyrightRestorationOutcome
@@ -45,7 +46,14 @@ export type CopyrightStatementFields = {
     citation: string
   }
   redress: {
-    key: 'appeal' | 'counter_notice' | 'court' | 'designated_agent' | 'new_notice'
+    key:
+      | 'appeal'
+      | 'counter_notice'
+      | 'court'
+      | 'designated_agent'
+      | 'new_notice'
+      | 'internal_complaint'
+      | 'out_of_court_dispute_settlement'
     label: string
     path: string | null
   }[]

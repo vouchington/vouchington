@@ -45,7 +45,7 @@ describe.each(TERRITORIAL_SURFACES)('$label claimant request contracts', surface
       await claimantRequest
         .post(surface.base)
         .set('Idempotency-Key', crypto.randomUUID())
-        .send({ ...territorialNoticeBody(), injected: true })
+        .send({ ...territorialNoticeBody(surface.jurisdiction), injected: true })
         .expect(503)
     })
   })
@@ -53,7 +53,7 @@ describe.each(TERRITORIAL_SURFACES)('$label claimant request contracts', surface
   it.each(MALFORMED_FIELDS)('rejects %s on a notice before recording it', async (_label, extra) => {
     const { claimantRequest, administrator } = await createTerritorialActors()
     await approveJurisdictionPolicy(administrator, surface.jurisdiction)
-    const body = territorialNoticeBody()
+    const body = territorialNoticeBody(surface.jurisdiction)
     const key = crypto.randomUUID()
 
     await claimantRequest
@@ -77,7 +77,10 @@ describe.each(TERRITORIAL_SURFACES)('$label claimant request contracts', surface
     await claimantRequest
       .post(surface.base)
       .set('Idempotency-Key', crypto.randomUUID())
-      .send({ ...territorialNoticeBody(), cf_turnstile_response: 'turnstile-token' })
+      .send({
+        ...territorialNoticeBody(surface.jurisdiction),
+        cf_turnstile_response: 'turnstile-token',
+      })
       .expect(201)
   })
 
@@ -92,7 +95,7 @@ describe.each(TERRITORIAL_SURFACES)('$label claimant request contracts', surface
     const rejected = await claimantRequest
       .post(surface.base)
       .set('Idempotency-Key', crypto.randomUUID())
-      .send({ ...territorialNoticeBody(), [field]: value })
+      .send({ ...territorialNoticeBody(surface.jurisdiction), [field]: value })
       .expect(422)
     expect(rejected.body.message).toBe(message)
   })

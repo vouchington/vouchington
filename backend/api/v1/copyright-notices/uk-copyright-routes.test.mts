@@ -36,12 +36,16 @@ describe('UK copyright notice routes', () => {
     await claimantRequest.authenticateAs(claimant)
     const staffRequest = createRequest()
     await staffRequest.authenticateAs(staff)
-    const pending = await receiveUkCopyrightNotice(claimant, crypto.randomUUID(), {
-      contact: `pending-${crypto.randomUUID()}@example.test`,
-      contentDescription: 'Pending work',
-      grounds: 'Pending grounds',
-      hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
-    })
+    const pending = await receiveUkCopyrightNotice(
+      { user: claimant, identity: `user:${claimant.id}` },
+      crypto.randomUUID(),
+      {
+        contact: `pending-${crypto.randomUUID()}@example.test`,
+        contentDescription: 'Pending work',
+        grounds: 'Pending grounds',
+        hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
+      },
+    )
     const failure = await staffRequest
       .post(`/api/v1/copyright-uk-notices/${pending.notice_id}/acknowledgment-failures`)
       .expect(200)

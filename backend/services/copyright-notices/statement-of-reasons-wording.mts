@@ -1,4 +1,5 @@
 import type { CopyrightDeliveryKind } from './delivery-types.mts'
+import { TERRITORIAL_COMPLAINT_WINDOW_MONTHS } from './territorial-fields.mts'
 import { copyrightStatementLegalGround } from './statement-of-reasons-legal-ground.mts'
 import type {
   CopyrightStatementInput,
@@ -11,6 +12,10 @@ export const COPYRIGHT_AI_ASSISTED_SENTENCE = 'Automated tools assisted with pro
 
 export function copyrightReceiptText(noticeId?: string): string {
   return `We received your copyright notice${noticeId ? ` for case ${noticeId}` : ''}. We will review it and contact you if we need more information.`
+}
+
+export function copyrightEuReceiptText(noticeId: string): string {
+  return `We received your EU copyright notice for case ${noticeId}. A moderator will decide whether to restrict the material. We will send the decision by email. You may complain about the decision within six months after we inform you; reply to the decision email to file a complaint. You may also seek out-of-court dispute settlement or judicial redress.`
 }
 
 export function copyrightPromotionText(noticeId: string): string {
@@ -42,13 +47,7 @@ export function copyrightStatementText(
     input.jurisdiction !== 'us_dmca' && explainableEvent && input.explanation
       ? `Public explanation: ${input.explanation}`
       : ''
-  const redress = fields.redress
-    .map(route =>
-      route.key === 'court'
-        ? 'You may seek judicial redress through a court.'
-        : `${route.label}: ${route.path}`,
-    )
-    .join(' ')
+  const redress = fields.redress.map(copyrightRedressRouteText).join(' ')
   return [
     decision,
     scope,
@@ -132,6 +131,8 @@ export function copyrightEmailSubject(kind: CopyrightDeliveryKind): string {
       return 'Copyright notice affecting your community image'
     case 'claimant_decision_notice':
       return 'Decision on your copyright notice'
+    case 'redress_decision_notice':
+      return 'Decision on your copyright complaint'
     case 'poster_restriction_notice':
       return 'Copyright notice affecting your material'
     case 'counter_notice_forwarding':
@@ -151,4 +152,17 @@ export function copyrightIntakeRejectionText(receivedAt: Date, aiGuidance: boole
       : 'Automated tools did not assist with processing this email.',
     'You may file a new notice at /copyright/notices/new, contact /copyright/designated-agent, or seek judicial redress through a court.',
   ].join('\n\n')
+}
+
+function copyrightRedressRouteText(route: CopyrightStatementFields['redress'][number]): string {
+  switch (route.key) {
+    case 'court':
+      return 'You may seek judicial redress through a court.'
+    case 'internal_complaint':
+      return `You may submit an internal complaint within ${TERRITORIAL_COMPLAINT_WINDOW_MONTHS} months after you are informed of this decision. ${route.path ? `Internal complaint: ${route.path}.` : 'To submit a complaint, reply to this email.'}`
+    case 'out_of_court_dispute_settlement':
+      return 'You may refer this decision to a certified out-of-court dispute settlement body under Article 21 of the Digital Services Act.'
+    default:
+      return `${route.label}: ${route.path}`
+  }
 }

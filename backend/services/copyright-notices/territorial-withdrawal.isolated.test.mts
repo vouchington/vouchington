@@ -36,6 +36,16 @@ function noticeRequest() {
   }
 }
 
+function euNoticeRequest() {
+  const base = noticeRequest()
+  return {
+    ...base,
+    notifierName: 'Notice claimant',
+    notifierEmail: base.contact,
+    goodFaithStatement: true as const,
+  }
+}
+
 function target(post: Awaited<ReturnType<typeof createHostedImagePost>>) {
   return {
     surfaceKind: 'post-image' as const,
@@ -83,11 +93,31 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
       policyVersion: `uk-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
     })
 
-    const euA = await receiveEuCopyrightNotice(claimant, crypto.randomUUID(), noticeRequest())
-    const euB = await receiveEuCopyrightNotice(claimant, crypto.randomUUID(), noticeRequest())
-    const euC = await receiveEuCopyrightNotice(claimant, crypto.randomUUID(), noticeRequest())
-    const euD = await receiveEuCopyrightNotice(claimant, crypto.randomUUID(), noticeRequest())
-    const uk = await receiveUkCopyrightNotice(claimant, crypto.randomUUID(), noticeRequest())
+    const euA = await receiveEuCopyrightNotice(
+      { user: claimant, identity: `user:${claimant.id}` },
+      crypto.randomUUID(),
+      euNoticeRequest(),
+    )
+    const euB = await receiveEuCopyrightNotice(
+      { user: claimant, identity: `user:${claimant.id}` },
+      crypto.randomUUID(),
+      euNoticeRequest(),
+    )
+    const euC = await receiveEuCopyrightNotice(
+      { user: claimant, identity: `user:${claimant.id}` },
+      crypto.randomUUID(),
+      euNoticeRequest(),
+    )
+    const euD = await receiveEuCopyrightNotice(
+      { user: claimant, identity: `user:${claimant.id}` },
+      crypto.randomUUID(),
+      euNoticeRequest(),
+    )
+    const uk = await receiveUkCopyrightNotice(
+      { user: claimant, identity: `user:${claimant.id}` },
+      crypto.randomUUID(),
+      noticeRequest(),
+    )
     await acknowledgeEuCopyrightNotice(claimant, euA.notice_id)
     await acknowledgeEuCopyrightNotice(claimant, euC.notice_id)
     await acknowledgeEuCopyrightNotice(claimant, euD.notice_id)
@@ -115,7 +145,11 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
     )
     expect(await withdrawAllTestTerritorialApprovals(administrator, 'eu_dsa')).toBeGreaterThan(0)
     await expect(
-      receiveEuCopyrightNotice(claimant, crypto.randomUUID(), noticeRequest()),
+      receiveEuCopyrightNotice(
+        { user: claimant, identity: `user:${claimant.id}` },
+        crypto.randomUUID(),
+        euNoticeRequest(),
+      ),
     ).rejects.toMatchObject({ status: 403, message: 'EU copyright notices are not available' })
 
     const failure = await recordEuCopyrightAcknowledgmentFailure(staff, euB.notice_id)
@@ -193,7 +227,11 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
 
     expect(await withdrawAllTestTerritorialApprovals(administrator, 'uk')).toBeGreaterThan(0)
     await expect(
-      receiveUkCopyrightNotice(claimant, crypto.randomUUID(), noticeRequest()),
+      receiveUkCopyrightNotice(
+        { user: claimant, identity: `user:${claimant.id}` },
+        crypto.randomUUID(),
+        noticeRequest(),
+      ),
     ).rejects.toMatchObject({ status: 403, message: 'UK copyright notices are not available' })
     await recordUkCopyrightReview(staff, uk.notice_id, {
       text: 'The UK notice identifies an infringing image.',

@@ -4,10 +4,23 @@ import type {
   CopyrightCounterNoticeGuidance,
   CopyrightLegalHoldGuidance,
 } from '@ts-shared/utils/copyright-submission-guidance'
+import type { CopyrightTerritorialStaffRecipient } from './read-models-staff-territorial-recipients.mts'
+import type { CopyrightTerritorialStaffComplaint } from './read-models-staff-territorial-complaints.mts'
 
 export type CopyrightStaffTerritorialCase = {
   hosted_use_url: string
   grounds: string
+  notifier: { name: string | null; email: string | null }
+  recipients: CopyrightTerritorialStaffRecipient[]
+  complaints: CopyrightTerritorialStaffComplaint[]
+  dispute_settlements: Array<{
+    id: string
+    body_name: string
+    referred_at: Date
+    referred_by_party: 'poster' | 'notifier'
+    referred_by_user_id: string | null
+    outcome: { result: string; decided_at: Date; implemented_at: Date | null } | null
+  }>
   acknowledgment: {
     attempt_count: number
     last_attempt_at: Date | null
@@ -149,7 +162,13 @@ export type CopyrightStaffCase = {
   }>
   email_correspondence: Array<{
     submission_id: string | null
-    kind: 'supplement' | 'appeal' | 'counter_notice' | 'withdrawal' | 'court_or_ccb_hold'
+    kind:
+      | 'supplement'
+      | 'appeal'
+      | 'counter_notice'
+      | 'withdrawal'
+      | 'court_or_ccb_hold'
+      | 'complaint'
     action: 'admitted' | 'rejected'
     reviewed_at: Date
   }>
@@ -158,6 +177,7 @@ export type CopyrightStaffCase = {
 export type CopyrightStaffQueueReason =
   | 'territorial_notice_review'
   | 'territorial_decision_reopened'
+  | 'territorial_redress_review'
   | 'form_intake_review'
   | 'restriction_review'
   | 'appeal_review'

@@ -1,5 +1,13 @@
 import type { CopyrightImageSurface } from './copyright-image-surfaces'
 import type { CopyrightStaffTerritorialCase } from './copyright-territorial'
+import type { CopyrightEuParticipantCase } from './copyright-eu'
+import type { CopyrightStaffQueueReason } from './copyright-notice-queue'
+export type {
+  CopyrightEuNoticeInput,
+  CopyrightEuNoticeResponse,
+  CopyrightJurisdictionAvailabilityResponse,
+  CopyrightEuRedressResponse,
+} from './copyright-eu'
 export { copyrightImageSurfaceLabel } from './copyright-image-surfaces'
 export type { CopyrightImageSurface } from './copyright-image-surfaces'
 
@@ -46,12 +54,27 @@ export type CopyrightNoticeDetail = CopyrightNoticeSummary & {
   timeline: Array<{ id: string; event_type: string; created_at: string }>
 }
 
-export type CopyrightParticipantNoticeDetail = CopyrightNoticeDetail & {
+type CopyrightParticipantNoticeBase = Omit<
+  CopyrightNoticeDetail,
+  'jurisdiction' | 'accepted_at'
+> & {
   statements: CopyrightParticipantStatement[]
   viewer_role: 'claimant' | 'poster' | 'staff'
   respondable_target_ids: string[]
   submissions: Array<{ id: string; kind: string; received_at: string; source_kind: string }>
 }
+
+export type CopyrightParticipantNoticeDetail =
+  | (CopyrightParticipantNoticeBase & {
+      jurisdiction: 'eu_dsa'
+      accepted_at: string | null
+      eu: CopyrightEuParticipantCase
+    })
+  | (CopyrightParticipantNoticeBase & {
+      jurisdiction: 'us_dmca' | 'uk'
+      accepted_at: string
+      eu?: never
+    })
 
 export type CopyrightNoticeResponseEligibility = Pick<
   CopyrightParticipantNoticeDetail,
@@ -153,7 +176,13 @@ export type CopyrightStaffQueueItem = {
   staydown_matches: CopyrightStaydownMatch[]
   email_correspondence: Array<{
     submission_id: string | null
-    kind: 'supplement' | 'appeal' | 'counter_notice' | 'withdrawal' | 'court_or_ccb_hold'
+    kind:
+      | 'supplement'
+      | 'appeal'
+      | 'counter_notice'
+      | 'withdrawal'
+      | 'court_or_ccb_hold'
+      | 'complaint'
     action: 'admitted' | 'rejected'
     reviewed_at: string
   }>
@@ -162,25 +191,7 @@ export type CopyrightStaffQueueItem = {
   next_deadline: { escalation_at: string; restoration_deadline_at: string } | null
 }
 
-export type CopyrightStaffQueueReason =
-  | 'territorial_notice_review'
-  | 'territorial_decision_reopened'
-  | 'form_intake_review'
-  | 'restriction_review'
-  | 'appeal_review'
-  | 'counter_notice_review'
-  | 'legal_hold_review'
-  | 'action_failed'
-  | 'enforcement_pending'
-  | 'delivery_failed'
-  | 'staydown_review'
-  | 'deadline_due'
-  | 'deadline_missed'
-
-export type CopyrightStaffQueuePage = {
-  copyright_notices: CopyrightStaffQueueItem[]
-  page_info: CopyrightNoticesPage['page_info']
-}
+export type { CopyrightStaffQueueReason, CopyrightStaffQueuePage } from './copyright-notice-queue'
 
 export type {
   CopyrightEmailIntakeQueueItem,

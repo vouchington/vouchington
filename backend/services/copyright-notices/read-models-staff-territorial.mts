@@ -5,6 +5,8 @@ import type { CopyrightStaffTerritorialCase } from './read-models-staff-types.mt
 import type { TerritorialCopyrightJurisdiction } from './territorial-fields.mts'
 import { territorialLabels } from './territorial-labels.mts'
 import { territorialDecisionIsLiveSql } from './territorial-redress-sql.mts'
+import { selectTerritorialStaffRecipients } from './read-models-staff-territorial-recipients.mts'
+import { selectTerritorialStaffComplaints } from './read-models-staff-territorial-complaints.mts'
 
 /** Reads the live territorial decision and the receipt that gives staff this case. */
 export async function selectStaffTerritorialCase(
@@ -16,6 +18,8 @@ export async function selectStaffTerritorialCase(
     idempotency_key: string
     hosted_use_url: string
     grounds_ciphertext: string
+    notifier_email_ciphertext: string | null
+    notifier_name: string | null
     attempt_count: number | null
     last_attempt_at: Date | null
     acknowledged_at: Date | null
@@ -30,6 +34,7 @@ export async function selectStaffTerritorialCase(
   }>(
     sql`/* selectStaffTerritorialCase */
       SELECT receipt.idempotency_key, receipt.hosted_use_url, receipt.grounds_ciphertext,
+        receipt.notifier_email_ciphertext, notice.claimant_display_name AS notifier_name,
         acknowledgment.attempt_count, acknowledgment.last_attempt_at,
         acknowledgment.acknowledged_at, acknowledgment.exhausted_at,
         EXISTS (SELECT 1 FROM copyright_territorial_escalations escalation
@@ -39,6 +44,7 @@ export async function selectStaffTerritorialCase(
         decision.rationale_ciphertext, decision.public_explanation_ciphertext,
         CASE WHEN decision.outcome = 'no_action' THEN reopened.decided_at ELSE NULL END AS reopened_at
       FROM copyright_territorial_notice_receipts receipt
+      JOIN copyright_notices notice ON notice.id = receipt.copyright_notice_id
       LEFT JOIN copyright_territorial_notice_acknowledgments acknowledgment
         ON acknowledgment.copyright_territorial_notice_receipt_id = receipt.id
       LEFT JOIN LATERAL (
@@ -63,12 +69,67 @@ export async function selectStaffTerritorialCase(
   const row = rows[0]
   if (!row) return null
   const labels = territorialLabels(jurisdiction)
+  const [recipients, complaints, { rows: settlements }] = await Promise.all([
+    selectTerritorialStaffRecipients(noticeId, row.decision_id, row.decided_at, query),
+    selectTerritorialStaffComplaints(
+      noticeId,
+      row.decision_id,
+      row.decided_at,
+      jurisdiction,
+      query,
+    ),
+    query<{
+      id: string
+      body_name: string
+      referred_at: Date
+      referred_by_party: 'poster' | 'notifier'
+      referred_by_user_id: string | null
+      result: string | null
+      decided_at: Date | null
+      implemented_at: Date | null
+    }>(sql`/* selectStaffTerritorialCase:settlements */
+      SELECT referral.id, referral.body_name, referral.referred_at,
+        referral.referred_by_party, referral.referred_by_user_id,
+        outcome.result, outcome.decided_at, outcome.implemented_at
+      FROM copyright_eu_dispute_settlement_referrals referral
+      LEFT JOIN copyright_eu_dispute_settlement_outcomes outcome
+        ON outcome.copyright_eu_dispute_settlement_referral_id = referral.id
+      WHERE referral.copyright_notice_id = ${noticeId}
+      ORDER BY referral.id
+    `),
+  ])
   return {
     hosted_use_url: row.hosted_use_url,
     grounds: decryptCopyrightText(
       row.grounds_ciphertext,
       `${labels.noticePurpose}:${row.idempotency_key}:grounds`,
     ),
+    notifier: {
+      name: row.notifier_name,
+      email: row.notifier_email_ciphertext
+        ? decryptCopyrightText(
+            row.notifier_email_ciphertext,
+            `${labels.noticePurpose}:${row.idempotency_key}:notifier_email`,
+          )
+        : null,
+    },
+    recipients,
+    complaints,
+    dispute_settlements: settlements.map(item => ({
+      id: item.id,
+      body_name: item.body_name,
+      referred_at: item.referred_at,
+      referred_by_party: item.referred_by_party,
+      referred_by_user_id: item.referred_by_user_id,
+      outcome:
+        item.result && item.decided_at
+          ? {
+              result: item.result,
+              decided_at: item.decided_at,
+              implemented_at: item.implemented_at,
+            }
+          : null,
+    })),
     acknowledgment: {
       attempt_count: row.attempt_count ?? 0,
       last_attempt_at: row.last_attempt_at,

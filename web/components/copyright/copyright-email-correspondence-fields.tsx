@@ -50,6 +50,7 @@ export function CopyrightEmailCorrespondenceFields({
             <SelectItem value='counter_notice'>Counter-notice</SelectItem>
             <SelectItem value='withdrawal'>Withdrawal</SelectItem>
             <SelectItem value='court_or_ccb_hold'>Court or CCB filing</SelectItem>
+            <SelectItem value='complaint'>EU decision complaint</SelectItem>
           </SelectContent>
         </Select>
       </div>

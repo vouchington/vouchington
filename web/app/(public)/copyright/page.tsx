@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { CopyrightStaffLinks } from '@/components/copyright/copyright-staff-links'
 import { createPageMetadata } from '@/lib/seo/metadata'
+import { getCopyrightJurisdictionAvailabilityServer } from '@/lib/api/server/copyright-notices'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = createPageMetadata({
@@ -10,7 +11,14 @@ export const metadata: Metadata = createPageMetadata({
   path: '/copyright',
 })
 
-export default function CopyrightPage() {
+export default async function CopyrightPage() {
+  let euAvailable = false
+  try {
+    euAvailable = (await getCopyrightJurisdictionAvailabilityServer())
+      .copyright_jurisdiction_availability.eu_dsa
+  } catch {
+    // The EU intake link is shown only when availability is confirmed.
+  }
   return (
     <main className='mx-auto max-w-3xl space-y-6 py-8'>
       <h1 className='text-3xl font-bold'>Copyright policy</h1>
@@ -66,6 +74,14 @@ export default function CopyrightPage() {
         >
           Counter-notice and restoration
         </Link>
+        {euAvailable && (
+          <Link
+            className='block underline'
+            href='/copyright/eu-notices/new'
+          >
+            Submit an EU copyright notice
+          </Link>
+        )}
         <CopyrightStaffLinks />
       </div>
     </main>

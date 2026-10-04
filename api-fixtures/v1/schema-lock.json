@@ -270,16 +270,20 @@
       "fixtureIds": ["web.copyright.email-intake-queue.default"],
       "hash": "aa3f27faa243815a024a9488de111719b8f75132bc2b72dca7c698757ecb63dd"
     },
+    "GET:/api/v1/copyright-jurisdiction-availability": {
+      "fixtureIds": ["web.copyright.eu.jurisdiction-availability"],
+      "hash": "824d5e44ad511c46f0aeb1ce931275695acc293c67f4b3c64c788d71cae2ba11"
+    },
     "GET:/api/v1/copyright-notices": {
       "fixtureIds": ["web.copyright.notices.default", "web.copyright.notices.null-claimant"],
-      "hash": "6e222b9e45b15b7bf87f49d04a0fa0d037bfab278aeae8c8da3632ea48666176"
+      "hash": "368fe3f23be60e016d35c5304989037a38e162110df5dbbd9b3cb7a725dd2f11"
     },
     "GET:/api/v1/copyright-notices/:id": {
       "fixtureIds": [
         "web.copyright.notice.detail.null-claimant",
         "web.copyright.notice.detail.populated"
       ],
-      "hash": "ab9eda832d61b6032b2d9d9d5fcf00a9dee3298b9e355419c92ba562f62a5ff8"
+      "hash": "e0f7f088c24e8b98ffda3c50279ef899de8a5d4f97737190f148c00a568e9173"
     },
     "GET:/api/v1/copyright-notices/:id/guest-capabilities": {
       "fixtureIds": ["web.copyright.guest-capabilities.listed"],
@@ -290,7 +294,7 @@
         "web.copyright.notice.participant.null-claimant",
         "web.copyright.notice.participant.populated"
       ],
-      "hash": "54d11a3733ece0e237e318029fb048080d04210e9b08181c86574801b4f6d0da"
+      "hash": "2a90d7896d817fc5fc763c593262a6040c37a5f8a38306863315bbb9d1793847"
     },
     "GET:/api/v1/copyright-notices/:id/targets/:targetId/image-similarity-candidates": {
       "fixtureIds": ["native.moderation.copyright.image-similarity-candidates.default"],
@@ -298,7 +302,7 @@
     },
     "GET:/api/v1/copyright-notices/review-queue": {
       "fixtureIds": ["web.copyright.staff-queue.default"],
-      "hash": "0b5c41c6eb440254b118045a5e12b24aa821f38f00c051ebe1ea6053570990eb"
+      "hash": "da416f53552685d94201ff7463576b1d9f5f176c9a33f342a94ef98847f59d74"
     },
     "GET:/api/v1/currencies": {
       "fixtureIds": ["shared.currencies.list.default"],
@@ -2796,6 +2800,10 @@
     "web.copyright.email-intake-rejection.reply-queued": {
       "fixtureIds": ["web.copyright.email-intake-rejection.reply-queued"],
       "hash": "b1d883f88b6afb685bde0e61dde5a6d4f86437e8d587d34d77f59216e18d1386"
+    },
+    "web.copyright.eu.jurisdiction-availability": {
+      "fixtureIds": ["web.copyright.eu.jurisdiction-availability"],
+      "hash": "20962f1872c97f9056f4c882a7bb4ee47277a7d8aa0fb9e168af4598ef728b99"
     },
     "web.copyright.guest-capabilities.listed": {
       "fixtureIds": ["web.copyright.guest-capabilities.listed"],

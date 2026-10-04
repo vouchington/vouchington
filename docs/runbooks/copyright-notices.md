@@ -160,6 +160,35 @@ human-compliant assessment; `no_action` has no targets or withholding. A reopene
 a restricting successor only. The public explanation is sent to the poster and notifier, so keep
 personal data out of it; internal rationale remains separate.
 
+### EU complaints and Art. 21 recording
+
+The anonymous jurisdiction-availability read controls the EU filing link and form only. Guests
+file with a name, receipt email address, exact location, contact, grounds, and good-faith statement.
+Receipt and decision notices go to that retained address; account notifiers also receive in-app
+notices. Existing case pages and complaint forms remain available after approval is withdrawn.
+Keep both jurisdiction approvals unapproved until the activation prerequisites are met.
+
+Review `territorial_redress_review` for a complaint awaiting a decision on the live territorial
+decision. Use the staff case's per-recipient informed time and complaint window, not intake time or
+a case-wide clock. Only sent decision notices count; a bounced message does not. A never-informed
+party and a reviewer have no cutoff. Notifier and poster each have their own complaint per decision;
+an old request cannot reverse a superseding decision. Staff write the complaint rationale for the
+complainant, who receives the reasoned decision and redress options. A revoked `no_action` returns
+to `territorial_decision_reopened` until staff record its restricting successor.
+
+For an EU guest notifier, locate the matched reply to the decision email and explicitly admit it
+as `complaint`. Verify the guest receipt and live decision. The service measures the window at the
+reply's `received_at`; admission delay does not close it. Mail alone authorizes no change, a
+rejected reply creates no complaint, and an account notifier uses the case page instead.
+
+Record an Art. 21 referral using the dispute-settlement routes in the
+[API contract](../requirements/api/v1/copyright-notices/README.md#eu-filing-complaints-and-dispute-settlement).
+Check the body name, referral time and named party against the received case. Record one outcome;
+a recipient-favouring outcome permits one implementation time at or after its decision. Perform
+the staff case action first, then record implementation: the referral or outcome itself does not
+restore media. These records remain usable after withdrawal. UK has no EU filing/complaint UI or
+Art. 21 recording.
+
 Never approve `uk` without counsel's written sign-off. EU/UK approval also remains blocked until
 #1906's staff screen ships. Approval and withdrawal are administrator-only:
 `POST /api/v1/copyright-jurisdiction-policies` and `.../:id/withdrawals`. Basis recorded by the owner

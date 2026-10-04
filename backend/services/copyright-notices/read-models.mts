@@ -1,5 +1,5 @@
 /* oxlint-disable max-lines -- Copyright read projections keep redaction rules in one audited module. */
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, read } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
@@ -18,6 +18,10 @@ import {
   copyrightTimelineEventTypesFor,
   type CopyrightTimelineAudience,
 } from './timeline-visibility.mts'
+import {
+  getEuParticipantNoticeDetail,
+  type CopyrightEuParticipantCase,
+} from './read-models-territorial.mts'
 
 export type CopyrightStaffEmailIntake = {
   id: string
@@ -158,7 +162,7 @@ async function getCopyrightEmailLinkedNotice(noticeId: string): Promise<{
 
 export type CopyrightPublicNotice = {
   id: string
-  jurisdiction: 'us_dmca'
+  jurisdiction: 'us_dmca' | 'eu_dsa' | 'uk'
   received_at: Date
   accepted_at: Date
   provisional_withholding_at: Date | null
@@ -183,11 +187,13 @@ export type CopyrightPublicNoticeDetail = CopyrightPublicNotice & {
   timeline: Array<{ id: string; event_type: string; created_at: Date }>
 }
 
-export type CopyrightParticipantNoticeDetail = CopyrightPublicNoticeDetail & {
+export type CopyrightParticipantNoticeDetail = Omit<CopyrightPublicNoticeDetail, 'accepted_at'> & {
+  accepted_at: Date | null
   statements: CopyrightParticipantStatement[]
   viewer_role: 'claimant' | 'poster' | 'staff'
   respondable_target_ids: string[]
   submissions: Array<{ id: string; kind: string; received_at: Date; source_kind: string }>
+  eu?: CopyrightEuParticipantCase
 }
 
 export type CopyrightAcceptedNoticeCursorRow = CopyrightPublicNotice & {
@@ -338,6 +344,16 @@ export async function getCopyrightParticipantNoticeDetail(
 ): Promise<CopyrightParticipantNoticeDetail | null> {
   const viewerRole = await getCopyrightNoticeViewerRole(noticeId, currentUser)
   if (!viewerRole) return null
+  const { rows: jurisdictions } = await read<{ jurisdiction: string }>(sql`
+    SELECT jurisdiction FROM copyright_notices WHERE id = ${noticeId}
+  `)
+  if (jurisdictions[0]?.jurisdiction === 'eu_dsa')
+    return getEuParticipantNoticeDetail(
+      noticeId,
+      currentUser,
+      viewerRole,
+      await getCopyrightPublicNoticeDetail(noticeId, viewerRole === 'staff' ? 'staff' : 'member'),
+    )
   const detail = await getCopyrightPublicNoticeDetail(
     noticeId,
     viewerRole === 'staff' ? 'staff' : 'member',

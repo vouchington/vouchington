@@ -1,4 +1,5 @@
 import type { RouteRateLimitEntry } from './types.mts'
+import { CONTENT_ROUTE_REGISTRY } from './registry-content.mts'
 
 /**
  * Static route registry: maps `METHOD:/path` → rate limit config.
@@ -130,6 +131,13 @@ export const ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
   'POST:/api/v1/copyright-eu-notices/:id/redress-requests/:redressId/decisions': {
     category: 'sensitive',
   },
+  'POST:/api/v1/copyright-eu-notices/:id/dispute-settlements': { category: 'sensitive' },
+  'POST:/api/v1/copyright-eu-notices/:id/dispute-settlements/:referralId/outcomes': {
+    category: 'sensitive',
+  },
+  'POST:/api/v1/copyright-eu-notices/:id/dispute-settlements/:referralId/implementations': {
+    category: 'sensitive',
+  },
   'POST:/api/v1/copyright-eu-notices/:id/supervised-complaints': { category: 'sensitive' },
   'POST:/api/v1/copyright-eu-reports': { category: 'sensitive' },
   'POST:/api/v1/copyright-uk-notices': { category: 'sensitive', ttlSeconds: 3600 },
@@ -142,6 +150,7 @@ export const ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
   'POST:/api/v1/copyright-uk-notices/:id/redress-requests/:redressId/decisions': {
     category: 'sensitive',
   },
+  'GET:/api/v1/copyright-jurisdiction-availability': { category: 'read' },
   'POST:/api/v1/copyright-jurisdiction-policies': { category: 'sensitive' },
   'POST:/api/v1/copyright-jurisdiction-policies/:id/withdrawals': { category: 'sensitive' },
   'POST:/api/v1/copyright-notices/:id/appeals': { category: 'sensitive', ttlSeconds: 3600 },
@@ -187,14 +196,5 @@ export const ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
   'GET:/api/v1/communities/:idOrSlug/restrictions': { category: 'read' },
   'POST:/api/v1/communities/:idOrSlug/restrictions': { category: 'write' },
   'DELETE:/api/v1/communities/:idOrSlug/restrictions/:id': { category: 'write' },
-
-  // MCP — write (stateless Streamable HTTP, higher cost per request)
-  'POST:/api/v1/mcp': { category: 'write', multiplier: 4 },
-  'POST:/api/v1/admin/mcp': { category: 'write', multiplier: 4 },
-
-  // Content creation — write (default)
-  'POST:/api/v1/posts': { category: 'write' },
-  'POST:/api/v1/topics': { category: 'write' },
-  'POST:/api/v1/rss-feeds': { category: 'write' },
-  'POST:/api/v1/communities': { category: 'write' },
+  ...CONTENT_ROUTE_REGISTRY,
 }

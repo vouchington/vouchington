@@ -1,4 +1,6 @@
 import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
+import type { createCopyrightEuNotice } from '@/lib/api/client/copyright-notices'
+import type { getCopyrightJurisdictionAvailabilityServer } from '@/lib/api/server/copyright-notices'
 
 export function makeCopyrightStaffQueueItem(
   overrides: Partial<CopyrightStaffQueueItem> = {},
@@ -60,4 +62,33 @@ export function makeCopyrightHostedCommunityResponse(input: {
       banner_image_placement: input.banner,
     },
   }
+}
+
+export function makeCopyrightEuNoticeResponse(
+  isDuplicate = false,
+): Awaited<ReturnType<typeof createCopyrightEuNotice>> {
+  return {
+    copyright_eu_notice: {
+      notice_id: '019f0000-0000-7000-8000-00000000e001',
+      receipt_id: '019f0000-0000-7000-8000-00000000e002',
+      acknowledgment_id: '019f0000-0000-7000-8000-00000000e003',
+      route_destination: 'staff_queue',
+      is_duplicate: isDuplicate,
+    },
+    acknowledgment: {
+      id: '019f0000-0000-7000-8000-00000000e003',
+      attempt_count: 1,
+      last_attempt_at: null,
+      acknowledged_at: '2026-10-04T00:00:00.000Z',
+      exhausted_at: null,
+      escalated: false,
+    },
+  }
+}
+
+export function makeCopyrightJurisdictionAvailability(
+  euDsa = false,
+  uk = false,
+): Awaited<ReturnType<typeof getCopyrightJurisdictionAvailabilityServer>> {
+  return { copyright_jurisdiction_availability: { eu_dsa: euDsa, uk } }
 }

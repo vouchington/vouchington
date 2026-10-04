@@ -2712,6 +2712,62 @@
       }
     },
     {
+      "id": "copyright-eu-notices",
+      "title": "Copyright EU notice filing and complaints",
+      "domain": "Account",
+      "intents": [],
+      "requirements": [
+        "docs/requirements/moderation/COPYRIGHT-NOTICES.md",
+        "docs/requirements/api/v1/copyright-notices/README.md"
+      ],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "copyright eu notice filing"
+        },
+        {
+          "table": "B",
+          "surface": "copyright eu complaints"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/app/(public)/copyright/eu-notices/new/page.tsx",
+            "web/app/(public)/copyright/notices/[id]/complaint/page.tsx",
+            "web/components/copyright/copyright-eu-notice-form.tsx",
+            "web/components/copyright/copyright-eu-guest-receipt.tsx",
+            "web/components/copyright/copyright-eu-complaint-form.tsx",
+            "web/components/copyright/copyright-notice-detail.tsx",
+            "web/components/copyright/copyright-notice-statements.tsx"
+          ],
+          "behaviorTests": [
+            "web/app/(public)/copyright/page.mock.test.tsx",
+            "web/app/(public)/copyright/eu-notices/new/page.mock.test.tsx",
+            "web/app/(public)/copyright/notices/[id]/complaint/page.mock.test.tsx",
+            "web/components/copyright/copyright-eu-notice-form.mock.test.tsx",
+            "web/components/copyright/copyright-eu-complaint-form.mock.test.tsx",
+            "web/components/copyright/copyright-notice-detail.test.tsx"
+          ]
+        },
+        "swift": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        },
+        "dotnet": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        }
+      },
+      "gap": {
+        "summary": "Swift and .NET provide no EU copyright notice form, participant statement and complaint flow, reopening state, or dispute-settlement display. Web supports guest and signed-in filing and case-specific complaints; guest notifiers complain by email reply. The tracking issue owns native EU copyright parity.",
+        "trackingIssue": "https://github.com/vouchington/vouchington/issues/1229"
+      }
+    },
+    {
       "id": "copyright-staff-review-queue",
       "title": "Copyright staff review queue and case actions",
       "domain": "Staff",

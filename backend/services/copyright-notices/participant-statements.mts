@@ -33,9 +33,9 @@ export async function selectCopyrightParticipantStatements(
     JOIN copyright_notice_correspondence_messages correspondence ON correspondence.id = intent.copyright_notice_correspondence_message_id
     WHERE intent.copyright_notice_id = ${noticeId} AND intent.channel = 'email'
       AND ((intent.recipient_role = 'poster' AND intent.recipient_user_id = ${userId}
-        AND intent.delivery_kind IN ('poster_restriction_notice', 'poster_review_notice', 'poster_restoration_notice'))
+        AND intent.delivery_kind IN ('poster_restriction_notice', 'poster_review_notice', 'poster_restoration_notice', 'redress_decision_notice'))
         OR (${role === 'claimant'} AND intent.recipient_role = 'claimant'
-          AND intent.delivery_kind = 'claimant_decision_notice'
+          AND intent.delivery_kind IN ('claimant_decision_notice', 'redress_decision_notice')
           AND EXISTS (SELECT 1 FROM copyright_notices notice WHERE notice.id = intent.copyright_notice_id AND notice.claimant_user_id = ${userId})))
     ORDER BY intent.id
   `)

@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto'
 import assert from 'http-assert'
 import { isUUID } from '@modules/utils'
 
+export const TERRITORIAL_COMPLAINT_WINDOW_MONTHS = 6
+
 export type TerritorialCopyrightJurisdiction = 'eu_dsa' | 'uk'
 export type CopyrightStaffDisposition = 'maintain' | 'revoke'
 
@@ -10,6 +12,12 @@ export type TerritorialNoticeRequest = {
   contentDescription: string
   grounds: string
   hostedUseUrl: string
+}
+
+export type EuTerritorialNoticeRequest = TerritorialNoticeRequest & {
+  notifierName: string
+  notifierEmail: string
+  goodFaithStatement: true
 }
 
 export function territorialCopyrightUnavailableMessage(
@@ -52,7 +60,9 @@ export function assertReportingPeriod(start: Date, end: Date): void {
   assert(start < end, 422, 'period_end must be after period_start')
 }
 
-export function territorialRequestSha256(input: TerritorialNoticeRequest): Buffer {
+export function territorialRequestSha256(
+  input: TerritorialNoticeRequest | EuTerritorialNoticeRequest,
+): Buffer {
   return createHash('sha256')
     .update(
       JSON.stringify({
@@ -60,6 +70,13 @@ export function territorialRequestSha256(input: TerritorialNoticeRequest): Buffe
         contentDescription: input.contentDescription,
         grounds: input.grounds,
         hostedUseUrl: input.hostedUseUrl,
+        ...('notifierName' in input
+          ? {
+              notifierName: input.notifierName,
+              notifierEmail: input.notifierEmail,
+              goodFaithStatement: input.goodFaithStatement,
+            }
+          : {}),
       }),
     )
     .digest()

@@ -3,7 +3,7 @@ import type { TerritorialCopyrightJurisdiction } from './territorial-fields.mts'
 
 export function existingReceiptQuery(
   jurisdiction: TerritorialCopyrightJurisdiction,
-  actorId: string,
+  requesterIdentitySha256: Buffer,
   idempotencyKey: string,
 ) {
   return sql`/* receiveTerritorialCopyrightNotice:existing */
@@ -15,7 +15,7 @@ export function existingReceiptQuery(
       ON acknowledgment.copyright_territorial_notice_receipt_id = receipt.id
     JOIN copyright_territorial_notice_routings routing
       ON routing.copyright_territorial_notice_receipt_id = receipt.id
-    WHERE receipt.requester_user_id = ${actorId}
+    WHERE receipt.requester_identity_sha256 = ${requesterIdentitySha256}
       AND receipt.jurisdiction = ${jurisdiction}
       AND receipt.idempotency_key = ${idempotencyKey}`
 }
@@ -24,19 +24,24 @@ export function insertReceiptQuery(
   jurisdiction: TerritorialCopyrightJurisdiction,
   noticeId: string,
   approvalId: string,
-  actorId: string,
+  requesterUserId: string | null,
+  requesterIdentitySha256: Buffer,
   idempotencyKey: string,
   requestSha256: Buffer,
   hostedUseUrl: string,
   groundsCiphertext: string,
+  notifierEmailCiphertext: string | null,
+  goodFaithStatement: true | null,
 ) {
   return sql`/* receiveTerritorialCopyrightNotice:receipt */
     INSERT INTO copyright_territorial_notice_receipts (
       copyright_notice_id, jurisdiction, copyright_jurisdiction_policy_approval_id,
-      requester_user_id, idempotency_key, request_sha256, hosted_use_url, grounds_ciphertext
+      requester_user_id, requester_identity_sha256, idempotency_key, request_sha256,
+      hosted_use_url, grounds_ciphertext, notifier_email_ciphertext, good_faith_statement
     ) VALUES (
-      ${noticeId}, ${jurisdiction}, ${approvalId}, ${actorId}, ${idempotencyKey}, ${requestSha256},
-      ${hostedUseUrl}, ${groundsCiphertext}
+      ${noticeId}, ${jurisdiction}, ${approvalId}, ${requesterUserId}, ${requesterIdentitySha256},
+      ${idempotencyKey}, ${requestSha256}, ${hostedUseUrl}, ${groundsCiphertext},
+      ${notifierEmailCiphertext}, ${goodFaithStatement}
     ) RETURNING id`
 }
 

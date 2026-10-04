@@ -45,7 +45,7 @@ CREATE TABLE copyright_notice_email_correspondence_reviews (
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
   copyright_notice_email_intake_recommendation_id uuid,
   action text NOT NULL CHECK (action IN ('pending', 'admitted', 'rejected')),
-  kind text CHECK (kind IN ('supplement', 'appeal', 'counter_notice', 'withdrawal', 'court_or_ccb_hold')),
+  kind text CHECK (kind IN ('supplement', 'appeal', 'counter_notice', 'withdrawal', 'court_or_ccb_hold', 'complaint')),
   copyright_notice_submission_id uuid UNIQUE REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
   copyright_notice_correspondence_id uuid UNIQUE REFERENCES copyright_notice_correspondence_messages(id) ON DELETE RESTRICT,
   reviewed_at timestamptz,

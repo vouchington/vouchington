@@ -10,6 +10,7 @@ import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import { revokeCopyrightGuestCapabilitiesForWithdrawal } from './guest-capability-withdrawal.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
 import { v7 as uuidv7 } from 'uuid'
+import { createGuestTerritorialComplaintFromEmail } from './territorial-complaint-email.mts'
 
 export type CopyrightEmailCorrespondenceKind =
   | 'supplement'
@@ -17,6 +18,7 @@ export type CopyrightEmailCorrespondenceKind =
   | 'counter_notice'
   | 'withdrawal'
   | 'court_or_ccb_hold'
+  | 'complaint'
 
 type CopyrightEmailAppealSubmission = {
   reason: string
@@ -64,6 +66,11 @@ export async function admitCopyrightEmailCorrespondence(input: {
     'Appeals and counter-notices require at least one target',
   )
   assert(
+    input.kind !== 'complaint' || input.targetIds.length === 0,
+    422,
+    'Complaints do not name targets',
+  )
+  assert(
     input.rationale.trim().length > 0 && input.rationale.length <= 10_000,
     422,
     'Review rationale is required',
@@ -109,7 +116,13 @@ export async function admitCopyrightEmailCorrespondence(input: {
     /* admitCopyrightEmailCorrespondence:lockNotice */
     SELECT jurisdiction FROM copyright_notices WHERE id = ${pending.notice_id} FOR UPDATE
   `)
-  assert(notices[0]?.jurisdiction === 'us_dmca', 422, 'Use the territorial complaint process')
+  assert(
+    input.kind === 'complaint'
+      ? notices[0]?.jurisdiction === 'eu_dsa'
+      : notices[0]?.jurisdiction === 'us_dmca',
+    422,
+    'Correspondence kind does not apply to this jurisdiction',
+  )
   const submissionId = uuidv7()
   const { rows: submissions } = await transaction<{
     id: string
@@ -123,6 +136,17 @@ export async function admitCopyrightEmailCorrespondence(input: {
   `)
   const submission = submissions[0]
   assert(submission, 500, 'Failed to record copyright email submission')
+  if (input.kind === 'complaint')
+    await createGuestTerritorialComplaintFromEmail(
+      {
+        noticeId: pending.notice_id,
+        submissionId: submission.id,
+        receivedAt: pending.received_at,
+        sesMessageId: pending.ses_message_id,
+        bodyCiphertext: pending.body_ciphertext,
+      },
+      transaction,
+    )
   if (input.targetIds.length > 0) {
     const { rows: targetRows } =
       await transaction(sql`/* admitCopyrightEmailCorrespondence:targets */

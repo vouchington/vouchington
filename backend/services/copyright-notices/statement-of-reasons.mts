@@ -41,9 +41,13 @@ export function buildCopyrightStatementOfReasons(input: CopyrightStatementInput)
           path: `/copyright/notices/${input.noticeId}/counter-notice`,
         },
       )
+    if (input.jurisdiction === 'eu_dsa') redress.push(...euRedressRoutes(input))
     redress.push({ key: 'court', label: 'Judicial redress', path: null })
   }
-  if (input.audience === 'claimant' && input.event !== 'restriction_ended') {
+  if (
+    input.audience === 'claimant' &&
+    (input.jurisdiction === 'eu_dsa' || input.event !== 'restriction_ended')
+  ) {
     if (input.jurisdiction === 'us_dmca') {
       if (input.event === 'reversed' || input.event === 'not_accepted')
         redress.push({ key: 'new_notice', label: 'New notice', path: '/copyright/notices/new' })
@@ -53,6 +57,7 @@ export function buildCopyrightStatementOfReasons(input: CopyrightStatementInput)
         path: '/copyright/designated-agent',
       })
     }
+    if (input.jurisdiction === 'eu_dsa') redress.push(...euRedressRoutes(input))
     redress.push({ key: 'court', label: 'Judicial redress', path: null })
   }
   const fields: CopyrightStatementFields = {
@@ -86,4 +91,22 @@ export function buildCopyrightStatementOfReasons(input: CopyrightStatementInput)
     text: copyrightStatementText(input, fields),
     inAppSummary: copyrightStatementSummary(input),
   }
+}
+
+function euRedressRoutes(input: CopyrightStatementInput): CopyrightStatementFields['redress'] {
+  return [
+    {
+      key: 'internal_complaint',
+      label: 'Internal complaint',
+      path:
+        input.audience === 'poster' || input.claimantHasAccount
+          ? `/copyright/notices/${input.noticeId}/complaint`
+          : null,
+    },
+    {
+      key: 'out_of_court_dispute_settlement',
+      label: 'Out-of-court dispute settlement',
+      path: null,
+    },
+  ]
 }

@@ -11,24 +11,28 @@ input keeps or changes. Other copyright route families (notice, appeal, and coun
 submission, guest capabilities, moderator review, email intake, repeat-infringer, and the staff
 queue) are owned by their own changes and are not covered here.
 
-An unauthenticated or unauthorized malformed call keeps its bare `401` or `403` with no schema
-diagnostic. A contract `422` names only the carrier (`Invalid request body` or
+A malformed authenticated-only or staff call keeps its bare `401` or `403` before a schema
+diagnostic. EU notice receipt permits guests and uses optional authentication. A contract `422` names only the carrier (`Invalid request body` or
 `Invalid request path`).
 
 ## Validated operations
 
-| Operation                                                                   | Contract                                                                                             |
-| --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `POST /copyright-eu-notices`, `POST /copyright-uk-notices`                  | Closed `CopyrightTerritorialNoticeRequest`                                                           |
-| `POST /copyright-{eu,uk}-notices/:id/redress-requests`                      | Closed `CopyrightTerritorialRedressRequest` and path                                                 |
-| `POST /copyright-eu-notices/:id/statements-of-reasons`                      | Closed decision request (`outcome`, `statement`, `public_explanation`, conditional targets) and path |
-| `POST /copyright-uk-notices/:id/reviews`                                    | Closed decision request (`outcome`, `rationale`, `public_explanation`, conditional targets) and path |
-| `POST /copyright-{eu,uk}-notices/:id/redress-requests/:redressId/decisions` | Closed `CopyrightTerritorialRedressDecisionRequest` and path                                         |
-| `POST /copyright-eu-notices/:id/supervised-complaints`                      | Closed `CopyrightTerritorialSupervisedComplaintRequest`, path                                        |
-| `POST /copyright-eu-reports`                                                | Closed `CopyrightTerritorialReportRequest`                                                           |
-| `POST /copyright-jurisdiction-policies`                                     | Closed `CopyrightJurisdictionPolicyRequest`                                                          |
-| `POST /copyright-{eu,uk}-notices/:id/acknowledgment-failures`               | `id` path only                                                                                       |
-| `POST /copyright-jurisdiction-policies/:id/withdrawals`                     | `id` path only                                                                                       |
+| Operation                                                                        | Contract                                                                                             |
+| -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `POST /copyright-eu-notices`                                                     | Closed `CopyrightEuNoticeRequest`, including name, email and literal-true good faith                 |
+| `POST /copyright-uk-notices`                                                     | Closed `CopyrightTerritorialNoticeRequest`; EU fields refused                                        |
+| `POST /copyright-{eu,uk}-notices/:id/redress-requests`                           | Closed `CopyrightTerritorialRedressRequest` and path                                                 |
+| `POST /copyright-eu-notices/:id/statements-of-reasons`                           | Closed decision request (`outcome`, `statement`, `public_explanation`, conditional targets) and path |
+| `POST /copyright-uk-notices/:id/reviews`                                         | Closed decision request (`outcome`, `rationale`, `public_explanation`, conditional targets) and path |
+| `POST /copyright-{eu,uk}-notices/:id/redress-requests/:redressId/decisions`      | Closed `CopyrightTerritorialRedressDecisionRequest` and path                                         |
+| `POST /copyright-eu-notices/:id/supervised-complaints`                           | Closed `CopyrightTerritorialSupervisedComplaintRequest`, path                                        |
+| `POST /copyright-eu-notices/:id/dispute-settlements`                             | Closed referral request and path                                                                     |
+| `POST /copyright-eu-notices/:id/dispute-settlements/:referralId/outcomes`        | Closed outcome request and path                                                                      |
+| `POST /copyright-eu-notices/:id/dispute-settlements/:referralId/implementations` | Closed implementation request and path                                                               |
+| `POST /copyright-eu-reports`                                                     | Closed `CopyrightTerritorialReportRequest`                                                           |
+| `POST /copyright-jurisdiction-policies`                                          | Closed `CopyrightJurisdictionPolicyRequest`                                                          |
+| `POST /copyright-{eu,uk}-notices/:id/acknowledgment-failures`                    | `id` path only                                                                                       |
+| `POST /copyright-jurisdiction-policies/:id/withdrawals`                          | `id` path only                                                                                       |
 
 The request types live in `territorial-request-types.mts` beside the routes, and the compiler
 extracts the schema from them, so the OpenAPI document, the request-contract bundle, and the runtime
@@ -46,14 +50,16 @@ verify order, status, and no-write behavior against the real database.
 
 Each handler keeps the order it had before the contract existed and adds the contract call last.
 
-- Notice receipt (EU, UK): kill switch `COPYRIGHT_INTAKE_ENABLED` (`503`), content type (`415`),
-  authentication (`401`), suspension, body read, CAPTCHA, `Idempotency-Key` (`400`), field parsers
-  (`422`), contract (`422`), service.
+- EU notice receipt: intake kill switch (`503`), content type (`415`), optional authentication and
+  rate limit, suspension when signed in, client-IP check (`400`), body read, CAPTCHA,
+  `Idempotency-Key` (`400`), field parsers (`422`), closed contract (`422`), service.
+- UK notice receipt: intake kill switch (`503`), content type (`415`), authentication (`401`),
+  suspension, body read, CAPTCHA, `Idempotency-Key`, field parsers, contract, service.
 - Redress request: content type, authentication, suspension, body read, CAPTCHA, path UUID,
   `Idempotency-Key`, field parsers, contract, service.
 - Supervised complaint (EU): authentication, suspension, content type, body read, path UUID, field
   parsers, contract, service. It has no CAPTCHA, kill switch, or idempotency key.
-- Staff routes (decisions, reports, acknowledgment failures) and policy routes: authentication
+- Staff routes (decisions, reports, acknowledgment failures, Art. 21 records) and policy routes: authentication
   and role (`401`, `403`), rate limit, suspension, content type, body read, path UUIDs, field
   parsers, contract, service. The role check is on the route, so a caller without the role never
   reaches the contract.
@@ -72,6 +78,9 @@ look at.
   `policy_version`, a `staff_disposition` outside `maintain` and `revoke`, a malformed path id, and
   a missing or malformed `Idempotency-Key` keep their existing status and message. The new decision
   fields `outcome`, `public_explanation`, and conditional `targets` are parser-validated with `422`.
+  EU notifier name and email are bounded and email-validated; `good_faith_statement` must be `true`.
+  Art. 21 parsers validate party, outcome, bounded body name, and timestamps before the closed
+  contract rejects unknown keys.
 - A redress decision `rationale` that is not a string is now rejected by
   `parseTerritorialRedressDecision` with `422` and `rationale is required`, the message the service
   already gave a missing or blank one. The staff role `403` is on the route and runs first, so no
@@ -100,8 +109,10 @@ plain optional string.
 These rejections depend on stored state and stay in the service, so a malformed body answers `422`
 before them, as a missing field already did:
 
-- Ownership `403` on a redress request and a supervised complaint: the requester or a staff
-  reviewer may file; anyone else gets `403` only for a well-formed body.
+- Ownership `403` on a redress request: the notifier, an affected post owner, or a reviewer may
+  file. A supervised complaint keeps its requester-or-reviewer authorization. A valid body reaches
+  these checks; malformed bodies answer `422` first. A complaint replay is caller-scoped and
+  precedes the six-month period check, which answers `422` once that recipient's window has ended.
 - Jurisdiction availability `403` (`lockCurrentCopyrightJurisdictionPolicy`) applies to new receipts:
   the intake service checks current policy approval after its idempotent replay lookup. Post-receipt
   operations instead validate the stored receipt and its approval snapshot, so withdrawal does not
@@ -126,6 +137,7 @@ signature over, or re-serializes, a raw body.
 
 ## Cross-client verification
 
-The closed schemas reject unknown keys, so every client body must be a subset of the schema. No web
-module under `web/` and no Swift, .NET, or TypeScript source in the local `vouchington-clients`
-checkout calls these routes, so no client body depends on a key outside the schema.
+The closed schemas reject unknown keys. The web EU form and complaint wrappers send only declared
+keys and use the shared CAPTCHA/idempotency helpers. Art. 21 recording is staff API tooling until
+the staff screen ships. Native EU UI remains deferred to #1229; see the
+[client parity matrix](../CLIENT-PARITY-MATRIX.md).
