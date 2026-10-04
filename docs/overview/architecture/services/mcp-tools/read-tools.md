@@ -112,21 +112,21 @@ service, including its precise timestamp and semantic cursors. RSS item and feed
 and fenced as external content. Item cursors include viewer state, so an MCP caller can round-trip
 its cursor against signed-in REST as the same user; anonymous REST mints its own cursor.
 
-| REST route                                                           | MCP tool                           | Result and limit                                             |
-| -------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ |
-| `GET /api/v1/rss-feeds`                                              | `search_rss_feeds`                 | Feed summaries, cursor, 25 max                               |
-| `GET /api/v1/rss-feeds/:id`                                          | `get_rss_feed`                     | Feed summary                                                 |
-| `GET /api/v1/rss-feeds/recommended`                                  | `get_recommended_rss_feeds`        | Personalized IDs, scores, reasons, cursor, 100 max           |
-| `GET /api/v1/rss-feeds/trending`                                     | `get_trending_rss_feeds`           | Public IDs and metrics, cursor, 100 max                      |
-| `GET /api/v1/rss-feeds/:id/crawls`                                   | `list_rss_feed_crawls`             | Paid or administrator summaries, cursor, 100 max             |
-| `GET /api/v1/rss-feeds/:id/crawls/:crawlId` (`#paid`, `#privileged`) | `get_rss_feed_crawl`               | Paid summary or administrator detail                         |
-| `GET /api/v1/rss-feed-items`                                         | `list_rss_feed_items`              | Item summaries, cursor, 100 max                              |
-| `GET /api/v1/rss-feed-items/:id`                                     | `get_rss_feed_item`                | Item summary and fenced article text                         |
-| `GET /api/v1/rss-feed-items/:id/follow-context`                      | `get_rss_feed_item_follow_context` | Caller-followed voter IDs and counts                         |
-| `GET /api/v1/rss-feed-items/:id/votes`                               | `get_rss_feed_item_votes`          | Own votes or, for administrators, all votes; cursor, 100 max |
-| `GET /api/v1/feeds/rss_feed_items/:feed_type`                        | `get_rss_feed_item_feed`           | Caller feed item IDs and delivery types, cursor, 100 max     |
-| `GET /api/v1/feeds/posts/:feed_type`                                 | `get_post_feed`                    | Caller feed post IDs and delivery types, cursor, 100 max     |
-| `GET /api/v1/feeds/referral_links/:feed_type`                        | `get_referral_link_feed`           | Followed-user referral links, cursor, 100 max                |
+| REST route                                      | MCP tool                           | Result and limit                                             |
+| ----------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ |
+| `GET /api/v1/rss-feeds`                         | `search_rss_feeds`                 | Feed summaries, cursor, 25 max                               |
+| `GET /api/v1/rss-feeds/:id`                     | `get_rss_feed`                     | Feed summary                                                 |
+| `GET /api/v1/rss-feeds/recommended`             | `get_recommended_rss_feeds`        | Personalized IDs, scores, reasons, cursor, 100 max           |
+| `GET /api/v1/rss-feeds/trending`                | `get_trending_rss_feeds`           | Public IDs and metrics, cursor, 100 max                      |
+| `GET /api/v1/rss-feeds/:id/crawls`              | `list_rss_feed_crawls`             | Paid or administrator summaries, cursor, 100 max             |
+| `GET /api/v1/rss-feeds/:id/crawls/:crawlId`     | `get_rss_feed_crawl`               | Paid summary or privileged administrator detail              |
+| `GET /api/v1/rss-feed-items`                    | `list_rss_feed_items`              | Item summaries, cursor, 100 max                              |
+| `GET /api/v1/rss-feed-items/:id`                | `get_rss_feed_item`                | Item summary and fenced article text                         |
+| `GET /api/v1/rss-feed-items/:id/follow-context` | `get_rss_feed_item_follow_context` | Caller-followed voter IDs and counts                         |
+| `GET /api/v1/rss-feed-items/:id/votes`          | `get_rss_feed_item_votes`          | Own votes or, for administrators, all votes; cursor, 100 max |
+| `GET /api/v1/feeds/rss_feed_items/:feed_type`   | `get_rss_feed_item_feed`           | Caller feed item IDs and delivery types, cursor, 100 max     |
+| `GET /api/v1/feeds/posts/:feed_type`            | `get_post_feed`                    | Caller feed post IDs and delivery types, cursor, 100 max     |
+| `GET /api/v1/feeds/referral_links/:feed_type`   | `get_referral_link_feed`           | Followed-user referral links, cursor, 100 max                |
 
 The existing `search_rss_feed_items` remains an internal agent tool. Its older search service has
 no cursor, so MCP uses `list_rss_feed_items`, which accepts text, semantic and similar-item search

@@ -134,10 +134,7 @@ export const getRssFeedCrawlTool: Tool<DetailArgs, DetailResult> = {
     plan: 'free',
     requiredScopes: { mcp: ['rss-feeds:read'] },
     annotations: { readOnlyHint: true },
-    api: [
-      { method: 'GET', path: '/api/v1/rss-feeds/:id/crawls/:crawlId#paid' },
-      { method: 'GET', path: '/api/v1/rss-feeds/:id/crawls/:crawlId#privileged' },
-    ],
+    api: [{ method: 'GET', path: '/api/v1/rss-feeds/:id/crawls/:crawlId' }],
     outputSchema: foundOrNotFoundSchema({ crawl: { oneOf: [summarySchema, detailSchema] } }),
   },
   function:

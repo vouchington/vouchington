@@ -335,11 +335,7 @@
       "api": [
         {
           "method": "GET",
-          "path": "/api/v1/rss-feeds/:id/crawls/:crawlId#paid"
-        },
-        {
-          "method": "GET",
-          "path": "/api/v1/rss-feeds/:id/crawls/:crawlId#privileged"
+          "path": "/api/v1/rss-feeds/:id/crawls/:crawlId"
         }
       ],
       "requiredScopes": ["rss-feeds:read"]
