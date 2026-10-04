@@ -5,6 +5,9 @@ import type { CopyrightStaffTerritorialCase } from './read-models-staff-types.mt
 import type { TerritorialCopyrightJurisdiction } from './territorial-fields.mts'
 import { territorialLabels } from './territorial-labels.mts'
 import { territorialDecisionIsLiveSql } from './territorial-redress-sql.mts'
+import { selectTerritorialStaffRecipients } from './read-models-staff-territorial-recipients.mts'
+import { selectTerritorialStaffComplaints } from './read-models-staff-territorial-complaints.mts'
+import { selectEuStaffSettlements } from './read-models-eu-settlements.mts'
 
 /** Reads the live territorial decision and the receipt that gives staff this case. */
 export async function selectStaffTerritorialCase(
@@ -16,6 +19,8 @@ export async function selectStaffTerritorialCase(
     idempotency_key: string
     hosted_use_url: string
     grounds_ciphertext: string
+    notifier_email_ciphertext: string | null
+    notifier_name: string | null
     attempt_count: number | null
     last_attempt_at: Date | null
     acknowledged_at: Date | null
@@ -30,6 +35,7 @@ export async function selectStaffTerritorialCase(
   }>(
     sql`/* selectStaffTerritorialCase */
       SELECT receipt.idempotency_key, receipt.hosted_use_url, receipt.grounds_ciphertext,
+        receipt.notifier_email_ciphertext, notice.claimant_display_name AS notifier_name,
         acknowledgment.attempt_count, acknowledgment.last_attempt_at,
         acknowledgment.acknowledged_at, acknowledgment.exhausted_at,
         EXISTS (SELECT 1 FROM copyright_territorial_escalations escalation
@@ -39,6 +45,7 @@ export async function selectStaffTerritorialCase(
         decision.rationale_ciphertext, decision.public_explanation_ciphertext,
         CASE WHEN decision.outcome = 'no_action' THEN reopened.decided_at ELSE NULL END AS reopened_at
       FROM copyright_territorial_notice_receipts receipt
+      JOIN copyright_notices notice ON notice.id = receipt.copyright_notice_id
       LEFT JOIN copyright_territorial_notice_acknowledgments acknowledgment
         ON acknowledgment.copyright_territorial_notice_receipt_id = receipt.id
       LEFT JOIN LATERAL (
@@ -63,12 +70,37 @@ export async function selectStaffTerritorialCase(
   const row = rows[0]
   if (!row) return null
   const labels = territorialLabels(jurisdiction)
+  const [recipients, complaints, settlements] = await Promise.all([
+    selectTerritorialStaffRecipients(noticeId, row.decision_id, row.decided_at, query),
+    selectTerritorialStaffComplaints(
+      noticeId,
+      row.decision_id,
+      row.decided_at,
+      jurisdiction,
+      query,
+    ),
+    selectEuStaffSettlements(noticeId, query),
+  ])
   return {
     hosted_use_url: row.hosted_use_url,
     grounds: decryptCopyrightText(
       row.grounds_ciphertext,
       `${labels.noticePurpose}:${row.idempotency_key}:grounds`,
     ),
+    notifier: {
+      name: row.notifier_name,
+      email: row.notifier_email_ciphertext
+        ? decryptCopyrightText(
+            row.notifier_email_ciphertext,
+            `${labels.noticePurpose}:${row.idempotency_key}:notifier_email`,
+          )
+        : null,
+    },
+    recipients,
+    complaints: complaints.results,
+    complaints_page_info: complaints.page_info,
+    dispute_settlements: settlements.results,
+    dispute_settlements_page_info: settlements.page_info,
     acknowledgment: {
       attempt_count: row.attempt_count ?? 0,
       last_attempt_at: row.last_attempt_at,

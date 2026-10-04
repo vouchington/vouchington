@@ -35,14 +35,26 @@ export type CopyrightEmailRejectionRequest = {
 }
 
 export type CopyrightEmailCorrespondenceRejectionRequest = {
-  kind: 'supplement' | 'appeal' | 'counter_notice' | 'withdrawal' | 'court_or_ccb_hold'
+  kind:
+    | 'supplement'
+    | 'appeal'
+    | 'counter_notice'
+    | 'withdrawal'
+    | 'court_or_ccb_hold'
+    | 'complaint'
   rationale: string
   recommendation_id?: ApiUuidContract | null
   manual_fallback_reason?: string | null
 }
 
 export type CopyrightEmailCorrespondenceRequest = {
-  kind: 'supplement' | 'appeal' | 'counter_notice' | 'withdrawal' | 'court_or_ccb_hold'
+  kind:
+    | 'supplement'
+    | 'appeal'
+    | 'counter_notice'
+    | 'withdrawal'
+    | 'court_or_ccb_hold'
+    | 'complaint'
   rationale: string
   recommendation_id?: ApiUuidContract | null
   manual_fallback_reason?: string | null

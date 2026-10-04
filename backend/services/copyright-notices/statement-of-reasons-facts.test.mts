@@ -4,6 +4,7 @@ import { deleteTestUser } from '@voucha/test-helpers/data-stores/psql/moderation
 import {
   createClearScreenedForm,
   createSignedInCopyrightForm,
+  createGuestCopyrightForm,
 } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { readTestCopyrightStatementFacts } from '@voucha/test-helpers/copyright-statement-notices'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
@@ -29,6 +30,7 @@ describe('statement public facts and durable provenance', () => {
     const facts = await readTestCopyrightStatementFacts(caseId, restriction.id)
     expect(facts.automatedDecision).toBe(false)
     expect(facts.aiGuidance).toBe(false)
+    expect(facts.claimantHasAccount).toBe(true)
     const statement = buildCopyrightStatementOfReasons({
       ...facts,
       audience: 'poster',
@@ -44,6 +46,19 @@ describe('statement public facts and durable provenance', () => {
       expect(JSON.stringify(statement)).not.toContain(privateValue)
     expect(statement.text).toContain('A person made this decision')
   })
+  it('loads a guest notifier account marker without exposing identity in fields', async () => {
+    const guest = await createGuestCopyrightForm()
+    const facts = await readTestCopyrightStatementFacts(guest.intake.copyright_notice_id)
+    expect(facts.claimantHasAccount).toBe(false)
+    const statement = buildCopyrightStatementOfReasons({
+      ...facts,
+      audience: 'claimant',
+      event: 'not_accepted',
+    })
+    expect(statement.fields).not.toHaveProperty('claimantHasAccount')
+    expect(JSON.stringify(statement.fields)).not.toContain('claimant@example.test')
+  })
+
   it('requires an actual completed guidance result', async () => {
     const plain = await createSignedInCopyrightForm()
     const screened = await createClearScreenedForm()

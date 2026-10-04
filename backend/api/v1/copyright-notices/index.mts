@@ -2,11 +2,17 @@ import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
   copyrightAcceptedNoticeCursorScope,
+  getCopyrightJurisdictionAvailability,
   getCopyrightParticipantNoticeDetail,
   getCopyrightPublicNoticeDetail,
   listAcceptedCopyrightNotices,
 } from '@services/copyright-notices'
-import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
+import {
+  getOptionalAuthAndRateLimit,
+  requireAuth,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../response-helpers.mts'
 import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
 import { apiQuery, apiResponse } from '../../response-contract.mts'
@@ -20,6 +26,7 @@ import {
 import './email-intake-queue-route.mts'
 import './email-intake-legal-process-route.mts'
 import './email-intake-reply-replay-route.mts'
+import './case-collection-routes.mts'
 import './eu-copyright-routes.mts'
 import './eu-copyright-staff-routes.mts'
 import './guest-capability-list-route.mts'
@@ -94,4 +101,14 @@ app.route('/api/v1/copyright-notices/:id/participant').get(async (ctx: Context) 
   const notice = await getCopyrightParticipantNoticeDetail(noticeId, currentUser)
   ctx.assert(notice, 403, 'You are not a participant in this copyright notice')
   ctx.json({ copyright_notice: notice })
+})
+
+app.route('/api/v1/copyright-jurisdiction-availability').get(async (ctx: Context) => {
+  setPrivateNoStoreCacheHeaders(ctx)
+  await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/copyright-jurisdiction-availability')
+  ctx.json(
+    apiResponse('GET:/api/v1/copyright-jurisdiction-availability', {
+      copyright_jurisdiction_availability: await getCopyrightJurisdictionAvailability(),
+    }),
+  )
 })

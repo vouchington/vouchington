@@ -18,12 +18,21 @@ export async function createRetentionTerritorialCase(jurisdiction: 'eu_dsa' | 'u
     policyVersion: `${jurisdiction}-${randomUUID().replaceAll('-', '').slice(0, 12)}`,
   })
   const suffix = randomUUID()
-  const receive = jurisdiction === 'eu_dsa' ? receiveEuCopyrightNotice : receiveUkCopyrightNotice
-  const receipt = await receive(claimant, randomUUID(), {
+  const notice = {
     contact: `claimant-${suffix}@example.test`,
     contentDescription: `Work ${suffix}`,
     grounds: `Grounds ${suffix}`,
     hostedUseUrl: `https://example.test/${suffix}`,
-  })
+  }
+  const requester = { user: claimant, identity: `user:${claimant.id}` }
+  const receipt =
+    jurisdiction === 'eu_dsa'
+      ? await receiveEuCopyrightNotice(requester, randomUUID(), {
+          ...notice,
+          notifierName: 'Retention notifier',
+          notifierEmail: notice.contact,
+          goodFaithStatement: true,
+        })
+      : await receiveUkCopyrightNotice(requester, randomUUID(), notice)
   return { noticeId: receipt.notice_id }
 }

@@ -26,16 +26,19 @@ import {
   recordCopyrightJurisdictionPolicyApproval,
   withdrawCopyrightJurisdictionPolicyApproval,
 } from './jurisdiction-policy.mts'
-import type { TerritorialNoticeRequest } from './territorial-fields.mts'
+import type { EuTerritorialNoticeRequest } from './territorial-fields.mts'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 
-function noticeRequest(): TerritorialNoticeRequest {
+function noticeRequest(): EuTerritorialNoticeRequest {
   const suffix = crypto.randomUUID()
   return {
     contact: `claimant-${suffix}@example.test`,
     contentDescription: `Work ${suffix}`,
     grounds: `Grounds ${suffix}`,
     hostedUseUrl: `https://example.test/${suffix}`,
+    notifierName: `Notifier ${suffix}`,
+    notifierEmail: `notifier-${suffix}@example.test`,
+    goodFaithStatement: true,
   }
 }
 
@@ -60,7 +63,7 @@ describe('EU copyright notice contracts', () => {
       await concealJurisdictionPolicyApprovals(transaction, 'eu_dsa', claimant.id)
       await expect(
         receiveEuCopyrightNoticeInTransaction(
-          claimant,
+          { user: claimant, identity: `user:${claimant.id}` },
           crypto.randomUUID(),
           noticeRequest(),
           transaction,
@@ -73,7 +76,7 @@ describe('EU copyright notice contracts', () => {
         claimant.id,
       )
       const opened = await receiveEuCopyrightNoticeInTransaction(
-        claimant,
+        { user: claimant, identity: `user:${claimant.id}` },
         crypto.randomUUID(),
         noticeRequest(),
         transaction,
@@ -82,7 +85,7 @@ describe('EU copyright notice contracts', () => {
       await insertJurisdictionPolicyWithdrawal(transaction, approvalId, claimant.id)
       await expect(
         receiveEuCopyrightNoticeInTransaction(
-          claimant,
+          { user: claimant, identity: `user:${claimant.id}` },
           crypto.randomUUID(),
           noticeRequest(),
           transaction,
@@ -126,9 +129,17 @@ describe('EU copyright notice contracts', () => {
     const { claimant } = await euActors()
     const request = noticeRequest()
     const key = crypto.randomUUID()
-    const receipt = await receiveEuCopyrightNotice(claimant, key, request)
+    const receipt = await receiveEuCopyrightNotice(
+      { user: claimant, identity: `user:${claimant.id}` },
+      key,
+      request,
+    )
     const acknowledgment = await acknowledgeEuCopyrightNotice(claimant, receipt.notice_id)
-    const replay = await receiveEuCopyrightNotice(claimant, key, request)
+    const replay = await receiveEuCopyrightNotice(
+      { user: claimant, identity: `user:${claimant.id}` },
+      key,
+      request,
+    )
     expect(receipt.route_destination).toBe('staff_queue')
     expect(receipt.is_duplicate).toBe(false)
     expect(replay).toMatchObject({ notice_id: receipt.notice_id, is_duplicate: true })
@@ -146,13 +157,20 @@ describe('EU copyright notice contracts', () => {
       uk_review_count: 0,
     })
     await expect(
-      receiveEuCopyrightNotice(claimant, key, { ...request, grounds: 'Different grounds' }),
+      receiveEuCopyrightNotice({ user: claimant, identity: `user:${claimant.id}` }, key, {
+        ...request,
+        grounds: 'Different grounds',
+      }),
     ).rejects.toMatchObject({ status: 409 })
   })
 
   it('escalates only after the fifth failed acknowledgment and not on a timer', async () => {
     const { claimant, staff, stranger } = await euActors()
-    const receipt = await receiveEuCopyrightNotice(claimant, crypto.randomUUID(), noticeRequest())
+    const receipt = await receiveEuCopyrightNotice(
+      { user: claimant, identity: `user:${claimant.id}` },
+      crypto.randomUUID(),
+      noticeRequest(),
+    )
     await expect(
       recordEuCopyrightAcknowledgmentFailure(stranger, receipt.notice_id),
     ).rejects.toMatchObject({ status: 403 })
@@ -182,7 +200,11 @@ describe('EU copyright notice contracts', () => {
 
     const { claimant, staff, stranger } = await euActors()
     const periodStart = new Date(Date.now() - 60_000)
-    const receipt = await receiveEuCopyrightNotice(claimant, crypto.randomUUID(), noticeRequest())
+    const receipt = await receiveEuCopyrightNotice(
+      { user: claimant, identity: `user:${claimant.id}` },
+      crypto.randomUUID(),
+      noticeRequest(),
+    )
     await acknowledgeEuCopyrightNotice(claimant, receipt.notice_id)
     await expect(
       recordEuCopyrightStatementOfReasons(stranger, receipt.notice_id, {

@@ -21,6 +21,7 @@ type CopyrightStatementFacts = Pick<
   | 'targetUrls'
   | 'automatedDecision'
   | 'aiGuidance'
+  | 'claimantHasAccount'
   | 'explanation'
 >
 
@@ -38,10 +39,12 @@ export async function selectCopyrightStatementFacts(
     target_urls: string[]
     automated_decision: boolean
     ai_guidance: boolean
+    claimant_has_account: boolean
     public_explanation_ciphertext: string | null
   }>(
     sql`/* selectCopyrightStatementFacts */
     SELECT notice.id, notice.received_at, notice.jurisdiction, notice.legal_basis,
+      notice.claimant_user_id IS NOT NULL AS claimant_has_account,
       ARRAY(SELECT target.hosted_use_url FROM copyright_notice_targets target
         WHERE target.copyright_notice_id = notice.id AND target.id = ${authority.targetId ?? null}
           AND `
@@ -93,6 +96,7 @@ export async function selectCopyrightStatementFacts(
     targetUrls: row.target_urls,
     automatedDecision: row.automated_decision,
     aiGuidance: row.ai_guidance,
+    claimantHasAccount: row.claimant_has_account,
     explanation:
       row.public_explanation_ciphertext &&
       (row.jurisdiction === 'eu_dsa' || row.jurisdiction === 'uk')

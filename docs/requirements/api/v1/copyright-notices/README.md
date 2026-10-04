@@ -11,7 +11,7 @@ recomputes the canonical URL. A claimant names a target only if that claimant co
 submission. A hidden target receives the same `422` as a missing one. Staff approval of an emailed notice
 is not gated by viewability and resolves any existing hosted placement. EU and UK notices are
 separate routes and stay unavailable until an administrator records an unwithdrawn jurisdiction
-policy approval. That gate controls new notice intake only: decisions and other operations on a
+policy approval. EU intake supports guests; UK intake requires authentication. That gate controls new notice intake only: decisions and other operations on a
 received notice continue from its receipt if approval is later withdrawn. Duplicate
 `(surface, owner, image)` selections receive a validation error
 before persistence. Signed-in and guest claimants may submit a notice, but only a deterministically
@@ -211,7 +211,7 @@ field-named 422 messages for missing or mistyped fields are unchanged. `cf_turns
 an optional string on the notice and redress bodies; an explicit `null` or non-string value now
 answers 422 instead of being ignored when CAPTCHA verification does not read it (an attested
 caller or an always-approve configuration). Authentication, staff role, and the kill switch
-answer before the schema. The service still decides ownership, jurisdiction availability, and
+answer before the schema where required; EU receipt uses optional authentication. The service still decides ownership, jurisdiction availability, and
 existence, so a malformed body answers 422 before those 403, 404, and 409 outcomes.
 
 For EU and UK staff decisions, the EU statement and UK review routes accept `outcome` (`restrict` or
@@ -225,6 +225,72 @@ restriction. The API route contract is not a grant of jurisdiction approval: the
 must ship before any approval is recorded. After receipt, decision and redress calls use that
 receipt even if approval is withdrawn. See
 [Copyright EU, UK, and territorial request validation](../../reference-copyright-territorial-request-validation.md).
+
+### EU filing, complaints, and dispute settlement
+
+`GET /api/v1/copyright-jurisdiction-availability` allows anonymous callers, is `no-store`, and returns
+`{ copyright_jurisdiction_availability: { eu_dsa, uk } }` for new notice availability only. The web
+hides the EU filing link and answers `notFound()` on the form when EU intake is unavailable or the
+read fails. Existing participant cases and complaint pages do not depend on current approval.
+
+`POST /api/v1/copyright-eu-notices` uses optional authentication, a client IP, CAPTCHA, rate limiting,
+and a UUID `Idempotency-Key`. Its closed request adds `notifier_name` (1–200 characters), a valid
+`notifier_email` (at most 254), and literal-true `good_faith_statement` to the existing contact,
+content description, grounds, and exact hosted URL. EU receipt and decision email goes to that
+address of record; an authenticated notifier also receives in-app notices. The UK request continues
+to require authentication and rejects the EU-only fields.
+
+`POST /api/v1/copyright-eu-notices/:id/redress-requests` accepts the notifier, an affected post owner,
+or a reviewer, with one complaint per party and live decision. Replay is caller-scoped and remains
+valid after the six-month window. Only a sent decision notice to that recipient starts the clock;
+no successful delivery means no cutoff. Bounced notices and notices for prior decisions do not
+count. A guest notifier complains by email reply, which staff explicitly admit as `complaint`.
+The period is checked against the incoming email's `received_at`, not staff admission time.
+Complaint decisions create `redress_decision_notice` delivery to the complainant; reviewer-filed
+requests create no recipient notice.
+
+`GET /api/v1/copyright-notices/:id/participant` serves EU cases before acceptance and after
+`no_action`, with nullable `accepted_at` and a viewer-specific `eu` block. It includes the live
+outcome, decision and informed times, reopening state, the viewer's own complaint and window,
+dispute settlements, and the viewer's immutable stored statements. Staff-only restriction reasons
+and other parties' complaints remain private. US appeal and counter-notice actions remain US-only.
+
+The participant settlement array and staff territorial complaint and settlement arrays include
+only the first 25 records, ordered by immutable ID. Required adjacent
+`dispute_settlements_page_info` and `complaints_page_info` fields indicate continuation.
+Authenticated clients continue with the following private, uncached reads, using `after` and
+`limit` (1–100; default 25):
+
+- `GET /api/v1/copyright-notices/:id/territorial-complaints` returns
+  `{ copyright_territorial_complaints, page_info }` for reviewers and the live decision;
+- `GET /api/v1/copyright-notices/:id/eu-dispute-settlements` returns
+  `{ copyright_eu_dispute_settlements, page_info }` for the participant's own referrals, or all
+  referrals for staff, without staff attribution fields; and
+- `GET /api/v1/copyright-notices/:id/eu-dispute-settlements/staff` returns the separate reviewer
+  projection, including referral attribution.
+
+Opaque cursors are scoped to the case and collection audience; participant cursors also identify
+the viewer, and complaint cursors identify the live decision. A cursor from another scope answers
+`400`. These reads authorize from the existing case and do not depend on current jurisdiction
+approval. The web participant settlement list provides Load more and retry while retaining rows
+already loaded.
+
+Staff record Art. 21 through three closed, sensitive-rate-limited routes:
+
+- `POST /api/v1/copyright-eu-notices/:id/dispute-settlements` with `body_name`, `referred_at`,
+  `referred_by_party`, and optional `referred_by_user_id`;
+- `POST /api/v1/copyright-eu-notices/:id/dispute-settlements/:referralId/outcomes` with `result` and
+  `decided_at`; and
+- `POST /api/v1/copyright-eu-notices/:id/dispute-settlements/:referralId/implementations` with
+  `implemented_at`.
+
+The referral requires a received notice and a decision. A named poster must own a target; an
+account notifier must match the receipt. The immutable outcome may be `decided_for_recipient`,
+`decided_for_platform`, `withdrawn`, or `no_decision`; only the first permits one implementation
+time at or after the decision. Recording does not itself enforce an outcome and takes no current
+policy approval lock. The staff queue adds `territorial_redress_review` for unresolved complaints
+on the live decision; the territorial case projection includes live recipient delivery state,
+complaints, and dispute settlements.
 
 Administrators may use `POST /api/v1/copyright-notices/:id/restrictions/:restrictionId/lifts`
 with a required, non-empty `rationale` of at most 10,000 characters. It returns 201 with

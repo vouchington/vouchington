@@ -4,15 +4,24 @@ import {
   getCopyrightNoticeServer,
   getCopyrightParticipantNoticeServer,
 } from '@/lib/api/server/copyright-notices'
+import { CopyrightEuNoticeDetail } from '@/components/copyright/copyright-eu-notice-detail'
+import { PageWithAside } from '@/components/page-with-aside'
 import { CopyrightNoticeDetailView } from '@/components/copyright/copyright-notice-detail'
 export const dynamic = 'force-dynamic'
 export default async function CopyrightNoticePage({ params }: { params: Promise<{ id: string }> }) {
   await requireCurrentUser()
   const { id } = await params
-  const [notice, participant] = await Promise.all([
-    getCopyrightNoticeServer(id),
-    getCopyrightParticipantNoticeServer(id),
-  ])
+  const participant = await getCopyrightParticipantNoticeServer(id)
+  if (participant?.jurisdiction === 'eu_dsa') {
+    return (
+      <PageWithAside>
+        <main className='mx-auto w-full max-w-3xl py-8'>
+          <CopyrightEuNoticeDetail notice={participant} />
+        </main>
+      </PageWithAside>
+    )
+  }
+  const notice = await getCopyrightNoticeServer(id)
   if (!notice) notFound()
   // The participant read model carries the timeline for the viewer's role (staff: the full one).
   const visibleNotice = participant ? { ...notice, timeline: participant.timeline } : notice

@@ -18,6 +18,7 @@ vi.mock(import('@/lib/auth/require-current-user'), () => ({
 
 vi.mock(import('@/lib/api/server/copyright-notices'), () => ({
   getCopyrightNotices: vi.fn<VitestLooseMock>(),
+  getCopyrightJurisdictionAvailabilityServer: vi.fn<VitestLooseMock>(),
   getCopyrightNoticeServer: vi.fn<VitestLooseMock>(),
   getCopyrightParticipantNoticeServer: vi.fn<VitestLooseMock>(),
   getCopyrightReviewQueue: vi.fn<VitestLooseMock>(),
@@ -49,12 +50,14 @@ vi.mock(import('@/components/copyright/copyright-email-review'), () => ({
 
 import { requireCurrentUser } from '@/lib/auth/require-current-user'
 import {
+  getCopyrightJurisdictionAvailabilityServer,
   getCopyrightEmailIntakeReviewQueue,
   getCopyrightNoticeServer,
   getCopyrightNotices,
   getCopyrightParticipantNoticeServer,
   getCopyrightReviewQueue,
 } from '@/lib/api/server/copyright-notices'
+import { makeCopyrightJurisdictionAvailability } from '@/test-helpers/api-responses/copyright'
 import {
   copyrightEmailIntakeId,
   makeCopyrightEmailQueuePage,
@@ -74,6 +77,7 @@ import CopyrightEmailReviewPage, { metadata as emailReviewMetadata } from './ema
 
 const mockUser = vi.mocked(requireCurrentUser)
 const mockList = vi.mocked(getCopyrightNotices)
+const mockAvailability = vi.mocked(getCopyrightJurisdictionAvailabilityServer)
 const mockNotice = vi.mocked(getCopyrightNoticeServer)
 const mockParticipant = vi.mocked(getCopyrightParticipantNoticeServer)
 const mockReviewQueue = vi.mocked(getCopyrightReviewQueue)
@@ -83,10 +87,11 @@ describe('copyright pages', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockUser.mockResolvedValue({ roles: ['moderator'] } as never)
+    mockAvailability.mockResolvedValue(makeCopyrightJurisdictionAvailability())
   })
 
-  it('renders the public policy pages', () => {
-    render(<CopyrightPage />)
+  it('renders the public policy pages', async () => {
+    render(await CopyrightPage())
     expect(screen.queryByRole('link', { name: 'Copyright review queue' })).toBeNull()
     expect(screen.getByRole('heading', { name: 'Copyright policy' })).toBeInTheDocument()
     render(<CounterNoticePage />)
@@ -101,8 +106,8 @@ describe('copyright pages', () => {
     expect(screen.getByText('layout child')).toBeInTheDocument()
   })
 
-  it('links the copyright articles from the policy and counter-notice pages', () => {
-    const { unmount } = render(<CopyrightPage />)
+  it('links the copyright articles from the policy and counter-notice pages', async () => {
+    const { unmount } = render(await CopyrightPage())
     expect(screen.getByRole('link', { name: 'Copyright and the DMCA on Voucha' })).toHaveAttribute(
       'href',
       '/article/copyright-and-dmca',
@@ -117,6 +122,23 @@ describe('copyright pages', () => {
       'href',
       '/article/copyright-complaints',
     )
+  })
+
+  it('shows the EU filing link only when availability is confirmed', async () => {
+    render(await CopyrightPage())
+    expect(screen.queryByRole('link', { name: 'Submit an EU copyright notice' })).toBeNull()
+    mockAvailability.mockResolvedValue(makeCopyrightJurisdictionAvailability(true))
+    render(await CopyrightPage())
+    expect(screen.getByRole('link', { name: 'Submit an EU copyright notice' })).toHaveAttribute(
+      'href',
+      '/copyright/eu-notices/new',
+    )
+  })
+
+  it('hides the EU filing link when the availability read fails', async () => {
+    mockAvailability.mockRejectedValue(new Error('unavailable'))
+    render(await CopyrightPage())
+    expect(screen.queryByRole('link', { name: 'Submit an EU copyright notice' })).toBeNull()
   })
 
   it('loads signed-in notice list, create, and staff queues', async () => {
@@ -165,6 +187,7 @@ describe('copyright pages', () => {
     mockNotice.mockResolvedValue({ id: 'notice-1', timeline: [] } as never)
     mockParticipant.mockResolvedValue({
       viewer_role: 'poster',
+      jurisdiction: 'us_dmca',
       respondable_target_ids: ['target-1'],
       timeline: [{ id: 'event-1', event_type: 'notice_received', created_at: '2026-07-01' }],
     } as never)

@@ -15,7 +15,7 @@ export function selectTerritorialRedressParent(
   noticeId: string,
 ) {
   return sql`/* submitTerritorialCopyrightRedress:decision */
-    SELECT decision.id, receipt.requester_user_id
+    SELECT decision.id, decision.decided_at, decision.outcome, receipt.requester_user_id
     FROM copyright_territorial_decisions decision
     JOIN copyright_territorial_notice_receipts receipt
       ON receipt.copyright_notice_id = decision.copyright_notice_id
@@ -28,33 +28,33 @@ export function selectTerritorialRedressParent(
 
 export function selectExistingTerritorialRedressRequest(
   jurisdiction: TerritorialCopyrightJurisdiction,
-  noticeId: string,
+  decisionId: string,
   actorId: string,
   idempotencyKey: string,
 ) {
   return sql`/* submitTerritorialCopyrightRedress:existing */
-    SELECT id, copyright_notice_id FROM copyright_territorial_redress_requests
-    WHERE jurisdiction = ${jurisdiction} AND (
-      copyright_notice_id = ${noticeId} OR (
-        submitted_by_user_id = ${actorId} AND idempotency_key = ${idempotencyKey}
-      )
-    )`
+    SELECT id, copyright_notice_id, copyright_territorial_decision_id
+    FROM copyright_territorial_redress_requests
+    WHERE jurisdiction = ${jurisdiction} AND submitted_by_user_id = ${actorId}
+      AND (copyright_territorial_decision_id = ${decisionId}
+        OR idempotency_key = ${idempotencyKey})`
 }
 
 export function insertTerritorialRedressRequest(
   jurisdiction: TerritorialCopyrightJurisdiction,
   noticeId: string,
   decisionId: string,
-  actorId: string,
+  actorId: string | null,
+  filedBy: 'notifier' | 'poster' | 'reviewer',
   idempotencyKey: string,
   explanationCiphertext: string,
 ) {
   return sql`/* submitTerritorialCopyrightRedress */
     INSERT INTO copyright_territorial_redress_requests (
       copyright_notice_id, jurisdiction, copyright_territorial_decision_id, submitted_by_user_id,
-      idempotency_key, explanation_ciphertext
+      filed_by, idempotency_key, explanation_ciphertext
     ) VALUES (
-      ${noticeId}, ${jurisdiction}, ${decisionId}, ${actorId}, ${idempotencyKey},
+      ${noticeId}, ${jurisdiction}, ${decisionId}, ${actorId}, ${filedBy}, ${idempotencyKey},
       ${explanationCiphertext}
     )
     RETURNING id`

@@ -5,6 +5,7 @@ type CopyrightLegalFollowupSubmissionKind = 'court_or_ccb_hold' | 'supplement'
 export type CopyrightSubmissionKind =
   | CopyrightFormSubmissionKind
   | CopyrightLegalFollowupSubmissionKind
+  | 'complaint'
 export type CopyrightSubmissionSourceKind = 'signed_in_form' | 'guest_form' | 'email' | 'staff'
 export type CopyrightHoldProceedingKind = 'federal_court' | 'ccb'
 export type CopyrightHoldResolutionKind = 'dismissed' | 'proceeding_ended' | 'superseded'

@@ -22,8 +22,21 @@ export async function receiveTestTerritorialDecisionNotice(
   }
   const receipt =
     jurisdiction === 'eu_dsa'
-      ? await receiveEuCopyrightNotice(claimant, crypto.randomUUID(), request)
-      : await receiveUkCopyrightNotice(claimant, crypto.randomUUID(), request)
+      ? await receiveEuCopyrightNotice(
+          { user: claimant, identity: `user:${claimant.id}` },
+          crypto.randomUUID(),
+          {
+            ...request,
+            notifierName: `Notifier ${claimant.id}`,
+            notifierEmail: request.contact,
+            goodFaithStatement: true,
+          },
+        )
+      : await receiveUkCopyrightNotice(
+          { user: claimant, identity: `user:${claimant.id}` },
+          crypto.randomUUID(),
+          request,
+        )
   return {
     noticeId: receipt.notice_id,
     contact: request.contact,

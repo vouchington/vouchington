@@ -39,7 +39,7 @@ Not partitioned — growth: unbounded.
 - `copyright_notice_email_correspondence_reviews_check`: `CHECK ((((action = 'pending'::text) AND (reviewed_at IS NULL) AND (reviewed_by_id IS NULL) AND (kind IS NULL)) OR ((action = ANY (ARRAY['admitted'::text, 'rejected'::text])) AND (reviewed_at IS NOT NULL) AND (reviewed_by_id IS NOT NULL) AND (kind IS NOT NULL))))`
 - `copyright_notice_email_correspondence_reviews_check1`: `CHECK (((action = 'admitted'::text) = ((copyright_notice_submission_id IS NOT NULL) AND (copyright_notice_correspondence_id IS NOT NULL))))`
 - `copyright_notice_email_correspondence_reviews_check2`: `CHECK (((action = 'pending'::text) OR ((copyright_notice_email_intake_recommendation_id IS NULL) = (manual_fallback_reason_ciphertext IS NOT NULL))))`
-- `copyright_notice_email_correspondence_reviews_kind_check`: `CHECK ((kind = ANY (ARRAY['supplement'::text, 'appeal'::text, 'counter_notice'::text, 'withdrawal'::text, 'court_or_ccb_hold'::text])))`
+- `copyright_notice_email_correspondence_reviews_kind_check`: `CHECK ((kind = ANY (ARRAY['supplement'::text, 'appeal'::text, 'counter_notice'::text, 'withdrawal'::text, 'court_or_ccb_hold'::text, 'complaint'::text])))`
 
 **Foreign keys:**
 

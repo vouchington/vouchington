@@ -87,7 +87,7 @@ CREATE TABLE copyright_notice_submissions (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE CASCADE,
   submitted_by_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
-  kind text NOT NULL CHECK (kind IN ('notice', 'supplement', 'appeal', 'counter_notice', 'withdrawal', 'court_or_ccb_hold')),
+  kind text NOT NULL CHECK (kind IN ('notice', 'supplement', 'appeal', 'counter_notice', 'withdrawal', 'court_or_ccb_hold', 'complaint')),
   received_at timestamptz NOT NULL,
   source_kind text NOT NULL CHECK (source_kind IN ('signed_in_form', 'guest_form', 'email', 'staff')),
   body_ciphertext text NOT NULL CHECK (char_length(body_ciphertext) BETWEEN 1 AND 1048576),

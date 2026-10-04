@@ -79,7 +79,8 @@ export function CopyrightNoticeDetailView({
         </ol>
       </section>
       <CopyrightNoticeStatements statements={statements} />
-      {responseEligibility?.viewer_role === 'poster' &&
+      {notice.jurisdiction === 'us_dmca' &&
+        responseEligibility?.viewer_role === 'poster' &&
         responseEligibility.respondable_target_ids.length > 0 && (
           <div className='flex gap-3'>
             <Link

@@ -8,6 +8,13 @@ import type {
   CopyrightParticipantNoticeDetail,
   CopyrightStaffQueuePage,
 } from '@/types/copyright-notices'
+import type { CopyrightJurisdictionAvailabilityResponse } from '@/types/copyright-eu'
+
+export async function getCopyrightJurisdictionAvailabilityServer(): Promise<CopyrightJurisdictionAvailabilityResponse> {
+  return serverApi.get<CopyrightJurisdictionAvailabilityResponse>(
+    '/api/v1/copyright-jurisdiction-availability',
+  )
+}
 
 export const getCopyrightNotices = cache(
   async (options?: { after?: string; limit?: number }): Promise<CopyrightNoticesPage> => {

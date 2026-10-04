@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { readCopyrightTerritorialContractShape } from '@voucha/test-helpers/data-stores/psql/copyright-eu-uk-contracts'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
+import { seedTerritorialRedress } from '@voucha/test-helpers/copyright-territorial-redress-seed'
 import {
   TERRITORIAL_SURFACES,
   approveJurisdictionPolicy,
   createTerritorialActors,
   seedDeterminedTerritorialNotice,
   seedPendingTerritorialNotice,
-  seedTerritorialRedress,
 } from '@voucha/test-helpers/services/copyright-notices/territorial-routes'
 
 // A caller the handler turns away answers with a bare status, never a schema diagnostic.

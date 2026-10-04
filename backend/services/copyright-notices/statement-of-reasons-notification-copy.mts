@@ -25,7 +25,8 @@ export function copyrightNotificationCopy(
     | 'poster_review_notice'
     | 'poster_restoration_notice'
     | 'owner_information_notice'
-    | 'claimant_decision_notice',
+    | 'claimant_decision_notice'
+    | 'redress_decision_notice',
   jurisdiction: string = 'us_dmca',
 ): { title: string; body: string } {
   switch (deliveryKind) {
@@ -38,6 +39,11 @@ export function copyrightNotificationCopy(
             title: 'Copyright notice decision',
             body: 'Your copyright notice was decided. The decision statement gives the reasons. You may seek judicial redress through a court.',
           }
+    case 'redress_decision_notice':
+      return {
+        title: 'Copyright complaint decision',
+        body: 'A person decided your complaint. See the case page for the disposition and reasons.',
+      }
     case 'poster_review_notice':
     case 'poster_restoration_notice':
     case 'owner_information_notice':

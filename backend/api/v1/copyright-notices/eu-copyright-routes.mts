@@ -4,12 +4,13 @@ import { verifyCaptchaOrAttestation } from '@services/captcha'
 import {
   acknowledgeEuCopyrightNotice,
   assertCopyrightIntakeEnabled,
+  createCopyrightGuestIdentity,
   receiveEuCopyrightNotice,
   recordEuCopyrightSupervisedComplaint,
   submitEuCopyrightRedress,
 } from '@services/copyright-notices'
 import {
-  parseTerritorialNoticeBody,
+  parseEuTerritorialNoticeBody,
   parseTerritorialText,
 } from '@services/copyright-notices/territorial-http-input'
 import { assertNotSuspended } from '@services/users'
@@ -17,12 +18,13 @@ import app from '../../app.mts'
 import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
 import {
   parseJsonBody,
+  getOptionalAuthAndRateLimit,
   requireAuth,
   validateRequestContract,
   validateUUIDParam,
 } from '../../response-helpers.mts'
 import type {
-  CopyrightTerritorialNoticeRequest,
+  CopyrightEuNoticeRequest,
   CopyrightTerritorialRedressRequest,
   CopyrightTerritorialSupervisedComplaintRequest,
 } from './territorial-request-types.mts'
@@ -36,14 +38,29 @@ app.route('/api/v1/copyright-eu-notices').post(async (ctx: Context) => {
   setPrivateNoStoreCacheHeaders(ctx)
   assertCopyrightIntakeEnabled()
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
-  const currentUser = await requireAuth(ctx, 'POST:/api/v1/copyright-eu-notices')
-  assertNotSuspended(currentUser)
-  const body = await parseJsonBody<CopyrightTerritorialNoticeRequest>(ctx)
+  const currentUser = await getOptionalAuthAndRateLimit(ctx, 'POST:/api/v1/copyright-eu-notices')
+  if (currentUser) assertNotSuspended(currentUser)
+  const body = await parseJsonBody<CopyrightEuNoticeRequest>(ctx)
   await verifyCaptchaOrAttestation(ctx, body, { actionTag: 'copyright-eu-notices.create' })
   const idempotencyKey = requireIdempotencyKey(ctx)
-  const notice = parseTerritorialNoticeBody(body)
+  const notice = parseEuTerritorialNoticeBody(body)
+  const guestIp = ctx.ip
+  ctx.assert(
+    currentUser || (typeof guestIp === 'string' && guestIp.length > 0),
+    400,
+    'Client IP required',
+  )
   validateRequestContract(ctx, 'POST:/api/v1/copyright-eu-notices', { body })
-  const receipt = await receiveEuCopyrightNotice(currentUser, idempotencyKey, notice)
+  const receipt = await receiveEuCopyrightNotice(
+    {
+      user: currentUser,
+      identity: currentUser
+        ? `user:${currentUser.id}`
+        : createCopyrightGuestIdentity(guestIp as string),
+    },
+    idempotencyKey,
+    notice,
+  )
   const acknowledgment = await acknowledgeEuCopyrightNotice(currentUser, receipt.notice_id)
   ctx.setStatus(receipt.is_duplicate ? 200 : 201)
   ctx.json({ copyright_eu_notice: receipt, acknowledgment })

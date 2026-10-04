@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   CAPTCHA_BODIES,
+  EU_NOTICE,
   ENUMS,
   PATH_ONLY,
   PATH_PARAMETERS,
@@ -40,10 +41,19 @@ describe('copyright territorial request contracts', () => {
     expect(schema.additionalProperties).toBe(false)
     expect((schema.required as string[]).toSorted()).toEqual(required)
     const properties = schema.properties as Record<string, Schema>
-    const stringKeys = required.filter(key => key !== ENUMS[operation]?.field)
+    const stringKeys = required.filter(
+      key => key !== ENUMS[operation]?.field && key !== 'good_faith_statement',
+    )
     expect(stringKeys.map(key => properties[key])).toEqual(
       stringKeys.map(() => ({ type: 'string' })),
     )
+  })
+
+  it('requires an affirmative EU good-faith statement', () => {
+    const schema = resolve(carriersOf(EU_NOTICE).body)
+    const properties = schema.properties as Record<string, Schema>
+    expect(schema.required).toContain('good_faith_statement')
+    expect(properties.good_faith_statement).toEqual({ const: true })
   })
 
   it.each(Object.entries(ENUMS))(
@@ -78,5 +88,20 @@ describe('copyright territorial request contracts', () => {
 
   it.each(PATH_ONLY)('%s declares a path carrier only', operation => {
     expect(Object.keys(carriersOf(operation))).toEqual(['path'])
+  })
+
+  it.each([
+    'POST:/api/v1/copyright-email-intakes/:id/correspondence',
+    'POST:/api/v1/copyright-email-intakes/:id/correspondence-rejections',
+  ])('%s permits territorial complaints in its closed correspondence kinds', operation => {
+    const properties = resolve(carriersOf(operation).body).properties as Record<string, Schema>
+    expect(((properties.kind?.enum ?? []) as string[]).toSorted()).toEqual([
+      'appeal',
+      'complaint',
+      'counter_notice',
+      'court_or_ccb_hold',
+      'supplement',
+      'withdrawal',
+    ])
   })
 })

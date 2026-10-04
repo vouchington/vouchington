@@ -11,7 +11,7 @@ CREATE TABLE copyright_notice_delivery_intents (
   recipient_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
   recipient_user_erased_at timestamptz,
   recipient_role text NOT NULL CHECK (recipient_role IN ('claimant', 'poster', 'informed_owner', 'correspondent')),
-  delivery_kind text NOT NULL CHECK (delivery_kind IN ('claimant_receipt', 'status_update', 'poster_restriction_notice', 'poster_review_notice', 'poster_restoration_notice', 'owner_information_notice', 'claimant_decision_notice', 'counter_notice_forwarding', 'staff_information_request', 'email_intake_rejected', 'email_intake_needs_information', 'email_intake_received')),
+  delivery_kind text NOT NULL CHECK (delivery_kind IN ('claimant_receipt', 'status_update', 'poster_restriction_notice', 'poster_review_notice', 'poster_restoration_notice', 'owner_information_notice', 'claimant_decision_notice', 'redress_decision_notice', 'counter_notice_forwarding', 'staff_information_request', 'email_intake_rejected', 'email_intake_needs_information', 'email_intake_received')),
   target_path text CHECK (target_path IS NULL OR (char_length(target_path) BETWEEN 1 AND 1024 AND target_path LIKE '/communities/%')),
   channel text NOT NULL CHECK (channel IN ('in_app', 'email')),
   state text NOT NULL DEFAULT 'pending' CHECK (state IN ('pending', 'claimed', 'sent', 'failed', 'bounced')),

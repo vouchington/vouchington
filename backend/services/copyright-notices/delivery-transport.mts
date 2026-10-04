@@ -40,7 +40,8 @@ export async function deliverCopyrightInAppNotification(intentId: string): Promi
         intent.delivery_kind === 'poster_review_notice' ||
         intent.delivery_kind === 'poster_restoration_notice' ||
         intent.delivery_kind === 'owner_information_notice' ||
-        intent.delivery_kind === 'claimant_decision_notice',
+        intent.delivery_kind === 'claimant_decision_notice' ||
+        intent.delivery_kind === 'redress_decision_notice',
       422,
       'Copyright delivery kind is not sent in-app',
     )

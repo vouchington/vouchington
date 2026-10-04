@@ -10,6 +10,9 @@ function noticeBody() {
     content_description: `Work ${suffix}`,
     grounds: `Grounds ${suffix}`,
     hosted_use_url: `https://example.test/${suffix}`,
+    notifier_name: `Notifier ${suffix}`,
+    notifier_email: `notifier-${suffix}@example.test`,
+    good_faith_statement: true,
   }
 }
 

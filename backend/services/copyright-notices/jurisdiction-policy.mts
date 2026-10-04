@@ -1,4 +1,4 @@
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, read } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -21,12 +21,8 @@ export function currentUserCanApproveCopyrightJurisdictionPolicy(
   return currentUser?.roles?.includes('administrator') === true
 }
 
-export async function lockCurrentCopyrightJurisdictionPolicy(
-  jurisdiction: TerritorialCopyrightJurisdiction,
-  transaction: TransactionQuery,
-): Promise<CopyrightJurisdictionPolicyApproval> {
-  const { rows } = await transaction<CopyrightJurisdictionPolicyApproval>(
-    sql`/* lockCurrentCopyrightJurisdictionPolicy */
+function currentCopyrightJurisdictionPolicySql(jurisdiction: TerritorialCopyrightJurisdiction) {
+  return sql`/* currentCopyrightJurisdictionPolicy */
     SELECT approval.id, approval.jurisdiction, approval.policy_version
     FROM copyright_jurisdiction_policy_approvals approval
     WHERE approval.jurisdiction = ${jurisdiction}
@@ -36,8 +32,35 @@ export async function lockCurrentCopyrightJurisdictionPolicy(
       )
     ORDER BY approval.approved_at DESC, approval.id DESC
     LIMIT 1
-    FOR UPDATE OF approval
-  `,
+  `
+}
+
+export async function findCurrentCopyrightJurisdictionPolicy(
+  jurisdiction: TerritorialCopyrightJurisdiction,
+): Promise<CopyrightJurisdictionPolicyApproval | null> {
+  const { rows } = await read<CopyrightJurisdictionPolicyApproval>(
+    currentCopyrightJurisdictionPolicySql(jurisdiction),
+  )
+  return rows[0] ?? null
+}
+
+export async function getCopyrightJurisdictionAvailability(): Promise<{
+  eu_dsa: boolean
+  uk: boolean
+}> {
+  const [euDsa, uk] = await Promise.all([
+    findCurrentCopyrightJurisdictionPolicy('eu_dsa'),
+    findCurrentCopyrightJurisdictionPolicy('uk'),
+  ])
+  return { eu_dsa: euDsa !== null, uk: uk !== null }
+}
+
+export async function lockCurrentCopyrightJurisdictionPolicy(
+  jurisdiction: TerritorialCopyrightJurisdiction,
+  transaction: TransactionQuery,
+): Promise<CopyrightJurisdictionPolicyApproval> {
+  const { rows } = await transaction<CopyrightJurisdictionPolicyApproval>(
+    currentCopyrightJurisdictionPolicySql(jurisdiction).append(sql`FOR UPDATE OF approval`),
   )
   const approval = rows[0]
   assert(approval, 403, territorialCopyrightUnavailableMessage(jurisdiction))

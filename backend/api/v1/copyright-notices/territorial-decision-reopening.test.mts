@@ -67,7 +67,6 @@ describe.each(TERRITORIAL_SURFACES)('$label decision reopening', surface => {
       counter_notices: [],
       legal_holds: [],
       action_intents: [],
-      delivery_intents: [],
       staydown_matches: [],
       email_correspondence: [],
       territorial: {
@@ -82,6 +81,12 @@ describe.each(TERRITORIAL_SURFACES)('$label decision reopening', surface => {
         decision: null,
       },
     })
+    expect(
+      (staffCase?.delivery_intents ?? [])
+        .filter(intent => intent.delivery_kind === 'claimant_receipt')
+        .map(intent => intent.channel)
+        .toSorted(),
+    ).toEqual(surface.jurisdiction === 'eu_dsa' ? ['email', 'in_app'] : [])
     expect(staffCase?.territorial?.acknowledgment.acknowledged_at).toEqual(
       acknowledgment.acknowledged_at,
     )

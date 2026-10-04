@@ -7,8 +7,6 @@ import {
   recordCopyrightJurisdictionPolicyApproval,
   recordEuCopyrightStatementOfReasons,
   recordUkCopyrightReview,
-  submitEuCopyrightRedress,
-  submitUkCopyrightRedress,
 } from '../../../services/copyright-notices/index.mts'
 import { createRequest } from '../../api/server.mts'
 import { createTestUser } from '../../entities/users.mts'
@@ -57,23 +55,28 @@ const SERVICES = {
     receive: receiveEuCopyrightNotice,
     acknowledge: acknowledgeEuCopyrightNotice,
     determine: recordEuCopyrightStatementOfReasons,
-    redress: submitEuCopyrightRedress,
   },
   uk: {
     receive: receiveUkCopyrightNotice,
     acknowledge: acknowledgeUkCopyrightNotice,
     determine: recordUkCopyrightReview,
-    redress: submitUkCopyrightRedress,
   },
 } as const
 
-export function territorialNoticeBody() {
+export function territorialNoticeBody(jurisdiction: TerritorialJurisdiction = 'uk') {
   const suffix = crypto.randomUUID()
   return {
     contact: `claimant-${suffix}@example.test`,
     content_description: `Work ${suffix}`,
     grounds: `Grounds ${suffix}`,
     hosted_use_url: `https://example.test/${suffix}`,
+    ...(jurisdiction === 'eu_dsa'
+      ? {
+          notifier_name: `Notifier ${suffix}`,
+          notifier_email: `notifier-${suffix}@example.test`,
+          good_faith_statement: true as const,
+        }
+      : {}),
   }
 }
 
@@ -150,11 +153,18 @@ export async function seedPendingTerritorialNotice(
   jurisdiction: TerritorialJurisdiction,
   claimant: PrivateUser,
 ): Promise<string> {
-  const receipt = await SERVICES[jurisdiction].receive(
-    claimant,
-    crypto.randomUUID(),
-    serviceNotice(territorialNoticeBody()),
-  )
+  const body = territorialNoticeBody(jurisdiction)
+  const request = serviceNotice(body)
+  const requester = { user: claimant, identity: `user:${claimant.id}` }
+  const receipt =
+    jurisdiction === 'eu_dsa'
+      ? await receiveEuCopyrightNotice(requester, crypto.randomUUID(), {
+          ...request,
+          notifierName: `Notifier ${claimant.id}`,
+          notifierEmail: request.contact,
+          goodFaithStatement: true,
+        })
+      : await receiveUkCopyrightNotice(requester, crypto.randomUUID(), request)
   return receipt.notice_id
 }
 
@@ -173,19 +183,4 @@ export async function seedDeterminedTerritorialNotice(
     targets: [],
   })
   return noticeId
-}
-
-/** A determined notice and the claimant's redress request against it. */
-export async function seedTerritorialRedress(
-  jurisdiction: TerritorialJurisdiction,
-  actors: Pick<TerritorialActors, 'claimant' | 'staff'>,
-): Promise<{ noticeId: string; redressId: string }> {
-  const noticeId = await seedDeterminedTerritorialNotice(jurisdiction, actors)
-  const redress = await SERVICES[jurisdiction].redress(
-    actors.claimant,
-    noticeId,
-    crypto.randomUUID(),
-    'Please review this restriction',
-  )
-  return { noticeId, redressId: redress.id }
 }

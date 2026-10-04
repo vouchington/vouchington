@@ -11,10 +11,16 @@ export type CopyrightNoticeDeliveryKind =
   | 'poster_restoration_notice'
   | 'owner_information_notice'
   | 'claimant_decision_notice'
+  | 'redress_decision_notice'
   | 'counter_notice_forwarding'
   | 'staff_information_request'
 
 export type CopyrightDeliveryKind = CopyrightNoticeDeliveryKind | CopyrightEmailIntakeDeliveryKind
+
+export const copyrightDecisionDeliveryKinds = [
+  'poster_restriction_notice',
+  'claimant_decision_notice',
+] as const satisfies readonly CopyrightNoticeDeliveryKind[]
 
 export type CopyrightDeliveryIntentRecord = {
   id: string

@@ -11,7 +11,12 @@ export default async function CopyrightCounterNoticePage({
   await requireCurrentUser()
   const { id } = await params
   const notice = await getCopyrightParticipantNoticeServer(id)
-  if (!notice || notice.viewer_role !== 'poster' || notice.respondable_target_ids.length === 0)
+  if (
+    !notice ||
+    notice.jurisdiction !== 'us_dmca' ||
+    notice.viewer_role !== 'poster' ||
+    notice.respondable_target_ids.length === 0
+  )
     notFound()
   return (
     <main className='mx-auto max-w-2xl space-y-4 py-8'>

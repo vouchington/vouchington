@@ -14,6 +14,8 @@ describe('copyright EU and UK contract schema', () => {
 
   it('stores the territorial contract tables without US clock columns', async () => {
     await expect(readTerritorialContractTableNames()).resolves.toEqual([
+      'copyright_eu_dispute_settlement_outcomes',
+      'copyright_eu_dispute_settlement_referrals',
       'copyright_eu_supervised_complaints',
       'copyright_eu_transparency_reports',
       'copyright_jurisdiction_policy_approvals',

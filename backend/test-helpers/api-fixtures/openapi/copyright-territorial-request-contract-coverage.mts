@@ -13,7 +13,15 @@ export const UK_REDRESS = `POST:${UK}/:id/redress-requests`
 
 /** Closed JSON bodies and the keys each one requires. */
 export const REQUIRED_KEYS: Record<string, string[]> = {
-  [EU_NOTICE]: ['contact', 'content_description', 'grounds', 'hosted_use_url'],
+  [EU_NOTICE]: [
+    'contact',
+    'content_description',
+    'good_faith_statement',
+    'grounds',
+    'hosted_use_url',
+    'notifier_email',
+    'notifier_name',
+  ],
   [UK_NOTICE]: ['contact', 'content_description', 'grounds', 'hosted_use_url'],
   [EU_REDRESS]: ['explanation'],
   [UK_REDRESS]: ['explanation'],

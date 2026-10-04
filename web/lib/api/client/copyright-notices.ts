@@ -11,6 +11,7 @@ import type {
 } from '@/types/copyright-notices'
 
 import type { CopyrightNoticeTargetInput } from './copyright-notice-input'
+export { createCopyrightEuNotice, createCopyrightEuRedress } from './copyright-eu-notices'
 export type { CopyrightNoticeTargetInput } from './copyright-notice-input'
 
 export function createCopyrightNotice(input: {

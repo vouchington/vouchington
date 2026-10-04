@@ -1,8 +1,10 @@
 import assert from 'http-assert'
+import { isEmailAddress } from '@ts-shared/utils/validation-core'
 import {
   assertBoundedText,
   assertStaffDisposition,
   type TerritorialNoticeRequest,
+  type EuTerritorialNoticeRequest,
 } from './territorial-fields.mts'
 import { parseCopyrightTargets } from './http-input.mts'
 import type { CopyrightImageSelector } from './placement-resolution.mts'
@@ -57,6 +59,19 @@ export function parseTerritorialNoticeBody(
     grounds: body.grounds,
     hostedUseUrl: body.hosted_use_url,
   }
+}
+
+export function parseEuTerritorialNoticeBody(
+  body: Record<string, unknown>,
+): EuTerritorialNoticeRequest {
+  const base = parseTerritorialNoticeBody(body)
+  assert(typeof body.notifier_name === 'string', 422, 'notifier_name is required')
+  assert(typeof body.notifier_email === 'string', 422, 'notifier_email is required')
+  const notifierName = assertBoundedText(body.notifier_name, 200, 'notifier_name is required')
+  const notifierEmail = assertBoundedText(body.notifier_email, 254, 'notifier_email is required')
+  assert(isEmailAddress(notifierEmail), 422, 'notifier_email must be an email address')
+  assert(body.good_faith_statement === true, 422, 'good_faith_statement must be true')
+  return { ...base, notifierName, notifierEmail, goodFaithStatement: true }
 }
 
 export function parseTerritorialText(body: Record<string, unknown>, field: string): string {

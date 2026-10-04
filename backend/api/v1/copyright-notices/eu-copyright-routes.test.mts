@@ -11,6 +11,9 @@ function noticeBody() {
     content_description: `Work ${suffix}`,
     grounds: `Grounds ${suffix}`,
     hosted_use_url: `https://example.test/${suffix}`,
+    notifier_name: `Notifier ${suffix}`,
+    notifier_email: `notifier-${suffix}@example.test`,
+    good_faith_statement: true,
   }
 }
 
@@ -20,6 +23,9 @@ function noticeRequest(body: ReturnType<typeof noticeBody>) {
     contentDescription: body.content_description,
     grounds: body.grounds,
     hostedUseUrl: body.hosted_use_url,
+    notifierName: body.notifier_name,
+    notifierEmail: body.notifier_email,
+    goodFaithStatement: true as const,
   }
 }
 
@@ -46,7 +52,7 @@ describe('EU copyright notice routes', () => {
     const staffRequest = createRequest()
     await staffRequest.authenticateAs(staff)
     const pending = await receiveEuCopyrightNotice(
-      claimant,
+      { user: claimant, identity: `user:${claimant.id}` },
       crypto.randomUUID(),
       noticeRequest(noticeBody()),
     )

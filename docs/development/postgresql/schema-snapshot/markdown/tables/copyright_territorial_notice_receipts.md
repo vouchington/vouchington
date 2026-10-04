@@ -6,32 +6,37 @@ EU or UK notice receipt. Administrative facts only; no US restoration clock and 
 
 Not partitioned — growth: unbounded.
 
-| Column                                      | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                            |
-| ------------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------- |
-| `id`                                        | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                    |
-| `copyright_notice_id`                       | `uuid`                     | no       |                              |          |           |           | Copyright notice this receipt records. One receipt per notice.                                     |
-| `jurisdiction`                              | `text`                     | no       |                              |          |           |           | Jurisdiction of the notice and of the policy approval: eu_dsa or uk. Both foreign keys must agree. |
-| `copyright_jurisdiction_policy_approval_id` | `uuid`                     | no       |                              |          |           |           | Unwithdrawn policy approval of the same jurisdiction that made this receipt acceptable.            |
-| `requester_user_id`                         | `uuid`                     | yes      |                              |          |           |           | Signed-in requester. Null for a guest or after account deletion.                                   |
-| `idempotency_key`                           | `text`                     | no       |                              |          |           |           | Caller idempotency key, unique together with requester_user_id and jurisdiction.                   |
-| `request_sha256`                            | `bytea`                    | no       |                              |          |           |           | SHA-256 digest of the received request.                                                            |
-| `hosted_use_url`                            | `text`                     | no       |                              |          |           |           | URL of the hosted use identified in the notice.                                                    |
-| `grounds_ciphertext`                        | `text`                     | no       |                              |          |           |           | Encrypted grounds supplied with the notice. The system does not decide merits.                     |
-| `received_at`                               | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When Voucha stored this notice receipt.                                                            |
-| `created_at`                                | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                    |
-| `updated_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                    |
+| Column                                      | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                             |
+| ------------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                                        | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                     |
+| `copyright_notice_id`                       | `uuid`                     | no       |                              |          |           |           | Copyright notice this receipt records. One receipt per notice.                                                                                      |
+| `jurisdiction`                              | `text`                     | no       |                              |          |           |           | Jurisdiction of the notice and of the policy approval: eu_dsa or uk. Both foreign keys must agree.                                                  |
+| `copyright_jurisdiction_policy_approval_id` | `uuid`                     | no       |                              |          |           |           | Unwithdrawn policy approval of the same jurisdiction that made this receipt acceptable.                                                             |
+| `requester_user_id`                         | `uuid`                     | yes      |                              |          |           |           | Signed-in requester identity retained after account deletion; null means a genuine guest only. This historical identity never grants authorization. |
+| `requester_identity_sha256`                 | `bytea`                    | no       |                              |          |           |           | SHA-256 of the signed-in or guest requester identity, used only to scope idempotency.                                                               |
+| `idempotency_key`                           | `text`                     | no       |                              |          |           |           | Caller idempotency key, unique together with requester identity digest and jurisdiction.                                                            |
+| `request_sha256`                            | `bytea`                    | no       |                              |          |           |           | SHA-256 digest of the received request.                                                                                                             |
+| `hosted_use_url`                            | `text`                     | no       |                              |          |           |           | URL of the hosted use identified in the notice.                                                                                                     |
+| `grounds_ciphertext`                        | `text`                     | no       |                              |          |           |           | Encrypted grounds supplied with the notice. The system does not decide merits.                                                                      |
+| `notifier_email_ciphertext`                 | `text`                     | yes      |                              |          |           |           | Encrypted EU notifier address of record for receipt and later decision notices; absent for UK.                                                      |
+| `good_faith_statement`                      | `boolean`                  | yes      |                              |          |           |           | EU notifier good-faith declaration, required true; absent for UK.                                                                                   |
+| `received_at`                               | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When Voucha stored this notice receipt.                                                                                                             |
+| `created_at`                                | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                     |
+| `updated_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                                     |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
 
-- `uq_copyright_territorial_notice_receipts__idempotency`: `UNIQUE (requester_user_id, jurisdiction, idempotency_key)`
+- `uq_copyright_territorial_notice_receipts__idempotency`: `UNIQUE (requester_identity_sha256, jurisdiction, idempotency_key)`
 - `uq_copyright_territorial_notice_receipts__notice`: `UNIQUE (copyright_notice_id, jurisdiction)`
 
 **Check constraints:**
 
+- `chk_copyright_territorial_notice_receipts__eu_fields`: `CHECK ((((jurisdiction = 'eu_dsa'::text) AND (notifier_email_ciphertext IS NOT NULL) AND (good_faith_statement IS TRUE)) OR ((jurisdiction = 'uk'::text) AND (notifier_email_ciphertext IS NULL) AND (good_faith_statement IS NULL))))`
 - `chk_copyright_territorial_notice_receipts__grounds`: `CHECK (((char_length(grounds_ciphertext) >= 1) AND (char_length(grounds_ciphertext) <= 1048576)))`
 - `chk_copyright_territorial_notice_receipts__idempotency`: `CHECK ((char_length(idempotency_key) = 36))`
+- `chk_copyright_territorial_notice_receipts__identity_sha`: `CHECK ((octet_length(requester_identity_sha256) = 32))`
 - `chk_copyright_territorial_notice_receipts__jurisdiction`: `CHECK ((jurisdiction = ANY (ARRAY['eu_dsa'::text, 'uk'::text])))`
 - `chk_copyright_territorial_notice_receipts__sha`: `CHECK ((octet_length(request_sha256) = 32))`
 - `chk_copyright_territorial_notice_receipts__url`: `CHECK (((char_length(hosted_use_url) >= 1) AND (char_length(hosted_use_url) <= 2048)))`
@@ -40,14 +45,14 @@ Not partitioned — growth: unbounded.
 
 - `fk_copyright_territorial_notice_receipts__approval`: `FOREIGN KEY (copyright_jurisdiction_policy_approval_id, jurisdiction) REFERENCES copyright_jurisdiction_policy_approvals(id, jurisdiction) ON DELETE RESTRICT`
 - `fk_copyright_territorial_notice_receipts__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE RESTRICT`
-- `fk_copyright_territorial_notice_receipts__requester`: `FOREIGN KEY (requester_user_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_copyright_territorial_notice_receipts__requester`: `FOREIGN KEY (requester_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `copyright_territorial_notice_receipts_pkey`: `CREATE UNIQUE INDEX copyright_territorial_notice_receipts_pkey ON public.copyright_territorial_notice_receipts USING btree (id)`
 - `idx_copyright_territorial_notice_receipts__policy`: `CREATE INDEX idx_copyright_territorial_notice_receipts__policy ON public.copyright_territorial_notice_receipts USING btree (copyright_jurisdiction_policy_approval_id, jurisdiction)`
 - `idx_copyright_territorial_notice_receipts__requester`: `CREATE INDEX idx_copyright_territorial_notice_receipts__requester ON public.copyright_territorial_notice_receipts USING btree (requester_user_id) WHERE (requester_user_id IS NOT NULL)`
-- `uq_copyright_territorial_notice_receipts__idempotency`: `CREATE UNIQUE INDEX uq_copyright_territorial_notice_receipts__idempotency ON public.copyright_territorial_notice_receipts USING btree (requester_user_id, jurisdiction, idempotency_key)`
+- `uq_copyright_territorial_notice_receipts__idempotency`: `CREATE UNIQUE INDEX uq_copyright_territorial_notice_receipts__idempotency ON public.copyright_territorial_notice_receipts USING btree (requester_identity_sha256, jurisdiction, idempotency_key)`
 - `uq_copyright_territorial_notice_receipts__notice`: `CREATE UNIQUE INDEX uq_copyright_territorial_notice_receipts__notice ON public.copyright_territorial_notice_receipts USING btree (copyright_notice_id, jurisdiction)`
 
 **Triggers:**

@@ -8,7 +8,6 @@ import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import {
   assertBoundedText,
-  assertIdempotencyKey,
   assertStaffDisposition,
   type CopyrightStaffDisposition,
   type TerritorialCopyrightJurisdiction,
@@ -16,70 +15,23 @@ import {
 import { territorialLabels } from './territorial-labels.mts'
 import { createCopyrightRestoreIntentForReversalInTransaction } from './restoration-reversal.mts'
 import { createCopyrightClaimantDecisionNoticeInTransaction } from './claimant-decision-notices.mts'
+import { createTerritorialRedressDecisionNotice } from './territorial-redress-notices.mts'
 import {
   applyCopyrightConfirmationConsequencesInTransaction,
   enqueueCopyrightStaydownHashes,
 } from './staydown-registration.mts'
 import {
   insertTerritorialRedressDecision,
-  insertTerritorialRedressRequest,
   selectExistingTerritorialRedressDecision,
-  selectExistingTerritorialRedressRequest,
-  selectTerritorialRedressParent,
   selectTerritorialRedressRequest,
 } from './territorial-redress-sql.mts'
 
-export type TerritorialCopyrightRedressRequest = { id: string; is_duplicate: boolean }
+export { submitTerritorialCopyrightRedress } from './territorial-redress-submission.mts'
+export type { TerritorialCopyrightRedressRequest } from './territorial-redress-submission.mts'
 export type TerritorialCopyrightRedressDecision = {
   id: string
   decided_at: Date
   staff_disposition: CopyrightStaffDisposition
-}
-
-export async function submitTerritorialCopyrightRedress(
-  actor: PrivateUser,
-  noticeId: string,
-  idempotencyKey: string,
-  explanation: string,
-  jurisdiction: TerritorialCopyrightJurisdiction,
-): Promise<TerritorialCopyrightRedressRequest> {
-  const labels = territorialLabels(jurisdiction)
-  assertIdempotencyKey(idempotencyKey)
-  const text = assertBoundedText(explanation, 50_000, 'explanation is required')
-  await using transaction = await beginTransaction()
-  const { rows: parents } = await transaction<{
-    id: string
-    requester_user_id: string | null
-  }>(selectTerritorialRedressParent(jurisdiction, noticeId))
-  const parent = parents[0]
-  assert(parent, 404, labels.decisionNotFound)
-  assert(
-    actor.id === parent.requester_user_id || currentUserCanReviewCopyrightNotices(actor),
-    403,
-    'Forbidden',
-  )
-  const { rows: existing } = await transaction<{ id: string; copyright_notice_id: string }>(
-    selectExistingTerritorialRedressRequest(jurisdiction, noticeId, actor.id, idempotencyKey),
-  )
-  if (existing[0]) {
-    assert(existing[0].copyright_notice_id === noticeId, 409, 'Idempotency-Key was reused')
-    await transaction.commit()
-    return { id: existing[0].id, is_duplicate: true }
-  }
-  const { rows } = await transaction<{ id: string }>(
-    insertTerritorialRedressRequest(
-      jurisdiction,
-      noticeId,
-      parent.id,
-      actor.id,
-      idempotencyKey,
-      encryptSecret(text, `${labels.redressPurpose}:${idempotencyKey}`),
-    ),
-  )
-  const created = rows[0]
-  assert(created, 500, labels.redressFailed)
-  await transaction.commit()
-  return { id: created.id, is_duplicate: false }
 }
 
 export async function recordTerritorialCopyrightRedressDecision(
@@ -168,6 +120,10 @@ export async function recordTerritorialCopyrightRedressDecision(
       transaction,
     )
   }
+  await createTerritorialRedressDecisionNotice(
+    { noticeId, redressId, disposition, rationale },
+    transaction,
+  )
   await transaction.commit()
   for (const intentId of restoreIntentIds) void enqueueApplyCopyrightAction(intentId)
   enqueueCopyrightStaydownHashes(staydownImageIds)

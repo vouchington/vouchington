@@ -37,7 +37,7 @@ describe('UK copyright notice contracts', () => {
       await concealJurisdictionPolicyApprovals(transaction, 'uk', claimant.id)
       await expect(
         receiveUkCopyrightNoticeInTransaction(
-          claimant,
+          { user: claimant, identity: `user:${claimant.id}` },
           crypto.randomUUID(),
           noticeRequest(),
           transaction,
@@ -50,7 +50,7 @@ describe('UK copyright notice contracts', () => {
         claimant.id,
       )
       const opened = await receiveUkCopyrightNoticeInTransaction(
-        claimant,
+        { user: claimant, identity: `user:${claimant.id}` },
         crypto.randomUUID(),
         noticeRequest(),
         transaction,
@@ -59,7 +59,7 @@ describe('UK copyright notice contracts', () => {
       await insertJurisdictionPolicyWithdrawal(transaction, approvalId, claimant.id)
       await expect(
         receiveUkCopyrightNoticeInTransaction(
-          claimant,
+          { user: claimant, identity: `user:${claimant.id}` },
           crypto.randomUUID(),
           noticeRequest(),
           transaction,
@@ -79,7 +79,11 @@ describe('UK copyright notice contracts', () => {
       jurisdiction: 'uk',
       policyVersion: `uk-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
     })
-    const receipt = await receiveUkCopyrightNotice(claimant, crypto.randomUUID(), noticeRequest())
+    const receipt = await receiveUkCopyrightNotice(
+      { user: claimant, identity: `user:${claimant.id}` },
+      crypto.randomUUID(),
+      noticeRequest(),
+    )
     const acknowledgment = await acknowledgeUkCopyrightNotice(claimant, receipt.notice_id)
     expect(receipt.route_destination).toBe('staff_queue')
     expect(acknowledgment.acknowledged_at).toBeInstanceOf(Date)
@@ -113,7 +117,11 @@ describe('UK copyright notice contracts', () => {
       rationale: 'Staff kept the recorded review',
     })
     expect(decision.staff_disposition).toBe('maintain')
-    const failing = await receiveUkCopyrightNotice(claimant, crypto.randomUUID(), noticeRequest())
+    const failing = await receiveUkCopyrightNotice(
+      { user: claimant, identity: `user:${claimant.id}` },
+      crypto.randomUUID(),
+      noticeRequest(),
+    )
     await recordUkCopyrightAcknowledgmentFailure(staff, failing.notice_id)
     await recordUkCopyrightAcknowledgmentFailure(staff, failing.notice_id)
     await recordUkCopyrightAcknowledgmentFailure(staff, failing.notice_id)

@@ -737,9 +737,10 @@ or unassessed filings and another independent restriction never lose their prote
 
 ## Jurisdiction and public meaning
 
-US timing does not govern EU or UK cases. The public form and email intake still accept only
-`us_dmca`. EU and UK use separate contracts and stay unavailable until an unwithdrawn jurisdiction
-policy approval exists. That approval is an operator record, not a seeded row, and remains
+US timing does not govern EU or UK cases. The US form and original email-notice intake accept
+`us_dmca`; the separate EU form accepts signed-in and guest notifiers. UK notice intake remains
+authenticated and has no web form. New EU and UK notices stay unavailable until an unwithdrawn
+jurisdiction policy approval exists. That approval is an operator record, not a seeded row, and remains
 unapproved until the staff web screen ships. New EU and UK notices need both that approval and
 `COPYRIGHT_INTAKE_ENABLED`; neither replaces the other. Withdrawing approval stops new EU/UK
 notice intake only. A notice already received remains decidable, and its acknowledgment, decision,
@@ -754,9 +755,13 @@ staff or counsel, and removing one ground cannot remove another.
 The fail-closed flow is diagrammed in the
 [copyright notices service README](../../../backend/services/copyright-notices/README.md).
 
-Receipt stores the notifier's contact, content location, and grounds. Staff resolve the post-image
-targets from the notifier's URL when deciding the notice; the notice body and its hash remain
-unchanged. A decision writes no US restoration deadline. Acknowledgment is an administrative
+Receipt stores the notifier's contact, content location, and grounds. EU receipts also record
+`notifier_name`, `notifier_email`, and the literal-true `good_faith_statement`; UK rejects these EU
+fields. Guest receipt identity is derived from the client IP, and signed-in identity from the
+account, so same-client idempotent replay creates no second receipt or delivery. EU notifiers
+receive the receipt and later decisions at the retained receipt email address; signed-in notifiers
+also receive in-app notices. Staff resolve the post-image targets from the notifier's URL when
+deciding the notice. A decision writes no US restoration deadline. Acknowledgment is an administrative
 obligation with no due timestamp. A failed attempt can be recorded until the fifth failure, the same
 attempt bound used for copyright delivery, and that fifth failure escalates. Success does not invent
 a response deadline.
@@ -783,6 +788,35 @@ The staff disposition on redress is `maintain` or `revoke` as selected by that u
 complaint records an external authority reference and escalates that record. UK review and redress
 do not write EU reason, complaint, or report rows. Neither contract imports the US counter-notice
 clock.
+
+The EU participant case is readable before acceptance and after `no_action`. It shows the live
+decision, the viewer's own stored statements and delivery times, complaint state, and dispute
+settlements. It never exposes another party's complaint or staff-only restriction rationale. The
+statement builder supplies the Art. 20 internal-complaint and Art. 21 dispute-settlement routes for
+EU posters and notifiers, together with judicial redress. Signed-in parties use the case-page
+complaint link; a guest notifier replies to the decision email. UK keeps its separate redress
+contract and has no EU UI or Art. 21 route.
+
+An EU notifier, targeted post owner, or reviewer may complain about the live decision. Each party
+has one request per decision, so the notifier and poster do not share a complaint, and a successor
+decision permits a new complaint. Replay returns the caller's request before checking the time
+window. The six-month period begins at that recipient's earliest sent decision notice for the live
+decision; bounced, failed, pending, earlier-decision, review, and restoration notices do not start
+it. A never-informed party has no cutoff, a reviewer has no cutoff, and a party with both roles
+receives the later window end. Calendar-month arithmetic is performed in PostgreSQL.
+
+Staff admit an EU guest's reply as correspondence and submission kind `complaint`; mail itself
+provides no authorization. The service checks the guest receipt, live decision, and complaint
+period at the email's receipt time. Unadmitted or rejected replies create no complaint. Staff
+complaint decisions notify the complainant on the applicable channels with the disposition and
+rationale; a reviewer-filed complaint has no recipient notice. A `revoke` of `no_action` tells the
+notifier that staff are deciding again and disables another complaint until the successor exists.
+
+Art. 21 referrals and outcomes are staff-recorded, EU-only immutable records. They identify the
+certified body, referral time and party, outcome, and any implementation time. One outcome belongs
+to a referral; only a recipient-favouring outcome permits one later implementation timestamp. The
+record itself does not enforce the body's decision: staff first perform the appropriate case
+action, then record implementation. These records and complaints remain usable after withdrawal.
 
 A member-visible case records an allegation and, where applicable, a provisional restriction or reviewed
 outcome. It never describes the claimant as the proven owner or the poster as an infringer.

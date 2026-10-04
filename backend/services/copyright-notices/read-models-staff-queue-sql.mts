@@ -54,6 +54,17 @@ export function copyrightStaffQueueKeysSql({
     .append(sql`
       GROUP BY decision.copyright_notice_id
       UNION ALL
+      SELECT request.copyright_notice_id, 'territorial_redress_review', request.received_at
+      FROM copyright_territorial_redress_requests request
+      JOIN copyright_territorial_decisions decision
+        ON decision.id = request.copyright_territorial_decision_id
+      WHERE NOT EXISTS (
+        SELECT 1 FROM copyright_territorial_redress_decisions redress_decision
+        WHERE redress_decision.copyright_territorial_redress_request_id = request.id
+      ) AND `)
+    .append(territorialDecisionIsLiveSql())
+    .append(sql`
+      UNION ALL
       SELECT target.copyright_notice_id, 'restriction_review', restriction.imposed_at
       FROM copyright_restrictions restriction
       JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id

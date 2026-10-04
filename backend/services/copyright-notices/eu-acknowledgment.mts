@@ -7,7 +7,7 @@ import {
 export type EuCopyrightAcknowledgment = TerritorialCopyrightAcknowledgment
 
 export async function acknowledgeEuCopyrightNotice(
-  actor: PrivateUser,
+  actor: PrivateUser | null,
   noticeId: string,
 ): Promise<EuCopyrightAcknowledgment> {
   return recordTerritorialCopyrightAcknowledgment(actor, noticeId, 'acknowledged', 'eu_dsa')

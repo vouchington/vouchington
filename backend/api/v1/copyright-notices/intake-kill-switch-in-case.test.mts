@@ -207,7 +207,16 @@ describe('copyright in-case responses with intake switched off', () => {
         .expect(503)
     }
 
-    const eu = await receiveEuCopyrightNotice(claimant, crypto.randomUUID(), territorialNotice())
+    const eu = await receiveEuCopyrightNotice(
+      { user: claimant, identity: `user:${claimant.id}` },
+      crypto.randomUUID(),
+      {
+        ...territorialNotice(),
+        notifierName: 'Notice claimant',
+        notifierEmail: `claimant-${claimant.id}@example.test`,
+        goodFaithStatement: true,
+      },
+    )
     const euNotice = `/api/v1/copyright-eu-notices/${eu.notice_id}`
     await staff
       .post(`${euNotice}/statements-of-reasons`)
@@ -236,7 +245,11 @@ describe('copyright in-case responses with intake switched off', () => {
       })
       .expect(201)
 
-    const uk = await receiveUkCopyrightNotice(claimant, crypto.randomUUID(), territorialNotice())
+    const uk = await receiveUkCopyrightNotice(
+      { user: claimant, identity: `user:${claimant.id}` },
+      crypto.randomUUID(),
+      territorialNotice(),
+    )
     const ukNotice = `/api/v1/copyright-uk-notices/${uk.notice_id}`
     await staff
       .post(`${ukNotice}/reviews`)

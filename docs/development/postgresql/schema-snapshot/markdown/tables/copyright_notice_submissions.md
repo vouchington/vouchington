@@ -28,7 +28,7 @@ Not partitioned — growth: unbounded.
 **Check constraints:**
 
 - `copyright_notice_submissions_body_ciphertext_check`: `CHECK (((char_length(body_ciphertext) >= 1) AND (char_length(body_ciphertext) <= 1048576)))`
-- `copyright_notice_submissions_kind_check`: `CHECK ((kind = ANY (ARRAY['notice'::text, 'supplement'::text, 'appeal'::text, 'counter_notice'::text, 'withdrawal'::text, 'court_or_ccb_hold'::text])))`
+- `copyright_notice_submissions_kind_check`: `CHECK ((kind = ANY (ARRAY['notice'::text, 'supplement'::text, 'appeal'::text, 'counter_notice'::text, 'withdrawal'::text, 'court_or_ccb_hold'::text, 'complaint'::text])))`
 - `copyright_notice_submissions_source_kind_check`: `CHECK ((source_kind = ANY (ARRAY['signed_in_form'::text, 'guest_form'::text, 'email'::text, 'staff'::text])))`
 - `copyright_submission_guest_capability_shape`: `CHECK (((copyright_notice_guest_capability_id IS NULL) OR ((source_kind = 'guest_form'::text) AND (kind = ANY (ARRAY['supplement'::text, 'withdrawal'::text, 'court_or_ccb_hold'::text])))))`
 

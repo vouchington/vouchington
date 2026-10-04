@@ -270,16 +270,28 @@
       "fixtureIds": ["web.copyright.email-intake-queue.default"],
       "hash": "aa3f27faa243815a024a9488de111719b8f75132bc2b72dca7c698757ecb63dd"
     },
+    "GET:/api/v1/copyright-jurisdiction-availability": {
+      "fixtureIds": ["web.copyright.eu.jurisdiction-availability"],
+      "hash": "824d5e44ad511c46f0aeb1ce931275695acc293c67f4b3c64c788d71cae2ba11"
+    },
     "GET:/api/v1/copyright-notices": {
       "fixtureIds": ["web.copyright.notices.default", "web.copyright.notices.null-claimant"],
-      "hash": "6e222b9e45b15b7bf87f49d04a0fa0d037bfab278aeae8c8da3632ea48666176"
+      "hash": "368fe3f23be60e016d35c5304989037a38e162110df5dbbd9b3cb7a725dd2f11"
     },
     "GET:/api/v1/copyright-notices/:id": {
       "fixtureIds": [
         "web.copyright.notice.detail.null-claimant",
         "web.copyright.notice.detail.populated"
       ],
-      "hash": "ab9eda832d61b6032b2d9d9d5fcf00a9dee3298b9e355419c92ba562f62a5ff8"
+      "hash": "e0f7f088c24e8b98ffda3c50279ef899de8a5d4f97737190f148c00a568e9173"
+    },
+    "GET:/api/v1/copyright-notices/:id/eu-dispute-settlements": {
+      "fixtureIds": ["web.copyright.eu.dispute-settlements.participant"],
+      "hash": "c2ac090988053c5a8b7b8b6e1a99ffe1427bb1e5caf9d854cf8f1eddc223687a"
+    },
+    "GET:/api/v1/copyright-notices/:id/eu-dispute-settlements/staff": {
+      "fixtureIds": ["web.copyright.eu.dispute-settlements.staff"],
+      "hash": "d19cb3686c47524cf4b0b24e93287d15e522f068e465f2bb2d5c59e02fdf0e12"
     },
     "GET:/api/v1/copyright-notices/:id/guest-capabilities": {
       "fixtureIds": ["web.copyright.guest-capabilities.listed"],
@@ -287,18 +299,23 @@
     },
     "GET:/api/v1/copyright-notices/:id/participant": {
       "fixtureIds": [
+        "web.copyright.eu.participant.no-action-complaint",
         "web.copyright.notice.participant.null-claimant",
         "web.copyright.notice.participant.populated"
       ],
-      "hash": "54d11a3733ece0e237e318029fb048080d04210e9b08181c86574801b4f6d0da"
+      "hash": "c83cec42a6c90e55f69895315ce0896e459bbbd8d0ed8eacd0bf68a19ab69cf0"
     },
     "GET:/api/v1/copyright-notices/:id/targets/:targetId/image-similarity-candidates": {
       "fixtureIds": ["native.moderation.copyright.image-similarity-candidates.default"],
       "hash": "4f2b4f1e0ba9ef6e1a49c55b6ab3a9c1855c9414e7cb74daf10e665b2d889940"
     },
+    "GET:/api/v1/copyright-notices/:id/territorial-complaints": {
+      "fixtureIds": ["web.copyright.eu.territorial-complaints"],
+      "hash": "9198d5ad6c123e8047678b4d5c159b243e2a8b1d8b957331bffa177ec4b168fa"
+    },
     "GET:/api/v1/copyright-notices/review-queue": {
       "fixtureIds": ["web.copyright.staff-queue.default"],
-      "hash": "0b5c41c6eb440254b118045a5e12b24aa821f38f00c051ebe1ea6053570990eb"
+      "hash": "5da2f53411f901ca961ba94bcd9b32e1edeaaa1373a2f498b4dfc130d7e764df"
     },
     "GET:/api/v1/currencies": {
       "fixtureIds": ["shared.currencies.list.default"],
@@ -2796,6 +2813,26 @@
     "web.copyright.email-intake-rejection.reply-queued": {
       "fixtureIds": ["web.copyright.email-intake-rejection.reply-queued"],
       "hash": "b1d883f88b6afb685bde0e61dde5a6d4f86437e8d587d34d77f59216e18d1386"
+    },
+    "web.copyright.eu.dispute-settlements.participant": {
+      "fixtureIds": ["web.copyright.eu.dispute-settlements.participant"],
+      "hash": "18a68f57833d8975118713b3c550d27891d47b25cf40014d6d2c026ec6f34873"
+    },
+    "web.copyright.eu.dispute-settlements.staff": {
+      "fixtureIds": ["web.copyright.eu.dispute-settlements.staff"],
+      "hash": "18a68f57833d8975118713b3c550d27891d47b25cf40014d6d2c026ec6f34873"
+    },
+    "web.copyright.eu.jurisdiction-availability": {
+      "fixtureIds": ["web.copyright.eu.jurisdiction-availability"],
+      "hash": "20962f1872c97f9056f4c882a7bb4ee47277a7d8aa0fb9e168af4598ef728b99"
+    },
+    "web.copyright.eu.participant.no-action-complaint": {
+      "fixtureIds": ["web.copyright.eu.participant.no-action-complaint"],
+      "hash": "10fd8b03e76dc670e8403bf8d2308e553ca2a297f3504ccd18ea8d6c6dfb6e65"
+    },
+    "web.copyright.eu.territorial-complaints": {
+      "fixtureIds": ["web.copyright.eu.territorial-complaints"],
+      "hash": "4c66339888ce391a253a7022ff3e0bb060b6856430b9294c121c910ecbe1275f"
     },
     "web.copyright.guest-capabilities.listed": {
       "fixtureIds": ["web.copyright.guest-capabilities.listed"],

@@ -77,6 +77,14 @@ CREATE OR REPLACE FUNCTION public.fn_ensure_retained_identity(family retained_id
  LANGUAGE plpgsql
 ```
 
+## `fn_guard_copyright_eu_dispute_settlement_outcome`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_eu_dispute_settlement_outcome()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_guard_copyright_territorial_decision`
 
 ```sql

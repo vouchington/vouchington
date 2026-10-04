@@ -1,5 +1,5 @@
 /* oxlint-disable max-lines -- Copyright read projections keep redaction rules in one audited module. */
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, read } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
@@ -7,10 +7,7 @@ import { assertNotSuspended } from '@services/users'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import type { CopyrightEmailSesVerdict, CopyrightEmailSesVerdicts } from './email-ses-verdicts.mts'
-import {
-  selectCopyrightParticipantStatements,
-  type CopyrightParticipantStatement,
-} from './participant-statements.mts'
+import { selectCopyrightParticipantStatements } from './participant-statements.mts'
 import { liveCopyrightCiphertext } from './erased-ciphertext.mts'
 import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
 import { copyrightPlacementPublicVisibleSql } from '@services/media-delivery-safety/copyright-placement-public-visible-sql'
@@ -18,6 +15,17 @@ import {
   copyrightTimelineEventTypesFor,
   type CopyrightTimelineAudience,
 } from './timeline-visibility.mts'
+import { getEuParticipantNoticeDetail } from './read-models-territorial.mts'
+import type {
+  CopyrightParticipantNoticeDetail,
+  CopyrightPublicNotice,
+  CopyrightPublicNoticeDetail,
+} from './read-models-notice-types.mts'
+export type {
+  CopyrightParticipantNoticeDetail,
+  CopyrightPublicNotice,
+  CopyrightPublicNoticeDetail,
+} from './read-models-notice-types.mts'
 
 export type CopyrightStaffEmailIntake = {
   id: string
@@ -154,40 +162,6 @@ async function getCopyrightEmailLinkedNotice(noticeId: string): Promise<{
   `)
   await transaction.commit()
   return rows.length > 0 ? { id: noticeId, targets: rows } : null
-}
-
-export type CopyrightPublicNotice = {
-  id: string
-  jurisdiction: 'us_dmca'
-  received_at: Date
-  accepted_at: Date
-  provisional_withholding_at: Date | null
-  target_count: number
-  claimant: { user_id: string; display_name: string } | null
-}
-
-export type CopyrightPublicNoticeDetail = CopyrightPublicNotice & {
-  targets: Array<{
-    id: string
-    surface:
-      | 'post-image'
-      | 'user-profile-image'
-      | 'user-profile-link-image'
-      | 'topic-logo-image'
-      | 'topic-hero-image'
-      | 'community-profile-image'
-      | 'community-banner-image'
-    hosted_use_url: string | null
-    restriction_status: 'active' | 'lifted' | 'pending'
-  }>
-  timeline: Array<{ id: string; event_type: string; created_at: Date }>
-}
-
-export type CopyrightParticipantNoticeDetail = CopyrightPublicNoticeDetail & {
-  statements: CopyrightParticipantStatement[]
-  viewer_role: 'claimant' | 'poster' | 'staff'
-  respondable_target_ids: string[]
-  submissions: Array<{ id: string; kind: string; received_at: Date; source_kind: string }>
 }
 
 export type CopyrightAcceptedNoticeCursorRow = CopyrightPublicNotice & {
@@ -338,6 +312,18 @@ export async function getCopyrightParticipantNoticeDetail(
 ): Promise<CopyrightParticipantNoticeDetail | null> {
   const viewerRole = await getCopyrightNoticeViewerRole(noticeId, currentUser)
   if (!viewerRole) return null
+  const { rows: jurisdictions } = await read<{
+    jurisdiction: string
+  }>(sql`/* getCopyrightParticipantNoticeJurisdiction */
+    SELECT jurisdiction FROM copyright_notices WHERE id = ${noticeId}
+  `)
+  if (jurisdictions[0]?.jurisdiction === 'eu_dsa')
+    return getEuParticipantNoticeDetail(
+      noticeId,
+      currentUser,
+      viewerRole,
+      await getCopyrightPublicNoticeDetail(noticeId, viewerRole === 'staff' ? 'staff' : 'member'),
+    )
   const detail = await getCopyrightPublicNoticeDetail(
     noticeId,
     viewerRole === 'staff' ? 'staff' : 'member',
@@ -382,7 +368,7 @@ export async function getCopyrightParticipantNoticeDetail(
   }
 }
 
-async function getCopyrightNoticeViewerRole(
+export async function getCopyrightNoticeViewerRole(
   noticeId: string,
   currentUser: PrivateUser,
 ): Promise<'claimant' | 'poster' | 'staff' | null> {

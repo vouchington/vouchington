@@ -15,6 +15,7 @@ const input = {
   targetUrls: ['https://example.test/image-a', 'https://example.test/image-b'],
   automatedDecision: false,
   aiGuidance: false,
+  claimantHasAccount: true,
 }
 
 describe('copyright statements of reasons', () => {
@@ -95,32 +96,39 @@ describe('copyright statements of reasons', () => {
   it.each([
     ['eu_dsa', 'EU or Member State law', 'DSA Article 16'],
     ['uk', 'UK law', 'UK copyright law'],
-  ] as const)('uses %s copyright ground and court-only redress', (jurisdiction, law, citation) => {
-    for (const audience of ['poster', 'claimant'] as const) {
-      for (const event of ['restricted', 'confirmed'] as const) {
-        const statement = buildCopyrightStatementOfReasons({
-          ...input,
-          jurisdiction,
-          audience,
-          event,
-          explanation: 'Sentinel public explanation from staff.',
-        })
-        expect(statement.fields.legalGround).toMatchObject({
-          jurisdiction,
-          citation: expect.stringContaining(citation),
-        })
-        expect(statement.text).toContain(law)
-        expect(statement.text).toContain('Sentinel public explanation from staff.')
-        expect(statement.fields.redress.map(route => route.key)).toEqual(['court'])
-        expect(statement.text).toContain('judicial redress through a court')
-        expect(statement.text).not.toContain('/copyright/notices/new')
-        expect(statement.text).not.toContain('/copyright/designated-agent')
-        expect(statement.text).not.toContain('/appeal')
-        expect(statement.text).not.toContain('/counter-notice')
-        expect(JSON.stringify(statement.fields)).not.toContain('Sentinel public explanation')
+  ] as const)(
+    'uses %s copyright ground and jurisdiction redress',
+    (jurisdiction, law, citation) => {
+      for (const audience of ['poster', 'claimant'] as const) {
+        for (const event of ['restricted', 'confirmed'] as const) {
+          const statement = buildCopyrightStatementOfReasons({
+            ...input,
+            jurisdiction,
+            audience,
+            event,
+            explanation: 'Sentinel public explanation from staff.',
+          })
+          expect(statement.fields.legalGround).toMatchObject({
+            jurisdiction,
+            citation: expect.stringContaining(citation),
+          })
+          expect(statement.text).toContain(law)
+          expect(statement.text).toContain('Sentinel public explanation from staff.')
+          expect(statement.fields.redress.map(route => route.key)).toEqual(
+            jurisdiction === 'eu_dsa'
+              ? ['internal_complaint', 'out_of_court_dispute_settlement', 'court']
+              : ['court'],
+          )
+          expect(statement.text).toContain('judicial redress through a court')
+          expect(statement.text).not.toContain('/copyright/notices/new')
+          expect(statement.text).not.toContain('/copyright/designated-agent')
+          expect(statement.text).not.toContain('/appeal')
+          expect(statement.text).not.toContain('/counter-notice')
+          expect(JSON.stringify(statement.fields)).not.toContain('Sentinel public explanation')
+        }
       }
-    }
-  })
+    },
+  )
   it.each(['eu_dsa', 'uk'] as const)(
     'renders %s no-action explanation without US intake routes',
     jurisdiction => {
@@ -133,7 +141,11 @@ describe('copyright statements of reasons', () => {
         explanation: 'Sentinel no-action explanation.',
       })
       expect(statement.fields.restriction).toBeNull()
-      expect(statement.fields.redress.map(route => route.key)).toEqual(['court'])
+      expect(statement.fields.redress.map(route => route.key)).toEqual(
+        jurisdiction === 'eu_dsa'
+          ? ['internal_complaint', 'out_of_court_dispute_settlement', 'court']
+          : ['court'],
+      )
       expect(statement.text).toContain('Sentinel no-action explanation.')
       expect(statement.text).not.toContain('/copyright/notices/new')
       expect(statement.text).not.toContain('/copyright/designated-agent')
