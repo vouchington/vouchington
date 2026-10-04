@@ -863,20 +863,29 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
      JOIN posts root_post ON ((root_post.id = COALESCE(candidate_post.root_id, candidate_post.id))))
      LEFT JOIN user_suspensions root_suspension ON (((root_suspension.user_id = root_post.created_by_id) AND (root_suspension.lifted_at IS NULL))))
      LEFT JOIN user_suspensions candidate_suspension ON (((candidate_suspension.user_id = candidate_post.created_by_id) AND (candidate_suspension.lifted_at IS NULL))))
-  WHERE ((candidate_post.deleted_at IS NULL) AND (candidate_post.approved_at IS NOT NULL) AND (candidate_post.archived_at IS NULL) AND (candidate_suspension.user_id IS NULL) AND (root_post.deleted_at IS NULL) AND (root_post.approved_at IS NOT NULL) AND (root_post.archived_at IS NULL) AND (root_post.privacy = 'public'::privacy_types) AND (root_post.broadcast = 'everyone'::broadcast_types) AND ((root_post.community_id IS NULL) OR (EXISTS ( SELECT 1
-           FROM (communities publication_community
-             JOIN community_post_reviews publication_review ON (((publication_review.community_id = publication_community.id) AND (publication_review.post_id = root_post.id) AND (publication_review.approved_at IS NOT NULL) AND (publication_review.rejected_at IS NULL) AND (publication_review.unpublished_at IS NULL))))
-          WHERE ((publication_community.id = root_post.community_id) AND (publication_community.deleted_at IS NULL) AND (publication_community.archived_at IS NULL) AND (publication_community.visibility = 'public'::community_visibility_types))
-         OFFSET 0))) AND ((root_post.post_type <> 'story'::post_types) OR (EXISTS ( SELECT 1
-           FROM ((post__stories post_story
-             JOIN stories publication_story ON (((publication_story.id = post_story.story_id) AND (publication_story.deleted_at IS NULL))))
-             JOIN rss_feed_items story_item ON (((story_item.story_id = publication_story.id) AND (story_item.deleted_at IS NULL))))
-          WHERE ((post_story.post_id = root_post.id) AND (EXISTS ( SELECT 1
-                   FROM (rss_feed_item_sources story_source
-                     JOIN rss_feeds story_feed ON ((story_feed.id = story_source.rss_feed_id)))
-                  WHERE ((story_source.rss_feed_item_id = story_item.id) AND (story_feed.deleted_at IS NULL) AND (story_feed.is_enabled = true) AND (story_feed.is_discoverable = true))
-                 OFFSET 0)))
-         OFFSET 0))) AND (root_suspension.user_id IS NULL));
+  WHERE ((candidate_post.deleted_at IS NULL) AND (candidate_post.approved_at IS NOT NULL) AND (candidate_post.archived_at IS NULL) AND (candidate_suspension.user_id IS NULL) AND (root_post.deleted_at IS NULL) AND (root_post.approved_at IS NOT NULL) AND (root_post.archived_at IS NULL) AND (root_post.privacy = 'public'::privacy_types) AND (root_post.broadcast = 'everyone'::broadcast_types) AND ((root_post.community_id IS NULL) OR (EXISTS ( WITH publication AS MATERIALIZED (
+                 SELECT 1 AS "?column?"
+                   FROM (communities publication_community
+                     JOIN community_post_reviews publication_review ON (((publication_review.community_id = publication_community.id) AND (publication_review.post_id = root_post.id) AND (publication_review.approved_at IS NOT NULL) AND (publication_review.rejected_at IS NULL) AND (publication_review.unpublished_at IS NULL))))
+                  WHERE ((publication_community.id = root_post.community_id) AND (publication_community.deleted_at IS NULL) AND (publication_community.archived_at IS NULL) AND (publication_community.visibility = 'public'::community_visibility_types))
+                )
+         SELECT 1
+           FROM publication))) AND ((root_post.post_type <> 'story'::post_types) OR (EXISTS ( WITH story_publication AS MATERIALIZED (
+                 SELECT 1 AS "?column?"
+                   FROM ((post__stories post_story
+                     JOIN stories publication_story ON (((publication_story.id = post_story.story_id) AND (publication_story.deleted_at IS NULL))))
+                     JOIN rss_feed_items story_item ON (((story_item.story_id = publication_story.id) AND (story_item.deleted_at IS NULL))))
+                  WHERE ((post_story.post_id = root_post.id) AND (EXISTS ( WITH source_publication AS MATERIALIZED (
+                                 SELECT 1 AS "?column?"
+                                   FROM (rss_feed_item_sources story_source
+                                     JOIN rss_feeds story_feed ON ((story_feed.id = story_source.rss_feed_id)))
+                                  WHERE ((story_source.rss_feed_item_id = story_item.id) AND (story_feed.deleted_at IS NULL) AND (story_feed.is_enabled = true) AND (story_feed.is_discoverable = true))
+                                )
+                         SELECT 1
+                           FROM source_publication)))
+                )
+         SELECT 1
+           FROM story_publication))) AND (root_suspension.user_id IS NULL));
 ```
 
 ## `view_rss_feed_current_states`
