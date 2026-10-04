@@ -2,12 +2,14 @@ export const BASIC_AUTH_SOURCE_FILE = 'cloudflare-worker/src/basic-auth.mts'
 export const BASIC_AUTH_RUNBOOK_FILE = 'docs/operations/cloudflare-worker-staging-auth.md'
 
 import {
-  BASIC_AUTH_EXEMPT_METHODS_BY_PATH,
-  BASIC_AUTH_EXEMPT_PATHS,
   findBasicAuthExemptMethodsByPath,
   findBasicAuthExemptPaths,
   findRunbookExemptRoutes,
-} from './basic-auth-doc-sync-parsers.mts'
+} from 'vouchington-tooling/basic-auth-doc-sync'
+
+const BASIC_AUTH_EXEMPT_PATHS = 'BASIC_AUTH_EXEMPT_PATHS'
+const BASIC_AUTH_EXEMPT_METHODS_BY_PATH = 'BASIC_AUTH_EXEMPT_METHODS_BY_PATH'
+const EXEMPT_PATHS_HEADING = 'Exempt paths'
 
 function formatPathList(paths: string[]): string {
   return paths.map(path => `\`${path}\``).join(', ')
@@ -32,9 +34,12 @@ export function checkBasicAuthRunbookExemptPathsSync(input: {
   sourceCode: string
   runbookMarkdown: string
 }): string[] {
-  const sourcePaths = findBasicAuthExemptPaths(input.sourceCode)
-  const sourceMethodsByPath = findBasicAuthExemptMethodsByPath(input.sourceCode)
-  const runbookRoutes = findRunbookExemptRoutes(input.runbookMarkdown)
+  const sourcePaths = findBasicAuthExemptPaths(input.sourceCode, BASIC_AUTH_EXEMPT_PATHS)
+  const sourceMethodsByPath = findBasicAuthExemptMethodsByPath(
+    input.sourceCode,
+    BASIC_AUTH_EXEMPT_METHODS_BY_PATH,
+  )
+  const runbookRoutes = findRunbookExemptRoutes(input.runbookMarkdown, EXEMPT_PATHS_HEADING)
   const errors: string[] = []
 
   if (!sourcePaths) {

@@ -1,11 +1,15 @@
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
+import type { ExemptRoute } from 'vouchington-tooling/basic-auth-doc-sync/runbook'
 
-import { checkBasicAuthRunbookExemptPathsSync } from './basic-auth-doc-sync.mts'
-import type { ExemptRoute } from './basic-auth-doc-sync-parsers.mts'
+import {
+  BASIC_AUTH_RUNBOOK_FILE,
+  BASIC_AUTH_SOURCE_FILE,
+  checkBasicAuthRunbookExemptPathsSync,
+} from './basic-auth-doc-sync.mts'
 import { checkTargetedGuardrails } from './index.mts'
 
 function basicAuthSource(routes: ExemptRoute[]): string {
@@ -61,102 +65,14 @@ describe('basic-auth exempt path doc sync guard', () => {
     ).toEqual([])
   })
 
-  it('accepts static template literals in source exempt paths', () => {
-    expect(
-      checkBasicAuthRunbookExemptPathsSync({
-        sourceCode:
-          'const BASIC_AUTH_EXEMPT_PATHS = new Set([`/api/v1/mcp`, "/infra/ping"])\nconst BASIC_AUTH_EXEMPT_METHODS_BY_PATH = new Map([[`/api/v1/mcp`, new Set(["POST"])], ["/infra/ping", new Set(["GET", "HEAD"])]])',
-        runbookMarkdown: basicAuthRunbook(syncedRoutes),
-      }),
-    ).toEqual([])
-  })
+  it('keeps configured live source and runbook in sync', async () => {
+    const repoRoot = join(import.meta.dirname, '../..')
+    const [sourceCode, runbookMarkdown] = await Promise.all([
+      readFile(join(repoRoot, BASIC_AUTH_SOURCE_FILE), 'utf8'),
+      readFile(join(repoRoot, BASIC_AUTH_RUNBOOK_FILE), 'utf8'),
+    ])
 
-  it('accepts comments and trailing commas in source exempt paths and methods', () => {
-    expect(
-      checkBasicAuthRunbookExemptPathsSync({
-        sourceCode: `
-const BASIC_AUTH_EXEMPT_PATHS = new Set([
-  // MCP clients call this route directly.
-  '/api/v1/mcp',
-  '/infra/ping', /* health check */
-])
-
-const BASIC_AUTH_EXEMPT_METHODS_BY_PATH = new Map([
-  ['/api/v1/mcp', new Set(['POST'])],
-  ['/infra/ping', new Set([
-    'GET',
-    'HEAD', /* liveness probe */
-  ])],
-])
-`,
-        runbookMarkdown: basicAuthRunbook(syncedRoutes),
-      }),
-    ).toEqual([])
-  })
-
-  it('ignores similar maps after the basic auth method map', () => {
-    expect(
-      checkBasicAuthRunbookExemptPathsSync({
-        sourceCode: `${basicAuthSource(syncedRoutes)}
-
-const UNRELATED_METHODS_BY_PATH = new Map([
-  ['/debug/status', new Set(['GET'])],
-])
-`,
-        runbookMarkdown: basicAuthRunbook(syncedRoutes),
-      }),
-    ).toEqual([])
-  })
-
-  it('accepts one-hyphen Markdown table separators', () => {
-    expect(
-      checkBasicAuthRunbookExemptPathsSync({
-        sourceCode: basicAuthSource(syncedRoutes),
-        runbookMarkdown: `# Staging Basic Auth
-
-### Exempt paths
-
-| Path | Methods | Caller | Auth mechanism |
-| - | - | - | - |
-| \`/api/v1/mcp\` | \`POST\` | Caller | Auth |
-| \`/infra/ping\` | \`GET\`, \`HEAD\` | Caller | Auth |
-`,
-      }),
-    ).toEqual([])
-  })
-
-  it('rejects malformed Markdown table separators before route rows', () => {
-    expect(
-      checkBasicAuthRunbookExemptPathsSync({
-        sourceCode: basicAuthSource([{ methods: ['GET', 'HEAD'], path: '/infra/ping' }]),
-        runbookMarkdown: `# Staging Basic Auth
-
-### Exempt paths
-
-| Path | Methods | Caller | Auth mechanism |
-| --- | not-a-separator | --- | --- |
-| --- | --- | --- | --- |
-| \`/infra/ping\` | \`GET\`, \`HEAD\` | Caller | Auth |
-`,
-      })[0],
-    ).toContain('could not parse the Exempt paths Markdown table')
-  })
-
-  it('ignores shadowed nested exempt path declarations', () => {
-    const errors = checkBasicAuthRunbookExemptPathsSync({
-      sourceCode: `
-const BASIC_AUTH_EXEMPT_PATHS = new Set(getPaths())
-
-function localOnly() {
-  const BASIC_AUTH_EXEMPT_PATHS = new Set(["/infra/ping"])
-  return BASIC_AUTH_EXEMPT_PATHS
-}
-`,
-      runbookMarkdown: basicAuthRunbook([{ methods: ['GET', 'HEAD'], path: '/infra/ping' }]),
-    })
-
-    expect(errors).toHaveLength(1)
-    expect(errors[0]).toContain('could not parse BASIC_AUTH_EXEMPT_PATHS')
+    expect(checkBasicAuthRunbookExemptPathsSync({ sourceCode, runbookMarkdown })).toEqual([])
   })
 
   it('flags source paths the runtime would never match', () => {
@@ -211,6 +127,32 @@ function localOnly() {
     expect(errors).toHaveLength(1)
     expect(errors[0]).toContain(
       'lists method(s) for `/infra/ping` as `GET`, but cloudflare-worker/src/basic-auth.mts has `GET`, `HEAD`',
+    )
+  })
+
+  it('flags duplicate runbook path rows', () => {
+    const runbookMarkdown = basicAuthRunbook([
+      { methods: ['GET'], path: '/infra/ping' },
+      { methods: ['GET', 'HEAD'], path: '/infra/ping' },
+    ])
+    const errors = checkBasicAuthRunbookExemptPathsSync({
+      sourceCode: basicAuthSource([{ methods: ['GET', 'HEAD'], path: '/infra/ping' }]),
+      runbookMarkdown,
+    })
+
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toContain('basic-auth exempt path table repeats path(s): `/infra/ping`')
+  })
+
+  it('does not equate duplicate source methods with distinct runbook methods', () => {
+    const errors = checkBasicAuthRunbookExemptPathsSync({
+      sourceCode: basicAuthSource([{ methods: ['GET', 'GET'], path: '/infra/ping' }]),
+      runbookMarkdown: basicAuthRunbook([{ methods: ['GET', 'HEAD'], path: '/infra/ping' }]),
+    })
+
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toContain(
+      'lists method(s) for `/infra/ping` as `GET`, `HEAD`, but cloudflare-worker/src/basic-auth.mts has `GET`, `GET`',
     )
   })
 
