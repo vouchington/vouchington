@@ -21,7 +21,8 @@ Not partitioned — growth: unbounded.
 **Primary key:** `PRIMARY KEY (placement_id)`
 
 **Unique constraints:**
-_none_
+
+- `image_surface_placements_placement_id_surface_kind_key`: `UNIQUE (placement_id, surface_kind)`
 
 **Check constraints:**
 
@@ -53,6 +54,7 @@ _none_
 - `idx_image_surface_placements__user_fk`: `CREATE INDEX idx_image_surface_placements__user_fk ON public.image_surface_placements USING btree (user_id) WHERE (user_id IS NOT NULL)`
 - `idx_image_surface_placements__user_profile`: `CREATE UNIQUE INDEX idx_image_surface_placements__user_profile ON public.image_surface_placements USING btree (user_id, image_id) WHERE (surface_kind = 'user-profile-image'::text)`
 - `image_surface_placements_pkey`: `CREATE UNIQUE INDEX image_surface_placements_pkey ON public.image_surface_placements USING btree (placement_id)`
+- `image_surface_placements_placement_id_surface_kind_key`: `CREATE UNIQUE INDEX image_surface_placements_placement_id_surface_kind_key ON public.image_surface_placements USING btree (placement_id, surface_kind)`
 
 **Triggers:**
 

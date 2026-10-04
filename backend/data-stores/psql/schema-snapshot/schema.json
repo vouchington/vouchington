@@ -586,7 +586,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_classifier_audit_actor_was_deleted(actor_id uuid)\n RETURNS boolean\n LANGUAGE sql\nAS $function$\n  SELECT actor_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM users WHERE id = actor_id)\n$function$\n"
     },
     "fn_copyright_retention_erasable_columns(table_name text)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasable_columns(table_name text)\n RETURNS text[]\n LANGUAGE sql\n IMMUTABLE PARALLEL SAFE\nAS $function$\n  SELECT CASE table_name\n    WHEN 'copyright_notices' THEN ARRAY['claimant_user_id', 'claimant_display_name', 'claimant_contact_ciphertext', 'work_description']\n    WHEN 'copyright_notice_submissions' THEN ARRAY['submitted_by_user_id', 'body_ciphertext']\n    WHEN 'copyright_notice_submission_requests' THEN ARRAY['requester_user_id']\n    WHEN 'copyright_notice_form_intakes' THEN ARRAY['requester_user_id', 'requester_identity_sha256', 'electronic_signature_ciphertext']\n    WHEN 'copyright_notice_form_screenings' THEN ARRAY['rationale_ciphertext', 'guidance_ciphertext']\n    WHEN 'copyright_notice_form_intake_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_evidence_artifacts' THEN ARRAY['storage_key']\n    WHEN 'copyright_notice_email_intakes' THEN ARRAY['raw_storage_key']\n    WHEN 'copyright_notice_email_intake_parses' THEN ARRAY['sender_email_ciphertext', 'sender_name_ciphertext', 'subject_ciphertext', 'body_ciphertext', 'message_id_ciphertext', 'reply_references_ciphertext', 'error_ciphertext']\n    WHEN 'copyright_notice_email_intake_attachments' THEN ARRAY['filename_ciphertext', 'content_id_ciphertext']\n    WHEN 'copyright_notice_email_thread_references' THEN ARRAY['lookup_token']\n    WHEN 'copyright_notice_email_intake_notice_links' THEN ARRAY['matched_reference_lookup']\n    WHEN 'copyright_notice_email_intake_recommendations' THEN ARRAY['structured_output_ciphertext']\n    WHEN 'copyright_notice_email_intake_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_email_correspondence_reviews' THEN ARRAY['rationale_ciphertext', 'manual_fallback_reason_ciphertext']\n    WHEN 'copyright_notice_appeal_recommendations' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_appeal_reviews' THEN ARRAY['rationale_ciphertext', 'manual_fallback_reason_ciphertext']\n    WHEN 'copyright_notice_counter_notice_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_legal_hold_assessments' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_legal_hold_resolutions' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_correspondence_messages' THEN ARRAY['body_ciphertext']\n    WHEN 'copyright_notice_delivery_intents' THEN ARRAY['body_ciphertext', 'failure_ciphertext']\n    WHEN 'copyright_notice_delivery_recipients' THEN ARRAY['email_ciphertext']\n    WHEN 'copyright_notice_lifecycle_events' THEN ARRAY['review_rationale_ciphertext']\n  END\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasable_columns(table_name text)\n RETURNS text[]\n LANGUAGE sql\n IMMUTABLE PARALLEL SAFE\nAS $function$\n  SELECT CASE table_name\n    WHEN 'copyright_notices' THEN ARRAY['claimant_user_id', 'claimant_display_name', 'claimant_contact_ciphertext', 'work_description']\n    WHEN 'copyright_notice_submissions' THEN ARRAY['submitted_by_user_id', 'body_ciphertext']\n    WHEN 'copyright_notice_submission_requests' THEN ARRAY['requester_user_id']\n    WHEN 'copyright_notice_form_intakes' THEN ARRAY['requester_user_id', 'requester_identity_sha256', 'electronic_signature_ciphertext']\n    WHEN 'copyright_notice_form_screenings' THEN ARRAY['rationale_ciphertext', 'guidance_ciphertext']\n    WHEN 'copyright_notice_form_intake_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_evidence_artifacts' THEN ARRAY['storage_key']\n    WHEN 'copyright_notice_email_intakes' THEN ARRAY['raw_storage_key']\n    WHEN 'copyright_notice_email_intake_parses' THEN ARRAY['sender_email_ciphertext', 'sender_name_ciphertext', 'subject_ciphertext', 'body_ciphertext', 'message_id_ciphertext', 'reply_references_ciphertext', 'error_ciphertext']\n    WHEN 'copyright_notice_email_intake_attachments' THEN ARRAY['filename_ciphertext', 'content_id_ciphertext']\n    WHEN 'copyright_notice_email_thread_references' THEN ARRAY['lookup_token']\n    WHEN 'copyright_notice_email_intake_notice_links' THEN ARRAY['matched_reference_lookup']\n    WHEN 'copyright_notice_email_intake_recommendations' THEN ARRAY['structured_output_ciphertext']\n    WHEN 'copyright_notice_email_intake_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_email_correspondence_reviews' THEN ARRAY['rationale_ciphertext', 'manual_fallback_reason_ciphertext']\n    WHEN 'copyright_notice_appeal_recommendations' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_appeal_reviews' THEN ARRAY['rationale_ciphertext', 'manual_fallback_reason_ciphertext']\n    WHEN 'copyright_restriction_administrator_lifts' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_counter_notice_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_legal_hold_assessments' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_legal_hold_resolutions' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_correspondence_messages' THEN ARRAY['body_ciphertext']\n    WHEN 'copyright_notice_delivery_intents' THEN ARRAY['body_ciphertext', 'failure_ciphertext']\n    WHEN 'copyright_notice_delivery_recipients' THEN ARRAY['email_ciphertext']\n    WHEN 'copyright_notice_lifecycle_events' THEN ARRAY['review_rationale_ciphertext']\n  END\n$function$\n"
     },
     "fn_copyright_retention_erasure_permitted(table_name text, old_row jsonb, new_row jsonb)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasure_permitted(table_name text, old_row jsonb, new_row jsonb)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT COALESCE(current_setting('app.copyright_retention_erasure', true) = 'on', false)\n    AND fn_copyright_retention_erasable_columns(table_name) IS NOT NULL\n    AND (old_row - fn_copyright_retention_erasable_columns(table_name))\n      = (new_row - fn_copyright_retention_erasable_columns(table_name))\n$function$\n"
@@ -829,7 +829,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_image_surface_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE'\n    AND OLD.surface_kind = 'user-profile-link-image'\n    AND OLD.user_profile_link_id IS NOT NULL\n    AND NEW.user_profile_link_id IS NULL\n    AND NEW.placement_id = OLD.placement_id\n    AND NEW.surface_kind = OLD.surface_kind\n    AND NEW.image_id = OLD.image_id\n    AND NEW.user_id IS NOT DISTINCT FROM OLD.user_id\n    AND NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id\n    AND NEW.community_id IS NOT DISTINCT FROM OLD.community_id\n    AND EXISTS (SELECT 1 FROM media_placements placement WHERE placement.id = OLD.placement_id\n      AND placement.retired_at IS NOT NULL AND placement.retirement_reason = 'owner_removed' FOR UPDATE)\n  THEN\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'UPDATE'\n    AND OLD.surface_kind = 'user-profile-image'\n    AND OLD.user_id IS NOT NULL\n    AND NEW.user_id IS NULL\n    AND NEW.placement_id = OLD.placement_id\n    AND NEW.surface_kind = OLD.surface_kind\n    AND NEW.image_id = OLD.image_id\n    AND NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id\n    AND NEW.community_id IS NOT DISTINCT FROM OLD.community_id\n    AND NEW.user_profile_link_id IS NOT DISTINCT FROM OLD.user_profile_link_id\n    AND EXISTS (SELECT 1 FROM media_placements placement WHERE placement.id = OLD.placement_id\n      AND placement.retired_at IS NOT NULL AND placement.retirement_reason = 'owner_removed' FOR UPDATE)\n  THEN\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'INSERT' AND num_nonnulls(NEW.user_id, NEW.topic_id, NEW.community_id, NEW.user_profile_link_id) <> 1 THEN\n    RAISE EXCEPTION 'new image surface requires one concrete live owner' USING ERRCODE = 'check_violation';\n  END IF;\n  IF TG_OP = 'INSERT' AND EXISTS (\n    SELECT 1\n    FROM image_surface_placements existing\n    JOIN media_placements placement ON placement.id = existing.placement_id\n    WHERE placement.retired_at IS NULL\n      AND existing.surface_kind = NEW.surface_kind\n    AND existing.user_id IS NOT DISTINCT FROM NEW.user_id\n      AND existing.topic_id IS NOT DISTINCT FROM NEW.topic_id\n      AND existing.community_id IS NOT DISTINCT FROM NEW.community_id\n      AND existing.user_profile_link_id IS NOT DISTINCT FROM NEW.user_profile_link_id\n  ) THEN\n    RAISE EXCEPTION 'a public image surface has at most one current binding' USING ERRCODE = 'unique_violation';\n  END IF;\n  IF TG_OP = 'INSERT' THEN RETURN NEW; END IF;\n  RAISE EXCEPTION 'image surface placement bindings are immutable' USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
     },
     "fn_reject_media_placement": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_media_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'media placements are retained for legal revision fencing' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.revision <> OLD.revision + 1 THEN\n    RAISE EXCEPTION 'media placement revision must advance by exactly one' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.retired_at IS NOT DISTINCT FROM OLD.retired_at\n    AND NEW.retirement_reason IS NOT DISTINCT FROM OLD.retirement_reason\n    AND NEW.copyright_withheld_at IS NOT DISTINCT FROM OLD.copyright_withheld_at THEN\n    RAISE EXCEPTION 'media placement lifecycle update must change availability' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_media_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'media placements are retained for legal revision fencing' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.revision <> OLD.revision + 1 THEN\n    RAISE EXCEPTION 'media placement revision must advance by exactly one' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.retired_at IS NOT DISTINCT FROM OLD.retired_at\n    AND NEW.retirement_reason IS NOT DISTINCT FROM OLD.retirement_reason\n    AND NEW.copyright_withheld_at IS NOT DISTINCT FROM OLD.copyright_withheld_at THEN\n    RAISE EXCEPTION 'media placement lifecycle update must change availability' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.retired_at IS NOT NULL AND NEW.retired_at IS NULL THEN\n    NEW.activation_revision := NEW.revision;\n  ELSIF NEW.activation_revision IS DISTINCT FROM OLD.activation_revision THEN\n    RAISE EXCEPTION 'media placement activation revision is system-managed' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_membership_administrator_refund_request_context": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_membership_administrator_refund_request_context()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE valid_context BOOLEAN;\nBEGIN\n  SELECT operation.operation_kind = 'administrator_refund' AND operation.remaining_refundable_minor_units = NEW.amount_minor_units AND operation.currency_code = NEW.currency_code INTO valid_context FROM membership_operations operation WHERE operation.id = NEW.membership_operation_id;\n  IF valid_context IS DISTINCT FROM TRUE THEN RAISE EXCEPTION 'administrator refund request does not match its operation context' USING ERRCODE = '23514'; END IF;\n  RETURN NEW;\nEND $function$\n"
@@ -20237,7 +20237,7 @@
     },
     "copyright_automatic_withholding_refusals": {
       "checkConstraints": {
-        "copyright_automatic_withholding_refusals_reason_check": "CHECK ((reason = ANY (ARRAY['thresholds_unset'::text, 'switch_on_unrecorded'::text, 'received_before_switch_on'::text, 'claimant_unavailable'::text, 'claimant_suspended'::text, 'trust_below_minimum'::text, 'account_too_new'::text, 'claimant_daily_cap'::text, 'poster_daily_cap'::text])))"
+        "copyright_automatic_withholding_refusals_reason_check": "CHECK ((reason = ANY (ARRAY['thresholds_unset'::text, 'switch_on_unrecorded'::text, 'received_before_switch_on'::text, 'claimant_unavailable'::text, 'claimant_suspended'::text, 'trust_below_minimum'::text, 'account_too_new'::text, 'claimant_daily_cap'::text, 'poster_daily_cap'::text, 'non_post_target'::text])))"
       },
       "columns": {
         "copyright_notice_submission_id": {
@@ -20275,7 +20275,7 @@
         },
         "reason": {
           "collation": null,
-          "comment": "First gate the submission failed: unset thresholds, an unrecorded or later switch-on, an erased or suspended claimant, trust or account age below the minimum, or a claimant or poster daily cap.",
+          "comment": "First gate the submission failed: a non-post target, unset thresholds, an unrecorded or later switch-on, an erased or suspended claimant, trust or account age below the minimum, or a claimant or poster daily cap.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -23854,26 +23854,29 @@
         "copyright_notice_delivery_intents_body_ciphertext_check": "CHECK (((body_ciphertext IS NULL) OR ((char_length(body_ciphertext) >= 1) AND (char_length(body_ciphertext) <= 1048576))))",
         "copyright_notice_delivery_intents_channel_check": "CHECK ((channel = ANY (ARRAY['in_app'::text, 'email'::text])))",
         "copyright_notice_delivery_intents_check": "CHECK (((delivery_kind <> 'claimant_decision_notice'::text) OR (recipient_role = 'claimant'::text)))",
-        "copyright_notice_delivery_intents_check1": "CHECK (((delivery_kind <> ALL (ARRAY['poster_restriction_notice'::text, 'poster_review_notice'::text, 'poster_restoration_notice'::text])) OR (recipient_role = 'poster'::text)))",
-        "copyright_notice_delivery_intents_check10": "CHECK (((delivery_kind <> 'staff_information_request'::text) OR ((recipient_role = 'claimant'::text) AND (channel = 'email'::text) AND (recipient_user_id IS NULL) AND (copyright_notice_correspondence_message_id IS NOT NULL))))",
-        "copyright_notice_delivery_intents_check11": "CHECK (((copyright_notice_email_intake_id IS NOT NULL) = (delivery_kind = ANY (ARRAY['email_intake_rejected'::text, 'email_intake_needs_information'::text, 'email_intake_received'::text]))))",
-        "copyright_notice_delivery_intents_check12": "CHECK (((copyright_notice_email_intake_id IS NOT NULL) = (body_ciphertext IS NOT NULL)))",
-        "copyright_notice_delivery_intents_check13": "CHECK (((copyright_notice_email_intake_id IS NULL) OR ((recipient_role = 'correspondent'::text) AND (channel = 'email'::text) AND (copyright_notice_submission_id IS NULL) AND (copyright_notice_correspondence_message_id IS NULL))))",
-        "copyright_notice_delivery_intents_check2": "CHECK (((recipient_role <> 'poster'::text) OR (recipient_user_id IS NOT NULL) OR (recipient_user_erased_at IS NOT NULL)))",
-        "copyright_notice_delivery_intents_check3": "CHECK (((recipient_role <> 'correspondent'::text) OR (recipient_user_id IS NULL)))",
-        "copyright_notice_delivery_intents_check4": "CHECK (((recipient_user_erased_at IS NULL) OR (recipient_user_id IS NULL)))",
-        "copyright_notice_delivery_intents_check5": "CHECK ((((state = 'pending'::text) AND (claimed_at IS NULL) AND (sent_at IS NULL) AND (failed_at IS NULL) AND (bounced_at IS NULL)) OR ((state = 'claimed'::text) AND (claimed_at IS NOT NULL) AND (delivery_attempted_at IS NOT NULL) AND (sent_at IS NULL) AND (failed_at IS NULL) AND (bounced_at IS NULL)) OR ((state = 'sent'::text) AND (delivery_attempted_at IS NOT NULL) AND (sent_at IS NOT NULL) AND (failed_at IS NULL) AND (bounced_at IS NULL)) OR ((state = 'failed'::text) AND (delivery_attempted_at IS NOT NULL) AND (failed_at IS NOT NULL) AND (sent_at IS NULL) AND (bounced_at IS NULL)) OR ((state = 'bounced'::text) AND (delivery_attempted_at IS NOT NULL) AND (sent_at IS NOT NULL) AND (bounced_at IS NOT NULL) AND (failed_at IS NULL))))",
-        "copyright_notice_delivery_intents_check6": "CHECK (((failure_ciphertext IS NULL) OR (state = ANY (ARRAY['pending'::text, 'failed'::text]))))",
-        "copyright_notice_delivery_intents_check7": "CHECK ((((state = 'pending'::text) AND ((delivery_attempt_count = 0) OR (next_attempt_at IS NOT NULL))) OR ((state <> 'pending'::text) AND (next_attempt_at IS NULL))))",
-        "copyright_notice_delivery_intents_check8": "CHECK (((ses_message_id IS NULL) OR (channel = 'email'::text)))",
-        "copyright_notice_delivery_intents_check9": "CHECK ((num_nonnulls(copyright_notice_id, copyright_notice_email_intake_id) = 1))",
+        "copyright_notice_delivery_intents_check1": "CHECK (((delivery_kind <> ALL (ARRAY['poster_restriction_notice'::text, 'poster_review_notice'::text, 'poster_restoration_notice'::text])) OR (recipient_role = ANY (ARRAY['poster'::text, 'informed_owner'::text]))))",
+        "copyright_notice_delivery_intents_check10": "CHECK (((ses_message_id IS NULL) OR (channel = 'email'::text)))",
+        "copyright_notice_delivery_intents_check11": "CHECK ((num_nonnulls(copyright_notice_id, copyright_notice_email_intake_id) = 1))",
+        "copyright_notice_delivery_intents_check12": "CHECK (((delivery_kind <> 'staff_information_request'::text) OR ((recipient_role = 'claimant'::text) AND (channel = 'email'::text) AND (recipient_user_id IS NULL) AND (copyright_notice_correspondence_message_id IS NOT NULL))))",
+        "copyright_notice_delivery_intents_check13": "CHECK (((copyright_notice_email_intake_id IS NOT NULL) = (delivery_kind = ANY (ARRAY['email_intake_rejected'::text, 'email_intake_needs_information'::text, 'email_intake_received'::text]))))",
+        "copyright_notice_delivery_intents_check14": "CHECK (((copyright_notice_email_intake_id IS NOT NULL) = (body_ciphertext IS NOT NULL)))",
+        "copyright_notice_delivery_intents_check15": "CHECK (((copyright_notice_email_intake_id IS NULL) OR ((recipient_role = 'correspondent'::text) AND (channel = 'email'::text) AND (copyright_notice_submission_id IS NULL) AND (copyright_notice_correspondence_message_id IS NULL))))",
+        "copyright_notice_delivery_intents_check2": "CHECK (((delivery_kind <> 'owner_information_notice'::text) OR (recipient_role = 'informed_owner'::text)))",
+        "copyright_notice_delivery_intents_check3": "CHECK (((recipient_role = 'informed_owner'::text) = (target_path IS NOT NULL)))",
+        "copyright_notice_delivery_intents_check4": "CHECK (((recipient_role <> ALL (ARRAY['poster'::text, 'informed_owner'::text])) OR (recipient_user_id IS NOT NULL) OR (recipient_user_erased_at IS NOT NULL)))",
+        "copyright_notice_delivery_intents_check5": "CHECK (((recipient_role <> 'correspondent'::text) OR (recipient_user_id IS NULL)))",
+        "copyright_notice_delivery_intents_check6": "CHECK (((recipient_user_erased_at IS NULL) OR (recipient_user_id IS NULL)))",
+        "copyright_notice_delivery_intents_check7": "CHECK ((((state = 'pending'::text) AND (claimed_at IS NULL) AND (sent_at IS NULL) AND (failed_at IS NULL) AND (bounced_at IS NULL)) OR ((state = 'claimed'::text) AND (claimed_at IS NOT NULL) AND (delivery_attempted_at IS NOT NULL) AND (sent_at IS NULL) AND (failed_at IS NULL) AND (bounced_at IS NULL)) OR ((state = 'sent'::text) AND (delivery_attempted_at IS NOT NULL) AND (sent_at IS NOT NULL) AND (failed_at IS NULL) AND (bounced_at IS NULL)) OR ((state = 'failed'::text) AND (delivery_attempted_at IS NOT NULL) AND (failed_at IS NOT NULL) AND (sent_at IS NULL) AND (bounced_at IS NULL)) OR ((state = 'bounced'::text) AND (delivery_attempted_at IS NOT NULL) AND (sent_at IS NOT NULL) AND (bounced_at IS NOT NULL) AND (failed_at IS NULL))))",
+        "copyright_notice_delivery_intents_check8": "CHECK (((failure_ciphertext IS NULL) OR (state = ANY (ARRAY['pending'::text, 'failed'::text]))))",
+        "copyright_notice_delivery_intents_check9": "CHECK ((((state = 'pending'::text) AND ((delivery_attempt_count = 0) OR (next_attempt_at IS NOT NULL))) OR ((state <> 'pending'::text) AND (next_attempt_at IS NULL))))",
         "copyright_notice_delivery_intents_delivery_attempt_count_check": "CHECK (((delivery_attempt_count >= 0) AND (delivery_attempt_count <= 5)))",
-        "copyright_notice_delivery_intents_delivery_kind_check": "CHECK ((delivery_kind = ANY (ARRAY['claimant_receipt'::text, 'status_update'::text, 'poster_restriction_notice'::text, 'poster_review_notice'::text, 'poster_restoration_notice'::text, 'claimant_decision_notice'::text, 'counter_notice_forwarding'::text, 'staff_information_request'::text, 'email_intake_rejected'::text, 'email_intake_needs_information'::text, 'email_intake_received'::text])))",
+        "copyright_notice_delivery_intents_delivery_kind_check": "CHECK ((delivery_kind = ANY (ARRAY['claimant_receipt'::text, 'status_update'::text, 'poster_restriction_notice'::text, 'poster_review_notice'::text, 'poster_restoration_notice'::text, 'owner_information_notice'::text, 'claimant_decision_notice'::text, 'counter_notice_forwarding'::text, 'staff_information_request'::text, 'email_intake_rejected'::text, 'email_intake_needs_information'::text, 'email_intake_received'::text])))",
         "copyright_notice_delivery_intents_failure_ciphertext_check": "CHECK (((failure_ciphertext IS NULL) OR ((char_length(failure_ciphertext) >= 1) AND (char_length(failure_ciphertext) <= 1048576))))",
         "copyright_notice_delivery_intents_idempotency_key_check": "CHECK (((char_length(idempotency_key) >= 1) AND (char_length(idempotency_key) <= 512)))",
-        "copyright_notice_delivery_intents_recipient_role_check": "CHECK ((recipient_role = ANY (ARRAY['claimant'::text, 'poster'::text, 'correspondent'::text])))",
+        "copyright_notice_delivery_intents_recipient_role_check": "CHECK ((recipient_role = ANY (ARRAY['claimant'::text, 'poster'::text, 'informed_owner'::text, 'correspondent'::text])))",
         "copyright_notice_delivery_intents_ses_message_id_check": "CHECK (((ses_message_id IS NULL) OR ((char_length(ses_message_id) >= 1) AND (char_length(ses_message_id) <= 1024))))",
-        "copyright_notice_delivery_intents_state_check": "CHECK ((state = ANY (ARRAY['pending'::text, 'claimed'::text, 'sent'::text, 'failed'::text, 'bounced'::text])))"
+        "copyright_notice_delivery_intents_state_check": "CHECK ((state = ANY (ARRAY['pending'::text, 'claimed'::text, 'sent'::text, 'failed'::text, 'bounced'::text])))",
+        "copyright_notice_delivery_intents_target_path_check": "CHECK (((target_path IS NULL) OR (((char_length(target_path) >= 1) AND (char_length(target_path) <= 1024)) AND (target_path ~~ '/communities/%'::text))))"
       },
       "columns": {
         "body_ciphertext": {
@@ -23884,7 +23887,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 24,
           "type": "text"
         },
         "bounced_at": {
@@ -23895,7 +23898,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 21,
           "type": "timestamp with time zone"
         },
         "channel": {
@@ -23906,7 +23909,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "text"
         },
         "claimed_at": {
@@ -23917,7 +23920,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
         },
         "copyright_notice_correspondence_message_id": {
@@ -23972,7 +23975,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 25,
           "type": "timestamp with time zone"
         },
         "delivery_attempt_count": {
@@ -23983,7 +23986,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "integer"
         },
         "delivery_attempted_at": {
@@ -23994,7 +23997,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 17,
           "type": "timestamp with time zone"
         },
         "delivery_kind": {
@@ -24016,7 +24019,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "failure_ciphertext": {
@@ -24027,7 +24030,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 23,
           "type": "text"
         },
         "id": {
@@ -24049,7 +24052,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "text"
         },
         "lease_token": {
@@ -24060,7 +24063,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "uuid"
         },
         "next_attempt_at": {
@@ -24071,12 +24074,12 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "recipient_role": {
           "collation": null,
-          "comment": "Legal role of the recipient: claimant, affected poster, or external email correspondent.",
+          "comment": "Legal role of the recipient: claimant, affected poster or setter, informed community owner, or external email correspondent.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -24115,7 +24118,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         },
         "ses_message_id": {
@@ -24126,7 +24129,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 22,
           "type": "text"
         },
         "state": {
@@ -24137,7 +24140,18 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
+          "type": "text"
+        },
+        "target_path": {
+          "collation": null,
+          "comment": "Immutable community URL selected when an informed-owner obligation is created; delivery does not derive a relationship from the idempotency key.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
           "type": "text"
         },
         "updated_at": {
@@ -24148,7 +24162,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 25,
+          "ordinalPosition": 26,
           "type": "timestamp with time zone"
         }
       },
@@ -28802,7 +28816,7 @@
     "copyright_notice_lifecycle_events": {
       "checkConstraints": {
         "copyright_lifecycle_event_notice_scope": "CHECK (((copyright_notice_id IS NOT NULL) OR (event_type = 'delivery_intent_replayed'::text)))",
-        "copyright_lifecycle_event_source_shape": "CHECK (((num_nonnulls(copyright_notice_submission_id, copyright_notice_submission_assessment_id, copyright_notice_evidence_artifact_id, copyright_notice_correspondence_id, copyright_notice_legal_hold_assessment_id, copyright_notice_legal_hold_resolution_id, copyright_notice_deadline_id, copyright_restriction_id, copyright_notice_action_intent_id, copyright_notice_email_intake_id, copyright_notice_delivery_intent_id, media_delivery_registry_key, copyright_notice_guest_capability_id) =\nCASE\n    WHEN (event_type = 'notice_received'::text) THEN 0\n    ELSE 1\nEND) AND\nCASE\n    WHEN (event_type = 'notice_received'::text) THEN true\n    WHEN (event_type = ANY (ARRAY['supplement_received'::text, 'appeal_received'::text, 'counter_notice_received'::text, 'withdrawal_received'::text, 'court_or_ccb_hold_received'::text, 'appeal_reviewed'::text, 'counter_notice_reviewed'::text])) THEN (copyright_notice_submission_id IS NOT NULL)\n    WHEN (event_type = 'submission_assessed'::text) THEN (copyright_notice_submission_assessment_id IS NOT NULL)\n    WHEN (event_type = 'evidence_artifact_recorded'::text) THEN (copyright_notice_evidence_artifact_id IS NOT NULL)\n    WHEN (event_type = ANY (ARRAY['outbound_correspondence_created'::text, 'agent_correspondence_approved'::text, 'email_correspondence_admitted'::text])) THEN (copyright_notice_correspondence_id IS NOT NULL)\n    WHEN (event_type = 'legal_hold_assessed'::text) THEN (copyright_notice_legal_hold_assessment_id IS NOT NULL)\n    WHEN (event_type = 'legal_hold_resolved'::text) THEN (copyright_notice_legal_hold_resolution_id IS NOT NULL)\n    WHEN (event_type = 'counter_notice_deadline_started'::text) THEN (copyright_notice_deadline_id IS NOT NULL)\n    WHEN (event_type = ANY (ARRAY['provisional_restriction_imposed'::text, 'mandatory_human_review_completed'::text])) THEN (copyright_restriction_id IS NOT NULL)\n    WHEN (event_type = ANY (ARRAY['restoration_intent_created'::text, 'reversal_restoration_intent_created'::text, 'copyright_action_replayed'::text, 'restoration_unavailable'::text, 'restriction_lifted_placement_retained'::text, 'restoration_authorized_pending_delivery'::text, 'placement_withheld'::text, 'placement_restored'::text])) THEN (copyright_notice_action_intent_id IS NOT NULL)\n    WHEN (event_type = 'email_correspondence_rejected'::text) THEN (copyright_notice_email_intake_id IS NOT NULL)\n    WHEN (event_type = 'delivery_intent_replayed'::text) THEN (copyright_notice_delivery_intent_id IS NOT NULL)\n    WHEN (event_type = 'media_delivery_registry_replayed'::text) THEN (media_delivery_registry_key IS NOT NULL)\n    WHEN (event_type = ANY (ARRAY['guest_capability_issued'::text, 'guest_capability_revoked'::text, 'guest_capability_revoked_by_withdrawal'::text])) THEN (copyright_notice_guest_capability_id IS NOT NULL)\n    ELSE false\nEND))",
+        "copyright_lifecycle_event_source_shape": "CHECK (((num_nonnulls(copyright_notice_submission_id, copyright_notice_submission_assessment_id, copyright_notice_evidence_artifact_id, copyright_notice_correspondence_id, copyright_notice_legal_hold_assessment_id, copyright_notice_legal_hold_resolution_id, copyright_notice_deadline_id, copyright_restriction_id, copyright_notice_action_intent_id, copyright_notice_email_intake_id, copyright_notice_delivery_intent_id, media_delivery_registry_key, copyright_notice_guest_capability_id) =\nCASE\n    WHEN (event_type = 'notice_received'::text) THEN 0\n    ELSE 1\nEND) AND\nCASE\n    WHEN (event_type = 'notice_received'::text) THEN true\n    WHEN (event_type = ANY (ARRAY['supplement_received'::text, 'appeal_received'::text, 'counter_notice_received'::text, 'withdrawal_received'::text, 'court_or_ccb_hold_received'::text, 'appeal_reviewed'::text, 'counter_notice_reviewed'::text])) THEN (copyright_notice_submission_id IS NOT NULL)\n    WHEN (event_type = 'submission_assessed'::text) THEN (copyright_notice_submission_assessment_id IS NOT NULL)\n    WHEN (event_type = 'evidence_artifact_recorded'::text) THEN (copyright_notice_evidence_artifact_id IS NOT NULL)\n    WHEN (event_type = ANY (ARRAY['outbound_correspondence_created'::text, 'agent_correspondence_approved'::text, 'email_correspondence_admitted'::text])) THEN (copyright_notice_correspondence_id IS NOT NULL)\n    WHEN (event_type = 'legal_hold_assessed'::text) THEN (copyright_notice_legal_hold_assessment_id IS NOT NULL)\n    WHEN (event_type = 'legal_hold_resolved'::text) THEN (copyright_notice_legal_hold_resolution_id IS NOT NULL)\n    WHEN (event_type = 'counter_notice_deadline_started'::text) THEN (copyright_notice_deadline_id IS NOT NULL)\n    WHEN (event_type = ANY (ARRAY['provisional_restriction_imposed'::text, 'mandatory_human_review_completed'::text, 'restriction_lifted_by_administrator'::text])) THEN (copyright_restriction_id IS NOT NULL)\n    WHEN (event_type = ANY (ARRAY['restoration_intent_created'::text, 'reversal_restoration_intent_created'::text, 'copyright_action_replayed'::text, 'restoration_unavailable'::text, 'restriction_lifted_placement_retained'::text, 'restoration_authorized_pending_delivery'::text, 'placement_withheld'::text, 'placement_restored'::text])) THEN (copyright_notice_action_intent_id IS NOT NULL)\n    WHEN (event_type = 'email_correspondence_rejected'::text) THEN (copyright_notice_email_intake_id IS NOT NULL)\n    WHEN (event_type = 'delivery_intent_replayed'::text) THEN (copyright_notice_delivery_intent_id IS NOT NULL)\n    WHEN (event_type = 'media_delivery_registry_replayed'::text) THEN (media_delivery_registry_key IS NOT NULL)\n    WHEN (event_type = ANY (ARRAY['guest_capability_issued'::text, 'guest_capability_revoked'::text, 'guest_capability_revoked_by_withdrawal'::text])) THEN (copyright_notice_guest_capability_id IS NOT NULL)\n    ELSE false\nEND))",
         "copyright_notice_lifecycle_ev_review_rationale_ciphertext_check": "CHECK (((review_rationale_ciphertext IS NULL) OR ((char_length(review_rationale_ciphertext) >= 1) AND (char_length(review_rationale_ciphertext) <= 65536))))",
         "copyright_notice_lifecycle_events_check": "CHECK ((((review_action IS NULL) AND (review_rationale_ciphertext IS NULL)) OR ((event_type = 'mandatory_human_review_completed'::text) AND (review_action IS NOT NULL) AND (review_rationale_ciphertext IS NOT NULL))))",
         "copyright_notice_lifecycle_events_check1": "CHECK (((counter_notice_accepted IS NULL) OR (event_type = 'counter_notice_reviewed'::text)))",
@@ -28811,7 +28825,7 @@
         "copyright_notice_lifecycle_events_check4": "CHECK (((event_type = 'counter_notice_reviewed'::text) = (counter_notice_accepted IS NOT NULL)))",
         "copyright_notice_lifecycle_events_check5": "CHECK (((event_type = 'mandatory_human_review_completed'::text) = (review_action IS NOT NULL)))",
         "copyright_notice_lifecycle_events_check6": "CHECK (((event_type <> 'media_delivery_registry_replayed'::text) OR (replay_reason IS NOT NULL)))",
-        "copyright_notice_lifecycle_events_event_type_check": "CHECK ((event_type = ANY (ARRAY['notice_received'::text, 'supplement_received'::text, 'appeal_received'::text, 'counter_notice_received'::text, 'withdrawal_received'::text, 'court_or_ccb_hold_received'::text, 'submission_assessed'::text, 'appeal_reviewed'::text, 'counter_notice_reviewed'::text, 'evidence_artifact_recorded'::text, 'outbound_correspondence_created'::text, 'agent_correspondence_approved'::text, 'email_correspondence_admitted'::text, 'email_correspondence_rejected'::text, 'provisional_restriction_imposed'::text, 'mandatory_human_review_completed'::text, 'legal_hold_assessed'::text, 'legal_hold_resolved'::text, 'counter_notice_deadline_started'::text, 'restoration_intent_created'::text, 'reversal_restoration_intent_created'::text, 'copyright_action_replayed'::text, 'delivery_intent_replayed'::text, 'media_delivery_registry_replayed'::text, 'restoration_unavailable'::text, 'restriction_lifted_placement_retained'::text, 'restoration_authorized_pending_delivery'::text, 'placement_withheld'::text, 'placement_restored'::text, 'guest_capability_issued'::text, 'guest_capability_revoked'::text, 'guest_capability_revoked_by_withdrawal'::text])))",
+        "copyright_notice_lifecycle_events_event_type_check": "CHECK ((event_type = ANY (ARRAY['notice_received'::text, 'supplement_received'::text, 'appeal_received'::text, 'counter_notice_received'::text, 'withdrawal_received'::text, 'court_or_ccb_hold_received'::text, 'submission_assessed'::text, 'appeal_reviewed'::text, 'counter_notice_reviewed'::text, 'evidence_artifact_recorded'::text, 'outbound_correspondence_created'::text, 'agent_correspondence_approved'::text, 'email_correspondence_admitted'::text, 'email_correspondence_rejected'::text, 'provisional_restriction_imposed'::text, 'mandatory_human_review_completed'::text, 'restriction_lifted_by_administrator'::text, 'legal_hold_assessed'::text, 'legal_hold_resolved'::text, 'counter_notice_deadline_started'::text, 'restoration_intent_created'::text, 'reversal_restoration_intent_created'::text, 'copyright_action_replayed'::text, 'delivery_intent_replayed'::text, 'media_delivery_registry_replayed'::text, 'restoration_unavailable'::text, 'restriction_lifted_placement_retained'::text, 'restoration_authorized_pending_delivery'::text, 'placement_withheld'::text, 'placement_restored'::text, 'guest_capability_issued'::text, 'guest_capability_revoked'::text, 'guest_capability_revoked_by_withdrawal'::text])))",
         "copyright_notice_lifecycle_events_recovery_source_check": "CHECK ((recovery_source = ANY (ARRAY['durable_review'::text, 'durable_decision'::text])))",
         "copyright_notice_lifecycle_events_replay_reason_check": "CHECK ((replay_reason = 'operator_replay'::text))",
         "copyright_notice_lifecycle_events_review_action_check": "CHECK ((review_action = ANY (ARRAY['confirm'::text, 'reverse'::text])))"
@@ -30800,13 +30814,13 @@
     },
     "copyright_notice_target_images": {
       "checkConstraints": {
-        "copyright_notice_target_images_binding_family_check": "CHECK ((binding_family = 'post'::text))"
+        "copyright_notice_target_images_binding_family_check": "CHECK ((binding_family = ANY (ARRAY['post'::text, 'surface'::text])))"
       },
       "columns": {
         "binding_family": {
           "collation": null,
-          "comment": "Retained placement binding family for this image. The current family is post.",
-          "defaultExpression": "'post'::text",
+          "comment": "Retained post or surface placement binding family for this image.",
+          "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
@@ -31000,6 +31014,7 @@
     },
     "copyright_notice_targets": {
       "checkConstraints": {
+        "copyright_notice_targets_check": "CHECK (((surface_activation_revision >= 0) AND (surface_activation_revision <= placement_revision)))",
         "copyright_notice_targets_placement_revision_check": "CHECK ((placement_revision >= 0))"
       },
       "columns": {
@@ -31022,7 +31037,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "hosted_use_url": {
@@ -31033,7 +31048,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 7,
           "type": "text"
         },
         "id": {
@@ -31049,7 +31064,7 @@
         },
         "placement_id": {
           "collation": null,
-          "comment": "Concrete retained post-image placement identity for the exact hosted use; retention never grants live delivery authority.",
+          "comment": "Concrete retained image placement identity for the exact hosted use; retention never grants live delivery authority.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -31069,6 +31084,28 @@
           "ordinalPosition": 4,
           "type": "integer"
         },
+        "surface_activation_revision": {
+          "collation": null,
+          "comment": "Captured activation epoch of a surface placement. An application activation row exists only when the binder was known; trigger-only reactivation leaves it unknown.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "integer"
+        },
+        "surface_owner_user_id": {
+          "collation": null,
+          "comment": "Retained profile account identity captured at filing for legal holds after account or link erasure; never grants live response authority.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        },
         "updated_at": {
           "collation": null,
           "comment": null,
@@ -31077,7 +31114,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         }
       },
@@ -31099,6 +31136,15 @@
           "onUpdate": "no action",
           "referencedColumns": ["placement_id"],
           "referencedTable": "retained_image_placement_bindings",
+          "validated": true
+        },
+        "copyright_notice_targets_surface_owner_user_id_fkey": {
+          "columns": ["surface_owner_user_id"],
+          "definition": "FOREIGN KEY (surface_owner_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
           "validated": true
         }
       },
@@ -31234,6 +31280,26 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_notice_targets__surface_owner_user": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_targets__surface_owner_user ON public.copyright_notice_targets USING btree (surface_owner_user_id) WHERE (surface_owner_user_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "surface_owner_user_id",
+              "descending": false,
+              "expression": "surface_owner_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(surface_owner_user_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -32256,6 +32322,191 @@
         "trigger_copyright_repeat_infringer_reviews_guard": "CREATE TRIGGER trigger_copyright_repeat_infringer_reviews_guard BEFORE DELETE OR UPDATE ON public.copyright_repeat_infringer_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_repeat_infringer_review()"
       },
       "uniqueConstraints": {}
+    },
+    "copyright_restriction_administrator_lifts": {
+      "checkConstraints": {
+        "copyright_restriction_administrator__rationale_ciphertext_check": "CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))"
+      },
+      "columns": {
+        "copyright_restriction_id": {
+          "collation": null,
+          "comment": "Restriction restored by the administrator decision.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": "Creation time derived from the UUIDv7 identity.",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": "UUIDv7 identity of the administrator lift.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "lifted_at": {
+          "collation": null,
+          "comment": "Time the administrator made the restoration decision.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "lifted_by_id": {
+          "collation": null,
+          "comment": "Administrator who made the decision; cleared only for account erasure.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "rationale_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted administrator rationale.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "Last erasure update time.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Immutable administrator decisions to restore a restricted image when no live subscriber can respond.",
+      "foreignKeys": {
+        "copyright_restriction_administrat_copyright_restriction_id_fkey": {
+          "columns": ["copyright_restriction_id"],
+          "definition": "FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_restrictions",
+          "validated": true
+        },
+        "copyright_restriction_administrator_lifts_lifted_by_id_fkey": {
+          "columns": ["lifted_by_id"],
+          "definition": "FOREIGN KEY (lifted_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_restriction_administrato_copyright_restriction_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_restriction_administrato_copyright_restriction_id_key ON public.copyright_restriction_administrator_lifts USING btree (copyright_restriction_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_restriction_id",
+              "descending": false,
+              "expression": "copyright_restriction_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_restriction_administrator_lifts_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_restriction_administrator_lifts_pkey ON public.copyright_restriction_administrator_lifts USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_restriction_administrator_lifts__actor": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_restriction_administrator_lifts__actor ON public.copyright_restriction_administrator_lifts USING btree (lifted_by_id) WHERE (lifted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "lifted_by_id",
+              "descending": false,
+              "expression": "lifted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(lifted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_restriction_administrator_lifts_immutable": "CREATE TRIGGER trigger_copyright_restriction_administrator_lifts_immutable BEFORE DELETE OR UPDATE ON public.copyright_restriction_administrator_lifts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('lifted_by_id')",
+        "trigger_copyright_restriction_administrator_lifts_require_actor": "CREATE TRIGGER trigger_copyright_restriction_administrator_lifts_require_actor BEFORE INSERT ON public.copyright_restriction_administrator_lifts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_human_actor('lifted_by_id')"
+      },
+      "uniqueConstraints": {
+        "copyright_restriction_administrato_copyright_restriction_id_key": {
+          "columns": ["copyright_restriction_id"],
+          "definition": "UNIQUE (copyright_restriction_id)"
+        }
+      }
     },
     "copyright_restrictions": {
       "checkConstraints": {
@@ -40093,6 +40344,203 @@
         }
       }
     },
+    "image_surface_placement_activations": {
+      "checkConstraints": {
+        "image_surface_placement_activations_check": "CHECK (((surface_kind = ANY (ARRAY['community-profile-image'::text, 'community-banner-image'::text])) = (bound_by_administrator IS NOT NULL)))",
+        "image_surface_placement_activations_placement_revision_check": "CHECK ((placement_revision >= 0))",
+        "image_surface_placement_activations_surface_kind_check": "CHECK ((surface_kind = ANY (ARRAY['user-profile-image'::text, 'topic-logo-image'::text, 'topic-hero-image'::text, 'community-profile-image'::text, 'community-banner-image'::text, 'user-profile-link-image'::text])))"
+      },
+      "columns": {
+        "bound_at": {
+          "collation": null,
+          "comment": "Time the application activated the image placement.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "bound_by_administrator": {
+          "collation": null,
+          "comment": "Whether a community image setter was an administrator at activation; null for other surfaces.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "boolean"
+        },
+        "bound_by_user_id": {
+          "collation": null,
+          "comment": "Retained identity of the account that selected the image.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "placement_id": {
+          "collation": null,
+          "comment": "Placement activated by the application.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "placement_revision": {
+          "collation": null,
+          "comment": "Placement revision at activation.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "integer"
+        },
+        "surface_kind": {
+          "collation": null,
+          "comment": "Surface kind captured with the placement identity.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "text"
+        },
+        "uploaded_by_user_id": {
+          "collation": null,
+          "comment": "Retained identity of the original uploader.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        }
+      },
+      "comment": "Immutable record of each application activation of an image surface placement.",
+      "foreignKeys": {
+        "image_surface_placement_activati_placement_id_surface_kind_fkey": {
+          "columns": ["placement_id", "surface_kind"],
+          "definition": "FOREIGN KEY (placement_id, surface_kind) REFERENCES image_surface_placements(placement_id, surface_kind) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["placement_id", "surface_kind"],
+          "referencedTable": "image_surface_placements",
+          "validated": true
+        },
+        "image_surface_placement_activations_bound_by_user_id_fkey": {
+          "columns": ["bound_by_user_id"],
+          "definition": "FOREIGN KEY (bound_by_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        },
+        "image_surface_placement_activations_uploaded_by_user_id_fkey": {
+          "columns": ["uploaded_by_user_id"],
+          "definition": "FOREIGN KEY (uploaded_by_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_image_surface_placement_activations__bound_by_user": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_image_surface_placement_activations__bound_by_user ON public.image_surface_placement_activations USING btree (bound_by_user_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "bound_by_user_id",
+              "descending": false,
+              "expression": "bound_by_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_image_surface_placement_activations__uploaded_by_user": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_image_surface_placement_activations__uploaded_by_user ON public.image_surface_placement_activations USING btree (uploaded_by_user_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "uploaded_by_user_id",
+              "descending": false,
+              "expression": "uploaded_by_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "image_surface_placement_activations_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX image_surface_placement_activations_pkey ON public.image_surface_placement_activations USING btree (placement_id, placement_revision)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "placement_id",
+              "descending": false,
+              "expression": "placement_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "placement_revision",
+              "descending": false,
+              "expression": "placement_revision",
+              "nullsFirst": false,
+              "opclass": "int4_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["placement_id", "placement_revision"],
+        "definition": "PRIMARY KEY (placement_id, placement_revision)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_image_surface_placement_activations_guard": "CREATE TRIGGER trigger_image_surface_placement_activations_guard BEFORE DELETE OR UPDATE ON public.image_surface_placement_activations FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
+      },
+      "uniqueConstraints": {}
+    },
     "image_surface_placements": {
       "checkConstraints": {
         "image_surface_placements_binding_family_check": "CHECK ((binding_family = 'surface'::text))",
@@ -40549,6 +40997,33 @@
           "ready": true,
           "unique": true,
           "valid": true
+        },
+        "image_surface_placements_placement_id_surface_kind_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX image_surface_placements_placement_id_surface_kind_key ON public.image_surface_placements USING btree (placement_id, surface_kind)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "placement_id",
+              "descending": false,
+              "expression": "placement_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "surface_kind",
+              "descending": false,
+              "expression": "surface_kind",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
         }
       },
       "partition": null,
@@ -40562,7 +41037,12 @@
         "trigger_image_surface_placement_guard": "CREATE TRIGGER trigger_image_surface_placement_guard BEFORE INSERT OR DELETE OR UPDATE ON public.image_surface_placements FOR EACH ROW EXECUTE FUNCTION fn_reject_image_surface_placement()",
         "trigger_image_surface_placements_updated_at": "CREATE TRIGGER trigger_image_surface_placements_updated_at BEFORE UPDATE ON public.image_surface_placements FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "image_surface_placements_placement_id_surface_kind_key": {
+          "columns": ["placement_id", "surface_kind"],
+          "definition": "UNIQUE (placement_id, surface_kind)"
+        }
+      }
     },
     "images": {
       "checkConstraints": {
@@ -43809,11 +44289,23 @@
     },
     "media_placements": {
       "checkConstraints": {
-        "media_placements_check": "CHECK ((((retired_at IS NULL) AND (retirement_reason IS NULL)) OR ((retired_at IS NOT NULL) AND (retirement_reason IS NOT NULL))))",
+        "media_placements_check": "CHECK (((activation_revision >= 0) AND (activation_revision <= revision)))",
+        "media_placements_check1": "CHECK ((((retired_at IS NULL) AND (retirement_reason IS NULL)) OR ((retired_at IS NOT NULL) AND (retirement_reason IS NOT NULL))))",
         "media_placements_retirement_reason_check": "CHECK ((retirement_reason = ANY (ARRAY['asset_deleted'::text, 'owner_removed'::text])))",
         "media_placements_revision_check": "CHECK ((revision >= 0))"
       },
       "columns": {
+        "activation_revision": {
+          "collation": null,
+          "comment": "Most recent retirement-to-active generation revision, including trigger-only reactivation; copyright parties use an immutable snapshot of this value.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "integer"
+        },
         "copyright_withheld_at": {
           "collation": null,
           "comment": "Placement-specific copyright withholding state; shared source assets remain recoverable.",
@@ -43822,7 +44314,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -43833,7 +44325,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -43855,7 +44347,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "timestamp with time zone"
         },
         "retirement_reason": {
@@ -43866,7 +44358,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "text"
         },
         "revision": {
@@ -43888,7 +44380,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         }
       },

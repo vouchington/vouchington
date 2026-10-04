@@ -6,15 +6,17 @@ Immutable media-kind-neutral snapshot of each exact hosted use identified by a c
 
 Not partitioned — growth: unbounded.
 
-| Column                | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                   |
-| --------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `id`                  | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                           |
-| `copyright_notice_id` | `uuid`                     | no       |                              |          |           |           | Copyright allegation that identified this hosted use.                                                                     |
-| `placement_id`        | `uuid`                     | no       |                              |          |           |           | Concrete retained post-image placement identity for the exact hosted use; retention never grants live delivery authority. |
-| `placement_revision`  | `integer`                  | no       |                              |          |           |           | Placement revision observed when the allegation target was captured.                                                      |
-| `hosted_use_url`      | `text`                     | no       |                              |          |           |           | Immutable URL snapshot supplied or resolved for the identified hosted use.                                                |
-| `created_at`          | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                           |
-| `updated_at`          | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                           |
+| Column                        | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                                             |
+| ----------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                          | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                                     |
+| `copyright_notice_id`         | `uuid`                     | no       |                              |          |           |           | Copyright allegation that identified this hosted use.                                                                                                               |
+| `placement_id`                | `uuid`                     | no       |                              |          |           |           | Concrete retained image placement identity for the exact hosted use; retention never grants live delivery authority.                                                |
+| `placement_revision`          | `integer`                  | no       |                              |          |           |           | Placement revision observed when the allegation target was captured.                                                                                                |
+| `surface_activation_revision` | `integer`                  | yes      |                              |          |           |           | Captured activation epoch of a surface placement. An application activation row exists only when the binder was known; trigger-only reactivation leaves it unknown. |
+| `surface_owner_user_id`       | `uuid`                     | yes      |                              |          |           |           | Retained profile account identity captured at filing for legal holds after account or link erasure; never grants live response authority.                           |
+| `hosted_use_url`              | `text`                     | no       |                              |          |           |           | Immutable URL snapshot supplied or resolved for the identified hosted use.                                                                                          |
+| `created_at`                  | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                                     |
+| `updated_at`                  | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                                                     |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -26,12 +28,14 @@ Not partitioned — growth: unbounded.
 
 **Check constraints:**
 
+- `copyright_notice_targets_check`: `CHECK (((surface_activation_revision >= 0) AND (surface_activation_revision <= placement_revision)))`
 - `copyright_notice_targets_placement_revision_check`: `CHECK ((placement_revision >= 0))`
 
 **Foreign keys:**
 
 - `copyright_notice_targets_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE CASCADE`
 - `copyright_notice_targets_placement_id_fkey`: `FOREIGN KEY (placement_id) REFERENCES retained_image_placement_bindings(placement_id) ON DELETE RESTRICT`
+- `copyright_notice_targets_surface_owner_user_id_fkey`: `FOREIGN KEY (surface_owner_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
@@ -40,6 +44,7 @@ Not partitioned — growth: unbounded.
 - `copyright_notice_targets_id_placement_id_key`: `CREATE UNIQUE INDEX copyright_notice_targets_id_placement_id_key ON public.copyright_notice_targets USING btree (id, placement_id)`
 - `copyright_notice_targets_pkey`: `CREATE UNIQUE INDEX copyright_notice_targets_pkey ON public.copyright_notice_targets USING btree (id)`
 - `idx_copyright_notice_targets__placement`: `CREATE INDEX idx_copyright_notice_targets__placement ON public.copyright_notice_targets USING btree (placement_id, placement_revision)`
+- `idx_copyright_notice_targets__surface_owner_user`: `CREATE INDEX idx_copyright_notice_targets__surface_owner_user ON public.copyright_notice_targets USING btree (surface_owner_user_id) WHERE (surface_owner_user_id IS NOT NULL)`
 
 **Triggers:**
 
