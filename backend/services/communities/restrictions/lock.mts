@@ -8,6 +8,7 @@ import { lockCommunityUser } from '../bans/lock.mts'
 import { getCommunity } from '../get.mts'
 import { getCommunityMember } from '../members/get.mts'
 import { currentUserCanModerateCommunity } from '../authorization.mts'
+import { runSequentially } from '@modules/utils/run-sequentially'
 
 /** Serialize active restriction-set changes with delegated community contribution decisions. */
 export async function lockCommunityRestrictionWrites(
@@ -15,12 +16,15 @@ export async function lockCommunityRestrictionWrites(
   communityId: string,
   actorId: string,
 ): Promise<{ archived_at: Date | null }> {
-  await lockActiveUserLifecycleForMutation(query, actorId)
-  await lockCommunityUser(communityId, actorId, { query })
-  await query(sql`/* lockCommunityRestrictionWrites.membership */
+  await runSequentially([
+    () => lockActiveUserLifecycleForMutation(query, actorId),
+    () => lockCommunityUser(communityId, actorId, { query }),
+    () =>
+      query(sql`/* lockCommunityRestrictionWrites.membership */
     SELECT id FROM community_members
     WHERE community_id = ${communityId} AND user_id = ${actorId} AND removed_at IS NULL
-    FOR NO KEY UPDATE`)
+    FOR NO KEY UPDATE`),
+  ])
   const { rows } = await query<{
     archived_at: Date | null
   }>(sql`/* lockCommunityRestrictionWrites */
