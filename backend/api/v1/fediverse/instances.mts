@@ -21,7 +21,6 @@ import {
   getFediverseInstanceAttributesByIdBatch,
   type FediverseInstanceAttributes,
 } from '@services/fediverse-instances'
-import type { FediverseIntegrationStatus } from '@services/fediverse-instances/integration-status'
 import { currentUserCanModifyFediverseInstanceIntegrationStatus } from '@services/fediverse-instances/authorization'
 import { indexById } from '@modules/utils'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
@@ -29,14 +28,20 @@ import { parseBooleanish } from '@ts-shared/utils/query'
 import { clampAnonLimit } from '@modules/search-utils'
 import { assertWithinContributionActionLimit } from '@services/contribution-gating/limits'
 import { getUserActivePlan } from '@services/memberships'
-import { parseTopicsSearchParams } from '@services/search-params'
+import { parseTopicsSearchParams, prepareTopicsSearchParams } from '@services/search-params'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
 import { getTopicElectionVotesByUser } from '@services/elections-votes/topic'
 import { renderMarkdownBatch } from '@services/markdown/batch-render'
 import { getAdminUserIdsFromEntities } from '@services/markdown/admin-users'
-import { apiResponse } from '../../response-contract.mts'
+import { apiQuery, apiResponse } from '../../response-contract.mts'
 import { classifyFediverseInstance as classifyInstance } from '@services/fediverse-search/adapters/instance-classification'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
+import {
+  fediverseInstancesQuery,
+  parseIntegrationStatus,
+  prepareFediverseInstanceQuery,
+  type FediverseInstancesQuery,
+} from './instances-query-helpers.mts'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 type PublicFediverseInstanceAttributes = Omit<
   FediverseInstanceAttributes,
@@ -55,33 +60,17 @@ function toPublicFediverseInstanceAttributes(
     open_registrations: attributes.open_registrations,
   }
 }
-const INTEGRATION_STATUSES = ['pending', 'approved', 'blocked'] as const
 
 type CreateFediverseInstanceRequest = { hostname: string }
-
-type FediverseInstancesQuery = {
-  q?: unknown
-  sort?: unknown
-  after?: unknown
-  limit?: unknown
-  software?: unknown
-  open_registrations?: unknown
-  integration_status?: unknown
-}
 
 type TopicBookmarks = Awaited<ReturnType<typeof getBookmarksForEntities>>
 type TopicElectionVote = Awaited<ReturnType<typeof getTopicElectionVotesByUser>>[number]
 type TopicElectionVotes = Record<string, TopicElectionVote>
 
-function parseIntegrationStatus(value: unknown): FediverseIntegrationStatus | undefined {
-  return typeof value === 'string' && (INTEGRATION_STATUSES as readonly string[]).includes(value)
-    ? (value as FediverseIntegrationStatus)
-    : undefined
-}
-
 app
   .route('/api/v1/fediverse/instances')
   .get(async (ctx: Context) => {
+    apiQuery('GET:/api/v1/fediverse/instances', fediverseInstancesQuery)
     const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/fediverse/instances')
 
     const query = ctx.query as FediverseInstancesQuery
@@ -98,13 +87,20 @@ app
       ...(query.after !== undefined && { after: query.after }),
       ...(query.limit !== undefined && { limit: query.limit }),
     }
+    const integrationStatus = parseIntegrationStatus(query.integration_status)
+    const preparedSearch = prepareTopicsSearchParams(canonicalSearchQuery)
+    const validationLimit = currentUser
+      ? preparedSearch.paginationOptions.limit
+      : clampAnonLimit(preparedSearch.paginationOptions.limit)
+    validateRequestContract(ctx, 'GET:/api/v1/fediverse/instances', {
+      query: prepareFediverseInstanceQuery(ctx.query, validationLimit, integrationStatus),
+    })
     const parsedSearchParams = await parseTopicsSearchParams(canonicalSearchQuery)
     const { searchOptions } = parsedSearchParams
     searchOptions.omitLimit = false
     if (!currentUser) {
       searchOptions.limit = clampAnonLimit(searchOptions.limit)
     }
-    const integrationStatus = parseIntegrationStatus(query.integration_status)
     Object.assign(searchOptions, {
       topic_types: ['fediverse_instance'],
       fediverse_instance: true,

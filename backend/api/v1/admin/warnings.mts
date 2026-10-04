@@ -15,6 +15,9 @@ import {
   userWarningsPagination,
 } from '@services/user-warnings'
 import { isUUID } from '@modules/utils'
+import { apiQuery } from '../../response-contract.mts'
+import { defineQueryContract, queryUuid } from '@modules/pagination'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 type IssueUserWarningRequest = {
   userId: ApiUuidContract
@@ -24,6 +27,8 @@ type IssueUserWarningRequest = {
   reportId?: ApiUuidContract | null
   resolveReport?: boolean
 }
+
+const warningsQuery = defineQueryContract({ userId: queryUuid() })
 
 // POST /api/v1/admin/warnings — issue a warning (mod staff only)
 app.route('/api/v1/admin/warnings').post(async (ctx: Context) => {
@@ -51,6 +56,7 @@ app.route('/api/v1/admin/warnings').post(async (ctx: Context) => {
 
 // GET /api/v1/admin/warnings — list warnings for a user (mod staff)
 app.route('/api/v1/admin/warnings').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/admin/warnings', warningsQuery, userWarningsPagination)
   await requireAuthAndRateLimit(ctx, currentUserCanViewUserWarnings, 'GET:/api/v1/admin/warnings')
 
   const userId = ctx.query.userId
@@ -61,6 +67,12 @@ app.route('/api/v1/admin/warnings').get(async (ctx: Context) => {
   )
 
   const pagination = userWarningsPagination.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, {
+    ...warningsQuery.queryContract,
+    ...userWarningsPagination.queryContract,
+  })
+  if (ctx.query.limit !== undefined) query.limit = pagination.limit
+  validateRequestContract(ctx, 'GET:/api/v1/admin/warnings', { query })
 
   const { warnings, hasNextPage, startCursor, endCursor } = await listIssuedUserWarnings({
     userId,

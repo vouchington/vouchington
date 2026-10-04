@@ -63,7 +63,10 @@ app.route('/api/v1/auth/oauth/:provider/authorizations').post(async (ctx: Contex
   // Manual asserts above pin the specific 422 messages this route's tests rely on for an
   // invalid purpose/callback_mode value; the schema check runs after them, against the same
   // body, to add the unrecognized-field and completion_proof_challenge type guard.
-  validateRequestContract(ctx, 'POST:/api/v1/auth/oauth/:provider/authorizations', { body })
+  validateRequestContract(ctx, 'POST:/api/v1/auth/oauth/:provider/authorizations', {
+    path: ctx.params,
+    body,
+  })
   if (body.purpose === 'connect' && currentUser) assertNotSuspended(currentUser)
   const sessionData = await ctx.getSessionTokenData()
   const result = await beginOAuthAuthorization({

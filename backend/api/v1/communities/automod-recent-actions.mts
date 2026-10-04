@@ -1,4 +1,5 @@
 import app from '../../app.mts'
+import { apiQuery } from '../../response-contract.mts'
 import type { Context } from '@jongleberry/api-server'
 import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {
@@ -9,12 +10,20 @@ import {
 import {
   recordAutomodActionFeedback,
   searchRecentAutomodActions,
-  type AutomodFeedbackAction,
-  type AutomodFeedbackOutcome,
-  type RecentAutomodActionSourceType,
 } from '@services/moderation-training'
+import { communityAutomodActionsQuery } from './query-contracts-helpers.mts'
+import {
+  isAutomodFeedbackAction,
+  isAutomodFeedbackOutcome,
+  parseLimit,
+  parseMaxConfidence,
+  parsePostType,
+  parseSourceType,
+  parseWindowHours,
+} from './automod-recent-actions-helpers.mts'
 
 app.route('/api/v1/communities/:idOrSlug/automod/recent-actions').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/communities/:idOrSlug/automod/recent-actions', communityAutomodActionsQuery)
   const currentUser = await requireAuth(
     ctx,
     'GET:/api/v1/communities/:idOrSlug/automod/recent-actions',
@@ -28,17 +37,31 @@ app.route('/api/v1/communities/:idOrSlug/automod/recent-actions').get(async (ctx
     path: ctx.params,
   })
 
+  const options = {
+    windowHours: parseWindowHours(ctx.query.window),
+    limit: parseLimit(ctx.query.limit),
+    after: typeof ctx.query.after === 'string' ? ctx.query.after : null,
+    sourceType: parseSourceType(ctx.query.source),
+    agentSlug: typeof ctx.query.agent === 'string' ? ctx.query.agent : null,
+    postType: parsePostType(ctx.query.post_type ?? ctx.query.content_type),
+    maxConfidence: parseMaxConfidence(ctx.query.max_confidence),
+  }
+  const query: Record<string, unknown> = {}
+  if (ctx.query.window !== undefined)
+    query.window = options.windowHours === 24 ? '24h' : options.windowHours === 168 ? '7d' : '48h'
+  if (ctx.query.limit !== undefined) query.limit = options.limit
+  if (options.after !== null) query.after = options.after
+  if (options.sourceType !== null) query.source = options.sourceType
+  if (options.agentSlug !== null) query.agent = options.agentSlug
+  if (options.postType !== null)
+    query[ctx.query.post_type === undefined ? 'content_type' : 'post_type'] = options.postType
+  if (options.maxConfidence !== null) query.max_confidence = options.maxConfidence
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/automod/recent-actions', {
+    query,
+  })
   const { actions, hasNextPage, endCursor, stats } = await searchRecentAutomodActions(
     community.id,
-    {
-      windowHours: parseWindowHours(ctx.query.window),
-      limit: parseLimit(ctx.query.limit),
-      after: typeof ctx.query.after === 'string' ? ctx.query.after : null,
-      sourceType: parseSourceType(ctx.query.source),
-      agentSlug: typeof ctx.query.agent === 'string' ? ctx.query.agent : null,
-      postType: parsePostType(ctx.query.post_type ?? ctx.query.content_type),
-      maxConfidence: parseMaxConfidence(ctx.query.max_confidence),
-    },
+    options,
   )
 
   ctx.json({
@@ -108,59 +131,3 @@ app
     ctx.setStatus(201)
     ctx.json({ feedback, applied_action: feedback.applied_action })
   })
-
-function parseWindowHours(value: unknown): number {
-  if (value === '24h') return 24
-  if (value === '7d') return 24 * 7
-  return 48
-}
-
-function parseLimit(value: unknown): number {
-  if (value === undefined) return 25
-  const limit = Number(value)
-  return Number.isFinite(limit) && limit > 0 ? Math.min(Math.floor(limit), 100) : 25
-}
-
-function parseMaxConfidence(value: unknown): number | null {
-  if (value === undefined || value === null || value === '') return null
-  const parsed = Number(value)
-  return Number.isFinite(parsed) ? parsed : null
-}
-
-function parseSourceType(value: unknown): RecentAutomodActionSourceType | null {
-  return typeof value === 'string' && isRecentAutomodActionSourceType(value) ? value : null
-}
-
-function parsePostType(value: unknown): string | null {
-  return typeof value === 'string' && isRecentAutomodPostType(value) ? value : null
-}
-
-function isRecentAutomodActionSourceType(value: string): value is RecentAutomodActionSourceType {
-  return (
-    value === 'agent_moderation' ||
-    value === 'openai_omni' ||
-    value === 'spam_detection' ||
-    value === 'community_prompt'
-  )
-}
-
-function isRecentAutomodPostType(value: string) {
-  return (
-    value === 'discussion' ||
-    value === 'review' ||
-    value === 'data_point' ||
-    value === 'story' ||
-    value === 'topic_recommendation' ||
-    value === 'comment' ||
-    value === 'article' ||
-    value === 'blog_post'
-  )
-}
-
-function isAutomodFeedbackOutcome(value: unknown): value is AutomodFeedbackOutcome {
-  return value === 'false_positive' || value === 'true_positive'
-}
-
-function isAutomodFeedbackAction(value: unknown): value is AutomodFeedbackAction {
-  return value === 'reinstate' || value === 'keep_removed' || value === 'label_only'
-}

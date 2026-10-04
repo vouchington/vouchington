@@ -1,10 +1,12 @@
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { apiQuery } from '../../response-contract.mts'
+import { createPaginationParser, defineQueryContract, queryBoolean } from '@modules/pagination'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { getRecommendedTopics } from '@services/recommended-topics'
 import { getTopicByAnyCachedBatch, getTopicMetricsByAnyCachedBatch } from '@services/entity-fetch'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
-import { createPaginationParser } from '@modules/pagination'
 import { indexById } from '@modules/utils'
 import { parseBooleanish } from '@ts-shared/utils/query'
 
@@ -17,12 +19,26 @@ const recommendedTopicsParser = createPaginationParser({
     sort: ['score', 'best'] as const,
   },
 })
+const recommendedTopicsFilters = defineQueryContract({
+  spending_category: queryBoolean(),
+  rss_feed: queryBoolean(),
+})
 
 app.route('/api/v1/recommended-topics').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/recommended-topics', recommendedTopicsParser, recommendedTopicsFilters)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/recommended-topics')
 
   // Parse pagination and common filters
   const paginationOptions = recommendedTopicsParser.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, {
+    ...recommendedTopicsParser.queryContract,
+    ...recommendedTopicsFilters.queryContract,
+  })
+  if (ctx.query.limit !== undefined) query.limit = paginationOptions.limit
+  if (ctx.query.spending_category !== undefined)
+    query.spending_category = parseBooleanish(ctx.query.spending_category)
+  if (ctx.query.rss_feed !== undefined) query.rss_feed = parseBooleanish(ctx.query.rss_feed)
+  validateRequestContract(ctx, 'GET:/api/v1/recommended-topics', { query })
 
   // Parse topic-specific parameters
   const searchOptions = {

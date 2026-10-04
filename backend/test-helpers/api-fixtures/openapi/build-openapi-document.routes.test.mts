@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { BackendResponseContract } from '../response-contract-types.mts'
 import { COLD_OPENAPI_BUILD_TIMEOUT_MS } from '../cold-build-budget.mts'
+import { applyRequiredQueryParameterOverrides } from '../required-query-parameter-overrides.mts'
 import { buildOpenApiDocument } from './build-openapi-document.mts'
 import type { OpenApiSchema } from 'vouchington-tooling/openapi-document'
 
@@ -12,6 +13,76 @@ const passkeyOptionRoutes = [
 ] as const
 
 describe('OpenAPI catalog response helpers', () => {
+  it('marks only the explicitly reviewed required query fields', () => {
+    const document = {
+      paths: {
+        '/api/v1/availability': {
+          get: {
+            parameters: [
+              { in: 'query', name: 'kind', required: false },
+              { in: 'query', name: 'value', required: false },
+            ],
+          },
+        },
+        '/api/v1/localization': {
+          get: {
+            parameters: [
+              { in: 'query', name: 'consumer', required: false },
+              { in: 'query', name: 'locales', required: false },
+            ],
+          },
+        },
+        '/api/v1/admin/warnings': {
+          get: {
+            parameters: [
+              { in: 'query', name: 'userId', required: false },
+              { in: 'query', name: 'after', required: false },
+            ],
+          },
+        },
+        '/api/v1/curated-aside-items': {
+          get: { parameters: [{ in: 'query', name: 'type', required: false }] },
+        },
+        '/api/v1/hostnames/compare': {
+          get: { parameters: [{ in: 'query', name: 'ids', required: false }] },
+        },
+        '/api/v1/lists/contains': {
+          get: {
+            parameters: [
+              { in: 'query', name: 'entity_id', required: false },
+              { in: 'query', name: 'item_type', required: false },
+            ],
+          },
+        },
+      },
+    }
+
+    applyRequiredQueryParameterOverrides(document)
+
+    expect(document.paths['/api/v1/availability']!.get!.parameters).toEqual([
+      { in: 'query', name: 'kind', required: true },
+      { in: 'query', name: 'value', required: true },
+    ])
+    expect(document.paths['/api/v1/localization']!.get!.parameters).toEqual([
+      { in: 'query', name: 'consumer', required: true },
+      { in: 'query', name: 'locales', required: false },
+    ])
+    expect(document.paths['/api/v1/admin/warnings']!.get!.parameters).toEqual([
+      { in: 'query', name: 'userId', required: true },
+      { in: 'query', name: 'after', required: false },
+    ])
+    expect(document.paths['/api/v1/curated-aside-items']!.get!.parameters).toEqual([
+      { in: 'query', name: 'type', required: true },
+    ])
+    expect(document.paths['/api/v1/hostnames/compare']!.get!.parameters).toEqual([
+      { in: 'query', name: 'ids', required: true },
+    ])
+    expect(document.paths['/api/v1/lists/contains']!.get!.parameters).toEqual([
+      { in: 'query', name: 'entity_id', required: true },
+      { in: 'query', name: 'item_type', required: true },
+    ])
+  })
+
   it('adds SSE, error-only, and unknown operations without fake success', () => {
     const routes = [
       { method: 'GET', routeTemplate: '/api/v1/events', kind: 'sse', source: 'test:1' },

@@ -18,6 +18,7 @@ import {
 } from '../backend-contract-catalog.mts'
 import type { HeaderContractRegistry } from '../header-contract-types.mts'
 import type { BackendQueryContractRegistry } from '../query-contract-types.mts'
+import { applyRequiredQueryParameterOverrides } from '../required-query-parameter-overrides.mts'
 import { applyMoneyContracts } from './openapi-money-contract.mts'
 
 export function buildOpenApiDocument(
@@ -49,6 +50,7 @@ export function buildOpenApiDocument(
     queryContracts: resolvedQueryContracts as Readonly<Record<string, QueryOperationContract>>,
     registeredRoutes: registeredRoutes as readonly ToolingRegisteredRoute[],
   })
+  applyRequiredQueryParameterOverrides(document)
   const headerContracts =
     options?.headerContracts ??
     (contracts === undefined

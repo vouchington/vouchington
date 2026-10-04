@@ -1,4 +1,5 @@
 import app from '../../app.mts'
+import { apiQuery } from '../../response-contract.mts'
 import type { Context } from '@jongleberry/api-server'
 import { getCommunityOrThrow, getCommunityMember } from '@services/communities'
 import { getUserPublicByAnyCachedBatch } from '@services/entity-fetch'
@@ -7,6 +8,7 @@ import type { ModerationAnalyticsRange } from '@services/moderation-analytics/ty
 import { currentUserCanViewCommunityModlog } from '@services/moderator-actions'
 import { isModerationStaff } from '@services/users'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { communityModerationAnalyticsQuery } from './query-contracts-helpers.mts'
 
 const VALID_RANGES = new Set<ModerationAnalyticsRange>(['today', '7d', '30d', '90d', 'all'])
 
@@ -18,6 +20,10 @@ function parseRange(raw: unknown): ModerationAnalyticsRange {
 }
 
 app.route('/api/v1/communities/:idOrSlug/moderation-analytics').get(async (ctx: Context) => {
+  apiQuery(
+    'GET:/api/v1/communities/:idOrSlug/moderation-analytics',
+    communityModerationAnalyticsQuery,
+  )
   const currentUser = await requireAuth(
     ctx,
     'GET:/api/v1/communities/:idOrSlug/moderation-analytics',
@@ -42,6 +48,9 @@ app.route('/api/v1/communities/:idOrSlug/moderation-analytics').get(async (ctx: 
   })
 
   const range = parseRange(ctx.query.range)
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/moderation-analytics', {
+    query: ctx.query.range !== undefined ? { range } : {},
+  })
   const metrics = await getModerationAnalytics(range, {
     type: 'community',
     communityId: community.id,

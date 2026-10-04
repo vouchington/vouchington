@@ -8,7 +8,7 @@ service call. [Request validation](reference-request-validation.md) owns the ord
 generated contract mechanics; the [Copyright Notices API](v1/copyright-notices/README.md) owns the
 legal flow. This page records the covered operations, the order each handler keeps, and which status
 each malformed input keeps or changes. Other copyright route families have their own pages, listed
-under [Coverage by route family](reference-request-validation.md#coverage-by-route-family); the form-intake,
+under [Route-family references](reference-request-validation.md#route-family-references); the form-intake,
 restriction, and legal-hold resolution reviews, image-similarity candidates, and replay routes are on
 the [staff decision page](reference-copyright-staff-decision-request-validation.md).
 

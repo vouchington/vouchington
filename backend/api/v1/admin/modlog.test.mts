@@ -164,6 +164,28 @@ describe('GET /api/v1/admin/modlog', () => {
     }
   })
 
+  it('ignores an unknown action_type', async () => {
+    const suffix = createRandomString(8)
+    const community = await insertTestCommunity({
+      createdById: admin.id,
+      slug: `modlog-admin-unknown-action-${suffix}`,
+    })
+    const action = await insertTestModeratorAction({
+      actorId: admin.id,
+      actionType: 'suspend',
+      communityId: community.id,
+      targetUserId: regularUser.id,
+    })
+
+    const request = createRequest()
+    await request.authenticateAs(admin)
+    const response = await request
+      .get(`/api/v1/admin/modlog?community_id=${community.id}&action_type=not-a-real-action`)
+      .expect(200)
+
+    expect(response.body.moderator_actions[action.id]?.action_type).toBe('suspend')
+  })
+
   it('returns 422 for invalid community_id UUID', async () => {
     const request = createRequest()
     await request.authenticateAs(admin)

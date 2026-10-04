@@ -1,4 +1,5 @@
 import app from '../../app.mts'
+import { apiQuery } from '../../response-contract.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {
@@ -12,6 +13,7 @@ import {
   encodeCommunityModerationQueueCursor,
   type CommunityModerationQueueSource,
 } from '@services/communities/publications/moderation-queue'
+import { communityModerationQueueQuery } from './query-contracts-helpers.mts'
 
 /**
  * GET /api/v1/communities/:idOrSlug/moderation-queue
@@ -21,6 +23,7 @@ import {
  * redacted views without reporter identity, reporter notes, or note-derived judgements.
  */
 app.route('/api/v1/communities/:idOrSlug/moderation-queue').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/communities/:idOrSlug/moderation-queue', communityModerationQueueQuery)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/communities/:idOrSlug/moderation-queue')
   const { idOrSlug } = ctx.params as { idOrSlug: string }
 
@@ -43,14 +46,24 @@ app.route('/api/v1/communities/:idOrSlug/moderation-queue').get(async (ctx: Cont
       : 'member'
 
   const limitRaw = ctx.query.limit !== undefined ? Number(ctx.query.limit) : 25
-  const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(limitRaw, 100) : 25
+  const limit =
+    Number.isFinite(limitRaw) && limitRaw > 0
+      ? Math.min(Math.max(Math.floor(limitRaw), 1), 100)
+      : 25
 
   const after = typeof ctx.query.after === 'string' ? ctx.query.after : undefined
+  const source = parseQueueSource(ctx.query.source)
+  const query = {
+    limit: ctx.query.limit === undefined ? undefined : limit,
+    after: ctx.query.after,
+    source: ctx.query.source,
+  }
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/moderation-queue', { query })
 
   const { entries, hasNextPage } = await searchCommunityModerationQueue(community.id, {
     limit,
     after,
-    source: parseQueueSource(ctx.query.source),
+    source,
     // Pre-publication reviews leak unpublished post titles and automod flags are moderation
     // signals; restrict both to moderator tier.
     includeModeratorSources: viewerTier === 'moderator',

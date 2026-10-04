@@ -82,6 +82,13 @@ export function queryString<const TDescription extends string | undefined = unde
   return createQueryString<undefined, TDescription>(options)
 }
 
+/** Requires a string query parameter at the HTTP boundary and in the generated API schema. */
+export function requiredQueryString<const TDescription extends string | undefined = undefined>(
+  options: DescriptorOptions<TDescription> = {},
+): QueryStringContract<undefined, TDescription> & { readonly required: true } {
+  return { ...queryString(options), required: true }
+}
+
 export function queryUuid<const TDescription extends string | undefined = undefined>(
   options: DescriptorOptions<TDescription> = {},
 ): QueryStringContract<'uuid', TDescription> {
@@ -133,6 +140,13 @@ export function queryEnum<
   options: DescriptorOptions<TDescription> & { readonly default?: TDefault } = {},
 ): QueryEnumContract<TValues, TDescription, TDefault> {
   return createQueryEnum<TValues, TDescription, TDefault>(values, options)
+}
+
+/** Requires a query enum at the HTTP boundary and in the generated API schema. */
+export function requiredQueryEnum<const TValues extends readonly string[]>(
+  values: TValues,
+): QueryEnumContract<TValues> & { readonly required: true } {
+  return { ...queryEnum(values), required: true }
 }
 
 export function queryCsvArray<

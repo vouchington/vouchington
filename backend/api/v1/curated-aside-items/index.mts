@@ -16,8 +16,11 @@ import {
   reorderCuratedItems,
 } from '@services/curated-aside-items'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
+import { apiQuery } from '../../response-contract.mts'
+import { defineQueryContract, queryEnum } from '@modules/pagination'
 
 const ALLOWED_ASIDE_TYPES = ['topic', 'source', 'community'] as const
+const curatedAsideQuery = defineQueryContract({ type: queryEnum(ALLOWED_ASIDE_TYPES) })
 
 // Typed as strings: the generated contract checks the carrier shape and unknown keys, while blank,
 // enum, and UUID checks below keep their existing statuses.
@@ -26,6 +29,7 @@ type ReorderCuratedAsideItemsRequest = { aside_type: string; item_ids: string[] 
 
 // GET /api/v1/curated-aside-items?type=topic
 app.route('/api/v1/curated-aside-items').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/curated-aside-items', curatedAsideQuery)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/curated-aside-items')
 
   const asideType = ctx.query.type as string | undefined
@@ -36,6 +40,9 @@ app.route('/api/v1/curated-aside-items').get(async (ctx: Context) => {
     422,
     'type must be one of: topic, source, community',
   )
+  validateRequestContract(ctx, 'GET:/api/v1/curated-aside-items', {
+    query: { type: safeAsideType },
+  })
 
   const items = await listCuratedItems(safeAsideType)
 

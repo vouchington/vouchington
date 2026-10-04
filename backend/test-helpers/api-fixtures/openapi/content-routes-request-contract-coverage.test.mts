@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import {
   CLOSED_BODIES,
   QUERY_CARRIERS,
-  SKIPPED_OPERATIONS,
+  STRING_PATH_OPERATIONS,
 } from './content-routes-request-contract-coverage.mts'
 
 type Schema = Record<string, unknown>
@@ -64,10 +64,13 @@ describe('content route request contracts', () => {
     expect(properties['idempotency-key']).toMatchObject({ format: 'uuid', type: 'string' })
   })
 
-  it.each(Object.entries(SKIPPED_OPERATIONS))('keeps %s free of validatable carriers (%s)', op => {
-    const carriers = carriersOf(op)
-    expect(Object.keys(carriers)).toEqual(['path'])
-    const properties = (carriers.path as { properties: Record<string, Schema> }).properties
-    for (const property of Object.values(properties)) expect(property).toEqual({ type: 'string' })
-  })
+  it.each(Object.entries(STRING_PATH_OPERATIONS))(
+    '%s keeps its path carrier a free-form string (%s)',
+    op => {
+      const carriers = carriersOf(op)
+      expect(Object.keys(carriers)).toEqual(['path'])
+      const properties = (carriers.path as { properties: Record<string, Schema> }).properties
+      for (const property of Object.values(properties)) expect(property).toEqual({ type: 'string' })
+    },
+  )
 })

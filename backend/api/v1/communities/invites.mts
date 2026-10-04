@@ -1,4 +1,6 @@
 import app from '../../app.mts'
+import { apiQuery } from '../../response-contract.mts'
+import { communityPageQuery, communityPageQueryInput } from './query-contracts-helpers.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {
@@ -15,6 +17,7 @@ import { indexById } from '@modules/utils'
 app
   .route('/api/v1/communities/:idOrSlug/invites')
   .get(async (ctx: Context) => {
+    apiQuery('GET:/api/v1/communities/:idOrSlug/invites', communityPageQuery)
     const currentUser = await requireAuth(ctx, 'GET:/api/v1/communities/:idOrSlug/invites')
 
     const { idOrSlug } = ctx.params as { idOrSlug: string }
@@ -25,6 +28,9 @@ app
 
     const limit = ctx.query.limit ? Number(ctx.query.limit) : undefined
     const after = ctx.query.after as string | undefined
+    validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/invites', {
+      query: communityPageQueryInput(ctx.query),
+    })
 
     const result = await searchInvites(community.id, { limit, after })
 

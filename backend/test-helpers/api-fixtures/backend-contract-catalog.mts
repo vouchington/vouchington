@@ -18,6 +18,7 @@ import { vouchaExtractOptions } from './contract-schema.mts'
 import type { HeaderContractRegistry } from './header-contract-types.mts'
 import { relativizeContractTree } from './program-paths.mts'
 import { assertUniqueResponseAttribution } from './response-contract-ambiguous-attribution.mts'
+import { REQUIRED_QUERY_PARAMETER_OVERRIDES } from './required-query-parameter-overrides.mts'
 import type { BackendQueryContractRegistry } from './query-contract-types.mts'
 import type { BackendRequestContract } from './request-contract-types.mts'
 import type { BackendResponseContract } from './response-contract-types.mts'
@@ -78,11 +79,23 @@ export function loadBackendRequestContracts(
 export function loadBackendQueryContracts(
   knownResponseRoutes: ReadonlySet<string>,
 ): BackendQueryContractRegistry {
-  return cached(queries, [...knownResponseRoutes].toSorted().join('\n'), loaded =>
-    relativizeContractTree(
-      discoverApiQueryContracts(loaded.program, loaded.routeFiles, knownResponseRoutes),
-    ),
-  ) as BackendQueryContractRegistry
+  return cached(queries, [...knownResponseRoutes].toSorted().join('\n'), loaded => {
+    const contracts = discoverApiQueryContracts(
+      loaded.program,
+      loaded.routeFiles,
+      knownResponseRoutes,
+    )
+    for (const [operation, names] of Object.entries(REQUIRED_QUERY_PARAMETER_OVERRIDES)) {
+      const parameters = contracts[operation]?.parameters
+      if (!parameters) continue
+      for (const name of names) {
+        const descriptor = parameters[name]
+        if (!descriptor) throw new Error(`Required query parameter ${operation} ${name} is missing`)
+        Object.assign(descriptor, { required: true })
+      }
+    }
+    return relativizeContractTree(contracts)
+  }) as BackendQueryContractRegistry
 }
 
 export function loadBackendHeaderContracts(

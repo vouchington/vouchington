@@ -1,4 +1,6 @@
 import app from '../../app.mts'
+import { apiQuery } from '../../response-contract.mts'
+import { communityPageQuery, communityPageQueryInput } from './query-contracts-helpers.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import createHttpError from 'http-errors'
 import {
@@ -22,6 +24,7 @@ import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 app
   .route('/api/v1/communities/:idOrSlug/list-items/topics')
   .get(async (ctx: Context) => {
+    apiQuery('GET:/api/v1/communities/:idOrSlug/list-items/topics', communityPageQuery)
     const currentUser = await getOptionalAuthAndRateLimit(
       ctx,
       'GET:/api/v1/communities/:idOrSlug/list-items/topics',
@@ -35,6 +38,9 @@ app
 
     const limit = ctx.query.limit ? Number(ctx.query.limit) : undefined
     const after = ctx.query.after as string | undefined
+    validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/list-items/topics', {
+      query: communityPageQueryInput(ctx.query),
+    })
 
     const result = await searchCommunityListItems(community.id, 'topic', { limit, after })
     const entityIds = result.results.map(item => item.entity_id)

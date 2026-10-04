@@ -22,7 +22,10 @@ app.route('/api/v1/auth/oauth/:provider/connect').put(async ctx => {
   const provider = assertValidProvider(ctx.params.provider ?? '')
 
   const body = (await ctx.request.json('100kb')) as Record<string, unknown>
-  validateRequestContract(ctx, 'PUT:/api/v1/auth/oauth/:provider/connect', { body })
+  validateRequestContract(ctx, 'PUT:/api/v1/auth/oauth/:provider/connect', {
+    path: ctx.params,
+    body,
+  })
   const { account, name } = await connectOAuthAccountFlow({
     provider,
     currentUserId: currentUser.id,
@@ -61,6 +64,9 @@ app.route('/api/v1/auth/oauth/:provider/continue').post(async ctx => {
     'POST:/api/v1/auth/oauth/:provider/continue',
   )
   const provider = assertValidProvider(ctx.params.provider ?? '')
+  validateRequestContract(ctx, 'POST:/api/v1/auth/oauth/:provider/continue', {
+    path: ctx.params,
+  })
   if (currentUser) {
     ctx.json({
       user: {

@@ -1,5 +1,6 @@
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import app from '../../app.mts'
+import { apiQuery } from '../../response-contract.mts'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { loadCommunityForViewer } from '@services/communities'
 import { getRssFeedItemFeedIds } from '@services/feeds'
@@ -21,7 +22,6 @@ import {
   getStoryPreviews,
   getVisiblePostStoryIdsByStoryIds,
 } from '@services/stories'
-import { createPaginationParser } from '@modules/pagination'
 import { indexById } from '@modules/utils'
 import { proxyRssFeedItemCoverArt } from '@services/rss-feed-items/proxy-cover-art'
 import { getRssFeedItemEmbedsByItems, proxyThumbnailUrls } from '@services/rss-feed-items'
@@ -33,16 +33,14 @@ import {
   isCatalogValue,
   type CommunityNewsFeedType,
 } from '@ts-shared/feed-capabilities'
-
-const communityNewsParser = createPaginationParser({
-  cursor: { type: 'timestamp' as const },
-  limit: { min: 1, max: 100, default: 25 },
-  filters: {
-    timeRange: true,
-  },
-})
+import {
+  communityNewsParser,
+  communityNewsQuery,
+  communityNewsQueryInput,
+} from './query-contracts-helpers.mts'
 
 app.route('/api/v1/communities/:idOrSlug/news').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/communities/:idOrSlug/news', communityNewsParser, communityNewsQuery)
   const currentUser = await getOptionalAuthAndRateLimit(
     ctx,
     'GET:/api/v1/communities/:idOrSlug/news',
@@ -54,7 +52,6 @@ app.route('/api/v1/communities/:idOrSlug/news').get(async (ctx: Context) => {
   })
 
   const paginationOptions = communityNewsParser.parse(ctx.query)
-  const hashtagSearchOptions = await resolveHashtagTopicSearch(ctx.query.q)
   const has_related_posts =
     ctx.query.has_related_posts === 'true'
       ? true
@@ -62,6 +59,16 @@ app.route('/api/v1/communities/:idOrSlug/news').get(async (ctx: Context) => {
         ? false
         : undefined
   const feedType = parseCommunityNewsFeedType(ctx.query.feed_type)
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/news', {
+    query: communityNewsQueryInput(
+      ctx.query,
+      paginationOptions.limit,
+      paginationOptions.time_range,
+      has_related_posts,
+      feedType,
+    ),
+  })
+  const hashtagSearchOptions = await resolveHashtagTopicSearch(ctx.query.q)
 
   const result = await getRssFeedItemFeedIds(currentUser, {
     ...paginationOptions,

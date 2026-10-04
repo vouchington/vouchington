@@ -15,19 +15,33 @@ import {
 } from '@services/entity-fetch'
 import { getTopUrlsByHostnameIds } from '@services/urls-hostnames/top-urls'
 import { indexById } from '@modules/utils'
-import { EMPTY_PAGE_INFO, getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
-import { createPaginationParser } from '@modules/pagination'
+import {
+  EMPTY_PAGE_INFO,
+  getOptionalAuthAndRateLimit,
+  validateRequestContract,
+} from '../../response-helpers.mts'
+import { apiQuery } from '../../response-contract.mts'
+import { createPaginationParser, defineQueryContract, queryString } from '@modules/pagination'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { clampAnonLimit } from '@modules/search-utils'
 
 const topHostnamesParser = createPaginationParser({
   cursor: { type: 'score' },
   limit: { min: 1, max: 100, default: 25 },
 })
+const topHostnamesFilters = defineQueryContract({ topic: queryString() })
 
 app.route('/api/v1/hostnames/top').get(async ctx => {
+  apiQuery('GET:/api/v1/hostnames/top', topHostnamesParser, topHostnamesFilters)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/hostnames/top')
 
   const paginationOptions = topHostnamesParser.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, {
+    ...topHostnamesParser.queryContract,
+    ...topHostnamesFilters.queryContract,
+  })
+  if (ctx.query.limit !== undefined) query.limit = paginationOptions.limit
+  validateRequestContract(ctx, 'GET:/api/v1/hostnames/top', { query })
 
   let topic_id: string | undefined
   if (ctx.query.topic) {

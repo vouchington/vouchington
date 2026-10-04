@@ -1,81 +1,53 @@
-# Content, list, household and public user route request validation
+# Content, list, household and public user request behavior
 
 [Back to Request validation](reference-request-validation.md)
 
-These routes validate their declared path, query, body and header carriers with
-`validateRequestContract` after authentication and authorization and before the service call.
-[Request validation](reference-request-validation.md) owns the ordering and the generated
-contract mechanics. This page records which operations are covered, which are skipped, and which
-status each malformed input keeps or changes.
+This page records selected runtime request-validation behavior for content, list, household, and
+public user routes. The shared [request-validation reference](reference-request-validation.md)
+describes the adapter and ordering guidance.
 
-Unauthenticated malformed calls keep returning 401 with no schema diagnostic. A 422 names only the
-carrier (`Invalid request body` or `Invalid request query`).
+## User collection and search queries
 
-## Validated operations
+For the user collections covered by route tests, malformed pagination keeps the parser's `400`
+response: non-integer limits and repeated cursors are rejected. A repeated `q` on
+`GET /api/v1/users/:idOrSlug/users/:listType` returns `422`; unsupported feed and media types retain
+their route-specific `400` response.
 
-| Group                          | Operations                                                                                                                                 | Contract                                                                                                                             |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Votes                          | `PUT`/`DELETE` vote on agent moderations, entity relations, hostnames and `users/:id/vouch-vote`; `GET` votes on the first three           | Closed `{choice}` body; `after`/`limit` query. The shared vote handler validates after the entity lookup by design.                  |
-| Attestation and attribution    | `POST app-attestation/attest`, `POST app-attestation/challenge`, `POST attribution/referrer`                                               | Closed bodies with required keys.                                                                                                    |
-| Bookmarks and entity relations | Bookmark `GET`/`PUT`/`DELETE`; entity-relation `GET`/`POST` by predicate                                                                   | Path carriers; the `GET` declares `sort`, `positiveNetVoteScore`, `minNetVoteScore`, `after`, `limit`.                               |
-| Feeds by type                  | `GET feeds/posts/:feed_type`, `referral_links`, `rss_feed_items`                                                                           | `after`, `limit`, `community`, `sort`, `media_type`, `has_related_posts`, `min_score_*` as each route uses them.                     |
-| Hostnames                      | `GET hostnames`, `GET`/`PATCH hostnames/:id`, `POST hostnames`                                                                             | Closed bodies; `blocked`, `crawlable`, `hostname`, `after`, `limit` query. `PATCH` validates before the 404 lookup.                  |
-| Households                     | `GET`/`POST households`, `GET`/`PATCH`/`DELETE households/:id`, memberships `GET`/`POST`/`DELETE`                                          | Closed bodies (create and update take no fields); `access`, `after`, `limit` query.                                                  |
-| Imports, landing pages, media  | `GET imports/:batchId/stream`, landing-page `visits`/`clicks`, `POST markdown/preview`, podcast `chapters` and `playback-position`         | Path UUIDs; closed bodies; `position_seconds` required.                                                                              |
-| Lists                          | `GET`/`POST lists`, `GET`/`PATCH`/`DELETE lists/:id`, `import`, `items` (`GET`, `POST`, `DELETE` for posts and RSS feed items)             | Closed bodies; `after`, `limit`, `media_type`, `read` query. `GET /api/v1/lists` is covered beyond the original set.                 |
-| Stories and URLs               | `POST stories/:storyId/discussions`, `GET urls/:id`, `GET urls/:id/crawls`, `GET urls/:id/crawls/:crawlId`                                 | `Idempotency-Key` header is a UUID; `after`/`limit` query.                                                                           |
-| Users                          | `PATCH users/:idOrSlug`, `GET users` (search), collections for posts, users, rss-feeds, rss-feed-items, urls, domains, topics, communities | `PATCH` body is a closed object; collections take `after`, `limit` and the extras each route reads (`q`, `feed_type`, `media_type`). |
+On `GET /api/v1/users`, a supplied `username` lookup takes precedence over `q`, including when an
+unused `limit` is malformed. In search mode, repeated `q` values use the first value. Malformed
+search pagination retains `400`, and an unauthenticated search still returns `401`.
 
-`users/:idOrSlug/users/:listType` rejects a repeated `q`, which was previously ignored.
-`users/:idOrSlug/rss-feeds/:listType` now declares `limit`, `after` and `feed_type` in OpenAPI.
+## User updates and data-request stream
 
-## Skipped operations
+`PATCH /api/v1/users/:idOrSlug` returns `422` for an invalid body without changing the user. A valid
+update by another user remains `403`.
 
-A path-only free-form id-or-slug carrier is a plain string, so the generated contract cannot
-reject anything the handler does not already resolve to a 404. These operations are skipped. The
-[coverage test](../../../backend/test-helpers/api-fixtures/openapi/content-routes-request-contract-coverage.test.mts)
-fails when one of them gains a body, query or header carrier, so it is validated in the same change.
+`GET /api/v1/users/:idOrSlug/data-request/stream` returns `422` for a malformed `request_id` and
+`404` for a well-formed UUID that does not identify a request. An unauthenticated caller still gets
+`401`.
 
-| Operation                                               | Reason                                                    |
-| ------------------------------------------------------- | --------------------------------------------------------- |
-| `DELETE /api/v1/topics/:idOrSlug`                       | Unconditionally answers 405 and reads nothing.            |
-| `GET`/`DELETE /api/v1/users/:idOrSlug`                  | Free-form id-or-slug path only.                           |
-| `GET /api/v1/users/:id/vouch-context`                   | Free-form id-or-username path only.                       |
-| `GET`/`POST /api/v1/users/:idOrSlug/data-request`       | Free-form id-or-slug path only.                           |
-| `GET /api/v1/users/:idOrSlug/data-request/stream`       | Server-sent-event route with no query carrier; see below. |
-| `GET /api/v1/users/:username/landing-page`, `.../:slug` | Free-form username and slug paths only.                   |
+## Community query behavior
 
-### Server-sent-event query carriers
+`GET /api/v1/communities/:idOrSlug/bans` returns `422` for a malformed `limit` after access checks;
+a valid limit returns `200`. Public `GET /api/v1/communities/:idOrSlug/posts` returns `422` for a
+malformed limit and serves a valid query with `200`.
 
-`apiQuery` needs a registered response route, and SSE routes have none, so the generator throws
-for `apiQuery` on them. The data-request stream asserts that `request_id` is a UUID inside the
-handler and answers 422 (`Invalid request ID`). A malformed id previously reached PostgreSQL and
-returned a 500. Follow-up: tooling support for SSE query carriers.
+`GET /api/v1/communities/:idOrSlug/moderation-transparency` returns `422` for an unrecognized
+`range`; omitting it keeps the 30-day default. `GET /api/v1/communities/:idOrSlug/moderation-analytics`
+uses its 30-day default for an omitted or unrecognized range, and
+`GET /api/v1/communities/:idOrSlug/moderator-stats` retains its 30-day default for an unsupported
+window. A supplied moderation-queue `source` outside the supported values returns `422` after the
+community access check.
 
-## Status decisions
+## Community request bodies
 
-- Parser and semantic 400s run first and are kept: malformed `limit`, repeated or malformed `after`
-  from the pagination parsers, invalid `feed_type`, an invalid `media_type` on the user collection
-  routes, an unknown list type, the landing-page path id, the story id, and a playback position out
-  of range.
-- `GET /api/v1/feeds/rss_feed_items/:feed_type` declares `media_type` as a comma-separated array of
-  `article|audio|video` (as `GET /rss-feed-items` does), because the parser accepts
-  `?media_type=audio,video` and repeated values. An unknown member is 422; the parser used to drop
-  it silently.
-- Out-of-range limits are still clamped, not rejected. Entity-relation `GET` keeps its clamping.
-- Schema-shape failures are 422: wrong types, unknown JSON fields, missing required keys,
-  repeated query keys, non-boolean flags, malformed body UUIDs, a malformed `Idempotency-Key`.
-- Missing required body keys are now 422 on referrer, landing-page clicks, playback position,
-  list item add and import.
-- Household `access` outside `all|owned|member` moved from 400 to 422. Household create and update
-  reject every body field.
-- Lists: a JSON `null` update body moved from 200 to 422; malformed limits on `GET /lists` and
-  list items are 422.
-- Entity-relation `GET` with an invalid `sort`, `positiveNetVoteScore` or `summary` is 422.
-- URL crawls: a malformed `limit` is 400 before the URL lookup; a malformed `crawlId` is 422 before it.
-- `PATCH /api/v1/users/:idOrSlug` validates after `requireAuth` and the suspension check but
-  before the service's own 404 and 403, because authorization lives inside `updateUser`. A malformed
-  body from an authenticated non-owner is 422.
-- Query coercion stays per route: the pagination parser runs first, then `prepareQueryForValidation`,
-  then the parsed `limit` and `after` overwrite the raw values before validation. There is no shared
-  Ajv coercion.
+`PATCH /api/v1/communities/:idOrSlug` returns `422` for a non-object JSON body from an owner and
+preserves `403` for a member without update access. An unauthenticated caller gets `401`.
+
+Community modmail and saved-reply routes return `422` instead of `400` for non-object JSON bodies.
+Their route-specific field checks still return `400` for invalid or missing fields.
+
+`POST /api/v1/communities/:idOrSlug/posts` validates the parsed body before its honeypot response.
+Malformed supplied fields return `422` after the contribution gates; a valid filled honeypot still
+gets a fake creation response without creating a real post. Unauthenticated callers still get
+`401`.

@@ -49,4 +49,25 @@ describe('POST /api/v1/communities/:idOrSlug/posts request contract validation',
       .expect(401)
     expect(response.text).not.toMatch(/invalid/i)
   })
+
+  it('validates supplied honeypot bodies before returning fake creation success', async () => {
+    const owner = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+    const random = createRandomString(8)
+    const community = await insertTestCommunity({
+      createdById: owner.id,
+      slug: `posts-create-hp-rv-422-${random}`,
+    })
+    await insertTestCommunityMember({
+      communityId: community.id,
+      userId: owner.id,
+      role: 'owner',
+    })
+
+    const request = createRequest()
+    await request.authenticateAs(owner)
+    await request
+      .post(`/api/v1/communities/${community.slug}/posts`)
+      .send({ hp_website: 'http://spam.com', unrecognized: true })
+      .expect(422)
+  })
 })

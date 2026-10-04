@@ -37,27 +37,23 @@ assertions in [API fixtures](../../../backend/test-helpers/api-fixtures/openapi/
 emitted carriers and schemas; route HTTP tests verify invocation order, status, and no-write
 behavior.
 
-## Coverage by route family
+## Route-family references
 
 - [Content, list, household and public user routes](reference-content-routes-request-validation.md)
-  record the validated operations, the skipped path-only operations, and the 400-versus-422
-  decisions for that family.
-- [Staff, admin, and operations routes](reference-staff-operations-request-validation.md) record
-  their status changes, carrier skips, and specialized ingress.
+  describe selected request and status behavior for that family.
+- [Staff, admin, and operations routes](reference-staff-operations-request-validation.md) describe
+  selected status behavior and specialized request handling.
 - [Copyright notice, appeal, and counter-notice routes](reference-copyright-submission-request-validation.md)
-  record their handler order, kept statuses, and cross-client verification.
+  describe request ordering and status behavior.
 - [Copyright guest capability and guest filing routes](reference-copyright-guest-request-validation.md)
-  record their handler order, kept statuses, and why the capability header is never validated.
-- [Copyright EU, UK, and jurisdiction policy routes](reference-copyright-territorial-request-validation.md)
-  record the closed bodies, the one explicit-null `cf_turnstile_response` acceptance change, and the
-  rejections the service still decides (ownership and jurisdiction availability `403`, `404`, `409`).
+  describe request ordering and capability-token behavior.
+- [Copyright EU, UK, and territorial policy routes](reference-copyright-territorial-request-validation.md)
+  describe request bodies and the route's legal status outcomes.
 - [Copyright repeat-infringer and staff queue routes](reference-copyright-staff-request-validation.md)
-  record their handler order, kept statuses, and the administrator-action ordering note.
-- [Copyright email-intake routes](reference-copyright-email-intake-request-validation.md) record
-  their handler order, the parsers that run before the contract, and the unknown-key `422` changes.
+  describe handler ordering and status behavior.
+- [Copyright email-intake routes](reference-copyright-email-intake-request-validation.md) describe
+  request parsing and status behavior.
 - [Copyright submission review routes](reference-copyright-submission-review-request-validation.md)
-  record their handler order, the unknown-key `422` changes, and the carrier-free media-delivery
-  replay skip.
-- [Copyright staff decision routes](reference-copyright-staff-decision-request-validation.md) record
-  the form-intake, restriction, and legal-hold resolution bodies, the lenient image-similarity
-  `limit`, the body-free replay and staydown routes, and the one `500` to `422` change.
+  describe request parsing and status behavior.
+- [Copyright staff decision routes](reference-copyright-staff-decision-request-validation.md)
+  describe request parsing and status behavior.

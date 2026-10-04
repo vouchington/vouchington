@@ -1,6 +1,9 @@
 import { streamJsonObject } from '@jongleberry/api-server'
 import app from '../../app.mts'
-import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
+import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
+import { apiQuery } from '../../response-contract.mts'
+import { defineQueryContract, queryEnum, queryNumber } from '@modules/pagination'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { getTrendingTopics, trendingTopicsPaginationParser } from '@services/trending-topics'
 import { getTopicByAnyCachedBatch, getTopicMetricsByAnyCachedBatch } from '@services/entity-fetch'
 import { getTrendingTopicsCached } from '@services/entity-fetch/search-caches'
@@ -11,9 +14,15 @@ import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { clampAnonLimit } from '@modules/search-utils'
 
 // Trending topics use a custom time range (day/week/month), not the standard TimeRange type
-const VALID_TIME_RANGES = new Set(['day', 'week', 'month'])
+const TIME_RANGES = ['day', 'week', 'month'] as const
+const VALID_TIME_RANGES = new Set<string>(TIME_RANGES)
+const trendingTopicsFilters = defineQueryContract({
+  time_range: queryEnum(TIME_RANGES, { default: 'day' }),
+  min_score: queryNumber(),
+})
 
 app.route('/api/v1/trending-topics').get(async ctx => {
+  apiQuery('GET:/api/v1/trending-topics', trendingTopicsPaginationParser, trendingTopicsFilters)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/trending-topics')
 
   // Parse pagination options
@@ -33,6 +42,15 @@ app.route('/api/v1/trending-topics').get(async ctx => {
   if (minScore !== undefined && minScore < 0) {
     ctx.throw(400, 'Min score must be >= 0')
   }
+  const query = prepareQueryForValidation(ctx.query, {
+    ...trendingTopicsPaginationParser.queryContract,
+    ...trendingTopicsFilters.queryContract,
+  })
+  if (ctx.query.limit !== undefined) query.limit = paginationOptions.limit
+  const validationQuery = Object.fromEntries(
+    Object.entries(query).filter(([key]) => key !== 'min_score' || minScore !== undefined),
+  )
+  validateRequestContract(ctx, 'GET:/api/v1/trending-topics', { query: validationQuery })
 
   const searchOptions = {
     ...paginationOptions,

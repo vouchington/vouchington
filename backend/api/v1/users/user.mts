@@ -13,7 +13,6 @@ import {
   type UpdateUserOptions,
 } from '@services/users'
 import { getUserMetricsByAnyCached, getUserProfileMetricsByAny } from '@services/entity-fetch'
-import { getFollowedUsersByElectionVote } from '@services/users/follow-context'
 import { listProfileLinks } from '@services/my/profile-links'
 import {
   createVoteClearHandler,
@@ -25,6 +24,7 @@ import {
   getUserVouchElectionVote,
   upsertUserVouchElectionVotes,
 } from '@services/elections-votes/user-vouch'
+import { getFollowedUsersByElectionVote } from '@services/users/follow-context'
 import { createVoteStatsNoopReconciler } from '@services/elections-votes/shared'
 import { enqueueBulkUpdateUserVouchElectionVoteStats } from '@queues/elections/enqueues'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
@@ -32,11 +32,14 @@ import renderMarkdown from '@services/markdown'
 import {
   apiNoRequestBody,
   apiOpenApiNoContent,
+  apiQuery,
   apiRequestContract,
   apiResponse,
 } from '../../response-contract.mts'
+
 import type { ElectionVoteRequest } from '@voucha/types/entities/election'
 import type { PrivateUser } from '@services/users/types'
+import { userProfileQueryContract } from './user-profile-query-helpers.mts'
 import {
   getOptionalAuthAndRateLimit,
   requireAuth,
@@ -49,6 +52,12 @@ app
   .route('/api/v1/users/:idOrSlug')
   .get(async (ctx: Context) => {
     const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/users/:idOrSlug')
+    const includeBio = ctx.query.include_bio === '1'
+    const recognizedIncludeBio = ctx.query.include_bio === '1' || ctx.query.include_bio === '0'
+    apiQuery('GET:/api/v1/users/:idOrSlug', userProfileQueryContract)
+    validateRequestContract(ctx, 'GET:/api/v1/users/:idOrSlug', {
+      query: recognizedIncludeBio ? { include_bio: ctx.query.include_bio } : {},
+    })
     const idOrSlug = ctx.params.idOrSlug!
 
     // Check if user is requesting their own profile (by ID or username)
@@ -70,7 +79,6 @@ app
       ctx.assert(resolvedUser, 404, 'User not found')
     }
 
-    const includeBio = ctx.query.include_bio === '1'
     const isAdminViewer = isAdminUser(currentUser ?? null)
     const [user_metrics, profile_links, user_bio_html, user_vouch_election] = await Promise.all([
       currentUser

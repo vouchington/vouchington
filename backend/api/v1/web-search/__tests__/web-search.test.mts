@@ -99,6 +99,14 @@ describe('GET /api/v1/web-search', () => {
     expect(response.body.page_info.has_next_page).toBe(false)
   })
 
+  it('validates limit before returning empty results for a short query', async () => {
+    const response = await createRequest()
+      .get('/api/v1/web-search?query=ab&limit=not-an-integer')
+      .expect(422)
+
+    expect(response.body.message).toBe('Invalid request query')
+  })
+
   it('blocked hostname: excluded from results for anonymous users', async () => {
     const token = randomUUID().replace(/-/g, '')
     const blockedHostnameId = await insertTestUrlHostname({

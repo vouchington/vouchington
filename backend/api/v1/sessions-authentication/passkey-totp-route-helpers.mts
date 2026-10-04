@@ -23,6 +23,7 @@ async function requireAuthAndItemId(
   const currentUser = await requireAuth(ctx, operation)
   assertNotSuspended(currentUser)
   ctx.assert(ctx.params.id, 400, 'id required')
+  validateRequestContract(ctx, operation, { path: ctx.params })
   return { currentUser, id: ctx.params.id }
 }
 
@@ -63,8 +64,7 @@ export async function deleteMfaFactor(
   await deleteFactor(currentUser.id, id, reAuthToken)
 }
 
-// Shared by `deleteMfaFactor`'s two call sites: validate the already-read optional body against
-// the request contract and extract the optional re-auth token.
+// Validate an optional re-authentication body only when the request supplied JSON.
 function validateReAuthToken(
   ctx: Context,
   operation: string,

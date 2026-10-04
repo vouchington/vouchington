@@ -2,12 +2,11 @@
 
 [Back to Request validation](reference-request-validation.md)
 
-The staff submission review routes under `backend/api/v1/copyright-notices/` validate their path and
-JSON body with `validateRequestContract` immediately before the first service call.
+This page describes request behavior for staff submission-review routes under
+`backend/api/v1/copyright-notices/`.
 [Request validation](reference-request-validation.md) owns the ordering and the generated contract
 mechanics; the [Copyright Notices API](v1/copyright-notices/README.md) owns the legal flow. This page
-records the covered operations, the order each handler keeps, which status each malformed input keeps
-or changes, and the two operations in this family that need no change.
+records route behavior, handler ordering, and status changes.
 
 An unauthenticated or unauthorized malformed call keeps its bare `401` or `403` with no schema
 diagnostic. A contract `422` names only the carrier (`Invalid request body`).
@@ -20,16 +19,10 @@ diagnostic. A contract `422` names only the carrier (`Invalid request body`).
 | `POST /copyright-submissions/:id/counter-notice-reviews` | Closed `CopyrightCounterNoticeReviewRequest` and `id` path |
 | `POST /copyright-submissions/:id/legal-hold-assessments` | Closed `CopyrightLegalHoldAssessmentRequest` and `id` path |
 
-The three request types live in `submission-review-request-types.mts` beside the routes. The handlers
-share one body reader, so each declares its type with `apiRequestContract`; the compiler cannot see
-through the shared helper. The compiler extracts the schema from the types, so the OpenAPI document,
-the request-contract bundle, and the runtime check share one source. Appeal `decisions` are one to
-twenty closed `{ restriction_id, action }` items, and legal-hold `target_ids` are one to twenty
-distinct UUIDs. Compiler-built assertions in
-[`copyright-submission-review-request-contract-coverage.test.mts`](../../../backend/test-helpers/api-fixtures/openapi/copyright-submission-review-request-contract-coverage.test.mts)
-verify the emitted carriers, and
+Appeal `decisions` are one to twenty `{ restriction_id, action }` items, and legal-hold `target_ids`
+are one to twenty distinct UUIDs. The runtime request tests in
 [`submission-review-request-validation.test.mts`](../../../backend/api/v1/copyright-notices/submission-review-request-validation.test.mts)
-verifies order, status, and no-write behavior against the real database.
+verify order, status, and no-write behavior against the real database.
 
 `POST /copyright-legal-hold-assessments/:id/resolutions` shares the body reader but is validated with
 the other remaining staff decision routes; see
@@ -77,27 +70,10 @@ request behaves exactly as before.
   a malformed path id keep their existing status and message. An unknown submission stays the
   service's `404`.
 
-## Operations that need no change
+## Related behavior
 
-- `POST /copyright-media-delivery/replays` reads no body, path, or query, so the compiler emits no
-  request-contract entry for it and a `validateRequestContract` call would have nothing to check.
-  It authenticates as copyright staff, then replays failed media-delivery registry records. This is
-  the carrier-free skip described in
-  [Skipped operations](reference-content-routes-request-validation.md#skipped-operations); the
-  coverage test fails if the route gains a body, path, or query carrier, so it is validated in the
-  same change. Existing route-replay coverage keeps its `403` and `200` behavior.
-- The repeat-infringer routes (the notice accounts read, dispositions, outcomes, and reinstatements)
-  were already validated by #1665, so they need no change; see
+- `POST /copyright-media-delivery/replays` remains a staff-only replay route. Its existing replay
+  coverage keeps the `403` and `200` outcomes.
+- For repeat-infringer routes (the notice accounts read, dispositions, outcomes, and reinstatements),
+  see
   [repeat-infringer and staff queue routes](reference-copyright-staff-request-validation.md).
-
-## Specialized ingress
-
-No named exclusions. Every route here reads a bounded JSON body (`1mb`) with the standard parser; no
-raw-body, MIME, or signature parser is involved.
-
-## Cross-client verification
-
-The closed schemas reject unknown keys, so every client body must be a subset of the schema. The web
-client (`web/lib/api/client/copyright-notices.ts`) sends only schema keys for all three routes. No
-native Swift or .NET copyright client exists in `vouchington-clients` (`5c4acb6`), so no native
-request body depends on a key outside the schema.

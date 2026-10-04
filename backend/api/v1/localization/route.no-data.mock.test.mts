@@ -1,7 +1,9 @@
+import { readFileSync } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { PUBLIC_LOCALIZATION_CONSUMERS } from '@vouchington/localization'
 
 vi.mock<typeof import('node:fs')>(import('node:fs'), async importOriginal => importOriginal())
-import { localizationRoute } from './route.mts'
+import { localizationRoute } from './localization-route-helpers.mts'
 import { setLocalizationDatabaseForTests } from '@services/localization/database'
 import { installSampleLocalizationDatabase } from '@voucha/test-helpers/services/localization/fixtures'
 
@@ -30,6 +32,36 @@ describe('localization route handler', () => {
     setLocalizationDatabaseForTests(undefined)
   })
 
+  it('publishes a required public-consumer enum in both API contracts', () => {
+    const bundle = JSON.parse(
+      readFileSync(
+        new URL('../../../../api-fixtures/v1/request-contracts.json', import.meta.url),
+        'utf8',
+      ),
+    ) as {
+      operations: Record<
+        string,
+        { query: { required: string[]; properties: Record<string, unknown> } }
+      >
+    }
+    expect(bundle.operations['GET:/api/v1/localization']?.query).toMatchObject({
+      required: ['consumer'],
+      properties: { consumer: { type: 'string', enum: [...PUBLIC_LOCALIZATION_CONSUMERS] } },
+    })
+
+    const openapi = JSON.parse(
+      readFileSync(new URL('../../../../api-fixtures/v1/openapi.json', import.meta.url), 'utf8'),
+    ) as { paths: Record<string, { get: { parameters: Array<Record<string, unknown>> } }> }
+    expect(openapi.paths['/api/v1/localization']?.get.parameters).toContainEqual(
+      expect.objectContaining({
+        in: 'query',
+        name: 'consumer',
+        required: true,
+        schema: { type: 'string', enum: [...PUBLIC_LOCALIZATION_CONSUMERS] },
+      }),
+    )
+  })
+
   it('writes JSON, 304, and 400 responses', () => {
     const ok = createContext({ consumer: 'web', locales: 'en', selectors: 'nav.*' })
     localizationRoute(ok as never)
@@ -46,5 +78,27 @@ describe('localization route handler', () => {
       throw new Error('headers failed')
     })
     expect(() => localizationRoute(boom as never)).toThrow(/headers failed/)
+  })
+
+  it.each([
+    ['repeated consumer', { consumer: ['web', 'native'], locales: 'en' }],
+    ['unknown consumer', { consumer: 'unknown', locales: 'en' }],
+  ])('rejects a %s before rendering a localization payload', (_label, query) => {
+    const ctx = createContext(query)
+
+    expect(() => localizationRoute(ctx as never)).toThrow(/consumer/i)
+    expect(ctx.throw).toHaveBeenCalledWith(400, expect.any(String))
+    expect(ctx.json).not.toHaveBeenCalled()
+  })
+
+  it('accepts repeated locale and selector values through the query boundary', () => {
+    const ctx = createContext({
+      consumer: 'web',
+      locales: ['en', 'es'],
+      selectors: ['nav.*', 'email.welcome.preview'],
+    })
+
+    localizationRoute(ctx as never)
+    expect(ctx.json).toHaveBeenCalled()
   })
 })

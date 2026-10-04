@@ -1,6 +1,13 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { createPaginationParser } from '@modules/pagination'
+import {
+  createPaginationParser,
+  defineQueryContract,
+  queryEnum,
+  queryUuid,
+} from '@modules/pagination'
+import { apiQuery } from '../../response-contract.mts'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { isUUID } from '@modules/utils'
 import { currentUserCanApplyVoteRingPenalty } from '@services/vote-integrity/authorization'
 import {
@@ -16,9 +23,16 @@ const penaltiesParser = createPaginationParser({
   cursor: { type: 'simple' },
   limit: { default: 25, max: 100 },
 })
+const penaltiesQuery = defineQueryContract({
+  status: queryEnum(['active', 'revoked']),
+  source: queryEnum(['flag']),
+  user_id: queryUuid(),
+  source_flag_id: queryUuid(),
+})
 
 // GET /api/v1/vote-integrity/penalties
 app.route('/api/v1/vote-integrity/penalties').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/vote-integrity/penalties', penaltiesParser, penaltiesQuery)
   await requireAuthAndRateLimit(
     ctx,
     currentUserCanApplyVoteRingPenalty,
@@ -34,6 +48,18 @@ app.route('/api/v1/vote-integrity/penalties').get(async (ctx: Context) => {
   ctx.assert(!source || source === 'flag', 422, 'Invalid source')
   ctx.assert(!user_id || isUUID(user_id), 422, 'Invalid user_id')
   ctx.assert(!source_flag_id || isUUID(source_flag_id), 422, 'Invalid source_flag_id')
+
+  const query = prepareQueryForValidation(ctx.query, {
+    ...penaltiesParser.queryContract,
+    ...penaltiesQuery.queryContract,
+  })
+  if (ctx.query.limit !== undefined) query.limit = limit
+  const validationQuery = Object.fromEntries(
+    Object.entries(query).filter(([, value]) => value !== ''),
+  )
+  validateRequestContract(ctx, 'GET:/api/v1/vote-integrity/penalties', {
+    query: validationQuery,
+  })
 
   const statusFilter = status === 'active' || status === 'revoked' ? status : undefined
   const sourceFilter = source === 'flag' ? source : undefined

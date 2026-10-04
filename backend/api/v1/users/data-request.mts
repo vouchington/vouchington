@@ -1,7 +1,11 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { isUUID } from '@modules/utils'
-import { requireAuth, requireAuthForSuspendedException } from '../../response-helpers.mts'
+import {
+  requireAuth,
+  requireAuthForSuspendedException,
+  validateRequestContract,
+} from '../../response-helpers.mts'
 import { assertNotSuspended } from '@services/users/suspension-guard'
 import { getPrivateUserByIdOrSlug, currentUserCanAccessDataRequest } from '@services/users'
 import {
@@ -39,6 +43,7 @@ app.route('/api/v1/users/:idOrSlug/data-request').post(async (ctx: Context) => {
     ctx,
     'POST:/api/v1/users/:idOrSlug/data-request',
   )
+  validateRequestContract(ctx, 'POST:/api/v1/users/:idOrSlug/data-request', { path: ctx.params })
 
   const user = await getPrivateUserByIdOrSlug(ctx.params.idOrSlug!)
   ctx.assert(user, 404, 'User not found')
@@ -66,6 +71,7 @@ app.route('/api/v1/users/:idOrSlug/data-request').post(async (ctx: Context) => {
 
 app.route('/api/v1/users/:idOrSlug/data-request').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/users/:idOrSlug/data-request')
+  validateRequestContract(ctx, 'GET:/api/v1/users/:idOrSlug/data-request', { path: ctx.params })
 
   const user = await getPrivateUserByIdOrSlug(ctx.params.idOrSlug!)
   ctx.assert(user, 404, 'User not found')
@@ -93,6 +99,9 @@ app.route('/api/v1/users/:idOrSlug/data-request').get(async (ctx: Context) => {
 
 app.route('/api/v1/users/:idOrSlug/data-request/stream').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/users/:idOrSlug/data-request/stream')
+  validateRequestContract(ctx, 'GET:/api/v1/users/:idOrSlug/data-request/stream', {
+    path: ctx.params,
+  })
 
   const user = await getPrivateUserByIdOrSlug(ctx.params.idOrSlug!)
   ctx.assert(user, 404, 'User not found')

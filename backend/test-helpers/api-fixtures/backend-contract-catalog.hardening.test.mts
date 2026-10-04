@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import { loadBackendQueryContracts } from './backend-contract-catalog.mts'
+import { newExpectedParameters } from './query-contract-expected-parameters.mts'
 import { COLD_BACKEND_PROGRAM_TIMEOUT_MS } from './cold-build-budget.mts'
 import { getBackendProgramBuildCount, getBackendProgramEntryCount } from './backend-program.mts'
 
@@ -217,7 +218,8 @@ const expectedParameters = {
   'GET:/api/v1/topics/compare': ['slugs'],
   'GET:/api/v1/trending-referral-programs': ['after', 'limit'],
   'GET:/api/v1/urls/:id/crawls': ['after', 'limit'],
-  'GET:/api/v1/users': ['after', 'limit'],
+  'GET:/api/v1/users': ['after', 'limit', 'q', 'username'],
+  'GET:/api/v1/users/:idOrSlug': ['include_bio'],
   'GET:/api/v1/users/:idOrSlug/communities/:listType': ['after', 'limit'],
   'GET:/api/v1/users/:idOrSlug/domains/:listType': ['after', 'limit'],
   'GET:/api/v1/users/:idOrSlug/posts/:listType': ['after', 'limit'],
@@ -228,6 +230,7 @@ const expectedParameters = {
   'GET:/api/v1/users/:idOrSlug/users/:listType': ['after', 'limit', 'q'],
   'GET:/api/v1/users/:userId/mod-notes': ['after', 'limit'],
   'POST:/api/v1/rss-feeds/:id/refreshes': ['force'],
+  ...newExpectedParameters,
 } as const
 
 const acceptedOperations = new Set(Object.keys(expectedParameters))
@@ -245,7 +248,7 @@ describe('real backend API query contracts', () => {
   }, COLD_BACKEND_PROGRAM_TIMEOUT_MS)
 
   it('publishes exactly the accepted operations and parameter sets', () => {
-    expect(Object.keys(contracts)).toEqual(Object.keys(expectedParameters))
+    expect(Object.keys(contracts).toSorted()).toEqual(Object.keys(expectedParameters).toSorted())
     for (const [operation, names] of Object.entries(expectedParameters)) {
       expect(Object.keys(contracts[operation]!.parameters).toSorted()).toEqual(names)
     }
@@ -269,6 +272,12 @@ describe('real backend API query contracts', () => {
     expect(contracts['GET:/api/v1/rss-feed-items']!.parameters.media_type).toMatchObject({
       kind: 'csv-array',
     })
+    expect(contracts['GET:/api/v1/availability']!.parameters.kind).toHaveProperty('required', true)
+    expect(contracts['GET:/api/v1/availability']!.parameters.value).toHaveProperty('required', true)
+    expect(contracts['GET:/api/v1/localization']!.parameters.consumer).toHaveProperty(
+      'required',
+      true,
+    )
   })
 
   it(

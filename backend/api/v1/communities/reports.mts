@@ -22,6 +22,7 @@ import { isUserBlockedOrMuted } from '@services/entity-relations/check-block-mut
 import { createPaginationParser, defineQueryContract, queryEnum } from '@modules/pagination'
 import { parseReportCursor } from '@services/moderation-reports/cursor'
 import { apiQuery } from '../../response-contract.mts'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import {
   communityModeratorVisibleReportSort,
   parseCommunityReportSort,
@@ -50,20 +51,19 @@ app.route('/api/v1/communities/:idOrSlug/reports/pending').get(async (ctx: Conte
   const community = isStaff
     ? await getCommunityOrThrow(idOrSlug)
     : (await loadCommunityForModerator(currentUser, idOrSlug)).community
-  // The generated query contract types `limit` as an integer (1-100) sourced from this route's
-  // pagination parser, but `ctx.query` always carries raw HTTP strings and the shared registry
-  // performs no type coercion. The existing pagination parser also clamps an out-of-range `limit`
-  // to 100 and returns 200, while the generated contract's `maximum: 100` would reject it — and
-  // `sort` defaults to 'severity' on any unrecognized value rather than rejecting it — so running
-  // the shared validator against the raw query here would change today's clamping/defaulting
-  // behavior into a 422. Query-carrier validation is intentionally skipped for this operation;
-  // only the path carrier is validated below.
   validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/reports/pending', {
     path: ctx.params,
   })
   const { limit, after } = pendingReportsPaginationParser.parse(ctx.query)
   const requestedSort = parseCommunityReportSort(ctx.query.sort)
   const sort = isStaff ? requestedSort : communityModeratorVisibleReportSort(requestedSort)
+  const query = prepareQueryForValidation(ctx.query, {
+    ...pendingReportsPaginationParser.queryContract,
+    ...pendingReportsFilterQuery.queryContract,
+  })
+  if (ctx.query.limit !== undefined) query.limit = limit
+  if (ctx.query.sort !== undefined) query.sort = requestedSort
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/reports/pending', { query })
   const cursorScope = `community-pending-reports:${community.id}:${isStaff ? 'staff' : 'member'}`
   const cursor = after ? parseReportCursor(after) : null
   ctx.assert(
