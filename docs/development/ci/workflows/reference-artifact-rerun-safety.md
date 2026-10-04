@@ -21,3 +21,6 @@ workflows do not get `actions: write` for cleanup because their definitions are 
 Keep required producer-consumer handoffs visible to the workflow topology model. It resolves only
 same-run jobs, including local reusable workflows. Inspect the result with `pnpm run ci:topology`.
 See [CI Reference: Workflow Topology Contracts](../../ci.md#workflow-topology-contracts).
+
+The artifact-retention guard reads decoded YAML data, including resolved aliases. Failure evidence
+shows the effective upload step with its resolved inputs; it does not rely on YAML AST source ranges.
