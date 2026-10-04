@@ -1,3 +1,4 @@
+import { clampLimit } from '@services/pagination'
 import { read } from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
@@ -5,7 +6,7 @@ import {
   buildHotScoreExpression,
   buildPublicPostEligibilityFilter,
 } from '@modules/feed-query-builders'
-import { clampLimit } from '@modules/search-utils'
+
 import { buildPageInfo, decodeUuidCursor, isScoreCursor } from '@modules/pagination'
 import { isUUID, getMinUUIDv7ForDate } from '@modules/utils'
 import { POST_TOPIC_CATEGORY_RELATION_TABLE } from '@services/entity-relations/metadata'

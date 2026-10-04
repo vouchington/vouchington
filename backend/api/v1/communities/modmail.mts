@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { isUUID } from '@modules/utils'
@@ -35,7 +36,10 @@ app.route('/api/v1/communities/:idOrSlug/modmail').get(async (ctx: Context) => {
     path: ctx.params,
   })
 
-  const { after: encodedAfter, limit } = preciseTimestampPaginationParser.parse(ctx.query)
+  const { after: encodedAfter, limit } = parseRuntimePagination(
+    preciseTimestampPaginationParser,
+    ctx.query,
+  )
   const after = encodedAfter
     ? decodeUuidCursor(encodedAfter, isPreciseTimestampCursor, 'Invalid modmail cursor')
     : undefined

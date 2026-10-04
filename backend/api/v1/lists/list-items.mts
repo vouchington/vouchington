@@ -1,3 +1,4 @@
+import { clampAnonLimit, getPaginationLimits } from '@services/pagination'
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import {
@@ -9,7 +10,7 @@ import { apiQuery } from '../../response-contract.mts'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { defineQueryContract, queryBoolean, queryInteger, queryString } from '@modules/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
-import { clampAnonLimit } from '@modules/search-utils'
+
 import { getListForWrite, searchListItems, currentUserCanViewList } from '@services/lists'
 
 const listItemsQuery = defineQueryContract({
@@ -39,7 +40,9 @@ app.route('/api/v1/lists/:id/items').get(async (ctx: Context) => {
     read?: boolean
   }
   const requestedLimit = query.limit as number | undefined
-  const limit = currentUser ? requestedLimit : clampAnonLimit(requestedLimit ?? 20)
+  const limit = currentUser
+    ? requestedLimit
+    : clampAnonLimit(requestedLimit ?? getPaginationLimits(20).default)
 
   const result = await searchListItems(listId, {
     mediaType,

@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import { apiQuery } from '../../response-contract.mts'
 import type { Context } from '@jongleberry/api-server'
@@ -44,7 +45,7 @@ app.route('/api/v1/communities/:idOrSlug/modlog').get(async (ctx: Context) => {
     path: ctx.params,
   })
 
-  const { limit, after } = parser.parse(ctx.query)
+  const { limit, after } = parseRuntimePagination(parser, ctx.query)
   const rawActionType = ctx.query.action_type as string | undefined
   const actionType = MODERATOR_ACTION_TYPES.includes(rawActionType as never)
     ? (rawActionType as (typeof MODERATOR_ACTION_TYPES)[number])

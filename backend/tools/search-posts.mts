@@ -1,3 +1,4 @@
+import { getPaginationLimits } from '@services/pagination'
 import type { BasicUser } from '@services/users/types'
 import type { PostSearchSort } from '@services/posts/search/types'
 import type { Tool } from '@services/openai-agents/tool-types'
@@ -103,11 +104,14 @@ const tool: Tool<ToolArgs, ToolResult> = {
     (currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
       const page = await findPageOrNull(args.after, async () => {
-        const prepared = preparePostsSearchParams({
-          ...pagedSearchQuery(args),
-          ...(args.sort && { sort: args.sort }),
-          ...(args.post_type && { post_types: args.post_type }),
-        })
+        const prepared = preparePostsSearchParams(
+          {
+            ...pagedSearchQuery(args),
+            ...(args.sort && { sort: args.sort }),
+            ...(args.post_type && { post_types: args.post_type }),
+          },
+          getPaginationLimits(25),
+        )
         const { shouldReturnEmpty, searchOptions } = await resolvePostsSearchParams(prepared)
         if (shouldReturnEmpty) return { results: [], page_info: EMPTY_PAGE_INFO }
 

@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
@@ -31,7 +32,10 @@ app.route('/api/v1/my/messages').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/my/messages', preciseTimestampPaginationParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/messages')
 
-  const { after: encodedAfter, limit } = preciseTimestampPaginationParser.parse(ctx.query)
+  const { after: encodedAfter, limit } = parseRuntimePagination(
+    preciseTimestampPaginationParser,
+    ctx.query,
+  )
   const query = prepareQueryForValidation(ctx.query, preciseTimestampPaginationParser.queryContract)
   if (ctx.query.limit !== undefined) query.limit = limit
   validateRequestContract(ctx, 'GET:/api/v1/my/messages', { query })

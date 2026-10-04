@@ -1,8 +1,9 @@
+import { clampLimit } from '@services/pagination'
 import { read } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { buildPageInfo, decodeScopedUuidCursor } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
-import { clampLimit } from '@modules/search-utils'
+
 import type { CrawlBasic } from './types.mts'
 import type { PaidSafeUrlCrawlHistory } from './public-url-response.mts'
 

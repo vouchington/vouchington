@@ -1,3 +1,5 @@
+import { clampAnonLimit } from '@services/pagination'
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import { streamJsonObject } from '@jongleberry/api-server'
 import app from '../../app.mts'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
@@ -19,7 +21,7 @@ import { getBookmarksForEntities } from '@services/bookmarks/get'
 import { indexById, isUUID } from '@modules/utils'
 import { parseNumberParam } from '@ts-shared/utils/query'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
-import { clampAnonLimit } from '@modules/search-utils'
+
 import { maybeSanitizeElections } from '@services/elections-votes/shared/sanitize-election'
 import { getPublicPostIds } from '@services/posts'
 import {
@@ -40,7 +42,7 @@ app.route('/api/v1/trending-posts').get(async ctx => {
   apiQuery('GET:/api/v1/trending-posts', trendingPostsPaginationParser, trendingPostsFilters)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/trending-posts')
 
-  const paginationOptions = trendingPostsPaginationParser.parse(ctx.query)
+  const paginationOptions = parseRuntimePagination(trendingPostsPaginationParser, ctx.query)
 
   let timeRange: TrendingTimeRange = 'day'
   if (ctx.query.time_range !== undefined) {

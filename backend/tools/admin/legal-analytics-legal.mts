@@ -1,3 +1,4 @@
+import { getPaginationLimitsForContract } from '@services/pagination'
 import assert from 'http-assert'
 import { assertNotSuspended } from '@services/users'
 import {
@@ -20,7 +21,14 @@ const reviewQueue = createAdminTool<{ after?: string; limit?: number }>({
   parameters: adminInput(PAGE_INPUT),
   outputSchema: adminRouteOutputSchema(queueApi),
   annotations: { readOnlyHint: true, openWorldHint: false },
-  run: (user, args) => listCopyrightStaffQueuePage(user, copyrightStaffQueueParser.parse(args)),
+  run: (user, args) =>
+    listCopyrightStaffQueuePage(
+      user,
+      copyrightStaffQueueParser.parse(
+        args,
+        getPaginationLimitsForContract(copyrightStaffQueueParser.queryContract),
+      ),
+    ),
 })
 const noticeApi = { method: 'GET', path: '/api/v1/copyright-notices/:id' } as const
 const notice = createAdminTool<{ id: string }>({

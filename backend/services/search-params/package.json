@@ -28,6 +28,7 @@
     "@modules/utils": "workspace:^",
     "@services/comments": "workspace:^",
     "@services/entity-cache": "workspace:^",
+    "@services/pagination": "workspace:^",
     "@services/urls-hostnames": "workspace:^",
     "@services/users": "workspace:^",
     "@ts-shared/utils": "workspace:^",

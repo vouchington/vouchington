@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { getFriendTrustedHostnames } from '@services/urls-hostnames/social'
@@ -23,7 +24,7 @@ app.route('/api/v1/hostnames/social').get(async (ctx: Context) => {
 
   ctx.set('Cache-Control', 'private, no-store')
 
-  const paginationOptions = socialHostnamesParser.parse(ctx.query)
+  const paginationOptions = parseRuntimePagination(socialHostnamesParser, ctx.query)
   const query = prepareQueryForValidation(ctx.query, socialHostnamesParser.queryContract)
   if (ctx.query.limit !== undefined) query.limit = paginationOptions.limit
   validateRequestContract(ctx, 'GET:/api/v1/hostnames/social', { query })

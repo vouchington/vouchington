@@ -1,6 +1,7 @@
+import { clampLimit } from '@services/pagination'
 import { read } from '@data-stores/psql'
 import { buildPageInfo, decodeUuidCursor, isScoreCursor } from '@modules/pagination'
-import { clampLimit } from '@modules/search-utils'
+
 import type { GetRecommendedRssFeedsOptions, GetRecommendedRssFeedsResult } from './types.mts'
 
 const DEFAULT_LIMIT = 20

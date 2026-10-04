@@ -1,3 +1,4 @@
+import { clampAnonLimit, getPaginationLimits } from '@services/pagination'
 import { isAdminUser } from '@services/users'
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
@@ -27,7 +28,7 @@ import {
   resolveRssFeedItemsSearchParams,
 } from '@services/search-params'
 import { getPostIdsByUrlIds } from '@services/posts/search/get-posts-by-url-ids'
-import { clampAnonLimit } from '@modules/search-utils'
+
 import {
   getStoriesByIdBatch,
   getStoryPreviews,
@@ -38,7 +39,7 @@ import { apiQuery } from '../../response-contract.mts'
 app.route('/api/v1/rss-feed-items').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/rss-feed-items', parseRssFeedItemsSearchParams)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/rss-feed-items')
-  const preparedSearchParams = prepareRssFeedItemsSearchParams(ctx.query)
+  const preparedSearchParams = prepareRssFeedItemsSearchParams(ctx.query, getPaginationLimits(10))
   validateRequestContract(ctx, 'GET:/api/v1/rss-feed-items', {
     query: preparedSearchParams.validationQuery,
   })

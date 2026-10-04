@@ -26,6 +26,7 @@
     "@modules/on-error": "workspace:^",
     "@modules/openai-utils": "workspace:^",
     "@modules/pagination": "workspace:^",
+    "@services/pagination": "workspace:^",
     "@ts-shared/money": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@valkey/valkey-glide": "^2.5.3",

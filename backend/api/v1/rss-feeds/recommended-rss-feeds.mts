@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
@@ -26,7 +27,7 @@ app.route('/api/v1/rss-feeds/recommended').get(async (ctx: Context) => {
   )
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/rss-feeds/recommended')
 
-  const paginationOptions = recommendedRssFeedsParser.parse(ctx.query)
+  const paginationOptions = parseRuntimePagination(recommendedRssFeedsParser, ctx.query)
   const query = prepareQueryForValidation(ctx.query, {
     ...recommendedRssFeedsParser.queryContract,
     ...recommendedRssFeedsQueryContract.queryContract,

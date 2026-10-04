@@ -1,6 +1,7 @@
+import { clampAnonLimit } from '@services/pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { clampAnonLimit } from '@modules/search-utils'
+
 import {
   getUserCommunitiesCollection,
   getUserMemberCommunitiesCollection,

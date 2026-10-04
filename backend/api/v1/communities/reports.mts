@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
@@ -54,7 +55,7 @@ app.route('/api/v1/communities/:idOrSlug/reports/pending').get(async (ctx: Conte
   validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/reports/pending', {
     path: ctx.params,
   })
-  const { limit, after } = pendingReportsPaginationParser.parse(ctx.query)
+  const { limit, after } = parseRuntimePagination(pendingReportsPaginationParser, ctx.query)
   const requestedSort = parseCommunityReportSort(ctx.query.sort)
   const sort = isStaff ? requestedSort : communityModeratorVisibleReportSort(requestedSort)
   const query = prepareQueryForValidation(ctx.query, {

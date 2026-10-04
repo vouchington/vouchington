@@ -1,5 +1,6 @@
+import { clampAnonLimit } from '@services/pagination'
 import type { Context } from '@jongleberry/api-server'
-import { clampAnonLimit } from '@modules/search-utils'
+
 import app from '../../app.mts'
 import { apiQuery } from '../../response-contract.mts'
 import { getUserTopicsCollectionPage } from '@services/entity-fetch'

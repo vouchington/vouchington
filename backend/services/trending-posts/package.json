@@ -26,6 +26,7 @@
     "@modules/search-utils": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/entity-relations": "workspace:^",
+    "@services/pagination": "workspace:^",
     "@ts-shared/feed-capabilities": "workspace:^",
     "@voucha/types": "workspace:^",
     "http-errors": "^2.0.1",

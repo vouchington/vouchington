@@ -355,3 +355,13 @@ bounded page. Referral-link fanout resumes the remaining links in a URL-scoped b
 continuation. Web, Swift, and .NET must treat this count as dispatch progress rather than the total
 eligible fanout or completed crawl work; the response shape remains unchanged. See the
 [URLs API](api/v1/urls/README.md#post-apiv1urlsidcrawl).
+
+## Runtime pagination limits
+
+| Behavior                                   | Vouchington                                                                                                              | Web, Swift, .NET and MCP coordination                                                                                                                                                  |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Runtime defaults and effective page maxima | `pagination-config` tunes page sizes within unchanged request/OpenAPI ceilings; lowered maxima may return shorter pages. | Consumers continue from `page_info.end_cursor` when `has_next_page` is true; requested size and static schema default do not promise a full page. No response shape or cursor changes. |
+
+The [pagination contract](../overview/architecture/pagination.md#runtime-page-limits) defines
+profile ownership and default clamping. This records API behavior coordination and does not
+change rendered native parity claims.

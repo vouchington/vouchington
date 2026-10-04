@@ -1,5 +1,6 @@
 import { parseBooleanish } from '@ts-shared/utils/query'
 import {
+  type PaginationRuntimeLimitBounds,
   createPaginationParser,
   defineQueryContract,
   queryBoolean,
@@ -39,12 +40,15 @@ const topicsQueryContract = defineQueryContract({
   rss_feed: queryBoolean(),
 })
 
-export function prepareTopicsSearchParams(query: Record<string, unknown>) {
+export function prepareTopicsSearchParams(
+  query: Record<string, unknown>,
+  runtimeLimits?: PaginationRuntimeLimitBounds,
+) {
   const validationQuery = prepareQueryForValidation(query, {
     ...topicsParser.queryContract,
     ...topicsQueryContract.queryContract,
   })
-  const pagination = topicsParser.parse(query)
+  const pagination = topicsParser.parse(query, runtimeLimits)
   if (query.limit !== undefined) validationQuery.limit = pagination.limit
   return {
     validationQuery,
@@ -120,8 +124,11 @@ export async function resolveTopicsSearchParams(
   }
 }
 
-async function parseTopicsSearchParamsImpl(query: Record<string, unknown>) {
-  return resolveTopicsSearchParams(prepareTopicsSearchParams(query))
+async function parseTopicsSearchParamsImpl(
+  query: Record<string, unknown>,
+  runtimeLimits?: PaginationRuntimeLimitBounds,
+) {
+  return resolveTopicsSearchParams(prepareTopicsSearchParams(query, runtimeLimits))
 }
 
 export const parseTopicsSearchParams = withQueryContract(

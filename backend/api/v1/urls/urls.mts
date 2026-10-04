@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery, apiResponse } from '../../response-contract.mts'
@@ -30,7 +31,7 @@ app.route('/api/v1/urls').get(async ctx => {
   apiQuery('GET:/api/v1/urls', urlsParser, urlsFilters)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/urls')
 
-  const paginationOptions = urlsParser.parse(ctx.query)
+  const paginationOptions = parseRuntimePagination(urlsParser, ctx.query)
 
   const query = ctx.query.query ? String(ctx.query.query) : undefined
   const hostnameId = ctx.query.hostnameId ? String(ctx.query.hostnameId) : undefined

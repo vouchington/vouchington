@@ -1,3 +1,4 @@
+import { getPaginationLimitsForContract } from '@services/pagination'
 import { getGrowthMetrics } from '@services/growth-metrics'
 import { parseGrowthMetricsRange } from '@services/growth-metrics/parse-range'
 import { getCommunityAiCostTotals } from '@services/ai-usage'
@@ -26,7 +27,13 @@ const costs = createAdminTool<{ after?: string; limit?: number }>({
   parameters: adminInput(PAGE_INPUT),
   outputSchema: adminRouteOutputSchema(costsApi),
   annotations: { readOnlyHint: true, openWorldHint: false },
-  run: (_, args) => getCommunityAiCostTotals(aiCostTotalsParser.parse(args)),
+  run: (_, args) =>
+    getCommunityAiCostTotals(
+      aiCostTotalsParser.parse(
+        args,
+        getPaginationLimitsForContract(aiCostTotalsParser.queryContract),
+      ),
+    ),
 })
 const statsApi = { method: 'GET', path: '/api/v1/mq/stats' } as const
 const stats = createAdminTool<Record<string, never>>({

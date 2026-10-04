@@ -1,3 +1,5 @@
+import { clampAnonLimit } from '@services/pagination'
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import { streamJsonObject } from '@jongleberry/api-server'
 import app from '../../app.mts'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
@@ -23,7 +25,6 @@ import {
 import { apiQuery } from '../../response-contract.mts'
 import { createPaginationParser, defineQueryContract, queryString } from '@modules/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
-import { clampAnonLimit } from '@modules/search-utils'
 
 const topHostnamesParser = createPaginationParser({
   cursor: { type: 'score' },
@@ -35,7 +36,7 @@ app.route('/api/v1/hostnames/top').get(async ctx => {
   apiQuery('GET:/api/v1/hostnames/top', topHostnamesParser, topHostnamesFilters)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/hostnames/top')
 
-  const paginationOptions = topHostnamesParser.parse(ctx.query)
+  const paginationOptions = parseRuntimePagination(topHostnamesParser, ctx.query)
   const query = prepareQueryForValidation(ctx.query, {
     ...topHostnamesParser.queryContract,
     ...topHostnamesFilters.queryContract,

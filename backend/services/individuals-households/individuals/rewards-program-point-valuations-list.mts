@@ -1,3 +1,4 @@
+import { getPaginationLimits } from '@services/pagination'
 import { getOrCreateIndividual } from './individuals.mts'
 import {
   toPointValuation,
@@ -29,8 +30,8 @@ export const getIndividualRewardsProgramPointValuations = async (
 ): Promise<IndividualRewardsProgramPointValuationPage> => {
   assert(currentUser, 401, 'User not logged in')
   assert(currentUserCanAccessUser(currentUser, user.id), 403, 'Forbidden')
+  const limit = parseBoundedIntegerLimit(options.limit, { min: 1, ...getPaginationLimits(25, 100) })
   const individual = await getOrCreateIndividual(user)
-  const limit = parseBoundedIntegerLimit(options.limit, { default: 25, min: 1, max: 100 })
   const scope = pointValuationCursorScope(individual.id)
   const cursorId = options.after
     ? decodeScopedUuidCursor(options.after, scope, 'Invalid point valuation cursor').id

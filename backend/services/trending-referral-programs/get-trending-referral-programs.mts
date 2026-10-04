@@ -1,6 +1,7 @@
+import { clampLimit } from '@services/pagination'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { clampLimit } from '@modules/search-utils'
+
 import { decodeUuidCursor, isScoreCursor, buildPageInfo } from '@modules/pagination'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import type {
@@ -17,7 +18,7 @@ export async function getTrendingReferralPrograms(
 ): Promise<TrendingReferralProgramsResult> {
   const { limit, after } = options
 
-  const safeLimit = Math.floor(clampLimit(limit, DEFAULT_LIMIT))
+  const safeLimit = Math.floor(clampLimit(limit, DEFAULT_LIMIT, 50))
 
   const lowerBoundUuid = timestampToUuidv7LowerBound(Date.now() - TIME_RANGE_MS)
 

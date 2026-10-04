@@ -1,3 +1,4 @@
+import { clampAnonLimit, getPaginationLimits } from '@services/pagination'
 import app from '@voucha/api/app'
 import type { Context } from '@jongleberry/api-server'
 import { getTopicIdByAnyCached } from '@services/entity-cache'
@@ -8,7 +9,7 @@ import {
 } from '@services/entity-fetch'
 import { getTopicIdsCached } from '@services/entity-fetch/search-caches'
 import { parseTopicsSearchParams } from '@services/search-params'
-import { clampAnonLimit } from '@modules/search-utils'
+
 import { getTopicTypeSlug } from '@voucha/types/entities/topic'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS, HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import { toFrontmatter } from '@modules/utils'
@@ -29,7 +30,10 @@ function parseTypeConstraint(value: unknown): string[] {
 }
 
 app.route('/md/topics').get(async (ctx: Context) => {
-  const { shouldReturnEmpty, searchOptions } = await parseTopicsSearchParams(ctx.query)
+  const { shouldReturnEmpty, searchOptions } = await parseTopicsSearchParams(
+    ctx.query,
+    getPaginationLimits(25),
+  )
   searchOptions.limit = clampAnonLimit(searchOptions.limit)
   searchOptions.omitLimit = false
 

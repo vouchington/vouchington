@@ -1,3 +1,5 @@
+import { getPaginationLimits } from '@services/pagination'
+
 export type SearchSystemArgs = {
   search?: string
   text_search_query?: string
@@ -18,7 +20,8 @@ export function clampToolLimit(
   defaultLimit: number,
   maxLimit: number,
 ): number {
-  return Math.min(Math.max(1, Math.floor(value ?? defaultLimit)), maxLimit)
+  const bounds = getPaginationLimits(defaultLimit, maxLimit)
+  return Math.min(Math.max(1, Math.floor(value ?? bounds.default)), bounds.max)
 }
 
 /** `search` is shorthand for setting both the text and the semantic query to the same value. */

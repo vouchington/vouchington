@@ -1,8 +1,9 @@
+import { clampLimit } from '@services/pagination'
 import type { PrivateUser } from '@services/users/types'
 import type { PostFeedOptions, PostFeedResponse } from '../types.mts'
 import sql from 'sql-template-strings'
 import { read } from '@data-stores/psql'
-import { clampLimit } from '@modules/search-utils'
+
 import { appendPostFeedDeliveryCTEs } from './get-ids/delivery-ctes.mts'
 import { appendEligiblePostsCTE } from './get-ids/eligible-posts-cte.mts'
 import { mapPostFeedResponse, parsePostFeedCursor } from './get-ids/feed-cursor.mts'

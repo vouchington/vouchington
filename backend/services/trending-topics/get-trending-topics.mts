@@ -1,7 +1,8 @@
+import { clampLimit } from '@services/pagination'
 import { read } from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
-import { clampLimit, TRENDING_TOPICS_DEFAULT_LIMIT } from '@modules/search-utils'
+import { TRENDING_TOPICS_DEFAULT_LIMIT } from '@modules/search-utils'
 import { decodeUuidCursor, encodeCursor, isScoreCursor } from '@modules/pagination'
 import {
   getEntityRelationTableNameOrThrow,

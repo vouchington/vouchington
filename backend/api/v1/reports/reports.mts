@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import { rerunReportJudgement } from '@services/moderation-reports/rerun-judgement'
 import { listModerationReportPage } from '@services/moderation-reports/list-page'
 import app from '../../app.mts'
@@ -35,7 +36,7 @@ app.route('/api/v1/reports').get(async (ctx: Context) => {
   // `status` and `sort` fall back to their defaults instead of failing, and the parsers keep their
   // own 400/422 answers, so the contract below checks the settled values.
   const cursorQuery = parseReportCursorQueryParams(ctx, ctx.query)
-  const { limit } = reportsPaginationParser.parse(ctx.query)
+  const { limit } = parseRuntimePagination(reportsPaginationParser, ctx.query)
   const { after, before } = cursorQuery
 
   const isStaff = isModerationStaff(currentUser)

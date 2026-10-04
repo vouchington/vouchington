@@ -1,8 +1,9 @@
+import { clampLimit } from '@services/pagination'
 import type { PrivateUser } from '@services/users/types'
 import type { RssFeedItemFeedOptions, RssFeedItemFeedResponse } from '../types.mts'
 import sql from 'sql-template-strings'
 import { read } from '@data-stores/psql'
-import { clampLimit } from '@modules/search-utils'
+
 import createHttpError from 'http-errors'
 import {
   buildRssFeedItemFeedPageInfo,

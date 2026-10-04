@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { indexById } from '@modules/utils'
 import { electionVotesMapToRecord } from '@modules/utils/collections'
@@ -36,7 +37,7 @@ app.route('/api/v1/topic-recommendations').get(async (ctx: Context) => {
     topicRecommendationsFilters,
   )
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/topic-recommendations')
-  const pagination = topicRecommendationsParser.parse(ctx.query)
+  const pagination = parseRuntimePagination(topicRecommendationsParser, ctx.query)
   const query = prepareQueryForValidation(ctx.query, {
     ...topicRecommendationsParser.queryContract,
     ...topicRecommendationsFilters.queryContract,

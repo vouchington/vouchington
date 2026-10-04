@@ -1,3 +1,4 @@
+import { getPaginationLimits } from '@services/pagination'
 import { parseHostnamesSearchParams } from '@services/search-params'
 import { searchUrlHostnames } from '@services/urls-hostnames'
 import type { Tool } from '@services/openai-agents/tool-types'
@@ -83,6 +84,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
             limit: clampToolLimit(args.limit, defaultLimit, max),
           },
           null,
+          getPaginationLimits(50),
         )
         return shouldReturnEmpty
           ? { results: [], page_info: EMPTY_PAGE_INFO }

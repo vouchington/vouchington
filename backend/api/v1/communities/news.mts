@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import app from '../../app.mts'
 import { apiQuery } from '../../response-contract.mts'
@@ -51,7 +52,7 @@ app.route('/api/v1/communities/:idOrSlug/news').get(async (ctx: Context) => {
     path: ctx.params,
   })
 
-  const paginationOptions = communityNewsParser.parse(ctx.query)
+  const paginationOptions = parseRuntimePagination(communityNewsParser, ctx.query)
   const has_related_posts =
     ctx.query.has_related_posts === 'true'
       ? true

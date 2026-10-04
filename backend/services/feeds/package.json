@@ -30,6 +30,7 @@
     "@modules/utils": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/follower-distributions": "workspace:^",
+    "@services/pagination": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/user-referral-program-links": "workspace:^",
     "@services/users": "workspace:^",

@@ -1,9 +1,10 @@
+import { clampLimit } from '@services/pagination'
 import { read } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { buildPageInfo, decodeUuidCursor, isSimpleCursor } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import assert from 'http-assert'
-import { clampLimit, escapeLikePattern } from '@modules/search-utils'
+import { escapeLikePattern } from '@modules/search-utils'
 import type { ViewUrl } from './types.mts'
 
 export type SearchUrlsOptions = {

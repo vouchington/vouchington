@@ -27,6 +27,7 @@
     "@modules/pagination": "workspace:^",
     "@modules/search-utils": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@services/pagination": "workspace:^",
     "@services/urls": "workspace:^",
     "@voucha/types": "workspace:^",
     "http-assert": "^1.5.0",

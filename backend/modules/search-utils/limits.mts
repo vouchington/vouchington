@@ -4,15 +4,24 @@ export const DEFAULT_LIMIT = 25
 export const ANON_MAX_LIMIT = 25
 export const TRENDING_TOPICS_DEFAULT_LIMIT = 20
 
-export function clampAnonLimit(limit: number): number {
-  const value = Number.isFinite(limit) ? limit : DEFAULT_LIMIT
-  return Math.min(Math.max(MIN_LIMIT, value), ANON_MAX_LIMIT)
+export type RuntimeSearchLimits = { default: number; max: number }
+
+export function clampAnonLimit(limit: number, bounds?: RuntimeSearchLimits): number {
+  const value = Number.isFinite(limit) ? limit : (bounds?.default ?? DEFAULT_LIMIT)
+  return Math.min(
+    Math.max(MIN_LIMIT, value),
+    Math.min(ANON_MAX_LIMIT, bounds?.max ?? ANON_MAX_LIMIT),
+  )
 }
 
-export function clampLimit(limit?: number, defaultLimit?: number): number {
-  const fallback = defaultLimit ?? DEFAULT_LIMIT
+export function clampLimit(
+  limit?: number,
+  defaultLimit?: number,
+  bounds?: RuntimeSearchLimits,
+): number {
+  const fallback = bounds?.default ?? defaultLimit ?? DEFAULT_LIMIT
   const value = limit !== undefined && Number.isFinite(limit) ? limit : fallback
-  return Math.min(Math.max(MIN_LIMIT, value), MAX_LIMIT)
+  return Math.min(Math.max(MIN_LIMIT, value), Math.min(MAX_LIMIT, bounds?.max ?? MAX_LIMIT))
 }
 
 const DEFAULT_MAX_DEPTH = 6

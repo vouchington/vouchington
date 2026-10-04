@@ -1,3 +1,4 @@
+import { getPaginationLimitsForContract } from '@services/pagination'
 import assert from 'http-assert'
 import { getUnmappedRssFeedItemCategories } from '@services/rss-feed-items'
 import {
@@ -84,7 +85,7 @@ const pages = createAdminTool<{ user_id: string; after?: string; limit?: number 
   outputSchema: adminRouteOutputSchema(pagesApi),
   annotations: { readOnlyHint: true, openWorldHint: false },
   run: async (_, args) => {
-    const parsed = pagination.parse(args)
+    const parsed = pagination.parse(args, getPaginationLimitsForContract(pagination.queryContract))
     return listLandingPagesForUserPage(args.user_id, { limit: parsed.limit, after: parsed.after })
   },
 })

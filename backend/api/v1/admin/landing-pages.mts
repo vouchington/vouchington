@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { createPaginationParser } from '@modules/pagination'
@@ -23,7 +24,7 @@ app.route('/api/v1/admin/users/:userId/landing-pages').get(async (ctx: Context) 
   validateRequestContract(ctx, 'GET:/api/v1/admin/users/:userId/landing-pages', {
     path: ctx.params,
   })
-  const pagination = landingPagesPagination.parse(ctx.query)
+  const pagination = parseRuntimePagination(landingPagesPagination, ctx.query)
   ctx.json(
     await listLandingPagesForUserPage(userId, {
       limit: pagination.limit,

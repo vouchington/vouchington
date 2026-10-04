@@ -25,6 +25,7 @@
     "@modules/pagination": "workspace:^",
     "@modules/search-utils": "workspace:^",
     "@services/entity-relations": "workspace:^",
+    "@services/pagination": "workspace:^",
     "@services/recently-viewed": "workspace:^",
     "@services/topics": "workspace:^",
     "@services/users": "workspace:^",

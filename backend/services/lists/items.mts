@@ -1,3 +1,4 @@
+import { clampLimit } from '@services/pagination'
 import { read, write } from '@data-stores/psql'
 import assert from 'http-assert'
 import { buildPageInfo, decodeUuidCursor, isSimpleCursor } from '@modules/pagination'
@@ -111,9 +112,10 @@ export async function searchListItems(
     currentUserId?: string
   } = {},
 ): Promise<{ results: ListItem[]; page_info: PageInfo }> {
-  const limit = options.limit ?? 20
-  assert(Number.isInteger(limit), 422, 'limit must be an integer')
-  assert(limit > 0 && limit <= 100, 422, 'limit must be between 1 and 100')
+  const requestedLimit = options.limit ?? clampLimit(undefined, 20)
+  assert(Number.isInteger(requestedLimit), 422, 'limit must be an integer')
+  assert(requestedLimit > 0 && requestedLimit <= 100, 422, 'limit must be between 1 and 100')
+  const limit = clampLimit(requestedLimit, 20)
 
   const params: unknown[] = [listId]
   let sql = `/* searchListItems */

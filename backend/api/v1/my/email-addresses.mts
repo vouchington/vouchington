@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { assertNotSuspended } from '@services/users/suspension'
@@ -63,7 +64,7 @@ app.route('/api/v1/my/email-addresses').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/my/email-addresses', emailAddressesParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/email-addresses')
 
-  const options = emailAddressesParser.parse(ctx.query)
+  const options = parseRuntimePagination(emailAddressesParser, ctx.query)
   const query = prepareQueryForValidation(ctx.query, emailAddressesParser.queryContract)
   if (ctx.query.limit !== undefined) query.limit = options.limit
   validateRequestContract(ctx, 'GET:/api/v1/my/email-addresses', { query })

@@ -1,4 +1,5 @@
 import {
+  type PaginationRuntimeLimitBounds,
   createPaginationParser,
   defineQueryContract,
   queryBoolean,
@@ -45,7 +46,10 @@ const rssFeedItemsValidationQueryContract = defineQueryContract({
   media_type: queryCsvArray(queryEnum(VALID_MEDIA_TYPES)),
 })
 
-export function prepareRssFeedItemsSearchParams(query: Record<string, unknown>) {
+export function prepareRssFeedItemsSearchParams(
+  query: Record<string, unknown>,
+  runtimeLimits?: PaginationRuntimeLimitBounds,
+) {
   const validationQuery = prepareQueryForValidation(
     query,
     rssFeedItemsValidationQueryContract.queryContract,
@@ -60,7 +64,7 @@ export function prepareRssFeedItemsSearchParams(query: Record<string, unknown>) 
       validationQuery.similar_window_days = similarWindowDays
     }
   }
-  const pagination = rssFeedItemsParser.parse(query)
+  const pagination = rssFeedItemsParser.parse(query, runtimeLimits)
   if (query.limit !== undefined) validationQuery.limit = pagination.limit
   return {
     validationQuery,
@@ -170,8 +174,11 @@ export async function resolveRssFeedItemsSearchParams(
   return { shouldReturnEmpty, searchOptions }
 }
 
-async function parseRssFeedItemsSearchParamsImpl(query: Record<string, unknown>) {
-  return resolveRssFeedItemsSearchParams(prepareRssFeedItemsSearchParams(query))
+async function parseRssFeedItemsSearchParamsImpl(
+  query: Record<string, unknown>,
+  runtimeLimits?: PaginationRuntimeLimitBounds,
+) {
+  return resolveRssFeedItemsSearchParams(prepareRssFeedItemsSearchParams(query, runtimeLimits))
 }
 
 export const parseRssFeedItemsSearchParams = withQueryContract(

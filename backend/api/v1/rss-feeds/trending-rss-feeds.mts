@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import { streamJsonObject } from '@jongleberry/api-server'
 import app from '../../app.mts'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
@@ -32,7 +33,7 @@ app.route('/api/v1/rss-feeds/trending').get(async ctx => {
   apiQuery('GET:/api/v1/rss-feeds/trending', trendingRssFeedsParser, trendingRssFeedsQueryContract)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/rss-feeds/trending')
 
-  const paginationOptions = trendingRssFeedsParser.parse(ctx.query)
+  const paginationOptions = parseRuntimePagination(trendingRssFeedsParser, ctx.query)
   const query = prepareQueryForValidation(ctx.query, {
     ...trendingRssFeedsParser.queryContract,
     ...trendingRssFeedsQueryContract.queryContract,

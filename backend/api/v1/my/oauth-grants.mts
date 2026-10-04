@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { listUserOAuthGrants, revokeUserOAuthGrant } from '@services/oauth-authorization-server'
@@ -17,7 +18,7 @@ app.route('/api/v1/my/oauth-grants').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/my/oauth-grants', oauthGrantsParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/oauth-grants')
 
-  const options = oauthGrantsParser.parse(ctx.query)
+  const options = parseRuntimePagination(oauthGrantsParser, ctx.query)
   const query = prepareQueryForValidation(ctx.query, oauthGrantsParser.queryContract)
   if (ctx.query.limit !== undefined) query.limit = options.limit
   validateRequestContract(ctx, 'GET:/api/v1/my/oauth-grants', { query })

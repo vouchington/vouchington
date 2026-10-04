@@ -1,3 +1,4 @@
+import { clampAnonLimit, getPaginationLimits } from '@services/pagination'
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
@@ -25,7 +26,7 @@ import {
   getTopicByAnyCachedBatch,
 } from '@services/entity-fetch'
 import { indexById } from '@modules/utils'
-import { clampAnonLimit, ANON_MAX_LIMIT } from '@modules/search-utils'
+import { ANON_MAX_LIMIT } from '@modules/search-utils'
 import { isAdminUser } from '@services/users'
 import { upsertAndBlockHostname } from '@services/hostname-blocking'
 import { normalizeHostname } from '@ts-shared/utils/urls'
@@ -64,11 +65,12 @@ app.route('/api/v1/hostnames').get(async ctx => {
   apiQuery('GET:/api/v1/hostnames', parseHostnamesSearchParams)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/hostnames')
   validateRequestContract(ctx, 'GET:/api/v1/hostnames', {
-    query: prepareHostnamesSearchParams(ctx.query).validationQuery,
+    query: prepareHostnamesSearchParams(ctx.query, getPaginationLimits(50)).validationQuery,
   })
   const { shouldReturnEmpty, ...searchOptions } = await parseHostnamesSearchParams(
     ctx.query,
     currentUser,
+    getPaginationLimits(50),
   )
   if (!currentUser) {
     searchOptions.limit = clampAnonLimit(searchOptions.limit ?? ANON_MAX_LIMIT)

@@ -27,6 +27,7 @@
     "@services/elections-votes": "workspace:^",
     "@services/entity-cache": "workspace:^",
     "@services/entity-fetch": "workspace:^",
+    "@services/pagination": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/search-params": "workspace:^",
     "@services/users": "workspace:^",

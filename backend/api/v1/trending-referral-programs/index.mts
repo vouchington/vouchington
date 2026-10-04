@@ -1,9 +1,11 @@
+import { clampAnonLimit } from '@services/pagination'
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { getTrendingReferralPrograms } from '@services/trending-referral-programs'
 import { createPaginationParser } from '@modules/pagination'
-import { clampAnonLimit } from '@modules/search-utils'
+
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { apiQuery } from '../../response-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
@@ -21,7 +23,7 @@ app.route('/api/v1/trending-referral-programs').get(async (ctx: Context) => {
     'GET:/api/v1/trending-referral-programs',
   )
 
-  const parsed = trendingReferralProgramsParser.parse(ctx.query)
+  const parsed = parseRuntimePagination(trendingReferralProgramsParser, ctx.query)
   const query = prepareQueryForValidation(ctx.query, trendingReferralProgramsParser.queryContract)
   if (ctx.query.limit !== undefined) query.limit = parsed.limit
   validateRequestContract(ctx, 'GET:/api/v1/trending-referral-programs', { query })

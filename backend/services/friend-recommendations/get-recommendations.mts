@@ -1,5 +1,6 @@
+import { clampLimit } from '@services/pagination'
 import { read } from '@data-stores/psql'
-import { clampLimit } from '@modules/search-utils'
+
 import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
 import type { PrivateUser } from '@services/users/types'
 import type { PageInfo } from '@voucha/types/pagination'

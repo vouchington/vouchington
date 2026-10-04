@@ -1,3 +1,4 @@
+import { getPaginationLimits } from '@services/pagination'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
@@ -32,7 +33,7 @@ type CommunityAiCostTotalCursor = {
 export async function getCommunityAiCostTotals(
   options: { limit?: number; after?: string } = {},
 ): Promise<CommunityAiCostTotalsPage> {
-  const limit = parseBoundedIntegerLimit(options.limit, { default: 25, min: 1, max: 100 })
+  const limit = parseBoundedIntegerLimit(options.limit, { min: 1, ...getPaginationLimits(25, 100) })
   const cursor = options.after
     ? decodeUuidCursor(options.after, isCommunityAiCostTotalCursor, 'Invalid AI cost totals cursor')
     : null

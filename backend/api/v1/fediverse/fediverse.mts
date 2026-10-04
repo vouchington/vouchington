@@ -1,3 +1,4 @@
+import { clampAnonLimit, clampLimit } from '@services/pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
@@ -7,7 +8,7 @@ import {
   parseFediverseProviders,
   parseFediverseResultType,
 } from '@services/fediverse-search'
-import { clampAnonLimit, clampLimit } from '@modules/search-utils'
+
 import { searchFediverse } from './search.mts'
 import {
   defineQueryContract,
@@ -41,7 +42,7 @@ app.route('/api/v1/fediverse/search').get(async (ctx: Context) => {
   // the settled integer.
   const parsedLimit = ctx.query.limit !== undefined ? Number(ctx.query.limit) : NaN
   const rawLimit = Number.isFinite(parsedLimit) ? Math.trunc(parsedLimit) : undefined
-  const limit = currentUser ? clampLimit(rawLimit, 10) : clampAnonLimit(rawLimit ?? 10)
+  const limit = currentUser ? clampLimit(rawLimit, 10) : clampAnonLimit(clampLimit(rawLimit, 10))
   ctx.assert(!Object.hasOwn(ctx.query, 'cursor'), 400, 'Use after instead of cursor')
   const afterRaw = ctx.query.after
   ctx.assert(afterRaw === undefined || typeof afterRaw === 'string', 422, 'Invalid after')

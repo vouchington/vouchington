@@ -1,7 +1,23 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeSearchToolArgs } from './search-system.mts'
+import { paginationConfig } from '@services/pagination'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { clampToolLimit, normalizeSearchToolArgs } from './search-system.mts'
 
 describe('normalizeSearchToolArgs', () => {
+  it('uses current runtime defaults and independent profile ceilings', () => {
+    overrideDynamicConfigFieldsForTest(paginationConfig, {
+      default_limit: 2,
+      max_limit: 4,
+      small_max_limit: 6,
+      trending_max_limit: 8,
+      descendants_max_limit: 12,
+    })
+    expect(clampToolLimit(undefined, 25, 100)).toBe(2)
+    expect(clampToolLimit(100, 25, 100)).toBe(4)
+    expect(clampToolLimit(100, 10, 25)).toBe(6)
+    expect(clampToolLimit(100, 20, 50)).toBe(8)
+    expect(clampToolLimit(200, 100, 200)).toBe(12)
+  })
   it('maps search alias to text and semantic queries', () => {
     expect(
       normalizeSearchToolArgs(

@@ -1,6 +1,7 @@
+import { clampLimit } from '@services/pagination'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { clampLimit } from '@modules/search-utils'
+
 import { decodeUuidCursor, isScoreCursor, buildPageInfo } from '@modules/pagination'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import { buildPublicPostEligibilityFilter } from '@modules/feed-query-builders'
@@ -30,7 +31,7 @@ export async function getTrendingCommunities(
   const dependencies = { ...defaultDependencies, ...dependencyOverrides }
   const { limit, after } = options
 
-  const safeLimit = Math.floor(clampLimit(limit, DEFAULT_LIMIT))
+  const safeLimit = Math.floor(clampLimit(limit, DEFAULT_LIMIT, 50))
 
   let cursorScore: number | undefined
   let cursorId: string | undefined

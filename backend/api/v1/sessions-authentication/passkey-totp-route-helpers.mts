@@ -1,5 +1,11 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import type { Context } from '@jongleberry/api-server'
-import { buildPageInfo, decodeScopedUuidCursor, type QueryContract } from '@modules/pagination'
+import {
+  buildPageInfo,
+  decodeScopedUuidCursor,
+  type QueryContract,
+  type PaginationRuntimeLimitBounds,
+} from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import type { PrivateUser } from '@services/users/types'
@@ -84,7 +90,10 @@ export async function listMfaFactors<T extends { id: string }>(
   ctx: Context,
   operation: string,
   parser: {
-    parse: (query: Record<string, unknown>) => { limit: number; after?: string }
+    parse: (
+      query: Record<string, unknown>,
+      bounds?: PaginationRuntimeLimitBounds,
+    ) => { limit: number; after?: string }
     queryContract: QueryContract
   },
   scopePrefix: string,
@@ -94,7 +103,7 @@ export async function listMfaFactors<T extends { id: string }>(
   ) => Promise<{ results: T[]; hasNextPage: boolean }>,
 ): Promise<{ results: T[]; page_info: PageInfo }> {
   const currentUser = await requireAuth(ctx, operation)
-  const { limit, after } = parser.parse(ctx.query)
+  const { limit, after } = parseRuntimePagination(parser, ctx.query)
   const query = prepareQueryForValidation(ctx.query, parser.queryContract)
   if (ctx.query.limit !== undefined) query.limit = limit
   validateRequestContract(ctx, operation, { query })

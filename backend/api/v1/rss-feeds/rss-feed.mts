@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { getRssFeedByIdCached } from '@services/entity-fetch'
@@ -36,7 +37,6 @@ import { parseUpdateRssFeedBody } from '@services/rss-feeds/request-body'
 import { createPaginationParser } from '@modules/pagination'
 import { apiQuery, apiRequestContract, apiResponse } from '../../response-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
-
 const rssFeedCrawlsParser = createPaginationParser({
   cursor: { type: 'simple' },
   limit: { min: 1, max: 100, default: 50 },
@@ -160,7 +160,7 @@ app.route('/api/v1/rss-feeds/:id/crawls').get(async (ctx: Context) => {
   const rssFeed = await getRssFeedByIdCached(id)
   ctx.assert(rssFeed, 404, 'RSS feed not found')
 
-  const options = rssFeedCrawlsParser.parse(ctx.query)
+  const options = parseRuntimePagination(rssFeedCrawlsParser, ctx.query)
   const query = prepareQueryForValidation(ctx.query, rssFeedCrawlsParser.queryContract)
   if (options.after !== undefined) query.after = options.after
   if (ctx.query.limit !== undefined) query.limit = options.limit

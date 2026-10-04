@@ -1,5 +1,6 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import type { Context } from '@jongleberry/api-server'
-import type { QueryContract } from '@modules/pagination'
+import type { QueryContract, PaginationRuntimeLimitBounds } from '@modules/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { validateRequestContract } from './response-helpers.mts'
 
@@ -8,10 +9,11 @@ type ParsedPagination = { limit: number; after?: string }
 /** The subset of a pagination parser that request validation needs. */
 export type ValidatablePaginationParser<TParsed extends ParsedPagination> = {
   readonly queryContract: QueryContract
-  parse(query: Record<string, unknown>): TParsed
+  parse(query: Record<string, unknown>, bounds?: PaginationRuntimeLimitBounds): TParsed
 }
 
 type ValidatePaginatedRequestOptions = {
+  runtimeLimitBounds?: PaginationRuntimeLimitBounds
   /** Also validate the declared path parameters in the same contract call. */
   path?: boolean
   /** Query contracts declared beside the parser through `apiQuery(operation, parser, ...extra)`. */
@@ -34,7 +36,7 @@ export function parseAndValidatePaginatedRequest<TParsed extends ParsedPaginatio
   parser: ValidatablePaginationParser<TParsed>,
   options: ValidatePaginatedRequestOptions = {},
 ): TParsed {
-  const parsed = parser.parse(ctx.query)
+  const parsed = parseRuntimePagination(parser, ctx.query, options.runtimeLimitBounds)
   const queryContract = Object.assign(
     {},
     parser.queryContract,

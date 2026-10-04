@@ -1,7 +1,8 @@
+import { clampLimit } from '@services/pagination'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { buildPageInfo } from '@modules/pagination'
-import { clampLimit } from '@modules/search-utils'
+
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import assert from 'http-assert'
 import type { ViewUrl } from '@services/urls/types'

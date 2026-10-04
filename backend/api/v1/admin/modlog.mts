@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
@@ -28,7 +29,7 @@ app.route('/api/v1/admin/modlog').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/admin/modlog', parser, modlogFilterQuery)
   await requireAuthAndRateLimit(ctx, isAdminUser, 'GET:/api/v1/admin/modlog')
 
-  const { limit, after } = parser.parse(ctx.query)
+  const { limit, after } = parseRuntimePagination(parser, ctx.query)
   // Normalize empty strings to undefined so falsy checks are consistent
   const communityId = ctx.query.community_id ? (ctx.query.community_id as string) : undefined
   const actorId = ctx.query.actor_id ? (ctx.query.actor_id as string) : undefined

@@ -1,3 +1,4 @@
+import { clampLimit } from '@services/pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
@@ -46,8 +47,8 @@ app.route('/api/v1/crawlers').get(async (ctx: Context) => {
 
   if (!hostname_id && !referral_program_id) {
     const parsedLimit =
-      typeof ctx.query.limit === 'string' ? Number.parseInt(ctx.query.limit, 10) : 25
-    const limit = Number.isNaN(parsedLimit) || parsedLimit < 1 ? 25 : Math.min(parsedLimit, 100)
+      typeof ctx.query.limit === 'string' ? Number.parseInt(ctx.query.limit, 10) : undefined
+    const limit = clampLimit(parsedLimit)
     const after = typeof ctx.query.after === 'string' ? ctx.query.after : null
     validateRequestContract(ctx, 'GET:/api/v1/crawlers', {
       query: {

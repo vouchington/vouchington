@@ -27,6 +27,7 @@
     "@services/bookmarks": "workspace:^",
     "@services/communities": "workspace:^",
     "@services/entity-fetch": "workspace:^",
+    "@services/pagination": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/rss-feed-items": "workspace:^",
     "@services/topics": "workspace:^",

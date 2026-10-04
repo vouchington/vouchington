@@ -1,3 +1,4 @@
+import { clampAnonLimit } from '@services/pagination'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
@@ -23,7 +24,7 @@ import { getUserActivePlan } from '@services/memberships'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
 import { searchCommunitiesCached } from '@services/entity-fetch/search-caches'
 import { indexById } from '@modules/utils'
-import { clampAnonLimit } from '@modules/search-utils'
+
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import {
   parseCommunitiesListQuery,

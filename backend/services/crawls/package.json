@@ -45,6 +45,7 @@
     "@services/crawler-referral-links": "workspace:^",
     "@services/crawlers": "workspace:^",
     "@services/entity-relations": "workspace:^",
+    "@services/pagination": "workspace:^",
     "@services/urls": "workspace:^",
     "@services/urls-domains-robots": "workspace:^",
     "@services/urls-hostnames": "workspace:^",

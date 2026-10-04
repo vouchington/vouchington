@@ -1,3 +1,4 @@
+import { getPaginationLimits } from '@services/pagination'
 import { read } from '@data-stores/psql'
 import {
   decodeCursor,
@@ -21,7 +22,7 @@ export async function listCurrencies(
     after?: string
   } = {},
 ): Promise<CurrencyPage> {
-  const limit = parseBoundedIntegerLimit(options.limit, { default: 25, min: 1, max: 25 })
+  const limit = parseBoundedIntegerLimit(options.limit, { min: 1, ...getPaginationLimits(25, 25) })
   let cursorCode: string | null = null
   if (options.after) {
     const cursor = decodeCursor(options.after)

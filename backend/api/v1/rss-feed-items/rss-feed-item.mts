@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
@@ -150,7 +151,7 @@ app.route('/api/v1/rss-feed-items/:id/votes').get(async (ctx: Context) => {
   const item = await getRssFeedItemById(ctx.params.id!)
   ctx.assert(item, 404, 'RSS feed item not found')
 
-  const { limit, after } = rssFeedItemVotesParser.parse(ctx.query)
+  const { limit, after } = parseRuntimePagination(rssFeedItemVotesParser, ctx.query)
   const query = prepareQueryForValidation(ctx.query, rssFeedItemVotesParser.queryContract)
   if (after !== undefined) query.after = after
   if (ctx.query.limit !== undefined) query.limit = limit

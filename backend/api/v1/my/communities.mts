@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { createPaginationParser } from '@modules/pagination'
@@ -14,7 +15,7 @@ const myCommunitiesParser = createPaginationParser({
 async function handleListMyCommunities(ctx: Context) {
   apiQuery('GET:/api/v1/my/communities', myCommunitiesParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/communities')
-  const pagination = myCommunitiesParser.parse(ctx.query)
+  const pagination = parseRuntimePagination(myCommunitiesParser, ctx.query)
   const query = prepareQueryForValidation(ctx.query, myCommunitiesParser.queryContract)
   if (ctx.query.limit !== undefined) query.limit = pagination.limit
   validateRequestContract(ctx, 'GET:/api/v1/my/communities', { query })

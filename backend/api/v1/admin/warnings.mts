@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import { issueUserWarning } from '@services/user-warnings/issue-warning'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
@@ -66,7 +67,7 @@ app.route('/api/v1/admin/warnings').get(async (ctx: Context) => {
     'userId query param is required and must be a UUID',
   )
 
-  const pagination = userWarningsPagination.parse(ctx.query)
+  const pagination = parseRuntimePagination(userWarningsPagination, ctx.query)
   const query = prepareQueryForValidation(ctx.query, {
     ...warningsQuery.queryContract,
     ...userWarningsPagination.queryContract,

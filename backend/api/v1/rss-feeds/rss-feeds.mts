@@ -1,3 +1,4 @@
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { buildRssFeedSidecars, searchRssFeeds } from '@services/rss-feeds'
@@ -57,7 +58,7 @@ app
       rssFeedsRouteQueryContract,
     )
     const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/rss-feeds')
-    const paginationOptions = rssFeedsPaginationParser.parse(ctx.query)
+    const paginationOptions = parseRuntimePagination(rssFeedsPaginationParser, ctx.query)
     const preparedSearchParams = prepareRssFeedsSearchParams(ctx.query)
     validateRequestContract(ctx, 'GET:/api/v1/rss-feeds', {
       query: {
