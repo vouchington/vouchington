@@ -27,7 +27,7 @@ repository evidence confirms it.
        pageInfo { hasNextPage endCursor }
        nodes { ... on PullRequest {
          number mergedAt headRefOid
-         reviews(first: 100) { totalCount nodes { databaseId url submittedAt body author { __typename } commit { oid } } }
+         reviews(first: 100) { totalCount nodes { fullDatabaseId url submittedAt body author { __typename } commit { oid } } }
          reviewThreads(first: 100) { totalCount nodes { isResolved } }
        } }
      }
@@ -37,7 +37,7 @@ repository evidence confirms it.
        (select($open > 0) | {pr: $p.number, mergedAt: $p.mergedAt, openThreads: $open}),
        (.reviews.nodes[] | select((.body | length) > 0 and (.submittedAt > $p.mergedAt
            or (.commit.oid == $p.headRefOid and .author.__typename != "Bot")))
-         | {pr: $p.number, mergedAt: $p.mergedAt, kind: "review", id: .databaseId, url: .url}))'
+         | {pr: $p.number, mergedAt: $p.mergedAt, kind: "review", id: .fullDatabaseId, url: .url}))'
    ```
 
    Each page prints one `{issueCount, prs}` record, and the `prs` values of a slice must add up to
@@ -57,28 +57,29 @@ repository evidence confirms it.
        pullRequest(number: $n) {
          number mergedAt
          reviewThreads(first: 100) {
-           nodes { isResolved comments(first: 1) { totalCount nodes { databaseId url } } }
+           nodes { isResolved comments(first: 1) { totalCount nodes { fullDatabaseId url } } }
          }
        }
      }
    }' --jq '.data.repository.pullRequest | . as $p | .reviewThreads.nodes[]
      | select(.isResolved == false and .comments.totalCount == 1)
-     | {pr: $p.number, mergedAt: $p.mergedAt, kind: "comment", id: .comments.nodes[0].databaseId, url: .comments.nodes[0].url}'
+     | {pr: $p.number, mergedAt: $p.mergedAt, kind: "comment", id: .comments.nodes[0].fullDatabaseId, url: .comments.nodes[0].url}'
    ```
 
    A `kind: "comment"` record is an unresolved thread whose only comment has no reply, whenever it
    was posted: a review of the final commit can land minutes before the merge, and the shepherd may
    stop before it handles it (Codex's last review of #1935 landed four minutes before that merge).
-   The candidates are these two kinds of record; each keeps its `mergedAt`. Ignore issue comments,
-   status comments, and resolved threads. Report the cutoff, the slices, the page and PR counts
-   against `issueCount`, any truncated PR, and the candidate count. Do not claim coverage beyond
-   this window.
+   The candidates are these two kinds of record; each keeps its `mergedAt` and its `id`, the 64-bit
+   `fullDatabaseId` (the 32-bit `databaseId` is deprecated). Ignore issue comments, status
+   comments, and resolved threads. Report the cutoff, the slices, the page and PR counts against
+   `issueCount`, any truncated PR, and the candidate count. Do not claim coverage beyond this
+   window.
 
 2. Drop covered items. Search PRs and issues in every state for each candidate's stable marker
-   `<!-- post-merge-review: <PR number> <comment|review> <databaseId> -->` and for its comment URL,
-   through a GraphQL `search(type: ISSUE)` that returns `state`, `body`, and `authorAssociation`.
-   Search matches words loosely, so confirm the exact marker or URL in the body. A hit covers the
-   item only when both hold:
+   `<!-- post-merge-review: <PR number> <comment|review> <fullDatabaseId> -->` and for its comment
+   URL, through a GraphQL `search(type: ISSUE)` that returns `state`, `body`, and
+   `authorAssociation`. Search matches words loosely, so confirm the exact marker or URL in the
+   body. A hit covers the item only when both hold:
    - Its author is trusted: `authorAssociation` is OWNER, MEMBER, or COLLABORATOR. Anyone can post a
      marker or a link on this public repository, and an untrusted hit must not suppress a follow-up.
    - It records a disposition: the item is listed under `## Post-merge review items` or in a
