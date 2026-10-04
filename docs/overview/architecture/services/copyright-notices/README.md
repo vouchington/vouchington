@@ -126,6 +126,16 @@ wrappers that pass the jurisdiction as a value to the shared flows in
 [`territorial-redress.mts`](../../../../../backend/services/copyright-notices/territorial-redress.mts).
 Their SQL is static, and per-jurisdiction error text and encryption purposes live in `territorial-labels.mts`.
 
+Trusted-flagger entries and append-only status changes form a staff-managed designation registry.
+EU receipt records at most one eligible linked-account match in the same transaction, even when
+priority is disabled. Guests and UK notices do not match, and later entries do not rewrite earlier
+receipt attribution. The shared `inAreaTrustedFlaggerMatchSql` predicate defines copyright
+trusted-flagger attribution for queue priority, transparency reports, and statement submission.
+An `other`-area match is recorded but receives none of those effects. The queue boosts only
+in-area EU matches within their urgency tier when the off-by-default switch and current EU policy
+approval both permit it; human decision authority is unchanged. See the
+[registry runbook](../../../../runbooks/copyright-notices.md#trusted-flaggers).
+
 ```mermaid
 flowchart TD
   policy[Unwithdrawn jurisdiction policy approval]

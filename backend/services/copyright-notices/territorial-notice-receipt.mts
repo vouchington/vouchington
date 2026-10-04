@@ -18,6 +18,7 @@ import {
 } from './territorial-fields.mts'
 import { createEuCopyrightReceiptDelivery } from './territorial-notice-receipt-delivery.mts'
 import { territorialLabels } from './territorial-labels.mts'
+import { recordCopyrightTrustedFlaggerMatch } from './trusted-flagger-match.mts'
 import {
   existingReceiptQuery,
   insertAcknowledgmentQuery,
@@ -109,6 +110,7 @@ export async function receiveTerritorialCopyrightNoticeInTransaction(
   )
   const notice = notices[0]
   assert(notice, 500, failure)
+  if (jurisdiction === 'eu_dsa') await recordCopyrightTrustedFlaggerMatch(notice.id, transaction)
   const { rows: receipts } = await transaction<{ id: string }>(
     insertReceiptQuery(
       jurisdiction,

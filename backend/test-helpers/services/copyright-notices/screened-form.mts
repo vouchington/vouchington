@@ -21,7 +21,7 @@ export async function isTestCopyrightStaffCaseQueued(
   const [key] = await readCopyrightStaffQueueCursorRows([noticeId])
   if (!key) return false
   let after: CopyrightStaffQueueCursor = {
-    tier: key.urgency,
+    tier: key.tier,
     timestamp: key.waiting_since_before,
     id: key.id,
   }

@@ -12,6 +12,7 @@ export const copyrightConfig = new DynamicConfig({
     evidenceRetentionDeletion: 'boolean',
     evidenceRetentionDays: 'number',
     staydownMatching: 'boolean',
+    trustedFlaggerPriority: 'boolean',
     automaticWithholdingMinTrustTier: 'number',
     automaticWithholdingMinAccountAgeDays: 'number',
     automaticWithholdingClaimantDailyCap: 'number',
@@ -26,6 +27,7 @@ export const copyrightConfig = new DynamicConfig({
     // switch is on.
     evidenceRetentionDays: 0,
     staydownMatching: false,
+    trustedFlaggerPriority: false,
     // -1 means unset: automatic withholding is refused until an operator approves every gate.
     automaticWithholdingMinTrustTier: -1,
     automaticWithholdingMinAccountAgeDays: -1,
@@ -105,4 +107,10 @@ export async function getCopyrightEvidenceRetentionDays(): Promise<number | null
 export async function isCopyrightStaydownMatchingEnabled(): Promise<boolean> {
   await copyrightConfig.waitForInitialization()
   return copyrightConfig.getFields().staydownMatching === true
+}
+
+/** Receipt-time matches exist regardless; priority remains disabled until explicitly enabled. */
+export async function isCopyrightTrustedFlaggerPriorityEnabled(): Promise<boolean> {
+  await copyrightConfig.waitForInitialization()
+  return copyrightConfig.getFields().trustedFlaggerPriority === true
 }

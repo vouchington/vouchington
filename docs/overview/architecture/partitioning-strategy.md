@@ -145,6 +145,8 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `copyright_claimant_suspension_reversals`, `copyright_eu_dispute_settlement_outcomes`,
   `copyright_eu_dispute_settlement_referrals`, `copyright_eu_supervised_complaints`,
   `copyright_eu_transparency_reports`,
+  `copyright_trusted_flaggers`, `copyright_trusted_flagger_changes`,
+  `copyright_trusted_flagger_matches`,
   `copyright_legal_hold_restrictions`, `copyright_notice_action_intents`,
   `copyright_notice_appeal_recommendations`, `copyright_notice_submission_guidance`,
   `copyright_notice_appeal_reviews`, `copyright_notice_correspondence_messages`,

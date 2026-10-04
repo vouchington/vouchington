@@ -17067,6 +17067,330 @@
       "source": "backend/api/v1/copyright-notices/staff-queue-route.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/copyright-trusted-flaggers": {
+      "bodyKind": "content",
+      "hash": "ed85f0bd74b397439d1ac6926800879b073c3eefb877440f4fa4d76b2bd9240b",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/copyright-trusted-flaggers",
+      "schema": {
+        "definitions": {
+          "CopyrightTrustedFlagger": {
+            "additionalProperties": false,
+            "properties": {
+              "area_description": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "area_of_expertise": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "intellectual_property"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "other"
+                    }
+                  ]
+                }
+              },
+              "award_reference": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "awarded_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "awarding_coordinator_name": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "awarding_member_state": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "name": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "status": {
+                "required": true,
+                "schema": {
+                  "name": "CopyrightTrustedFlaggerStatus",
+                  "type": "ref"
+                }
+              },
+              "user_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "CopyrightTrustedFlaggerStatus": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "active"
+              },
+              {
+                "type": "literal",
+                "value": "revoked"
+              },
+              {
+                "type": "literal",
+                "value": "suspended"
+              }
+            ]
+          },
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "end_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "has_next_page": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "start_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "copyright_trusted_flaggers": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "name": "CopyrightTrustedFlagger",
+                  "type": "ref"
+                },
+                "type": "array"
+              }
+            },
+            "page_info": {
+              "required": true,
+              "schema": {
+                "name": "PageInfo",
+                "type": "ref"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/trusted-flagger-routes.mts",
+      "statusKnowledge": "default"
+    },
+    "GET:/api/v1/copyright-trusted-flaggers/:id": {
+      "bodyKind": "content",
+      "hash": "c30303b7309e8f99ba535b6ce940747890a5e109b0dd74a64e787a27373932e3",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/copyright-trusted-flaggers/:id",
+      "schema": {
+        "definitions": {
+          "CopyrightTrustedFlagger": {
+            "additionalProperties": false,
+            "properties": {
+              "area_description": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "area_of_expertise": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "intellectual_property"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "other"
+                    }
+                  ]
+                }
+              },
+              "award_reference": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "awarded_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "awarding_coordinator_name": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "awarding_member_state": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "name": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "status": {
+                "required": true,
+                "schema": {
+                  "name": "CopyrightTrustedFlaggerStatus",
+                  "type": "ref"
+                }
+              },
+              "user_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "CopyrightTrustedFlaggerStatus": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "active"
+              },
+              {
+                "type": "literal",
+                "value": "revoked"
+              },
+              {
+                "type": "literal",
+                "value": "suspended"
+              }
+            ]
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "copyright_trusted_flagger": {
+              "required": true,
+              "schema": {
+                "name": "CopyrightTrustedFlagger",
+                "type": "ref"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/trusted-flagger-routes.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/currencies": {
       "bodyKind": "content",
       "hash": "c741658b0f89e883e57fc6fc975c26bb3c5898cbed5282cb8916102d7cc5753c",
@@ -74066,6 +74390,226 @@
       "statusCodes": [201],
       "statusKnowledge": "explicit"
     },
+    "POST:/api/v1/copyright-trusted-flaggers": {
+      "bodyKind": "content",
+      "hash": "c30303b7309e8f99ba535b6ce940747890a5e109b0dd74a64e787a27373932e3",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/copyright-trusted-flaggers",
+      "schema": {
+        "definitions": {
+          "CopyrightTrustedFlagger": {
+            "additionalProperties": false,
+            "properties": {
+              "area_description": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "area_of_expertise": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "intellectual_property"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "other"
+                    }
+                  ]
+                }
+              },
+              "award_reference": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "awarded_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "awarding_coordinator_name": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "awarding_member_state": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "name": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "status": {
+                "required": true,
+                "schema": {
+                  "name": "CopyrightTrustedFlaggerStatus",
+                  "type": "ref"
+                }
+              },
+              "user_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "CopyrightTrustedFlaggerStatus": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "active"
+              },
+              {
+                "type": "literal",
+                "value": "revoked"
+              },
+              {
+                "type": "literal",
+                "value": "suspended"
+              }
+            ]
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "copyright_trusted_flagger": {
+              "required": true,
+              "schema": {
+                "name": "CopyrightTrustedFlagger",
+                "type": "ref"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/trusted-flagger-routes.mts",
+      "statusCodes": [201],
+      "statusKnowledge": "explicit"
+    },
+    "POST:/api/v1/copyright-trusted-flaggers/:id/status-changes": {
+      "bodyKind": "content",
+      "hash": "0073ec95dce086a87827cfed2e5a9c19f495cc439043ed2ca8d90a09b8b476e7",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/copyright-trusted-flaggers/:id/status-changes",
+      "schema": {
+        "definitions": {
+          "CopyrightTrustedFlaggerChange": {
+            "additionalProperties": false,
+            "properties": {
+              "change_type": {
+                "required": true,
+                "schema": {
+                  "name": "CopyrightTrustedFlaggerChangeType",
+                  "type": "ref"
+                }
+              },
+              "copyright_trusted_flagger_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "reason": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "CopyrightTrustedFlaggerChangeType": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "reinstated"
+              },
+              {
+                "type": "literal",
+                "value": "revoked"
+              },
+              {
+                "type": "literal",
+                "value": "suspended"
+              }
+            ]
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "copyright_trusted_flagger_change": {
+              "required": true,
+              "schema": {
+                "name": "CopyrightTrustedFlaggerChange",
+                "type": "ref"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/trusted-flagger-routes.mts",
+      "statusCodes": [201],
+      "statusKnowledge": "explicit"
+    },
     "POST:/api/v1/disputes/:id/approval#staff": {
       "bodyKind": "content",
       "hash": "ff3e92da79d3ba5049858e4848887465bf5ec57d4935194321555698f764643e",
@@ -82064,6 +82608,110 @@
     }
   },
   "fixtures": [
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/copyright-trusted-flaggers",
+      "bodyFile": "responses/copyright.trusted-flaggers.list.json",
+      "consumers": [],
+      "id": "copyright.trusted-flaggers.list",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/copyright-notices/trusted-flagger-routes.mts"],
+      "path": "/api/v1/copyright-trusted-flaggers",
+      "responseSchema": {
+        "hash": "f6734da6e39abce475a50b3e7006e3dd8e822bf8c5664fea4207604b2476a13d",
+        "key": "copyright.trusted-flaggers.list"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/copyright-trusted-flaggers"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/copyright-trusted-flagger-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/copyright-trusted-flaggers/:id",
+      "bodyFile": "responses/copyright.trusted-flaggers.get.json",
+      "consumers": [],
+      "id": "copyright.trusted-flaggers.get",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/copyright-notices/trusted-flagger-routes.mts"],
+      "path": "/api/v1/copyright-trusted-flaggers/00000000-0000-7000-8000-000000001220",
+      "responseSchema": {
+        "hash": "50adcff5c4a9f9729c09b1b6a6025821012c9c54d2bb7ea4833600fea04b7330",
+        "key": "copyright.trusted-flaggers.get"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000001220"
+        },
+        "routeTemplate": "/api/v1/copyright-trusted-flaggers/:id"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/copyright-trusted-flagger-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "POST:/api/v1/copyright-trusted-flaggers",
+      "bodyFile": "responses/copyright.trusted-flaggers.create.json",
+      "consumers": [],
+      "id": "copyright.trusted-flaggers.create",
+      "method": "POST",
+      "migratedFrom": ["backend/api/v1/copyright-notices/trusted-flagger-routes.mts"],
+      "path": "/api/v1/copyright-trusted-flaggers",
+      "requestBody": {
+        "area_description": "Copyright notices",
+        "area_of_expertise": "intellectual_property",
+        "award_reference": "https://example.test/designations/1220",
+        "awarded_at": "2026-09-01",
+        "awarding_coordinator_name": "Example Digital Services Coordinator",
+        "awarding_member_state": "DE",
+        "name": "Example copyright flagger",
+        "user_id": "00000000-0000-7000-8000-000000001221"
+      },
+      "responseSchema": {
+        "hash": "50adcff5c4a9f9729c09b1b6a6025821012c9c54d2bb7ea4833600fea04b7330",
+        "key": "copyright.trusted-flaggers.create"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/copyright-trusted-flaggers"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/copyright-trusted-flagger-cases.mts"
+      },
+      "status": 201
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "POST:/api/v1/copyright-trusted-flaggers/:id/status-changes",
+      "bodyFile": "responses/copyright.trusted-flaggers.status-change.json",
+      "consumers": [],
+      "id": "copyright.trusted-flaggers.status-change",
+      "method": "POST",
+      "migratedFrom": ["backend/api/v1/copyright-notices/trusted-flagger-routes.mts"],
+      "path": "/api/v1/copyright-trusted-flaggers/00000000-0000-7000-8000-000000001220/status-changes",
+      "requestBody": {
+        "change_type": "suspended",
+        "reason": "Commission list update"
+      },
+      "responseSchema": {
+        "hash": "1818f7e8768d4ed094a422bb8a08fd5b3015d3112eac4a58a8cda418fd4792aa",
+        "key": "copyright.trusted-flaggers.status-change"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000001220"
+        },
+        "routeTemplate": "/api/v1/copyright-trusted-flaggers/:id/status-changes"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/copyright-trusted-flagger-cases.mts"
+      },
+      "status": 201
+    },
     {
       "auth": "none",
       "backendResponseContractKey": "GET:/api/v1/copyright-jurisdiction-availability",

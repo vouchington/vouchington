@@ -53,6 +53,7 @@ export const newExpectedParameters = {
   'GET:/api/v1/copyright-notices/:id/eu-dispute-settlements': ['after', 'limit'],
   'GET:/api/v1/copyright-notices/:id/eu-dispute-settlements/staff': ['after', 'limit'],
   'GET:/api/v1/copyright-notices/:id/territorial-complaints': ['after', 'limit'],
+  'GET:/api/v1/copyright-trusted-flaggers': ['after', 'limit'],
   'GET:/api/v1/crawlers': ['after', 'hostname_id', 'limit', 'referral_program_id'],
   'GET:/api/v1/curated-aside-items': ['type'],
   'GET:/api/v1/fediverse/instances': [

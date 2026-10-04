@@ -78,6 +78,11 @@ const isolatedDatabaseCases = {
     fullName:
       'copyright staff queue urgency > lists missed then due restoration deadlines ahead of older intake work across pages',
   },
+  'copyright-trusted-flagger-priority': {
+    file: 'backend/api/v1/copyright-notices/trusted-flagger-staff-queue.test.mts',
+    fullName:
+      'trusted-flagger staff queue priority > boosts only in-area EU matches within urgency tiers and pages with the new cursor',
+  },
   'copyright-dev-seed': {
     file: 'backend/scripts/seed/copyright.test.mts',
     // Joined with ' > ' because that is what Vitest 5 matches.

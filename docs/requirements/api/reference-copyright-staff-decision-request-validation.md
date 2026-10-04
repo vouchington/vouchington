@@ -23,6 +23,20 @@ diagnostic. A contract `422` names only the carrier (`Invalid request body`).
 | `POST /copyright-notices/:id/action-intents/:intentId/replays`             | Path only (no body)                                        |
 | `POST /copyright-notices/:id/staydown-matches/:matchId/reviews`            | Path only (no body)                                        |
 
+Trusted-flagger registry operations also validate generated contracts:
+
+| Operation                                             | Contract                                |
+| ----------------------------------------------------- | --------------------------------------- |
+| `GET /copyright-trusted-flaggers`                     | Bounded `after`, `limit` query          |
+| `GET /copyright-trusted-flaggers/:id`                 | UUID path                               |
+| `POST /copyright-trusted-flaggers`                    | Closed designation and account body     |
+| `POST /copyright-trusted-flaggers/:id/status-changes` | UUID path and closed change/reason body |
+
+Both registry mutations authorize administrators before validation, reject unknown keys and
+malformed designation/date/status fields with `422`, and remain available while intake is off.
+Registry reads require copyright review staff. The [API registry contract](v1/copyright-notices/README.md#trusted-flagger-registry)
+owns operation results and status transitions.
+
 The route-level request tests in
 [`staff-decision-request-validation.test.mts`](../../../backend/api/v1/copyright-notices/staff-decision-request-validation.test.mts)
 and

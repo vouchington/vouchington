@@ -9,15 +9,17 @@ import { assertNotSuspended } from '@services/users'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { getPendingCopyrightStaffCase } from './read-models-staff-case.mts'
 import { copyrightStaffQueueKeysSql } from './read-models-staff-queue-sql.mts'
+import { isCopyrightTrustedFlaggerPriorityEnabled } from './config.mts'
+import { findCurrentCopyrightJurisdictionPolicy } from './jurisdiction-policy.mts'
 import type {
   CopyrightStaffQueueCase,
   CopyrightStaffQueueReason,
 } from './read-models-staff-types.mts'
 
-// Names the `(urgency, waiting_since, id)` ascending keyset below; cursors encoded under another
+// Names the `(tier, waiting_since, id)` ascending keyset below; cursors encoded under another
 // scope are rejected, so a cursor from a different list or ordering can never seek into this one.
 export const copyrightStaffQueueCursorScope =
-  'copyright-notices:staff-queue:urgency-asc-waiting-since-asc-id-asc'
+  'copyright-notices:staff-queue:tier-asc-waiting-since-asc-id-asc'
 
 export type CopyrightStaffQueueCursor = { tier: number; timestamp: string; id: string }
 type QueuedCase = CopyrightStaffQueueCase & { cursor: CopyrightStaffQueueCursor }
@@ -38,11 +40,15 @@ export async function listCopyrightStaffQueue(
   if (!currentUserCanReviewCopyrightNotices(currentUser)) {
     return { cases: [], endCursor: null, hasNextPage: false }
   }
+  const trustedFlaggerBoost =
+    (await isCopyrightTrustedFlaggerPriorityEnabled()) &&
+    (await findCurrentCopyrightJurisdictionPolicy('eu_dsa')) !== null
   observeSharedDbScope('listCopyrightStaffQueue', sharedDbCursorScope(options.after?.id))
   await using transaction = await beginTransaction()
-  const query = sql`/* listPendingCopyrightStaffCases */`.append(copyrightStaffQueueKeysSql())
-    .append(sql`
-    SELECT queue_key.id, queue_key.urgency, queue_key.reasons, queue_key.waiting_since,
+  const query = sql`/* listPendingCopyrightStaffCases */`.append(
+    copyrightStaffQueueKeysSql({ trustedFlaggerBoost }),
+  ).append(sql`
+    SELECT queue_key.id, queue_key.urgency, queue_key.tier, queue_key.reasons, queue_key.waiting_since,
       to_char(queue_key.waiting_since AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
         AS cursor_waiting_since,
       next_deadline.escalation_at, next_deadline.restoration_deadline_at
@@ -58,11 +64,11 @@ export async function listCopyrightStaffQueue(
   `)
   if (options.after) {
     query.append(sql`
-    WHERE (queue_key.urgency, queue_key.waiting_since, queue_key.id)
+    WHERE (queue_key.tier, queue_key.waiting_since, queue_key.id)
       > (${options.after.tier}::int, ${options.after.timestamp}::timestamptz, ${options.after.id}::uuid)`)
   }
   query.append(sql`
-    ORDER BY queue_key.urgency, queue_key.waiting_since, queue_key.id
+    ORDER BY queue_key.tier, queue_key.waiting_since, queue_key.id
     LIMIT ${options.limit + 1}
   `)
   const { rows } = await transaction<QueueKeyRow>(query)
@@ -84,6 +90,7 @@ export async function listCopyrightStaffQueue(
 type QueueKeyRow = {
   id: string
   urgency: number
+  tier: number
   reasons: CopyrightStaffQueueReason[]
   waiting_since: Date
   cursor_waiting_since: string
@@ -105,5 +112,5 @@ function queueFields(
 }
 
 function cursorFor(row: QueueKeyRow): CopyrightStaffQueueCursor {
-  return { tier: row.urgency, timestamp: row.cursor_waiting_since, id: row.id }
+  return { tier: row.tier, timestamp: row.cursor_waiting_since, id: row.id }
 }

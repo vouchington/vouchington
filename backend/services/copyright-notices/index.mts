@@ -137,3 +137,11 @@ export {
   listCopyrightEuSettlements,
   listCopyrightTerritorialComplaints,
 } from './case-collection-pages.mts'
+
+export {
+  copyrightTrustedFlaggerCursorScope,
+  createCopyrightTrustedFlagger,
+  getCopyrightTrustedFlagger,
+  listCopyrightTrustedFlaggers,
+  recordCopyrightTrustedFlaggerChange,
+} from './trusted-flaggers.mts'

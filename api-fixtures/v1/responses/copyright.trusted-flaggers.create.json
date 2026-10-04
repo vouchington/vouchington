@@ -1,0 +1,14 @@
+{
+  "copyright_trusted_flagger": {
+    "area_description": "Copyright notices",
+    "area_of_expertise": "intellectual_property",
+    "award_reference": "https://example.test/designations/1220",
+    "awarded_at": "2026-09-01",
+    "awarding_coordinator_name": "Example Digital Services Coordinator",
+    "awarding_member_state": "DE",
+    "id": "00000000-0000-7000-8000-000000001220",
+    "name": "Example copyright flagger",
+    "status": "active",
+    "user_id": "00000000-0000-7000-8000-000000001221"
+  }
+}

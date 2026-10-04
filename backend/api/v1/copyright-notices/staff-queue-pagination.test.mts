@@ -115,7 +115,7 @@ describe('copyright staff queue pagination', () => {
       .expect(400)
     const unknownTier = encodeScopedTierPreciseUuidCursor(
       '2026-01-01T00:00:00.000000Z',
-      3,
+      6,
       created[0]!,
       copyrightStaffQueueCursorScope,
     )
@@ -165,7 +165,7 @@ describe('copyright staff queue pagination', () => {
       await request.authenticateAs(await createTestUser({ extraRoles: ['moderator'] }))
       const after = encodeScopedTierPreciseUuidCursor(
         rows[0]!.waiting_since,
-        rows[0]!.urgency,
+        rows[0]!.tier,
         rows[0]!.id,
         copyrightStaffQueueCursorScope,
       )

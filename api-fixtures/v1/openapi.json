@@ -5334,6 +5334,160 @@
         "required": ["authority_reference", "explanation"],
         "type": "object"
       },
+      "CopyrightTrustedFlagger": {
+        "additionalProperties": false,
+        "properties": {
+          "area_description": {
+            "type": "string"
+          },
+          "area_of_expertise": {
+            "enum": ["intellectual_property", "other"],
+            "type": "string"
+          },
+          "award_reference": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "awarded_at": {
+            "type": "string"
+          },
+          "awarding_coordinator_name": {
+            "type": "string"
+          },
+          "awarding_member_state": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CopyrightTrustedFlaggerStatus"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "area_description",
+          "area_of_expertise",
+          "award_reference",
+          "awarded_at",
+          "awarding_coordinator_name",
+          "awarding_member_state",
+          "id",
+          "name",
+          "status",
+          "user_id"
+        ],
+        "type": "object"
+      },
+      "CopyrightTrustedFlaggerChange": {
+        "additionalProperties": false,
+        "properties": {
+          "change_type": {
+            "$ref": "#/components/schemas/CopyrightTrustedFlaggerChangeType"
+          },
+          "copyright_trusted_flagger_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": ["change_type", "copyright_trusted_flagger_id", "created_at", "id", "reason"],
+        "type": "object"
+      },
+      "CopyrightTrustedFlaggerChangeRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "change_type": {
+            "enum": ["reinstated", "revoked", "suspended"],
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": ["change_type", "reason"],
+        "type": "object"
+      },
+      "CopyrightTrustedFlaggerChangeType": {
+        "enum": ["reinstated", "revoked", "suspended"],
+        "type": "string"
+      },
+      "CopyrightTrustedFlaggerCreateRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "area_description": {
+            "type": "string"
+          },
+          "area_of_expertise": {
+            "enum": ["intellectual_property", "other"],
+            "type": "string"
+          },
+          "award_reference": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "awarded_at": {
+            "type": "string"
+          },
+          "awarding_coordinator_name": {
+            "type": "string"
+          },
+          "awarding_member_state": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "area_description",
+          "area_of_expertise",
+          "awarded_at",
+          "awarding_coordinator_name",
+          "awarding_member_state",
+          "name",
+          "user_id"
+        ],
+        "type": "object"
+      },
+      "CopyrightTrustedFlaggerStatus": {
+        "enum": ["active", "revoked", "suspended"],
+        "type": "string"
+      },
       "Country": {
         "additionalProperties": false,
         "properties": {
@@ -48947,6 +49101,219 @@
                     }
                   },
                   "required": ["copyright_legal_hold_assessment"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-trusted-flaggers": {
+      "get": {
+        "operationId": "get_api_v1_copyright-trusted-flaggers",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_trusted_flaggers": {
+                      "items": {
+                        "$ref": "#/components/schemas/CopyrightTrustedFlagger"
+                      },
+                      "type": "array"
+                    },
+                    "page_info": {
+                      "$ref": "#/components/schemas/PageInfo"
+                    }
+                  },
+                  "required": ["copyright_trusted_flaggers", "page_info"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "post_api_v1_copyright-trusted-flaggers",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyrightTrustedFlaggerCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_trusted_flagger": {
+                      "$ref": "#/components/schemas/CopyrightTrustedFlagger"
+                    }
+                  },
+                  "required": ["copyright_trusted_flagger"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-trusted-flaggers/{id}": {
+      "delete": {
+        "operationId": "delete_api_v1_copyright-trusted-flaggers_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "405": {
+            "description": "Method Not Allowed"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "get": {
+        "operationId": "get_api_v1_copyright-trusted-flaggers_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_trusted_flagger": {
+                      "$ref": "#/components/schemas/CopyrightTrustedFlagger"
+                    }
+                  },
+                  "required": ["copyright_trusted_flagger"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patch_api_v1_copyright-trusted-flaggers_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "405": {
+            "description": "Method Not Allowed"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-trusted-flaggers/{id}/status-changes": {
+      "post": {
+        "operationId": "post_api_v1_copyright-trusted-flaggers_id_status-changes",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyrightTrustedFlaggerChangeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_trusted_flagger_change": {
+                      "$ref": "#/components/schemas/CopyrightTrustedFlaggerChange"
+                    }
+                  },
+                  "required": ["copyright_trusted_flagger_change"],
                   "type": "object"
                 }
               }

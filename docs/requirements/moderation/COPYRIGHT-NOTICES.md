@@ -539,7 +539,13 @@ restoration deadline at or past `escalation_at`. An open deadline before escalat
 queue a case by itself. Each case carries its distinct
 `reasons`, the `waiting_since` time of its oldest open item, and its earliest open deadline. The
 queue orders cases by urgency: a missed restoration deadline first, then a deadline past escalation or an unassessed court or CCB filing,
-then all other work, each oldest wait first. Urgency depends on the clock, so a case can move to an
+then all other work, each oldest wait first. When `copyright.trustedFlaggerPriority` is enabled
+and EU policy approval is current, an in-area matched EU notice sorts first within its urgency
+tier; it never crosses an urgency boundary. The switch defaults off, and withdrawing approval
+restores ordinary ordering. Matching records are retained regardless of the switch; out-of-area
+matches receive no copyright priority or trusted-flagger attribution. The
+[trusted-flagger runbook](../../runbooks/copyright-notices.md#trusted-flaggers) owns registry
+operations. Urgency depends on the clock, so a case can move to an
 earlier tier between pages. The staff pages are reached from the Moderation sidebar's Copyright
 group, and the public policy page shows its staff queue links only to administrators and moderators.
 
