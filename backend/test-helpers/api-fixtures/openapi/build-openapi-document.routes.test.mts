@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { BackendResponseContract } from '../response-contract-types.mts'
+import { loadRegisteredRouteCatalog } from '../backend-contract-catalog.mts'
 import { COLD_OPENAPI_BUILD_TIMEOUT_MS } from '../cold-build-budget.mts'
 import { buildOpenApiDocument } from './build-openapi-document.mts'
 import type { OpenApiSchema } from 'vouchington-tooling/openapi-document'
@@ -12,6 +13,54 @@ const passkeyOptionRoutes = [
 ] as const
 
 describe('OpenAPI catalog response helpers', () => {
+  it(
+    'keeps the global public-route inventory broader than the v1 OpenAPI document',
+    () => {
+      const publicRoutes = loadRegisteredRouteCatalog()
+      const doc = buildOpenApiDocument()
+
+      expect(publicRoutes.some(route => route.routeTemplate === '/authorize')).toBe(true)
+      expect(doc.paths['/authorize']).toBeUndefined()
+      expect(doc.paths['/.well-known/webfinger']).toBeUndefined()
+      expect(
+        publicRoutes.some(route =>
+          route.routeTemplate.startsWith('/api/v1/oauth/authorization-requests/'),
+        ),
+      ).toBe(true)
+      expect(doc.paths['/api/v1/oauth/authorization-requests/{id}']).toBeUndefined()
+    },
+    COLD_OPENAPI_BUILD_TIMEOUT_MS,
+  )
+
+  it('honors explicitly supplied external routes in focused OpenAPI builds', () => {
+    const route = {
+      method: 'GET',
+      routeTemplate: '/synthetic-protocol',
+      kind: 'ordinary' as const,
+      source: 'test:protocol',
+    }
+    const contract: BackendResponseContract = {
+      method: 'GET',
+      routeTemplate: route.routeTemplate,
+      source: 'synthetic-response',
+      hash: 'synthetic-hash',
+      schema: {
+        root: { type: 'object', properties: {}, additionalProperties: false },
+        definitions: {},
+      },
+      bodyKind: 'content',
+      mediaType: 'application/json',
+    }
+    const doc = buildOpenApiDocument(
+      { 'GET:/synthetic-protocol': contract },
+      {},
+      {},
+      { registeredRoutes: [route] },
+    )
+
+    expect(doc.paths['/synthetic-protocol']?.get).toBeDefined()
+  })
+
   it('adds SSE, error-only, and unknown operations without fake success', () => {
     const routes = [
       { method: 'GET', routeTemplate: '/api/v1/events', kind: 'sse', source: 'test:1' },

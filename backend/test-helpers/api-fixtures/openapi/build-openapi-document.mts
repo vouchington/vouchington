@@ -40,7 +40,10 @@ export function buildOpenApiDocument(
       ? loadBackendQueryContracts(new Set(Object.keys(resolvedContracts)))
       : {})
   const registeredRoutes =
-    options?.registeredRoutes ?? (contracts === undefined ? loadRegisteredRouteCatalog() : [])
+    options?.registeredRoutes ??
+    (contracts === undefined
+      ? loadRegisteredRouteCatalog().filter(route => route.source.startsWith('backend/api/v1/'))
+      : [])
   const document = buildFromTooling({
     title: 'Voucha API',
     version: '1.0.0',

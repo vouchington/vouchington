@@ -38,6 +38,7 @@ describe('third-party route request validation inventory', () => {
 
   it('classifies every registered REST and MCP route exactly once', () => {
     const routes = discoverThirdPartyRoutes()
+    const bundle = buildRequestContractsBundle(document)
     const keys = routes.map(routeKey)
     const outsideV1 = keys.filter(key => !key.includes(':/api/v1/'))
     const noInput = new Set(NO_INPUT_OPERATIONS)
@@ -61,6 +62,7 @@ describe('third-party route request validation inventory', () => {
       ].toSorted(),
     )
     expect([...runtimeValidated].filter(key => !keys.includes(key))).toEqual([])
+    expect([...runtimeValidated].filter(key => !bundle.operations[key])).toEqual([])
     expect(runtimeValidated).not.toContain('GET:/api/v1/auth/oauth/providers')
     expect([...specialized].filter(key => !keys.includes(key))).toEqual([])
     expect([...noInput].filter(key => !keys.includes(key))).toEqual([])
@@ -86,7 +88,6 @@ describe('third-party route request validation inventory', () => {
     for (const [operation, keys] of Object.entries(SPECIALIZED_QUERY_INPUTS)) {
       expect(sourceQueryReads.get(operation)).toEqual(new Set(keys))
     }
-    const bundle = buildRequestContractsBundle(document)
     expect(() =>
       assertQueryCarrierCoverage(
         sourceQueryReads,

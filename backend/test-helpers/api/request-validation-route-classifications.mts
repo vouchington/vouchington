@@ -71,6 +71,16 @@ export const SPECIALIZED_INGRESS = {
     evidence: 'backend/api/oauth/token-protocol.test.mts',
     proof: 'requires a registered client for token revocation',
   },
+  'GET:/api/v1/oauth/authorization-requests/:id': {
+    parser: 'OAuth consent authentication, session binding, and UUID path parser',
+    evidence: 'backend/api/oauth/token-protocol.test.mts',
+    proof: 'not-a-uuid',
+  },
+  'POST:/api/v1/oauth/authorization-requests/:id/decisions': {
+    parser: 'OAuth consent decision parser after authentication and suspension checks',
+    evidence: 'backend/api/oauth/token-protocol.test.mts',
+    proof: 'Invalid id',
+  },
 } as const
 
 export const SPECIALIZED_QUERY_INPUTS = {

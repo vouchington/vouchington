@@ -24838,100 +24838,6 @@
   },
   "openapi": "3.1.0",
   "paths": {
-    "/.well-known/nodeinfo": {
-      "get": {
-        "operationId": "get_.well-known_nodeinfo",
-        "responses": {
-          "default": {
-            "$ref": "#/components/responses/Error"
-          }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "registered route has no statically recognized response emission"
-      }
-    },
-    "/.well-known/oauth-authorization-server": {
-      "get": {
-        "operationId": "get_.well-known_oauth-authorization-server",
-        "responses": {
-          "default": {
-            "$ref": "#/components/responses/Error"
-          }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "registered route has no statically recognized response emission"
-      }
-    },
-    "/.well-known/oauth-protected-resource/api/v1/admin/mcp": {
-      "get": {
-        "operationId": "get_.well-known_oauth-protected-resource_api_v1_admin_mcp",
-        "responses": {
-          "default": {
-            "$ref": "#/components/responses/Error"
-          }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "registered route has no statically recognized response emission"
-      }
-    },
-    "/.well-known/oauth-protected-resource/api/v1/mcp": {
-      "get": {
-        "operationId": "get_.well-known_oauth-protected-resource_api_v1_mcp",
-        "responses": {
-          "default": {
-            "$ref": "#/components/responses/Error"
-          }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "registered route has no statically recognized response emission"
-      }
-    },
-    "/.well-known/webfinger": {
-      "get": {
-        "operationId": "get_.well-known_webfinger",
-        "responses": {
-          "default": {
-            "$ref": "#/components/responses/Error"
-          }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "registered route has no statically recognized response emission"
-      }
-    },
-    "/ap/inbox": {
-      "post": {
-        "operationId": "post_ap_inbox",
-        "responses": {
-          "default": {
-            "$ref": "#/components/responses/Error"
-          }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "registered route has no statically recognized response emission"
-      }
-    },
-    "/ap/users/{userId}": {
-      "get": {
-        "operationId": "get_ap_users_userId",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "userId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "default": {
-            "$ref": "#/components/responses/Error"
-          }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "registered route has no statically recognized response emission"
-      }
-    },
     "/api/v1/admin/ai-costs": {
       "get": {
         "operationId": "get_api_v1_admin_ai-costs",
@@ -64076,50 +63982,6 @@
         }
       }
     },
-    "/api/v1/oauth/authorization-requests/{id}": {
-      "get": {
-        "operationId": "get_api_v1_oauth_authorization-requests_id",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "default": {
-            "$ref": "#/components/responses/Error"
-          }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "registered route has no statically recognized response emission"
-      }
-    },
-    "/api/v1/oauth/authorization-requests/{id}/decisions": {
-      "post": {
-        "operationId": "post_api_v1_oauth_authorization-requests_id_decisions",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "default": {
-            "$ref": "#/components/responses/Error"
-          }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "registered route has no statically recognized response emission"
-      }
-    },
     "/api/v1/official-referral-links/{linkId}": {
       "delete": {
         "operationId": "delete_api_v1_official-referral-links_linkId",
@@ -84814,78 +84676,6 @@
         "x-schema-unavailable": true,
         "x-schema-unavailable-reason": "backend/api/v1/web-search/web-search.mts: Property \"results\": Unsupported response contract type \"never\": never is not supported"
       }
-    },
-    "/authorize": {
-      "get": {
-        "operationId": "get_authorize",
-        "responses": {
-          "default": {
-            "$ref": "#/components/responses/Error"
-          }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "registered route has no statically recognized response emission"
-      }
-    },
-    "/client-metadata.json": {
-      "get": {
-        "operationId": "get_client-metadata.json",
-        "responses": {
-          "default": {
-            "$ref": "#/components/responses/Error"
-          }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "registered route has no statically recognized response emission"
-      }
-    },
-    "/nodeinfo/2.0": {
-      "get": {
-        "operationId": "get_nodeinfo_2.0",
-        "responses": {
-          "default": {
-            "$ref": "#/components/responses/Error"
-          }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "registered route has no statically recognized response emission"
-      }
-    },
-    "/register": {
-      "post": {
-        "operationId": "post_register",
-        "responses": {
-          "default": {
-            "$ref": "#/components/responses/Error"
-          }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "registered route has no statically recognized response emission"
-      }
-    },
-    "/revoke": {
-      "post": {
-        "operationId": "post_revoke",
-        "responses": {
-          "default": {
-            "$ref": "#/components/responses/Error"
-          }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "registered route has no statically recognized response emission"
-      }
-    },
-    "/token": {
-      "post": {
-        "operationId": "post_token",
-        "responses": {
-          "default": {
-            "$ref": "#/components/responses/Error"
-          }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "registered route has no statically recognized response emission"
-      }
     }
   },
   "x-unavailable-request-routes": [],
@@ -84893,12 +84683,6 @@
     "DELETE:/api/v1/admin/mcp",
     "DELETE:/api/v1/mcp",
     "DELETE:/api/v1/topics/:idOrSlug",
-    "GET:/.well-known/nodeinfo",
-    "GET:/.well-known/oauth-authorization-server",
-    "GET:/.well-known/oauth-protected-resource/api/v1/admin/mcp",
-    "GET:/.well-known/oauth-protected-resource/api/v1/mcp",
-    "GET:/.well-known/webfinger",
-    "GET:/ap/users/:userId",
     "GET:/api/v1/admin/article-syncs/:jobId/stream",
     "GET:/api/v1/admin/mcp",
     "GET:/api/v1/admin/postgresql/stream",
@@ -84911,24 +84695,15 @@
     "GET:/api/v1/mcp",
     "GET:/api/v1/me/individual",
     "GET:/api/v1/mq/stream",
-    "GET:/api/v1/oauth/authorization-requests/:id",
     "GET:/api/v1/rss-feeds",
     "GET:/api/v1/search",
     "GET:/api/v1/topics/:idOrSlug/retailer",
     "GET:/api/v1/users/:idOrSlug/data-request/stream",
     "GET:/api/v1/web-search",
-    "GET:/authorize",
-    "GET:/client-metadata.json",
-    "GET:/nodeinfo/2.0",
     "PATCH:/api/v1/topics/:idOrSlug/retailer",
-    "POST:/ap/inbox",
     "POST:/api/v1/admin/mcp",
     "POST:/api/v1/households/:id/memberships",
     "POST:/api/v1/images/upload-url",
-    "POST:/api/v1/mcp",
-    "POST:/api/v1/oauth/authorization-requests/:id/decisions",
-    "POST:/register",
-    "POST:/revoke",
-    "POST:/token"
+    "POST:/api/v1/mcp"
   ]
 }

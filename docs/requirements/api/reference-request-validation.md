@@ -41,12 +41,15 @@ query value that reaches the generated boundary answers `422` before service wor
 The source-derived inventory includes every registered public REST and MCP route, including
 protocol routes outside `/api/v1`. Its specialized entries include the six previously reviewed
 MCP/admin-MCP, Apple, Google, email-unsubscribe, and OAuth broker callback cases; Bluesky's
-AT Protocol OAuth callback; and seven public ActivityPub, WebFinger, and OAuth protocol routes.
-Bluesky is an additional source-audited exception to the earlier six-case readiness list: its
-state is consumed by the AT Protocol SDK parser and its successful response remains the
+AT Protocol OAuth callback; seven public ActivityPub, WebFinger, and OAuth protocol routes; and
+the OAuth consent request and decision routes. The latter use authenticated session binding,
+UUID path parsing, and a dedicated decision-body parser, and are not in the generated v1 request
+bundle. Bluesky is an additional source-audited exception to the earlier six-case readiness list:
+its state is consumed by the AT Protocol SDK parser and its successful response remains the
 protocol-required redirect. The catalog also records six input-free public metadata/discovery
 routes outside `/api/v1`; any new registered route must be assigned to a validated, specialized,
-or explicitly input-free class.
+or explicitly input-free class. Runtime-validated operations are required to exist in the generated
+request bundle, while the global source inventory remains broader than the v1 OpenAPI surface.
 
 A typed raw-body declaration or explicit request-contract marker must emit a meaningful body
 schema: invoking the adapter against an empty object is not coverage. Compiler-built request-bundle
