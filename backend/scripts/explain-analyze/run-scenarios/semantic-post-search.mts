@@ -14,17 +14,32 @@ export async function runSemanticPostSearchScenarios(): Promise<void> {
   for (const sort of ['new', 'relevance'] as const) {
     for (const hybrid of [false, true]) {
       const scenario = `post-search-${hybrid ? 'hybrid' : 'semantic'}-${sort}`
-      const options = {
+      const seedOptions = {
         semantic_search_query: 'seed',
         semanticSearchEmbedding: embedding,
         ...(hybrid ? { text_search_query: 'seed' } : {}),
         sort,
         limit: 26,
       }
-      const seed = await inspectSemanticPostSeed(options)
+      const seed = await inspectSemanticPostSeed(seedOptions)
       console.log(`${scenario}: exact eligible seed rows=${seed.eligible_count}`)
+      let options = seedOptions
       try {
         if (seed.eligible_count === 0) throw new Error(`${scenario}: no exact eligible seed rows`)
+        const eligibleId = seed.eligible_sample_ids?.[0]
+        if (!eligibleId) throw new Error(`${scenario}: no eligible seed id to anchor ANN search`)
+        const { rows } = await read<{ embedding: string }>(
+          `/* semanticPostSearchSeedEmbedding */
+           SELECT bedrock_nova_multimodal_v1_embedding::text AS embedding
+           FROM posts WHERE id = $1 AND bedrock_nova_multimodal_v1_embedding IS NOT NULL`,
+          [eligibleId],
+        )
+        const anchor = rows[0]?.embedding
+        if (!anchor) throw new Error(`${scenario}: eligible seed has no embedding`)
+        // The 40k-row fixture is clustered. A generic vector can exhaust the bounded ANN scan
+        // before reaching a filtered row, even though exact eligibility is nonempty. Query from
+        // an eligible seeded post so the candidate search has a known zero-distance neighbor.
+        options = { ...seedOptions, semanticSearchEmbedding: JSON.parse(anchor) as number[] }
         await runAndCapture(
           scenario,
           () => executePostSearchQuery(buildPostSearchQuery(seedUser, options), true),
