@@ -365,6 +365,7 @@ eligible fanout or completed crawl work; the response shape remains unchanged. S
 The [pagination contract](../overview/architecture/pagination.md#runtime-page-limits) defines
 profile ownership and default clamping. This records API behavior coordination and does not
 change rendered native parity claims.
+
 ## Retained community prompt creator handoff
 
 The pre-launch schema review (#1597) retains community prompts when their creator is deleted.
