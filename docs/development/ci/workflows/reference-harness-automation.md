@@ -259,8 +259,9 @@ completed deploy`, so Automation Fix Main can never legally subscribe to itself,
   itself.
 - Dependabot revalidates the exact open bot-authored PR ref/SHA immediately before dispatch. The
   agent modifies that branch only; it cannot create a second PR. Before fixing, it searches open
-  issues, pull requests, and recorded decisions; when one already owns the failure or rules out the
-  fix, it reports the PR as blocked and leaves it unchanged. Its failure comment stays quiet
+  issues, pull requests, and recorded decisions; when one already owns or defers the failure, it
+  reports the PR as blocked and leaves it unchanged, and a decision that rules out only some fixes
+  narrows its options instead. Its failure comment stays quiet
   when the `dispatch` job was cancelled by concurrency coalescing (cancelled with zero steps, no
   session id): several source workflows failing on one PR share one `harness-dispatch` group, GitHub
   keeps only one pending run, and the surviving run owns the session. A lookup failure posts the
