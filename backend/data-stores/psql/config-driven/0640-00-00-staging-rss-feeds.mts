@@ -11,7 +11,7 @@ export type StagingRssFeed = {
   readonly url: string
   readonly hostname: string
   readonly pathname: string
-  readonly name: string
+  readonly title: string
   readonly slug: string
   readonly ids: {
     readonly hostname: string
@@ -29,7 +29,7 @@ export const STAGING_RSS_FEEDS: readonly StagingRssFeed[] = [
     url: 'https://www.theguardian.com/science/rss',
     hostname: 'www.theguardian.com',
     pathname: '/science/rss',
-    name: 'The Guardian Science',
+    title: 'The Guardian Science',
     slug: 'the-guardian-science-theguardian-com-science-rss',
     ids: {
       hostname: '01a0f4c2-c400-7692-aa38-ab180ba72f58',
@@ -45,7 +45,7 @@ export const STAGING_RSS_FEEDS: readonly StagingRssFeed[] = [
     url: 'https://blog.cloudflare.com/rss/',
     hostname: 'blog.cloudflare.com',
     pathname: '/rss/',
-    name: 'Cloudflare Blog',
+    title: 'Cloudflare Blog',
     slug: 'cloudflare-blog-blog-cloudflare-com-rss',
     ids: {
       hostname: '01a0f4c2-c400-76eb-aec6-0e1194d6ec35',
@@ -61,7 +61,7 @@ export const STAGING_RSS_FEEDS: readonly StagingRssFeed[] = [
     url: 'https://www.quantamagazine.org/feed/',
     hostname: 'www.quantamagazine.org',
     pathname: '/feed/',
-    name: 'Quanta Magazine',
+    title: 'Quanta Magazine',
     slug: 'quanta-magazine-quantamagazine-org-feed',
     ids: {
       hostname: '01a0f4c2-c400-757d-840b-e651ee1ae676',
@@ -78,6 +78,10 @@ export const STAGING_RSS_FEEDS: readonly StagingRssFeed[] = [
 const RSS_MIME_TYPE = 'application/rss+xml'
 const AUTO_UPDATER_USERNAME = 'rss-feed-auto-updater'
 
+// The product names a feed source's topic `${title} (${url})` (buildSourceTopicName); the slug
+// and rss_feeds.title use the bare feed title.
+const sourceTopicName = (feed: StagingRssFeed): string => `${feed.title} (${feed.url})`
+
 const lit = (value: string): string => `'${value.replaceAll("'", "''")}'`
 
 // Every statement is one insert-only INSERT: a bare `ON CONFLICT DO NOTHING` (the fixed-id key,
@@ -86,7 +90,8 @@ const lit = (value: string): string => `'${value.replaceAll("'", "''")}'`
 // joined by natural key, so a missing parent inserts nothing.
 function feedStatements(feed: StagingRssFeed): string[] {
   const { ids } = feed
-  const sha256 = createTopicEmbeddingContent({ name: feed.name }).content_sha256.toString('hex')
+  const topicName = sourceTopicName(feed)
+  const sha256 = createTopicEmbeddingContent({ name: topicName }).content_sha256.toString('hex')
   const changeInsert = (table: string, id: string): string => `
 INSERT INTO ${table} (id, rss_feed_id, enabled, created_by_id, reason)
 SELECT ${lit(id)}, f.id, TRUE,
@@ -119,13 +124,13 @@ INSERT INTO topics (
   id, name, slug, topic_type, aliases, hostname_id, created_via,
   bedrock_nova_multimodal_v1_content_sha256
 )
-SELECT ${lit(ids.topic)}, ${lit(feed.name)}, ${lit(feed.slug)}, 'rss_feed',
+SELECT ${lit(ids.topic)}, ${lit(topicName)}, ${lit(feed.slug)}, 'rss_feed',
   ARRAY[${lit(feed.slug)}], h.id, 'system', decode(${lit(sha256)}, 'hex')
 FROM url_hostnames h
 WHERE h.hostname = ${lit(feed.hostname)}
   AND NOT EXISTS (
     SELECT 1 FROM topics
-    WHERE id = ${lit(ids.topic)} OR slug = ${lit(feed.slug)} OR lower(name) = lower(${lit(feed.name)})
+    WHERE id = ${lit(ids.topic)} OR slug = ${lit(feed.slug)} OR lower(name) = lower(${lit(topicName)})
   )
   AND NOT EXISTS (SELECT 1 FROM topic_aliases WHERE alias = ${lit(feed.slug)})
 ON CONFLICT DO NOTHING;`,
@@ -141,7 +146,7 @@ WHERE t.id = ${lit(ids.topic)}
 ON CONFLICT DO NOTHING;`,
     `
 INSERT INTO rss_feeds (id, rss_feed_url_id, topic_id, title, feed_type, created_via)
-SELECT ${lit(ids.feed)}, u.id, t.id, ${lit(feed.name)}, 'article', 'system'
+SELECT ${lit(ids.feed)}, u.id, t.id, ${lit(feed.title)}, 'article', 'system'
 FROM urls u
 JOIN topics t ON t.id = ${lit(ids.topic)} AND t.deleted_at IS NULL
 WHERE u.url = ${lit(feed.url)}

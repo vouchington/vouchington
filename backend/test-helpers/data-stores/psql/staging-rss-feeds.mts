@@ -12,6 +12,7 @@ import {
 export type SeededFeedRow = {
   url: string
   title: string
+  topic_name: string
   slug: string
   aliases: string[]
   topic_type: string
@@ -71,7 +72,7 @@ export async function readSeededFeeds(
   urls: readonly string[],
 ): Promise<SeededFeedRow[]> {
   const { rows } = await tx<SeededFeedRow>(sql`
-    SELECT u.url, f.title, t.slug, t.aliases, t.topic_type, th.hostname AS topic_hostname,
+    SELECT u.url, f.title, t.name AS topic_name, t.slug, t.aliases, t.topic_type, th.hostname AS topic_hostname,
       h.hostname AS url_hostname, h.topic_id AS hostname_topic_id, ct.mime_type, u.search_params,
       f.is_enabled, f.is_discoverable, f.created_via, f.created_by_id, f.feed_type,
       (SELECT cu.username FROM rss_feed_enablement_changes c

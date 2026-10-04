@@ -73,7 +73,7 @@ describe('0640-00-00-staging-rss-feeds feed list', () => {
         .replace(/^www\./, '')
         .replace(/\/$/, '')
         .replaceAll(/[./=?&#]/g, ' ')
-      expect(createSlugFromTitle(`${feed.name} ${urlPart}`, 250)).toBe(feed.slug)
+      expect(createSlugFromTitle(`${feed.title} ${urlPart}`, 250)).toBe(feed.slug)
     }
   })
 
@@ -123,7 +123,8 @@ describe('0640-00-00-staging-rss-feeds applied to the database', () => {
     for (const feed of feeds) {
       const seeded = STAGING_RSS_FEEDS.find(candidate => candidate.url === feed.url)!
       expect(feed).toMatchObject({
-        title: seeded.name,
+        title: seeded.title,
+        topic_name: `${seeded.title} (${seeded.url})`,
         slug: seeded.slug,
         aliases: [seeded.slug],
         topic_type: 'rss_feed',
