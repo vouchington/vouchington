@@ -2,7 +2,7 @@
 
 Source entrypoint: [articles/README.md](../../../../articles/README.md)
 
-Seed articles for blog publishing and RAG ingestion. These serve dual purpose: published as blog posts at launch, and ingested into the AI chat agent's knowledge base.
+Seed articles for blog publishing and public/site knowledge retrieval.
 
 ## Existing
 

@@ -16,7 +16,7 @@
  *   free-capacity budget is set explicitly to the former SDK default rather than left implicit.
  */
 
-export interface RetryPolicy {
+interface RetryPolicy {
   maxRetries: number
   rationale: string
 }

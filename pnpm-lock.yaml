@@ -223,13 +223,13 @@ importers:
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
-      openai:
-        specifier: ^7.25.0
-        version: 7.25.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@8.11.2)(ws@8.21.3)(zod@4.6.5)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      openai:
+        specifier: ^7.25.0
+        version: 7.25.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@8.11.2)(ws@8.21.3)(zod@4.6.5)
 
   backend/agents/appeal-resolution:
     dependencies:

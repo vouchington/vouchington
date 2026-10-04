@@ -1,6 +1,5 @@
 import type { OpenAI } from '@modules/openai-utils'
 import createHttpError from 'http-errors'
-import { createOpenAIModeration } from './request.mts'
 
 export type CreateTextModeration = (texts: string[]) => Promise<OpenAI.Moderations.Moderation[]>
 
@@ -24,9 +23,8 @@ const PROMPT_INJECTION_PATTERNS = [
 
 export async function checkMessageSafety(
   message: string,
-  deps: { createTextModeration?: CreateTextModeration } = {},
+  deps: { createTextModeration: CreateTextModeration },
 ): Promise<void> {
-  const createTextModeration = deps.createTextModeration ?? createOpenAIModeration
   // Pattern-based detection
   for (const pattern of PROMPT_INJECTION_PATTERNS) {
     if (pattern.test(message)) {
@@ -37,7 +35,7 @@ export async function checkMessageSafety(
   }
 
   // OpenAI moderation check
-  const moderationResults = await createTextModeration([message])
+  const moderationResults = await deps.createTextModeration([message])
 
   if (moderationResults.length === 0) {
     return
