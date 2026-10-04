@@ -10,6 +10,7 @@ import webCopyrightGuestCapabilityRevoked from '../../../../api-fixtures/v1/resp
 import webCopyrightGuestFilingReceived from '../../../../api-fixtures/v1/responses/web.copyright.guest-filing.received.json'
 import webCopyrightGuestInformationRequested from '../../../../api-fixtures/v1/responses/web.copyright.guest-information.requested.json'
 import webCopyrightStaffQueueDefault from '../../../../api-fixtures/v1/responses/web.copyright.staff-queue.default.json'
+import webCopyrightStaffQueueTerritorial from '../../../../api-fixtures/v1/responses/web.copyright.staff-queue.territorial.json'
 import type {
   CopyrightNoticesPage,
   CopyrightNoticeDetail,
@@ -91,6 +92,12 @@ export const COPYRIGHT_DECLARATIONS = [
   defineWebApiFixture<CopyrightStaffQueuePage>()(
     'web.copyright.staff-queue.default',
     webCopyrightStaffQueueDefault,
+    context => context.server.copyrightNotices.getCopyrightReviewQueue(),
+    [context => context.client.copyrightNotices.listCopyrightReviewQueue()],
+  ),
+  defineWebApiFixture<CopyrightStaffQueuePage>()(
+    'web.copyright.staff-queue.territorial',
+    webCopyrightStaffQueueTerritorial,
     context => context.server.copyrightNotices.getCopyrightReviewQueue(),
     [context => context.client.copyrightNotices.listCopyrightReviewQueue()],
   ),
