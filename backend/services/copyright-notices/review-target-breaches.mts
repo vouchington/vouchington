@@ -1,6 +1,7 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
+import { heldCopyrightDeadlineSql } from './held-deadline-sql.mts'
 import { copyrightStaffQueueKeysSql } from './read-models-staff-queue-sql.mts'
 import { copyrightEmailIntakeAwaitingReviewSql } from './read-models-staff-email-intakes-sql.mts'
 
@@ -19,8 +20,10 @@ export type CopyrightReviewTargetBreaches = {
  * `reviewTargetMinutes`, the email intakes on the email-review queue received before that cutoff,
  * and the notices with an open counter-notice deadline past `escalation_at` or
  * `restoration_deadline_at`, oldest first. Both waiting buckets reuse their queue's own rule, so
- * the page and the queues agree. A null target skips the waiting buckets; missed deadlines are
- * always counted against `now`. Only notice and intake ids leave this read, never claimant,
+ * paging excludes assessed qualifying holds awaiting resolution and times automated enforcement
+ * from receipt; the staff display retains its original waiting age. A null target skips the waiting buckets; missed deadlines are
+ * counted against `now` unless every restricted deadline target is covered by an unresolved
+ * qualifying hold and no filing on the case is unassessed. Only notice and intake ids leave this read, never claimant,
  * poster, or email fields. `noticeIds` and `emailIntakeIds` bound a test to its own fixtures; an
  * omitted list is empty once the other is given.
  */
@@ -43,8 +46,9 @@ export async function readCopyrightReviewTargetBreaches(options: {
       : new Date(options.now.getTime() - options.reviewTargetMinutes * 60_000)
   const limit = COPYRIGHT_REVIEW_TARGET_ID_LIMIT
   const query = sql`/* readCopyrightReviewTargetBreaches */`
-  query.append(copyrightStaffQueueKeysSql())
-  query.append(sql`
+  query.append(copyrightStaffQueueKeysSql({ paging: true }))
+  query
+    .append(sql`
     , waiting AS (
       SELECT copyright_notice_id AS notice_id, min(since) AS waiting_since FROM open_item
       WHERE reason NOT IN ('deadline_due', 'deadline_missed') AND since <= ${cutoff}::timestamptz
@@ -53,9 +57,11 @@ export async function readCopyrightReviewTargetBreaches(options: {
     ), missed AS (
       SELECT copyright_notice_id AS notice_id, min(escalation_at) AS escalation_at,
         min(restoration_deadline_at) AS restoration_deadline_at
-      FROM copyright_notice_deadlines
+      FROM copyright_notice_deadlines deadline
       WHERE resolved_at IS NULL AND cancelled_at IS NULL AND escalation_at <= ${options.now}
         AND (${scope}::uuid[] IS NULL OR copyright_notice_id = ANY(${scope}::uuid[]))
+        AND NOT `)
+    .append(heldCopyrightDeadlineSql()).append(sql`
       GROUP BY copyright_notice_id
     ), email_waiting AS (
       SELECT intake.id, intake.received_at FROM copyright_notice_email_intakes intake
