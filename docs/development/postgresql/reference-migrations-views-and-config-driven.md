@@ -212,6 +212,16 @@ config-driven operations, and views. After migration the database contains:
 - **Communities** — `voucha-quality-filters` and `voucha-platform`, owned by the `system` user,
   seeded by
   [`config-driven/0140-00-01-seed-communities.mts`](../../../backend/data-stores/psql/config-driven/0140-00-01-seed-communities.mts).
+- **Staging only: RSS feeds** — three public feeds (Guardian Science, Cloudflare Blog, Quanta
+  Magazine) so the staging crawl pipeline has real feeds to fetch after every reset. The generator
+  [`config-driven/0640-00-00-staging-rss-feeds.mts`](../../../backend/data-stores/psql/config-driven/0640-00-00-staging-rss-feeds.mts)
+  emits SQL only when `ENVIRONMENT` is `staging`; every other environment gets no statements. It
+  writes what `createRssFeedSource` writes for a system-created feed (hostname, URL, `rss_feed`
+  topic with its slug alias, the feed row, and initial enabled and discoverable changes by the
+  `rss-feed-auto-updater` system user) using fixed UUIDv7 ids and insert-only SQL. A rerun, a
+  feed disabled later, or an existing row for the same hostname, URL or slug is never changed.
+  It seeds no posts or users and does not touch crawl configuration. `db:seed` never runs in
+  staging, so this is the only seeded feed data there.
 
 ### What `db:seed` creates (in addition)
 
