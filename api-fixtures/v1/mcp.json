@@ -34262,7 +34262,8 @@
                         "type": "string"
                       },
                       "jurisdiction": {
-                        "const": "us_dmca"
+                        "enum": ["eu_dsa", "uk", "us_dmca"],
+                        "type": "string"
                       },
                       "legal_holds": {
                         "items": {
@@ -34504,7 +34505,9 @@
                             "form_intake_review",
                             "legal_hold_review",
                             "restriction_review",
-                            "staydown_review"
+                            "staydown_review",
+                            "territorial_decision_reopened",
+                            "territorial_notice_review"
                           ],
                           "type": "string"
                         },
@@ -34664,6 +34667,120 @@
                           "type": "object"
                         },
                         "type": "array"
+                      },
+                      "territorial": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "acknowledgment": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "acknowledged_at": {
+                                "anyOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "attempt_count": {
+                                "type": "number"
+                              },
+                              "escalated": {
+                                "type": "boolean"
+                              },
+                              "exhausted_at": {
+                                "anyOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "last_attempt_at": {
+                                "anyOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "acknowledged_at",
+                              "attempt_count",
+                              "escalated",
+                              "exhausted_at",
+                              "last_attempt_at"
+                            ],
+                            "type": "object"
+                          },
+                          "decision": {
+                            "anyOf": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "decided_at": {
+                                    "type": "string"
+                                  },
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "outcome": {
+                                    "enum": ["no_action", "restrict"],
+                                    "type": "string"
+                                  },
+                                  "public_explanation": {
+                                    "type": "string"
+                                  },
+                                  "rationale": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "decided_at",
+                                  "id",
+                                  "outcome",
+                                  "public_explanation",
+                                  "rationale"
+                                ],
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "grounds": {
+                            "type": "string"
+                          },
+                          "hosted_use_url": {
+                            "type": "string"
+                          },
+                          "reopened_at": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "acknowledgment",
+                          "decision",
+                          "grounds",
+                          "hosted_use_url",
+                          "reopened_at"
+                        ],
+                        "type": "object"
                       },
                       "waiting_since": {
                         "type": "string"
