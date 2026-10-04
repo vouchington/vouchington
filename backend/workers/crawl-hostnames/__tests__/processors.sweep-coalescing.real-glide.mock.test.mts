@@ -25,6 +25,7 @@ import { scheduledJobManifest as unfurlManifest } from '@queues/unfurl-referral-
 import { findYourFriendsQueue } from '@queues/find-your-friends/queues'
 import { enqueueDispatchFindYourFriends } from '@queues/find-your-friends/enqueues'
 import { scheduledJobManifest as friendsManifest } from '@queues/find-your-friends/enqueues/schedules'
+import { processCrawlHostnamesJob } from '../processors.mts'
 
 vi.hoisted(() => {
   const url = new URL(process.env.VALKEY_URL || 'redis://localhost:6379')
@@ -109,7 +110,10 @@ describe('periodic sweep coalescing', () => {
       queue.name,
       async (job: Job) => {
         if (job.name !== fixture.work) {
-          const result = await fixture.root()
+          const result =
+            fixture.label === 'tier1' || fixture.label === 'tier2'
+              ? await processCrawlHostnamesJob(job)
+              : await fixture.root()
           if (++roots >= 2) repeated.resolve()
           return result
         }
