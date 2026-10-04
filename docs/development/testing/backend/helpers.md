@@ -302,22 +302,6 @@ the expected synthetic provider URL, returns actual response headers, then termi
 response socket to exercise production body-reader and network-error classification. Its callback
 receives the real transport and request count; server and dispatcher close after the callback.
 
-For a statement executed by the global read/write pool rather than an owned transaction, use
-`withPostgresPoolQueryFailureForTest` from `@voucha/test-helpers/postgres-pool-query-failure` with
-the same annotation, callback, and optional command. It acquires a real idle client, begins and
-aborts its server transaction, then lets the unchanged `pg.Pool.query` implementation acquire that
-client through a one-shot lease and execute its original SQL. Before handoff the helper destroys
-the client on failure; after handoff the pool core owns `release(error)`, which destroys the
-connection and rolls back. Cleanup waits for that client's bounded `end` event. A transaction
-wrapper would give two owners responsibility for the same release, so the test-only setup has a
-scoped manual-transaction lint exception.
-
-Real HTTP requests do not inherit the test callback's async context. For those tests, pass a fresh
-UUID as `requestId` and the same `x-request-id` header. The helper matches the production request
-context exactly, in addition to the SQL annotation; never use a global marker-only interception.
-Assert the response's request ID and verify a different request ID remains healthy while the fault
-is installed. Direct service/tool calls use the default async-context scope.
-
 ## Notification Push Recovery Backlogs
 
 Use `withTestNotificationPushRecoveryBacklog()` from
