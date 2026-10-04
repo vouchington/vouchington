@@ -16,6 +16,8 @@ const reasonLabels: Record<CopyrightStaffQueueReason, string> = {
   staydown_review: 'Possible re-upload',
   deadline_due: 'Escalation due',
   deadline_missed: 'Restoration deadline missed',
+  territorial_notice_review: 'Territorial notice review',
+  territorial_decision_reopened: 'Territorial decision reopened',
 }
 
 const urgentReasons = new Set<CopyrightStaffQueueReason>(['deadline_due', 'deadline_missed'])

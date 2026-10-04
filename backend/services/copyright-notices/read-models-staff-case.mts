@@ -4,6 +4,8 @@ import { readClaimantMisuseSummary } from './claimant-misuse-summary.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import { decryptCopyrightText } from './erased-ciphertext.mts'
 import { copyrightFormSecretPurpose } from './form-intakes.mts'
+import { selectStaffTerritorialCase } from './read-models-staff-territorial.mts'
+import { territorialLabels } from './territorial-labels.mts'
 import {
   selectStaffAppeals,
   selectStaffCounterNotices,
@@ -30,30 +32,39 @@ export async function getPendingCopyrightStaffCase(
   const { rows } = await query<{
     id: string
     received_at: Date
-    jurisdiction: 'us_dmca'
+    jurisdiction: 'us_dmca' | 'eu_dsa' | 'uk'
     claimant_user_id: string | null
     claimant_display_name: string | null
     claimant_contact_ciphertext: string
     work_description: string
     form_key: string | null
     ses_message_id: string | null
+    territorial_key: string | null
   }>(sql`/* getPendingCopyrightStaffCase:notice */
     SELECT notice.id, notice.received_at, notice.jurisdiction, notice.claimant_user_id,
       notice.claimant_display_name, notice.claimant_contact_ciphertext, notice.work_description,
-      form.idempotency_key AS form_key, email.ses_message_id
+      form.idempotency_key AS form_key, email.ses_message_id,
+      receipt.idempotency_key AS territorial_key
     FROM copyright_notices notice
     LEFT JOIN copyright_notice_form_intakes form ON form.copyright_notice_id = notice.id
     LEFT JOIN copyright_notice_email_intake_reviews email_review ON email_review.promoted_copyright_notice_id = notice.id
     LEFT JOIN copyright_notice_email_intakes email ON email.id = email_review.copyright_notice_email_intake_id
+    LEFT JOIN copyright_territorial_notice_receipts receipt
+      ON receipt.copyright_notice_id = notice.id AND receipt.jurisdiction = notice.jurisdiction
     WHERE notice.id = ${noticeId}
   `)
   const notice = rows[0]
   if (!notice) return null
-  const contactPurpose = notice.form_key
-    ? copyrightFormSecretPurpose(notice.form_key)
-    : notice.ses_message_id
-      ? copyrightEmailIntakePurpose(notice.ses_message_id)
-      : null
+  const contactPurpose =
+    notice.jurisdiction === 'us_dmca'
+      ? notice.form_key
+        ? copyrightFormSecretPurpose(notice.form_key)
+        : notice.ses_message_id
+          ? copyrightEmailIntakePurpose(notice.ses_message_id)
+          : null
+      : notice.territorial_key
+        ? `${territorialLabels(notice.jurisdiction).noticePurpose}:${notice.territorial_key}:contact`
+        : null
   if (!contactPurpose) return null
   const [
     targets,
@@ -68,6 +79,7 @@ export async function getPendingCopyrightStaffCase(
     emailCorrespondence,
     staydownMatches,
     misuse,
+    territorial,
   ] = await Promise.all([
     selectStaffTargets(noticeId, query),
     selectStaffEvidence(noticeId, query),
@@ -81,6 +93,9 @@ export async function getPendingCopyrightStaffCase(
     selectStaffEmailCorrespondence(noticeId, query),
     selectStaffStaydownMatches(noticeId, query),
     notice.claimant_user_id ? readClaimantMisuseSummary(notice.claimant_user_id, query) : null,
+    notice.jurisdiction === 'us_dmca'
+      ? null
+      : selectStaffTerritorialCase(noticeId, notice.jurisdiction, query),
   ])
   return {
     id: notice.id,
@@ -92,6 +107,7 @@ export async function getPendingCopyrightStaffCase(
       misuse,
     },
     work_description: notice.work_description,
+    ...(territorial ? { territorial } : {}),
     targets,
     evidence,
     form_review: formReview,

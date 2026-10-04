@@ -5,10 +5,31 @@ import type {
   CopyrightLegalHoldGuidance,
 } from '@ts-shared/utils/copyright-submission-guidance'
 
+export type CopyrightStaffTerritorialCase = {
+  hosted_use_url: string
+  grounds: string
+  acknowledgment: {
+    attempt_count: number
+    last_attempt_at: Date | null
+    acknowledged_at: Date | null
+    exhausted_at: Date | null
+    escalated: boolean
+  }
+  reopened_at: Date | null
+  decision: {
+    id: string
+    outcome: 'restrict' | 'no_action'
+    decided_at: Date
+    rationale: string
+    public_explanation: string
+  } | null
+}
+
 export type CopyrightStaffCase = {
   id: string
   received_at: Date
-  jurisdiction: 'us_dmca'
+  jurisdiction: 'us_dmca' | 'eu_dsa' | 'uk'
+  territorial?: CopyrightStaffTerritorialCase
   claimant: {
     display_name: string | null
     contact: string
@@ -135,6 +156,8 @@ export type CopyrightStaffCase = {
 }
 
 export type CopyrightStaffQueueReason =
+  | 'territorial_notice_review'
+  | 'territorial_decision_reopened'
   | 'form_intake_review'
   | 'restriction_review'
   | 'appeal_review'

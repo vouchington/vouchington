@@ -20,7 +20,6 @@ const guidance: CopyrightFormGuidance = {
   risk_notes: [],
   suggested_action: 'approve_intake',
 }
-
 const counterGuidance: CopyrightCounterNoticeGuidance = {
   summary: 'The counter-notice identifies the image.',
   elements: [
@@ -31,7 +30,6 @@ const counterGuidance: CopyrightCounterNoticeGuidance = {
   ],
   risk_notes: [],
 }
-
 const holdGuidance: CopyrightLegalHoldGuidance = {
   summary: 'The filing describes a court action.',
   criteria: [
@@ -43,7 +41,6 @@ const holdGuidance: CopyrightLegalHoldGuidance = {
   ],
   risk_notes: [],
 }
-
 describe('CopyrightStaffQueue', () => {
   it('shows an empty review queue when no cases are waiting', () => {
     render(
@@ -56,7 +53,6 @@ describe('CopyrightStaffQueue', () => {
     )
     expect(screen.getByText('No copyright cases need review.')).toBeInTheDocument()
   })
-
   it.each(['completed', 'pending', 'failed'] as const)(
     'renders private case facts and every pending decision with %s screening',
     state => {
@@ -167,7 +163,13 @@ describe('CopyrightStaffQueue', () => {
                 delivery_intents: [],
                 staydown_matches: [],
                 email_correspondence: [],
-                reasons: ['counter_notice_review', 'deadline_due', 'form_intake_review'],
+                reasons: [
+                  'counter_notice_review',
+                  'deadline_due',
+                  'form_intake_review',
+                  'territorial_notice_review',
+                  'territorial_decision_reopened',
+                ],
                 waiting_since: '2026-01-01T00:00:00.000Z',
                 next_deadline: {
                   escalation_at: '2026-01-10T00:00:00.000Z',
@@ -184,6 +186,8 @@ describe('CopyrightStaffQueue', () => {
         'Counter-notice review',
         'Escalation due',
         'Intake review',
+        'Territorial notice review',
+        'Territorial decision reopened',
       ])
       expect(screen.getByText(/^Queued/).querySelector('time')).toHaveAttribute(
         'dateTime',
@@ -224,7 +228,6 @@ describe('CopyrightStaffQueue', () => {
       })
     },
   )
-
   it.each([
     { accepted: true, reviewedById: 'moderator-123', decision: 'Approved by moderator-123' },
     { accepted: false, reviewedById: null, decision: 'Rejected by a deleted moderator account' },

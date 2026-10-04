@@ -14,6 +14,7 @@ export type LockedCopyrightActionDelivery = {
   reversal_by_review: boolean
   reversal_by_appeal: boolean
   reversal_by_administrator_lift: boolean
+  reversal_by_complaint: boolean
   hold_resolution_authorized: boolean
   earliest_restoration_at: Date | null
   resolved_at: Date | null

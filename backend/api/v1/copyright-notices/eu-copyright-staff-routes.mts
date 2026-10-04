@@ -7,9 +7,9 @@ import {
   recordEuCopyrightStatementOfReasons,
 } from '@services/copyright-notices'
 import {
+  parseTerritorialDecisionBody,
   parseTerritorialRedressDecision,
   parseTerritorialReportPeriod,
-  parseTerritorialText,
 } from '@services/copyright-notices/territorial-http-input'
 import { assertNotSuspended } from '@services/users'
 import app from '../../app.mts'
@@ -56,12 +56,12 @@ app.route('/api/v1/copyright-eu-notices/:id/statements-of-reasons').post(async (
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   const body = await parseJsonBody<CopyrightTerritorialStatementRequest>(ctx)
   const noticeId = validateUUIDParam(ctx, 'id')
-  const text = parseTerritorialText(body, 'statement')
+  const input = parseTerritorialDecisionBody(body, 'statement')
   validateRequestContract(ctx, 'POST:/api/v1/copyright-eu-notices/:id/statements-of-reasons', {
     path: ctx.params,
     body,
   })
-  const statement = await recordEuCopyrightStatementOfReasons(currentUser, noticeId, text)
+  const statement = await recordEuCopyrightStatementOfReasons(currentUser, noticeId, input)
   ctx.setStatus(201)
   ctx.json({ copyright_eu_statement_of_reasons: statement })
 })

@@ -12,6 +12,7 @@ export type TerritorialLabels = {
   noticeFailed: string
   noticePurpose: string
   decisionPurpose: string
+  publicExplanationPurpose: string
   decisionTextRequired: string
   decisionExists: string
   decisionFailed: string
@@ -30,6 +31,7 @@ const TERRITORIAL_LABELS = {
     noticeFailed: 'Failed to record EU copyright notice',
     noticePurpose: 'copyright-eu-notice',
     decisionPurpose: 'copyright-eu-statement',
+    publicExplanationPurpose: 'copyright-eu-public-explanation',
     decisionTextRequired: 'statement is required',
     decisionExists: 'A statement of reasons already exists',
     decisionFailed: 'Failed to record EU statement of reasons',
@@ -46,6 +48,7 @@ const TERRITORIAL_LABELS = {
     noticeFailed: 'Failed to record UK copyright notice',
     noticePurpose: 'copyright-uk-notice',
     decisionPurpose: 'copyright-uk-review',
+    publicExplanationPurpose: 'copyright-uk-public-explanation',
     decisionTextRequired: 'rationale is required',
     decisionExists: 'A UK copyright review already exists',
     decisionFailed: 'Failed to record UK copyright review',

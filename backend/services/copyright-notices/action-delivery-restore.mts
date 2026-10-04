@@ -128,13 +128,15 @@ async function liftCopyrightRestrictionAndResolveDeadline(input: {
       restorationOutcome: input.restorationOutcome,
       restorationCause: input.legal.reversal_by_administrator_lift
         ? 'administrator_lift'
-        : input.legal.reversal_by_appeal
-          ? 'appeal_reversed'
-          : input.legal.reversal_by_review
-            ? 'review_reversed'
-            : input.legal.hold_resolution_authorized
-              ? 'hold_resolved'
-              : 'counter_notice_window',
+        : input.legal.reversal_by_complaint
+          ? 'complaint_reversed'
+          : input.legal.reversal_by_appeal
+            ? 'appeal_reversed'
+            : input.legal.reversal_by_review
+              ? 'review_reversed'
+              : input.legal.hold_resolution_authorized
+                ? 'hold_resolved'
+                : 'counter_notice_window',
     },
     input.query,
   )

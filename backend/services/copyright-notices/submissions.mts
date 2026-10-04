@@ -110,6 +110,12 @@ async function createAuthenticatedCopyrightSubmission(
     await transaction.commit()
     return { submission: existing, isDuplicate: true }
   }
+  const { rows: notices } = await transaction<{ jurisdiction: string }>(sql`
+    /* createCopyrightSubmission:jurisdiction */
+    SELECT jurisdiction FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE
+  `)
+  assert(notices[0], 404, 'Copyright notice not found')
+  assert(notices[0].jurisdiction === 'us_dmca', 422, 'Use the territorial complaint process')
   const ownershipStatement = sql`/* createCopyrightSubmission:posterTargets */
     SELECT target.id
     FROM copyright_notice_targets target

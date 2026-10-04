@@ -185,16 +185,22 @@ describe('EU copyright notice contracts', () => {
     const receipt = await receiveEuCopyrightNotice(claimant, crypto.randomUUID(), noticeRequest())
     await acknowledgeEuCopyrightNotice(claimant, receipt.notice_id)
     await expect(
-      recordEuCopyrightStatementOfReasons(stranger, receipt.notice_id, 'Not a staff decision'),
+      recordEuCopyrightStatementOfReasons(stranger, receipt.notice_id, {
+        text: 'Not a staff decision',
+        publicExplanation: 'No action taken.',
+        outcome: 'no_action',
+        targets: [],
+      }),
     ).rejects.toMatchObject({ status: 403 })
     await expect(
       submitEuCopyrightRedress(claimant, receipt.notice_id, crypto.randomUUID(), 'Too soon'),
     ).rejects.toMatchObject({ status: 404 })
-    const statement = await recordEuCopyrightStatementOfReasons(
-      staff,
-      receipt.notice_id,
-      'Staff statement of reasons',
-    )
+    const statement = await recordEuCopyrightStatementOfReasons(staff, receipt.notice_id, {
+      text: 'Staff statement of reasons',
+      publicExplanation: 'No action taken.',
+      outcome: 'no_action',
+      targets: [],
+    })
     expect(statement.automation_disclosure).toBe('human')
     await expect(
       submitEuCopyrightRedress(stranger, receipt.notice_id, crypto.randomUUID(), 'Unrelated'),

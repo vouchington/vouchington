@@ -98,8 +98,9 @@ async function insertDecision(
 ): Promise<string> {
   const { rows } = await transaction<{ id: string }>(sql`/* insertTerritorialDecision */
     INSERT INTO copyright_territorial_decisions (
-      copyright_notice_id, jurisdiction, automation_disclosure, rationale_ciphertext
-    ) VALUES (${noticeId}, ${jurisdiction}, 'human', 'rationale')
+      copyright_notice_id, jurisdiction, outcome, automation_disclosure,
+      rationale_ciphertext, public_explanation_ciphertext
+    ) VALUES (${noticeId}, ${jurisdiction}, 'no_action', 'human', 'rationale', 'explanation')
     RETURNING id
   `)
   const decision = rows[0]

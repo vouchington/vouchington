@@ -35,12 +35,27 @@ export function parseCopyrightNoticeForm(body: Record<string, unknown>) {
     'accuracy_authority_under_penalty_of_perjury must be accepted',
   )
   assert(boundedString(electronicSignature, 500), 422, 'electronic_signature is required')
+  const targets = parseCopyrightTargets(body.targets)
+  return {
+    jurisdiction: jurisdiction as CopyrightJurisdiction,
+    claimantDisplayName: claimantDisplayName as string | null,
+    claimantContact,
+    claimantEmail,
+    workDescription,
+    goodFaithBelief,
+    accuracyAuthorityUnderPenaltyOfPerjury,
+    electronicSignature,
+    targets,
+  }
+}
+
+export function parseCopyrightTargets(value: unknown): CopyrightImageSelector[] {
   assert(
-    Array.isArray(body.targets) && body.targets.length > 0 && body.targets.length <= 20,
+    Array.isArray(value) && value.length > 0 && value.length <= 20,
     422,
     'targets must contain 1 to 20 hosted images',
   )
-  const targets: CopyrightImageSelector[] = body.targets.map(target => {
+  const targets: CopyrightImageSelector[] = value.map(target => {
     assert(
       target && typeof target === 'object' && !Array.isArray(target),
       422,
@@ -107,17 +122,7 @@ export function parseCopyrightNoticeForm(body: Record<string, unknown>) {
     return `${target.surfaceKind}:${owner.toLowerCase()}:${target.imageId.toLowerCase()}`
   })
   assert(new Set(targetKeys).size === targets.length, 422, 'targets must be unique')
-  return {
-    jurisdiction: jurisdiction as CopyrightJurisdiction,
-    claimantDisplayName: claimantDisplayName as string | null,
-    claimantContact,
-    claimantEmail,
-    workDescription,
-    goodFaithBelief,
-    accuracyAuthorityUnderPenaltyOfPerjury,
-    electronicSignature,
-    targets,
-  }
+  return targets
 }
 
 export function boundedString(value: unknown, maxLength: number): value is string {

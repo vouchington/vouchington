@@ -29,6 +29,11 @@ const isolatedDatabaseCases = {
     fullName:
       'ActivityPub inbox durable storage bounds > deletes expired rows in deterministic lease-aware locked batches',
   },
+  'copyright-territorial-withdrawal': {
+    file: 'backend/services/copyright-notices/territorial-withdrawal.isolated.test.mts',
+    fullName:
+      'territorial approval withdrawal keeps received-case duties > gates new EU and UK intake while pending and decided notices continue',
+  },
   'copyright-eu-transparency-report': {
     file: 'backend/services/copyright-notices/eu-copyright-contract.test.mts',
     fullName:

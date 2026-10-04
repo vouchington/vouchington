@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { buildCopyrightStatementOfReasons } from './statement-of-reasons.mts'
+import {
+  COPYRIGHT_AI_ASSISTED_SENTENCE,
+  copyrightNotificationCopy,
+} from './statement-of-reasons-wording.mts'
 
 const input = {
   audience: 'poster' as const,
@@ -81,15 +85,98 @@ describe('copyright statements of reasons', () => {
       aiGuidance: true,
     })
     expect(statement.text).toContain('person will review')
+    expect(statement.text).toContain(COPYRIGHT_AI_ASSISTED_SENTENCE)
     expect(buildCopyrightStatementOfReasons(input).fields.automation).toEqual({
       detection: false,
       decision: 'person',
       aiGuidance: false,
     })
   })
-  it.each(['eu_dsa', 'uk'])('rejects unsupported legal ground %s', jurisdiction => {
-    expect(() => buildCopyrightStatementOfReasons({ ...input, jurisdiction })).toThrow(
+  it.each([
+    ['eu_dsa', 'EU or Member State law', 'DSA Article 16'],
+    ['uk', 'UK law', 'UK copyright law'],
+  ] as const)('uses %s copyright ground and court-only redress', (jurisdiction, law, citation) => {
+    for (const audience of ['poster', 'claimant'] as const) {
+      for (const event of ['restricted', 'confirmed'] as const) {
+        const statement = buildCopyrightStatementOfReasons({
+          ...input,
+          jurisdiction,
+          audience,
+          event,
+          explanation: 'Sentinel public explanation from staff.',
+        })
+        expect(statement.fields.legalGround).toMatchObject({
+          jurisdiction,
+          citation: expect.stringContaining(citation),
+        })
+        expect(statement.text).toContain(law)
+        expect(statement.text).toContain('Sentinel public explanation from staff.')
+        expect(statement.fields.redress.map(route => route.key)).toEqual(['court'])
+        expect(statement.text).toContain('judicial redress through a court')
+        expect(statement.text).not.toContain('/copyright/notices/new')
+        expect(statement.text).not.toContain('/copyright/designated-agent')
+        expect(statement.text).not.toContain('/appeal')
+        expect(statement.text).not.toContain('/counter-notice')
+        expect(JSON.stringify(statement.fields)).not.toContain('Sentinel public explanation')
+      }
+    }
+  })
+  it.each(['eu_dsa', 'uk'] as const)(
+    'renders %s no-action explanation without US intake routes',
+    jurisdiction => {
+      const statement = buildCopyrightStatementOfReasons({
+        ...input,
+        jurisdiction,
+        audience: 'claimant',
+        event: 'not_accepted',
+        targetUrls: [],
+        explanation: 'Sentinel no-action explanation.',
+      })
+      expect(statement.fields.restriction).toBeNull()
+      expect(statement.fields.redress.map(route => route.key)).toEqual(['court'])
+      expect(statement.text).toContain('Sentinel no-action explanation.')
+      expect(statement.text).not.toContain('/copyright/notices/new')
+      expect(statement.text).not.toContain('/copyright/designated-agent')
+      expect(JSON.stringify(statement.fields)).not.toContain('Sentinel no-action explanation.')
+      expect(
+        copyrightNotificationCopy('claimant_decision_notice', jurisdiction).body,
+      ).not.toContain('/copyright/')
+    },
+  )
+  it('rejects an unknown jurisdiction or legal basis', () => {
+    expect(() => buildCopyrightStatementOfReasons({ ...input, jurisdiction: 'other' })).toThrow(
       'Unsupported copyright statement legal ground',
+    )
+    expect(() => buildCopyrightStatementOfReasons({ ...input, legalBasis: 'other' })).toThrow(
+      'Unsupported copyright statement legal ground',
+    )
+  })
+  it('uses complaint reversal cause and never carries a stale explanation', () => {
+    for (const event of ['reversed', 'restriction_ended'] as const) {
+      const statement = buildCopyrightStatementOfReasons({
+        ...input,
+        jurisdiction: 'eu_dsa',
+        event,
+        explanation: 'Sentinel stale explanation.',
+        restorationCause: 'complaint_reversed',
+        restorationOutcome: 'visible',
+      })
+      expect(statement.text).not.toContain('Sentinel stale explanation.')
+      expect(JSON.stringify(statement.fields)).not.toContain('Sentinel stale explanation.')
+      expect(statement.text.includes('a complaint reversed the decision')).toBe(
+        event === 'restriction_ended',
+      )
+    }
+  })
+  it('keeps US statement and in-app copy unchanged when given an explanation', () => {
+    const before = buildCopyrightStatementOfReasons(input)
+    const after = buildCopyrightStatementOfReasons({
+      ...input,
+      explanation: 'Sentinel ignored US explanation.',
+    })
+    expect(after).toEqual(before)
+    expect(copyrightNotificationCopy('claimant_decision_notice').body).toContain(
+      '/copyright/designated-agent',
     )
   })
   it('provides notifier redress without exposing target URLs', () => {

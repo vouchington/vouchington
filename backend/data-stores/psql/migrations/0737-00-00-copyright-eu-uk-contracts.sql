@@ -99,18 +99,30 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_decisions (
   jurisdiction text NOT NULL,
   decided_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   decided_by_id uuid,
+  outcome text NOT NULL,
+  copyright_notice_submission_assessment_id uuid,
+  supersedes_decision_id uuid UNIQUE,
   automation_disclosure text NOT NULL,
   rationale_ciphertext text NOT NULL,
+  public_explanation_ciphertext text NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT uq_copyright_territorial_decisions__notice UNIQUE (copyright_notice_id, jurisdiction),
   CONSTRAINT uq_copyright_territorial_decisions__notice_id UNIQUE (copyright_notice_id, id),
   CONSTRAINT chk_copyright_territorial_decisions__jurisdiction CHECK (jurisdiction IN ('eu_dsa', 'uk')),
+  CONSTRAINT chk_copyright_territorial_decisions__outcome CHECK (outcome IN ('restrict', 'no_action')),
+  CONSTRAINT chk_copyright_territorial_decisions__assessment CHECK ((outcome = 'restrict') = (copyright_notice_submission_assessment_id IS NOT NULL)),
+  CONSTRAINT chk_copyright_territorial_decisions__successor CHECK (supersedes_decision_id IS NULL OR outcome = 'restrict'),
   CONSTRAINT chk_copyright_territorial_decisions__human CHECK (automation_disclosure = 'human'),
   CONSTRAINT chk_copyright_territorial_decisions__rationale CHECK (
     char_length(rationale_ciphertext) BETWEEN 1 AND 1048576
+  ),
+  CONSTRAINT chk_copyright_territorial_decisions__public_explanation CHECK (
+    char_length(public_explanation_ciphertext) BETWEEN 1 AND 1048576
   )
 );
+CREATE UNIQUE INDEX uq_copyright_territorial_decisions__original
+  ON copyright_territorial_decisions (copyright_notice_id, jurisdiction)
+  WHERE supersedes_decision_id IS NULL;
 
 CREATE TABLE IF NOT EXISTS copyright_territorial_redress_requests (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
@@ -292,9 +304,9 @@ COMMENT ON COLUMN copyright_territorial_notice_acknowledgments.exhausted_at IS
   'When the fifth attempt failed and the obligation was exhausted.';
 
 COMMENT ON TABLE copyright_territorial_decisions IS
-  'Staff decision on one EU or UK copyright notice. EU rows are the statement of reasons (DSA Art. 17); UK rows are the review. automation_disclosure is human because the system does not decide merits.';
+  'Human decision on an EU or UK notice. A revoked no_action can be superseded once by a restrict decision; the live decision is the row without a successor.';
 COMMENT ON COLUMN copyright_territorial_decisions.copyright_notice_id IS
-  'Notice this decision explains. One decision per notice.';
+  'Notice this decision explains. At most one original and one permitted successor per notice.';
 COMMENT ON COLUMN copyright_territorial_decisions.jurisdiction IS
   'Jurisdiction of the notice: eu_dsa or uk. Must equal the notice jurisdiction.';
 COMMENT ON COLUMN copyright_territorial_decisions.decided_at IS
@@ -303,8 +315,16 @@ COMMENT ON COLUMN copyright_territorial_decisions.decided_by_id IS
   'Staff user who recorded the decision. Null after that account is deleted.';
 COMMENT ON COLUMN copyright_territorial_decisions.automation_disclosure IS
   'How the decision was produced. Constrained to human.';
+COMMENT ON COLUMN copyright_territorial_decisions.outcome IS
+  'Human decision: restrict the named targets or take no action.';
+COMMENT ON COLUMN copyright_territorial_decisions.copyright_notice_submission_assessment_id IS
+  'Required compliant human assessment for a restrict decision; absent for no_action.';
+COMMENT ON COLUMN copyright_territorial_decisions.supersedes_decision_id IS
+  'Prior no_action decision reopened by a complaint revoke on the same notice.';
 COMMENT ON COLUMN copyright_territorial_decisions.rationale_ciphertext IS
-  'Encrypted staff-supplied rationale; the statement of reasons for eu_dsa rows. The system does not choose the text.';
+  'Encrypted staff-only rationale; never included in participant notices.';
+COMMENT ON COLUMN copyright_territorial_decisions.public_explanation_ciphertext IS
+  'Encrypted staff-written public explanation for poster and notifier statements; must contain no personal data.';
 
 COMMENT ON TABLE copyright_territorial_redress_requests IS
   'Participant redress against one EU or UK decision. One request per notice.';
@@ -426,6 +446,18 @@ ALTER TABLE copyright_territorial_decisions
   FOREIGN KEY (decided_by_id) REFERENCES users (id) ON DELETE SET NULL NOT VALID;
 ALTER TABLE copyright_territorial_decisions
   VALIDATE CONSTRAINT fk_copyright_territorial_decisions__decided_by;
+ALTER TABLE copyright_territorial_decisions
+  ADD CONSTRAINT fk_copyright_territorial_decisions__assessment
+  FOREIGN KEY (copyright_notice_submission_assessment_id)
+  REFERENCES copyright_notice_submission_assessments (id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE copyright_territorial_decisions
+  VALIDATE CONSTRAINT fk_copyright_territorial_decisions__assessment;
+ALTER TABLE copyright_territorial_decisions
+  ADD CONSTRAINT fk_copyright_territorial_decisions__predecessor
+  FOREIGN KEY (copyright_notice_id, supersedes_decision_id)
+  REFERENCES copyright_territorial_decisions (copyright_notice_id, id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE copyright_territorial_decisions
+  VALIDATE CONSTRAINT fk_copyright_territorial_decisions__predecessor;
 
 ALTER TABLE copyright_territorial_redress_requests
   ADD CONSTRAINT fk_copyright_territorial_redress_requests__notice
@@ -480,6 +512,9 @@ CREATE INDEX IF NOT EXISTS idx_copyright_territorial_notice_receipts__requester
   ON copyright_territorial_notice_receipts (requester_user_id) WHERE requester_user_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_copyright_territorial_decisions__decided_by
   ON copyright_territorial_decisions (decided_by_id) WHERE decided_by_id IS NOT NULL;
+CREATE INDEX idx_copyright_territorial_decisions__assessment
+  ON copyright_territorial_decisions (copyright_notice_submission_assessment_id)
+  WHERE copyright_notice_submission_assessment_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_copyright_territorial_redress_requests__decision
   ON copyright_territorial_redress_requests (copyright_notice_id, copyright_territorial_decision_id);
 CREATE INDEX IF NOT EXISTS idx_copyright_territorial_redress_requests__submitter
@@ -538,6 +573,45 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION fn_guard_copyright_territorial_decision()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.outcome = 'restrict' AND NOT EXISTS (
+    SELECT 1 FROM copyright_notice_submission_assessments assessment
+    JOIN copyright_notice_submissions submission
+      ON submission.id = assessment.copyright_notice_submission_id
+    WHERE assessment.id = NEW.copyright_notice_submission_assessment_id
+      AND submission.copyright_notice_id = NEW.copyright_notice_id
+      AND submission.kind = 'notice'
+      AND assessment.substantially_compliant
+      AND assessment.assessed_by_id IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM copyright_notice_submission_assessments newer
+        WHERE newer.supersedes_assessment_id = assessment.id
+      )
+  ) THEN
+    RAISE EXCEPTION 'territorial restriction requires a current compliant human notice assessment in the same case'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  IF NEW.supersedes_decision_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM copyright_territorial_decisions predecessor
+    JOIN copyright_territorial_redress_requests request
+      ON request.copyright_territorial_decision_id = predecessor.id
+    JOIN copyright_territorial_redress_decisions redress
+      ON redress.copyright_territorial_redress_request_id = request.id
+    WHERE predecessor.id = NEW.supersedes_decision_id
+      AND predecessor.copyright_notice_id = NEW.copyright_notice_id
+      AND predecessor.jurisdiction = NEW.jurisdiction
+      AND predecessor.outcome = 'no_action'
+      AND redress.staff_disposition = 'revoke'
+  ) THEN
+    RAISE EXCEPTION 'territorial successor requires a revoked no_action decision'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
 CREATE TRIGGER trigger_copyright_jurisdiction_policy_approvals_immutable
   BEFORE UPDATE OR DELETE ON copyright_jurisdiction_policy_approvals
   FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
@@ -556,6 +630,9 @@ CREATE TRIGGER trigger_copyright_territorial_notice_acknowledgments_attempt
 CREATE TRIGGER trigger_copyright_territorial_decisions_immutable
   BEFORE UPDATE OR DELETE ON copyright_territorial_decisions
   FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+CREATE TRIGGER trigger_copyright_territorial_decisions_scope
+  BEFORE INSERT ON copyright_territorial_decisions
+  FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_territorial_decision();
 CREATE TRIGGER trigger_copyright_territorial_redress_requests_immutable
   BEFORE UPDATE OR DELETE ON copyright_territorial_redress_requests
   FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();

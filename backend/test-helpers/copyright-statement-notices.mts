@@ -62,7 +62,7 @@ export async function replayTestCopyrightStatementNotices(
 
 export async function replayTestCopyrightClaimantDecision(
   noticeId: string,
-  event: 'restricted' | 'not_accepted',
+  event: 'restricted' | 'not_accepted' | 'reversed',
 ) {
   await using transaction = await beginTransaction()
   await createCopyrightClaimantDecisionNoticeInTransaction({ noticeId, event }, transaction)

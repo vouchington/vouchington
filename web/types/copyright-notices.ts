@@ -1,4 +1,5 @@
 import type { CopyrightImageSurface } from './copyright-image-surfaces'
+import type { CopyrightStaffTerritorialCase } from './copyright-territorial'
 export { copyrightImageSurfaceLabel } from './copyright-image-surfaces'
 export type { CopyrightImageSurface } from './copyright-image-surfaces'
 
@@ -18,7 +19,7 @@ export type {
 
 export type CopyrightNoticeSummary = {
   id: string
-  jurisdiction: 'us_dmca'
+  jurisdiction: 'us_dmca' | 'eu_dsa' | 'uk'
   received_at: string
   accepted_at: string
   provisional_withholding_at: string | null
@@ -60,9 +61,10 @@ export type CopyrightNoticeResponseEligibility = Pick<
 export type CopyrightStaffQueueItem = {
   id: string
   received_at: string
-  jurisdiction: 'us_dmca'
+  jurisdiction: 'us_dmca' | 'eu_dsa' | 'uk'
   claimant: CopyrightStaffClaimant
   work_description: string
+  territorial?: CopyrightStaffTerritorialCase
   targets: Array<{
     id: string
     placement_key: string
@@ -161,6 +163,8 @@ export type CopyrightStaffQueueItem = {
 }
 
 export type CopyrightStaffQueueReason =
+  | 'territorial_notice_review'
+  | 'territorial_decision_reopened'
   | 'form_intake_review'
   | 'restriction_review'
   | 'appeal_review'

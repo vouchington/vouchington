@@ -107,10 +107,17 @@ disposition; restrict and terminate recheck the operative threshold at decision 
 
 EU and UK contracts live in migration `0737-00-00-copyright-eu-uk-contracts.sql`. They record
 receipt, routing, a staff decision (the EU statement of reasons under DSA Art. 17, or the UK
-review), redress, escalation, and EU reporting facts, and they fail closed until a separate
-jurisdiction policy approval exists. They do not use the US restoration clock or decide legal
-merits. Seven `copyright_territorial_*` tables hold both jurisdictions; only supervised complaints
-and transparency reports are EU-only. Each notice-child row carries `jurisdiction` and a composite
+review), redress, escalation, and EU reporting facts, and they fail closed for new intake until a
+separate jurisdiction policy approval exists. Withdrawing approval stops new receipts only;
+post-receipt decisions, delivery, complaints, and restoration remain bound to the receipt. Staff
+choose `restrict` or `no_action`; a `restrict` resolves and withholds named post-image targets,
+creates the human-compliant assessment, sends the poster statement and notifier notice, and counts
+toward repeat-infringer incidents. A `no_action` has no targets or restriction. The separate
+public explanation is encrypted and sent in those notices. A complaint `revoke` reverses only its
+decision's restrictions and incident; revoking `no_action` reopens the queue for a restricting
+successor. These flows do not use the US restoration clock or decide legal merits. Seven
+`copyright_territorial_*` tables hold both jurisdictions; only supervised complaints and
+transparency reports are EU-only. Each notice-child row carries `jurisdiction` and a composite
 foreign key to `copyright_notices (id, jurisdiction)`, a redress request references the decision on
 its own notice, and an escalation names exactly one source. The `eu-*` and `uk-*` files are
 wrappers that pass the jurisdiction as a value to the shared flows in
@@ -127,8 +134,13 @@ flowchart TD
   policy -->|uk| ukReceipt[UK receipt routed to the staff queue]
   euReceipt --> ack[Acknowledgment attempts with no due time]
   ack -->|fifth failure| escalated[Escalation]
-  euReceipt --> reasons[Staff-supplied statement of reasons]
+  euReceipt --> reasons[Staff restrict or no_action decision]
+  reasons -->|restrict: post-image targets| restriction[Human assessment and withholding]
+  restriction --> poster[Art. 17 poster statement and notifier notice]
+  reasons -->|no_action: no targets| notifier[Notifier decision notice]
   reasons --> redress[Participant redress and staff disposition]
+  redress -->|revoke restrict| restore[Restore decision-authorized restrictions and reverse incident]
+  redress -->|revoke no_action| reopened[Reopened staff queue; restrict successor]
   euReceipt --> supervised[Supervised complaint escalates when recorded]
   policy --> report[Transparency counts for a caller-supplied period]
   ukReceipt --> review[Staff-supplied review]
@@ -143,17 +155,6 @@ eligibility/reset/audit helper. Neither legal transitions nor reconciliation aut
 provider-failed work; that requires explicit operator replay. Original
 counter-notice scope, current assessment, human review, time and cancellation, placement identity,
 revision and safety must still permit restoration. Other active restrictions retain denial.
-
-```mermaid
-flowchart LR
-  transition[Hold assessment or resolution] --> fence[Case placement fence]
-  historical[Historical blocked-restore scan] --> fence
-  fence --> proof[Original authority and current safety]
-  proof -->|eligible| reset[Same intent reset and replay audit]
-  reset --> commit[Owner commit]
-  commit --> queue[Post-commit pending action enqueue]
-  proof -->|blocked| unchanged[Keep original state]
-```
 
 The durable workflow is documented in
 [`COPYRIGHT-NOTICES.md`](../../../../requirements/moderation/COPYRIGHT-NOTICES.md).

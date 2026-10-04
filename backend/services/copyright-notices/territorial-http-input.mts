@@ -4,6 +4,45 @@ import {
   assertStaffDisposition,
   type TerritorialNoticeRequest,
 } from './territorial-fields.mts'
+import { parseCopyrightTargets } from './http-input.mts'
+import type { CopyrightImageSelector } from './placement-resolution.mts'
+
+type TerritorialPostTarget = Extract<CopyrightImageSelector, { surfaceKind: 'post-image' }>
+
+export function parseTerritorialDecisionBody(
+  body: Record<string, unknown>,
+  textField: 'statement' | 'rationale',
+): {
+  text: string
+  publicExplanation: string
+  outcome: 'restrict' | 'no_action'
+  targets: TerritorialPostTarget[]
+} {
+  const text = parseTerritorialText(body, textField)
+  assert(typeof body.public_explanation === 'string', 422, 'public_explanation is required')
+  const publicExplanation = assertBoundedText(
+    body.public_explanation,
+    2000,
+    'public_explanation is required',
+  )
+  assert(body.outcome === 'restrict' || body.outcome === 'no_action', 422, 'outcome is required')
+  if (body.outcome === 'no_action') {
+    assert(body.targets === undefined, 422, 'no_action must not name targets')
+    return { text, publicExplanation, outcome: body.outcome, targets: [] }
+  }
+  const targets = parseCopyrightTargets(body.targets)
+  assert(
+    targets.every(target => target.surfaceKind === 'post-image'),
+    422,
+    'targets must name post images',
+  )
+  return {
+    text,
+    publicExplanation,
+    outcome: body.outcome,
+    targets: targets as TerritorialPostTarget[],
+  }
+}
 
 export function parseTerritorialNoticeBody(
   body: Record<string, unknown>,
