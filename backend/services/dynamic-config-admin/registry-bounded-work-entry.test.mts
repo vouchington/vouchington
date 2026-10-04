@@ -10,19 +10,32 @@ import { dynamicConfigRegistry } from './registry.mts'
 import { defineBoundedWorkNamespace } from './registry-bounded-work-entry.mts'
 
 describe('bounded work namespace policy', () => {
+  const options = {
+    namespace: 'ai-usage-work-config',
+    config: aiUsageWorkConfig,
+    label: 'Test',
+    maxValues: aiUsageWorkMaxValues,
+    descriptions: {},
+  }
   it('rejects missing, stale and unsafe hard ceilings', () => {
-    expect(() => defineBoundedWorkNamespace(aiUsageWorkConfig, 'Test', {}, {})).toThrow('exactly')
+    expect(() => defineBoundedWorkNamespace({ ...options, maxValues: {} })).toThrow('exactly')
     expect(() =>
-      defineBoundedWorkNamespace(
-        aiUsageWorkConfig,
-        'Test',
-        { ...aiUsageWorkMaxValues, obsolete: 1 },
-        {},
-      ),
+      defineBoundedWorkNamespace({
+        ...options,
+        maxValues: { ...aiUsageWorkMaxValues, obsolete: 1 },
+      }),
     ).toThrow('exactly')
     expect(() =>
-      defineBoundedWorkNamespace(aiUsageWorkConfig, 'Test', { release_batch_size: 0 }, {}),
+      defineBoundedWorkNamespace({
+        ...options,
+        maxValues: { release_batch_size: 0 },
+      }),
     ).toThrow('ceiling')
+  })
+  it('rejects an explicit namespace that differs from the runtime configuration identity', () => {
+    expect(() =>
+      defineBoundedWorkNamespace({ ...options, namespace: 'unrelated-work-config' }),
+    ).toThrow('must match its DynamicConfig key')
   })
 })
 

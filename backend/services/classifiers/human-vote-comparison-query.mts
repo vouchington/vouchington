@@ -1,4 +1,3 @@
-import { getClassifiersWorkLimit } from './work-limits.mts'
 import { getMinUUIDv7ForDate } from '@modules/utils/ids'
 import {
   CLASSIFIER_COMPARISON_BUCKET_COUNT,
@@ -93,16 +92,19 @@ function humanOutcomeSelect(subject: (typeof SUBJECT_RELATIONS)[number]): string
  * `MAX_BATCHES + 1` batches survive, newest first, so everything after is bounded by the cap and by
  * the candidates one batch can hold. Aggregation happens in SQL; no row is a vote or an identity.
  */
-export function buildHumanVoteComparisonQuery(options: ClassifierHumanVoteComparisonOptions): {
+export function buildHumanVoteComparisonQuery(
+  options: ClassifierHumanVoteComparisonOptions,
+  maxBatches: number,
+): {
   text: string
   values: unknown[]
 } {
-  const CLASSIFIER_COMPARISON_MAX_BATCHES = getClassifiersWorkLimit('comparison_max_batches')
   const values: unknown[] = [
     options.classifierId,
     getMinUUIDv7ForDate(options.from),
     getMinUUIDv7ForDate(options.to),
-    CLASSIFIER_COMPARISON_MAX_BATCHES + 1,
+    maxBatches + 1,
+    maxBatches,
   ]
   const filters: string[] = []
   const addFilter = (column: string, value: string | undefined) => {
@@ -126,7 +128,7 @@ export function buildHumanVoteComparisonQuery(options: ClassifierHumanVoteCompar
       ORDER BY batch.id DESC
       LIMIT $4
     ), capped_batches AS (
-      SELECT id, post_id, rss_feed_item_id FROM selected_batches ORDER BY id DESC LIMIT ${CLASSIFIER_COMPARISON_MAX_BATCHES}
+      SELECT id, post_id, rss_feed_item_id FROM selected_batches ORDER BY id DESC LIMIT $5
     ), decisions AS (
       SELECT batch.post_id, batch.rss_feed_item_id, result.topic_id,
         LEAST(FLOOR(result.probability * ${CLASSIFIER_COMPARISON_BUCKET_COUNT}), ${CLASSIFIER_COMPARISON_BUCKET_COUNT - 1})::int AS bucket,

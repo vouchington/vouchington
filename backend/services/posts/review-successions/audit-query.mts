@@ -1,4 +1,3 @@
-import { getPostsWorkLimit } from '@services/posts/work-limits'
 import { read } from '@data-stores/psql'
 import {
   buildOtherwisePublicPostEligibilityFilter,
@@ -25,9 +24,9 @@ export type ReviewSuccessionHistoryAuditRow = {
 export async function listReviewSuccessionHistoryAuditRows(
   cursor: string | null,
   cutoffArchivedAt: string,
+  pageSize: number,
 ): Promise<ReviewSuccessionHistoryAuditRow[]> {
-  const REVIEW_SUCCESSION_HISTORY_AUDIT_QUERY_LIMIT =
-    getPostsWorkLimit('review_succession_history_audit_page_size') + 1
+  const queryLimit = pageSize + 1
   const statement = sql`/* listReviewSuccessionHistoryAuditRows */
     WITH archived_page AS MATERIALIZED (
       SELECT review.id
@@ -41,7 +40,7 @@ export async function listReviewSuccessionHistoryAuditRows(
           SELECT 1 FROM post_review_topic_ratings rating WHERE rating.post_id = review.id
         )
       ORDER BY review.id
-      LIMIT ${REVIEW_SUCCESSION_HISTORY_AUDIT_QUERY_LIMIT}
+      LIMIT ${queryLimit}
     ), active_page AS MATERIALIZED (
       SELECT succession.predecessor_post_id
       FROM review_successions succession
@@ -50,13 +49,13 @@ export async function listReviewSuccessionHistoryAuditRows(
         AND succession.automatically_restored_at IS NULL
         AND succession.manual_override_at IS NULL
       ORDER BY succession.predecessor_post_id
-      LIMIT ${REVIEW_SUCCESSION_HISTORY_AUDIT_QUERY_LIMIT}
+      LIMIT ${queryLimit}
     ), source_page AS MATERIALIZED (
       SELECT id FROM archived_page
       UNION
       SELECT predecessor_post_id FROM active_page
       ORDER BY id
-      LIMIT ${REVIEW_SUCCESSION_HISTORY_AUDIT_QUERY_LIMIT}
+      LIMIT ${queryLimit}
     ), current_topics AS MATERIALIZED (
       SELECT review.id, review.created_by_id AS author_user_id,
         ARRAY_AGG(rating.topic_id ORDER BY rating.topic_id) AS topic_ids

@@ -19,43 +19,54 @@ import {
 } from '@queues/find-your-friends/config'
 
 export const backgroundWorkRegistryEntries9 = {
-  'moderation-analytics-work-config': defineBoundedWorkNamespace(
-    moderationAnalyticsWorkConfig,
-    'Moderation analytics',
-    moderationAnalyticsWorkMaxValues,
-    { leaderboard_page_size: 'Moderators included in the activity leaderboard.' },
-  ),
-  'users-work-config': defineBoundedWorkNamespace(usersWorkConfig, 'Users', usersWorkMaxValues, {
-    engagement_claim_hours: 'Engagement claim hours for background processing.',
+  'moderation-analytics-work-config': defineBoundedWorkNamespace({
+    namespace: 'moderation-analytics-work-config',
+    config: moderationAnalyticsWorkConfig,
+    label: 'Moderation analytics',
+    maxValues: moderationAnalyticsWorkMaxValues,
+    descriptions: { leaderboard_page_size: 'Moderators included in the activity leaderboard.' },
   }),
-  'post-clearance-work-config': defineBoundedWorkNamespace(
-    postClearanceWorkConfig,
-    'Post clearance',
-    postClearanceWorkMaxValues,
-    {
+  'users-work-config': defineBoundedWorkNamespace({
+    namespace: 'users-work-config',
+    config: usersWorkConfig,
+    label: 'Users',
+    maxValues: usersWorkMaxValues,
+    descriptions: {
+      engagement_claim_hours: 'Engagement claim hours for background processing.',
+    },
+  }),
+  'post-clearance-work-config': defineBoundedWorkNamespace({
+    namespace: 'post-clearance-work-config',
+    config: postClearanceWorkConfig,
+    label: 'Post clearance',
+    maxValues: postClearanceWorkMaxValues,
+    descriptions: {
       attempt_lease_minutes: 'Attempt lease minutes for background processing.',
       first_retry_minutes: 'First retry minutes for background processing.',
       later_retry_minutes: 'Later retry minutes for background processing.',
     },
-  ),
-  'vote-weight-work-config': defineBoundedWorkNamespace(
-    voteWeightWorkConfig,
-    'Vote weight dispatch',
-    voteWeightWorkMaxValues,
-    { dispatch_batch_size: 'Users per vote weight dispatcher page.' },
-  ),
-  'crawl-boilerplate-removal-work-config': defineBoundedWorkNamespace(
-    crawlBoilerplateRemovalWorkConfig,
-    'Crawl boilerplate removal',
-    crawlBoilerplateRemovalWorkMaxValues,
-    { batch_size: 'HTML snapshots per boilerplate removal batch.' },
-  ),
-  'find-your-friends-work-config': defineBoundedWorkNamespace(
-    findYourFriendsWorkConfig,
-    'Find your friends',
-    findYourFriendsWorkMaxValues,
-    {
+  }),
+  'vote-weight-work-config': defineBoundedWorkNamespace({
+    namespace: 'vote-weight-work-config',
+    config: voteWeightWorkConfig,
+    label: 'Vote weight dispatch',
+    maxValues: voteWeightWorkMaxValues,
+    descriptions: { dispatch_batch_size: 'Users per vote weight dispatcher page.' },
+  }),
+  'crawl-boilerplate-removal-work-config': defineBoundedWorkNamespace({
+    namespace: 'crawl-boilerplate-removal-work-config',
+    config: crawlBoilerplateRemovalWorkConfig,
+    label: 'Crawl boilerplate removal',
+    maxValues: crawlBoilerplateRemovalWorkMaxValues,
+    descriptions: { batch_size: 'HTML snapshots per boilerplate removal batch.' },
+  }),
+  'find-your-friends-work-config': defineBoundedWorkNamespace({
+    namespace: 'find-your-friends-work-config',
+    config: findYourFriendsWorkConfig,
+    label: 'Find your friends',
+    maxValues: findYourFriendsWorkMaxValues,
+    descriptions: {
       enqueue_batch_size: 'Enqueue batch size for find your friends processing.',
     },
-  ),
+  }),
 }

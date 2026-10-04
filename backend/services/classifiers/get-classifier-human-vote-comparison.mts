@@ -43,7 +43,7 @@ export async function getClassifierHumanVoteComparison(
       reason: 'Only topic classifiers can be compared with human topic votes',
     }
   }
-  const query = buildHumanVoteComparisonQuery(options)
+  const query = buildHumanVoteComparisonQuery(options, CLASSIFIER_COMPARISON_MAX_BATCHES)
   const { rows } = await read<ComparisonQueryRow>(query.text, query.values)
   const batchesSelected = rows[0]?.batches_selected ?? 0
   return {

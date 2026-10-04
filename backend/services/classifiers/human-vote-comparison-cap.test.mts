@@ -1,4 +1,7 @@
-import { getClassifiersWorkLimit } from './work-limits.mts'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
+import { observeTestPostgresQueryPools } from '@voucha/test-helpers/postgres-query-pool-observer'
+import { classifiersWorkConfig, getClassifiersWorkLimit } from './work-limits.mts'
 import { describe, expect, it } from 'vitest'
 import {
   insertCompletedEmptyBatches,
@@ -25,6 +28,42 @@ async function reportWithBatches(others: number) {
 }
 
 describe('getClassifierHumanVoteComparison batch cap', () => {
+  it('keeps SQL aggregation and truncation metadata on the captured cap across the classifier await', async () => {
+    const fixture = await createClassifierFixture()
+    await fixture.activateClassifierConfigurations()
+    await seedGlobalDecision(fixture, { probability: 0.9, at: seedMoment(-2) })
+    await insertCompletedEmptyBatches(fixture, 2, seedMoment(0))
+    const restore = overrideDynamicConfigFieldsForTest(classifiersWorkConfig, {
+      comparison_max_batches: 2,
+    })
+    try {
+      const { result: observed, queries } = await withCapturedTestQueries(() =>
+        observeTestPostgresQueryPools(
+          '/* classifierHumanVoteComparison:classifier */',
+          () => getClassifierHumanVoteComparison({ classifierId: fixture.classifierId, ...WINDOW }),
+          () => {
+            overrideDynamicConfigFieldsForTest(classifiersWorkConfig, { comparison_max_batches: 1 })
+          },
+        ),
+      )
+      expect(observed.result).toMatchObject({
+        outcome: 'ok',
+        comparison: {
+          batches_examined: 2,
+          truncated: true,
+          cells: [],
+        },
+      })
+      const comparison = queries.find(query =>
+        query.text.includes('/* classifierHumanVoteComparison */'),
+      )!
+      expect(comparison.text).toContain('LIMIT $5')
+      expect(comparison.values.slice(3, 5)).toEqual([3, 2])
+    } finally {
+      restore()
+    }
+  })
+
   it('examines every batch of a window that holds exactly the cap', async () => {
     const comparison = await reportWithBatches(
       getClassifiersWorkLimit('comparison_max_batches') - 1,

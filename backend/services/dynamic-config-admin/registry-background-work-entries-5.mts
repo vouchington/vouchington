@@ -15,11 +15,12 @@ import {
 import { bookmarksWorkConfig, bookmarksWorkMaxValues } from '@services/bookmarks/work-limits'
 
 export const backgroundWorkRegistryEntries5 = {
-  'post-publication-work-config': defineBoundedWorkNamespace(
-    postPublicationWorkConfig,
-    'Post publication',
-    postPublicationWorkMaxValues,
-    {
+  'post-publication-work-config': defineBoundedWorkNamespace({
+    namespace: 'post-publication-work-config',
+    config: postPublicationWorkConfig,
+    label: 'Post publication',
+    maxValues: postPublicationWorkMaxValues,
+    descriptions: {
       capture_batch_size: 'Capture batch size for post publication processing.',
       dirty_work_key_batch_size: 'Dirty work key batch size for post publication processing.',
       identity_snapshot_page_size: 'Identity snapshot page size for post publication processing.',
@@ -30,12 +31,13 @@ export const backgroundWorkRegistryEntries5 = {
       rss_feed_hard_delete_capture_batch_size:
         'Rss feed hard delete capture batch size for post publication processing.',
     },
-  ),
-  'rss-feed-items-work-config': defineBoundedWorkNamespace(
-    rssFeedItemsWorkConfig,
-    'Rss feed items',
-    rssFeedItemsWorkMaxValues,
-    {
+  }),
+  'rss-feed-items-work-config': defineBoundedWorkNamespace({
+    namespace: 'rss-feed-items-work-config',
+    config: rssFeedItemsWorkConfig,
+    label: 'Rss feed items',
+    maxValues: rssFeedItemsWorkMaxValues,
+    descriptions: {
       category_backfill_batch_size: 'Category backfill batch size for rss feed items processing.',
       backfill_invalidation_chunk_size:
         'Backfill invalidation chunk size for rss feed items processing.',
@@ -56,35 +58,38 @@ export const backgroundWorkRegistryEntries5 = {
       story_category_change_batch_size:
         'Story category change batch size for rss feed items processing.',
     },
-  ),
-  'rss-feeds-work-config': defineBoundedWorkNamespace(
-    rssFeedsWorkConfig,
-    'Rss feeds',
-    rssFeedsWorkMaxValues,
-    {
+  }),
+  'rss-feeds-work-config': defineBoundedWorkNamespace({
+    namespace: 'rss-feeds-work-config',
+    config: rssFeedsWorkConfig,
+    label: 'Rss feeds',
+    maxValues: rssFeedsWorkMaxValues,
+    descriptions: {
       category_sql_batch_size: 'Category sql batch size for rss feeds processing.',
       category_backfill_batch_size: 'Category backfill batch size for rss feeds processing.',
       topic_alias_category_mapping_reconciliation_batch_size:
         'Topic alias category mapping reconciliation batch size for rss feeds processing.',
     },
-  ),
-  'notifications-work-config': defineBoundedWorkNamespace(
-    notificationsWorkConfig,
-    'Notifications',
-    notificationsWorkMaxValues,
-    {
+  }),
+  'notifications-work-config': defineBoundedWorkNamespace({
+    namespace: 'notifications-work-config',
+    config: notificationsWorkConfig,
+    label: 'Notifications',
+    maxValues: notificationsWorkMaxValues,
+    descriptions: {
       community_digest_recipient_batch_size:
         'Community digest recipient batch size for notifications processing.',
       reconcile_batch_size: 'Reconcile batch size for notifications processing.',
     },
-  ),
-  'bookmarks-work-config': defineBoundedWorkNamespace(
-    bookmarksWorkConfig,
-    'Bookmarks',
-    bookmarksWorkMaxValues,
-    {
+  }),
+  'bookmarks-work-config': defineBoundedWorkNamespace({
+    namespace: 'bookmarks-work-config',
+    config: bookmarksWorkConfig,
+    label: 'Bookmarks',
+    maxValues: bookmarksWorkMaxValues,
+    descriptions: {
       bloom_batch_size: 'Bloom batch size for bookmarks processing.',
       bloom_lookup_batch_size: 'Bloom lookup batch size for bookmarks processing.',
     },
-  ),
+  }),
 }

@@ -15,34 +15,49 @@ import {
 } from '@services/report-integrity/work-limits'
 
 export const backgroundWorkEntries1 = [
-  defineBoundedWorkNamespace(aiUsageWorkConfig, 'AI usage', aiUsageWorkMaxValues, {
-    release_batch_size: 'Release batch size for ai usage processing.',
+  defineBoundedWorkNamespace({
+    namespace: 'ai-usage-work-config',
+    config: aiUsageWorkConfig,
+    label: 'AI usage',
+    maxValues: aiUsageWorkMaxValues,
+    descriptions: {
+      release_batch_size: 'Release batch size for ai usage processing.',
+    },
   }),
-  defineBoundedWorkNamespace(
-    blueskyFollowsWorkConfig,
-    'Bluesky Follows',
-    blueskyFollowsWorkMaxValues,
-    {
+  defineBoundedWorkNamespace({
+    namespace: 'bluesky-follows-work-config',
+    config: blueskyFollowsWorkConfig,
+    label: 'Bluesky Follows',
+    maxValues: blueskyFollowsWorkMaxValues,
+    descriptions: {
       backfill_batch_size: 'Backfill batch size for bluesky follows processing.',
     },
-  ),
-  defineBoundedWorkNamespace(crawlEmbedsWorkConfig, 'Crawl Embeds', crawlEmbedsWorkMaxValues, {
-    backfill_batch_size: 'Backfill batch size for crawl embeds processing.',
   }),
-  defineBoundedWorkNamespace(
-    languageDetectionWorkConfig,
-    'Language Detection',
-    languageDetectionWorkMaxValues,
-    {
+  defineBoundedWorkNamespace({
+    namespace: 'crawl-embeds-work-config',
+    config: crawlEmbedsWorkConfig,
+    label: 'Crawl Embeds',
+    maxValues: crawlEmbedsWorkMaxValues,
+    descriptions: {
+      backfill_batch_size: 'Backfill batch size for crawl embeds processing.',
+    },
+  }),
+  defineBoundedWorkNamespace({
+    namespace: 'language-detection-work-config',
+    config: languageDetectionWorkConfig,
+    label: 'Language Detection',
+    maxValues: languageDetectionWorkMaxValues,
+    descriptions: {
       backfill_batch_size: 'Backfill batch size for language detection processing.',
     },
-  ),
-  defineBoundedWorkNamespace(
-    reportIntegrityWorkConfig,
-    'Report Integrity',
-    reportIntegrityWorkMaxValues,
-    {
+  }),
+  defineBoundedWorkNamespace({
+    namespace: 'report-integrity-work-config',
+    config: reportIntegrityWorkConfig,
+    label: 'Report Integrity',
+    maxValues: reportIntegrityWorkMaxValues,
+    descriptions: {
       backfill_batch_size: 'Backfill batch size for report integrity processing.',
     },
-  ),
+  }),
 ]

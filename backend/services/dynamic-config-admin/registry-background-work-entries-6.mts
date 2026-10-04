@@ -18,47 +18,52 @@ import {
 } from '@services/entity-relations/work-limits'
 
 export const backgroundWorkRegistryEntries6 = {
-  'urls-domains-blacklist-work-config': defineBoundedWorkNamespace(
-    urlsDomainsBlacklistWorkConfig,
-    'Urls domains blacklist',
-    urlsDomainsBlacklistWorkMaxValues,
-    {
+  'urls-domains-blacklist-work-config': defineBoundedWorkNamespace({
+    namespace: 'urls-domains-blacklist-work-config',
+    config: urlsDomainsBlacklistWorkConfig,
+    label: 'Urls domains blacklist',
+    maxValues: urlsDomainsBlacklistWorkMaxValues,
+    descriptions: {
       email_bloom_batch_size: 'Email bloom batch size for urls domains blacklist processing.',
       bloom_batch_size: 'Bloom batch size for urls domains blacklist processing.',
     },
-  ),
-  'classifier-runs-work-config': defineBoundedWorkNamespace(
-    classifierRunsWorkConfig,
-    'Classifier runs',
-    classifierRunsWorkMaxValues,
-    {
+  }),
+  'classifier-runs-work-config': defineBoundedWorkNamespace({
+    namespace: 'classifier-runs-work-config',
+    config: classifierRunsWorkConfig,
+    label: 'Classifier runs',
+    maxValues: classifierRunsWorkMaxValues,
+    descriptions: {
       discovery_page_size: 'Discovery page size for classifier runs processing.',
     },
-  ),
-  'classifiers-work-config': defineBoundedWorkNamespace(
-    classifiersWorkConfig,
-    'Classifiers',
-    classifiersWorkMaxValues,
-    {
+  }),
+  'classifiers-work-config': defineBoundedWorkNamespace({
+    namespace: 'classifiers-work-config',
+    config: classifiersWorkConfig,
+    label: 'Classifiers',
+    maxValues: classifiersWorkMaxValues,
+    descriptions: {
       comparison_max_batches: 'Comparison max batches for classifiers processing.',
     },
-  ),
-  'elections-votes-work-config': defineBoundedWorkNamespace(
-    electionsVotesWorkConfig,
-    'Elections votes',
-    electionsVotesWorkMaxValues,
-    {
+  }),
+  'elections-votes-work-config': defineBoundedWorkNamespace({
+    namespace: 'elections-votes-work-config',
+    config: electionsVotesWorkConfig,
+    label: 'Elections votes',
+    maxValues: electionsVotesWorkMaxValues,
+    descriptions: {
       primary_refresh_batch_size: 'Primary refresh batch size for elections votes processing.',
     },
-  ),
-  'entity-relations-work-config': defineBoundedWorkNamespace(
-    entityRelationsWorkConfig,
-    'Entity relations',
-    entityRelationsWorkMaxValues,
-    {
+  }),
+  'entity-relations-work-config': defineBoundedWorkNamespace({
+    namespace: 'entity-relations-work-config',
+    config: entityRelationsWorkConfig,
+    label: 'Entity relations',
+    maxValues: entityRelationsWorkMaxValues,
+    descriptions: {
       alias_resolution_batch_size: 'Alias resolution batch size for entity relations processing.',
       rss_feed_publisher_batch_size:
         'Rss feed publisher batch size for entity relations processing.',
     },
-  ),
+  }),
 }

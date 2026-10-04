@@ -1,3 +1,7 @@
+import { postsWorkConfig } from '@services/posts/work-limits'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
+import { withPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
   createRandomString,
@@ -177,6 +181,45 @@ describe('review successions', () => {
     await expect(listReviewSuccessionsForPostIds([predecessorId])).resolves.toMatchObject([
       { topic_ids: [topic] },
     ])
+  })
+
+  it('uses the locked candidate cap for the canonical reread after a live config change', async () => {
+    await createReview([topicA, topicB])
+    const successorId = await createReview([topicA, topicB])
+    const restore = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
+      review_succession_candidate_page_size: 1,
+    })
+    try {
+      const { result, queries } = await withCapturedTestQueries(() =>
+        withPostgresTransactionForTest(
+          query => reconcileReviewSuccessionsForPostIds([successorId], { query }),
+          {
+            marker: '/* listReviewSuccessionCandidateIds */',
+            complete: () => {
+              overrideDynamicConfigFieldsForTest(postsWorkConfig, {
+                review_succession_candidate_page_size: 2,
+              })
+            },
+          },
+        ),
+      )
+      expect(result.changedPostIds).toEqual([])
+      for (const marker of [
+        'listReviewSuccessionCandidateIds',
+        'listLockedReviewSuccessionCandidates',
+      ]) {
+        const candidates = queries.filter(query => query.text.includes(`/* ${marker} */`))
+        expect(candidates.length).toBeGreaterThan(0)
+        const limits = candidates.flatMap(query =>
+          [...query.text.matchAll(/LIMIT \$(\d+)/g)].map(
+            ([, parameter]) => query.values[Number(parameter) - 1],
+          ),
+        )
+        expect(new Set(limits)).toEqual(new Set([1]))
+      }
+    } finally {
+      restore()
+    }
   })
 
   it('replays a completed handoff without creating a second epoch', async () => {

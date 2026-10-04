@@ -3,15 +3,22 @@ import { oauthGithubWorkConfig, oauthGithubWorkMaxValues } from '@services/oauth
 import { oauthXWorkConfig, oauthXWorkMaxValues } from '@services/oauth-x/work-limits'
 
 export const backgroundWorkEntries4 = [
-  defineBoundedWorkNamespace(
-    oauthGithubWorkConfig,
-    'GitHub friend updates',
-    oauthGithubWorkMaxValues,
-    {
+  defineBoundedWorkNamespace({
+    namespace: 'oauth-github-work-config',
+    config: oauthGithubWorkConfig,
+    label: 'GitHub friend updates',
+    maxValues: oauthGithubWorkMaxValues,
+    descriptions: {
       friend_mutation_batch_size: 'Friend mutation batch size for oauth github processing.',
     },
-  ),
-  defineBoundedWorkNamespace(oauthXWorkConfig, 'X friend updates', oauthXWorkMaxValues, {
-    friend_mutation_batch_size: 'Friend mutation batch size for oauth x processing.',
+  }),
+  defineBoundedWorkNamespace({
+    namespace: 'oauth-x-work-config',
+    config: oauthXWorkConfig,
+    label: 'X friend updates',
+    maxValues: oauthXWorkMaxValues,
+    descriptions: {
+      friend_mutation_batch_size: 'Friend mutation batch size for oauth x processing.',
+    },
   }),
 ]
