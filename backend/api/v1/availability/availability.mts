@@ -2,7 +2,7 @@ import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../response-contract.mts'
-import { defineQueryContract, queryEnum, queryString } from '@modules/pagination'
+import { defineQueryContract, requiredQueryEnum, requiredQueryString } from '@modules/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { isAdminUser } from '@services/users'
 import { checkAvailability, type AvailabilityKind } from '@services/availability'
@@ -15,8 +15,8 @@ const VALID_KINDS = [
   'username',
 ] as const satisfies readonly AvailabilityKind[]
 const availabilityQuery = defineQueryContract({
-  kind: queryEnum(VALID_KINDS),
-  value: queryString(),
+  kind: requiredQueryEnum(VALID_KINDS),
+  value: requiredQueryString(),
 })
 
 app.route('/api/v1/availability').get(async (ctx: Context) => {

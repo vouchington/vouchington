@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { queryString, requiredQueryEnum } from '@modules/pagination'
+import { queryString, requiredQueryEnum, requiredQueryString } from '@modules/pagination'
 import type { BackendResponseContract } from '../api-fixtures/response-contract-types.mts'
 import { buildOpenApiDocument } from '../api-fixtures/openapi/build-openapi-document.mts'
 
 describe('required query projection', () => {
-  it('requires the source-marked enum on a dynamic route without requiring optional peers', () => {
+  it('requires source-marked enum and string parameters without requiring optional peers', () => {
     const route = '/api/v1/things/:id'
     const key = `GET:${route}`
     const response: BackendResponseContract = {
@@ -22,7 +22,11 @@ describe('required query projection', () => {
         [key]: {
           method: 'GET',
           routeTemplate: route,
-          parameters: { consumer: requiredQueryEnum(['web', 'swift']), detail: queryString() },
+          parameters: {
+            consumer: requiredQueryEnum(['web', 'swift']),
+            value: requiredQueryString(),
+            detail: queryString(),
+          },
         },
       },
     )
@@ -30,6 +34,9 @@ describe('required query projection', () => {
 
     expect(parameters).toContainEqual(
       expect.objectContaining({ in: 'query', name: 'consumer', required: true }),
+    )
+    expect(parameters).toContainEqual(
+      expect.objectContaining({ in: 'query', name: 'value', required: true }),
     )
     expect(parameters).toContainEqual(
       expect.objectContaining({ in: 'query', name: 'detail', required: false }),

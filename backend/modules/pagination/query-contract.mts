@@ -82,6 +82,13 @@ export function queryString<const TDescription extends string | undefined = unde
   return createQueryString<undefined, TDescription>(options)
 }
 
+/** Requires a string query parameter at the HTTP boundary and in the generated API schema. */
+export function requiredQueryString<const TDescription extends string | undefined = undefined>(
+  options: DescriptorOptions<TDescription> = {},
+): QueryStringContract<undefined, TDescription> & { readonly required: true } {
+  return { ...queryString(options), required: true }
+}
+
 export function queryUuid<const TDescription extends string | undefined = undefined>(
   options: DescriptorOptions<TDescription> = {},
 ): QueryStringContract<'uuid', TDescription> {

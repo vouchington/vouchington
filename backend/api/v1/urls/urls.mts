@@ -1,7 +1,12 @@
 import app from '../../app.mts'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery, apiResponse } from '../../response-contract.mts'
-import { createPaginationParser, defineQueryContract, queryString } from '@modules/pagination'
+import {
+  createPaginationParser,
+  defineQueryContract,
+  queryString,
+  queryUuid,
+} from '@modules/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { searchUrls } from '@services/urls'
 import {
@@ -17,7 +22,7 @@ const urlsParser = createPaginationParser({
 })
 const urlsFilters = defineQueryContract({
   query: queryString(),
-  hostnameId: queryString(),
+  hostnameId: queryUuid(),
   contentTypeId: queryString({ description: 'Positive PostgreSQL bigint identifier.' }),
 })
 

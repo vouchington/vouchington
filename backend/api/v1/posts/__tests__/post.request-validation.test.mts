@@ -10,6 +10,20 @@ import {
 } from '@voucha/test-helpers'
 
 describe('post request validation', () => {
+  it('preserves the coded 400 for a malformed Idempotency-Key', async () => {
+    const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+    const request = createRequest()
+    await request.authenticateAs(user)
+
+    const response = await request
+      .post('/api/v1/posts')
+      .set('Idempotency-Key', 'not-a-uuid')
+      .send({ post_type: 'discussion', title: 'Header parser', markdown: 'Valid body.' })
+      .expect(400)
+
+    expect(response.body.message).toBe('Idempotency-Key must be a UUID')
+  })
+
   it('rejects malformed post types without retaining admissions or consuming quota', async () => {
     const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     const request = createRequest()

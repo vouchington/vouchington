@@ -15,6 +15,13 @@ describe('URL routes - request contract validation', () => {
     freeUser = await createTestUser()
   }, 60_000)
 
+  it('returns 422 for a malformed hostname UUID before URL search', async () => {
+    const request = createRequest()
+    await request.authenticateAs(admin)
+    const response = await request.get('/api/v1/urls?hostnameId=not-a-uuid').expect(422)
+    expect(response.body).toHaveProperty('message')
+  })
+
   describe('anonymous callers', () => {
     it.each([
       `/api/v1/urls/${randomUUID()}`,

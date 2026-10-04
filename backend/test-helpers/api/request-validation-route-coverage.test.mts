@@ -18,6 +18,7 @@ import {
 
 import {
   NO_INPUT_OPERATIONS,
+  SPECIALIZED_HEADER_INPUTS,
   SPECIALIZED_INGRESS,
   SPECIALIZED_QUERY_INPUTS,
 } from './request-validation-route-classifications.mts'
@@ -65,6 +66,7 @@ describe('third-party route request validation inventory', () => {
     expect([...runtimeValidated].filter(key => !bundle.operations[key])).toEqual([])
     expect(runtimeValidated).not.toContain('GET:/api/v1/auth/oauth/providers')
     expect([...specialized].filter(key => !keys.includes(key))).toEqual([])
+    expect(Object.keys(SPECIALIZED_HEADER_INPUTS).filter(key => !keys.includes(key))).toEqual([])
     expect([...noInput].filter(key => !keys.includes(key))).toEqual([])
     expect([...runtimeValidated].filter(key => specialized.has(key) || noInput.has(key))).toEqual(
       [],
@@ -102,6 +104,7 @@ describe('third-party route request validation inventory', () => {
         runtimeCarrierFamilies,
         bundle.operations,
         SPECIALIZED_QUERY_INPUTS,
+        SPECIALIZED_HEADER_INPUTS,
       ),
     ).not.toThrow()
     expect({
@@ -121,6 +124,13 @@ describe('third-party route request validation inventory', () => {
   it('keeps the specialized parser exclusions tied to focused boundary tests', async () => {
     const { access, readFile } = await import('node:fs/promises')
     for (const exclusion of Object.values(SPECIALIZED_INGRESS)) {
+      expect(exclusion.parser).not.toBe('')
+      const evidenceUrl = new URL(`../../../${exclusion.evidence}`, import.meta.url)
+      await expect(access(evidenceUrl)).resolves.toBeUndefined()
+      const evidence = await readFile(evidenceUrl, 'utf8')
+      expect(evidence).toContain(exclusion.proof)
+    }
+    for (const exclusion of Object.values(SPECIALIZED_HEADER_INPUTS)) {
       expect(exclusion.parser).not.toBe('')
       const evidenceUrl = new URL(`../../../${exclusion.evidence}`, import.meta.url)
       await expect(access(evidenceUrl)).resolves.toBeUndefined()
@@ -157,13 +167,15 @@ describe('third-party route request validation inventory', () => {
             path: { properties: { id: { type: 'string' } } },
             query: { properties: { term: { type: 'string' } } },
             body: { properties: { input: { type: 'string' } } },
+            header: { properties: { 'idempotency-key': { type: 'string' } } },
           },
         },
         {},
       ),
     ).toThrow(
       'GET:/api/v1/search has a generated path carrier without runtime validation\n' +
-        'GET:/api/v1/search has a generated body carrier without runtime validation',
+        'GET:/api/v1/search has a generated body carrier without runtime validation\n' +
+        'GET:/api/v1/search has a generated header carrier without runtime validation',
     )
   })
 })

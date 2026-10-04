@@ -1,5 +1,7 @@
 import ts from 'typescript'
 
+import { priorCarrierWrites } from './request-validation-route-carrier-writes.mts'
+
 export type CarrierBindings = Map<ts.Symbol, ReadonlySet<string>>
 
 export function requestCarrierOrigins(
@@ -32,20 +34,9 @@ export function requestCarrierOrigins(
                 found.add(origin)
             }
           }
-          const declarations = symbol.declarations ?? []
-          const scope = declarations.map(declaration => owningFunction(declaration)).find(Boolean)
-          const findWrites = (candidate: ts.Node): void => {
-            if (
-              ts.isBinaryExpression(candidate) &&
-              candidate.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
-              rootIdentifier(candidate.left, checker) === symbol &&
-              owningFunction(candidate) === scope
-            ) {
-              for (const origin of trace(candidate.right, nextSeen)) found.add(origin)
-            }
-            ts.forEachChild(candidate, findWrites)
+          for (const write of priorCarrierWrites(node, symbol, checker)) {
+            for (const origin of trace(write, nextSeen)) found.add(origin)
           }
-          findWrites(node.getSourceFile())
         }
       }
       return found
@@ -83,6 +74,13 @@ export function requestCarrierOrigins(
       if (root.has('context') && ['query', 'params'].includes(node.name.text)) {
         found.add(node.name.text === 'params' ? 'path' : 'query')
       }
+      if (
+        node.name.text === 'headers' &&
+        ts.isPropertyAccessExpression(node.expression) &&
+        node.expression.name.text === 'req' &&
+        trace(node.expression.expression, seen).has('context')
+      )
+        found.add('header')
     }
     if (ts.isElementAccessExpression(node) && node.argumentExpression) {
       const root = trace(node.expression, seen)
@@ -182,18 +180,4 @@ function traceContext(
       declaration.initializer &&
       traceContext(declaration.initializer, checker, bindings, next),
   )
-}
-
-function rootIdentifier(expression: ts.Expression, checker: ts.TypeChecker): ts.Symbol | undefined {
-  let current = expression
-  while (ts.isPropertyAccessExpression(current) || ts.isElementAccessExpression(current)) {
-    current = current.expression
-  }
-  return ts.isIdentifier(current) ? identifierSymbol(current, checker) : undefined
-}
-
-function owningFunction(node: ts.Node): ts.Node | undefined {
-  let current: ts.Node | undefined = node
-  while (current && !ts.isFunctionLike(current)) current = current.parent
-  return current && ts.isFunctionLike(current) ? current : undefined
 }

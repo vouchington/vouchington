@@ -35092,7 +35092,7 @@
           {
             "in": "query",
             "name": "kind",
-            "required": false,
+            "required": true,
             "schema": {
               "enum": ["topic-slug", "topic-name", "community-slug", "post-slug", "username"],
               "type": "string"
@@ -35101,7 +35101,7 @@
           {
             "in": "query",
             "name": "value",
-            "required": false,
+            "required": true,
             "schema": {
               "type": "string"
             }
@@ -35444,7 +35444,7 @@
             }
           },
           {
-            "description": "Repeated topic UUID query values.",
+            "description": "Comma-separated topic UUIDs; repeated query keys are also accepted.",
             "explode": false,
             "in": "query",
             "name": "topic",
@@ -77000,6 +77000,7 @@
             "name": "hostnameId",
             "required": false,
             "schema": {
+              "format": "uuid",
               "type": "string"
             }
           },

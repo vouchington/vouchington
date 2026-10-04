@@ -32,6 +32,7 @@ import {
 } from './list-query.mts'
 import { apiQuery } from '../../response-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
+import { parseStringArray } from '@ts-shared/utils/query'
 
 const VALID_MEMBER_ROSTER_VISIBILITIES = ['public', 'users', 'members', 'moderators']
 app
@@ -62,11 +63,13 @@ app
     }
 
     const topicParam = ctx.query.topic
-    const topicParams = Array.isArray(topicParam)
-      ? (topicParam as string[])
-      : typeof topicParam === 'string'
-        ? [topicParam]
-        : []
+    const topicParams = parseStringArray(topicParam)
+    if (
+      typeof topicParam === 'string' &&
+      topicParam.split(',').some(topicId => topicId.trim() === '')
+    ) {
+      ctx.throw(400, 'Invalid topic UUID format')
+    }
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     for (const id of topicParams) {
       if (!uuidRegex.test(id)) {

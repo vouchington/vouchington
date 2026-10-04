@@ -51,7 +51,9 @@ export const communitiesQuery = defineQueryContract({
   feed_category: queryEnum(VALID_FEED_CATEGORIES),
   has_list_type: queryBoolean(),
   has_list_items: queryBoolean(),
-  topic: queryCsvArray(queryUuid(), { description: 'Repeated topic UUID query values.' }),
+  topic: queryCsvArray(queryUuid(), {
+    description: 'Comma-separated topic UUIDs; repeated query keys are also accepted.',
+  }),
 })
 
 export interface CommunitiesListQuery {

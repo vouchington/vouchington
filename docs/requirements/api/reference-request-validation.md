@@ -50,6 +50,10 @@ protocol-required redirect. The catalog also records six input-free public metad
 routes outside `/api/v1`; any new registered route must be assigned to a validated, specialized,
 or explicitly input-free class. Runtime-validated operations are required to exist in the generated
 request bundle, while the global source inventory remains broader than the v1 OpenAPI surface.
+Generated header carriers are checked by the same family inventory. Posts and topic
+recommendations retain the admission parser's coded Idempotency-Key `400`, while copyright guest
+filings keep the capability token in its secret header and preserve its `403` response; the other
+declared request headers are passed through runtime contract validation.
 
 A typed raw-body declaration or explicit request-contract marker must emit a meaningful body
 schema: invoking the adapter against an empty object is not coverage. Compiler-built request-bundle

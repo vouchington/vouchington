@@ -99,6 +99,29 @@ export const SPECIALIZED_QUERY_INPUTS = {
   ],
 } as const
 
+export const SPECIALIZED_HEADER_INPUTS = {
+  'POST:/api/v1/copyright-notices/:id/guest-filings': {
+    parser: 'Copyright guest capability admission, preserved as a secret header',
+    evidence: 'backend/api/v1/copyright-notices/guest-capability-request-validation.test.mts',
+    proof: 'Copyright-Guest-Capability',
+  },
+  'POST:/api/v1/posts': {
+    parser: 'Contribution admission Idempotency-Key parser preserves its coded 400',
+    evidence: 'backend/api/v1/posts/__tests__/post.request-validation.test.mts',
+    proof: 'preserves the coded 400 for a malformed Idempotency-Key',
+  },
+  'POST:/api/v1/rss-feed-items/:id/discussions': {
+    parser: 'Contribution admission Idempotency-Key parser preserves malformed-header status',
+    evidence: 'backend/api/v1/rss-feed-items/discussion.test.mts',
+    proof: 'rejects a malformed Idempotency-Key header before mutation',
+  },
+  'POST:/api/v1/topic-recommendations': {
+    parser: 'Contribution admission Idempotency-Key parser preserves its coded 400',
+    evidence: 'backend/api/v1/topic-recommendations/__tests__/request-validation.test.mts',
+    proof: 'lets a malformed Idempotency-Key keep its coded 400',
+  },
+} as const
+
 // A newly added route with no validator must be reviewed and placed here only when its source and
 // generated contract both prove it has no request input to validate.
 export const NO_INPUT_OPERATIONS: readonly string[] = [

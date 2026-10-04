@@ -34,7 +34,7 @@ export function recordValidatorCarrierFamilies(
             : undefined
         if (family && value) {
           const origins = requestCarrierOrigins(value, checker, carrierBindings)
-          if (['query', 'path', 'body'].includes(family) && !origins.has(family)) {
+          if (['query', 'path', 'body', 'header'].includes(family) && !origins.has(family)) {
             throw new Error(`${operation} ${family} option lacks handler ${family} input lineage`)
           }
         }

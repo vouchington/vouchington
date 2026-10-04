@@ -26234,6 +26234,7 @@
             "type": "string"
           }
         },
+        "required": ["kind", "value"],
         "type": "object"
       }
     },
@@ -29948,6 +29949,7 @@
             "type": "string"
           },
           "hostnameId": {
+            "format": "uuid",
             "type": "string"
           },
           "limit": {

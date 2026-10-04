@@ -104,4 +104,42 @@ describe('GET /api/v1/communities – hashtag topic search', () => {
     expect(ids).toContain(matchingCommunity.id)
     expect(ids).not.toContain(nonMatchingCommunity.id)
   })
+
+  it('filters by comma-separated topic UUIDs', async () => {
+    const rand = createRandomString(8)
+    const topicIds = await Promise.all(
+      ['one', 'two'].map(suffix =>
+        insertTestTopic({
+          name: `CSV Topic ${suffix} ${rand}`,
+          slug: `csv-topic-${suffix}-${rand}`,
+          createdById: user.id,
+        }),
+      ),
+    )
+    const community = await insertTestCommunity({
+      createdById: user.id,
+      name: `CSV Topic Match ${rand}`,
+      slug: `csv-topic-match-${rand}`,
+    })
+    await Promise.all(
+      topicIds.map(topicId =>
+        insertTestCommunityListItem({
+          communityId: community.id,
+          itemType: 'topic',
+          entityId: topicId,
+        }),
+      ),
+    )
+
+    const response = await createRequest()
+      .get(`/api/v1/communities?topic=${topicIds.join(',')}`)
+      .expect(200)
+    const resultIds = response.body.results.map((result: { id: string }) => result.id)
+    expect(resultIds).toContain(community.id)
+  })
+
+  it('returns 400 for an empty member in a comma-separated topic list', async () => {
+    const response = await createRequest().get('/api/v1/communities?topic=,').expect(400)
+    expect(response.body.message).toBe('Invalid topic UUID format')
+  })
 })
