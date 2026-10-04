@@ -8,7 +8,7 @@ import {
   pollUntilNotNull,
 } from '@voucha/test-helpers'
 import { runReportJudgementAgent } from './run.mts'
-import { OpenAIResponseNotCompletedError } from '@agents/_shared'
+import { OpenAIResponseNotCompletedError } from '@modules/openai-utils/create-response'
 import type { Response } from 'openai/resources/responses/responses'
 
 describe('runReportJudgementAgent', () => {

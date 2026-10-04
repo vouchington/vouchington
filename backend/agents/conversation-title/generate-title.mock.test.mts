@@ -26,8 +26,11 @@ vi.mock<typeof import('@modules/openai-utils/create-response')>(
 )
 
 import { generateChatTitle } from './generate-title.mts'
-import { createOpenAIResponse } from '@modules/openai-utils/create-response'
-import { SYNCHRONOUS_REQUEST_RETRY_POLICY, OpenAIResponseNotCompletedError } from '@agents/_shared'
+import {
+  createOpenAIResponse,
+  OpenAIResponseNotCompletedError,
+} from '@modules/openai-utils/create-response'
+import { SYNCHRONOUS_REQUEST_RETRY_POLICY } from '@agents/_shared'
 
 function makeTitleResponse(text: string) {
   return {

@@ -1,5 +1,5 @@
 import { it, expect, vi, beforeEach, describe } from 'vitest'
-import { OpenAIResponseNotCompletedError } from '@agents/_shared'
+import { OpenAIResponseNotCompletedError } from '@modules/openai-utils/create-response'
 import { findAiUsageRecordForAgent, pollUntilNotNull } from '@voucha/test-helpers'
 import { callStoryPostAgent } from './agent.mts'
 import type { Story } from '@services/stories/types'

@@ -1,4 +1,4 @@
-export { createOpenAIResponse, OpenAIResponseNotCompletedError } from './create-response.mts'
+export { createOpenAIResponse } from './create-response.mts'
 export { createOpenRouterResponse, toOpenRouterModel } from '@modules/openrouter-utils'
 export {
   callRecordingAgentResponseUsage,

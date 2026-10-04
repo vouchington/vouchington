@@ -11,7 +11,7 @@ import {
 import { createModerationAppeal } from '@services/moderation-appeals/create'
 import { parseCreateModerationAppealInput } from '@services/moderation-appeals/parse'
 import { runAppealResolutionAgent } from './run.mts'
-import { OpenAIResponseNotCompletedError } from '@agents/_shared'
+import { OpenAIResponseNotCompletedError } from '@modules/openai-utils/create-response'
 import type { Response } from 'openai/resources/responses/responses'
 
 describe('runAppealResolutionAgent', () => {

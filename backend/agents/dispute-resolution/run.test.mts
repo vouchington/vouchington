@@ -14,7 +14,7 @@ import { parseCreateReviewDisputeInput } from '@services/review-disputes/parse'
 import { createReviewDispute } from '@services/review-disputes/create'
 import { getReviewDisputeById } from '@services/review-disputes/get'
 import { runDisputeResolutionAgent } from './run.mts'
-import { OpenAIResponseNotCompletedError } from '@agents/_shared'
+import { OpenAIResponseNotCompletedError } from '@modules/openai-utils/create-response'
 import type { PrivateUser } from '@services/users/types'
 import type { Response } from 'openai/resources/responses/responses'
 
