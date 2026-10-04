@@ -8,6 +8,7 @@ import { enqueueSendCopyrightNoticeEmail } from '@queues/emails/enqueues'
 import { enqueueDeliverCopyrightNotice } from '@queues/notifications/enqueues'
 import { enqueueCreateImageEmbeddingsBatch } from '@queues/bedrock-embeddings-batch/enqueues'
 import onError from '@modules/on-error'
+import { enqueueCopyrightSubmissionGuidanceBestEffort } from './submission-guidance-enqueue.mts'
 import { findCopyrightImageSimilarityCandidates } from '@services/bedrock-embeddings-batch/image-similarity'
 import { replayFailedMediaDeliveryRegistryRecords } from '@services/media-delivery-safety'
 import {
@@ -675,6 +676,11 @@ app.route('/api/v1/copyright-email-intakes/:id/correspondence').post(async (ctx:
     recommendationId,
     manualFallbackReason,
   })
+  if (
+    !admitted.isDuplicate &&
+    (body.kind === 'counter_notice' || body.kind === 'court_or_ccb_hold')
+  )
+    await enqueueCopyrightSubmissionGuidanceBestEffort(admitted.submissionId)
   ctx.setStatus(admitted.isDuplicate ? 200 : 201)
   ctx.json({
     copyright_notice: { id: admitted.noticeId },

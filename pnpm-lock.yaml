@@ -478,6 +478,28 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
+  backend/agents/copyright-submission-guidance:
+    dependencies:
+      '@agents/_shared':
+        specifier: workspace:^
+        version: link:../_shared
+      '@jongleberry/vurst-prompt':
+        specifier: ^0.4.3
+        version: 0.4.3
+      '@modules/openai-utils':
+        specifier: workspace:^
+        version: link:../../modules/openai-utils
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../../services/copyright-notices
+      '@ts-shared/utils':
+        specifier: workspace:^
+        version: link:../../../ts-shared/utils
+    devDependencies:
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+
   backend/agents/dispute-resolution:
     dependencies:
       '@agents/_shared':
@@ -11311,6 +11333,9 @@ importers:
       '@agents/copyright-form-screening':
         specifier: workspace:^
         version: link:../../agents/copyright-form-screening
+      '@agents/copyright-submission-guidance':
+        specifier: workspace:^
+        version: link:../../agents/copyright-submission-guidance
       '@agents/dispute-resolution':
         specifier: workspace:^
         version: link:../../agents/dispute-resolution

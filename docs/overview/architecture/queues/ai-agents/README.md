@@ -19,6 +19,7 @@ releases jobs when an operator relaxes the daily cap.
 | `processCopyrightEmailIntake`              | `copyright-email-intake`               | Parses a preserved copyright-inbox email into an advisory structured recommendation; moderator approval remains mandatory                                      |
 | `processCopyrightFormScreening`            | `copyright-form-screening`             | Screens a structured form only for obvious spam or invalidity; a clear signed-in result may provisionally restrict pending mandatory human review              |
 | `processCopyrightAppealRecommendation`     | `copyright-appeal-recommendation`      | Persists advisory appeal analysis for a moderator; it never changes a restriction or restores material                                                         |
+| `processCopyrightSubmissionGuidance`       | `copyright-submission-guidance`        | Persists advisory counter-notice and court/CCB filing guidance for staff; it does not decide submissions or change case workflow                               |
 | `processStoryPost`                         | `story-post`                           | Generates or refreshes a story summary; entity recovery uses the awaited enqueue so queue failure retains the durable checkpoint for retry.                    |
 | `processReportJudgement`                   | `report-judgement`                     | Stores an advisory moderation report judgement through OpenRouter                                                                                              |
 | `processDisputeResolution`                 | `dispute-resolution`                   | Drafts an advisory dispute resolution through OpenRouter                                                                                                       |
@@ -27,7 +28,7 @@ releases jobs when an operator relaxes the daily cap.
 | `processAutoDispatchJudgement`             | `auto-dispatch-judgement`              | Applies an eligible stored judgement through its own policy boundary                                                                                           |
 | `processReconcileAutoDispatchJudgements`   | `reconcile-auto-dispatch-judgements`   | Recovers pending automatic judgement dispatches                                                                                                                |
 | `processReconcileBackgroundResponses`      | `reconcile-background-responses`       | Crash-recovery sweep of orphaned OpenAI `background: true` responses (cancel/retrieve/record); see [Background Response Sweeper](#background-response-sweeper) |
-| `processReconcileCopyrightAgentDispatches` | `reconcile-copyright-agent-dispatches` | Re-enqueues advisory email, form-screening, and appeal gaps; applies saved clear form screens without another model run                                        |
+| `processReconcileCopyrightAgentDispatches` | `reconcile-copyright-agent-dispatches` | Re-enqueues advisory email, form-screening, appeal, and submission-guidance gaps; applies saved clear form screens without another model run                   |
 
 ## Architecture
 
@@ -60,6 +61,7 @@ every active community prompt in a single provider call. The community's
 - [`enqueues/copyright-email-intake.mts`](../../../../../backend/queues/ai-agents/enqueues/copyright-email-intake.mts) — replay-safe copyright email extraction jobs
 - [`enqueues/copyright-form-screening.mts`](../../../../../backend/queues/ai-agents/enqueues/copyright-form-screening.mts) — stable-ID structured form anti-spam jobs
 - [`enqueues/copyright-appeal-recommendation.mts`](../../../../../backend/queues/ai-agents/enqueues/copyright-appeal-recommendation.mts) — stable-ID advisory appeal recommendation jobs
+- [`enqueues/copyright-submission-guidance.mts`](../../../../../backend/queues/ai-agents/enqueues/copyright-submission-guidance.mts) — stable-ID advisory counter-notice and court/CCB filing guidance jobs
 - [`enqueues/reconcile-copyright-agent-dispatches.mts`](../../../../../backend/queues/ai-agents/enqueues/reconcile-copyright-agent-dispatches.mts) - copyright agent delivery recovery job
 - [`enqueues/classifier-run.mts`](../../../../../backend/queues/ai-agents/enqueues/classifier-run.mts) — durable classifier-run dispatch and stable-id run jobs; run jobs use the outage-sized `CLASSIFIER_RUN_ATTEMPTS` and `CLASSIFIER_RUN_BACKOFF` from `config.mts` (see [classifier-run backoff](../workers/ai-agents/README.md#classifier-run-backoff)) instead of `AI_AGENTS_DEFAULTS`
 - [`enqueues/reconcile-classifier-runs.mts`](../../../../../backend/queues/ai-agents/enqueues/reconcile-classifier-runs.mts) — five-minute cursor-paginated run and request recovery
@@ -72,7 +74,7 @@ every active community prompt in a single provider call. The community's
 
 ## Copyright Agent Dispatch
 
-Copyright forms, successfully parsed email intakes, and appeals are durable before queue delivery. The
+Copyright forms, successfully parsed email intakes, appeals, and eligible counter-notice or court/CCB submissions are durable before queue delivery. The
 five-minute `reconcile-copyright-agent-dispatches` job pages the whole pending backlog from
 PostgreSQL by dispatched intake or submission ID and re-enqueues records still missing their agent
 result with stable logical job IDs. A failed dispatch does not stop the rest of its page or later
@@ -81,8 +83,9 @@ starve newer work. A saved latest clear signed-in form screen with no moderator
 review instead invokes the durable form-effect service directly, which resumes its assessment and
 unrestricted targets without calling a model. Reviewed forms and targets already lifted under an
 automated assessment never re-enter automated enforcement. Failed MIME parses are preserved for
-staff and are not sent to the extraction agent. Appeal recommendations are advisory evidence only;
-no agent processor changes material availability or a restriction.
+staff and are not sent to the extraction agent. Appeal recommendations and submission guidance are advisory evidence only;
+no agent processor changes material availability or a restriction. Submission-guidance dispatch is
+recovered for in-case filings even while intake is off, like appeals.
 
 `COPYRIGHT_INTAKE_ENABLED` gates the dispatches that start work for new intake. While it is off, the
 reconciler still walks every page but skips the `email` and `form-screening` dispatches, which stay

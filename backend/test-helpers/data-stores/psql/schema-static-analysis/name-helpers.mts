@@ -38,6 +38,7 @@ const NAME_INFLECTION_IGNORE_PATTERNS = [
   /^retained_rss_feed_item_identities_default$/,
   /^retained_image_identities_default$/,
   /^retained_image_placement_bindings_default$/,
+  /^copyright_notice_submission_guidance$/,
 ]
 
 const INVARIANT_PLURAL_LAST_WORDS = new Set(['news'])

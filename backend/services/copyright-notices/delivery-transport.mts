@@ -1,5 +1,7 @@
 import { getCopyrightStatementInAppSummary } from './statement-in-app-summary.mts'
+import { copyrightInAppDecisionWasAiAssisted } from './ai-assistance-disclosure.mts'
 import {
+  COPYRIGHT_AI_ASSISTED_SENTENCE,
   copyrightEmailSubject,
   copyrightNotificationCopy,
 } from './statement-of-reasons-wording.mts'
@@ -44,13 +46,20 @@ export async function deliverCopyrightInAppNotification(intentId: string): Promi
     )
     const summary = await getCopyrightStatementInAppSummary(intent.id)
     const copy = copyrightNotificationCopy(intent.delivery_kind)
+    const aiAssisted =
+      intent.delivery_kind === 'status_update'
+        ? await copyrightInAppDecisionWasAiAssisted(intent.id)
+        : false
     assert(
       intent.recipient_role !== 'informed_owner' || intent.target_path,
       422,
       'Informed owner delivery requires a community path',
     )
     await createCopyrightNoticeNotification({
-      statementCopy: summary ? { title: copy.title, body: summary } : copy,
+      statementCopy: {
+        title: copy.title,
+        body: (summary ?? copy.body) + (aiAssisted ? `\n\n${COPYRIGHT_AI_ASSISTED_SENTENCE}` : ''),
+      },
       userId: intent.recipient_user_id,
       noticeId: intent.copyright_notice_id,
       eventKey: `copyright-delivery:${intent.id}`,

@@ -298,7 +298,7 @@
     },
     "GET:/api/v1/copyright-notices/review-queue": {
       "fixtureIds": ["web.copyright.staff-queue.default"],
-      "hash": "abaee9912ff78902245bf69ce2500a8407ed4c355377c55edf43d1081cc890bc"
+      "hash": "fa0cd56356b568a7a4d6eedfa0f9777200e4cc3a44e2d937fa09f34a84d53ddc"
     },
     "GET:/api/v1/currencies": {
       "fixtureIds": ["shared.currencies.list.default"],

@@ -11,6 +11,7 @@ function queueItem(assessed: boolean): CopyrightStaffQueueItem {
         submission_id: 'hold-test',
         received_at: '2026-01-02T00:00:00Z',
         statement: { summary: 'Filed' },
+        guidance: null,
         assessment: assessed
           ? {
               id: 'assessment-test',

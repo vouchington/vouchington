@@ -7,6 +7,7 @@ import {
 import { enqueueOrRetryCopyrightEmailIntake } from '@queues/ai-agents/enqueues/copyright-email-intake'
 import { enqueueOrRetryCopyrightFormScreening } from '@queues/ai-agents/enqueues/copyright-form-screening'
 import { enqueueOrRetryCopyrightAppealRecommendation } from '@queues/ai-agents/enqueues/copyright-appeal-recommendation'
+import { enqueueOrRetryCopyrightSubmissionGuidance } from '@queues/ai-agents/enqueues/copyright-submission-guidance'
 
 export type ReconcileCopyrightAgentDispatchesDeps = {
   getPending: typeof getPendingCopyrightAgentDispatches
@@ -14,6 +15,7 @@ export type ReconcileCopyrightAgentDispatchesDeps = {
   enqueueForm: typeof enqueueOrRetryCopyrightFormScreening
   applyFormEffect: typeof applyNonSpamSignedInCopyrightFormScreening
   enqueueAppeal: typeof enqueueOrRetryCopyrightAppealRecommendation
+  enqueueSubmissionGuidance: typeof enqueueOrRetryCopyrightSubmissionGuidance
 }
 
 const defaultDeps: ReconcileCopyrightAgentDispatchesDeps = {
@@ -22,6 +24,7 @@ const defaultDeps: ReconcileCopyrightAgentDispatchesDeps = {
   enqueueForm: enqueueOrRetryCopyrightFormScreening,
   applyFormEffect: applyNonSpamSignedInCopyrightFormScreening,
   enqueueAppeal: enqueueOrRetryCopyrightAppealRecommendation,
+  enqueueSubmissionGuidance: enqueueOrRetryCopyrightSubmissionGuidance,
 }
 
 /**
@@ -84,5 +87,6 @@ function enqueueDispatch(
 ): Promise<void> {
   if (item.kind === 'email') return deps.enqueueEmail(item.intakeId)
   if (item.kind === 'form-screening') return deps.enqueueForm(item.submissionId)
+  if (item.kind === 'submission-guidance') return deps.enqueueSubmissionGuidance(item.submissionId)
   return deps.enqueueAppeal(item.submissionId)
 }

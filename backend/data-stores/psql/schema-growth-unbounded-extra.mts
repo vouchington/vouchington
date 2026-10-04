@@ -50,6 +50,7 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'copyright_legal_hold_restrictions',
   'copyright_notice_action_intents',
   'copyright_notice_appeal_recommendations',
+  'copyright_notice_submission_guidance',
   'copyright_notice_appeal_reviews',
   'copyright_restriction_administrator_lifts',
   'copyright_notice_correspondence_messages',

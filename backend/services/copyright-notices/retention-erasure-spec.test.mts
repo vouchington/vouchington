@@ -13,6 +13,7 @@ import {
 import { enableAutomaticProvisionalWithholdingForTest } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { createRetentionEmailCase } from '@voucha/test-helpers/services/copyright-notices/retention-email-case'
 import { createRetentionFormCase } from '@voucha/test-helpers/services/copyright-notices/retention-form-case'
+import { addTestCopyrightSubmissionGuidanceForRetentionCase } from '@voucha/test-helpers/copyright-submission-guidance-retention'
 import { createRetentionAdministratorLiftCase } from '@voucha/test-helpers/copyright-retention-administrator-lift'
 import { COPYRIGHT_RETENTION_ERASURE } from './retention-erasure-spec.mts'
 
@@ -44,6 +45,7 @@ async function createTargets(): Promise<Target[]> {
     createRetentionFormCase(),
     createRetentionAdministratorLiftCase(),
   ])
+  await addTestCopyrightSubmissionGuidanceForRetentionCase(cases[1]!.noticeId)
   const rows = await Promise.all(cases.map(entry => readCopyrightRetentionColumns(entry.noticeId)))
   const targets: Target[] = []
   const uncovered: string[] = []

@@ -1,5 +1,9 @@
 import type { ClaimantMisuseSummary } from './claimant-misuse-summary.mts'
 import type { CopyrightFormGuidance } from './form-screening-guidance.mts'
+import type {
+  CopyrightCounterNoticeGuidance,
+  CopyrightLegalHoldGuidance,
+} from '@ts-shared/utils/copyright-submission-guidance'
 
 export type CopyrightStaffCase = {
   id: string
@@ -74,11 +78,13 @@ export type CopyrightStaffCase = {
     received_at: Date
     target_ids: string[]
     statement: Record<string, unknown>
+    guidance: CopyrightCounterNoticeGuidance | null
   }>
   legal_holds: Array<{
     submission_id: string
     received_at: Date
     statement: Record<string, unknown>
+    guidance: CopyrightLegalHoldGuidance | null
     assessment: {
       id: string
       from_original_claimant: boolean

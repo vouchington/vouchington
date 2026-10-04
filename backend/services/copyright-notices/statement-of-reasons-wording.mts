@@ -4,6 +4,8 @@ import type {
   CopyrightStatementFields,
 } from './statement-of-reasons-types.mts'
 
+export const COPYRIGHT_AI_ASSISTED_SENTENCE = 'Automated tools assisted with processing this case.'
+
 export function copyrightReceiptText(noticeId?: string): string {
   return `We received your copyright notice${noticeId ? ` for case ${noticeId}` : ''}. We will review it and contact you if we need more information.`
 }
@@ -28,7 +30,7 @@ export function copyrightStatementText(
         ? 'The provisional restriction was imposed automatically. A person will review it.'
         : 'A person made this decision.'
   const assistance = input.aiGuidance
-    ? 'Automated tools assisted with processing this case.'
+    ? COPYRIGHT_AI_ASSISTED_SENTENCE
     : 'Automated tools did not assist with processing this case.'
   const legal = 'Legal ground: copyright infringement under 17 U.S.C. 512 (US DMCA).'
   const redress = fields.redress

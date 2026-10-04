@@ -13,6 +13,7 @@ export type CopyrightAgentDispatch =
   | { kind: 'form-screening'; submissionId: string }
   | { kind: 'form-effect'; submissionId: string }
   | { kind: 'appeal'; submissionId: string }
+  | { kind: 'submission-guidance'; submissionId: string }
 
 export type CopyrightAgentDispatchPage = {
   results: CopyrightAgentDispatch[]
@@ -178,6 +179,15 @@ function buildPendingCopyrightAgentDispatchesQuery() {
         AND NOT EXISTS (
           SELECT 1 FROM copyright_notice_appeal_recommendations recommendation
           WHERE recommendation.copyright_notice_submission_id = submission.id
+        )
+      UNION ALL
+      SELECT 'submission-guidance'::text AS kind, submission.id
+      FROM copyright_notice_submissions submission
+      WHERE submission.kind IN ('counter_notice', 'court_or_ccb_hold')
+        AND submission.body_ciphertext <> 'erased'
+        AND NOT EXISTS (
+          SELECT 1 FROM copyright_notice_submission_guidance guidance
+          WHERE guidance.copyright_notice_submission_id = submission.id
         )
     ) candidates`
 }

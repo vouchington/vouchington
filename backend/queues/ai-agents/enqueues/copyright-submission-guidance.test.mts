@@ -1,26 +1,45 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  enqueueCopyrightSubmissionGuidanceAndWait,
+  enqueueOrRetryCopyrightSubmissionGuidance,
+} from './copyright-submission-guidance.mts'
+import {
   enqueueCopyrightAppealRecommendationAndWait,
   enqueueOrRetryCopyrightAppealRecommendation,
 } from './copyright-appeal-recommendation.mts'
 import { ai_agents } from '../queues.mts'
 
-describe('copyright appeal recommendation enqueue recovery', () => {
+const enqueues = [
+  {
+    name: 'copyright-submission-guidance',
+    prefix: 'copyright_submission_guidance_',
+    enqueueAndWait: enqueueCopyrightSubmissionGuidanceAndWait,
+    recover: enqueueOrRetryCopyrightSubmissionGuidance,
+  },
+  {
+    name: 'copyright-appeal-recommendation',
+    prefix: 'copyright_appeal_recommendation_',
+    enqueueAndWait: enqueueCopyrightAppealRecommendationAndWait,
+    recover: enqueueOrRetryCopyrightAppealRecommendation,
+  },
+]
+
+describe.each(enqueues)('$name enqueue recovery', ({ name, prefix, enqueueAndWait, recover }) => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('creates an ordered, deduplicated recommendation job', async () => {
+  it('creates an ordered, deduplicated guidance job', async () => {
     const submissionId = crypto.randomUUID()
     const add = vi.spyOn(ai_agents, 'add').mockResolvedValue({} as never)
 
-    await enqueueCopyrightAppealRecommendationAndWait(submissionId)
+    await enqueueAndWait(submissionId)
 
     expect(add).toHaveBeenCalledWith(
-      'copyright-appeal-recommendation',
+      name,
       { submission_id: submissionId },
       expect.objectContaining({
-        jobId: `copyright_appeal_recommendation_${submissionId}`,
-        deduplication: { id: `copyright_appeal_recommendation_${submissionId}`, mode: 'simple' },
-        ordering: { key: `copyright_appeal_recommendation_${submissionId}`, concurrency: 1 },
+        jobId: `${prefix}${submissionId}`,
+        deduplication: { id: `${prefix}${submissionId}`, mode: 'simple' },
+        ordering: { key: `${prefix}${submissionId}`, concurrency: 1 },
       }),
     )
   })
@@ -29,7 +48,7 @@ describe('copyright appeal recommendation enqueue recovery', () => {
     const remove = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
     const enqueue = vi.fn<(id: string) => Promise<void>>().mockResolvedValue(undefined)
 
-    await enqueueOrRetryCopyrightAppealRecommendation('submission-id', {
+    await recover('submission-id', {
       getJob: vi
         .fn<
           () => Promise<{
@@ -40,7 +59,7 @@ describe('copyright appeal recommendation enqueue recovery', () => {
           }>
         >()
         .mockResolvedValue({
-          name: 'copyright-appeal-recommendation',
+          name,
           getState: async () => 'completed',
           remove,
           retry: async () => undefined,
@@ -55,7 +74,7 @@ describe('copyright appeal recommendation enqueue recovery', () => {
   it('does not replace a retained job owned by another queue route', async () => {
     const enqueue = vi.fn<(id: string) => Promise<void>>().mockResolvedValue(undefined)
 
-    await enqueueOrRetryCopyrightAppealRecommendation('submission-id', {
+    await recover('submission-id', {
       getJob: async () => ({
         name: 'another-job',
         getState: async () => 'waiting',
@@ -72,9 +91,9 @@ describe('copyright appeal recommendation enqueue recovery', () => {
     const retry = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
     const enqueue = vi.fn<(id: string) => Promise<void>>().mockResolvedValue(undefined)
 
-    await enqueueOrRetryCopyrightAppealRecommendation('submission-id', {
+    await recover('submission-id', {
       getJob: async () => ({
-        name: 'copyright-appeal-recommendation',
+        name,
         getState: async () => 'failed',
         retry,
         remove: async () => undefined,

@@ -34,6 +34,7 @@ const hold: CopyrightStaffQueueItem['legal_holds'][number] = {
   submission_id: 'hold-1',
   received_at: '2026-09-01T00:00:00.000Z',
   statement: { filing: 'example' },
+  guidance: null,
   assessment: null,
 }
 

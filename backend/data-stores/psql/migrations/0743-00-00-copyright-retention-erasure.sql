@@ -22,6 +22,7 @@ RETURNS text[] LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$
   SELECT CASE table_name
     WHEN 'copyright_notices' THEN ARRAY['claimant_user_id', 'claimant_display_name', 'claimant_contact_ciphertext', 'work_description']
     WHEN 'copyright_notice_submissions' THEN ARRAY['submitted_by_user_id', 'body_ciphertext']
+    WHEN 'copyright_notice_submission_guidance' THEN ARRAY['guidance_ciphertext']
     WHEN 'copyright_notice_submission_requests' THEN ARRAY['requester_user_id']
     WHEN 'copyright_notice_form_intakes' THEN ARRAY['requester_user_id', 'requester_identity_sha256', 'electronic_signature_ciphertext']
     WHEN 'copyright_notice_form_screenings' THEN ARRAY['rationale_ciphertext', 'guidance_ciphertext']

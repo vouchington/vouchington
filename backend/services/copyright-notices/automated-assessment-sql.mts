@@ -27,7 +27,11 @@ export function aiGuidanceSql(noticeAlias = 'notice'): SQLStatement {
       WHERE guidance_review.promoted_copyright_notice_id = ${notice}.id)
     OR EXISTS (SELECT 1 FROM copyright_notice_submissions guidance_appeal
       JOIN copyright_notice_appeal_recommendations guidance_recommendation ON guidance_recommendation.copyright_notice_submission_id = guidance_appeal.id
-      WHERE guidance_appeal.copyright_notice_id = ${notice}.id))`)
+      WHERE guidance_appeal.copyright_notice_id = ${notice}.id)
+    OR EXISTS (SELECT 1 FROM copyright_notice_submissions guidance_submission
+      JOIN copyright_notice_submission_guidance guidance_result
+        ON guidance_result.copyright_notice_submission_id = guidance_submission.id
+      WHERE guidance_submission.copyright_notice_id = ${notice}.id))`)
 }
 
 function checkedAlias(alias: string): string {

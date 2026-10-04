@@ -9,6 +9,8 @@ import { createCopyrightReviewOutcomeNoticesInTransaction } from './review-outco
 import { recordClaimantMisuseEvent } from './claimant-misuse-ledger.mts'
 import { calculateUsCounterNoticeRestorationWindow } from './deadlines.mts'
 import { createCounterNoticeForwardingInTransaction } from './counter-notice-forwarding.mts'
+import { copyrightSubmissionHasGuidance } from './ai-assistance-disclosure.mts'
+import { COPYRIGHT_AI_ASSISTED_SENTENCE } from './statement-of-reasons-wording.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { createCopyrightRestoreIntentForReversalInTransaction } from './restoration-reversal.mts'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
@@ -283,6 +285,7 @@ export async function reviewCopyrightCounterNotice(input: {
   assert(submission, 404, 'Copyright counter-notice not found')
   assert(submission.jurisdiction === 'us_dmca', 422, 'Only US DMCA counter-notices are supported')
   const reviewedAt = new Date()
+  const aiAssisted = await copyrightSubmissionHasGuidance(input.submissionId, transaction)
   const { rows: assessmentRows } = await transaction<{
     id: string
   }>(sql`/* reviewCopyrightCounterNotice:assessment */
@@ -317,6 +320,7 @@ export async function reviewCopyrightCounterNotice(input: {
       {
         assessmentId: assessment.id,
         earliestRestorationAt: window.earliest_restoration_at,
+        aiAssisted,
       },
       transaction,
     )
@@ -360,9 +364,11 @@ export async function reviewCopyrightCounterNotice(input: {
       {
         noticeId: submission.copyright_notice_id,
         submissionId: input.submissionId,
-        bodyText: input.accepted
-          ? 'Your counter-notice was accepted and forwarded to the original claimant.'
-          : 'Your counter-notice was reviewed and was not accepted.',
+        bodyText:
+          (input.accepted
+            ? 'Your counter-notice was accepted and forwarded to the original claimant.'
+            : 'Your counter-notice was reviewed and was not accepted.') +
+          (aiAssisted ? `\n\n${COPYRIGHT_AI_ASSISTED_SENTENCE}` : ''),
         idempotencyKey: `copyright-counter-review:${input.submissionId}:email-outcome`,
       },
       transaction,

@@ -5,10 +5,11 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import { createDeterministicCopyrightCorrespondenceInTransaction } from './correspondence.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
+import { COPYRIGHT_AI_ASSISTED_SENTENCE } from './statement-of-reasons-wording.mts'
 
 /** Called only by the qualifying-deadline transaction after human compliance review. */
 export async function createCounterNoticeForwardingInTransaction(
-  input: { assessmentId: string; earliestRestorationAt: Date },
+  input: { assessmentId: string; earliestRestorationAt: Date; aiAssisted?: boolean },
   transaction: TransactionQuery,
 ): Promise<void> {
   const { rows } = await transaction<{
@@ -71,7 +72,12 @@ export async function createCounterNoticeForwardingInTransaction(
       noticeId: row.notice_id,
       submissionId: row.submission_id,
       correspondenceKind: 'counter_notice_forwarding',
-      bodyText: renderCounterNoticeForwarding(counterNotice, targets, input.earliestRestorationAt),
+      bodyText: [
+        renderCounterNoticeForwarding(counterNotice, targets, input.earliestRestorationAt),
+        input.aiAssisted ? COPYRIGHT_AI_ASSISTED_SENTENCE : null,
+      ]
+        .filter(Boolean)
+        .join('\n\n'),
     },
     transaction,
   )

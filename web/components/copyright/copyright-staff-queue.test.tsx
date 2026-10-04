@@ -1,6 +1,10 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import type { CopyrightFormGuidance } from '@/types/copyright-notices'
+import type {
+  CopyrightCounterNoticeGuidance,
+  CopyrightFormGuidance,
+  CopyrightLegalHoldGuidance,
+} from '@/types/copyright-notices'
 import { CopyrightStaffQueue } from './copyright-staff-queue'
 
 const guidance: CopyrightFormGuidance = {
@@ -15,6 +19,29 @@ const guidance: CopyrightFormGuidance = {
   ],
   risk_notes: [],
   suggested_action: 'approve_intake',
+}
+
+const counterGuidance: CopyrightCounterNoticeGuidance = {
+  summary: 'The counter-notice identifies the image.',
+  elements: [
+    { element: 'signature', status: 'present', gap: null },
+    { element: 'material_identification', status: 'present', gap: null },
+    { element: 'good_faith_statement', status: 'present', gap: null },
+    { element: 'contact_and_jurisdiction_consent', status: 'present', gap: null },
+  ],
+  risk_notes: [],
+}
+
+const holdGuidance: CopyrightLegalHoldGuidance = {
+  summary: 'The filing describes a court action.',
+  criteria: [
+    { criterion: 'from_original_claimant', status: 'unclear', gap: 'Check the sender.' },
+    { criterion: 'proceeding_kind', status: 'present', gap: null },
+    { criterion: 'commenced_at', status: 'present', gap: null },
+    { criterion: 'received_by_designated_agent_at', status: 'unclear', gap: 'Check receipt.' },
+    { criterion: 'same_material', status: 'present', gap: null },
+  ],
+  risk_notes: [],
 }
 
 describe('CopyrightStaffQueue', () => {
@@ -124,6 +151,7 @@ describe('CopyrightStaffQueue', () => {
                     received_at: '2026-01-03T00:00:00.000Z',
                     target_ids: ['target-123'],
                     statement: { name: 'Poster' },
+                    guidance: state === 'completed' ? counterGuidance : null,
                   },
                 ],
                 legal_holds: [
@@ -131,6 +159,7 @@ describe('CopyrightStaffQueue', () => {
                     submission_id: 'hold-123',
                     received_at: '2026-01-03T00:00:00.000Z',
                     statement: { case: 'example' },
+                    guidance: state === 'completed' ? holdGuidance : null,
                     assessment: null,
                   },
                 ],
@@ -172,9 +201,9 @@ describe('CopyrightStaffQueue', () => {
       expect(screen.queryAllByText(/Agent: invalid_or_spam/)).toHaveLength(
         state === 'completed' ? 1 : 0,
       )
-      expect(screen.queryAllByText('AI guidance — not a decision')).toHaveLength(
-        state === 'completed' ? 1 : 0,
-      )
+      expect(
+        screen.queryAllByRole('region', { name: 'AI guidance — not a decision' }),
+      ).toHaveLength(state === 'completed' ? 3 : 0)
       expect(screen.getByText(/Claimant.*claimant@example\.test/)).toBeInTheDocument()
       expect(screen.getByRole('heading', { name: 'Notifier history' })).toBeInTheDocument()
       expect(screen.getByText('1 notice withdrawn by the notifier')).toBeInTheDocument()

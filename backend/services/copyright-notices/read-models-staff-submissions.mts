@@ -4,37 +4,9 @@ import sql from 'sql-template-strings'
 import { decryptCopyrightJson } from './erased-ciphertext.mts'
 import type { CopyrightStaffCase } from './read-models-staff-types.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
+import { parseStoredCopyrightSubmissionGuidance } from './read-models-staff-guidance.mts'
 
-export async function selectStaffRestrictions(
-  noticeId: string,
-  query: TransactionQuery,
-): Promise<CopyrightStaffCase['restrictions']> {
-  const { rows } = await query<{
-    id: string
-    target_id: string
-    imposed_at: Date
-    lifted_at: Date | null
-    human_reviewed_at: Date | null
-    human_review_action: 'confirm' | 'reverse' | null
-  }>(sql`/* getPendingCopyrightStaffCase:restrictions */
-    SELECT restriction.id, restriction.copyright_notice_target_id AS target_id, restriction.imposed_at,
-      restriction.lifted_at, restriction.human_reviewed_at, restriction.human_review_action
-    FROM copyright_restrictions restriction JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-    WHERE target.copyright_notice_id = ${noticeId} ORDER BY restriction.id
-  `)
-  return rows.map(row => ({
-    id: row.id,
-    target_id: row.target_id,
-    imposed_at: row.imposed_at,
-    status: (row.lifted_at
-      ? 'lifted'
-      : row.human_reviewed_at
-        ? row.human_review_action === 'reverse'
-          ? 'reversed'
-          : 'confirmed'
-        : 'pending_review') as CopyrightStaffCase['restrictions'][number]['status'],
-  }))
-}
+export { selectStaffRestrictions } from './read-models-staff-restrictions.mts'
 
 export async function selectStaffAppeals(noticeId: string, query: TransactionQuery) {
   const { rows } = await query<{
@@ -83,10 +55,16 @@ export async function selectStaffCounterNotices(noticeId: string, query: Transac
     received_at: Date
     body_ciphertext: string
     target_ids: string[]
+    guidance_ciphertext: string | null
   }>(sql`/* getPendingCopyrightStaffCase:counters */
     SELECT submission.id AS submission_id, submission.received_at, submission.body_ciphertext,
+      guidance.guidance_ciphertext,
       ARRAY(SELECT target.copyright_notice_target_id FROM copyright_notice_submission_targets target WHERE target.copyright_notice_submission_id = submission.id ORDER BY target.copyright_notice_target_id) AS target_ids
     FROM copyright_notice_submissions submission
+    LEFT JOIN LATERAL (
+      SELECT guidance_ciphertext FROM copyright_notice_submission_guidance
+      WHERE copyright_notice_submission_id = submission.id ORDER BY id DESC LIMIT 1
+    ) guidance ON true
     LEFT JOIN copyright_notice_counter_notice_reviews review ON review.copyright_notice_submission_id = submission.id
     WHERE submission.copyright_notice_id = ${noticeId} AND submission.kind = 'counter_notice' AND review.id IS NULL
     ORDER BY submission.received_at, submission.id
@@ -95,6 +73,11 @@ export async function selectStaffCounterNotices(noticeId: string, query: Transac
     submission_id: row.submission_id,
     received_at: row.received_at,
     target_ids: row.target_ids,
+    guidance: parseStoredCopyrightSubmissionGuidance(
+      row.guidance_ciphertext,
+      row.submission_id,
+      'counter_notice',
+    ),
     statement: parseStatement(
       decryptSecret(row.body_ciphertext, copyrightSubmissionPurpose(row.submission_id)),
     ),
@@ -119,8 +102,10 @@ export async function selectStaffLegalHolds(
     same_material: boolean | null
     target_ids: string[]
     resolution_id: string | null
+    guidance_ciphertext: string | null
   }>(sql`/* getPendingCopyrightStaffCase:legalHolds */
     SELECT submission.id AS submission_id, submission.received_at, submission.body_ciphertext,
+      guidance.guidance_ciphertext,
       assessment.id AS assessment_id, assessment.assessed_at, assessment.from_original_claimant,
       assessment.proceeding_kind, assessment.ccb_claim_kind, assessment.commenced_at,
       assessment.received_by_designated_agent_at, assessment.same_material,
@@ -132,6 +117,10 @@ export async function selectStaffLegalHolds(
       ), '{}') AS target_ids,
       resolution.id AS resolution_id
     FROM copyright_notice_submissions submission
+    LEFT JOIN LATERAL (
+      SELECT guidance_ciphertext FROM copyright_notice_submission_guidance
+      WHERE copyright_notice_submission_id = submission.id ORDER BY id DESC LIMIT 1
+    ) guidance ON true
     LEFT JOIN copyright_notice_legal_hold_assessments assessment
       ON assessment.copyright_notice_submission_id = submission.id
     LEFT JOIN copyright_notice_legal_hold_resolutions resolution
@@ -145,6 +134,11 @@ export async function selectStaffLegalHolds(
     received_at: row.received_at,
     statement: parseStatement(
       decryptCopyrightJson(row.body_ciphertext, copyrightSubmissionPurpose(row.submission_id)),
+    ),
+    guidance: parseStoredCopyrightSubmissionGuidance(
+      row.guidance_ciphertext,
+      row.submission_id,
+      'court_or_ccb_hold',
     ),
     assessment: row.assessment_id
       ? {

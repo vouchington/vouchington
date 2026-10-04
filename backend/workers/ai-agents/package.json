@@ -23,6 +23,7 @@
     "@agents/copyright-appeal-recommendation": "workspace:^",
     "@agents/copyright-email-intake": "workspace:^",
     "@agents/copyright-form-screening": "workspace:^",
+    "@agents/copyright-submission-guidance": "workspace:^",
     "@agents/dispute-resolution": "workspace:^",
     "@agents/post-classifier": "workspace:^",
     "@agents/report-judgement": "workspace:^",

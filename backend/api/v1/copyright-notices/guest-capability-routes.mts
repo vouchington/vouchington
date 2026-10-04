@@ -23,6 +23,7 @@ import type {
   CopyrightGuestFilingRequest,
   CopyrightGuestInformationRequest,
 } from './guest-capability-request-types.mts'
+import { enqueueCopyrightSubmissionGuidanceBestEffort } from './submission-guidance-enqueue.mts'
 
 const guestFilingKinds: readonly CopyrightGuestFilingRequest['kind'][] = [
   'supplement',
@@ -176,6 +177,8 @@ app.route('/api/v1/copyright-notices/:id/guest-filings').post(async (ctx: Contex
     kind: body.kind,
     statement: body.statement,
   })
+  if (filing.kind === 'court_or_ccb_hold')
+    await enqueueCopyrightSubmissionGuidanceBestEffort(filing.id)
   ctx.setStatus(201)
   ctx.json(
     apiResponse('POST:/api/v1/copyright-notices/:id/guest-filings', {
