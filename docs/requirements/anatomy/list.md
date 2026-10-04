@@ -33,7 +33,7 @@ and cursor-pagination index on `(list_id, id DESC) WHERE removed_at IS NULL`.
 
 Append-only read-tracking tables with PK `(user_id, entity_id)`.
 
-### `view_list_items`
+### `view_user_list_items`
 
 UNION ALL view over both junction tables:
 `(id, list_id, item_type, entity_id, order_index, created_at, media_type)`.

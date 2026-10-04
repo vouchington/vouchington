@@ -12,7 +12,7 @@ export async function getLandingPageReferralLinksByIds(
     -- no-mistakes-disable-next-line postgres-required-predicates: existing referral links may still point at merged source topics; resolve them to active destinations
     SELECT
       urpl.id,
-      COALESCE(destination_topic.id, source_topic.id) AS referral_program_topic_id,
+      COALESCE(destination_topic.id, source_topic.id) AS referral_program_id,
       COALESCE(destination_topic.name, source_topic.name) AS referral_program_name,
       COALESCE(destination_topic.slug, source_topic.slug) AS referral_program_slug,
       urpl.label,
@@ -47,7 +47,7 @@ export async function getOwnedLandingPageReferralLinks(
     -- no-mistakes-disable-next-line postgres-required-predicates: existing referral links may still point at merged source topics; resolve them to active destinations
     SELECT
       urpl.id,
-      COALESCE(destination_topic.id, source_topic.id) AS referral_program_topic_id,
+      COALESCE(destination_topic.id, source_topic.id) AS referral_program_id,
       COALESCE(destination_topic.name, source_topic.name) AS referral_program_name,
       COALESCE(destination_topic.slug, source_topic.slug) AS referral_program_slug,
       urpl.label,

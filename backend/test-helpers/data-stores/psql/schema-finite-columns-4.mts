@@ -17,7 +17,7 @@ export const FINITE_COLUMN_CONTRACTS_4 = [
   ],
   ['image_surface_placements', 'binding_family', 'image_binding_families', false],
   ['image_surface_placements', 'surface_kind', 'image_surface_placement_surface_kinds', false],
-  ['lists', 'visibility', 'list_visibilities', false],
+  ['user_lists', 'visibility', 'list_visibilities', false],
   ['mcp_call_audit_events', 'outcome', 'mcp_call_audit_event_outcomes', false],
   ['mcp_call_audit_events', 'surface', 'mcp_call_audit_event_surfaces', false],
   ['media_delivery_registry_changes', 'desired_state', 'media_delivery_desired_states', false],

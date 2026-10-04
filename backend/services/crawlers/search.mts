@@ -31,7 +31,7 @@ export async function searchCrawlers(
       c.link_text_content_to_remove,
       c.link_hrefs_to_remove,
       c.content_selectors,
-      c.referral_program_topic_id,
+      c.referral_program_topic_id AS referral_program_id,
       c.created_at,
       c.updated_at,
       c.deleted_at

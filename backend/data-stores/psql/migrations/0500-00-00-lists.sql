@@ -9,8 +9,8 @@ DO $$ BEGIN
 END $$;
 
 DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'list_item_types') THEN
-    CREATE TYPE list_item_types AS ENUM ('rss_feed_item', 'post');
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_list_item_types') THEN
+    CREATE TYPE user_list_item_types AS ENUM ('rss_feed_item', 'post');
   END IF;
 END $$;
 

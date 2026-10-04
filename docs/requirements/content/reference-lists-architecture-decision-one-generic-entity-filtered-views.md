@@ -39,7 +39,7 @@ View: `backend/data-stores/psql/views/2026-06-28-list-items.sql`
 
 Indexes: `(owner_user_id, id DESC) WHERE removed_at IS NULL` for sidebar/owner-index queries.
 
-### `list_item_types` enum
+### `user_list_item_types` enum
 
 `'rss_feed_item' | 'post'`
 
@@ -48,7 +48,7 @@ Indexes: `(owner_user_id, id DESC) WHERE removed_at IS NULL` for sidebar/owner-i
 Junction tables linking lists to their items; both have `removed_at` soft-delete and a partial
 unique index `(list_id, entity_id) WHERE removed_at IS NULL`.
 
-### `view_list_items`
+### `view_user_list_items`
 
 UNION ALL view over both junction tables, filtered `WHERE removed_at IS NULL`. Exposes:
 `(id, list_id, item_type, entity_id, order_index, created_at, media_type)`.

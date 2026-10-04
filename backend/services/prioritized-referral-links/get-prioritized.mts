@@ -137,7 +137,7 @@ user_tiers AS (
 ),
 ranked AS (
   SELECT DISTINCT ON (al.user_id)
-    al.id, al.user_id, al.referral_program_topic_id, al.url, al.label,`)
+    al.id, al.user_id, al.referral_program_topic_id AS referral_program_id, al.url, al.label,`)
 
   if (all) {
     query.append(sql`

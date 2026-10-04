@@ -2,11 +2,11 @@
 -- Only active (non-removed) rows are included; removed_at IS NULL is enforced per-branch.
 -- media_type comes from the rss_feed_items table for RSS items; NULL for posts.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE VIEW view_list_items AS
+CREATE OR REPLACE VIEW view_user_list_items AS
   SELECT
     li.id,
     li.user_list_id AS list_id,
-    'rss_feed_item'::list_item_types AS item_type,
+    'rss_feed_item'::user_list_item_types AS item_type,
     li.rss_feed_item_id AS entity_id,
     li.order_index,
     li.created_at,
@@ -18,7 +18,7 @@ UNION ALL
   SELECT
     li.id,
     li.user_list_id AS list_id,
-    'post'::list_item_types AS item_type,
+    'post'::user_list_item_types AS item_type,
     li.post_id AS entity_id,
     li.order_index,
     li.created_at,

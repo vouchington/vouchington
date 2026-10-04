@@ -47,7 +47,7 @@ export async function containsReferralLinks(
     SELECT
       rpvr.hostname,
       rpvr.pathname,
-      rp.topic_id AS referral_program_topic_id
+      rp.topic_id AS referral_program_id
     FROM referral_program_topics rp
     JOIN referral_program_topic_link_validation_rule_sets trplv
       ON trplv.referral_program_topic_id = rp.topic_id

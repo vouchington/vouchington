@@ -69,7 +69,7 @@ export async function dispatchReferralLinkCrawls(
       : " ORDER BY COALESCE(last_crawl_success_at, '-infinity'::timestamptz), id",
   )
   queryStatement.append(sql` LIMIT ${limits.maxRows + 1}
-    ) SELECT c.id AS link_id, c.url_id, c.referral_program_topic_id, c.due_at::text AS due_at,
+    ) SELECT c.id AS link_id, c.url_id, c.referral_program_topic_id AS referral_program_id, c.due_at::text AS due_at,
       h.id AS hostname_id, h.hostname, h.requests_per_second_limit,
       (h.crawlable IS DISTINCT FROM false AND h.blocked = false) AS host_eligible,
       (c.last_crawl_failure_at IS NULL OR c.last_crawl_failure_at

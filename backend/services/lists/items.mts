@@ -120,7 +120,7 @@ export async function searchListItems(
   const params: unknown[] = [listId]
   let sql = `/* searchListItems */
     SELECT id, list_id, item_type, entity_id, order_index, created_at, media_type
-    FROM view_list_items
+    FROM view_user_list_items
     WHERE list_id = $1
   `
 

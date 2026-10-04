@@ -63,7 +63,7 @@ export async function isUrlReferralLink(
 
   const query = sql`/* isUrlReferralLink */
     SELECT
-      rp.topic_id AS referral_program_topic_id,
+      rp.topic_id AS referral_program_id,
       rpvr.hostname,
       rpvr.pathname,
       rpvr.is_referral_link_url,

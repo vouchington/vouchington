@@ -38,7 +38,7 @@ SELECT * FROM (
   SELECT * FROM ranked
   UNION ALL
   SELECT
-    ol.id, ol.user_id, ol.referral_program_topic_id, ol.url, ol.label,
+    ol.id, ol.user_id, ol.referral_program_topic_id AS referral_program_id, ol.url, ol.label,
     0 AS priority_group,
     0 AS contribution_rank,
     0 AS tier_rank,
@@ -74,7 +74,7 @@ SELECT * FROM (
   SELECT * FROM limited_personal_links
   UNION ALL
   SELECT
-    ol.id, ol.user_id, ol.referral_program_topic_id, ol.url, ol.label,
+    ol.id, ol.user_id, ol.referral_program_topic_id AS referral_program_id, ol.url, ol.label,
     0 AS priority_group,
     0 AS contribution_rank,
     0 AS tier_rank,
