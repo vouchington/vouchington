@@ -30,8 +30,8 @@ export async function copyrightInAppDecisionWasAiAssisted(intentId: string): Pro
       WHERE intent.id = ${intentId}
         AND intent.delivery_kind = 'status_update'
         AND intent.recipient_role = 'poster'
-        AND review.created_at <= intent.created_at
-        AND guidance.created_at <= review.created_at
+        AND review.id <= intent.id
+        AND guidance.id <= review.id
     ) AS assisted
   `)
   return rows[0]?.assisted ?? false
