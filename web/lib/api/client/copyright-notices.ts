@@ -12,6 +12,23 @@ import type {
 
 import type { CopyrightNoticeTargetInput } from './copyright-notice-input'
 export { createCopyrightEuNotice, createCopyrightEuRedress } from './copyright-eu-notices'
+export {
+  replayCopyrightActionIntent,
+  replayCopyrightDeliveryIntent,
+  replayCopyrightMediaDelivery,
+} from './copyright-recovery'
+export {
+  decideCopyrightTerritorialNotice,
+  recordCopyrightTerritorialAcknowledgmentFailure,
+} from './copyright-territorial-decisions'
+export {
+  decideCopyrightTerritorialRedress,
+  listCopyrightEuStaffDisputeSettlements,
+  listCopyrightTerritorialComplaints,
+  recordCopyrightEuDisputeSettlementImplementation,
+  recordCopyrightEuDisputeSettlementOutcome,
+  referCopyrightEuDisputeSettlement,
+} from './copyright-territorial-redress'
 export type { CopyrightNoticeTargetInput } from './copyright-notice-input'
 
 export function createCopyrightNotice(input: {
@@ -147,10 +164,6 @@ export function reviewCopyrightCounterNotice(
   })
 }
 
-export function replayCopyrightMediaDelivery(): Promise<{ replayed: number }> {
-  return clientApi.post('/api/v1/copyright-media-delivery/replays', {})
-}
-
 export function assessCopyrightLegalHold(
   submissionId: string,
   input: {
@@ -179,18 +192,4 @@ export function resolveCopyrightLegalHold(
     resolution_kind: resolutionKind,
     rationale,
   })
-}
-
-export function replayCopyrightActionIntent(noticeId: string, intentId: string): Promise<void> {
-  return clientApi.post(
-    `/api/v1/copyright-notices/${noticeId}/action-intents/${intentId}/replays`,
-    {},
-  )
-}
-
-export function replayCopyrightDeliveryIntent(noticeId: string, intentId: string): Promise<void> {
-  return clientApi.post(
-    `/api/v1/copyright-notices/${noticeId}/delivery-intents/${intentId}/replays`,
-    {},
-  )
 }

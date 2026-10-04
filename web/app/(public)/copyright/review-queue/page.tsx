@@ -19,7 +19,8 @@ export default async function CopyrightReviewQueuePage() {
       <div>
         <h1 className='text-3xl font-bold'>Copyright review queue</h1>
         <p className='text-muted-foreground'>
-          Review each provisional action and intake with the private staff tools.
+          Review copyright intake, provisional actions, EU and UK notices, and complaints with the
+          private staff tools.
         </p>
       </div>
       <CopyrightStaffQueue

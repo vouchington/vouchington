@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
@@ -15,17 +15,26 @@ import {
   type CopyrightNoticeResolvedTarget,
 } from '@/lib/api/client/copyright-notice-targets'
 import onError from '@/lib/on-error'
+import { copyrightStaffPostImageChoices } from './copyright-notice-target-picker-staff'
 
 const MAX_NOTICE_TARGETS = 20
 
 export function CopyrightNoticeTargetPicker({
   targets,
   onChange,
+  initialUrl = '',
+  legend = 'Hosted material',
+  hint,
+  postImagesOnly = false,
 }: {
   targets: CopyrightNoticeResolvedTarget[]
   onChange: (targets: CopyrightNoticeResolvedTarget[]) => void
+  initialUrl?: string
+  legend?: string
+  hint?: ReactNode
+  postImagesOnly?: boolean
 }) {
-  const [targetUrl, setTargetUrl] = useState('')
+  const [targetUrl, setTargetUrl] = useState(initialUrl)
   const [resolvedTargets, setResolvedTargets] = useState<CopyrightNoticeResolvedTarget[]>([])
   const [resolving, setResolving] = useState(false)
   const [lookupFailed, setLookupFailed] = useState(false)
@@ -40,7 +49,9 @@ export function CopyrightNoticeTargetPicker({
     try {
       const resolved = await resolveCopyrightNoticeTargets(requestedUrl)
       if (request !== resolutionRequest.current) return
-      setResolvedTargets(resolved)
+      const choices = postImagesOnly ? copyrightStaffPostImageChoices(resolved) : resolved
+      setResolvedTargets(choices)
+      setLookupFailed(choices.length === 0)
       onChange([])
     } catch (err) {
       if (request !== resolutionRequest.current) return
@@ -78,10 +89,11 @@ export function CopyrightNoticeTargetPicker({
 
   return (
     <fieldset className='space-y-3 rounded border p-3'>
-      <legend className='px-1 text-sm font-medium'>Hosted material</legend>
+      <legend className='px-1 text-sm font-medium'>{legend}</legend>
       <p className='text-sm text-muted-foreground'>
-        Paste the URL of a Voucha post, profile, topic or community, then select each image that
-        uses your work.
+        {postImagesOnly
+          ? 'Paste a Voucha post URL and select each image named in the notice.'
+          : 'Paste the URL of a Voucha post, profile, topic or community, then select each image that uses your work.'}
       </p>
       <div className='flex gap-2'>
         <div className='flex-1'>
@@ -103,7 +115,17 @@ export function CopyrightNoticeTargetPicker({
           {resolving ? 'Finding material…' : 'Find hosted material'}
         </Button>
       </div>
-      {lookupFailed ? <CopyrightTargetNotFound /> : <CopyrightDesignatedAgentHint />}
+      {lookupFailed ? (
+        postImagesOnly ? (
+          <p role='alert'>No hosted post images were found at that URL.</p>
+        ) : (
+          <CopyrightTargetNotFound />
+        )
+      ) : hint === undefined ? (
+        <CopyrightDesignatedAgentHint />
+      ) : (
+        hint
+      )}
       {resolvedTargets.length > 0 && (
         <div className='space-y-2'>
           {resolvedTargets.map((target, index) => {

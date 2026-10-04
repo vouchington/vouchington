@@ -16,6 +16,7 @@ import { CopyrightRepeatInfringerActions } from './copyright-repeat-infringer-ac
 import { CopyrightStaffLegalHoldReview } from './copyright-staff-case-legal-hold'
 import { CopyrightStaffQueueStatus } from './copyright-staff-queue-status'
 import { CopyrightStaffStaydownMatches } from './copyright-staff-staydown-matches'
+import { CopyrightStaffTerritorial } from './copyright-staff-territorial'
 import {
   ReviewButtons,
   type SubmitRecovery,
@@ -38,6 +39,7 @@ export function CopyrightStaffCase({
   submitRecovery: SubmitRecovery
 }) {
   const canSubmit = rationale.length > 0
+  const isUsNotice = notice.jurisdiction === 'us_dmca'
   return (
     <article className='space-y-4 rounded border p-4'>
       <header>
@@ -48,35 +50,47 @@ export function CopyrightStaffCase({
         <CopyrightStaffQueueStatus notice={notice} />
       </header>
       <CopyrightStaffComplaint notice={notice} />
-      <CopyrightStaffFormReview
-        {...{ canSubmit, pending, rationale, submit }}
-        formReview={notice.form_review}
-      />
-      <CopyrightStaffRestrictionReviews {...{ canSubmit, notice, pending, rationale, submit }} />
-      {notice.appeals.map(appeal => (
-        <CopyrightStaffAppealReview
-          appeal={appeal}
-          canSubmit={canSubmit}
-          key={appeal.submission_id}
+      {isUsNotice ? (
+        <>
+          <CopyrightStaffFormReview
+            {...{ canSubmit, pending, rationale, submit }}
+            formReview={notice.form_review}
+          />
+          <CopyrightStaffRestrictionReviews
+            {...{ canSubmit, notice, pending, rationale, submit }}
+          />
+          {notice.appeals.map(appeal => (
+            <CopyrightStaffAppealReview
+              appeal={appeal}
+              canSubmit={canSubmit}
+              key={appeal.submission_id}
+              pending={pending}
+              rationale={rationale}
+              restrictions={notice.restrictions}
+              submit={submit}
+            />
+          ))}
+          <CopyrightStaffCounterNotices {...{ canSubmit, notice, pending, rationale, submit }} />
+          {notice.legal_holds.map(hold => (
+            <CopyrightStaffLegalHoldReview
+              hold={hold}
+              key={hold.submission_id}
+              pending={pending}
+              rationale={rationale}
+              submit={submit}
+              targets={notice.targets}
+            />
+          ))}
+          <CopyrightStaffGuestCapability noticeId={notice.id} />
+          <CopyrightStaffInformationRequests notice={notice} />
+        </>
+      ) : (
+        <CopyrightStaffTerritorial
+          item={notice}
           pending={pending}
-          rationale={rationale}
-          restrictions={notice.restrictions}
-          submit={submit}
+          onReview={submitRecovery}
         />
-      ))}
-      <CopyrightStaffCounterNotices {...{ canSubmit, notice, pending, rationale, submit }} />
-      {notice.legal_holds.map(hold => (
-        <CopyrightStaffLegalHoldReview
-          hold={hold}
-          key={hold.submission_id}
-          pending={pending}
-          rationale={rationale}
-          submit={submit}
-          targets={notice.targets}
-        />
-      ))}
-      <CopyrightStaffGuestCapability noticeId={notice.id} />
-      <CopyrightStaffInformationRequests notice={notice} />
+      )}
       <CopyrightStaffCorrespondence notice={notice} />
       <CopyrightStaffIntentRecovery {...{ notice, pending, submitRecovery }} />
       <CopyrightStaffStaydownMatches {...{ notice, pending, submitRecovery }} />

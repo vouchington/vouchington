@@ -2794,14 +2794,33 @@
             "web/components/copyright/copyright-staff-case-appeal.tsx",
             "web/components/copyright/copyright-staff-case-legal-hold.tsx",
             "web/components/copyright/copyright-staff-review-buttons.tsx",
-            "web/components/copyright/copyright-repeat-infringer-actions.tsx"
+            "web/components/copyright/copyright-repeat-infringer-actions.tsx",
+            "web/components/copyright/copyright-staff-territorial.tsx",
+            "web/components/copyright/copyright-staff-territorial-decision.tsx",
+            "web/components/copyright/copyright-staff-territorial-complaint-list.tsx",
+            "web/components/copyright/copyright-staff-territorial-complaint-review.tsx",
+            "web/components/copyright/copyright-staff-territorial-dispute.tsx",
+            "web/components/copyright/copyright-staff-territorial-dispute-list.tsx",
+            "web/components/copyright/copyright-staff-territorial-dispute-referral.tsx",
+            "web/components/copyright/copyright-staff-territorial-dispute-record.tsx",
+            "web/storybook/copyright-staff-territorial.stories.tsx",
+            "web/storybook/copyright-staff-territorial-decision.stories.tsx",
+            "web/storybook/copyright-staff-territorial-redress.stories.tsx",
+            "web/storybook/copyright-staff-territorial-dispute.stories.tsx"
           ],
           "behaviorTests": [
             "web/components/copyright/copyright-staff-queue.mock.test.tsx",
             "web/components/copyright/copyright-staff-queue.test.tsx",
             "web/components/copyright/copyright-staff-review-buttons.test.tsx",
             "web/components/copyright/copyright-staff-case-legal-hold.mock.test.tsx",
-            "web/components/copyright/copyright-repeat-infringer-actions.mock.test.tsx"
+            "web/components/copyright/copyright-repeat-infringer-actions.mock.test.tsx",
+            "web/components/copyright/copyright-staff-territorial.mock.test.tsx",
+            "web/components/copyright/copyright-staff-territorial-decision.mock.test.tsx",
+            "web/components/copyright/copyright-staff-territorial-redress.mock.test.tsx",
+            "web/components/copyright/copyright-staff-territorial-dispute.mock.test.tsx",
+            "web/components/copyright/copyright-notice-target-picker-staff.mock.test.tsx",
+            "web/lib/api/client/copyright-territorial-decisions.mock.test.ts",
+            "web/lib/api/client/__tests__/copyright-territorial-redress.mock.test.ts"
           ]
         },
         "swift": {
@@ -2816,7 +2835,7 @@
         }
       },
       "gap": {
-        "summary": "Swift and .NET render no copyright review queue, staff case review, legal-hold, or repeat-infringer action. Staff mutation controls remain web-only staff tooling. The administrator restriction lift has an API route but no web control yet.",
+        "summary": "Swift and .NET render no copyright review queue, staff case review, territorial notice decisions, complaint decisions, EU Art. 21 records, legal-hold, or repeat-infringer action. Staff mutation controls remain web-only staff tooling. The administrator restriction lift has an API route but no web control yet; territorial notice and complaint controls also have no native consumer.",
         "trackingIssue": "https://github.com/vouchington/vouchington/issues/1229"
       }
     },

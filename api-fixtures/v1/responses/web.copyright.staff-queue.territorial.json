@@ -1,0 +1,160 @@
+{
+  "copyright_notices": [
+    {
+      "action_intents": [],
+      "appeals": [],
+      "claimant": {
+        "contact": "rights@example.test",
+        "display_name": "Rights representative",
+        "misuse": null
+      },
+      "counter_notices": [],
+      "delivery_intents": [],
+      "email_correspondence": [],
+      "evidence": [],
+      "form_review": null,
+      "id": "00000000-0000-7000-8000-000000001906",
+      "jurisdiction": "eu_dsa",
+      "legal_holds": [],
+      "next_deadline": null,
+      "reasons": ["territorial_notice_review"],
+      "received_at": "2026-10-04T09:00:00.000Z",
+      "restrictions": [],
+      "staydown_matches": [],
+      "targets": [],
+      "territorial": {
+        "acknowledgment": {
+          "acknowledged_at": "2026-10-04T10:01:00.000Z",
+          "attempt_count": 1,
+          "escalated": false,
+          "exhausted_at": null,
+          "last_attempt_at": "2026-10-04T10:00:00.000Z"
+        },
+        "complaints": [],
+        "complaints_page_info": {
+          "end_cursor": null,
+          "has_next_page": false,
+          "start_cursor": null
+        },
+        "decision": null,
+        "dispute_settlements": [],
+        "dispute_settlements_page_info": {
+          "end_cursor": null,
+          "has_next_page": false,
+          "start_cursor": null
+        },
+        "grounds": "The hosted post reproduces the original photograph.",
+        "hosted_use_url": "https://voucha.ai/discussion/garden-photo",
+        "notifier": {
+          "email": "rights@example.test",
+          "name": "Rights representative"
+        },
+        "recipients": [],
+        "reopened_at": null
+      },
+      "waiting_since": "2026-10-04T09:00:00.000Z",
+      "work_description": "Original photograph of a garden."
+    },
+    {
+      "action_intents": [],
+      "appeals": [],
+      "claimant": {
+        "contact": "park@example.test",
+        "display_name": "Park Images",
+        "misuse": null
+      },
+      "counter_notices": [],
+      "delivery_intents": [],
+      "email_correspondence": [],
+      "evidence": [],
+      "form_review": null,
+      "id": "00000000-0000-7000-8000-000000001907",
+      "jurisdiction": "uk",
+      "legal_holds": [],
+      "next_deadline": null,
+      "reasons": ["territorial_redress_review"],
+      "received_at": "2026-10-04T09:00:00.000Z",
+      "restrictions": [
+        {
+          "id": "00000000-0000-7000-8000-00000000190e",
+          "imposed_at": "2026-10-04T10:30:00.000Z",
+          "status": "confirmed",
+          "target_id": "00000000-0000-7000-8000-00000000190b"
+        }
+      ],
+      "staydown_matches": [],
+      "targets": [
+        {
+          "hosted_use_url": "https://voucha.ai/discussion/park-photo",
+          "id": "00000000-0000-7000-8000-00000000190b",
+          "image_id": "00000000-0000-7000-8000-00000000190d",
+          "placement_key": "image-placement:00000000-0000-7000-8000-00000000190c",
+          "placement_revision": 1,
+          "provenance": null,
+          "surface": "post-image"
+        }
+      ],
+      "territorial": {
+        "acknowledgment": {
+          "acknowledged_at": "2026-10-04T10:01:00.000Z",
+          "attempt_count": 1,
+          "escalated": false,
+          "exhausted_at": null,
+          "last_attempt_at": "2026-10-04T10:00:00.000Z"
+        },
+        "complaints": [
+          {
+            "decision": null,
+            "explanation": "The image was licensed for this use.",
+            "filed_by": "poster",
+            "id": "00000000-0000-7000-8000-00000000190a",
+            "informed_at": "2026-10-04T10:35:00.000Z",
+            "received_at": "2026-10-04T11:00:00.000Z",
+            "submitted_by_user_id": "00000000-0000-7000-8000-000000001909",
+            "window_ends_at": "2027-04-04T10:35:00.000Z"
+          }
+        ],
+        "complaints_page_info": {
+          "end_cursor": null,
+          "has_next_page": false,
+          "start_cursor": null
+        },
+        "decision": {
+          "decided_at": "2026-10-04T10:30:00.000Z",
+          "id": "00000000-0000-7000-8000-000000001908",
+          "outcome": "restrict",
+          "public_explanation": "The hosted photograph matches the notified work.",
+          "rationale": "The evidence identifies the hosted image."
+        },
+        "dispute_settlements": [],
+        "dispute_settlements_page_info": {
+          "end_cursor": null,
+          "has_next_page": false,
+          "start_cursor": null
+        },
+        "grounds": "The hosted post reproduces the original park photograph.",
+        "hosted_use_url": "https://voucha.ai/discussion/park-photo",
+        "notifier": {
+          "email": "park@example.test",
+          "name": "Park Images"
+        },
+        "recipients": [
+          {
+            "informed_at": "2026-10-04T10:35:00.000Z",
+            "role": "poster",
+            "state": "sent",
+            "user_id": "00000000-0000-7000-8000-000000001909"
+          }
+        ],
+        "reopened_at": null
+      },
+      "waiting_since": "2026-10-04T11:00:00.000Z",
+      "work_description": "Original photograph of a garden."
+    }
+  ],
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  }
+}

@@ -1,3 +1,5 @@
+import type { PageInfo } from '@voucha/types/pagination'
+
 /** Staff-only receipt, acknowledgment, and current decision for a received EU or UK notice. */
 export type CopyrightStaffTerritorialCase = {
   hosted_use_url: string
@@ -24,6 +26,8 @@ export type CopyrightStaffTerritorialCase = {
       rationale: string
     } | null
   }>
+  complaints_page_info: PageInfo
+  dispute_settlements_page_info: PageInfo
   dispute_settlements: Array<{
     id: string
     body_name: string

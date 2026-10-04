@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   listCopyrightReviewQueue,
@@ -84,6 +84,53 @@ describe('CopyrightStaffQueue recovery actions', () => {
 
     expect(screen.getByText('Information request 1 emailed to the claimant')).toBeVisible()
     expect(screen.getByText('Bounced')).toBeVisible()
+  })
+
+  it('shows territorial controls only for EU and UK cases while preserving US controls', () => {
+    const euNotice: CopyrightStaffQueueItem = {
+      ...makeNotice(),
+      id: 'eu-case',
+      jurisdiction: 'eu_dsa',
+      reasons: ['territorial_notice_review'],
+      territorial: {
+        hosted_use_url: 'https://voucha.ai/discussion/garden-photo',
+        grounds: 'The post reproduces the photograph.',
+        notifier: { name: 'Rights representative', email: 'rights@example.test' },
+        acknowledgment: {
+          attempt_count: 1,
+          last_attempt_at: '2026-10-04T10:00:00Z',
+          acknowledged_at: '2026-10-04T10:01:00Z',
+          exhausted_at: null,
+          escalated: false,
+        },
+        decision: null,
+        reopened_at: null,
+        recipients: [],
+        complaints: [],
+        complaints_page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+        dispute_settlements: [],
+        dispute_settlements_page_info: {
+          has_next_page: false,
+          start_cursor: null,
+          end_cursor: null,
+        },
+      },
+    }
+    render(
+      <CopyrightStaffQueue
+        data={{
+          copyright_notices: [euNotice, { ...makeNotice(), id: 'us-case' }],
+          page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+        }}
+      />,
+    )
+    const euCase = screen.getByText('Case eu-case').closest('article')!
+    const usCase = screen.getByText('Case us-case').closest('article')!
+    expect(within(euCase).getByText('EU/UK notice details')).toBeVisible()
+    expect(within(euCase).getByText('Territorial notice review')).toBeVisible()
+    expect(within(euCase).queryByText('Guest access')).toBeNull()
+    expect(within(usCase).getByText('Guest access')).toBeVisible()
+    expect(within(usCase).queryByText('EU/UK notice details')).toBeNull()
   })
 
   it('loads a subsequent page from the staff cursor and renders its cases', async () => {

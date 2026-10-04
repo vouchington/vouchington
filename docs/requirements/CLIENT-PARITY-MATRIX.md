@@ -114,17 +114,18 @@ or bounced; only the web consumer reads them. The staydown queue reason
 queue fixture `web.copyright.staff-queue.default`, plus the mark-reviewed action, are web-only
 staff tooling as well; native clients have no staff copyright queue. The territorial staff queue reasons `territorial_notice_review` and
 `territorial_decision_reopened`, plus the `territorial` case projection, are web-only staff
-contracts; there is no native staff client consumer. The territorial decision picker ships in #1906
-before approval and uses the post-image target contract and two-stage decision/reopening flow. The
+contracts; there is no native staff client consumer. The #1906 staff territorial screen provides the decision picker, complaint decisions, and EU Art. 21
+referral, outcome, and implementation controls before approval. It uses the post-image target contract
+and two-stage decision/reopening flow; no native staff consumer exists. The
 [request and response contract](api/v1/copyright-notices/README.md) is owned by the API page.
 EU filing and complaint UI is web-only. The EU form supports guests behind the jurisdiction
 availability read; signed-in notifier and poster case pages show their own immutable statements,
 complaint windows and requests, reopening state, and dispute settlements. Availability errors hide
 new filing; existing case and complaint pages remain usable after withdrawal. Guest notifiers
 complain by admitted email reply. `territorial_redress_review`, notifier receipt details, live
-recipient informed times, complaint decisions, and Art. 21 records extend the staff territorial
-projection for #1906. Swift and .NET have no EU filing or complaint surface; the capability
-`copyright-eu-notices` is tracked in #1229. UK UI remains out of scope.
+recipient informed times, complaint decisions, and Art. 21 records are part of the staff territorial
+projection. Swift and .NET have no EU filing or complaint surface; the capability
+`copyright-eu-notices` is tracked in #1229. UK public filing and participant UI remain out of scope.
 
 Table B lists every web copyright surface (policy pages, member cases, notice filing, poster
 responses, guest filing, and the four staff surfaces). Swift and .NET render none of them, and

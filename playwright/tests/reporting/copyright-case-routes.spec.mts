@@ -61,6 +61,11 @@ test('staff review rationale hydrates for a genuine pending restriction', async 
     .filter({ has: page.getByRole('heading', { name: `Case ${fixture.noticeId}`, exact: true }) })
   await revealOwnedQueueItem(page, item, '/api/v1/copyright-notices/review-queue')
   await expect(item).toBeVisible()
+  await expect(page).toHaveURL(/\/copyright\/review-queue$/)
+  await expect(item.getByTestId('copyright-staff-territorial')).toHaveCount(0)
+  await expect(item.getByTestId('copyright-staff-territorial-decision')).toHaveCount(0)
+  await expect(item.getByTestId('copyright-staff-territorial-redress')).toHaveCount(0)
+  await expect(item.getByTestId('copyright-staff-territorial-dispute')).toHaveCount(0)
   const confirm = item.getByRole('button', { name: 'Confirm restriction', exact: true })
   await expect(confirm).toBeDisabled()
   await page
