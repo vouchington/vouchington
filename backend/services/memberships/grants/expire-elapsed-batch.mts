@@ -1,5 +1,5 @@
 import { getMembershipWorkLimits } from '../work-limits.mts'
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import { enqueueDeliverMembershipEntitlementEffectsBestEffort } from '@queues/memberships/enqueues'
 import sql from 'sql-template-strings'
 import { expireElapsedMemberships, type MembershipExpiryResult } from './expire-elapsed.mts'
@@ -9,8 +9,15 @@ export async function expireElapsedMembershipsBatch(
 ): Promise<MembershipExpiryResult> {
   const limits = getMembershipWorkLimits()
   const result = await expireSelectedMembershipUsers(batchSize, limits)
-  const remaining = await getElapsedMembershipUserIdsBatch(1)
-  return { ...result, hasMore: result.hasMore || remaining.length > 0 }
+  const { rows } = await write(sql`/* expireElapsedMembershipsBatch:hasMore */
+    SELECT 1 FROM memberships membership
+    JOIN membership_sources source ON source.id = membership.membership_source_id
+    WHERE source.source_kind = 'admin_grant'
+      AND membership.projection_ended_at IS NULL AND membership.cancelled_at IS NULL
+      AND membership.expired_at IS NULL AND membership.expires_at IS NOT NULL
+      AND membership.expires_at <= CURRENT_TIMESTAMP
+    LIMIT 1`)
+  return { ...result, hasMore: result.hasMore || rows.length > 0 }
 }
 
 async function expireSelectedMembershipUsers(

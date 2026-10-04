@@ -177,6 +177,7 @@ describe('expireElapsedMembershipsForUser', () => {
     await withTestMembershipUserLocked(member.id, async () => {
       const candidates = await getElapsedMembershipUserIdsBatch(1_000_000)
       expect(candidates).not.toContain(member.id)
+      expect((await expireElapsedMembershipsBatch(1)).hasMore).toBe(true)
       await expect(expireElapsedMembershipsForUsers([member.id])).resolves.toEqual({
         expired: 0,
         hasMore: true,
