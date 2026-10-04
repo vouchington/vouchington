@@ -148,12 +148,6 @@ importers:
       pr-shepherd:
         specifier: ^0.56.2
         version: 0.56.2(supports-color@10.2.2)
-      remark-gfm:
-        specifier: ^4.0.1
-        version: 4.0.1(supports-color@10.2.2)
-      remark-parse:
-        specifier: ^11.0.0
-        version: 11.0.0(supports-color@10.2.2)
       squawk-cli:
         specifier: ^2.66.0
         version: 2.66.0
@@ -163,15 +157,12 @@ importers:
       typescript:
         specifier: npm:@typescript/typescript6@^6.0.2
         version: '@typescript/typescript6@6.0.2'
-      unified:
-        specifier: ^11.0.5
-        version: 11.0.5
       vitest:
         specifier: ^5.0.3
         version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       vouchington-tooling:
-        specifier: ^0.32.0
-        version: 0.32.0(@modelcontextprotocol/sdk@1.31.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(supports-color@10.2.2)(vitest@5.0.3)
+        specifier: ^0.33.0
+        version: 0.33.0(@modelcontextprotocol/sdk@1.31.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(supports-color@10.2.2)(vitest@5.0.3)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -1407,8 +1398,8 @@ importers:
         specifier: npm:@typescript/typescript6@^6.0.2
         version: '@typescript/typescript6@6.0.2'
       vouchington-tooling:
-        specifier: ^0.32.0
-        version: 0.32.0(@modelcontextprotocol/sdk@1.31.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(supports-color@10.2.2)(vitest@5.0.3)
+        specifier: ^0.33.0
+        version: 0.33.0(@modelcontextprotocol/sdk@1.31.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(supports-color@10.2.2)(vitest@5.0.3)
 
   backend/data-stores/valkey:
     dependencies:
@@ -10791,8 +10782,8 @@ importers:
         specifier: ^0.8.1
         version: 0.8.1
       vouchington-tooling:
-        specifier: ^0.32.0
-        version: 0.32.0(@modelcontextprotocol/sdk@1.31.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(supports-color@10.2.2)(vitest@5.0.3)
+        specifier: ^0.33.0
+        version: 0.33.0(@modelcontextprotocol/sdk@1.31.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(supports-color@10.2.2)(vitest@5.0.3)
     devDependencies:
       '@ts-shared/utils':
         specifier: workspace:^
@@ -13030,8 +13021,8 @@ importers:
         specifier: ^11.0.5
         version: 11.0.5
       vouchington-tooling:
-        specifier: ^0.32.0
-        version: 0.32.0(@modelcontextprotocol/sdk@1.31.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(supports-color@10.2.2)(vitest@5.0.3)
+        specifier: ^0.33.0
+        version: 0.33.0(@modelcontextprotocol/sdk@1.31.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(supports-color@10.2.2)(vitest@5.0.3)
     devDependencies:
       '@types/picomatch':
         specifier: ^4.0.3
@@ -13272,8 +13263,8 @@ importers:
         specifier: ^1.9.0
         version: 1.9.0
       vouchington-tooling:
-        specifier: ^0.32.0
-        version: 0.32.0(@modelcontextprotocol/sdk@1.31.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(supports-color@10.2.2)(vitest@5.0.3)
+        specifier: ^0.33.0
+        version: 0.33.0(@modelcontextprotocol/sdk@1.31.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(supports-color@10.2.2)(vitest@5.0.3)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -22614,8 +22605,8 @@ packages:
       jsdom:
         optional: true
 
-  vouchington-tooling@0.32.0:
-    resolution: {integrity: sha512-7JPTz2ISX7RZupQOuXIEp8AhpnWgis2TtPgmkVIrSZMzlVqD1QeNjGmnfXy7j/Y6P0O/n0LsrUKupgGhVyE3Aw==}
+  vouchington-tooling@0.33.0:
+    resolution: {integrity: sha512-XW7im3CrEq6L/gQ4i4GY6f3lT2fpUpHEUlioKqLy0a/+f2c1aGfYwapnxZCQ/8SzrVZ6JQ6UbLYvi22R19HKhQ==}
     engines: {node: '>=24.0.0'}
     hasBin: true
     peerDependencies:
@@ -31997,7 +31988,7 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vouchington-tooling@0.32.0(@modelcontextprotocol/sdk@1.31.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(supports-color@10.2.2)(vitest@5.0.3):
+  vouchington-tooling@0.33.0(@modelcontextprotocol/sdk@1.31.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(supports-color@10.2.2)(vitest@5.0.3):
     dependencies:
       '@types/mdast': 4.0.4
       '@types/unist': 3.0.3
