@@ -229,18 +229,23 @@ completed deploy`, so Automation Fix Main can never legally subscribe to itself,
   ejected PR's commits. The concurrency id is the constant `vouchington:mq-eject`, so an ejection
   while a session is queued or running joins that session (`created=false`), and the
   `comment-session` job links it on the new PR. The session discovers ejections from this
-  workflow's non-skipped runs of the last 24 hours and treats one as untriaged while its PR is open
-  and unmerged at the ejected head, not re-enqueued, and without a triage marker newer than the
-  removal; any other entry is skipped without stopping the session. For each entry it also walks up
+  workflow's non-skipped runs of the last 24 hours, whose run name carries the PR number, and treats
+  one as untriaged until a triage marker for that PR and ejected head is newer than the removal. It
+  classifies an untriaged ejection even after its PR moved, merged, closed, or was re-enqueued,
+  because a flaky test or CI defect outlives the PR, and it reads the merge-group run attempt that
+  finished before the ejection, since a later rerun overwrites the run's result. A triaged
+  ejection is skipped without stopping the session. For each entry it also walks up
   the native stack and includes every layer GitHub removed at the same moment with a stack cascade
   reason (`stack_*`, such as `stack_invalidated`). It classifies each removal on its own, so an
   unchanged PR ejected twice can land in two groups, and groups removals by failure fingerprint.
   Per group it comments its analysis when the PR is the root cause, opens one flaky-test fix PR from
   `main`, files or updates one CI or architecture issue, or reports a transient; finishing one group
   moves on to the next. It never pushes to, edits, merges, enqueues, or dequeues an ejected PR or
-  stack layer. Each of them gets at most one comment per removal, carrying a PR/head marker and
-  rechecked against the live PR, including its queue entry, immediately before posting; a stack
-  layer's comment points to the failing layer's triage and is skipped when that triage is. Before
+  stack layer. Each of them gets at most one comment per removal, carrying a PR/head marker that is
+  rechecked for a duplicate immediately before posting. An ejected PR's comment is always posted as
+  the record of its triage; when the PR has moved on, it reports the outcome for the ejected head
+  without asking for a fix or a re-enqueue. A stack layer's comment points to the failing layer's
+  triage and is posted only while the layer is still out of the queue at the same head. Before
   exiting it repeats discovery, bounded to three passes and about 75 minutes so a busy queue cannot
   run the shared session into its timeout. An ejection that joins
   after the last pass, or that the bound leaves behind, gets only the session link; a session that
@@ -253,7 +258,9 @@ completed deploy`, so Automation Fix Main can never legally subscribe to itself,
   a later sweep still treats the ejection as untriaged. Fix Main still owns failures on `main`
   itself.
 - Dependabot revalidates the exact open bot-authored PR ref/SHA immediately before dispatch. The
-  agent modifies that branch only; it cannot create a second PR. Its failure comment stays quiet
+  agent modifies that branch only; it cannot create a second PR. Before fixing, it searches open
+  issues, pull requests, and recorded decisions; when one already owns the failure or rules out the
+  fix, it reports the PR as blocked and leaves it unchanged. Its failure comment stays quiet
   when the `dispatch` job was cancelled by concurrency coalescing (cancelled with zero steps, no
   session id): several source workflows failing on one PR share one `harness-dispatch` group, GitHub
   keeps only one pending run, and the surviving run owns the session. A lookup failure posts the
