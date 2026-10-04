@@ -9,11 +9,6 @@ import { tagLimitsDynamicConfigRegistryEntries } from './registry-tag-limits-ent
 import type { DynamicConfigRegistryEntry } from './types.mts'
 
 const REGISTRY_ORDER = [
-  'api-keys-work-config',
-  'account-data-requests-work-config',
-  'memberships-work-config',
-  'copyright-notices-work-config',
-
   'feature-flags',
   'membership-billing',
   'request-client-info',
@@ -34,6 +29,10 @@ const REGISTRY_ORDER = [
   'rss-feed-crawl-config',
   'user-import-export-config',
   'data-retention-config',
+  'api-keys-work-config',
+  'account-data-requests-work-config',
+  'memberships-work-config',
+  'copyright-notices-work-config',
   'web-risk-config',
   'moderation-ai-config',
   'moderation-ai-dispatch-config',

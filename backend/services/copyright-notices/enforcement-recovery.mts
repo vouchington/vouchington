@@ -20,7 +20,7 @@ export async function recoverMissingDecisionAssessments(
     'Invalid decision assessment cursor',
   )
   const { rows } = await write<{ id: string }>(sql`/* recoverMissingCopyrightDecisionAssessments */
-    WITH candidates AS (
+    WITH candidate_page AS (
       SELECT DISTINCT ON (submission_id)
         submission_id, copyright_notice_id, assessed_by_id, screening_id
       FROM (
@@ -47,7 +47,9 @@ export async function recoverMissingDecisionAssessments(
         WHERE assessment.copyright_notice_submission_id = durable_decisions.submission_id
       )
       ORDER BY submission_id, priority DESC
-      LIMIT ${limit}
+      LIMIT ${limit + 1}
+    ), candidates AS (
+      SELECT * FROM candidate_page ORDER BY submission_id LIMIT ${limit}
     ), inserted AS (
       INSERT INTO copyright_notice_submission_assessments (
         copyright_notice_submission_id, assessed_at, assessed_by_id,
@@ -67,12 +69,13 @@ export async function recoverMissingDecisionAssessments(
     JOIN copyright_notice_submissions submission
       ON submission.id = inserted.copyright_notice_submission_id
     RETURNING id)
-    SELECT submission_id AS id FROM candidates ORDER BY submission_id
+    SELECT submission_id AS id FROM candidate_page ORDER BY submission_id
   `)
+  const page = rows.slice(0, limit)
   return {
-    results: rows.map(row => row.id),
-    page_info: buildPageInfo(rows, {
-      hasNextPage: rows.length === limit,
+    results: page.map(row => row.id),
+    page_info: buildPageInfo(page, {
+      hasNextPage: rows.length > limit,
       getCursor: row => ({ id: row.id }),
     }),
   }

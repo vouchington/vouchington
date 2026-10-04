@@ -118,10 +118,17 @@ export async function expireElapsedMembershipsBatch(
   batchSize = getMembershipWorkLimits().batchSize,
 ): Promise<MembershipExpiryResult> {
   const limits = getMembershipWorkLimits()
-  const userIds = await getElapsedMembershipUserIdsBatch(batchSize)
-  const result = await expireElapsedMembershipsForUsers(userIds, limits)
+  const result = await expireSelectedMembershipUsers(batchSize, limits)
   const remaining = await getElapsedMembershipUserIdsBatch(1)
   return { ...result, hasMore: result.hasMore || remaining.length > 0 }
+}
+
+async function expireSelectedMembershipUsers(
+  batchSize: number,
+  limits: ReturnType<typeof getMembershipWorkLimits>,
+) {
+  const userIds = await getElapsedMembershipUserIdsBatch(batchSize)
+  return expireElapsedMembershipsForUsers(userIds, limits)
 }
 
 export async function getElapsedMembershipUserIdsBatch(batchSize: number): Promise<string[]> {
