@@ -92,9 +92,25 @@ describe('crawl-hostnames processors', () => {
     })
 
     expect(dispatchCrawlHostnamesMock).toHaveBeenCalled()
-    expect(dispatchCrawlUrlsPerHostnameMock).toHaveBeenCalledWith('h1', undefined)
+    expect(dispatchCrawlUrlsPerHostnameMock).toHaveBeenCalledWith(
+      'h1',
+      undefined,
+      expect.any(Function),
+    )
     expect(dispatchTier1CrawlUrlsMock).toHaveBeenCalled()
     expect(dispatchTier2CrawlUrlsMock).toHaveBeenCalled()
+  })
+
+  it('keeps hostname identity when the bounded core saves a successful cursor', async () => {
+    const queued = job('crawl_urls_per_hostname_dispatcher', { hostname_id: 'h1' })
+    queued.updateData = vi.fn<Job['updateData']>(async () => {})
+    const cursor = { sweepStartedAt: new Date().toISOString(), afterId: 'successful-url' }
+    dispatchCrawlUrlsPerHostnameMock.mockImplementationOnce(async (_, __, save) => {
+      await save?.(cursor)
+      return { count: 1, hasMore: false }
+    })
+    await processCrawlHostnamesJob(queued, dependencies())
+    expect(queued.updateData).toHaveBeenCalledExactlyOnceWith({ hostname_id: 'h1', cursor })
   })
 
   it('runs cleanup and refresh dispatcher jobs through helper processors', async () => {

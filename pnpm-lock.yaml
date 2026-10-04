@@ -11899,6 +11899,19 @@ importers:
       glide-mq:
         specifier: ^0.16.0
         version: 0.16.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
+    devDependencies:
+      '@modules/scheduled-job-manifest':
+        specifier: workspace:^
+        version: link:../../modules/scheduled-job-manifest
+      '@queues/crawl-referral-links':
+        specifier: workspace:^
+        version: link:../../queues/crawl-referral-links
+      '@queues/find-your-friends':
+        specifier: workspace:^
+        version: link:../../queues/find-your-friends
+      '@queues/unfurl-referral-links':
+        specifier: workspace:^
+        version: link:../../queues/unfurl-referral-links
 
   backend/workers/crawl-referral-links:
     dependencies:

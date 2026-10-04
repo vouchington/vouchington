@@ -13,8 +13,8 @@ See [Crawling Architecture](../../crawling.md) for the dispatcher flow and crawl
 - `crawl_hostnames` - All hostname-level crawl operations
   - `crawl_hostnames_dispatcher` - Daily 2 AM, enqueues per-hostname URL dispatch
   - `crawl_urls_per_hostname_dispatcher` - Dispatches individual URL crawls for a hostname
-  - `crawl_tier1_dispatcher` - Daily 2:30 AM, dispatches high-priority URLs (7-day cycle)
-  - `crawl_tier2_dispatcher` - Weekly Sunday 3 AM, dispatches lower-priority URLs (30-day cycle)
+  - `enqueueCrawlTier1Dispatcher` - Daily 2:30 AM, requests the coalesced `crawl_tier1_dispatcher` sweep (7-day cycle)
+  - `enqueueCrawlTier2Dispatcher` - Weekly Sunday 3 AM, requests the coalesced `crawl_tier2_dispatcher` sweep (30-day cycle)
   - `refresh_hostname_crawler_dispatcher` - Weekly Monday 4 AM, refreshes crawler configs
   - `refresh_hostname_crawler` - Refreshes crawler for a single hostname
   - `crawl_cleanup` - Daily 3:30 AM, deletes old invalid crawls (30-day cutoff; overall crawl retention is partition drop)

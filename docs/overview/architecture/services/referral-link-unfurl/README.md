@@ -43,6 +43,9 @@ Lost-job recovery dispatch uses `referral-unfurl-dispatch-work-config` page and 
 Each `hasMore` continuation retains its fixed request cutoff and exact request timestamp/ID tuple, matching the partial recovery index; newly requested
 links join a later scheduled sweep. Completed and failed rows remain outside recovery selection.
 
+Workers use [retained queue sweep ownership](../../../../development/postgresql/reference-cursors.md#retained-queue-sweeps)
+to coalesce repeated roots and preserve successful cursor progress through bounded passes and retries.
+
 ## Related
 
 - Seed data: [../../../seed/referral-programs-topics.csv](../../../../../seed/referral-programs-topics.csv)

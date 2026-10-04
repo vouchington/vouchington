@@ -3,7 +3,7 @@ import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import { CRAWL_HOSTNAMES_QUEUE_NAME, PRIORITY_DEFAULT, PRIORITY_DISPATCHER } from './config.mts'
 import { crawlHostnamesQueue } from './queues.mts'
-import type { CrawlHostnamesJobs, CrawlUrlDispatchData } from './types.mts'
+import type { CrawlHostnamesJobs } from './types.mts'
 
 const ONE_MINUTE_MS = 60_000
 const BACKFILL_DEDUPLICATION_TTL_MS = 60 * ONE_MINUTE_MS
@@ -23,8 +23,8 @@ function createBulkHostnameEnqueue(jobName: CrawlHostnamesJobs, defaultPriority:
       opts: {
         deduplication: {
           id: `${jobName}__${hostnameId}`,
-          mode: 'debounce',
-          ttl: ONE_MINUTE_MS,
+          mode: jobName === CRAWL_HOSTNAME_JOB_NAME ? ('simple' as const) : ('debounce' as const),
+          ...(jobName === CRAWL_HOSTNAME_JOB_NAME ? {} : { ttl: ONE_MINUTE_MS }),
         },
       },
     }),
@@ -49,13 +49,19 @@ function createDispatcherEnqueue(jobName: CrawlHostnamesJobs, defaultPriority: n
       {},
       {
         priority: defaultPriority,
-        ...(options?.deduplicationId && {
-          deduplication: {
-            id: options.deduplicationId,
-            mode: 'throttle' as const,
-            ttl: BACKFILL_DEDUPLICATION_TTL_MS,
-          },
-        }),
+        ...(jobName === 'crawl_tier1_dispatcher' || jobName === 'crawl_tier2_dispatcher'
+          ? {
+              deduplication: { id: jobName, mode: 'simple' as const },
+            }
+          : options?.deduplicationId
+            ? {
+                deduplication: {
+                  id: options.deduplicationId,
+                  mode: 'throttle' as const,
+                  ttl: BACKFILL_DEDUPLICATION_TTL_MS,
+                },
+              }
+            : {}),
       },
     )
   }
@@ -92,22 +98,3 @@ export const enqueueRefreshHostnameCrawlerDispatcher = createDispatcherEnqueue(
 )
 
 export const enqueueCrawlCleanup = createDispatcherEnqueue('crawl_cleanup', PRIORITY_DEFAULT)
-
-export function enqueueCrawlDispatchContinuation(
-  jobName: CrawlHostnamesJobs,
-  data: CrawlUrlDispatchData,
-): EnqueueReturnType {
-  const enqueue = createEnqueueFunction<CrawlUrlDispatchData, CrawlHostnamesJobs>({
-    queue: crawlHostnamesQueue,
-    queueName: CRAWL_HOSTNAMES_QUEUE_NAME,
-    jobName,
-  })
-  return enqueue(data, {
-    priority: PRIORITY_DISPATCHER,
-    deduplication: {
-      id: `${jobName}:${data.hostname_id ?? 'all'}:${data.cursor?.sweepStartedAt}:${data.cursor?.afterId}`,
-      mode: 'throttle',
-      ttl: ONE_MINUTE_MS,
-    },
-  })
-}

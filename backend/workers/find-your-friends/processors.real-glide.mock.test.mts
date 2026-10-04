@@ -43,21 +43,19 @@ describe('friend dispatcher continuations', () => {
         upperIds: { facebook: null, x: null, github: null, [provider]: ids[2]! },
         afterIds: { [provider]: `${prefix}-0` },
       }
-      expect(await processFindYourFriendsDispatcher(undefined, data)).toEqual({
-        count: 1,
-        hasMore: true,
-      })
-      const jobs = await findYourFriendsQueue.searchJobs({ name: 'dispatchFindYourFriends' })
-      const continuation = jobs.find(
-        job => (job.data as FriendsDispatchData).afterIds?.[provider] === ids[0],
-      )!
-      expect(continuation).toBeDefined()
+      const saved: FriendsDispatchData[] = []
+      expect(
+        await processFindYourFriendsDispatcher(undefined, data, async next => {
+          saved.push(next)
+        }),
+      ).toEqual({ count: 1, hasMore: true })
+      const resumed = saved.at(-1)!
+      expect(resumed.afterIds?.[provider]).toBe(ids[0])
       const laterId = `${prefix}-bb`
       const laterOwner = await createTestUser()
       await insertTestOAuthAccount(provider, laterId)
       await connectTestOAuthAccount(provider, laterOwner.id, laterId)
       await setTestOAuthAccountTokens(provider, laterId, { accessToken: 'synthetic-access-token' })
-      const resumed = continuation.data as FriendsDispatchData
       expect(await processFindYourFriendsDispatcher(undefined, resumed)).toEqual({
         count: 1,
         hasMore: true,

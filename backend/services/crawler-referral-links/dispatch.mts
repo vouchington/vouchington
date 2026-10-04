@@ -9,7 +9,10 @@ import {
 
 import { getDispatchLimits } from './work-limits.mts'
 import { getMaxUUIDv7ForDate } from '@modules/utils'
-import type { ReferralCrawlDispatchCursor } from '@queues/crawl-referral-links/types'
+import type {
+  ReferralCrawlDispatchData,
+  ReferralCrawlDispatchCursor,
+} from '@queues/crawl-referral-links/types'
 
 type EnqueueBulkCrawlReferralLinks = typeof enqueueBulkCrawlReferralLinks
 type ComputeHostnameRateLimitMs = typeof computeHostnameRateLimitMs
@@ -23,6 +26,7 @@ type ScheduledReferralLinkDispatchOptions = ReferralLinkDispatchDependencies & {
   referralLinkIds?: readonly string[]
   cursor?: ReferralCrawlDispatchCursor
   urlId?: string
+  saveProgress?: (data: ReferralCrawlDispatchData) => Promise<void>
 }
 
 export async function dispatchReferralLinkCrawls(
@@ -30,6 +34,11 @@ export async function dispatchReferralLinkCrawls(
 ) {
   const limits = getDispatchLimits()
   const sweepStartedAt = options.cursor?.sweepStartedAt ?? new Date().toISOString()
+  const scope = {
+    ...(options.urlId && { urlId: options.urlId }),
+    ...(options.referralLinkIds && { referralLinkIds: options.referralLinkIds }),
+  }
+  await options.saveProgress?.({ ...scope, cursor: { ...options.cursor, sweepStartedAt } })
   const upperId = getMaxUUIDv7ForDate(new Date(sweepStartedAt))
   const queryStatement = sql`/* dispatchReferralLinkCrawls */
     WITH due_candidates AS MATERIALIZED (
@@ -92,22 +101,28 @@ export async function dispatchReferralLinkCrawls(
         computeHostnameRateLimitMs:
           options.computeHostnameRateLimitMs ?? computeHostnameRateLimitMs,
       })
+      const last = rows.at(-1)!
+      await options.saveProgress?.({
+        ...scope,
+        cursor: {
+          sweepStartedAt,
+          ...(options.urlId
+            ? { afterId: last.link_id }
+            : { afterWork: { dueAt: last.due_at, id: last.link_id } }),
+        },
+      })
     },
   })
-  if (result.hasMore && result.lastRow)
-    await enqueueCrawlReferralLinksDispatcher({
-      cursor: {
-        sweepStartedAt,
-        ...(options.urlId
-          ? { afterId: result.lastRow.link_id }
-          : {
-              afterWork: { dueAt: result.lastRow.due_at, id: result.lastRow.link_id },
-            }),
-      },
-      ...(options.urlId ? { urlId: options.urlId } : {}),
-      ...(options.referralLinkIds ? { referralLinkIds: options.referralLinkIds } : {}),
-    })
-  return { count: total, hasMore: result.hasMore }
+  const cursor =
+    result.hasMore && result.lastRow
+      ? {
+          sweepStartedAt,
+          ...(options.urlId
+            ? { afterId: result.lastRow.link_id }
+            : { afterWork: { dueAt: result.lastRow.due_at, id: result.lastRow.link_id } }),
+        }
+      : undefined
+  return { count: total, hasMore: result.hasMore, ...(cursor && { cursor }) }
 }
 
 /** Event fanout preserves its URL scope and bypasses scheduled crawl cooldowns. */
@@ -115,5 +130,8 @@ export async function enqueueReferralLinkCrawlsForUrlId(
   urlId: string,
   dependencies: ReferralLinkDispatchDependencies = {},
 ) {
-  return dispatchReferralLinkCrawls({ ...dependencies, urlId })
+  const result = await dispatchReferralLinkCrawls({ ...dependencies, urlId })
+  if (result.hasMore && result.cursor)
+    await enqueueCrawlReferralLinksDispatcher({ urlId, cursor: result.cursor })
+  return { count: result.count, hasMore: result.hasMore }
 }

@@ -23,3 +23,15 @@ Enqueue-only selectors retain a fixed sweep cutoff and a stable keyset position 
 continuations; they must not restart at the same prefix on every scheduled run. A lost queue
 continuation is recoverable through the next scheduled sweep. Reconciliation checkpoints
 advance only when the entire fixed window drains.
+
+## Retained queue sweeps
+
+Periodic roots enqueue one simple-deduplicated live job per logical sweep scope. The worker saves
+fixed bounds in that job before selecting work and saves the exact cursor after each successful
+enqueue. Successful capped passes park the same job; side-effect failures propagate after saving
+the successful predecessor, preserving the ordinary bounded attempt policy. Repeated scheduler
+roots therefore cannot multiply unfinished sweep chains. Complete windows alone advance checkpoints.
+
+Independent scopes must not share a retained ordering slot: a delayed job keeps that slot in
+GlideMQ. Per-item/provider ordering remains separate. Manual events with distinct fixed windows
+retain their own scope so coalescing a scheduled sweep cannot discard newer event fanout.

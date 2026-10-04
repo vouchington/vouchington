@@ -25,9 +25,7 @@ describe('unfurl referral links processor', () => {
     })
     await markReferralLinkUnfurlRequested(parent.id)
 
-    await processUnfurlReferralLinksJob(
-      makeJob('unfurl_referral_links_dispatcher', {}, 'dispatcher'),
-    )
+    await processUnfurlReferralLinksJob(makeJob('unfurl_referral_links_dispatcher', {}))
 
     const waiting = await readAllQueueJobs(unfurlReferralLinksQueue)
     expect(
@@ -39,10 +37,10 @@ describe('unfurl referral links processor', () => {
     ).toBe(true)
   })
 
-  it('rejects an unknown job name inside the dispatcher ordering key', async () => {
-    await expect(
-      processUnfurlReferralLinksJob(makeJob('unexpected', {}, 'dispatcher')),
-    ).rejects.toThrow('Unfurl referral links dispatcher job unexpected not found')
+  it('rejects an unknown job name', async () => {
+    await expect(processUnfurlReferralLinksJob(makeJob('unexpected', {}))).rejects.toThrow(
+      'Unfurl referral links job unexpected not found',
+    )
   })
 
   it('unfurl_referral_link job delegates to runReferralLinkUnfurl using job.data.parentLinkId', async () => {
@@ -115,11 +113,13 @@ function randomSlug(label: string): string {
 function makeJob(
   name: string,
   data: Record<string, string>,
-  orderingKey?: 'dispatcher',
-): Job<Record<string, string>> {
+): Pick<Job<Record<string, string>>, 'name' | 'data' | 'updateData' | 'moveToDelayed'> {
   return {
     name,
     data,
-    opts: orderingKey ? { ordering: { key: orderingKey } } : {},
-  } as Job<Record<string, string>>
+    updateData: async () => {},
+    moveToDelayed: async () => {
+      throw new Error('unexpected capped dispatcher')
+    },
+  }
 }

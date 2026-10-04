@@ -38,20 +38,25 @@ describe('bounded referral crawl dispatch', () => {
       max_rows_per_run: 1,
     })
     const computeHostnameRateLimitMs = async () => 1
+    const progress: ReferralCrawlDispatchData[] = []
     expect(
-      await dispatchReferralLinkCrawls({ referralLinkIds: ids, computeHostnameRateLimitMs }),
-    ).toEqual({ count: 1, hasMore: true })
-    const jobs = await crawlReferralLinksQueue.searchJobs({
-      name: 'crawl_referral_links_dispatcher',
-    })
-    const data = jobs
-      .map(job => job.data as ReferralCrawlDispatchData)
-      .find(data => data.cursor?.afterWork?.id === ids[0])!
+      await dispatchReferralLinkCrawls({
+        referralLinkIds: ids,
+        computeHostnameRateLimitMs,
+        saveProgress: async next => {
+          progress.push(next)
+        },
+      }),
+    ).toMatchObject({ count: 1, hasMore: true })
+    const data = progress.at(-1)!
+    expect(data.cursor?.afterWork?.id).toBe(ids[0])
     expect(data.referralLinkIds).toEqual(ids)
-    expect(await dispatchReferralLinkCrawls({ ...data, computeHostnameRateLimitMs })).toEqual({
-      count: 1,
-      hasMore: true,
-    })
+    expect(await dispatchReferralLinkCrawls({ ...data, computeHostnameRateLimitMs })).toMatchObject(
+      {
+        count: 1,
+        hasMore: true,
+      },
+    )
     expect(
       await dispatchReferralLinkCrawls({
         ...data,
@@ -97,10 +102,12 @@ describe('bounded referral crawl dispatch', () => {
     const data = jobs[0]!.data as ReferralCrawlDispatchData
     expect(data.urlId).toBe(urlId)
     expect(data.cursor?.afterId).toBe(ids[0])
-    expect(await dispatchReferralLinkCrawls({ ...data, computeHostnameRateLimitMs })).toEqual({
-      count: 1,
-      hasMore: false,
-    })
+    expect(await dispatchReferralLinkCrawls({ ...data, computeHostnameRateLimitMs })).toMatchObject(
+      {
+        count: 1,
+        hasMore: false,
+      },
+    )
     for (const linkId of ids)
       expect(
         await crawlReferralLinksQueue.searchJobs({ name: 'crawl_referral_link', data: { linkId } }),

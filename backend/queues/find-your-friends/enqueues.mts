@@ -21,10 +21,6 @@ const { attempts, backoff, removeOnComplete, removeOnFail, deduplicationTtlMs } 
   FIND_YOUR_FRIENDS_DEFAULTS
 
 const defaults = { attempts, backoff, removeOnComplete, removeOnFail } satisfies Partial<JobOptions>
-type DispatcherOptions = {
-  deduplicationId?: string
-}
-const BACKFILL_DEDUPLICATION_TTL_MS = 60 * 60_000
 
 type SyncConfig<TData> = {
   jobName: FindYourFriendsSyncJobs
@@ -136,19 +132,12 @@ export const enqueueBulkSyncFacebookFriends = facebookSync.bulk
 export const enqueueBulkSyncXFriends = xSync.bulk
 export const enqueueBulkSyncGithubFriends = githubSync.bulk
 
-export function enqueueDispatchFindYourFriends(
-  options?: DispatcherOptions,
-  data: FriendsDispatchData = {},
-): EnqueueReturnType {
-  return enqueueDispatchFindYourFriendsJob(data, {
-    priority: PRIORITY_DISPATCHER,
-    ordering: FIND_YOUR_FRIENDS_ORDERING.dispatcher,
-    ...(options?.deduplicationId && {
-      deduplication: {
-        id: options.deduplicationId,
-        mode: 'throttle' as const,
-        ttl: BACKFILL_DEDUPLICATION_TTL_MS,
-      },
-    }),
-  })
+export function enqueueDispatchFindYourFriends(): EnqueueReturnType {
+  return enqueueDispatchFindYourFriendsJob(
+    {},
+    {
+      priority: PRIORITY_DISPATCHER,
+      deduplication: { id: 'friends-dispatcher', mode: 'simple' },
+    },
+  )
 }

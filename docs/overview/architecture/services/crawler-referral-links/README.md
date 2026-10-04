@@ -15,7 +15,7 @@ Crawls URLs associated with active `user_referral_program_links` entries to dete
 - Only active links (`activated_at IS NOT NULL`, `deactivated_at IS NULL`) on crawlable, unblocked hostnames are dispatched
 - robots.txt is checked before crawling regardless of crawler type — disallowed URLs are skipped without updating link status
 - The scheduled dispatcher awaits child crawl job enqueue by hostname; enqueue failure fails the dispatcher so a retry or admin-triggered run re-scans durable link state
-- The scheduled worker calls the dispatcher without options, which reads a capped page of indexed due candidates
+- The scheduled worker supplies its retained scope and cursor to read a capped page of indexed due candidates
 - Scoped dispatcher calls may provide `referralLinkIds`: omitting it selects scheduled due work, a non-empty list selects only those eligible links, and an empty list dispatches nothing
 
 ## Crawler Type
@@ -53,6 +53,9 @@ IDs; newly successful rows fall outside the fixed due cutoff.
 URL event fanout uses the same bounded engine, preserves that URL in every continuation, and
 bypasses scheduled cooldowns. It queues the initial page synchronously and resumes the tail in
 the background; it never silently truncates the event's eligible links.
+
+Workers use [retained queue sweep ownership](../../../../development/postgresql/reference-cursors.md#retained-queue-sweeps)
+to coalesce repeated roots and preserve successful cursor progress through bounded passes and retries.
 
 ## Related
 

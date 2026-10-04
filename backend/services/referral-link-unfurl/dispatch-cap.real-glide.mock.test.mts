@@ -49,16 +49,14 @@ describe('bounded referral unfurl dispatch', () => {
       batch_size: 1,
       max_rows_per_run: 1,
     })
-    expect(await dispatchUnfurlReferralLinks({ sweepStartedAt, after })).toEqual({
-      count: 1,
-      hasMore: true,
-    })
-    const jobs = await unfurlReferralLinksQueue.searchJobs({
-      name: 'unfurl_referral_links_dispatcher',
-    })
-    const cursor = jobs
-      .map(job => (job.data as { cursor?: UnfurlDispatchCursor }).cursor)
-      .find(cursor => cursor?.after?.id === ids[0])!
+    const savedCursors: UnfurlDispatchCursor[] = []
+    expect(
+      await dispatchUnfurlReferralLinks({ sweepStartedAt, after }, async next => {
+        savedCursors.push(next)
+      }),
+    ).toEqual({ count: 1, hasMore: true })
+    const cursor = savedCursors.at(-1)!
+    expect(cursor.after?.id).toBe(ids[0])
     const [later] = await insertTestUnfurlDispatchPlanLinks({
       userId: owner.id,
       referralProgramId,

@@ -3,7 +3,6 @@ export const PRIORITY_DEFAULT = 10
 export const PRIORITY_DISPATCHER = 100
 
 export const UNFURL_REFERRAL_LINKS_ORDERING = {
-  dispatcher: { key: 'dispatcher', concurrency: 1 },
   unfurl: { key: 'unfurl', concurrency: 5 },
 } as const
 

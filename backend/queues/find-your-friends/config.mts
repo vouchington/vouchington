@@ -5,7 +5,6 @@ export const PRIORITY_DISPATCHER = 100
 export const ENQUEUE_BATCH_SIZE = 1000
 
 export const FIND_YOUR_FRIENDS_ORDERING = {
-  dispatcher: { key: 'dispatcher', concurrency: 1 },
   sync_facebook: { key: 'sync_facebook', concurrency: 5 },
   sync_x: { key: 'sync_x', concurrency: 2 }, // tight rate limits
   sync_github: { key: 'sync_github', concurrency: 5 },

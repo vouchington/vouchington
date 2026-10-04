@@ -74,16 +74,7 @@ export function enqueueUnfurlReferralLinksDispatcher(
 ): EnqueueReturnType {
   return enqueueUnfurlReferralLinksDispatcherJob(cursor ? { cursor } : {}, {
     priority: PRIORITY_DISPATCHER,
-    ...(cursor
-      ? {
-          deduplication: {
-            id: `referral-unfurl:${cursor.sweepStartedAt}:${cursor.after?.requestedAt}:${cursor.after?.id}`,
-            mode: 'throttle' as const,
-            ttl: UNFURL_REFERRAL_LINKS_DEFAULTS.deduplicationTtlMs,
-          },
-        }
-      : {}),
-    ordering: UNFURL_REFERRAL_LINKS_ORDERING.dispatcher,
+    deduplication: { id: 'referral-unfurl-dispatcher', mode: 'simple' },
   })
 }
 

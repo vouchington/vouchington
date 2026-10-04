@@ -93,17 +93,18 @@ describe('indexed referral crawl candidates', () => {
     ).toBeLessThanOrEqual(2)
     queued.length = 0
     let data: ReferralCrawlDispatchData = { referralLinkIds: ids, cursor: { sweepStartedAt } }
+    const saveProgress = async (next: ReferralCrawlDispatchData) => {
+      data = next
+    }
     for (const id of ids) {
-      const result = await dispatchReferralLinkCrawls({ ...data, ...dependencies })
+      const result = await dispatchReferralLinkCrawls({
+        ...data,
+        ...dependencies,
+        saveProgress,
+      })
       expect(result.count).toBe(skipped.includes(id) ? 0 : 1)
       expect(result.hasMore).toBe(id !== ids.at(-1))
       if (!result.hasMore) break
-      const jobs = await crawlReferralLinksQueue.searchJobs({
-        name: 'crawl_referral_links_dispatcher',
-      })
-      data = jobs
-        .map(job => job.data as ReferralCrawlDispatchData)
-        .find(data => data.cursor?.afterWork?.id === id)!
       expect(data.referralLinkIds).toEqual(ids)
       expect(data.cursor?.sweepStartedAt).toBe(sweepStartedAt)
     }

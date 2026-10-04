@@ -79,7 +79,12 @@ function crawlJob(
     registration: 'sequential' as const,
     repeat: { pattern },
     template: {
-      name: id,
+      name:
+        id === 'crawl_tier1_dispatcher'
+          ? 'enqueueCrawlTier1Dispatcher'
+          : id === 'crawl_tier2_dispatcher'
+            ? 'enqueueCrawlTier2Dispatcher'
+            : id,
       data: {},
       opts: { ...DEFAULT_OPTIONS, priority } satisfies JobOptions,
     },

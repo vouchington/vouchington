@@ -8,10 +8,10 @@ See [Crawling Architecture](../../crawling.md) for the referral-link fetch and a
 
 ## Processors
 
-| Queue                  | Processor                         | Schedule                  |
-| ---------------------- | --------------------------------- | ------------------------- |
-| `crawl_referral_links` | `crawl_referral_links_dispatcher` | Weekly Sunday at 4 AM UTC |
-| `crawl_referral_links` | `crawl_referral_link`             | Enqueued by dispatcher    |
+| Queue                  | Processor                             | Schedule                  |
+| ---------------------- | ------------------------------------- | ------------------------- |
+| `crawl_referral_links` | `enqueueCrawlReferralLinksDispatcher` | Weekly Sunday at 4 AM UTC |
+| `crawl_referral_links` | `crawl_referral_link`                 | Enqueued by dispatcher    |
 
 ## Architecture
 

@@ -43,13 +43,14 @@ describe('bounded crawl URL dispatch', () => {
     overrideDynamicConfigFieldsForTest(crawlDispatchConfig, { batch_size: 1, max_rows_per_run: 1 })
     const cursor = { sweepStartedAt: new Date(time.getTime() + 1).toISOString(), afterId: lowerId }
     const dispatch = tier === 1 ? dispatchTier1CrawlUrls : dispatchTier2CrawlUrls
-    expect(await dispatch(cursor)).toEqual({ count: 1, hasMore: true })
-    const jobs = await crawlHostnamesQueue.searchJobs({
-      name: tier === 1 ? 'crawl_tier1_dispatcher' : 'crawl_tier2_dispatcher',
-    })
-    const saved = jobs
-      .map(job => (job.data as { cursor?: CrawlDispatchCursor }).cursor)
-      .find(cursor => cursor?.afterId === ids[0])!
+    const savedCursors: CrawlDispatchCursor[] = []
+    expect(
+      await dispatch(cursor, async next => {
+        savedCursors.push(next)
+      }),
+    ).toEqual({ count: 1, hasMore: true })
+    const saved = savedCursors.at(-1)!
+    expect(saved.afterId).toBe(ids[0])
     expect(saved).toBeDefined()
     expect(await dispatch(saved)).toEqual({ count: 1, hasMore: true })
     expect(await dispatch({ ...saved, afterId: ids[1] })).toEqual({ count: 1, hasMore: false })
@@ -69,17 +70,14 @@ describe('bounded crawl URL dispatch', () => {
     await updateUrlHostname(hostnameId, { crawlable: true })
     await updateUrlHostnameBlocked(hostnameId, false)
     overrideDynamicConfigFieldsForTest(crawlDispatchConfig, { batch_size: 1, max_rows_per_run: 1 })
-    expect(await dispatchCrawlUrlsPerHostname(hostnameId)).toEqual({ count: 1, hasMore: true })
-    const continuationJobs = () =>
-      crawlHostnamesQueue.searchJobs({
-        name: 'crawl_urls_per_hostname_dispatcher',
-        data: { hostname_id: hostnameId },
-      })
-    const first = (await continuationJobs()).find(
-      job => (job.data as { cursor?: CrawlDispatchCursor }).cursor?.afterId === urls[0]!.id,
-    )!
-    expect(first).toBeDefined()
-    const cursor = (first.data as { cursor: CrawlDispatchCursor }).cursor as CrawlDispatchCursor
+    const savedCursors: CrawlDispatchCursor[] = []
+    expect(
+      await dispatchCrawlUrlsPerHostname(hostnameId, undefined, async next => {
+        savedCursors.push(next)
+      }),
+    ).toEqual({ count: 1, hasMore: true })
+    const cursor = savedCursors.at(-1)!
+    expect(cursor.afterId).toBe(urls[0]!.id)
     const later = (await insertTestUrlDirect(owner.id, `https://${hostname}/later`))!
     expect(await dispatchCrawlUrlsPerHostname(hostnameId, cursor)).toEqual({
       count: 1,

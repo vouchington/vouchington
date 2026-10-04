@@ -1,30 +1,29 @@
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { enqueueDispatchFindYourFriends } from '@queues/find-your-friends/enqueues'
+import {
+  processRetainedSweep,
+  workerQueueConnection,
+  workerQueuePrefix,
+} from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
 import { QUEUE_NAME } from '@queues/find-your-friends/config'
 import { processFindYourFriendsDispatcher } from './processors.mts'
 import { syncFacebookFriends } from '@services/oauth-facebook/friends'
 import { syncXFriends } from '@services/oauth-x/friends'
 import { syncGithubFriends } from '@services/oauth-github/friends'
-import type {
-  FindYourFriendsDispatcherJobs,
-  FindYourFriendsSyncJobs,
-} from '@queues/find-your-friends/types'
+import type { FindYourFriendsSyncJobs } from '@queues/find-your-friends/types'
 import { Worker, type Job } from 'glide-mq'
 
 export const findYourFriends = new Worker(
   QUEUE_NAME,
   (job: Job) => {
+    if (job.name === 'enqueueDispatchFindYourFriends') return enqueueDispatchFindYourFriends()
+    if (job.name === 'dispatchFindYourFriends')
+      return processRetainedSweep(job, save =>
+        processFindYourFriendsDispatcher(undefined, job.data, save),
+      )
     const orderingKey = job.opts.ordering?.key
 
     switch (orderingKey) {
-      case 'dispatcher': {
-        switch (job.name as FindYourFriendsDispatcherJobs) {
-          case 'dispatchFindYourFriends':
-            return processFindYourFriendsDispatcher(undefined, job.data)
-          default:
-            throw new Error(`find-your-friends dispatcher job ${job.name} not found`)
-        }
-      }
       case 'sync_facebook': {
         switch (job.name as FindYourFriendsSyncJobs) {
           case 'syncFacebookFriends': {

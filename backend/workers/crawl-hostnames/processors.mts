@@ -5,7 +5,12 @@ import { refreshHostnameCrawler } from '@services/crawlers/refresh'
 import { dispatchCrawlHostnames } from '@services/crawls/dispatch-crawl-hostnames'
 import { dispatchTier1CrawlUrls, dispatchTier2CrawlUrls } from '@services/crawls/dispatch-tier-urls'
 import { dispatchCrawlUrlsPerHostname } from '@services/crawls/dispatch-per-hostname'
-import { enqueueBulkRefreshHostnameCrawler } from '@queues/crawl-hostnames/enqueues'
+import { processRetainedSweep } from '@data-stores/valkey-glide-mq'
+import {
+  enqueueBulkRefreshHostnameCrawler,
+  enqueueCrawlTier1Dispatcher,
+  enqueueCrawlTier2Dispatcher,
+} from '@queues/crawl-hostnames/enqueues'
 import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
 import { computeRateLimitForHostname } from '@services/crawls/hostname-rate-limit'
 import type { Job } from 'glide-mq'
@@ -90,18 +95,30 @@ export async function processCrawlHostnamesJob(
 ): Promise<unknown> {
   const deps = getDependencies(dependencies)
   switch (job.name as CrawlHostnamesJobs) {
+    case 'enqueueCrawlTier1Dispatcher':
+      return enqueueCrawlTier1Dispatcher()
+    case 'enqueueCrawlTier2Dispatcher':
+      return enqueueCrawlTier2Dispatcher()
     case 'crawl_hostnames_dispatcher':
       return deps.dispatchCrawlHostnames()
     case 'crawl_urls_per_hostname_dispatcher': {
       const hostnameId = job.data?.hostname_id
       if (!hostnameId)
         throw new Error('Crawl URLs per hostname dispatcher job .hostname_id is required')
-      return deps.dispatchCrawlUrlsPerHostname(hostnameId, job.data?.cursor)
+      return processRetainedSweep(job, save =>
+        deps.dispatchCrawlUrlsPerHostname(hostnameId, job.data?.cursor, cursor =>
+          save({ hostname_id: hostnameId, cursor }),
+        ),
+      )
     }
     case 'crawl_tier1_dispatcher':
-      return deps.dispatchTier1CrawlUrls(job.data?.cursor)
+      return processRetainedSweep(job, save =>
+        deps.dispatchTier1CrawlUrls(job.data?.cursor, cursor => save({ cursor })),
+      )
     case 'crawl_tier2_dispatcher':
-      return deps.dispatchTier2CrawlUrls(job.data?.cursor)
+      return processRetainedSweep(job, save =>
+        deps.dispatchTier2CrawlUrls(job.data?.cursor, cursor => save({ cursor })),
+      )
     case 'crawl_cleanup':
       return processCrawlCleanup(deps)
     case 'refresh_hostname_crawler_dispatcher':

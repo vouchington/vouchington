@@ -1,4 +1,6 @@
-export type FindYourFriendsDispatcherJobs = 'dispatchFindYourFriends'
+export type FindYourFriendsDispatcherJobs =
+  | 'dispatchFindYourFriends'
+  | 'enqueueDispatchFindYourFriends'
 
 export type FindYourFriendsSyncJobs = 'syncFacebookFriends' | 'syncXFriends' | 'syncGithubFriends'
 

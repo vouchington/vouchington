@@ -10,7 +10,6 @@ import { HTML_CRAWL_EXCLUSIVITY_SQL } from './html-crawl-eligibility-sql.mts'
 
 import { getCrawlDispatchLimits } from './work-limits.mts'
 import type { CrawlDispatchCursor } from '@queues/crawl-hostnames/types'
-import { enqueueCrawlDispatchContinuation } from '@queues/crawl-hostnames/enqueues'
 
 /**
  * Given a hostname ID, dispatch a bounded page of URLs that need crawling.
@@ -19,9 +18,11 @@ import { enqueueCrawlDispatchContinuation } from '@queues/crawl-hostnames/enqueu
 export const dispatchCrawlUrlsPerHostname = async (
   hostnameId: string,
   cursor?: CrawlDispatchCursor,
+  saveProgress?: (cursor: CrawlDispatchCursor) => Promise<void>,
 ) => {
   const limits = getCrawlDispatchLimits()
   const sweepStartedAt = cursor?.sweepStartedAt ?? new Date().toISOString()
+  await saveProgress?.({ sweepStartedAt, ...(cursor?.afterId && { afterId: cursor.afterId }) })
   const upperId = getMinUUIDv7ForDate(new Date(sweepStartedAt))
   const hostname = await getUrlHostnameCrawlerDetailsById(hostnameId)
   if (!hostname || !hostname.crawlable || hostname.blocked) return { count: 0, hasMore: false }
@@ -82,14 +83,10 @@ export const dispatchCrawlUrlsPerHostname = async (
           rows.map(row => ({ urlId: row.id })),
           { hostnameId, rateLimitMs },
         )
+        await saveProgress?.({ sweepStartedAt, afterId: rows.at(-1)!.id })
       },
     },
   )
 
-  if (result.hasMore && result.lastRow)
-    await enqueueCrawlDispatchContinuation('crawl_urls_per_hostname_dispatcher', {
-      hostname_id: hostnameId,
-      cursor: { sweepStartedAt, afterId: result.lastRow.id },
-    })
   return { count: total, hasMore: result.hasMore }
 }

@@ -92,7 +92,7 @@ describe('crawl referral links processor', () => {
         data: {},
         opts: { ordering: { key: 'dispatcher' } },
       } as Job),
-    ).rejects.toThrow('Crawl referral links dispatcher job unexpected not found')
+    ).rejects.toThrow('Crawl referral link job unexpected not found')
   })
 
   it('updates referral-link crawl state for handled crawl errors', async () => {

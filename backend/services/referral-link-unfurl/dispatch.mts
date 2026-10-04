@@ -1,9 +1,6 @@
 import { executeHandlerWithCursorInBatches } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import {
-  enqueueUnfurlReferralLink,
-  enqueueUnfurlReferralLinksDispatcher,
-} from '@queues/unfurl-referral-links/enqueues'
+import { enqueueUnfurlReferralLink } from '@queues/unfurl-referral-links/enqueues'
 
 import { getDispatchLimits } from './work-limits.mts'
 import type { UnfurlDispatchCursor } from '@queues/unfurl-referral-links/types'
@@ -16,9 +13,13 @@ import type { UnfurlDispatchCursor } from '@queues/unfurl-referral-links/types'
  * unfurl_failed_at before re-enqueueing (see requestReferralLinkUnfurl) -- so this
  * dispatcher only needs to catch in-flight loss, not retry permanent failures forever.
  */
-export async function dispatchUnfurlReferralLinks(cursor?: UnfurlDispatchCursor) {
+export async function dispatchUnfurlReferralLinks(
+  cursor?: UnfurlDispatchCursor,
+  saveProgress?: (cursor: UnfurlDispatchCursor) => Promise<void>,
+) {
   const limits = getDispatchLimits()
   const sweepStartedAt = cursor?.sweepStartedAt ?? new Date().toISOString()
+  await saveProgress?.({ sweepStartedAt, ...(cursor?.after && { after: cursor.after }) })
   const queryStatement = sql`/* dispatchUnfurlReferralLinks */
     SELECT id, unfurl_requested_at::text AS requested_at
     FROM user_referral_program_links
@@ -47,14 +48,14 @@ export async function dispatchUnfurlReferralLinks(cursor?: UnfurlDispatchCursor)
         for (const row of rows) {
           // oxlint-disable-next-line no-await-in-loop -- preserve per-row enqueue backpressure
           await enqueueUnfurlReferralLink({ parentLinkId: row.id })
+          // oxlint-disable-next-line no-await-in-loop -- save only successfully enqueued predecessors
+          await saveProgress?.({
+            sweepStartedAt,
+            after: { requestedAt: row.requested_at, id: row.id },
+          })
         }
       },
     },
   )
-  if (result.hasMore && result.lastRow)
-    await enqueueUnfurlReferralLinksDispatcher({
-      sweepStartedAt,
-      after: { requestedAt: result.lastRow.requested_at, id: result.lastRow.id },
-    })
   return { count: total, hasMore: result.hasMore }
 }

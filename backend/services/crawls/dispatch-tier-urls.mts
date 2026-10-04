@@ -11,7 +11,6 @@ import { HTML_CRAWL_EXCLUSIVITY_SQL } from './html-crawl-eligibility-sql.mts'
 import { getCrawlDispatchLimits } from './work-limits.mts'
 import { enqueueByHostname } from './dispatch-url-batches.mts'
 import type { CrawlDispatchCursor } from '@queues/crawl-hostnames/types'
-import { enqueueCrawlDispatchContinuation } from '@queues/crawl-hostnames/enqueues'
 
 const TIER_1_AGE_DAYS = 7
 const TIER_2_AGE_DAYS = 30
@@ -22,16 +21,25 @@ const ATTEMPT_THRESHOLD_HOURS = 1
  * Tier 1: URLs referenced by entity relations with positive votes,
  * or user profile links.
  */
-export const dispatchTier1CrawlUrls = (cursor?: CrawlDispatchCursor) =>
-  dispatchTierCrawlUrls(1, cursor)
+export const dispatchTier1CrawlUrls = (
+  cursor?: CrawlDispatchCursor,
+  saveProgress?: (cursor: CrawlDispatchCursor) => Promise<void>,
+) => dispatchTierCrawlUrls(1, cursor, saveProgress)
 
 /** Dispatch non-positive relation URLs outside Tier 1, with the 30-day eligibility cutoff. */
-export const dispatchTier2CrawlUrls = (cursor?: CrawlDispatchCursor) =>
-  dispatchTierCrawlUrls(2, cursor)
+export const dispatchTier2CrawlUrls = (
+  cursor?: CrawlDispatchCursor,
+  saveProgress?: (cursor: CrawlDispatchCursor) => Promise<void>,
+) => dispatchTierCrawlUrls(2, cursor, saveProgress)
 
-async function dispatchTierCrawlUrls(tier: 1 | 2, cursor?: CrawlDispatchCursor) {
+async function dispatchTierCrawlUrls(
+  tier: 1 | 2,
+  cursor?: CrawlDispatchCursor,
+  saveProgress?: (cursor: CrawlDispatchCursor) => Promise<void>,
+) {
   const limits = getCrawlDispatchLimits()
   const sweepStartedAt = cursor?.sweepStartedAt ?? new Date().toISOString()
+  await saveProgress?.({ sweepStartedAt, ...(cursor?.afterId && { afterId: cursor.afterId }) })
   const upperId = getMinUUIDv7ForDate(new Date(sweepStartedAt))
   const attemptCutoffId = getMinUUIDv7ForDate(
     new Date(new Date(sweepStartedAt).getTime() - ATTEMPT_THRESHOLD_HOURS * 60 * 60 * 1000),
@@ -79,15 +87,9 @@ async function dispatchTierCrawlUrls(tier: 1 | 2, cursor?: CrawlDispatchCursor) 
     handler: async rows => {
       total += rows.length
       await enqueueByHostname(rows)
+      await saveProgress?.({ sweepStartedAt, afterId: rows.at(-1)!.id })
     },
   })
-  if (result.hasMore && result.lastRow)
-    await enqueueCrawlDispatchContinuation(
-      tier === 1 ? 'crawl_tier1_dispatcher' : 'crawl_tier2_dispatcher',
-      {
-        cursor: { sweepStartedAt, afterId: result.lastRow.id },
-      },
-    )
   return { count: total, hasMore: result.hasMore }
 }
 

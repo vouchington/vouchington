@@ -122,6 +122,9 @@ the last dispatched URL ID, so still-eligible queued rows cannot occupy every ru
 Tier selection starts from active relation/profile-link work and joins URLs by ID; it does not
 choose work by scanning unrelated URL entities. Hostname-wide scheduling remains a separate owner.
 
+Workers use [retained queue sweep ownership](../../../../development/postgresql/reference-cursors.md#retained-queue-sweeps)
+to coalesce repeated roots and preserve successful cursor progress through bounded passes and retries.
+
 ## Related
 
 - [Crawling Overview](../../crawling.md)

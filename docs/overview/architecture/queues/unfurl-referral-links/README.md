@@ -11,11 +11,11 @@ for the browser-crawl flow this reuses to capture the parent's post-redirect par
 
 ## Processors
 
-| Queue                   | Job                                 | Schedule                                                  |
-| ----------------------- | ----------------------------------- | --------------------------------------------------------- |
-| `unfurl_referral_links` | `unfurl_referral_links_dispatcher`  | Hourly                                                    |
-| `unfurl_referral_links` | `unfurl_referral_link`              | Enqueued by `requestReferralLinkUnfurl` or the dispatcher |
-| `unfurl_referral_links` | `remove_unfurled_children_for_user` | Enqueued by the membership downgrade hook                 |
+| Queue                   | Job                                    | Schedule                                                  |
+| ----------------------- | -------------------------------------- | --------------------------------------------------------- |
+| `unfurl_referral_links` | `enqueueUnfurlReferralLinksDispatcher` | Hourly                                                    |
+| `unfurl_referral_links` | `unfurl_referral_link`                 | Enqueued by `requestReferralLinkUnfurl` or the dispatcher |
+| `unfurl_referral_links` | `remove_unfurled_children_for_user`    | Enqueued by the membership downgrade hook                 |
 
 The dispatcher runs hourly rather than the weekly crawl-referral-links cadence because it
 self-heals a user-facing, actively-awaited action (a paid user waiting on their unfurl), not a
