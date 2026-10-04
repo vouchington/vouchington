@@ -12,6 +12,10 @@
   queue. Before opening a PR, compare its changed files and contracts with open PRs. On overlap,
   add the work as the next layer of that stack. Otherwise, rebase it onto the open PR and run
   `gh stack link <lower> <upper>` before either PR is enqueued.
+- Keep stacks short. Make independent PRs against `main` whenever the work neither depends on nor
+  conflicts with other open work. Avoid stacks longer than 5 PRs: ask the user before creating or
+  adding the 6th layer. Never create or grow a stack beyond 10 PRs. When you are unsure whether to
+  stack or split, or a plan needs an exception, ask the user.
 - The PR helper flags about 5,000 added or 20,000 deleted lines for a split decision. Split only
   along independently reviewable boundaries; dependencies and conflicts determine whether to stack.
   Disclose the 150-file automated-review limit for larger atomic changes. Verified CI-generated

@@ -10,7 +10,8 @@ description: Discover and shepherd native GitHub PR stacks or PRs based on non-m
 Claude Code and Codex load `vouchington-workflow:stacked-prs`; Grok, Cursor, and OpenCode read
 `node_modules/vouchington-tooling/skills/stacked-prs/SKILL.md`. If it cannot be read, stop and report
 the missing prerequisite; never apply this overlay alone. Decision owner for whether to stack at all,
-one source issue per PR, and the ~5k-changed-line split trigger: [Git And PRs](../agent-workflow/git-and-prs.md).
+stack length limits, one source issue per PR, and the ~5k-changed-line split trigger:
+[Git And PRs](../agent-workflow/git-and-prs.md).
 This page is the CLI contract and procedure after that decision is already yes.
 
 ## Vouchington additions
@@ -143,8 +144,9 @@ stack's first owned pull request exists, and asks the human each merge question.
 
 Independent stacks run at the same time, one worker each. Dependent or
 [conflicting](../agent-workflow/git-and-prs.md#branch-and-commit) unmerged work is the next layer
-of the same stack (`gh stack add`), in the same worktree. A second stack whose base is an unmerged
-head is not a stack this procedure can drain.
+of the same stack (`gh stack add`), in the same worktree, within the
+[length limits](../agent-workflow/git-and-prs.md#branch-and-commit). A second stack whose base is an
+unmerged head is not a stack this procedure can drain.
 
 A lower layer is in decent shape when it is committed, the before-push checks have passed, its pull
 request is open with an updated body, and the worker has started shepherding. Start the next layer
