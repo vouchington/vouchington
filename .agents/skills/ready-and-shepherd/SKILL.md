@@ -160,6 +160,12 @@ applied it — see [merge-authority](../../../docs/development/merge-authority.m
 gh pr edit <N> --add-label automation
 ```
 
+Marking ready is the hand-off. If this session did the PR's work, write the one hand-off
+retrospective, and later the merge note, that the Close-out rule in
+[Git And PRs](../agent-workflow/git-and-prs.md#close-out) describes. A triaged PR this session did
+not author gets no hand-off retrospective, because a retrospective reads this session's
+transcripts, not the author's.
+
 ## Step 5 — Arm auto-merge (only with `--arm-auto-merge`)
 
 Without this flag, **skip this step entirely** — merge stays a human decision.

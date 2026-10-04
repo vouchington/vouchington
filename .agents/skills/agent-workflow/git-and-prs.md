@@ -113,9 +113,18 @@ Unmatched commits on origin/<branch> are new commits someone pushed.
 
 ## Close-out
 
-- Report actual validation, open PRs, and remaining blockers. Use [retrospective](../retrospective/SKILL.md)
-  for substantive completed work with reusable findings or when requested; do not repeat it for
-  every intermediate commit or stack layer.
+- Report actual validation, open PRs, and remaining blockers.
+- **Hand-off retrospective.** When you hand a PR to the human as ready, write one
+  [retrospective](../retrospective/SKILL.md) for it, from the session that did the work: it reads
+  that session's transcripts and journal. A native stack gets one retrospective when the stack is
+  handed off, covering every layer. Do not write one per layer or for an intermediate commit.
+- **Merge note.** If you are still running when the merge happens and it changes the outcome, such
+  as a merge-queue ejection and its fix, a follow-up push, or review comments addressed after
+  hand-off, append one short journal note to the same session with the
+  [blackboard skill](../blackboard/SKILL.md#script-procedure). Name the PR and the retrospective's
+  source event in the note, and give it its own `--source-event-id` (for example `merge-pr<number>`):
+  the writer rejects the retrospective's ID reused for different content. Never write a second
+  retrospective.
 - Hook mechanics and limitations belong in [agent sandbox](../../../docs/development/agent-sandbox.md)
   and [harness parity](../../../docs/development/agent-harness-parity.md). Do not restate their parser
   implementation here or add new auto-formatting hooks as part of ordinary feature work.
