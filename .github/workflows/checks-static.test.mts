@@ -89,7 +89,7 @@ describe('checks-static workflow', () => {
 
   it('budgets each job above its serial critical step timeouts', () => {
     const expectedBudgets = new Map([
-      ['static-backend', 15],
+      ['static-backend', 21],
       ['static-web', 35],
       ['static-lambdas', 18],
       ['static-cloudflare', 20],
@@ -117,13 +117,18 @@ describe('checks-static workflow', () => {
 
   it('compiles all API contracts once and rejects tracked or untracked canonical drift', () => {
     const job = jobSection('static-backend')
-    const apiFixtureSnapshots = parsed.jobs?.['static-backend']?.steps?.find(
-      step => step.name === 'Check compiled API contracts and canonical snapshots',
+    const steps = parsed.jobs?.['static-backend']?.steps ?? []
+    const compilation = steps.find(step => step.name === 'Check compiled API contracts')
+    const apiFixtureSnapshots = steps.find(
+      step => step.name === 'Check canonical API snapshot git state',
     )
-
+    expect(compilation).toMatchObject({ run: 'pnpm run api-contracts:check' })
+    expect(numberField(compilation?.['timeout-minutes'], 'API compilation')).toBeGreaterThan(
+      numberField(apiFixtureSnapshots?.['timeout-minutes'], 'snapshot Git guard'),
+    )
+    expect(steps.filter(step => step.run?.includes('pnpm run api-contracts:check'))).toHaveLength(1)
     expect(apiFixtureSnapshots).toMatchObject({
-      run: `pnpm run api-contracts:check
-git diff --exit-code -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-fixtures/v1/openapi.json api-fixtures/v1/request-contracts.json
+      run: `git diff --exit-code -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-fixtures/v1/openapi.json api-fixtures/v1/request-contracts.json
 untracked_generated_files="$(git ls-files --others --exclude-standard -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-fixtures/v1/openapi.json api-fixtures/v1/request-contracts.json)"
 if [ -n "$untracked_generated_files" ]; then
   echo "::error::Generated API fixture files are untracked:"
@@ -131,13 +136,14 @@ if [ -n "$untracked_generated_files" ]; then
   exit 1
 fi\n`,
     })
-    expect(apiFixtureSnapshots?.run?.match(/pnpm run api-contracts:check/g)).toHaveLength(1)
+    expect(apiFixtureSnapshots?.run).not.toContain('pnpm')
     expect(apiFixtureSnapshots?.run).not.toContain('vitest')
     expect(apiFixtureSnapshots?.run).not.toContain('api-fixtures:generate')
     expect(apiFixtureSnapshots?.run).not.toContain('openapi:generate')
-    expect(
-      job.indexOf('- name: Check compiled API contracts and canonical snapshots'),
-    ).toBeGreaterThan(job.indexOf('- name: Check backend dependencies'))
+    expect(job.indexOf('- name: Check compiled API contracts')).toBeGreaterThan(
+      job.indexOf('- name: Check backend dependencies'),
+    )
+    expect(steps.indexOf(apiFixtureSnapshots!)).toBeGreaterThan(steps.indexOf(compilation!))
   })
 
   it('owns the web pages-router, dependency, build, and smoke checks lifted from tests-web.yml', () => {

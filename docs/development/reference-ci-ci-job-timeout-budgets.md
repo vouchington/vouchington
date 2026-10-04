@@ -46,6 +46,10 @@ For the Docker image jobs, workflow tests should assert the exact job and critic
 and that the job timeout remains below the sum of declared step timeouts. Other jobs retain their
 existing budget model unless they explicitly adopt and test this fail-fast relationship.
 
+The static backend job retains its additive model with a 21-minute job ceiling: six minutes for
+setup, three for dependency analysis, ten for the compiler/extractor, one for generated-file Git
+state, and one for runner provisioning and drain headroom.
+
 Lambda tests retain an additive budget that covers every declared step ceiling, including artifact
 fallbacks, with provisioning and drain headroom. The workflow test verifies this relationship and
 bounds remote checkout/fetch operations; only the local LCOV copy has no separate step timeout.

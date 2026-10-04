@@ -2090,9 +2090,10 @@ rules:
       maxMinutes: 10
       rejectStepExceedingJob: true
       allow:
-        # Static backend setup, dependency, and typecheck step budgets sum 12m; cap adds runner-overhead buffer. See PR #8489.
+        # 6m setup + 3m dependencies + 10m API compiler + 1m snapshot Git guard + 1m overhead.
+        # Keep the additive model documented in docs/development/reference-ci-ci-job-timeout-budgets.md.
         - job: '.github/workflows/checks-static.yml#static-backend'
-          maxMinutes: 15
+          maxMinutes: 21
         # Static Cloudflare setup, retry install, typecheck, smoke, and dry-run budgets sum 17m; cap adds buffer. See PR #8489.
         - job: '.github/workflows/checks-static.yml#static-cloudflare'
           maxMinutes: 20

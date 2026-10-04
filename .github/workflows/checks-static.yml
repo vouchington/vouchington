@@ -42,7 +42,7 @@ jobs:
   static-backend:
     if: inputs.backend
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 21
     permissions:
       actions: read
       contents: read
@@ -54,10 +54,12 @@ jobs:
       - name: Check backend dependencies
         run: pnpm exec depcruise --config backend/.dependency-cruiser.cjs --output-type err --cache --cache-strategy content backend ts-shared
         timeout-minutes: 3
-      - name: Check compiled API contracts and canonical snapshots
+      - name: Check compiled API contracts
+        run: pnpm run api-contracts:check
+        timeout-minutes: 10
+      - name: Check canonical API snapshot git state
         shell: bash
         run: |
-          pnpm run api-contracts:check
           git diff --exit-code -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-fixtures/v1/openapi.json api-fixtures/v1/request-contracts.json
           untracked_generated_files="$(git ls-files --others --exclude-standard -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-fixtures/v1/openapi.json api-fixtures/v1/request-contracts.json)"
           if [ -n "$untracked_generated_files" ]; then
@@ -65,7 +67,7 @@ jobs:
             printf '%s\n' "$untracked_generated_files"
             exit 1
           fi
-        timeout-minutes: 5
+        timeout-minutes: 1
 
   static-web:
     if: inputs.web
