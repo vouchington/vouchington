@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { HoverableCard } from '@/components/shared/hoverable-card'
 import { TopicLogo } from '@/components/shared/topic-logo'
+import { TopicAboutCopy } from '@/components/topics/topic-about-copy'
 import { TopicCardFediverseRow } from '@/components/topics/topic-card-fediverse-row'
 import { Users, Star } from 'lucide-react'
 import { formatCompactNumber, calculateAverageRating } from '@ts-shared/utils/format'
@@ -39,6 +40,7 @@ export interface TopicCardProps {
     | 'slug'
     | 'topic_type'
     | 'markdown'
+    | 'lingua_rs_detected_language'
     | 'logo_image_id'
     | 'logo_image_placement'
     | 'allow_reviews'
@@ -113,11 +115,11 @@ export function TopicCard({
             )}
 
             {/* Description */}
-            {topic.markdown && (
-              <p className='mt-2 line-clamp-2 text-sm text-muted-foreground'>
-                {topic.markdown.slice(0, 200)}
-              </p>
-            )}
+            <TopicAboutCopy
+              markdown={topic.markdown}
+              detectedLanguage={topic.lingua_rs_detected_language}
+              className='mt-2 line-clamp-2 text-sm text-muted-foreground'
+            />
 
             {/* Metrics */}
             <div className='mt-2 flex items-center gap-4 text-sm text-muted-foreground'>

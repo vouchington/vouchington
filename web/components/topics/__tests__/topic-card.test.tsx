@@ -35,6 +35,43 @@ describe('TopicCard', () => {
     expect(screen.getByText(/Premium travel rewards/)).toBeDefined()
   })
 
+  it('marks the description with the detected topic language', () => {
+    render(
+      <TopicCard
+        topic={{
+          ...mockTopic,
+          markdown: 'وصف الموضوع',
+          lingua_rs_detected_language: 'ar',
+        }}
+      />,
+    )
+
+    const description = screen.getByText('وصف الموضوع')
+    expect(description).toHaveAttribute('lang', 'ar')
+    expect(description).toHaveAttribute('dir', 'rtl')
+  })
+
+  it('keeps an unknown topic language outside the UI locale', () => {
+    render(
+      <TopicCard
+        topic={{
+          ...mockTopic,
+          markdown: 'Unknown language description',
+          lingua_rs_detected_language: null,
+        }}
+      />,
+    )
+
+    const description = screen.getByText('Unknown language description')
+    expect(description).not.toHaveAttribute('lang')
+    expect(description).toHaveAttribute('dir', 'auto')
+  })
+
+  it('omits a blank topic description', () => {
+    const { container } = render(<TopicCard topic={{ ...mockTopic, markdown: '   ' }} />)
+    expect(container.querySelector('[data-pw="topic-card"] p')).toBeNull()
+  })
+
   it('renders average rating when metrics provided', () => {
     render(
       <TopicCard
