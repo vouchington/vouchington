@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import type { ContributionAdmissionAudit } from './admission-reservations.mts'
+import type { ContributionAdmissionAudit } from './admission-audit.mts'
 import type { ContributionAdmissionPolicy, ContributionPolicySource } from './policy.mts'
 
 export type ContributionAdmissionResult<T> =

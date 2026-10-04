@@ -52,8 +52,9 @@ export async function createSesBounceEvent(
   const { rows } = await write(sql`/* createSesBounceEvent */
     WITH registered_subtype AS (
       INSERT INTO ses_bounce_subtypes (id)
-      SELECT ${input.bounce_sub_type ?? null}::text
+      SELECT ${input.bounce_sub_type ?? null}::text AS id
       WHERE ${input.bounce_sub_type ?? null}::text IS NOT NULL
+      ORDER BY id ASC NULLS LAST
       ON CONFLICT (id) DO NOTHING
     )
     INSERT INTO ses_bounce_events (

@@ -3,7 +3,10 @@ import { beginTransaction } from '@data-stores/psql'
 import { createCodedError } from '@modules/on-error/create-coded-error'
 import { IDEMPOTENCY_KEY_REUSED } from '@modules/on-error/error-codes'
 import sql from 'sql-template-strings'
-import { contributionAdmissionScopeCategory } from './admission-audit.mts'
+import {
+  contributionAdmissionScopeCategory,
+  type ContributionAdmissionAudit,
+} from './admission-audit.mts'
 import { hashAdmissionIntent } from './admission-intent.mts'
 import {
   completeMarkerlessContributionAdmissionReplay,
@@ -17,14 +20,6 @@ export {
 } from './admission-reservation-maintenance.mts'
 
 type State = 'in_progress' | 'committed' | 'retryable_failed' | 'expired'
-
-export type ContributionAdmissionAudit = Readonly<{
-  route: string
-  scope: string
-  source: string
-  postType: string
-  policyRevision: string
-}>
 
 export async function claimContributionAdmission<T>(
   actorId: string,

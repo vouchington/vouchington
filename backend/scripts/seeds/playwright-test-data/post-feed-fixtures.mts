@@ -1,8 +1,9 @@
-import { upsertMediaTypes } from '../../../services/urls/media-types.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 
 async function seedPlaywrightPostFeedFixtures(query: TransactionQuery): Promise<void> {
-  await upsertMediaTypes('audio/mpeg', { query })
+  await query(
+    `INSERT INTO media_types (mime_type) VALUES ('audio/mpeg') ON CONFLICT (mime_type) DO NOTHING`,
+  )
   await query(
     `INSERT INTO topics (id, topic_type, name, slug, markdown, bedrock_nova_multimodal_v1_content_sha256, created_via) VALUES ( '019c64e6-f8a0-7000-a000-000000000001', 'card', 'Test News Source', 'test-news-source', 'A test news source for Playwright tests', decode('00000000000000000000000000000000000000000000000000000000000000e1', 'hex'), 'system' ) ON CONFLICT (id) DO UPDATE SET topic_type = EXCLUDED.topic_type, name = EXCLUDED.name, slug = EXCLUDED.slug, markdown = EXCLUDED.markdown, bedrock_nova_multimodal_v1_content_sha256 = EXCLUDED.bedrock_nova_multimodal_v1_content_sha256`,
   )

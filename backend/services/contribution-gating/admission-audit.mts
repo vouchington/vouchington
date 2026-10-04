@@ -1,5 +1,12 @@
-import type { ContributionAdmissionAudit } from './admission-reservations.mts'
 import type { ContributionPolicySource } from './policy.mts'
+
+export type ContributionAdmissionAudit = Readonly<{
+  route: string
+  scope: string
+  source: string
+  postType: string
+  policyRevision: string
+}>
 
 export function normalizeContributionAdmissionAudit(input: {
   audit?: ContributionAdmissionAudit

@@ -42,7 +42,7 @@ export async function searchCopyrightStaffEmailIntakes(
   observeSharedDbScope('searchCopyrightStaffEmailIntakes', sharedDbCursorScope(options.after?.id))
   await using transaction = await beginTransaction()
   const query = sql`/* searchCopyrightStaffEmailIntakes */
-    SELECT intake.id, intake.received_at, COALESCE(parse.status, 'unparsed') AS parse_status,
+    SELECT intake.id, intake.received_at, COALESCE(parse.status::text, 'unparsed') AS parse_status,
       recommendation.id AS recommendation_id, link.link_kind, link.copyright_notice_id AS linked_notice_id,
       reply.state AS reply_state, COALESCE(reply.bounced_at, reply.failed_at, reply.updated_at) AS reply_since,
       to_char(
