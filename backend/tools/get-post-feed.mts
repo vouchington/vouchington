@@ -17,7 +17,7 @@ import {
   type PostArgs,
 } from './personal-feed-support.mts'
 
-export const getPostFeedTool: Tool<PostArgs, FeedResult> = {
+const getPostFeedTool: Tool<PostArgs, FeedResult> = {
   schema: {
     name: 'get_post_feed',
     type: 'function',

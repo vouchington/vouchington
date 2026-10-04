@@ -16,7 +16,7 @@ import {
   type ItemArgs,
 } from './personal-feed-support.mts'
 
-export const getRssFeedItemFeedTool: Tool<ItemArgs, FeedResult> = {
+const getRssFeedItemFeedTool: Tool<ItemArgs, FeedResult> = {
   schema: {
     name: 'get_rss_feed_item_feed',
     type: 'function',

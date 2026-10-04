@@ -15,7 +15,7 @@ import {
   type ReferralResult,
 } from './personal-feed-support.mts'
 
-export const getReferralLinkFeedTool: Tool<ReferralArgs, ReferralResult> = {
+const getReferralLinkFeedTool: Tool<ReferralArgs, ReferralResult> = {
   schema: {
     name: 'get_referral_link_feed',
     type: 'function',
