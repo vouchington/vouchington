@@ -6,7 +6,7 @@ import { nativePaidCrawlApiFixtureCases } from './native-paid-crawl-cases.mts'
 import { nativeCopyrightApiFixtureCases } from './native-copyright-cases.mts'
 import { webCopyrightGuestApiFixtureCases } from './web-copyright-guest-cases.mts'
 import { webCopyrightEuApiFixtureCases } from './web-copyright-eu-cases.mts'
-import { copyrightDsaReportApiFixtureCases } from './copyright-dsa-report-cases.mts'
+import { copyrightDsaApiFixtureCases } from './copyright-dsa-cases.mts'
 import { copyrightTrustedFlaggerApiFixtureCases } from './copyright-trusted-flagger-cases.mts'
 import { webCopyrightEmailIntakeApiFixtureCases } from './web-copyright-email-intake-cases.mts'
 import { nativeHouseholdApiFixtureCases } from './native-household-cases.mts'
@@ -55,8 +55,8 @@ function fromCaseFile(caseFile: string, cases: ApiFixtureCase[]): ResolvedApiFix
 
 export const apiFixtureCases: ResolvedApiFixtureCase[] = [
   ...fromCaseFile(
-    'backend/test-helpers/api-fixtures/copyright-dsa-report-cases.mts',
-    copyrightDsaReportApiFixtureCases,
+    'backend/test-helpers/api-fixtures/copyright-dsa-cases.mts',
+    copyrightDsaApiFixtureCases,
   ),
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/copyright-trusted-flagger-cases.mts',

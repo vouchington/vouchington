@@ -32,11 +32,12 @@ ALTER TABLE open_graph_dependency_manifest_placements
   VALIDATE CONSTRAINT fk_open_graph_dependency_manifest_placements__placement;
 
 ALTER TABLE open_graph_dependency_manifest_placements
-  ADD CONSTRAINT fk_open_graph_dependency_manifest_placements__image
-  FOREIGN KEY (image_id) REFERENCES images (id) ON DELETE RESTRICT NOT VALID;
+  ADD CONSTRAINT fk_open_graph_dependency_manifest_placements__image_binding
+  FOREIGN KEY (placement_id, image_id)
+  REFERENCES retained_image_placement_bindings (placement_id, image_id) ON DELETE RESTRICT NOT VALID;
 
 ALTER TABLE open_graph_dependency_manifest_placements
-  VALIDATE CONSTRAINT fk_open_graph_dependency_manifest_placements__image;
+  VALIDATE CONSTRAINT fk_open_graph_dependency_manifest_placements__image_binding;
 
 COMMENT ON TABLE open_graph_dependency_manifests IS
   'Registered set of placement dependencies for one OG render. Unknown manifests are not delivery authority.';

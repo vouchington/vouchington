@@ -38,14 +38,25 @@ CREATE TABLE IF NOT EXISTS retained_rss_feed_item_identities_default
   PARTITION OF retained_rss_feed_item_identities DEFAULT;
 
 CREATE TABLE IF NOT EXISTS retained_image_identities (
-  id UUID PRIMARY KEY
+  id UUID PRIMARY KEY,
+  created_by_id UUID NOT NULL REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
+  UNIQUE (id, created_by_id)
 ) PARTITION BY RANGE (id);
-COMMENT ON TABLE retained_image_identities IS 'Concrete image byte identity retained while live or durable references remain; never delivery authority.';
+COMMENT ON TABLE retained_image_identities IS 'Concrete image byte identity and original uploader provenance retained while live or durable references remain; never delivery or account authority.';
+COMMENT ON COLUMN retained_image_identities.created_by_id IS 'Immutable original uploader retained user identity, including after the live image or user row is deleted.';
 
 CREATE TABLE IF NOT EXISTS retained_image_identities_default
   PARTITION OF retained_image_identities DEFAULT;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_retained_image_identities__created_by_id
+ON retained_image_identities (created_by_id);
+
+CREATE TRIGGER trigger_guard_retained_image_uploader
+BEFORE UPDATE OF id, created_by_id ON retained_image_identities
+FOR EACH ROW
+  WHEN (ROW(OLD.id, OLD.created_by_id) IS DISTINCT FROM ROW(NEW.id, NEW.created_by_id)) EXECUTE FUNCTION fn_reject_mutation();
+
 CREATE TABLE IF NOT EXISTS retained_image_placement_bindings (
   placement_id UUID PRIMARY KEY,
   image_id UUID NOT NULL REFERENCES retained_image_identities (id) ON DELETE RESTRICT,
@@ -89,8 +100,8 @@ VALUES ('user'), ('api_key'), ('topic'), ('post'), ('rss_feed_item'), ('image'),
 ON CONFLICT (family) DO NOTHING;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TYPE retained_identity_families AS ENUM ('user', 'api_key', 'topic', 'post', 'rss_feed_item', 'image', 'membership');
-COMMENT ON TYPE retained_identity_families IS 'Concrete identity owners supported by the shared ownership fence; never authorization.';
+CREATE TYPE retained_identity_families AS ENUM ('user', 'api_key', 'topic', 'post', 'rss_feed_item', 'membership');
+COMMENT ON TYPE retained_identity_families IS 'Concrete identity owners supported by the shared ownership fence; image identity requires its uploader and uses a separate creator.';
 
 CREATE OR REPLACE FUNCTION fn_ensure_retained_identity(family retained_identity_families, identity_id UUID)
 RETURNS VOID LANGUAGE plpgsql AS $$

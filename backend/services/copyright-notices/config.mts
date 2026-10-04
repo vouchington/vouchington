@@ -1,4 +1,5 @@
 import { DynamicConfig } from '@data-stores/valkey'
+import { parseCopyrightDsaSorDatabaseFrom } from './dsa-start-date.mts'
 
 /**
  * Audited operator switches for copyright handling. Each field ships with the code that reads it;
@@ -14,6 +15,8 @@ export const copyrightConfig = new DynamicConfig({
     staydownMatching: 'boolean',
     trustedFlaggerPriority: 'boolean',
     dsaTransparencyReports: 'boolean',
+    dsaSorDatabase: 'boolean',
+    dsaSorDatabaseFrom: 'string',
     automaticWithholdingMinTrustTier: 'number',
     automaticWithholdingMinAccountAgeDays: 'number',
     automaticWithholdingClaimantDailyCap: 'number',
@@ -30,6 +33,8 @@ export const copyrightConfig = new DynamicConfig({
     staydownMatching: false,
     trustedFlaggerPriority: false,
     dsaTransparencyReports: false,
+    dsaSorDatabase: false,
+    dsaSorDatabaseFrom: '',
     // -1 means unset: automatic withholding is refused until an operator approves every gate.
     automaticWithholdingMinTrustTier: -1,
     automaticWithholdingMinAccountAgeDays: -1,
@@ -121,4 +126,16 @@ export async function isCopyrightTrustedFlaggerPriorityEnabled(): Promise<boolea
 export async function isCopyrightDsaTransparencyReportsEnabled(): Promise<boolean> {
   await copyrightConfig.waitForInitialization()
   return copyrightConfig.getFields().dsaTransparencyReports === true
+}
+
+/** Public DSA statement submissions remain disabled until explicitly enabled by an operator. */
+export async function isCopyrightDsaSorDatabaseEnabled(): Promise<boolean> {
+  await copyrightConfig.waitForInitialization()
+  return copyrightConfig.getFields().dsaSorDatabase === true
+}
+
+/** UTC day after the Article 19 exemption, or null while unset or malformed. */
+export async function getCopyrightDsaSorDatabaseFrom(): Promise<Date | null> {
+  await copyrightConfig.waitForInitialization()
+  return parseCopyrightDsaSorDatabaseFrom(copyrightConfig.getFields().dsaSorDatabaseFrom)
 }

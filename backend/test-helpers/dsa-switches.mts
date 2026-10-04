@@ -17,3 +17,20 @@ export function useDsaTransparencyReports(enabled = true): void {
     restore = undefined
   })
 }
+
+/** Isolates the public DSA submission switch and cutoff to this test fork. */
+export function useDsaStatementSubmissions(enabled = true, from = '2020-01-01'): void {
+  let restore: (() => void) | undefined
+  beforeEach(async () => {
+    await copyrightConfig.waitForInitialization()
+    await copyrightConfig.close()
+    restore = overrideDynamicConfigFieldsForTest(copyrightConfig, {
+      dsaSorDatabase: enabled,
+      dsaSorDatabaseFrom: from,
+    })
+  })
+  afterEach(() => {
+    restore?.()
+    restore = undefined
+  })
+}

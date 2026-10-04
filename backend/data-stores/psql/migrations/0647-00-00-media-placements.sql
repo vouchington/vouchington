@@ -24,7 +24,7 @@ ALTER TABLE media_placements VALIDATE CONSTRAINT fk_media_placements__retained_i
 CREATE TABLE image_placements (
   placement_id uuid PRIMARY KEY REFERENCES media_placements(id) ON DELETE RESTRICT,
   post_id uuid NOT NULL REFERENCES posts(id) ON DELETE RESTRICT,
-  image_id uuid NOT NULL REFERENCES images(id) ON DELETE RESTRICT,
+  image_id uuid NOT NULL,
   binding_family image_binding_families NOT NULL DEFAULT 'post' CHECK (binding_family = 'post'),
   UNIQUE (post_id, image_id)
 );

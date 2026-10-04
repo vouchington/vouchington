@@ -147,6 +147,11 @@ not turn a human decision into an automatic decision. Statements exclude contact
 private evidence, and staff rationale. Only supported US copyright grounds are rendered. Any future
 hold-decision notice must use the shared statement-of-reasons builder.
 
+Article 24(5) database submissions map only the builder’s structured fields into an immutable,
+fixed-template public payload. They never publish this participant statement text. See the
+[database submission contract](#eu-and-uk-contracts) and
+[operator runbook](../../runbooks/copyright-notices.md#dsa-statement-database).
+
 Each affected poster receives one immutable email and in-app obligation per event. The notifier receives
 one decision pair per notice, using the retained receipt email address for email delivery; guest and
 email-only notifiers receive email only. Stable event keys reuse the original text on retry. The private
@@ -796,6 +801,17 @@ The staff disposition on redress is `maintain` or `revoke` as selected by that u
 complaint records an external authority reference and escalates that record. UK review and redress
 do not write EU reason, complaint, or report rows. Neither contract imports the US counter-notice
 clock.
+
+DSA Article 24(5) submission is independently controlled by `copyright.dsaSorDatabase` (off)
+and `copyright.dsaSorDatabaseFrom` (unset). Eligible US, EU, and UK restrictions, including each
+court-hold re-imposition, become one durable public statement per restriction id. `no_action`
+creates no submission. Neither missing nor withdrawn EU intake approval changes eligibility.
+The stored payload maps the shared builder's structured fields, uses fixed draft templates,
+reports automation from the shared provenance predicates, and never copies its text, user-written
+facts, public explanation, contact, URL, or a user id. In-area trusted-flagger matches alone select
+`SOURCE_TRUSTED_FLAGGER`. The start date excludes decisions taken under the Article 19 exemption;
+there is no pre-exemption backfill. Retries preserve the original payload and public identity.
+See the [submission runbook](../../runbooks/copyright-notices.md#dsa-statement-database).
 
 DSA transparency reporting is independently gated by the off-by-default
 `copyright.dsaTransparencyReports` switch, not by EU jurisdiction approval. Its six stored counts

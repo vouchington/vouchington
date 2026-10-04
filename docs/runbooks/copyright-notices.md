@@ -23,6 +23,49 @@ identifiers belong in the private operations repository.
 
 These are product response targets, not representations of safe-harbor eligibility.
 
+## DSA statement database
+
+`copyright.dsaSorDatabase` defaults to `false`, and `copyright.dsaSorDatabaseFrom` defaults to
+an empty string. Operators with audited copyright configuration access set the start date to the
+real calendar date (`YYYY-MM-DD`, UTC) on which the Article 19 exemption ended, including its
+12-month run-off. An unset date prevents both enqueueing and HTTP calls even if the switch is on,
+and the sweep records a configuration warning. This implementation authorizes no activation.
+Missing or withdrawn EU intake approval does not change this independent service obligation.
+
+Before activation, the operator completes [Commission onboarding](https://transparency.dsa.ec.europa.eu/page/onboarding-documentation)
+and sandbox validation, supplies
+worker-only `DSA_TRANSPARENCY_DATABASE_URL` and secret `DSA_TRANSPARENCY_DATABASE_TOKEN`, and obtains
+counsel's wording and automation confirmation in #1230. The code contains draft fixed templates.
+The URL must use HTTPS on a Commission `europa.eu` host. Hand the two environment-variable names
+to the infrastructure owner through the [env contract](../overview/infrastructure/env-var-contract.md);
+this change does not configure infrastructure or credentials. Blank credentials leave work
+pending without an HTTP call or attempt row and cause one warning per sweep.
+
+The five-minute notifications sweep materializes and enqueues missing eligible restriction rows
+in UUID-keyset pages. It includes US, EU, and UK restrictions imposed on or after the start date,
+even if lifted, and each court-hold re-imposition has its own restriction id. It never submits
+`no_action` decisions or pre-exemption restrictions. Moving the date later prevents an already
+queued older restriction from being claimed. Both jobs check the switch and date again.
+
+Each work item captures a fixed, allow-listed payload and uses the restriction id as its unique
+Commission `puid`. It contains no personal data or user-written text, including public explanation,
+contact, hosted URL, grounds, or rationale. All retry sends use that same stored payload.
+Submissions are public and irreversible; there is no update, withdrawal, or deletion operation.
+
+A 15-minute lease fences each attempt. Success and duplicate-`puid` replies record the Commission
+UUID once. Retryable errors use exponential minute backoff; five retryable failures in a round,
+or one permanent validation failure, dead-letter the item and report ids and status only.
+Expired claims add `lease_expired` failures so repeated worker crashes reach the same cap. Inspect
+configuration and the error class before replaying; never put tokens or response bodies in logs.
+
+An administrator may call
+`POST /api/v1/copyright-dsa-statement-submissions/:id/replays` for a dead-lettered item.
+It appends a `replayed` ledger row naming the retained administrator, moves availability to now,
+and enqueues after commit. It preserves all earlier attempts and the captured payload. A new round
+may dead-letter again; submitted, pending, or unknown items return `{ replayed: false }`.
+See the [API contract](../requirements/api/v1/copyright-notices/README.md#dsa-statement-replay)
+and [queue recovery matrix](../overview/architecture/queues/notifications/README.md#dsa-statement-database).
+
 ## DSA transparency report
 
 `copyright.dsaTransparencyReports` defaults to `false` in the audited copyright namespace.

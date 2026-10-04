@@ -19,7 +19,6 @@ import { createCopyrightNoticeAggregate } from './services/copyright-notices/cre
 import { getCopyrightNoticePrivateAggregate } from './services/copyright-notices/private-aggregate.mts'
 import { appendCopyrightSubmissionAssessment } from '../services/copyright-notices/compliance.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from '../services/copyright-notices/restrictions.mts'
-
 export const TEST_COPYRIGHT_IMAGE_KINDS = [
   'post-image',
   'user-profile-image',
@@ -154,12 +153,13 @@ export async function createTestCopyrightImageFixture(
     detach,
   }
 }
-export async function createTestCopyrightRestrictionForImage(fixture: TestCopyrightImageFixture) {
+type Fixture = TestCopyrightImageFixture
+export async function createTestCopyrightRestrictionForImage(fixture: Fixture, at = new Date()) {
   const moderator = await createTestUserDirect({ extraRoles: ['moderator'] })
   const resolved = await resolveCopyrightImagePlacement(fixture.selector)
   const notice = await createCopyrightNoticeAggregate({
     jurisdiction: 'us_dmca',
-    receivedAt: new Date(),
+    receivedAt: at,
     claimantUserId: null,
     claimantDisplayName: 'Test claimant',
     claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
@@ -176,7 +176,7 @@ export async function createTestCopyrightRestrictionForImage(fixture: TestCopyri
   if (!aggregate) throw new Error('Copyright case missing')
   const assessment = await appendCopyrightSubmissionAssessment({
     submissionId: aggregate.submissions[0]!.id,
-    assessedAt: new Date(),
+    assessedAt: at,
     currentUser: moderator,
     substantiallyCompliant: true,
   })
@@ -184,7 +184,7 @@ export async function createTestCopyrightRestrictionForImage(fixture: TestCopyri
     noticeId: notice.id,
     targetId: aggregate.targets[0]!.id,
     assessmentId: assessment.id,
-    imposedAt: new Date(),
+    imposedAt: at,
     imposedById: null,
   })
   const restricted = await getCopyrightNoticePrivateAggregate(notice.id)

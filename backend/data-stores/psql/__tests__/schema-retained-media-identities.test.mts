@@ -123,9 +123,12 @@ describe('concrete retained media identities', () => {
         placement_id: placementId,
         other_placement_id: otherPlacementId,
       } = identities[0]!
+      const { rows: uploaders } = await query<{ id: string }>(
+        '/* createRetainedImagesForMutation:uploader */ INSERT INTO retained_user_identities (id) VALUES (uuidv7()) RETURNING id',
+      )
       await query(
-        '/* createRetainedImagesForMutation */ INSERT INTO retained_image_identities (id) VALUES ($1), ($2)',
-        [imageId, otherImageId],
+        '/* createRetainedImagesForMutation */ INSERT INTO retained_image_identities (id, created_by_user_id) VALUES ($1, $3), ($2, $3)',
+        [imageId, otherImageId, uploaders[0]!.id],
       )
       await query(
         "/* createRetainedBindingForMutation */ INSERT INTO retained_image_placement_bindings (placement_id, image_id, binding_family) VALUES ($1, $2, 'post')",

@@ -1,3 +1,4 @@
+/* oxlint-disable max-lines -- Notification processor exports stay centralized for worker registration. */
 import { UnrecoverableError } from '@modules/queue-errors'
 import { reconcileNotificationsForPost } from '@services/notifications/reconcile-post'
 import { reconcileNotificationsForRssFeedItem } from '@services/notifications/reconcile-rss-feed-item'
@@ -42,6 +43,10 @@ export { processApplyCopyrightAction } from './processors/copyright-action.mts'
 export { processReconcileCopyrightActionIntents } from './processors/copyright-action-reconcile.mts'
 export { processCheckCopyrightReviewTarget } from './processors/copyright-review-target.mts'
 export { processSweepCopyrightEvidenceRetention } from './processors/copyright-evidence-retention.mts'
+export {
+  processSubmitDsaStatementOfReasons,
+  processReconcileDsaStatementSubmissions,
+} from './processors/copyright-dsa-submission.mts'
 export {
   processApplyMediaDeliveryRegistryRecord,
   processReconcileMediaDeliveryRegistry,

@@ -102,7 +102,7 @@ export async function readTestRetainedIdentityTraversalBound(
 }
 
 export async function insertTestRetainedIdentityRoot(
-  family: RetainedIdentityFamily,
+  family: Exclude<RetainedIdentityFamily, 'image'>,
   id: string,
 ): Promise<void> {
   await write(

@@ -26,6 +26,7 @@ import {
 import './email-intake-queue-route.mts'
 import './email-intake-legal-process-route.mts'
 import './email-intake-reply-replay-route.mts'
+import './dsa-statement-replay-route.mts'
 import './case-collection-routes.mts'
 import './eu-copyright-routes.mts'
 import './eu-copyright-staff-routes.mts'

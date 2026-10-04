@@ -1,5 +1,6 @@
 import { copyrightConfig } from '@services/copyright-notices/config'
 import { defineDynamicConfigNamespace } from './registry-descriptor.mts'
+import { validateCopyrightDsaSorDatabaseFrom } from './registry-copyright-validators.mts'
 
 export const copyrightRegistryEntry = defineDynamicConfigNamespace({
   namespace: 'copyright',
@@ -7,6 +8,7 @@ export const copyrightRegistryEntry = defineDynamicConfigNamespace({
   description: 'Copyright notice automation and legal-operations switches.',
   config: copyrightConfig,
   access: { update_roles: ['developer'] },
+  validate: validateCopyrightDsaSorDatabaseFrom,
   fields: {
     automaticProvisionalWithholding: {
       description:
@@ -41,6 +43,14 @@ export const copyrightRegistryEntry = defineDynamicConfigNamespace({
     dsaTransparencyReports: {
       description:
         'Allow staff to record and export aggregate DSA copyright transparency figures. Off by default; the report covers all receipt periods without requiring a jurisdiction approval.',
+    },
+    dsaSorDatabase: {
+      description:
+        'Submit eligible copyright restriction statements to the public DSA Transparency Database. Off by default; the exemption end date and worker credentials are also required.',
+    },
+    dsaSorDatabaseFrom: {
+      description:
+        'First UTC day after the DSA Article 19 exemption. Empty means unset and prevents any public statement submission, even if the switch is on.',
     },
     automaticWithholdingMinTrustTier: {
       description:

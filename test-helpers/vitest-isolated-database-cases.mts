@@ -48,6 +48,11 @@ const isolatedDatabaseCases = {
     fullName:
       'DSA copyright transparency report GET > counts a receipt after withdrawing its approval and does not persist GET output',
   },
+  'copyright-dsa-submission-materialization': {
+    file: 'backend/services/copyright-notices/dsa-statement-submission-sweep.test.mts',
+    fullName:
+      'DSA statement submission materialization > records each eligible restriction once across cutoff, lift, and jurisdiction',
+  },
   'copyright-eu-transparency-report': {
     file: 'backend/services/copyright-notices/eu-copyright-contract.test.mts',
     fullName:

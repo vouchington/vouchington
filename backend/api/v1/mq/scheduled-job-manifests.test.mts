@@ -75,6 +75,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'notifications/media-delivery-registry-reconciliation',
   'notifications/copyright-action-reconciliation',
   'notifications/copyright-delivery-reconciliation',
+  'notifications/copyright-dsa-statement-reconciliation',
   'notifications/copyright-evidence-retention',
   'notifications/copyright-review-target-page',
   'notifications/notification-push-intent-recovery',

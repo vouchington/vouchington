@@ -15,7 +15,7 @@ CREATE TABLE image_surface_placements (
     'user-profile-image', 'topic-logo-image', 'topic-hero-image',
     'community-profile-image', 'community-banner-image', 'user-profile-link-image'
   )),
-  image_id uuid NOT NULL REFERENCES images(id) ON DELETE RESTRICT,
+  image_id uuid NOT NULL,
   binding_family image_binding_families NOT NULL DEFAULT 'surface' CHECK (binding_family = 'surface'),
   user_id uuid REFERENCES users(id) ON DELETE RESTRICT,
   topic_id uuid REFERENCES topics(id) ON DELETE RESTRICT,
