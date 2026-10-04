@@ -2,6 +2,10 @@ import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst
 
 const UNTRUSTED_FIELDS = new Set([
   'reason',
+  'summary',
+  'gap',
+  'rationale',
+  'structured_output',
   'input_data',
   'error_message',
   'note',

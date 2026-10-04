@@ -1,4 +1,5 @@
 import { classifierPlanIsolatedCases } from './vitest-isolated-database-classifier-plan-cases.mts'
+import { copyrightMcpIsolatedCases } from './vitest-isolated-database-copyright-mcp-cases.mts'
 import { copyrightReportIsolatedCases } from './vitest-isolated-database-copyright-report-cases.mts'
 import { generalIsolatedCases } from './vitest-isolated-database-general-cases.mts'
 import { workerSweepIsolatedCases } from './vitest-isolated-database-worker-cases.mts'
@@ -9,6 +10,7 @@ const isolatedDatabaseCases = {
   ...workerSweepIsolatedCases,
   ...classifierPlanIsolatedCases,
   ...generalIsolatedCases,
+  ...copyrightMcpIsolatedCases,
   'copyright-territorial-withdrawal': {
     file: 'backend/services/copyright-notices/territorial-withdrawal.isolated.test.mts',
     fullName:

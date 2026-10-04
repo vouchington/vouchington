@@ -10,6 +10,7 @@ import {
   listCopyrightStaffQueuePage,
 } from '@services/copyright-notices/staff-queue-page'
 import { adminInput, createAdminTool, PAGE_INPUT, UUID_INPUT } from './create-admin-tool.mts'
+import { redactCopyrightContactFields, redactCopyrightQueueCase } from './copyright-redaction.mts'
 import { adminRouteOutputSchema } from './output-schema.mts'
 
 const queueApi = { method: 'GET', path: '/api/v1/copyright-notices/review-queue' } as const
@@ -21,14 +22,19 @@ const reviewQueue = createAdminTool<{ after?: string; limit?: number }>({
   parameters: adminInput(PAGE_INPUT),
   outputSchema: adminRouteOutputSchema(queueApi),
   annotations: { readOnlyHint: true, openWorldHint: false },
-  run: (user, args) =>
-    listCopyrightStaffQueuePage(
+  run: async (user, args) => {
+    const page = await listCopyrightStaffQueuePage(
       user,
       copyrightStaffQueueParser.parse(
         args,
         getPaginationLimitsForContract(copyrightStaffQueueParser.queryContract),
       ),
-    ),
+    )
+    return redactCopyrightContactFields({
+      ...page,
+      copyright_notices: page.copyright_notices.map(redactCopyrightQueueCase),
+    })
+  },
 })
 const noticeApi = { method: 'GET', path: '/api/v1/copyright-notices/:id' } as const
 const notice = createAdminTool<{ id: string }>({
@@ -42,7 +48,7 @@ const notice = createAdminTool<{ id: string }>({
   run: async (_, args) => {
     const copyright_notice = await getCopyrightPublicNoticeDetail(args.id)
     assert(copyright_notice, 404, 'Copyright notice not found')
-    return { copyright_notice }
+    return redactCopyrightContactFields({ copyright_notice })
   },
 })
 const repeatApi = {
@@ -59,12 +65,12 @@ const repeatAccounts = createAdminTool<{ id: string }>({
   annotations: { readOnlyHint: true, openWorldHint: false },
   run: async (user, args) => {
     assertNotSuspended(user)
-    return {
+    return redactCopyrightContactFields({
       copyright_repeat_infringer_accounts: await listCopyrightRepeatInfringerAccountsForNotice(
         user,
         args.id,
       ),
-    }
+    })
   },
 })
 export const adminLegalTools = [reviewQueue, notice, repeatAccounts]
