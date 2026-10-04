@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { listNotifications } from '@services/notifications'
 import { appendCopyrightNoticeSubmission } from './submission-appending.mts'
 import { createCopyrightCounterNotice, reviewCopyrightCounterNotice } from './index.mts'
-import { copyrightSubmissionGuidance } from './submission-guidance.mts'
+import { appendCopyrightSubmissionGuidance } from './submission-guidance.mts'
 import { copyrightNotificationCopy } from './statement-of-reasons-wording.mts'
 import {
   deliverCopyrightInAppNotification,
@@ -46,7 +46,7 @@ const holdGuidance: CopyrightLegalHoldGuidance = {
   risk_notes: [],
 }
 async function addCounterGuidance(submissionId: string, seed: number): Promise<void> {
-  await copyrightSubmissionGuidance.append({
+  await appendCopyrightSubmissionGuidance({
     submissionId,
     inputSha256: Buffer.alloc(32, seed),
     promptVersion: 'test-copyright-submission-guidance-v1',
@@ -265,7 +265,7 @@ describe('copyright submission guidance disclosure', () => {
       submittedByUserId: null,
       bodyCiphertext: `hold-${crypto.randomUUID()}`,
     })
-    await copyrightSubmissionGuidance.append({
+    await appendCopyrightSubmissionGuidance({
       submissionId: hold.id,
       inputSha256: Buffer.alloc(32, 17),
       promptVersion: 'test-copyright-submission-guidance-v1',

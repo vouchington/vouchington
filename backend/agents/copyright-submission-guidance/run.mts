@@ -2,7 +2,10 @@ import { createHash } from 'node:crypto'
 import { callRecordingAgentResponseUsage, DEFAULT_AGENT_MODEL } from '@agents/_shared'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import { extractTextFromOpenAIResponse } from '@modules/openai-utils'
-import { copyrightSubmissionGuidance } from '@services/copyright-notices'
+import {
+  appendCopyrightSubmissionGuidance,
+  getCopyrightSubmissionGuidanceSource,
+} from '@services/copyright-notices/submission-guidance'
 import {
   callCopyrightSubmissionGuidanceModel,
   type CopyrightSubmissionGuidanceKind,
@@ -19,7 +22,7 @@ export async function runCopyrightSubmissionGuidanceAgent(
   submissionId: string,
   callModel: CopyrightSubmissionGuidanceModelCaller = callCopyrightSubmissionGuidanceModel,
 ): Promise<CopyrightSubmissionGuidanceKind | null> {
-  const filing = await copyrightSubmissionGuidance.get(submissionId)
+  const filing = await getCopyrightSubmissionGuidanceSource(submissionId)
   if (!filing) return null
   const modelInput = wrapExternalContent(
     await sanitizePromptInjection(JSON.stringify(filing.input)),
@@ -34,7 +37,7 @@ export async function runCopyrightSubmissionGuidanceAgent(
     extractTextFromOpenAIResponse(response),
     filing.kind,
   )
-  await copyrightSubmissionGuidance.append({
+  await appendCopyrightSubmissionGuidance({
     submissionId,
     inputSha256: createHash('sha256').update(modelInput).digest(),
     promptVersion: PROMPT_VERSION,

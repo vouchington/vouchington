@@ -101,7 +101,6 @@ export {
   CopyrightDeliveryNotClaimedError,
 } from './delivery-transport.mts'
 export { copyrightAppealRecommendations } from './appeal-recommendations.mts'
-export { copyrightSubmissionGuidance } from './submission-guidance.mts'
 export {
   acknowledgeEuCopyrightNotice,
   recordEuCopyrightAcknowledgmentFailure,

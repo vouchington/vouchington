@@ -45,7 +45,8 @@ type SubmissionRow = {
   restricted_target_count: string
 }
 
-async function getCopyrightSubmissionGuidanceSource(
+/** @public Agent boundary for the redacted model input; only live filings are returned. */
+export async function getCopyrightSubmissionGuidanceSource(
   submissionId: string,
 ): Promise<GuidanceSource | null> {
   const { rows } = await read<SubmissionRow>(sql`/* getCopyrightSubmissionGuidanceSource */
@@ -133,7 +134,8 @@ function isPresent(value: unknown): boolean {
   return typeof value === 'string' && value.trim().length > 0
 }
 
-async function appendCopyrightSubmissionGuidance(input: {
+/** @public Agent boundary for one immutable encrypted advisory guidance result. */
+export async function appendCopyrightSubmissionGuidance(input: {
   submissionId: string
   inputSha256: Buffer
   promptVersion: string
@@ -150,9 +152,4 @@ async function appendCopyrightSubmissionGuidance(input: {
     )
     ON CONFLICT (copyright_notice_submission_id, input_sha256, prompt_version) DO NOTHING
   `)
-}
-
-export const copyrightSubmissionGuidance = {
-  get: getCopyrightSubmissionGuidanceSource,
-  append: appendCopyrightSubmissionGuidance,
 }

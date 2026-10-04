@@ -18,7 +18,7 @@ import {
   reviewCopyrightCounterNotice,
 } from './index.mts'
 import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
-import { copyrightSubmissionGuidance } from './submission-guidance.mts'
+import { appendCopyrightSubmissionGuidance } from './submission-guidance.mts'
 import { eraseTestCopyrightSubmissionGuidanceForNotice } from '@voucha/test-helpers/copyright-submission-guidance-staff-read'
 
 describe('copyright submission guidance in the staff case projection', () => {
@@ -61,14 +61,14 @@ describe('copyright submission guidance in the staff case projection', () => {
       ...counterGuidance,
       summary: 'Latest counter-notice summary.',
     }
-    await copyrightSubmissionGuidance.append({
+    await appendCopyrightSubmissionGuidance({
       submissionId: counter.submission.id,
       inputSha256: Buffer.alloc(32, 31),
       promptVersion: 'test-copyright-submission-guidance-v1',
       model: 'test-model',
       guidance: counterGuidance,
     })
-    await copyrightSubmissionGuidance.append({
+    await appendCopyrightSubmissionGuidance({
       submissionId: counter.submission.id,
       inputSha256: Buffer.alloc(32, 32),
       promptVersion: 'test-copyright-submission-guidance-v1',
@@ -99,7 +99,7 @@ describe('copyright submission guidance in the staff case projection', () => {
       })),
       risk_notes: [],
     }
-    await copyrightSubmissionGuidance.append({
+    await appendCopyrightSubmissionGuidance({
       submissionId: hold.id,
       inputSha256: Buffer.alloc(32, 33),
       promptVersion: 'test-copyright-submission-guidance-v1',

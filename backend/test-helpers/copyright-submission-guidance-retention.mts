@@ -5,7 +5,7 @@ import {
   type CopyrightCounterNoticeGuidance,
   type CopyrightLegalHoldGuidance,
 } from '@ts-shared/utils/copyright-submission-guidance'
-import { copyrightSubmissionGuidance } from '../services/copyright-notices/submission-guidance.mts'
+import { appendCopyrightSubmissionGuidance } from '../services/copyright-notices/submission-guidance.mts'
 import { getCopyrightNoticePrivateAggregate } from './services/copyright-notices/private-aggregate.mts'
 
 /** Adds encrypted guidance to the filed counter-notice and hold in an existing retention case. */
@@ -37,14 +37,14 @@ export async function addTestCopyrightSubmissionGuidanceForRetentionCase(
     risk_notes: [],
   }
 
-  await copyrightSubmissionGuidance.append({
+  await appendCopyrightSubmissionGuidance({
     submissionId: counter.id,
     inputSha256: randomBytes(32),
     promptVersion: 'retention-fixture-v1',
     model: 'retention-fixture',
     guidance: counterGuidance,
   })
-  await copyrightSubmissionGuidance.append({
+  await appendCopyrightSubmissionGuidance({
     submissionId: hold.id,
     inputSha256: randomBytes(32),
     promptVersion: 'retention-fixture-v1',
