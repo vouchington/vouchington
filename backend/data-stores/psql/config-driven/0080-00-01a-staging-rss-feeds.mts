@@ -6,6 +6,10 @@ import { createTopicEmbeddingContent } from '@voucha/types/entities/topic'
  * values `normalizeUrlForUrlTable` and `generateSourceDetails` produce, pinned by the test.
  * The ids carry a timestamp from before any real change row, so a later `uuidv7()` enablement
  * change always sorts after the initial one (the sync triggers read `ORDER BY id DESC`).
+ *
+ * The runner applies config-driven files in name order, in one pass. This file's prefix sorts
+ * after 0080-00-01-publisher-type-topics.mts and before 0080-00-02-publisher-type-relations.sql,
+ * so the Cloudflare topic exists when that file relates it to its `blog` publisher type.
  */
 export type StagingRssFeed = {
   readonly url: string
@@ -84,6 +88,13 @@ const sourceTopicName = (feed: StagingRssFeed): string => `${feed.title} (${feed
 
 const lit = (value: string): string => `'${value.replaceAll("'", "''")}'`
 
+// rss_feeds allows one active feed per URL (idx_rss_feeds__rss_feed_url_id), so a topic or alias
+// created while another topic already owns the URL's feed would point at no feed at all.
+const noActiveFeedForUrl = (feed: StagingRssFeed): string => `NOT EXISTS (
+    SELECT 1 FROM rss_feeds f JOIN urls u ON u.id = f.rss_feed_url_id
+    WHERE u.url = ${lit(feed.url)} AND f.deleted_at IS NULL
+  )`
+
 // Every statement is one insert-only INSERT: a bare `ON CONFLICT DO NOTHING` (the fixed-id key,
 // and the unique indexes on topics and rss_feeds) plus a NOT EXISTS so a rerun, and a row that
 // was soft-deleted or disabled after seeding, is never recreated or re-enabled. Parents are
@@ -133,6 +144,7 @@ WHERE h.hostname = ${lit(feed.hostname)}
     WHERE id = ${lit(ids.topic)} OR slug = ${lit(feed.slug)} OR lower(name) = lower(${lit(topicName)})
   )
   AND NOT EXISTS (SELECT 1 FROM topic_aliases WHERE alias = ${lit(feed.slug)})
+  AND ${noActiveFeedForUrl(feed)}
 ON CONFLICT DO NOTHING;`,
     // Only while topics.aliases still lists the slug, so an alias removed later is not resurrected
     // out of sync with topics.aliases.
@@ -143,6 +155,7 @@ FROM topics t
 WHERE t.id = ${lit(ids.topic)}
   AND ${lit(feed.slug)} = ANY(t.aliases)
   AND NOT EXISTS (SELECT 1 FROM topic_aliases WHERE alias = ${lit(feed.slug)})
+  AND ${noActiveFeedForUrl(feed)}
 ON CONFLICT DO NOTHING;`,
     `
 INSERT INTO rss_feeds (id, rss_feed_url_id, topic_id, title, feed_type, created_via)

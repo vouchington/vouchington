@@ -216,14 +216,20 @@ config-driven operations, and views. After migration the database contains:
   [`config-driven/0140-00-01-seed-communities.mts`](../../../backend/data-stores/psql/config-driven/0140-00-01-seed-communities.mts).
 - **Staging only: RSS feeds** — three public feeds (Guardian Science, Cloudflare Blog, Quanta
   Magazine) so the staging crawl pipeline has real feeds to fetch after every reset. The generator
-  [`config-driven/0640-00-00-staging-rss-feeds.mts`](../../../backend/data-stores/psql/config-driven/0640-00-00-staging-rss-feeds.mts)
+  [`config-driven/0080-00-01a-staging-rss-feeds.mts`](../../../backend/data-stores/psql/config-driven/0080-00-01a-staging-rss-feeds.mts)
   emits SQL only when `ENVIRONMENT` is `staging`; every other environment gets no statements. It
   writes what `createRssFeedSource` writes for a system-created feed (hostname, URL, `rss_feed`
   topic with its slug alias, the feed row, and initial enabled and discoverable changes by the
   `rss-feed-auto-updater` system user) using fixed UUIDv7 ids and insert-only SQL. A rerun, a
   feed disabled later, or an existing row for the same hostname, URL or slug is never changed.
-  It seeds no posts or users and does not touch crawl configuration. `db:seed` never runs in
-  staging, so this is the only seeded feed data there.
+  The topic and alias are also skipped while any other topic already owns an active feed for the
+  URL, because `rss_feeds` allows one active feed per URL and the new topic would point at no
+  feed. The runner applies config-driven files in name order in a single pass, so the prefix sorts
+  this file after `0080-00-01-publisher-type-topics.mts` and before
+  `0080-00-02-publisher-type-relations.sql`: the Cloudflare topic must exist when that file
+  relates it to the `blog` publisher type, and a later prefix leaves it unrelated until a second
+  bootstrap pass. It seeds no posts or users and does not touch crawl configuration. `db:seed`
+  never runs in staging, so this is the only seeded feed data there.
 
 ### What `db:seed` creates (in addition)
 
