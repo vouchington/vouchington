@@ -22,8 +22,10 @@ Unanswerable evidence is `unknown — no journal`, never a guess.
 for a native stack when the stack is handed off, per the Close-out rule in
 [Git And PRs](../agent-workflow/git-and-prs.md#close-out). Write it from the session that did the
 work, because the collectors read that session's transcripts and journal. Do not write one per stack
-layer or intermediate commit. If the merge changes the outcome while you are still running, add the
-short journal note that rule describes instead of a second retrospective.
+layer or intermediate commit. Pass that hand-off's own `--source-event-id` (for example
+`handoff-pr<number>`) to both `check` and `save`, so a second PR or stack handed off in the same
+session is not treated as already reported. If the merge changes the outcome while you are still
+running, add the short journal note that rule describes instead of a second retrospective.
 
 Start with `node dev/retrospective-save.mts check [--session-id <id>]`. An interactive root Codex always
 adds `--root-codex` to this check, `node dev/blackboard-journal.mts entries`, and the eventual

@@ -117,7 +117,10 @@ Unmatched commits on origin/<branch> are new commits someone pushed.
 - **Hand-off retrospective.** When you hand a PR to the human as ready, write one
   [retrospective](../retrospective/SKILL.md) for it, from the session that did the work: it reads
   that session's transcripts and journal. A native stack gets one retrospective when the stack is
-  handed off, covering every layer. Do not write one per layer or for an intermediate commit.
+  handed off, covering every layer. Do not write one per layer or for an intermediate commit. Give
+  each hand-off its own `--source-event-id`, such as `handoff-pr<number>` (a stack uses its top PR's
+  number), on both `check` and `save`: the default `retrospective-<session-id>` fits only the first
+  hand-off in a session, and a second one would be mistaken for it.
 - **Merge note.** If you are still running when the merge happens and it changes the outcome, such
   as a merge-queue ejection and its fix, a follow-up push, or review comments addressed after
   hand-off, append one short journal note to the same session with the
