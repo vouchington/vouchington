@@ -147,8 +147,7 @@ function sourceBranchSql(
     statement
       .append('SELECT slug FROM post_slugs CROSS JOIN native_bounds WHERE ')
       .append(nativeSourceRange('post_id', ['slug'], cursor === null ? null : [cursor], 0))
-      .append(sql` ORDER BY post_id, slug LIMIT `)
-      .append(publicationPageLimit(limit)).append(sql`)
+      .append(sql` ORDER BY slug LIMIT ${limit}`).append(sql`)
       SELECT 'post_slug'::text AS kind, NULL::text AS "uuidValue", slug AS "textValue", NULL::text AS "postType", NULL::text AS day, slug AS cursor FROM page ORDER BY slug`)
   } else {
     statement

@@ -111,7 +111,7 @@ export async function insertContentProvenanceOAuthClient(
     )
     VALUES (
       ${clientId}, 'Content provenance test client', 'public', 'none',
-      ARRAY['https://agent.example/callback'], ARRAY['authorization_code', 'refresh_token'], ARRAY['code'], ARRAY['mcp:read'],
+      ARRAY['https://agent.example/callback'], ARRAY['authorization_code', 'refresh_token']::oauth_grant_types[], ARRAY['code']::oauth_response_types[], ARRAY['mcp.user:read']::api_scopes[],
       ${metadataUrl}, ${refreshGeneration}, ${refreshedAt}, ${expiresAt},
       ${columns.verifiedAt ?? null}, ${columns.verifiedById ?? null}
     )

@@ -84,7 +84,7 @@ export async function insertTestRetainedUserAuditRow(
       `/* insertTestRetainedUserAuditOAuthServerEvent */
       INSERT INTO oauth_authorization_server_events
         (event_type, access_token_id, user_id, client_id, grant_id, resource, scopes)
-      VALUES ('access_token_revoked', $1, $2, $3, $4, 'https://example.test/mcp', ARRAY['read'])`,
+      VALUES ('access_token_revoked', $1, $2, $3, $4, 'https://example.test/mcp', ARRAY['mcp.user:read']::api_scopes[])`,
       [randomUUID(), actorId, randomUUID(), randomUUID()],
     )
   }

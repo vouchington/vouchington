@@ -11,7 +11,28 @@ import {
   advanceEntityReconciliationCheckpoint,
   getEntityReconciliationWindow,
   streamEntityReconciliationCandidateBatches,
+  type EntityReconciliationCandidate,
+  type EntityReconciliationWindow,
 } from './reconciliation.mts'
+
+/** Resume bounded runs so concurrent fixtures cannot hide this test's rows behind the run cap. */
+async function* streamCompleteWindow(window: EntityReconciliationWindow) {
+  let after: EntityReconciliationCandidate | undefined
+  let hasMore = true
+  const onComplete = (result: { hasMore: boolean }) => {
+    hasMore = result.hasMore
+  }
+  while (hasMore) {
+    hasMore = false
+    for await (const batch of streamEntityReconciliationCandidateBatches(window, {
+      after,
+      onComplete,
+    })) {
+      after = batch.at(-1)
+      yield batch
+    }
+  }
+}
 
 describe('entity-listener reconciliation', () => {
   it('resumes from the durable checkpoint with overlap and replica-lag margin', async () => {
@@ -29,7 +50,7 @@ describe('entity-listener reconciliation', () => {
     const user = await createTestUser()
     await setUserReferrerId(user.id, referrer.id)
     const now = new Date()
-    const batches = streamEntityReconciliationCandidateBatches({
+    const batches = streamCompleteWindow({
       start: new Date(now.getTime() - 60_000),
       end: new Date(now.getTime() + 60_000),
     })
@@ -53,7 +74,7 @@ describe('entity-listener reconciliation', () => {
     )
     await deleteTestPost(post.id)
     const now = new Date()
-    const batches = streamEntityReconciliationCandidateBatches({
+    const batches = streamCompleteWindow({
       start: new Date(now.getTime() - 60_000),
       end: new Date(now.getTime() + 60_000),
     })
@@ -79,7 +100,7 @@ describe('entity-listener reconciliation', () => {
       null,
     )
     const now = new Date()
-    const batches = streamEntityReconciliationCandidateBatches({
+    const batches = streamCompleteWindow({
       start: new Date(now.getTime() - 60_000),
       end: new Date(now.getTime() + 60_000),
     })

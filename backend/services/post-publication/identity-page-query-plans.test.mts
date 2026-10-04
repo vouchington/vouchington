@@ -124,18 +124,7 @@ describe('publication identity physical page query plans', () => {
       await using query = await beginTransaction()
       await listFeedRows(query, feedFixture.candidate.id, null, 100)
     })
-    for (const mode of ['force_custom_plan', 'force_generic_plan'] as const) {
-      sparseFeedPlans.set(
-        mode,
-        await explainSparsePublicationFeedSourcesForTest(feedItemQuery, mode),
-      )
-    }
-    await insertTestPublicationAdditionalFeedItems(
-      feedFixture.candidate.id,
-      feedIds[0]!,
-      1001,
-      true,
-    )
+    // Give sparse probes an adversarial source relation before ANALYZE and EXPLAIN.
     const unrelated = await createTestPublicationSnapshotWork()
     const unrelatedTopics = await insertTestPublicationTopicSlugFanout(
       unrelated.candidate.id,
@@ -148,6 +137,18 @@ describe('publication identity physical page query plans', () => {
       unrelatedTopics.topicIds,
     )
     await insertTestPublicationAdditionalFeedItems(unrelated.candidate.id, unrelatedFeeds[0]!, 1001)
+    for (const mode of ['force_custom_plan', 'force_generic_plan'] as const) {
+      sparseFeedPlans.set(
+        mode,
+        await explainSparsePublicationFeedSourcesForTest(feedItemQuery, mode),
+      )
+    }
+    await insertTestPublicationAdditionalFeedItems(
+      feedFixture.candidate.id,
+      feedIds[0]!,
+      1001,
+      true,
+    )
   })
 
   it.each(['force_custom_plan', 'force_generic_plan'] as const)(
