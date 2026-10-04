@@ -36,6 +36,14 @@ CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasure_permitted(table
  STABLE
 ```
 
+## `fn_create_media_delivery_generation_change`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_create_media_delivery_generation_change()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_create_metrics`
 
 ```sql
@@ -982,6 +990,14 @@ CREATE OR REPLACE FUNCTION public.fn_update_classifier_run_scope()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_update_clearance_transparency_scope()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_media_delivery_change_authority`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_media_delivery_change_authority()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
