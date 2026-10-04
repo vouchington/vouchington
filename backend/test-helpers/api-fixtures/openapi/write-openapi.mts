@@ -5,6 +5,7 @@ import { writeGeneratedFiles } from 'vouchington-tooling/api-fixtures'
 import { stableStringify } from '../write.mts'
 import { buildOpenApiDocument } from './build-openapi-document.mts'
 import { buildRequestContractsBundle } from './request-contract-bundle.mts'
+import type { OpenApiDocument } from 'vouchington-tooling/openapi-document'
 
 const repoRoot = fileURLToPath(new URL('../../../..', import.meta.url))
 const openApiPath = join(repoRoot, 'api-fixtures/v1/openapi.json')
@@ -23,11 +24,12 @@ async function formatWithOxfmt(path: string, rawJson: string): Promise<string> {
 export async function writeOpenApi({
   check = false,
   path = openApiPath,
+  document = buildOpenApiDocument(),
 }: {
   check?: boolean
   path?: string
+  document?: OpenApiDocument
 } = {}): Promise<void> {
-  const document = buildOpenApiDocument()
   const runtimePath =
     path === openApiPath ? requestContractsPath : join(path, '..', 'request-contracts.json')
   const files = new Map<string, string>()

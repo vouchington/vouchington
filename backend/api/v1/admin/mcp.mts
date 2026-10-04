@@ -3,7 +3,7 @@ import { Readable } from 'node:stream'
 import type { Context } from '@jongleberry/api-server'
 import { ADMIN_MCP_SERVER_CONFIG } from '@services/mcp-tools'
 import { dispatchMcpRequest, rejectMcpMethod } from '../../mcp-helpers.mts'
-import { apiRequestContract } from '../../response-contract.mts'
+import { apiOpenApiHttpResponse, apiRequestContract } from '../../response-contract.mts'
 
 // POST /api/v1/admin/mcp — administrator-only MCP Streamable HTTP endpoint.
 // Auth: an admin-resource OAuth access token only (API keys never authenticate here), the
@@ -11,7 +11,10 @@ import { apiRequestContract } from '../../response-contract.mts'
 app.route('/api/v1/admin/mcp').post(async (ctx: Context) => {
   // JSON-RPC messages are validated by the MCP SDK, so the contract body stays open.
   apiRequestContract<'POST:/api/v1/admin/mcp', unknown>('POST:/api/v1/admin/mcp')
-  const response = await dispatchMcpRequest(ctx, ADMIN_MCP_SERVER_CONFIG)
+  const response = apiOpenApiHttpResponse(
+    'POST:/api/v1/admin/mcp',
+    await dispatchMcpRequest(ctx, ADMIN_MCP_SERVER_CONFIG),
+  )
   const contentType = response.headers.get('Content-Type')
   if (contentType) ctx.setType(contentType)
   ctx.setStatus(response.status)

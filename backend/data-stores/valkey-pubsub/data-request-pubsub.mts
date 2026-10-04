@@ -1,5 +1,6 @@
+import type { DataRequestStatus } from '@voucha/types/entities/account-data-request'
 import { createChannelPubSub } from './channel-pubsub.mts'
 
-export type DataRequestStatus = { status: string; download_url?: string | null }
+export type DataRequestStreamStatus = { status: DataRequestStatus; download_url?: string | null }
 
-export const dataRequestPubSub = createChannelPubSub<DataRequestStatus>('data-request:status')
+export const dataRequestPubSub = createChannelPubSub<DataRequestStreamStatus>('data-request:status')

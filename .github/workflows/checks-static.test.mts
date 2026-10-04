@@ -115,25 +115,29 @@ describe('checks-static workflow', () => {
     expect(job).not.toContain('Typecheck backend and email templates')
   })
 
-  it('regenerates API fixture snapshots and rejects tracked or untracked drift', () => {
+  it('compiles all API contracts once and rejects tracked or untracked canonical drift', () => {
     const job = jobSection('static-backend')
     const apiFixtureSnapshots = parsed.jobs?.['static-backend']?.steps?.find(
-      step => step.name === 'Check API fixture snapshots are up to date',
+      step => step.name === 'Check compiled API contracts and canonical snapshots',
     )
 
     expect(apiFixtureSnapshots).toMatchObject({
-      run: `pnpm run api-fixtures:generate
-git diff --exit-code -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses
-untracked_generated_files="$(git ls-files --others --exclude-standard -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses)"
+      run: `pnpm run api-contracts:check
+git diff --exit-code -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-fixtures/v1/openapi.json api-fixtures/v1/request-contracts.json
+untracked_generated_files="$(git ls-files --others --exclude-standard -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-fixtures/v1/openapi.json api-fixtures/v1/request-contracts.json)"
 if [ -n "$untracked_generated_files" ]; then
   echo "::error::Generated API fixture files are untracked:"
   printf '%s\\n' "$untracked_generated_files"
   exit 1
 fi\n`,
     })
-    expect(job.indexOf('- name: Check API fixture snapshots are up to date')).toBeGreaterThan(
-      job.indexOf('- name: Check backend dependencies'),
-    )
+    expect(apiFixtureSnapshots?.run?.match(/pnpm run api-contracts:check/g)).toHaveLength(1)
+    expect(apiFixtureSnapshots?.run).not.toContain('vitest')
+    expect(apiFixtureSnapshots?.run).not.toContain('api-fixtures:generate')
+    expect(apiFixtureSnapshots?.run).not.toContain('openapi:generate')
+    expect(
+      job.indexOf('- name: Check compiled API contracts and canonical snapshots'),
+    ).toBeGreaterThan(job.indexOf('- name: Check backend dependencies'))
   })
 
   it('owns the web pages-router, dependency, build, and smoke checks lifted from tests-web.yml', () => {

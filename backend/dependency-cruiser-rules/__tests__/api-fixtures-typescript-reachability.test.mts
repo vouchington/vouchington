@@ -91,7 +91,7 @@ describe('no-api-fixtures-typescript-reachability', () => {
     ).toBe(true)
     expect(
       exemptions.some(pattern =>
-        pattern.test('backend/test-helpers/api-fixtures/backend-program.test.mts'),
+        pattern.test('backend/test-helpers/api-fixtures/backend-row-contracts.mts'),
       ),
     ).toBe(false)
     expect(
@@ -141,7 +141,7 @@ describe('no-api-fixtures-typescript-reachability', () => {
     ])
   })
 
-  it('keeps the two in-repo runtime consumers and does not exempt the row-contract test', async () => {
+  it('keeps the two in-repo runtime consumers and does not exempt the row-contract checker', async () => {
     await expect(
       violationsFor(
         noApiFixturesTypescriptReachability,
@@ -157,7 +157,7 @@ describe('no-api-fixtures-typescript-reachability', () => {
     await expect(
       violationsFor(
         noApiFixturesTypescriptReachability,
-        'backend/test-helpers/api-fixtures/backend-program.test.mts',
+        'backend/test-helpers/api-fixtures/backend-row-contracts.mts',
       ),
     ).resolves.toEqual([])
   })

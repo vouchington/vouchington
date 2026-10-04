@@ -1443,7 +1443,7 @@ rules:
         backend-no-data-mocks: [backend]
         backend-modules: [backend]
         backend-test-helpers: [backend]
-        backend-contract-program: [backend]
+        backend-contract-artifacts: [backend]
         backend-email-templates: [backend]
         backend-postgres-schema: [postgres-schema]
         backend-aws: [backend-credentialed]

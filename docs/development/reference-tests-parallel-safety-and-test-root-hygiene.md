@@ -452,14 +452,10 @@ Every derived loader must call `loadBackendProgram()` before checking its own re
 that cache by the returned generation. One generation change therefore invalidates response,
 request, query, and registered-route results atomically rather than allowing an early derived-cache
 hit to hide stale compiler inputs. `getBackendProgramBuildCount()` exposes a module-level counter
-for this. The focused regression at
-`backend/test-helpers/api-fixtures/backend-program.test.mts` uses
-`resetBackendContractDiscoveryCachesForTest()` to clear only the four loader result caches and then
-the shared program cache/counter. One lifecycle test loads every derived product twice across two
-generations: identities stay stable within a generation, the physical build count does not advance
-on warm calls, and a simulated input change advances the generation and invalidates all four
-products atomically. A second real-program test marks one compiler capture stale and proves the
-production composition discards it before publishing a later attempt. The bounded attempt loop
+for this. The canonical static compilation job shares one settled backend program while verifying
+all current generated artifacts. The former full-backend multi-generation Vitest integrations are
+removed; tiny product catalog generation/signature composition coverage is a separate follow-up.
+The bounded attempt loop
 calls `settleBuild` from `vouchington-tooling/compiler-build`. `backend-program-settlement.mts`
 keeps the three-attempt bound and the backend terminal error; its exhaustive retry, configuration
 handoff, terminal error, and unexpected-error branches use in-memory tests instead of repeatedly

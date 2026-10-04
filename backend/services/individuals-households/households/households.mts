@@ -108,7 +108,13 @@ export async function addHouseholdMembership(
   const exists = await verifyIndividualExists(individualId)
   assert(exists, 404, 'Individual not found')
 
-  const { rows } = await write(sql`/* addHouseholdMembership */
+  const { rows } = await write<{
+    id: string
+    household_id: string
+    relationship: string | null
+    updated_at: Date
+    individual: { id: string; updated_at: string }
+  }>(sql`/* addHouseholdMembership */
     INSERT INTO household_members (household_id, individual_id, relationship)
     VALUES (${householdId}, ${individualId}, ${relationship || null})
     ON CONFLICT ON CONSTRAINT uniq_household_members__household_id_individual_id DO UPDATE

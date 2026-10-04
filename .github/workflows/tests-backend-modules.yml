@@ -41,7 +41,7 @@ jobs:
           VITEST_JUNIT_OUTPUT_FILE: backend-modules-test-report.junit.xml
           VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
         run: |
-          pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/data-stores/analytics --project backend/services/analytics --project backend-modules --project backend-no-data-mocks --project backend-test-helpers --project backend-contract-program --project backend-email-templates
+          pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/data-stores/analytics --project backend/services/analytics --project backend-modules --project backend-no-data-mocks --project backend-test-helpers --project backend-contract-artifacts --project backend-email-templates
         timeout-minutes: 10
       - name: Preserve full backend-modules LCOV
         if: ${{ !cancelled() && inputs.publish_coverage }}

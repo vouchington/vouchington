@@ -48,7 +48,7 @@ Reporter policy:
 | `backend-modules`                  | `tests-backend-modules.yml`      | `backend-modules`                 | None                     |
 | `backend-no-data-mocks`            | `tests-backend-modules.yml`      | `backend-modules`                 | None                     |
 | `backend-test-helpers`             | `tests-backend-modules.yml`      | `backend-modules`                 | None                     |
-| `backend-contract-program`         | `tests-backend-modules.yml`      | `backend-modules`                 | None                     |
+| `backend-contract-artifacts`       | `tests-backend-modules.yml`      | `backend-modules`                 | None                     |
 | `backend-email-templates`          | `tests-backend-modules.yml`      | `backend-modules`                 | None                     |
 | `backend/analytics-integration`    | `tests-backend-unit.yml`         | `backend-tests`                   | None                     |
 | `backend-data-stores`              | `tests-backend-unit.yml`         | `backend-tests`                   | None                     |

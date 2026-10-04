@@ -8,22 +8,13 @@ This directory is the source for the generated shared API fixture corpus in
 Web consumers bind each generated response to its exact TypeScript response type and production
 wrapper invocation through the [web fixture declarations](../web/api-responses.md#shared-fixture-declarations).
 
-## Real Backend Program Contract Tests
+## Backend Compilation and Artifact Assertions
 
-`backend-program.test.mts`, `openapi/write-openapi.test.mts`, `backend-contract-catalog.hardening.test.mts`,
-and `native-moderation-optional-contracts.test.mts` are the only test files that call the real loaders
-(`loadBackendProgram()`, `loadBackendResponseContracts()`, `loadBackendRequestContracts()`,
-`loadBackendQueryContracts()`, `loadRegisteredRouteCatalog()`) against the actual `backend/tsconfig.json`
-route tree, rather than a synthetic `buildVirtualProgramMatrix()`. Building that real `ts.Program` costs
-~1.4 GB transient / ~870 MB retained. They run in their own dedicated `backend-contract-program` Vitest
-project (`test-helpers/vitest-config/backend-core-projects.mts`), isolated from the rest of
-`backend-test-helpers`'s files so this project's peak fork memory depends only on these four files, not on
-whatever unrelated test-helper files happen to share a fork with them. They keep `isolate: false` among
-themselves — when two of them do land in the same fork, they reuse one memoized program via
-`loadBackendProgram()` rather than each building their own — but the repository-owned
-`VITEST_MAX_WORKERS` CI worker policy can still give each file its own fork; Vitest 5 has no per-project worker cap that would force
-all four onto exactly one. Either way each fork now pays at most one program build, not one build plus
-whatever unrelated test-helper files it would otherwise have accumulated.
+The real backend is compiled by `pnpm run api-contracts:check` in the static backend job. One
+settled program verifies fixture, OpenAPI and executable request snapshots, exact query descriptors,
+registered-route completeness and PostgreSQL producer row types. Artifact assertions in Vitest read
+the committed outputs after that job passes. Tiny compiler-host and bounded-settlement tests retain
+filesystem invalidation and retry coverage; Vitest does not repeatedly compile the full backend.
 
 ## Backend Response Contracts
 
@@ -69,10 +60,19 @@ and media type, and a failed secondary variant makes the whole operation unavail
 silently disappearing.
 
 The OpenAPI document catalogs every literal API-v1 route registration independently of fixture
-coverage. Every registered method and normalized path shape appears in `paths`. SSE handlers are
-published as `text/event-stream` with an honest unavailable event-schema marker, unconditional 405
-handlers publish only the shared error response, and an otherwise unrecognized emission receives an
-operation-level unavailable marker without a fabricated success response.
+coverage. Every registered method and normalized path shape appears in `paths`. SSE frames are written through `apiSseFrame` at each concrete route's emission callback. Their
+`text/event-stream` content is a string; `x-sse-events` maps each literal event name to its
+compiler-derived `dataSchema`, including terminal events and every payload variant. Generic
+subscription helpers pass typed events to those callbacks. Keepalive comments carry no event
+payload, and routine lifecycle expiry reconnects without inventing an error event.
+
+Opaque SDK responses use `apiOpenApiHttpResponse` with the shared `ApiHttpResponse` carrier. The
+carrier describes reachable status, media and body variants without reading or replacing the
+response. Stateless MCP POST responses remain JSON (single replies or reply arrays), with bodyless
+202 notification acknowledgements and JSON-RPC errors at 200 or 400. The explicit 400 schema also
+includes framework admission errors. Unconditional 405 handlers publish only the shared error
+response. Unknown emissions and unsupported payload variants fail extraction; the generated
+response and request unavailable-route arrays must both remain empty.
 
 The default contract key is `METHOD:/route/template`. Use an explicit
 `backendResponseContractKey` only when a route has multiple response variants, and wrap that
@@ -213,8 +213,9 @@ by name after route-ordered path parameters. See
 - Run `pnpm run openapi:generate` when response or query contracts change.
 - Commit the source change, `api-fixtures/v1/manifest.json`, `api-fixtures/v1/schema-lock.json`,
   any generated response JSON changes, and `api-fixtures/v1/openapi.json` when its contract changes.
-- `pnpm run api-fixtures:check` is the local no-write convenience check.
-- CI regenerates these snapshots and rejects a diff or untracked generated file in
+- `pnpm run api-contracts:check` verifies all canonical snapshots and compiler acceptance together.
+  `pnpm run api-fixtures:check` remains the narrower response-fixture convenience check.
+- CI checks these snapshots and rejects tracked or untracked drift in
   `checks-static.yml`'s `static-backend` job.
 - Run `pnpm run openapi:check` before pushing.
 - For client fixture coverage, run

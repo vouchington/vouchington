@@ -52,9 +52,11 @@ describe('POST /api/v1/admin/mcp request boundary', () => {
   it('answers an authenticated non-JSON-RPC object with a JSON-RPC error, not a schema 422', async () => {
     const response = await postRaw(token, '{"hello":"world"}')
 
-    expect(response.status).toBeGreaterThanOrEqual(400)
-    expect(response.status).toBeLessThan(500)
-    expect(response.status).not.toBe(422)
-    expect(response.body).toMatchObject({ jsonrpc: '2.0', error: { code: expect.any(Number) } })
+    expect(response.status).toBe(400)
+    expect(response.body).toMatchObject({
+      jsonrpc: '2.0',
+      id: null,
+      error: { code: expect.any(Number) },
+    })
   })
 })

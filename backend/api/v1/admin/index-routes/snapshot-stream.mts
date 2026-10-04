@@ -1,3 +1,5 @@
+import type { PassThrough } from 'node:stream'
+import type { ApiSseEvent } from '../../../response-contract.mts'
 import type { Context } from '@jongleberry/api-server'
 import type { ChannelPubSub } from '@data-stores/valkey-pubsub'
 import type { PrivateUser } from '@services/users/types'
@@ -6,24 +8,25 @@ import { pipeChannelToSSE, startSSE } from '../../../sse-helpers.mts'
 
 const CHANNEL_KEY = 'snapshot'
 
-type SnapshotPublisher = (value: unknown) => Promise<void>
+type SnapshotPublisher<T> = (value: T) => Promise<void>
 
-type AdminSnapshotStreamOptions = {
+type AdminSnapshotStreamOptions<T> = {
   authorize: (user: PrivateUser) => boolean
   rateLimitKey: string
-  pubSub: ChannelPubSub<unknown>
+  pubSub: ChannelPubSub<T>
   tickerIntervalMs: number
-  publishTick: (publish: SnapshotPublisher) => void
-  loadInitialValue: () => Promise<unknown>
+  publishTick: (publish: SnapshotPublisher<T>) => void
+  loadInitialValue: () => Promise<T | undefined>
+  emit: (stream: PassThrough, event: ApiSseEvent<'snapshot', T>) => void
 }
 
-export function createAdminSnapshotStream(
-  options: AdminSnapshotStreamOptions,
+export function createAdminSnapshotStream<T>(
+  options: AdminSnapshotStreamOptions<T>,
 ): (ctx: Context) => Promise<void> {
   let subscriberCount = 0
   let ticker: ReturnType<typeof setInterval> | null = null
 
-  const publish: SnapshotPublisher = value => options.pubSub.publish(CHANNEL_KEY, value)
+  const publish: SnapshotPublisher<T> = value => options.pubSub.publish(CHANNEL_KEY, value)
 
   function startTicker(): void {
     ticker = setInterval(() => {
@@ -62,15 +65,14 @@ export function createAdminSnapshotStream(
       if (sse.lifecycleSignal.aborted) closeSubscription()
       else sse.lifecycleSignal.addEventListener('abort', closeSubscription, { once: true })
 
-      let initialValue: unknown
+      let initialValue: T | undefined
       if (!sse.lifecycleSignal.aborted) {
         initialValue = await options.loadInitialValue()
       }
 
       try {
         await pipeChannelToSSE({
-          ctx,
-          stream: sse.stream,
+          emit: event => options.emit(sse!.stream, event),
           subscription,
           eventName: 'snapshot',
           abortSignal: sse.lifecycleSignal,
