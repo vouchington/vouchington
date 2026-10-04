@@ -1,8 +1,11 @@
+import { copyrightReportIsolatedCases } from './vitest-isolated-database-copyright-report-cases.mts'
+
 // Vitest matches `testNamePattern` against the suite and test titles joined by " > ", so every
 // registered name keeps that separator; the template type rejects a space-joined name at compile time.
 type IsolatedDatabaseCaseDefinition = { file: string; fullName: `${string} > ${string}` }
 
 const isolatedDatabaseCases = {
+  ...copyrightReportIsolatedCases,
   'semantic-post-window-cap': {
     file: 'backend/services/posts/search/__tests__/get-ids.semantic-window.test.mts',
     fullName:

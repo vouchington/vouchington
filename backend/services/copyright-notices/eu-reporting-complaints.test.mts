@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
+import { runIsolatedDatabaseCase } from '../../../test-helpers/vitest-isolated-database-case.mts'
 import { createTestEuParticipantCase } from '@voucha/test-helpers/copyright-eu-participant-cases'
 import { createTestReportingTrustedEuCase } from '@voucha/test-helpers/dsa-report-figure-fixtures'
 import {
@@ -19,6 +21,10 @@ describe('DSA copyright complaint aggregates', () => {
   useCopyrightIntakeEnvironment()
 
   it('reports reviewer filings from their stored role even before a staff outcome exists', async () => {
+    if (getIsolatedDatabaseCaseMode('copyright-dsa-complaint-reviewer') === 'parent') {
+      await runIsolatedDatabaseCase('copyright-dsa-complaint-reviewer')
+      return
+    }
     const { start, end } = period()
     const before = await readDsaCopyrightComplaintFigures(start, end)
     const scene = await createTestEuParticipantCase('no_action')
@@ -39,6 +45,10 @@ describe('DSA copyright complaint aggregates', () => {
     )
   })
   it('uses immutable submitter roles and complained-about outcomes across decision periods', async () => {
+    if (getIsolatedDatabaseCaseMode('copyright-dsa-complaint-roles') === 'parent') {
+      await runIsolatedDatabaseCase('copyright-dsa-complaint-roles')
+      return
+    }
     const { start, end } = period()
     const before = await readDsaCopyrightComplaintFigures(start, end)
     const noAction = await createTestEuParticipantCase('no_action')
@@ -92,6 +102,10 @@ describe('DSA copyright complaint aggregates', () => {
   })
 
   it('includes only in-area matches in the trusted no-action subset', async () => {
+    if (getIsolatedDatabaseCaseMode('copyright-dsa-complaint-trusted') === 'parent') {
+      await runIsolatedDatabaseCase('copyright-dsa-complaint-trusted')
+      return
+    }
     const { start, end } = period()
     const before = await readDsaCopyrightComplaintFigures(start, end)
     const inArea = await createTestReportingTrustedEuCase('intellectual_property', 'no_action')
@@ -124,6 +138,10 @@ describe('DSA copyright complaint aggregates', () => {
   })
 
   it('counts a historical complaint only in its receipt period and a later outcome in its decision period', async () => {
+    if (getIsolatedDatabaseCaseMode('copyright-dsa-complaint-periods') === 'parent') {
+      await runIsolatedDatabaseCase('copyright-dsa-complaint-periods')
+      return
+    }
     const [notifier, staff] = await Promise.all([
       createTestUser(),
       createTestUser({ extraRoles: ['moderator'] }),

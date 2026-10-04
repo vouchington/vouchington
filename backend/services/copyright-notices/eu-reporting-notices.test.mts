@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
+import { runIsolatedDatabaseCase } from '../../../test-helpers/vitest-isolated-database-case.mts'
 import {
   createTestCopyrightImageFixture,
   createTestCopyrightRestrictionForImage,
@@ -46,6 +48,10 @@ describe('DSA copyright notice aggregates', () => {
   })
 
   it('omits medians when no completed withhold qualifies', async () => {
+    if (getIsolatedDatabaseCaseMode('copyright-dsa-notice-empty') === 'parent') {
+      await runIsolatedDatabaseCase('copyright-dsa-notice-empty')
+      return
+    }
     const empty = await readDsaCopyrightNoticeFigures(
       new Date('2200-01-01T00:00:00.000Z'),
       new Date('2200-01-02T00:00:00.000Z'),
@@ -56,6 +62,10 @@ describe('DSA copyright notice aggregates', () => {
   })
 
   it('counts every pipeline but only in-area flaggers for trusted figures', async () => {
+    if (getIsolatedDatabaseCaseMode('copyright-dsa-notice-population') === 'parent') {
+      await runIsolatedDatabaseCase('copyright-dsa-notice-population')
+      return
+    }
     installTestMediaDeliveryEdge()
     const { start, end } = period()
     const before = await readDsaCopyrightNoticeFigures(start, end)
@@ -124,6 +134,10 @@ describe('DSA copyright notice aggregates', () => {
   })
 
   it('counts durable automated assessment provenance rather than nullable staff identity', async () => {
+    if (getIsolatedDatabaseCaseMode('copyright-dsa-notice-automation') === 'parent') {
+      await runIsolatedDatabaseCase('copyright-dsa-notice-automation')
+      return
+    }
     const { start, end } = period()
     const before = await readDsaCopyrightNoticeFigures(start, end)
     const { notice, screeningId } = await createClearScreenedForm(2)
@@ -157,6 +171,10 @@ describe('DSA copyright notice aggregates', () => {
   })
 
   it('counts guidance-only processing while leaving the human restriction out of automated actions', async () => {
+    if (getIsolatedDatabaseCaseMode('copyright-dsa-notice-guidance') === 'parent') {
+      await runIsolatedDatabaseCase('copyright-dsa-notice-guidance')
+      return
+    }
     const { start, end } = period()
     const restricted = await createTestCopyrightRestrictionForImage(
       await createTestCopyrightImageFixture('post-image'),
@@ -197,6 +215,10 @@ describe('DSA copyright notice aggregates', () => {
   })
 
   it('includes a court-hold reimposition as a separate law action', async () => {
+    if (getIsolatedDatabaseCaseMode('copyright-dsa-notice-hold') === 'parent') {
+      await runIsolatedDatabaseCase('copyright-dsa-notice-hold')
+      return
+    }
     const dependencies = createTestCopyrightDeliveryDependencies(async () => undefined)
     const scene = await openHeldCounterNoticeRestore(dependencies)
     await expect(
@@ -214,6 +236,10 @@ describe('DSA copyright notice aggregates', () => {
   })
 
   it('rounds receipt-to-completed-withhold time from one notice to two hours decimals', async () => {
+    if (getIsolatedDatabaseCaseMode('copyright-dsa-notice-median') === 'parent') {
+      await runIsolatedDatabaseCase('copyright-dsa-notice-median')
+      return
+    }
     const imposedAt = new Date(Date.now() - 2 * 3_600_000)
     const receivedAt = new Date(imposedAt.getTime() - 3_600_000)
     const completedAt = new Date(receivedAt.getTime() + 74 * 60_000 + 24_000)
