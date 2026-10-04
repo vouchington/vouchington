@@ -1,8 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
   beginTransaction,
-  enableQueryCapture,
-  stopTestQueryCapture,
+  captureScopedTestQueries,
   explainCapturedTestQuery,
   collectPlanNodes,
   type CapturedTestQuery,
@@ -273,13 +272,7 @@ async function captureAnnotatedQuery(
   annotation: string,
   run: () => Promise<void>,
 ): Promise<CapturedTestQuery> {
-  enableQueryCapture()
-  let queries: CapturedTestQuery[] = []
-  try {
-    await run()
-  } finally {
-    queries = stopTestQueryCapture()
-  }
+  const queries = await captureScopedTestQueries(run)
   const selected = queries.filter(query => query.text.startsWith(`/* ${annotation} */`))
   if (selected.length !== 1)
     throw new Error(`Expected one actual ${annotation} query, got ${selected.length}`)
