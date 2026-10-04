@@ -1,16 +1,11 @@
+import { getDataRetentionLimits } from './config.mts'
 import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import {
   lockAuthorPublicationLifecycle,
-  recordAuthorDeletionBeforePostReassignment,
+  processAuthorDeletionPublicationBatch,
 } from '@services/post-publication'
-import { DELETED_USER_ID } from '@services/users/constants'
 import sql from 'sql-template-strings'
-import {
-  detachProviderMembershipSources,
-  releaseMembershipLineageBindings,
-} from './cleanup-membership-lineage.mts'
-import { pseudonymizeIdentityVerificationAttempts } from './pseudonymize-identity-verification-attempts.mts'
-import { terminateRetainedMembershipGrants } from './terminate-retained-membership-grants.mts'
+import { cleanupUserPreservedRows } from './cleanup-user-preserved-rows.mts'
 
 export const FINAL_USER_PURGE_LOCK_KEY = 'data-retention:final-user-purge'
 
@@ -18,7 +13,8 @@ export async function cleanupSoftDeletedUser(
   targetId: string,
   cutoffDate: Date,
   lowerBoundDate?: Date,
-): Promise<number> {
+  publicationBatchSize = getDataRetentionLimits().batchSize,
+): Promise<{ deleted: number; hasMore: boolean }> {
   await using query = await beginTransaction()
   await lockFinalUserPurge(query, targetId)
   await lockAuthorPublicationLifecycle(query, targetId)
@@ -26,32 +22,28 @@ export async function cleanupSoftDeletedUser(
     !(await lockEligibleSoftDeletedUserForFinalPurge(query, targetId, cutoffDate, lowerBoundDate))
   ) {
     await query.commit()
-    return 0
+    return { deleted: 0, hasMore: false }
   }
-  await recordAuthorDeletionBeforePostReassignment(query, targetId)
-  await Promise.all([
-    query(sql`/* cleanupSoftDeletedUserBatch: reassign hashtag contributors */
-        UPDATE post_topic_alias_sources SET contributor_id = ${DELETED_USER_ID}
-        WHERE contributor_id = ${targetId}`),
-    query(sql`/* cleanupSoftDeletedUserBatch: preserve topics */
-        UPDATE topics SET created_by_id = ${DELETED_USER_ID} WHERE created_by_id = ${targetId}`),
-    pseudonymizeIdentityVerificationAttempts(query, [targetId]),
-    releaseMembershipLineageBindings(query, targetId),
-    terminateRetainedMembershipGrants(query, targetId),
-  ])
-  await Promise.all([
-    query(sql`/* cleanupSoftDeletedUserBatch: reassign verified identities */
-        UPDATE verified_identities SET user_id = ${DELETED_USER_ID},
-          revoked_at = COALESCE(revoked_at, CURRENT_TIMESTAMP) WHERE user_id = ${targetId}`),
-    query(sql`/* cleanupSoftDeletedUserBatch: reassign identity transfers */
-        UPDATE verified_identities SET transferred_to_user_id = ${DELETED_USER_ID}
-        WHERE transferred_to_user_id = ${targetId}`),
-  ])
+  const { rows: authors } = await query<{ username: string | null }>(sql`
+    SELECT username FROM users WHERE id = ${targetId}`)
+  const publication = await processAuthorDeletionPublicationBatch(
+    query,
+    targetId,
+    authors[0]?.username ?? null,
+    publicationBatchSize,
+  )
+  if (publication.hasMore) {
+    await query.commit()
+    return { deleted: 0, hasMore: true }
+  }
+  if (await cleanupUserPreservedRows(query, targetId, publicationBatchSize)) {
+    await query.commit()
+    return { deleted: 0, hasMore: true }
+  }
   const { rowCount } = await query(sql`/* cleanupSoftDeletedUserBatch:delete */
       DELETE FROM users WHERE id = ${targetId}`)
-  await detachProviderMembershipSources(query, targetId)
   await query.commit()
-  return rowCount ?? 0
+  return { deleted: rowCount ?? 0, hasMore: false }
 }
 
 async function lockFinalUserPurge(query: QueryExecutor, targetId: string): Promise<void> {

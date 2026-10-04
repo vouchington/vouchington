@@ -101,3 +101,5 @@ the stored-secret encryption keys.
 
 - S3 infrastructure: [docs/overview/architecture/backend/modules/aws/README.md](../../backend/modules/aws/README.md)
 - Job queue (async export processing): [docs/overview/architecture/queues/account-data-requests/README.md](../../queues/account-data-requests/README.md)
+
+Recovery and expiration claims use configured bounded CTE pages with `FOR UPDATE SKIP LOCKED`. The expiration processor caps claimed pages per run and reports remaining work; durable state removes processed exports from the next scheduled claim.

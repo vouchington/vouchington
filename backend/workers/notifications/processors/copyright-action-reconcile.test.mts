@@ -1,3 +1,5 @@
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { copyrightSweepConfig } from '@services/copyright-notices/work-limits'
 import { describe, expect, it, vi } from 'vitest'
 import type { CopyrightSweepIdPage } from '@services/copyright-notices'
 import {
@@ -42,6 +44,7 @@ function reconcileDeps(pages: SweepPages = {}) {
     }),
     recoverDecisionAssessments: vi.fn<Deps['recoverDecisionAssessments']>(async () => {
       log.push('recover decision assessments')
+      return page([], null)
     }),
     searchPendingEnforcement: vi.fn<Deps['searchPendingEnforcement']>(
       sweep(log, 'pending enforcement', pages.pendingEnforcement),
@@ -99,7 +102,10 @@ describe('processReconcileCopyrightActionIntents', () => {
       actionIntents: [page(['intent-1', 'intent-2'], 'intent-cursor'), page(['intent-3'], null)],
     })
 
-    await expect(processReconcileCopyrightActionIntents(deps)).resolves.toEqual({ enqueued: 3 })
+    await expect(processReconcileCopyrightActionIntents(deps)).resolves.toEqual({
+      enqueued: 3,
+      hasMore: false,
+    })
 
     expect(log).toEqual([
       'search form reviews',
@@ -129,26 +135,29 @@ describe('processReconcileCopyrightActionIntents', () => {
       'search action intents',
       'enqueue intent-3',
     ])
-    expect(deps.searchFormReviews.mock.calls).toEqual([[{}], [{ after: 'review-cursor' }]])
+    expect(deps.searchFormReviews.mock.calls).toEqual([
+      [{ limit: 100 }],
+      [{ limit: 100, after: 'review-cursor' }],
+    ])
     expect(deps.searchPendingEnforcement.mock.calls).toEqual([
-      [{}],
-      [{ after: 'assessment-cursor' }],
+      [{ limit: 100 }],
+      [{ limit: 100, after: 'assessment-cursor' }],
     ])
     expect(deps.searchSuspendedClaimantRestrictions.mock.calls).toEqual([
-      [{}],
-      [{ after: 'claimant-cursor' }],
+      [{ limit: 100 }],
+      [{ limit: 100, after: 'claimant-cursor' }],
     ])
     expect(deps.liftSuspendedClaimantRestrictions.mock.calls).toEqual([
       ['claimant-notice-1', NOW],
       ['claimant-notice-2', NOW],
     ])
     expect(deps.searchDueRestorations.mock.calls).toEqual([
-      [{ now: NOW }],
-      [{ now: NOW, after: 'deadline-cursor' }],
+      [{ now: NOW, limit: 100 }],
+      [{ now: NOW, limit: 100, after: 'deadline-cursor' }],
     ])
     expect(deps.searchBlockedHoldRestorations.mock.calls).toEqual([
-      [{}],
-      [{ after: 'notice-cursor' }],
+      [{ limit: 100 }],
+      [{ limit: 100, after: 'notice-cursor' }],
     ])
     expect(deps.recoverBlockedHoldRestorations.mock.calls).toEqual([
       ['notice-1', NOW],
@@ -159,8 +168,8 @@ describe('processReconcileCopyrightActionIntents', () => {
       ['deadline-2', NOW],
     ])
     expect(deps.searchActionIntents.mock.calls).toEqual([
-      [{ now: NOW }],
-      [{ now: NOW, after: 'intent-cursor' }],
+      [{ now: NOW, limit: 100 }],
+      [{ now: NOW, limit: 100, after: 'intent-cursor' }],
     ])
   })
 
@@ -231,5 +240,31 @@ describe('processReconcileCopyrightActionIntents', () => {
     expect(deps.liftSuspendedClaimantRestrictions).toHaveBeenCalledWith('same-page-claimant', NOW)
     expect(deps.recoverBlockedHoldRestorations).toHaveBeenCalledWith('same-page-notice', NOW)
     expect(deps.enqueueApplyCopyrightAction).toHaveBeenCalledWith('same-page-intent')
+  })
+  it('continues only unfinished stages at the configured cap even when a head item fails', async () => {
+    overrideDynamicConfigFieldsForTest(copyrightSweepConfig, {
+      batch_size: 1,
+      max_batches_per_run: 1,
+    })
+    const { deps } = reconcileDeps({ formReviews: [page(['head'], 'head-cursor')] })
+    const failure = new Error('head failed')
+    deps.recoverFormReview.mockRejectedValueOnce(failure)
+    const enqueueContinuation = vi.fn<Deps['enqueueContinuation']>(async () => undefined)
+    await expect(
+      processReconcileCopyrightActionIntents({ ...deps, enqueueContinuation }),
+    ).rejects.toBeInstanceOf(AggregateError)
+    expect(enqueueContinuation).toHaveBeenCalledWith({
+      evaluatedAt: NOW.toISOString(),
+      cursors: { forms: 'head-cursor' },
+    })
+    const next = reconcileDeps({ formReviews: [page(['tail'], null)] }).deps
+    await processReconcileCopyrightActionIntents(next, {
+      evaluatedAt: NOW.toISOString(),
+      cursors: { forms: 'head-cursor' },
+    })
+    expect(next.searchFormReviews).toHaveBeenCalledWith({ after: 'head-cursor', limit: 1 })
+    expect(next.recoverDecisionAssessments).not.toHaveBeenCalled()
+    expect(next.searchPendingEnforcement).not.toHaveBeenCalled()
+    expect(next.recoverFormReview).toHaveBeenCalledWith('tail')
   })
 })

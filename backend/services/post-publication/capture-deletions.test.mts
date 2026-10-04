@@ -1,9 +1,9 @@
 import { beginTransaction, createTestPost, createTestUser } from '@voucha/test-helpers'
 import { describe, expect, it, vi } from 'vitest'
 import { lockPostPublication } from './lock.mts'
-import { recordAuthorDeletionBeforePostReassignment } from './capture-deletions.mts'
+import { processAuthorDeletionPublicationBatch } from './capture-deletions.mts'
 
-describe('recordAuthorDeletionBeforePostReassignment', () => {
+describe('processAuthorDeletionPublicationBatch', () => {
   it('takes post publication scopes before waiting on the deletion preimage', async () => {
     const author = await createTestUser()
     if (!author) throw new Error('Expected author')
@@ -39,7 +39,7 @@ async function holdPostRow(
 }
 async function captureAuthorDeletion(authorId: string) {
   await using query = await beginTransaction()
-  await recordAuthorDeletionBeforePostReassignment(query, authorId)
+  await processAuthorDeletionPublicationBatch(query, authorId, null, 100)
   await query.commit()
 }
 async function probePostPublicationLock(postId: string) {

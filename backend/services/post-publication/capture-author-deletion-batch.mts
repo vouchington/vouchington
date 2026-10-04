@@ -21,7 +21,12 @@ export async function processAuthorDeletionPublicationBatch(
   priorAuthorUsername: string | null,
   batchSize: number,
 ): Promise<{ processed: number; hasMore: boolean }> {
-  const sources = await getLockedContributedSources(query, authorUserId, batchSize)
+  await lockAuthorPublicationLifecycle(query, authorUserId)
+  await query(
+    `/* processAuthorDeletionPublicationBatch:lockAuthor */ SELECT id FROM users WHERE id = $1::uuid FOR UPDATE`,
+    [authorUserId],
+  )
+  const sources = await getContributedSources(query, authorUserId, batchSize)
   if (sources.length > 0) {
     return processContributedSources(query, authorUserId, priorAuthorUsername, sources).then(
       () => ({
@@ -31,18 +36,16 @@ export async function processAuthorDeletionPublicationBatch(
     )
   }
   const postIds = await getAuthoredPostIds(query, authorUserId, batchSize)
-  if (postIds.length === 0) return { processed: 0, hasMore: false }
+  if (postIds.length === 0) {
+    await recordPostPublicationChange(query, {
+      scope: { type: 'author', authorUserId },
+      reason: 'author_deleted',
+      footprint: { priorAuthorUsername: priorAuthorUsername ?? undefined },
+    })
+    return { processed: 0, hasMore: false }
+  }
   await processAuthoredPostBatch(query, authorUserId, priorAuthorUsername, postIds)
   return { processed: postIds.length, hasMore: postIds.length === batchSize }
-}
-
-async function getLockedContributedSources(
-  query: TransactionQuery,
-  userId: string,
-  batchSize: number,
-): Promise<SourceCandidate[]> {
-  await lockAuthorPublicationLifecycle(query, userId)
-  return getContributedSources(query, userId, batchSize)
 }
 
 async function processAuthoredPostBatch(

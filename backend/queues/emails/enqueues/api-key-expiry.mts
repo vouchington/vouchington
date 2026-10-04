@@ -32,13 +32,14 @@ export function enqueueBulkSendApiKeyExpiryReminders(apiKeyIds: string[]) {
   })
 }
 
-export function enqueueDispatchApiKeyExpiryReminders() {
-  return enqueueDispatcher(
-    {},
-    {
-      ...options,
-      priority: PRIORITY_DISPATCHER,
-      deduplication: { id: 'api-key-expiry-dispatch', mode: 'throttle', ttl: 60_000 },
+export function enqueueDispatchApiKeyExpiryReminders(data: { afterId?: string } = {}) {
+  return enqueueDispatcher(data, {
+    ...options,
+    priority: PRIORITY_DISPATCHER,
+    deduplication: {
+      id: `api-key-expiry-dispatch:${data.afterId ?? 'root'}`,
+      mode: 'throttle',
+      ttl: 60_000,
     },
-  )
+  })
 }

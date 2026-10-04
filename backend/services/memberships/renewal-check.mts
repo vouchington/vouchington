@@ -1,3 +1,4 @@
+import { getMembershipWorkLimits } from './work-limits.mts'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
@@ -5,9 +6,10 @@ import {
   type RenewalPriceIncreaseUser,
 } from './renewal-price-increase-user.mts'
 
-export async function getUsersApproachingRenewalWithPriceIncrease(): Promise<
-  RenewalPriceIncreaseUser[]
-> {
+export async function getUsersApproachingRenewalWithPriceIncrease(
+  afterId?: string,
+  batchSize = getMembershipWorkLimits().batchSize,
+): Promise<RenewalPriceIncreaseUser[]> {
   const { rows } = await read(sql`/* getUsersApproachingRenewalWithPriceIncrease */
     SELECT m.user_id, m.id AS membership_id,
       observation.id AS membership_provider_observation_id,
@@ -34,7 +36,8 @@ export async function getUsersApproachingRenewalWithPriceIncrease(): Promise<
       ON renewal_product.id = observation.renewal_membership_product_id
       AND renewal_product.plan = product.plan
       AND renewal_product.billing_interval = product.billing_interval
-    WHERE m.projection_ended_at IS NULL
+    WHERE (${afterId ?? null}::uuid IS NULL OR m.id > ${afterId ?? null}::uuid)
+      AND m.projection_ended_at IS NULL
       AND state.auto_renews = true AND state.cancelled_at IS NULL
       AND state.past_due_at IS NULL AND state.expires_at > CURRENT_TIMESTAMP
       AND observation.cancelled_at IS NULL AND observation.past_due_at IS NULL
@@ -67,6 +70,7 @@ export async function getUsersApproachingRenewalWithPriceIncrease(): Promise<
           AND (m.renewal_price_increase_claimed_at IS NULL
             OR m.renewal_price_increase_claimed_at < CURRENT_TIMESTAMP - INTERVAL '1 hour'))
       )
+    ORDER BY m.id LIMIT ${batchSize}
   `)
   return rows.map(renewalPriceIncreaseUser)
 }

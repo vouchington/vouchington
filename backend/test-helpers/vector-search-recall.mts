@@ -14,7 +14,8 @@ export const TEST_HNSW_EF_SEARCH = 1000
  */
 export async function raiseHnswEfSearchForTestDatabase(): Promise<void> {
   await write(
-    `DO $$ BEGIN EXECUTE format('ALTER DATABASE %I SET hnsw.ef_search = ${TEST_HNSW_EF_SEARCH}', current_database()); END $$;`,
+    // Register pgvector's user-settable GUC in this connection before ALTER DATABASE.
+    `DO $$ BEGIN PERFORM '[0]'::vector; EXECUTE format('ALTER DATABASE %I SET hnsw.ef_search = ${TEST_HNSW_EF_SEARCH}', current_database()); END $$;`,
   )
 }
 

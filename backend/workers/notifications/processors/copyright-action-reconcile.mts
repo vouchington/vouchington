@@ -1,4 +1,8 @@
-import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
+import type { CopyrightSweepContinuation } from '@queues/notifications/types'
+import {
+  enqueueApplyCopyrightAction,
+  enqueueReconcileCopyrightActionIntents,
+} from '@queues/notifications/enqueues'
 import {
   createDueStatutoryCopyrightRestoreIntentsForDeadline,
   enforceCopyrightAssessment,
@@ -35,6 +39,7 @@ export type ReconcileCopyrightActionIntentsDeps = {
   createDueRestoreIntents: typeof createDueStatutoryCopyrightRestoreIntentsForDeadline
   searchActionIntents: typeof searchRecoverableCopyrightActionIntentIds
   enqueueApplyCopyrightAction: typeof enqueueApplyCopyrightAction
+  enqueueContinuation: typeof enqueueReconcileCopyrightActionIntents
   now: () => Date
 }
 
@@ -52,20 +57,30 @@ const defaultDeps: ReconcileCopyrightActionIntentsDeps = {
   createDueRestoreIntents: createDueStatutoryCopyrightRestoreIntentsForDeadline,
   searchActionIntents: searchRecoverableCopyrightActionIntentIds,
   enqueueApplyCopyrightAction,
+  enqueueContinuation: enqueueReconcileCopyrightActionIntents,
   now: () => new Date(),
 }
 
 /**
- * Walks every page of each copyright action sweep in stage order: rejected form reviews, lost
+ * Processes capped pages of each copyright action sweep in stage order: rejected form reviews, lost
  * decision assessments, pending enforcement, suspended claimants' pending automatic restrictions,
  * blocked hold restorations, due statutory restorations, then recoverable action intents. A failed item, page read, or stage does not stop the rest; the
  * job fails afterwards with every error so its retry covers what is still pending.
  */
 export async function processReconcileCopyrightActionIntents(
   dependencyOverrides: Partial<ReconcileCopyrightActionIntentsDeps> = {},
-): Promise<{ enqueued: number }> {
+  data: CopyrightSweepContinuation = {},
+): Promise<{ enqueued: number; hasMore: boolean }> {
   const deps = { ...defaultDeps, ...dependencyOverrides }
-  const evaluatedAt = deps.now()
+  const evaluatedAt = data.evaluatedAt ? new Date(data.evaluatedAt) : deps.now()
+  const cursors: Record<string, string> = {}
+  const options = (stage: string) => ({
+    after: data.cursors?.[stage],
+    skip: data.cursors !== undefined && !(stage in data.cursors),
+    onMore: (after: string) => {
+      cursors[stage] = after
+    },
+  })
   const tally: CopyrightSweepTally = { enqueued: 0, errors: [] }
   const stages = [
     () =>
@@ -73,18 +88,23 @@ export async function processReconcileCopyrightActionIntents(
         walkCopyrightSweep(
           page => deps.searchFormReviews(page),
           ids => settleCopyrightSweepSequentially(ids, id => deps.recoverFormReview(id)),
+          options('forms'),
         ),
       ),
     () =>
-      runCopyrightSweepStage(tally, async () => {
-        await deps.recoverDecisionAssessments()
-        return []
-      }),
+      runCopyrightSweepStage(tally, () =>
+        walkCopyrightSweep(
+          page => deps.recoverDecisionAssessments(page),
+          async () => [],
+          options('decisions'),
+        ),
+      ),
     () =>
       runCopyrightSweepStage(tally, () =>
         walkCopyrightSweep(
           page => deps.searchPendingEnforcement(page),
           ids => settleCopyrightSweepSequentially(ids, id => deps.enforceAssessment(id)),
+          options('enforcement'),
         ),
       ),
     () =>
@@ -95,6 +115,7 @@ export async function processReconcileCopyrightActionIntents(
             settleCopyrightSweepSequentially(ids, id =>
               deps.liftSuspendedClaimantRestrictions(id, evaluatedAt),
             ),
+          options('suspended'),
         ),
       ),
     () =>
@@ -105,6 +126,7 @@ export async function processReconcileCopyrightActionIntents(
             settleCopyrightSweepSequentially(ids, id =>
               deps.recoverBlockedHoldRestorations(id, evaluatedAt),
             ),
+          options('blocked'),
         ),
       ),
     () =>
@@ -115,6 +137,7 @@ export async function processReconcileCopyrightActionIntents(
             settleCopyrightSweepSequentially(ids, id =>
               deps.createDueRestoreIntents(id, evaluatedAt),
             ),
+          options('restorations'),
         ),
       ),
     () =>
@@ -122,14 +145,17 @@ export async function processReconcileCopyrightActionIntents(
         tally,
         page => deps.searchActionIntents({ now: evaluatedAt, ...page }),
         id => deps.enqueueApplyCopyrightAction(id),
+        options('actions'),
       ),
   ]
   for (const stage of stages) {
     // oxlint-disable-next-line no-await-in-loop -- each sweep consumes durable work produced by preceding stages.
     await stage()
   }
+  if (Object.keys(cursors).length > 0)
+    await deps.enqueueContinuation({ evaluatedAt: evaluatedAt.toISOString(), cursors })
   if (tally.errors.length > 0) {
     throw new AggregateError(tally.errors, 'Copyright action reconciliation failed')
   }
-  return { enqueued: tally.enqueued }
+  return { enqueued: tally.enqueued, hasMore: Object.keys(cursors).length > 0 }
 }

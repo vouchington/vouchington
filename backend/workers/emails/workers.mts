@@ -41,7 +41,7 @@ export async function processEmailJob(
     case 'copyright':
       return processSendCopyrightNoticeEmail(parsed.data)
     case 'dispatcher':
-      return processEmailDispatcherJob(parsed.name, dispatchers)
+      return processEmailDispatcherJob(parsed.name, dispatchers, parsed.data)
     case 'template':
       return processEmail(templates, parsed.name, parsed.input, parsed.variables)
   }
@@ -58,10 +58,11 @@ export function isDispatcherJob(jobName: EmailJobs): jobName is EmailDispatcherJ
 function processEmailDispatcherJob(
   jobName: EmailDispatcherJobs,
   dispatchers: EmailWorkerDispatchers,
-): Promise<void> {
+  data: { afterId?: string },
+): Promise<unknown> {
   switch (jobName) {
     case 'dispatchApiKeyExpiryReminders':
-      return dispatchers.dispatchApiKeyExpiryReminders()
+      return dispatchers.dispatchApiKeyExpiryReminders(data)
     case 'dispatchEngagementEmails':
       return dispatchers.dispatchEngagementEmails()
     case 'dispatchCommunityModerationSummaryEmails':

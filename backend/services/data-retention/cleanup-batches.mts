@@ -18,7 +18,7 @@ export async function cleanupSoftDeletedUserBatch(
   cutoffDate: Date,
   batchSize: number,
   lowerBoundDate?: Date,
-): Promise<number> {
+): Promise<{ deleted: number; hasMore: boolean }> {
   const targetQuery = sql`/* cleanupSoftDeletedUserBatch */
     SELECT id FROM users
     WHERE deleted_at IS NOT NULL
@@ -47,11 +47,14 @@ export async function cleanupSoftDeletedUserBatch(
     LIMIT ${batchSize}`)
   const { rows: targetRows } = await write<{ id: string }>(targetQuery)
   let deleted = 0
+  let hasMore = targetRows.length === batchSize
   for (const { id: targetId } of targetRows) {
     // oxlint-disable-next-line no-await-in-loop -- each independently selected user commits before the next may block.
-    deleted += await cleanupSoftDeletedUser(targetId, cutoffDate, lowerBoundDate)
+    const result = await cleanupSoftDeletedUser(targetId, cutoffDate, lowerBoundDate, batchSize)
+    deleted += result.deleted
+    hasMore ||= result.hasMore
   }
-  return deleted
+  return { deleted, hasMore }
 }
 
 export async function deleteOldReferralAttributionBatch(

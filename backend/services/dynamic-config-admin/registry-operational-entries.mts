@@ -1,6 +1,5 @@
 import { activityPubInboxConfig } from '@services/ap-inbox-activities/config'
 import { DATA_RETENTION_MAX_VALUES, dataRetentionConfig } from '@services/data-retention/config'
-import { kagiSmallWebImportConfig } from '@services/kagi-smallweb/import-config'
 import { moderationAiConfig, moderationAiDispatchConfig } from '@services/moderation/ai-config'
 import {
   RSS_FEED_CRAWL_MAX_VALUES,
@@ -174,16 +173,6 @@ export const operationalDynamicConfigRegistryEntries = [
         description:
           'When auto_dispatch_enabled, automatically dismiss reports where AI recommends no action.',
       },
-    },
-  }),
-  defineDynamicConfigNamespace({
-    namespace: 'kagi-smallweb-config',
-    label: 'Kagi Smallweb',
-    description: 'Controls for Kagi Small Web feed import. Disabled by default.',
-    config: kagiSmallWebImportConfig,
-    access: { update_roles: ['developer'] },
-    fields: {
-      enabled: { description: 'Enable Kagi Small Web feed import dispatcher.' },
     },
   }),
 ]

@@ -1,3 +1,5 @@
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { copyrightSweepConfig } from '@services/copyright-notices/work-limits'
 import { describe, expect, it, vi } from 'vitest'
 import type { CopyrightSweepIdPage } from '@services/copyright-notices'
 import {
@@ -41,14 +43,17 @@ describe('processReconcileCopyrightDeliveryIntents', () => {
       email: [page(['email-1'], 'email-cursor'), page(['email-2'], null)],
     })
 
-    await expect(processReconcileCopyrightDeliveryIntents(deps)).resolves.toEqual({ enqueued: 5 })
+    await expect(processReconcileCopyrightDeliveryIntents(deps)).resolves.toEqual({
+      enqueued: 5,
+      hasMore: false,
+    })
 
     expect(deps.searchDeliveryIntents.mock.calls).toEqual(
       expect.arrayContaining([
-        [{ channel: 'in_app' }],
-        [{ channel: 'in_app', after: 'in-app-cursor' }],
-        [{ channel: 'email' }],
-        [{ channel: 'email', after: 'email-cursor' }],
+        [{ limit: 100, channel: 'in_app' }],
+        [{ limit: 100, channel: 'in_app', after: 'in-app-cursor' }],
+        [{ limit: 100, channel: 'email' }],
+        [{ limit: 100, channel: 'email', after: 'email-cursor' }],
       ]),
     )
     expect(deps.searchDeliveryIntents).toHaveBeenCalledTimes(4)
@@ -89,6 +94,28 @@ describe('processReconcileCopyrightDeliveryIntents', () => {
       ['same-page-in-app'],
       ['next'],
     ])
+  })
+  it('reports its cap and resumes only the unfinished channel', async () => {
+    overrideDynamicConfigFieldsForTest(copyrightSweepConfig, {
+      batch_size: 1,
+      max_batches_per_run: 1,
+    })
+    const deps = reconcileDeps({ inApp: [page(['head'], 'head-cursor')] })
+    const enqueueContinuation = vi.fn<Deps['enqueueContinuation']>(async () => undefined)
+    await expect(
+      processReconcileCopyrightDeliveryIntents({ ...deps, enqueueContinuation }),
+    ).resolves.toEqual({ enqueued: 1, hasMore: true })
+    expect(enqueueContinuation).toHaveBeenCalledWith({ cursors: { in_app: 'head-cursor' } })
+    const next = reconcileDeps({ inApp: [page(['tail'], null)] })
+    await expect(
+      processReconcileCopyrightDeliveryIntents(next, { cursors: { in_app: 'head-cursor' } }),
+    ).resolves.toEqual({ enqueued: 1, hasMore: false })
+    expect(next.searchDeliveryIntents).toHaveBeenCalledWith({
+      channel: 'in_app',
+      after: 'head-cursor',
+      limit: 1,
+    })
+    expect(next.enqueueSendCopyrightNoticeEmail).not.toHaveBeenCalled()
   })
 })
 

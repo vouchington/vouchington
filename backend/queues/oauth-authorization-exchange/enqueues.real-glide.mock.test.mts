@@ -70,13 +70,24 @@ describe('OAuth authorization exchange recovery through real GlideMQ', () => {
       await initialWorker.close()
       failSelectedJob = false
 
+      const lookups: string[] = []
+      const terminalJobs = async (ids: readonly string[], state: string) => {
+        const jobs = await Promise.all(
+          ids.map(async id => {
+            lookups.push(id)
+            const job = await queue.getJob(id)
+            return job && (await job.getState()) === state ? job : null
+          }),
+        )
+        return jobs.filter(job => job !== null)
+      }
       const inputs = [
         { authorizationId: completedAuthorizationId },
         { authorizationId: failedAuthorizationId },
       ]
       await expect(
         enqueueOrReactivateBulkOAuthAuthorizationExchanges(inputs, {
-          getCompletedJobs: async () => queue.getJobs('completed', 0, -1, { excludeData: true }),
+          getCompletedJobs: ids => terminalJobs(ids, 'completed'),
           enqueueBulk: async jobs =>
             queue.addBulk(
               jobs.map(data => ({
@@ -85,9 +96,12 @@ describe('OAuth authorization exchange recovery through real GlideMQ', () => {
                 opts: options(data.authorizationId),
               })),
             ),
-          getFailedJobs: async () => queue.getJobs('failed', 0, -1, { excludeData: true }),
+          getFailedJobs: ids => terminalJobs(ids, 'failed'),
         }),
       ).resolves.toBe(1)
+
+      expect(new Set(lookups)).toEqual(new Set(inputs.map(input => input.authorizationId)))
+      expect(lookups).not.toContain(unrelatedAuthorizationId)
 
       recoveryWorker = new Worker<OAuthAuthorizationExchangeJobData>(
         queueName,

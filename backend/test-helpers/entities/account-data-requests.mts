@@ -69,3 +69,10 @@ export async function getTestDataRequestAttemptFence(
   `)
   return rows[0] ?? null
 }
+
+/** Simulates the nullable live-owner reference after deletion, without erasing shared fixtures. */
+export async function orphanTestDataRequest(requestId: string): Promise<void> {
+  await write(
+    sql`/* orphanTestDataRequest */ UPDATE user_data_requests SET user_id = NULL WHERE id = ${requestId}`,
+  )
+}

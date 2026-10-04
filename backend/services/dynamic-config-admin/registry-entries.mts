@@ -1,3 +1,4 @@
+import { workDynamicConfigRegistryEntries } from './registry-work-entries.mts'
 import { aiUsageDynamicConfigRegistryEntries } from './registry-ai-usage-entries.mts'
 import { coreDynamicConfigRegistryEntries } from './registry-core-entries.mts'
 import { externalProxyDynamicConfigRegistryEntries } from './registry-external-proxy-entries.mts'
@@ -8,6 +9,11 @@ import { tagLimitsDynamicConfigRegistryEntries } from './registry-tag-limits-ent
 import type { DynamicConfigRegistryEntry } from './types.mts'
 
 const REGISTRY_ORDER = [
+  'api-keys-work-config',
+  'account-data-requests-work-config',
+  'memberships-work-config',
+  'copyright-notices-work-config',
+
   'feature-flags',
   'membership-billing',
   'request-client-info',
@@ -42,6 +48,7 @@ const REGISTRY_ORDER = [
 ] as const
 
 const unorderedRegistryEntries = [
+  ...workDynamicConfigRegistryEntries,
   ...featureFlagDynamicConfigRegistryEntries,
   ...coreDynamicConfigRegistryEntries,
   ...policyDynamicConfigRegistryEntries,

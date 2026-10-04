@@ -64,7 +64,10 @@ describe('expireElapsedMembershipsForUser', () => {
     await grantMembership(queuedGrantIssuer.id, member.id, 'pro', secondSku.id, 30)
     await updateTestMembershipExpiresAt(first.id, new Date('2020-01-01T00:00:00.000Z'))
 
-    await expect(expireElapsedMembershipsForUsers([member.id])).resolves.toEqual({ expired: 1 })
+    await expect(expireElapsedMembershipsForUsers([member.id])).resolves.toEqual({
+      expired: 1,
+      hasMore: false,
+    })
     const activeMembership = await getMembershipByUserId(member.id)
     expect(activeMembership).toMatchObject({ plan: 'pro' })
     const history = await getMembershipHistory(member.id)
@@ -143,9 +146,18 @@ describe('expireElapsedMembershipsForUser', () => {
     await withTestMembershipUserLocked(member.id, async () => {
       const candidates = await getElapsedMembershipUserIdsBatch(1_000_000)
       expect(candidates).not.toContain(member.id)
-      await expect(expireElapsedMembershipsForUsers([member.id])).resolves.toEqual({ expired: 0 })
+      await expect(expireElapsedMembershipsForUsers([member.id])).resolves.toEqual({
+        expired: 0,
+        hasMore: true,
+      })
     })
-    await expect(expireElapsedMembershipsForUsers([member.id])).resolves.toEqual({ expired: 1 })
-    await expect(expireElapsedMembershipsForUsers([member.id])).resolves.toEqual({ expired: 0 })
+    await expect(expireElapsedMembershipsForUsers([member.id])).resolves.toEqual({
+      expired: 1,
+      hasMore: false,
+    })
+    await expect(expireElapsedMembershipsForUsers([member.id])).resolves.toEqual({
+      expired: 0,
+      hasMore: false,
+    })
   })
 })

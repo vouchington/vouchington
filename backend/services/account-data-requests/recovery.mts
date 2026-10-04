@@ -1,3 +1,4 @@
+import { getDataRequestLimits } from './work-limits.mts'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { lockActiveDataRequestUser } from './active-user-lock.mts'
@@ -8,19 +9,32 @@ export type RecoverableDataRequest = {
   processingAttemptId: string
 }
 
-export async function claimRecoverableDataRequests(): Promise<RecoverableDataRequest[]> {
+export async function claimRecoverableDataRequests(requestIds?: readonly string[]): Promise<{
+  requests: RecoverableDataRequest[]
+  hasMore: boolean
+}> {
+  const { batchSize } = getDataRequestLimits()
   await using transaction = await beginTransaction()
-  await transaction(sql`/* claimRecoverableDataRequests:deletedUsers */
+  const { rowCount: deletedCount } =
+    await transaction(sql`/* claimRecoverableDataRequests:deletedUsers */
+      WITH candidates AS (
+        SELECT id FROM user_data_requests
+        WHERE user_id IS NULL AND completed_at IS NULL AND failed_at IS NULL
+          AND (${requestIds ?? null}::uuid[] IS NULL OR id = ANY(${requestIds ?? null}::uuid[]))
+        ORDER BY id LIMIT ${batchSize} FOR UPDATE SKIP LOCKED
+      )
       UPDATE user_data_requests
       SET failed_at = CURRENT_TIMESTAMP,
           last_error_message = 'User was deleted before the export completed'
-      WHERE user_id IS NULL AND completed_at IS NULL AND failed_at IS NULL
+      WHERE id IN (SELECT id FROM candidates)
     `)
   const { rows: candidateRows } = await transaction<{ user_id: string }>(
     sql`/* claimRecoverableDataRequests:candidateUsers */
         SELECT DISTINCT request.user_id
         FROM user_data_requests request
-        WHERE request.completed_at IS NULL
+        JOIN users active_user ON active_user.id = request.user_id AND active_user.deleted_at IS NULL
+        WHERE (${requestIds ?? null}::uuid[] IS NULL OR request.id = ANY(${requestIds ?? null}::uuid[]))
+          AND request.completed_at IS NULL
           AND request.failed_at IS NULL
           AND request.user_id IS NOT NULL
           AND (
@@ -28,7 +42,7 @@ export async function claimRecoverableDataRequests(): Promise<RecoverableDataReq
             OR request.processing_started_at < NOW() - INTERVAL '30 minutes'
           )
         ORDER BY request.user_id
-        LIMIT 500
+        LIMIT ${batchSize}
       `,
   )
   const activeUserIds: string[] = []
@@ -38,14 +52,18 @@ export async function claimRecoverableDataRequests(): Promise<RecoverableDataReq
   }
   if (activeUserIds.length === 0) {
     await transaction.commit()
-    return []
+    return {
+      requests: [],
+      hasMore: deletedCount === batchSize || candidateRows.length === batchSize,
+    }
   }
 
   const { rows } = await transaction(sql`/* claimRecoverableDataRequests:claim */
       WITH candidates AS (
         SELECT request.id
       FROM user_data_requests request
-      WHERE request.completed_at IS NULL
+      WHERE (${requestIds ?? null}::uuid[] IS NULL OR request.id = ANY(${requestIds ?? null}::uuid[]))
+        AND request.completed_at IS NULL
         AND request.failed_at IS NULL
         AND request.user_id = ANY(${activeUserIds}::uuid[])
         AND (
@@ -53,7 +71,7 @@ export async function claimRecoverableDataRequests(): Promise<RecoverableDataReq
           OR request.processing_started_at < NOW() - INTERVAL '30 minutes'
         )
       ORDER BY request.id
-      LIMIT 500
+      LIMIT ${batchSize}
       FOR UPDATE SKIP LOCKED
     )
     UPDATE user_data_requests request
@@ -73,7 +91,7 @@ export async function claimRecoverableDataRequests(): Promise<RecoverableDataReq
     RETURNING request.id, request.user_id, request.processing_attempt_id
     `)
   await transaction.commit()
-  return rows.map(row => {
+  const requests = rows.map(row => {
     const typed = row as { id: string; user_id: string; processing_attempt_id: string }
     return {
       requestId: typed.id,
@@ -81,4 +99,11 @@ export async function claimRecoverableDataRequests(): Promise<RecoverableDataReq
       processingAttemptId: typed.processing_attempt_id,
     }
   })
+  return {
+    requests,
+    hasMore:
+      deletedCount === batchSize ||
+      candidateRows.length === batchSize ||
+      requests.length === batchSize,
+  }
 }

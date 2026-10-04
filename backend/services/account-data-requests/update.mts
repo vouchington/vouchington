@@ -1,3 +1,4 @@
+import { getDataRequestLimits } from './work-limits.mts'
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { lockActiveDataRequestUser } from './active-user-lock.mts'
@@ -150,16 +151,21 @@ export async function markDataRequestFailed(
   return (rowCount ?? 0) > 0
 }
 
-/** Marks all expired ready requests and returns the s3_keys to delete. */
-export async function expireDataRequests(): Promise<string[]> {
+/** Claims one bounded page; clearing its keys makes the next scheduled run resume. */
+export async function expireDataRequests(
+  batchSize = getDataRequestLimits().batchSize,
+  requestIds?: readonly string[],
+): Promise<string[]> {
   const { rows } = await write(sql`/* expireDataRequests */
     WITH reclaimable AS (
       SELECT id, s3_key FROM user_data_requests
-      WHERE completed_at IS NOT NULL
+      WHERE (${requestIds ?? null}::uuid[] IS NULL OR id = ANY(${requestIds ?? null}::uuid[]))
+        AND completed_at IS NOT NULL
         AND failed_at IS NULL
         AND s3_key IS NOT NULL
         AND expires_at IS NOT NULL
         AND expires_at < NOW()
+      ORDER BY expires_at, id LIMIT ${batchSize} FOR UPDATE SKIP LOCKED
     )
     UPDATE user_data_requests
     SET s3_key = NULL

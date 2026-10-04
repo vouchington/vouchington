@@ -12,6 +12,10 @@ export const notificationsWorker = createWorker(
     if (job.name === 'processCommunityActivityDigestScheduleTick') {
       return processCommunityActivityDigestScheduleTick({})
     }
+    if (job.name === 'processReconcileCopyrightActionIntents')
+      return processors.processReconcileCopyrightActionIntents({}, job.data)
+    if (job.name === 'processReconcileCopyrightDeliveryIntents')
+      return processors.processReconcileCopyrightDeliveryIntents({}, job.data)
     const fn =
       processors[
         job.name as Exclude<NotificationJobs, 'processCommunityActivityDigestScheduleTick'>

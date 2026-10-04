@@ -19,3 +19,9 @@ export type NotificationJobs =
   | 'processSweepCopyrightEvidenceRetention'
   | 'processApplyMediaDeliveryRegistryRecord'
   | 'processReconcileMediaDeliveryRegistry'
+
+/** A fixed evaluation time and only the unfinished copyright stage cursors. */
+export type CopyrightSweepContinuation = {
+  evaluatedAt?: string
+  cursors?: Record<string, string>
+}

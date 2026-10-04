@@ -148,7 +148,7 @@ export async function processMembershipJob(job: Job, processors = PROCESSORS): P
       await processors.reconcileStripeMembershipCatalog()
       return
     case 'processRenewalNotificationCheck':
-      await processors.processRenewalNotificationCheckDispatcher()
+      await processors.processRenewalNotificationCheckDispatcher(job.data as { afterId?: string })
       return
     case 'processSendRenewalPriceIncreaseEmail':
       await processors.processSendRenewalPriceIncreaseEmail(job.data)

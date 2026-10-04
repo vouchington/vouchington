@@ -19,7 +19,7 @@ describe('reciprocal final user purges', () => {
       new Date('2020-01-01T00:00:00.000Z'),
     )
     const cutoffDate = new Date('2020-02-01T00:00:00.000Z')
-    const purges: Promise<number>[] = []
+    const purges: Array<ReturnType<typeof cleanupSoftDeletedUser>> = []
     try {
       await using barrier = await holdTestFinalPurgeUserLifecycle(firstUser.id)
       const firstPurge = cleanupSoftDeletedUser(firstUser.id, cutoffDate)
@@ -33,7 +33,10 @@ describe('reciprocal final user purges', () => {
       // The barrier is disposed before draining either purge, including after an assertion fails.
       await Promise.all(purges)
     }
-    await expect(Promise.all(purges)).resolves.toEqual([1, 1])
+    await expect(Promise.all(purges)).resolves.toEqual([
+      { deleted: 1, hasMore: false },
+      { deleted: 1, hasMore: false },
+    ])
     expect(await getTestUserRaw(firstUser.id)).toBeNull()
     expect(await getTestUserRaw(secondUser.id)).toBeNull()
   })

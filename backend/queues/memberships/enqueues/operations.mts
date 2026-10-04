@@ -16,7 +16,7 @@ const RENEWAL_CHECK_JOB_NAME: MembershipsJobs = 'processRenewalNotificationCheck
 const RENEWAL_PRICE_INCREASE_JOB_NAME: MembershipsJobs = 'processSendRenewalPriceIncreaseEmail'
 
 const enqueueRenewalNotificationCheckJob = createEnqueueFunction<
-  Record<string, never>,
+  { afterId?: string },
   MembershipsJobs
 >({ queue: memberships, queueName: QUEUE_NAME, jobName: RENEWAL_CHECK_JOB_NAME })
 
@@ -55,8 +55,13 @@ const enqueueBulkSendRenewalPriceIncreaseEmailJobs = createBulkEnqueueFunction<
   }),
 })
 
-export function enqueueRenewalNotificationCheck(): EnqueueReturnType {
-  return enqueueRenewalNotificationCheckJob({}, { priority: PRIORITY_DISPATCHER })
+export function enqueueRenewalNotificationCheck(
+  data: { afterId?: string } = {},
+): EnqueueReturnType {
+  return enqueueRenewalNotificationCheckJob(data, {
+    priority: PRIORITY_DISPATCHER,
+    deduplication: { id: `renewal-check:${data.afterId ?? 'root'}`, mode: 'throttle', ttl: 60_000 },
+  })
 }
 
 export function enqueueDeliverMembershipEntitlementEffects(): EnqueueReturnType {

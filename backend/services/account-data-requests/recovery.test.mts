@@ -18,13 +18,13 @@ describe('account data request recovery', () => {
     const user = await createTestUser()
     const request = await createDataRequest(user.id, user.id)
     await makeUserDataRequestRecoverableForTest(request.id, 'unstarted')
-    const unstarted = (await claimRecoverableDataRequests()).find(
+    const unstarted = (await claimRecoverableDataRequests()).requests.find(
       candidate => candidate.requestId === request.id,
     )
     expect(unstarted?.processingAttemptId).toBe(request.processing_attempt_id)
 
     await makeUserDataRequestRecoverableForTest(request.id, 'stale')
-    const stale = (await claimRecoverableDataRequests()).find(
+    const stale = (await claimRecoverableDataRequests()).requests.find(
       candidate => candidate.requestId === request.id,
     )
     expect(stale?.processingAttemptId).not.toBe(request.processing_attempt_id)
@@ -55,7 +55,7 @@ describe('account data request recovery', () => {
     await makeUserDataRequestRecoverableForTest(request.id, 'unstarted')
     try {
       await softDeleteUser(user.id)
-      const recovered = await claimRecoverableDataRequests()
+      const { requests: recovered } = await claimRecoverableDataRequests()
       expect(recovered.some(candidate => candidate.requestId === request.id)).toBe(false)
     } finally {
       await restoreUser(user.id)

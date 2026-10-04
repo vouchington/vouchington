@@ -236,3 +236,5 @@ creates a fresh append-only projection and reactivation outbox.
 - Job queue: [../../queues/memberships/README.md](../../queues/memberships/README.md)
 - Stripe: [../stripe/README.md](../stripe/README.md)
 - Database schema: [../../data-stores/psql/AGENTS.md](../../../../../backend/data-stores/psql/AGENTS.md)
+
+Grant expiry normalizes a configured number of bounded pages. Background expiry commits progress and reports remaining due grants. Synchronous grant mutations return a retryable conflict when normalization still has work, so a capped pass cannot apply an operation against stale access. Renewal-email dispatch resumes from its last membership ID through a continuation.

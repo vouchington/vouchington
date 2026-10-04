@@ -1,7 +1,11 @@
+import { getApiKeyExpiryLimits } from './work-limits.mts'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-export async function getApiKeysDueForExpiryReminder(afterId?: string): Promise<string[]> {
+export async function getApiKeysDueForExpiryReminder(
+  afterId?: string,
+  batchSize = getApiKeyExpiryLimits().batchSize,
+): Promise<string[]> {
   const query = sql`/* getApiKeysDueForExpiryReminder */
     SELECT id FROM api_keys
     WHERE expires_at > NOW() AND expires_at <= NOW() + INTERVAL '7 days'
@@ -9,7 +13,7 @@ export async function getApiKeysDueForExpiryReminder(afterId?: string): Promise<
       AND expiry_reminder_sent_at IS NULL
   `
   if (afterId) query.append(sql` AND id > ${afterId}::uuid`)
-  query.append(sql` ORDER BY id LIMIT 100`)
+  query.append(sql` ORDER BY id LIMIT ${batchSize}`)
   const { rows } = await read<{ id: string }>(query)
   return rows.map(row => row.id)
 }

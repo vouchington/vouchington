@@ -8,18 +8,14 @@ import {
   DATA_REQUEST_UPLOAD_LEASE_MS,
   markDataRequestReady,
   markDataRequestFailed,
-  expireDataRequests,
   writeExportFiles,
   zipDir,
   uploadExportToS3,
   deleteExportFromS3,
-  deleteExportsFromS3,
   getExportDownloadUrl,
-  claimRecoverableDataRequests,
   wasDataRequestMadeBySubject,
   SEVEN_DAYS_SECONDS,
 } from '@services/account-data-requests'
-import { enqueueBulkExportRequests } from '@queues/account-data-requests/enqueues'
 import { getPrivateUserByAny } from '@services/users/get'
 import { enqueueSendDataExportReadyEmail } from '@queues/emails/enqueues'
 import { DATA_EXPORT_EXPIRY_DAYS } from '@queues/account-data-requests/config'
@@ -40,16 +36,6 @@ type ExportRequestDependencies = {
   wasDataRequestMadeBySubject: typeof wasDataRequestMadeBySubject
   writeExportFiles: typeof writeExportFiles
   zipDir: typeof zipDir
-}
-
-type CleanupExpiredExportsDependencies = {
-  deleteExportsFromS3: typeof deleteExportsFromS3
-  expireDataRequests: typeof expireDataRequests
-}
-
-type RecoverExportRequestsDependencies = {
-  claimRecoverableDataRequests: typeof claimRecoverableDataRequests
-  enqueueBulkExportRequests: typeof enqueueBulkExportRequests
 }
 
 export async function processExportRequest(
@@ -165,26 +151,7 @@ export async function processExportRequest(
   }
 }
 
-export async function recoverExportRequests(
-  dependencies?: Partial<RecoverExportRequestsDependencies>,
-): Promise<{ enqueued: number }> {
-  const claimRequests = dependencies?.claimRecoverableDataRequests ?? claimRecoverableDataRequests
-  const enqueueRequests = dependencies?.enqueueBulkExportRequests ?? enqueueBulkExportRequests
-  const requests = await claimRequests()
-  if (requests.length > 0) await enqueueRequests(requests)
-  return { enqueued: requests.length }
-}
-
-export async function processCleanupExpiredExports(
-  dependencies?: Partial<CleanupExpiredExportsDependencies>,
-): Promise<void> {
-  const expireRequests = dependencies?.expireDataRequests ?? expireDataRequests
-  const deleteExports = dependencies?.deleteExportsFromS3 ?? deleteExportsFromS3
-  const s3Keys = await expireRequests()
-  if (s3Keys.length === 0) return
-  try {
-    await deleteExports(s3Keys)
-  } catch {
-    // Non-fatal: S3 lifecycle will eventually reclaim failed objects.
-  }
-}
+export {
+  recoverExportRequests,
+  processCleanupExpiredExports,
+} from './processors/recovery-cleanup.mts'
