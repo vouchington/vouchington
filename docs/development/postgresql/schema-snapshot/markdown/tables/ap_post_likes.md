@@ -13,7 +13,7 @@ Not partitioned — growth: unbounded.
 | `remote_actor_id` | `uuid`                     | no       |                              |          |           |           | The remote actor who sent the Like. One active row per (post_id, remote_actor_id) — see idx_ap_post_likes__post_remote_actor.                                                                                     |
 | `like_ap_id`      | `text`                     | no       |                              |          |           |           | The inbound Like activity's ActivityPub `id`. Unique while active — a second live Like from the same remote actor on the same post is rejected by idx_ap_post_likes__post_remote_actor before this could collide. |
 | `created_at`      | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                                                                                   |
-| `deleted_at`      | `timestamp with time zone` | yes      |                              |          |           |           | Set by an inbound Undo(Like). NULL while the like is active. A later re-Like from the same (post_id, remote_actor_id) resurrects this same row rather than inserting a new one — see fn_sync_ap_post_likes.       |
+| `deleted_at`      | `timestamp with time zone` | yes      |                              |          |           |           | Set by an inbound Undo(Like). NULL while the like is active. A later re-Like from the same (post_id, remote_actor_id) resurrects this same row rather than inserting a new one — see fn_project_ap_post_likes.    |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -39,4 +39,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_sync_ap_post_likes`: `CREATE TRIGGER trigger_sync_ap_post_likes AFTER INSERT OR UPDATE ON public.ap_post_likes FOR EACH ROW EXECUTE FUNCTION fn_sync_ap_post_likes()`
+- `trigger_sync_ap_post_likes`: `CREATE TRIGGER trigger_sync_ap_post_likes AFTER INSERT OR UPDATE ON public.ap_post_likes FOR EACH ROW EXECUTE FUNCTION fn_project_ap_post_likes()`

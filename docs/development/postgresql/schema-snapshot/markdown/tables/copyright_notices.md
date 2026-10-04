@@ -48,6 +48,6 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_notices_identity_immutable`: `CREATE TRIGGER trigger_copyright_notices_identity_immutable BEFORE DELETE OR UPDATE ON public.copyright_notices FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_identity()`
-- `trigger_copyright_notices_lifecycle_guard`: `CREATE TRIGGER trigger_copyright_notices_lifecycle_guard BEFORE UPDATE ON public.copyright_notices FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_lifecycle()`
+- `trigger_copyright_notices_identity_immutable`: `CREATE TRIGGER trigger_copyright_notices_identity_immutable BEFORE DELETE OR UPDATE ON public.copyright_notices FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_identity()`
+- `trigger_copyright_notices_lifecycle_guard`: `CREATE TRIGGER trigger_copyright_notices_lifecycle_guard BEFORE UPDATE ON public.copyright_notices FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_lifecycle()`
 - `trigger_copyright_notices_updated_at`: `CREATE TRIGGER trigger_copyright_notices_updated_at BEFORE UPDATE ON public.copyright_notices FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

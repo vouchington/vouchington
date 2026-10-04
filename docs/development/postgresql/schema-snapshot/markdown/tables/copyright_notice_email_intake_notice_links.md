@@ -21,7 +21,8 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `copyright_notice_email_intake_copyright_notice_email_intak_key4`: `UNIQUE (copyright_notice_email_intake_id)`
+- `copyright_notice_email_intake_copyright_notice_email_intak_key5`: `UNIQUE (copyright_notice_email_intake_id)`
+- `copyright_notice_email_intake_copyright_notice_id_copyright_key`: `UNIQUE (copyright_notice_id, copyright_notice_email_intake_id)`
 
 **Check constraints:**
 
@@ -30,17 +31,18 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_notice_email_intak_copyright_notice_email_intak_fkey5`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
-- `copyright_notice_email_intak_copyright_notice_email_intak_fkey6`: `FOREIGN KEY (copyright_notice_email_intake_recommendation_id) REFERENCES copyright_notice_email_intake_recommendations(id) ON DELETE RESTRICT`
+- `copyright_notice_email_intak_copyright_notice_email_intak_fkey4`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
+- `copyright_notice_email_intak_copyright_notice_email_intak_fkey5`: `FOREIGN KEY (copyright_notice_email_intake_recommendation_id) REFERENCES copyright_notice_email_intake_recommendations(id) ON DELETE RESTRICT`
 - `copyright_notice_email_intake_notice_l_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_notice_email_intake_copyright_notice_email_intak_key4`: `CREATE UNIQUE INDEX copyright_notice_email_intake_copyright_notice_email_intak_key4 ON public.copyright_notice_email_intake_notice_links USING btree (copyright_notice_email_intake_id)`
+- `copyright_notice_email_intake_copyright_notice_email_intak_key5`: `CREATE UNIQUE INDEX copyright_notice_email_intake_copyright_notice_email_intak_key5 ON public.copyright_notice_email_intake_notice_links USING btree (copyright_notice_email_intake_id)`
+- `copyright_notice_email_intake_copyright_notice_id_copyright_key`: `CREATE UNIQUE INDEX copyright_notice_email_intake_copyright_notice_id_copyright_key ON public.copyright_notice_email_intake_notice_links USING btree (copyright_notice_id, copyright_notice_email_intake_id)`
 - `copyright_notice_email_intake_notice_links_pkey`: `CREATE UNIQUE INDEX copyright_notice_email_intake_notice_links_pkey ON public.copyright_notice_email_intake_notice_links USING btree (id)`
 - `idx_copyright_email_thread_links__notice`: `CREATE INDEX idx_copyright_email_thread_links__notice ON public.copyright_notice_email_intake_notice_links USING btree (copyright_notice_id, id)`
 - `idx_copyright_email_thread_links__recommendation`: `CREATE INDEX idx_copyright_email_thread_links__recommendation ON public.copyright_notice_email_intake_notice_links USING btree (copyright_notice_email_intake_recommendation_id) WHERE (copyright_notice_email_intake_recommendation_id IS NOT NULL)`
 
 **Triggers:**
 
-- `trigger_copyright_email_thread_links_immutable`: `CREATE TRIGGER trigger_copyright_email_thread_links_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_immutable_evidence()`
+- `trigger_copyright_email_thread_links_immutable`: `CREATE TRIGGER trigger_copyright_email_thread_links_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`

@@ -51,4 +51,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_mipr_cases_immutable`: `CREATE TRIGGER trigger_mipr_cases_immutable BEFORE DELETE OR UPDATE ON public.membership_ineligible_purchase_reversal_cases FOR EACH ROW EXECUTE FUNCTION fn_reject_mipr_case_mutation()`
+- `trigger_mipr_cases_immutable`: `CREATE TRIGGER trigger_mipr_cases_immutable BEFORE DELETE OR UPDATE ON public.membership_ineligible_purchase_reversal_cases FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

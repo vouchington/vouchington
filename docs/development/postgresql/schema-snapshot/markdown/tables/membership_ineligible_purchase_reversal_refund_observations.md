@@ -38,5 +38,5 @@ _none_
 
 **Triggers:**
 
-- `trigger_mipr_succeeded_refund_observations_context`: `CREATE TRIGGER trigger_mipr_succeeded_refund_observations_context BEFORE INSERT ON public.membership_ineligible_purchase_reversal_refund_observations FOR EACH ROW EXECUTE FUNCTION fn_require_mipr_succeeded_refund_observation_context()`
-- `trigger_mipr_succeeded_refund_observations_immutable`: `CREATE TRIGGER trigger_mipr_succeeded_refund_observations_immutable BEFORE DELETE OR UPDATE ON public.membership_ineligible_purchase_reversal_refund_observations FOR EACH ROW EXECUTE FUNCTION fn_reject_mipr_succeeded_refund_observation_mutation()`
+- `trigger_mipr_succeeded_refund_observations_context`: `CREATE TRIGGER trigger_mipr_succeeded_refund_observations_context BEFORE INSERT ON public.membership_ineligible_purchase_reversal_refund_observations FOR EACH ROW EXECUTE FUNCTION fn_reject_mipr_succeeded_refund_observation_context()`
+- `trigger_mipr_succeeded_refund_observations_immutable`: `CREATE TRIGGER trigger_mipr_succeeded_refund_observations_immutable BEFORE DELETE OR UPDATE ON public.membership_ineligible_purchase_reversal_refund_observations FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

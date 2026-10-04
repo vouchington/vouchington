@@ -50,4 +50,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_membership_automatic_refund_receipts_immutable`: `CREATE TRIGGER trigger_membership_automatic_refund_receipts_immutable BEFORE DELETE OR UPDATE ON public.membership_automatic_refund_receipts FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_automatic_refund_receipt_mutation()`
+- `trigger_membership_automatic_refund_receipts_immutable`: `CREATE TRIGGER trigger_membership_automatic_refund_receipts_immutable BEFORE DELETE OR UPDATE ON public.membership_automatic_refund_receipts FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

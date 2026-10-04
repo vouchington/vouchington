@@ -90,5 +90,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_delivery_intent_transition`: `CREATE TRIGGER trigger_copyright_delivery_intent_transition BEFORE DELETE OR UPDATE ON public.copyright_notice_delivery_intents FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_delivery_intent_transition()`
+- `trigger_copyright_delivery_intent_transition`: `CREATE TRIGGER trigger_copyright_delivery_intent_transition BEFORE DELETE OR UPDATE ON public.copyright_notice_delivery_intents FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_delivery_intent_transition()`
 - `trigger_copyright_delivery_intents_updated_at`: `CREATE TRIGGER trigger_copyright_delivery_intents_updated_at BEFORE UPDATE ON public.copyright_notice_delivery_intents FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

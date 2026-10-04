@@ -39,5 +39,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_assert_web_push_owner_subscription`: `CREATE CONSTRAINT TRIGGER trigger_assert_web_push_owner_subscription AFTER INSERT OR DELETE OR UPDATE ON public.web_push_endpoint_owners DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_web_push_endpoint_owner_subscription()`
+- `trigger_assert_web_push_owner_subscription`: `CREATE CONSTRAINT TRIGGER trigger_assert_web_push_owner_subscription AFTER INSERT OR DELETE OR UPDATE ON public.web_push_endpoint_owners DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_reject_web_push_endpoint_owner_subscription()`
 - `trigger_web_push_endpoint_owners_updated_at`: `CREATE TRIGGER trigger_web_push_endpoint_owners_updated_at BEFORE UPDATE ON public.web_push_endpoint_owners FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

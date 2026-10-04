@@ -36,4 +36,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_sync_rss_feed_is_enabled`: `CREATE TRIGGER trigger_sync_rss_feed_is_enabled AFTER INSERT ON public.rss_feed_enablement_changes FOR EACH ROW EXECUTE FUNCTION fn_sync_rss_feed_is_enabled()`
+- `trigger_sync_rss_feed_is_enabled`: `CREATE TRIGGER trigger_sync_rss_feed_is_enabled AFTER INSERT ON public.rss_feed_enablement_changes FOR EACH ROW EXECUTE FUNCTION fn_project_latest_change('rss_feeds', 'id', 'rss_feed_id', 'is_enabled', 'enabled')`

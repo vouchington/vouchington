@@ -47,6 +47,6 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_review_successions_guard`: `CREATE TRIGGER trigger_review_successions_guard BEFORE UPDATE ON public.review_successions FOR EACH ROW EXECUTE FUNCTION fn_guard_review_succession_mutation()`
-- `trigger_review_successions_topics`: `CREATE CONSTRAINT TRIGGER trigger_review_successions_topics AFTER INSERT OR DELETE ON public.review_successions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_review_succession_topics()`
+- `trigger_review_successions_guard`: `CREATE TRIGGER trigger_review_successions_guard BEFORE UPDATE ON public.review_successions FOR EACH ROW EXECUTE FUNCTION fn_reject_review_succession_mutation()`
+- `trigger_review_successions_topics`: `CREATE CONSTRAINT TRIGGER trigger_review_successions_topics AFTER INSERT OR DELETE ON public.review_successions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_reject_review_succession_topics()`
 - `trigger_review_successions_updated_at`: `CREATE TRIGGER trigger_review_successions_updated_at BEFORE UPDATE ON public.review_successions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

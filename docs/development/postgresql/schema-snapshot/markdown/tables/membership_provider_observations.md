@@ -85,5 +85,5 @@ _none_
 
 **Triggers:**
 
-- `trigger_membership_provider_observations_immutable`: `CREATE TRIGGER trigger_membership_provider_observations_immutable BEFORE DELETE OR UPDATE ON public.membership_provider_observations FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_provider_observation_mutation()`
-- `trigger_membership_provider_observations_verified_evidence`: `CREATE TRIGGER trigger_membership_provider_observations_verified_evidence BEFORE INSERT ON public.membership_provider_observations FOR EACH ROW EXECUTE FUNCTION fn_require_verified_membership_provider_observation_evidence()`
+- `trigger_membership_provider_observations_immutable`: `CREATE TRIGGER trigger_membership_provider_observations_immutable BEFORE DELETE OR UPDATE ON public.membership_provider_observations FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_membership_provider_observations_verified_evidence`: `CREATE TRIGGER trigger_membership_provider_observations_verified_evidence BEFORE INSERT ON public.membership_provider_observations FOR EACH ROW EXECUTE FUNCTION fn_reject_verified_membership_provider_observation_evidence()`

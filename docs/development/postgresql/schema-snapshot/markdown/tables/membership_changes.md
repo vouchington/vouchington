@@ -62,4 +62,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_membership_changes_append_only`: `CREATE TRIGGER trigger_membership_changes_append_only BEFORE DELETE OR UPDATE ON public.membership_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_change_mutation()`
+- `trigger_membership_changes_append_only`: `CREATE TRIGGER trigger_membership_changes_append_only BEFORE DELETE OR UPDATE ON public.membership_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

@@ -38,4 +38,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_copyright_repeat_infringer_incidents_guard`: `CREATE TRIGGER trigger_copyright_repeat_infringer_incidents_guard BEFORE DELETE OR UPDATE ON public.copyright_repeat_infringer_incidents FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_repeat_infringer_incident()`
+- `trigger_copyright_repeat_infringer_incidents_guard`: `CREATE TRIGGER trigger_copyright_repeat_infringer_incidents_guard BEFORE DELETE OR UPDATE ON public.copyright_repeat_infringer_incidents FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_repeat_infringer_incident()`

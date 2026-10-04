@@ -22,6 +22,7 @@ Not partitioned — growth: unbounded.
 **Unique constraints:**
 
 - `copyright_notice_email_intake_copyright_notice_email_intak_key2`: `UNIQUE (copyright_notice_email_intake_id, input_sha256, prompt_version)`
+- `copyright_notice_email_intake_copyright_notice_email_intak_key3`: `UNIQUE (copyright_notice_email_intake_id, id)`
 
 **Check constraints:**
 
@@ -37,9 +38,10 @@ Not partitioned — growth: unbounded.
 **Indexes:**
 
 - `copyright_notice_email_intake_copyright_notice_email_intak_key2`: `CREATE UNIQUE INDEX copyright_notice_email_intake_copyright_notice_email_intak_key2 ON public.copyright_notice_email_intake_recommendations USING btree (copyright_notice_email_intake_id, input_sha256, prompt_version)`
+- `copyright_notice_email_intake_copyright_notice_email_intak_key3`: `CREATE UNIQUE INDEX copyright_notice_email_intake_copyright_notice_email_intak_key3 ON public.copyright_notice_email_intake_recommendations USING btree (copyright_notice_email_intake_id, id)`
 - `copyright_notice_email_intake_recommendations_pkey`: `CREATE UNIQUE INDEX copyright_notice_email_intake_recommendations_pkey ON public.copyright_notice_email_intake_recommendations USING btree (id)`
 - `idx_copyright_email_recommendations__intake`: `CREATE INDEX idx_copyright_email_recommendations__intake ON public.copyright_notice_email_intake_recommendations USING btree (copyright_notice_email_intake_id, id DESC)`
 
 **Triggers:**
 
-- `trigger_copyright_email_recommendations_immutable`: `CREATE TRIGGER trigger_copyright_email_recommendations_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intake_recommendations FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_immutable_evidence()`
+- `trigger_copyright_email_recommendations_immutable`: `CREATE TRIGGER trigger_copyright_email_recommendations_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intake_recommendations FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`

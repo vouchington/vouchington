@@ -41,5 +41,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_jurisdiction_policy_approvals_immutable`: `CREATE TRIGGER trigger_copyright_jurisdiction_policy_approvals_immutable BEFORE DELETE OR UPDATE ON public.copyright_jurisdiction_policy_approvals FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()`
+- `trigger_copyright_jurisdiction_policy_approvals_immutable`: `CREATE TRIGGER trigger_copyright_jurisdiction_policy_approvals_immutable BEFORE DELETE OR UPDATE ON public.copyright_jurisdiction_policy_approvals FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_copyright_jurisdiction_policy_approvals_updated_at`: `CREATE TRIGGER trigger_copyright_jurisdiction_policy_approvals_updated_at BEFORE UPDATE ON public.copyright_jurisdiction_policy_approvals FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

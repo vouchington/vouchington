@@ -90,4 +90,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_membership_operations_guard`: `CREATE TRIGGER trigger_membership_operations_guard BEFORE DELETE OR UPDATE ON public.membership_operations FOR EACH ROW EXECUTE FUNCTION fn_guard_membership_operation_mutation()`
+- `trigger_membership_operations_guard`: `CREATE TRIGGER trigger_membership_operations_guard BEFORE DELETE OR UPDATE ON public.membership_operations FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_operation_mutation()`

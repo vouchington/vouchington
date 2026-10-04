@@ -62,5 +62,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_correspondence_guard`: `CREATE TRIGGER trigger_copyright_correspondence_guard BEFORE DELETE OR UPDATE ON public.copyright_notice_correspondence_messages FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_correspondence()`
+- `trigger_copyright_correspondence_guard`: `CREATE TRIGGER trigger_copyright_correspondence_guard BEFORE DELETE OR UPDATE ON public.copyright_notice_correspondence_messages FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_correspondence()`
 - `trigger_copyright_correspondence_updated_at`: `CREATE TRIGGER trigger_copyright_correspondence_updated_at BEFORE UPDATE ON public.copyright_notice_correspondence_messages FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

@@ -50,5 +50,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_membership_refund_operation_attempts_context`: `CREATE TRIGGER trigger_membership_refund_operation_attempts_context BEFORE INSERT ON public.membership_refund_operation_attempts FOR EACH ROW EXECUTE FUNCTION fn_require_membership_refund_operation_attempt_context()`
-- `trigger_membership_refund_operation_attempts_guard`: `CREATE TRIGGER trigger_membership_refund_operation_attempts_guard BEFORE DELETE OR UPDATE ON public.membership_refund_operation_attempts FOR EACH ROW EXECUTE FUNCTION fn_guard_membership_refund_operation_attempt_mutation()`
+- `trigger_membership_refund_operation_attempts_context`: `CREATE TRIGGER trigger_membership_refund_operation_attempts_context BEFORE INSERT ON public.membership_refund_operation_attempts FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_refund_operation_attempt_context()`
+- `trigger_membership_refund_operation_attempts_guard`: `CREATE TRIGGER trigger_membership_refund_operation_attempts_guard BEFORE DELETE OR UPDATE ON public.membership_refund_operation_attempts FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_refund_operation_attempt_mutation()`

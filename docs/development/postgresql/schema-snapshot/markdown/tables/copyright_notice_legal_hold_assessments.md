@@ -8,6 +8,7 @@ Not partitioned — growth: unbounded.
 
 | Column                            | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                              |
 | --------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------- |
+| `copyright_notice_id`             | `uuid`                     | no       |                              |          |           |           | Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.          |
 | `id`                              | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                      |
 | `copyright_notice_submission_id`  | `uuid`                     | no       |                              |          |           |           | Immutable court or CCB submission evaluated by this assessment.                                                      |
 | `assessed_at`                     | `timestamp with time zone` | no       |                              |          |           |           | When staff completed the legal-hold qualification assessment.                                                        |
@@ -25,7 +26,8 @@ Not partitioned — growth: unbounded.
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `copyright_notice_legal_hold_assessme_copyright_notice_id_id_key`: `UNIQUE (copyright_notice_id, id)`
 
 **Check constraints:**
 
@@ -37,16 +39,18 @@ _none_
 
 **Foreign keys:**
 
-- `copyright_notice_legal_hold_a_copyright_notice_submission__fkey`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE CASCADE`
 - `copyright_notice_legal_hold_assessments_assessed_by_id_fkey`: `FOREIGN KEY (assessed_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_copyright_hold_assessments__parent_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id) REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE CASCADE`
 
 **Indexes:**
 
+- `copyright_notice_legal_hold_assessme_copyright_notice_id_id_key`: `CREATE UNIQUE INDEX copyright_notice_legal_hold_assessme_copyright_notice_id_id_key ON public.copyright_notice_legal_hold_assessments USING btree (copyright_notice_id, id)`
 - `copyright_notice_legal_hold_assessments_pkey`: `CREATE UNIQUE INDEX copyright_notice_legal_hold_assessments_pkey ON public.copyright_notice_legal_hold_assessments USING btree (id)`
 - `idx_copyright_notice_hold_assessments__assessed_by`: `CREATE INDEX idx_copyright_notice_hold_assessments__assessed_by ON public.copyright_notice_legal_hold_assessments USING btree (assessed_by_id, id DESC)`
 - `idx_copyright_notice_hold_assessments__submission`: `CREATE INDEX idx_copyright_notice_hold_assessments__submission ON public.copyright_notice_legal_hold_assessments USING btree (copyright_notice_submission_id, id DESC)`
 
 **Triggers:**
 
-- `trigger_copyright_notice_hold_assessments_immutable`: `CREATE TRIGGER trigger_copyright_notice_hold_assessments_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_legal_hold_assessments FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_immutable_with_actor_erasure('assessed_by_id')`
-- `trigger_copyright_notice_hold_assessments_require_actor`: `CREATE TRIGGER trigger_copyright_notice_hold_assessments_require_actor BEFORE INSERT ON public.copyright_notice_legal_hold_assessments FOR EACH ROW EXECUTE FUNCTION fn_require_copyright_human_actor('assessed_by_id')`
+- `trigger_copyright_notice_hold_assessments_immutable`: `CREATE TRIGGER trigger_copyright_notice_hold_assessments_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_legal_hold_assessments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('assessed_by_id')`
+- `trigger_copyright_notice_hold_assessments_require_actor`: `CREATE TRIGGER trigger_copyright_notice_hold_assessments_require_actor BEFORE INSERT ON public.copyright_notice_legal_hold_assessments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_human_actor('assessed_by_id')`
+- `trigger_update_copyright_hold_assessments_scope`: `CREATE TRIGGER trigger_update_copyright_hold_assessments_scope BEFORE INSERT ON public.copyright_notice_legal_hold_assessments FOR EACH ROW EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submissions', 'copyright_notice_submission_id')`

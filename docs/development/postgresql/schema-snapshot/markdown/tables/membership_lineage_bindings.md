@@ -49,4 +49,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_membership_lineage_bindings_guard`: `CREATE TRIGGER trigger_membership_lineage_bindings_guard BEFORE DELETE OR UPDATE ON public.membership_lineage_bindings FOR EACH ROW EXECUTE FUNCTION fn_guard_membership_lineage_binding_mutation()`
+- `trigger_membership_lineage_bindings_guard`: `CREATE TRIGGER trigger_membership_lineage_bindings_guard BEFORE DELETE OR UPDATE ON public.membership_lineage_bindings FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_lineage_binding_mutation()`

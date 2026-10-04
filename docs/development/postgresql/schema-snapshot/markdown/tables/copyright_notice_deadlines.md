@@ -23,6 +23,7 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
+- `copyright_notice_deadlines_copyright_notice_id_id_key`: `UNIQUE (copyright_notice_id, id)`
 - `copyright_notice_deadlines_qualifying_counter_notice_assess_key`: `UNIQUE (qualifying_counter_notice_assessment_id)`
 
 **Check constraints:**
@@ -38,6 +39,7 @@ Not partitioned — growth: unbounded.
 
 **Indexes:**
 
+- `copyright_notice_deadlines_copyright_notice_id_id_key`: `CREATE UNIQUE INDEX copyright_notice_deadlines_copyright_notice_id_id_key ON public.copyright_notice_deadlines USING btree (copyright_notice_id, id)`
 - `copyright_notice_deadlines_pkey`: `CREATE UNIQUE INDEX copyright_notice_deadlines_pkey ON public.copyright_notice_deadlines USING btree (id)`
 - `copyright_notice_deadlines_qualifying_counter_notice_assess_key`: `CREATE UNIQUE INDEX copyright_notice_deadlines_qualifying_counter_notice_assess_key ON public.copyright_notice_deadlines USING btree (qualifying_counter_notice_assessment_id)`
 - `idx_copyright_notice_deadlines__notice`: `CREATE INDEX idx_copyright_notice_deadlines__notice ON public.copyright_notice_deadlines USING btree (copyright_notice_id, id DESC)`
@@ -45,5 +47,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_deadlines_guard`: `CREATE TRIGGER trigger_copyright_deadlines_guard BEFORE DELETE OR UPDATE ON public.copyright_notice_deadlines FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_deadline()`
+- `trigger_copyright_deadlines_guard`: `CREATE TRIGGER trigger_copyright_deadlines_guard BEFORE DELETE OR UPDATE ON public.copyright_notice_deadlines FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_deadline()`
 - `trigger_copyright_deadlines_updated_at`: `CREATE TRIGGER trigger_copyright_deadlines_updated_at BEFORE UPDATE ON public.copyright_notice_deadlines FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

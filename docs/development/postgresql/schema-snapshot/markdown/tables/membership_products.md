@@ -33,5 +33,5 @@ _none_
 
 **Triggers:**
 
-- `trigger_membership_products_identity_immutable`: `CREATE TRIGGER trigger_membership_products_identity_immutable BEFORE UPDATE ON public.membership_products FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_product_identity_mutation()`
+- `trigger_membership_products_identity_immutable`: `CREATE TRIGGER trigger_membership_products_identity_immutable BEFORE UPDATE OF plan, billing_interval ON public.membership_products FOR EACH ROW WHEN (((old.plan IS DISTINCT FROM new.plan) OR (old.billing_interval IS DISTINCT FROM new.billing_interval))) EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_membership_products_updated_at`: `CREATE TRIGGER trigger_membership_products_updated_at BEFORE UPDATE ON public.membership_products FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

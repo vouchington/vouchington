@@ -38,4 +38,4 @@ _none_
 
 **Triggers:**
 
-- `moderation_transparency_released_rollup_guard`: `CREATE TRIGGER moderation_transparency_released_rollup_guard BEFORE DELETE OR UPDATE ON public.moderation_transparency_released_daily_rollups FOR EACH ROW EXECUTE FUNCTION fn_protect_released_moderation_transparency_rollup()`
+- `moderation_transparency_released_rollup_guard`: `CREATE TRIGGER moderation_transparency_released_rollup_guard BEFORE DELETE OR UPDATE ON public.moderation_transparency_released_daily_rollups FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

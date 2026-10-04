@@ -51,4 +51,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_mcp_call_audit_events_append_only`: `CREATE TRIGGER trigger_mcp_call_audit_events_append_only BEFORE DELETE OR UPDATE ON public.mcp_call_audit_events FOR EACH ROW EXECUTE FUNCTION fn_reject_mcp_call_audit_event_mutation()`
+- `trigger_mcp_call_audit_events_append_only`: `CREATE TRIGGER trigger_mcp_call_audit_events_append_only BEFORE DELETE OR UPDATE ON public.mcp_call_audit_events FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

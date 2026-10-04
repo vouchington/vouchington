@@ -40,5 +40,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_form_reviews_immutable`: `CREATE TRIGGER trigger_copyright_form_reviews_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_form_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_immutable_with_actor_erasure('reviewed_by_id')`
-- `trigger_copyright_form_reviews_require_actor`: `CREATE TRIGGER trigger_copyright_form_reviews_require_actor BEFORE INSERT ON public.copyright_notice_form_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_require_copyright_human_actor('reviewed_by_id')`
+- `trigger_copyright_form_reviews_immutable`: `CREATE TRIGGER trigger_copyright_form_reviews_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_form_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('reviewed_by_id')`
+- `trigger_copyright_form_reviews_require_actor`: `CREATE TRIGGER trigger_copyright_form_reviews_require_actor BEFORE INSERT ON public.copyright_notice_form_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_human_actor('reviewed_by_id')`

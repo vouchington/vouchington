@@ -24,7 +24,7 @@ Not partitioned — growth: unbounded.
 **Unique constraints:**
 
 - `copyright_notice_email_intake__promoted_copyright_notice_id_key`: `UNIQUE (promoted_copyright_notice_id)`
-- `copyright_notice_email_intake_copyright_notice_email_intak_key3`: `UNIQUE (copyright_notice_email_intake_id)`
+- `copyright_notice_email_intake_copyright_notice_email_intak_key4`: `UNIQUE (copyright_notice_email_intake_id)`
 
 **Check constraints:**
 
@@ -35,14 +35,14 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `copyright_notice_email_intak_copyright_notice_email_intak_fkey3`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
-- `copyright_notice_email_intak_copyright_notice_email_intak_fkey4`: `FOREIGN KEY (copyright_notice_email_intake_recommendation_id) REFERENCES copyright_notice_email_intake_recommendations(id) ON DELETE RESTRICT`
 - `copyright_notice_email_intake_promoted_copyright_notice_id_fkey`: `FOREIGN KEY (promoted_copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
 - `copyright_notice_email_intake_reviews_reviewed_by_id_fkey`: `FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_copyright_email_reviews__recommendation_intake`: `FOREIGN KEY (copyright_notice_email_intake_id, copyright_notice_email_intake_recommendation_id) REFERENCES copyright_notice_email_intake_recommendations(copyright_notice_email_intake_id, id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `copyright_notice_email_intake__promoted_copyright_notice_id_key`: `CREATE UNIQUE INDEX copyright_notice_email_intake__promoted_copyright_notice_id_key ON public.copyright_notice_email_intake_reviews USING btree (promoted_copyright_notice_id)`
-- `copyright_notice_email_intake_copyright_notice_email_intak_key3`: `CREATE UNIQUE INDEX copyright_notice_email_intake_copyright_notice_email_intak_key3 ON public.copyright_notice_email_intake_reviews USING btree (copyright_notice_email_intake_id)`
+- `copyright_notice_email_intake_copyright_notice_email_intak_key4`: `CREATE UNIQUE INDEX copyright_notice_email_intake_copyright_notice_email_intak_key4 ON public.copyright_notice_email_intake_reviews USING btree (copyright_notice_email_intake_id)`
 - `copyright_notice_email_intake_reviews_pkey`: `CREATE UNIQUE INDEX copyright_notice_email_intake_reviews_pkey ON public.copyright_notice_email_intake_reviews USING btree (id)`
 - `idx_copyright_email_reviews__intake`: `CREATE INDEX idx_copyright_email_reviews__intake ON public.copyright_notice_email_intake_reviews USING btree (copyright_notice_email_intake_id, id DESC)`
 - `idx_copyright_email_reviews__recommendation`: `CREATE INDEX idx_copyright_email_reviews__recommendation ON public.copyright_notice_email_intake_reviews USING btree (copyright_notice_email_intake_recommendation_id) WHERE (copyright_notice_email_intake_recommendation_id IS NOT NULL)`
@@ -50,6 +50,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_email_reviews_immutable`: `CREATE TRIGGER trigger_copyright_email_reviews_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_immutable_with_actor_erasure('reviewed_by_id')`
-- `trigger_copyright_email_reviews_recommendation_scope`: `CREATE TRIGGER trigger_copyright_email_reviews_recommendation_scope BEFORE INSERT ON public.copyright_notice_email_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_email_review_recommendation_scope()`
-- `trigger_copyright_email_reviews_require_actor`: `CREATE TRIGGER trigger_copyright_email_reviews_require_actor BEFORE INSERT ON public.copyright_notice_email_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_require_copyright_human_actor('reviewed_by_id')`
+- `trigger_copyright_email_reviews_immutable`: `CREATE TRIGGER trigger_copyright_email_reviews_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('reviewed_by_id')`
+- `trigger_copyright_email_reviews_require_actor`: `CREATE TRIGGER trigger_copyright_email_reviews_require_actor BEFORE INSERT ON public.copyright_notice_email_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_human_actor('reviewed_by_id')`

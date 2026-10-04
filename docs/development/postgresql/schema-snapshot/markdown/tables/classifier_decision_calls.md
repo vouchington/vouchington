@@ -37,4 +37,4 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_classifier_decision_calls_append_only`: `CREATE TRIGGER trigger_classifier_decision_calls_append_only BEFORE UPDATE ON public.classifier_decision_calls FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update()`
+- `trigger_classifier_decision_calls_append_only`: `CREATE TRIGGER trigger_classifier_decision_calls_append_only BEFORE UPDATE ON public.classifier_decision_calls FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

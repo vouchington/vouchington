@@ -75,8 +75,8 @@ _none_
 
 **Triggers:**
 
-- `trigger_ap_inbox_deliveries_retention`: `CREATE TRIGGER trigger_ap_inbox_deliveries_retention BEFORE INSERT OR UPDATE ON public.ap_inbox_deliveries FOR EACH ROW EXECUTE FUNCTION fn_ap_inbox_delivery_retention()`
-- `trigger_ap_inbox_deliveries_storage_after_delete`: `CREATE TRIGGER trigger_ap_inbox_deliveries_storage_after_delete AFTER DELETE ON public.ap_inbox_deliveries REFERENCING OLD TABLE AS deleted_deliveries FOR EACH STATEMENT EXECUTE FUNCTION fn_ap_inbox_delivery_storage_after_delete()`
-- `trigger_ap_inbox_deliveries_storage_after_insert`: `CREATE TRIGGER trigger_ap_inbox_deliveries_storage_after_insert AFTER INSERT ON public.ap_inbox_deliveries REFERENCING NEW TABLE AS inserted_deliveries FOR EACH STATEMENT EXECUTE FUNCTION fn_ap_inbox_delivery_storage_after_insert()`
-- `trigger_ap_inbox_deliveries_storage_after_update`: `CREATE TRIGGER trigger_ap_inbox_deliveries_storage_after_update AFTER UPDATE ON public.ap_inbox_deliveries REFERENCING OLD TABLE AS previous_deliveries NEW TABLE AS updated_deliveries FOR EACH STATEMENT EXECUTE FUNCTION fn_ap_inbox_delivery_storage_after_update()`
+- `trigger_ap_inbox_deliveries_retention`: `CREATE TRIGGER trigger_ap_inbox_deliveries_retention BEFORE INSERT OR UPDATE ON public.ap_inbox_deliveries FOR EACH ROW EXECUTE FUNCTION fn_project_ap_inbox_delivery_retention()`
+- `trigger_ap_inbox_deliveries_storage_after_delete`: `CREATE TRIGGER trigger_ap_inbox_deliveries_storage_after_delete AFTER DELETE ON public.ap_inbox_deliveries REFERENCING OLD TABLE AS deleted_deliveries FOR EACH STATEMENT EXECUTE FUNCTION fn_project_ap_inbox_delivery_storage_after_delete()`
+- `trigger_ap_inbox_deliveries_storage_after_insert`: `CREATE TRIGGER trigger_ap_inbox_deliveries_storage_after_insert AFTER INSERT ON public.ap_inbox_deliveries REFERENCING NEW TABLE AS inserted_deliveries FOR EACH STATEMENT EXECUTE FUNCTION fn_project_ap_inbox_delivery_storage_after_insert()`
+- `trigger_ap_inbox_deliveries_storage_after_update`: `CREATE TRIGGER trigger_ap_inbox_deliveries_storage_after_update AFTER UPDATE ON public.ap_inbox_deliveries REFERENCING OLD TABLE AS previous_deliveries NEW TABLE AS updated_deliveries FOR EACH STATEMENT EXECUTE FUNCTION fn_project_ap_inbox_delivery_storage_after_update()`
 - `trigger_ap_inbox_deliveries_updated_at`: `CREATE TRIGGER trigger_ap_inbox_deliveries_updated_at BEFORE UPDATE ON public.ap_inbox_deliveries FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

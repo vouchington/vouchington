@@ -41,5 +41,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_territorial_notice_acknowledgments_attempt`: `CREATE TRIGGER trigger_copyright_territorial_notice_acknowledgments_attempt BEFORE DELETE OR UPDATE ON public.copyright_territorial_notice_acknowledgments FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_territorial_acknowledgment_attempt()`
+- `trigger_copyright_territorial_notice_acknowledgments_attempt`: `CREATE TRIGGER trigger_copyright_territorial_notice_acknowledgments_attempt BEFORE DELETE OR UPDATE ON public.copyright_territorial_notice_acknowledgments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_acknowledgment_attempt()`
 - `trigger_copyright_territorial_notice_acknowledgments_updated_at`: `CREATE TRIGGER trigger_copyright_territorial_notice_acknowledgments_updated_at BEFORE UPDATE ON public.copyright_territorial_notice_acknowledgments FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

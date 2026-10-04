@@ -36,4 +36,4 @@ RANGE partitioned on `placement_id` (children: default, no retention owner, acce
 
 **Triggers:**
 
-- `trigger_guard_retained_image_placement_binding`: `CREATE TRIGGER trigger_guard_retained_image_placement_binding BEFORE UPDATE ON public.retained_image_placement_bindings FOR EACH ROW EXECUTE FUNCTION fn_guard_retained_image_placement_binding()`
+- `trigger_guard_retained_image_placement_binding`: `CREATE TRIGGER trigger_guard_retained_image_placement_binding BEFORE UPDATE OF placement_id, image_id, binding_family ON public.retained_image_placement_bindings FOR EACH ROW WHEN ((((old.placement_id IS DISTINCT FROM new.placement_id) OR (old.image_id IS DISTINCT FROM new.image_id)) OR (old.binding_family IS DISTINCT FROM new.binding_family))) EXECUTE FUNCTION fn_reject_mutation()`

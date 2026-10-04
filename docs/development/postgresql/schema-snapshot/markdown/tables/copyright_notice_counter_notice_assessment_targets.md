@@ -6,12 +6,13 @@ Exact hosted targets covered by a substantially compliant statutory counter-noti
 
 Not partitioned — growth: unbounded.
 
-| Column                                      | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                       |
-| ------------------------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------- |
-| `copyright_notice_submission_assessment_id` | `uuid`                     | no       |                     |          |           |           | Counter-notice compliance assessment whose scope is recorded. |
-| `copyright_notice_target_id`                | `uuid`                     | no       |                     |          |           |           | Exact hosted target the counter-notice asks to restore.       |
-| `created_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                               |
-| `updated_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                               |
+| Column                                      | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                     |
+| ------------------------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------- |
+| `copyright_notice_id`                       | `uuid`                     | no       |                     |          |           |           | Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion. |
+| `copyright_notice_submission_assessment_id` | `uuid`                     | no       |                     |          |           |           | Counter-notice compliance assessment whose scope is recorded.                                               |
+| `copyright_notice_target_id`                | `uuid`                     | no       |                     |          |           |           | Exact hosted target the counter-notice asks to restore.                                                     |
+| `created_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                             |
+| `updated_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                             |
 
 **Primary key:** `PRIMARY KEY (copyright_notice_submission_assessment_id, copyright_notice_target_id)`
 
@@ -23,15 +24,17 @@ _none_
 
 **Foreign keys:**
 
-- `copyright_notice_counter_noti_copyright_notice_submission__fkey`: `FOREIGN KEY (copyright_notice_submission_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE CASCADE`
-- `copyright_notice_counter_notice_copyright_notice_target_id_fkey`: `FOREIGN KEY (copyright_notice_target_id) REFERENCES copyright_notice_targets(id) ON DELETE RESTRICT`
+- `fk_copyright_counter_targets__parent_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_submission_assessment_id) REFERENCES copyright_notice_submission_assessments(copyright_notice_id, id) ON DELETE CASCADE`
+- `fk_copyright_counter_targets__target_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_target_id) REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `copyright_notice_counter_notice_assessment_targets_pkey`: `CREATE UNIQUE INDEX copyright_notice_counter_notice_assessment_targets_pkey ON public.copyright_notice_counter_notice_assessment_targets USING btree (copyright_notice_submission_assessment_id, copyright_notice_target_id)`
+- `idx_copyright_notice_counter_assessment_targets__notice`: `CREATE INDEX idx_copyright_notice_counter_assessment_targets__notice ON public.copyright_notice_counter_notice_assessment_targets USING btree (copyright_notice_id)`
 - `idx_copyright_notice_counter_assessment_targets__target`: `CREATE INDEX idx_copyright_notice_counter_assessment_targets__target ON public.copyright_notice_counter_notice_assessment_targets USING btree (copyright_notice_target_id, copyright_notice_submission_assessment_id)`
 
 **Triggers:**
 
-- `trigger_copyright_notice_counter_assessment_targets_immutable`: `CREATE TRIGGER trigger_copyright_notice_counter_assessment_targets_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_counter_notice_assessment_targets FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_immutable_evidence()`
-- `trigger_copyright_notice_counter_assessment_targets_scope`: `CREATE TRIGGER trigger_copyright_notice_counter_assessment_targets_scope BEFORE INSERT ON public.copyright_notice_counter_notice_assessment_targets FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_counter_notice_assessment_target_scope()`
+- `trigger_copyright_notice_counter_assessment_targets_immutable`: `CREATE TRIGGER trigger_copyright_notice_counter_assessment_targets_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_counter_notice_assessment_targets FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
+- `trigger_copyright_notice_counter_assessment_targets_scope`: `CREATE TRIGGER trigger_copyright_notice_counter_assessment_targets_scope BEFORE INSERT ON public.copyright_notice_counter_notice_assessment_targets FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_counter_notice_assessment_target_scope()`
+- `trigger_update_copyright_counter_targets_scope`: `CREATE TRIGGER trigger_update_copyright_counter_targets_scope BEFORE INSERT ON public.copyright_notice_counter_notice_assessment_targets FOR EACH ROW EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submission_assessments', 'copyright_notice_submission_assessment_id')`

@@ -38,4 +38,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_membership_grant_activation_periods_guard`: `CREATE TRIGGER trigger_membership_grant_activation_periods_guard BEFORE DELETE OR UPDATE ON public.membership_grant_activation_periods FOR EACH ROW EXECUTE FUNCTION fn_guard_membership_grant_activation_period_mutation()`
+- `trigger_membership_grant_activation_periods_guard`: `CREATE TRIGGER trigger_membership_grant_activation_periods_guard BEFORE DELETE OR UPDATE ON public.membership_grant_activation_periods FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_grant_activation_period_mutation()`

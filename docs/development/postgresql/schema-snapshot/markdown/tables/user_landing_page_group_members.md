@@ -42,4 +42,4 @@ _none_
 **Triggers:**
 
 - `trigger_user_landing_page_group_members_updated_at`: `CREATE TRIGGER trigger_user_landing_page_group_members_updated_at BEFORE UPDATE ON public.user_landing_page_group_members FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
-- `trigger_validate_user_landing_page_group_member_item_type`: `CREATE CONSTRAINT TRIGGER trigger_validate_user_landing_page_group_member_item_type AFTER INSERT OR UPDATE ON public.user_landing_page_group_members DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION fn_validate_user_landing_page_group_member_item_type()`
+- `trigger_validate_user_landing_page_group_member_item_type`: `CREATE CONSTRAINT TRIGGER trigger_validate_user_landing_page_group_member_item_type AFTER INSERT OR UPDATE ON public.user_landing_page_group_members DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION fn_reject_user_landing_page_group_member_item_type()`

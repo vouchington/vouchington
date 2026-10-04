@@ -49,4 +49,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_oauth_authorization_server_events_append_only`: `CREATE TRIGGER trigger_oauth_authorization_server_events_append_only BEFORE DELETE OR UPDATE ON public.oauth_authorization_server_events FOR EACH ROW EXECUTE FUNCTION fn_reject_oauth_authorization_server_event_mutation()`
+- `trigger_oauth_authorization_server_events_append_only`: `CREATE TRIGGER trigger_oauth_authorization_server_events_append_only BEFORE DELETE OR UPDATE ON public.oauth_authorization_server_events FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

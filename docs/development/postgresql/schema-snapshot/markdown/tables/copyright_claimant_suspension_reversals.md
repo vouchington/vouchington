@@ -34,4 +34,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_copyright_claimant_suspension_reversals_immutable`: `CREATE TRIGGER trigger_copyright_claimant_suspension_reversals_immutable BEFORE DELETE OR UPDATE ON public.copyright_claimant_suspension_reversals FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_immutable_evidence()`
+- `trigger_copyright_claimant_suspension_reversals_immutable`: `CREATE TRIGGER trigger_copyright_claimant_suspension_reversals_immutable BEFORE DELETE OR UPDATE ON public.copyright_claimant_suspension_reversals FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`

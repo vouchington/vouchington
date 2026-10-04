@@ -6,25 +6,27 @@ Independent, reversible legal restrictions; lifting one restriction never lifts 
 
 Not partitioned — growth: unbounded.
 
-| Column                       | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                           |
-| ---------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------- |
-| `id`                         | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                   |
-| `authorizing_assessment_id`  | `uuid`                     | no       |                              |          |           |           | Immutable exact compliant assessment that authorized this restriction.                            |
-| `copyright_notice_target_id` | `uuid`                     | no       |                              |          |           |           | Exact allegation target governed by this independent restriction.                                 |
-| `imposed_at`                 | `timestamp with time zone` | no       |                              |          |           |           | When the independent restriction became active.                                                   |
-| `lifted_at`                  | `timestamp with time zone` | yes      |                              |          |           |           | One-way timestamp recording when this restriction was lifted.                                     |
-| `imposed_by_id`              | `uuid`                     | yes      |                              |          |           |           | Staff actor that imposed the restriction, or NULL for an authorized automatic provisional action. |
-| `lifted_by_id`               | `uuid`                     | yes      |                              |          |           |           | Staff actor that lifted the restriction; NULL denotes an authorized system restoration.           |
-| `human_reviewed_at`          | `timestamp with time zone` | yes      |                              |          |           |           | When staff completed the mandatory review of this exact provisional restriction.                  |
-| `human_review_action`        | `text`                     | yes      |                              |          |           |           | Human outcome for this target restriction: confirm or reverse.                                    |
-| `human_reviewed_by_id`       | `uuid`                     | yes      |                              |          |           |           | Staff reviewer; may become NULL only when the reviewer account is erased.                         |
-| `created_at`                 | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                   |
-| `updated_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                   |
+| Column                       | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                     |
+| ---------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------- |
+| `copyright_notice_id`        | `uuid`                     | no       |                              |          |           |           | Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion. |
+| `id`                         | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                             |
+| `authorizing_assessment_id`  | `uuid`                     | no       |                              |          |           |           | Immutable exact compliant assessment that authorized this restriction.                                      |
+| `copyright_notice_target_id` | `uuid`                     | no       |                              |          |           |           | Exact allegation target governed by this independent restriction.                                           |
+| `imposed_at`                 | `timestamp with time zone` | no       |                              |          |           |           | When the independent restriction became active.                                                             |
+| `lifted_at`                  | `timestamp with time zone` | yes      |                              |          |           |           | One-way timestamp recording when this restriction was lifted.                                               |
+| `imposed_by_id`              | `uuid`                     | yes      |                              |          |           |           | Staff actor that imposed the restriction, or NULL for an authorized automatic provisional action.           |
+| `lifted_by_id`               | `uuid`                     | yes      |                              |          |           |           | Staff actor that lifted the restriction; NULL denotes an authorized system restoration.                     |
+| `human_reviewed_at`          | `timestamp with time zone` | yes      |                              |          |           |           | When staff completed the mandatory review of this exact provisional restriction.                            |
+| `human_review_action`        | `text`                     | yes      |                              |          |           |           | Human outcome for this target restriction: confirm or reverse.                                              |
+| `human_reviewed_by_id`       | `uuid`                     | yes      |                              |          |           |           | Staff reviewer; may become NULL only when the reviewer account is erased.                                   |
+| `created_at`                 | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                             |
+| `updated_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                             |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `copyright_restrictions_copyright_notice_id_id_key`: `UNIQUE (copyright_notice_id, id)`
 
 **Check constraints:**
 
@@ -35,14 +37,15 @@ _none_
 
 **Foreign keys:**
 
-- `copyright_restrictions_copyright_notice_target_id_fkey`: `FOREIGN KEY (copyright_notice_target_id) REFERENCES copyright_notice_targets(id) ON DELETE CASCADE`
 - `copyright_restrictions_human_reviewed_by_id_fkey`: `FOREIGN KEY (human_reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `copyright_restrictions_imposed_by_id_fkey`: `FOREIGN KEY (imposed_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `copyright_restrictions_lifted_by_id_fkey`: `FOREIGN KEY (lifted_by_id) REFERENCES users(id) ON DELETE SET NULL`
-- `fk_copyright_restrictions__authorizing_assessment`: `FOREIGN KEY (authorizing_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT`
+- `fk_copyright_restrictions__authorizing_assessment`: `FOREIGN KEY (copyright_notice_id, authorizing_assessment_id) REFERENCES copyright_notice_submission_assessments(copyright_notice_id, id) ON DELETE RESTRICT`
+- `fk_copyright_restrictions__parent_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_target_id) REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE CASCADE`
 
 **Indexes:**
 
+- `copyright_restrictions_copyright_notice_id_id_key`: `CREATE UNIQUE INDEX copyright_restrictions_copyright_notice_id_id_key ON public.copyright_restrictions USING btree (copyright_notice_id, id)`
 - `copyright_restrictions_pkey`: `CREATE UNIQUE INDEX copyright_restrictions_pkey ON public.copyright_restrictions USING btree (id)`
 - `idx_copyright_restrictions__authorizing_assessment`: `CREATE INDEX idx_copyright_restrictions__authorizing_assessment ON public.copyright_restrictions USING btree (authorizing_assessment_id)`
 - `idx_copyright_restrictions__human_reviewer`: `CREATE INDEX idx_copyright_restrictions__human_reviewer ON public.copyright_restrictions USING btree (human_reviewed_by_id) WHERE (human_reviewed_by_id IS NOT NULL)`
@@ -53,6 +56,7 @@ _none_
 
 **Triggers:**
 
-- `trigger_copyright_restriction_assessment_scope`: `CREATE TRIGGER trigger_copyright_restriction_assessment_scope BEFORE INSERT OR UPDATE OF authorizing_assessment_id ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_restriction_assessment_scope()`
-- `trigger_copyright_restrictions_lifecycle_guard`: `CREATE TRIGGER trigger_copyright_restrictions_lifecycle_guard BEFORE DELETE OR UPDATE ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_restriction_lifecycle()`
+- `trigger_copyright_restriction_assessment_scope`: `CREATE TRIGGER trigger_copyright_restriction_assessment_scope BEFORE INSERT OR UPDATE OF authorizing_assessment_id ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_restriction_assessment_scope()`
+- `trigger_copyright_restrictions_lifecycle_guard`: `CREATE TRIGGER trigger_copyright_restrictions_lifecycle_guard BEFORE DELETE OR UPDATE ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_restriction_lifecycle()`
 - `trigger_copyright_restrictions_updated_at`: `CREATE TRIGGER trigger_copyright_restrictions_updated_at BEFORE UPDATE ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_update_copyright_restrictions_scope`: `CREATE TRIGGER trigger_update_copyright_restrictions_scope BEFORE INSERT ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_targets', 'copyright_notice_target_id')`

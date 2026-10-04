@@ -6,22 +6,24 @@ Immutable resolution of a previously assessed restoration hold; a resolved hold 
 
 Not partitioned — growth: unbounded.
 
-| Column                                      | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                   |
-| ------------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------- |
-| `id`                                        | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                           |
-| `copyright_notice_legal_hold_assessment_id` | `uuid`                     | no       |                              |          |           |           | Hold assessment resolved by this immutable record.                                        |
-| `resolved_at`                               | `timestamp with time zone` | no       |                              |          |           |           | When staff determined the hold no longer applied.                                         |
-| `resolved_by_id`                            | `uuid`                     | yes      |                              |          |           |           | Staff user responsible for resolving the hold.                                            |
-| `resolution_kind`                           | `text`                     | no       |                              |          |           |           | Why the hold ended: dismissed, proceeding ended, or superseded by a corrected assessment. |
-| `rationale_ciphertext`                      | `text`                     | no       |                              |          |           |           | Authenticated ciphertext of private staff rationale and supporting references.            |
-| `created_at`                                | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                           |
-| `updated_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                           |
+| Column                                      | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                     |
+| ------------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------- |
+| `copyright_notice_id`                       | `uuid`                     | no       |                              |          |           |           | Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion. |
+| `id`                                        | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                             |
+| `copyright_notice_legal_hold_assessment_id` | `uuid`                     | no       |                              |          |           |           | Hold assessment resolved by this immutable record.                                                          |
+| `resolved_at`                               | `timestamp with time zone` | no       |                              |          |           |           | When staff determined the hold no longer applied.                                                           |
+| `resolved_by_id`                            | `uuid`                     | yes      |                              |          |           |           | Staff user responsible for resolving the hold.                                                              |
+| `resolution_kind`                           | `text`                     | no       |                              |          |           |           | Why the hold ended: dismissed, proceeding ended, or superseded by a corrected assessment.                   |
+| `rationale_ciphertext`                      | `text`                     | no       |                              |          |           |           | Authenticated ciphertext of private staff rationale and supporting references.                              |
+| `created_at`                                | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                             |
+| `updated_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                             |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
 
 - `copyright_notice_legal_hold_r_copyright_notice_legal_hold_a_key`: `UNIQUE (copyright_notice_legal_hold_assessment_id)`
+- `copyright_notice_legal_hold_resoluti_copyright_notice_id_id_key`: `UNIQUE (copyright_notice_id, id)`
 
 **Check constraints:**
 
@@ -30,16 +32,18 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_notice_legal_hold_r_copyright_notice_legal_hold__fkey`: `FOREIGN KEY (copyright_notice_legal_hold_assessment_id) REFERENCES copyright_notice_legal_hold_assessments(id) ON DELETE RESTRICT`
 - `copyright_notice_legal_hold_resolutions_resolved_by_id_fkey`: `FOREIGN KEY (resolved_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_copyright_hold_resolutions__parent_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_legal_hold_assessment_id) REFERENCES copyright_notice_legal_hold_assessments(copyright_notice_id, id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `copyright_notice_legal_hold_r_copyright_notice_legal_hold_a_key`: `CREATE UNIQUE INDEX copyright_notice_legal_hold_r_copyright_notice_legal_hold_a_key ON public.copyright_notice_legal_hold_resolutions USING btree (copyright_notice_legal_hold_assessment_id)`
+- `copyright_notice_legal_hold_resoluti_copyright_notice_id_id_key`: `CREATE UNIQUE INDEX copyright_notice_legal_hold_resoluti_copyright_notice_id_id_key ON public.copyright_notice_legal_hold_resolutions USING btree (copyright_notice_id, id)`
 - `copyright_notice_legal_hold_resolutions_pkey`: `CREATE UNIQUE INDEX copyright_notice_legal_hold_resolutions_pkey ON public.copyright_notice_legal_hold_resolutions USING btree (id)`
 - `idx_copyright_notice_hold_resolutions__resolved_by`: `CREATE INDEX idx_copyright_notice_hold_resolutions__resolved_by ON public.copyright_notice_legal_hold_resolutions USING btree (resolved_by_id, id DESC)`
 
 **Triggers:**
 
-- `trigger_copyright_notice_hold_resolutions_immutable`: `CREATE TRIGGER trigger_copyright_notice_hold_resolutions_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_legal_hold_resolutions FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_immutable_with_actor_erasure('resolved_by_id')`
-- `trigger_copyright_notice_hold_resolutions_require_actor`: `CREATE TRIGGER trigger_copyright_notice_hold_resolutions_require_actor BEFORE INSERT ON public.copyright_notice_legal_hold_resolutions FOR EACH ROW EXECUTE FUNCTION fn_require_copyright_human_actor('resolved_by_id')`
+- `trigger_copyright_notice_hold_resolutions_immutable`: `CREATE TRIGGER trigger_copyright_notice_hold_resolutions_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_legal_hold_resolutions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('resolved_by_id')`
+- `trigger_copyright_notice_hold_resolutions_require_actor`: `CREATE TRIGGER trigger_copyright_notice_hold_resolutions_require_actor BEFORE INSERT ON public.copyright_notice_legal_hold_resolutions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_human_actor('resolved_by_id')`
+- `trigger_update_copyright_hold_resolutions_scope`: `CREATE TRIGGER trigger_update_copyright_hold_resolutions_scope BEFORE INSERT ON public.copyright_notice_legal_hold_resolutions FOR EACH ROW EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_legal_hold_assessments', 'copyright_notice_legal_hold_assessment_id')`

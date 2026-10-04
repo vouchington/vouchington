@@ -41,5 +41,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_repeat_infringer_dispositions_actor`: `CREATE TRIGGER trigger_copyright_repeat_infringer_dispositions_actor BEFORE INSERT ON public.copyright_repeat_infringer_dispositions FOR EACH ROW EXECUTE FUNCTION fn_require_copyright_human_actor('recorded_by_id')`
-- `trigger_copyright_repeat_infringer_dispositions_immutable`: `CREATE TRIGGER trigger_copyright_repeat_infringer_dispositions_immutable BEFORE DELETE OR UPDATE ON public.copyright_repeat_infringer_dispositions FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_immutable_with_actor_erasure('recorded_by_id')`
+- `trigger_copyright_repeat_infringer_dispositions_actor`: `CREATE TRIGGER trigger_copyright_repeat_infringer_dispositions_actor BEFORE INSERT ON public.copyright_repeat_infringer_dispositions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_human_actor('recorded_by_id')`
+- `trigger_copyright_repeat_infringer_dispositions_immutable`: `CREATE TRIGGER trigger_copyright_repeat_infringer_dispositions_immutable BEFORE DELETE OR UPDATE ON public.copyright_repeat_infringer_dispositions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('recorded_by_id')`

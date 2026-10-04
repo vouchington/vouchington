@@ -33,6 +33,6 @@ _none_
 
 **Triggers:**
 
-- `trigger_review_succession_topics_immutable`: `CREATE TRIGGER trigger_review_succession_topics_immutable BEFORE DELETE OR UPDATE ON public.review_succession_topics FOR EACH ROW EXECUTE FUNCTION fn_guard_review_succession_topic_mutation()`
-- `trigger_review_succession_topics_nonempty`: `CREATE CONSTRAINT TRIGGER trigger_review_succession_topics_nonempty AFTER INSERT OR DELETE ON public.review_succession_topics DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_review_succession_topics()`
+- `trigger_review_succession_topics_immutable`: `CREATE TRIGGER trigger_review_succession_topics_immutable BEFORE DELETE OR UPDATE ON public.review_succession_topics FOR EACH ROW EXECUTE FUNCTION fn_reject_review_succession_topic_mutation()`
+- `trigger_review_succession_topics_nonempty`: `CREATE CONSTRAINT TRIGGER trigger_review_succession_topics_nonempty AFTER INSERT OR DELETE ON public.review_succession_topics DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_reject_review_succession_topics()`
 - `trigger_review_succession_topics_updated_at`: `CREATE TRIGGER trigger_review_succession_topics_updated_at BEFORE UPDATE ON public.review_succession_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

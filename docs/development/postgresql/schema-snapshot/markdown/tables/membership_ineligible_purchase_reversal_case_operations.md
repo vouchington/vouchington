@@ -32,5 +32,5 @@ _none_
 
 **Triggers:**
 
-- `trigger_mipr_case_ops_context`: `CREATE TRIGGER trigger_mipr_case_ops_context BEFORE INSERT ON public.membership_ineligible_purchase_reversal_case_operations FOR EACH ROW EXECUTE FUNCTION fn_require_mipr_case_op_context()`
-- `trigger_mipr_case_ops_immutable`: `CREATE TRIGGER trigger_mipr_case_ops_immutable BEFORE DELETE OR UPDATE ON public.membership_ineligible_purchase_reversal_case_operations FOR EACH ROW EXECUTE FUNCTION fn_reject_mipr_case_op_mutation()`
+- `trigger_mipr_case_ops_context`: `CREATE TRIGGER trigger_mipr_case_ops_context BEFORE INSERT ON public.membership_ineligible_purchase_reversal_case_operations FOR EACH ROW EXECUTE FUNCTION fn_reject_mipr_case_op_context()`
+- `trigger_mipr_case_ops_immutable`: `CREATE TRIGGER trigger_mipr_case_ops_immutable BEFORE DELETE OR UPDATE ON public.membership_ineligible_purchase_reversal_case_operations FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

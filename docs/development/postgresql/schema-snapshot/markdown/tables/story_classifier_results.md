@@ -67,5 +67,5 @@ _none_
 
 **Triggers:**
 
-- `trigger_story_classifier_results_append_only`: `CREATE TRIGGER trigger_story_classifier_results_append_only BEFORE UPDATE ON public.story_classifier_results FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update()`
-- `trigger_story_classifier_results_batch_scope`: `CREATE TRIGGER trigger_story_classifier_results_batch_scope BEFORE INSERT OR UPDATE OF batch_id, scope_category, scope_community_id ON public.story_classifier_results FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_result_batch_scope()`
+- `trigger_story_classifier_results_append_only`: `CREATE TRIGGER trigger_story_classifier_results_append_only BEFORE UPDATE ON public.story_classifier_results FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_story_classifier_results_batch_scope`: `CREATE TRIGGER trigger_story_classifier_results_batch_scope BEFORE INSERT OR UPDATE OF batch_id, scope_category, scope_community_id ON public.story_classifier_results FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_result_batch_scope()`

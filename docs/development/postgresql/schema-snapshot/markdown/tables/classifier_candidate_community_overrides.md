@@ -45,6 +45,6 @@ _none_
 
 **Triggers:**
 
-- `trigger_classifier_candidate_community_overrides_global`: `CREATE TRIGGER trigger_classifier_candidate_community_overrides_global BEFORE INSERT OR UPDATE OF candidate_id ON public.classifier_candidate_community_overrides FOR EACH ROW EXECUTE FUNCTION fn_require_global_classifier_candidate_override()`
-- `trigger_classifier_candidate_community_overrides_lifecycle`: `CREATE TRIGGER trigger_classifier_candidate_community_overrides_lifecycle BEFORE UPDATE ON public.classifier_candidate_community_overrides FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_candidate_community_override_lifecycle()`
+- `trigger_classifier_candidate_community_overrides_global`: `CREATE TRIGGER trigger_classifier_candidate_community_overrides_global BEFORE INSERT OR UPDATE OF candidate_id ON public.classifier_candidate_community_overrides FOR EACH ROW EXECUTE FUNCTION fn_reject_global_classifier_candidate_override()`
+- `trigger_classifier_candidate_community_overrides_lifecycle`: `CREATE TRIGGER trigger_classifier_candidate_community_overrides_lifecycle BEFORE UPDATE ON public.classifier_candidate_community_overrides FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_candidate_community_override_lifecycle()`
 - `trigger_classifier_candidate_community_overrides_updated_at`: `CREATE TRIGGER trigger_classifier_candidate_community_overrides_updated_at BEFORE UPDATE ON public.classifier_candidate_community_overrides FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

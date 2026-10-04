@@ -38,4 +38,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_bluesky_follow_records_active_users`: `CREATE TRIGGER trigger_bluesky_follow_records_active_users BEFORE INSERT OR UPDATE OF follower_user_id, followee_user_id ON public.bluesky_follow_records FOR EACH ROW EXECUTE FUNCTION fn_fence_bluesky_follow_receipt_active_users()`
+- `trigger_bluesky_follow_records_active_users`: `CREATE TRIGGER trigger_bluesky_follow_records_active_users BEFORE INSERT OR UPDATE OF follower_user_id, followee_user_id ON public.bluesky_follow_records FOR EACH ROW EXECUTE FUNCTION fn_lock_bluesky_follow_receipt_active_users()`

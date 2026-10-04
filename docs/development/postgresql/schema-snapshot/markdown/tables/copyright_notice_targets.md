@@ -20,6 +20,7 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
+- `copyright_notice_targets_copyright_notice_id_id_key`: `UNIQUE (copyright_notice_id, id)`
 - `copyright_notice_targets_copyright_notice_id_placement_id_p_key`: `UNIQUE (copyright_notice_id, placement_id, placement_revision)`
 - `copyright_notice_targets_id_placement_id_key`: `UNIQUE (id, placement_id)`
 
@@ -34,6 +35,7 @@ Not partitioned — growth: unbounded.
 
 **Indexes:**
 
+- `copyright_notice_targets_copyright_notice_id_id_key`: `CREATE UNIQUE INDEX copyright_notice_targets_copyright_notice_id_id_key ON public.copyright_notice_targets USING btree (copyright_notice_id, id)`
 - `copyright_notice_targets_copyright_notice_id_placement_id_p_key`: `CREATE UNIQUE INDEX copyright_notice_targets_copyright_notice_id_placement_id_p_key ON public.copyright_notice_targets USING btree (copyright_notice_id, placement_id, placement_revision)`
 - `copyright_notice_targets_id_placement_id_key`: `CREATE UNIQUE INDEX copyright_notice_targets_id_placement_id_key ON public.copyright_notice_targets USING btree (id, placement_id)`
 - `copyright_notice_targets_pkey`: `CREATE UNIQUE INDEX copyright_notice_targets_pkey ON public.copyright_notice_targets USING btree (id)`
@@ -41,4 +43,4 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_notice_targets_immutable`: `CREATE TRIGGER trigger_copyright_notice_targets_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_targets FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_immutable_evidence()`
+- `trigger_copyright_notice_targets_immutable`: `CREATE TRIGGER trigger_copyright_notice_targets_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_targets FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
