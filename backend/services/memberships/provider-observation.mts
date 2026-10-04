@@ -91,7 +91,7 @@ export async function getLatestProviderSourceProjection(
     FROM memberships membership
     INNER JOIN membership_products product ON product.id = membership.membership_product_id
     WHERE membership.membership_source_id = ${membershipSourceId}
-    ORDER BY membership.created_at DESC, membership.id DESC
+    ORDER BY membership.id DESC
     LIMIT 1
     FOR UPDATE OF membership`)
   return rows[0] as PriorMembership | undefined

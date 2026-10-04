@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Keep this view a single flat SELECT: no top-level WITH and no UNION ALL.
 -- A subquery carrying a non-empty cteList fails is_simple_subquery()/is_simple_union_all() in
 -- the planner, so PostgreSQL cannot pull this view up into an enclosing query. Any consumer that
@@ -44,44 +45,50 @@ CREATE OR REPLACE VIEW view_public_post_eligibility AS
   AND (
     root_post.community_id IS NULL
     OR EXISTS (
-      SELECT 1
-      FROM communities publication_community
-      JOIN community_post_reviews publication_review
-        ON publication_review.community_id = publication_community.id
-       AND publication_review.post_id = root_post.id
-       AND publication_review.approved_at IS NOT NULL
-       AND publication_review.rejected_at IS NULL
-       AND publication_review.unpublished_at IS NULL
-      WHERE publication_community.id = root_post.community_id
-        AND publication_community.deleted_at IS NULL
-        AND publication_community.archived_at IS NULL
-        AND publication_community.visibility = 'public'
-      OFFSET 0
+      WITH publication AS MATERIALIZED (
+        SELECT 1
+        FROM communities publication_community
+        JOIN community_post_reviews publication_review
+          ON publication_review.community_id = publication_community.id
+         AND publication_review.post_id = root_post.id
+         AND publication_review.approved_at IS NOT NULL
+         AND publication_review.rejected_at IS NULL
+         AND publication_review.unpublished_at IS NULL
+        WHERE publication_community.id = root_post.community_id
+          AND publication_community.deleted_at IS NULL
+          AND publication_community.archived_at IS NULL
+          AND publication_community.visibility = 'public'
+      )
+      SELECT 1 FROM publication
     )
   )
   AND (
     root_post.post_type <> 'story'
     OR EXISTS (
-      SELECT 1
-      FROM post__stories post_story
-      JOIN stories publication_story
-        ON publication_story.id = post_story.story_id
-       AND publication_story.deleted_at IS NULL
-      JOIN rss_feed_items story_item
-        ON story_item.story_id = publication_story.id
-       AND story_item.deleted_at IS NULL
-      WHERE post_story.post_id = root_post.id
-        AND EXISTS (
-          SELECT 1
-          FROM rss_feed_item_sources story_source
-          JOIN rss_feeds story_feed ON story_feed.id = story_source.rss_feed_id
-          WHERE story_source.rss_feed_item_id = story_item.id
-            AND story_feed.deleted_at IS NULL
-            AND story_feed.is_enabled = TRUE
-            AND story_feed.is_discoverable = TRUE
-          OFFSET 0
-        )
-      OFFSET 0
+      WITH story_publication AS MATERIALIZED (
+        SELECT 1
+        FROM post__stories post_story
+        JOIN stories publication_story
+          ON publication_story.id = post_story.story_id
+         AND publication_story.deleted_at IS NULL
+        JOIN rss_feed_items story_item
+          ON story_item.story_id = publication_story.id
+         AND story_item.deleted_at IS NULL
+        WHERE post_story.post_id = root_post.id
+          AND EXISTS (
+            WITH source_publication AS MATERIALIZED (
+              SELECT 1
+              FROM rss_feed_item_sources story_source
+              JOIN rss_feeds story_feed ON story_feed.id = story_source.rss_feed_id
+              WHERE story_source.rss_feed_item_id = story_item.id
+                AND story_feed.deleted_at IS NULL
+                AND story_feed.is_enabled = TRUE
+                AND story_feed.is_discoverable = TRUE
+            )
+            SELECT 1 FROM source_publication
+          )
+      )
+      SELECT 1 FROM story_publication
     )
   )
   AND root_suspension.user_id IS NULL;

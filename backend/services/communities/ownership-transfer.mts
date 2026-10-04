@@ -41,7 +41,7 @@ export async function transferCommunityOwnershipWithOptions(
         AND user_id = ${toUserId}
         AND role = 'moderator'
         AND removed_at IS NULL
-        AND (SELECT COUNT(*) FROM demote) > 0
+        AND EXISTS (SELECT 1 FROM demote)
       RETURNING updated_at
     )
     SELECT

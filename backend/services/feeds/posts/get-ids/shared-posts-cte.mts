@@ -25,6 +25,8 @@ export function appendSharedPosts(
     timeRange: PostFeedOptions['time_range']
   },
 ): void {
+  // Keep the anti-existence test a BooleanTest rather than a pulled-up anti join: on sparse
+  // recipient pages the anti join estimates one delivery and rescans eligibility per delivery.
   const sharedPostsCutoffDate = getTimeRangeLowerBoundDate(timeRange ?? '1w')
   query.append(sql`
     ),
@@ -33,9 +35,11 @@ export function appendSharedPosts(
         post_feed_shares.sort_at, post_feed_shares.shared_by_user_id, post_feed_shares.created_at
       FROM post_feed_shares
       WHERE post_feed_shares.recipient_user_id = ${currentUserId}
-        AND post_feed_shares.shared_by_user_id NOT IN (
-          SELECT user_id FROM excluded_users
-        )`)
+        AND post_feed_shares.shared_by_user_id IS NOT NULL
+        AND (NOT EXISTS (
+          SELECT 1 FROM excluded_users
+          WHERE excluded_users.user_id = post_feed_shares.shared_by_user_id
+        )) IS TRUE`)
   if (sharedPostsCutoffDate) {
     query.append(sql`
         AND post_feed_shares.sort_at >= ${sharedPostsCutoffDate}`)

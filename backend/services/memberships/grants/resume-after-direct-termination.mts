@@ -80,7 +80,7 @@ export async function resumeGrantAfterDirectAccessSuspensionInTransaction(
     INNER JOIN LATERAL (
       SELECT id FROM memberships
       WHERE membership_source_id = exhausted.membership_source_id
-      ORDER BY projection_ended_at DESC NULLS LAST, created_at DESC
+      ORDER BY projection_ended_at DESC NULLS LAST, id DESC
       LIMIT 1
     ) membership ON true`)
   for (const exhausted of exhaustedRows as Array<{

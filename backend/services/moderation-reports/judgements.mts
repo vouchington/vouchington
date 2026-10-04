@@ -90,7 +90,7 @@ export async function getLatestJudgementForEntity(
   query.append(sql` AS entity_id, ${entityType}::moderation_report_entity_type AS entity_type`)
   query.append(sql` FROM moderation_report_judgements WHERE `)
   query.append(fkColumn)
-  query.append(sql` = ${entityId}::uuid ORDER BY created_at DESC, id DESC LIMIT 1`)
+  query.append(sql` = ${entityId}::uuid ORDER BY id DESC LIMIT 1`)
 
   const { rows } = await read(query)
   return (rows[0] as ModerationReportJudgement | undefined) ?? null

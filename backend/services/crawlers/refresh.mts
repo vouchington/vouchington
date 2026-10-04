@@ -24,7 +24,10 @@ export const searchHostnameIdsNeedingCrawlerRefresh = async (
       AND (h.crawlable IS NULL OR h.crawlable = true)
     GROUP BY h.id
     HAVING (
-      COUNT(c.id) = 0
+      NOT EXISTS (
+        SELECT 1 FROM crawlers existing_crawler
+        WHERE existing_crawler.hostname_id = h.id AND existing_crawler.deleted_at IS NULL
+      )
       OR MAX(c.updated_at) < date_trunc('week', CURRENT_TIMESTAMP)
     )
     ORDER BY h.id ASC

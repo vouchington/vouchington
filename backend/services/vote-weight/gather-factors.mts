@@ -62,13 +62,13 @@ export async function gatherVoteWeightFactors(
     FROM users u
     CROSS JOIN oauth_stats os
     CROSS JOIN LATERAL (
-      SELECT COUNT(*) > 0 AS has_email FROM user_email_addresses WHERE user_id = u.id
+      SELECT EXISTS (SELECT 1 FROM user_email_addresses WHERE user_id = u.id) AS has_email
     ) es
     CROSS JOIN LATERAL (
-      SELECT COUNT(*) > 0 AS has_phone FROM user_phone_numbers WHERE user_id = u.id
+      SELECT EXISTS (SELECT 1 FROM user_phone_numbers WHERE user_id = u.id) AS has_phone
     ) ps
     CROSS JOIN LATERAL (
-      SELECT COUNT(*) > 0 AS has_passkey FROM user_passkeys WHERE user_id = u.id
+      SELECT EXISTS (SELECT 1 FROM user_passkeys WHERE user_id = u.id) AS has_passkey
     ) pk
     LEFT JOIN LATERAL (
       SELECT membership.plan
@@ -76,10 +76,11 @@ export async function gatherVoteWeightFactors(
       WHERE membership.user_id = u.id
     ) ms ON true
     LEFT JOIN LATERAL (
-      SELECT COUNT(*) > 0 AS is_admin
-      FROM user_roles ur
+      SELECT EXISTS (
+      SELECT 1 FROM user_roles ur
       JOIN user_roles_types urt ON urt.id = ur.role_type_id
       WHERE ur.user_id = u.id AND urt.slug = 'administrator'
+      ) AS is_admin
     ) as2 ON true
     CROSS JOIN LATERAL (
       SELECT COALESCE(EXP(SUM(LN(penalty_multiplier))), 1.0) AS penalty_product

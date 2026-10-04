@@ -18,9 +18,7 @@ export async function getAllReportsForEntity(
   const fkColumn = reportEntityFkColumn(entityType)
   const query = sql`/* getAllReportsForEntity */ SELECT id, reason, note, created_at FROM moderation_reports WHERE `
   query.append(fkColumn)
-  query.append(
-    sql` = ${entityId}::uuid ORDER BY created_at DESC, id DESC LIMIT ${MAX_REPORTS_FOR_JUDGEMENT}`,
-  )
+  query.append(sql` = ${entityId}::uuid ORDER BY id DESC LIMIT ${MAX_REPORTS_FOR_JUDGEMENT}`)
   const { rows } = await read(query)
   return rows as Array<{
     id: string

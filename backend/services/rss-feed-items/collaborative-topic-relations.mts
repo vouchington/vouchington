@@ -132,7 +132,7 @@ async function selectPaidFollowerTopics(
     FROM relation__user__follow__topic ft
     JOIN plan_followers pf ON pf.user_id = ft.subject_id
     JOIN topics t ON t.id = ft.object_id AND t.deleted_at IS NULL AND t.merged_into_topic_id IS NULL
-    WHERE ft.deleted_at IS NULL AND ft.object_id NOT IN (SELECT topic_id FROM already_tagged)
+    WHERE ft.deleted_at IS NULL AND NOT EXISTS (SELECT 1 FROM already_tagged WHERE already_tagged.topic_id = ft.object_id)
     GROUP BY ft.object_id
     ORDER BY follower_count DESC, ft.object_id
     LIMIT ${limit}

@@ -140,7 +140,7 @@ async function lockRetainedDirectSourceProjection(sourceId: string, query: Query
       INNER JOIN membership_products product ON product.id = membership.membership_product_id
       WHERE membership.membership_source_id = ${sourceId}
         AND membership.projection_ended_at IS NOT NULL
-      ORDER BY membership.projection_ended_at DESC, membership.created_at DESC, membership.id DESC
+      ORDER BY membership.projection_ended_at DESC, membership.id DESC
       LIMIT 1
       FOR UPDATE OF membership`,
   )

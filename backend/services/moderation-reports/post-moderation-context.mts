@@ -78,7 +78,7 @@ export async function getPostModerationContextBatch(
   agentQuery.append(idList)
   agentQuery.append(sql`)
       AND am.deleted_at IS NULL
-    ORDER BY am.post_id, am.created_at DESC
+    ORDER BY am.post_id, am.id DESC
   `)
 
   // Fetch topic slugs added by agents with the moderator role (system users)

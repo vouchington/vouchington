@@ -57,8 +57,10 @@ check gets materialized as its own unindexed subplan wherever it is joined, and 
 that reads it once per output row (a batched-by-id lookup, a scalar subquery correlated to an outer
 id) pays that materialization once per row instead of once total. See
 [`view_public_post_eligibility`](../../../backend/data-stores/psql/views/2025-01-18-public-post-eligibility.sql) for the shape this
-forces (flat SELECT, `UNION ALL` only, no CTE) and the rejected alternative shape it was measured
-against (#10785).
+forces (flat outer SELECT, `UNION ALL` only, no top-level CTE) and the rejected alternative shape it was measured
+against (#10785). Internal existence probes may use nested `MATERIALIZED` CTEs as optimizer
+fences: keep the parent correlation inside each CTE and the outer view flat. The community, story,
+and feed-source eligibility probes use this shape in place of `OFFSET 0`.
 
 This applies at every nesting level, not just a view's own top-level `SELECT`. A view -- or a
 scalar subquery inside a view's target list -- that reads another non-materialized view through a

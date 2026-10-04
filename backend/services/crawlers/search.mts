@@ -14,11 +14,9 @@ export async function searchCrawlers(
   const parsedLimit = options.limit ?? 25
   const limit = Number.isNaN(parsedLimit) || parsedLimit < 1 ? 25 : Math.min(parsedLimit, 100)
 
-  let afterTimestamp: Date | null = null
   let afterId: string | null = null
   if (options.after) {
     const cursor = decodeUuidCursor(options.after, isTimestampCursor, 'Invalid cursor format')
-    afterTimestamp = new Date(cursor.timestamp)
     afterId = cursor.id
   }
 
@@ -40,13 +38,11 @@ export async function searchCrawlers(
     FROM crawlers c
     WHERE c.deleted_at IS NULL`
 
-  if (afterTimestamp !== null && afterId !== null) {
-    query.append(
-      sql` AND (c.created_at < ${afterTimestamp} OR (c.created_at = ${afterTimestamp} AND c.id < ${afterId}))`,
-    )
+  if (afterId !== null) {
+    query.append(sql` AND (c.id < ${afterId})`)
   }
 
-  query.append(sql` ORDER BY c.created_at DESC, c.id DESC LIMIT ${limit + 1}`)
+  query.append(sql` ORDER BY c.id DESC LIMIT ${limit + 1}`)
 
   const { rows } = await read(query)
   const hasNextPage = rows.length > limit

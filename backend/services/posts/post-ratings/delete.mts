@@ -20,8 +20,7 @@ export async function deletePostRatingRecord(
       ),
       locked AS (
         SELECT
-          COUNT(*)::int AS n,
-          COUNT(*) FILTER (WHERE topic_id = ${topicId})::int AS exists_count
+          COUNT(*)::int AS n
         FROM locked_rows
       ),
       deleted AS (
@@ -33,13 +32,13 @@ export async function deletePostRatingRecord(
       )
       SELECT
         (SELECT n FROM locked) AS total_count,
-        (SELECT exists_count FROM locked) AS exists_count,
-        (SELECT COUNT(*)::int FROM deleted) AS deleted_count
+        EXISTS (SELECT 1 FROM locked_rows WHERE topic_id = ${topicId}) AS has_rating,
+        EXISTS (SELECT 1 FROM deleted) AS did_delete
     `)
-  const { total_count, exists_count, deleted_count } = rows[0]
-  assert(exists_count > 0, 404, 'Rating not found')
+  const { total_count, has_rating, did_delete } = rows[0]
+  assert(has_rating, 404, 'Rating not found')
   assert(total_count > 1, 422, 'Cannot delete the last rating on a review')
-  assert(deleted_count > 0, 404, 'Rating not found')
+  assert(did_delete, 404, 'Rating not found')
   await createPostRevision(
     postId,
     'update',

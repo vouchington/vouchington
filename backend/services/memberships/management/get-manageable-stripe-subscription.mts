@@ -34,7 +34,7 @@ export async function getManageableStripeSubscriptionByUserId(
       FROM memberships
       WHERE membership_source_id = source.id
         AND user_id = ${userId}
-      ORDER BY projection_ended_at DESC NULLS FIRST, created_at DESC, id DESC
+      ORDER BY projection_ended_at DESC NULLS FIRST, id DESC
       LIMIT 1
     ) membership ON true
     WHERE source.user_id = ${userId}
