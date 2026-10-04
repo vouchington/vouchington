@@ -20,6 +20,10 @@ function reviewed(reason: string, keys: readonly string[]): ReviewedIds {
 
 // Opaque ids with no owning row to reference: client tokens, traversal cursors, protocol ids.
 export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
+  [
+    'copyright_dsa_statement_submissions.transparency_database_uuid',
+    'Commission statement UUID returned by the external DSA protocol; no Voucha row owns it.',
+  ],
   ...reviewed('Client-issued device token; no devices table exists.', [
     'agent_moderation_votes.device_id',
     ...electedVoteTables.map(table => `${table}.device_id`),

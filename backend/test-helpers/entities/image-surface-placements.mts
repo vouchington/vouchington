@@ -136,12 +136,6 @@ export async function isTestImagePlacementPubliclyProjected(input: {
   return rows[0]?.projected ?? false
 }
 
-export async function setTestImageCreator(imageId: string, userId: string): Promise<void> {
-  await write(sql`/* setTestImageCreator */
-    UPDATE images SET created_by_id = ${userId} WHERE id = ${imageId}
-  `)
-}
-
 export async function retireTestImageSurfacePlacementsForDeletedImage(
   imageId: string,
 ): Promise<Array<{ placementId: string; revision: number }>> {
