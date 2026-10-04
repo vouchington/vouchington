@@ -34,20 +34,20 @@ failed or was rejected.
 ## CI Failures
 
 Every retrospective must contain a `## CI Failures` section immediately after
-`## Transcript Facts`. This is an **observed-failures log**, not a historical GitHub audit: read the
-session journal first (via `node dev/blackboard-journal.mts entries [--root-codex]` for interactive
-root Codex), then the supported `retrospective-transcript` output for failures surfaced during the
-session. Do not re-mine raw or recursive transcripts: the normalized collectors own that boundary.
-A collector reporting unavailable evidence must remain unavailable. Do not crawl workflow
-history for failures the session never observed, and do not infer that no failure occurred merely
-because the final run passed.
+`## Transcript Facts`. This is an **observed-failures log**, not a historical GitHub audit: build it
+from the session journal alone (via `node dev/blackboard-journal.mts entries [--root-codex]` for
+interactive root Codex), as the composer does. Transcript output cannot establish CI status. Do not
+re-mine raw or recursive transcripts: the normalized collectors own that boundary. A journal that
+cannot be read must remain unavailable. Do not crawl workflow history for failures the session never
+observed, and do not infer that no failure occurred merely because the final run passed.
 
 Use exactly one status line:
 
 - `Status: failures observed`
-- `Status: none observed` — only when the journal or transcript was available and showed no failures
-- `Status: unavailable (<reason>)` — when neither source can establish whether failures occurred; the
-  reason must be non-blank
+- `Status: none observed` — only when the journal was available and showed no failures
+- `Status: unavailable (<reason>)` — when the journal cannot establish whether failures occurred,
+  such as an unreadable journal or a session unknown to the hosted blackboard; the reason must be
+  non-blank
 
 When failures were observed, group repeated occurrences by root signature and record each group in
 this form:

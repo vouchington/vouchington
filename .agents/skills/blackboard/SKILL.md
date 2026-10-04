@@ -46,7 +46,7 @@ A denied or escalated command uses this block grammar instead, one block per ent
 retrospective's `## Sandbox & Permission Audit` is built only from entries that match it:
 
 ```
-- `sandbox-escalation` — <command prefix> — <what needed elevated access>
+- `sandbox-escalation` — <command and subcommand only: no paths, hosts, branches or secrets> — <what needed elevated access>
   - Outcome: requested|approved|denied|unknown
   - Evidence: <sanitized denial or approval text>
   - Disposition: <allowlist change, issue #N, or none>
