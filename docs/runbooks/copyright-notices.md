@@ -23,12 +23,41 @@ identifiers belong in the private operations repository.
 
 These are product response targets, not representations of safe-harbor eligibility.
 
+## Trusted flaggers
+
+The trusted-flagger registry is staff API tooling with no web screen. Staff copy designations by
+hand from the Commission's published list; there is no automatic import. An administrator creates
+an entry with `POST /api/v1/copyright-trusted-flaggers`, recording the entity name, linked Voucha
+account, awarding Digital Services Coordinator, two-letter uppercase member state, award date,
+optional award reference, and designation's area wording. Record `intellectual_property` only for
+an intellectual-property designation; otherwise record `other`.
+
+Reviewers read the bounded registry with `GET /api/v1/copyright-trusted-flaggers` and an entry with
+`GET /api/v1/copyright-trusted-flaggers/:id`. Administrators append suspension, reinstatement, or
+revocation with `POST /api/v1/copyright-trusted-flaggers/:id/status-changes`, providing a reason
+from the designation record. Revocation is final. Correct a wrong entry by revoking it and creating
+a replacement; entries have no PATCH or DELETE route.
+
+A signed-in EU notice captures an eligible account match in its receipt transaction, even while
+`copyright.trustedFlaggerPriority` is off. Guest and UK notices never match. Entries added after
+receipt do not change earlier notices. Only intellectual-property matches receive copyright
+priority or count as trusted-flagger notices in reporting and statement submission; an `other`
+match remains recorded without those effects. Every matched notice still requires human review.
+
+`copyright.trustedFlaggerPriority` defaults to `false`. Registry routes remain available with
+that switch or intake off, so staff can prepare records without enabling priority. Priority also
+requires an unwithdrawn `eu_dsa` approval; follow the [intake activation gate](#intake-activation).
+This runbook does not authorize enabling the switch or approving a jurisdiction.
+
 ## Queue triage
 
 The staff case queue (Moderation sidebar, Copyright, Case Queue) lists missed restoration deadlines
 first, then deadlines past escalation or unassessed court or CCB filings, then other open work, each oldest wait first. Work it top
 down. Each case shows why it is queued and how long its oldest open item has waited. The email
-intake queue shows each message's wait age.
+intake queue shows each message's wait age. With `copyright.trustedFlaggerPriority` enabled and
+an unwithdrawn EU jurisdiction approval, an EU notice with an in-area trusted-flagger match sorts
+first within its urgency tier, then by oldest wait. It never moves ahead of a more urgent case.
+With the switch off or approval withdrawn, queue order is unchanged.
 
 1. Confirm the original submission and evidence digest exist. Never reconstruct a missing email from
    agent output.
@@ -137,11 +166,11 @@ job, and the AI form-screening job. Existing complaint pages, all ongoing statut
 designated-agent email ingest remain available; use the individual delivery/enforcement controls
 and incident procedures rather than the intake switch to manage a downstream outage.
 
-| Class             | Routes                                                                                                                                                                                      | While the switch is off |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| New intake        | `POST /api/v1/copyright-notices` (signed-in and guest form), `POST /api/v1/copyright-eu-notices`, `POST /api/v1/copyright-uk-notices`, `POST /api/v1/copyright-email-intakes/:id/approvals` | 503                     |
-| In-case responses | Appeals, counter-notices, guest filings (supplement, withdrawal, court/CCB hold), EU and UK redress, EU supervised complaints                                                               | Open                    |
-| Staff             | Every other staff decision, review, replay, capability, repeat-infringer, jurisdiction-policy, and report route, including recording or rejecting a matched email reply                     | Open                    |
+| Class             | Routes                                                                                                                                                                                            | While the switch is off |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| New intake        | `POST /api/v1/copyright-notices` (signed-in and guest form), `POST /api/v1/copyright-eu-notices`, `POST /api/v1/copyright-uk-notices`, `POST /api/v1/copyright-email-intakes/:id/approvals`       | 503                     |
+| In-case responses | Appeals, counter-notices, guest filings (supplement, withdrawal, court/CCB hold), EU and UK redress, EU supervised complaints                                                                     | Open                    |
+| Staff             | Every other staff decision, review, replay, capability, repeat-infringer, jurisdiction-policy, trusted-flagger registry, and report route, including recording or rejecting a matched email reply | Open                    |
 
 [`intake-kill-switch-routes.test.mts`](../../backend/api/v1/copyright-notices/intake-kill-switch-routes.test.mts)
 fails when a non-GET copyright route has no class. Approving an emailed notice creates a new case,

@@ -5312,6 +5312,160 @@
       "required": ["authority_reference", "explanation"],
       "type": "object"
     },
+    "CopyrightTrustedFlagger": {
+      "additionalProperties": false,
+      "properties": {
+        "area_description": {
+          "type": "string"
+        },
+        "area_of_expertise": {
+          "enum": ["intellectual_property", "other"],
+          "type": "string"
+        },
+        "award_reference": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "awarded_at": {
+          "type": "string"
+        },
+        "awarding_coordinator_name": {
+          "type": "string"
+        },
+        "awarding_member_state": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/components/schemas/CopyrightTrustedFlaggerStatus"
+        },
+        "user_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "area_description",
+        "area_of_expertise",
+        "award_reference",
+        "awarded_at",
+        "awarding_coordinator_name",
+        "awarding_member_state",
+        "id",
+        "name",
+        "status",
+        "user_id"
+      ],
+      "type": "object"
+    },
+    "CopyrightTrustedFlaggerChange": {
+      "additionalProperties": false,
+      "properties": {
+        "change_type": {
+          "$ref": "#/components/schemas/CopyrightTrustedFlaggerChangeType"
+        },
+        "copyright_trusted_flagger_id": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": ["change_type", "copyright_trusted_flagger_id", "created_at", "id", "reason"],
+      "type": "object"
+    },
+    "CopyrightTrustedFlaggerChangeRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "change_type": {
+          "enum": ["reinstated", "revoked", "suspended"],
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": ["change_type", "reason"],
+      "type": "object"
+    },
+    "CopyrightTrustedFlaggerChangeType": {
+      "enum": ["reinstated", "revoked", "suspended"],
+      "type": "string"
+    },
+    "CopyrightTrustedFlaggerCreateRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "area_description": {
+          "type": "string"
+        },
+        "area_of_expertise": {
+          "enum": ["intellectual_property", "other"],
+          "type": "string"
+        },
+        "award_reference": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "awarded_at": {
+          "type": "string"
+        },
+        "awarding_coordinator_name": {
+          "type": "string"
+        },
+        "awarding_member_state": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "user_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "area_description",
+        "area_of_expertise",
+        "awarded_at",
+        "awarding_coordinator_name",
+        "awarding_member_state",
+        "name",
+        "user_id"
+      ],
+      "type": "object"
+    },
+    "CopyrightTrustedFlaggerStatus": {
+      "enum": ["active", "revoked", "suspended"],
+      "type": "string"
+    },
     "Country": {
       "additionalProperties": false,
       "properties": {
@@ -28448,6 +28602,33 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/copyright-trusted-flaggers": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/copyright-trusted-flaggers/:id": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
     "GET:/api/v1/crawlers": {
       "query": {
         "properties": {
@@ -34197,6 +34378,25 @@
     "POST:/api/v1/copyright-submissions/:id/legal-hold-assessments": {
       "body": {
         "$ref": "#/components/schemas/CopyrightLegalHoldAssessmentRequest"
+      },
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-trusted-flaggers": {
+      "body": {
+        "$ref": "#/components/schemas/CopyrightTrustedFlaggerCreateRequest"
+      }
+    },
+    "POST:/api/v1/copyright-trusted-flaggers/:id/status-changes": {
+      "body": {
+        "$ref": "#/components/schemas/CopyrightTrustedFlaggerChangeRequest"
       },
       "path": {
         "properties": {

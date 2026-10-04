@@ -41,6 +41,8 @@ export const ROOT_FAMILIES = {
       ['copyright_notice_targets', 'surface_owner_user_id'],
       ['copyright_territorial_notice_receipts', 'requester_user_id'],
       ['copyright_territorial_redress_requests', 'submitted_by_user_id'],
+      ['copyright_trusted_flaggers', 'created_by_id'],
+      ['copyright_trusted_flagger_changes', 'changed_by_id'],
       ...retainedRelationReferences('user'),
     ],
   },

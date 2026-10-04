@@ -31,7 +31,7 @@ describe('guest court or CCB filing staff reads', () => {
       readTestCopyrightStaffCase(notice.id),
       listCopyrightStaffQueue(staff, {
         limit: 1,
-        after: { tier: key!.urgency, timestamp: key!.waiting_since_before, id: notice.id },
+        after: { tier: key!.tier, timestamp: key!.waiting_since_before, id: notice.id },
       }),
     ])
     const expectedHold = {

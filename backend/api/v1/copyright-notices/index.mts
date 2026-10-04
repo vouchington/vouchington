@@ -35,6 +35,7 @@ import './moderator-routes.mts'
 import './repeat-infringer-routes.mts'
 import './staff-queue-route.mts'
 import './submission-routes.mts'
+import './trusted-flagger-routes.mts'
 import './jurisdiction-policy-routes.mts'
 import './uk-copyright-routes.mts'
 

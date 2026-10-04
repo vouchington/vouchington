@@ -34,6 +34,10 @@ export const copyrightRegistryEntry = defineDynamicConfigNamespace({
       description:
         'Hash media a moderator confirmed as infringing and send later uploads of the same or a near-identical image to staff review. Never blocks, hides or delays an upload. Off until counsel decides Voucha is an online content-sharing service provider; read the copyright runbook before enabling.',
     },
+    trustedFlaggerPriority: {
+      description:
+        'Prioritize in-area EU trusted-flagger notices within their existing urgency tier only while an EU jurisdiction approval is active. Off by default; receipt-time matches are recorded even while off.',
+    },
     automaticWithholdingMinTrustTier: {
       description:
         'Lowest claimant trust tier whose clear-screened notice may be withheld automatically. -1 means unset: every gate must be set before any automatic withholding happens, and an unset gate sends the notice to a moderator.',

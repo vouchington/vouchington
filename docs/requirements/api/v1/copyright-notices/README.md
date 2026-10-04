@@ -66,13 +66,17 @@ omitted. The public member projection has no statements. An unaccepted notice ne
 participant case, including for its notifier; its in-app decision links to the notification inbox.
 
 The staff review queue uses the same bounded `after` and `limit` contract. Its cursor is scoped to
-the actionable queue and orders by `(urgency, waiting_since, id)`: a missed restoration deadline
+the actionable queue and orders by `(tier, waiting_since, id)`: a missed restoration deadline
 first, then a deadline past escalation or an unassessed court or CCB filing, then all other open work, each oldest wait first. Every
 queued case, including one whose only open item is a deadline past escalation, remains reachable
 after the first page. Each item adds `reasons` (the distinct open-item kinds), `waiting_since` (the
 oldest open item's time), and `next_deadline` (the earliest open deadline's `escalation_at` and
 `restoration_deadline_at`, or null). Urgency is evaluated against the current time on each request,
-so a case whose deadline passes between pages moves to an earlier tier.
+so a case whose deadline passes between pages moves to an earlier tier. The tier is
+`urgency * 2 + 1` by default. When `copyright.trustedFlaggerPriority` and an unwithdrawn EU policy
+approval are both present, an in-area matched EU notice uses `urgency * 2`, ahead of ordinary
+notices within the same urgency. The boost never crosses urgency tiers. The new cursor scope
+rejects previous queue cursors with `400`; clients restart from the first page.
 
 While `copyright.staydownMatching` is on, an upload that matches an image a moderator confirmed on
 a case adds the `staydown_review` reason to that case. Each item's `staydown_matches` lists its
@@ -225,6 +229,33 @@ restriction. The API route contract is not a grant of jurisdiction approval: the
 must ship before any approval is recorded. After receipt, decision and redress calls use that
 receipt even if approval is withdrawn. See
 [Copyright EU, UK, and territorial request validation](../../reference-copyright-territorial-request-validation.md).
+
+### Trusted-flagger registry
+
+The staff API registry remains available while intake and `copyright.trustedFlaggerPriority` are
+off. Reads require copyright review staff; writes require a jurisdiction-policy administrator.
+The switch defaults to `false`, and priority additionally requires current EU policy approval.
+Matching at EU receipt is independent of the switch and creates no decision or restriction.
+
+- `GET /api/v1/copyright-trusted-flaggers` accepts bounded `after` and `limit` and returns
+  `{ copyright_trusted_flaggers, page_info }` with derived status;
+- `GET /api/v1/copyright-trusted-flaggers/:id` returns `{ copyright_trusted_flagger }`;
+- `POST /api/v1/copyright-trusted-flaggers` takes the closed account/designation fields: `name`,
+  `user_id`, `awarding_coordinator_name`, uppercase two-letter `awarding_member_state`, valid
+  `awarded_at` (`YYYY-MM-DD`), `area_of_expertise` (`intellectual_property` or `other`),
+  `area_description` (1–500 characters), and optional `award_reference`. It returns `201` with
+  `{ copyright_trusted_flagger }`; an unknown account answers `422`;
+- `POST /api/v1/copyright-trusted-flaggers/:id/status-changes` takes the closed `change_type`
+  (`suspended`, `reinstated`, `revoked`) and nonempty `reason`, returning `201` with
+  `{ copyright_trusted_flagger_change }`. Missing entries answer `404` and invalid transitions
+  answer `409`. Revocation is final.
+
+A new entry is active; its latest append-only change determines later status. No PATCH or DELETE
+is registered; either method on an entry answers `405` with `Allow: GET`. Guests cannot match.
+Only an eligible signed-in EU account matches, with intellectual-property entries preferred over
+other entries, then newest. Matching is recorded once at receipt; a later designation cannot
+retroactively match a notice. Only an in-area match boosts priority and supplies trusted-flagger
+reporting or statement-submission attribution. See the [registry runbook](../../../../runbooks/copyright-notices.md#trusted-flaggers).
 
 ### EU filing, complaints, and dispute settlement
 

@@ -23,7 +23,7 @@ export async function listCopyrightStaffQueuePage(
   const after = args.after
     ? decodeScopedTierPreciseUuidCursor(args.after, copyrightStaffQueueCursorScope, message)
     : undefined
-  assert(!after || [0, 1, 2].includes(after.tier), 400, message)
+  assert(!after || [0, 1, 2, 3, 4, 5].includes(after.tier), 400, message)
   const { cases, endCursor, hasNextPage } = await listCopyrightStaffQueue(currentUser, {
     limit: args.limit,
     after,

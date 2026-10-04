@@ -38,14 +38,17 @@ export async function readCopyrightAcceptedNoticeCursorBefore(noticeId: string):
  * Staff-queue `after` cursor whose first page starts at the first-queued of `noticeIds`. The queue
  * is global and the test database is shared and never cleaned, so a test that reads from the queue
  * head sees other tests' cases; seeking one microsecond before its own first queue key
- * `(urgency, waiting_since, id)` keeps every page on rows at or after it.
+ * `(tier, waiting_since, id)` keeps every page on rows at or after it.
  */
-export async function readCopyrightStaffQueueCursorBefore(noticeIds: string[]): Promise<string> {
-  const [first] = await readCopyrightStaffQueueCursorRows(noticeIds, 1)
+export async function readCopyrightStaffQueueCursorBefore(
+  noticeIds: string[],
+  { trustedFlaggerBoost = false }: { trustedFlaggerBoost?: boolean } = {},
+): Promise<string> {
+  const [first] = await readCopyrightStaffQueueCursorRows(noticeIds, 1, { trustedFlaggerBoost })
   if (!first) throw new Error('Copyright staff queue fixture has no queued notices')
   return encodeScopedTierPreciseUuidCursor(
     first.waiting_since_before,
-    first.urgency,
+    first.tier,
     first.id,
     copyrightStaffQueueCursorScope,
   )
@@ -55,17 +58,27 @@ export async function readCopyrightStaffQueueCursorBefore(noticeIds: string[]): 
 export async function readCopyrightStaffQueueCursorRows(
   noticeIds: string[],
   limit = noticeIds.length,
+  { trustedFlaggerBoost = false }: { trustedFlaggerBoost?: boolean } = {},
 ): Promise<
-  Array<{ id: string; urgency: number; waiting_since: string; waiting_since_before: string }>
+  Array<{
+    id: string
+    urgency: number
+    tier: number
+    waiting_since: string
+    waiting_since_before: string
+  }>
 > {
   const { rows } = await read<{
     id: string
     urgency: number
+    tier: number
     waiting_since: string
     waiting_since_before: string
   }>(
-    sql`/* readCopyrightStaffQueueCursorRows */`.append(copyrightStaffQueueKeysSql()).append(sql`
-      SELECT id, urgency,
+    sql`/* readCopyrightStaffQueueCursorRows */`.append(
+      copyrightStaffQueueKeysSql({ trustedFlaggerBoost }),
+    ).append(sql`
+      SELECT id, urgency, tier,
         to_char(waiting_since AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS waiting_since,
         to_char(
           (waiting_since - interval '1 microsecond') AT TIME ZONE 'UTC',
@@ -73,7 +86,7 @@ export async function readCopyrightStaffQueueCursorRows(
         ) AS waiting_since_before
       FROM queue_key
       WHERE id = ANY(${noticeIds}::uuid[])
-      ORDER BY urgency, queue_key.waiting_since, id
+      ORDER BY tier, queue_key.waiting_since, id
       LIMIT ${limit}`),
   )
   return rows

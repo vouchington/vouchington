@@ -85,6 +85,7 @@ describe('copyright dynamic-config namespace', () => {
       evidenceRetentionDeletion: false,
       evidenceRetentionDays: 0,
       staydownMatching: false,
+      trustedFlaggerPriority: false,
       automaticWithholdingMinTrustTier: -1,
       automaticWithholdingMinAccountAgeDays: -1,
       automaticWithholdingClaimantDailyCap: -1,

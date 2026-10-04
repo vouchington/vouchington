@@ -58,6 +58,8 @@ const routeClasses = {
     'POST:/api/v1/copyright-submissions/:id/appeal-reviews',
     'POST:/api/v1/copyright-submissions/:id/counter-notice-reviews',
     'POST:/api/v1/copyright-submissions/:id/legal-hold-assessments',
+    'POST:/api/v1/copyright-trusted-flaggers',
+    'POST:/api/v1/copyright-trusted-flaggers/:id/status-changes',
     'POST:/api/v1/copyright-uk-notices/:id/acknowledgment-failures',
     'POST:/api/v1/copyright-uk-notices/:id/redress-requests/:redressId/decisions',
     'POST:/api/v1/copyright-uk-notices/:id/reviews',

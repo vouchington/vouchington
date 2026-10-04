@@ -3,15 +3,18 @@ import { automatedAssessmentSql } from './automated-assessment-sql.mts'
 import { unassessedCourtFilingSql } from './unassessed-court-filing-sql.mts'
 import { pendingCopyrightEnforcementSql } from './enforcement-pending-sql.mts'
 import { territorialDecisionIsLiveSql } from './territorial-redress-sql.mts'
+import { inAreaTrustedFlaggerMatchSql } from './trusted-flagger-match.mts'
 
 /**
- * Opens a `queue_key` CTE with one row per actionable case: the case's urgency tier (0 missed
- * deadline, 1 deadline past escalation or unassessed court filing, 2 other work), the oldest open item's `waiting_since`,
+ * Opens a `queue_key` CTE with one row per actionable case: the urgency tier (0 missed deadline,
+ * 1 deadline past escalation or unassessed court filing, 2 other work), the optional trusted-flagger
+ * boost within that tier, the oldest open item's `waiting_since`,
  * and its distinct `reasons`. Callers append their own `SELECT ... FROM queue_key`.
  */
 export function copyrightStaffQueueKeysSql({
   paging = false,
-}: { paging?: boolean } = {}): SQLStatement {
+  trustedFlaggerBoost = false,
+}: { paging?: boolean; trustedFlaggerBoost?: boolean } = {}): SQLStatement {
   return sql`
     WITH open_item AS (
       SELECT intake.copyright_notice_id, 'form_intake_review'::text AS reason,
@@ -142,7 +145,7 @@ export function copyrightStaffQueueKeysSql({
       FROM copyright_notice_deadlines deadline
       WHERE deadline.resolved_at IS NULL AND deadline.cancelled_at IS NULL
         AND deadline.escalation_at <= CURRENT_TIMESTAMP
-    ), queue_key AS (
+    ), queue_key_base AS (
       SELECT open_item.copyright_notice_id AS id,
         CASE
           WHEN bool_or(open_item.reason = 'deadline_missed') THEN 0
@@ -157,4 +160,17 @@ export function copyrightStaffQueueKeysSql({
       GROUP BY open_item.copyright_notice_id
     )
   `)
+    .append(sql`
+      , queue_key AS (
+        SELECT queue_key_base.*,
+          queue_key_base.urgency * 2 + `)
+    .append(
+      trustedFlaggerBoost
+        ? sql`CASE WHEN `
+            .append(inAreaTrustedFlaggerMatchSql(sql``.append('queue_key_base.id')))
+            .append(sql` THEN 0 ELSE 1 END`)
+        : sql`1`,
+    ).append(sql` AS tier
+        FROM queue_key_base
+      )`)
 }
