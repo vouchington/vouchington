@@ -4,21 +4,20 @@ Application-level Valkey calls issued **per job** on the shared singleton
 clients. Excludes glide-mq stream ops (XADD/XREADGROUP/XACK on the worker's own
 connections). See `predecessor-issue#4717`.
 
-| Call site (service / file)                                                            | Client       | Operation          | Calls / job |
-| ------------------------------------------------------------------------------------- | ------------ | ------------------ | ----------- |
-| `services/crawls/domain-rate-limit` → `getDomainRateLimitRemainingMs`                 | rate-limiter | pttl               | 1           |
-| `services/web-risk/state` → `isLocallyRateLimited` (minute + month windows)           | rate-limiter | invokeScript (Lua) | 1           |
-| `services/urls-domains-blacklist/bloom-filter` → `checkBloomFilter` / `existsIfReady` | cache        | invokeScript (Lua) | 1           |
-| `services/urls-domains-robots` → `fetchRobotsTxtCached`                               | cache        | get                | 1           |
+| Call site (service / file)                                                             | Client       | Operation            | Calls / job |
+| -------------------------------------------------------------------------------------- | ------------ | -------------------- | ----------- |
+| `loadCrawlPreflight` → `getDomainRateLimitRemainingMs`                                 | rate-limiter | pttl                 | 1           |
+| `assertUrlAllowedByWebRisk` → `isUrlBlocked` → `checkBloomFilters` (hostname suffixes) | bloom        | mexistsIfReady (Lua) | 1           |
+| `isUrlCrawlable` → `fetchRobotsTxtCached`                                              | cache        | get                  | 1           |
 
-**Total per job:** ~4 fixed ops (2 rate-limiter + 2 cache)
+**Total per job:** 1 rate-limiter `pttl` + 1 bloom `mexistsIfReady` + 1 cache `get` when Web Risk is off and robots.txt is cached.
 
 ## Notes
 
-- All 4 ops fire on the `crawl_url` job path via `crawlUrl` → `loadCrawlPreflight`.
-- `getDomainRateLimitRemainingMs` issues a `pttl` on rate-limiter. If the domain is currently rate-limited the job throws `CrawlerRateLimitError` before the web-risk calls.
-- `assertUrlAllowedByWebRisk` → `isLocallyRateLimited` issues 1 `invokeScript` op that checks both minute and month Web Risk windows. If web-risk is disabled via env or the URL passes bloom/clean-verdict checks early, later ops are skipped.
-- **Conditional:** When web-risk is enabled and no cached clean verdict exists, `assertUrlAllowedByWebRisk` additionally reads the clean-verdict key, checks the provider cooldown key, and writes the clean-verdict key after a clean response — up to 3 more `rateLimiterValkeyClient` ops (`get`/`pttl`/`set` variants), bringing the rate-limiter total to up to 5 ops for uncached URLs.
-- `checkBloomFilter` (`existsIfReady`) on the URL blocklist bloom filter lands on cache client. On a cache miss in `fetchRobotsTxtCached` a `set` is also issued, adding 1 more cache op.
-- On rate-limit errors from the crawled site, `setDomainRateLimitedBackground` fires `invokeScript(setDomainRateLimitScript)` on rate-limiter as a background fire-and-forget — not counted above since it is not on the hot path of every job.
-- **Conditional:** Jobs with HTTP redirects or distinct canonical URLs call `addUrl()` → `assertUrlAllowedByWebRisk()` (1 more rate-limiter op) + `invalidate.urls(urlId)` (1 cache op) for each redirect/canonical URL processed. Redirect-heavy crawl jobs can exceed ~4 fixed ops significantly.
+- Those three calls run on every `crawl_url` job through `crawlUrl` → `loadCrawlPreflight`, unless an earlier check returns.
+- `getDomainRateLimitRemainingMs` issues a `pttl` on `rateLimiterValkeyClient`. A positive TTL throws `CrawlerRateLimitError` before the blocklist and robots calls. That preflight throw does not write a new lock.
+- `assertUrlAllowedByWebRisk` always calls `isUrlBlocked` before the Web Risk feature check. `isUrlBlocked` sends every hostname suffix in one `mexistsIfReady` on `bloomValkeyClient`. Every suffix absent skips the blocklist table and reads only the local hostname policy. A missing filter or any possible hit falls through to PostgreSQL.
+- Web Risk provider checks run only when `web-risk-config.enabled` is set and an API key is present. The enabled flag is an in-memory dynamic-config read, not another per-job command. A warm clean-verdict `get` returns immediately. A cold verdict can add a cooldown `pttl`, one combined minute+month `invokeScript`, and a clean-verdict `set` on `rateLimiterValkeyClient`.
+- Robots.txt is one cache `get` on a hit. A miss calls `checkDomainBlacklisted` → `checkBloomFilter` (one `existsIfReady` on `bloomValkeyClient`), then `set`s the fetched body (1 more cache op). `ignore_robots_txt` skips `isUrlCrawlable`, so that job has no robots cache read.
+- A crawled-site HTTP 429 awaits `setDomainRateLimited` (`invokeScript` of `set-domain-rate-limit.lua` on `rateLimiterValkeyClient`) inside `recordCrawlError`. That write is not on the success path. When the processor re-enqueues, `computeRateLimitForHostname` reads robots.txt from cache again.
+- Redirects and distinct canonical URLs call `addUrl()` → `assertUrlAllowedByWebRisk()` (another bloom `mexistsIfReady`, plus the conditional Web Risk ops above) and `invalidate.urls` (one cache deletion script for a single changed URL). The redirect hop then repeats preflight.
