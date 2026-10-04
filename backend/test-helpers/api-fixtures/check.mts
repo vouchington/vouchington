@@ -8,6 +8,8 @@ import { getBackendProgramBuildCount, loadBackendProgram } from './backend-progr
 import {
   loadBackendQueryContracts,
   loadBackendResponseContracts,
+  loadBackendRequestContracts,
+  loadBackendHeaderContracts,
   loadRegisteredRouteCatalog,
 } from './backend-contract-catalog.mts'
 import { buildOpenApiDocument } from './openapi/build-openapi-document.mts'
@@ -25,9 +27,22 @@ assertBackendRowContracts(loaded.program)
 reportPhase('PostgreSQL row contracts verified')
 const builds = getBackendProgramBuildCount()
 
-await writeApiFixtures({ check: true })
+// Fixture validation and OpenAPI share one full discovery rather than extracting responses twice.
+const discoveryOptions = { onRouteError: () => {} }
+const responses = loadBackendResponseContracts(undefined, discoveryOptions)
+const knownResponseRoutes = new Set(Object.keys(responses))
+await writeApiFixtures({ check: true, responseContracts: responses })
 reportPhase('Response fixtures verified')
-const document = buildOpenApiDocument()
+const queries = loadBackendQueryContracts(knownResponseRoutes)
+const document = buildOpenApiDocument(
+  responses,
+  loadBackendRequestContracts(undefined, discoveryOptions),
+  queries,
+  {
+    headerContracts: loadBackendHeaderContracts(knownResponseRoutes),
+    registeredRoutes: loadRegisteredRouteCatalog(),
+  },
+)
 assert.deepEqual(document['x-unavailable-routes'], [])
 assert.deepEqual(document['x-unavailable-request-routes'], [])
 reportPhase('OpenAPI contracts extracted')
@@ -40,8 +55,6 @@ const generated = Object.entries(document.paths).flatMap(([route, item]) =>
 )
 assert.deepEqual([...new Set(generated)].toSorted(), [...new Set(registered)].toSorted())
 
-const responses = loadBackendResponseContracts(undefined, { onRouteError: () => {} })
-const queries = loadBackendQueryContracts(new Set(Object.keys(responses)))
 assert.deepEqual(queries['GET:/api/v1/topics/:id/prioritized-referral-links']?.parameters.all, {
   kind: 'boolean',
 })
