@@ -5,6 +5,7 @@ import {
   readCopyrightRetentionMarker,
   readCopyrightRetentionSkeleton,
 } from '@voucha/test-helpers/data-stores/psql/copyright-retention'
+import { createRetentionAdministratorLiftCase } from '@voucha/test-helpers/copyright-retention-administrator-lift'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { createRetentionEmailCase } from '@voucha/test-helpers/services/copyright-notices/retention-email-case'
 import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
@@ -31,10 +32,12 @@ describe('copyright evidence retention sweep', () => {
     await configure({ evidenceRetentionDeletion: true, evidenceRetentionDays: 30 })
     const cases = await Promise.all([createRetentionEmailCase(), createRetentionFormCase()])
     const noticeIds = cases.map(entry => entry.noticeId)
+    const administratorLift = await createRetentionAdministratorLiftCase()
+    const coverageNoticeIds = [...noticeIds, administratorLift.noticeId]
     for (const key of cases.flatMap(entry => entry.evidenceKeys)) {
       bucket.put(key, { versions: 3, deleteMarker: true })
     }
-    const columns = await Promise.all(noticeIds.map(readCopyrightRetentionColumns))
+    const columns = await Promise.all(coverageNoticeIds.map(readCopyrightRetentionColumns))
     const skeletons = await Promise.all(noticeIds.map(readCopyrightRetentionSkeleton))
     const incidents = await Promise.all(
       cases.map(entry => getCopyrightRepeatInfringerAccount(entry.posterId)),
@@ -45,9 +48,12 @@ describe('copyright evidence retention sweep', () => {
       formCase!.noticeId,
     ])
 
-    const result = await sweepCopyrightEvidenceRetention({ now: afterRetention(), noticeIds })
+    const result = await sweepCopyrightEvidenceRetention({
+      now: afterRetention(),
+      noticeIds: coverageNoticeIds,
+    })
 
-    expect(result).toEqual({ erased: 2, ineligible: 0, failed: [] })
+    expect(result).toEqual({ erased: 3, ineligible: 0, failed: [] })
     await expect(readCopyrightStaffQueueCursorRows(noticeIds)).resolves.toEqual([])
     for (const [index, entry] of cases.entries()) {
       for (const key of entry.evidenceKeys) expect(bucket.countVersions(key)).toBe(0)
@@ -62,9 +68,9 @@ describe('copyright evidence retention sweep', () => {
         erased_object_count: entry.evidenceKeys.length,
       })
     }
-    // Every table the sweep covers held a row in one of the two fixtures, and each erasable
+    // Every table the sweep covers held a row in one of the fixtures, and each erasable
     // column of each row now differs from what it held, or is still null where it was null.
-    const after = await Promise.all(noticeIds.map(readCopyrightRetentionColumns))
+    const after = await Promise.all(coverageNoticeIds.map(readCopyrightRetentionColumns))
     expect(findCopyrightRetentionGaps(columns, after)).toEqual({
       uncovered: [],
       missing: [],

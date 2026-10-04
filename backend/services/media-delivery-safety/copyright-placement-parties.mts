@@ -4,7 +4,7 @@ import { DELETED_USER_ID } from '@voucha/types/entities/user-constants'
 
 export type CopyrightPlacementPartyPurpose = 'notify' | 'respond' | 'inform' | 'strike' | 'retain'
 
-/** Reads the authoritative parties for one target and purpose. */
+/** @public Integration seam: checks every purpose against the same production party query. */
 export async function selectCopyrightPlacementPartyUserIds(
   targetId: string,
   purpose: CopyrightPlacementPartyPurpose,

@@ -34419,6 +34419,62 @@
                             },
                             "placement_revision": {
                               "type": "number"
+                            },
+                            "provenance": {
+                              "anyOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "set_by_administrator": {
+                                      "anyOf": [
+                                        {
+                                          "const": false
+                                        },
+                                        {
+                                          "const": true
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "set_by_id": {
+                                      "type": "string"
+                                    },
+                                    "uploaded_by_id": {
+                                      "anyOf": [
+                                        {
+                                          "type": "null"
+                                        },
+                                        {
+                                          "type": "string"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "set_by_administrator",
+                                    "set_by_id",
+                                    "uploaded_by_id"
+                                  ],
+                                  "type": "object"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "surface": {
+                              "enum": [
+                                "community-banner-image",
+                                "community-profile-image",
+                                "post-image",
+                                "topic-hero-image",
+                                "topic-logo-image",
+                                "user-profile-image",
+                                "user-profile-link-image"
+                              ],
+                              "type": "string"
                             }
                           },
                           "required": [
@@ -34426,7 +34482,9 @@
                             "id",
                             "image_id",
                             "placement_key",
-                            "placement_revision"
+                            "placement_revision",
+                            "provenance",
+                            "surface"
                           ],
                           "type": "object"
                         },
@@ -34618,9 +34676,21 @@
                           "restriction_status": {
                             "enum": ["active", "lifted", "pending"],
                             "type": "string"
+                          },
+                          "surface": {
+                            "enum": [
+                              "community-banner-image",
+                              "community-profile-image",
+                              "post-image",
+                              "topic-hero-image",
+                              "topic-logo-image",
+                              "user-profile-image",
+                              "user-profile-link-image"
+                            ],
+                            "type": "string"
                           }
                         },
-                        "required": ["hosted_use_url", "id", "restriction_status"],
+                        "required": ["hosted_use_url", "id", "restriction_status", "surface"],
                         "type": "object"
                       },
                       "type": "array"

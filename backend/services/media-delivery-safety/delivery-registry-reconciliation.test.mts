@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { stageCurrentImagePlacementDeliveryRecordsForImageIds } from './delivery-registry-reconciliation.mts'
 import {
   createTestUserDirect,
   getTestImageSurfacePlacements,
@@ -14,7 +15,6 @@ import {
   getImagePlacementDeliveryKey,
   getMediaDeliveryRegistryScanBefore,
   stageAllCurrentImagePlacementDeliveryRecords,
-  stageCurrentImagePlacementDeliveryRecordsForImageIds,
   stageImagePlacementDeliveryRecord,
   listRecoverableMediaDeliveryRegistryKeys,
   replayFailedMediaDeliveryRegistryRecords,

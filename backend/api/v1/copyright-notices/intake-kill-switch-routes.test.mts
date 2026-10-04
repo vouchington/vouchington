@@ -46,6 +46,7 @@ const routeClasses = {
     'POST:/api/v1/copyright-notices/:id/guest-capabilities',
     'POST:/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/information-requests',
     'POST:/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/revocation',
+    'POST:/api/v1/copyright-notices/:id/restrictions/:restrictionId/lifts',
     'POST:/api/v1/copyright-notices/:id/restrictions/:restrictionId/reviews',
     'POST:/api/v1/copyright-notices/:id/staydown-matches/:matchId/reviews',
     'POST:/api/v1/copyright-repeat-infringer-accounts/:accountUserId/reinstatements',

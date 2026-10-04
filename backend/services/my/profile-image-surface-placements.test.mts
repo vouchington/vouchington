@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
+import { stageCurrentImagePlacementDeliveryRecordsForImageIds } from '@services/media-delivery-safety/delivery-registry-reconciliation'
 import { createProfileLink, deleteProfileLink } from './profile-links.mts'
 import { updateProfileImageId } from './identity.mts'
 import {
   getImagePlacementDeliveryKey,
   stageImagePlacementDeliveryRecord,
-  stageCurrentImagePlacementDeliveryRecordsForImageIds,
 } from '@services/media-delivery-safety'
 import {
   createTestUserDirect,

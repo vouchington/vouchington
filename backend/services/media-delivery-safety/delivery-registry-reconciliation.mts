@@ -44,6 +44,7 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
   return rows.length
 }
 
+/** @public Scoped reconciliation seam exercised against real PostgreSQL delivery records. */
 export async function stageCurrentImagePlacementDeliveryRecordsForImageIds(
   imageIds: readonly string[],
 ): Promise<number> {
