@@ -95,6 +95,7 @@ export async function createCommunity(
       await syncImageSurfacePlacement(
         { surfaceKind: 'community-profile-image', communityId: newCommunity.id },
         input.profile_image_id,
+        currentUserId,
         query,
       )
     }
@@ -102,6 +103,7 @@ export async function createCommunity(
       await syncImageSurfacePlacement(
         { surfaceKind: 'community-banner-image', communityId: newCommunity.id },
         input.banner_image_id,
+        currentUserId,
         query,
       )
     }

@@ -34,6 +34,7 @@ export async function createMultiOwnerStatementFixture() {
         imageId,
         placementId,
         placementRevision: 1,
+        bindingFamily: 'post' as const,
         hostedUseUrl: `https://voucha.ai/posts/${postId}`,
       }
     }),

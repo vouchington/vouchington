@@ -15,7 +15,10 @@ import { CopyrightEmailApprovalTargetFields } from './copyright-email-approval-t
 import { CopyrightEmailReview } from './copyright-email-review'
 
 vi.mock(import('@/lib/api/client/copyright-email-intakes'), () => intakesClient)
-vi.mock(import('@/lib/api/client/copyright-notice-targets'), () => targetsClient)
+vi.mock(import('@/lib/api/client/copyright-notice-targets'), async importOriginal => ({
+  ...(await importOriginal()),
+  ...targetsClient,
+}))
 
 const mockResolveTargets = targetsClient.resolveCopyrightNoticeTargets
 const mockGet = intakesClient.getCopyrightEmailIntake
@@ -124,6 +127,7 @@ function draft(overrides: Partial<CopyrightEmailApprovalDraft> = {}): CopyrightE
       {
         id: 'target-1',
         group_id: 'group-1',
+        surface: 'post-image',
         post_id: '',
         image_id: '',
         target_url: 'https://voucha.ai/discussion/example',
@@ -145,6 +149,7 @@ function failedTarget(groupId: string) {
 
 function resolvedTarget(index: number): CopyrightNoticeResolvedTarget {
   return {
+    surface: 'post-image',
     post_id: '019f0000-0000-7000-8000-000000000003',
     image_id: `019f0000-0000-7000-8000-${String(index).padStart(12, '0')}`,
     target_url: 'https://voucha.ai/discussion/example',
@@ -161,6 +166,7 @@ function fullTargetRows() {
       ...target,
       id: `manual-${index}`,
       group_id: `manual-group-${index}`,
+      surface: 'post-image' as const,
       post_id: `post-${index}`,
       image_id: `image-${index}`,
       target_url: `https://voucha.ai/discussion/manual-${index}`,

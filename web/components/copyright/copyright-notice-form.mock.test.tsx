@@ -37,7 +37,8 @@ vi.mock(import('@/lib/api/client/copyright-notices'), () => ({
   createCopyrightNotice: vi.fn<typeof createCopyrightNotice>(),
 }))
 
-vi.mock(import('@/lib/api/client/copyright-notice-targets'), () => ({
+vi.mock(import('@/lib/api/client/copyright-notice-targets'), async importOriginal => ({
+  ...(await importOriginal()),
   resolveCopyrightNoticeTargets: vi.fn<typeof resolveCopyrightNoticeTargets>(),
 }))
 
@@ -82,6 +83,7 @@ describe('CopyrightNoticeForm', () => {
   it('resolves a hosted-use URL and submits only selected images without exposing raw IDs', async () => {
     mockResolveTargets.mockResolvedValue([
       {
+        surface: 'post-image',
         post_id: '019f0000-0000-7000-8000-000000000001',
         image_id: '019f0000-0000-7000-8000-000000000002',
         target_url: 'https://voucha.ai/discussion/hosted-material',
@@ -89,6 +91,7 @@ describe('CopyrightNoticeForm', () => {
         caption: 'Claimed image',
       },
       {
+        surface: 'post-image',
         post_id: '019f0000-0000-7000-8000-000000000001',
         image_id: '019f0000-0000-7000-8000-000000000003',
         target_url: 'https://voucha.ai/discussion/hosted-material',
@@ -140,6 +143,7 @@ describe('CopyrightNoticeForm', () => {
         accuracy_authority_under_penalty_of_perjury: true,
         targets: [
           {
+            surface: 'post-image',
             post_id: '019f0000-0000-7000-8000-000000000001',
             image_id: '019f0000-0000-7000-8000-000000000003',
             target_url: 'https://voucha.ai/discussion/hosted-material',
@@ -155,6 +159,7 @@ describe('CopyrightNoticeForm', () => {
   it('resets captcha after a failed notice submission', async () => {
     mockResolveTargets.mockResolvedValue([
       {
+        surface: 'post-image',
         post_id: '019f0000-0000-7000-8000-000000000001',
         image_id: '019f0000-0000-7000-8000-000000000002',
         target_url: 'https://voucha.ai/discussion/hosted-material',

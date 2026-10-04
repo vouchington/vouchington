@@ -58,6 +58,8 @@ describe('CopyrightStaffQueue', () => {
                     placement_key: 'image-placement:placement-123',
                     placement_revision: 1,
                     image_id: 'image-123',
+                    surface: 'post-image',
+                    provenance: null,
                     hosted_use_url: 'https://voucha.ai/posts/post-123',
                   },
                   {
@@ -65,6 +67,8 @@ describe('CopyrightStaffQueue', () => {
                     placement_key: 'image-placement:placement-456',
                     placement_revision: 1,
                     image_id: 'image-456',
+                    surface: 'post-image',
+                    provenance: null,
                     hosted_use_url: 'https://voucha.ai/posts/post-456',
                   },
                 ],

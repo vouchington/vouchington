@@ -11,6 +11,9 @@ export type LockedCopyrightActionDelivery = {
   human_reviewed_at: Date | null
   human_review_action: 'confirm' | 'reverse' | null
   reversal_authorized: boolean
+  reversal_by_review: boolean
+  reversal_by_appeal: boolean
+  reversal_by_administrator_lift: boolean
   hold_resolution_authorized: boolean
   earliest_restoration_at: Date | null
   resolved_at: Date | null

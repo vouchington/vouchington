@@ -13,6 +13,7 @@ import {
 import { enableAutomaticProvisionalWithholdingForTest } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { createRetentionEmailCase } from '@voucha/test-helpers/services/copyright-notices/retention-email-case'
 import { createRetentionFormCase } from '@voucha/test-helpers/services/copyright-notices/retention-form-case'
+import { createRetentionAdministratorLiftCase } from '@voucha/test-helpers/services/copyright-notices/retention-administrator-lift'
 import { COPYRIGHT_RETENTION_ERASURE } from './retention-erasure-spec.mts'
 
 /** SQLSTATE check_violation, which every legal-record guard raises. */
@@ -38,7 +39,11 @@ type Target = { spec: (typeof COPYRIGHT_RETENTION_ERASURE)[number]; noticeId: st
 
 /** For each covered table, a notice with a row holding something the overwrite would change. */
 async function createTargets(): Promise<Target[]> {
-  const cases = await Promise.all([createRetentionEmailCase(), createRetentionFormCase()])
+  const cases = await Promise.all([
+    createRetentionEmailCase(),
+    createRetentionFormCase(),
+    createRetentionAdministratorLiftCase(),
+  ])
   const rows = await Promise.all(cases.map(entry => readCopyrightRetentionColumns(entry.noticeId)))
   const targets: Target[] = []
   const uncovered: string[] = []

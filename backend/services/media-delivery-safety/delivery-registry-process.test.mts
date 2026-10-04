@@ -208,6 +208,7 @@ describe('media delivery registry processor', () => {
     await syncImageSurfacePlacement(
       { surfaceKind: 'user-profile-image', userId: user.id },
       null,
+      null,
       transaction,
     )
     await transaction.commit()

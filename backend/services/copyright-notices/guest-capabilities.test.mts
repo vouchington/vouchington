@@ -59,6 +59,7 @@ async function openNotice() {
         placementId: placement.placement_id,
         placementRevision: placement.placement_revision,
         imageId,
+        bindingFamily: 'post',
         hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
       },
     ],

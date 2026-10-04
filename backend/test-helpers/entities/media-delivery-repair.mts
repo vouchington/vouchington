@@ -48,7 +48,12 @@ export async function setTestDeliveryUserImageInTransaction(
   userId: string,
   imageId: string,
 ): Promise<void> {
-  await syncImageSurfacePlacement({ surfaceKind: 'user-profile-image', userId }, imageId, query)
+  await syncImageSurfacePlacement(
+    { surfaceKind: 'user-profile-image', userId },
+    imageId,
+    userId,
+    query,
+  )
   await query(sql`UPDATE users SET profile_image_id = ${imageId} WHERE id = ${userId}`)
 }
 

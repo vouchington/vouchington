@@ -66,6 +66,7 @@ export async function createProfileLink(
   await syncImageSurfacePlacement(
     { surfaceKind: 'user-profile-link-image', userProfileLinkId: row.id },
     input.image_id ?? null,
+    input.image_id ? userId : null,
     transaction,
   )
   if (input.image_id) {
@@ -119,6 +120,7 @@ export async function updateProfileLink(
     await syncImageSurfacePlacement(
       { surfaceKind: 'user-profile-link-image', userProfileLinkId: linkId },
       desiredImageId ?? null,
+      desiredImageId ? userId : null,
       transaction,
     )
   const { rows } = await transaction(sql`/* updateProfileLink */
@@ -159,6 +161,7 @@ export async function deleteProfileLink(userId: string, linkId: string): Promise
     () =>
       syncImageSurfacePlacement(
         { surfaceKind: 'user-profile-link-image', userProfileLinkId: linkId },
+        null,
         null,
         transaction,
       ),

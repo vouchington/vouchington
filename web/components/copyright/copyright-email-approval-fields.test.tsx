@@ -17,6 +17,7 @@ function draft(overrides: Partial<CopyrightEmailApprovalDraft> = {}): CopyrightE
       {
         id: 'target-1',
         group_id: 'group-1',
+        surface: 'post-image',
         post_id: '',
         image_id: '',
         target_url: '',
@@ -25,6 +26,7 @@ function draft(overrides: Partial<CopyrightEmailApprovalDraft> = {}): CopyrightE
       {
         id: 'target-2',
         group_id: 'group-2',
+        surface: 'post-image',
         post_id: '',
         image_id: '',
         target_url: '',

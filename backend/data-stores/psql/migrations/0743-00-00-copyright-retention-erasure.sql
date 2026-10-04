@@ -37,6 +37,7 @@ RETURNS text[] LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$
     WHEN 'copyright_notice_email_correspondence_reviews' THEN ARRAY['rationale_ciphertext', 'manual_fallback_reason_ciphertext']
     WHEN 'copyright_notice_appeal_recommendations' THEN ARRAY['rationale_ciphertext']
     WHEN 'copyright_notice_appeal_reviews' THEN ARRAY['rationale_ciphertext', 'manual_fallback_reason_ciphertext']
+    WHEN 'copyright_restriction_administrator_lifts' THEN ARRAY['rationale_ciphertext']
     WHEN 'copyright_notice_counter_notice_reviews' THEN ARRAY['rationale_ciphertext']
     WHEN 'copyright_notice_legal_hold_assessments' THEN ARRAY['rationale_ciphertext']
     WHEN 'copyright_notice_legal_hold_resolutions' THEN ARRAY['rationale_ciphertext']

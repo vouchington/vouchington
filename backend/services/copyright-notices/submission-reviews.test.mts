@@ -59,6 +59,7 @@ async function createRestrictedFixture(targetCount = 1, detachBeforeScreening = 
       accuracyAuthorityUnderPenaltyOfPerjury: true,
       electronicSignature: 'Claimant',
       claimantTargets: imageIds.map(imageId => ({
+        surfaceKind: 'post-image' as const,
         postId,
         imageId,
         hostedUseUrl: `https://voucha.ai/posts/${postId}`,

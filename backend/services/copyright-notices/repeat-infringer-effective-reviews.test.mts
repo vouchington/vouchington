@@ -207,6 +207,7 @@ async function createTestRepeatInfringerNotice(ownerIds: string[], moderator: Pr
         placementId: placement.placement_id,
         placementRevision: placement.placement_revision,
         imageId,
+        bindingFamily: 'post' as const,
         hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
       }
     }),

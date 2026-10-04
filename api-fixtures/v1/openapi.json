@@ -3860,22 +3860,155 @@
         "type": "object"
       },
       "CopyrightNoticeTargetRequest": {
-        "additionalProperties": false,
-        "properties": {
-          "image_id": {
-            "format": "uuid",
-            "type": "string"
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "community_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "image_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "surface": {
+                "const": "community-banner-image"
+              },
+              "target_url": {
+                "type": "string"
+              }
+            },
+            "required": ["community_id", "image_id", "surface", "target_url"],
+            "type": "object"
           },
-          "post_id": {
-            "format": "uuid",
-            "type": "string"
+          {
+            "additionalProperties": false,
+            "properties": {
+              "community_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "image_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "surface": {
+                "const": "community-profile-image"
+              },
+              "target_url": {
+                "type": "string"
+              }
+            },
+            "required": ["community_id", "image_id", "surface", "target_url"],
+            "type": "object"
           },
-          "target_url": {
-            "type": "string"
+          {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "post_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "surface": {
+                "const": "post-image"
+              },
+              "target_url": {
+                "type": "string"
+              }
+            },
+            "required": ["image_id", "post_id", "surface", "target_url"],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "surface": {
+                "const": "topic-hero-image"
+              },
+              "target_url": {
+                "type": "string"
+              },
+              "topic_id": {
+                "format": "uuid",
+                "type": "string"
+              }
+            },
+            "required": ["image_id", "surface", "target_url", "topic_id"],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "surface": {
+                "const": "topic-logo-image"
+              },
+              "target_url": {
+                "type": "string"
+              },
+              "topic_id": {
+                "format": "uuid",
+                "type": "string"
+              }
+            },
+            "required": ["image_id", "surface", "target_url", "topic_id"],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "surface": {
+                "const": "user-profile-image"
+              },
+              "target_url": {
+                "type": "string"
+              },
+              "user_id": {
+                "format": "uuid",
+                "type": "string"
+              }
+            },
+            "required": ["image_id", "surface", "target_url", "user_id"],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "surface": {
+                "const": "user-profile-link-image"
+              },
+              "target_url": {
+                "type": "string"
+              },
+              "user_profile_link_id": {
+                "format": "uuid",
+                "type": "string"
+              }
+            },
+            "required": ["image_id", "surface", "target_url", "user_profile_link_id"],
+            "type": "object"
           }
-        },
-        "required": ["image_id", "post_id", "target_url"],
-        "type": "object"
+        ]
       },
       "CopyrightParticipantStatement": {
         "additionalProperties": false,
@@ -4043,6 +4176,16 @@
       "CopyrightRepeatInfringerReviewDecision": {
         "enum": ["no_action", "restrict", "terminate", "warning"],
         "type": "string"
+      },
+      "CopyrightRestrictionLiftRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "rationale": {
+            "type": "string"
+          }
+        },
+        "required": ["rationale"],
+        "type": "object"
       },
       "CopyrightRestrictionRecord": {
         "additionalProperties": false,
@@ -45554,6 +45697,62 @@
                                 },
                                 "placement_revision": {
                                   "type": "number"
+                                },
+                                "provenance": {
+                                  "anyOf": [
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "set_by_administrator": {
+                                          "anyOf": [
+                                            {
+                                              "const": false
+                                            },
+                                            {
+                                              "const": true
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "set_by_id": {
+                                          "type": "string"
+                                        },
+                                        "uploaded_by_id": {
+                                          "anyOf": [
+                                            {
+                                              "type": "null"
+                                            },
+                                            {
+                                              "type": "string"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "set_by_administrator",
+                                        "set_by_id",
+                                        "uploaded_by_id"
+                                      ],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "surface": {
+                                  "enum": [
+                                    "community-banner-image",
+                                    "community-profile-image",
+                                    "post-image",
+                                    "topic-hero-image",
+                                    "topic-logo-image",
+                                    "user-profile-image",
+                                    "user-profile-link-image"
+                                  ],
+                                  "type": "string"
                                 }
                               },
                               "required": [
@@ -45561,7 +45760,9 @@
                                 "id",
                                 "image_id",
                                 "placement_key",
-                                "placement_revision"
+                                "placement_revision",
+                                "provenance",
+                                "surface"
                               ],
                               "type": "object"
                             },
@@ -45731,9 +45932,21 @@
                               "restriction_status": {
                                 "enum": ["active", "lifted", "pending"],
                                 "type": "string"
+                              },
+                              "surface": {
+                                "enum": [
+                                  "community-banner-image",
+                                  "community-profile-image",
+                                  "post-image",
+                                  "topic-hero-image",
+                                  "topic-logo-image",
+                                  "user-profile-image",
+                                  "user-profile-link-image"
+                                ],
+                                "type": "string"
                               }
                             },
-                            "required": ["hosted_use_url", "id", "restriction_status"],
+                            "required": ["hosted_use_url", "id", "restriction_status", "surface"],
                             "type": "object"
                           },
                           "type": "array"
@@ -46517,9 +46730,21 @@
                               "restriction_status": {
                                 "enum": ["active", "lifted", "pending"],
                                 "type": "string"
+                              },
+                              "surface": {
+                                "enum": [
+                                  "community-banner-image",
+                                  "community-profile-image",
+                                  "post-image",
+                                  "topic-hero-image",
+                                  "topic-logo-image",
+                                  "user-profile-image",
+                                  "user-profile-link-image"
+                                ],
+                                "type": "string"
                               }
                             },
-                            "required": ["hosted_use_url", "id", "restriction_status"],
+                            "required": ["hosted_use_url", "id", "restriction_status", "surface"],
                             "type": "object"
                           },
                           "type": "array"
@@ -46612,6 +46837,67 @@
               }
             },
             "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-notices/{id}/restrictions/{restrictionId}/lifts": {
+      "post": {
+        "operationId": "post_api_v1_copyright-notices_id_restrictions_restrictionId_lifts",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "restrictionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyrightRestrictionLiftRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_restriction_lift": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["copyright_restriction_lift"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
           },
           "default": {
             "$ref": "#/components/responses/Error"

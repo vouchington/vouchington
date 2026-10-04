@@ -11,6 +11,7 @@ import {
 } from './copyright-designated-agent-hint'
 import {
   resolveCopyrightNoticeTargets,
+  copyrightNoticeTargetKey,
   type CopyrightNoticeResolvedTarget,
 } from '@/lib/api/client/copyright-notice-targets'
 import onError from '@/lib/on-error'
@@ -69,7 +70,9 @@ export function CopyrightNoticeTargetPicker({
     onChange(
       checked
         ? [...targets, target]
-        : targets.filter(selected => selected.image_id !== target.image_id),
+        : targets.filter(
+            selected => copyrightNoticeTargetKey(selected) !== copyrightNoticeTargetKey(target),
+          ),
     )
   }
 
@@ -77,7 +80,8 @@ export function CopyrightNoticeTargetPicker({
     <fieldset className='space-y-3 rounded border p-3'>
       <legend className='px-1 text-sm font-medium'>Hosted material</legend>
       <p className='text-sm text-muted-foreground'>
-        Paste the URL of the Voucha post, then select each image that uses your work.
+        Paste the URL of a Voucha post, profile, topic or community, then select each image that
+        uses your work.
       </p>
       <div className='flex gap-2'>
         <div className='flex-1'>
@@ -103,20 +107,21 @@ export function CopyrightNoticeTargetPicker({
       {resolvedTargets.length > 0 && (
         <div className='space-y-2'>
           {resolvedTargets.map((target, index) => {
-            const id = `copyright-notice-target-${target.image_id}`
+            const key = copyrightNoticeTargetKey(target)
+            const id = `copyright-notice-target-${index}`
             const label = target.caption.trim() || `Image ${target.order_index + 1}`
             return (
               <Label
                 aria-label={`Hosted image ${index + 1}: ${label}`}
                 className='flex items-center gap-2 text-sm'
                 htmlFor={id}
-                key={target.image_id}
+                key={key}
               >
                 <Checkbox
                   id={id}
-                  checked={targets.some(selected => selected.image_id === target.image_id)}
+                  checked={targets.some(selected => copyrightNoticeTargetKey(selected) === key)}
                   disabled={
-                    !targets.some(selected => selected.image_id === target.image_id) &&
+                    !targets.some(selected => copyrightNoticeTargetKey(selected) === key) &&
                     targets.length >= MAX_NOTICE_TARGETS
                   }
                   onCheckedChange={checked => toggle(target, checked === true)}

@@ -55,7 +55,14 @@ describe('email appeal review', () => {
         goodFaithBelief: true,
         accuracyAuthorityUnderPenaltyOfPerjury: true,
         electronicSignature: 'Claimant',
-        claimantTargets: [{ postId, imageId, hostedUseUrl: `https://voucha.ai/posts/${postId}` }],
+        claimantTargets: [
+          {
+            surfaceKind: 'post-image' as const,
+            postId,
+            imageId,
+            hostedUseUrl: `https://voucha.ai/posts/${postId}`,
+          },
+        ],
       },
     })
     await appendCopyrightFormScreening({

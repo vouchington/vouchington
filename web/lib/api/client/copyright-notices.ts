@@ -10,11 +10,8 @@ import type {
   CopyrightStaffQueuePage,
 } from '@/types/copyright-notices'
 
-export type CopyrightNoticeTargetInput = {
-  post_id: string
-  image_id: string
-  target_url: string
-}
+import type { CopyrightNoticeTargetInput } from './copyright-notice-input'
+export type { CopyrightNoticeTargetInput } from './copyright-notice-input'
 
 export function createCopyrightNotice(input: {
   claimant_display_name: string

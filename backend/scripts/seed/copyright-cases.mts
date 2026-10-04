@@ -99,7 +99,12 @@ async function seedCopyrightFormCase(
       accuracyAuthorityUnderPenaltyOfPerjury: true,
       electronicSignature: seed.claimantDisplayName,
       claimantTargets: [
-        { postId: media.postId, imageId: media.imageId, hostedUseUrl: media.hostedUseUrl },
+        {
+          surfaceKind: 'post-image',
+          postId: media.postId,
+          imageId: media.imageId,
+          hostedUseUrl: media.hostedUseUrl,
+        },
       ],
     },
   })

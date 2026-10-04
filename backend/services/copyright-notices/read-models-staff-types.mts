@@ -17,6 +17,19 @@ export type CopyrightStaffCase = {
     placement_key: string
     placement_revision: number
     image_id: string
+    surface:
+      | 'post-image'
+      | 'user-profile-image'
+      | 'user-profile-link-image'
+      | 'topic-logo-image'
+      | 'topic-hero-image'
+      | 'community-profile-image'
+      | 'community-banner-image'
+    provenance: {
+      set_by_id: string
+      set_by_administrator: boolean | null
+      uploaded_by_id: string | null
+    } | null
     hosted_use_url: string
   }>
   evidence: Array<{

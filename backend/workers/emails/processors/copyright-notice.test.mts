@@ -41,7 +41,14 @@ async function createEmailDeliveryIntent(): Promise<{ intentId: string; noticeId
       goodFaithBelief: true,
       accuracyAuthorityUnderPenaltyOfPerjury: true,
       electronicSignature: 'Claimant',
-      claimantTargets: [{ postId, imageId, hostedUseUrl: `https://voucha.ai/posts/${postId}` }],
+      claimantTargets: [
+        {
+          surfaceKind: 'post-image' as const,
+          postId,
+          imageId,
+          hostedUseUrl: `https://voucha.ai/posts/${postId}`,
+        },
+      ],
     },
   })
   const aggregate = await getCopyrightNoticePrivateAggregate(intake.intake.copyright_notice_id)

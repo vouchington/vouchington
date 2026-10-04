@@ -17,6 +17,7 @@ describe('CopyrightNoticeDetailView', () => {
           targets: [
             {
               id: 'target-123',
+              surface: 'post-image',
               hosted_use_url: 'https://voucha.ai/posts/123',
               restriction_status: 'active',
             },

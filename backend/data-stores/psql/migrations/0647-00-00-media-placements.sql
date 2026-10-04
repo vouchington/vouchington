@@ -2,6 +2,7 @@
 CREATE TABLE media_placements (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   revision integer NOT NULL DEFAULT 0 CHECK (revision >= 0),
+  activation_revision integer NOT NULL DEFAULT 0 CHECK (activation_revision >= 0 AND activation_revision <= revision),
   retired_at timestamptz,
   retirement_reason text CHECK (retirement_reason IN ('asset_deleted', 'owner_removed')),
   copyright_withheld_at timestamptz,
@@ -50,6 +51,11 @@ BEGIN
     AND NEW.copyright_withheld_at IS NOT DISTINCT FROM OLD.copyright_withheld_at THEN
     RAISE EXCEPTION 'media placement lifecycle update must change availability' USING ERRCODE = 'check_violation';
   END IF;
+  IF OLD.retired_at IS NOT NULL AND NEW.retired_at IS NULL THEN
+    NEW.activation_revision := NEW.revision;
+  ELSIF NEW.activation_revision IS DISTINCT FROM OLD.activation_revision THEN
+    RAISE EXCEPTION 'media placement activation revision is system-managed' USING ERRCODE = 'check_violation';
+  END IF;
   RETURN NEW;
 END;
 $$;
@@ -68,6 +74,7 @@ FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
 COMMENT ON TABLE media_placements IS 'Durable image-use placements; exact binding and revision authority governs public delivery.';
 COMMENT ON COLUMN media_placements.revision IS 'Monotonic delivery revision; every availability change advances it exactly once.';
+COMMENT ON COLUMN media_placements.activation_revision IS 'Most recent retirement-to-active generation revision, including trigger-only reactivation; copyright parties use an immutable snapshot of this value.';
 COMMENT ON COLUMN media_placements.retired_at IS 'Placement is no longer attached to its host surface; retained so stale routes fail closed.';
 COMMENT ON COLUMN media_placements.retirement_reason IS 'Why the placement retired. Owner removal supersedes an asset retirement, fencing image-delete rollback from restoring a detached use.';
 COMMENT ON COLUMN media_placements.copyright_withheld_at IS 'Placement-specific copyright withholding state; shared source assets remain recoverable.';

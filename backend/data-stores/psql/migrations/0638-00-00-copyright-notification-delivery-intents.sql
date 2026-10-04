@@ -10,8 +10,9 @@ CREATE TABLE copyright_notice_delivery_intents (
   copyright_notice_correspondence_message_id uuid,
   recipient_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
   recipient_user_erased_at timestamptz,
-  recipient_role text NOT NULL CHECK (recipient_role IN ('claimant', 'poster', 'correspondent')),
-  delivery_kind text NOT NULL CHECK (delivery_kind IN ('claimant_receipt', 'status_update', 'poster_restriction_notice', 'poster_review_notice', 'poster_restoration_notice', 'claimant_decision_notice', 'counter_notice_forwarding', 'staff_information_request', 'email_intake_rejected', 'email_intake_needs_information', 'email_intake_received')),
+  recipient_role text NOT NULL CHECK (recipient_role IN ('claimant', 'poster', 'informed_owner', 'correspondent')),
+  delivery_kind text NOT NULL CHECK (delivery_kind IN ('claimant_receipt', 'status_update', 'poster_restriction_notice', 'poster_review_notice', 'poster_restoration_notice', 'owner_information_notice', 'claimant_decision_notice', 'counter_notice_forwarding', 'staff_information_request', 'email_intake_rejected', 'email_intake_needs_information', 'email_intake_received')),
+  target_path text CHECK (target_path IS NULL OR (char_length(target_path) BETWEEN 1 AND 1024 AND target_path LIKE '/communities/%')),
   channel text NOT NULL CHECK (channel IN ('in_app', 'email')),
   state text NOT NULL DEFAULT 'pending' CHECK (state IN ('pending', 'claimed', 'sent', 'failed', 'bounced')),
   delivery_attempt_count integer NOT NULL DEFAULT 0 CHECK (delivery_attempt_count BETWEEN 0 AND 5),
@@ -35,8 +36,10 @@ CREATE TABLE copyright_notice_delivery_intents (
   FOREIGN KEY (copyright_notice_correspondence_message_id, copyright_notice_id)
     REFERENCES copyright_notice_correspondence_messages(id, copyright_notice_id) ON DELETE RESTRICT,
   CHECK (delivery_kind <> 'claimant_decision_notice' OR recipient_role = 'claimant'),
-  CHECK (delivery_kind NOT IN ('poster_restriction_notice', 'poster_review_notice', 'poster_restoration_notice') OR recipient_role = 'poster'),
-  CHECK (recipient_role <> 'poster' OR recipient_user_id IS NOT NULL OR recipient_user_erased_at IS NOT NULL),
+  CHECK (delivery_kind NOT IN ('poster_restriction_notice', 'poster_review_notice', 'poster_restoration_notice') OR recipient_role IN ('poster', 'informed_owner')),
+  CHECK (delivery_kind <> 'owner_information_notice' OR recipient_role = 'informed_owner'),
+  CHECK ((recipient_role = 'informed_owner') = (target_path IS NOT NULL)),
+  CHECK (recipient_role NOT IN ('poster', 'informed_owner') OR recipient_user_id IS NOT NULL OR recipient_user_erased_at IS NOT NULL),
   CHECK (recipient_role <> 'correspondent' OR recipient_user_id IS NULL),
   CHECK (recipient_user_erased_at IS NULL OR recipient_user_id IS NULL),
   CHECK ((state = 'pending' AND claimed_at IS NULL AND sent_at IS NULL AND failed_at IS NULL AND bounced_at IS NULL)
@@ -90,6 +93,7 @@ BEGIN
     OR NEW.copyright_notice_correspondence_message_id IS DISTINCT FROM OLD.copyright_notice_correspondence_message_id
     OR NEW.recipient_role IS DISTINCT FROM OLD.recipient_role
     OR NEW.delivery_kind IS DISTINCT FROM OLD.delivery_kind
+    OR NEW.target_path IS DISTINCT FROM OLD.target_path
     OR NEW.channel IS DISTINCT FROM OLD.channel
     OR NEW.body_ciphertext IS DISTINCT FROM OLD.body_ciphertext
     OR NEW.idempotency_key IS DISTINCT FROM OLD.idempotency_key THEN
@@ -125,8 +129,9 @@ COMMENT ON COLUMN copyright_notice_delivery_intents.copyright_notice_submission_
 COMMENT ON COLUMN copyright_notice_delivery_intents.copyright_notice_correspondence_message_id IS 'Optional private correspondence body delivered by this obligation.';
 COMMENT ON COLUMN copyright_notice_delivery_intents.recipient_user_id IS 'Voucha user receiving the notice when the recipient has an account.';
 COMMENT ON COLUMN copyright_notice_delivery_intents.recipient_user_erased_at IS 'Time account erasure removed a poster recipient reference while retaining the legal delivery record.';
-COMMENT ON COLUMN copyright_notice_delivery_intents.recipient_role IS 'Legal role of the recipient: claimant, affected poster, or external email correspondent.';
+COMMENT ON COLUMN copyright_notice_delivery_intents.recipient_role IS 'Legal role of the recipient: claimant, affected poster or setter, informed community owner, or external email correspondent.';
 COMMENT ON COLUMN copyright_notice_delivery_intents.delivery_kind IS 'Legal event communicated by this delivery. staff_information_request emails the notice claimant a staff request for more information and always references its immutable correspondence message.';
+COMMENT ON COLUMN copyright_notice_delivery_intents.target_path IS 'Immutable community URL selected when an informed-owner obligation is created; delivery does not derive a relationship from the idempotency key.';
 COMMENT ON COLUMN copyright_notice_delivery_intents.channel IS 'Transport channel used for the delivery.';
 COMMENT ON COLUMN copyright_notice_delivery_intents.state IS 'Durable transport lifecycle state.';
 COMMENT ON COLUMN copyright_notice_delivery_intents.delivery_attempt_count IS 'Number of claimed transport attempts, capped to prevent an unhealthy obligation starving other delivery work.';

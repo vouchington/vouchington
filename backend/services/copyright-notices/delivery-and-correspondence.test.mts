@@ -62,6 +62,7 @@ async function createFixture() {
         placementId,
         placementRevision: 1,
         imageId,
+        bindingFamily: 'post',
         hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
       },
     ],
@@ -90,7 +91,6 @@ describe('copyright delivery and correspondence persistence', () => {
       expect.objectContaining({ id: intent.id, channel: 'in_app', state: 'sent' }),
     )
   })
-
   it('replays a delivery key and sweeps the intent on its channel until the retry cap fails it', async () => {
     const { claimant, notice } = await createFixture()
     const input = {

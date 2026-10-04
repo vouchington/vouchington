@@ -9,7 +9,8 @@ import { CopyrightNoticeTargetPicker } from './copyright-notice-target-picker'
 
 configure({ testIdAttribute: 'data-pw' })
 
-vi.mock(import('@/lib/api/client/copyright-notice-targets'), () => ({
+vi.mock(import('@/lib/api/client/copyright-notice-targets'), async importOriginal => ({
+  ...(await importOriginal()),
   resolveCopyrightNoticeTargets: vi.fn<typeof resolveCopyrightNoticeTargets>(),
 }))
 
@@ -114,7 +115,8 @@ describe('CopyrightNoticeTargetPicker', () => {
   })
 
   it('does not select more than twenty hosted images', async () => {
-    const many = Array.from({ length: 21 }, (_, index) => ({
+    const many: CopyrightNoticeResolvedTarget[] = Array.from({ length: 21 }, (_, index) => ({
+      surface: 'post-image',
       post_id: '019f0000-0000-7000-8000-000000000001',
       image_id: `019f0000-0000-7000-8000-0000000000${String(index + 10)}`,
       target_url: 'https://voucha.ai/discussion/hosted-material',
@@ -144,10 +146,53 @@ describe('CopyrightNoticeTargetPicker', () => {
     fireEvent.click(screen.getByLabelText('Hosted image 21: Image 21'))
     expect(onChange).not.toHaveBeenCalled()
   })
+  it('keeps two image slots with the same image ID distinct', async () => {
+    const choices: CopyrightNoticeResolvedTarget[] = [
+      {
+        surface: 'topic-logo-image',
+        topic_id: 'topic-1',
+        image_id: 'image-1',
+        target_url: 'https://voucha.ai/topic/photos',
+        order_index: 0,
+        caption: 'Topic logo',
+      },
+      {
+        surface: 'topic-hero-image',
+        topic_id: 'topic-1',
+        image_id: 'image-1',
+        target_url: 'https://voucha.ai/topic/photos',
+        order_index: 1,
+        caption: 'Topic hero image',
+      },
+    ]
+    mockResolveTargets.mockResolvedValue(choices)
+    const onChange = vi.fn<(targets: CopyrightNoticeResolvedTarget[]) => void>()
+    const { rerender } = render(
+      <CopyrightNoticeTargetPicker
+        targets={[]}
+        onChange={onChange}
+      />,
+    )
+    fireEvent.change(screen.getByLabelText('Hosted use URL'), {
+      target: { value: 'https://voucha.ai/topic/photos' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Find hosted material' }))
+    fireEvent.click(await screen.findByLabelText('Hosted image 1: Topic logo'))
+    expect(onChange).toHaveBeenLastCalledWith([choices[0]])
+    rerender(
+      <CopyrightNoticeTargetPicker
+        targets={[choices[0]!]}
+        onChange={onChange}
+      />,
+    )
+    fireEvent.click(screen.getByLabelText('Hosted image 2: Topic hero image'))
+    expect(onChange).toHaveBeenLastCalledWith(choices)
+  })
 })
 
-function makeTarget(caption: string) {
+function makeTarget(caption: string): CopyrightNoticeResolvedTarget {
   return {
+    surface: 'post-image',
     post_id: '019f0000-0000-7000-8000-000000000001',
     image_id: `019f0000-0000-7000-8000-00000000000${caption === 'first' ? '2' : '3'}`,
     target_url: `https://voucha.ai/discussion/${caption}`,

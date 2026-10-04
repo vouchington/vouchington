@@ -108,6 +108,7 @@ function makePromotionInput(
         placementId,
         placementRevision: 1,
         imageId,
+        bindingFamily: 'post' as const,
         hostedUseUrl: `https://voucha.ai/posts/${postId}`,
       },
     ],

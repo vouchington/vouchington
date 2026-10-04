@@ -38,6 +38,7 @@ export async function updateCommunity(
     updateCommunityInTransaction({
       community,
       communityId,
+      actorUserId: currentUser.id,
       update: input,
       statement: updateStatement,
       query,

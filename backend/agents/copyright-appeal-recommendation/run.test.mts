@@ -60,7 +60,14 @@ describe('copyright appeal recommendation output', () => {
         goodFaithBelief: true,
         accuracyAuthorityUnderPenaltyOfPerjury: true,
         electronicSignature: 'Claimant',
-        claimantTargets: [{ postId, imageId, hostedUseUrl: `https://voucha.ai/posts/${postId}` }],
+        claimantTargets: [
+          {
+            surfaceKind: 'post-image' as const,
+            postId,
+            imageId,
+            hostedUseUrl: `https://voucha.ai/posts/${postId}`,
+          },
+        ],
       },
     })
     const targetId = (await getCopyrightNoticePrivateAggregate(intake.intake.copyright_notice_id))

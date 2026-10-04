@@ -11,8 +11,23 @@ export async function selectStaffTargets(
 ) {
   const { rows } = await query<CopyrightStaffCase['targets'][number]>(
     sql`/* getPendingCopyrightStaffCase:targets */
-      SELECT target.id, concat('image-placement:', target.placement_id) AS placement_key, target.placement_revision, image.image_id, target.hosted_use_url
+      SELECT target.id, concat('image-placement:', target.placement_id) AS placement_key,
+        target.placement_revision, image.image_id, target.hosted_use_url,
+        COALESCE(surface.surface_kind, 'post-image') AS surface,
+        CASE WHEN activation.placement_id IS NULL THEN NULL ELSE jsonb_build_object(
+          'set_by_id', activation.bound_by_user_id,
+          'set_by_administrator', activation.bound_by_administrator,
+          'uploaded_by_id', activation.uploaded_by_user_id
+        ) END AS provenance
       FROM copyright_notice_targets target JOIN copyright_notice_target_images image ON image.copyright_notice_target_id = target.id
+      LEFT JOIN image_surface_placements surface ON surface.placement_id = target.placement_id
+      LEFT JOIN LATERAL (
+        SELECT recorded.placement_id, recorded.bound_by_user_id, recorded.bound_by_administrator,
+          recorded.uploaded_by_user_id
+        FROM image_surface_placement_activations recorded
+        WHERE recorded.placement_id = target.placement_id
+          AND recorded.placement_revision = target.surface_activation_revision
+      ) activation ON true
       WHERE target.copyright_notice_id = ${noticeId} ORDER BY target.id
     `,
   )

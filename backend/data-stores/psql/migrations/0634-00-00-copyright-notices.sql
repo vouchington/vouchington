@@ -27,6 +27,8 @@ CREATE TABLE copyright_notice_targets (
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE CASCADE,
   placement_id uuid NOT NULL REFERENCES retained_image_placement_bindings(placement_id) ON DELETE RESTRICT,
   placement_revision integer NOT NULL CHECK (placement_revision >= 0),
+  surface_activation_revision integer CHECK (surface_activation_revision >= 0 AND surface_activation_revision <= placement_revision),
+  surface_owner_user_id uuid REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
   hosted_use_url text NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -39,7 +41,7 @@ CREATE TABLE copyright_notice_target_images (
   copyright_notice_target_id uuid PRIMARY KEY REFERENCES copyright_notice_targets(id) ON DELETE CASCADE,
   placement_id uuid NOT NULL,
   image_id uuid NOT NULL REFERENCES retained_image_identities(id) ON DELETE RESTRICT,
-  binding_family text NOT NULL DEFAULT 'post' CHECK (binding_family = 'post'),
+  binding_family text NOT NULL CHECK (binding_family IN ('post', 'surface')),
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (copyright_notice_target_id, placement_id)
@@ -298,7 +300,7 @@ CREATE TABLE copyright_notice_lifecycle_events (
     'appeal_reviewed', 'counter_notice_reviewed', 'evidence_artifact_recorded',
     'outbound_correspondence_created', 'agent_correspondence_approved',
     'email_correspondence_admitted', 'email_correspondence_rejected',
-    'provisional_restriction_imposed', 'mandatory_human_review_completed',
+    'provisional_restriction_imposed', 'mandatory_human_review_completed', 'restriction_lifted_by_administrator',
     'legal_hold_assessed', 'legal_hold_resolved', 'counter_notice_deadline_started',
     'restoration_intent_created', 'reversal_restoration_intent_created',
     'copyright_action_replayed', 'delivery_intent_replayed',
@@ -361,7 +363,8 @@ CREATE TABLE copyright_notice_lifecycle_events (
       WHEN event_type = 'legal_hold_assessed' THEN copyright_notice_legal_hold_assessment_id IS NOT NULL
       WHEN event_type = 'legal_hold_resolved' THEN copyright_notice_legal_hold_resolution_id IS NOT NULL
       WHEN event_type = 'counter_notice_deadline_started' THEN copyright_notice_deadline_id IS NOT NULL
-      WHEN event_type IN ('provisional_restriction_imposed', 'mandatory_human_review_completed')
+      WHEN event_type IN ('provisional_restriction_imposed', 'mandatory_human_review_completed',
+        'restriction_lifted_by_administrator')
         THEN copyright_restriction_id IS NOT NULL
       WHEN event_type IN ('restoration_intent_created', 'reversal_restoration_intent_created',
         'copyright_action_replayed', 'restoration_unavailable',
@@ -473,6 +476,8 @@ BEFORE INSERT ON copyright_notice_lifecycle_events
 FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_lifecycle_event_source_notice();
 
 CREATE INDEX idx_copyright_notice_targets__placement ON copyright_notice_targets(placement_id, placement_revision);
+CREATE INDEX idx_copyright_notice_targets__surface_owner_user ON copyright_notice_targets(surface_owner_user_id)
+  WHERE surface_owner_user_id IS NOT NULL;
 CREATE INDEX idx_copyright_notice_target_images__image ON copyright_notice_target_images(image_id);
 CREATE INDEX idx_copyright_notice_target_images__binding ON copyright_notice_target_images(placement_id, image_id, binding_family);
 CREATE INDEX idx_copyright_restrictions__target ON copyright_restrictions(copyright_notice_target_id);
@@ -874,15 +879,17 @@ COMMENT ON COLUMN copyright_notices.policy_version IS 'Version of the intake dec
 
 COMMENT ON TABLE copyright_notice_targets IS 'Immutable media-kind-neutral snapshot of each exact hosted use identified by a copyright allegation.';
 COMMENT ON COLUMN copyright_notice_targets.copyright_notice_id IS 'Copyright allegation that identified this hosted use.';
-COMMENT ON COLUMN copyright_notice_targets.placement_id IS 'Concrete retained post-image placement identity for the exact hosted use; retention never grants live delivery authority.';
+COMMENT ON COLUMN copyright_notice_targets.placement_id IS 'Concrete retained image placement identity for the exact hosted use; retention never grants live delivery authority.';
 COMMENT ON COLUMN copyright_notice_targets.placement_revision IS 'Placement revision observed when the allegation target was captured.';
+COMMENT ON COLUMN copyright_notice_targets.surface_activation_revision IS 'Captured activation epoch of a surface placement. An application activation row exists only when the binder was known; trigger-only reactivation leaves it unknown.';
+COMMENT ON COLUMN copyright_notice_targets.surface_owner_user_id IS 'Retained profile account identity captured at filing for legal holds after account or link erasure; never grants live response authority.';
 COMMENT ON COLUMN copyright_notice_targets.hosted_use_url IS 'Immutable URL snapshot supplied or resolved for the identified hosted use.';
 
 COMMENT ON TABLE copyright_notice_target_images IS 'Typed image subtype for a copyright target; future video support adds a sibling typed relation without a polymorphic foreign key.';
 COMMENT ON COLUMN copyright_notice_target_images.copyright_notice_target_id IS 'Copyright target whose hosted media is the referenced image.';
 COMMENT ON COLUMN copyright_notice_target_images.placement_id IS 'Retained placement identity shared with the parent target so the image binding matches that exact hosted use.';
 COMMENT ON COLUMN copyright_notice_target_images.image_id IS 'Image asset captured for the exact hosted placement revision.';
-COMMENT ON COLUMN copyright_notice_target_images.binding_family IS 'Retained placement binding family for this image. The current family is post.';
+COMMENT ON COLUMN copyright_notice_target_images.binding_family IS 'Retained post or surface placement binding family for this image.';
 
 COMMENT ON TABLE copyright_restrictions IS 'Independent, reversible legal restrictions; lifting one restriction never lifts another active restriction.';
 COMMENT ON COLUMN copyright_restrictions.copyright_notice_target_id IS 'Exact allegation target governed by this independent restriction.';

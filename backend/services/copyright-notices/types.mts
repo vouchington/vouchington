@@ -20,6 +20,7 @@ export type CopyrightCorrespondenceKind =
   | 'inbound_message'
 
 export type CopyrightNoticeTargetInput = {
+  bindingFamily: 'post' | 'surface'
   placementId: string
   placementRevision: number
   imageId: string

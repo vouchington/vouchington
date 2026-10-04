@@ -1,17 +1,16 @@
 import { read, write } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
+import { copyrightPlacementHostIsLiveSql } from './placement-copyright-host-sql.mts'
+import {
+  toCopyrightImagePlacement,
+  type CopyrightImagePlacement,
+  type CopyrightImagePlacementRow,
+} from './placement-copyright-types.mts'
 
-export { getPostIdForImagePlacementCopyright } from './placement-post.mts'
+export { getImagePlacementCopyrightOwner } from './placement-owner.mts'
 
-export type CopyrightImagePlacement = {
-  placementId: string
-  revision: number
-  imageId: string
-  deleted: boolean
-  withheld: boolean
-  safetyBlocked: boolean
-}
+export type { CopyrightImagePlacement } from './placement-copyright-types.mts'
 
 export type ImagePlacementRetirement = { placementId: string; revision: number }
 
@@ -67,31 +66,32 @@ export async function getImagePlacementForCopyright(
   options: QueryOptions = {},
 ): Promise<CopyrightImagePlacement | null> {
   const query = options.query ?? read
-  const { rows } = await query<{
-    placement_id: string
-    revision: number
-    image_id: string
-    retired_at: Date | null
-    copyright_withheld_at: Date | null
-    image_deleted_at: Date | null
-    post_deleted_at: Date | null
-    image_quarantine_pending_at: Date | null
-    image_moderation_flagged: boolean | null
-  }>(sql`/* getImagePlacementForCopyright */
-    SELECT placement.id AS placement_id, placement.revision, image_placement.image_id,
-      placement.retired_at, placement.copyright_withheld_at,
-      image.deleted_at AS image_deleted_at, post.deleted_at AS post_deleted_at,
-      image.quarantine_pending_at AS image_quarantine_pending_at,
-      image.openai_omni_moderation_flagged AS image_moderation_flagged
-    FROM media_placements placement
-    JOIN image_placements image_placement ON image_placement.placement_id = placement.id
-    JOIN images image ON image.id = image_placement.image_id
-    JOIN posts post ON post.id = image_placement.post_id
-    WHERE placement.id = ${placementId}
-  `)
+  const { rows } = await query<CopyrightImagePlacementRow>(
+    buildCopyrightPlacementReadSql(placementId),
+  )
   const placement = rows[0]
   if (!placement) return null
   return toCopyrightImagePlacement(placement)
+}
+
+function buildCopyrightPlacementReadSql(placementId: string): ReturnType<typeof sql> {
+  const statement = sql`/* getImagePlacementForCopyright */
+    SELECT placement.id AS placement_id, placement.revision, binding.image_id,
+      placement.retired_at, placement.copyright_withheld_at,
+      image.deleted_at AS image_deleted_at,
+      image.quarantine_pending_at AS image_quarantine_pending_at,
+      image.openai_omni_moderation_flagged AS image_moderation_flagged, `
+  statement.append(copyrightPlacementHostIsLiveSql())
+  statement.append(sql` AS host_live
+    FROM media_placements placement
+    JOIN retained_image_placement_bindings binding ON binding.placement_id = placement.id
+    JOIN images image ON image.id = binding.image_id
+    LEFT JOIN image_placements post_binding ON post_binding.placement_id = placement.id
+    LEFT JOIN posts post ON post.id = post_binding.post_id
+    LEFT JOIN image_surface_placements surface ON surface.placement_id = placement.id
+    WHERE placement.id = ${placementId}
+  `)
+  return statement
 }
 
 export async function withholdImagePlacementForCopyright(
@@ -114,41 +114,9 @@ async function changeImagePlacementCopyrightWithholding(
   options: QueryOptions,
 ): Promise<CopyrightImagePlacementMutation> {
   const query = options.query ?? write
-  const { rows } = await query<{
-    placement_id: string
-    revision: number
-    image_id: string
-    retired_at: Date | null
-    copyright_withheld_at: Date | null
-    image_deleted_at: Date | null
-    post_deleted_at: Date | null
-    image_quarantine_pending_at: Date | null
-    image_moderation_flagged: boolean | null
-  }>(sql`/* changeImagePlacementCopyrightWithholding */
-    UPDATE media_placements placement
-    SET copyright_withheld_at = CASE WHEN ${withhold} THEN CURRENT_TIMESTAMP ELSE NULL END,
-        revision = placement.revision + 1
-    FROM image_placements image_placement
-    JOIN images image ON image.id = image_placement.image_id
-    JOIN posts post ON post.id = image_placement.post_id
-    WHERE placement.id = image_placement.placement_id
-      AND placement.id = ${input.placementId}
-      AND placement.revision = ${input.expectedRevision}
-      AND placement.retired_at IS NULL
-      AND (
-        (${withhold} AND placement.copyright_withheld_at IS NULL)
-        OR (NOT ${withhold} AND placement.copyright_withheld_at IS NOT NULL)
-      )
-      AND image.deleted_at IS NULL
-      AND post.deleted_at IS NULL
-      AND image.quarantine_pending_at IS NULL
-      AND image.openai_omni_moderation_flagged IS NOT TRUE
-    RETURNING placement.id AS placement_id, placement.revision, image_placement.image_id,
-      placement.retired_at, placement.copyright_withheld_at,
-      image.deleted_at AS image_deleted_at, post.deleted_at AS post_deleted_at,
-      image.quarantine_pending_at AS image_quarantine_pending_at,
-      image.openai_omni_moderation_flagged AS image_moderation_flagged
-  `)
+  const { rows } = await query<CopyrightImagePlacementRow>(
+    buildCopyrightPlacementMutationSql(input, withhold),
+  )
   const updated = rows[0]
   if (updated) return { status: 'applied', placement: toCopyrightImagePlacement(updated) }
 
@@ -162,29 +130,39 @@ async function changeImagePlacementCopyrightWithholding(
   return { status: 'stale', placement: current }
 }
 
-function toCopyrightImagePlacement(placement: {
-  placement_id: string
-  revision: number
-  image_id: string
-  retired_at: Date | null
-  copyright_withheld_at: Date | null
-  image_deleted_at: Date | null
-  post_deleted_at: Date | null
-  image_quarantine_pending_at: Date | null
-  image_moderation_flagged: boolean | null
-}): CopyrightImagePlacement {
-  return {
-    placementId: placement.placement_id,
-    revision: placement.revision,
-    imageId: placement.image_id,
-    deleted:
-      placement.retired_at !== null ||
-      placement.image_deleted_at !== null ||
-      placement.post_deleted_at !== null ||
-      placement.image_quarantine_pending_at !== null ||
-      placement.image_moderation_flagged === true,
-    withheld: placement.copyright_withheld_at !== null,
-    safetyBlocked:
-      placement.image_quarantine_pending_at !== null || placement.image_moderation_flagged === true,
-  }
+function buildCopyrightPlacementMutationSql(
+  input: { placementId: string; expectedRevision: number },
+  withhold: boolean,
+): ReturnType<typeof sql> {
+  const statement = sql`/* changeImagePlacementCopyrightWithholding */
+    UPDATE media_placements placement
+    SET copyright_withheld_at = CASE WHEN ${withhold} THEN CURRENT_TIMESTAMP ELSE NULL END,
+        revision = placement.revision + 1
+    FROM retained_image_placement_bindings binding
+    JOIN images image ON image.id = binding.image_id
+    LEFT JOIN image_placements post_binding ON post_binding.placement_id = binding.placement_id
+    LEFT JOIN posts post ON post.id = post_binding.post_id
+    LEFT JOIN image_surface_placements surface ON surface.placement_id = binding.placement_id
+    WHERE placement.id = binding.placement_id
+      AND placement.id = ${input.placementId}
+      AND placement.revision = ${input.expectedRevision}
+      AND placement.retired_at IS NULL
+      AND (
+        (${withhold} AND placement.copyright_withheld_at IS NULL)
+        OR (NOT ${withhold} AND placement.copyright_withheld_at IS NOT NULL)
+      )
+      AND image.deleted_at IS NULL
+      AND `
+  statement.append(copyrightPlacementHostIsLiveSql())
+  statement.append(sql`
+      AND image.quarantine_pending_at IS NULL
+      AND image.openai_omni_moderation_flagged IS NOT TRUE
+    RETURNING placement.id AS placement_id, placement.revision, binding.image_id,
+      placement.retired_at, placement.copyright_withheld_at,
+      image.deleted_at AS image_deleted_at,
+      image.quarantine_pending_at AS image_quarantine_pending_at,
+      image.openai_omni_moderation_flagged AS image_moderation_flagged, `)
+  statement.append(copyrightPlacementHostIsLiveSql())
+  statement.append(sql` AS host_live`)
+  return statement
 }

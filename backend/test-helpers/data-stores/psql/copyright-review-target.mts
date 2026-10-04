@@ -144,8 +144,8 @@ export async function insertCopyrightPagingTarget(
       INSERT INTO copyright_notice_targets (copyright_notice_id, placement_id, placement_revision, hosted_use_url)
       SELECT ${noticeId}, placement_id, 1, ${`https://example.test/${randomUUID()}`} FROM binding RETURNING id, placement_id
     ), image AS (
-      INSERT INTO copyright_notice_target_images (copyright_notice_target_id, placement_id, image_id)
-      SELECT id, placement_id, ${imageId} FROM target
+      INSERT INTO copyright_notice_target_images (copyright_notice_target_id, placement_id, image_id, binding_family)
+      SELECT id, placement_id, ${imageId}, 'post' FROM target
     ) SELECT id FROM target`)
   if (!rows[0]) throw new Error('Copyright paging target was not inserted')
   return rows[0].id

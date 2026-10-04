@@ -83,6 +83,7 @@ describe('copyright notices client', () => {
       accuracy_authority_under_penalty_of_perjury: true,
       targets: [
         {
+          surface: 'post-image' as const,
           post_id: '019f0000-0000-7000-8000-000000000001',
           image_id: '019f0000-0000-7000-8000-000000000002',
           target_url: 'https://voucha.ai/discussion/copyright-idempotency-test',

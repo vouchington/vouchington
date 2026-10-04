@@ -31,11 +31,12 @@ export async function createCopyrightDeliveryIntent(
     submissionId: string | null
     correspondenceId: string | null
     recipientUserId: string | null
-    recipientRole: 'claimant' | 'poster' | 'correspondent'
+    recipientRole: 'claimant' | 'poster' | 'informed_owner' | 'correspondent'
     deliveryKind: CopyrightNoticeDeliveryKind
     channel: CopyrightDeliveryIntentRecord['channel']
     idempotencyKey: string
     recipientEmail?: string
+    targetPath?: string
   },
   transaction?: TransactionQuery,
 ): Promise<CopyrightDeliveryIntentRecord> {
@@ -69,7 +70,7 @@ export async function claimCopyrightDeliveryIntent(
         OR (state = 'claimed' AND claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes'))
     RETURNING id, lease_token, copyright_notice_id, copyright_notice_email_intake_id,
       copyright_notice_submission_id, copyright_notice_correspondence_message_id, recipient_user_id,
-      recipient_role, delivery_kind, channel, state, ses_message_id, delivery_attempt_count,
+      recipient_role, delivery_kind, target_path, channel, state, ses_message_id, delivery_attempt_count,
       body_ciphertext
   `)
   return rows[0] ?? null
@@ -171,7 +172,7 @@ async function insertCopyrightDeliveryIntent(
   transaction: TransactionQuery,
 ): Promise<CopyrightDeliveryIntentRecord> {
   assert(
-    input.recipientRole !== 'poster' || input.recipientUserId,
+    !['poster', 'informed_owner'].includes(input.recipientRole) || input.recipientUserId,
     422,
     'Poster delivery requires a user recipient',
   )
@@ -180,13 +181,18 @@ async function insertCopyrightDeliveryIntent(
     422,
     'Correspondent delivery requires an external email recipient',
   )
+  assert(
+    (input.recipientRole === 'informed_owner') === Boolean(input.targetPath),
+    422,
+    'Informed owner delivery requires a community path',
+  )
   const { rows } =
     await transaction<CopyrightDeliveryIntentRecord>(sql`/* createCopyrightDeliveryIntent */
     INSERT INTO copyright_notice_delivery_intents (
       copyright_notice_id, copyright_notice_submission_id, copyright_notice_correspondence_message_id,
-      recipient_user_id, recipient_role, delivery_kind, channel, idempotency_key
+      recipient_user_id, recipient_role, delivery_kind, target_path, channel, idempotency_key
     ) SELECT ${input.noticeId}, ${input.submissionId}, ${input.correspondenceId},
-      ${input.recipientUserId}, ${input.recipientRole}, ${input.deliveryKind}, ${input.channel}, ${input.idempotencyKey}
+      ${input.recipientUserId}, ${input.recipientRole}, ${input.deliveryKind}, ${input.targetPath ?? null}, ${input.channel}, ${input.idempotencyKey}
     WHERE EXISTS (SELECT 1 FROM copyright_notices WHERE id = ${input.noticeId})
       AND (${input.submissionId}::uuid IS NULL OR EXISTS (
         SELECT 1 FROM copyright_notice_submissions
@@ -198,7 +204,7 @@ async function insertCopyrightDeliveryIntent(
       ))
     ON CONFLICT (idempotency_key) DO NOTHING
     RETURNING id, lease_token, copyright_notice_id, copyright_notice_submission_id,
-      copyright_notice_correspondence_message_id, recipient_user_id, recipient_role, delivery_kind,
+      copyright_notice_correspondence_message_id, recipient_user_id, recipient_role, delivery_kind, target_path,
       channel, state, ses_message_id, delivery_attempt_count
   `)
   const intent = rows[0]
@@ -209,7 +215,7 @@ async function insertCopyrightDeliveryIntent(
   const { rows: existingRows } =
     await transaction<CopyrightDeliveryIntentRecord>(sql`/* createCopyrightDeliveryIntent:existing */
     SELECT id, lease_token, copyright_notice_id, copyright_notice_submission_id,
-      copyright_notice_correspondence_message_id, recipient_user_id, recipient_role, delivery_kind,
+      copyright_notice_correspondence_message_id, recipient_user_id, recipient_role, delivery_kind, target_path,
       channel, state, ses_message_id, delivery_attempt_count
     FROM copyright_notice_delivery_intents
     WHERE idempotency_key = ${input.idempotencyKey}
@@ -223,6 +229,7 @@ async function insertCopyrightDeliveryIntent(
       existing.recipient_user_id === input.recipientUserId &&
       existing.recipient_role === input.recipientRole &&
       existing.delivery_kind === input.deliveryKind &&
+      existing.target_path === (input.targetPath ?? null) &&
       existing.channel === input.channel,
     409,
     'Copyright delivery idempotency key was reused',

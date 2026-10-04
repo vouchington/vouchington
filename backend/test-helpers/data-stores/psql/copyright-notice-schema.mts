@@ -40,8 +40,8 @@ export async function createCopyrightNoticeSchemaFixture(): Promise<CopyrightNot
       FROM notice CROSS JOIN placement
       RETURNING id, placement_id
     ), image_target AS (
-      INSERT INTO copyright_notice_target_images (copyright_notice_target_id, placement_id, image_id)
-      SELECT target.id, placement.placement_id, placement.image_id FROM target CROSS JOIN placement
+      INSERT INTO copyright_notice_target_images (copyright_notice_target_id, placement_id, image_id, binding_family)
+      SELECT target.id, placement.placement_id, placement.image_id, 'post' FROM target CROSS JOIN placement
     ), submission AS (
       INSERT INTO copyright_notice_submissions (copyright_notice_id, kind, received_at, source_kind, body_ciphertext)
       SELECT id, 'notice', CURRENT_TIMESTAMP, 'staff', ${`v1:test-body:${randomUUID()}`} FROM notice
@@ -86,6 +86,7 @@ export {
   rejectCopyrightRestrictionDeletion,
   rejectCopyrightSubmissionMutation,
   rejectCopyrightTargetImageWithSurfaceBinding,
+  acceptCopyrightTargetImageWithSurfaceBinding,
   rejectCopyrightTargetImageWithWrongBinding,
   rejectCopyrightTargetWithUnknownPlacement,
 } from './copyright-notice-schema-rejections.mts'
@@ -129,8 +130,8 @@ export async function createSecondCopyrightRestrictionForPlacement(
       FROM second_notice CROSS JOIN copyright_notice_targets original WHERE original.id = ${fixture.targetId}
       RETURNING id, placement_id
     ), second_image_target AS (
-      INSERT INTO copyright_notice_target_images (copyright_notice_target_id, placement_id, image_id)
-      SELECT second_target.id, second_target.placement_id, original.image_id FROM second_target
+      INSERT INTO copyright_notice_target_images (copyright_notice_target_id, placement_id, image_id, binding_family)
+      SELECT second_target.id, second_target.placement_id, original.image_id, original.binding_family FROM second_target
       CROSS JOIN copyright_notice_target_images original WHERE original.copyright_notice_target_id = ${fixture.targetId}
     ), second_submission AS (
       INSERT INTO copyright_notice_submissions (

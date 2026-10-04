@@ -4,6 +4,7 @@ import { enqueueStaydownHash } from '@queues/images/enqueues'
 import sql from 'sql-template-strings'
 import { isCopyrightStaydownMatchingEnabled } from './config.mts'
 import { syncCopyrightRepeatInfringerIncidents } from './repeat-infringer-incidents.mts'
+import { anyReversalSourceSql } from './restriction-reversal-sources-sql.mts'
 
 /**
  * Registers the images of a case's moderator-confirmed, still-active restrictions for staydown and
@@ -17,7 +18,8 @@ async function registerCopyrightStaydownEntriesInTransaction(
   query: TransactionQuery,
 ): Promise<string[]> {
   if (!(await isCopyrightStaydownMatchingEnabled())) return []
-  const { rows } = await query<{ image_id: string }>(sql`/* registerCopyrightStaydownEntries */
+  const { rows } = await query<{ image_id: string }>(
+    sql`/* registerCopyrightStaydownEntries */
     INSERT INTO copyright_staydown_entries (copyright_restriction_id, image_id, sha_256)
     SELECT restriction.id, target_image.image_id, image.sha_256
     FROM copyright_notice_targets target
@@ -34,14 +36,11 @@ async function registerCopyrightStaydownEntriesInTransaction(
           WHERE review.copyright_restriction_id = restriction.id AND review.action = 'confirm'
         )
       )
-      AND restriction.human_review_action IS DISTINCT FROM 'reverse'
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_notice_appeal_reviews review
-        WHERE review.copyright_restriction_id = restriction.id AND review.action = 'reverse'
-      )
+      AND NOT `.append(anyReversalSourceSql).append(sql`
     ON CONFLICT (copyright_restriction_id) DO NOTHING
     RETURNING image_id
-  `)
+  `),
+  )
   return rows.map(row => row.image_id)
 }
 

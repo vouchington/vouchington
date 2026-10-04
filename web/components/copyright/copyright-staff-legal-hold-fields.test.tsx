@@ -41,6 +41,8 @@ describe('copyright staff legal-hold fields', () => {
               placement_key: 'image-placement:one',
               placement_revision: 1,
               image_id: 'image-1',
+              surface: 'post-image',
+              provenance: null,
               hosted_use_url: 'https://voucha.ai/discussion/one',
             },
             {
@@ -48,6 +50,8 @@ describe('copyright staff legal-hold fields', () => {
               placement_key: 'image-placement:two',
               placement_revision: 1,
               image_id: 'image-2',
+              surface: 'post-image',
+              provenance: null,
               hosted_use_url: 'https://voucha.ai/discussion/two',
             },
           ]}

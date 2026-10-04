@@ -6,11 +6,49 @@ import type { ApiArrayContract } from '../../response-contract.mts'
 // run first so each rejection keeps its field-named message. Statutory attestations are the
 // literal `true`: an unaccepted declaration is never a valid submission.
 
-export type CopyrightNoticeTargetRequest = {
-  post_id: ApiUuidContract
-  image_id: ApiUuidContract
-  target_url: string
-}
+export type CopyrightNoticeTargetRequest =
+  | {
+      surface: 'post-image'
+      post_id: ApiUuidContract
+      image_id: ApiUuidContract
+      target_url: string
+    }
+  | {
+      surface: 'user-profile-image'
+      user_id: ApiUuidContract
+      image_id: ApiUuidContract
+      target_url: string
+    }
+  | {
+      surface: 'user-profile-link-image'
+      user_profile_link_id: ApiUuidContract
+      image_id: ApiUuidContract
+      target_url: string
+    }
+  | {
+      surface: 'topic-logo-image'
+      topic_id: ApiUuidContract
+      image_id: ApiUuidContract
+      target_url: string
+    }
+  | {
+      surface: 'topic-hero-image'
+      topic_id: ApiUuidContract
+      image_id: ApiUuidContract
+      target_url: string
+    }
+  | {
+      surface: 'community-profile-image'
+      community_id: ApiUuidContract
+      image_id: ApiUuidContract
+      target_url: string
+    }
+  | {
+      surface: 'community-banner-image'
+      community_id: ApiUuidContract
+      image_id: ApiUuidContract
+      target_url: string
+    }
 
 export type CopyrightNoticeFormRequest = {
   jurisdiction: 'us_dmca'

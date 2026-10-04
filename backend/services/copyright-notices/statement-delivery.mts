@@ -12,12 +12,13 @@ export async function createCopyrightStatementDeliveryInTransaction(
   input: {
     noticeId: string
     recipientUserId: string | null
-    recipientRole: 'poster' | 'claimant'
+    recipientRole: 'poster' | 'claimant' | 'informed_owner'
     recipientEmail?: string | null
     deliveryKind: CopyrightNoticeDeliveryKind
     correspondenceKind: CopyrightCorrespondenceKind
     key: string
     text: string
+    targetPath?: string
   },
   transaction: TransactionQuery,
 ): Promise<void> {
@@ -47,7 +48,7 @@ export async function createCopyrightStatementDeliveryInTransaction(
     `)
     if (!accounts[0]?.active) activeRecipientUserId = null
   }
-  if (input.recipientRole === 'poster' && !activeRecipientUserId) return
+  if (input.recipientRole !== 'claimant' && !activeRecipientUserId) return
   const correspondence = await createDeterministicCopyrightCorrespondenceInTransaction(
     {
       noticeId: input.noticeId,
@@ -68,6 +69,7 @@ export async function createCopyrightStatementDeliveryInTransaction(
         deliveryKind: input.deliveryKind,
         channel: 'in_app',
         idempotencyKey: input.key,
+        targetPath: input.targetPath,
       },
       transaction,
     )
@@ -82,6 +84,7 @@ export async function createCopyrightStatementDeliveryInTransaction(
       deliveryKind: input.deliveryKind,
       channel: 'email',
       idempotencyKey: `${input.key}:email`,
+      targetPath: input.targetPath,
       recipientEmail: input.recipientEmail ?? undefined,
     },
     transaction,

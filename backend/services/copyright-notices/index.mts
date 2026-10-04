@@ -1,5 +1,7 @@
 export { assertCopyrightIntakeEnabled, isCopyrightIntakeEnabled } from './activation.mts'
 export { resolveCopyrightImagePlacement } from './placement-resolution.mts'
+export { liftCopyrightRestrictionWithoutSetter } from './restriction-lifts.mts'
+export { currentUserCanLiftCopyrightRestriction } from './authorization.mts'
 export { createCopyrightFormIntake, createCopyrightGuestIdentity } from './form-intakes.mts'
 export {
   issueCopyrightGuestCapability,

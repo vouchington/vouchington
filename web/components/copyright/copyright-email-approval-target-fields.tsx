@@ -2,11 +2,17 @@
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { CopyrightNoticeResolvedTarget } from '@/lib/api/client/copyright-notice-targets'
+import {
+  copyrightNoticeTargetKey,
+  type CopyrightNoticeResolvedTarget,
+} from '@/lib/api/client/copyright-notice-targets'
+import { CopyrightEmailApprovalManualTargetFields } from './copyright-email-approval-manual-target-fields'
 import {
   MAX_EMAIL_APPROVAL_TARGETS,
   CopyrightEmailApprovalDraft,
   CopyrightEmailApprovalTarget,
+  copyrightEmailApprovalTargetKey,
+  approvalTargetFields,
 } from './copyright-email-approval-model'
 import { useCopyrightEmailApprovalTargetResolution } from './copyright-email-approval-target-resolution'
 import { CopyrightEmailApprovalTargetChoice } from './copyright-email-approval-target-choice'
@@ -32,6 +38,10 @@ export function CopyrightEmailApprovalTargetFields({
                 ...item,
                 target_url: value,
                 post_id: '',
+                user_id: undefined,
+                user_profile_link_id: undefined,
+                topic_id: undefined,
+                community_id: undefined,
                 image_id: '',
                 resolution_status: 'pending',
               },
@@ -41,7 +51,11 @@ export function CopyrightEmailApprovalTargetFields({
     })
   }
 
-  function updateTarget(id: string, key: 'post_id' | 'image_id', value: string) {
+  function updateTarget(
+    id: string,
+    key: 'post_id' | 'user_id' | 'user_profile_link_id' | 'topic_id' | 'community_id' | 'image_id',
+    value: string,
+  ) {
     onChange({
       ...draft,
       targets: draft.targets.map(target =>
@@ -56,7 +70,9 @@ export function CopyrightEmailApprovalTargetFields({
     checked: boolean,
   ) {
     const selected = draft.targets.filter(item => sameTargetGroup(item, target))
-    const existing = selected.find(item => item.image_id === choice.image_id)
+    const existing = selected.find(
+      item => copyrightEmailApprovalTargetKey(item) === copyrightNoticeTargetKey(choice),
+    )
     if (checked && !existing) {
       const placeholder = selected.find(item => !item.image_id)
       if (!placeholder && draft.targets.length >= MAX_EMAIL_APPROVAL_TARGETS) return
@@ -65,7 +81,7 @@ export function CopyrightEmailApprovalTargetFields({
         targets: placeholder
           ? draft.targets.map(item =>
               item.id === placeholder.id
-                ? { ...item, ...approvalTarget(choice), resolution_status: 'resolved' }
+                ? { ...item, ...approvalTargetFields(choice), resolution_status: 'resolved' }
                 : item,
             )
           : [
@@ -73,7 +89,7 @@ export function CopyrightEmailApprovalTargetFields({
               {
                 id: crypto.randomUUID(),
                 group_id: target.group_id,
-                ...approvalTarget(choice),
+                ...approvalTargetFields(choice),
                 resolution_status: 'resolved',
               },
             ],
@@ -86,7 +102,16 @@ export function CopyrightEmailApprovalTargetFields({
           selected.length === 1
             ? draft.targets.map(item =>
                 item.id === existing.id
-                  ? { ...item, post_id: '', image_id: '', resolution_status: 'resolved' }
+                  ? {
+                      ...item,
+                      post_id: '',
+                      user_id: undefined,
+                      user_profile_link_id: undefined,
+                      topic_id: undefined,
+                      community_id: undefined,
+                      image_id: '',
+                      resolution_status: 'resolved',
+                    }
                   : item,
               )
             : draft.targets.filter(item => item.id !== existing.id),
@@ -113,14 +138,18 @@ export function CopyrightEmailApprovalTargetFields({
         resolved[target.id]?.map((choice, imageIndex) => (
           <CopyrightEmailApprovalTargetChoice
             checked={draft.targets.some(
-              item => item.group_id === target.group_id && item.image_id === choice.image_id,
+              item =>
+                item.group_id === target.group_id &&
+                copyrightEmailApprovalTargetKey(item) === copyrightNoticeTargetKey(choice),
             )}
             choice={choice}
             index={imageIndex}
-            key={choice.image_id}
+            key={copyrightNoticeTargetKey(choice)}
             disabled={
               !draft.targets.some(
-                item => item.group_id === target.group_id && item.image_id === choice.image_id,
+                item =>
+                  item.group_id === target.group_id &&
+                  copyrightEmailApprovalTargetKey(item) === copyrightNoticeTargetKey(choice),
               ) &&
               !draft.targets.some(item => item.group_id === target.group_id && !item.image_id) &&
               draft.targets.length >= MAX_EMAIL_APPROVAL_TARGETS
@@ -130,29 +159,14 @@ export function CopyrightEmailApprovalTargetFields({
           />
         ))}
       {target.resolution_status === 'failed' && (
-        <>
-          <p
-            className='text-sm text-destructive'
-            role='alert'
-          >
-            {errors[target.id] ?? 'We could not resolve this hosted URL.'} Enter verified IDs
-            manually after checking the original email.
-          </p>
-          <Input
-            aria-label={`Post ID ${index + 1}`}
-            onChange={event => updateTarget(target.id, 'post_id', event.target.value)}
-            // ast-grep-ignore: web-no-id-text-input -- staff-only fallback after URL resolution fails; the backend verifies the live placement before approval.
-            placeholder='Resolved post ID'
-            value={target.post_id}
-          />
-          <Input
-            aria-label={`Image ID ${index + 1}`}
-            onChange={event => updateTarget(target.id, 'image_id', event.target.value)}
-            // ast-grep-ignore: web-no-id-text-input -- staff-only fallback after URL resolution fails; the backend verifies the live placement before approval.
-            placeholder='Resolved image ID'
-            value={target.image_id}
-          />
-        </>
+        <CopyrightEmailApprovalManualTargetFields
+          target={target}
+          index={index}
+          draft={draft}
+          onChange={onChange}
+          updateTarget={updateTarget}
+          error={errors[target.id]}
+        />
       )}
       {groups.length > 1 && (
         <Button
@@ -170,14 +184,6 @@ export function CopyrightEmailApprovalTargetFields({
       )}
     </div>
   ))
-}
-
-function approvalTarget(choice: CopyrightNoticeResolvedTarget) {
-  return {
-    post_id: choice.post_id,
-    image_id: choice.image_id,
-    target_url: choice.target_url,
-  }
 }
 
 function uniqueTargetGroups(targets: CopyrightEmailApprovalTarget[]) {

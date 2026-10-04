@@ -147,16 +147,16 @@ immutable, while a monotonic placement revision advances whenever the attachment
 reactivated, withheld, or restored. Copyright action workers re-read and lock that authoritative
 placement, the exact image binding, the expected revision, every legal blocker, and the restriction
 state before applying an intent. Withholding one placement never deletes the source image or blocks
-another post that independently uses the same image.
+another placement that independently uses the same image.
 
 Each legal target stores a foreign key to the retained placement binding, and its target-image row
-checks the exact placement, image, and post-family tuple. The observed revision is immutable evidence,
+checks the exact placement, image, and explicit post or surface family tuple. The observed revision is immutable evidence,
 not a foreign key to the mutable current revision. Legal references pin the retained binding and image
 through bounded orphan cleanup after live media is removed; retained identity alone never grants
 delivery. Staff/email response fields that display `image-placement:<id>` derive that string from the
 UUID at the API boundary. No encoded placement relationship is stored.
 
-Application projections omit retired or withheld placements, and persisted post image URLs use
+Application projections omit retired or withheld placements, and persisted image URLs use
 `/images/placements/<placement-id>/<revision>/<image-id>`. The resize Lambda validates the route
 shape and keeps the placement segments out of the S3 key. Those application controls do not by
 themselves revoke a warm CDN response or prevent a caller from trying a historical generic image
@@ -178,6 +178,62 @@ exclude unavailable or moderated media, and return placement identifiers and sta
 keys, vectors, or public URLs. They never expand a notice target or apply a restriction
 automatically; a missing source embedding schedules the ordinary batch pipeline without delaying
 the legal case.
+
+### Surface targets and parties
+
+A notice can target a post image, avatar, profile-link image, topic logo or hero, or community profile
+or banner image. One resolver derives the live placement and canonical page URL. The claimant pastes
+the page URL and selects an image; the submitted URL is informational. This coverage uses the existing
+intake boundary and adds no surface-specific switch.
+
+The immutable activation history records both the original uploader and the account that selected
+the image. Each creation or reactivation records its revision; an unchanged update records nothing.
+For community images it snapshots whether the setter was a site administrator at that time. A later
+role change cannot rewrite that fact. A trigger-only activation has an unknown binder; it never
+borrows the current owner's identity. A placement's activation epoch advances even when a database
+trigger alone reactivates it. The target captures that epoch at filing, and parties use an application
+activation row only for the captured epoch. Later withholding revisions or reactivations cannot
+change the target's recorded setter.
+
+| Target                            | Restriction notice and right to respond                 | Informational notice                                                    | Incident after human confirmation         | Retention party |
+| --------------------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------- | --------------- |
+| Post image                        | Post author                                             | None                                                                    | Post author                               | Post author     |
+| Avatar or profile-link image      | Profile owner, including an administrator               | None                                                                    | Profile owner, including an administrator | Profile owner   |
+| Community profile or banner image | Recorded setter, unless a site administrator or unknown | Other live community owners; all live owners when the binder is unknown | Recorded non-administrator setter         | Recorded setter |
+| Topic logo or hero                | None                                                    | None                                                                    | None                                      | None            |
+
+Notify, respond, inform and strike sets contain only live accounts. Retention uses the retained
+account identity even after deletion and does not grant case access. A moderator setting an image
+as a community owner acts as a user; only a site administrator's community setting is provider
+content. Avatars and profile-link images remain the owner's own content regardless of staff role.
+Topic images and administrator-set community images are assessed and may be withheld, but have no
+subscriber counter-notice flow or incident. The claimant still receives the decision. These drafted
+subscriber and strike rules await counsel confirmation in #1230.
+
+Other community owners receive one informational in-app notice and email, linked to the community
+page. They gain no participant case access, appeal or counter-notice right. The notice says whether
+the setter was told; it is also sent for administrator-set and unknown-binder images.
+
+Deleting or erasing a setter neither restores the image nor cancels a counter-notice filed first.
+If staff accept that counter-notice, the statutory window still counts from receipt, including when
+acceptance follows deletion. With no accepted counter-notice, withholding remains. Staff can admit
+and review emailed correspondence from the former setter through the existing appeal or
+counter-notice path.
+
+### Administrator lift without a responding account
+
+An administrator may lift an active restriction with an encrypted written rationale only when its
+live respond set is empty. This includes a post whose author's account is deleted or erased, a
+surface whose setter is gone or unknown, an administrator-set community image, and a topic image.
+A live responding account or an already lifted restriction returns 409; a non-administrator returns 403. The API-only action is `POST /api/v1/copyright-notices/:id/restrictions/:restrictionId/lifts`;
+there is no web control yet.
+
+The lift records immutable actor and restriction evidence, voids the supported incident, queues a
+restore intent and sends the claimant's reversed decision once per case. Delivery still rechecks
+other active restrictions, court or CCB filings, and placement safety. Restoration notices are
+created only when delivery lifts the restriction, with cause `administrator_lift` and the actual
+visible, still-hidden or unavailable outcome. Community owners in the inform set receive them via
+the community page; topic images have no owner recipient.
 
 ## Derived state machine
 
@@ -292,8 +348,9 @@ explicit manual-fallback reason while reviewing the preserved original.
 For email approvals, staff resolve each recommended hosted URL to live image placements and select
 verified targets. If a URL cannot be resolved, the review surface explains the failure and allows
 manual target identification; approval still validates the chosen target against the live placement.
-Staff approval is not gated by who can view the post: it resolves any existing hosted placement,
-including a signed-in-only, followers-only, private-community, draft, or archived post. Hosted
+Staff approval is not gated by claimant viewability: it resolves any existing hosted placement,
+including a signed-in-only, followers-only, private-community, draft, or archived post, and a private
+community profile or banner image. Hosted
 material is subject to a notice wherever it resides on the service, not only where an anonymous
 visitor can find it.
 
@@ -310,8 +367,9 @@ agent outage cannot strand a legal notice. Form routes require Turnstile, enforc
 authenticated route boundary, apply route-scoped rate limits, and store only a purpose-separated
 HMAC-derived guest network digest rather than the source address.
 
-Hosted-use selection accepts canonical post URLs, including `/story/:id`, and verifies their images
-through the post API. Query strings, fragments, and foreign hosts are rejected.
+Hosted-use selection accepts canonical post URLs, including `/story/:id`, user profiles, topics, and
+community pages, and resolves their image slots through the corresponding API. Selection keys on
+`(surface, owner, image)`. Query strings, fragments, and foreign hosts are rejected.
 
 A claimant form resolves a target only if the claimant could open that post directly at submission,
 the same check as the post API rather than anonymous discovery. A signed-in-only post resolves for
@@ -321,7 +379,9 @@ viewable. A post awaiting community review is hidden from everyone but staff, in
 and staff claimants pass for any post that is not deleted. Any other target gets the same 422 as a
 target that does not exist (same status, message, and body, with nothing stored), so the form
 cannot be used to learn whether a post or image the claimant cannot see exists. A replay of an
-already accepted notice is answered before this check.
+already accepted notice is answered before this check. Avatar and profile-link targets require a
+live owner; topic targets require a live, unmerged topic; community images use the community
+viewability rule. A hidden surface has the same missing-placement 422 and stores nothing.
 
 Email admission trusts the SES receipt-rule classification and the configured
 `copyright-incoming/` object prefix, never recipient headers inside untrusted MIME. The original S3
@@ -371,7 +431,7 @@ An accepted case participant sees their own immutable statement texts and delive
 “Notices sent to you”. Posters receive restriction, first human review, and restriction-ended
 notices; signed-in notifiers see the notice decision. Staff and unrelated members do not receive
 that projection. A member who is both notifier and poster receives both sets addressed to them.
-Stored poster reasons contain only the affected target's public-eligible URL, never another owner's
+Stored poster or setter reasons contain only the affected target's public-eligible URL, never another owner's
 or a non-public target's URL. A deleted poster receives no new account delivery obligations; retained
 historical obligations do not authorize the erased account. Counter-notice deadline restoration
 states that it was automatic, distinct from a provisional restriction awaiting human review.
@@ -379,7 +439,10 @@ Guest and email-only claimants receive the reasons and usable redress in the ema
 an instruction to open an inaccessible authenticated case page. A rejection before email promotion
 is an intake decision: it does not invent a case identifier or establish US legal grounds.
 [Delivery obligations](#immutable-decision-statements) define the privacy boundary
-and distinguish review reversal from image restoration.
+and distinguish review reversal from image restoration. An `owner_information_notice` conveys only
+the community image change, not participant rights. Administrator-lift restoration carries the
+`administrator_lift` cause and the delivery-confirmed outcome; it is not sent while restoration is
+blocked by a court or CCB filing.
 
 `/copyright/notices/new` is public. A signed-out visitor files with the same Turnstile check,
 statutory fields, and § 512(f) warning as a signed-in member, and the notice is a guest filing as
@@ -497,6 +560,8 @@ must pass before an automated assessment may withhold:
   `automaticWithholdingMinAccountAgeDays` old, and at trust tier `automaticWithholdingMinTrustTier`
   or higher. In a rolling 24 hours, no claimant may have more than `automaticWithholdingClaimantDailyCap`
   notices, and no poster more than `automaticWithholdingPosterDailyCap`, withheld automatically.
+  Any non-post target, including a mixed post/surface notice, refuses automatic withholding with
+  `non_post_target` before these caps and remains with a moderator.
 - **No invented defaults.** The four thresholds are audited `copyright` fields that launch unset
   (-1). While any is unset, or the switch has no audited off-to-on change on record, automatic
   withholding is refused. Zero is a real value; a cap of zero refuses everything.
@@ -688,15 +753,17 @@ outcome. It never describes the claimant as the proven owner or the poster as an
 ## Repeat-infringer incidents
 
 A human `confirm` on a restriction or its immutable appeal review creates one incident for the
-non-deleted post author of that placement. A `reverse` in either review is terminal for that
-restriction and dominates every confirmation. Appeal decisions synchronize incidents in the same
+live account in the target's strike set above. An avatar or profile-link owner gets one even when an
+administrator; a non-administrator community setter gets one, including a moderator acting as an
+owner. Topic images and administrator-set community images create none. Every authorized reversal
+source, including an administrator lift, is terminal for that restriction and dominates confirmation. Appeal decisions synchronize incidents in the same
 transaction. Several targets on the same notice stay one incident per account; reversing one
 target preserves incidents supported by other confirmed targets. A guest placement with no author
 does not create one. Restoration does not remove the incident. A staff disposition of `withdrawn`,
 `duplicate`, or `abusive` makes its incident non-operative.
 
 The second operative incident for an account opens a staff review. Opening that review does not
-suspend or delete the account. Incident synchronization locks all affected authors through the
+suspend or delete the account. Incident synchronization locks all affected strike accounts and existing incident accounts through the
 existing publication lifecycle lock before recomputing state, and the open-review unique index
 keeps concurrent confirmations at one open review. A later reversal does not close an already-open
 review; enforcing outcomes recheck the operative threshold. Similarity candidates never create an
@@ -712,7 +779,8 @@ and publication dirty work share one account-lifecycle-serialized transaction, s
 does not partially enforce and the still-open review can be retried.
 
 `deleteUser` returns 409 while the account has an operative incident, or an unresolved qualifying
-legal hold on a placement whose post author is that account. A qualifying hold is an assessment
+legal hold on a placement for which that account belongs to the retention set above. A qualifying
+hold is an assessment
 with an original claimant, the same material, a proceeding kind, a commencement time, and a
 designated-agent receipt, and with no resolution row. An open review alone does not block deletion.
 An administrator-placed legal-process preservation hold on the account, such as for a §512(h)
@@ -777,7 +845,7 @@ period.
   capability, an open qualifying court or CCB hold with no resolution, or an open
   [legal-process preservation hold](#repeat-infringer-incidents) on an account party
   to the case. A party is the signed-in claimant, the submitter of any submission, the account of
-  an incident raised on the case, or the author of a post a target belongs to. A failed or bounced
+  an incident raised on the case, or a retained party of a target. A failed or bounced
   delivery alone does not block: no staff action clears it, so it would otherwise hold the case
   forever. The clock still waits from the delivery's last change, and a failed media action still
   blocks. A hold is recorded only on an account, so legal process that concerns an email-only

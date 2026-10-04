@@ -1,9 +1,10 @@
 import Link from 'next/link'
 import { userHref } from '@/lib/links/entity-href'
-import type {
-  CopyrightNoticeDetail,
-  CopyrightNoticeResponseEligibility,
-  CopyrightParticipantNoticeDetail,
+import {
+  copyrightImageSurfaceLabel,
+  type CopyrightNoticeDetail,
+  type CopyrightNoticeResponseEligibility,
+  type CopyrightParticipantNoticeDetail,
 } from '@/types/copyright-notices'
 import { CopyrightNoticeStatements } from './copyright-notice-statements'
 import { copyrightTimelineEventLabel } from './copyright-timeline-event-label'
@@ -47,6 +48,7 @@ export function CopyrightNoticeDetailView({
               key={target.id}
               className='rounded border p-3'
             >
+              <p className='text-sm font-medium'>{copyrightImageSurfaceLabel(target.surface)}</p>
               {target.hosted_use_url ? (
                 <a
                   href={target.hosted_use_url}

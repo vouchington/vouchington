@@ -35,6 +35,39 @@ describe('copyright submission request contracts', () => {
 
   describe('POST /copyright-notices', () => {
     type Form = Awaited<ReturnType<typeof createCopyrightFormFixture>>['form']
+    it.each<[string, (target: Form['targets'][number]) => Record<string, unknown>, string]>([
+      [
+        'missing surface',
+        target => ({ ...target, surface: undefined }),
+        'targets[].surface is invalid',
+      ],
+      [
+        'unknown surface',
+        target => ({ ...target, surface: 'video-image' }),
+        'targets[].surface is invalid',
+      ],
+      [
+        'missing owner',
+        target => ({ ...target, post_id: undefined }),
+        'targets[].post_id must be a UUID',
+      ],
+      [
+        'another branch owner',
+        target => ({ ...target, user_id: crypto.randomUUID() }),
+        'Invalid request body',
+      ],
+      ['extra key', target => ({ ...target, injected: true }), 'Invalid request body'],
+    ])('rejects a target with %s before admission', async (_label, change, message) => {
+      const { claimant, form } = await createCopyrightFormFixture()
+      const request = createRequest()
+      await request.authenticateAs(claimant)
+      const response = await request
+        .post(NOTICES)
+        .set('Idempotency-Key', crypto.randomUUID())
+        .send({ ...form, targets: [change(form.targets[0]!)] })
+        .expect(422)
+      expect(response.body.message).toBe(message)
+    })
     it.each<[string, (form: Form) => object]>([
       ['an unknown key', form => ({ ...form, injected: true })],
       ['a non-string cf_turnstile_response', form => ({ ...form, cf_turnstile_response: 7 })],

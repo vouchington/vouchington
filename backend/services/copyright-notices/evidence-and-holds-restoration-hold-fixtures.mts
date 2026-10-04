@@ -42,6 +42,7 @@ export async function createCopyrightRestorationHoldFixture(targetCount = 1) {
         placementId: placement.placement_id,
         placementRevision: placement.placement_revision,
         imageId,
+        bindingFamily: 'post' as const,
         hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
       }
     }),

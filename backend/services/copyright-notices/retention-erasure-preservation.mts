@@ -1,5 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { copyrightPlacementPartiesSql } from './placement-parties.mts'
 
 /**
  * The body of a `preservation(notice_id, released_at)` CTE: one row per legal-process preservation
@@ -13,7 +14,7 @@ import sql from 'sql-template-strings'
  * column. Holds are never deleted, so a released hold still marks when the case last stopped being
  * preserved: the retention clock waits from that time.
  */
-export const COPYRIGHT_PRESERVATION_PARTIES_SQL = `
+export const COPYRIGHT_PRESERVATION_PARTIES_SQL = sql`
       SELECT notice.id AS notice_id, hold.released_at
       FROM user_legal_preservation_holds hold
       JOIN copyright_notices notice ON notice.claimant_user_id = hold.account_user_id
@@ -29,11 +30,10 @@ export const COPYRIGHT_PRESERVATION_PARTIES_SQL = `
         ON incident.account_user_id = hold.account_user_id
       UNION ALL
       SELECT target.copyright_notice_id, hold.released_at
-      FROM user_legal_preservation_holds hold
-      JOIN posts post ON post.created_by_id = hold.account_user_id
-      JOIN image_placements image_placement ON image_placement.post_id = post.id
-      JOIN copyright_notice_targets target ON target.placement_id = image_placement.placement_id
-    `
+      FROM copyright_notice_targets target
+      CROSS JOIN LATERAL `.append(copyrightPlacementPartiesSql('retain')).append(sql` party
+      JOIN user_legal_preservation_holds hold ON hold.account_user_id = party.user_id
+    `)
 
 /**
  * Takes, in id order, the per-account advisory lock that placing a preservation hold and deleting
@@ -46,7 +46,7 @@ async function lockCopyrightRetentionPartyAccounts(
   transaction: TransactionQuery,
   noticeId: string,
 ): Promise<void> {
-  const { rows } = await transaction<{ user_id: string }>(sql`/* listCopyrightRetentionParties */
+  const statement = sql`/* listCopyrightRetentionParties */
     SELECT DISTINCT party.user_id FROM (
       SELECT claimant_user_id AS user_id FROM copyright_notices WHERE id = ${noticeId}
       UNION ALL
@@ -56,14 +56,16 @@ async function lockCopyrightRetentionPartyAccounts(
       SELECT account_user_id FROM copyright_repeat_infringer_incidents
       WHERE copyright_notice_id = ${noticeId}
       UNION ALL
-      SELECT post.created_by_id
+      SELECT party.user_id
       FROM copyright_notice_targets target
-      JOIN image_placements image_placement ON image_placement.placement_id = target.placement_id
-      JOIN posts post ON post.id = image_placement.post_id
+      CROSS JOIN LATERAL `
+  statement.append(copyrightPlacementPartiesSql('retain'))
+  statement.append(sql` party
       WHERE target.copyright_notice_id = ${noticeId}
     ) party
     WHERE party.user_id IS NOT NULL
     ORDER BY party.user_id`)
+  const { rows } = await transaction<{ user_id: string }>(statement)
   for (const { user_id: userId } of rows) {
     // oxlint-disable-next-line no-await-in-loop -- locks must be taken one at a time in id order.
     await transaction(sql`/* lockCopyrightRetentionParty */

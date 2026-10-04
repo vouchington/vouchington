@@ -2,6 +2,7 @@ import assert from 'http-assert'
 import { isUUID } from '@modules/utils'
 import { isEmailAddress } from '@ts-shared/utils/validation-core'
 import type { CopyrightJurisdiction } from './types.mts'
+import type { CopyrightImageSelector } from './placement-resolution.mts'
 
 const JURISDICTIONS = new Set<CopyrightJurisdiction>(['us_dmca'])
 
@@ -39,12 +40,31 @@ export function parseCopyrightNoticeForm(body: Record<string, unknown>) {
     422,
     'targets must contain 1 to 20 hosted images',
   )
-  const targets = body.targets.map(target => {
-    const item = target as Record<string, unknown>
+  const targets: CopyrightImageSelector[] = body.targets.map(target => {
     assert(
-      typeof item.post_id === 'string' && isUUID(item.post_id),
+      target && typeof target === 'object' && !Array.isArray(target),
       422,
-      'targets[].post_id must be a UUID',
+      'targets[] must be an object',
+    )
+    const item = target as Record<string, unknown>
+    const surface = item.surface
+    const ownerField =
+      surface === 'post-image'
+        ? 'post_id'
+        : surface === 'user-profile-image'
+          ? 'user_id'
+          : surface === 'user-profile-link-image'
+            ? 'user_profile_link_id'
+            : surface === 'topic-logo-image' || surface === 'topic-hero-image'
+              ? 'topic_id'
+              : surface === 'community-profile-image' || surface === 'community-banner-image'
+                ? 'community_id'
+                : null
+    assert(ownerField, 422, 'targets[].surface is invalid')
+    assert(
+      typeof item[ownerField] === 'string' && isUUID(item[ownerField]),
+      422,
+      `targets[].${ownerField} must be a UUID`,
     )
     assert(
       typeof item.image_id === 'string' && isUUID(item.image_id),
@@ -52,15 +72,40 @@ export function parseCopyrightNoticeForm(body: Record<string, unknown>) {
       'targets[].image_id must be a UUID',
     )
     assert(boundedString(item.target_url, 2048), 422, 'targets[].target_url is required')
-    return {
-      postId: item.post_id as string,
-      imageId: item.image_id as string,
-      hostedUseUrl: item.target_url,
+    const shared = { imageId: item.image_id as string, hostedUseUrl: item.target_url }
+    switch (surface) {
+      case 'post-image':
+        return { ...shared, surfaceKind: surface, postId: item.post_id as string }
+      case 'user-profile-image':
+        return { ...shared, surfaceKind: surface, userId: item.user_id as string }
+      case 'user-profile-link-image':
+        return {
+          ...shared,
+          surfaceKind: surface,
+          userProfileLinkId: item.user_profile_link_id as string,
+        }
+      case 'topic-logo-image':
+      case 'topic-hero-image':
+        return { ...shared, surfaceKind: surface, topicId: item.topic_id as string }
+      case 'community-profile-image':
+      case 'community-banner-image':
+        return { ...shared, surfaceKind: surface, communityId: item.community_id as string }
     }
+    throw new Error('Unknown copyright target surface')
   })
-  const targetKeys = targets.map(
-    target => `${target.postId.toLowerCase()}:${target.imageId.toLowerCase()}`,
-  )
+  const targetKeys = targets.map(target => {
+    const owner =
+      'postId' in target
+        ? target.postId
+        : 'userId' in target
+          ? target.userId
+          : 'userProfileLinkId' in target
+            ? target.userProfileLinkId
+            : 'topicId' in target
+              ? target.topicId
+              : target.communityId
+    return `${target.surfaceKind}:${owner.toLowerCase()}:${target.imageId.toLowerCase()}`
+  })
   assert(new Set(targetKeys).size === targets.length, 422, 'targets must be unique')
   return {
     jurisdiction: jurisdiction as CopyrightJurisdiction,

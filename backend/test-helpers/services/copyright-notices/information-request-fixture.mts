@@ -39,7 +39,14 @@ export async function fileTestCopyrightFormNotice(signedIn: boolean): Promise<{
       goodFaithBelief: true,
       accuracyAuthorityUnderPenaltyOfPerjury: true,
       electronicSignature: 'Claimant',
-      claimantTargets: [{ postId, imageId, hostedUseUrl: `https://voucha.ai/posts/${postId}` }],
+      claimantTargets: [
+        {
+          surfaceKind: 'post-image' as const,
+          postId,
+          imageId,
+          hostedUseUrl: `https://voucha.ai/posts/${postId}`,
+        },
+      ],
     },
   })
   return { noticeId: intake.copyright_notice_id, claimantEmail }
