@@ -25,12 +25,12 @@ describe('hard-purged uploader identity', () => {
     await purgeUploaderForTest(uploader)
     expect(await getTestUserRaw(uploader.id)).toBeNull()
 
-    await expect(createImageUploadUrl(uploader, uploadOptions)).rejects.toThrow(
-      /cannot own new data after deletion|does not exist/,
-    )
-    await expect(claimImageUpload(uploader.id, upload.image_id)).rejects.toThrow(
-      /cannot own new data after deletion|does not exist/,
-    )
+    await expect(createImageUploadUrl(uploader, uploadOptions)).rejects.toMatchObject({
+      status: 401,
+    })
+    await expect(claimImageUpload(uploader.id, upload.image_id)).rejects.toMatchObject({
+      status: 401,
+    })
     await expect(getImageUploadState(uploader.id, upload.image_id)).rejects.toMatchObject({
       status: 404,
     })
@@ -49,6 +49,6 @@ describe('hard-purged uploader identity', () => {
 
     await expect(
       persistPromotedImageKey(upload.image_id, hash, `digest/${hash.toString('hex')}`),
-    ).rejects.toThrow(/cannot own new data after deletion|does not exist/)
+    ).rejects.toMatchObject({ status: 401 })
   }, 60_000)
 })

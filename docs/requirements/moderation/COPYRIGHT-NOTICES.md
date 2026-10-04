@@ -28,13 +28,16 @@ route as new intake, in-case response, or staff and fails on an unclassified rou
 
 ## Ownership boundaries
 
-| Owner                               | Responsibility                                                                                                                                                 |
-| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@services/copyright-notices`       | Case creation, immutable submissions and evidence metadata, compliance assessments, human review, public projection, deadlines, holds, and restoration intents |
-| Copyright intake routes and workers | Authenticate or verify CAPTCHA/attestation, encrypt private fields, preserve email source, and call the domain service                                         |
-| Media placement service             | Authoritative current placement revision, reversible delivery state, and non-copyright blockers such as deletion, replacement, safety action, or court order   |
-| Staff moderation surfaces           | Human review, corrections, appeals, correspondence approval, and legal escalation                                                                              |
-| Notifications and email delivery    | Idempotent delivery intents, retries, bounce visibility, and verified case-scoped access                                                                       |
+- `@services/copyright-notices` owns case creation, immutable submissions and evidence metadata,
+  compliance assessments, human review, public projection, deadlines, holds, and restoration intents.
+- Copyright intake routes and workers authenticate or verify CAPTCHA/attestation, encrypt private
+  fields, preserve email source, and call the domain service.
+- The media placement service owns the current placement revision, reversible delivery state, and
+  non-copyright blockers such as deletion, replacement, safety action, or court order.
+- Staff moderation surfaces own human review, corrections, appeals, correspondence approval, and
+  legal escalation.
+- Notifications and email delivery own idempotent intents, retries, bounce visibility, and verified
+  case-scoped access.
 
 No caller may update copyright tables directly. In particular, a delivery worker cannot decide that
 a counter-notice is compliant or that a hold is qualifying.

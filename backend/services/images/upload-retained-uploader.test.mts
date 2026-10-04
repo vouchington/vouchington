@@ -23,10 +23,8 @@ describe('retained uploader identity', () => {
         contentLength: 1024,
         dependencies: { presignImageUploadUrl: presign },
       }),
-    ).rejects.toThrow('cannot own new data after deletion')
-    await expect(claimImageUpload(user.id, upload.image_id)).rejects.toThrow(
-      'cannot own new data after deletion',
-    )
+    ).rejects.toMatchObject({ status: 401 })
+    await expect(claimImageUpload(user.id, upload.image_id)).rejects.toMatchObject({ status: 401 })
     await expect(getImageUploadState(user.id, upload.image_id)).rejects.toMatchObject({
       status: 404,
     })

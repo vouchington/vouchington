@@ -1,5 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import createHttpError from 'http-errors'
+import { lockActiveUserLifecycleForMutation } from '@services/users/active-user-lifecycle-lock'
 import { deriveUploadStatus } from './get-upload-state.mts'
 import { getImageById } from './get.mts'
 
@@ -10,10 +11,7 @@ export async function claimImageUpload(
   imageId: string,
 ): Promise<{ claimed: boolean; image: ImageUploadRecord }> {
   await using transaction = await beginTransaction()
-  await transaction(
-    `/* claimImageUpload:lockActiveUploader */ SELECT fn_lock_active_user_for_mutation($1)`,
-    [userId],
-  )
+  await lockActiveUserLifecycleForMutation(transaction, userId)
   const { rows } = await transaction<ImageUploadRecord>(
     `/* claimImageUpload:lock */
     SELECT *
@@ -70,10 +68,7 @@ export async function persistPromotedImageKey(
   )
   const creatorId = creatorRows[0]?.created_by_id
   if (!creatorId) throw createHttpError(409, 'Image upload is no longer eligible for promotion')
-  await transaction(
-    `/* persistPromotedImageKey:lockActiveUploader */ SELECT fn_lock_active_user_for_mutation($1)`,
-    [creatorId],
-  )
+  await lockActiveUserLifecycleForMutation(transaction, creatorId)
   const { rows } = await transaction<ImageUploadRecord>(
     `/* persistPromotedImageKey:lock */
     SELECT *
@@ -86,6 +81,7 @@ export async function persistPromotedImageKey(
   const image = rows[0]
   if (
     !image ||
+    image.created_by_id !== creatorId ||
     image.deleted_at ||
     image.upload_started_at === null ||
     image.upload_completed_at !== null ||

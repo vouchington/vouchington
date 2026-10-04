@@ -38,6 +38,7 @@
     "@services/post-revisions": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/topics": "workspace:^",
+    "@services/users": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/media": "^0.2.0",

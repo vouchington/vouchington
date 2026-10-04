@@ -4,6 +4,7 @@ import { MediaError, validateMediaUpload } from '@vouchington/media'
 import { SUPPORTED_IMAGE_FORMATS } from './constants.mts'
 import { presignImageUploadUrl } from './presign-upload-url.mts'
 import createHttpError from 'http-errors'
+import { lockActiveUserLifecycleForMutation } from '@services/users/active-user-lifecycle-lock'
 
 const PRESIGNED_URL_EXPIRATION_SECONDS = 3600 // 1 hour
 
@@ -24,6 +25,8 @@ const defaultDependencies: CreateImageUploadUrlDependencies = {
 export async function createImageUploadUrl(user: { id: string }, options: CreateUploadUrlOptions) {
   const dependencies = { ...defaultDependencies, ...options.dependencies }
   const { contentType: normalizedContentType } = validateImageUpload(options)
+  await using transaction = await beginTransaction()
+  await lockActiveUserLifecycleForMutation(transaction, user.id)
 
   const imageId = mintUUIDv7()
   const s3Key = imageId
@@ -36,11 +39,6 @@ export async function createImageUploadUrl(user: { id: string }, options: Create
   })
 
   // Source provenance and the selected presign bucket commit together in the row.
-  await using transaction = await beginTransaction()
-  await transaction(
-    `/* createImageUploadUrl:lockActiveUploader */ SELECT fn_lock_active_user_for_mutation($1)`,
-    [user.id],
-  )
   const { rows } = await transaction(
     `/* createImageUploadUrl */
     INSERT INTO images (
