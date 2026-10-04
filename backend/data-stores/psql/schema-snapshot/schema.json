@@ -21236,6 +21236,67 @@
           "unique": false,
           "valid": true
         },
+        "idx_copyright_eu_dispute_settlement_referrals__notice_page": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_eu_dispute_settlement_referrals__notice_page ON public.copyright_eu_dispute_settlement_referrals USING btree (copyright_notice_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_eu_dispute_settlement_referrals__participant_page": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_eu_dispute_settlement_referrals__participant_page ON public.copyright_eu_dispute_settlement_referrals USING btree (copyright_notice_id, referred_by_user_id, id) WHERE (referred_by_user_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "referred_by_user_id",
+              "descending": false,
+              "expression": "referred_by_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(referred_by_user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_copyright_eu_dispute_settlement_referrals__recorded_by": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -35745,6 +35806,33 @@
               "column": "copyright_territorial_decision_id",
               "descending": false,
               "expression": "copyright_territorial_decision_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_territorial_redress_requests__decision_page": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_territorial_redress_requests__decision_page ON public.copyright_territorial_redress_requests USING btree (copyright_territorial_decision_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_territorial_decision_id",
+              "descending": false,
+              "expression": "copyright_territorial_decision_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }

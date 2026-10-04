@@ -43,6 +43,8 @@ _none_
 - `copyright_eu_dispute_settlement_referrals_pkey`: `CREATE UNIQUE INDEX copyright_eu_dispute_settlement_referrals_pkey ON public.copyright_eu_dispute_settlement_referrals USING btree (id)`
 - `idx_copyright_eu_dispute_settlement_referrals__decision`: `CREATE INDEX idx_copyright_eu_dispute_settlement_referrals__decision ON public.copyright_eu_dispute_settlement_referrals USING btree (copyright_notice_id, copyright_territorial_decision_id)`
 - `idx_copyright_eu_dispute_settlement_referrals__notice`: `CREATE INDEX idx_copyright_eu_dispute_settlement_referrals__notice ON public.copyright_eu_dispute_settlement_referrals USING btree (copyright_notice_id, jurisdiction)`
+- `idx_copyright_eu_dispute_settlement_referrals__notice_page`: `CREATE INDEX idx_copyright_eu_dispute_settlement_referrals__notice_page ON public.copyright_eu_dispute_settlement_referrals USING btree (copyright_notice_id, id)`
+- `idx_copyright_eu_dispute_settlement_referrals__participant_page`: `CREATE INDEX idx_copyright_eu_dispute_settlement_referrals__participant_page ON public.copyright_eu_dispute_settlement_referrals USING btree (copyright_notice_id, referred_by_user_id, id) WHERE (referred_by_user_id IS NOT NULL)`
 - `idx_copyright_eu_dispute_settlement_referrals__recorded_by`: `CREATE INDEX idx_copyright_eu_dispute_settlement_referrals__recorded_by ON public.copyright_eu_dispute_settlement_referrals USING btree (recorded_by_id) WHERE (recorded_by_id IS NOT NULL)`
 - `idx_copyright_eu_dispute_settlement_referrals__referred_by`: `CREATE INDEX idx_copyright_eu_dispute_settlement_referrals__referred_by ON public.copyright_eu_dispute_settlement_referrals USING btree (referred_by_user_id) WHERE (referred_by_user_id IS NOT NULL)`
 

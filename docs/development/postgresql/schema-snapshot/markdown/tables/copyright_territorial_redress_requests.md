@@ -44,6 +44,7 @@ Not partitioned — growth: unbounded.
 
 - `copyright_territorial_redress_requests_pkey`: `CREATE UNIQUE INDEX copyright_territorial_redress_requests_pkey ON public.copyright_territorial_redress_requests USING btree (id)`
 - `idx_copyright_territorial_redress_requests__decision`: `CREATE INDEX idx_copyright_territorial_redress_requests__decision ON public.copyright_territorial_redress_requests USING btree (copyright_notice_id, copyright_territorial_decision_id)`
+- `idx_copyright_territorial_redress_requests__decision_page`: `CREATE INDEX idx_copyright_territorial_redress_requests__decision_page ON public.copyright_territorial_redress_requests USING btree (copyright_territorial_decision_id, id)`
 - `idx_copyright_territorial_redress_requests__submitter`: `CREATE INDEX idx_copyright_territorial_redress_requests__submitter ON public.copyright_territorial_redress_requests USING btree (submitted_by_user_id) WHERE (submitted_by_user_id IS NOT NULL)`
 - `uq_copyright_territorial_redress_requests__guest`: `CREATE UNIQUE INDEX uq_copyright_territorial_redress_requests__guest ON public.copyright_territorial_redress_requests USING btree (copyright_territorial_decision_id) WHERE (submitted_by_user_id IS NULL)`
 - `uq_copyright_territorial_redress_requests__idempotency`: `CREATE UNIQUE INDEX uq_copyright_territorial_redress_requests__idempotency ON public.copyright_territorial_redress_requests USING btree (submitted_by_user_id, jurisdiction, idempotency_key)`
