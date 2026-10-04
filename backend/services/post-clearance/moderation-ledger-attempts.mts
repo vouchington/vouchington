@@ -1,3 +1,4 @@
+import { getPostClearanceWorkLimit } from './work-limits.mts'
 import { beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import type {
@@ -24,6 +25,7 @@ export async function beginPostModerationAttempt(
   postId: string,
   source: AutomatedPostModerationSource,
 ): Promise<PostModerationAttempt | null> {
+  const leaseMinutes = getPostClearanceWorkLimit('attempt_lease_minutes')
   await using transaction = await beginTransaction()
   const version = await ensureCurrentPostModerationVersion(postId, { query: transaction })
   const { rows } = await transaction<PostModerationAttempt>(
@@ -32,7 +34,7 @@ export async function beginPostModerationAttempt(
         UPDATE post_moderation_work_items work
         SET leased_at = CURRENT_TIMESTAMP,
           lease_token = uuidv7(),
-          lease_expires_at = LEAST($3, CURRENT_TIMESTAMP + INTERVAL '4 minutes'),
+          lease_expires_at = LEAST($3, CURRENT_TIMESTAMP + $4::integer * INTERVAL '1 minute'),
           generation = generation + 1
         WHERE work.version_id = $1
           AND work.source = $2::post_moderation_sources
@@ -67,7 +69,7 @@ export async function beginPostModerationAttempt(
         attempt.attempt_number, attempt.lease_token, version.deadline_at, version.content_sha256
       FROM inserted_attempt attempt
       JOIN post_moderation_versions version ON version.id = attempt.version_id`,
-    [version.id, source, version.deadline_at],
+    [version.id, source, version.deadline_at, leaseMinutes],
   )
   await transaction.commit()
   return rows[0] ?? null
@@ -103,6 +105,8 @@ export async function failPostModerationAttempt(
   attempt: PostModerationAttempt,
   errorCode: string,
 ): Promise<{ recorded: boolean; exhausted: boolean }> {
+  const firstRetryMinutes = getPostClearanceWorkLimit('first_retry_minutes')
+  const laterRetryMinutes = getPostClearanceWorkLimit('later_retry_minutes')
   await using transaction = await beginTransaction()
   const { rows } = await transaction<{ exhausted: boolean }>(
     `/* failPostModerationAttempt */
@@ -125,8 +129,8 @@ export async function failPostModerationAttempt(
       released_work AS (
         UPDATE post_moderation_work_items work
         SET available_at = CASE failed_attempt.attempt_number
-              WHEN 1 THEN version.created_at + INTERVAL '5 minutes'
-              ELSE version.created_at + INTERVAL '20 minutes'
+              WHEN 1 THEN version.created_at + $6::integer * INTERVAL '1 minute'
+              ELSE version.created_at + $7::integer * INTERVAL '1 minute'
             END,
           completed_at = CASE WHEN failed_attempt.attempt_number >= 3
             THEN CURRENT_TIMESTAMP ELSE NULL END,
@@ -151,7 +155,15 @@ export async function failPostModerationAttempt(
         ON CONFLICT (attempt_id) DO NOTHING
       )
       SELECT exhausted FROM released_work`,
-    [attempt.id, attempt.version_id, attempt.source, attempt.lease_token, errorCode],
+    [
+      attempt.id,
+      attempt.version_id,
+      attempt.source,
+      attempt.lease_token,
+      errorCode,
+      firstRetryMinutes,
+      laterRetryMinutes,
+    ],
   )
   await transaction.commit()
   return { recorded: rows.length > 0, exhausted: rows[0]?.exhausted ?? false }

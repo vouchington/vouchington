@@ -1,13 +1,15 @@
+import { getRssFeedItemsWorkLimit } from './work-limits.mts'
 import type { ExistingRssFeedItemRow } from './upsert-queries.mts'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { chunkArray, RSS_FEED_ITEM_SQL_BATCH_SIZE } from './processing-limits.mts'
+import { chunkArray } from './processing-limits.mts'
 
 export async function getExistingRssFeedItems(
   rssFeedId: string,
   urlHostnameId: string,
   guids: string[],
 ): Promise<ExistingRssFeedItemRow[]> {
+  const RSS_FEED_ITEM_SQL_BATCH_SIZE = getRssFeedItemsWorkLimit('sql_batch_size')
   return (
     await Promise.all(
       chunkArray(guids, RSS_FEED_ITEM_SQL_BATCH_SIZE).map(async guidChunk => {

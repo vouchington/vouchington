@@ -25,6 +25,7 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/stripe": "workspace:^",
     "@modules/token-secrets": "workspace:^",

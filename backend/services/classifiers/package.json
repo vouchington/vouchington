@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@services/entity-relations": "workspace:^",

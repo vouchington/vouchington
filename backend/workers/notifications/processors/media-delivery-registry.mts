@@ -1,3 +1,4 @@
+import { getMediaDeliverySafetyWorkLimit } from '@services/media-delivery-safety/work-limits'
 import {
   enqueueApplyMediaDeliveryRegistryRecord,
   enqueueContinueMediaDeliveryRegistryReconciliation,
@@ -43,13 +44,14 @@ export async function processReconcileMediaDeliveryRegistry(
     listRecoverableMediaDeliveryRegistryKeys
   const enqueue =
     dependencies.enqueueApplyMediaDeliveryRegistryRecord ?? enqueueApplyMediaDeliveryRegistryRecord
+  const pageSize = getMediaDeliverySafetyWorkLimit('recovery_page_size')
   const stage =
     dependencies.stageAllCurrentImagePlacementDeliveryRecords ??
     stageAllCurrentImagePlacementDeliveryRecords
   const repair =
     dependencies.reconcileMediaDeliveryRepairMarkers ?? reconcileMediaDeliveryRepairMarkers
   if (!data.scanBefore) {
-    await repair(100)
+    await repair(pageSize)
     await stage()
   }
   const cutoff =
@@ -63,7 +65,7 @@ export async function processReconcileMediaDeliveryRegistry(
   const scanBefore = data.scanBefore ?? (await cutoff())
   // ast-grep-ignore: no-three-sequential-awaits -- terminal cleanup precedes primary discovery, then child acceptance precedes continuation
   await fail(scanBefore)
-  const page = await list({ limit: 100, scanBefore, after: data.after })
+  const page = await list({ limit: pageSize, scanBefore, after: data.after })
   const accepted = await Promise.allSettled(page.results.map(deliveryKey => enqueue(deliveryKey)))
   const failures = accepted.filter(result => result.status === 'rejected')
   if (failures.length)

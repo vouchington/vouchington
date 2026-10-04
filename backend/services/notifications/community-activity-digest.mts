@@ -1,8 +1,8 @@
+import { getNotificationsWorkLimit } from './work-limits.mts'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import {
-  COMMUNITY_ACTIVITY_DIGEST_RECIPIENT_BATCH_SIZE,
   getPreviousClosedMondayWindow,
   listCommunityActivityDigestRecipientPage,
 } from './community-activity-digest-recipients.mts'
@@ -20,6 +20,9 @@ export async function createCommunityActivityDigestBatch(input: {
   created: Array<{ userId: string; notificationId: string }>
   nextUserId: string | null
 }> {
+  const COMMUNITY_ACTIVITY_DIGEST_RECIPIENT_BATCH_SIZE = getNotificationsWorkLimit(
+    'community_digest_recipient_batch_size',
+  )
   const { rows: recipientRows, page } = await listCommunityActivityDigestRecipientPage(
     input.afterUserId,
   )

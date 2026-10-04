@@ -1,9 +1,8 @@
+import { getBlueskyFollowsWorkLimit } from './work-limits.mts'
 import { createAsyncGeneratorFromCursor, read, write } from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import { enqueueOnUserUpdated } from '@queues/entity-listeners/enqueues'
-
-const BACKFILL_BATCH_SIZE = 500
 
 export type BlueskyDisconnectRequest = {
   userId: string
@@ -56,7 +55,7 @@ export async function hasPendingBlueskyDisconnect(
 }
 
 export async function* streamPendingBlueskyDisconnectBatches(
-  batchSize = BACKFILL_BATCH_SIZE,
+  batchSize = getBlueskyFollowsWorkLimit('backfill_batch_size'),
 ): AsyncGenerator<BlueskyDisconnectRequest[], void, unknown> {
   let batch: BlueskyDisconnectRequest[] = []
   for await (const row of createAsyncGeneratorFromCursor<{

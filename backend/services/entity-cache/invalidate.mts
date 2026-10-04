@@ -1,3 +1,4 @@
+import { getEntityCacheWorkLimit } from './work-limits.mts'
 import {
   getUserCacheKeys,
   getTopicCacheKeys,
@@ -35,8 +36,6 @@ import {
 
 type InvalidateFunction<Keys extends unknown[] = unknown[]> = (...keys: Keys) => Promise<void>
 type CacheDeleteGroups = Parameters<typeof ValkeyCache.deleteFromCaches>[0]
-
-const CACHE_DELETE_KEYS_PER_BATCH = 500
 
 export const invalidate = {
   users: wrap(async (...keys: unknown[]): Promise<void> => {
@@ -164,6 +163,7 @@ export const invalidate = {
 
 /** Publication reconciliation cannot acknowledge best-effort cache work. */
 export async function deleteFromCachesInChunks(groups: CacheDeleteGroups): Promise<void> {
+  const CACHE_DELETE_KEYS_PER_BATCH = getEntityCacheWorkLimit('delete_keys_per_batch')
   const maxKeys = Math.max(0, ...groups.map(group => group.keys.length))
   async function deleteNextChunk(start: number): Promise<void> {
     if (start >= maxKeys) return

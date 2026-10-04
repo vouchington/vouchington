@@ -1,5 +1,5 @@
+import { getPostPublicationWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql'
-import { POST_PUBLICATION_CAPTURE_BATCH_SIZE } from './constants.mts'
 import {
   lockTopicAliasPublicationScopes,
   recordTopicAliasPublicationWork,
@@ -29,6 +29,7 @@ export async function recordRssFeedHardDeleteTopicAliasPublicationScopes(
   query: TransactionQuery,
   rssFeedId: string,
 ): Promise<void> {
+  const POST_PUBLICATION_CAPTURE_BATCH_SIZE = getPostPublicationWorkLimit('capture_batch_size')
   let afterTopicAliasId: string | null = null
   while (true) {
     // oxlint-disable-next-line no-await-in-loop -- ascending alias pages preserve the publication scope lock order.

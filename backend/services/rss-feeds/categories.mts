@@ -1,9 +1,7 @@
+import { getRssFeedsWorkLimit } from './work-limits.mts'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { chunkArray } from '@services/rss-feed-items/processing-limits'
-
-export const RSS_FEED_CATEGORY_SQL_BATCH_SIZE = 500
-const RSS_FEED_CATEGORY_BACKFILL_BATCH_SIZE = 500
 
 /**
  * Normalizes an array of raw itunes:category texts for storage.
@@ -30,6 +28,7 @@ export async function upsertRssFeedCategories(
   rssFeedId: string,
   rawCategories: string[],
 ): Promise<void> {
+  const RSS_FEED_CATEGORY_SQL_BATCH_SIZE = getRssFeedsWorkLimit('category_sql_batch_size')
   if (rawCategories.length === 0) return
 
   const normalized = normalizeFeedCategories(rawCategories)
@@ -106,6 +105,7 @@ async function upsertRssFeedCategoriesChunk(
  * is added or a topic name/slug changes.
  */
 export async function backfillCategoriesForTopicAlias(topicId: string): Promise<number> {
+  const RSS_FEED_CATEGORY_BACKFILL_BATCH_SIZE = getRssFeedsWorkLimit('category_backfill_batch_size')
   let updated = 0
 
   while (true) {

@@ -1,7 +1,7 @@
+import { getClassifiersWorkLimit } from './work-limits.mts'
 import { getMinUUIDv7ForDate } from '@modules/utils/ids'
 import {
   CLASSIFIER_COMPARISON_BUCKET_COUNT,
-  CLASSIFIER_COMPARISON_MAX_BATCHES,
   type ClassifierHumanVoteComparisonOptions,
 } from './human-vote-comparison-types.mts'
 
@@ -97,6 +97,7 @@ export function buildHumanVoteComparisonQuery(options: ClassifierHumanVoteCompar
   text: string
   values: unknown[]
 } {
+  const CLASSIFIER_COMPARISON_MAX_BATCHES = getClassifiersWorkLimit('comparison_max_batches')
   const values: unknown[] = [
     options.classifierId,
     getMinUUIDv7ForDate(options.from),

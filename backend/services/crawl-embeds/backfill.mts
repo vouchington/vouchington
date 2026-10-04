@@ -1,10 +1,9 @@
+import { getCrawlEmbedsWorkLimit } from './work-limits.mts'
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import onError from '@modules/on-error'
 import { enqueueBulkCrawlEmbeds } from '@queues/crawl-embeds/enqueues'
 import sql from 'sql-template-strings'
 import { getOEmbedEndpointHostname } from './endpoint-hostname.mts'
-
-const BACKFILL_BATCH_SIZE = 500
 
 export async function backfillPendingCrawlEmbeds(): Promise<void> {
   for await (const entries of streamPendingCrawlEmbedBatches()) {
@@ -17,6 +16,7 @@ async function* streamPendingCrawlEmbedBatches(): AsyncGenerator<
   void,
   unknown
 > {
+  const BACKFILL_BATCH_SIZE = getCrawlEmbedsWorkLimit('backfill_batch_size')
   let entries: Array<{ crawlId: string; endpointHostname: string }> = []
   for await (const row of createAsyncGeneratorFromCursor<{ id: string; oembed_url: string }>(
     sql`/* streamPendingCrawlEmbedBatches */

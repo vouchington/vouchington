@@ -1,3 +1,4 @@
+import { getPostsWorkLimit } from '@services/posts/work-limits'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import {
   buildOtherwisePublicPostEligibilityFilter,
@@ -17,8 +18,6 @@ type CandidateRow = {
   succession_id: string | null
   succession_topic_ids: string[] | null
 }
-
-export const REVIEW_SUCCESSION_CANDIDATE_PAGE_SIZE = 100
 
 /** Locks every current candidate once, after all affected exact-topic groups are locked. */
 export async function lockReviewSuccessionCandidates(
@@ -92,6 +91,9 @@ async function listReviewSuccessionCandidateIds(
 }
 
 function reviewSuccessionCandidatePageCte(groups: readonly ReviewSuccessionGroup[]) {
+  const REVIEW_SUCCESSION_CANDIDATE_PAGE_SIZE = getPostsWorkLimit(
+    'review_succession_candidate_page_size',
+  )
   const records = groups.map(group => ({
     author_user_id: group.authorUserId,
     topic_ids: group.topicIds,

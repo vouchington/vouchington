@@ -1,5 +1,5 @@
+import { getRemoteActorsWorkLimit } from '@services/remote-actors/work-limits'
 import { read } from '@data-stores/psql'
-import { FOLLOWER_INBOX_BATCH_SIZE } from '@services/remote-actors'
 import {
   REMOTE_FOLLOWER_DIRECTORY_COUNT,
   REMOTE_FOLLOWER_SEED_COUNT,
@@ -11,7 +11,7 @@ import { runAndCapture, seedUser } from '../run-support.mts'
 import * as services from '../run-services.mts'
 
 const { listRemoteFollowerInboxPage } = services
-const REMOTE_FOLLOWER_PAGE_LIMIT = FOLLOWER_INBOX_BATCH_SIZE + 1
+const REMOTE_FOLLOWER_PAGE_LIMIT = getRemoteActorsWorkLimit('follower_inbox_batch_size') + 1
 const LATE_CURSOR_INDEX = REMOTE_FOLLOWER_SEED_COUNT - REMOTE_FOLLOWER_PAGE_LIMIT - 1
 
 export async function runRemoteFollowerScenarios(): Promise<void> {

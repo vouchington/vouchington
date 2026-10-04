@@ -2,7 +2,6 @@
 export const CLASSIFIER_COMPARISON_MAX_WINDOW_DAYS = 31
 
 /** The most decision batches one report reads, newest first; a larger window reports `truncated`. */
-export const CLASSIFIER_COMPARISON_MAX_BATCHES = 1000
 
 /** Probability buckets are tenths: bucket 0 is [0, 0.1) and the last bucket is [0.9, 1]. */
 export const CLASSIFIER_COMPARISON_BUCKET_COUNT = 10

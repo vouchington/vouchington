@@ -22,6 +22,7 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
     "@modules/feed-query-builders": "workspace:^",
     "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",

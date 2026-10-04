@@ -1,5 +1,4 @@
 export const MAX_SELECTED_FOLLOWER_DISTRIBUTION_RECIPIENTS = 100
-export const FOLLOWER_DISTRIBUTION_CHUNK_SIZE = 500
 
 export type FollowerDistributionAction =
   | 'post_share'

@@ -2,6 +2,7 @@ import { DynamicConfig, getBoundedPositiveIntegerField } from '@data-stores/valk
 
 export type DataRetentionConfig = {
   batch_size: number
+  topic_import_attempt_batch_size: number
   max_batches_per_run: number
 }
 
@@ -15,17 +16,23 @@ export const DATA_RETENTION_CONFIG_KEY = 'data-retention-config'
 
 export const DEFAULT_DATA_RETENTION_CONFIG: DataRetentionConfig = {
   batch_size: 500,
+  topic_import_attempt_batch_size: 25,
   max_batches_per_run: 200,
 }
 
 export const DATA_RETENTION_MAX_VALUES: DataRetentionConfig = {
   batch_size: 5_000,
+  topic_import_attempt_batch_size: 250,
   max_batches_per_run: 2_000,
 }
 
 export const dataRetentionConfig = new DynamicConfig({
   key: DATA_RETENTION_CONFIG_KEY,
-  fieldTypes: { batch_size: 'number', max_batches_per_run: 'number' },
+  fieldTypes: {
+    batch_size: 'number',
+    max_batches_per_run: 'number',
+    topic_import_attempt_batch_size: 'number',
+  },
   defaultFields: DEFAULT_DATA_RETENTION_CONFIG,
 })
 
@@ -41,4 +48,8 @@ function readField(field: keyof DataRetentionConfig): number {
     defaultValue: DEFAULT_DATA_RETENTION_CONFIG[field],
     maxValue: DATA_RETENTION_MAX_VALUES[field],
   })
+}
+
+export function getTopicImportAttemptDeletionBatchSize(): number {
+  return readField('topic_import_attempt_batch_size')
 }

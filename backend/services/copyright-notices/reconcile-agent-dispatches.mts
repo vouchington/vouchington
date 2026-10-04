@@ -1,3 +1,4 @@
+import { getCopyrightNoticesWorkLimit } from './work-limits.mts'
 import { read } from '@data-stores/psql'
 import { buildPageInfo, decodeUuidCursor, isSimpleCursor } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
@@ -60,6 +61,8 @@ export async function getPendingCopyrightAgentDispatches(
 }
 
 function buildPendingCopyrightAgentDispatchesQuery() {
+  const COPYRIGHT_NOTICES_SCREENING_LEASE_MINUTES =
+    getCopyrightNoticesWorkLimit('screening_lease_minutes')
   return sql`/* getPendingCopyrightAgentDispatches */
     SELECT kind, id FROM (
       SELECT 'email'::text AS kind, intake.id
@@ -85,7 +88,7 @@ function buildPendingCopyrightAgentDispatchesQuery() {
       JOIN copyright_notice_form_screening_executions execution
         ON execution.copyright_notice_form_intake_id = intake.id
       WHERE execution.state = 'failed' OR (execution.state = 'pending'
-        AND (execution.claimed_at IS NULL OR execution.claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes'))
+        AND (execution.claimed_at IS NULL OR execution.claimed_at < CURRENT_TIMESTAMP - ${COPYRIGHT_NOTICES_SCREENING_LEASE_MINUTES}::integer * INTERVAL '1 minute'))
       UNION ALL
       SELECT 'form-effect'::text AS kind, intake.copyright_notice_submission_id AS id
       FROM copyright_notice_form_intakes intake

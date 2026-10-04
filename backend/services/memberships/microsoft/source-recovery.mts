@@ -1,3 +1,4 @@
+import { getMembershipWorkLimit } from '@services/memberships/work-limits'
 import { createHash } from 'node:crypto'
 import { beginTransaction, type QueryExecutor, write } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
@@ -13,7 +14,6 @@ import type { MicrosoftStoreSourceRecoveryContext } from './source-recovery-cont
 import type { MicrosoftStoreClient } from './types.mts'
 
 const RECOVERY_CURSOR_ID = 'active_sources'
-const RECOVERY_BATCH_SIZE = 500
 const SWEEP_BUCKET_MS = 60 * 60 * 1000
 export type MicrosoftStoreSourceRecoveryBatch = {
   sourceIds: string[]
@@ -25,9 +25,14 @@ export type MicrosoftStoreSourceRecoveryBatch = {
 }
 
 export async function findRecoverableMicrosoftStoreSourceJobs(): Promise<MicrosoftStoreSourceRecoveryBatch> {
+  const RECOVERY_BATCH_SIZE = getMembershipWorkLimit('source_recovery_batch_size')
   const cursor = await findRecoveryCursor()
   const sweepUpperBound = cursor.previousUpperBound ?? (await findSourceSweepUpperBound())
-  const sourceIds = await findSourcesAfterCursor(cursor.previousCursor, sweepUpperBound)
+  const sourceIds = await findSourcesAfterCursor(
+    cursor.previousCursor,
+    sweepUpperBound,
+    RECOVERY_BATCH_SIZE,
+  )
   const page = sourceIds.slice(0, RECOVERY_BATCH_SIZE)
   return {
     ...cursor,
@@ -116,6 +121,8 @@ async function findRecoveryCursor(): Promise<{
 async function findSourcesAfterCursor(
   cursor: string | null,
   upperBound: string | null,
+
+  RECOVERY_BATCH_SIZE: number,
 ): Promise<string[]> {
   const { rows } = await write<{ sourceId: string }>(
     sql`/* findRecoverableMicrosoftStoreSourceJobs.sources */ SELECT source.id AS "sourceId" FROM membership_sources source INNER JOIN membership_source_states state ON state.membership_source_id = source.id INNER JOIN membership_provider_lineages lineage ON lineage.id = source.membership_provider_lineage_id INNER JOIN membership_microsoft_store_credentials credential ON credential.user_id = source.user_id AND credential.environment = lineage.environment AND credential.application_id = lineage.application_id WHERE source.source_kind = 'direct' AND source.user_id IS NOT NULL AND lineage.provider = 'microsoft_store' AND credential.collections_expires_at > CURRENT_TIMESTAMP AND credential.purchase_expires_at > CURRENT_TIMESTAMP AND (${cursor}::UUID IS NULL OR source.id > ${cursor}::UUID) AND (${upperBound}::UUID IS NULL OR source.id <= ${upperBound}::UUID) ORDER BY source.id LIMIT ${RECOVERY_BATCH_SIZE + 1}`,

@@ -1,3 +1,4 @@
+import { getMembershipWorkLimit } from '@services/memberships/work-limits'
 import { getExternalFetch } from '@modules/utils'
 import type {
   MicrosoftStoreClient,
@@ -9,7 +10,6 @@ import { getMicrosoftStoreServiceToken } from './service-token.mts'
 
 const COLLECTIONS_URL = 'https://collections.mp.microsoft.com/v9.0/collections/publisherQuery'
 const RECURRENCES_URL = 'https://purchase.mp.microsoft.com/v8.0/b2b/recurrences/query'
-const MAX_QUERY_PAGES = 10
 
 /** Worker-only Microsoft Store client. Store ID keys stay in the request body, never a URL. */
 export function createConfiguredMicrosoftStoreClient(): MicrosoftStoreClient {
@@ -88,6 +88,7 @@ async function queryMicrosoftStorePages<T>(
   body: Record<string, unknown>,
   queryName: string,
 ): Promise<T[]> {
+  const MAX_QUERY_PAGES = getMembershipWorkLimit('microsoft_query_max_pages')
   const items: T[] = []
   const continuationTokens = new Set<string>()
   let continuationToken: string | null = null

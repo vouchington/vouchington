@@ -1,3 +1,4 @@
+import { getOpenaiModerationWorkLimit } from './work-limits.mts'
 import { getImageByAny } from '@services/images/get'
 import { deleteImageById } from '@services/images/delete'
 import * as imageS3 from '@services/images/s3'
@@ -9,8 +10,6 @@ import {
   prepublishImageDeliveryDenials,
   lockImageAssetMutation,
 } from '@services/media-delivery-safety'
-
-export const IMAGE_QUARANTINE_RECONCILIATION_BATCH_SIZE = 25
 
 export async function deleteFlaggedImage(imageId: string): Promise<boolean> {
   const image = await getImageByAny(imageId, { includeQuarantinePending: true })
@@ -71,6 +70,9 @@ export async function deleteFlaggedImage(imageId: string): Promise<boolean> {
 }
 
 export async function reconcilePendingImageQuarantines(): Promise<{ reconciled: number }> {
+  const IMAGE_QUARANTINE_RECONCILIATION_BATCH_SIZE = getOpenaiModerationWorkLimit(
+    'image_quarantine_batch_size',
+  )
   const { rows } = await read<{ id: string }>(sql`/* reconcilePendingImageQuarantines */
     SELECT id
     FROM images

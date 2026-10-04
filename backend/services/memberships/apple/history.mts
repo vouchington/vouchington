@@ -1,3 +1,4 @@
+import { getMembershipWorkLimit } from '@services/memberships/work-limits'
 import {
   AppStoreServerAPIClient,
   Environment,
@@ -8,8 +9,6 @@ import {
   type TransactionHistoryRequest,
 } from '@apple/app-store-server-library'
 import type { AppleMembershipProviderEnvironment } from './types.mts'
-
-const MAX_HISTORY_PAGES = 100
 
 export type AppleTransactionHistoryClient = Pick<AppStoreServerAPIClient, 'getTransactionHistory'>
 export type AppleSubscriptionStatusClient = Pick<
@@ -53,6 +52,7 @@ export async function fetchAppleTransactionHistory(
   client: AppleTransactionHistoryClient,
   transactionId: string,
 ): Promise<string[]> {
+  const MAX_HISTORY_PAGES = getMembershipWorkLimit('apple_history_max_pages')
   const request: TransactionHistoryRequest = {
     sort: Order.ASCENDING,
     productTypes: [ProductType.AUTO_RENEWABLE],

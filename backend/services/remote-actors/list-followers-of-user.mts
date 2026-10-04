@@ -1,8 +1,6 @@
 import { read, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-export const FOLLOWER_INBOX_BATCH_SIZE = 500
-
 export type RemoteFollowerInboxRow = {
   remoteActorId: string
   inboxUrl: string | null

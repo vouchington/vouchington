@@ -11,11 +11,11 @@ import {
   getTestGooglePlayAcknowledgementRecoveryCursor,
   makeTestGooglePlayAcknowledgementDue,
 } from '@voucha/test-helpers/google-play-memberships'
+import { acknowledgeGooglePlayPurchase } from './acknowledgement.mts'
 import {
-  acknowledgeGooglePlayPurchase,
-  advanceGooglePlayAcknowledgementRecoveryCursor,
   findDueGooglePlayAcknowledgementIds,
-} from './acknowledgement.mts'
+  advanceGooglePlayAcknowledgementRecoveryCursor,
+} from './acknowledgement-recovery.mts'
 import { processGooglePlayMembershipVerification } from './process-verification.mts'
 import { GooglePlaySubscriptionLookupError } from './configured-client.mts'
 import type { GooglePlaySubscriptionV2, GooglePlaySubscriptionsV2Client } from './types.mts'

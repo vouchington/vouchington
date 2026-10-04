@@ -1,3 +1,4 @@
+import { getUserDeletionsWorkLimit } from './work-limits.mts'
 import { describe, expect, it, vi } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { createUserDeletionRequest } from './create.mts'
@@ -7,7 +8,6 @@ import {
   claimUserDeletionAttempt,
   processUserDeletionBatch,
 } from './lifecycle.mts'
-import { USER_DELETION_BATCH_SIZE } from './phases.mts'
 import {
   addUserDeletionRelationImpactForTest,
   completeUserDeletionRelationImpactForTest,
@@ -134,7 +134,7 @@ describe('user deletion lifecycle', () => {
       },
     })
 
-    expect(processedBatchSize).toBe(USER_DELETION_BATCH_SIZE)
+    expect(processedBatchSize).toBe(getUserDeletionsWorkLimit('batch_size'))
     expect(result).not.toBeNull()
     if (!result) throw new Error('Expected successor')
     expect(

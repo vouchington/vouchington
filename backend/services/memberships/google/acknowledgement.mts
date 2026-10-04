@@ -1,3 +1,4 @@
+import { getMembershipWorkLimit } from '@services/memberships/work-limits'
 import { createHash } from 'node:crypto'
 import { type QueryExecutor, write } from '@data-stores/psql'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
@@ -8,11 +9,6 @@ import type {
 } from './types.mts'
 import { GooglePlayLineageConflictError } from './lineage.mts'
 import { GooglePlaySubscriptionLookupError } from './configured-client.mts'
-import {
-  advanceGooglePlayRecoverySweep,
-  beginGooglePlayRecoverySweep,
-  pageGooglePlayRecoveryItems,
-} from './recovery-cursor.mts'
 
 type GoogleAcknowledgementClaim = {
   id: string
@@ -110,61 +106,13 @@ export async function acknowledgeGooglePlayPurchase(options: {
   }
 }
 
-export type GooglePlayAcknowledgementRecoveryBatch = {
-  acknowledgementIds: string[]
-  previousCursor: string | null
-  previousUpperBound: string | null
-  sweepUpperBound: string | null
-  nextCursor: string | null
-  completesSweep: boolean
-}
-
-export async function findDueGooglePlayAcknowledgementIds(): Promise<GooglePlayAcknowledgementRecoveryBatch> {
-  const cursor = await beginGooglePlayRecoverySweep({
-    cursorId: 'acknowledgements',
-    findUpperBound: findAcknowledgementSweepUpperBound,
-  })
-  const page = pageGooglePlayRecoveryItems(
-    cursor,
-    await findDueAcknowledgementsAfter(cursor.previousCursor, cursor.sweepUpperBound),
-    500,
-  )
-  return { ...page, acknowledgementIds: page.items.map(item => item.id) }
-}
-
-async function findDueAcknowledgementsAfter(cursor: string | null, upperBound: string | null) {
-  const { rows } = await write<{ id: string }>(sql`/* findDueGooglePlayAcknowledgementIds */
-    SELECT id FROM membership_google_play_acknowledgements WHERE acknowledged_at IS NULL AND skipped_at IS NULL AND next_attempt_at <= CURRENT_TIMESTAMP
-      AND (attempt_claim_token IS NULL OR attempt_claimed_at < CURRENT_TIMESTAMP - INTERVAL '30 minutes')
-      AND (${cursor}::UUID IS NULL OR id > ${cursor}::UUID)
-      AND (${upperBound}::UUID IS NULL OR id <= ${upperBound}::UUID)
-    ORDER BY id LIMIT 501`)
-  return rows
-}
-
-async function findAcknowledgementSweepUpperBound(): Promise<string | null> {
-  const { rows } = await write<{
-    id: string | null
-  }>(sql`/* findGooglePlayAcknowledgementSweepUpperBound */
-    SELECT id FROM membership_google_play_acknowledgements
-    WHERE acknowledged_at IS NULL AND skipped_at IS NULL AND next_attempt_at <= CURRENT_TIMESTAMP
-      AND (attempt_claim_token IS NULL OR attempt_claimed_at < CURRENT_TIMESTAMP - INTERVAL '30 minutes')
-    ORDER BY id DESC LIMIT 1`)
-  return rows[0]?.id ?? null
-}
-
-export async function advanceGooglePlayAcknowledgementRecoveryCursor(
-  batch: GooglePlayAcknowledgementRecoveryBatch,
-): Promise<void> {
-  await advanceGooglePlayRecoverySweep({ cursorId: 'acknowledgements', ...batch })
-}
-
 async function claimGoogleAcknowledgement(id: string): Promise<GoogleAcknowledgementClaim | null> {
+  const claimMinutes = getMembershipWorkLimit('verification_claim_minutes')
   const { rows } = await write<GoogleAcknowledgementClaim>(sql`/* claimGoogleAcknowledgement */
     UPDATE membership_google_play_acknowledgements SET attempt_claim_token = uuidv7(), attempt_claimed_at = CURRENT_TIMESTAMP,
       attempt_count = attempt_count + 1, last_error = NULL
     WHERE id = ${id} AND acknowledged_at IS NULL AND skipped_at IS NULL AND next_attempt_at <= CURRENT_TIMESTAMP
-      AND (attempt_claim_token IS NULL OR attempt_claimed_at < CURRENT_TIMESTAMP - INTERVAL '30 minutes')
+      AND (attempt_claim_token IS NULL OR attempt_claimed_at < CURRENT_TIMESTAMP - ${claimMinutes}::integer * INTERVAL '1 minute')
     RETURNING id, attempt_claim_token AS "claimToken", encrypted_purchase_token AS "encryptedPurchaseToken", purchase_token_lookup_sha256 AS "purchaseTokenLookupSha256", application_id AS "applicationId", subscription_id AS "subscriptionId"`)
   return rows[0] ?? null
 }
@@ -189,9 +137,10 @@ async function deferGoogleAcknowledgement(
   claim: GoogleAcknowledgementClaim,
   error: unknown,
 ): Promise<void> {
+  const retryMinutes = getMembershipWorkLimit('verification_retry_minutes')
   const message =
     error instanceof Error ? error.message.slice(0, 1000) : 'Google acknowledgement failed'
   await write(sql`/* deferGoogleAcknowledgement */ UPDATE membership_google_play_acknowledgements
-    SET attempt_claim_token = NULL, attempt_claimed_at = NULL, next_attempt_at = CURRENT_TIMESTAMP + INTERVAL '5 minutes', last_error = ${message}
+    SET attempt_claim_token = NULL, attempt_claimed_at = NULL, next_attempt_at = CURRENT_TIMESTAMP + ${retryMinutes}::integer * INTERVAL '1 minute', last_error = ${message}
     WHERE id = ${claim.id} AND attempt_claim_token = ${claim.claimToken}`)
 }

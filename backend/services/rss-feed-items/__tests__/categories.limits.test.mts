@@ -1,3 +1,4 @@
+import { getRssFeedItemsWorkLimit } from '@services/rss-feed-items/work-limits'
 import { it, expect, beforeEach, describe } from 'vitest'
 import { upsertRssFeedItemCategories, getRssFeedItemCategories } from '../categories.mts'
 import { buildRssFeedItemCategorySqlBatches } from '../category-batches.mts'
@@ -14,10 +15,7 @@ import {
   waitForTestPostgresLockWaiter,
 } from '@voucha/test-helpers'
 import { createTopicAliases } from '@services/topics/aliases'
-import {
-  RSS_FEED_ITEM_CATEGORY_SQL_BATCH_SIZE,
-  RSS_FEED_ITEM_MAX_CATEGORIES,
-} from '../processing-limits.mts'
+import { RSS_FEED_ITEM_MAX_CATEGORIES } from '../processing-limits.mts'
 
 describe('categories limits', () => {
   let testRssFeedId: string
@@ -81,7 +79,7 @@ describe('categories limits', () => {
 
   it('upsertRssFeedItemCategories writes category pairs across SQL chunks', async () => {
     const random = Math.random().toString(36).slice(2, 15)
-    const itemCount = Math.ceil(RSS_FEED_ITEM_CATEGORY_SQL_BATCH_SIZE / 20) + 1
+    const itemCount = Math.ceil(getRssFeedItemsWorkLimit('category_sql_batch_size') / 20) + 1
     const items = await upsertRssFeedItems(
       testRssFeedId,
       Array.from({ length: itemCount }, (_, index) => ({
@@ -117,7 +115,7 @@ describe('categories limits', () => {
 
   it('upsertRssFeedItemCategories updates matched categories across SQL chunks', async () => {
     const random = Math.random().toString(36).slice(2, 15)
-    const itemCount = Math.ceil(RSS_FEED_ITEM_CATEGORY_SQL_BATCH_SIZE / 20) + 1
+    const itemCount = Math.ceil(getRssFeedItemsWorkLimit('category_sql_batch_size') / 20) + 1
     const items = await upsertRssFeedItems(
       testRssFeedId,
       Array.from({ length: itemCount }, (_, index) => ({
@@ -177,9 +175,9 @@ describe('categories limits', () => {
 
     const batches = buildRssFeedItemCategorySqlBatches(items)
     expect(batches).toHaveLength(10)
-    expect(batches.every(batch => batch.length === RSS_FEED_ITEM_CATEGORY_SQL_BATCH_SIZE)).toBe(
-      true,
-    )
+    expect(
+      batches.every(batch => batch.length === getRssFeedItemsWorkLimit('category_sql_batch_size')),
+    ).toBe(true)
     expect(batches.flat()).toHaveLength(10_000)
 
     const heapBefore = process.memoryUsage().heapUsed

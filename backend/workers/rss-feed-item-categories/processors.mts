@@ -1,9 +1,7 @@
+import { getRssFeedItemsWorkLimit } from '@services/rss-feed-items/work-limits'
 import { backfillCategoriesForTopicAliases } from '@services/rss-feed-items/backfill-categories-for-topic-aliases'
 import { backfillCategoriesForTopicAlias } from '@services/rss-feeds/categories'
-import {
-  CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE,
-  reconcileRssFeedItemCategorySnapshots,
-} from '@services/rss-feed-items/category-snapshot-reconciliations'
+import { reconcileRssFeedItemCategorySnapshots } from '@services/rss-feed-items/category-snapshot-reconciliations'
 import { enqueueContinueRssFeedItemCategorySnapshotReconciliation } from '@queues/rss-feed-item-categories/enqueues'
 
 type RssFeedItemCategoryDependencies = {
@@ -23,7 +21,10 @@ export const processReconcileRssFeedItemCategorySnapshots = async (
   const enqueueContinuation =
     dependencies?.enqueueContinueRssFeedItemCategorySnapshotReconciliation ??
     enqueueContinueRssFeedItemCategorySnapshotReconciliation
-  const result = await reconcile()
+  const CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE = getRssFeedItemsWorkLimit(
+    'category_snapshot_reconciliation_batch_size',
+  )
+  const result = await reconcile(CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE)
   if (result.reconciled === CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE) {
     await enqueueContinuation()
   }

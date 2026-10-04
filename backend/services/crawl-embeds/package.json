@@ -24,6 +24,7 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/crawl-embeds": "workspace:^",

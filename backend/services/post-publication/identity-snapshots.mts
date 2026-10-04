@@ -1,3 +1,4 @@
+import { getPostPublicationWorkLimit } from './work-limits.mts'
 import { retainPublicationIdentityBridges } from './identity-bridges.mts'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -8,8 +9,6 @@ import { persistPublicationSnapshotPage } from './snapshot-key-writes.mts'
 import { retainStoredPublicationIdentityPage } from './retain-stored-identities.mts'
 import { publicationEligibilityFingerprintSql } from './fingerprint.mts'
 
-import { POST_PUBLICATION_IDENTITY_SNAPSHOT_PAGE_SIZE } from './identity-snapshot-page-size.mts'
-export { POST_PUBLICATION_IDENTITY_SNAPSHOT_PAGE_SIZE } from './identity-snapshot-page-size.mts'
 type SnapshotPost = { id: string; eligibility_fingerprint: string; is_public: boolean }
 export type Snapshot = {
   id: string
@@ -27,7 +26,7 @@ export type Snapshot = {
 export async function materializePostPublicationIdentitySnapshot(
   work: ClaimedPostPublicationDirtyWork,
   post: SnapshotPost,
-  limit = POST_PUBLICATION_IDENTITY_SNAPSHOT_PAGE_SIZE,
+  limit = getPostPublicationWorkLimit('identity_snapshot_page_size'),
 ): Promise<{ snapshotId: string; complete: boolean }> {
   if (!Number.isSafeInteger(limit) || limit < 1)
     throw new TypeError('Snapshot page limit must be positive')

@@ -1,3 +1,4 @@
+import { getRssFeedItemsWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import {
   lockPostPublicationRssFeedScopes,
@@ -12,14 +13,12 @@ type CategoryTopicChange = {
   topic_id: string | null
 }
 
-const STORY_CATEGORY_ITEM_BATCH_SIZE = 500
-const STORY_CATEGORY_CHANGE_BATCH_SIZE = 1000
-
 /** Establishes the item-row-first lock order shared with story assignment writers. */
 export async function lockRssFeedItemsForStoryPublicationChanges(
   query: TransactionQuery,
   itemIds: readonly string[],
 ): Promise<void> {
+  const STORY_CATEGORY_ITEM_BATCH_SIZE = getRssFeedItemsWorkLimit('story_category_item_batch_size')
   const ids = [...new Set(itemIds)].toSorted()
   const rssFeedIds = new Set<string>()
   for (let offset = 0; offset < ids.length; offset += STORY_CATEGORY_ITEM_BATCH_SIZE) {
@@ -53,6 +52,10 @@ export async function recordStoryPublicationChangesForCategoryTopics(
   query: TransactionQuery,
   changes: readonly CategoryTopicChange[],
 ): Promise<void> {
+  const STORY_CATEGORY_ITEM_BATCH_SIZE = getRssFeedItemsWorkLimit('story_category_item_batch_size')
+  const STORY_CATEGORY_CHANGE_BATCH_SIZE = getRssFeedItemsWorkLimit(
+    'story_category_change_batch_size',
+  )
   const topicChanges = changes.filter(change => change.previous_topic_id !== change.topic_id)
   if (topicChanges.length === 0) return
 

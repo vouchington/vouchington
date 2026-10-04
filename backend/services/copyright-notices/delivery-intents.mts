@@ -1,3 +1,4 @@
+import { getCopyrightNoticesWorkLimit } from './work-limits.mts'
 /* oxlint-disable max-lines -- Delivery transitions stay centralized around one durable-intent invariant. */
 import { beginTransaction, read, write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
@@ -50,6 +51,8 @@ export async function createCopyrightDeliveryIntent(
 export async function claimCopyrightDeliveryIntent(
   intentId: string,
 ): Promise<ClaimedCopyrightDeliveryIntent | null> {
+  const COPYRIGHT_NOTICES_DELIVERY_LEASE_MINUTES =
+    getCopyrightNoticesWorkLimit('delivery_lease_minutes')
   const { rows } =
     await write<ClaimedCopyrightDeliveryIntent>(sql`/* claimCopyrightDeliveryIntent */
     WITH exhausted AS (
@@ -57,7 +60,7 @@ export async function claimCopyrightDeliveryIntent(
       SET state = 'failed', claimed_at = NULL, failed_at = CURRENT_TIMESTAMP, next_attempt_at = NULL
       WHERE id = ${intentId}
         AND state = 'claimed'
-        AND claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes'
+        AND claimed_at < CURRENT_TIMESTAMP - ${COPYRIGHT_NOTICES_DELIVERY_LEASE_MINUTES}::integer * INTERVAL '1 minute'
         AND delivery_attempt_count >= 5
     )
     UPDATE copyright_notice_delivery_intents
@@ -67,7 +70,7 @@ export async function claimCopyrightDeliveryIntent(
     WHERE id = ${intentId}
       AND delivery_attempt_count < 5
       AND ((state = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= CURRENT_TIMESTAMP))
-        OR (state = 'claimed' AND claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes'))
+        OR (state = 'claimed' AND claimed_at < CURRENT_TIMESTAMP - ${COPYRIGHT_NOTICES_DELIVERY_LEASE_MINUTES}::integer * INTERVAL '1 minute'))
     RETURNING id, lease_token, copyright_notice_id, copyright_notice_email_intake_id,
       copyright_notice_submission_id, copyright_notice_correspondence_message_id, recipient_user_id,
       recipient_role, delivery_kind, target_path, channel, state, ses_message_id, delivery_attempt_count,
@@ -281,6 +284,8 @@ export async function recordCopyrightDeliveryRecipient(input: {
 export function searchRecoverableCopyrightDeliveryIntentIds(
   options: CopyrightSweepPageOptions & { channel: CopyrightDeliveryIntentRecord['channel'] },
 ): Promise<CopyrightSweepIdPage> {
+  const COPYRIGHT_NOTICES_DELIVERY_LEASE_MINUTES =
+    getCopyrightNoticesWorkLimit('delivery_lease_minutes')
   return queryCopyrightSweepIdPage(
     options,
     'Invalid copyright delivery intent cursor',
@@ -292,7 +297,7 @@ export function searchRecoverableCopyrightDeliveryIntentIds(
       WHERE channel = ${options.channel}
         AND (
           (state = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= CURRENT_TIMESTAMP))
-          OR (state = 'claimed' AND claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes')
+          OR (state = 'claimed' AND claimed_at < CURRENT_TIMESTAMP - ${COPYRIGHT_NOTICES_DELIVERY_LEASE_MINUTES}::integer * INTERVAL '1 minute')
         )`,
     statement => read(statement),
   )

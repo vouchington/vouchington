@@ -1,8 +1,7 @@
+import { getEntityCacheWorkLimit } from './work-limits.mts'
 import { createAsyncGeneratorFromCursor, read } from '@data-stores/psql'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import { entityCacheBloomFilters } from './bloom-filter-instances.mts'
-
-const BATCH_SIZE = 5000
 
 export async function backfillPostsBloomFilter(): Promise<void> {
   const { posts } = entityCacheBloomFilters
@@ -19,6 +18,7 @@ export async function backfillPostsBloomFilter(): Promise<void> {
 }
 
 async function* postKeysFromDb(): AsyncGenerator<string> {
+  const BATCH_SIZE = getEntityCacheWorkLimit('bloom_backfill_batch_size')
   for await (const { id } of createAsyncGeneratorFromCursor<{ id: string }>(
     '/* postKeysFromDb */ SELECT id FROM posts WHERE deleted_at IS NULL',
     { batchSize: BATCH_SIZE },
@@ -58,6 +58,7 @@ export async function backfillTopicsBloomFilter(): Promise<void> {
 }
 
 async function* topicsKeysFromDb(): AsyncGenerator<string> {
+  const BATCH_SIZE = getEntityCacheWorkLimit('bloom_backfill_batch_size')
   for await (const { id, slug } of createAsyncGeneratorFromCursor<{ id: string; slug: string }>(
     '/* topicsKeysFromDb */ SELECT id, slug FROM topics WHERE deleted_at IS NULL AND merged_into_topic_id IS NULL',
     { batchSize: BATCH_SIZE },
@@ -97,6 +98,7 @@ export async function backfillUsersBloomFilter(): Promise<void> {
 }
 
 async function* usersKeysFromDb(): AsyncGenerator<string> {
+  const BATCH_SIZE = getEntityCacheWorkLimit('bloom_backfill_batch_size')
   for await (const { id, username } of createAsyncGeneratorFromCursor<{
     id: string
     username: string
@@ -120,6 +122,7 @@ export async function backfillCommunitiesBloomFilter(): Promise<void> {
 }
 
 async function* communitiesKeysFromDb(): AsyncGenerator<string> {
+  const BATCH_SIZE = getEntityCacheWorkLimit('bloom_backfill_batch_size')
   for await (const { id, slug } of createAsyncGeneratorFromCursor<{ id: string; slug: string }>(
     '/* communitiesKeysFromDb */ SELECT id, slug FROM communities WHERE deleted_at IS NULL',
     { batchSize: BATCH_SIZE },
@@ -141,6 +144,7 @@ export async function backfillRssFeedItemsBloomFilter(): Promise<void> {
 }
 
 async function* rssFeedItemsKeysFromDb(): AsyncGenerator<string> {
+  const BATCH_SIZE = getEntityCacheWorkLimit('bloom_backfill_batch_size')
   for await (const { id } of createAsyncGeneratorFromCursor<{
     id: string
   }>('/* rssFeedItemsKeysFromDb */ SELECT id FROM rss_feed_items WHERE deleted_at IS NULL', {
@@ -151,6 +155,7 @@ async function* rssFeedItemsKeysFromDb(): AsyncGenerator<string> {
 
 // Groups individual keys into fixed-size batches for bloom filter population via rebuildFromStream.
 async function* inBatches(keys: AsyncIterable<string>): AsyncGenerator<string[]> {
+  const BATCH_SIZE = getEntityCacheWorkLimit('bloom_backfill_batch_size')
   const batch: string[] = []
   for await (const key of keys) {
     batch.push(key)

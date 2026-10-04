@@ -1,3 +1,4 @@
+import { getMediaDeliverySafetyWorkLimit } from './work-limits.mts'
 import { write } from '@data-stores/psql'
 import {
   observeSharedDbScope,
@@ -10,7 +11,6 @@ import sql from 'sql-template-strings'
 import {
   MEDIA_DELIVERY_CLAIM_TIMEOUT_MS,
   MEDIA_DELIVERY_MAX_ATTEMPTS,
-  MEDIA_DELIVERY_RECOVERY_PAGE_SIZE,
   mediaDeliveryClaimable,
 } from './delivery-registry-policy.mts'
 
@@ -26,6 +26,7 @@ export async function failExpiredExhaustedMediaDeliveryRegistryRecords(
   now: string,
   deliveryKeys?: readonly string[],
 ): Promise<number> {
+  const MEDIA_DELIVERY_RECOVERY_PAGE_SIZE = getMediaDeliverySafetyWorkLimit('recovery_page_size')
   if (deliveryKeys?.length === 0) return 0
   const { rowCount } = await write(sql`/* failExpiredExhaustedMediaDeliveryRegistryRecords */
     WITH candidates AS (
@@ -53,6 +54,7 @@ export async function listRecoverableMediaDeliveryRegistryKeys(input: {
   after?: string
   deliveryKeys?: readonly string[]
 }): Promise<{ results: string[]; page_info: PageInfo }> {
+  const MEDIA_DELIVERY_RECOVERY_PAGE_SIZE = getMediaDeliverySafetyWorkLimit('recovery_page_size')
   if (
     !Number.isSafeInteger(input.limit) ||
     input.limit < 1 ||

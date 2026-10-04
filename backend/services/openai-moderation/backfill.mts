@@ -1,3 +1,4 @@
+import { getOpenaiModerationWorkLimit } from './work-limits.mts'
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { POST_MODERATION_POLICY_REVISION } from '@services/post-clearance/moderation-ledger-types'
@@ -5,18 +6,18 @@ import { POST_MODERATION_POLICY_REVISION } from '@services/post-clearance/modera
 // Number of IDs accumulated before a batch is yielded for bulk enqueue. The cursor
 // reads from PostgreSQL in pages of this size and we re-chunk yields to match, so
 // each yielded batch becomes a single glide-mq addBulk call.
-const BACKFILL_BATCH_SIZE = 500
 
 // Streams IDs from a source-of-truth query over a single pg-cursor connection,
-// yielding them in fixed-size batches. Memory stays O(BACKFILL_BATCH_SIZE)
+// yielding them in fixed-size batches. Memory stays O(batchSize)
 // regardless of table size, and consumers can bulk-enqueue one batch per yield.
 async function* streamIdBatches(
   rows: AsyncIterable<{ id: string }>,
+  batchSize = getOpenaiModerationWorkLimit('backfill_batch_size'),
 ): AsyncGenerator<string[], void, unknown> {
   let batch: string[] = []
   for await (const row of rows) {
     batch.push(row.id)
-    if (batch.length >= BACKFILL_BATCH_SIZE) {
+    if (batch.length >= batchSize) {
       yield batch
       batch = []
     }
@@ -51,6 +52,7 @@ async function* streamIdBatches(
  * no-content), and a backfill is a rare recovery operation — so over-inclusion is harmless.
  */
 export function streamUnmoderatedPostIdBatches(): AsyncGenerator<string[], void, unknown> {
+  const batchSize = getOpenaiModerationWorkLimit('backfill_batch_size')
   return streamIdBatches(
     createAsyncGeneratorFromCursor<{ id: string }>(
       sql`/* streamUnmoderatedPostIdBatches */
@@ -70,8 +72,9 @@ export function streamUnmoderatedPostIdBatches(): AsyncGenerator<string[], void,
           )
         ORDER BY post.id
       `,
-      { batchSize: BACKFILL_BATCH_SIZE },
+      { batchSize: batchSize },
     ),
+    batchSize,
   )
 }
 
@@ -82,6 +85,7 @@ export function streamUnmoderatedPostIdBatches(): AsyncGenerator<string[], void,
  * a usable S3 object for the moderation API to inspect.
  */
 export function streamUnmoderatedImageIdBatches(): AsyncGenerator<string[], void, unknown> {
+  const batchSize = getOpenaiModerationWorkLimit('backfill_batch_size')
   return streamIdBatches(
     createAsyncGeneratorFromCursor<{ id: string }>(
       sql`/* streamUnmoderatedImageIdBatches */
@@ -91,7 +95,8 @@ export function streamUnmoderatedImageIdBatches(): AsyncGenerator<string[], void
           AND upload_completed_at IS NOT NULL
         ORDER BY id
       `,
-      { batchSize: BACKFILL_BATCH_SIZE },
+      { batchSize: batchSize },
     ),
+    batchSize,
   )
 }

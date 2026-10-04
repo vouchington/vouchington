@@ -1,3 +1,4 @@
+import { getImagesWorkLimit } from './work-limits.mts'
 import { beginTransaction } from '@data-stores/psql'
 import onError from '@modules/on-error'
 import { markImageUploadSourceDeleted } from './complete-upload-state.mts'
@@ -5,9 +6,6 @@ import { cleanupStagedUploadSource } from './cleanup-staged-upload-source.mts'
 import { deleteKnownImageStorageFromS3 } from './s3-upload-lifecycle.mts'
 import { enqueueExtractImageMetadata } from '@queues/images/enqueues'
 
-const ABANDONED_THRESHOLD_HOURS = 24
-const RECOVERY_THRESHOLD_HOURS = 1
-const CLEANUP_BATCH_SIZE = 100
 const STAGED_SOURCE_CLEANUP_CONCURRENCY = 4
 const ABANDONED_UPLOAD_ERROR = 'Upload abandoned before completion'
 
@@ -19,6 +17,9 @@ interface AbandonedImageStorage {
 }
 
 export async function cleanupAbandonedUploads() {
+  const ABANDONED_THRESHOLD_HOURS = getImagesWorkLimit('abandoned_threshold_hours')
+  const RECOVERY_THRESHOLD_HOURS = getImagesWorkLimit('recovery_threshold_hours')
+  const CLEANUP_BATCH_SIZE = getImagesWorkLimit('cleanup_batch_size')
   const recoveryCutoff = new Date(Date.now() - RECOVERY_THRESHOLD_HOURS * 60 * 60 * 1000)
   const abandonmentCutoff = new Date(Date.now() - ABANDONED_THRESHOLD_HOURS * 60 * 60 * 1000)
 

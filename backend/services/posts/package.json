@@ -24,6 +24,7 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
     "@modules/aws": "workspace:^",
     "@modules/feed-query-builders": "workspace:^",
     "@modules/on-error": "workspace:^",

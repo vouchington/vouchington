@@ -1,9 +1,7 @@
+import { getFollowerDistributionsWorkLimit } from './work-limits.mts'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import {
-  FOLLOWER_DISTRIBUTION_CHUNK_SIZE,
-  type FollowerDistributionProcessResult,
-} from './types.mts'
+import type { FollowerDistributionProcessResult } from './types.mts'
 import type { ProcessOptions } from './process-types.mts'
 import {
   ensureDeliveryRows,
@@ -18,7 +16,7 @@ export async function processFollowerDistributionChunk(
   distributionId: string,
   options: ProcessOptions = {},
 ): Promise<FollowerDistributionProcessResult> {
-  const chunkSize = options.chunkSize ?? FOLLOWER_DISTRIBUTION_CHUNK_SIZE
+  const chunkSize = options.chunkSize ?? getFollowerDistributionsWorkLimit('recipient_chunk_size')
   await using query = await beginTransaction()
 
   await query(sql`/* processFollowerDistributionChunk */

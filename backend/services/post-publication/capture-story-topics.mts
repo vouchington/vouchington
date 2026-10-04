@@ -1,7 +1,7 @@
+import { getPostPublicationWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import type { PostPublicationDirtyWork } from './types.mts'
 import { retainPostPublicationImpacts } from './capture-impacts.mts'
-import { POST_PUBLICATION_CAPTURE_BATCH_SIZE } from './constants.mts'
 import { normalizePostPublicationIdentifiers } from './identifiers.mts'
 import { upsertPostPublicationDirtyWork } from './upsert-dirty-work.mts'
 import { preparePostPublicationIdentityBridges } from './prepare-identity-bridges.mts'
@@ -17,6 +17,7 @@ export async function recordStoryTopicPublicationChanges(
   query: TransactionQuery,
   changes: readonly StoryTopicPublicationChange[],
 ): Promise<PostPublicationDirtyWork[]> {
+  const POST_PUBLICATION_CAPTURE_BATCH_SIZE = getPostPublicationWorkLimit('capture_batch_size')
   const impactsByStory = new Map<string, { postIds: Set<string>; topicIds: Set<string> }>()
   for (const change of changes) {
     if (!change.storyId) throw new TypeError('Story publication change requires an identifier')

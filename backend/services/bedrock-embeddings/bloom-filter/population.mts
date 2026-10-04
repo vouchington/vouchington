@@ -1,3 +1,4 @@
+import { getEmbeddingBloomPopulationBatchSize } from '../batch/config.mts'
 import { createAsyncGeneratorFromCursor, read } from '@data-stores/psql'
 import { bloomValkeyClient } from '@data-stores/valkey'
 import { EMBEDDINGS_TABLE } from '../config.mts'
@@ -5,9 +6,8 @@ import { EMBEDDING_BLOOM_READY_KEY, embeddingBloomFilter } from './bloom-filter.
 
 type ContentRow = { content_sha256: string }
 
-const BATCH_SIZE = 1000
-
 async function* hashBatchesFromDb(): AsyncGenerator<string[]> {
+  const BATCH_SIZE = getEmbeddingBloomPopulationBatchSize()
   const batch: string[] = []
 
   for await (const row of createAsyncGeneratorFromCursor<ContentRow>(

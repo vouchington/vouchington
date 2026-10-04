@@ -1,3 +1,4 @@
+import { getCommunitiesWorkLimit } from './work-limits.mts'
 /* oxlint-disable max-lines -- Local date/time formatters are cached by timezone. */
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -199,6 +200,7 @@ export async function hasModerationEmailSent(userId: string, sendKey: string): P
 }
 
 async function getModerationSummaryRecipients(): Promise<ModerationRecipientRow[]> {
+  const WORK_PAGE_SIZE = getCommunitiesWorkLimit('summary_email_batch_size')
   const { rows } = await read(sql`/* getModerationSummaryRecipients */
     SELECT DISTINCT
       u.id,
@@ -302,7 +304,7 @@ async function getModerationSummaryRecipients(): Promise<ModerationRecipientRow[
           END
       )
     ORDER BY u.id ASC
-    LIMIT 250
+    LIMIT ${WORK_PAGE_SIZE}
   `)
   return rows as ModerationRecipientRow[]
 }

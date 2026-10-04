@@ -1,3 +1,5 @@
+import { getUsersWorkLimit } from '@services/users/work-limits'
+import { getEngagementEmailsWorkLimit } from './work-limits.mts'
 /* oxlint-disable max-lines -- Engagement email query and formatting helpers are kept with their dispatcher. */
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -280,6 +282,8 @@ export function buildFollowNewsSourceItems(
 }
 
 async function getFollowTopicsRecipients(): Promise<EngagementRecipientRow[]> {
+  const USERS_ENGAGEMENT_CLAIM_HOURS = getUsersWorkLimit('engagement_claim_hours')
+  const WORK_PAGE_SIZE = getEngagementEmailsWorkLimit('dispatch_batch_size')
   const { rows } = await read(sql`/* getFollowTopicsRecipients */
     SELECT u.id, uea.email_address, u.username, u.ui_locale
     FROM users u
@@ -306,7 +310,7 @@ async function getFollowTopicsRecipients(): Promise<EngagementRecipientRow[]> {
           AND (
             s.sent_at IS NOT NULL
             OR s.delivery_attempted_at IS NOT NULL
-            OR s.claimed_at >= CURRENT_TIMESTAMP - INTERVAL '1 day'
+            OR s.claimed_at >= CURRENT_TIMESTAMP - ${USERS_ENGAGEMENT_CLAIM_HOURS}::integer * INTERVAL '1 hour'
           )
       )
     ORDER BY (
@@ -314,7 +318,7 @@ async function getFollowTopicsRecipients(): Promise<EngagementRecipientRow[]> {
       FROM user_engagement_email_sends s
       WHERE s.user_id = u.id AND s.email_type = 'follow_topics'
     ) ASC NULLS FIRST, u.id ASC
-    LIMIT 250
+    LIMIT ${WORK_PAGE_SIZE}
   `)
   return rows as EngagementRecipientRow[]
 }
@@ -322,6 +326,8 @@ async function getFollowTopicsRecipients(): Promise<EngagementRecipientRow[]> {
 async function getPostReferralLinkRecipients(
   dispatchStartedAt: Date,
 ): Promise<EngagementRecipientRow[]> {
+  const USERS_ENGAGEMENT_CLAIM_HOURS = getUsersWorkLimit('engagement_claim_hours')
+  const WORK_PAGE_SIZE = getEngagementEmailsWorkLimit('dispatch_batch_size')
   const { rows } = await read(sql`/* getPostReferralLinkRecipients */
     SELECT u.id, uea.email_address, u.username, u.ui_locale
     FROM users u
@@ -356,7 +362,7 @@ async function getPostReferralLinkRecipients(
           AND (
             s.sent_at IS NOT NULL
             OR s.delivery_attempted_at IS NOT NULL
-            OR s.claimed_at >= CURRENT_TIMESTAMP - INTERVAL '1 day'
+            OR s.claimed_at >= CURRENT_TIMESTAMP - ${USERS_ENGAGEMENT_CLAIM_HOURS}::integer * INTERVAL '1 hour'
           )
       )
     ORDER BY (
@@ -364,7 +370,7 @@ async function getPostReferralLinkRecipients(
       FROM user_engagement_email_sends s
       WHERE s.user_id = u.id AND s.email_type = 'post_referral_link'
     ) ASC NULLS FIRST, u.id ASC
-    LIMIT 250
+    LIMIT ${WORK_PAGE_SIZE}
   `)
   return rows as EngagementRecipientRow[]
 }
@@ -372,6 +378,8 @@ async function getPostReferralLinkRecipients(
 async function getFollowNewsSourcesRecipients(
   dispatchStartedAt: Date,
 ): Promise<EngagementRecipientRow[]> {
+  const USERS_ENGAGEMENT_CLAIM_HOURS = getUsersWorkLimit('engagement_claim_hours')
+  const WORK_PAGE_SIZE = getEngagementEmailsWorkLimit('dispatch_batch_size')
   const { rows } = await read(sql`/* getFollowNewsSourcesRecipients */
     SELECT u.id, uea.email_address, u.username, u.ui_locale
     FROM users u
@@ -405,7 +413,7 @@ async function getFollowNewsSourcesRecipients(
           AND (
             s.sent_at IS NOT NULL
             OR s.delivery_attempted_at IS NOT NULL
-            OR s.claimed_at >= CURRENT_TIMESTAMP - INTERVAL '1 day'
+            OR s.claimed_at >= CURRENT_TIMESTAMP - ${USERS_ENGAGEMENT_CLAIM_HOURS}::integer * INTERVAL '1 hour'
           )
       )
     ORDER BY (
@@ -413,7 +421,7 @@ async function getFollowNewsSourcesRecipients(
       FROM user_engagement_email_sends s
       WHERE s.user_id = u.id AND s.email_type = 'follow_news_sources'
     ) ASC NULLS FIRST, u.id ASC
-    LIMIT 250
+    LIMIT ${WORK_PAGE_SIZE}
   `)
   return rows as EngagementRecipientRow[]
 }

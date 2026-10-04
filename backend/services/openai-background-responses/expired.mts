@@ -1,7 +1,6 @@
+import { getOpenaiBackgroundResponsesWorkLimit } from './work-limits.mts'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-
-export const BACKGROUND_RESPONSE_RECONCILE_BATCH_SIZE = 100
 
 export interface ExpiredBackgroundResponse {
   responseId: string
@@ -27,6 +26,8 @@ interface ExpiredBackgroundResponseRow {
 export async function getExpiredBackgroundResponses(
   options: { batchSize?: number } = {},
 ): Promise<ExpiredBackgroundResponse[]> {
+  const BACKGROUND_RESPONSE_RECONCILE_BATCH_SIZE =
+    getOpenaiBackgroundResponsesWorkLimit('reconcile_batch_size')
   const batchSize = Math.min(
     Math.max(Math.trunc(options.batchSize ?? BACKGROUND_RESPONSE_RECONCILE_BATCH_SIZE), 1),
     BACKGROUND_RESPONSE_RECONCILE_BATCH_SIZE,

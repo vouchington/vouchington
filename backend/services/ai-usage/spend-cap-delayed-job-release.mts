@@ -1,3 +1,4 @@
+import { getAiUsageWorkLimit } from './work-limits.mts'
 import { randomUUID } from 'node:crypto'
 import type { Queue } from 'glide-mq'
 import {
@@ -9,7 +10,6 @@ import { loadScript } from '@data-stores/valkey/scripts'
 import { spendCapDelayedRegistryKey } from './spend-cap-delayed-jobs.mts'
 import pMap from 'p-map'
 
-const RELEASE_BATCH_SIZE = 100
 const RELEASE_CONCURRENCY = 5
 const METADATA_FIELDS = new Set(['__mode', '__generation', '__release_lease'])
 const MARKED = 'marked'
@@ -61,6 +61,7 @@ export async function releaseSpendCapDelayedJobs(
   cursor = '0',
   dayHasEnded = false,
 ): Promise<SpendCapReleaseResult> {
+  const RELEASE_BATCH_SIZE = getAiUsageWorkLimit('release_batch_size')
   const key = spendCapDelayedRegistryKey(day)
   const [nextCursor, fields] = await registry.hscan(key, cursor, { count: RELEASE_BATCH_SIZE })
   const entries = registryEntries(fields)

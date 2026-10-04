@@ -1,12 +1,10 @@
+import { getPostsWorkLimit } from '@services/posts/work-limits'
 import { read } from '@data-stores/psql'
 import {
   buildOtherwisePublicPostEligibilityFilter,
   buildPublicPostEligibilityFilter,
 } from '@modules/feed-query-builders'
 import sql from 'sql-template-strings'
-
-export const REVIEW_SUCCESSION_HISTORY_AUDIT_PAGE_SIZE = 100
-const REVIEW_SUCCESSION_HISTORY_AUDIT_QUERY_LIMIT = REVIEW_SUCCESSION_HISTORY_AUDIT_PAGE_SIZE + 1
 
 export type ReviewSuccessionHistoryAuditRow = {
   id: string
@@ -28,6 +26,8 @@ export async function listReviewSuccessionHistoryAuditRows(
   cursor: string | null,
   cutoffArchivedAt: string,
 ): Promise<ReviewSuccessionHistoryAuditRow[]> {
+  const REVIEW_SUCCESSION_HISTORY_AUDIT_QUERY_LIMIT =
+    getPostsWorkLimit('review_succession_history_audit_page_size') + 1
   const statement = sql`/* listReviewSuccessionHistoryAuditRows */
     WITH archived_page AS MATERIALIZED (
       SELECT review.id

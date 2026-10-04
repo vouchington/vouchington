@@ -1,8 +1,7 @@
+import { getRssFeedItemsWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import type { ClearedCategoryTopicMapping } from './category-topic-votes.mts'
 import { lockRssFeedItemsForStoryPublicationChanges } from './story-publication-change.mts'
-
-const CATEGORY_CLEAR_BATCH_SIZE = 500
 
 export type ReResolvedCategoryTopicMapping = ClearedCategoryTopicMapping & {
   category_text: string
@@ -16,6 +15,7 @@ export async function clearUnlinkedTopicAliasCategoryBatch(
   alias: string,
   formerTopicId: string | undefined,
 ): Promise<ReResolvedCategoryTopicMapping[]> {
+  const CATEGORY_CLEAR_BATCH_SIZE = getRssFeedItemsWorkLimit('category_clear_batch_size')
   const parameters = [topicAliasId, alias, formerTopicId ?? null, CATEGORY_CLEAR_BATCH_SIZE]
   const { rows: candidateItems } = await query<{ rss_feed_item_id: string }>(
     `/* clearCategoriesForUnlinkedTopicAlias.candidateItems */

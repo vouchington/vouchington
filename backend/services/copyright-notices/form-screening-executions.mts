@@ -1,3 +1,4 @@
+import { getCopyrightNoticesWorkLimit } from './work-limits.mts'
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
@@ -64,6 +65,8 @@ export async function startCopyrightFormScreeningInTransaction(
 export async function claimCopyrightFormScreening(
   intakeId: string,
 ): Promise<CopyrightFormScreeningAttempt | null> {
+  const COPYRIGHT_NOTICES_SCREENING_LEASE_MINUTES =
+    getCopyrightNoticesWorkLimit('screening_lease_minutes')
   await using transaction = await beginTransaction()
   await lockCopyrightFormReview(intakeId, transaction)
   const { rows } = await transaction<{
@@ -77,7 +80,7 @@ export async function claimCopyrightFormScreening(
       claimed_at = clock_timestamp(), completed_at = NULL, updated_at = clock_timestamp()
     WHERE copyright_notice_form_intake_id = ${intakeId}
       AND (state = 'failed' OR (state = 'pending'
-        AND (claimed_at IS NULL OR claimed_at < clock_timestamp() - INTERVAL '15 minutes')))
+        AND (claimed_at IS NULL OR claimed_at < clock_timestamp() - ${COPYRIGHT_NOTICES_SCREENING_LEASE_MINUTES}::integer * INTERVAL '1 minute')))
     RETURNING attempt_number, lease_token
   `)
   await transaction.commit()

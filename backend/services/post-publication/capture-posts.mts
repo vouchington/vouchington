@@ -1,3 +1,4 @@
+import { getPostPublicationWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import {
   POST_PUBLICATION_REASONS,
@@ -9,7 +10,6 @@ import {
   type PostPublicationImpactsByScope,
 } from './capture-impacts.mts'
 import { retainPostPublicationPostScopeContext } from './capture-post-context.mts'
-import { POST_PUBLICATION_CAPTURE_BATCH_SIZE } from './constants.mts'
 import { normalizePostPublicationIdentifiers } from './identifiers.mts'
 import { upsertPostPublicationDirtyWork } from './upsert-dirty-work.mts'
 import { preparePostPublicationIdentityBridges } from './prepare-identity-bridges.mts'
@@ -28,6 +28,7 @@ export async function recordPostPublicationChanges(
   reason: PostPublicationReason,
   changes: readonly PostPublicationBatchChange[],
 ): Promise<PostPublicationDirtyWork[]> {
+  const POST_PUBLICATION_CAPTURE_BATCH_SIZE = getPostPublicationWorkLimit('capture_batch_size')
   if (!reasons.has(reason)) throw new TypeError(`Unsupported post publication reason: ${reason}`)
   const impactsByPost = new Map<string, { postIds: Set<string>; topicIds: Set<string> }>()
   for (const change of changes) {
@@ -87,6 +88,7 @@ export async function lockPostPublicationPostScopes(
   query: TransactionQuery,
   postIds: readonly string[],
 ): Promise<void> {
+  const POST_PUBLICATION_CAPTURE_BATCH_SIZE = getPostPublicationWorkLimit('capture_batch_size')
   const ids = normalizePostPublicationIdentifiers(postIds)
   for (let offset = 0; offset < ids.length; offset += POST_PUBLICATION_CAPTURE_BATCH_SIZE) {
     const batch = ids.slice(offset, offset + POST_PUBLICATION_CAPTURE_BATCH_SIZE)

@@ -1,9 +1,8 @@
+import { getTopicsWorkLimit } from './work-limits.mts'
 import { read } from '@data-stores/psql'
 import { enqueueBulkReconcilePostNotifications } from '@queues/notifications/enqueues'
 import { enqueueContinueInvalidatingPostsForTopicAliases } from '@queues/topic-aliases/enqueues'
 import { invalidate } from '@services/entity-cache/invalidate'
-
-export const TOPIC_ALIAS_POST_INVALIDATION_BATCH_SIZE = 100
 
 /**
  * Preserves immediate cache invalidation for an alias mutation while bounding
@@ -20,6 +19,9 @@ export async function invalidatePostsForTopicAliasesPage(
   topicAliasIds: string[],
   afterPostId?: string,
 ): Promise<{ hasMore: boolean; lastPostId: string | null }> {
+  const TOPIC_ALIAS_POST_INVALIDATION_BATCH_SIZE = getTopicsWorkLimit(
+    'alias_post_invalidation_batch_size',
+  )
   if (topicAliasIds.length === 0) return { hasMore: false, lastPostId: null }
   const { rows } = await read<{ post_id: string }>(
     `/* invalidatePostsForTopicAliases */

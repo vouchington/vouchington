@@ -24,6 +24,7 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
     "@services/classifiers": "workspace:^",
     "@services/post-publication": "workspace:^",
     "@ts-shared/utils": "workspace:^",

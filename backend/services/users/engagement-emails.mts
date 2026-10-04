@@ -1,3 +1,4 @@
+import { getUsersWorkLimit } from './work-limits.mts'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -7,6 +8,7 @@ export async function claimEngagementEmailSend(
   userId: string,
   emailType: EngagementEmailType,
 ): Promise<boolean> {
+  const USERS_ENGAGEMENT_CLAIM_HOURS = getUsersWorkLimit('engagement_claim_hours')
   const { rows } = await write(sql`/* claimEngagementEmailSend */
     INSERT INTO user_engagement_email_sends (user_id, email_type)
     VALUES (${userId}, ${emailType})
@@ -14,7 +16,7 @@ export async function claimEngagementEmailSend(
       SET claimed_at = CURRENT_TIMESTAMP
       WHERE user_engagement_email_sends.sent_at IS NULL
         AND user_engagement_email_sends.delivery_attempted_at IS NULL
-        AND user_engagement_email_sends.claimed_at < CURRENT_TIMESTAMP - INTERVAL '1 day'
+        AND user_engagement_email_sends.claimed_at < CURRENT_TIMESTAMP - ${USERS_ENGAGEMENT_CLAIM_HOURS}::integer * INTERVAL '1 hour'
     RETURNING user_id
   `)
   return rows.length > 0

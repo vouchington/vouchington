@@ -6,8 +6,12 @@ import * as stripeSubscriptions from '@modules/stripe/subscriptions'
 export type IneligibleStripePurchaseOperations = {
   cancelSubscriptionImmediately: typeof stripeSubscriptions.cancelStripeSubscriptionImmediately
   createRefund: typeof stripeRefunds.createStripeRefund
-  getDisputeSettlementForPayment?: typeof stripeDisputes.getStripeDisputeSettlementForPayment
+  getDisputeSettlementForPayment?: (
+    options: Parameters<typeof stripeDisputes.getStripeDisputeSettlementForPayment>[0],
+  ) => ReturnType<typeof stripeDisputes.getStripeDisputeSettlementForPayment>
   retrieveRefund?: typeof stripeRefunds.getStripeRefund
-  listSubscriptionInvoices: typeof stripeInvoices.listAllStripeSubscriptionInvoices
+  listSubscriptionInvoices: (
+    id: string,
+  ) => ReturnType<typeof stripeInvoices.listAllStripeSubscriptionInvoices>
   listRefundsForPaymentPage: typeof stripeRefunds.listStripeRefundsForPaymentPage
 }

@@ -21,7 +21,6 @@ import {
   validateRecaptchaConfig,
   validateRequestSigningModeConfig,
 } from './registry-validators.mts'
-
 export const coreDynamicConfigRegistryEntries = [
   defineDynamicConfigNamespace({
     namespace: 'request-client-info',
@@ -135,6 +134,14 @@ export const coreDynamicConfigRegistryEntries = [
         'creation_retry_delay_ms',
         'Delay before retrying a capacity-denied creation job.',
       ),
+      bloom_population_batch_size: bedrockField(
+        'bloom_population_batch_size',
+        'Embedding hashes per bloom population chunk.',
+      ),
+      reconciliation_page_size: bedrockField(
+        'reconciliation_page_size',
+        'Completed embedding jobs per reconciliation page.',
+      ),
       max_inflight_jobs: bedrockField(
         'max_inflight_jobs',
         'Maximum number of Bedrock batch jobs allowed in flight simultaneously.',
@@ -183,7 +190,6 @@ export const coreDynamicConfigRegistryEntries = [
     validate: validateBedrockBatchConfig,
   }),
 ]
-
 function bedrockField(key: keyof typeof BEDROCK_BATCH_MAX_VALUES, description: string) {
   return {
     description,

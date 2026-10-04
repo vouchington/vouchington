@@ -1,3 +1,4 @@
+import { getMembershipWorkLimit } from '@services/memberships/work-limits'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
@@ -16,8 +17,6 @@ export type {
   RefundMetadataPage,
   RefundMetadataScanState,
 } from './metadata-discovery-types.mts'
-
-const PROVIDER_PAGE_BUDGET = 3
 
 export type RefundMetadataDiscoveryResult =
   | { outcome: 'found'; refund: MetadataDiscoverableRefund }
@@ -38,6 +37,7 @@ export async function discoverRefundByOperationMetadata(
     startingAfter?: string
   }) => Promise<RefundMetadataPage>,
 ): Promise<RefundMetadataDiscoveryResult> {
+  const PROVIDER_PAGE_BUDGET = getMembershipWorkLimit('refund_metadata_pages_per_run')
   const state = await getRefundMetadataScanState(attempt.id)
   if (state?.completedAt) return { outcome: 'not_found' }
   return advanceRefundMetadataScan(

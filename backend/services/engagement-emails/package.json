@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
     "@email-templates/core": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",

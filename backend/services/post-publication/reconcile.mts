@@ -1,3 +1,4 @@
+import { getPostPublicationWorkLimit } from './work-limits.mts'
 import { write } from '@data-stores/psql'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
 import type { ClaimedPostPublicationDirtyWork } from './types.mts'
@@ -8,8 +9,6 @@ import { retainOrphanPublicationIdentities } from './orphan-identities.mts'
 import { materializePostPublicationIdentitySnapshot } from './identity-snapshots.mts'
 
 export type { ReconciliationPost } from './publication-candidates.mts'
-
-export const POST_PUBLICATION_RECONCILIATION_PAGE_SIZE = 100
 
 export type PublicationSitemapTarget = {
   postType: (typeof SITEMAP_CONFIG.POST_TYPES)[number]
@@ -22,7 +21,7 @@ export type PublicationSitemapTarget = {
  */
 export async function reconcilePostPublicationDirtyWork(
   work: ClaimedPostPublicationDirtyWork,
-  limit = POST_PUBLICATION_RECONCILIATION_PAGE_SIZE,
+  limit = getPostPublicationWorkLimit('reconciliation_page_size'),
   selectedPostIds?: readonly string[],
 ): Promise<{
   processed: number

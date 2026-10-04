@@ -1,3 +1,4 @@
+import { getMembershipWorkLimit } from '@services/memberships/work-limits'
 import { write } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
@@ -25,14 +26,15 @@ export type GooglePlayNotificationRecoveryBatch = {
 }
 
 export async function findRecoverableGooglePlayNotificationJobs(): Promise<GooglePlayNotificationRecoveryBatch> {
+  const pageSize = getMembershipWorkLimit('google_cursor_page_size')
   const cursor = await beginGooglePlayRecoverySweep({
     cursorId: 'notifications',
     findUpperBound: findNotificationSweepUpperBound,
   })
   const page = pageGooglePlayRecoveryItems(
     cursor,
-    await findPendingNotificationRows(cursor.previousCursor, cursor.sweepUpperBound),
-    500,
+    await findPendingNotificationRows(cursor.previousCursor, cursor.sweepUpperBound, pageSize),
+    pageSize,
   )
   const rows = page.items
   const parsed = rows.map(row => {
@@ -77,6 +79,7 @@ export async function findRecoverableGooglePlayNotificationJobs(): Promise<Googl
 async function findPendingNotificationRows(
   cursor: string | null,
   upperBound: string | null,
+  WORK_PAGE_SIZE: number,
 ): Promise<
   Array<{
     id: string
@@ -98,7 +101,7 @@ async function findPendingNotificationRows(
       AND verified_at IS NULL AND rejected_at IS NULL
       AND (${cursor}::UUID IS NULL OR id > ${cursor}::UUID)
       AND (${upperBound}::UUID IS NULL OR id <= ${upperBound}::UUID)
-    ORDER BY id LIMIT 501`)
+    ORDER BY id LIMIT ${WORK_PAGE_SIZE + 1}`)
   return rows
 }
 

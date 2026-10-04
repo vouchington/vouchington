@@ -1,5 +1,5 @@
+import { getRssFeedItemsWorkLimit } from './work-limits.mts'
 import { write, type QueryExecutor } from '@data-stores/psql'
-import { RSS_FEED_ITEM_CATEGORY_SQL_BATCH_SIZE } from './processing-limits.mts'
 
 export type CategoryTopicMutation = {
   rss_feed_item_id: string
@@ -103,6 +103,7 @@ export async function updateMatchedCategories(
 }
 
 function orderedCategoryChunks<T extends { rss_feed_item_id: string }>(rows: readonly T[]): T[][] {
+  const RSS_FEED_ITEM_CATEGORY_SQL_BATCH_SIZE = getRssFeedItemsWorkLimit('category_sql_batch_size')
   const rowsByItemId = new Map<string, T[]>()
   for (const row of rows) {
     const itemRows = rowsByItemId.get(row.rss_feed_item_id) ?? []

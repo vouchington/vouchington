@@ -1,3 +1,4 @@
+import { getPostPublicationWorkLimit } from './work-limits.mts'
 /* oxlint-disable max-lines -- deletion capture keeps ordered preimage locks and durable impact retention together. */
 import type { TransactionQuery } from '@data-stores/psql'
 import { retainPostPublicationImpactKeys } from './capture-keys.mts'
@@ -15,8 +16,6 @@ import {
 
 export { processAuthorDeletionPublicationBatch } from './capture-author-deletion-batch.mts'
 export { lockAuthorPublicationLifecycle } from './lock.mts'
-
-const RSS_FEED_HARD_DELETE_CAPTURE_BATCH_SIZE = 500
 
 /** Retains story-post and category tombstones before a feed cascade removes its source edges. */
 export async function recordRssFeedHardDeletePublicationChange(
@@ -48,6 +47,9 @@ async function retainRssFeedHardDeleteItemImpacts(
   rssFeedId: string,
   dirtyWorkId: string,
 ): Promise<void> {
+  const RSS_FEED_HARD_DELETE_CAPTURE_BATCH_SIZE = getPostPublicationWorkLimit(
+    'rss_feed_hard_delete_capture_batch_size',
+  )
   let afterItemId: string | null = null
   while (true) {
     // oxlint-disable-next-line no-await-in-loop -- each retained item-impact page is bounded.
@@ -75,6 +77,9 @@ async function lockRssFeedHardDeletePosts(
   query: TransactionQuery,
   rssFeedId: string,
 ): Promise<void> {
+  const RSS_FEED_HARD_DELETE_CAPTURE_BATCH_SIZE = getPostPublicationWorkLimit(
+    'rss_feed_hard_delete_capture_batch_size',
+  )
   let afterPostId: string | null = null
   while (true) {
     // oxlint-disable-next-line no-await-in-loop -- globally ordered post pages precede source relation locks.
@@ -111,6 +116,9 @@ async function lockRssFeedHardDeleteItems(
   query: TransactionQuery,
   rssFeedId: string,
 ): Promise<void> {
+  const RSS_FEED_HARD_DELETE_CAPTURE_BATCH_SIZE = getPostPublicationWorkLimit(
+    'rss_feed_hard_delete_capture_batch_size',
+  )
   let afterItemId: string | null = null
   while (true) {
     // oxlint-disable-next-line no-await-in-loop -- ascending item pages establish the shared item-row-first order.
@@ -136,6 +144,9 @@ async function lockRssFeedHardDeleteSources(
   query: TransactionQuery,
   rssFeedId: string,
 ): Promise<void> {
+  const RSS_FEED_HARD_DELETE_CAPTURE_BATCH_SIZE = getPostPublicationWorkLimit(
+    'rss_feed_hard_delete_capture_batch_size',
+  )
   let afterItemId: string | null = null
   while (true) {
     // oxlint-disable-next-line no-await-in-loop -- source pages follow the globally ordered item/post locks.
@@ -177,6 +188,9 @@ async function lockRssFeedHardDeleteCategories(
   query: TransactionQuery,
   rssFeedId: string,
 ): Promise<void> {
+  const RSS_FEED_HARD_DELETE_CAPTURE_BATCH_SIZE = getPostPublicationWorkLimit(
+    'rss_feed_hard_delete_capture_batch_size',
+  )
   let afterItemId: string | null = null
   let afterCategoryText: string | null = null
   while (true) {
@@ -209,6 +223,9 @@ async function retainRssFeedHardDeletePostImpacts(
   rssFeedId: string,
   dirtyWorkId: string,
 ): Promise<void> {
+  const RSS_FEED_HARD_DELETE_CAPTURE_BATCH_SIZE = getPostPublicationWorkLimit(
+    'rss_feed_hard_delete_capture_batch_size',
+  )
   let afterPostId: string | null = null
   while (true) {
     // oxlint-disable-next-line no-await-in-loop -- each retained impact page is bounded.

@@ -1,3 +1,4 @@
+import { getApInboxActivitiesWorkLimit } from './work-limits.mts'
 import { write } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import {
@@ -16,6 +17,9 @@ export function buildExpireActivityPubInboxDeliveriesQuery(
   category: ActivityPubInboxExpiryCategory,
   limit: number = ACTIVITYPUB_INBOX_STORAGE_POLICY.cleanupBatchSize,
 ): SQLStatement {
+  const AP_INBOX_ACTIVITIES_PROCESSING_TIMEOUT_MINUTES = getApInboxActivitiesWorkLimit(
+    'processing_timeout_minutes',
+  )
   if (
     !Number.isInteger(limit) ||
     limit < 1 ||
@@ -40,7 +44,7 @@ export function buildExpireActivityPubInboxDeliveriesQuery(
         AND (
           delivery.failed_at IS NOT NULL
           OR delivery.processing_at IS NULL
-          OR delivery.processing_at < CURRENT_TIMESTAMP - INTERVAL '30 minutes'
+          OR delivery.processing_at < CURRENT_TIMESTAMP - ${AP_INBOX_ACTIVITIES_PROCESSING_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute'
         )
       ORDER BY delivery.retention_expires_at, delivery.id
       LIMIT ${limit}

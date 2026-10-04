@@ -1,9 +1,9 @@
+import { getUrlsDomainsBlacklistWorkLimit } from './work-limits.mts'
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-export const URL_BLOCKLIST_BLOOM_BATCH_SIZE = 10_000
-
 export async function* urlBlocklistBatchesFromDb(): AsyncGenerator<string[]> {
+  const URL_BLOCKLIST_BLOOM_BATCH_SIZE = getUrlsDomainsBlacklistWorkLimit('bloom_batch_size')
   let batch: string[] = []
 
   for await (const row of createAsyncGeneratorFromCursor<{ domain: string }>(

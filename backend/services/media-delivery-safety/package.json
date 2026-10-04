@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
     "@modules/aws": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@ts-shared/url-signing": "workspace:^",

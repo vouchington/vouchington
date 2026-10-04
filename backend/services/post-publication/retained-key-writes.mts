@@ -1,5 +1,5 @@
+import { getPostPublicationWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql'
-import { POST_PUBLICATION_DIRTY_WORK_KEY_BATCH_SIZE } from './constants.mts'
 import { RETAINED_KEY_COLUMNS } from './concrete-key-columns.mts'
 import { retainPublicationIdentityBridges } from './identity-bridges.mts'
 
@@ -45,6 +45,9 @@ export async function retainPostPublicationKeys(
   dirtyWorkId: string,
   keys: readonly PostPublicationRetainedKey[],
 ): Promise<void> {
+  const POST_PUBLICATION_DIRTY_WORK_KEY_BATCH_SIZE = getPostPublicationWorkLimit(
+    'dirty_work_key_batch_size',
+  )
   for (const family of ['post', 'community', 'rss_feed_item'] as const) {
     const ids = [
       ...new Set(

@@ -2,8 +2,6 @@ import type Stripe from 'stripe'
 import { getStripeClient } from './client.mts'
 import { listAllStripeInvoicePaymentsForPaymentIntent } from './invoice-payments.mts'
 
-const MAX_STRIPE_DISPUTE_PAGES = 10
-
 export type StripeDisputeSettlement = {
   lostDisputeAmountMinorUnits: number
   refundDeferred: boolean
@@ -18,6 +16,7 @@ export type WonStripeDisputeInvoice = {
 /* no-mistakes: integration=stripe */
 export async function getWonStripeDisputeInvoice(
   disputeId: string,
+  paymentPages: number,
 ): Promise<WonStripeDisputeInvoice | null> {
   const stripe = getStripeClient()
   const dispute = await stripe.disputes.retrieve(disputeId)
@@ -27,7 +26,7 @@ export async function getWonStripeDisputeInvoice(
   const charge = await stripe.charges.retrieve(chargeId)
   const paymentIntentId = getStripeExpandableId(charge.payment_intent)
   if (!paymentIntentId) return null
-  const payments = await listAllStripeInvoicePaymentsForPaymentIntent(paymentIntentId)
+  const payments = await listAllStripeInvoicePaymentsForPaymentIntent(paymentIntentId, paymentPages)
   const invoiceIds = [
     ...new Set(payments.map(payment => getStripeExpandableId(payment.invoice))),
   ].filter((invoiceId): invoiceId is string => invoiceId !== null)
@@ -40,12 +39,16 @@ export async function getWonStripeDisputeInvoice(
 }
 
 /* no-mistakes: integration=stripe */
-export async function getStripeDisputeSettlementForPayment(options: {
-  chargeId: string | null
-  currency: string
-  paymentIntentId: string | null
-}): Promise<StripeDisputeSettlement> {
-  if (options.chargeId) return getStripeChargeDisputeSettlement(options.chargeId, options.currency)
+export async function getStripeDisputeSettlementForPayment(
+  options: {
+    chargeId: string | null
+    currency: string
+    paymentIntentId: string | null
+  },
+  maxPages: number,
+): Promise<StripeDisputeSettlement> {
+  if (options.chargeId)
+    return getStripeChargeDisputeSettlement(options.chargeId, options.currency, maxPages)
   if (!options.paymentIntentId)
     throw new Error('Stripe dispute lookup requires a charge or payment intent')
   const charge = await getStripePaymentIntentLatestCharge(options.paymentIntentId)
@@ -53,6 +56,7 @@ export async function getStripeDisputeSettlementForPayment(options: {
   return getStripeChargeDisputeSettlement(
     typeof charge === 'string' ? charge : charge.id,
     options.currency,
+    maxPages,
   )
 }
 
@@ -60,6 +64,7 @@ export async function getStripeDisputeSettlementForPayment(options: {
 async function getStripeChargeDisputeSettlement(
   chargeId: string,
   currency: string,
+  maxPages: number,
 ): Promise<StripeDisputeSettlement> {
   return listStripeDisputePages(
     chargeId,
@@ -67,6 +72,7 @@ async function getStripeChargeDisputeSettlement(
     undefined,
     { lostDisputeAmountMinorUnits: 0, refundDeferred: false },
     0,
+    maxPages,
   )
 }
 
@@ -76,8 +82,9 @@ async function listStripeDisputePages(
   startingAfter: string | undefined,
   settlement: StripeDisputeSettlement,
   pageCount: number,
+  maxPages: number,
 ): Promise<StripeDisputeSettlement> {
-  if (pageCount >= MAX_STRIPE_DISPUTE_PAGES)
+  if (pageCount >= maxPages)
     throw new Error(`Stripe charge ${chargeId} exceeded the dispute page limit`)
   const page = await getStripeClient().disputes.list({
     charge: chargeId,
@@ -91,7 +98,14 @@ async function listStripeDisputePages(
   if (!page.has_more) return nextSettlement
   const lastDispute = page.data.at(-1)
   if (!lastDispute) throw new Error(`Stripe returned an empty dispute page for charge ${chargeId}`)
-  return listStripeDisputePages(chargeId, currency, lastDispute.id, nextSettlement, pageCount + 1)
+  return listStripeDisputePages(
+    chargeId,
+    currency,
+    lastDispute.id,
+    nextSettlement,
+    pageCount + 1,
+    maxPages,
+  )
 }
 
 /* no-mistakes: integration=stripe */

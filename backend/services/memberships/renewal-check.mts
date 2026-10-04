@@ -1,4 +1,4 @@
-import { getMembershipWorkLimits } from './work-limits.mts'
+import { getMembershipWorkLimit, getMembershipWorkLimits } from './work-limits.mts'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
@@ -10,6 +10,7 @@ export async function getUsersApproachingRenewalWithPriceIncrease(
   afterId?: string,
   batchSize = getMembershipWorkLimits().batchSize,
 ): Promise<RenewalPriceIncreaseUser[]> {
+  const MEMBERSHIPS_RENEWAL_CLAIM_HOURS = getMembershipWorkLimit('renewal_claim_hours')
   const { rows } = await read(sql`/* getUsersApproachingRenewalWithPriceIncrease */
     SELECT m.user_id, m.id AS membership_id,
       observation.id AS membership_provider_observation_id,
@@ -55,7 +56,7 @@ export async function getUsersApproachingRenewalWithPriceIncrease(
       AND (
         ((m.renewal_price_increase_claimed_at IS NULL
           OR m.renewal_price_increase_delivery_attempted_at IS NOT NULL
-          OR m.renewal_price_increase_claimed_at < CURRENT_TIMESTAMP - INTERVAL '1 hour') AND
+          OR m.renewal_price_increase_claimed_at < CURRENT_TIMESTAMP - ${MEMBERSHIPS_RENEWAL_CLAIM_HOURS}::integer * INTERVAL '1 hour') AND
           (m.renewal_price_increase_notified_provider_product_id,
           m.renewal_price_increase_notified_minor_units,
           m.renewal_price_increase_notified_currency_code,
@@ -68,7 +69,7 @@ export async function getUsersApproachingRenewalWithPriceIncrease(
         OR (m.renewal_price_increase_notified_at IS NULL
           AND m.renewal_price_increase_delivery_attempted_at IS NULL
           AND (m.renewal_price_increase_claimed_at IS NULL
-            OR m.renewal_price_increase_claimed_at < CURRENT_TIMESTAMP - INTERVAL '1 hour'))
+            OR m.renewal_price_increase_claimed_at < CURRENT_TIMESTAMP - ${MEMBERSHIPS_RENEWAL_CLAIM_HOURS}::integer * INTERVAL '1 hour'))
       )
     ORDER BY m.id LIMIT ${batchSize}
   `)
@@ -80,6 +81,7 @@ export async function claimRenewalPriceIncreaseNotification(
   userId: string,
   membershipProviderObservationId: string,
 ): Promise<string | null> {
+  const MEMBERSHIPS_RENEWAL_CLAIM_HOURS = getMembershipWorkLimit('renewal_claim_hours')
   const { rows } = await write(sql`/* claimRenewalPriceIncreaseNotification */
     UPDATE memberships m
     SET renewal_price_increase_notified_observation_id = observation.id,
@@ -126,7 +128,7 @@ export async function claimRenewalPriceIncreaseNotification(
       AND (
         ((m.renewal_price_increase_claimed_at IS NULL
           OR m.renewal_price_increase_delivery_attempted_at IS NOT NULL
-          OR m.renewal_price_increase_claimed_at < CURRENT_TIMESTAMP - INTERVAL '1 hour') AND
+          OR m.renewal_price_increase_claimed_at < CURRENT_TIMESTAMP - ${MEMBERSHIPS_RENEWAL_CLAIM_HOURS}::integer * INTERVAL '1 hour') AND
           (m.renewal_price_increase_notified_provider_product_id,
           m.renewal_price_increase_notified_minor_units,
           m.renewal_price_increase_notified_currency_code,
@@ -139,7 +141,7 @@ export async function claimRenewalPriceIncreaseNotification(
         OR (m.renewal_price_increase_notified_at IS NULL
           AND m.renewal_price_increase_delivery_attempted_at IS NULL
           AND (m.renewal_price_increase_claimed_at IS NULL
-            OR m.renewal_price_increase_claimed_at < CURRENT_TIMESTAMP - INTERVAL '1 hour'))
+            OR m.renewal_price_increase_claimed_at < CURRENT_TIMESTAMP - ${MEMBERSHIPS_RENEWAL_CLAIM_HOURS}::integer * INTERVAL '1 hour'))
       )
     RETURNING m.renewal_price_increase_claim_token
   `)

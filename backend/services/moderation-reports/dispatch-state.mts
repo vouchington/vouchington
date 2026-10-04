@@ -1,3 +1,4 @@
+import { getModerationReportsWorkLimit } from './work-limits.mts'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getMaxUUIDv7ForDate, getMinUUIDv7ForDate } from '@modules/utils/ids'
@@ -20,6 +21,7 @@ export async function getUndispatchedJudgements(): Promise<
     community_id: string | null
   }>
 > {
+  const WORK_PAGE_SIZE = getModerationReportsWorkLimit('dispatch_batch_size')
   const now = Date.now()
   const olderThanId = getMinUUIDv7ForDate(new Date(now - 2 * 60 * 1000))
   const newerThanId = getMaxUUIDv7ForDate(new Date(now - 30 * 60 * 1000))
@@ -47,7 +49,7 @@ export async function getUndispatchedJudgements(): Promise<
       AND j.id < ${olderThanId}::uuid
       AND j.id > ${newerThanId}::uuid
     ORDER BY j.id
-    LIMIT 200
+    LIMIT ${WORK_PAGE_SIZE}
   `)
   return rows
 }

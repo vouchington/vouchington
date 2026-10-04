@@ -1,3 +1,12 @@
+import { backgroundWorkRegistryEntries9 } from './registry-background-work-entries-9.mts'
+import { backgroundWorkRegistryEntries8 } from './registry-background-work-entries-8.mts'
+import { backgroundWorkRegistryEntries7 } from './registry-background-work-entries-7.mts'
+import { backgroundWorkRegistryEntries6 } from './registry-background-work-entries-6.mts'
+import { backgroundWorkRegistryEntries5 } from './registry-background-work-entries-5.mts'
+import { backgroundWorkEntries1 } from './registry-background-work-entries-1.mts'
+import { backgroundWorkEntries2 } from './registry-background-work-entries-2.mts'
+import { backgroundWorkEntries3 } from './registry-background-work-entries-3.mts'
+import { backgroundWorkEntries4 } from './registry-background-work-entries-4.mts'
 import { streamDynamicConfigRegistryEntries } from './registry-stream-entries.mts'
 import { workDynamicConfigRegistryEntries } from './registry-work-entries.mts'
 import { aiUsageDynamicConfigRegistryEntries } from './registry-ai-usage-entries.mts'
@@ -30,6 +39,49 @@ const REGISTRY_ORDER = [
   'rss-feed-crawl-config',
   'user-import-export-config',
   'data-retention-config',
+  'moderation-analytics-work-config',
+  'post-clearance-work-config',
+  'users-work-config',
+  'vote-weight-work-config',
+  'crawl-boilerplate-removal-work-config',
+  'find-your-friends-work-config',
+  'stripe-work-config',
+  'recommended-topics-work-config',
+  'engagement-emails-work-config',
+  'ap-inbox-activities-work-config',
+  'user-deletions-work-config',
+  'topics-work-config',
+  'stories-work-config',
+  'remote-actors-work-config',
+  'posts-work-config',
+  'media-delivery-safety-work-config',
+  'entity-relations-work-config',
+  'elections-votes-work-config',
+  'classifiers-work-config',
+  'classifier-runs-work-config',
+  'urls-domains-blacklist-work-config',
+  'bookmarks-work-config',
+  'notifications-work-config',
+  'rss-feeds-work-config',
+  'rss-feed-items-work-config',
+  'post-publication-work-config',
+  'ai-usage-work-config',
+  'bluesky-follows-work-config',
+  'crawl-embeds-work-config',
+  'language-detection-work-config',
+  'report-integrity-work-config',
+  'images-work-config',
+  'openai-background-responses-work-config',
+  'openai-moderation-work-config',
+  'entity-cache-work-config',
+  'hostname-blocking-work-config',
+  'moderation-reports-work-config',
+  'communities-work-config',
+  'admin-imports-work-config',
+  'follower-distributions-work-config',
+  'oauth-facebook-work-config',
+  'oauth-github-work-config',
+  'oauth-x-work-config',
   'crawl-dispatch-work-config',
   'referral-crawl-dispatch-work-config',
   'referral-unfurl-dispatch-work-config',
@@ -53,6 +105,16 @@ const REGISTRY_ORDER = [
 ] as const
 
 const unorderedRegistryEntries = [
+  ...backgroundWorkEntries1,
+  ...backgroundWorkEntries2,
+  ...backgroundWorkEntries3,
+  ...backgroundWorkEntries4,
+  ...Object.values(backgroundWorkRegistryEntries5),
+  ...Object.values(backgroundWorkRegistryEntries6),
+  ...Object.values(backgroundWorkRegistryEntries7),
+  ...Object.values(backgroundWorkRegistryEntries8),
+  ...Object.values(backgroundWorkRegistryEntries9),
+
   ...workDynamicConfigRegistryEntries,
   ...streamDynamicConfigRegistryEntries,
   ...featureFlagDynamicConfigRegistryEntries,

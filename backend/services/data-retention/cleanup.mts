@@ -13,7 +13,7 @@ import {
   deleteOldReferralAttributionBatch,
   deleteOrphanedOAuthAccountBatch,
 } from './cleanup-batches.mts'
-import type { DataRetentionLimits } from './config.mts'
+import { getTopicImportAttemptDeletionBatchSize, type DataRetentionLimits } from './config.mts'
 import {
   cleanupAbandonedBlueskyLinkSessions,
   cleanupExpiredBlueskyLinkCompletions,
@@ -51,8 +51,6 @@ export { cleanupAbandonedBlueskyLinkSessions, cleanupExpiredBlueskyLinkCompletio
 export { cleanupExpiredOAuthAuthorizations }
 export { cleanupExpiredOAuthAuthorizationServerArtifacts }
 export { cleanupTerminalNotificationPushIntents }
-
-const TOPIC_IMPORT_ATTEMPT_DELETION_BATCH_SIZE = 25
 
 export async function cleanupAnalyticsLocalFiles(): Promise<void> {
   if (process.env.ANALYTICS_BACKEND !== 'local') return
@@ -127,7 +125,7 @@ export async function runDataRetentionCleanup(
   // shared batch size can only lower it.
   const topicImportLimits = {
     ...limits,
-    batchSize: Math.min(limits.batchSize, TOPIC_IMPORT_ATTEMPT_DELETION_BATCH_SIZE),
+    batchSize: Math.min(limits.batchSize, getTopicImportAttemptDeletionBatchSize()),
   }
   // Ephemeral broker rows reference users and provider accounts. Remove expired rows first so a
   // long-interrupted cleanup run cannot retain avoidable references ahead of parent cleanup.
@@ -216,7 +214,7 @@ export async function cleanupExpiredTopicImportAttempts(
 ): Promise<CleanupResult> {
   return runBoundedBatches(
     {
-      batchSize: options.batchSize ?? TOPIC_IMPORT_ATTEMPT_DELETION_BATCH_SIZE,
+      batchSize: options.batchSize ?? getTopicImportAttemptDeletionBatchSize(),
       maxBatches: options.maxBatches,
     },
     async batchSize =>

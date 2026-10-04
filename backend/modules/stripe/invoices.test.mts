@@ -1,3 +1,7 @@
+import {
+  stripeInvoiceLookupLimitsForTest,
+  stripeLookupMaxPagesForTest,
+} from '@voucha/test-helpers/stripe-pagination-limits'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as stripeClientModule from '@modules/stripe/client'
 import {
@@ -7,32 +11,26 @@ import {
   listStripeSubscriptionInvoices,
 } from './invoices.mts'
 import { listAllStripeInvoicePayments } from './invoice-payments.mts'
-
 describe('stripe invoices module', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
-
   afterEach(() => {
     vi.restoreAllMocks()
   })
-
   it('retrieves invoices by ID', async () => {
     const retrieve = vi.fn<VitestLooseMock>().mockResolvedValue({ id: 'in_123' })
     vi.spyOn(stripeClientModule, 'getStripeClient').mockReturnValue({
       invoices: { retrieve },
     } as never)
-
     await expect(getStripeInvoice('in_123')).resolves.toEqual({ id: 'in_123' })
     expect(retrieve).toHaveBeenCalledWith('in_123', { expand: ['payments'] })
   })
-
   it('lists invoices for a subscription with default limit', async () => {
     const list = vi.fn<VitestLooseMock>().mockResolvedValue({ data: [] })
     vi.spyOn(stripeClientModule, 'getStripeClient').mockReturnValue({
       invoices: { list },
     } as never)
-
     await expect(listStripeSubscriptionInvoices('sub_123')).resolves.toEqual({ data: [] })
     expect(list).toHaveBeenCalledWith({
       subscription: 'sub_123',
@@ -40,7 +38,6 @@ describe('stripe invoices module', () => {
       expand: ['data.payments'],
     })
   })
-
   it('lists and hydrates every invoice page for a subscription', async () => {
     const list = vi
       .fn<VitestLooseMock>()
@@ -61,8 +58,9 @@ describe('stripe invoices module', () => {
         listLineItems: vi.fn<VitestLooseMock>().mockResolvedValue({ data: [], has_more: false }),
       },
     } as never)
-
-    await expect(listAllStripeSubscriptionInvoices('sub_123')).resolves.toEqual([
+    await expect(
+      listAllStripeSubscriptionInvoices('sub_123', stripeInvoiceLookupLimitsForTest),
+    ).resolves.toEqual([
       { id: 'in_newest', status: 'open', lines: { data: [] }, payments: { data: [] } },
       { id: 'in_oldest', status: 'open', lines: { data: [] }, payments: { data: [] } },
     ])
@@ -78,7 +76,6 @@ describe('stripe invoices module', () => {
       expand: ['data.payments'],
     })
   })
-
   it('hydrates every paid invoice payment page', async () => {
     const list = vi.fn<VitestLooseMock>().mockResolvedValue({
       data: [{ id: 'in_paid', status: 'paid' }],
@@ -102,7 +99,9 @@ describe('stripe invoices module', () => {
       },
     } as never)
 
-    await expect(listAllStripeSubscriptionInvoices('sub_123')).resolves.toEqual([
+    await expect(
+      listAllStripeSubscriptionInvoices('sub_123', stripeInvoiceLookupLimitsForTest),
+    ).resolves.toEqual([
       {
         id: 'in_paid',
         status: 'paid',
@@ -150,7 +149,9 @@ describe('stripe invoices module', () => {
       },
     } as never)
 
-    await expect(listAllStripeSubscriptionInvoices('sub_123')).resolves.toEqual([
+    await expect(
+      listAllStripeSubscriptionInvoices('sub_123', stripeInvoiceLookupLimitsForTest),
+    ).resolves.toEqual([
       {
         id: 'in_paid_lines',
         status: 'paid',
@@ -195,7 +196,9 @@ describe('stripe invoices module', () => {
       invoicePayments: { list: paymentList },
     } as never)
 
-    await expect(listAllStripeSubscriptionInvoices('sub_123')).resolves.toEqual([
+    await expect(
+      listAllStripeSubscriptionInvoices('sub_123', stripeInvoiceLookupLimitsForTest),
+    ).resolves.toEqual([
       {
         id: 'in_open',
         status: 'open',
@@ -225,9 +228,9 @@ describe('stripe invoices module', () => {
       invoices: { list },
     } as never)
 
-    await expect(listAllStripeSubscriptionInvoices('sub_unbounded')).rejects.toThrow(
-      'Stripe subscription sub_unbounded exceeded the invoice page limit',
-    )
+    await expect(
+      listAllStripeSubscriptionInvoices('sub_unbounded', stripeInvoiceLookupLimitsForTest),
+    ).rejects.toThrow('Stripe subscription sub_unbounded exceeded the invoice page limit')
     expect(list).toHaveBeenCalledTimes(10)
   })
 
@@ -240,9 +243,9 @@ describe('stripe invoices module', () => {
       invoicePayments: { list },
     } as never)
 
-    await expect(listAllStripeInvoicePayments('in_unbounded')).rejects.toThrow(
-      'Stripe invoice in_unbounded exceeded the payment page limit',
-    )
+    await expect(
+      listAllStripeInvoicePayments('in_unbounded', stripeLookupMaxPagesForTest),
+    ).rejects.toThrow('Stripe invoice in_unbounded exceeded the payment page limit')
     expect(list).toHaveBeenCalledTimes(10)
   })
 
@@ -252,9 +255,9 @@ describe('stripe invoices module', () => {
       invoicePayments: { list },
     } as never)
 
-    await expect(listAllStripeInvoicePayments('in_empty')).rejects.toThrow(
-      'Stripe returned an empty invoice payment page for invoice in_empty',
-    )
+    await expect(
+      listAllStripeInvoicePayments('in_empty', stripeLookupMaxPagesForTest),
+    ).rejects.toThrow('Stripe returned an empty invoice payment page for invoice in_empty')
     expect(list).toHaveBeenCalledOnce()
   })
 
@@ -264,9 +267,9 @@ describe('stripe invoices module', () => {
       invoices: { list },
     } as never)
 
-    await expect(listAllStripeSubscriptionInvoices('sub_empty')).rejects.toThrow(
-      'Stripe returned an empty invoice page for subscription sub_empty',
-    )
+    await expect(
+      listAllStripeSubscriptionInvoices('sub_empty', stripeInvoiceLookupLimitsForTest),
+    ).rejects.toThrow('Stripe returned an empty invoice page for subscription sub_empty')
     expect(list).toHaveBeenCalledOnce()
   })
 
@@ -277,17 +280,20 @@ describe('stripe invoices module', () => {
     } as never)
 
     await expect(
-      getCompleteStripeInvoicePayments({
-        id: 'in_open',
-        status: 'open',
-        payments: {
-          data: [
-            { id: 'inpay_paid', status: 'paid' },
-            { id: 'inpay_open', status: 'open' },
-          ],
-          has_more: false,
-        },
-      } as never),
+      getCompleteStripeInvoicePayments(
+        {
+          id: 'in_open',
+          status: 'open',
+          payments: {
+            data: [
+              { id: 'inpay_paid', status: 'paid' },
+              { id: 'inpay_open', status: 'open' },
+            ],
+            has_more: false,
+          },
+        } as never,
+        stripeLookupMaxPagesForTest,
+      ),
     ).resolves.toEqual([{ id: 'inpay_paid', status: 'paid' }])
     expect(list).not.toHaveBeenCalled()
   })

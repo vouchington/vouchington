@@ -1,3 +1,4 @@
+import { getMembershipWorkLimit } from '@services/memberships/work-limits'
 import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { DirectMembershipSourceRejectedError } from '../direct-source-authority.mts'
@@ -160,9 +161,12 @@ async function deferAppleVerification(
   verificationId: string,
   processingClaimToken: string,
 ): Promise<void> {
+  const MEMBERSHIPS_VERIFICATION_RETRY_MINUTES = getMembershipWorkLimit(
+    'verification_retry_minutes',
+  )
   await write(sql`/* deferAppleVerification */
     UPDATE membership_verifications SET processing_claim_token = NULL, processing_claimed_at = NULL,
-      next_processing_at = CURRENT_TIMESTAMP + INTERVAL '5 minutes', last_error = 'apple_verification_retry'
+      next_processing_at = CURRENT_TIMESTAMP + ${MEMBERSHIPS_VERIFICATION_RETRY_MINUTES}::integer * INTERVAL '1 minute', last_error = 'apple_verification_retry'
     WHERE id = ${verificationId} AND processing_claim_token = ${processingClaimToken}
       AND verified_at IS NULL AND conflicted_at IS NULL AND rejected_at IS NULL`)
 }

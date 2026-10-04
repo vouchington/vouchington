@@ -1,3 +1,4 @@
+import { getWeeklyHostnameRefreshBatchSize } from '@services/crawls/work-limits'
 import type { CrawlHostnamesJobs } from '@queues/crawl-hostnames/types'
 import { deleteOldInvalidCrawls } from '@services/crawls/cleanup'
 import { searchHostnameIdsNeedingCrawlerRefresh } from '@services/crawlers'
@@ -14,8 +15,6 @@ import {
 import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
 import { computeRateLimitForHostname } from '@services/crawls/hostname-rate-limit'
 import type { Job } from 'glide-mq'
-
-const WEEKLY_REFRESH_BATCH_SIZE = 500
 
 type CrawlHostnamesProcessorDependencies = {
   deleteOldInvalidCrawls: typeof deleteOldInvalidCrawls
@@ -61,7 +60,7 @@ export const processRefreshHostnameCrawlerDispatcher = (
   dependencies?: Partial<CrawlHostnamesProcessorDependencies>,
 ): Promise<string[]> => {
   const deps = getDependencies(dependencies)
-  return deps.searchHostnameIdsNeedingCrawlerRefresh(WEEKLY_REFRESH_BATCH_SIZE)
+  return deps.searchHostnameIdsNeedingCrawlerRefresh(getWeeklyHostnameRefreshBatchSize())
 }
 
 export async function processRefreshHostnameCrawlerDispatcherJob(

@@ -1,10 +1,8 @@
+import { getRssFeedItemsWorkLimit } from '@services/rss-feed-items/work-limits'
 import { read } from '@data-stores/psql'
 import { enqueueBulkLanguageDetection } from '@queues/language-detection/enqueues'
 import onError from '@modules/on-error'
-import {
-  chunkArray,
-  RSS_FEED_ITEM_ENQUEUE_BATCH_SIZE,
-} from '@services/rss-feed-items/processing-limits'
+import { chunkArray } from '@services/rss-feed-items/processing-limits'
 import { updateRssFeedById } from './update.mts'
 import {
   extractFeedTitle,
@@ -122,6 +120,7 @@ async function reenqueueItemLanguageDetectionIfNeeded(
   readFn: typeof read,
   enqueueBulkLanguageDetectionFn: typeof enqueueBulkLanguageDetection,
 ): Promise<void> {
+  const RSS_FEED_ITEM_ENQUEUE_BATCH_SIZE = getRssFeedItemsWorkLimit('enqueue_batch_size')
   if (declaredLanguage === oldDeclaredLanguage) return
 
   const { rows } = await readFn(

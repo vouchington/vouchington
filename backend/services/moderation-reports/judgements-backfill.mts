@@ -1,3 +1,4 @@
+import { getModerationReportsWorkLimit } from './work-limits.mts'
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -6,8 +7,6 @@ export type MissingJudgementEntity = {
   entityId: string
   triggeringReportId: string
 }
-
-const BACKFILL_BATCH_SIZE = 500
 
 /**
  * Streams batches of entities that have moderation reports but no judgement row.
@@ -20,6 +19,7 @@ export async function* streamEntitiesMissingJudgementBatches(): AsyncGenerator<
   void,
   unknown
 > {
+  const BACKFILL_BATCH_SIZE = getModerationReportsWorkLimit('backfill_batch_size')
   let batch: MissingJudgementEntity[] = []
   for await (const row of createAsyncGeneratorFromCursor<{
     entity_type: string

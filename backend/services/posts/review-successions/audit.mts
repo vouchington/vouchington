@@ -1,8 +1,8 @@
+import { getPostsWorkLimit } from '@services/posts/work-limits'
 import { read } from '@data-stores/psql'
 import { isUUID } from '@modules/utils'
 import {
   listReviewSuccessionHistoryAuditRows,
-  REVIEW_SUCCESSION_HISTORY_AUDIT_PAGE_SIZE,
   type ReviewSuccessionHistoryAuditRow,
 } from './audit-query.mts'
 
@@ -54,6 +54,9 @@ export async function auditReviewSuccessionHistory(options: {
 export function pageReviewSuccessionHistoryAuditRows(
   rows: readonly ReviewSuccessionHistoryAuditRow[],
 ): { rows: readonly ReviewSuccessionHistoryAuditRow[]; cursor: string | null; hasMore: boolean } {
+  const REVIEW_SUCCESSION_HISTORY_AUDIT_PAGE_SIZE = getPostsWorkLimit(
+    'review_succession_history_audit_page_size',
+  )
   const pageRows = rows.slice(0, REVIEW_SUCCESSION_HISTORY_AUDIT_PAGE_SIZE)
   return {
     rows: pageRows,

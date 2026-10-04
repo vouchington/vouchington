@@ -166,6 +166,7 @@ export async function searchPostsForAdminReview(
           AND i.upload_completed_at IS NOT NULL
           AND i.quarantine_pending_at IS NULL
         ORDER BY pi.order_index, pi.image_id
+        -- Current post schema accepts at most 20 images (posts/image-input-validation.mts).
         LIMIT 20
       ) bounded_images
     ) media ON true

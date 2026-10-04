@@ -1,6 +1,7 @@
+import { getRssFeedItemsWorkLimit } from './work-limits.mts'
 import type { RssFeedItemWithHash } from './upsert-prepare.mts'
 import { upsertRssFeedItemIdentities } from './upsert-identities.mts'
-import { chunkArray, RSS_FEED_ITEM_SQL_BATCH_SIZE } from './processing-limits.mts'
+import { chunkArray } from './processing-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import { lockPostPublicationRssFeedScopes } from '@services/post-publication/capture-rss-feeds'
 
@@ -32,6 +33,7 @@ export async function resolveAndLockRssFeedItemWrites(
   urlHostnameId: string,
   items: RssFeedItemWithHash[],
 ): Promise<ResolvedRssFeedItemWrites> {
+  const RSS_FEED_ITEM_SQL_BATCH_SIZE = getRssFeedItemsWorkLimit('sql_batch_size')
   const uniqueItems = new Map<string, RssFeedItemWithHash>()
   for (const item of items) uniqueItems.set(item.feedItem.guid, item)
   const orderedItems = [...uniqueItems.values()].toSorted(compareRssFeedItemGuids)
@@ -77,6 +79,7 @@ async function lockRssFeedItemIdentities(
   urlHostnameId: string,
   guids: string[],
 ): Promise<Array<{ id: string; guid: string }>> {
+  const RSS_FEED_ITEM_SQL_BATCH_SIZE = getRssFeedItemsWorkLimit('sql_batch_size')
   const rows: Array<{ id: string; guid: string }> = []
   for (const guidChunk of chunkArray(guids, RSS_FEED_ITEM_SQL_BATCH_SIZE)) {
     // oxlint-disable-next-line no-await-in-loop -- ascending GUID batches preserve global identity lock order.
@@ -99,6 +102,7 @@ async function lockRssFeedItemsForUpsert(
   txQuery: TransactionQuery,
   rssFeedItemIds: string[],
 ): Promise<LockedRssFeedItemRow[]> {
+  const RSS_FEED_ITEM_SQL_BATCH_SIZE = getRssFeedItemsWorkLimit('sql_batch_size')
   const orderedIds = [...new Set(rssFeedItemIds)].toSorted()
   if (orderedIds.length === 0) return []
   const rows: LockedRssFeedItemRow[] = []

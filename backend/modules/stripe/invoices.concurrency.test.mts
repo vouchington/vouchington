@@ -1,3 +1,7 @@
+import {
+  stripeInvoiceLookupLimitsForTest,
+  stripeLookupMaxPagesForTest,
+} from '@voucha/test-helpers/stripe-pagination-limits'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as stripeClientModule from '@modules/stripe/client'
 import { getCompleteStripeInvoiceLines, listAllStripeSubscriptionInvoices } from './invoices.mts'
@@ -28,7 +32,10 @@ describe('stripe invoice hydration concurrency', () => {
       invoices: { list, listLineItems },
     } as never)
 
-    const hydratedInvoices = listAllStripeSubscriptionInvoices('sub_123')
+    const hydratedInvoices = listAllStripeSubscriptionInvoices(
+      'sub_123',
+      stripeInvoiceLookupLimitsForTest,
+    )
 
     await vi.waitFor(() => expect(listLineItems).toHaveBeenCalledTimes(3))
     expect(listLineItems.mock.calls.map(([invoiceId]) => invoiceId)).toEqual(invoiceIds.slice(0, 3))
@@ -48,9 +55,9 @@ describe('stripe invoice hydration concurrency', () => {
       invoices: { listLineItems },
     } as never)
 
-    await expect(getCompleteStripeInvoiceLines({ id: 'in_empty_lines' } as never)).rejects.toThrow(
-      'Stripe returned an empty invoice line page for invoice in_empty_lines',
-    )
+    await expect(
+      getCompleteStripeInvoiceLines({ id: 'in_empty_lines' } as never, stripeLookupMaxPagesForTest),
+    ).rejects.toThrow('Stripe returned an empty invoice line page for invoice in_empty_lines')
   })
 
   it('bounds invoice-line pagination', async () => {
@@ -63,7 +70,10 @@ describe('stripe invoice hydration concurrency', () => {
     } as never)
 
     await expect(
-      getCompleteStripeInvoiceLines({ id: 'in_unbounded_lines' } as never),
+      getCompleteStripeInvoiceLines(
+        { id: 'in_unbounded_lines' } as never,
+        stripeLookupMaxPagesForTest,
+      ),
     ).rejects.toThrow('Stripe invoice in_unbounded_lines exceeded the line page limit')
     expect(listLineItems).toHaveBeenCalledTimes(10)
   })

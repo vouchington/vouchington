@@ -1,16 +1,17 @@
+import { getLanguageDetectionWorkLimit } from './work-limits.mts'
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 // Number of IDs accumulated before a batch is yielded for bulk enqueue.
-const BACKFILL_BATCH_SIZE = 500
 
 async function* streamIdBatches(
   rows: AsyncIterable<{ id: string }>,
+  batchSize = getLanguageDetectionWorkLimit('backfill_batch_size'),
 ): AsyncGenerator<string[], void, unknown> {
   let batch: string[] = []
   for await (const row of rows) {
     batch.push(row.id)
-    if (batch.length >= BACKFILL_BATCH_SIZE) {
+    if (batch.length >= batchSize) {
       yield batch
       batch = []
     }
@@ -25,6 +26,7 @@ async function* streamIdBatches(
  * Idempotent: runBatch skips rows whose saved input key still matches current content.
  */
 export function streamPostsNeedingLanguageDetection(): AsyncGenerator<string[], void, unknown> {
+  const batchSize = getLanguageDetectionWorkLimit('backfill_batch_size')
   return streamIdBatches(
     createAsyncGeneratorFromCursor<{ id: string }>(
       sql`/* streamPostsNeedingLanguageDetection */
@@ -32,8 +34,9 @@ export function streamPostsNeedingLanguageDetection(): AsyncGenerator<string[], 
         WHERE deleted_at IS NULL
         ORDER BY id
       `,
-      { batchSize: BACKFILL_BATCH_SIZE },
+      { batchSize: batchSize },
     ),
+    batchSize,
   )
 }
 
@@ -45,6 +48,7 @@ export function streamRssFeedItemsNeedingLanguageDetection(): AsyncGenerator<
   void,
   unknown
 > {
+  const batchSize = getLanguageDetectionWorkLimit('backfill_batch_size')
   return streamIdBatches(
     createAsyncGeneratorFromCursor<{ id: string }>(
       sql`/* streamRssFeedItemsNeedingLanguageDetection */
@@ -52,8 +56,9 @@ export function streamRssFeedItemsNeedingLanguageDetection(): AsyncGenerator<
         WHERE deleted_at IS NULL
         ORDER BY id
       `,
-      { batchSize: BACKFILL_BATCH_SIZE },
+      { batchSize: batchSize },
     ),
+    batchSize,
   )
 }
 
@@ -63,6 +68,7 @@ export function streamRssFeedItemsNeedingLanguageDetection(): AsyncGenerator<
  * rows created by createCrawl() have empty inputs and null completed_at.
  */
 export function streamCrawlsNeedingLanguageDetection(): AsyncGenerator<string[], void, unknown> {
+  const batchSize = getLanguageDetectionWorkLimit('backfill_batch_size')
   return streamIdBatches(
     createAsyncGeneratorFromCursor<{ id: string }>(
       sql`/* streamCrawlsNeedingLanguageDetection */
@@ -75,8 +81,9 @@ export function streamCrawlsNeedingLanguageDetection(): AsyncGenerator<string[],
           )
         ORDER BY id
       `,
-      { batchSize: BACKFILL_BATCH_SIZE },
+      { batchSize: batchSize },
     ),
+    batchSize,
   )
 }
 
@@ -88,6 +95,7 @@ export function streamCommunitiesNeedingLanguageDetection(): AsyncGenerator<
   void,
   unknown
 > {
+  const batchSize = getLanguageDetectionWorkLimit('backfill_batch_size')
   return streamIdBatches(
     createAsyncGeneratorFromCursor<{ id: string }>(
       sql`/* streamCommunitiesNeedingLanguageDetection */
@@ -95,8 +103,9 @@ export function streamCommunitiesNeedingLanguageDetection(): AsyncGenerator<
         WHERE deleted_at IS NULL
         ORDER BY id
       `,
-      { batchSize: BACKFILL_BATCH_SIZE },
+      { batchSize: batchSize },
     ),
+    batchSize,
   )
 }
 
@@ -105,6 +114,7 @@ export function streamCommunitiesNeedingLanguageDetection(): AsyncGenerator<
  * Only users with a non-empty bio are worth detecting.
  */
 export function streamUsersNeedingLanguageDetection(): AsyncGenerator<string[], void, unknown> {
+  const batchSize = getLanguageDetectionWorkLimit('backfill_batch_size')
   return streamIdBatches(
     createAsyncGeneratorFromCursor<{ id: string }>(
       sql`/* streamUsersNeedingLanguageDetection */
@@ -114,8 +124,9 @@ export function streamUsersNeedingLanguageDetection(): AsyncGenerator<string[], 
           AND deleted_at IS NULL
         ORDER BY id
       `,
-      { batchSize: BACKFILL_BATCH_SIZE },
+      { batchSize: batchSize },
     ),
+    batchSize,
   )
 }
 
@@ -123,6 +134,7 @@ export function streamUsersNeedingLanguageDetection(): AsyncGenerator<string[], 
  * Streams topic IDs eligible for language detection.
  */
 export function streamTopicsNeedingLanguageDetection(): AsyncGenerator<string[], void, unknown> {
+  const batchSize = getLanguageDetectionWorkLimit('backfill_batch_size')
   return streamIdBatches(
     createAsyncGeneratorFromCursor<{ id: string }>(
       sql`/* streamTopicsNeedingLanguageDetection */
@@ -131,7 +143,8 @@ export function streamTopicsNeedingLanguageDetection(): AsyncGenerator<string[],
           AND merged_into_topic_id IS NULL
         ORDER BY id
       `,
-      { batchSize: BACKFILL_BATCH_SIZE },
+      { batchSize: batchSize },
     ),
+    batchSize,
   )
 }

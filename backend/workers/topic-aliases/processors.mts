@@ -1,3 +1,4 @@
+import { getRssFeedsWorkLimit } from '@services/rss-feeds/work-limits'
 import { updateTopicAliasesField } from '@services/topics/aliases'
 import { updateTopicEmbeddingContentHash } from '@services/topics/content'
 import { enqueueBackfillCategoriesForTopicAliases } from '@queues/rss-feed-item-categories/enqueues'
@@ -8,10 +9,7 @@ import {
 import { invalidatePostsForTopicAliasesPage } from '@services/topics/invalidate-posts-for-topic-aliases'
 import { backfillCategoriesForTopicAlias } from '@services/rss-feeds/categories'
 import { clearCategoriesForUnlinkedTopicAlias } from '@services/rss-feed-items/clear-topic-alias-categories'
-import {
-  TOPIC_ALIAS_CATEGORY_MAPPING_RECONCILIATION_BATCH_SIZE,
-  processReconcileTopicAliasCategoryMappings as reconcileTopicAliasCategoryMappings,
-} from '@services/rss-feeds/reconcile-topic-alias-category-mappings'
+import { processReconcileTopicAliasCategoryMappings as reconcileTopicAliasCategoryMappings } from '@services/rss-feeds/reconcile-topic-alias-category-mappings'
 
 type TopicAliasCategoryMappingReconciliationDependencies = {
   enqueueContinueTopicAliasCategoryMappingReconciliation: typeof enqueueContinueTopicAliasCategoryMappingReconciliation
@@ -47,7 +45,10 @@ export const processReconcileTopicAliasCategoryMappings = async (
   const enqueueContinuation =
     dependencies?.enqueueContinueTopicAliasCategoryMappingReconciliation ??
     enqueueContinueTopicAliasCategoryMappingReconciliation
-  const result = await reconcile()
+  const TOPIC_ALIAS_CATEGORY_MAPPING_RECONCILIATION_BATCH_SIZE = getRssFeedsWorkLimit(
+    'topic_alias_category_mapping_reconciliation_batch_size',
+  )
+  const result = await reconcile(TOPIC_ALIAS_CATEGORY_MAPPING_RECONCILIATION_BATCH_SIZE)
   if (result.reconciled === TOPIC_ALIAS_CATEGORY_MAPPING_RECONCILIATION_BATCH_SIZE) {
     await enqueueContinuation()
   }

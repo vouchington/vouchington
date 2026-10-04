@@ -1,3 +1,4 @@
+import { getPostPublicationWorkLimit } from './work-limits.mts'
 import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { publicationEligibilityFingerprintSql } from './fingerprint.mts'
@@ -11,7 +12,6 @@ import { recordPostPublicationShadowRepair } from './record-shadow-repair.mts'
 import type { ShadowAuditCandidate } from './shadow-audit-types.mts'
 
 const SHADOW_AUDIT_CHECKPOINT = 'post-publication-shadow'
-export const POST_PUBLICATION_SHADOW_AUDIT_PAGE_SIZE = 100
 /** Bounded operator audit: dry runs are read-only; repairs record post transitions before advancing the checkpoint. */
 export async function runPostPublicationShadowAudit(options: {
   dryRun: boolean
@@ -20,6 +20,8 @@ export async function runPostPublicationShadowAudit(options: {
   /** Read-only streaming cursor. Dry runs never read or mutate the durable checkpoint. */
   cursor?: string | null
 }): Promise<PostPublicationShadowAuditResult> {
+  const POST_PUBLICATION_SHADOW_AUDIT_PAGE_SIZE =
+    getPostPublicationWorkLimit('shadow_audit_page_size')
   const limit = options.limit ?? POST_PUBLICATION_SHADOW_AUDIT_PAGE_SIZE
   if (!Number.isSafeInteger(limit) || limit < 1)
     throw new TypeError('Post publication shadow audit limit must be positive')

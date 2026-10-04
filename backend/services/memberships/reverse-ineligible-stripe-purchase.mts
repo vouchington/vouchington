@@ -1,3 +1,4 @@
+import { getMembershipWorkLimit } from './work-limits.mts'
 import * as stripeInvoices from '@modules/stripe/invoices'
 import * as stripeDisputes from '@modules/stripe/disputes'
 import * as stripeRefunds from '@modules/stripe/refunds'
@@ -91,12 +92,20 @@ export async function reverseIneligibleStripePurchase(
 }
 
 function getStripeOperations(): IneligibleStripePurchaseOperations {
+  const invoiceLimits = {
+    invoicePages: getMembershipWorkLimit('stripe_subscription_invoice_max_pages'),
+    paymentPages: getMembershipWorkLimit('stripe_invoice_payment_max_pages'),
+    linePages: getMembershipWorkLimit('stripe_invoice_line_max_pages'),
+  }
+  const disputePages = getMembershipWorkLimit('stripe_dispute_max_pages')
   return {
     cancelSubscriptionImmediately: stripeSubscriptions.cancelStripeSubscriptionImmediately,
     createRefund: stripeRefunds.createStripeRefund,
-    getDisputeSettlementForPayment: stripeDisputes.getStripeDisputeSettlementForPayment,
+    getDisputeSettlementForPayment: options =>
+      stripeDisputes.getStripeDisputeSettlementForPayment(options, disputePages),
     retrieveRefund: stripeRefunds.getStripeRefund,
-    listSubscriptionInvoices: stripeInvoices.listAllStripeSubscriptionInvoices,
+    listSubscriptionInvoices: id =>
+      stripeInvoices.listAllStripeSubscriptionInvoices(id, invoiceLimits),
     listRefundsForPaymentPage: stripeRefunds.listStripeRefundsForPaymentPage,
   }
 }

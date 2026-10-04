@@ -1,3 +1,4 @@
+import { stripeLookupMaxPagesForTest } from '@voucha/test-helpers/stripe-pagination-limits'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as stripeClientModule from '@modules/stripe/client'
 import { getCompleteStripeInvoicePayments } from './invoices.mts'
@@ -17,11 +18,14 @@ describe('open Stripe invoice payment hydration', () => {
     } as never)
 
     await expect(
-      getCompleteStripeInvoicePayments({
-        id: 'in_open_incomplete_payments',
-        payments: { data: [{ id: 'inpay_open', status: 'open' }], has_more: true },
-        status: 'open',
-      } as never),
+      getCompleteStripeInvoicePayments(
+        {
+          id: 'in_open_incomplete_payments',
+          payments: { data: [{ id: 'inpay_open', status: 'open' }], has_more: true },
+          status: 'open',
+        } as never,
+        stripeLookupMaxPagesForTest,
+      ),
     ).resolves.toEqual([{ id: 'inpay_paid', status: 'paid' }])
     expect(list).toHaveBeenCalledWith({
       invoice: 'in_open_incomplete_payments',

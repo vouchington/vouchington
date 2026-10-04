@@ -1,3 +1,4 @@
+import { getMembershipWorkLimit } from '@services/memberships/work-limits'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { AppleMembershipProviderEnvironment } from './types.mts'
@@ -11,6 +12,7 @@ export type RecoverableAppleNotification = {
 export async function findRecoverableAppleNotificationJobs(): Promise<
   RecoverableAppleNotification[]
 > {
+  const WORK_PAGE_SIZE = getMembershipWorkLimit('notification_recovery_batch_size')
   const { rows } = await read<{
     id: string
     provider_lineage_id: string
@@ -24,7 +26,7 @@ export async function findRecoverableAppleNotificationJobs(): Promise<
       AND evidence.provider_event_id IS NOT NULL
       AND evidence.verified_at IS NULL AND evidence.rejected_at IS NULL
     ORDER BY evidence.received_at, evidence.id
-    LIMIT 500`)
+    LIMIT ${WORK_PAGE_SIZE}`)
   return rows.map(row => ({
     evidenceId: row.id,
     providerLineageId: row.provider_lineage_id,

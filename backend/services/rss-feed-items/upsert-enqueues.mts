@@ -1,3 +1,4 @@
+import { getRssFeedItemsWorkLimit } from './work-limits.mts'
 import { enqueueBulkCreateRssFeedItemEmbeddings } from '@queues/bedrock-embeddings/enqueues'
 import { enqueueBulkAutotaggerRssFeedItems } from '@queues/ai-agents/enqueues/autotagger'
 import { enqueueLanguageDetection } from '@queues/language-detection/enqueues'
@@ -8,7 +9,7 @@ import { enqueueBulkReconcileRssFeedItemNotifications } from '@queues/notificati
 import { enqueueReconcileRssFeedItemCategorySnapshots } from '@queues/rss-feed-item-categories/enqueues'
 import type { RssFeedItemWithHash } from './upsert-prepare.mts'
 import type { ExistingRssFeedItemRow, UpsertedRssFeedItemRow } from './upsert-queries.mts'
-import { chunkArray, RSS_FEED_ITEM_ENQUEUE_BATCH_SIZE } from './processing-limits.mts'
+import { chunkArray } from './processing-limits.mts'
 import onError from '@modules/on-error'
 
 type RssFeedItemEnqueueRow = Pick<
@@ -124,6 +125,7 @@ async function enqueueRssFeedItemLanguageDetection(rows: RssFeedItemEnqueueRow[]
 }
 
 async function enqueueChunks<T>(items: T[], enqueue: (chunk: T[]) => unknown | Promise<unknown>) {
+  const RSS_FEED_ITEM_ENQUEUE_BATCH_SIZE = getRssFeedItemsWorkLimit('enqueue_batch_size')
   for (const chunk of chunkArray(items, RSS_FEED_ITEM_ENQUEUE_BATCH_SIZE)) {
     try {
       // eslint-disable-next-line no-await-in-loop -- Sequential chunks limit queue fanout pressure.

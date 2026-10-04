@@ -24,6 +24,7 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
     "@modules/http-signatures": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/urls-hostnames": "workspace:^",

@@ -1,3 +1,4 @@
+import { getCrawlerReferralLinksWorkLimit, getDispatchLimits } from './work-limits.mts'
 import { executeHandlerWithCursorInBatches } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { enqueueByHostname } from './dispatch-hostnames.mts'
@@ -7,7 +8,6 @@ import {
   enqueueCrawlReferralLinksDispatcher,
 } from '@queues/crawl-referral-links/enqueues'
 
-import { getDispatchLimits } from './work-limits.mts'
 import { getMaxUUIDv7ForDate } from '@modules/utils'
 import type {
   ReferralCrawlDispatchData,
@@ -32,6 +32,8 @@ type ScheduledReferralLinkDispatchOptions = ReferralLinkDispatchDependencies & {
 export async function dispatchReferralLinkCrawls(
   options: ScheduledReferralLinkDispatchOptions = {},
 ) {
+  const CRAWLER_REFERRAL_LINKS_FAILURE_RETRY_HOURS =
+    getCrawlerReferralLinksWorkLimit('failure_retry_hours')
   const limits = getDispatchLimits()
   const sweepStartedAt = options.cursor?.sweepStartedAt ?? new Date().toISOString()
   const scope = {
@@ -71,7 +73,7 @@ export async function dispatchReferralLinkCrawls(
       h.id AS hostname_id, h.hostname, h.requests_per_second_limit,
       (h.crawlable IS DISTINCT FROM false AND h.blocked = false) AS host_eligible,
       (c.last_crawl_failure_at IS NULL OR c.last_crawl_failure_at
-        < ${sweepStartedAt}::timestamptz - INTERVAL '1 hour') AS retry_eligible
+        < ${sweepStartedAt}::timestamptz - ${CRAWLER_REFERRAL_LINKS_FAILURE_RETRY_HOURS}::integer * INTERVAL '1 hour') AS retry_eligible
     FROM due_candidates c JOIN urls u ON u.id = c.url_id JOIN url_hostnames h ON h.id = u.hostname_id`)
   queryStatement.append(options.urlId ? ' ORDER BY c.id' : ' ORDER BY c.due_at, c.id')
 

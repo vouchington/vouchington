@@ -1,8 +1,7 @@
+import { getRssFeedItemsWorkLimit } from './work-limits.mts'
 import { write, type QueryExecutor } from '@data-stores/psql'
 import { enqueueBulkReconcileRssFeedItemNotifications } from '@queues/notifications/enqueues'
 import { upsertRssFeedItemCategories, type RssFeedItemCategoryInput } from './categories.mts'
-
-export const CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE = 25
 
 export type RssFeedItemCategorySnapshotReconciliation = RssFeedItemCategoryInput & {
   generation: string
@@ -96,7 +95,11 @@ export async function markRssFeedCategorySnapshotsForReconciliation(
 }
 
 /** Drains a bounded, oldest-first durable outbox; stale generation acknowledgements retain new work. */
-export async function reconcileRssFeedItemCategorySnapshots(): Promise<{ reconciled: number }> {
+export async function reconcileRssFeedItemCategorySnapshots(
+  CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE = getRssFeedItemsWorkLimit(
+    'category_snapshot_reconciliation_batch_size',
+  ),
+): Promise<{ reconciled: number }> {
   const { rows } = await write<RssFeedItemCategorySnapshotReconciliation>(
     `/* reconcileRssFeedItemCategorySnapshots */
       SELECT rss_feed_item_id, categories, generation

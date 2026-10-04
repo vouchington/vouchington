@@ -1,3 +1,4 @@
+import { getStoriesWorkLimit } from './work-limits.mts'
 import { beginTransaction, write } from '@data-stores/psql'
 import { containsReferralLinks } from '@services/referral-program-link-validations/contains-referral-links'
 import { assertUrlsHaveNoBlockedHostnames } from '@services/urls/assert-hostname-not-blocked'
@@ -11,7 +12,6 @@ import type {
 } from './story-post-related-url-projection-types.mts'
 import { isStoryPostRelatedUrlProjectionWorkCurrent } from './story-post-related-url-projection-work.mts'
 
-export const STORY_POST_RELATED_URL_PROJECTION_PAGE_SIZE = 100
 const SAFETY_CONCURRENCY = 5
 
 export async function getStoryPostRelatedUrlProjectionSourcePage(input: {
@@ -33,6 +33,9 @@ export async function getStoryPostRelatedUrlProjectionSourcePage(input: {
 export async function getStoryPostRelatedUrlProjectionSourcePageForWork(
   work: ProjectionWork,
 ): Promise<SourceRow[]> {
+  const STORY_POST_RELATED_URL_PROJECTION_PAGE_SIZE = getStoriesWorkLimit(
+    'post_related_url_projection_page_size',
+  )
   // A NULL high-water is a real empty snapshot, not an unbounded scan that could
   // accidentally absorb items assigned after this generation began.
   if (!work.source_high_water_id) return []

@@ -1,10 +1,7 @@
+import { getUserDeletionsWorkLimit } from './work-limits.mts'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import {
-  getNextUserDeletionPhase,
-  USER_DELETION_BATCH_SIZE,
-  type UserDeletionPhase,
-} from './phases.mts'
+import { getNextUserDeletionPhase, type UserDeletionPhase } from './phases.mts'
 import { createUserDeletionSuccessor } from './successor.mts'
 import type { UserDeletionBatchResult, UserDeletionRequest } from './types.mts'
 
@@ -103,6 +100,7 @@ async function canCompleteUserDeletion(
   request: UserDeletionRequest,
   query: TransactionQuery,
 ): Promise<boolean> {
+  const USER_DELETION_BATCH_SIZE = getUserDeletionsWorkLimit('batch_size')
   const receipts = await query(sql`/* advanceUserDeletionAttempt:purgeLateBlueskyFollowReceipts */
     DELETE FROM bluesky_follow_records WHERE (follower_user_id, followee_user_id) IN (
       SELECT follower_user_id, followee_user_id FROM bluesky_follow_records
@@ -135,6 +133,7 @@ async function purgeCompletedUserDeletionAuditPage(
   request: UserDeletionRequest,
   query: TransactionQuery,
 ): Promise<boolean> {
+  const USER_DELETION_BATCH_SIZE = getUserDeletionsWorkLimit('batch_size')
   const redacted = await query(sql`/* advanceUserDeletionAttempt:redactExternalWorkKeys */
     UPDATE user_deletion_external_works
     SET work_key = NULL

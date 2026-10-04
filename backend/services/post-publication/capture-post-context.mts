@@ -1,8 +1,8 @@
+import { getPostPublicationWorkLimit } from './work-limits.mts'
 import { publicationPageLimit } from './page-limit.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
-import { POST_PUBLICATION_IDENTITY_SNAPSHOT_PAGE_SIZE } from './identity-snapshots.mts'
 import { listPublicationIdentitySourcePage } from './identity-source-paging.mts'
 import { retainSnapshotPage } from './snapshot-key-writes.mts'
 import { retainPostPublicationKeys } from './retained-key-writes.mts'
@@ -33,7 +33,7 @@ async function retainPostScope(
   if (!livePostId) return
   let cursorKind: string | null = null
   let cursorValue: string | null = null
-  const limit = POST_PUBLICATION_IDENTITY_SNAPSHOT_PAGE_SIZE
+  const limit = getPostPublicationWorkLimit('identity_snapshot_page_size')
   while (true) {
     // oxlint-disable-next-line no-await-in-loop -- exact source keyset pages share the caller transaction.
     const page = await listPublicationIdentitySourcePage(

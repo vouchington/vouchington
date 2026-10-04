@@ -25,6 +25,7 @@
   "dependencies": {
     "@atproto/api": "^0.22.0",
     "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
     "@modules/bluesky-oauth": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@queues/bluesky-follow-propagation": "workspace:^",

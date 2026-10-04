@@ -13,6 +13,18 @@ export const streamDynamicConfigRegistryEntries = [
     config: crawlDispatchConfig,
     access: { update_roles: ['developer'] },
     fields: {
+      weekly_refresh_batch_size: {
+        description: 'Hostname rows per weekly refresh page.',
+        min_value: 1,
+        max_value: 5000,
+        integer: true,
+      },
+      hostname_batch_size: {
+        description: 'Maximum hostnames per enqueue batch in hostname scheduling.',
+        min_value: 1,
+        max_value: 5000,
+        integer: true,
+      },
       batch_size: {
         description: 'Maximum URLs per enqueue batch.',
         min_value: 1,
@@ -35,6 +47,12 @@ export const streamDynamicConfigRegistryEntries = [
     config: referralCrawlDispatchConfig,
     access: { update_roles: ['developer'] },
     fields: {
+      failure_retry_hours: {
+        description: 'Hours before retrying a failed referral crawl.',
+        min_value: 1,
+        max_value: 24,
+        integer: true,
+      },
       batch_size: {
         description: 'Maximum rows per enqueue batch.',
         min_value: 1,

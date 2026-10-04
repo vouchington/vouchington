@@ -1,3 +1,4 @@
+import { getMembershipWorkLimit } from '@services/memberships/work-limits'
 import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
@@ -9,7 +10,6 @@ import {
 } from './subscription-verifier.mts'
 import type { GooglePlayMembershipObservation } from './types.mts'
 import type { Context } from './process-verification-types.mts'
-
 export async function allocateGooglePlayObservationOrder(): Promise<number> {
   const { rows } = await write<{ provider_order: string }>(
     sql`/* allocateGooglePlayObservationOrder */ SELECT nextval('membership_google_play_observation_order_seq') AS provider_order`,
@@ -192,8 +192,9 @@ export async function deferGooglePlayVerification(
   token: string,
   error: unknown,
 ): Promise<void> {
+  const retryMinutes = getMembershipWorkLimit('verification_retry_minutes')
   const message = error instanceof Error ? error.message : 'Google Play verification retry'
   await write(
-    sql`/* deferGooglePlayVerification */ UPDATE membership_verifications SET processing_claim_token = NULL, processing_claimed_at = NULL, next_processing_at = CURRENT_TIMESTAMP + INTERVAL '5 minutes', last_error = ${message.slice(0, 1000)} WHERE id = ${id} AND processing_claim_token = ${token} AND verified_at IS NULL AND conflicted_at IS NULL AND rejected_at IS NULL`,
+    sql`/* deferGooglePlayVerification */ UPDATE membership_verifications SET processing_claim_token = NULL, processing_claimed_at = NULL, next_processing_at = CURRENT_TIMESTAMP + ${retryMinutes}::integer * INTERVAL '1 minute', last_error = ${message.slice(0, 1000)} WHERE id = ${id} AND processing_claim_token = ${token} AND verified_at IS NULL AND conflicted_at IS NULL AND rejected_at IS NULL`,
   )
 }

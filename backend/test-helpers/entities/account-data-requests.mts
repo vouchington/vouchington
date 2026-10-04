@@ -45,12 +45,13 @@ export async function getUserDataRequestStatusAndS3KeyForTest(
 export async function makeUserDataRequestRecoverableForTest(
   requestId: string,
   mode: 'unstarted' | 'stale',
+  ageMinutes = 31,
 ): Promise<void> {
   await write(sql`/* makeUserDataRequestRecoverableForTest */
     UPDATE user_data_requests
-    SET dispatched_at = NOW() - INTERVAL '31 minutes',
+    SET dispatched_at = NOW() - ${ageMinutes}::integer * INTERVAL '1 minute',
         processing_started_at = CASE
-          WHEN ${mode} = 'stale' THEN NOW() - INTERVAL '31 minutes'
+          WHEN ${mode} = 'stale' THEN NOW() - ${ageMinutes}::integer * INTERVAL '1 minute'
           ELSE NULL
         END
     WHERE id = ${requestId}
