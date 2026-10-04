@@ -13,8 +13,49 @@ import {
 import { notifications } from '@queues/notifications/queues'
 type EnqueueResult = Awaited<ReturnType<typeof enqueueApplyMediaDeliveryRegistryRecord>>
 import { processReconcileMediaDeliveryRegistry } from './media-delivery-registry.mts'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { mediaDeliverySafetyWorkConfig } from '@services/media-delivery-safety/work-limits'
 
 describe('durable media registry recovery hardening', () => {
+  it('keeps its captured page budget when configuration is lowered during repair', async () => {
+    const user = await createTestUserDirect()
+    overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, { recovery_page_size: 2 })
+    await withTestMediaRecoveryBacklog(user.id, 3, async ({ deliveryKeys, scanBefore }) => {
+      const accepted: string[] = []
+      const continuations: ReconcileMediaDeliveryRegistryData[] = []
+      const dependencies = {
+        ...scopedTestMediaRecoveryDependencies(deliveryKeys),
+        reconcileMediaDeliveryRepairMarkers: async (limit: number) => {
+          expect(limit).toBe(2)
+          overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, {
+            recovery_page_size: 1,
+          })
+          return 0
+        },
+        stageAllCurrentImagePlacementDeliveryRecords: async () => 0,
+        getMediaDeliveryRegistryScanBefore: async () => scanBefore,
+        enqueueApplyMediaDeliveryRegistryRecord: async (key: string) => {
+          accepted.push(key)
+          return undefined
+        },
+        enqueueContinueMediaDeliveryRegistryReconciliation: async (
+          next: Extract<ReconcileMediaDeliveryRegistryData, { scanBefore: string }>,
+        ) => {
+          continuations.push(next)
+          return undefined
+        },
+      }
+      expect(await processReconcileMediaDeliveryRegistry({}, dependencies)).toEqual({ enqueued: 2 })
+      expect(accepted).toEqual(deliveryKeys.slice(0, 2))
+      expect(continuations).toHaveLength(1)
+      expect(await processReconcileMediaDeliveryRegistry(continuations[0], dependencies)).toEqual({
+        enqueued: 1,
+      })
+      expect(accepted).toEqual(deliveryKeys)
+      expect(continuations).toHaveLength(1)
+    })
+  })
+
   it('enqueues 101 owned deliveries through persisted distinct continuation jobs', async () => {
     const user = await createTestUserDirect()
     await withTestMediaRecoveryBacklog(user.id, 102, async ({ deliveryKeys, scanBefore }) => {

@@ -1,4 +1,7 @@
-import { getMediaDeliverySafetyWorkLimit } from './work-limits.mts'
+import {
+  getMediaDeliverySafetyWorkLimit,
+  mediaDeliverySafetyWorkMaxValues,
+} from './work-limits.mts'
 import { write } from '@data-stores/psql'
 import {
   observeSharedDbScope,
@@ -54,12 +57,9 @@ export async function listRecoverableMediaDeliveryRegistryKeys(input: {
   after?: string
   deliveryKeys?: readonly string[]
 }): Promise<{ results: string[]; page_info: PageInfo }> {
-  const MEDIA_DELIVERY_RECOVERY_PAGE_SIZE = getMediaDeliverySafetyWorkLimit('recovery_page_size')
-  if (
-    !Number.isSafeInteger(input.limit) ||
-    input.limit < 1 ||
-    input.limit > MEDIA_DELIVERY_RECOVERY_PAGE_SIZE
-  )
+  // The caller captures its configured budget before awaits; only the stable hard ceiling applies here.
+  const pageMaximum = mediaDeliverySafetyWorkMaxValues.recovery_page_size
+  if (!Number.isSafeInteger(input.limit) || input.limit < 1 || input.limit > pageMaximum)
     throw new TypeError('Media recovery page limit must be between one and the page maximum')
   const deliveryKeys = input.deliveryKeys ? [...new Set(input.deliveryKeys)].toSorted() : null
   const scope = JSON.stringify({
