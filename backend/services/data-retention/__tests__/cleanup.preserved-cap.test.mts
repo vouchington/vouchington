@@ -7,7 +7,7 @@ import {
   getTestUserRaw,
   getTestMembershipGrant,
 } from '@voucha/test-helpers'
-import { grantMembership } from '@services/memberships'
+import { grantMembership } from '../../memberships/index.mts'
 import { cleanupSoftDeletedUsers } from '../cleanup.mts'
 
 describe('retained grant purge budget', () => {

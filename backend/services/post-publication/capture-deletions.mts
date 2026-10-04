@@ -1,7 +1,7 @@
 /* oxlint-disable max-lines -- deletion capture keeps ordered preimage locks and durable impact retention together. */
 import type { TransactionQuery } from '@data-stores/psql'
 import { retainPostPublicationImpactKeys } from './capture-keys.mts'
-import { lockAuthorPublicationLifecycle, postPublicationScopeLockKey } from './lock.mts'
+import { postPublicationScopeLockKey } from './lock.mts'
 import { recordPostPublicationChange } from './capture.mts'
 import {
   lockRssFeedHardDeleteTopicAliasPublicationScopes,

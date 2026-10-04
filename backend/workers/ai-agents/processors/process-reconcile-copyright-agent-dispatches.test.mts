@@ -78,7 +78,7 @@ describe('processReconcileCopyrightAgentDispatches', () => {
       deps.enqueueEmail.mockRejectedValueOnce(new Error('head failed'))
       const enqueueContinuation = vi.fn<
         ReconcileCopyrightAgentDispatchesDeps['enqueueContinuation']
-      >(async () => undefined)
+      >(async () => null)
       await expect(
         processReconcileCopyrightAgentDispatches({
           ...deps,

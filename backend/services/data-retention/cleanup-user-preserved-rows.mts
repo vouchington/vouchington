@@ -1,4 +1,4 @@
-import type { QueryExecutor } from '@data-stores/psql'
+import type { TransactionQuery } from '@data-stores/psql'
 import { DELETED_USER_ID } from '@services/users/constants'
 import sql from 'sql-template-strings'
 import {
@@ -10,7 +10,7 @@ import { terminateRetainedMembershipGrants } from './terminate-retained-membersh
 
 /** Mutation-backed pages must finish before the live user parent is removed. */
 export async function cleanupUserPreservedRows(
-  query: QueryExecutor,
+  query: TransactionQuery,
   userId: string,
   batchSize: number,
 ): Promise<boolean> {
