@@ -28,6 +28,6 @@
     "stripe": "^23.0.0"
   },
   "devDependencies": {
-    "@types/node": "^26.6.3"
+    "@types/node": "^26.6.4"
   }
 }
