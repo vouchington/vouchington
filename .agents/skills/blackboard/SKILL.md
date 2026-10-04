@@ -51,13 +51,15 @@ failing test or check:
 - `recurring|one-off` — `GitHub Actions` — <check name>: <gotcha, or flaky: <test>>
   - Evidence: <run URL and commit>
   - Root diagnostic: <root cause; for a flake, the nondeterminism observed>
-  - Disposition: no-mistakes impact: selected|missed (<gap>); <fix commit or issue #N>
+  - Disposition: no-mistakes impact: selected|missed (<gap>)|n/a (<why>); <fix commit, issue #N, or none>
 ```
 
 Agents should know every test to update without running the whole suite locally, and the impact
 assessment is how. A failure in a test it did not name is `missed (<gap>)`, a `no-mistakes` gap: fix
 the impact rules or file an issue, never "run the full suite locally". A flake that `no-mistakes` ran
-and that passed locally is `selected`, recorded as a flake.
+and that passed locally is `selected`, recorded as a flake. `n/a (<why>)` is only for a failure with
+no test or check logic behind it, such as a cancelled run or a runner outage; a test or check that
+failed on its own is always `selected` or `missed`.
 
 Journal the observation before filing or commenting through
 [github-issue](../github-issue/SKILL.md). Append its issue disposition afterward; a one-off or
