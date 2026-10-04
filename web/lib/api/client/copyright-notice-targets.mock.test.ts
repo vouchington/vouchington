@@ -1,4 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  makeCopyrightHostedCommunityResponse,
+  makeCopyrightHostedTopicResponse,
+} from '@/test-helpers/api-responses/copyright'
 import { resolveCopyrightNoticeTargets, copyrightNoticeTargetKey } from './copyright-notice-targets'
 
 const { mockGet } = vi.hoisted(() => ({ mockGet: vi.fn<VitestLooseMock>() }))
@@ -47,14 +51,14 @@ describe('resolveCopyrightNoticeTargets', () => {
   })
 
   it('lists topic logo and hero as distinct choices on one URL', async () => {
-    mockGet.mockResolvedValue({
-      topic: {
+    mockGet.mockResolvedValue(
+      makeCopyrightHostedTopicResponse({
         id: 'topic-1',
-        topic_type: 'topic',
-        logo_image_placement: image('same-image'),
-        hero_image_placement: image('same-image'),
-      },
-    })
+        topicType: 'topic',
+        logo: image('same-image'),
+        hero: image('same-image'),
+      }),
+    )
     const targets = await resolveCopyrightNoticeTargets('https://voucha.ai/topic/cameras')
     expect(mockGet).toHaveBeenCalledWith('/api/v1/topics/cameras')
     expect(targets.map(target => target.surface)).toEqual(['topic-logo-image', 'topic-hero-image'])
@@ -62,13 +66,13 @@ describe('resolveCopyrightNoticeTargets', () => {
   })
 
   it('lists community profile and banner placements', async () => {
-    mockGet.mockResolvedValue({
-      community: {
+    mockGet.mockResolvedValue(
+      makeCopyrightHostedCommunityResponse({
         id: 'community-1',
-        profile_image_placement: image('profile'),
-        banner_image_placement: image('banner'),
-      },
-    })
+        profile: image('profile'),
+        banner: image('banner'),
+      }),
+    )
     const targets = await resolveCopyrightNoticeTargets('https://voucha.ai/communities/photo-club')
     expect(mockGet).toHaveBeenCalledWith('/api/v1/communities/photo-club')
     expect(targets.map(target => target.surface)).toEqual([

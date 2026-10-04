@@ -1,6 +1,14 @@
 'use client'
 
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import type { CopyrightNoticeTargetInput } from '@/lib/api/client/copyright-notices'
 import type {
   CopyrightEmailApprovalDraft,
@@ -47,20 +55,18 @@ export function CopyrightEmailApprovalManualTargetFields({
         {error ?? 'We could not resolve this hosted URL.'} Enter verified IDs manually after
         checking the original email.
       </p>
-      <label className='block text-sm'>
-        Image surface
-        <select
-          aria-label={`Image surface ${index + 1}`}
-          className='w-full rounded border bg-background p-2'
+      <div className='space-y-1'>
+        <Label htmlFor={`copyright-email-surface-${index}`}>Image surface</Label>
+        <Select
           value={target.surface}
-          onChange={event =>
+          onValueChange={value =>
             onChange({
               ...draft,
               targets: draft.targets.map(item =>
                 item.id === target.id
                   ? {
                       ...item,
-                      surface: event.target.value as CopyrightNoticeTargetInput['surface'],
+                      surface: value as CopyrightNoticeTargetInput['surface'],
                       post_id: '',
                       user_id: undefined,
                       user_profile_link_id: undefined,
@@ -72,16 +78,24 @@ export function CopyrightEmailApprovalManualTargetFields({
             })
           }
         >
-          {Object.entries(SURFACE_LABELS).map(([surface, label]) => (
-            <option
-              key={surface}
-              value={surface}
-            >
-              {label}
-            </option>
-          ))}
-        </select>
-      </label>
+          <SelectTrigger
+            aria-label={`Image surface ${index + 1}`}
+            id={`copyright-email-surface-${index}`}
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(SURFACE_LABELS).map(([surface, label]) => (
+              <SelectItem
+                key={surface}
+                value={surface}
+              >
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       <Input
         aria-label={`${ownerLabel(target.surface)} ${index + 1}`}
         onChange={event => updateTarget(target.id, ownerKey(target.surface), event.target.value)}
