@@ -45,6 +45,9 @@ export async function activateCommunityRestrictions(
 
   await using query = await beginTransaction()
   await lockCommunityRestrictionWrites(query, communityId)
+  if (input.expiresAt !== null) {
+    assert(input.expiresAt > new Date(), 422, 'expires_at must be in the future')
+  }
   const restrictions = await activateCommunityRestrictionTypes(
     query,
     currentUser.id,

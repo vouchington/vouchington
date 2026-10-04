@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import { setTimeout } from 'node:timers/promises'
 import { lockDelegatedPostCommunity } from '../services/posts/delegated-write-locks.mts'
 import {
   getTestPostgresBackendProcessId,
@@ -10,6 +11,7 @@ export async function withHeldDelegatedCommunityFenceForTest<T>(
   communityId: string,
   actorId: string,
   operation: () => Promise<T>,
+  releaseAfter?: () => Date,
 ): Promise<T> {
   await using query = await beginTransaction()
   await lockDelegatedPostCommunity(query, communityId, actorId)
@@ -18,6 +20,9 @@ export async function withHeldDelegatedCommunityFenceForTest<T>(
   void pending.catch(() => undefined)
   try {
     await waitForTestPostgresLockWaiter(processId, 'lockCommunityRestrictionWrites')
+    if (releaseAfter) {
+      await setTimeout(Math.max(0, releaseAfter().getTime() - Date.now() + 1))
+    }
     await query.commit()
   } catch (err) {
     await query.rollback()

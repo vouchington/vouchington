@@ -9,6 +9,8 @@ import {
 import { withHeldDelegatedCommunityFenceForTest } from '@voucha/test-helpers/community-restriction-writer-race'
 import { callRejectedMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { countTestPostsCreatedBy } from '@voucha/test-helpers/entities/posts-deletion'
+import { countTestCommunityRestrictions } from '@voucha/test-helpers/entities/community-restrictions'
+import { readStaffActionHistory } from '@voucha/test-helpers/staff-action-history'
 import { activateCommunityRestrictions } from './activate.mts'
 import { liftCommunityRestriction } from './lift.mts'
 import { getActiveCommunityRestrictions } from './get.mts'
@@ -21,6 +23,26 @@ async function fixture() {
 }
 
 describe('community restriction writers share delegated post fences', () => {
+  it('refuses activation if its expiry passes while waiting for the fence', async () => {
+    const { currentUser, community } = await fixture()
+    let expiresAt: Date
+    await expect(
+      withHeldDelegatedCommunityFenceForTest(
+        community.id,
+        currentUser.id,
+        () => {
+          expiresAt = new Date(Date.now() + 10_000)
+          return activateCommunityRestrictions(currentUser, community.id, {
+            restrictionTypes: ['no_links'],
+            expiresAt,
+          })
+        },
+        () => expiresAt,
+      ),
+    ).rejects.toMatchObject({ status: 422, message: 'expires_at must be in the future' })
+    expect(await countTestCommunityRestrictions(community.id)).toBe(0)
+    expect(await readStaffActionHistory(currentUser.id)).toEqual([])
+  })
   it('activation waits until the delegated community fence releases', async () => {
     const { currentUser, community } = await fixture()
     const restrictions = await withHeldDelegatedCommunityFenceForTest(

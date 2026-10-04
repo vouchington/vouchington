@@ -52,6 +52,15 @@ export async function deleteTestCommunityRestriction(restrictionId: string): Pro
     DELETE FROM community_restrictions WHERE id = ${restrictionId}`)
 }
 
+export async function countTestCommunityRestrictions(communityId: string): Promise<number> {
+  const { rows } = await read<{ count: number }>(
+    sql`/* countTestCommunityRestrictions */
+    SELECT count(*)::integer AS count FROM community_restrictions WHERE community_id = ${communityId}`,
+    { readOnly: false },
+  )
+  return rows[0]!.count
+}
+
 /** Restriction ids a moderator action activated or lifted, stored as child rows. */
 export async function getTestModeratorActionRestrictionIds(
   moderatorActionId: string,
