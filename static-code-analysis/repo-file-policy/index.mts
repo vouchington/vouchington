@@ -1,3 +1,8 @@
+import { checkBoundedWorkTunables } from './bounded-work-tunables.mts'
+import {
+  workTunableAllowlist,
+  workTunableAllowlistFile,
+} from './bounded-work-tunables-allowlist.mts'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -58,6 +63,13 @@ export async function checkRepoFilePolicy(
 
   const trackedFiles = ctx.trackedFiles.filter(file => existsSync(join(ctx.repoRoot, file)))
   const trackedFileSet = ctx.trackedFileSet
+  errors.push(
+    ...checkBoundedWorkTunables(
+      ctx.repoRoot,
+      trackedFiles,
+      trackedFileSet.has(workTunableAllowlistFile) ? workTunableAllowlist : [],
+    ),
+  )
 
   checkMigrationSqlGuard(ctx.repoRoot, trackedFiles, errors)
   checkMonetaryContracts(ctx.repoRoot, trackedFiles, errors, ctx.readTrackedFile)

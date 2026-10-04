@@ -1,0 +1,40 @@
+id: bounded-work-literal
+language: Tsx
+severity: warning
+message: Runtime work bounds belong in DynamicConfig.
+rule:
+  all:
+    - any:
+        - pattern:
+            context: const $NAME = $VALUE
+            selector: variable_declarator
+        - pattern:
+            context: 'const $NAME: $TYPE = $VALUE'
+            selector: variable_declarator
+    - inside:
+        kind: lexical_declaration
+        regex: '^const\b'
+constraints:
+  NAME:
+    regex: '(BATCH_SIZE|PAGE_SIZE|CHUNK_SIZE|MAX_BATCHES|_PER_RUN)$'
+  VALUE:
+    matches: numeric-value
+utils:
+  numeric-value:
+    any:
+      - all:
+          - kind: number
+          - regex: '[0-9a-fA-F.]$'
+      - all:
+          - kind: unary_expression
+          - regex: '^[+-]'
+          - has:
+              matches: numeric-value
+      - all:
+          - kind: parenthesized_expression
+          - has:
+              matches: numeric-value
+      - all:
+          - kind: as_expression
+          - has:
+              matches: numeric-value

@@ -1,0 +1,47 @@
+id: bounded-work-env
+language: Tsx
+severity: warning
+message: Runtime batch and page sizes belong in DynamicConfig.
+rule:
+  any:
+    - pattern: process.env.$NAME
+    - pattern: process.env[$ENV_KEY]
+    - all:
+        - kind: shorthand_property_identifier_pattern
+        - pattern: $NAME
+        - inside:
+            kind: object_pattern
+            inside:
+              kind: variable_declarator
+              has:
+                field: value
+                pattern: process.env
+    - all:
+        - pattern:
+            context: 'const { $NAME: $ALIAS } = process.env'
+            selector: pair_pattern
+        - inside:
+            kind: object_pattern
+            inside:
+              kind: variable_declarator
+              has:
+                field: value
+                pattern: process.env
+    - all:
+        - pattern:
+            context: 'const { $NAME = $DEFAULT } = process.env'
+            selector: object_assignment_pattern
+        - inside:
+            kind: object_pattern
+            inside:
+              kind: variable_declarator
+              has:
+                field: value
+                pattern: process.env
+constraints:
+  ENV_KEY:
+    all:
+      - kind: string
+      - regex: '(?i)(batch|page)_?size'
+  NAME:
+    regex: '(?i)(batch|page)_?size'
