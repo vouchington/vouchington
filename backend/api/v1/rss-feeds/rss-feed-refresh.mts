@@ -33,12 +33,16 @@ app.route('/api/v1/rss-feeds/:id/refreshes').post(async (ctx: Context) => {
   validateRequestContract(ctx, 'POST:/api/v1/rss-feeds/:id/refreshes', { path: ctx.params, query })
 
   let force = query.force === true
-  if (ctx.query.force === undefined && ctx.request.is('json')) {
-    const body = (await ctx.request.json('1mb')) as { force?: unknown }
+  let body: { force?: unknown } = {}
+  const readsBody = ctx.query.force === undefined && ctx.request.is('json')
+  if (readsBody) {
+    body = (await ctx.request.json('1mb')) as { force?: unknown }
     if (body && typeof body === 'object' && !Array.isArray(body) && body.force !== undefined) {
       body.force = normalizeRefreshForce(body.force)
     }
-    validateRequestContract(ctx, 'POST:/api/v1/rss-feeds/:id/refreshes', { body })
+  }
+  validateRequestContract(ctx, 'POST:/api/v1/rss-feeds/:id/refreshes', { body })
+  if (readsBody) {
     force = body.force === true
   }
   const refresh = await refreshRssFeedAsCurrentUser(currentUser, rssFeed.id, force)

@@ -2,6 +2,7 @@ import ts from 'typescript'
 
 import { isExecutedAdmissionCallback } from './request-validation-route-execution.mts'
 import { contextRoot, isQueryRoot } from './request-validation-route-input-roots.mts'
+import { recordQueryReadSite } from './request-validation-route-read-sites.mts'
 import {
   findRegistration,
   resolveHandlerNodes,
@@ -15,11 +16,11 @@ export function discoverSourceInputOperationsForProgram(
   routeFiles: readonly ts.SourceFile[],
   routes: readonly Route[],
   queryReads?: Map<string, Set<string>>,
+  queryReadSites?: Map<string, ts.Node[]>,
 ): Set<string> {
   const checker = program.getTypeChecker()
   const operations = new Set<string>()
   for (const route of routes) {
-    if (!route.routeTemplate.startsWith('/api/v1/')) continue
     const [fileName, lineText] = route.source.split(':')
     const source = fileName
       ? routeFiles.find(candidate =>
@@ -51,6 +52,7 @@ export function discoverSourceInputOperationsForProgram(
         operations,
         routeFiles,
         queryReads,
+        queryReadSites,
         querySymbols,
       })
     }
@@ -64,6 +66,7 @@ type Inspection = {
   operations: Set<string>
   routeFiles: readonly ts.SourceFile[]
   queryReads?: Map<string, Set<string>>
+  queryReadSites?: Map<string, ts.Node[]>
   querySymbols: Set<ts.Symbol>
 }
 
@@ -99,6 +102,7 @@ function inspectRouteNode(
         const reads = inspection.queryReads?.get(operation) ?? new Set<string>()
         reads.add(key)
         inspection.queryReads?.set(operation, reads)
+        recordQueryReadSite(element, checker, operation, inspection.queryReadSites)
       }
       if (ts.isIdentifier(element.name)) {
         const symbol = checker.getSymbolAtLocation(element.name)
@@ -131,6 +135,7 @@ function inspectRouteNode(
       const reads = inspection.queryReads?.get(operation) ?? new Set<string>()
       reads.add(node.name.text)
       inspection.queryReads?.set(operation, reads)
+      recordQueryReadSite(node, checker, operation, inspection.queryReadSites)
     }
   }
   if (ts.isElementAccessExpression(node) && contextRoot(node.expression, checker, contexts)) {
@@ -143,6 +148,7 @@ function inspectRouteNode(
       const reads = inspection.queryReads?.get(operation) ?? new Set<string>()
       reads.add(key)
       inspection.queryReads?.set(operation, reads)
+      recordQueryReadSite(node, checker, operation, inspection.queryReadSites)
     }
   }
   if (ts.isCallExpression(node)) {

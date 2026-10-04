@@ -10,5 +10,9 @@ export function routeKey(route: Pick<Route, 'method' | 'routeTemplate'>): string
 }
 
 export function discoverThirdPartyRoutes(): Route[] {
-  return loadRegisteredRouteCatalog().filter(route => route.routeTemplate.startsWith('/api/v1/'))
+  return loadRegisteredRouteCatalog().map(route => ({
+    method: route.method,
+    routeTemplate: route.routeTemplate,
+    source: route.source,
+  }))
 }

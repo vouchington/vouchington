@@ -199,7 +199,10 @@ Schemas describe logical query values rather than every wire-compatible spelling
   Singular aliases remain scalar. Runtime support for repeated keys and legacy boolean spellings is
   intentionally not the canonical OpenAPI shape.
 
-Query parameters are optional and sorted by name after route-ordered path parameters. See
+Query parameters are optional by default. A required enum uses `requiredQueryEnum` in the
+route's typed carrier; the local compiler adapter retains that source metadata when the pinned
+query extractor omits it, and projects the same requirement into OpenAPI and the executable
+request bundle. Parameters are sorted by name after route-ordered path parameters. See
 [`@modules/pagination`](../../../overview/architecture/backend/modules/pagination/README.md) for the metadata builders and
 [`@services/search-params`](../../../overview/architecture/services/search-params/README.md) for parser ownership.
 

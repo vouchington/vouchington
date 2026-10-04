@@ -3,6 +3,7 @@ import {
   getOptionalAuthAndRateLimit,
   parseJsonBody,
   requireAuth,
+  validateRequestContract,
   validateUUIDParam,
 } from '../response-helpers.mts'
 import {
@@ -134,6 +135,9 @@ app.route('/api/v1/oauth/authorization-requests/:id').get(async (ctx: Context) =
     ctx,
     'GET:/api/v1/oauth/authorization-requests/:id',
   )
+  validateRequestContract(ctx, 'GET:/api/v1/oauth/authorization-requests/:id', {
+    path: ctx.params,
+  })
   const request = await getOAuthAuthorizationRequestForUser(
     authorizationContext.userId,
     validateUUIDParam(ctx, 'id'),
@@ -150,6 +154,9 @@ app.route('/api/v1/oauth/authorization-requests/:id/decisions').post(async (ctx:
     'POST:/api/v1/oauth/authorization-requests/:id/decisions',
   )
   assertNotSuspended(currentUser)
+  validateRequestContract(ctx, 'POST:/api/v1/oauth/authorization-requests/:id/decisions', {
+    path: ctx.params,
+  })
   const body = await parseJsonBody<{ decision?: unknown }>(ctx)
   ctx.assert(body?.decision === 'approve' || body?.decision === 'deny', 422, 'Invalid decision')
   const session = await ctx.getSessionTokenData()

@@ -14,7 +14,7 @@ Public bounded localization batches from the immutable SQLite catalog.
 
 Query parameters:
 
-- `consumer` — public consumer only: `web`, `swift`, or `dotnet`. `email` is rejected.
+- `consumer` — required public consumer: `web`, `swift`, or `dotnet`. Missing values and `email` are rejected with `400`.
 - `locales` — ordered locale list (comma-separated or repeated). `en` aliases `en-US`.
 - `selectors` — exact IDs or terminal prefixes (`nav.*`).
 

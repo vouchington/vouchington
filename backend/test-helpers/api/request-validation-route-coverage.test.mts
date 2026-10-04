@@ -13,7 +13,7 @@ import { discoverRuntimeValidatedOperations } from './request-validation-route-v
 import { discoverThirdPartyRoutes, routeKey } from './request-validation-route-catalog.mts'
 import {
   discoverSourceInputOperations,
-  discoverSourceQueryReads,
+  discoverSourceQueryInput,
 } from './request-validation-route-input-catalog.mts'
 
 import {
@@ -30,17 +30,36 @@ let sourceQueryReads: Map<string, Set<string>>
 describe('third-party route request validation inventory', () => {
   beforeAll(() => {
     document = buildOpenApiDocument()
+    const queryInput = discoverSourceQueryInput()
+    sourceQueryReads = queryInput.reads
     runtimeCarrierFamilies = new Map()
-    runtimeValidated = discoverRuntimeValidatedOperations(runtimeCarrierFamilies)
-    sourceQueryReads = discoverSourceQueryReads()
+    runtimeValidated = discoverRuntimeValidatedOperations(runtimeCarrierFamilies, queryInput.sites)
   }, COLD_OPENAPI_BUILD_TIMEOUT_MS)
 
   it('classifies every registered REST and MCP route exactly once', () => {
     const routes = discoverThirdPartyRoutes()
     const keys = routes.map(routeKey)
+    const outsideV1 = keys.filter(key => !key.includes(':/api/v1/'))
     const noInput = new Set(NO_INPUT_OPERATIONS)
     const specialized = new Set(Object.keys(SPECIALIZED_INGRESS))
     expect(new Set(keys).size).toBe(keys.length)
+    expect(outsideV1.toSorted()).toEqual(
+      [
+        'GET:/.well-known/nodeinfo',
+        'GET:/.well-known/oauth-authorization-server',
+        'GET:/.well-known/oauth-protected-resource/api/v1/admin/mcp',
+        'GET:/.well-known/oauth-protected-resource/api/v1/mcp',
+        'GET:/.well-known/webfinger',
+        'GET:/ap/users/:userId',
+        'GET:/authorize',
+        'GET:/client-metadata.json',
+        'GET:/nodeinfo/2.0',
+        'POST:/ap/inbox',
+        'POST:/register',
+        'POST:/revoke',
+        'POST:/token',
+      ].toSorted(),
+    )
     expect([...runtimeValidated].filter(key => !keys.includes(key))).toEqual([])
     expect(runtimeValidated).not.toContain('GET:/api/v1/auth/oauth/providers')
     expect([...specialized].filter(key => !keys.includes(key))).toEqual([])

@@ -60,19 +60,9 @@ export async function deleteMfaFactor(
   const body = ctx.request.is('json')
     ? ((await ctx.request.json('100kb').catch(() => ({}))) as { re_auth_token?: string })
     : undefined
-  const reAuthToken = body === undefined ? undefined : validateReAuthToken(ctx, operation, body)
+  validateRequestContract(ctx, operation, { body: body === undefined ? {} : body })
+  const reAuthToken = body === undefined ? undefined : body.re_auth_token
   await deleteFactor(currentUser.id, id, reAuthToken)
-}
-
-// Shared by `deleteMfaFactor`'s two call sites: validate the already-read optional body against
-// the request contract and extract the optional re-auth token.
-function validateReAuthToken(
-  ctx: Context,
-  operation: string,
-  body: { re_auth_token?: string },
-): string | undefined {
-  validateRequestContract(ctx, operation, { body })
-  return body.re_auth_token
 }
 
 // Shared by the passkey and TOTP-authenticator list routes, which page through a user's own items

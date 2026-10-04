@@ -24,6 +24,12 @@ import {
   recordValidatorCarrierFamilies,
   recordVoteFactoryCarrierFamilies,
 } from './request-validation-route-families.mts'
+import { guardLineage } from './request-validation-route-guards.mts'
+import { alreadyVisited, handlerCarrierBindings } from './request-validation-route-visit.mts'
+import {
+  admitGuardedQuery,
+  admitValidator,
+} from './request-validation-route-conditional-admission.mts'
 type ValidatorAssertion = typeof assertTrustedValidator
 type VoteFactoryAssertion = typeof assertTrustedVoteFactory
 
@@ -41,6 +47,7 @@ export function discoverRuntimeValidatedOperationsForProgram(
     validator?: ValidatorAssertion
     voteFactory?: VoteFactoryAssertion
     carrierFamilies?: Map<string, Set<string>>
+    queryReadSites?: ReadonlyMap<string, readonly ts.Node[]>
   } = {},
 ): Set<string> {
   const checker = program.getTypeChecker()
@@ -66,30 +73,15 @@ export function discoverRuntimeValidatedOperationsForProgram(
       throw new Error(`Cannot inspect route handler ${routeKey(route)}`)
 
     const operation = routeKey(route)
+    const guardedQueryValidators: ts.CallExpression[] = []
     const visited = new Map<ts.Node, Set<string>>()
     const inspect = (
       node: ts.Node,
       bindings: Map<ts.Symbol, string>,
       carrierBindings: CarrierBindings,
+      conditionalCall: boolean,
     ): void => {
-      const bindingKey = [...bindings]
-        .map(([symbol, value]) => `${checker.getFullyQualifiedName(symbol)}=${value}`)
-        .toSorted()
-        .join('|')
-      const carrierKey = [...carrierBindings]
-        .map(
-          ([symbol, value]) =>
-            `${checker.getFullyQualifiedName(symbol)}=${[...value].toSorted().join(',')}`,
-        )
-        .toSorted()
-        .join('|')
-      const visitKey = `${bindingKey}#${carrierKey}`
-      const nodeBindings = visited.get(node) ?? new Set<string>()
-      if (nodeBindings.has(visitKey)) return
-      nodeBindings.add(visitKey)
-      visited.set(node, nodeBindings)
-      // A route only owns code that runs in its handler or in a helper that it actually invokes.
-      // A nested callback/declaration is not evidence merely because its body mentions a validator.
+      if (alreadyVisited(node, bindings, carrierBindings, conditionalCall, checker, visited)) return
       if (
         ts.isFunctionLike(node) &&
         !handlerNodes.includes(node) &&
@@ -103,13 +95,24 @@ export function discoverRuntimeValidatedOperationsForProgram(
           const key = resolveString(node.arguments[1], checker, bindings)
           if (!key) throw new Error(`${name} in ${operation} has a non-static operation key`)
           if (key !== operation) throw new Error(`${name} in ${operation} validates ${key}`)
-          validated.add(operation)
+          const localFamilies = new Map<string, Set<string>>()
           recordValidatorCarrierFamilies(
             name,
             node,
             operation,
             checker,
             carrierBindings,
+            localFamilies,
+          )
+          const families = localFamilies.get(operation) ?? new Set<string>()
+          admitValidator(
+            node,
+            operation,
+            families,
+            checker,
+            conditionalCall,
+            validated,
+            guardedQueryValidators,
             assertions.carrierFamilies,
           )
           return
@@ -136,7 +139,12 @@ export function discoverRuntimeValidatedOperationsForProgram(
               ts.isVariableDeclaration(declaration) &&
               declaration.initializer
             ) {
-              inspect(declaration.initializer, bindings, carrierBindings)
+              inspect(
+                declaration.initializer,
+                bindings,
+                carrierBindings,
+                conditionalCall || guardLineage(node, checker) !== '[]',
+              )
             } else if (
               routeFiles.includes(declaration.getSourceFile()) &&
               (ts.isFunctionDeclaration(declaration) || ts.isMethodDeclaration(declaration)) &&
@@ -157,24 +165,36 @@ export function discoverRuntimeValidatedOperationsForProgram(
                   if (origins.size > 0) nestedCarrierBindings.set(symbol, origins)
                 }
               })
-              inspect(declaration.body, nestedBindings, nestedCarrierBindings)
+              inspect(
+                declaration.body,
+                nestedBindings,
+                nestedCarrierBindings,
+                conditionalCall || guardLineage(node, checker) !== '[]',
+              )
             }
           }
         }
       }
-      ts.forEachChild(node, child => inspect(child, bindings, carrierBindings))
+      ts.forEachChild(node, child => {
+        const guardedCallback =
+          ts.isCallExpression(node) &&
+          ts.isFunctionLike(child) &&
+          isExecutedAdmissionCallback(child, checker) &&
+          guardLineage(node, checker) !== '[]'
+        inspect(child, bindings, carrierBindings, conditionalCall || guardedCallback)
+      })
     }
     for (const handler of handlerNodes) {
-      const carrierBindings: CarrierBindings = new Map()
-      if (ts.isFunctionLike(handler)) {
-        const context = handler.parameters[0]?.name
-        if (context && ts.isIdentifier(context)) {
-          const symbol = checker.getSymbolAtLocation(context)
-          if (symbol) carrierBindings.set(symbol, new Set(['context']))
-        }
-      }
-      inspect(handler, new Map(), carrierBindings)
+      inspect(handler, new Map(), handlerCarrierBindings(handler, checker), false)
     }
+    admitGuardedQuery(
+      operation,
+      guardedQueryValidators,
+      assertions.queryReadSites?.get(operation) ?? [],
+      checker,
+      validated,
+      assertions.carrierFamilies,
+    )
   }
   return validated
 }

@@ -135,6 +135,13 @@ export function queryEnum<
   return createQueryEnum<TValues, TDescription, TDefault>(values, options)
 }
 
+/** Requires a query enum at the HTTP boundary and in the generated API schema. */
+export function requiredQueryEnum<const TValues extends readonly string[]>(
+  values: TValues,
+): QueryEnumContract<TValues> & { readonly required: true } {
+  return { ...queryEnum(values), required: true }
+}
+
 export function queryCsvArray<
   const TItems extends QueryArrayItemContract,
   const TDescription extends string | undefined = undefined,

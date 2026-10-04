@@ -80,23 +80,26 @@ app
     // discarded when the client already has one (no createSessionToken-only path exists —
     // the Lua script updates both records atomically).
     let dt, st
+    let rawBody: SessionTokenBody = {}
     if (ctx.request.is('json')) {
       const routeKey = 'DELETE:/api/v1/session'
       // See the PATCH handler above: this cast must stay inline here, not in a shared helper —
       // the OpenAPI request-contract harvester can't attribute a cast shared by two routes.
-      let rawBody: SessionTokenBody
       try {
         rawBody = (await ctx.request.json('100kb')) as SessionTokenBody
       } catch {
         await ctx.applyRouteRateLimit(routeKey)
         ctx.throw(422, 'Invalid body')
       }
-      ;({ dt, st } = await rateLimitAndValidateSessionBody(ctx, routeKey, rawBody))
+      const tokenBody = toTokenBody(rawBody)
+      await applySessionBodyRateLimit(ctx, routeKey, tokenBody)
+      ;({ dt, st } = tokenBody)
     } else {
       await ctx.applyRouteRateLimit('DELETE:/api/v1/session')
       dt = ctx.cookies.get('dt')
       st = ctx.cookies.get('st')
     }
+    validateRequestContract(ctx, 'DELETE:/api/v1/session', { body: rawBody })
 
     const sessionState = await resetSessionState({
       deviceToken: dt,

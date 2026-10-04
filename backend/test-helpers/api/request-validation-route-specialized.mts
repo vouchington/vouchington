@@ -21,7 +21,7 @@ export function discoverInlineUuidQueryAssertions(): Set<string> {
   const backend = loadBackendProgram()
   return discoverInlineUuidQueryAssertionsForProgram(
     backend.program,
-    backend.routeFiles,
+    backend.apiSourceFiles,
     loadRegisteredRouteCatalog(),
   )
 }

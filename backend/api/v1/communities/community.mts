@@ -121,17 +121,20 @@ app
       )
     }
 
-    let updated = community
-    if (archive !== undefined && hasUpdateFields) {
+    if (archive === undefined || hasUpdateFields) {
       ctx.assert(
         currentUserCanUpdateCommunity(currentUser, community, membership),
         403,
         'Forbidden',
       )
-      validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug', {
-        path: ctx.params,
-        body,
-      })
+    }
+    validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug', {
+      path: ctx.params,
+      body,
+    })
+
+    let updated = community
+    if (archive !== undefined && hasUpdateFields) {
       updated = await updateCommunityAndSetArchiveState(
         currentUser,
         community.id,
@@ -140,21 +143,8 @@ app
         membership,
       )
     } else if (archive === undefined) {
-      ctx.assert(
-        currentUserCanUpdateCommunity(currentUser, community, membership),
-        403,
-        'Forbidden',
-      )
-      validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug', {
-        path: ctx.params,
-        body,
-      })
       updated = await updateCommunity(currentUser, community.id, input, membership)
     } else {
-      validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug', {
-        path: ctx.params,
-        body,
-      })
       updated = await setCommunityArchiveState(
         currentUser,
         community.id,

@@ -1,4 +1,6 @@
+import { readFileSync } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { PUBLIC_LOCALIZATION_CONSUMERS } from '@vouchington/localization'
 
 vi.mock<typeof import('node:fs')>(import('node:fs'), async importOriginal => importOriginal())
 import { localizationRoute } from './localization-route-helpers.mts'
@@ -28,6 +30,36 @@ describe('localization route handler', () => {
 
   afterEach(() => {
     setLocalizationDatabaseForTests(undefined)
+  })
+
+  it('publishes a required public-consumer enum in both API contracts', () => {
+    const bundle = JSON.parse(
+      readFileSync(
+        new URL('../../../../api-fixtures/v1/request-contracts.json', import.meta.url),
+        'utf8',
+      ),
+    ) as {
+      operations: Record<
+        string,
+        { query: { required: string[]; properties: Record<string, unknown> } }
+      >
+    }
+    expect(bundle.operations['GET:/api/v1/localization']?.query).toMatchObject({
+      required: ['consumer'],
+      properties: { consumer: { type: 'string', enum: [...PUBLIC_LOCALIZATION_CONSUMERS] } },
+    })
+
+    const openapi = JSON.parse(
+      readFileSync(new URL('../../../../api-fixtures/v1/openapi.json', import.meta.url), 'utf8'),
+    ) as { paths: Record<string, { get: { parameters: Array<Record<string, unknown>> } }> }
+    expect(openapi.paths['/api/v1/localization']?.get.parameters).toContainEqual(
+      expect.objectContaining({
+        in: 'query',
+        name: 'consumer',
+        required: true,
+        schema: { type: 'string', enum: [...PUBLIC_LOCALIZATION_CONSUMERS] },
+      }),
+    )
   })
 
   it('writes JSON, 304, and 400 responses', () => {

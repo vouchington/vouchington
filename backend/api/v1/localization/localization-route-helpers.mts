@@ -1,5 +1,11 @@
 import type { Context } from '@jongleberry/api-server'
-import { defineQueryContract, queryCsvArray, queryString } from '@modules/pagination'
+import {
+  defineQueryContract,
+  queryCsvArray,
+  queryString,
+  requiredQueryEnum,
+} from '@modules/pagination'
+import { PUBLIC_LOCALIZATION_CONSUMERS } from '@vouchington/localization'
 import { validateRequestContract } from '../../response-helpers.mts'
 import { queryValues } from '@services/localization/query'
 import {
@@ -10,7 +16,7 @@ import {
 } from '@services/localization'
 
 export const localizationQuery = defineQueryContract({
-  consumer: queryString(),
+  consumer: requiredQueryEnum(PUBLIC_LOCALIZATION_CONSUMERS),
   locales: queryCsvArray(queryString()),
   selectors: queryCsvArray(queryString()),
 })

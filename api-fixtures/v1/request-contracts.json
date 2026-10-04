@@ -25784,6 +25784,17 @@
         "type": "object"
       }
     },
+    "GET:/ap/users/:userId": {
+      "path": {
+        "properties": {
+          "userId": {
+            "type": "string"
+          }
+        },
+        "required": ["userId"],
+        "type": "object"
+      }
+    },
     "GET:/api/v1/admin/ai-costs": {
       "query": {
         "properties": {
@@ -28026,6 +28037,7 @@
       "query": {
         "properties": {
           "consumer": {
+            "enum": ["web", "swift", "dotnet"],
             "type": "string"
           },
           "locales": {
@@ -28041,6 +28053,7 @@
             "type": "array"
           }
         },
+        "required": ["consumer"],
         "type": "object"
       }
     },
@@ -28555,6 +28568,17 @@
             "type": "integer"
           }
         },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/oauth/authorization-requests/:id": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
         "type": "object"
       }
     },
@@ -33430,6 +33454,17 @@
     "POST:/api/v1/my/spending-categories": {
       "body": {
         "$ref": "#/components/schemas/CreateSpendingCategoryRequest"
+      }
+    },
+    "POST:/api/v1/oauth/authorization-requests/:id/decisions": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
       }
     },
     "POST:/api/v1/posts": {

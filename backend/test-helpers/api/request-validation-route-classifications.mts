@@ -36,12 +36,57 @@ export const SPECIALIZED_INGRESS = {
       'backend/api/v1/sessions-authentication/__tests__/auth-bluesky-invalid-state.test.mts',
     proof: 'invalid saved app state',
   },
+  'GET:/ap/users/:userId': {
+    parser: 'ActivityPub actor UUID path parser',
+    evidence: 'backend/api/activitypub/actor.test.mts',
+    proof: 'returns 422 for a non-UUID userId',
+  },
+  'POST:/ap/inbox': {
+    parser: 'ActivityPub raw-body digest and HTTP signature verifier',
+    evidence: 'backend/api/activitypub/inbox.test.mts',
+    proof: 'body digest is mismatched',
+  },
+  'GET:/.well-known/webfinger': {
+    parser: 'WebFinger account resource parser',
+    evidence: 'backend/api/activitypub/webfinger.test.mts',
+    proof: 'returns 400 when resource is missing',
+  },
+  'GET:/authorize': {
+    parser: 'OAuth authorization request parser and redirect guard',
+    evidence: 'backend/api/oauth/oauth.test.mts',
+    proof: 'never redirects an authorization error to an unregistered URI',
+  },
+  'POST:/register': {
+    parser: 'OAuth dynamic client registration body parser',
+    evidence: 'backend/api/oauth/registration.test.mts',
+    proof: 'malformed JSON',
+  },
+  'POST:/token': {
+    parser: 'OAuth token form and client authentication parser',
+    evidence: 'backend/api/oauth/token-protocol.test.mts',
+    proof: 'rejects duplicate form parameters',
+  },
+  'POST:/revoke': {
+    parser: 'OAuth revocation form and client authentication parser',
+    evidence: 'backend/api/oauth/token-protocol.test.mts',
+    proof: 'requires a registered client for token revocation',
+  },
 } as const
 
 export const SPECIALIZED_QUERY_INPUTS = {
   'GET:/api/v1/auth/oauth/:provider/broker-callback': ['state', 'code', 'error'],
   'POST:/api/v1/email-unsubscribe': ['token'],
   'GET:/api/v1/users/:idOrSlug/data-request/stream': ['request_id'],
+  'GET:/.well-known/webfinger': ['resource'],
+  'GET:/authorize': [
+    '*',
+    'code_challenge',
+    'code_challenge_method',
+    'resource',
+    'response_type',
+    'scope',
+    'state',
+  ],
 } as const
 
 // A newly added route with no validator must be reviewed and placed here only when its source and
@@ -101,4 +146,10 @@ export const NO_INPUT_OPERATIONS: readonly string[] = [
   'POST:/api/v1/memberships/microsoft-store/service-tickets',
   'POST:/api/v1/my/identity-verification/checkout-sessions',
   'POST:/api/v1/my/notifications/read-all',
+  'GET:/.well-known/nodeinfo',
+  'GET:/nodeinfo/2.0',
+  'GET:/.well-known/oauth-authorization-server',
+  'GET:/.well-known/oauth-protected-resource/api/v1/mcp',
+  'GET:/.well-known/oauth-protected-resource/api/v1/admin/mcp',
+  'GET:/client-metadata.json',
 ]

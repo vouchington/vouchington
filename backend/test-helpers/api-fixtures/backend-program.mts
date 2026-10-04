@@ -12,7 +12,7 @@ import {
 
 import { settleBackendProgramBuild } from './backend-program-settlement.mts'
 import { formatDiagnostics, normalizePath } from './program-paths.mts'
-import { backendApiRouteRootFileNames } from './route-file-roots.mts'
+import { backendApiRouteRootFileNames, backendApiSourceFiles } from './route-file-roots.mts'
 
 const repoRoot = fileURLToPath(new URL('../../..', import.meta.url))
 declare const backendProgramGenerationBrand: unique symbol
@@ -23,6 +23,8 @@ export type BackendProgram = {
   generation: BackendProgramGeneration
   program: ts.Program
   routeFiles: ts.SourceFile[]
+  registeredRouteFiles: ts.SourceFile[]
+  apiSourceFiles: ts.SourceFile[]
 }
 
 type CachedBackendProgram = BackendProgram & {
@@ -87,14 +89,37 @@ function buildBackendProgram(configuration: BackendProgramConfiguration): Cached
   const routeFiles = settled.program
     .getSourceFiles()
     .filter(file => normalizePath(file.fileName).includes('/backend/api/v1/'))
+  const { registeredRouteFiles, apiSourceFiles } = backendApiSourceFiles(
+    settled.program,
+    hasRouteRegistration,
+  )
   cachedProgram = {
     generation: Object.freeze({}) as BackendProgramGeneration,
     probeSnapshot: settled.probeSnapshot,
     program: settled.program,
     rootSignature: settled.configuration.rootSignature,
     routeFiles,
+    registeredRouteFiles,
+    apiSourceFiles,
   }
   return cachedProgram
+}
+
+function hasRouteRegistration(source: ts.SourceFile): boolean {
+  let found = false
+  const visit = (node: ts.Node): void => {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.name.text === 'route'
+    ) {
+      found = true
+      return
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(source)
+  return found
 }
 
 type BackendProgramConfiguration = {
@@ -109,7 +134,9 @@ function readBackendProgramConfiguration(): BackendProgramConfiguration {
   if (config.error) throw new Error(formatDiagnostics([config.error]))
   const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, resolve(repoRoot, 'backend'))
   if (parsed.errors.length > 0) throw new Error(formatDiagnostics(parsed.errors))
-  const rootFileNames = backendApiRouteRootFileNames(parsed.fileNames)
+  const rootFileNames = backendApiRouteRootFileNames(parsed.fileNames, (fileName, sourceText) =>
+    hasRouteRegistration(ts.createSourceFile(fileName, sourceText, ts.ScriptTarget.Latest, true)),
+  )
   const rootSignature = JSON.stringify({
     config: config.config,
     options: parsed.options,
@@ -119,19 +146,12 @@ function readBackendProgramConfiguration(): BackendProgramConfiguration {
   return { parsed, rootFileNames, rootSignature }
 }
 
-/**
- * Number of times loadBackendProgram() has actually built a `ts.Program` (cache misses only,
- * never cache hits) since the last narrow test reset. See backend-program.test.mts.
- */
+/** Number of actual builds since the narrow test reset. */
 export function getBackendProgramBuildCount(): number {
   return buildCount
 }
 
-/**
- * Number of times loadBackendProgram() has been called at all, including cache hits. Unlike
- * getBackendProgramBuildCount(), this also catches a reintroduced call that hits an already-warm
- * cache — a build-count-only assertion would miss that call silently.
- */
+/** Number of calls, including cache hits, since the narrow test reset. */
 export function getBackendProgramEntryCount(): number {
   return entryCount
 }
