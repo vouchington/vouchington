@@ -1,7 +1,7 @@
 # Voucha
 
-- Work from this non-main worktree root. A trusted GitHub Actions checkout may be the workspace;
-  do not change the main checkout or discard local work without explicit direction.
+- Work from this non-main worktree or a trusted GitHub Actions checkout;
+  do not change main or discard local work without explicit direction.
 - **One current contract:** Voucha has not launched. Rewrite current producers, consumers, and
   canonical schema together; remove replaced paths. Do not add shims, dual readers/writers,
   backfills, activation flags, or upgrade-only migrations for historical app versions. Preserve external
@@ -20,15 +20,18 @@
 - Use the [local workflow](.agents/skills/agent-workflow/SKILL.md) and only its relevant phase.
   Prefer local skill adapters over direct canonical plugin invocation; they load shared guidance
   and add repository policy. Select specialized procedures from the [skill catalog](.agents/catalog/README.md).
-- Save plans outside Git. An existing issue/comment, PR description, or persistent native plan
-  file is sufficient; a new Plan issue and fixed template are not required.
+- Save plans outside Git: an issue/comment, PR description, or native plan file suffices.
+  No new Plan issue or fixed template required.
 - Search [docs](docs/README.md) for relevant prior decisions; update the owning page for behavior
   changes. Follow [instruction placement](docs/AGENTS.md), and link rather than duplicate guidance.
 - Agent hooks and harness configuration follow [hook instructions](dev/codex-hooks/AGENTS.md).
   Keep shared `AGENTS.md`; do not introduce shadowing `CLAUDE.md` files.
+- No AST parsing in this repo. Implement it upstream in `vouchington-tooling`
+  (Vouchington-specific) or `no-mistakes` (generalizable rules). Before building AST parsing,
+  escalate to a human for an architectural decision.
 - Tests use synthetic Git refs; keep production pins, checksums, and intentional historical refs exact.
   Test helpers belong only in `test-helpers/**` or immediately below
   a top-level workspace; never add nested helpers or `test-support` directories.
-  File basenames must not contain `test-helpers`.
+  No `test-helpers` in file basenames.
 - Before committing or pushing, follow the [commit checklist](docs/checklists/commit.md).
   [Tests](docs/development/tests.md) and [CI](docs/development/ci.md) own validation commands.
