@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   createTestUserDirect,
+  countTestPostsCreatedBy,
   createTestPost,
   getTestUserRaw,
   createTestRetentionWindow,
@@ -42,5 +43,22 @@ describe('author deletion budget', () => {
     expect(await getTestUserRaw(user.id)).toBeNull()
     expect(await readTestPublicationIdentityBridge('post', first.id)).not.toBeNull()
     expect(await readTestPublicationIdentityBridge('post', second.id)).not.toBeNull()
+  })
+  it('shares the row allowance across selected authors instead of giving each a full page', async () => {
+    const first = await createTestUserDirect()
+    const second = await createTestUserDirect()
+    await insertTestPostsForUser(first.id, 2)
+    await insertTestPostsForUser(second.id, 2)
+    const window = createTestRetentionWindow()
+    await softDeleteUserAt(first.id, window.firstEligibleDate)
+    await softDeleteUserAt(second.id, window.secondEligibleDate)
+    const options = { ...window, batchSize: 2, maxBatches: 1 }
+    await expect(cleanupSoftDeletedUsers(options)).resolves.toEqual({ deleted: 0, hasMore: true })
+    expect(await countTestPostsCreatedBy(first.id)).toBe(0)
+    expect(await countTestPostsCreatedBy(second.id)).toBe(2)
+    expect(await getTestUserRaw(first.id)).not.toBeNull()
+    await cleanupSoftDeletedUsers(options)
+    expect(await countTestPostsCreatedBy(second.id)).toBe(1)
+    expect(await getTestUserRaw(first.id)).toBeNull()
   })
 })

@@ -6,7 +6,7 @@ export async function releaseMembershipLineageBindings(
   query: QueryExecutor,
   userId: string,
   batchSize = getDataRetentionLimits().batchSize,
-): Promise<boolean> {
+): Promise<number> {
   const { rowCount } =
     await query(sql`/* cleanupSoftDeletedUserBatch: release membership lineage bindings */
     WITH candidates AS (SELECT id FROM membership_lineage_bindings
@@ -16,14 +16,14 @@ export async function releaseMembershipLineageBindings(
     SET released_at = CURRENT_TIMESTAMP,
         release_reason = 'account_hard_deleted'
     WHERE id IN (SELECT id FROM candidates)`)
-  return rowCount === batchSize
+  return rowCount ?? 0
 }
 
 export async function detachProviderMembershipSources(
   query: QueryExecutor,
   userId: string,
   batchSize = getDataRetentionLimits().batchSize,
-): Promise<boolean> {
+): Promise<number> {
   const { rowCount } =
     await query(sql`/* cleanupSoftDeletedUserBatch: detach provider membership sources */
     WITH candidates AS (SELECT id FROM membership_sources
@@ -32,5 +32,5 @@ export async function detachProviderMembershipSources(
     UPDATE membership_sources
     SET user_id = NULL
     WHERE id IN (SELECT id FROM candidates)`)
-  return rowCount === batchSize
+  return rowCount ?? 0
 }

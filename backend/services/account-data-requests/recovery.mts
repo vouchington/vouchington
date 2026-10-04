@@ -9,44 +9,51 @@ export type RecoverableDataRequest = {
   processingAttemptId: string
 }
 
-export async function claimRecoverableDataRequests(requestIds?: readonly string[]): Promise<{
+export async function claimRecoverableDataRequests(
+  requestIds?: readonly string[],
+  batchSize = getDataRequestLimits().batchSize,
+): Promise<{
   requests: RecoverableDataRequest[]
   hasMore: boolean
 }> {
-  const { batchSize } = getDataRequestLimits()
   await using transaction = await beginTransaction()
+  // Both mutation streams consume one shared, globally ordered candidate page.
+  const { rows: candidateRows } = await transaction<{ id: string; user_id: string | null }>(sql`
+    /* claimRecoverableDataRequests:candidates */
+    WITH orphan_ids AS (
+      SELECT id, user_id FROM user_data_requests
+      WHERE user_id IS NULL AND completed_at IS NULL AND failed_at IS NULL
+        AND (${requestIds ?? null}::uuid[] IS NULL OR id = ANY(${requestIds ?? null}::uuid[]))
+      ORDER BY id LIMIT ${batchSize}
+    ), active_ids AS (
+      SELECT request.id, request.user_id FROM user_data_requests request
+      JOIN users active_user ON active_user.id = request.user_id AND active_user.deleted_at IS NULL
+      WHERE (${requestIds ?? null}::uuid[] IS NULL OR request.id = ANY(${requestIds ?? null}::uuid[]))
+        AND request.completed_at IS NULL AND request.failed_at IS NULL
+        AND ((request.processing_started_at IS NULL AND request.dispatched_at < NOW() - INTERVAL '5 minutes')
+          OR request.processing_started_at < NOW() - INTERVAL '30 minutes')
+      ORDER BY request.id LIMIT ${batchSize}
+    )
+    SELECT id, user_id FROM (SELECT * FROM orphan_ids UNION ALL SELECT * FROM active_ids) candidates
+    ORDER BY id LIMIT ${batchSize}
+  `)
+  const selectedIds = candidateRows.map(row => row.id)
   const { rowCount: deletedCount } =
     await transaction(sql`/* claimRecoverableDataRequests:deletedUsers */
-      WITH candidates AS (
-        SELECT id FROM user_data_requests
-        WHERE user_id IS NULL AND completed_at IS NULL AND failed_at IS NULL
-          AND (${requestIds ?? null}::uuid[] IS NULL OR id = ANY(${requestIds ?? null}::uuid[]))
-        ORDER BY id LIMIT ${batchSize} FOR UPDATE SKIP LOCKED
-      )
-      UPDATE user_data_requests
-      SET failed_at = CURRENT_TIMESTAMP,
-          last_error_message = 'User was deleted before the export completed'
-      WHERE id IN (SELECT id FROM candidates)
-    `)
-  const { rows: candidateRows } = await transaction<{ user_id: string }>(
-    sql`/* claimRecoverableDataRequests:candidateUsers */
-        SELECT DISTINCT request.user_id
-        FROM user_data_requests request
-        JOIN users active_user ON active_user.id = request.user_id AND active_user.deleted_at IS NULL
-        WHERE (${requestIds ?? null}::uuid[] IS NULL OR request.id = ANY(${requestIds ?? null}::uuid[]))
-          AND request.completed_at IS NULL
-          AND request.failed_at IS NULL
-          AND request.user_id IS NOT NULL
-          AND (
-            (request.processing_started_at IS NULL AND request.dispatched_at < NOW() - INTERVAL '5 minutes')
-            OR request.processing_started_at < NOW() - INTERVAL '30 minutes'
-          )
-        ORDER BY request.user_id
-        LIMIT ${batchSize}
-      `,
-  )
+    WITH candidates AS (
+      SELECT id FROM user_data_requests
+      WHERE id = ANY(${selectedIds}::uuid[]) AND user_id IS NULL
+        AND completed_at IS NULL AND failed_at IS NULL
+      ORDER BY id LIMIT ${batchSize} FOR UPDATE SKIP LOCKED
+    )
+    UPDATE user_data_requests SET failed_at = CURRENT_TIMESTAMP,
+      last_error_message = 'User was deleted before the export completed'
+    WHERE id IN (SELECT id FROM candidates)
+  `)
   const activeUserIds: string[] = []
-  for (const { user_id: userId } of candidateRows) {
+  for (const userId of [
+    ...new Set(candidateRows.flatMap(row => (row.user_id ? [row.user_id] : []))),
+  ].toSorted()) {
     // oxlint-disable-next-line no-await-in-loop -- sorted user lifecycle locks fence every candidate before the claim update.
     if (await lockActiveDataRequestUser(transaction, userId)) activeUserIds.push(userId)
   }
@@ -54,7 +61,7 @@ export async function claimRecoverableDataRequests(requestIds?: readonly string[
     await transaction.commit()
     return {
       requests: [],
-      hasMore: deletedCount === batchSize || candidateRows.length === batchSize,
+      hasMore: candidateRows.length === batchSize || candidateRows.length > (deletedCount ?? 0),
     }
   }
 
@@ -62,7 +69,7 @@ export async function claimRecoverableDataRequests(requestIds?: readonly string[
       WITH candidates AS (
         SELECT request.id
       FROM user_data_requests request
-      WHERE (${requestIds ?? null}::uuid[] IS NULL OR request.id = ANY(${requestIds ?? null}::uuid[]))
+      WHERE request.id = ANY(${selectedIds}::uuid[])
         AND request.completed_at IS NULL
         AND request.failed_at IS NULL
         AND request.user_id = ANY(${activeUserIds}::uuid[])
@@ -102,8 +109,7 @@ export async function claimRecoverableDataRequests(requestIds?: readonly string[
   return {
     requests,
     hasMore:
-      deletedCount === batchSize ||
       candidateRows.length === batchSize ||
-      requests.length === batchSize,
+      candidateRows.length > (deletedCount ?? 0) + requests.length,
   }
 }

@@ -105,10 +105,26 @@ describe('processReconcileCopyrightDeliveryIntents', () => {
     await expect(
       processReconcileCopyrightDeliveryIntents({ ...deps, enqueueContinuation }),
     ).resolves.toEqual({ enqueued: 1, hasMore: true })
-    expect(enqueueContinuation).toHaveBeenCalledWith({ cursors: { in_app: 'head-cursor' } })
+    expect(enqueueContinuation).toHaveBeenCalledWith({
+      pending: ['email', 'in_app'],
+      cursors: { in_app: 'head-cursor' },
+    })
+    const email = reconcileDeps({ email: [page(['email-tail'], null)] })
+    await expect(
+      processReconcileCopyrightDeliveryIntents(email, {
+        pending: ['email', 'in_app'],
+        cursors: { in_app: 'head-cursor' },
+      }),
+    ).resolves.toEqual({ enqueued: 1, hasMore: true })
+    expect(email.searchDeliveryIntents).toHaveBeenCalledTimes(1)
+    expect(email.enqueueSendCopyrightNoticeEmail).toHaveBeenCalledWith('email-tail')
+    expect(email.enqueueDeliverCopyrightNotice).not.toHaveBeenCalled()
     const next = reconcileDeps({ inApp: [page(['tail'], null)] })
     await expect(
-      processReconcileCopyrightDeliveryIntents(next, { cursors: { in_app: 'head-cursor' } }),
+      processReconcileCopyrightDeliveryIntents(next, {
+        pending: ['in_app'],
+        cursors: { in_app: 'head-cursor' },
+      }),
     ).resolves.toEqual({ enqueued: 1, hasMore: false })
     expect(next.searchDeliveryIntents).toHaveBeenCalledWith({
       channel: 'in_app',

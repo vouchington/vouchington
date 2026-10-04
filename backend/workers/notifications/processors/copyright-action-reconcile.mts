@@ -19,6 +19,7 @@ import {
 } from '@services/copyright-notices'
 import {
   enqueueEveryCopyrightSweepPage,
+  createCopyrightSweepBudget,
   runCopyrightSweepStage,
   settleCopyrightSweepSequentially,
   walkCopyrightSweep,
@@ -73,14 +74,24 @@ export async function processReconcileCopyrightActionIntents(
 ): Promise<{ enqueued: number; hasMore: boolean }> {
   const deps = { ...defaultDeps, ...dependencyOverrides }
   const evaluatedAt = data.evaluatedAt ? new Date(data.evaluatedAt) : deps.now()
-  const cursors: Record<string, string> = {}
-  const options = (stage: string) => ({
-    after: data.cursors?.[stage],
-    skip: data.cursors !== undefined && !(stage in data.cursors),
-    onMore: (after: string) => {
-      cursors[stage] = after
-    },
-  })
+  const cursors = new Map(Object.entries(data.cursors ?? {}))
+  const budget = createCopyrightSweepBudget()
+  const deferred = new Set<string>()
+  const options = (stage: string) => {
+    const after = cursors.get(stage) ?? undefined
+    cursors.delete(stage)
+    return {
+      after,
+      singlePage: true,
+      onPageReadError: () => {
+        deferred.add(stage)
+      },
+      budget,
+      onMore: (after?: string) => {
+        cursors.set(stage, after ?? null)
+      },
+    }
+  }
   const tally: CopyrightSweepTally = { enqueued: 0, errors: [] }
   const stages = [
     () =>
@@ -148,14 +159,33 @@ export async function processReconcileCopyrightActionIntents(
         options('actions'),
       ),
   ]
-  for (const stage of stages) {
-    // oxlint-disable-next-line no-await-in-loop -- each sweep consumes durable work produced by preceding stages.
-    await stage()
+  const names = [
+    'forms',
+    'decisions',
+    'enforcement',
+    'suspended',
+    'blocked',
+    'restorations',
+    'actions',
+  ]
+  const pending = [...(data.pending ?? names)]
+  while (budget.remainingPages > 0 && pending.length > 0) {
+    const name = pending.shift()!
+    const index = names.indexOf(name)
+    if (index < 0) throw new Error(`Unknown copyright sweep stage: ${name}`)
+    // oxlint-disable-next-line no-await-in-loop -- rotate after each page under one shared job allowance.
+    await stages[index]!()
+    if (cursors.has(name) && !deferred.has(name)) pending.push(name)
   }
-  if (Object.keys(cursors).length > 0)
-    await deps.enqueueContinuation({ evaluatedAt: evaluatedAt.toISOString(), cursors })
+  pending.push(...deferred)
+  if (pending.length > 0)
+    await deps.enqueueContinuation({
+      evaluatedAt: evaluatedAt.toISOString(),
+      pending,
+      cursors: Object.fromEntries(cursors),
+    })
   if (tally.errors.length > 0) {
     throw new AggregateError(tally.errors, 'Copyright action reconciliation failed')
   }
-  return { enqueued: tally.enqueued, hasMore: Object.keys(cursors).length > 0 }
+  return { enqueued: tally.enqueued, hasMore: pending.length > 0 }
 }

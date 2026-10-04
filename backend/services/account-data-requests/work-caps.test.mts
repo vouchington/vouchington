@@ -72,6 +72,39 @@ describe('account export work caps', () => {
     })
   })
 
+  it('shares a single candidate allowance between deleted-owner and active recovery work', async () => {
+    const orphanOwner = await createTestUser()
+    const activeOwner = await createTestUser()
+    const orphan = await createDataRequest(orphanOwner.id, orphanOwner.id)
+    const active = await createDataRequest(activeOwner.id, activeOwner.id)
+    await orphanTestDataRequest(orphan.id)
+    await makeUserDataRequestRecoverableForTest(active.id, 'unstarted')
+    overrideDynamicConfigFieldsForTest(dataRequestConfig, { batch_size: 1, max_batches_per_run: 1 })
+    const queued: string[] = []
+    const dependencies = {
+      claimRecoverableDataRequests: () => claimRecoverableDataRequests([orphan.id, active.id]),
+      enqueueBulkExportRequests: async (...args: Parameters<typeof enqueueBulkExportRequests>) => {
+        queued.push(...args[0].map(request => request.requestId))
+        return enqueueBulkExportRequests(...args)
+      },
+    }
+    await expect(recoverExportRequests(dependencies)).resolves.toEqual({
+      enqueued: 0,
+      hasMore: true,
+    })
+    expect((await getUserDataRequestStatusAndS3KeyForTest(orphan.id))?.status).toBe('failed')
+    expect(queued).toEqual([])
+    await expect(recoverExportRequests(dependencies)).resolves.toEqual({
+      enqueued: 1,
+      hasMore: true,
+    })
+    expect(queued).toEqual([active.id])
+    await expect(recoverExportRequests(dependencies)).resolves.toEqual({
+      enqueued: 0,
+      hasMore: false,
+    })
+  })
+
   it('expires one bounded page per run and resumes after clearing the first page', async () => {
     const users = await Promise.all([createTestUser(), createTestUser()])
     const requests = await Promise.all(users.map(user => createDataRequest(user.id, user.id)))

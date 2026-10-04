@@ -20,12 +20,12 @@ export async function recoverExportRequests(
 ): Promise<{ enqueued: number; hasMore: boolean }> {
   const claimRequests = dependencies?.claimRecoverableDataRequests ?? claimRecoverableDataRequests
   const enqueueRequests = dependencies?.enqueueBulkExportRequests ?? enqueueBulkExportRequests
-  const { maxBatches } = getDataRequestLimits()
+  const { batchSize, maxBatches } = getDataRequestLimits()
   let enqueued = 0
   let hasMore = false
   for (let batch = 0; batch < maxBatches; batch++) {
     // oxlint-disable-next-line no-await-in-loop -- committed recovery claims become ineligible before the next page.
-    const result = await claimRequests()
+    const result = await claimRequests(undefined, batchSize)
     if (result.requests.length > 0) {
       // oxlint-disable-next-line no-await-in-loop -- one configured page of enqueues per claimed batch.
       await enqueueRequests(result.requests)

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   createTestUserDirect,
+  createRandomString,
+  insertTestTopic,
+  getTestTopicCreatedById,
   createTestSku,
   createTestRetentionWindow,
   softDeleteUserAt,
@@ -36,5 +39,25 @@ describe('retained grant purge budget', () => {
       [first, second, third].map(grant => getTestMembershipGrant(grant.grantId)),
     )
     expect(settled.every(grant => grant?.revoked_at && grant.source_cancelled_at)).toBe(true)
+  })
+  it('shares one row across topics and grants, without consuming empty earlier phases', async () => {
+    const admin = await createTestUserDirect()
+    const user = await createTestUserDirect()
+    const sku = await createTestSku({ plan: 'plus' })
+    const grant = await grantMembership(admin.id, user.id, 'plus', sku.id, 30)
+    const slug = createRandomString(12).toLowerCase()
+    const topic = await insertTestTopic({ name: slug, slug, createdById: user.id })
+    const window = createTestRetentionWindow()
+    await softDeleteUserAt(user.id, window.firstEligibleDate)
+    const options = { ...window, batchSize: 1, maxBatches: 1 }
+    await expect(cleanupSoftDeletedUsers(options)).resolves.toEqual({ deleted: 0, hasMore: true })
+    expect(await getTestTopicCreatedById(topic)).not.toBe(user.id)
+    expect((await getTestMembershipGrant(grant.grantId))?.revoked_at).toBeNull()
+    await expect(cleanupSoftDeletedUsers(options)).resolves.toEqual({ deleted: 0, hasMore: true })
+    expect((await getTestMembershipGrant(grant.grantId))?.revoked_at).not.toBeNull()
+    expect(await getTestUserRaw(user.id)).not.toBeNull()
+    await cleanupSoftDeletedUsers(options)
+    await cleanupSoftDeletedUsers(options)
+    expect(await getTestUserRaw(user.id)).toBeNull()
   })
 })

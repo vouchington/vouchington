@@ -17,6 +17,7 @@ function page(results: string[], endCursor: string | null): CopyrightSweepIdPage
 }
 
 type SweepPages = {
+  decisionAssessments?: CopyrightSweepIdPage[]
   formReviews?: CopyrightSweepIdPage[]
   pendingEnforcement?: CopyrightSweepIdPage[]
   suspendedClaimants?: CopyrightSweepIdPage[]
@@ -35,6 +36,7 @@ function sweep(log: string[], name: string, pages: CopyrightSweepIdPage[] = []) 
 
 function reconcileDeps(pages: SweepPages = {}) {
   const log: string[] = []
+  const decisionPages = [...(pages.decisionAssessments ?? [])]
   const deps = {
     searchFormReviews: vi.fn<Deps['searchFormReviews']>(
       sweep(log, 'form reviews', pages.formReviews),
@@ -44,7 +46,7 @@ function reconcileDeps(pages: SweepPages = {}) {
     }),
     recoverDecisionAssessments: vi.fn<Deps['recoverDecisionAssessments']>(async () => {
       log.push('recover decision assessments')
-      return page([], null)
+      return decisionPages.shift() ?? page([], null)
     }),
     searchPendingEnforcement: vi.fn<Deps['searchPendingEnforcement']>(
       sweep(log, 'pending enforcement', pages.pendingEnforcement),
@@ -86,7 +88,7 @@ function reconcileDeps(pages: SweepPages = {}) {
 }
 
 describe('processReconcileCopyrightActionIntents', () => {
-  it('walks every page of each sweep in stage order', async () => {
+  it('rotates one page per unfinished stage under the shared job budget', async () => {
     const { deps, log } = reconcileDeps({
       formReviews: [page(['review-1'], 'review-cursor'), page(['review-2'], null)],
       pendingEnforcement: [
@@ -110,28 +112,28 @@ describe('processReconcileCopyrightActionIntents', () => {
     expect(log).toEqual([
       'search form reviews',
       'recover form review review-1',
-      'search form reviews',
-      'recover form review review-2',
       'recover decision assessments',
       'search pending enforcement',
       'enforce assessment assessment-1',
-      'search pending enforcement',
-      'enforce assessment assessment-2',
       'search suspended claimants',
       'lift suspended claimant claimant-notice-1',
-      'search suspended claimants',
-      'lift suspended claimant claimant-notice-2',
       'search blocked hold restorations',
       'recover blocked hold restorations notice-1',
-      'search blocked hold restorations',
-      'recover blocked hold restorations notice-2',
       'search due restorations',
       'create restore intents deadline-1',
-      'search due restorations',
-      'create restore intents deadline-2',
       'search action intents',
       'enqueue intent-1',
       'enqueue intent-2',
+      'search form reviews',
+      'recover form review review-2',
+      'search pending enforcement',
+      'enforce assessment assessment-2',
+      'search suspended claimants',
+      'lift suspended claimant claimant-notice-2',
+      'search blocked hold restorations',
+      'recover blocked hold restorations notice-2',
+      'search due restorations',
+      'create restore intents deadline-2',
       'search action intents',
       'enqueue intent-3',
     ])
@@ -255,16 +257,42 @@ describe('processReconcileCopyrightActionIntents', () => {
     ).rejects.toBeInstanceOf(AggregateError)
     expect(enqueueContinuation).toHaveBeenCalledWith({
       evaluatedAt: NOW.toISOString(),
+      pending: [
+        'decisions',
+        'enforcement',
+        'suspended',
+        'blocked',
+        'restorations',
+        'actions',
+        'forms',
+      ],
       cursors: { forms: 'head-cursor' },
     })
-    const next = reconcileDeps({ formReviews: [page(['tail'], null)] }).deps
-    await processReconcileCopyrightActionIntents(next, {
+    const round = reconcileDeps({
+      decisionAssessments: [page(['decision-tail'], 'decision-cursor')],
+    }).deps
+    const continuation = enqueueContinuation.mock.calls[0]?.[0]
+    if (!continuation) throw new Error('Expected pending stage continuation')
+    const nextContinuation = vi.fn<Deps['enqueueContinuation']>(async () => undefined)
+    await processReconcileCopyrightActionIntents(
+      { ...round, enqueueContinuation: nextContinuation },
+      continuation,
+    )
+    expect(round.searchFormReviews).not.toHaveBeenCalled()
+    expect(round.recoverDecisionAssessments).toHaveBeenCalledExactlyOnceWith({ limit: 1 })
+    expect(round.searchPendingEnforcement).not.toHaveBeenCalled()
+    expect(nextContinuation).toHaveBeenCalledWith({
       evaluatedAt: NOW.toISOString(),
-      cursors: { forms: 'head-cursor' },
+      pending: [
+        'enforcement',
+        'suspended',
+        'blocked',
+        'restorations',
+        'actions',
+        'forms',
+        'decisions',
+      ],
+      cursors: { forms: 'head-cursor', decisions: 'decision-cursor' },
     })
-    expect(next.searchFormReviews).toHaveBeenCalledWith({ after: 'head-cursor', limit: 1 })
-    expect(next.recoverDecisionAssessments).not.toHaveBeenCalled()
-    expect(next.searchPendingEnforcement).not.toHaveBeenCalled()
-    expect(next.recoverFormReview).toHaveBeenCalledWith('tail')
   })
 })

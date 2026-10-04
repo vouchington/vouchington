@@ -8,8 +8,15 @@ export type CopyrightSweepPageRequest = { after?: string; limit?: number }
 
 export type CopyrightSweepWalkOptions = {
   after?: string
-  skip?: boolean
-  onMore?: (after: string) => void
+  singlePage?: boolean
+  onMore?: (after?: string) => void
+  onPageReadError?: () => void
+  budget?: ReturnType<typeof createCopyrightSweepBudget>
+}
+
+export function createCopyrightSweepBudget() {
+  const { batchSize, maxBatches } = getCopyrightSweepLimits()
+  return { batchSize, remainingPages: maxBatches }
 }
 
 /** Runs one reconcile stage without rejecting: its item errors, or its own failure, go to the tally. */
@@ -31,18 +38,26 @@ export async function walkCopyrightSweep(
   options: CopyrightSweepWalkOptions = {},
 ): Promise<unknown[]> {
   const errors: unknown[] = []
-  if (options.skip) return []
-  const { batchSize, maxBatches } = getCopyrightSweepLimits()
+  const budget = options.budget ?? createCopyrightSweepBudget()
   let cursor = options.after
-  for (let batch = 0; batch < maxBatches; batch++) {
-    // oxlint-disable-next-line no-await-in-loop -- advance only after the page's items settle.
-    const page = await searchPage({ ...(cursor ? { after: cursor } : {}), limit: batchSize })
+  while (budget.remainingPages > 0) {
+    budget.remainingPages--
+    let page: CopyrightSweepIdPage
+    try {
+      // oxlint-disable-next-line no-await-in-loop -- one selected stage consumes one shared page allowance.
+      page = await searchPage({ ...(cursor ? { after: cursor } : {}), limit: budget.batchSize })
+    } catch (err) {
+      options.onMore?.(cursor)
+      options.onPageReadError?.()
+      throw err
+    }
     // oxlint-disable-next-line no-await-in-loop -- preserves at-least-once handling before cursor advance.
     errors.push(...(await settlePage(page.results)))
     cursor = page.page_info.has_next_page ? (page.page_info.end_cursor ?? undefined) : undefined
     if (!cursor) return errors
+    if (options.singlePage) break
   }
-  if (cursor) options.onMore?.(cursor)
+  options.onMore?.(cursor)
   return errors
 }
 

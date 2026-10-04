@@ -7,7 +7,7 @@ export async function terminateRetainedMembershipGrants(
   query: QueryExecutor,
   userId: string,
   batchSize = getDataRetentionLimits().batchSize,
-): Promise<boolean> {
+): Promise<number> {
   const { rows } =
     await query(sql`/* cleanupSoftDeletedUserBatch: terminate retained membership grants */
     WITH boundary AS MATERIALIZED (
@@ -50,5 +50,5 @@ export async function terminateRetainedMembershipGrants(
       RETURNING source_state.membership_source_id)
     SELECT id FROM target_grants
   `)
-  return rows.length === batchSize
+  return rows.length
 }

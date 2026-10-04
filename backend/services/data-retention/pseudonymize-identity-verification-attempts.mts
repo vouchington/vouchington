@@ -12,7 +12,7 @@ export async function pseudonymizeIdentityVerificationAttempts(
   query: TransactionQuery,
   targetIds: string[],
   batchSize = getDataRetentionLimits().batchSize,
-): Promise<boolean> {
+): Promise<number> {
   const { rowCount } = await query(sql`/* pseudonymizeIdentityVerificationAttempts */
     WITH candidates AS (
       SELECT id FROM (
@@ -33,5 +33,5 @@ export async function pseudonymizeIdentityVerificationAttempts(
           ELSE granted_by_id
         END
     WHERE id IN (SELECT id FROM candidates)`)
-  return rowCount === batchSize
+  return rowCount ?? 0
 }
