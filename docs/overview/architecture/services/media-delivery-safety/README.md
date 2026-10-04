@@ -72,7 +72,15 @@ no provider calls.
 Registry rows require typed image and placement foreign keys and an exact immutable revision.
 Hard owner deletion retains only the retired placement/image binding, not a deleted-owner UUID.
 Live owner links clear after owner-removal retirement, including profile-link deletion cascades;
-ownerless bindings cannot be created or reactivated. Recovery proves current live ownership.
+ownerless bindings cannot be created or reactivated. Recovery proves current live ownership. Immutable surface activation rows separately retain
+setter and uploader identities and, for community images, the setter's administrator status at
+activation. These evidence rows do not grant delivery authority. Copyright targets can reference
+either binding family; withholding/restoration reuse the registry and invalidate the post, user,
+topic or community cache for the exact placement. A profile-link change invalidates its user.
+Each target captures the current activation epoch. A database-trigger-only reactivation advances
+the epoch without an application activation row, so the binder remains unknown.
+The [target-party policy](../../../../requirements/moderation/COPYRIGHT-NOTICES.md#surface-targets-and-parties)
+defines notices, counter-notice rights and incidents.
 There is no generic public-image route, media discriminator, or image-wide allow fallback.
 The fresh-bootstrap schema is defined by the placement, delivery registry, surface binding, and
 repair-marker creators in migrations 0647, 0648, 0649, and 0731. Runtime owner writes create their

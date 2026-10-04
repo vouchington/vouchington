@@ -3,15 +3,19 @@
 Source entrypoint: [backend/api/v1/copyright-notices/README.md](../../../../../backend/api/v1/copyright-notices/README.md)
 
 Structured US copyright notices use CAPTCHA or App Attest, rate limiting, UUID idempotency, and
-server-resolved hosted image placements. A claimant names a post only if that claimant could open
-it directly at submission. A target the claimant cannot open receives the same `422` as a target
-that does not exist, so the route does not reveal hidden posts. Staff approval of an emailed notice
+server-resolved hosted image placements. A target is a closed union on `surface`: `post-image` uses
+`post_id`; `user-profile-image` uses `user_id`; `user-profile-link-image` uses
+`user_profile_link_id`; topic logo/hero kinds use `topic_id`; community profile/banner kinds use
+`community_id`. Every branch includes `image_id` and informational `target_url`. The resolver
+recomputes the canonical URL. A claimant names a target only if that claimant could view it at
+submission. A hidden target receives the same `422` as a missing one. Staff approval of an emailed notice
 is not gated by viewability and resolves any existing hosted placement. EU and UK notices are
 separate routes and stay
-unavailable until an administrator records an unwithdrawn jurisdiction policy approval. Duplicate post and image pairs receive a validation error
+unavailable until an administrator records an unwithdrawn jurisdiction policy approval. Duplicate
+`(surface, owner, image)` selections receive a validation error
 before persistence. Signed-in and guest claimants may submit a notice, but only a deterministically
 complete signed-in notice with a durable `not_obviously_invalid` anti-spam recommendation is
-eligible for provisional restriction. The recommendation is not a legal merits
+eligible for provisional restriction; any non-post target refuses automation with `non_post_target`. The recommendation is not a legal merits
 assessment and cannot fill a statutory field. A moderator must subsequently review every
 provisional restriction.
 
@@ -209,6 +213,12 @@ caller or an always-approve configuration). Authentication, staff role, and the 
 answer before the schema. The service still decides ownership, jurisdiction availability, and
 existence, so a malformed body answers 422 before those 403, 404, and 409 outcomes. See
 [Copyright EU, UK, and territorial request validation](../../reference-copyright-territorial-request-validation.md).
+
+Administrators may use `POST /api/v1/copyright-notices/:id/restrictions/:restrictionId/lifts`
+with a required, non-empty `rationale` of at most 10,000 characters. It returns 201 with
+`{ copyright_restriction_lift: { id } }`. It refuses an active live responder or an already lifted
+restriction with 409 and a non-administrator with 403. The body is closed and contract-validated.
+See the [administrator lift policy](../../../moderation/COPYRIGHT-NOTICES.md#administrator-lift-without-a-responding-account).
 
 ## Performance
 

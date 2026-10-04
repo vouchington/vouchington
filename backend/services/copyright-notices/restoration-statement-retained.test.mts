@@ -32,6 +32,7 @@ describe('restoration notices with another active restriction', () => {
           placementId: scene.target.placement_id,
           placementRevision: scene.target.placement_revision,
           imageId: scene.target.image_id,
+          bindingFamily: 'post',
           hostedUseUrl: scene.target.hosted_use_url,
         },
       ],

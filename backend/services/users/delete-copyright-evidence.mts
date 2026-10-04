@@ -1,5 +1,6 @@
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
+import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
 import type { TransactionQuery } from '@data-stores/psql'
 
 /**
@@ -11,7 +12,7 @@ export async function assertCopyrightEvidenceAllowsDeletion(
   query: TransactionQuery,
   userId: string,
 ): Promise<void> {
-  const { rows } = await query<{ blocked: boolean }>(sql`
+  const statement = sql`
     /* deleteUser:copyrightEvidence */
     SELECT (
       EXISTS (
@@ -24,18 +25,17 @@ export async function assertCopyrightEvidenceAllowsDeletion(
       )
       OR EXISTS (
         SELECT 1
-        FROM posts post
-        JOIN image_placements image_placement ON image_placement.post_id = post.id
-        JOIN media_placements placement ON placement.id = image_placement.placement_id
-        JOIN copyright_notice_targets target
-          ON target.placement_id = placement.id
+        FROM copyright_notice_targets target
+        CROSS JOIN LATERAL `
+  statement.append(copyrightPlacementPartiesSql('retain'))
+  statement.append(sql` party
         JOIN copyright_notice_legal_hold_assessment_targets hold_target
           ON hold_target.copyright_notice_target_id = target.id
         JOIN copyright_notice_legal_hold_assessments hold
           ON hold.id = hold_target.copyright_notice_legal_hold_assessment_id
         LEFT JOIN copyright_notice_legal_hold_resolutions resolved
           ON resolved.copyright_notice_legal_hold_assessment_id = hold.id
-        WHERE post.created_by_id = ${userId}
+        WHERE party.user_id = ${userId}
           AND resolved.id IS NULL
           AND hold.from_original_claimant
           AND hold.same_material
@@ -45,6 +45,7 @@ export async function assertCopyrightEvidenceAllowsDeletion(
       )
     ) AS blocked
   `)
+  const { rows } = await query<{ blocked: boolean }>(statement)
   assert(
     !rows[0]?.blocked,
     409,

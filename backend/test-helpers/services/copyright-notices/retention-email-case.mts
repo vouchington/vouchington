@@ -66,6 +66,7 @@ export async function createRetentionEmailCase(): Promise<RetentionCase & { inta
         placementId: placement.placement_id,
         placementRevision: placement.placement_revision,
         imageId,
+        bindingFamily: 'post',
         hostedUseUrl: `https://voucha.ai/posts/${postId}`,
       },
     ],

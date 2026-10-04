@@ -69,12 +69,35 @@ describe('copyright email intake request contracts', () => {
     expect(Object.keys(path.properties)).toEqual(['id'])
   })
 
-  it('declares the approval targets as one to twenty hosted images', () => {
+  it('declares the approval targets as one to twenty closed hosted surfaces', () => {
     const targets = propertiesOf(APPROVAL).targets as Schema
     expect(targets).toMatchObject({ type: 'array', minItems: 1, maxItems: 20 })
     const item = resolve(targets.items as Schema)
-    expect(item.additionalProperties).toBe(false)
-    expect((item.required as string[]).toSorted()).toEqual(['image_id', 'post_id', 'target_url'])
+    const owners: Record<string, string> = {
+      'community-banner-image': 'community_id',
+      'community-profile-image': 'community_id',
+      'post-image': 'post_id',
+      'topic-hero-image': 'topic_id',
+      'topic-logo-image': 'topic_id',
+      'user-profile-image': 'user_id',
+      'user-profile-link-image': 'user_profile_link_id',
+    }
+    const branches = item.anyOf as Schema[]
+    expect(branches).toHaveLength(Object.keys(owners).length)
+    for (const branch of branches) {
+      const fields = branch.properties as Record<string, Schema>
+      const surface = fields.surface?.const as string
+      const owner = owners[surface]
+      expect(owner).toBeDefined()
+      expect(branch.additionalProperties).toBe(false)
+      expect((branch.required as string[]).toSorted()).toEqual(
+        ['image_id', owner!, 'surface', 'target_url'].toSorted(),
+      )
+      expect(fields.surface).toEqual({ const: surface })
+      expect(fields[owner!]).toEqual({ format: 'uuid', type: 'string' })
+      expect(fields.image_id).toEqual({ format: 'uuid', type: 'string' })
+      expect(fields.target_url).toEqual({ type: 'string' })
+    }
   })
 
   it('declares the correspondence target ids as one to twenty distinct uuids', () => {

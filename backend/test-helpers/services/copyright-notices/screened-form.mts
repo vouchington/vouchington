@@ -88,6 +88,7 @@ async function createForm(targetCount: number, people: FormPeople, guest: boolea
       accuracyAuthorityUnderPenaltyOfPerjury: true,
       electronicSignature: 'Claimant',
       claimantTargets: imageIds.map(imageId => ({
+        surfaceKind: 'post-image' as const,
         postId,
         imageId,
         hostedUseUrl: `https://voucha.ai/posts/${postId}`,

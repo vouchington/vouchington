@@ -1,6 +1,6 @@
 import {
   getImagePlacementForCopyright,
-  getPostIdForImagePlacementCopyright,
+  getImagePlacementCopyrightOwner,
   restoreImagePlacementForCopyright,
   withholdImagePlacementForCopyright,
 } from '@services/images/placements'
@@ -29,7 +29,7 @@ export type CopyrightActionDeliveryDependencies = {
   getImagePlacementForCopyright: typeof getImagePlacementForCopyright
   withholdImagePlacementForCopyright: typeof withholdImagePlacementForCopyright
   restoreImagePlacementForCopyright: typeof restoreImagePlacementForCopyright
-  getPostIdForImagePlacementCopyright: typeof getPostIdForImagePlacementCopyright
+  getImagePlacementCopyrightOwner: typeof getImagePlacementCopyrightOwner
   prepublishImagePlacementDenial: typeof prepublishImagePlacementDenial
   publishStagedMediaDeliveryRecord: typeof publishStagedMediaDeliveryRecord
 }
@@ -40,7 +40,7 @@ const defaultDependencies: CopyrightActionDeliveryDependencies = {
   getImagePlacementForCopyright,
   withholdImagePlacementForCopyright,
   restoreImagePlacementForCopyright,
-  getPostIdForImagePlacementCopyright,
+  getImagePlacementCopyrightOwner,
   prepublishImagePlacementDenial: prepublishCopyrightImagePlacementDenial,
   publishStagedMediaDeliveryRecord: publishStagedCopyrightDeliveryRecord,
 }

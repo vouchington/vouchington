@@ -48,8 +48,8 @@ export async function rejectCopyrightTargetImageWithWrongBinding(
       VALUES (${fixture.noticeId}, ${fixture.placementId}, 2, 'https://example.test/wrong-binding')
       RETURNING id, placement_id
     )
-    INSERT INTO copyright_notice_target_images (copyright_notice_target_id, placement_id, image_id)
-    SELECT id, placement_id, ${otherImageId} FROM target`)
+    INSERT INTO copyright_notice_target_images (copyright_notice_target_id, placement_id, image_id, binding_family)
+    SELECT id, placement_id, ${otherImageId}, 'post' FROM target`)
 }
 
 export async function rejectCopyrightTargetImageWithSurfaceBinding(
@@ -65,8 +65,25 @@ export async function rejectCopyrightTargetImageWithSurfaceBinding(
       VALUES (${fixture.noticeId}, ${surfacePlacementId}, 1, 'https://example.test/surface-binding')
       RETURNING id, placement_id
     )
-    INSERT INTO copyright_notice_target_images (copyright_notice_target_id, placement_id, image_id)
-    SELECT id, placement_id, ${fixture.imageId} FROM target`)
+    INSERT INTO copyright_notice_target_images (copyright_notice_target_id, placement_id, image_id, binding_family)
+    SELECT id, placement_id, ${fixture.imageId}, 'post' FROM target`)
+}
+
+export async function acceptCopyrightTargetImageWithSurfaceBinding(
+  fixture: CopyrightNoticeSchemaFixture,
+): Promise<void> {
+  const surfacePlacementId = randomUUID()
+  await write(sql`/* acceptCopyrightTargetImageWithSurfaceBinding:binding */
+    INSERT INTO retained_image_placement_bindings (placement_id, image_id, binding_family)
+    VALUES (${surfacePlacementId}, ${fixture.imageId}, 'surface')`)
+  await write(sql`/* acceptCopyrightTargetImageWithSurfaceBinding:target */
+    WITH target AS (
+      INSERT INTO copyright_notice_targets (copyright_notice_id, placement_id, placement_revision, hosted_use_url)
+      VALUES (${fixture.noticeId}, ${surfacePlacementId}, 1, 'https://example.test/surface-binding')
+      RETURNING id, placement_id
+    )
+    INSERT INTO copyright_notice_target_images (copyright_notice_target_id, placement_id, image_id, binding_family)
+    SELECT id, placement_id, ${fixture.imageId}, 'surface' FROM target`)
 }
 
 export function rejectCopyrightLifecycleCrossCaseAction(fixture: CopyrightNoticeSchemaFixture) {

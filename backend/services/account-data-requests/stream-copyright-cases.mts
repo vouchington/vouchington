@@ -1,5 +1,7 @@
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
+import { copyrightPlacementPublicVisibleSql } from '@services/media-delivery-safety/copyright-placement-public-visible-sql'
 
 /**
  * Lifecycle events a member sees on a case, mirroring `copyrightTimelineEventTypesFor('member')`
@@ -27,7 +29,7 @@ export const COPYRIGHT_CASE_TIMELINE_EVENT_TYPES = [
  * retention sweep has erased the case's evidence and personal data, and is empty before that.
  */
 export function streamCopyrightCases(userId: string) {
-  return createAsyncGeneratorFromCursor(sql`/* streamCopyrightCases */
+  const statement = sql`/* streamCopyrightCases */
     SELECT notice.id AS notice_id,
       CASE WHEN notice.claimant_user_id = ${userId} THEN 'claimant' ELSE 'poster' END AS viewer_role,
       notice.jurisdiction, notice.received_at, notice.accepted_at, notice.provisional_withholding_at,
@@ -41,7 +43,10 @@ export function streamCopyrightCases(userId: string) {
       END AS claimant_display_name,
       (SELECT COALESCE(json_agg(json_build_object(
           'id', target.id,
-          'hosted_use_url', CASE WHEN public_post.post_id IS NOT NULL THEN target.hosted_use_url END,
+          'surface', COALESCE(surface.surface_kind, 'post-image'),
+          'hosted_use_url', CASE WHEN `
+  statement.append(copyrightPlacementPublicVisibleSql())
+  statement.append(sql` THEN target.hosted_use_url END,
           'restriction_status', CASE
             WHEN restriction.id IS NULL THEN 'pending'
             WHEN restriction.lifted_at IS NULL THEN 'active'
@@ -49,10 +54,7 @@ export function streamCopyrightCases(userId: string) {
           END
         ) ORDER BY target.id), '[]'::json)
         FROM copyright_notice_targets target
-        LEFT JOIN image_placements image_placement
-          ON target.placement_id = image_placement.placement_id
-        LEFT JOIN view_public_post_eligibility public_post
-          ON public_post.post_id = image_placement.post_id
+        LEFT JOIN image_surface_placements surface ON surface.placement_id = target.placement_id
         LEFT JOIN LATERAL (
           SELECT current_restriction.id, current_restriction.lifted_at
           FROM copyright_restrictions current_restriction
@@ -73,13 +75,14 @@ export function streamCopyrightCases(userId: string) {
       AND (
         notice.claimant_user_id = ${userId}
         OR EXISTS (
-          SELECT 1 FROM copyright_notice_targets poster_target
-          JOIN media_placements placement ON poster_target.placement_id = placement.id
-          JOIN image_placements poster_image ON poster_image.placement_id = placement.id
-          JOIN posts post ON post.id = poster_image.post_id
-          WHERE poster_target.copyright_notice_id = notice.id AND post.created_by_id = ${userId}
+          SELECT 1 FROM copyright_notice_targets target
+          CROSS JOIN LATERAL `)
+  statement.append(copyrightPlacementPartiesSql('respond'))
+  statement.append(sql` party
+          WHERE target.copyright_notice_id = notice.id AND party.user_id = ${userId}
         )
       )
     ORDER BY notice.id
   `)
+  return createAsyncGeneratorFromCursor(statement)
 }

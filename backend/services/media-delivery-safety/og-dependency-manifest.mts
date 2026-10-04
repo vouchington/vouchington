@@ -45,7 +45,7 @@ export async function registerOgDependencyManifest(
   return manifestId
 }
 
-/** Allows delivery only when the manifest exists and every recorded tuple is currently authorized. */
+/** @public Manifest authorization seam tested against real placement authority and PostgreSQL rows. */
 export async function authorizeOgDependencyManifest(
   manifestId: string,
   options: ManifestQueryOptions = {},

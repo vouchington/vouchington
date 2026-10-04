@@ -11,7 +11,7 @@ import type { Post } from '@services/posts/types'
 import { getPostByAny } from '@services/posts/get'
 import {
   getImagePlacementForCopyright,
-  getPostIdForImagePlacementCopyright,
+  getImagePlacementCopyrightOwner,
   restoreImagePlacementForCopyright,
   withholdImagePlacementForCopyright,
 } from './placements.mts'
@@ -77,8 +77,11 @@ describe('image placements', () => {
     await insertTestPostImage({ postId, imageId })
     const placement = (await getPostImages(postId))[0]!
 
-    await expect(getPostIdForImagePlacementCopyright(placement.placement_id)).resolves.toBe(postId)
-    await expect(getPostIdForImagePlacementCopyright(randomUUID())).resolves.toBeNull()
+    await expect(getImagePlacementCopyrightOwner(placement.placement_id)).resolves.toEqual({
+      kind: 'post',
+      id: postId,
+    })
+    await expect(getImagePlacementCopyrightOwner(randomUUID())).resolves.toBeNull()
   })
 
   it('preserves a stable placement identity across idempotent updates and reattachment', async () => {

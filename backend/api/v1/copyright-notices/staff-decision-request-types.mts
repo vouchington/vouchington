@@ -13,6 +13,10 @@ export type CopyrightRestrictionReviewRequest = {
   rationale: string
 }
 
+export type CopyrightRestrictionLiftRequest = {
+  rationale: string
+}
+
 export type CopyrightLegalHoldResolutionRequest = {
   resolution_kind: 'dismissed' | 'proceeding_ended' | 'superseded'
   rationale: string

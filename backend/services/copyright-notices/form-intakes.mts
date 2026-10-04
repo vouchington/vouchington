@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret, hashToken } from '@modules/token-secrets'
-import { canViewPostsBatch } from '@services/posts'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -9,7 +8,11 @@ import { createCopyrightNoticeAggregateInTransaction } from './create.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { createCopyrightFormReceiptInTransaction } from './form-intake-receipt.mts'
 import type { CopyrightJurisdiction, CopyrightNoticeTargetInput } from './types.mts'
-import { resolveCopyrightImagePlacement } from './placement-resolution.mts'
+import {
+  claimantCanViewCopyrightImagePlacement,
+  resolveCopyrightImagePlacement,
+  type CopyrightImageSelector,
+} from './placement-resolution.mts'
 import { assertStructuredNoticeStatutoryFields } from './form-input-validation.mts'
 
 export type CreateCopyrightFormIntakeInput = {
@@ -25,7 +28,7 @@ export type CreateCopyrightFormIntakeInput = {
     goodFaithBelief: boolean
     accuracyAuthorityUnderPenaltyOfPerjury: boolean
     electronicSignature: string
-    claimantTargets: Array<{ postId: string; imageId: string; hostedUseUrl: string }>
+    claimantTargets: CopyrightImageSelector[]
   }
 }
 
@@ -68,8 +71,14 @@ export async function createCopyrightFormIntake(
   const purpose = copyrightFormSecretPurpose(input.idempotencyKey)
   const now = new Date()
   const targets: CopyrightNoticeTargetInput[] = []
-  await assertClaimantCanViewTargets(input.currentUser, input.request.claimantTargets, transaction)
   for (const target of input.request.claimantTargets) {
+    // oxlint-disable-next-line no-await-in-loop -- use the same filing transaction for the visibility and target snapshot.
+    const viewable = await claimantCanViewCopyrightImagePlacement(
+      target,
+      input.currentUser,
+      transaction,
+    )
+    assert(viewable, 422, 'Hosted image placement was not found')
     // oxlint-disable-next-line no-await-in-loop -- one transaction owns the idempotency lock and authoritative target snapshot.
     targets.push(await resolveCopyrightImagePlacement(target, transaction))
   }
@@ -159,23 +168,6 @@ export async function createCopyrightFormIntake(
  * A claimant may name only posts they can view right now. Staff approval and email intakes resolve
  * any existing target; this gate runs first so a hidden target answers like a missing one.
  */
-async function assertClaimantCanViewTargets(
-  currentUser: PrivateUser | null,
-  targets: Array<{ postId: string }>,
-  transaction: Awaited<ReturnType<typeof beginTransaction>>,
-): Promise<void> {
-  const viewable = await canViewPostsBatch(
-    currentUser,
-    targets.map(target => ({ id: target.postId })),
-    { query: transaction },
-  )
-  assert(
-    targets.every(target => viewable.get(target.postId)),
-    422,
-    'Hosted image placement was not found',
-  )
-}
-
 export function copyrightFormSecretPurpose(idempotencyKey: string): string {
   return `copyright-form:${idempotencyKey}`
 }
@@ -188,9 +180,7 @@ function stableRequestJson(request: CreateCopyrightFormIntakeInput['request']): 
   return JSON.stringify({
     ...request,
     claimantTargets: request.claimantTargets.toSorted((a, b) =>
-      `${a.postId}:${a.imageId}:${a.hostedUseUrl}`.localeCompare(
-        `${b.postId}:${b.imageId}:${b.hostedUseUrl}`,
-      ),
+      JSON.stringify(a).localeCompare(JSON.stringify(b)),
     ),
   })
 }

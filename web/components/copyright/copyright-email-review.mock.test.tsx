@@ -17,7 +17,10 @@ import { CopyrightEmailReview } from './copyright-email-review'
 configure({ testIdAttribute: 'data-pw' })
 
 vi.mock(import('@/lib/api/client/copyright-email-intakes'), () => intakesClient)
-vi.mock(import('@/lib/api/client/copyright-notice-targets'), () => targetsClient)
+vi.mock(import('@/lib/api/client/copyright-notice-targets'), async importOriginal => ({
+  ...(await importOriginal()),
+  ...targetsClient,
+}))
 
 const mockApprove = intakesClient.approveCopyrightEmailIntake
 const mockAdmitCorrespondence = intakesClient.admitCopyrightEmailCorrespondence
@@ -35,6 +38,7 @@ describe('CopyrightEmailReview', () => {
     mockGet.mockResolvedValue({ copyright_email_intake: makeIntake() })
     mockResolveTargets.mockResolvedValue([
       {
+        surface: 'post-image',
         post_id: '019f0000-0000-7000-8000-000000000003',
         image_id: '019f0000-0000-7000-8000-000000000004',
         target_url: 'https://voucha.ai/discussion/example',
@@ -73,6 +77,7 @@ describe('CopyrightEmailReview', () => {
     mockApprove.mockResolvedValue(undefined)
     mockResolveTargets.mockResolvedValue([
       {
+        surface: 'post-image',
         post_id: '019f0000-0000-7000-8000-000000000003',
         image_id: '019f0000-0000-7000-8000-000000000004',
         target_url: 'https://voucha.ai/discussion/example',
@@ -80,6 +85,7 @@ describe('CopyrightEmailReview', () => {
         caption: 'Claimed image',
       },
       {
+        surface: 'post-image',
         post_id: '019f0000-0000-7000-8000-000000000003',
         image_id: '019f0000-0000-7000-8000-000000000005',
         target_url: 'https://voucha.ai/discussion/example',
@@ -113,11 +119,13 @@ describe('CopyrightEmailReview', () => {
         electronic_signature: 'Claimant',
         targets: [
           {
+            surface: 'post-image',
             post_id: '019f0000-0000-7000-8000-000000000003',
             image_id: '019f0000-0000-7000-8000-000000000004',
             target_url: 'https://voucha.ai/discussion/example',
           },
           {
+            surface: 'post-image',
             post_id: '019f0000-0000-7000-8000-000000000003',
             image_id: '019f0000-0000-7000-8000-000000000005',
             target_url: 'https://voucha.ai/discussion/example',

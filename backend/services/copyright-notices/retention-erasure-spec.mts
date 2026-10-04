@@ -26,6 +26,10 @@ const own = (id: string) => sql`copyright_notice_id = ${id}`
 const viaSubmissions = (id: string) =>
   sql`copyright_notice_submission_id IN
     (SELECT id FROM copyright_notice_submissions WHERE copyright_notice_id = ${id})`
+const viaRestrictions = (id: string) =>
+  sql`copyright_restriction_id IN (SELECT restriction.id FROM copyright_restrictions restriction
+    JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
+    WHERE target.copyright_notice_id = ${id})`
 const viaFormIntakes = (id: string) =>
   sql`copyright_notice_form_intake_id IN
     (SELECT id FROM copyright_notice_form_intakes WHERE copyright_notice_id = ${id})`
@@ -116,6 +120,11 @@ export const COPYRIGHT_RETENTION_ERASURE: readonly CopyrightRetentionErasureTabl
     'copyright_notice_appeal_reviews',
     { rationale_ciphertext: 'redact', manual_fallback_reason_ciphertext: 'redact' },
     viaSubmissions,
+  ),
+  table(
+    'copyright_restriction_administrator_lifts',
+    { rationale_ciphertext: 'redact' },
+    viaRestrictions,
   ),
   table(
     'copyright_notice_counter_notice_reviews',

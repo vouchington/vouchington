@@ -15,6 +15,8 @@ import {
   assertCopyrightIntakeEnabled,
   rejectCopyrightEmailCorrespondence,
   currentUserCanReviewCopyrightNotices,
+  currentUserCanLiftCopyrightRestriction,
+  liftCopyrightRestrictionWithoutSetter,
   promoteCopyrightEmailIntake,
   rejectCopyrightEmailIntake,
   resolveCopyrightImagePlacement,
@@ -58,6 +60,7 @@ import type {
   CopyrightFormIntakeReviewRequest,
   CopyrightLegalHoldResolutionRequest,
   CopyrightRestrictionReviewRequest,
+  CopyrightRestrictionLiftRequest,
 } from './staff-decision-request-types.mts'
 import type {
   CopyrightAppealReviewRequest,
@@ -250,6 +253,42 @@ app
       reviewedAt: new Date(),
     })
     ctx.json({ copyright_restriction: restriction })
+  })
+
+app
+  .route('/api/v1/copyright-notices/:id/restrictions/:restrictionId/lifts')
+  .post(async (ctx: Context) => {
+    apiRequestContract<
+      'POST:/api/v1/copyright-notices/:id/restrictions/:restrictionId/lifts',
+      CopyrightRestrictionLiftRequest
+    >('POST:/api/v1/copyright-notices/:id/restrictions/:restrictionId/lifts')
+    setPrivateNoStoreCacheHeaders(ctx)
+    const currentUser = await requireAuthAndRateLimit(
+      ctx,
+      currentUserCanLiftCopyrightRestriction,
+      'POST:/api/v1/copyright-notices/:id/restrictions/:restrictionId/lifts',
+    )
+    assertNotSuspended(currentUser)
+    ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
+    const noticeId = validateUUIDParam(ctx, 'id')
+    const restrictionId = validateUUIDParam(ctx, 'restrictionId')
+    const body = (await ctx.request.json('1mb')) as CopyrightRestrictionLiftRequest
+    assertObjectBody(ctx, body)
+    ctx.assert(boundedString(body.rationale, 10_000), 422, 'rationale is required')
+    validateRequestContract(
+      ctx,
+      'POST:/api/v1/copyright-notices/:id/restrictions/:restrictionId/lifts',
+      { path: ctx.params, body },
+    )
+    const lift = await liftCopyrightRestrictionWithoutSetter({
+      currentUser,
+      noticeId,
+      restrictionId,
+      rationale: body.rationale,
+      liftedAt: new Date(),
+    })
+    ctx.setStatus(201)
+    ctx.json({ copyright_restriction_lift: { id: lift.id } })
   })
 
 app

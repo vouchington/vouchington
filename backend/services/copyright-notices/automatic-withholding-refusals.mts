@@ -41,6 +41,20 @@ export async function refuseAutomaticWithholding(
   },
 ): Promise<boolean> {
   const { eligibility } = input
+  const { rows: nonPostTargets } = await transaction<{ has_non_post_target: boolean }>(sql`
+    /* refuseAutomaticWithholding:nonPostTarget */
+    SELECT EXISTS (
+      SELECT 1 FROM copyright_notice_targets target
+      JOIN copyright_notice_target_images image_target
+        ON image_target.copyright_notice_target_id = target.id
+      WHERE target.copyright_notice_id = ${input.noticeId}
+        AND image_target.binding_family <> 'post'
+    ) AS has_non_post_target
+  `)
+  if (nonPostTargets[0]?.has_non_post_target) {
+    await recordAutomaticWithholdingRefusal(transaction, input.submissionId, 'non_post_target')
+    return true
+  }
   if (eligibility.reason === null && input.hasAutomatedAssessment) return false
   const reason =
     eligibility.reason === null

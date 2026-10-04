@@ -15,6 +15,9 @@ export const ROOT_FAMILIES = {
     table: 'retained_user_identities',
     references: [
       ['users', 'id'],
+      ['images', 'created_by_id'],
+      ['image_surface_placement_activations', 'bound_by_user_id'],
+      ['image_surface_placement_activations', 'uploaded_by_user_id'],
       ['user_deletion_requests', 'user_id'],
       ['user_deletion_requests', 'requested_by_id'],
       ['user_deletion_audit_logs', 'user_id'],
@@ -35,6 +38,7 @@ export const ROOT_FAMILIES = {
       ['user_legal_preservation_holds', 'account_user_id'],
       ['user_legal_preservation_holds', 'placed_by_id'],
       ['user_legal_preservation_holds', 'released_by_id'],
+      ['copyright_notice_targets', 'surface_owner_user_id'],
       ...retainedRelationReferences('user'),
     ],
   },

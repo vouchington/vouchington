@@ -94,6 +94,7 @@ describe('delivery authority and durable denial repair', () => {
     await syncImageSurfacePlacement(
       { surfaceKind: 'user-profile-image', userId: fixture.userId },
       null,
+      null,
       transaction,
     )
     await transaction.commit()
@@ -234,6 +235,7 @@ describe('delivery authority and durable denial repair', () => {
       const b = await syncImageSurfacePlacement(
         { surfaceKind: 'user-profile-image', userId: fixture.userId },
         imageB,
+        fixture.userId,
         transaction,
       )
       if (!b) throw new Error('Intermediate tuple missing')
@@ -245,6 +247,7 @@ describe('delivery authority and durable denial repair', () => {
       await syncImageSurfacePlacement(
         { surfaceKind: 'user-profile-image', userId: fixture.userId },
         imageC,
+        fixture.userId,
         transaction,
       )
     }
@@ -265,6 +268,7 @@ describe('delivery authority and durable denial repair', () => {
     await using transaction = await beginTransaction()
     await syncImageSurfacePlacement(
       { surfaceKind: 'user-profile-image', userId: fixture.userId },
+      null,
       null,
       transaction,
     )

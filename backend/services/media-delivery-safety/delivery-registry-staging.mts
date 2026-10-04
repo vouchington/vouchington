@@ -4,6 +4,7 @@ import type { MediaDeliveryRegistryState } from '@modules/aws/media-delivery-reg
 import sql from 'sql-template-strings'
 import { getImagePlacementDeliveryKey } from './delivery-registry-types.mts'
 
+/** @public Post-image registry staging seam exercised against real PostgreSQL placements. */
 export async function stagePostImagePlacementDeliveryRecords(
   postId: string,
   options: QueryOptions = {},

@@ -59,7 +59,12 @@ export const updateTopic = async (
         await prepublishImageSurfaceDenials(references, imageQuery)
         for (const reference of references) {
           // oxlint-disable-next-line no-await-in-loop -- one predeclared admission batch, then each exact owner binding.
-          await syncImageSurfacePlacement(reference, reference.nextImageId ?? null, imageQuery)
+          await syncImageSurfacePlacement(
+            reference,
+            reference.nextImageId ?? null,
+            reference.nextImageId ? updater.id : null,
+            imageQuery,
+          )
         }
       }
       const updateQuery = sql`/* updateTopicInStore */ UPDATE topics SET updated_by_id = ${updater.id}`

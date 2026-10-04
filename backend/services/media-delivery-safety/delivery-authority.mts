@@ -1,6 +1,7 @@
 import type { QueryExecutor } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { ImageDeliveryRecord } from './delivery-registry-types.mts'
+import { imageSurfaceOwnerIsLiveSql } from './surface-owner-live-sql.mts'
 
 /** Called only while the exact delivery placement fence is retained. */
 export async function lockImageDeliveryLegalAuthority(
@@ -34,7 +35,7 @@ export async function imageDeliveryIsAuthorized(
 
 /** SQL predicate over an exact tuple named authority; shared by snapshot staging and locked publication. */
 export function imageDeliveryAuthorityProof(): ReturnType<typeof sql> {
-  return sql`EXISTS (
+  const proof = sql`EXISTS (
       SELECT 1 FROM images image
       WHERE image.id = authority.image_id
         AND image.deleted_at IS NULL AND image.upload_completed_at IS NOT NULL
@@ -54,26 +55,9 @@ export function imageDeliveryAuthorityProof(): ReturnType<typeof sql> {
                 OR EXISTS (
                   SELECT 1 FROM image_surface_placements surface
                   WHERE surface.placement_id = placement.id AND surface.image_id = image.id
-                    AND (
-                      (surface.surface_kind = 'user-profile-image' AND EXISTS (
-                        SELECT 1 FROM users owner WHERE owner.id = surface.user_id
-                          AND owner.deleted_at IS NULL AND owner.profile_image_id = image.id))
-                      OR (surface.surface_kind = 'user-profile-link-image' AND EXISTS (
-                        SELECT 1 FROM user_profile_links link JOIN users owner ON owner.id = link.user_id
-                        WHERE link.id = surface.user_profile_link_id AND link.image_id = image.id
-                          AND owner.deleted_at IS NULL))
-                      OR (surface.surface_kind IN ('topic-logo-image', 'topic-hero-image') AND EXISTS (
-                        SELECT 1 FROM topics owner WHERE owner.id = surface.topic_id
-                          AND owner.deleted_at IS NULL AND owner.merged_into_topic_id IS NULL
-                          AND CASE surface.surface_kind WHEN 'topic-logo-image' THEN owner.logo_image_id
-                            ELSE owner.hero_image_id END = image.id))
-                      OR (surface.surface_kind IN ('community-profile-image', 'community-banner-image') AND EXISTS (
-                        SELECT 1 FROM communities owner WHERE owner.id = surface.community_id
-                          AND owner.deleted_at IS NULL
-                          AND CASE surface.surface_kind WHEN 'community-profile-image' THEN owner.profile_image_id
-                            ELSE owner.banner_image_id END = image.id))
-                    )
-                )
+                    AND `
+  proof.append(imageSurfaceOwnerIsLiveSql())
+  proof.append(sql`)
               )
               AND NOT EXISTS (
                 SELECT 1 FROM copyright_notice_targets target
@@ -104,5 +88,6 @@ export function imageDeliveryAuthorityProof(): ReturnType<typeof sql> {
                   )
               )
           )
-    )`
+    )`)
+  return proof
 }

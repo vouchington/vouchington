@@ -3,6 +3,7 @@ import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
+import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
 import { v7 as uuidv7 } from 'uuid'
 import type { PrivateUser } from '@services/users/types'
 import type { CopyrightNoticeSubmissionRecord } from './types.mts'
@@ -109,19 +110,17 @@ async function createAuthenticatedCopyrightSubmission(
     await transaction.commit()
     return { submission: existing, isDuplicate: true }
   }
-  const { rows: ownedTargetRows } = await transaction<{
-    id: string
-  }>(sql`/* createCopyrightSubmission:posterTargets */
+  const ownershipStatement = sql`/* createCopyrightSubmission:posterTargets */
     SELECT target.id
     FROM copyright_notice_targets target
-    JOIN media_placements placement
-      ON target.placement_id = placement.id
-    JOIN image_placements image_placement ON image_placement.placement_id = placement.id
-    JOIN posts post ON post.id = image_placement.post_id
+    CROSS JOIN LATERAL `
+  ownershipStatement.append(copyrightPlacementPartiesSql('respond'))
+  ownershipStatement.append(sql` party
     WHERE target.copyright_notice_id = ${noticeId} AND target.id = ANY(${input.targetIds})
-      AND post.created_by_id = ${currentUser.id}
+      AND party.user_id = ${currentUser.id}
     FOR UPDATE OF target
   `)
+  const { rows: ownedTargetRows } = await transaction<{ id: string }>(ownershipStatement)
   assert(
     ownedTargetRows.length === input.targetIds.length,
     403,

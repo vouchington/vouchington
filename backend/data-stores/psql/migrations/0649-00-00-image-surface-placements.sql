@@ -20,6 +20,7 @@ CREATE TABLE image_surface_placements (
   community_id uuid REFERENCES communities(id) ON DELETE RESTRICT,
   user_profile_link_id uuid REFERENCES user_profile_links(id) ON DELETE RESTRICT,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (placement_id, surface_kind),
   CHECK (
     (surface_kind = 'user-profile-image'
       AND topic_id IS NULL AND community_id IS NULL AND user_profile_link_id IS NULL)
@@ -31,6 +32,39 @@ CREATE TABLE image_surface_placements (
       AND user_id IS NULL AND topic_id IS NULL AND community_id IS NULL)
   )
 );
+
+CREATE TABLE image_surface_placement_activations (
+  placement_id uuid NOT NULL,
+  surface_kind text NOT NULL CHECK (surface_kind IN (
+    'user-profile-image', 'topic-logo-image', 'topic-hero-image',
+    'community-profile-image', 'community-banner-image', 'user-profile-link-image'
+  )),
+  placement_revision integer NOT NULL CHECK (placement_revision >= 0),
+  bound_by_user_id uuid NOT NULL REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
+  uploaded_by_user_id uuid NOT NULL REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
+  bound_by_administrator boolean,
+  bound_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (placement_id, placement_revision),
+  FOREIGN KEY (placement_id, surface_kind)
+    REFERENCES image_surface_placements(placement_id, surface_kind) ON DELETE RESTRICT,
+  CHECK ((surface_kind IN ('community-profile-image', 'community-banner-image')) =
+    (bound_by_administrator IS NOT NULL))
+);
+CREATE INDEX idx_image_surface_placement_activations__bound_by_user
+  ON image_surface_placement_activations(bound_by_user_id);
+CREATE INDEX idx_image_surface_placement_activations__uploaded_by_user
+  ON image_surface_placement_activations(uploaded_by_user_id);
+CREATE TRIGGER trigger_image_surface_placement_activations_guard
+BEFORE UPDATE OR DELETE ON image_surface_placement_activations
+FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+COMMENT ON TABLE image_surface_placement_activations IS 'Immutable record of each application activation of an image surface placement.';
+COMMENT ON COLUMN image_surface_placement_activations.placement_id IS 'Placement activated by the application.';
+COMMENT ON COLUMN image_surface_placement_activations.surface_kind IS 'Surface kind captured with the placement identity.';
+COMMENT ON COLUMN image_surface_placement_activations.placement_revision IS 'Placement revision at activation.';
+COMMENT ON COLUMN image_surface_placement_activations.bound_by_user_id IS 'Retained identity of the account that selected the image.';
+COMMENT ON COLUMN image_surface_placement_activations.uploaded_by_user_id IS 'Retained identity of the original uploader.';
+COMMENT ON COLUMN image_surface_placement_activations.bound_by_administrator IS 'Whether a community image setter was an administrator at activation; null for other surfaces.';
+COMMENT ON COLUMN image_surface_placement_activations.bound_at IS 'Time the application activated the image placement.';
 
 ALTER TABLE image_surface_placements
 ADD CONSTRAINT fk_image_surface_placements__retained_image_binding

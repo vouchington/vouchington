@@ -49,6 +49,7 @@ async function approvalInput(moderator: Awaited<ReturnType<typeof createModerato
         placementId,
         placementRevision: 1,
         imageId,
+        bindingFamily: 'post' as const,
         hostedUseUrl: `https://voucha.ai/posts/${postId}`,
       },
     ],

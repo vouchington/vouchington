@@ -2,8 +2,8 @@ import { beginTransaction } from '@data-stores/psql'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import sql from 'sql-template-strings'
 import { getImagePlacementKey } from '@services/images/placements'
-import { invalidatePostStrict } from '@services/entity-cache/invalidate-strict'
 import type { CopyrightActionDeliveryDependencies } from './action-delivery-dependencies.mts'
+import { invalidateCopyrightPlacementCache } from './action-delivery-cache.mts'
 import {
   completeCopyrightActionIntentInTransaction,
   getCopyrightActionPlacementKey,
@@ -177,13 +177,4 @@ async function restoreIsBlocked(
     (await hasCopyrightActionBlocker(legal, now, query)) ||
     (await hasOtherActiveCopyrightRestrictions(legal, query))
   )
-}
-
-async function invalidateCopyrightPlacementCache(
-  placementId: string,
-  query: Awaited<ReturnType<typeof beginTransaction>>,
-  dependencies: CopyrightActionDeliveryDependencies,
-): Promise<void> {
-  const postId = await dependencies.getPostIdForImagePlacementCopyright(placementId, { query })
-  if (postId) await invalidatePostStrict(postId)
 }

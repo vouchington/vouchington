@@ -1,8 +1,5 @@
-export { getImagePlacementDeliveryKey, getMediaDeliveryPath } from './delivery-registry-types.mts'
-export {
-  stageImagePlacementDeliveryRecord,
-  stagePostImagePlacementDeliveryRecords,
-} from './delivery-registry-staging.mts'
+export { getImagePlacementDeliveryKey } from './delivery-registry-types.mts'
+export { stageImagePlacementDeliveryRecord } from './delivery-registry-staging.mts'
 export {
   prepublishImagePlacementDenial,
   publishStagedMediaDeliveryRecord,
@@ -15,7 +12,6 @@ export { repairFailedImageDeliveryMutation } from './delivery-registry-recovery.
 export {
   replayFailedMediaDeliveryRegistryRecords,
   stageAllCurrentImagePlacementDeliveryRecords,
-  stageCurrentImagePlacementDeliveryRecordsForImageIds,
 } from './delivery-registry-reconciliation.mts'
 export {
   listRecoverableMediaDeliveryRegistryKeys,

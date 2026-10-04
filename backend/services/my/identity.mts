@@ -35,6 +35,7 @@ export async function updateProfileImageId(
   await syncImageSurfacePlacement(
     { surfaceKind: 'user-profile-image', userId },
     profileImageId,
+    profileImageId ? userId : null,
     transaction,
   )
   const { rowCount } = await transaction(

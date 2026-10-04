@@ -9,6 +9,7 @@ export type CopyrightRestorationCause =
   | 'appeal_reversed'
   | 'counter_notice_window'
   | 'hold_resolved'
+  | 'administrator_lift'
 export type CopyrightRestorationOutcome = 'visible' | 'still_hidden' | 'unavailable'
 export type CopyrightStatementInput = {
   audience: 'poster' | 'claimant'

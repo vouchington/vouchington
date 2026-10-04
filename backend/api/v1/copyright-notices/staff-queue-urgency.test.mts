@@ -58,7 +58,12 @@ describe('copyright staff queue urgency', () => {
           accuracyAuthorityUnderPenaltyOfPerjury: true,
           electronicSignature: 'Guest claimant',
           claimantTargets: [
-            { postId: target.post_id, imageId: target.image_id, hostedUseUrl: target.target_url },
+            {
+              surfaceKind: 'post-image' as const,
+              postId: target.post_id,
+              imageId: target.image_id,
+              hostedUseUrl: target.target_url,
+            },
           ],
         },
       })

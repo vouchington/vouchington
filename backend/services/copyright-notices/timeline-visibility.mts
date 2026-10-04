@@ -38,6 +38,7 @@ export const copyrightTimelineEventAudience = {
   // Internal review, evidence, and correspondence handling.
   submission_assessed: 'staff',
   mandatory_human_review_completed: 'staff',
+  restriction_lifted_by_administrator: 'staff',
   legal_hold_assessed: 'staff',
   legal_hold_resolved: 'staff',
   evidence_artifact_recorded: 'staff',

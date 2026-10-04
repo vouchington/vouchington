@@ -31,6 +31,7 @@
     "@modules/utils": "workspace:^",
     "@queues/images": "workspace:^",
     "@queues/notifications": "workspace:^",
+    "@services/communities": "workspace:^",
     "@services/contribution-gating": "workspace:^",
     "@services/entity-cache": "workspace:^",
     "@services/images": "workspace:^",

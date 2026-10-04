@@ -39,7 +39,7 @@ export async function createCopyrightCaseFixture() {
       goodFaithBelief: true,
       accuracyAuthorityUnderPenaltyOfPerjury: true,
       electronicSignature: `Claimant ${suffix}`,
-      claimantTargets: [{ postId, imageId, hostedUseUrl }],
+      claimantTargets: [{ surfaceKind: 'post-image', postId, imageId, hostedUseUrl }],
     },
   })
   const aggregate = requireTestValue(

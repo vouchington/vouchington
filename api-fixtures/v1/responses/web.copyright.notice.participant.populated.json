@@ -25,7 +25,8 @@
       {
         "hosted_use_url": "https://voucha.ai/posts/fixture",
         "id": "00000000-0000-7000-8000-000000000805",
-        "restriction_status": "active"
+        "restriction_status": "active",
+        "surface": "post-image"
       }
     ],
     "timeline": [

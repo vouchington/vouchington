@@ -12,6 +12,8 @@ import {
   type CopyrightParticipantStatement,
 } from './participant-statements.mts'
 import { liveCopyrightCiphertext } from './erased-ciphertext.mts'
+import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
+import { copyrightPlacementPublicVisibleSql } from '@services/media-delivery-safety/copyright-placement-public-visible-sql'
 import {
   copyrightTimelineEventTypesFor,
   type CopyrightTimelineAudience,
@@ -167,6 +169,14 @@ export type CopyrightPublicNotice = {
 export type CopyrightPublicNoticeDetail = CopyrightPublicNotice & {
   targets: Array<{
     id: string
+    surface:
+      | 'post-image'
+      | 'user-profile-image'
+      | 'user-profile-link-image'
+      | 'topic-logo-image'
+      | 'topic-hero-image'
+      | 'community-profile-image'
+      | 'community-banner-image'
     hosted_use_url: string | null
     restriction_status: 'active' | 'lifted' | 'pending'
   }>
@@ -261,22 +271,18 @@ export async function getCopyrightPublicNoticeDetail(
     return null
   }
   const notice = toCopyrightPublicNotice(noticeRow)
-  const [targets, timeline] = await Promise.all([
-    transaction<
-      CopyrightPublicNoticeDetail['targets'][number]
-    >(sql`/* getCopyrightPublicNotice:targets */
-      SELECT target.id,
-        CASE WHEN public_post.post_id IS NOT NULL THEN target.hosted_use_url ELSE NULL END AS hosted_use_url,
+  const targetsSql = sql`/* getCopyrightPublicNotice:targets */
+      SELECT target.id, COALESCE(surface.surface_kind, 'post-image') AS surface,
+        CASE WHEN `
+  targetsSql.append(copyrightPlacementPublicVisibleSql())
+  targetsSql.append(sql` THEN target.hosted_use_url ELSE NULL END AS hosted_use_url,
         CASE
           WHEN restriction.id IS NULL THEN 'pending'
           WHEN restriction.lifted_at IS NULL THEN 'active'
           ELSE 'lifted'
         END AS restriction_status
       FROM copyright_notice_targets target
-      LEFT JOIN image_placements image_placement
-        ON target.placement_id = image_placement.placement_id
-      LEFT JOIN view_public_post_eligibility public_post
-        ON public_post.post_id = image_placement.post_id
+      LEFT JOIN image_surface_placements surface ON surface.placement_id = target.placement_id
       LEFT JOIN LATERAL (
         SELECT current_restriction.id, current_restriction.lifted_at
         FROM copyright_restrictions current_restriction
@@ -286,7 +292,9 @@ export async function getCopyrightPublicNoticeDetail(
       ) restriction ON true
       WHERE target.copyright_notice_id = ${noticeId}
       ORDER BY target.id
-    `),
+    `)
+  const [targets, timeline] = await Promise.all([
+    transaction<CopyrightPublicNoticeDetail['targets'][number]>(targetsSql),
     transaction<
       CopyrightPublicNoticeDetail['timeline'][number]
     >(sql`/* getCopyrightPublicNotice:timeline */
@@ -336,6 +344,15 @@ export async function getCopyrightParticipantNoticeDetail(
   )
   if (!detail) return null
   await using transaction = await beginTransaction()
+  const respondableTargetsSql = sql`/* getCopyrightParticipantNoticeDetail:respondableTargets */
+      SELECT DISTINCT target.id
+      FROM copyright_notice_targets target
+      CROSS JOIN LATERAL `
+  respondableTargetsSql.append(copyrightPlacementPartiesSql('respond'))
+  respondableTargetsSql.append(sql` party
+      WHERE target.copyright_notice_id = ${noticeId}
+        AND party.user_id = ${currentUser.id}
+      ORDER BY target.id`)
   const [{ rows: submissions }, { rows: respondableTargets }] = await Promise.all([
     transaction<CopyrightParticipantNoticeDetail['submissions'][number]>(
       sql`/* getCopyrightParticipantNoticeDetail:submissions */
@@ -346,17 +363,7 @@ export async function getCopyrightParticipantNoticeDetail(
       ORDER BY received_at, id
     `,
     ),
-    transaction<{ id: string }>(sql`/* getCopyrightParticipantNoticeDetail:respondableTargets */
-      SELECT DISTINCT target.id
-      FROM copyright_notice_targets target
-      JOIN media_placements placement
-        ON target.placement_id = placement.id
-      JOIN image_placements image_placement ON image_placement.placement_id = placement.id
-      JOIN posts post ON post.id = image_placement.post_id
-      WHERE target.copyright_notice_id = ${noticeId}
-        AND post.created_by_id = ${currentUser.id}
-      ORDER BY target.id
-    `),
+    transaction<{ id: string }>(respondableTargetsSql),
   ])
   const statements = await selectCopyrightParticipantStatements(
     noticeId,
@@ -378,26 +385,26 @@ async function getCopyrightNoticeViewerRole(
   noticeId: string,
   currentUser: PrivateUser,
 ): Promise<'claimant' | 'poster' | 'staff' | null> {
-  if (currentUserCanReviewCopyrightNotices(currentUser)) return 'staff'
+  const canReview = currentUserCanReviewCopyrightNotices(currentUser)
   await using transaction = await beginTransaction()
-  const { rows } = await transaction<{
-    role: 'claimant' | 'poster'
-  }>(sql`/* getCopyrightNoticeViewerRole */
+  const viewerSql = sql`/* getCopyrightNoticeViewerRole */
     SELECT CASE
       WHEN notice.claimant_user_id = ${currentUser.id} THEN 'claimant'
       WHEN EXISTS (
         SELECT 1 FROM copyright_notice_targets target
-        JOIN media_placements placement
-          ON target.placement_id = placement.id
-        JOIN image_placements image_placement ON image_placement.placement_id = placement.id
-        JOIN posts post ON post.id = image_placement.post_id
-        WHERE target.copyright_notice_id = notice.id AND post.created_by_id = ${currentUser.id}
+        CROSS JOIN LATERAL `
+  viewerSql.append(copyrightPlacementPartiesSql('respond'))
+  viewerSql.append(sql` party
+        WHERE target.copyright_notice_id = notice.id AND party.user_id = ${currentUser.id}
       ) THEN 'poster'
-      ELSE NULL
+      ELSE CASE WHEN ${canReview} THEN 'staff' ELSE NULL END
     END AS role
     FROM copyright_notices notice
     WHERE notice.id = ${noticeId}
   `)
+  const { rows } = await transaction<{
+    role: 'claimant' | 'poster' | 'staff' | null
+  }>(viewerSql)
   await transaction.commit()
   return rows[0]?.role ?? null
 }

@@ -38,6 +38,7 @@ describe('copyright in-app notification delivery', () => {
           placementId,
           placementRevision: 1,
           imageId,
+          bindingFamily: 'post',
           hostedUseUrl: `https://voucha.ai/posts/${postId}`,
         },
       ],

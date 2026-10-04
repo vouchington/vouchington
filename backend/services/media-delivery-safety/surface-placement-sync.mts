@@ -50,8 +50,12 @@ export async function getImageSurfacePlacement(
 export async function syncImageSurfacePlacement(
   reference: ImageSurfaceReference,
   requestedImageId: string | null,
+  actorUserId: string | null,
   query: TransactionQuery,
 ): Promise<ImagePlacementTuple | null> {
+  if (requestedImageId && !actorUserId) {
+    throw new Error('An image surface activation requires an actor')
+  }
   await lockImageAssetAdmission(requestedImageId ? [requestedImageId] : [], query)
   const { rows: canonical } = await query<{ id: string | null }>(
     sql`/* syncImageSurfacePlacement:canonicalAsset */ SELECT ${requestedImageId}::uuid::text AS id`,
@@ -101,6 +105,7 @@ export async function syncImageSurfacePlacement(
   `)
   const existing = await query<ImagePlacementTuple>(existingStatement)
   let placement = existing.rows[0]
+  let activated = false
   if (placement) {
     const { rows } = await query<ImagePlacementTuple>(sql`/* syncImageSurfacePlacement:reactivate */
       UPDATE media_placements
@@ -108,7 +113,10 @@ export async function syncImageSurfacePlacement(
       WHERE id = ${placement.placement_id} AND retired_at IS NOT NULL
       RETURNING id AS placement_id, revision AS placement_revision, ${imageId}::uuid AS image_id
     `)
-    placement = rows[0] ?? placement
+    if (rows[0]) {
+      placement = rows[0]
+      activated = true
+    }
   } else {
     const columns = surfaceColumns(reference)
     const { rows: allocated } = await query<{ id: string }>(
@@ -137,6 +145,27 @@ export async function syncImageSurfacePlacement(
       FROM inserted_surface JOIN inserted_placement ON inserted_placement.id = inserted_surface.placement_id
     `)
     placement = rows[0]!
+    activated = true
+  }
+  if (activated) {
+    await query(sql`/* syncImageSurfacePlacement:activation */
+      INSERT INTO image_surface_placement_activations (
+        placement_id, surface_kind, placement_revision, bound_by_user_id,
+        uploaded_by_user_id, bound_by_administrator
+      )
+      SELECT ${placement.placement_id}, surface.surface_kind, ${placement.placement_revision},
+        ${actorUserId}, image.created_by_id,
+        CASE WHEN surface.surface_kind IN ('community-profile-image', 'community-banner-image')
+          THEN EXISTS (
+            SELECT 1 FROM user_roles role
+            JOIN user_roles_types role_type ON role_type.id = role.role_type_id
+            WHERE role.user_id = ${actorUserId} AND role_type.slug = 'administrator'
+          )
+          ELSE NULL END
+      FROM image_surface_placements surface
+      JOIN images image ON image.id = surface.image_id
+      WHERE surface.placement_id = ${placement.placement_id}
+    `)
   }
   await stageImagePlacementDeliveryRecord(
     {

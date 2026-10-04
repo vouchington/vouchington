@@ -12,6 +12,7 @@ import type { CommunityVisibility } from './types.mts'
 export async function updateCommunityInTransaction(input: {
   community: CommunityWithOwner
   communityId: string
+  actorUserId: string
   update: UpdateCommunityInput
   statement: { text: string; values: unknown[] }
   query: TransactionQuery
@@ -34,7 +35,12 @@ async function applyLockedCommunityUpdate(
   const surfaces = await prepublishChangedCommunitySurfaces(input)
   for (const surface of surfaces) {
     // oxlint-disable-next-line no-await-in-loop -- admission was declared and locked as one owner batch.
-    await syncImageSurfacePlacement(surface, surface.nextImageId ?? null, input.query)
+    await syncImageSurfacePlacement(
+      surface,
+      surface.nextImageId ?? null,
+      surface.nextImageId ? input.actorUserId : null,
+      input.query,
+    )
   }
   const locked = await lockCommunityPublicationInputs(input.query, input.communityId)
   const rowCount = await prepublishAndUpdateCommunity(input)

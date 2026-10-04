@@ -54,7 +54,14 @@ describe('copyright form moderator fallback', () => {
           goodFaithBelief: true,
           accuracyAuthorityUnderPenaltyOfPerjury: true,
           electronicSignature: 'Claimant',
-          claimantTargets: [{ postId, imageId, hostedUseUrl: `https://voucha.ai/posts/${postId}` }],
+          claimantTargets: [
+            {
+              surfaceKind: 'post-image' as const,
+              postId,
+              imageId,
+              hostedUseUrl: `https://voucha.ai/posts/${postId}`,
+            },
+          ],
         },
       })
     const flaggedNotice = await createNotice('Original photograph')
@@ -135,7 +142,14 @@ describe('copyright form moderator fallback', () => {
         goodFaithBelief: true,
         accuracyAuthorityUnderPenaltyOfPerjury: true,
         electronicSignature: 'Claimant',
-        claimantTargets: [{ postId, imageId, hostedUseUrl: `https://voucha.ai/posts/${postId}` }],
+        claimantTargets: [
+          {
+            surfaceKind: 'post-image' as const,
+            postId,
+            imageId,
+            hostedUseUrl: `https://voucha.ai/posts/${postId}`,
+          },
+        ],
       },
     })
     await appendCopyrightFormScreening({
@@ -193,7 +207,14 @@ describe('copyright form moderator fallback', () => {
         goodFaithBelief: true,
         accuracyAuthorityUnderPenaltyOfPerjury: true,
         electronicSignature: 'Claimant',
-        claimantTargets: [{ postId, imageId, hostedUseUrl: `https://voucha.ai/posts/${postId}` }],
+        claimantTargets: [
+          {
+            surfaceKind: 'post-image' as const,
+            postId,
+            imageId,
+            hostedUseUrl: `https://voucha.ai/posts/${postId}`,
+          },
+        ],
       },
     })
     await appendCopyrightFormScreening({
@@ -243,7 +264,14 @@ describe('copyright form moderator fallback', () => {
         goodFaithBelief: true,
         accuracyAuthorityUnderPenaltyOfPerjury: true,
         electronicSignature: 'Guest claimant',
-        claimantTargets: [{ postId, imageId, hostedUseUrl: `https://voucha.ai/posts/${postId}` }],
+        claimantTargets: [
+          {
+            surfaceKind: 'post-image' as const,
+            postId,
+            imageId,
+            hostedUseUrl: `https://voucha.ai/posts/${postId}`,
+          },
+        ],
       },
     })
     const reviews = await Promise.all([

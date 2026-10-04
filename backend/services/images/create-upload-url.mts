@@ -1,9 +1,10 @@
-import { write } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
 import { mintUUIDv7 } from '@modules/utils/ids'
 import { MediaError, validateMediaUpload } from '@vouchington/media'
 import { SUPPORTED_IMAGE_FORMATS } from './constants.mts'
 import { presignImageUploadUrl } from './presign-upload-url.mts'
 import createHttpError from 'http-errors'
+import { lockActiveUserLifecycleForMutation } from '@services/users/active-user-lifecycle-lock'
 
 const PRESIGNED_URL_EXPIRATION_SECONDS = 3600 // 1 hour
 
@@ -24,6 +25,8 @@ const defaultDependencies: CreateImageUploadUrlDependencies = {
 export async function createImageUploadUrl(user: { id: string }, options: CreateUploadUrlOptions) {
   const dependencies = { ...defaultDependencies, ...options.dependencies }
   const { contentType: normalizedContentType } = validateImageUpload(options)
+  await using transaction = await beginTransaction()
+  await lockActiveUserLifecycleForMutation(transaction, user.id)
 
   const imageId = mintUUIDv7()
   const s3Key = imageId
@@ -36,7 +39,7 @@ export async function createImageUploadUrl(user: { id: string }, options: Create
   })
 
   // Source provenance and the selected presign bucket commit together in the row.
-  const { rows } = await write(
+  const { rows } = await transaction(
     `/* createImageUploadUrl */
     INSERT INTO images (
       id,
@@ -58,6 +61,7 @@ export async function createImageUploadUrl(user: { id: string }, options: Create
   `,
     [imageId, s3Key, user.id],
   )
+  await transaction.commit()
 
   return {
     image_id: rows[0].id,

@@ -154,6 +154,7 @@ describe('asset admission root domain', () => {
           ? syncImageSurfacePlacement(
               { surfaceKind: 'user-profile-image', userId: user.id },
               imageId,
+              user.id,
               owner,
             )
           : createCommunity(user.id, WEB_PROVENANCE, {
@@ -194,6 +195,7 @@ describe('asset admission root domain', () => {
     const tuple = await syncImageSurfacePlacement(
       { surfaceKind: 'user-profile-image', userId: user.id },
       imageId,
+      user.id,
       owner,
     )
     await setTestDeliveryUserImageInTransaction(owner, user.id, imageId)

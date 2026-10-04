@@ -63,7 +63,7 @@ s3_key TEXT NOT NULL              -- SHA-256 hex key after promotion
 sha_256 BYTEA                     -- Null until completion freezes and hashes the staged upload
 upload_staged_at TIMESTAMPTZ      -- Provenance: browser source was the staging bucket
 upload_source_deleted_at TIMESTAMPTZ -- Durable evidence that the staging source was deleted
-created_by_id UUID NOT NULL        -- User who created the image
+created_by_id UUID NOT NULL        -- Original uploader retained-identity ID
 data JSONB NOT NULL                -- Sharp metadata (dimensions, format, etc.)
 
 -- Upload lifecycle tracking
@@ -282,8 +282,14 @@ This handles cases where:
 
 ### Ownership
 
-- Only the user who requested the upload URL can complete it
-- Check: `image.created_by_id === currentUser.id`
+- Only a live user who requested the upload URL can complete it. Creation, completion, and
+  promotion serialize against the account-deletion fence; upload-state reads require a live user.
+- Check: `image.created_by_id === currentUser.id` **and** the uploader account is active.
+
+`created_by_id` keeps the original uploader's retained identity when that account is physically
+deleted. The image can remain in use through another live owner's placement, and the immutable
+placement activation keeps its uploader and setter snapshots. The retained ID is provenance, not
+authorization: upload completion still requires an authenticated live user whose ID matches it.
 
 ## Files
 

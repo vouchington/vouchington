@@ -207,6 +207,7 @@ describe('copyright notice routes', () => {
         electronicSignature: 'Guest claimant',
         claimantTargets: [
           {
+            surfaceKind: 'post-image' as const,
             postId: guestTarget.post_id,
             imageId: guestTarget.image_id,
             hostedUseUrl: guestTarget.target_url,

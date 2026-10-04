@@ -39,11 +39,13 @@ export async function getImageUploadState(
   // terminal update published just before connection must be visible here.
   const { rows } = await write<ImageUploadStateRow>(
     `/* getImageUploadState */
-    SELECT id, created_by_id, upload_started_at, upload_completed_at, upload_failed_at,
-           upload_error, deleted_at, quarantine_pending_at,
-           openai_omni_moderation_created_at, openai_omni_moderation_flagged
+    SELECT images.id, images.created_by_id, images.upload_started_at, images.upload_completed_at,
+           images.upload_failed_at, images.upload_error, images.deleted_at,
+           images.quarantine_pending_at, images.openai_omni_moderation_created_at,
+           images.openai_omni_moderation_flagged
     FROM images
-    WHERE id = $1
+    JOIN users uploader ON uploader.id = images.created_by_id AND uploader.deleted_at IS NULL
+    WHERE images.id = $1
   `,
     [imageId],
   )

@@ -24,7 +24,12 @@ export async function createCopyrightFormFixture(
       accuracy_authority_under_penalty_of_perjury: true,
       electronic_signature: 'Copyright claimant',
       targets: [
-        { post_id: postId, image_id: imageId, target_url: `https://voucha.ai/posts/${postId}` },
+        {
+          surface: 'post-image' as const,
+          post_id: postId,
+          image_id: imageId,
+          target_url: `https://voucha.ai/posts/${postId}`,
+        },
       ],
     },
   }

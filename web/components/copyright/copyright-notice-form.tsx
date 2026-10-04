@@ -6,7 +6,10 @@ import { Button } from '@/components/ui/button'
 import { TurnstileField } from '@/components/shared/turnstile-field'
 import { useTurnstileToken } from '@/hooks/use-turnstile-token'
 import { createCopyrightNotice } from '@/lib/api/client/copyright-notices'
-import type { CopyrightNoticeResolvedTarget } from '@/lib/api/client/copyright-notice-targets'
+import {
+  copyrightNoticeTargetInput,
+  type CopyrightNoticeResolvedTarget,
+} from '@/lib/api/client/copyright-notice-targets'
 import onError, { onSuccess } from '@/lib/on-error'
 import { DeclarationCheckbox, LabeledInput, LabeledTextarea } from './copyright-form-fields'
 import { CopyrightMisrepresentationWarning } from './copyright-misrepresentation-warning'
@@ -48,11 +51,7 @@ export function CopyrightNoticeForm() {
           electronic_signature: values.signature.trim(),
           good_faith_belief: values.goodFaithBelief,
           accuracy_authority_under_penalty_of_perjury: values.authorityDeclaration,
-          targets: targets.map(({ post_id, image_id, target_url }) => ({
-            post_id,
-            image_id,
-            target_url,
-          })),
+          targets: targets.map(copyrightNoticeTargetInput),
           cf_turnstile_response: turnstile.token ?? undefined,
         })
         if (!currentUser) {

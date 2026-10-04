@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { stageCurrentImagePlacementDeliveryRecordsForImageIds } from './delivery-registry-reconciliation.mts'
 import {
   beginTransaction,
   getTestMediaDeliveryRecord,
@@ -12,7 +13,6 @@ import { createTestDeliverySurface } from '@voucha/test-helpers/media-delivery-s
 import {
   processMediaDeliveryRegistryRecord,
   replayFailedMediaDeliveryRegistryRecords,
-  stageCurrentImagePlacementDeliveryRecordsForImageIds,
   stageImagePlacementDeliveryRecord,
 } from './index.mts'
 

@@ -36,6 +36,7 @@ function submit(
       electronicSignature: 'Claimant',
       claimantTargets: targets.map(target => ({
         ...target,
+        surfaceKind: 'post-image' as const,
         hostedUseUrl: `https://voucha.ai/posts/${target.postId}`,
       })),
     },

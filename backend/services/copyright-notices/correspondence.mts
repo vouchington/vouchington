@@ -54,8 +54,9 @@ export async function getCopyrightEmailCorrespondence(intentId: string): Promise
     copyright_notice_submission_id: string | null
     copyright_notice_correspondence_message_id: string
     recipient_user_id: string | null
-    recipient_role: 'claimant' | 'poster' | 'correspondent'
+    recipient_role: 'claimant' | 'poster' | 'informed_owner' | 'correspondent'
     delivery_kind: import('./delivery-types.mts').CopyrightDeliveryIntentRecord['delivery_kind']
+    target_path: string | null
     channel: 'email'
     state: import('./delivery-types.mts').CopyrightDeliveryIntentRecord['state']
     ses_message_id: string | null
@@ -64,7 +65,7 @@ export async function getCopyrightEmailCorrespondence(intentId: string): Promise
   }>(sql`/* getCopyrightEmailCorrespondence */
       SELECT intent.id, intent.lease_token, intent.copyright_notice_id, intent.copyright_notice_submission_id,
         intent.copyright_notice_correspondence_message_id, intent.recipient_user_id,
-        intent.recipient_role, intent.delivery_kind, intent.channel, intent.state, intent.ses_message_id,
+        intent.recipient_role, intent.delivery_kind, intent.target_path, intent.channel, intent.state, intent.ses_message_id,
         intent.delivery_attempt_count,
         correspondence.body_ciphertext
       FROM copyright_notice_delivery_intents intent

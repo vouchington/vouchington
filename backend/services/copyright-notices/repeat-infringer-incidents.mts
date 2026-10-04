@@ -5,6 +5,8 @@ import { encryptSecret } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { lockCopyrightRepeatInfringerNoticeAccounts } from './repeat-infringer-locks.mts'
+import { anyReversalSourceSql } from './restriction-reversal-sources-sql.mts'
+import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
 
 export type CopyrightRepeatInfringerDisposition = 'withdrawn' | 'duplicate' | 'abusive'
 
@@ -18,18 +20,17 @@ export async function syncCopyrightRepeatInfringerIncidents(
   transaction: OwnedTransaction,
 ): Promise<void> {
   const accountIds = await lockCopyrightRepeatInfringerNoticeAccounts(noticeId, transaction)
-  await transaction(sql`
+  await transaction(
+    sql`
     /* syncCopyrightRepeatInfringerIncidents */
     WITH owners AS (
-      SELECT DISTINCT post.created_by_id AS account_user_id
+      SELECT DISTINCT party.user_id AS account_user_id
       FROM copyright_notice_targets target
       JOIN copyright_restrictions restriction
         ON restriction.copyright_notice_target_id = target.id
-      JOIN media_placements placement
-        ON target.placement_id = placement.id
-      JOIN image_placements image_placement ON image_placement.placement_id = placement.id
-      JOIN posts post ON post.id = image_placement.post_id
-      JOIN users account ON account.id = post.created_by_id AND account.deleted_at IS NULL
+      CROSS JOIN LATERAL `
+      .append(copyrightPlacementPartiesSql('strike'))
+      .append(sql` party
       WHERE target.copyright_notice_id = ${noticeId}
         AND (
           restriction.human_review_action = 'confirm'
@@ -38,11 +39,8 @@ export async function syncCopyrightRepeatInfringerIncidents(
             WHERE review.copyright_restriction_id = restriction.id AND review.action = 'confirm'
           )
         )
-        AND restriction.human_review_action IS DISTINCT FROM 'reverse'
-        AND NOT EXISTS (
-          SELECT 1 FROM copyright_notice_appeal_reviews review
-          WHERE review.copyright_restriction_id = restriction.id AND review.action = 'reverse'
-        )
+        AND NOT `)
+      .append(anyReversalSourceSql).append(sql`
     ), desired AS (
       SELECT owners.account_user_id,
         NOT EXISTS (
@@ -75,7 +73,8 @@ export async function syncCopyrightRepeatInfringerIncidents(
     SELECT account_user_id, operative FROM upserted
     UNION ALL
     SELECT account_user_id, false FROM cleared
-  `)
+  `),
+  )
   if (accountIds.length === 0) return
   await transaction(sql`
     /* syncCopyrightRepeatInfringerIncidents:openReview */

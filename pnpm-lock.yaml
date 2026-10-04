@@ -3378,6 +3378,9 @@ importers:
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
+      '@services/media-delivery-safety':
+        specifier: workspace:^
+        version: link:../media-delivery-safety
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -4683,6 +4686,9 @@ importers:
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
+      '@services/communities':
+        specifier: workspace:^
+        version: link:../communities
       '@services/contribution-gating':
         specifier: workspace:^
         version: link:../contribution-gating
@@ -6256,6 +6262,9 @@ importers:
       '@services/topics':
         specifier: workspace:^
         version: link:../topics
+      '@services/users':
+        specifier: workspace:^
+        version: link:../users
       '@ts-shared/deploy-environment':
         specifier: workspace:^
         version: link:../../../ts-shared/deploy-environment

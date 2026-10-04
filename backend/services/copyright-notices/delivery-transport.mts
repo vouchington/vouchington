@@ -37,17 +37,24 @@ export async function deliverCopyrightInAppNotification(intentId: string): Promi
         intent.delivery_kind === 'poster_restriction_notice' ||
         intent.delivery_kind === 'poster_review_notice' ||
         intent.delivery_kind === 'poster_restoration_notice' ||
+        intent.delivery_kind === 'owner_information_notice' ||
         intent.delivery_kind === 'claimant_decision_notice',
       422,
       'Copyright delivery kind is not sent in-app',
     )
     const summary = await getCopyrightStatementInAppSummary(intent.id)
     const copy = copyrightNotificationCopy(intent.delivery_kind)
+    assert(
+      intent.recipient_role !== 'informed_owner' || intent.target_path,
+      422,
+      'Informed owner delivery requires a community path',
+    )
     await createCopyrightNoticeNotification({
       statementCopy: summary ? { title: copy.title, body: summary } : copy,
       userId: intent.recipient_user_id,
       noticeId: intent.copyright_notice_id,
       eventKey: `copyright-delivery:${intent.id}`,
+      targetPath: intent.target_path ?? undefined,
     })
     return await markCopyrightDeliveryIntentSent({ intentId, leaseToken: intent.lease_token })
   } catch (err) {
@@ -110,7 +117,7 @@ async function loadCopyrightEmailText(intent: ClaimedCopyrightDeliveryIntent): P
 export async function resolveCopyrightEmailRecipient(
   intentId: string,
   recipientUserId: string | null,
-  recipientRole: 'claimant' | 'poster' | 'correspondent',
+  recipientRole: 'claimant' | 'poster' | 'informed_owner' | 'correspondent',
 ): Promise<string> {
   const retainedRecipient = await getCopyrightDeliveryRecipient(intentId)
   if (retainedRecipient)
@@ -118,7 +125,7 @@ export async function resolveCopyrightEmailRecipient(
       retainedRecipient.email_ciphertext,
       `copyright-delivery-recipient:${retainedRecipient.copyright_notice_delivery_intent_id}`,
     )
-  if (recipientRole === 'poster') {
+  if (recipientRole === 'poster' || recipientRole === 'informed_owner') {
     assert(recipientUserId, 422, 'Copyright poster delivery requires a member recipient')
     const email = await getVerifiedEmailAddress(recipientUserId)
     assert(email, 422, 'Affected poster has no verified email address')

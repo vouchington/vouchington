@@ -1,6 +1,12 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { LockedCopyrightActionDelivery } from './action-delivery-locking-types.mts'
+import {
+  anyReversalSourceSql,
+  reverseReviewSourceSql,
+  appealReversalSourceSql,
+  administratorLiftSourceSql,
+} from './restriction-reversal-sources-sql.mts'
 
 export type CopyrightActionFacts = Omit<
   LockedCopyrightActionDelivery,
@@ -15,11 +21,14 @@ export function copyrightActionDeliveryFacts() {
     intent.copyright_notice_deadline_id,
     restriction.lifted_at AS restriction_lifted_at, restriction.human_reviewed_at,
     restriction.human_review_action,
-    EXISTS (
-      SELECT 1 FROM copyright_notice_appeal_reviews appeal_review
-      WHERE appeal_review.copyright_restriction_id = restriction.id
-        AND appeal_review.action = 'reverse'
-    ) AS reversal_authorized,
+    `
+    .append(anyReversalSourceSql)
+    .append(sql` AS reversal_authorized, `)
+    .append(reverseReviewSourceSql)
+    .append(sql` AS reversal_by_review, `)
+    .append(appealReversalSourceSql)
+    .append(sql` AS reversal_by_appeal, `)
+    .append(administratorLiftSourceSql).append(sql` AS reversal_by_administrator_lift,
     EXISTS (
       SELECT 1 FROM copyright_legal_hold_restrictions hold_restriction
       JOIN copyright_notice_legal_hold_resolutions hold_resolution
@@ -31,7 +40,7 @@ export function copyrightActionDeliveryFacts() {
     JOIN copyright_restrictions restriction ON restriction.id = intent.copyright_restriction_id
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
     JOIN copyright_notice_target_images target_image
-      ON target_image.copyright_notice_target_id = target.id`
+      ON target_image.copyright_notice_target_id = target.id`)
 }
 
 export async function lockCopyrightActionDeadline(

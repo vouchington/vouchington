@@ -40,6 +40,12 @@ intake queue shows each message's wait age.
    private-community, draft, or archived). A claimant form reaches you only with targets that claimant
    could open directly at submission; any other target was refused with the same 422 as a missing one
    and nothing was recorded, so a rightsholder who cannot see the material needs the email path.
+   The same selection can name an avatar, profile-link image, topic logo or hero, or community
+   profile or banner. Verify the displayed surface and immutable setter/uploader provenance. A
+   topic image is assessed and withheld normally, with no subscriber counter-notice or incident;
+   the claimant receives the decision. For an administrator-set community image, no setter
+   receives a subscriber notice or incident, while other live owners receive information only.
+   See [target parties](../requirements/moderation/COPYRIGHT-NOTICES.md#surface-targets-and-parties).
 4. Record missing elements as an assessment and request information. Do not silently reject a
    substantially compliant notice for failing to match Voucha's form wording. For a form-filed
    case, send the request from the case's Guest access section (issue access, then Request
@@ -260,7 +266,7 @@ moderator accepts or rejects the intake. Clear the queue by hand. Each automatic
 needs its own human decision within the triage target above.
 
 A notice that fails a gate (suspended or too-new claimant, low trust tier, claimant or poster over
-its 24-hour cap) is never dropped: it waits in the staff queue like a guest form, and a moderator
+its 24-hour cap, or any non-post target) is never dropped: it waits in the staff queue like a guest form, and a moderator
 accepts or rejects it. It is not retried when the cap clears.
 
 The staff case shows the claimant's misuse ledger: notices withdrawn, rejected on review, and
@@ -329,6 +335,9 @@ Notes for operators:
 ## Repeat-infringer review
 
 1. A second operative incident opens a review. Opening the review does not suspend the account.
+   A human confirmation creates incidents for the target's strike set: post authors, avatar and
+   profile-link owners, and recorded non-administrator community setters. Administrator-owned
+   avatars/profile-link images are included; topic and administrator-set community images are not.
 2. Reviewers may record warning or no action, or mark an incident withdrawn, duplicate, or abusive.
    Each decision needs a rationale. The rationale is stored encrypted.
 3. Only an administrator may restrict or terminate, and only while two operative incidents remain.
@@ -338,12 +347,24 @@ Notes for operators:
    moderator action, and publication invalidation work commit together after the account lifecycle
    lock; a failed decision leaves the review open for retry.
 4. Account deletion returns 409 while an operative incident remains, while an unresolved
-   qualifying legal hold covers a placement that account owns, or while an administrator has an
+   qualifying legal hold covers a placement for which the account is a retained party, or while an administrator has an
    open [preservation hold](#dmca-512h-subpoenas) on the account. An open review alone does not
    refuse deletion.
 5. An operative incident keeps its case out of the retention sweep, and incidents never age out.
    The retention period is an approved-policy gate; see
    [Evidence retention deletion](#evidence-retention-deletion).
+
+### Restoring when nobody can respond
+
+Deleting the setter or author does not lift withholding or cancel a counter-notice filed first.
+An accepted counter-notice keeps its receipt-based statutory schedule even if staff accept it
+after account deletion. Without one, staff can admit and review emailed correspondence through
+the existing appeal/counter-notice path. For a lift on staff's own initiative, an administrator may
+call `POST /api/v1/copyright-notices/:id/restrictions/:restrictionId/lifts` with a written rationale
+when the target has no live responding account. The action is API-only; there is no web control
+yet. It refuses a live responder or an already lifted restriction. Verify the encrypted lift
+record, reversed claimant notice, non-operative supported incident and restore intent. Another
+active restriction or court/CCB blocker can still prevent restoration.
 
 ## Recovery scans
 
@@ -655,7 +676,11 @@ sufficient to identify an alleged infringer, to the extent Voucha has it.
 
 ## Statements of reasons and decision notices
 
-US copyright decisions persist the exact statement sent to each participant. Check the private delivery
+US copyright decisions persist the exact statement sent to each participant. Community owners who
+are information-only recipients have no case, appeal or counter-notice access; their in-app notice
+links to the community. Administrator lifts send a reversed claimant decision once per notice.
+Their `administrator_lift` restoration notice is created only when delivery lifts the restriction,
+with the actual outcome; topics have no owner recipient. Check the private delivery
 intent state and `sent_at` before treating a notice as informed; retry a failed notice through the existing Delivery failures replay; a human reversal and later restoration
 are separate notices. An expired counter-notice waiting period is disclosed as automatic restoration. A busy account lifecycle transition returns a retryable conflict before legal changes and delivery obligations commit; retry the operation after that transition completes. Participants see their own stored texts under “Notices sent to you”; staff use
 the existing private delivery aggregate. See the [delivery requirements](../requirements/moderation/COPYRIGHT-NOTICES.md#immutable-decision-statements).

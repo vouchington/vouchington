@@ -1,4 +1,3 @@
-import { DELETED_USER_ID } from '@services/users/constants'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { createCopyrightStatementDeliveryInTransaction } from './statement-delivery.mts'
@@ -8,21 +7,33 @@ import {
   type CopyrightRestorationCause,
   type CopyrightRestorationOutcome,
 } from './statement-of-reasons.mts'
+import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
 
 export async function selectCopyrightTargetPosters(
   targetId: string,
   transaction: TransactionQuery,
-): Promise<{ user_id: string }[]> {
-  const { rows } = await transaction<{ user_id: string }>(sql`/* selectCopyrightTargetPosters */
-    SELECT DISTINCT post.created_by_id AS user_id
+  purpose: 'notify' | 'inform' = 'notify',
+): Promise<
+  { user_id: string; recipient_role: 'poster' | 'informed_owner'; target_path: string | null }[]
+> {
+  const statement = sql`/* selectCopyrightTargetPosters */
+    SELECT DISTINCT party.user_id, ${purpose === 'inform' ? 'informed_owner' : 'poster'}::text AS recipient_role,
+      CASE WHEN ${purpose === 'inform'} THEN '/communities/' || COALESCE(community.slug, community.id::text)
+        ELSE NULL END AS target_path
     FROM copyright_notice_targets target
-    JOIN media_placements placement ON target.placement_id = placement.id
-    JOIN image_placements image_placement ON image_placement.placement_id = placement.id
-    JOIN posts post ON post.id = image_placement.post_id
-    JOIN users account ON account.id = post.created_by_id AND account.deleted_at IS NULL
-    WHERE target.id = ${targetId} AND post.created_by_id <> ${DELETED_USER_ID}
+    LEFT JOIN image_surface_placements surface ON surface.placement_id = target.placement_id
+    LEFT JOIN communities community ON community.id = surface.community_id
+    CROSS JOIN LATERAL `
+  statement.append(copyrightPlacementPartiesSql(purpose))
+  statement.append(sql` party
+    WHERE target.id = ${targetId}
     ORDER BY user_id
   `)
+  const { rows } = await transaction<{
+    user_id: string
+    recipient_role: 'poster' | 'informed_owner'
+    target_path: string | null
+  }>(statement)
   return rows
 }
 
@@ -59,13 +70,17 @@ export async function createCopyrightPosterNoticesInTransaction(
       : input.event === 'restriction_ended'
         ? 'poster_restoration_notice'
         : 'poster_review_notice'
-  for (const poster of await selectCopyrightTargetPosters(input.targetId, transaction)) {
+  const recipients =
+    input.restorationCause === 'administrator_lift'
+      ? await selectCopyrightTargetPosters(input.targetId, transaction, 'inform')
+      : await selectCopyrightTargetPosters(input.targetId, transaction)
+  for (const poster of recipients) {
     // oxlint-disable-next-line no-await-in-loop -- each poster has independent durable delivery evidence.
     await createCopyrightStatementDeliveryInTransaction(
       {
         noticeId: input.noticeId,
         recipientUserId: poster.user_id,
-        recipientRole: 'poster',
+        recipientRole: poster.recipient_role,
         deliveryKind,
         correspondenceKind:
           input.event === 'restricted'
@@ -73,10 +88,33 @@ export async function createCopyrightPosterNoticesInTransaction(
             : input.event === 'restriction_ended'
               ? 'restoration_notice'
               : 'decision_notice',
-        key: `${prefix}:${input.restrictionId}:poster:${poster.user_id}`,
+        key: `${prefix}:${input.restrictionId}:${poster.recipient_role}:${poster.user_id}`,
         text: statement.text,
+        targetPath: poster.target_path ?? undefined,
       },
       transaction,
     )
+  }
+  if (input.event === 'restricted') {
+    const informedOwners = await selectCopyrightTargetPosters(input.targetId, transaction, 'inform')
+    for (const owner of informedOwners) {
+      // oxlint-disable-next-line no-await-in-loop -- one immutable delivery pair per community owner.
+      await createCopyrightStatementDeliveryInTransaction(
+        {
+          noticeId: input.noticeId,
+          recipientUserId: owner.user_id,
+          recipientRole: 'informed_owner',
+          deliveryKind: 'owner_information_notice',
+          correspondenceKind: 'restriction_notice',
+          key: `copyright-owner-information:${input.restrictionId}:${owner.user_id}`,
+          text:
+            recipients.length > 0
+              ? 'An image on a community you own was withheld after a copyright notice. The member who set it has been told.'
+              : 'An image on a community you own was withheld after a copyright notice.',
+          targetPath: owner.target_path ?? undefined,
+        },
+        transaction,
+      )
+    }
   }
 }

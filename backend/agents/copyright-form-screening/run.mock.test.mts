@@ -140,7 +140,14 @@ async function createScreeningForm(
       accuracyAuthorityUnderPenaltyOfPerjury: true,
       electronicSignature: 'Claimant',
       ...claimant,
-      claimantTargets: [{ postId, imageId, hostedUseUrl: `https://voucha.ai/posts/${postId}` }],
+      claimantTargets: [
+        {
+          surfaceKind: 'post-image' as const,
+          postId,
+          imageId,
+          hostedUseUrl: `https://voucha.ai/posts/${postId}`,
+        },
+      ],
     },
   })
 }

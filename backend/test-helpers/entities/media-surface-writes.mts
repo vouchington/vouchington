@@ -14,16 +14,22 @@ export async function setTestTopicSurfaceImages(
   const heroImageId = input.heroImageId === undefined ? null : input.heroImageId
   const imageIds = [input.logoImageId, input.heroImageId].flatMap(id => (id ? [id] : []))
   await lockImageAssetAdmission(imageIds, query)
+  const { rows: actors } = await query<{ created_by_id: string }>(
+    sql`/* setTestTopicSurfaceImages:actor */ SELECT created_by_id FROM topics WHERE id = ${topicId}`,
+  )
+  const actorUserId = actors[0]?.created_by_id ?? null
   if (input.logoImageId !== undefined)
     await syncImageSurfacePlacement(
       { surfaceKind: 'topic-logo-image', topicId },
       input.logoImageId,
+      input.logoImageId ? actorUserId : null,
       query,
     )
   if (input.heroImageId !== undefined)
     await syncImageSurfacePlacement(
       { surfaceKind: 'topic-hero-image', topicId },
       input.heroImageId,
+      input.heroImageId ? actorUserId : null,
       query,
     )
   await query(sql`/* setTestTopicSurfaceImages */
@@ -51,16 +57,22 @@ export async function setTestCommunitySurfaceImages(
   const bannerImageId = input.bannerImageId === undefined ? null : input.bannerImageId
   const imageIds = [input.profileImageId, input.bannerImageId].flatMap(id => (id ? [id] : []))
   await lockImageAssetAdmission(imageIds, query)
+  const { rows: actors } = await query<{ created_by_id: string }>(
+    sql`/* setTestCommunitySurfaceImages:actor */ SELECT created_by_id FROM communities WHERE id = ${communityId}`,
+  )
+  const actorUserId = actors[0]?.created_by_id ?? null
   if (input.profileImageId !== undefined || input.deleted)
     await syncImageSurfacePlacement(
       { surfaceKind: 'community-profile-image', communityId },
       input.deleted ? null : profileImageId,
+      input.deleted || !profileImageId ? null : actorUserId,
       query,
     )
   if (input.bannerImageId !== undefined || input.deleted)
     await syncImageSurfacePlacement(
       { surfaceKind: 'community-banner-image', communityId },
       input.deleted ? null : bannerImageId,
+      input.deleted || !bannerImageId ? null : actorUserId,
       query,
     )
   await query(sql`/* setTestCommunitySurfaceImages */
@@ -80,7 +92,12 @@ export async function setTestUserProfileImage(
   imageId: string | null,
 ): Promise<void> {
   await using query = await beginTransaction()
-  await syncImageSurfacePlacement({ surfaceKind: 'user-profile-image', userId }, imageId, query)
+  await syncImageSurfacePlacement(
+    { surfaceKind: 'user-profile-image', userId },
+    imageId,
+    imageId ? userId : null,
+    query,
+  )
   await query(sql`/* setTestUserProfileImage */
     UPDATE users SET profile_image_id = ${imageId} WHERE id = ${userId}
   `)

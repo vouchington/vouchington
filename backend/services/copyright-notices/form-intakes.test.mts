@@ -47,7 +47,14 @@ describe('copyright form intakes', () => {
         goodFaithBelief: true,
         accuracyAuthorityUnderPenaltyOfPerjury: true,
         electronicSignature: 'Claimant',
-        claimantTargets: [{ postId, imageId, hostedUseUrl: `https://voucha.ai/posts/${postId}` }],
+        claimantTargets: [
+          {
+            surfaceKind: 'post-image' as const,
+            postId,
+            imageId,
+            hostedUseUrl: `https://voucha.ai/posts/${postId}`,
+          },
+        ],
       },
     }
     const first = await createCopyrightFormIntake(input)
@@ -109,7 +116,14 @@ describe('copyright form intakes', () => {
         goodFaithBelief: true,
         accuracyAuthorityUnderPenaltyOfPerjury: true,
         electronicSignature: 'Claimant',
-        claimantTargets: [{ postId, imageId, hostedUseUrl: `https://voucha.ai/posts/${postId}` }],
+        claimantTargets: [
+          {
+            surfaceKind: 'post-image' as const,
+            postId,
+            imageId,
+            hostedUseUrl: `https://voucha.ai/posts/${postId}`,
+          },
+        ],
       },
     })
     // Resolve the durable target ID rather than trusting a form-provided location.

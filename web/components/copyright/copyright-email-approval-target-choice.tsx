@@ -17,7 +17,7 @@ export function CopyrightEmailApprovalTargetChoice({
   onCheckedChange: (checked: boolean) => void
   targetId: string
 }) {
-  const id = `copyright-email-target-${targetId}-${choice.image_id}`
+  const id = `copyright-email-target-${targetId}-${index}`
   const label = choice.caption.trim() || `Image ${choice.order_index + 1}`
   return (
     <Label

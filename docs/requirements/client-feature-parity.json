@@ -2706,7 +2706,7 @@
         }
       },
       "gap": {
-        "summary": "Swift and .NET render no copyright policy page, case list or detail, participant decision statements, notice form (signed in or signed out), appeal, counter-notice, or guest filing. Native claimant-profile consumption stays deferred to the linked related issues. The tracking issue is the interim DMCA native owner until a dedicated native copyright issue exists.",
+        "summary": "Swift and .NET render no copyright policy page, case list or detail, participant decision statements, notice form (signed in or signed out), appeal, counter-notice, or guest filing. Non-post image filing is web-only and native has no notice form. Native claimant-profile consumption stays deferred to the linked related issues. The tracking issue is the interim DMCA native owner until a dedicated native copyright issue exists.",
         "trackingIssue": "https://github.com/vouchington/vouchington/issues/1229",
         "relatedIssues": ["vouchington/vouchington#853", "vouchington/vouchington#854"]
       }
@@ -2760,7 +2760,7 @@
         }
       },
       "gap": {
-        "summary": "Swift and .NET render no copyright review queue, staff case review, legal-hold, or repeat-infringer action. Staff mutation controls remain web-only staff tooling.",
+        "summary": "Swift and .NET render no copyright review queue, staff case review, legal-hold, or repeat-infringer action. Staff mutation controls remain web-only staff tooling. The administrator restriction lift has an API route but no web control yet.",
         "trackingIssue": "https://github.com/vouchington/vouchington/issues/1229"
       }
     },

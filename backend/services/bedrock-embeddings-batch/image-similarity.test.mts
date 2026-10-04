@@ -45,6 +45,7 @@ describe('findCopyrightImageSimilarityCandidates', () => {
       policyVersion: 'test',
       targets: [
         await resolveCopyrightImagePlacement({
+          surfaceKind: 'post-image' as const,
           postId: source.postId,
           imageId: source.image.id,
           hostedUseUrl: 'https://voucha.ai',
@@ -90,6 +91,7 @@ describe('findCopyrightImageSimilarityCandidates', () => {
       policyVersion: 'test',
       targets: [
         await resolveCopyrightImagePlacement({
+          surfaceKind: 'post-image' as const,
           postId: source.postId,
           imageId: source.image.id,
           hostedUseUrl: 'https://voucha.ai',

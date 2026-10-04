@@ -3,6 +3,17 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { CopyrightNoticeTargetInput } from './types.mts'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
+import type { ImageSurfaceReference } from '@services/media-delivery-safety/surface-lock'
+import type { PrivateUser } from '@services/users/types'
+import { canViewPostsBatch } from '@services/posts'
+import { getCommunity } from '@services/communities/get'
+import { getCommunityMember } from '@services/communities/members/get'
+import { currentUserCanViewCommunity } from '@services/communities/authorization'
+import { resolveCopyrightSurfacePlacement } from './placement-adapters/surface.mts'
+
+export type CopyrightImageSelector =
+  | { surfaceKind: 'post-image'; postId: string; imageId: string; hostedUseUrl: string }
+  | (ImageSurfaceReference & { imageId: string; hostedUseUrl: string })
 
 const POST_TYPE_PATHS = {
   article: 'article',
@@ -17,13 +28,12 @@ const POST_TYPE_PATHS = {
 
 /** Resolves the current, server-owned post-image placement; callers never provide legal keys. */
 export async function resolveCopyrightImagePlacement(
-  input: {
-    postId: string
-    imageId: string
-    hostedUseUrl: string
-  },
+  input: CopyrightImageSelector,
   query: typeof write | Awaited<ReturnType<typeof beginTransaction>> = write,
 ): Promise<CopyrightNoticeTargetInput> {
+  if (input.surfaceKind !== 'post-image') {
+    return resolveCopyrightSurfacePlacement(input, query)
+  }
   const { rows } = await query<{
     post_id: string
     image_id: string
@@ -55,6 +65,7 @@ export async function resolveCopyrightImagePlacement(
   const path = POST_TYPE_PATHS[placement.post_type]
   assert(path, 422, 'Hosted image placement does not have a public post route')
   return {
+    bindingFamily: 'post',
     placementId: placement.placement_id,
     placementRevision: placement.placement_revision,
     imageId: placement.image_id,
@@ -63,4 +74,25 @@ export async function resolveCopyrightImagePlacement(
       SITEMAP_CONFIG.BASE_URL,
     ).href,
   }
+}
+
+/** The claimant must be able to see the named page; staff approval resolves without this gate. */
+export async function claimantCanViewCopyrightImagePlacement(
+  input: CopyrightImageSelector,
+  currentUser: PrivateUser | null,
+  query: typeof write | Awaited<ReturnType<typeof beginTransaction>>,
+): Promise<boolean> {
+  if (input.surfaceKind === 'post-image') {
+    const viewable = await canViewPostsBatch(currentUser, [{ id: input.postId }], { query })
+    return Boolean(viewable.get(input.postId))
+  }
+  if ('communityId' in input) {
+    const community = await getCommunity(input.communityId, { query })
+    if (!community) return false
+    const membership = currentUser
+      ? await getCommunityMember(input.communityId, currentUser.id, { query })
+      : null
+    return currentUserCanViewCommunity(currentUser, community, membership)
+  }
+  return true
 }

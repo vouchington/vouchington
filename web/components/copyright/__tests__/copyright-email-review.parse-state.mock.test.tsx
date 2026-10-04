@@ -21,7 +21,10 @@ import {
 import { CopyrightEmailReview } from '../copyright-email-review'
 
 vi.mock(import('@/lib/api/client/copyright-email-intakes'), () => intakesClient)
-vi.mock(import('@/lib/api/client/copyright-notice-targets'), () => targetsClient)
+vi.mock(import('@/lib/api/client/copyright-notice-targets'), async importOriginal => ({
+  ...(await importOriginal()),
+  ...targetsClient,
+}))
 
 const keepNewlines = getDefaultNormalizer({ collapseWhitespace: false })
 const parsedEmailRegion = () => screen.getByRole('region', { name: 'Parsed email' })

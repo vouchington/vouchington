@@ -15,6 +15,7 @@ import {
   rejectCopyrightRestrictionDeletion,
   rejectCopyrightSubmissionMutation,
   rejectCopyrightTargetImageWithSurfaceBinding,
+  acceptCopyrightTargetImageWithSurfaceBinding,
   rejectCopyrightTargetImageWithWrongBinding,
   rejectCopyrightTargetWithUnknownPlacement,
   type CopyrightNoticeSchemaFixture,
@@ -63,7 +64,8 @@ describe('copyright notice schema', () => {
     })
   })
 
-  it('rejects absent placements, wrong image bindings, and surface bindings for legal targets', async () => {
+  it('accepts a surface binding and rejects absent placements or mismatched families', async () => {
+    await expect(acceptCopyrightTargetImageWithSurfaceBinding(fixture)).resolves.toBeUndefined()
     await expect(rejectCopyrightTargetWithUnknownPlacement(fixture)).rejects.toMatchObject({
       code: '23503',
     })

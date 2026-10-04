@@ -26,6 +26,7 @@
     "@modules/aws": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@services/entity-relations": "workspace:^",
+    "@services/media-delivery-safety": "workspace:^",
     "@voucha/types": "workspace:^",
     "csv-stringify": "^6.9.0",
     "sql-template-strings": "^2.2.2",

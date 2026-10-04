@@ -133,6 +133,7 @@ describe('copyright notice member claimant attribution', () => {
         accuracyAuthorityUnderPenaltyOfPerjury: true,
         electronicSignature: 'Guest signature private',
         claimantTargets: fixture.form.targets.map(target => ({
+          surfaceKind: 'post-image' as const,
           postId: target.post_id,
           imageId: target.image_id,
           hostedUseUrl: target.target_url,

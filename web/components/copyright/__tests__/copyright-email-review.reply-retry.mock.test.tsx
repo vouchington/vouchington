@@ -11,7 +11,10 @@ import {
 import { CopyrightEmailReview } from '../copyright-email-review'
 
 vi.mock(import('@/lib/api/client/copyright-email-intakes'), () => intakesClient)
-vi.mock(import('@/lib/api/client/copyright-notice-targets'), () => targetsClient)
+vi.mock(import('@/lib/api/client/copyright-notice-targets'), async importOriginal => ({
+  ...(await importOriginal()),
+  ...targetsClient,
+}))
 
 const failedId = '019f0000-0000-7000-8000-0000000000f1'
 const bouncedId = '019f0000-0000-7000-8000-0000000000b1'

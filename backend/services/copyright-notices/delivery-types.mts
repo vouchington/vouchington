@@ -9,6 +9,7 @@ export type CopyrightNoticeDeliveryKind =
   | 'poster_restriction_notice'
   | 'poster_review_notice'
   | 'poster_restoration_notice'
+  | 'owner_information_notice'
   | 'claimant_decision_notice'
   | 'counter_notice_forwarding'
   | 'staff_information_request'
@@ -22,8 +23,9 @@ export type CopyrightDeliveryIntentRecord = {
   copyright_notice_submission_id: string | null
   copyright_notice_correspondence_message_id: string | null
   recipient_user_id: string | null
-  recipient_role: 'claimant' | 'poster' | 'correspondent'
+  recipient_role: 'claimant' | 'poster' | 'informed_owner' | 'correspondent'
   delivery_kind: CopyrightDeliveryKind
+  target_path: string | null
   channel: 'in_app' | 'email'
   state: 'pending' | 'claimed' | 'sent' | 'failed' | 'bounced'
   ses_message_id: string | null

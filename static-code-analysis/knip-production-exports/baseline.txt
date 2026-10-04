@@ -38,8 +38,6 @@ exports backend/entrypoints/worker-io/index.mts reportWorkerLoadFailure
 exports backend/modules/activitypub-uris/actor-uris.mts getActorInboxUri
 exports backend/modules/api-egress-proxy/transport.mts resetApiEgressProxyTransportForTest
 exports backend/modules/aws/client-credential-env-cases.mts registerClientCredentialEnvCases
-exports backend/modules/aws/media-delivery-registry.mts invalidateMediaDeliveryPath
-exports backend/modules/aws/media-delivery-registry.mts putMediaDeliveryRegistryRecord
 exports backend/modules/csv/parse-csv.mts stripBom
 exports backend/modules/membership-helpers/tier-helpers.mts hasProTier
 exports backend/modules/on-error/error-codes.mts AGENT_RESPONSE_DISABLED

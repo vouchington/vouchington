@@ -1,3 +1,7 @@
+import type { CopyrightImageSurface } from './copyright-image-surfaces'
+export { copyrightImageSurfaceLabel } from './copyright-image-surfaces'
+export type { CopyrightImageSurface } from './copyright-image-surfaces'
+
 import type { CopyrightParticipantStatement } from './copyright-statements'
 import type { CopyrightStaffClaimant } from './copyright-claimant-misuse'
 import type { CopyrightStaydownMatch } from './copyright-staydown'
@@ -25,6 +29,7 @@ export type CopyrightNoticeDetail = CopyrightNoticeSummary & {
   targets: Array<{
     id: string
     hosted_use_url: string | null
+    surface: CopyrightImageSurface
     restriction_status: 'active' | 'lifted' | 'pending'
   }>
   timeline: Array<{ id: string; event_type: string; created_at: string }>
@@ -79,6 +84,12 @@ export type CopyrightStaffQueueItem = {
     placement_revision: number
     image_id: string
     hosted_use_url: string
+    surface: CopyrightImageSurface
+    provenance: {
+      set_by_id: string
+      set_by_administrator: boolean | null
+      uploaded_by_id: string
+    } | null
   }>
   evidence: Array<{
     id: string
@@ -180,21 +191,7 @@ export type CopyrightStaffQueuePage = {
   page_info: CopyrightNoticesPage['page_info']
 }
 
-export type CopyrightEmailIntakeQueueItem = {
-  id: string
-  received_at: string
-  // 'unparsed' means the inbound worker never recorded a parse; staff review the original email.
-  parse_status: 'succeeded' | 'failed' | 'unparsed'
-  recommendation_id: string | null
-  review_path: 'initial' | 'unresolved_thread' | 'matched_thread'
-  linked_notice_id: string | null
-  // Why staff see it: still unreviewed, or the reply to its declined intake failed or bounced.
-  waiting_reason: 'awaiting_review' | 'reply_failed' | 'reply_bounced'
-  // `received_at` while unreviewed; the time the reply failed or bounced otherwise.
-  waiting_since: string
-}
-
-export type CopyrightEmailIntakeQueuePage = {
-  copyright_email_intakes: CopyrightEmailIntakeQueueItem[]
-  page_info: CopyrightNoticesPage['page_info']
-}
+export type {
+  CopyrightEmailIntakeQueueItem,
+  CopyrightEmailIntakeQueuePage,
+} from './copyright-email-intake-queue'

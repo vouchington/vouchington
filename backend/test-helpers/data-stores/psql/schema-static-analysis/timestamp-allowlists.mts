@@ -75,6 +75,7 @@ export const ALLOWED_MISSING_CREATED_AT = new Map<string, string>([
 ])
 
 export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
+  ['image_surface_placement_activations', 'Immutable provenance; bound_at records activation.'],
   [
     'user_agent_strings',
     'Insert-only normalized string lookup shared by sessions and votes; existing rows never update.',

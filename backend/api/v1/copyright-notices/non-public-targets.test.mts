@@ -5,13 +5,14 @@ import { createParsedCopyrightEmailIntake } from '@services/copyright-notices/em
 import { createCopyrightFormFixture } from '@services/copyright-notices/route-test-fixtures'
 import { createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { createTestCopyrightImageFixture } from '@voucha/test-helpers/copyright-surface-target-fixtures'
 import { readCopyrightEmailIntakeReview } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import type { HostedPostAudience } from '@voucha/test-helpers/services/copyright-notices/hosted-post-audience'
 
 type Fixture = Awaited<ReturnType<typeof createCopyrightFormFixture>>
 
-async function submitForm(fixture: Fixture, form: Fixture['form'], key = crypto.randomUUID()) {
+async function submitForm(fixture: Fixture, form: object, key = crypto.randomUUID()) {
   const request = createRequest()
   await request.authenticateAs(fixture.claimant)
   const response = await request
@@ -125,5 +126,51 @@ describe('copyright notice targets are limited to posts the claimant can view', 
     expect(refused.status).toBe(422)
     expect(refused.body.message).toBe('Hosted image placement was not found')
     await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.toEqual([])
+  })
+
+  it('hides a private community banner from a nonmember claimant but lets staff approve the named placement', async () => {
+    const fixture = await createCopyrightFormFixture()
+    const banner = await createTestCopyrightImageFixture('community-banner-image', {
+      communityVisibility: 'private',
+    })
+    const form = {
+      ...fixture.form,
+      targets: [
+        {
+          surface: 'community-banner-image',
+          community_id: banner.ownerId,
+          image_id: banner.imageId,
+          target_url: `https://voucha.ai/communities/${banner.ownerId}`,
+        },
+      ],
+    }
+    const key = crypto.randomUUID()
+    const hidden = await submitForm(fixture, form, key)
+    const missing = await submitForm(fixture, {
+      ...form,
+      targets: [{ ...form.targets[0], community_id: crypto.randomUUID() }],
+    })
+    expect(hidden.response.status).toBe(422)
+    expect(hidden.response.body).toEqual(missing.response.body)
+    await hidden.request
+      .post('/api/v1/copyright-notices')
+      .set('Idempotency-Key', key)
+      .send(form)
+      .expect(422)
+
+    const intake = await createParsedCopyrightEmailIntake()
+    const staff = createRequest()
+    await staff.authenticateAs(await createTestUser({ extraRoles: ['moderator'] }))
+    await staff
+      .post(`/api/v1/copyright-email-intakes/${intake.id}/approvals`)
+      .send({
+        ...form,
+        rationale: 'The email supplies a complete notice.',
+        manual_fallback_reason: 'No recommendation is available.',
+      })
+      .expect(201)
+    await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.toEqual([
+      { decision: 'approved', promoted_copyright_notice_id: expect.any(String) },
+    ])
   })
 })

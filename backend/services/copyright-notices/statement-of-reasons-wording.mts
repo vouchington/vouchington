@@ -94,6 +94,10 @@ export const copyrightStatementNotificationCopy = {
     title: 'Copyright restriction ended',
     body: 'This restriction ended. See the case page for the image availability and reasons.',
   },
+  owner_information_notice: {
+    title: 'Community image restricted',
+    body: 'An image on a community you own was withheld after a copyright notice.',
+  },
 }
 
 function copyrightRestorationCauseText(cause: CopyrightStatementInput['restorationCause']): string {
@@ -104,6 +108,8 @@ function copyrightRestorationCauseText(cause: CopyrightStatementInput['restorati
       return 'the appeal reversed the decision'
     case 'hold_resolved':
       return 'the legal hold was resolved'
+    case 'administrator_lift':
+      return 'an administrator lifted the restriction after review'
     case 'counter_notice_window':
       return 'the counter-notice waiting period ended'
     default:
@@ -125,6 +131,8 @@ export function copyrightEmailSubject(kind: CopyrightDeliveryKind): string {
       return 'Review of your copyright restriction'
     case 'poster_restoration_notice':
       return 'Your copyright restriction has ended'
+    case 'owner_information_notice':
+      return 'Copyright notice affecting your community image'
     case 'claimant_decision_notice':
       return 'Decision on your copyright notice'
     case 'poster_restriction_notice':
@@ -143,6 +151,7 @@ export function copyrightNotificationCopy(
     | 'poster_restriction_notice'
     | 'poster_review_notice'
     | 'poster_restoration_notice'
+    | 'owner_information_notice'
     | 'claimant_decision_notice',
 ): { title: string; body: string } {
   switch (deliveryKind) {
@@ -151,6 +160,7 @@ export function copyrightNotificationCopy(
     case 'claimant_decision_notice':
     case 'poster_review_notice':
     case 'poster_restoration_notice':
+    case 'owner_information_notice':
       return copyrightStatementNotificationCopy[deliveryKind]
     case 'poster_restriction_notice':
       return {

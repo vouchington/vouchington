@@ -77,6 +77,7 @@ export async function createRetentionMinimalCase(
         placementId: placement.placement_id,
         placementRevision: placement.placement_revision,
         imageId,
+        bindingFamily: 'post',
         hostedUseUrl: `https://example.test/${randomUUID()}`,
       },
     ],

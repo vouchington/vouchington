@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { stagePostImagePlacementDeliveryRecords } from './delivery-registry-staging.mts'
+import { stageCurrentImagePlacementDeliveryRecordsForImageIds } from './delivery-registry-reconciliation.mts'
 import {
   createTestUserDirect,
   getTestImageSurfacePlacements,
@@ -11,11 +13,7 @@ import {
   setTestUserProfileImage,
 } from '@voucha/test-helpers'
 import { setTestMediaRecoveryState } from '@voucha/test-helpers/media-delivery-recovery'
-import {
-  stageImagePlacementDeliveryRecord,
-  stagePostImagePlacementDeliveryRecords,
-  stageCurrentImagePlacementDeliveryRecordsForImageIds,
-} from './index.mts'
+import { stageImagePlacementDeliveryRecord } from './index.mts'
 
 describe('media registry staging state', () => {
   it('retains unchanged placement snapshots in every lifecycle state', async () => {

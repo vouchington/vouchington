@@ -18,6 +18,7 @@ const noticeDetail = (profile: typeof claimant | null) => ({
   targets: [
     {
       id: targetId,
+      surface: 'post-image',
       hosted_use_url: 'https://voucha.ai/posts/fixture',
       restriction_status: 'active',
     },

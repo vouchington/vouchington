@@ -11,7 +11,8 @@ export async function lockActiveUserLifecycleForMutation(
   try {
     await lockActiveUserSubjectsForMutation(query, [userId])
   } catch (err) {
-    if ((err as { code?: string }).code === '23514') throw createHttpError(401, 'User not found')
+    if (['23514', 'P0002'].includes((err as { code?: string }).code ?? ''))
+      throw createHttpError(401, 'User not found')
     throw err
   }
   await lockAuthorPublicationLifecycle(query, userId)

@@ -279,7 +279,7 @@
         "web.copyright.notice.detail.null-claimant",
         "web.copyright.notice.detail.populated"
       ],
-      "hash": "588a69c994513fea3ffd3f9d0b2942a0e6864c00794838a4bbbacd5c3ea720cc"
+      "hash": "ab9eda832d61b6032b2d9d9d5fcf00a9dee3298b9e355419c92ba562f62a5ff8"
     },
     "GET:/api/v1/copyright-notices/:id/guest-capabilities": {
       "fixtureIds": ["web.copyright.guest-capabilities.listed"],
@@ -290,7 +290,7 @@
         "web.copyright.notice.participant.null-claimant",
         "web.copyright.notice.participant.populated"
       ],
-      "hash": "e78e757689b5123c3287a4c0e8f0b7a3c3945605edc2880347e4f20607b6a762"
+      "hash": "54d11a3733ece0e237e318029fb048080d04210e9b08181c86574801b4f6d0da"
     },
     "GET:/api/v1/copyright-notices/:id/targets/:targetId/image-similarity-candidates": {
       "fixtureIds": ["native.moderation.copyright.image-similarity-candidates.default"],
@@ -298,7 +298,7 @@
     },
     "GET:/api/v1/copyright-notices/review-queue": {
       "fixtureIds": ["web.copyright.staff-queue.default"],
-      "hash": "1283d6ff13e88500926369029321f25227fca538472c4a95743ca0914a9f16d7"
+      "hash": "abaee9912ff78902245bf69ce2500a8407ed4c355377c55edf43d1081cc890bc"
     },
     "GET:/api/v1/currencies": {
       "fixtureIds": ["shared.currencies.list.default"],
@@ -2819,19 +2819,19 @@
     },
     "web.copyright.notice.detail.null-claimant": {
       "fixtureIds": ["web.copyright.notice.detail.null-claimant"],
-      "hash": "9e46cdf92384461bf15c0e41ee2cb3607f3bc16c63538397838b029722f47b5e"
+      "hash": "b946564d81af6317a3dbe620e14aa457aac6c1e3560307363584c384f0a45f16"
     },
     "web.copyright.notice.detail.populated": {
       "fixtureIds": ["web.copyright.notice.detail.populated"],
-      "hash": "7dde673db6a929374f915ca97fe1380ce6618e01742d57249f20935a7ba75d69"
+      "hash": "b318424d068e8f0b5fffdc5eb858a6c0a467fb1c0f307e6fc84a42c5f9b0a6b7"
     },
     "web.copyright.notice.participant.null-claimant": {
       "fixtureIds": ["web.copyright.notice.participant.null-claimant"],
-      "hash": "e5cc40cf4621e26b2be97ba94c2ef15d00f415319b200bb27e6833ed41a31ec5"
+      "hash": "aef096e1a193004629657f1e557a3e7da3ba1d3da86421411c3ab354c5b52fb8"
     },
     "web.copyright.notice.participant.populated": {
       "fixtureIds": ["web.copyright.notice.participant.populated"],
-      "hash": "9d8cc312d81b7afe6f43f43b2fce40da55f4e95d5045258486b94ad6d2e72bc9"
+      "hash": "f72f870de9da87fd48f641f0ab56357b7e4dc635db69073ae950a5656106bac9"
     },
     "web.copyright.notices.default": {
       "fixtureIds": ["web.copyright.notices.default"],

@@ -13022,7 +13022,7 @@
     },
     "GET:/api/v1/copyright-notices/:id": {
       "bodyKind": "content",
-      "hash": "588a69c994513fea3ffd3f9d0b2942a0e6864c00794838a4bbbacd5c3ea720cc",
+      "hash": "ab9eda832d61b6032b2d9d9d5fcf00a9dee3298b9e355419c92ba562f62a5ff8",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -13163,6 +13163,42 @@
                                     {
                                       "type": "literal",
                                       "value": "pending"
+                                    }
+                                  ]
+                                }
+                              },
+                              "surface": {
+                                "required": true,
+                                "schema": {
+                                  "type": "union",
+                                  "variants": [
+                                    {
+                                      "type": "literal",
+                                      "value": "community-banner-image"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "community-profile-image"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "post-image"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "topic-hero-image"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "topic-logo-image"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "user-profile-image"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "user-profile-link-image"
                                     }
                                   ]
                                 }
@@ -13361,7 +13397,7 @@
     },
     "GET:/api/v1/copyright-notices/:id/participant": {
       "bodyKind": "content",
-      "hash": "e78e757689b5123c3287a4c0e8f0b7a3c3945605edc2880347e4f20607b6a762",
+      "hash": "54d11a3733ece0e237e318029fb048080d04210e9b08181c86574801b4f6d0da",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -13652,6 +13688,42 @@
                                     }
                                   ]
                                 }
+                              },
+                              "surface": {
+                                "required": true,
+                                "schema": {
+                                  "type": "union",
+                                  "variants": [
+                                    {
+                                      "type": "literal",
+                                      "value": "community-banner-image"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "community-profile-image"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "post-image"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "topic-hero-image"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "topic-logo-image"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "user-profile-image"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "user-profile-link-image"
+                                    }
+                                  ]
+                                }
                               }
                             },
                             "type": "object"
@@ -13785,7 +13857,7 @@
     },
     "GET:/api/v1/copyright-notices/review-queue": {
       "bodyKind": "content",
-      "hash": "1283d6ff13e88500926369029321f25227fca538472c4a95743ca0914a9f16d7",
+      "hash": "abaee9912ff78902245bf69ce2500a8407ed4c355377c55edf43d1081cc890bc",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -14979,6 +15051,98 @@
                               "required": true,
                               "schema": {
                                 "type": "number"
+                              }
+                            },
+                            "provenance": {
+                              "required": true,
+                              "schema": {
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "set_by_administrator": {
+                                        "required": true,
+                                        "schema": {
+                                          "type": "union",
+                                          "variants": [
+                                            {
+                                              "type": "literal",
+                                              "value": false
+                                            },
+                                            {
+                                              "type": "literal",
+                                              "value": true
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "set_by_id": {
+                                        "required": true,
+                                        "schema": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "uploaded_by_id": {
+                                        "required": true,
+                                        "schema": {
+                                          "type": "union",
+                                          "variants": [
+                                            {
+                                              "type": "null"
+                                            },
+                                            {
+                                              "type": "string"
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "surface": {
+                              "required": true,
+                              "schema": {
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "type": "literal",
+                                    "value": "community-banner-image"
+                                  },
+                                  {
+                                    "type": "literal",
+                                    "value": "community-profile-image"
+                                  },
+                                  {
+                                    "type": "literal",
+                                    "value": "post-image"
+                                  },
+                                  {
+                                    "type": "literal",
+                                    "value": "topic-hero-image"
+                                  },
+                                  {
+                                    "type": "literal",
+                                    "value": "topic-logo-image"
+                                  },
+                                  {
+                                    "type": "literal",
+                                    "value": "user-profile-image"
+                                  },
+                                  {
+                                    "type": "literal",
+                                    "value": "user-profile-link-image"
+                                  }
+                                ]
                               }
                             }
                           },
@@ -89823,7 +89987,7 @@
       ],
       "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000000804",
       "responseSchema": {
-        "hash": "7dde673db6a929374f915ca97fe1380ce6618e01742d57249f20935a7ba75d69",
+        "hash": "b318424d068e8f0b5fffdc5eb858a6c0a467fb1c0f307e6fc84a42c5f9b0a6b7",
         "key": "web.copyright.notice.detail.populated"
       },
       "route": {
@@ -89851,7 +90015,7 @@
       ],
       "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000000804",
       "responseSchema": {
-        "hash": "9e46cdf92384461bf15c0e41ee2cb3607f3bc16c63538397838b029722f47b5e",
+        "hash": "b946564d81af6317a3dbe620e14aa457aac6c1e3560307363584c384f0a45f16",
         "key": "web.copyright.notice.detail.null-claimant"
       },
       "route": {
@@ -89879,7 +90043,7 @@
       ],
       "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000000804/participant",
       "responseSchema": {
-        "hash": "9d8cc312d81b7afe6f43f43b2fce40da55f4e95d5045258486b94ad6d2e72bc9",
+        "hash": "f72f870de9da87fd48f641f0ab56357b7e4dc635db69073ae950a5656106bac9",
         "key": "web.copyright.notice.participant.populated"
       },
       "route": {
@@ -89907,7 +90071,7 @@
       ],
       "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000000804/participant",
       "responseSchema": {
-        "hash": "e5cc40cf4621e26b2be97ba94c2ef15d00f415319b200bb27e6833ed41a31ec5",
+        "hash": "aef096e1a193004629657f1e557a3e7da3ba1d3da86421411c3ab354c5b52fb8",
         "key": "web.copyright.notice.participant.null-claimant"
       },
       "route": {

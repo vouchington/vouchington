@@ -19,6 +19,7 @@ export type AutomaticWithholdingRefusalReason =
   | 'account_too_new'
   | 'claimant_daily_cap'
   | 'poster_daily_cap'
+  | 'non_post_target'
 
 export type AutomaticWithholdingEligibility =
   | { reason: AutomaticWithholdingRefusalReason }

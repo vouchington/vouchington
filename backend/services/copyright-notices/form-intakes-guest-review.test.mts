@@ -33,7 +33,14 @@ describe('copyright guest form intake review', () => {
         goodFaithBelief: true,
         accuracyAuthorityUnderPenaltyOfPerjury: true,
         electronicSignature: 'Guest claimant',
-        claimantTargets: [{ postId, imageId, hostedUseUrl: `https://voucha.ai/posts/${postId}` }],
+        claimantTargets: [
+          {
+            surfaceKind: 'post-image' as const,
+            postId,
+            imageId,
+            hostedUseUrl: `https://voucha.ai/posts/${postId}`,
+          },
+        ],
       },
     })
 
