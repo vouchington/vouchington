@@ -8,18 +8,26 @@ import { CRAWLER_USER_AGENT } from '@voucha/config'
 import onError from '@modules/on-error'
 import { HTML_CRAWL_EXCLUSIVITY_SQL } from './html-crawl-eligibility-sql.mts'
 
-const BATCH_SIZE = Number.parseInt(process.env.CRAWLER_BATCH_SIZE || '', 10) || 1000
+import { getCrawlDispatchLimits } from './work-limits.mts'
+import type { CrawlDispatchCursor } from '@queues/crawl-hostnames/types'
+import { enqueueCrawlDispatchContinuation } from '@queues/crawl-hostnames/enqueues'
 
 /**
- * Given a hostname ID, dispatch crawl jobs for all URLs that need crawling.
+ * Given a hostname ID, dispatch a bounded page of URLs that need crawling.
  * Uses per-hostname age_threshold_days from the hostname-level dispatch system.
  */
-export const dispatchCrawlUrlsPerHostname = async (hostnameId: string): Promise<number> => {
+export const dispatchCrawlUrlsPerHostname = async (
+  hostnameId: string,
+  cursor?: CrawlDispatchCursor,
+) => {
+  const limits = getCrawlDispatchLimits()
+  const sweepStartedAt = cursor?.sweepStartedAt ?? new Date().toISOString()
+  const upperId = getMinUUIDv7ForDate(new Date(sweepStartedAt))
   const hostname = await getUrlHostnameCrawlerDetailsById(hostnameId)
-  if (!hostname || !hostname.crawlable || hostname.blocked) return 0
+  if (!hostname || !hostname.crawlable || hostname.blocked) return { count: 0, hasMore: false }
   const attemptThresholdHours = hostname.attempt_threshold_hours ?? 1
   const attemptCutoffId = getMinUUIDv7ForDate(
-    new Date(Date.now() - attemptThresholdHours * 60 * 60 * 1000),
+    new Date(new Date(sweepStartedAt).getTime() - attemptThresholdHours * 60 * 60 * 1000),
   )
 
   // Compute rate limit once — robots.txt is Valkey-cached so this is cheap
@@ -40,13 +48,15 @@ export const dispatchCrawlUrlsPerHostname = async (hostnameId: string): Promise<
     FROM urls u
     JOIN url_hostnames h ON h.id = u.hostname_id
     WHERE u.hostname_id = ${hostnameId}
+      AND u.id < ${upperId}::uuid
+      AND (${cursor?.afterId ?? null}::uuid IS NULL OR u.id > ${cursor?.afterId ?? null}::uuid)
       AND h.crawlable = true
       AND h.blocked = false
       AND NOT EXISTS (
         SELECT 1 FROM crawls c
         WHERE c.url_id = u.id
           AND c.embeddings_generated_at IS NOT NULL
-          AND c.embeddings_generated_at > NOW() - INTERVAL '1 day' * COALESCE(h.age_threshold_days, 1)
+          AND c.embeddings_generated_at > ${sweepStartedAt}::timestamptz - INTERVAL '1 day' * COALESCE(h.age_threshold_days, 1)
       )
       AND NOT EXISTS (
         SELECT 1 FROM crawls c
@@ -59,17 +69,27 @@ export const dispatchCrawlUrlsPerHostname = async (hostnameId: string): Promise<
   `)
   let total = 0
 
-  await executeHandlerWithCursorInBatches<{ id: string }>(queryStatement, undefined, {
-    batchSize: BATCH_SIZE,
-    readOnly: true,
-    handler: async rows => {
-      total += rows.length
-      await enqueueBulkCrawlUrls(
-        rows.map(row => ({ urlId: row.id })),
-        { hostnameId, rateLimitMs },
-      )
+  const result = await executeHandlerWithCursorInBatches<{ id: string }>(
+    queryStatement,
+    undefined,
+    {
+      batchSize: limits.batchSize,
+      maxRows: limits.maxRows,
+      readOnly: true,
+      handler: async rows => {
+        total += rows.length
+        await enqueueBulkCrawlUrls(
+          rows.map(row => ({ urlId: row.id })),
+          { hostnameId, rateLimitMs },
+        )
+      },
     },
-  })
+  )
 
-  return total
+  if (result.hasMore && result.lastRow)
+    await enqueueCrawlDispatchContinuation('crawl_urls_per_hostname_dispatcher', {
+      hostname_id: hostnameId,
+      cursor: { sweepStartedAt, afterId: result.lastRow.id },
+    })
+  return { count: total, hasMore: result.hasMore }
 }

@@ -3,7 +3,7 @@ import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import { CRAWL_HOSTNAMES_QUEUE_NAME, PRIORITY_DEFAULT, PRIORITY_DISPATCHER } from './config.mts'
 import { crawlHostnamesQueue } from './queues.mts'
-import type { CrawlHostnamesJobs } from './types.mts'
+import type { CrawlHostnamesJobs, CrawlUrlDispatchData } from './types.mts'
 
 const ONE_MINUTE_MS = 60_000
 const BACKFILL_DEDUPLICATION_TTL_MS = 60 * ONE_MINUTE_MS
@@ -92,3 +92,22 @@ export const enqueueRefreshHostnameCrawlerDispatcher = createDispatcherEnqueue(
 )
 
 export const enqueueCrawlCleanup = createDispatcherEnqueue('crawl_cleanup', PRIORITY_DEFAULT)
+
+export function enqueueCrawlDispatchContinuation(
+  jobName: CrawlHostnamesJobs,
+  data: CrawlUrlDispatchData,
+): EnqueueReturnType {
+  const enqueue = createEnqueueFunction<CrawlUrlDispatchData, CrawlHostnamesJobs>({
+    queue: crawlHostnamesQueue,
+    queueName: CRAWL_HOSTNAMES_QUEUE_NAME,
+    jobName,
+  })
+  return enqueue(data, {
+    priority: PRIORITY_DISPATCHER,
+    deduplication: {
+      id: `${jobName}:${data.hostname_id ?? 'all'}:${data.cursor?.sweepStartedAt}:${data.cursor?.afterId}`,
+      mode: 'throttle',
+      ttl: ONE_MINUTE_MS,
+    },
+  })
+}

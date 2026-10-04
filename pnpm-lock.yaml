@@ -4026,6 +4026,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/bedrock-embeddings-batch':
+        specifier: workspace:^
+        version: link:../../queues/bedrock-embeddings-batch
       '@services/bedrock-embeddings':
         specifier: workspace:^
         version: link:../bedrock-embeddings
@@ -4885,9 +4888,15 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
       '@queues/crawl-referral-links':
         specifier: workspace:^
         version: link:../../queues/crawl-referral-links
@@ -5326,18 +5335,30 @@ importers:
       '@services/copyright-notices':
         specifier: workspace:^
         version: link:../copyright-notices
+      '@services/crawler-referral-links':
+        specifier: workspace:^
+        version: link:../crawler-referral-links
+      '@services/crawls':
+        specifier: workspace:^
+        version: link:../crawls
       '@services/data-retention':
         specifier: workspace:^
         version: link:../data-retention
       '@services/dynamic-config-audit':
         specifier: workspace:^
         version: link:../dynamic-config-audit
+      '@services/entity-listener-reconciliation':
+        specifier: workspace:^
+        version: link:../entity-listener-reconciliation
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
       '@services/feature-flags':
         specifier: workspace:^
         version: link:../feature-flags
+      '@services/friend-recommendations':
+        specifier: workspace:^
+        version: link:../friend-recommendations
       '@services/kagi-smallweb':
         specifier: workspace:^
         version: link:../kagi-smallweb
@@ -5356,6 +5377,9 @@ importers:
       '@services/recaptcha':
         specifier: workspace:^
         version: link:../recaptcha
+      '@services/referral-link-unfurl':
+        specifier: workspace:^
+        version: link:../referral-link-unfurl
       '@services/request-client-info':
         specifier: workspace:^
         version: link:../request-client-info
@@ -5748,6 +5772,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
@@ -6103,6 +6130,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
@@ -8559,6 +8589,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/membership-helpers':
         specifier: workspace:^
         version: link:../../modules/membership-helpers

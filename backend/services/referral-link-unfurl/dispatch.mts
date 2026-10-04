@@ -1,8 +1,13 @@
 import { executeHandlerWithCursorInBatches } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { enqueueUnfurlReferralLink } from '@queues/unfurl-referral-links/enqueues'
+import {
+  enqueueUnfurlReferralLink,
+  enqueueUnfurlReferralLinksDispatcher,
+} from '@queues/unfurl-referral-links/enqueues'
 
-const BATCH_SIZE = 1000
+import { getDispatchLimits } from './work-limits.mts'
+import type { UnfurlDispatchCursor } from '@queues/unfurl-referral-links/types'
+import { getMinUUIDv7ForDate } from '@modules/utils'
 
 /**
  * Self-heals parents stuck requested-but-not-completed (e.g. a crashed/lost job) by
@@ -12,28 +17,40 @@ const BATCH_SIZE = 1000
  * unfurl_failed_at before re-enqueueing (see requestReferralLinkUnfurl) -- so this
  * dispatcher only needs to catch in-flight loss, not retry permanent failures forever.
  */
-export async function dispatchUnfurlReferralLinks(): Promise<number> {
+export async function dispatchUnfurlReferralLinks(cursor?: UnfurlDispatchCursor) {
+  const limits = getDispatchLimits()
+  const sweepStartedAt = cursor?.sweepStartedAt ?? new Date().toISOString()
+  const upperId = getMinUUIDv7ForDate(new Date(sweepStartedAt))
   const queryStatement = sql`/* dispatchUnfurlReferralLinks */
     SELECT id
     FROM user_referral_program_links
-    WHERE unfurl_requested_at IS NOT NULL
+    WHERE id < ${upperId}::uuid
+      AND (${cursor?.afterId ?? null}::uuid IS NULL OR id > ${cursor?.afterId ?? null}::uuid)
+      AND unfurl_requested_at <= ${sweepStartedAt}::timestamptz
       AND unfurl_completed_at IS NULL
       AND unfurl_failed_at IS NULL
       AND deleted_at IS NULL
-    ORDER BY unfurl_requested_at
+    ORDER BY id
   `
 
   let total = 0
-  await executeHandlerWithCursorInBatches<{ id: string }>(queryStatement, undefined, {
-    batchSize: BATCH_SIZE,
-    readOnly: true,
-    handler: async rows => {
-      total += rows.length
-      for (const row of rows) {
-        // oxlint-disable-next-line no-await-in-loop -- preserve per-row enqueue backpressure
-        await enqueueUnfurlReferralLink({ parentLinkId: row.id })
-      }
+  const result = await executeHandlerWithCursorInBatches<{ id: string }>(
+    queryStatement,
+    undefined,
+    {
+      batchSize: limits.batchSize,
+      maxRows: limits.maxRows,
+      readOnly: true,
+      handler: async rows => {
+        total += rows.length
+        for (const row of rows) {
+          // oxlint-disable-next-line no-await-in-loop -- preserve per-row enqueue backpressure
+          await enqueueUnfurlReferralLink({ parentLinkId: row.id })
+        }
+      },
     },
-  })
-  return total
+  )
+  if (result.hasMore && result.lastRow)
+    await enqueueUnfurlReferralLinksDispatcher({ sweepStartedAt, afterId: result.lastRow.id })
+  return { count: total, hasMore: result.hasMore }
 }

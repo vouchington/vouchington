@@ -347,3 +347,11 @@ the staff moderation ops row stays full. Swift and .NET drop both decoder fields
 Financial scope consent (#1271): hosted OAuth consent and the web API-key picker describe financial profile and spending exact grants. Native clients have no consent screen; their shared `native.credentials.mcpUserFullAccess` copy now states that financial profile and spending require separate grants. Native presets must explicitly list financial scopes when they intend to access those resources.
 
 Admin MCP tools (#209): the admin server remains OAuth-only. Ordinary moderation, account enforcement, and site-operation reads can use matching admin umbrella grants; destructive approval, AI rerun, agent votes, account sanctions, operational writes, copyright, analytics, and editorial scopes require explicit grants and appear in hosted sensitive consent. Tools remain exclusive to `admin_mcp` and do not enter the native client tool manifest. The vote-ring penalty REST contract now requires `{ flag, penalized_user_count }`; web consumes that flag directly. Swift and .NET must regenerate their shared contracts and apply the returned flag before release; [clients #200](https://github.com/vouchington/vouchington-clients/issues/200) owns this pending parity work. The client implementation is prepared locally, with canonical staging and native toolchain/publication checks still blocked. MCP decisions skip training feedback until an independent staff/user action supplies evidence through the existing workflow.
+
+## Manual crawl fanout count
+
+For `POST /api/v1/urls/:id/crawl`, `enqueued_count` counts jobs actually queued by the initial
+bounded page. Referral-link fanout resumes the remaining links in a URL-scoped background
+continuation. Web, Swift, and .NET must treat this count as dispatch progress rather than the total
+eligible fanout or completed crawl work; the response shape remains unchanged. See the
+[URLs API](api/v1/urls/README.md#post-apiv1urlsidcrawl).

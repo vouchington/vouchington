@@ -17,3 +17,9 @@ export type BedrockEmbeddingsBatchDispatcherJob =
   | 'creation_dispatcher'
   | 'backlog_dispatcher'
   | 'stale_cleanup_dispatcher'
+
+export type EmbeddingScanCursor = {
+  sweepStartedAt: string
+  afterId?: string
+  afterOrderIndex?: number
+}

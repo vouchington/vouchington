@@ -213,7 +213,7 @@ describe('dispatch', () => {
       },
     })
 
-    assert.equal(dispatchedCount, 0)
+    assert.deepEqual(dispatchedCount, { count: 0, hasMore: false })
     assert.equal(computeCount, 0)
     assert.equal(enqueueCount, 0)
   })

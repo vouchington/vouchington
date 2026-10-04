@@ -22,4 +22,21 @@ describe('dynamic config registry entry ordering', () => {
       max_batches_per_run: { integer: true, min_value: 1 },
     })
   })
+  it.each([
+    'crawl-dispatch-work-config',
+    'referral-crawl-dispatch-work-config',
+    'referral-unfurl-dispatch-work-config',
+    'entity-reconciliation-work-config',
+  ])('registers finite cursor work bounds for %s', namespace => {
+    expect(getDynamicConfigRegistryEntry(namespace)?.fields).toMatchObject({
+      batch_size: { integer: true, min_value: 1 },
+      max_rows_per_run: { integer: true, min_value: 1 },
+    })
+  })
+  it('registers the friends per-provider budget', () => {
+    expect(getDynamicConfigRegistryEntry('friends-dispatch-work-config')?.fields).toMatchObject({
+      batch_size: { integer: true, min_value: 1 },
+      max_rows_per_provider_per_run: { integer: true, min_value: 1 },
+    })
+  })
 })

@@ -6,6 +6,7 @@ export async function insertTestPostRelatedUrlBatch(options: {
   hostname: string
   hostnameId: string
   createdById: string
+  votesScoreUp?: 0 | 1
 }): Promise<void> {
   await write(
     `/* insertTestPostRelatedUrlBatch */
@@ -19,7 +20,14 @@ export async function insertTestPostRelatedUrlBatch(options: {
     )
     INSERT INTO relation__post__related__url
       (subject_id, object_id, created_by_id, votes_score_up, votes_count_up)
-    SELECT post_id, url_id, $5, 1, 1 FROM input`,
-    [options.postIds, options.urlIds, options.hostname, options.hostnameId, options.createdById],
+    SELECT post_id, url_id, $5, $6::integer, $6::integer FROM input`,
+    [
+      options.postIds,
+      options.urlIds,
+      options.hostname,
+      options.hostnameId,
+      options.createdById,
+      options.votesScoreUp ?? 1,
+    ],
   )
 }

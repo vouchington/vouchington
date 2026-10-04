@@ -44,6 +44,12 @@ Links are automatically deactivated based on crawl results:
 - `update-link-status.mts` — Updates link status after crawl (success / failure / immediate deactivation)
 - `types.mts` — Shared types
 
+Scheduled dispatch uses `referral-crawl-dispatch-work-config` page and run limits with a fixed
+UUID sweep upper bound. Its `hasMore` continuation retains the last link ID and any selected IDs.
+URL event fanout uses the same bounded engine, preserves that URL in every continuation, and
+bypasses scheduled cooldowns. It queues the initial page synchronously and resumes the tail in
+the background; it never silently truncates the event's eligible links.
+
 ## Related
 
 - System: [../../queues/crawl-referral-links/README.md](../../queues/crawl-referral-links/README.md)

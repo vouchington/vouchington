@@ -1,3 +1,4 @@
+import { createPendingScan, type PendingScanOptions } from './scan-options.mts'
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import { transformImage } from '@vouchington/image-resize'
 import { freezeImageUpload, MAX_IMAGE_UPLOAD_BYTES } from '@services/images/freeze-upload'
@@ -24,11 +25,15 @@ type ImageReadDependencies = {
 
 const defaultImageReadDependencies: ImageReadDependencies = { getImageFromS3 }
 
-export async function* streamPendingImages(): AsyncGenerator<PendingImage, void, unknown> {
+export async function* streamPendingImages(
+  options: PendingScanOptions = {},
+): AsyncGenerator<PendingImage, void, unknown> {
+  const scan = createPendingScan(options, true)
   const query = `/* streamPendingImages */
     SELECT id, s3_key, sha_256
     FROM images
-    WHERE deleted_at IS NULL
+    WHERE id < $1::uuid AND ($2::uuid IS NULL OR id < $2::uuid)
+      AND deleted_at IS NULL
       AND quarantine_pending_at IS NULL
       AND openai_omni_moderation_created_at IS NOT NULL
       AND openai_omni_moderation_flagged = FALSE
@@ -37,9 +42,15 @@ export async function* streamPendingImages(): AsyncGenerator<PendingImage, void,
     ORDER BY id DESC
   `
 
-  for await (const image of createAsyncGeneratorFromCursor<PendingImage>(query, [], {
-    batchSize: 100,
-  })) {
+  for await (const image of createAsyncGeneratorFromCursor<PendingImage>(
+    query,
+    [scan.upperId, scan.afterId],
+    {
+      batchSize: scan.limits.batchSize,
+      maxRows: scan.limits.maxRows,
+      onComplete: scan.complete,
+    },
+  )) {
     yield image
   }
 }

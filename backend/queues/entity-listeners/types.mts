@@ -74,7 +74,7 @@ type EmptyEntityJobData = Record<string, never>
 
 type EntityJobPayloads = {
   reconcileEntity: ReconcileEntityData
-  reconcileEntities: EmptyEntityJobData
+  reconcileEntities: EntityReconciliationDispatchData
   processUrlCreated: EntityIdData
   processUrlUpdated: EmptyEntityJobData
   processUrlDeleted: EmptyEntityJobData
@@ -115,4 +115,9 @@ export type ReconcileEntityData = {
   changeId?: string
   contentChanged?: boolean
   referrerId?: string
+}
+
+export type EntityReconciliationDispatchData = {
+  window?: { start: string; end: string }
+  after?: ReconcileEntityData
 }

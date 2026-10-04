@@ -50,7 +50,7 @@ export async function enqueueManualUrlCrawlAsCurrentUser(
     return { target: 'rss_feed', enqueued_count: 1, rss_feed_id: rssFeedId }
   }
 
-  const referralCount = await enqueueReferralLinkCrawlsForUrlId(urlId)
+  const { count: referralCount } = await enqueueReferralLinkCrawlsForUrlId(urlId)
   if (referralCount > 0) {
     return { target: 'referral_link', enqueued_count: referralCount }
   }

@@ -28,6 +28,12 @@ candidate page permits `friends_synced_at` to advance. A failed or deletion-inte
 therefore leave committed current-page rows for the next idempotent sync without holding the account
 deletion fence across the provider request or the full friend graph.
 
+The dispatcher captures a fixed sweep time and each provider's greatest text ID. It applies the
+registered `friends-dispatch-work-config` budget separately to each provider and reports `hasMore`.
+Continuation payloads retain provider positions and completed providers. Eligibility also checks
+account creation against the sweep time, since a newly inserted text ID can sort below the upper
+bound. Failed or still-queued accounts are retried by the next sweep without starving later IDs.
+
 ## Related
 
 - Parent: [../AGENTS.md](../../../../../backend/queues/AGENTS.md)

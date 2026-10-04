@@ -43,7 +43,7 @@ describe('processors', () => {
   describe('processFindYourFriendsDispatcher', () => {
     it('returns zero count when no accounts to sync', async () => {
       const result = await runDispatcher()
-      expect(result).toEqual({ count: 0 })
+      expect(result).toEqual({ count: 0, hasMore: false })
       expect(mockEnqueueBulkSyncFacebookFriends).not.toHaveBeenCalled()
       expect(mockEnqueueBulkSyncXFriends).not.toHaveBeenCalled()
       expect(mockEnqueueBulkSyncGithubFriends).not.toHaveBeenCalled()
@@ -55,7 +55,7 @@ describe('processors', () => {
 
       const result = await runDispatcher()
 
-      expect(result).toEqual({ count: 50 })
+      expect(result).toEqual({ count: 50, hasMore: false })
       expect(mockEnqueueBulkSyncFacebookFriends).toHaveBeenCalledTimes(1)
       expect(mockEnqueueBulkSyncFacebookFriends).toHaveBeenCalledWith(fbIds)
     })
@@ -66,7 +66,7 @@ describe('processors', () => {
 
       const result = await runDispatcher()
 
-      expect(result).toEqual({ count: 2500 })
+      expect(result).toEqual({ count: 2500, hasMore: false })
       expect(mockEnqueueBulkSyncFacebookFriends).toHaveBeenCalledTimes(3)
       expect(mockEnqueueBulkSyncFacebookFriends.mock.calls[0]![0]).toHaveLength(1000)
       expect(mockEnqueueBulkSyncFacebookFriends.mock.calls[1]![0]).toHaveLength(1000)
@@ -79,7 +79,7 @@ describe('processors', () => {
 
       const result = await runDispatcher()
 
-      expect(result).toEqual({ count: 1000 })
+      expect(result).toEqual({ count: 1000, hasMore: false })
       expect(mockEnqueueBulkSyncGithubFriends).toHaveBeenCalledTimes(1)
       expect(mockEnqueueBulkSyncGithubFriends.mock.calls[0]![0]).toHaveLength(1000)
     })
@@ -91,7 +91,7 @@ describe('processors', () => {
 
       const result = await runDispatcher()
 
-      expect(result).toEqual({ count: 60 })
+      expect(result).toEqual({ count: 60, hasMore: false })
       expect(mockEnqueueBulkSyncFacebookFriends).toHaveBeenCalledTimes(1)
       expect(mockEnqueueBulkSyncXFriends).toHaveBeenCalledTimes(1)
       expect(mockEnqueueBulkSyncGithubFriends).toHaveBeenCalledTimes(1)

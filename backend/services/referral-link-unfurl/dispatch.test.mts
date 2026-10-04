@@ -48,7 +48,7 @@ describe('dispatchUnfurlReferralLinks', () => {
     const neverRequested = await createLink()
 
     const totalEnqueued = await dispatchUnfurlReferralLinks()
-    expect(totalEnqueued).toBeGreaterThanOrEqual(1)
+    expect(totalEnqueued.count).toBeGreaterThanOrEqual(1)
 
     const jobs = await readAllQueueJobs(unfurlReferralLinksQueue)
     const enqueuedLinkIds = new Set(jobs.map(jobParentLinkId))

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
@@ -8,7 +9,7 @@ import {
   QUEUE_NAME,
 } from '../config.mts'
 import { entitiesListeners } from '../queues.mts'
-import type { ReconcileEntityData } from '../types.mts'
+import type { ReconcileEntityData, EntityReconciliationDispatchData } from '../types.mts'
 
 const DEFAULTS = {
   attempts: 3,
@@ -45,7 +46,7 @@ export const enqueueBulkReconcileEntities = createBulkEnqueueFunction<
 })
 
 const enqueueReconcileEntitiesJob = createEnqueueFunction<
-  Record<string, never>,
+  EntityReconciliationDispatchData,
   'reconcileEntities'
 >({
   queue: entitiesListeners,
@@ -54,14 +55,18 @@ const enqueueReconcileEntitiesJob = createEnqueueFunction<
   defaults: DEFAULTS,
 })
 
-export function enqueueReconcileEntities(): EnqueueReturnType {
+export function enqueueReconcileEntities(
+  data: EntityReconciliationDispatchData = {},
+): EnqueueReturnType {
   const intervalMs = getEntityListenerReconciliationIntervalSeconds() * 1000
-  const jobId = `entity-reconciliation-dispatcher__${Math.floor(Date.now() / intervalMs)}`
-  return enqueueReconcileEntitiesJob({}, {
+  const jobId = data.window
+    ? `entity-reconciliation-dispatcher__${createHash('sha256').update(JSON.stringify(data)).digest('hex')}`
+    : `entity-reconciliation-dispatcher__${Math.floor(Date.now() / intervalMs)}`
+  return enqueueReconcileEntitiesJob(data, {
     jobId,
     priority: PRIORITY_DISPATCHER,
     deduplication: {
-      id: 'entity-reconciliation-dispatcher',
+      id: data.window ? jobId : 'entity-reconciliation-dispatcher',
       mode: 'throttle',
       ttl: intervalMs,
     },

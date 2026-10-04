@@ -11,7 +11,11 @@ import {
   QUEUE_NAME,
 } from './config.mts'
 import { findYourFriendsQueue } from './queues.mts'
-import type { FindYourFriendsDispatcherJobs, FindYourFriendsSyncJobs } from './types.mts'
+import type {
+  FriendsDispatchData,
+  FindYourFriendsDispatcherJobs,
+  FindYourFriendsSyncJobs,
+} from './types.mts'
 
 const { attempts, backoff, removeOnComplete, removeOnFail, deduplicationTtlMs } =
   FIND_YOUR_FRIENDS_DEFAULTS
@@ -116,7 +120,7 @@ const githubSync = createSyncEnqueues({
 })
 
 const enqueueDispatchFindYourFriendsJob = createEnqueueFunction<
-  Record<string, never>,
+  FriendsDispatchData,
   FindYourFriendsDispatcherJobs
 >({
   queue: findYourFriendsQueue,
@@ -132,19 +136,19 @@ export const enqueueBulkSyncFacebookFriends = facebookSync.bulk
 export const enqueueBulkSyncXFriends = xSync.bulk
 export const enqueueBulkSyncGithubFriends = githubSync.bulk
 
-export function enqueueDispatchFindYourFriends(options?: DispatcherOptions): EnqueueReturnType {
-  return enqueueDispatchFindYourFriendsJob(
-    {},
-    {
-      priority: PRIORITY_DISPATCHER,
-      ordering: FIND_YOUR_FRIENDS_ORDERING.dispatcher,
-      ...(options?.deduplicationId && {
-        deduplication: {
-          id: options.deduplicationId,
-          mode: 'throttle' as const,
-          ttl: BACKFILL_DEDUPLICATION_TTL_MS,
-        },
-      }),
-    },
-  )
+export function enqueueDispatchFindYourFriends(
+  options?: DispatcherOptions,
+  data: FriendsDispatchData = {},
+): EnqueueReturnType {
+  return enqueueDispatchFindYourFriendsJob(data, {
+    priority: PRIORITY_DISPATCHER,
+    ordering: FIND_YOUR_FRIENDS_ORDERING.dispatcher,
+    ...(options?.deduplicationId && {
+      deduplication: {
+        id: options.deduplicationId,
+        mode: 'throttle' as const,
+        ttl: BACKFILL_DEDUPLICATION_TTL_MS,
+      },
+    }),
+  })
 }

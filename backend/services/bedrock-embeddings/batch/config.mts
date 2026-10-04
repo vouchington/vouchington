@@ -17,6 +17,9 @@ const DEFAULTS = {
   max_file_size_gb: 1,
   max_job_size_gb: 100,
   min_records_per_job: 100,
+  cursor_batch_size: 1000,
+  image_cursor_batch_size: 100,
+  max_scan_rows_per_run: 100000,
   backlog_threshold: 1000,
   stale_ttl_hours: 24,
 }
@@ -28,6 +31,9 @@ export const BEDROCK_BATCH_MAX_VALUES: Record<keyof typeof DEFAULTS, number> = {
   max_file_size_gb: 10,
   max_job_size_gb: 1_000,
   min_records_per_job: 1_000_000,
+  cursor_batch_size: 5000,
+  image_cursor_batch_size: 5000,
+  max_scan_rows_per_run: 1_000_000,
   backlog_threshold: 10_000_000,
   stale_ttl_hours: 168,
 }
@@ -41,6 +47,9 @@ export const bedrockEmbeddingsBatchConfig = new DynamicConfig({
     max_file_size_gb: 'number',
     max_job_size_gb: 'number',
     min_records_per_job: 'number',
+    cursor_batch_size: 'number',
+    image_cursor_batch_size: 'number',
+    max_scan_rows_per_run: 'number',
     backlog_threshold: 'number',
     stale_ttl_hours: 'number',
   },
@@ -71,4 +80,14 @@ export function getBacklogThreshold(): number {
 
 export function getStaleTtlHours(): number {
   return positiveInteger('stale_ttl_hours')
+}
+
+export function getPendingEmbeddingScanLimits(images = false) {
+  const maxRows = positiveInteger('max_scan_rows_per_run')
+  if (maxRows < positiveInteger('min_records_per_job'))
+    throw new RangeError('Embedding scan budget must cover the minimum records per job')
+  return {
+    batchSize: positiveInteger(images ? 'image_cursor_batch_size' : 'cursor_batch_size'),
+    maxRows,
+  }
 }

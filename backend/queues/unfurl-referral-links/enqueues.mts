@@ -9,7 +9,7 @@ import {
   UNFURL_REFERRAL_LINKS_QUEUE_NAME,
 } from './config.mts'
 import { unfurlReferralLinksQueue } from './queues.mts'
-import type { UnfurlReferralLinksJobs } from './types.mts'
+import type { UnfurlReferralLinksJobs, UnfurlDispatchCursor } from './types.mts'
 
 type UnfurlReferralLinkEntry = { parentLinkId: string }
 type RemoveUnfurledChildrenForUserEntry = { userId: string }
@@ -36,7 +36,7 @@ const enqueueUnfurlReferralLinkJob = createEnqueueFunction<
 })
 
 const enqueueUnfurlReferralLinksDispatcherJob = createEnqueueFunction<
-  Record<string, never>,
+  { cursor?: UnfurlDispatchCursor },
   UnfurlReferralLinksJobs
 >({
   queue: unfurlReferralLinksQueue,
@@ -69,14 +69,22 @@ export function enqueueUnfurlReferralLink(data: UnfurlReferralLinkEntry): Enqueu
   } satisfies Partial<JobOptions>)
 }
 
-export function enqueueUnfurlReferralLinksDispatcher(): EnqueueReturnType {
-  return enqueueUnfurlReferralLinksDispatcherJob(
-    {},
-    {
-      priority: PRIORITY_DISPATCHER,
-      ordering: UNFURL_REFERRAL_LINKS_ORDERING.dispatcher,
-    },
-  )
+export function enqueueUnfurlReferralLinksDispatcher(
+  cursor?: UnfurlDispatchCursor,
+): EnqueueReturnType {
+  return enqueueUnfurlReferralLinksDispatcherJob(cursor ? { cursor } : {}, {
+    priority: PRIORITY_DISPATCHER,
+    ...(cursor
+      ? {
+          deduplication: {
+            id: `referral-unfurl:${cursor.sweepStartedAt}:${cursor.afterId}`,
+            mode: 'throttle' as const,
+            ttl: UNFURL_REFERRAL_LINKS_DEFAULTS.deduplicationTtlMs,
+          },
+        }
+      : {}),
+    ordering: UNFURL_REFERRAL_LINKS_ORDERING.dispatcher,
+  })
 }
 
 /** Fired from the membership downgrade/expiry hook (decision #4 eager removal). Ordered and

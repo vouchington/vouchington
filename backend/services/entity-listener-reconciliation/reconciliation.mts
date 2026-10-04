@@ -3,7 +3,8 @@ import { getMinUUIDv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 
 const CHECKPOINT_NAME = 'entity-listeners'
-const BATCH_SIZE = 500
+import { getEntityReconciliationLimits } from './work-limits.mts'
+import type { CursorRunResult } from '@data-stores/psql/bounded-cursor-api'
 const OVERLAP_MS = 5 * 60_000
 const REPLICA_LAG_MARGIN_MS = 60_000
 
@@ -50,7 +51,14 @@ export async function getEntityReconciliationWindow(
 
 export async function* streamEntityReconciliationCandidateBatches(
   window: EntityReconciliationWindow,
+  options: {
+    after?: EntityReconciliationCandidate
+    limits?: ReturnType<typeof getEntityReconciliationLimits>
+    onComplete?: (result: Pick<CursorRunResult<unknown>, 'rowsRead' | 'hasMore'>) => void
+  } = {},
 ): AsyncGenerator<EntityReconciliationCandidate[]> {
+  const limits = options.limits ?? getEntityReconciliationLimits()
+  const after = options.after
   const firstRevisionId = getMinUUIDv7ForDate(window.start)
   const afterLastRevisionId = getMinUUIDv7ForDate(new Date(window.end.getTime() + 1))
   let batch: EntityReconciliationCandidate[] = []
@@ -100,9 +108,16 @@ export async function* streamEntityReconciliationCandidateBatches(
         FROM urls
         WHERE updated_at >= ${window.start} AND updated_at <= ${window.end}
       ) candidates
+      WHERE (${after?.entityId ?? null}::uuid IS NULL
+        OR (changed_at_epoch_us::numeric, entity_id, entity_type) >
+          (${after?.changedAtEpochUs ?? null}::numeric, ${after?.entityId ?? null}::uuid, ${after?.entityType ?? null}::text)
+        OR ((changed_at_epoch_us::numeric, entity_id, entity_type) =
+          (${after?.changedAtEpochUs ?? null}::numeric, ${after?.entityId ?? null}::uuid, ${after?.entityType ?? null}::text)
+          AND ${after?.changeId ?? null}::uuid IS NOT NULL
+          AND (change_id > ${after?.changeId ?? null}::uuid OR change_id IS NULL)))
       ORDER BY changed_at, entity_id, entity_type, change_id
     `,
-    { batchSize: BATCH_SIZE },
+    { batchSize: limits.batchSize, maxRows: limits.maxRows, onComplete: options.onComplete },
   )) {
     const changes = row.details?.changes as Record<string, { before?: unknown }> | undefined
     batch.push({
@@ -117,7 +132,7 @@ export async function* streamEntityReconciliationCandidateBatches(
         ? { referrerId: row.details.referrerId }
         : {}),
     })
-    if (batch.length >= BATCH_SIZE) {
+    if (batch.length >= limits.batchSize) {
       yield batch
       batch = []
     }

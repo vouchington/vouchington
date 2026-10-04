@@ -24,6 +24,7 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@modules/search-utils": "workspace:^",
     "@services/users": "workspace:^",

@@ -1,3 +1,4 @@
+import { parseEmbeddingScanCursor } from '@queues/bedrock-embeddings-batch/payload/job-payload'
 import type {
   BedrockEmbeddingsBatchCreationJob,
   BedrockEmbeddingsBatchPollingJob,
@@ -35,15 +36,15 @@ export const processBedrockEmbeddingsBatchJob = async (
       case 'creation': {
         switch (job.name as BedrockEmbeddingsBatchCreationJob) {
           case 'topics':
-            return await processTopicBatchCreation()
+            return await processTopicBatchCreation(parseEmbeddingScanCursor(job.data))
           case 'posts':
-            return await processPostBatchCreation()
+            return await processPostBatchCreation(parseEmbeddingScanCursor(job.data))
           case 'rss_feed_items':
-            return await processRssFeedItemBatchCreation()
+            return await processRssFeedItemBatchCreation(parseEmbeddingScanCursor(job.data))
           case 'crawl_chunks':
-            return await processCrawlChunkBatchCreation()
+            return await processCrawlChunkBatchCreation(parseEmbeddingScanCursor(job.data))
           case 'images':
-            return await processImageEmbeddingBatchCreation()
+            return await processImageEmbeddingBatchCreation(parseEmbeddingScanCursor(job.data))
           default:
             throw new Error(`Unknown creation job type: ${job.name}`)
         }

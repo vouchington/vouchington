@@ -10,7 +10,7 @@ export async function processUnfurlReferralLinksJob(job: Job): Promise<unknown> 
     case 'dispatcher': {
       switch (job.name as UnfurlReferralLinksJobs) {
         case 'unfurl_referral_links_dispatcher':
-          return dispatchUnfurlReferralLinks()
+          return dispatchUnfurlReferralLinks(job.data?.cursor)
         default:
           throw new Error(`Unfurl referral links dispatcher job ${job.name} not found`)
       }

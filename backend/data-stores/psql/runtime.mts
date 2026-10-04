@@ -1,3 +1,4 @@
+import { createBoundedCursorApi } from './bounded-cursor-api.mts'
 import pg from 'pg'
 import onError from '@modules/on-error'
 import { createPsql, type Psql } from '@vouchington/postgres'
@@ -49,10 +50,8 @@ export const read: Psql['read'] = (input, valuesOrOptions, options) =>
   runWithSingleQueryCapture(() => runtimeRead(input, valuesOrOptions, options))
 export const write: Psql['write'] = (input, valuesOrOptions, options) =>
   runWithSingleQueryCapture(() => runtimeWrite(input, valuesOrOptions, options))
-export const createAsyncGeneratorFromCursor: Psql['createAsyncGeneratorFromCursor'] =
-  psql.createAsyncGeneratorFromCursor
-export const executeHandlerWithCursorInBatches: Psql['executeHandlerWithCursorInBatches'] =
-  psql.executeHandlerWithCursorInBatches
+export const { createAsyncGeneratorFromCursor, executeHandlerWithCursorInBatches } =
+  createBoundedCursorApi(psql)
 export const close: Psql['close'] = psql.close
 
 registerPsqlPoolMetricsForTestEnvironment(

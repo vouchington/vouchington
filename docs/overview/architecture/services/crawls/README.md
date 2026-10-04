@@ -116,6 +116,12 @@ remaining chunks, allowing their embedding rows to cascade. Each partition retir
 transaction; a failure rolls back that partition, is reported, and leaves other partitions eligible
 for cleanup. Failed partitions remain attached for a later cleanup run.
 
+Per-hostname and tier URL dispatch capture a fixed sweep time and UUID upper bound, read at most
+the registered `crawl-dispatch-work-config` row budget, and report `hasMore`. Continuations retain
+the last dispatched URL ID, so still-eligible queued rows cannot occupy every run's first page.
+Tier selection starts from active relation/profile-link work and joins URLs by ID; it does not
+choose work by scanning unrelated URL entities. Hostname-wide scheduling remains a separate owner.
+
 ## Related
 
 - [Crawling Overview](../../crawling.md)

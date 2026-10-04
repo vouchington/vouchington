@@ -10,6 +10,7 @@ import {
 } from './config.mts'
 import { bedrock_embeddings_batch } from './queues.mts'
 import type {
+  EmbeddingScanCursor,
   BedrockEmbeddingsBatchDispatcherJob,
   BedrockEmbeddingsBatchPollingJob,
 } from './types.mts'
@@ -35,18 +36,20 @@ export {
 } from './enqueues/reconciliation.mts'
 
 function createCreationBatchEnqueue(jobName: CreationJobName, deduplicationId: string) {
-  const enqueue = createEnqueueFunction<Record<string, never>, CreationJobName>({
+  const enqueue = createEnqueueFunction<{ cursor?: EmbeddingScanCursor }, CreationJobName>({
     queue: bedrock_embeddings_batch,
     queueName: QUEUE_NAME,
     jobName,
     defaults,
   })
 
-  return (priority?: number): EnqueueReturnType => {
-    return enqueue({}, {
+  return (priority?: number, cursor?: EmbeddingScanCursor): EnqueueReturnType => {
+    return enqueue(cursor ? { cursor } : {}, {
       priority: priority ?? PRIORITY_DEFAULT,
       deduplication: {
-        id: deduplicationId,
+        id: cursor
+          ? `${deduplicationId}:${cursor.sweepStartedAt}:${cursor.afterId}:${cursor.afterOrderIndex ?? ''}`
+          : deduplicationId,
         mode: 'throttle',
         ttl: BEDROCK_EMBEDDINGS_BATCH_DEFAULTS.deduplicationTtlMs,
       },

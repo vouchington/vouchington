@@ -59,6 +59,19 @@ Roll this contract out independently per environment: deploy and verify the prod
 then apply that environment's EventBridge filter. Jobs created with the old unscoped name before
 the filter apply remain safe because the permanent poll dispatcher reconciles their terminal state.
 
+Pending-entity reads use registered cursor batch sizes and a per-run scan budget in
+`bedrock-embeddings-batch-config`. Creation reports `hasMore` and carries a fixed UUID sweep bound
+and last attempted position in its continuation (crawl chunks additionally retain the chunk order).
+Chunk scans use crawl ID descending and chunk order ascending for a stable resume order.
+Poison images count as attempted work; their continuation advances to the tail, and the next
+scheduled root sweep retries them. The same wrap retry covers undersized pages and submission
+failures. Provider rate denial preserves the current continuation unchanged.
+
+The scan budget must be at least the configured minimum batch size. Staff edits validate this
+against merged current fields, and runtime validation rejects an invalid combination before file,
+cursor, or provider side effects. This avoids permanently undersized healthy pages without lifting
+the configured work cap.
+
 ## Related
 
 - Base single-pipeline service and shared architecture diagram:

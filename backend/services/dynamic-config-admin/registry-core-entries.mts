@@ -13,9 +13,9 @@ import {
 } from '@services/post-content-limits'
 import { recaptchaConfig } from '@services/recaptcha/config'
 import { requestClientInfoConfig } from '@services/request-client-info/config'
+import { validateBedrockBatchConfig } from './registry-bedrock-validator.mts'
 import { defineDynamicConfigNamespace } from './registry-descriptor.mts'
 import {
-  validateBedrockBatchConfig,
   validateModerationConfig,
   validatePostContentLimitsConfig,
   validateRecaptchaConfig,
@@ -150,6 +150,18 @@ export const coreDynamicConfigRegistryEntries = [
       max_job_size_gb: bedrockField(
         'max_job_size_gb',
         'Maximum total in-flight Bedrock batch input size in GB.',
+      ),
+      cursor_batch_size: bedrockField(
+        'cursor_batch_size',
+        'Maximum text/crawl candidates per cursor fetch.',
+      ),
+      image_cursor_batch_size: bedrockField(
+        'image_cursor_batch_size',
+        'Maximum image candidates per cursor fetch.',
+      ),
+      max_scan_rows_per_run: bedrockField(
+        'max_scan_rows_per_run',
+        'Maximum scanned candidates per run; must cover the minimum records per job.',
       ),
       min_records_per_job: bedrockField(
         'min_records_per_job',

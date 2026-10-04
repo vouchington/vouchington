@@ -1,3 +1,4 @@
+import { parseReconciliationDispatch } from './job-payload-reconciliation.mts'
 import type { EntityJobs } from '../types.mts'
 import {
   communityPromptPayload,
@@ -21,7 +22,7 @@ export { entityJobContractCoversCanonicalTypes, JobPayloadError }
 
 const parsers = {
   reconcileEntity: parseReconcileEntity,
-  reconcileEntities: emptyPayload,
+  reconcileEntities: parseReconciliationDispatch,
   processUrlCreated: idPayload,
   processUrlUpdated: emptyPayload,
   processUrlDeleted: emptyPayload,

@@ -96,12 +96,12 @@ export async function processCrawlHostnamesJob(
       const hostnameId = job.data?.hostname_id
       if (!hostnameId)
         throw new Error('Crawl URLs per hostname dispatcher job .hostname_id is required')
-      return deps.dispatchCrawlUrlsPerHostname(hostnameId)
+      return deps.dispatchCrawlUrlsPerHostname(hostnameId, job.data?.cursor)
     }
     case 'crawl_tier1_dispatcher':
-      return deps.dispatchTier1CrawlUrls()
+      return deps.dispatchTier1CrawlUrls(job.data?.cursor)
     case 'crawl_tier2_dispatcher':
-      return deps.dispatchTier2CrawlUrls()
+      return deps.dispatchTier2CrawlUrls(job.data?.cursor)
     case 'crawl_cleanup':
       return processCrawlCleanup(deps)
     case 'refresh_hostname_crawler_dispatcher':

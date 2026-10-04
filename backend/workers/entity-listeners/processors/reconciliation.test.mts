@@ -30,13 +30,66 @@ describe('reconcileEntityBatches', () => {
         reconcileEntity: reconcile,
         advanceCheckpoint,
       }),
-    ).resolves.toEqual({ reconciled: 2 })
+    ).resolves.toEqual({ reconciled: 2, hasMore: false })
 
     expect(reconcile.mock.calls).toEqual([[first], [second]])
     expect(advanceCheckpoint).toHaveBeenCalledWith(completedThrough)
     expect(reconcile.mock.invocationCallOrder[1]).toBeLessThan(
       advanceCheckpoint.mock.invocationCallOrder[0]!,
     )
+  })
+
+  it('keeps the fixed window pending at its cap and emits the last successful cursor', async () => {
+    const candidate: ReconcileEntityData = {
+      entityType: 'user',
+      entityId: 'user-a',
+      changedAtEpochUs: '1001',
+    }
+    const advanceCheckpoint = vi.fn<(through: Date) => Promise<void>>(async () => {})
+    const onMore = vi.fn<(after?: ReconcileEntityData) => Promise<void>>(async () => {})
+    expect(
+      await reconcileEntityBatches(
+        toAsyncBatches([[candidate]]),
+        new Date(),
+        {
+          reconcileEntity: async () => {},
+          advanceCheckpoint,
+        },
+        { hasMore: () => true, onMore },
+      ),
+    ).toEqual({ reconciled: 1, hasMore: true })
+    expect(onMore).toHaveBeenCalledExactlyOnceWith(candidate)
+    expect(advanceCheckpoint).not.toHaveBeenCalled()
+  })
+
+  it('resumes from the successful predecessor when the next side effect fails', async () => {
+    const first: ReconcileEntityData = {
+      entityType: 'user',
+      entityId: 'user-a',
+      changedAtEpochUs: '1001',
+    }
+    const second: ReconcileEntityData = {
+      entityType: 'user',
+      entityId: 'user-b',
+      changedAtEpochUs: '1001',
+    }
+    const onMore = vi.fn<(after?: ReconcileEntityData) => Promise<void>>(async () => {})
+    const advanceCheckpoint = vi.fn<(through: Date) => Promise<void>>(async () => {})
+    await expect(
+      reconcileEntityBatches(
+        toAsyncBatches([[first, second]]),
+        new Date(),
+        {
+          reconcileEntity: async data => {
+            if (data.entityId === second.entityId) throw new Error('side effect failed')
+          },
+          advanceCheckpoint,
+        },
+        { hasMore: () => false, onMore },
+      ),
+    ).rejects.toThrow('side effect failed')
+    expect(onMore).toHaveBeenCalledExactlyOnceWith(first)
+    expect(advanceCheckpoint).not.toHaveBeenCalled()
   })
 
   it('leaves the checkpoint unchanged when an entity fails', async () => {

@@ -1,3 +1,4 @@
+import { createPendingScan, type PendingScanOptions } from './scan-options.mts'
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import { createTopicEmbeddingContent } from '@services/topics/content'
 import type { BatchUpdateItem } from '@services/bedrock-embeddings/batch/types'
@@ -22,11 +23,15 @@ export async function copyExistingTopicEmbeddings(
   return copyExistingEmbeddings('topics', options)
 }
 
-export async function* streamPendingTopics(): AsyncGenerator<PendingTopic, void, unknown> {
+export async function* streamPendingTopics(
+  options: PendingScanOptions = {},
+): AsyncGenerator<PendingTopic, void, unknown> {
+  const scan = createPendingScan(options)
   const query = `/* streamPendingTopics */
     SELECT t.id, t.name, t.aliases, t.markdown
     FROM topics t
-    WHERE t.deleted_at IS NULL
+    WHERE t.id < $1::uuid AND ($2::uuid IS NULL OR t.id < $2::uuid)
+      AND t.deleted_at IS NULL
       AND (
         t.bedrock_nova_multimodal_v1_input_sha256 IS NULL
         OR t.bedrock_nova_multimodal_v1_input_sha256 != t.bedrock_nova_multimodal_v1_content_sha256
@@ -37,7 +42,16 @@ export async function* streamPendingTopics(): AsyncGenerator<PendingTopic, void,
   `
 
   yield* streamPendingEntities<{ id: string; name: string; aliases: string[]; markdown: string }>(
-    createAsyncGeneratorFromCursor(query, [], { batchSize: 1000 }),
+    createAsyncGeneratorFromCursor<{
+      id: string
+      name: string
+      aliases: string[]
+      markdown: string
+    }>(query, [scan.upperId, scan.afterId], {
+      batchSize: scan.limits.batchSize,
+      maxRows: scan.limits.maxRows,
+      onComplete: scan.complete,
+    }),
     row =>
       createTopicEmbeddingContent({
         name: row.name,

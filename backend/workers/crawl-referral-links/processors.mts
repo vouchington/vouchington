@@ -30,7 +30,7 @@ export async function processCrawlReferralLinksJob(job: Job): Promise<unknown> {
     case 'dispatcher': {
       switch (job.name as CrawlReferralLinksJobs) {
         case 'crawl_referral_links_dispatcher':
-          return dispatchReferralLinkCrawls()
+          return dispatchReferralLinkCrawls(job.data ?? {})
         default:
           throw new Error(`Crawl referral links dispatcher job ${job.name} not found`)
       }

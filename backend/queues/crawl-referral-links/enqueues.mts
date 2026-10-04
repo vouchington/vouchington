@@ -9,7 +9,7 @@ import {
   PRIORITY_DISPATCHER,
 } from './config.mts'
 import { crawlReferralLinksQueue } from './queues.mts'
-import type { CrawlReferralLinksJobs } from './types.mts'
+import type { CrawlReferralLinksJobs, ReferralCrawlDispatchData } from './types.mts'
 
 type CrawlReferralLinkEntry = { linkId: string; urlId: string; referralProgramId: string }
 type CrawlReferralLinkContext = { hostnameId: string; rateLimitMs: number }
@@ -47,7 +47,7 @@ const enqueueBulkCrawlReferralLinkJobs = createBulkEnqueueFunction<
 })
 
 const enqueueCrawlReferralLinksDispatcherJob = createEnqueueFunction<
-  Record<string, never>,
+  ReferralCrawlDispatchData,
   CrawlReferralLinksJobs
 >({
   queue: crawlReferralLinksQueue,
@@ -76,12 +76,20 @@ export function enqueueBulkCrawlReferralLinks(
   )
 }
 
-export function enqueueCrawlReferralLinksDispatcher(): EnqueueReturnType {
-  return enqueueCrawlReferralLinksDispatcherJob(
-    {},
-    {
-      priority: PRIORITY_DISPATCHER,
-      ordering: CRAWL_REFERRAL_LINKS_ORDERING.dispatcher,
-    },
-  )
+export function enqueueCrawlReferralLinksDispatcher(
+  data: ReferralCrawlDispatchData = {},
+): EnqueueReturnType {
+  return enqueueCrawlReferralLinksDispatcherJob(data, {
+    priority: PRIORITY_DISPATCHER,
+    ...(data.cursor
+      ? {
+          deduplication: {
+            id: `referral-crawl:${data.urlId ?? 'scheduled'}:${JSON.stringify(data.referralLinkIds ?? [])}:${data.cursor.sweepStartedAt}:${data.cursor.afterId}`,
+            mode: 'throttle' as const,
+            ttl: CRAWL_REFERRAL_LINKS_DEFAULTS.deduplicationTtlMs,
+          },
+        }
+      : {}),
+    ordering: CRAWL_REFERRAL_LINKS_ORDERING.dispatcher,
+  })
 }

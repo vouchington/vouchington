@@ -1,11 +1,16 @@
-import { executeHandlerWithCursorInBatches, read } from '@data-stores/psql'
+import { executeHandlerWithCursorInBatches } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { computeHostnameRateLimitMs } from '@services/urls-domains-robots'
 import { CRAWLER_USER_AGENT } from '@voucha/config'
 import onError from '@modules/on-error'
-import { enqueueBulkCrawlReferralLinks } from '@queues/crawl-referral-links/enqueues'
+import {
+  enqueueBulkCrawlReferralLinks,
+  enqueueCrawlReferralLinksDispatcher,
+} from '@queues/crawl-referral-links/enqueues'
 
-const BATCH_SIZE = 1000
+import { getDispatchLimits } from './work-limits.mts'
+import { getMaxUUIDv7ForDate } from '@modules/utils'
+import type { ReferralCrawlDispatchCursor } from '@queues/crawl-referral-links/types'
 
 type EnqueueBulkCrawlReferralLinks = typeof enqueueBulkCrawlReferralLinks
 type ComputeHostnameRateLimitMs = typeof computeHostnameRateLimitMs
@@ -17,6 +22,8 @@ type ReferralLinkDispatchDependencies = {
 
 type ScheduledReferralLinkDispatchOptions = ReferralLinkDispatchDependencies & {
   referralLinkIds?: readonly string[]
+  cursor?: ReferralCrawlDispatchCursor
+  urlId?: string
 }
 
 async function enqueueByHostname(
@@ -70,28 +77,37 @@ async function enqueueByHostname(
 
 export async function dispatchReferralLinkCrawls(
   options: ScheduledReferralLinkDispatchOptions = {},
-): Promise<number> {
+) {
+  const limits = getDispatchLimits()
+  const sweepStartedAt = options.cursor?.sweepStartedAt ?? new Date().toISOString()
+  const upperId = getMaxUUIDv7ForDate(new Date(sweepStartedAt))
   const queryStatement = sql`/* dispatchReferralLinkCrawls */
     SELECT urpl.id AS link_id, urpl.url_id, urpl.referral_program_id,
            h.id AS hostname_id, h.hostname, h.requests_per_second_limit
     FROM user_referral_program_links urpl
     JOIN urls u ON u.id = urpl.url_id
     JOIN url_hostnames h ON h.id = u.hostname_id
-    WHERE urpl.activated_at IS NOT NULL
+    WHERE urpl.id <= ${upperId}::uuid
+      AND (${options.cursor?.afterId ?? null}::uuid IS NULL OR urpl.id > ${options.cursor?.afterId ?? null}::uuid)
+      AND urpl.activated_at IS NOT NULL
       AND urpl.deactivated_at IS NULL
       AND urpl.deleted_at IS NULL
       AND h.crawlable IS DISTINCT FROM false
       AND h.blocked = false
-      AND (urpl.last_crawl_success_at IS NULL OR urpl.last_crawl_success_at < NOW() - INTERVAL '7 days')
-      AND (urpl.last_crawl_failure_at IS NULL OR urpl.last_crawl_failure_at < NOW() - INTERVAL '1 hour')
+
   `
+  if (options.urlId) queryStatement.append(sql` AND urpl.url_id = ${options.urlId}::uuid`)
+  else
+    queryStatement.append(sql`
+      AND (urpl.last_crawl_success_at IS NULL OR urpl.last_crawl_success_at < ${sweepStartedAt}::timestamptz - INTERVAL '7 days')
+      AND (urpl.last_crawl_failure_at IS NULL OR urpl.last_crawl_failure_at < ${sweepStartedAt}::timestamptz - INTERVAL '1 hour')`)
   if (options.referralLinkIds !== undefined) {
     queryStatement.append(sql` AND urpl.id = ANY(${[...options.referralLinkIds]}::uuid[])`)
   }
-  queryStatement.append(sql` ORDER BY h.id, urpl.id`)
+  queryStatement.append(sql` ORDER BY urpl.id`)
 
   let total = 0
-  await executeHandlerWithCursorInBatches<{
+  const result = await executeHandlerWithCursorInBatches<{
     link_id: string
     url_id: string
     referral_program_id: string
@@ -99,7 +115,8 @@ export async function dispatchReferralLinkCrawls(
     hostname: string
     requests_per_second_limit: number | null
   }>(queryStatement, undefined, {
-    batchSize: BATCH_SIZE,
+    batchSize: limits.batchSize,
+    maxRows: limits.maxRows,
     readOnly: true,
     handler: async rows => {
       total += rows.length
@@ -111,40 +128,19 @@ export async function dispatchReferralLinkCrawls(
       })
     },
   })
-  return total
+  if (result.hasMore && result.lastRow)
+    await enqueueCrawlReferralLinksDispatcher({
+      cursor: { sweepStartedAt, afterId: result.lastRow.link_id },
+      ...(options.urlId ? { urlId: options.urlId } : {}),
+      ...(options.referralLinkIds ? { referralLinkIds: options.referralLinkIds } : {}),
+    })
+  return { count: total, hasMore: result.hasMore }
 }
 
+/** Event fanout preserves its URL scope and bypasses scheduled crawl cooldowns. */
 export async function enqueueReferralLinkCrawlsForUrlId(
   urlId: string,
   dependencies: ReferralLinkDispatchDependencies = {},
-): Promise<number> {
-  const { rows } = await read<{
-    link_id: string
-    url_id: string
-    referral_program_id: string
-    hostname_id: string
-    hostname: string
-    requests_per_second_limit: number | null
-  }>(sql`/* enqueueReferralLinkCrawlsForUrlId */
-    SELECT urpl.id AS link_id, urpl.url_id, urpl.referral_program_id,
-           h.id AS hostname_id, h.hostname, h.requests_per_second_limit
-    FROM user_referral_program_links urpl
-    JOIN urls u ON u.id = urpl.url_id
-    JOIN url_hostnames h ON h.id = u.hostname_id
-    WHERE urpl.url_id = ${urlId}
-      AND urpl.activated_at IS NOT NULL
-      AND urpl.deactivated_at IS NULL
-      AND urpl.deleted_at IS NULL
-      AND h.crawlable IS DISTINCT FROM false
-      AND h.blocked = false
-    ORDER BY h.id, urpl.id
-  `)
-
-  await enqueueByHostname(rows, {
-    enqueueBulkCrawlReferralLinks:
-      dependencies.enqueueBulkCrawlReferralLinks ?? enqueueBulkCrawlReferralLinks,
-    computeHostnameRateLimitMs:
-      dependencies.computeHostnameRateLimitMs ?? computeHostnameRateLimitMs,
-  })
-  return rows.length
+) {
+  return dispatchReferralLinkCrawls({ ...dependencies, urlId })
 }

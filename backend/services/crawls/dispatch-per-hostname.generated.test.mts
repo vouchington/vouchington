@@ -32,7 +32,7 @@ describe('dispatch-per-hostname.generated', () => {
 
     const result = await dispatchCrawlUrlsPerHostname(url!.hostname.id)
 
-    expect(result).toBe(0)
+    expect(result).toEqual({ count: 0, hasMore: false })
   })
 
   it('dispatchCrawlUrlsPerHostname returns 0 when hostname is not crawlable', async () => {
@@ -43,7 +43,7 @@ describe('dispatch-per-hostname.generated', () => {
 
     const result = await dispatchCrawlUrlsPerHostname(url!.hostname.id)
 
-    expect(result).toBe(0)
+    expect(result).toEqual({ count: 0, hasMore: false })
   })
 
   it('dispatchCrawlUrlsPerHostname returns 0 when hostname does not exist', async () => {
@@ -51,7 +51,7 @@ describe('dispatch-per-hostname.generated', () => {
 
     const result = await dispatchCrawlUrlsPerHostname(fakeId)
 
-    expect(result).toBe(0)
+    expect(result).toEqual({ count: 0, hasMore: false })
   })
 
   it('uses custom attempt threshold hours when filtering recent crawl attempts', async () => {
@@ -68,7 +68,7 @@ describe('dispatch-per-hostname.generated', () => {
 
     const result = await dispatchCrawlUrlsPerHostname(url!.hostname.id)
 
-    expect(result).toBe(0)
+    expect(result).toEqual({ count: 0, hasMore: false })
   })
 
   it('does not dispatch RSS feed URLs through the HTML crawler', async () => {
@@ -83,7 +83,7 @@ describe('dispatch-per-hostname.generated', () => {
 
     const result = await dispatchCrawlUrlsPerHostname(url!.hostname.id)
 
-    expect(result).toBe(0)
+    expect(result).toEqual({ count: 0, hasMore: false })
   })
 
   it('does not dispatch referral-link URLs through the HTML crawler', async () => {
@@ -103,7 +103,7 @@ describe('dispatch-per-hostname.generated', () => {
 
     const result = await dispatchCrawlUrlsPerHostname(url!.hostname.id)
 
-    expect(result).toBe(0)
+    expect(result).toEqual({ count: 0, hasMore: false })
   })
 
   it('dispatches deactivated referral-link URLs through the HTML crawler', async () => {
@@ -124,7 +124,7 @@ describe('dispatch-per-hostname.generated', () => {
 
     const result = await dispatchCrawlUrlsPerHostname(url!.hostname.id)
 
-    expect(result).toBe(1)
+    expect(result).toEqual({ count: 1, hasMore: false })
   })
 
   it('crawlable hostname filter excludes blocked and non-crawlable hostnames', async () => {

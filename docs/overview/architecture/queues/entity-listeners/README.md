@@ -105,6 +105,13 @@ Triggered by `enqueueOnPostDeleted(postId)`.
 
 - For comments, refresh ancestor metrics through the `entity-metrics-cache-refresh` queue.
 
+Reconciliation uses `entity-reconciliation-work-config` page and run limits and reports `hasMore`.
+Capped queue continuations retain the exact window and the last successfully processed composite
+position: epoch microseconds, entity ID, entity type, and nullable change ID (NULL last).
+Microseconds remain strings rather than passing through JavaScript Date. Failures enqueue the
+last successful position before retrying; only a drained window advances the durable checkpoint.
+Losing a continuation replays the unchanged checkpoint window through the scheduled recovery path.
+
 ## Related
 
 - Full post creation pipeline: [docs/overview/architecture/post-lifecycle.md](../../post-lifecycle.md)

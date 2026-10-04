@@ -1,3 +1,4 @@
+import type { EmbeddingScanCursor } from '@queues/bedrock-embeddings-batch/types'
 import { processBatch } from '@services/bedrock-embeddings-batch/orchestrator/poll'
 import {
   getBatchInfo,
@@ -56,39 +57,54 @@ export {
   processPostEmbeddingTriggerRecovery,
 } from './processors/reconciliation.mts'
 
-export const processTopicBatchCreation = (): Promise<CreateBatchResult> =>
+export const processTopicBatchCreation = (
+  cursor?: EmbeddingScanCursor,
+): Promise<CreateBatchResult> =>
   processBatchCreation({
+    cursor,
     jobType: 'topics',
-    streamPending: streamPendingTopics,
-    reEnqueue: enqueueCreateTopicEmbeddingsBatch,
+    streamPending: options => streamPendingTopics({ ...options, cursor }),
+    reEnqueue: next => enqueueCreateTopicEmbeddingsBatch(undefined, next),
   })
 
-export const processPostBatchCreation = (): Promise<CreateBatchResult> =>
+export const processPostBatchCreation = (
+  cursor?: EmbeddingScanCursor,
+): Promise<CreateBatchResult> =>
   processBatchCreation({
+    cursor,
     jobType: 'posts',
-    streamPending: streamPendingPosts,
-    reEnqueue: enqueueCreatePostEmbeddingsBatch,
+    streamPending: options => streamPendingPosts({ ...options, cursor }),
+    reEnqueue: next => enqueueCreatePostEmbeddingsBatch(undefined, next),
   })
 
-export const processRssFeedItemBatchCreation = (): Promise<CreateBatchResult> =>
+export const processRssFeedItemBatchCreation = (
+  cursor?: EmbeddingScanCursor,
+): Promise<CreateBatchResult> =>
   processBatchCreation({
+    cursor,
     jobType: 'rss_feed_items',
-    streamPending: streamPendingRssFeedItems,
-    reEnqueue: enqueueCreateRssFeedItemEmbeddingsBatch,
+    streamPending: options => streamPendingRssFeedItems({ ...options, cursor }),
+    reEnqueue: next => enqueueCreateRssFeedItemEmbeddingsBatch(undefined, next),
   })
 
-export const processCrawlChunkBatchCreation = (): Promise<CreateBatchResult> =>
+export const processCrawlChunkBatchCreation = (
+  cursor?: EmbeddingScanCursor,
+): Promise<CreateBatchResult> =>
   processBatchCreation({
+    cursor,
     jobType: 'crawl_chunks',
-    streamPending: streamPendingCrawlChunks,
-    reEnqueue: enqueueCreateCrawlChunkBatch,
+    streamPending: options => streamPendingCrawlChunks({ ...options, cursor }),
+    reEnqueue: next => enqueueCreateCrawlChunkBatch(undefined, next),
   })
 
-export const processImageEmbeddingBatchCreation = (): Promise<CreateBatchResult> =>
+export const processImageEmbeddingBatchCreation = (
+  cursor?: EmbeddingScanCursor,
+): Promise<CreateBatchResult> =>
   processImageBatchCreation({
-    streamPending: streamPendingImages,
+    cursor,
+    streamPending: options => streamPendingImages({ ...options, cursor }),
     addImageToBatch,
-    reEnqueue: enqueueCreateImageEmbeddingsBatch,
+    reEnqueue: next => enqueueCreateImageEmbeddingsBatch(undefined, next),
   })
 
 export const processBatchPolling = async (

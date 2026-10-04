@@ -20,7 +20,7 @@ export const findYourFriends = new Worker(
       case 'dispatcher': {
         switch (job.name as FindYourFriendsDispatcherJobs) {
           case 'dispatchFindYourFriends':
-            return processFindYourFriendsDispatcher()
+            return processFindYourFriendsDispatcher(undefined, job.data)
           default:
             throw new Error(`find-your-friends dispatcher job ${job.name} not found`)
         }
