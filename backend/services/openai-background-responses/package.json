@@ -25,7 +25,7 @@
     "@modules/openai-utils": "workspace:^",
     "@services/ai-usage": "workspace:^",
     "@ts-shared/utils": "workspace:^",
-    "openai": "^7.25.0",
+    "openai": "^7.27.0",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
