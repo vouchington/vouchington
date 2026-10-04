@@ -2075,8 +2075,8 @@ importers:
         specifier: ^0.2.4
         version: 0.2.4
       '@atproto/oauth-client-node':
-        specifier: ^0.5.7
-        version: 0.5.7
+        specifier: ^0.5.8
+        version: 0.5.8
       '@modules/api-egress-proxy':
         specifier: workspace:^
         version: link:../api-egress-proxy
@@ -13698,8 +13698,8 @@ packages:
     engines: {node: '>= 12.0.0'}
     hasBin: true
 
-  '@atproto-labs/did-resolver@0.3.9':
-    resolution: {integrity: sha512-KBgUdQQ76XL/xjQbuMfVBOEa5jaragR9NPq1uMoM4iXKnW5GGcEMHMPu+WrTxYNBku0b7MhPUfCs1pKtyLBP6g==}
+  '@atproto-labs/did-resolver@0.3.10':
+    resolution: {integrity: sha512-SPWOcJG/rsqrp2XQZQe8ctC9Y604mivZfXTrCsXbo7dXeAukYSgljPPa/7yWAlTvCbqUSNKScVEWpdCyel/nFw==}
     engines: {node: '>=22'}
 
   '@atproto-labs/fetch-node@0.4.0':
@@ -13718,12 +13718,8 @@ packages:
     resolution: {integrity: sha512-hsYYvGhi6Tv6f4Fti//i/vllVIb/wrJaOcbT3Yh7oo10VxBKAyxzVaB7mIJcho2YJ5kHd2kbCYYPWLw8pvm/bg==}
     engines: {node: '>=22'}
 
-  '@atproto-labs/handle-resolver@0.4.9':
-    resolution: {integrity: sha512-I2xrVsgw0M1Gp5qAWQwX8aoq6E79PnNHuWX+mg7zMRpuazA5DWiHoJOyBZHPeEtbtYO3F8g3le7PRL8imaWljw==}
-    engines: {node: '>=22'}
-
-  '@atproto-labs/identity-resolver@0.4.9':
-    resolution: {integrity: sha512-dVfbDHybOlDimEdUSbDfCQpMbmf25LNpffxCqSE//hLD86wiUzJQwJn2sHfskZTfwGD896wyY8musfrR3vDnOA==}
+  '@atproto-labs/identity-resolver@0.4.10':
+    resolution: {integrity: sha512-deKu7csOsM8lnIRnLa97te6ODIUx0Lm3Srxid/Ix+UYQqFKA0sIpfYmHZduAK7B+aTqiPcHjoA9Y/qpJyzgnMw==}
     engines: {node: '>=22'}
 
   '@atproto-labs/pipe@0.2.4':
@@ -13742,16 +13738,8 @@ packages:
     resolution: {integrity: sha512-LPMNsUA3SVXdveO/tU4PCUd/uQbOR3rgLJHHGU2h6Ug4dfnFjgrcm32W5Q49tt4x0gBmwyLcUFkiAgd0ii+IVQ==}
     engines: {node: '>=22'}
 
-  '@atproto/common-web@0.5.12':
-    resolution: {integrity: sha512-FumNnUOUsk68gP+jU0sXY2wY2piqFV9/qU2YaoQq/IZknhJBlLYCzjQXXCN0FCzxAZWD0YUzgydeyuRvFoAxfA==}
-    engines: {node: '>=22'}
-
   '@atproto/common-web@0.5.13':
     resolution: {integrity: sha512-TSVba26vsgeYqeE6BKrvomEbzRJPiRkmVfakfJxqoEWAwxrWfvXvKSwGkPIY57kw5g2gHpKxPIM0v+DqarWKEw==}
-    engines: {node: '>=22'}
-
-  '@atproto/did@0.5.5':
-    resolution: {integrity: sha512-ibCxTPsPQtrtX+iidnE0bkMBHuoWFBdVfPFfCAlUKY6HfkqdUUxItzvQu9AMucYDhP6vJ15HLVj+QhNY2jtIvw==}
     engines: {node: '>=22'}
 
   '@atproto/did@0.5.6':
@@ -13778,32 +13766,24 @@ packages:
     resolution: {integrity: sha512-mvrAd0lbyuecIHjyld8QN6MN6CBf4j0GCxLzegsvLh0SvDf+GbYWklkcQqmITL44yFQOwmA/QNIQj0Uvh7+R/g==}
     engines: {node: '>=22'}
 
-  '@atproto/lexicon@0.7.14':
-    resolution: {integrity: sha512-hDG2+61JTrvxDFtoojDFxKmZkFVl/lR/jFi82gSN0zNDjr+dlpUGKlG9MoPBkUKK83+Pi+I2jZ55xXboJq6JTA==}
-    engines: {node: '>=22'}
-
   '@atproto/lexicon@0.7.15':
     resolution: {integrity: sha512-VAiXSHY12hqFYevassyVlWXDxs88ya9jS6DhGc93QbxOQbKasy8yWtxzG3oMiSLQaN+hOuqZUw4kSySLZgR2/w==}
     engines: {node: '>=22'}
 
-  '@atproto/oauth-client-node@0.5.7':
-    resolution: {integrity: sha512-MBzhBcDu3YTojlnJbCHH7ouvzpkhVEpK9FMJsW4QZ1UiujkEAMq7jL77X54WQl7YF/KfaCWxZ54liC0nlRMoPw==}
+  '@atproto/oauth-client-node@0.5.8':
+    resolution: {integrity: sha512-Mhs0JlEiZC3iu0RB1XXjmbFodk8rTtyM+27tNm/2dHkTPdBZTbl7smwOoAXdNpa3rjgR4DlCEBLkTqS9XLsjcQ==}
     engines: {node: '>=22'}
 
-  '@atproto/oauth-client@0.8.7':
-    resolution: {integrity: sha512-DbWMFcy6t2HyyPKVEhKeh8xNNwM6sokPl/Qk7ctZLvEu+FT4GKsUppgf2hkWqeUyVc7nacu+nE7dCkYwPZmBKA==}
+  '@atproto/oauth-client@0.8.8':
+    resolution: {integrity: sha512-W2T44dtFRBiHlq21JAnailcR7pjkTIlVoYTSxkXTAiycac97KhiXqKPOOfAu2sjkA3FTnKlMMjdjv4UrtDui+w==}
     engines: {node: '>=22'}
 
-  '@atproto/oauth-types@0.7.6':
-    resolution: {integrity: sha512-FgFe2mJOUgJSQBxKBwLWv+lFyDxBnlqA+wfSLabCNnabtNuSO3UQI0CGI72K7/OQRQvdwkcYQMoUuw3Rqex/mg==}
+  '@atproto/oauth-types@0.7.7':
+    resolution: {integrity: sha512-HhY0n6BJtFlxHJTOwT34uf7BiMaEluuwiZqHkamWoFvl+Gk7bPgWhPslr4kX2J/7ryFxhdsKVj1tjWjy0AhjTw==}
     engines: {node: '>=22'}
 
   '@atproto/syntax@0.7.6':
     resolution: {integrity: sha512-luKQTcWw1H1jLmYvX34ldBqNjz2orF082njmcF9fxbWTqVhsO+TpY0FHRKVPoV7dwL0Y3L16DNz1ma0LFGH25g==}
-    engines: {node: '>=22'}
-
-  '@atproto/xrpc@0.8.13':
-    resolution: {integrity: sha512-htpi93/Zqyk5WsT+RrWemxMcJFJx2M4VT8i8avuWJTyr7AZ42qvPsIdVsaPdOOS3rZwodq/SdZXJFgspJ4yc5g==}
     engines: {node: '>=22'}
 
   '@atproto/xrpc@0.8.14':
@@ -22954,13 +22934,13 @@ snapshots:
       '@ast-grep/cli-win32-ia32-msvc': 0.45.3
       '@ast-grep/cli-win32-x64-msvc': 0.45.3
 
-  '@atproto-labs/did-resolver@0.3.9':
+  '@atproto-labs/did-resolver@0.3.10':
     dependencies:
       '@atproto-labs/fetch': 0.3.6
       '@atproto-labs/pipe': 0.2.4
       '@atproto-labs/simple-store': 0.5.1
       '@atproto-labs/simple-store-memory': 0.2.6
-      '@atproto/did': 0.5.5
+      '@atproto/did': 0.5.6
       zod: 3.25.76
 
   '@atproto-labs/fetch-node@0.4.0':
@@ -22989,17 +22969,10 @@ snapshots:
       '@atproto/did': 0.5.6
       zod: 3.25.76
 
-  '@atproto-labs/handle-resolver@0.4.9':
+  '@atproto-labs/identity-resolver@0.4.10':
     dependencies:
-      '@atproto-labs/simple-store': 0.5.1
-      '@atproto-labs/simple-store-memory': 0.2.6
-      '@atproto/did': 0.5.5
-      zod: 3.25.76
-
-  '@atproto-labs/identity-resolver@0.4.9':
-    dependencies:
-      '@atproto-labs/did-resolver': 0.3.9
-      '@atproto-labs/handle-resolver': 0.4.9
+      '@atproto-labs/did-resolver': 0.3.10
+      '@atproto-labs/handle-resolver': 0.4.10
 
   '@atproto-labs/pipe@0.2.4': {}
 
@@ -23021,22 +22994,11 @@ snapshots:
       tlds: 1.261.0
       zod: 3.25.76
 
-  '@atproto/common-web@0.5.12':
-    dependencies:
-      '@atproto/lex-data': 0.1.7
-      '@atproto/lex-json': 0.1.6
-      '@atproto/syntax': 0.7.6
-      zod: 3.25.76
-
   '@atproto/common-web@0.5.13':
     dependencies:
       '@atproto/lex-data': 0.1.7
       '@atproto/lex-json': 0.1.6
       '@atproto/syntax': 0.7.6
-      zod: 3.25.76
-
-  '@atproto/did@0.5.5':
-    dependencies:
       zod: 3.25.76
 
   '@atproto/did@0.5.6':
@@ -23070,13 +23032,6 @@ snapshots:
       '@atproto/lex-data': 0.1.7
       tslib: 2.8.1
 
-  '@atproto/lexicon@0.7.14':
-    dependencies:
-      '@atproto/common-web': 0.5.12
-      '@atproto/syntax': 0.7.6
-      multiformats: 13.4.2
-      zod: 3.25.76
-
   '@atproto/lexicon@0.7.15':
     dependencies:
       '@atproto/common-web': 0.5.13
@@ -23084,37 +23039,37 @@ snapshots:
       multiformats: 13.4.2
       zod: 3.25.76
 
-  '@atproto/oauth-client-node@0.5.7':
+  '@atproto/oauth-client-node@0.5.8':
     dependencies:
-      '@atproto-labs/did-resolver': 0.3.9
+      '@atproto-labs/did-resolver': 0.3.10
       '@atproto-labs/handle-resolver-node': 0.2.11
       '@atproto-labs/simple-store': 0.5.1
-      '@atproto/did': 0.5.5
+      '@atproto/did': 0.5.6
       '@atproto/jwk': 0.7.4
       '@atproto/jwk-jose': 0.2.4
       '@atproto/jwk-webcrypto': 0.3.4
-      '@atproto/oauth-client': 0.8.7
-      '@atproto/oauth-types': 0.7.6
+      '@atproto/oauth-client': 0.8.8
+      '@atproto/oauth-types': 0.7.7
 
-  '@atproto/oauth-client@0.8.7':
+  '@atproto/oauth-client@0.8.8':
     dependencies:
-      '@atproto-labs/did-resolver': 0.3.9
+      '@atproto-labs/did-resolver': 0.3.10
       '@atproto-labs/fetch': 0.3.6
-      '@atproto-labs/handle-resolver': 0.4.9
-      '@atproto-labs/identity-resolver': 0.4.9
+      '@atproto-labs/handle-resolver': 0.4.10
+      '@atproto-labs/identity-resolver': 0.4.10
       '@atproto-labs/simple-store': 0.5.1
       '@atproto-labs/simple-store-memory': 0.2.6
-      '@atproto/did': 0.5.5
+      '@atproto/did': 0.5.6
       '@atproto/jwk': 0.7.4
-      '@atproto/oauth-types': 0.7.6
-      '@atproto/xrpc': 0.8.13
+      '@atproto/oauth-types': 0.7.7
+      '@atproto/xrpc': 0.8.14
       core-js: 3.50.0
       multiformats: 13.4.2
       zod: 3.25.76
 
-  '@atproto/oauth-types@0.7.6':
+  '@atproto/oauth-types@0.7.7':
     dependencies:
-      '@atproto/did': 0.5.5
+      '@atproto/did': 0.5.6
       '@atproto/jwk': 0.7.4
       zod: 3.25.76
 
@@ -23122,11 +23077,6 @@ snapshots:
     dependencies:
       iso-datestring-validator: 2.2.2
       tslib: 2.8.1
-
-  '@atproto/xrpc@0.8.13':
-    dependencies:
-      '@atproto/lexicon': 0.7.14
-      zod: 3.25.76
 
   '@atproto/xrpc@0.8.14':
     dependencies:
