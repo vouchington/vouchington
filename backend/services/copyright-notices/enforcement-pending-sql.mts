@@ -1,5 +1,6 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { automatedAssessmentSql } from './automated-assessment-sql.mts'
+import { territorialAssessmentRevokedSql } from './restriction-reversal-sources-sql.mts'
 
 /**
  * Which automated (clear-screen, not moderator-reviewed) assessments a pending-enforcement query
@@ -47,6 +48,9 @@ export function pendingCopyrightEnforcementSql(
         FROM copyright_notice_submission_assessments newer
         WHERE newer.supersedes_assessment_id = assessment.id
       )
+      AND NOT `)
+    .append(territorialAssessmentRevokedSql)
+    .append(sql`
       AND NOT EXISTS (
         SELECT 1 FROM copyright_restrictions restriction
         WHERE restriction.copyright_notice_target_id = target.id

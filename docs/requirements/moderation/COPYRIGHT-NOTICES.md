@@ -739,43 +739,59 @@ or unassessed filings and another independent restriction never lose their prote
 
 US timing does not govern EU or UK cases. The public form and email intake still accept only
 `us_dmca`. EU and UK use separate contracts and stay unavailable until an unwithdrawn jurisdiction
-policy approval exists. That approval is an operator record, not a seeded row. New EU and UK notices
-need both it and `COPYRIGHT_INTAKE_ENABLED`, and neither replaces the other. Redress, supervised
-complaints, and staff decisions on an existing EU or UK notice do not depend on
-`COPYRIGHT_INTAKE_ENABLED`. Representatives, counsel review, and the activation checklist remain
-required before any live intake is advertised. Conflicting grounds go to qualified staff or
-counsel, and removing one ground cannot remove another.
+policy approval exists. That approval is an operator record, not a seeded row, and remains
+unapproved until the staff web screen ships. New EU and UK notices need both that approval and
+`COPYRIGHT_INTAKE_ENABLED`; neither replaces the other. Withdrawing approval stops new EU/UK
+notice intake only. A notice already received remains decidable, and its acknowledgment, decision,
+enforcement, statement delivery, complaint and complaint decision, restoration, and Article 21
+recording use the notice's receipt rather than current approval. These staff and in-case operations
+do not depend on `COPYRIGHT_INTAKE_ENABLED`. Representatives, counsel review, and the activation
+checklist remain required before any live intake is advertised. Conflicting grounds go to qualified
+staff or counsel, and removing one ground cannot remove another.
 
 ## EU and UK contracts
 
 The fail-closed flow is diagrammed in the
 [copyright notices service README](../../../backend/services/copyright-notices/README.md).
 
-Receipt stores the notifier's contact, content location, and grounds. It does not resolve a
-placement, write a lifecycle event, or create a US restoration deadline. Acknowledgment is an
-administrative obligation with no due timestamp. A failed attempt can be recorded until the fifth
-failure, the same attempt bound used for copyright delivery, and that fifth failure escalates.
-Success does not invent a response deadline.
+Receipt stores the notifier's contact, content location, and grounds. Staff resolve the post-image
+targets from the notifier's URL when deciding the notice; the notice body and its hash remain
+unchanged. A decision writes no US restoration deadline. Acknowledgment is an administrative
+obligation with no due timestamp. A failed attempt can be recorded until the fifth failure, the same
+attempt bound used for copyright delivery, and that fifth failure escalates. Success does not invent
+a response deadline.
 
 A statement of reasons, UK review, and redress decision exist only when an identified staff user
-supplies the text. The EU statement of reasons (DSA Art. 17) and the UK review are the same kind of
-stored decision, told apart by jurisdiction. `automation_disclosure` is `human`. The staff disposition on redress is
-`maintain` or `revoke` as selected by that user. The service does not choose it and does not
-withhold media. A supervised complaint records an external authority reference and escalates that
-record. Transparency reporting counts facts bound to the current EU approval inside a period the
-caller supplies. It does not choose the period.
+supplies them. Each decision is `restrict` or `no_action`, with internal rationale and a separate,
+required public explanation. The explanation is encrypted, limited to 2,000 characters, and sent to
+the poster in the Art. 17 statement and to the notifier in the Art. 16(5) notice; staff must not
+include personal data. It is not included in Art. 15 reporting or Art. 24(5) submissions. The EU
+statement of reasons (DSA Art. 17) and the UK review are the same kind of stored decision, told
+apart by jurisdiction. `automation_disclosure` is `human`.
 
-UK review and redress do not write EU reason, complaint, or report rows. Neither contract imports
-the US counter-notice clock.
+For `restrict`, staff name one or more existing post-image targets using the required `post-image`
+surface discriminator, post id, image id, and notifier URL. The service resolves and validates the
+hosted placements, creates a human-compliant notice assessment, and withholds the targets through
+the ordinary restriction path. It sends the poster statement and notifier decision notice. For
+`no_action`, there are no targets, assessment, or restriction; the notifier receives the decision
+notice. A complaint `revoke` reverses only restrictions authorized by that decision and voids the
+associated repeat-infringer incident. A `revoke` of `no_action` reopens the staff queue; the
+successor decision may only be `restrict` and must name its post-image targets. `maintain` creates
+no reversal.
+
+The staff disposition on redress is `maintain` or `revoke` as selected by that user. A supervised
+complaint records an external authority reference and escalates that record. UK review and redress
+do not write EU reason, complaint, or report rows. Neither contract imports the US counter-notice
+clock.
 
 A member-visible case records an allegation and, where applicable, a provisional restriction or reviewed
 outcome. It never describes the claimant as the proven owner or the poster as an infringer.
 
 ## Repeat-infringer incidents
 
-A human `confirm` on a restriction or its immutable appeal review creates one incident for the
-live account in the target's strike set above. An avatar or profile-link owner gets one even when an
-administrator; a non-administrator community setter gets one, including a moderator acting as an
+A human `confirm` on a US restriction or its immutable appeal review, and a staff-confirmed EU/UK
+`restrict` decision, creates one incident for the live account in the target's strike set above. An
+avatar or profile-link owner gets one even when an administrator; a non-administrator community setter gets one, including a moderator acting as an
 owner. Topic images and administrator-set community images create none. Every authorized reversal
 source, including an administrator lift, is terminal for that restriction and dominates confirmation. Appeal decisions synchronize incidents in the same
 transaction. Several targets on the same notice stay one incident per account; reversing one

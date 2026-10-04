@@ -21,14 +21,20 @@ export async function createCopyrightClaimantDecisionNoticeInTransaction(
   const { rows } = await transaction<{
     claimant_user_id: string | null
     already_rejected: boolean
+    later_restricted: boolean
   }>(sql`/* createCopyrightClaimantDecisionNoticeInTransaction:recipient */
     SELECT claimant_user_id, EXISTS (SELECT 1 FROM copyright_notice_delivery_intents
-      WHERE idempotency_key IN (${`copyright-decision:${input.noticeId}:not_accepted:claimant`}, ${`copyright-decision:${input.noticeId}:not_accepted:claimant:email`})) AS already_rejected
+      WHERE idempotency_key IN (${`copyright-decision:${input.noticeId}:not_accepted:claimant`}, ${`copyright-decision:${input.noticeId}:not_accepted:claimant:email`})) AS already_rejected,
+      EXISTS (SELECT 1 FROM copyright_notice_delivery_intents restricted_intent
+        WHERE restricted_intent.idempotency_key IN (
+          ${`copyright-decision:${input.noticeId}:restricted:claimant`},
+          ${`copyright-decision:${input.noticeId}:restricted:claimant:email`}
+        )) AS later_restricted
     FROM copyright_notices WHERE id = ${input.noticeId} FOR UPDATE
   `)
   const notice = rows[0]
   assert(notice, 404, 'Copyright notice not found')
-  if (input.event === 'reversed' && notice.already_rejected) return
+  if (input.event === 'reversed' && notice.already_rejected && !notice.later_restricted) return
   const facts = await selectCopyrightStatementFacts(input.noticeId, transaction, input)
   const statement = buildCopyrightStatementOfReasons({
     ...facts,

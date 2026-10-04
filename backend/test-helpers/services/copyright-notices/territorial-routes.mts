@@ -166,7 +166,12 @@ export async function seedDeterminedTerritorialNotice(
   const services = SERVICES[jurisdiction]
   const noticeId = await seedPendingTerritorialNotice(jurisdiction, actors.claimant)
   await services.acknowledge(actors.claimant, noticeId)
-  await services.determine(actors.staff, noticeId, `Staff reasons ${crypto.randomUUID()}`)
+  await services.determine(actors.staff, noticeId, {
+    text: `Staff reasons ${crypto.randomUUID()}`,
+    publicExplanation: 'We reviewed the notice and took no action.',
+    outcome: 'no_action',
+    targets: [],
+  })
   return noticeId
 }
 

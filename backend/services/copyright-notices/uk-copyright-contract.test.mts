@@ -85,12 +85,22 @@ describe('UK copyright notice contracts', () => {
     expect(acknowledgment.acknowledged_at).toBeInstanceOf(Date)
     expect(acknowledgment.escalated).toBe(false)
     await expect(
-      recordUkCopyrightReview(stranger, receipt.notice_id, 'Not staff'),
+      recordUkCopyrightReview(stranger, receipt.notice_id, {
+        text: 'Not staff',
+        publicExplanation: 'No action taken.',
+        outcome: 'no_action',
+        targets: [],
+      }),
     ).rejects.toMatchObject({ status: 403 })
     await expect(
       submitUkCopyrightRedress(claimant, receipt.notice_id, crypto.randomUUID(), 'Too soon'),
     ).rejects.toMatchObject({ status: 404 })
-    const review = await recordUkCopyrightReview(staff, receipt.notice_id, 'Staff review rationale')
+    const review = await recordUkCopyrightReview(staff, receipt.notice_id, {
+      text: 'Staff review rationale',
+      publicExplanation: 'No action taken.',
+      outcome: 'no_action',
+      targets: [],
+    })
     expect(review.automation_disclosure).toBe('human')
     const redress = await submitUkCopyrightRedress(
       claimant,

@@ -2,6 +2,7 @@ import {
   copyrightStatementSummary,
   copyrightStatementText,
 } from './statement-of-reasons-wording.mts'
+import { copyrightStatementLegalGround } from './statement-of-reasons-legal-ground.mts'
 
 import type {
   CopyrightStatementInput,
@@ -21,8 +22,9 @@ export function buildCopyrightStatementOfReasons(input: CopyrightStatementInput)
   text: string
   inAppSummary: string
 } {
-  if (input.jurisdiction !== 'us_dmca' || input.legalBasis !== 'copyright')
+  if (input.legalBasis !== 'copyright')
     throw new Error('Unsupported copyright statement legal ground')
+  const legalGround = copyrightStatementLegalGround(input.jurisdiction)
   if (input.event === 'restriction_ended' && (!input.restorationCause || !input.restorationOutcome))
     throw new Error('Restoration cause and outcome are required')
   const redress: CopyrightStatementFields['redress'] = []
@@ -30,23 +32,28 @@ export function buildCopyrightStatementOfReasons(input: CopyrightStatementInput)
     input.audience === 'poster' &&
     (input.event === 'restricted' || input.event === 'confirmed')
   ) {
-    redress.push(
-      { key: 'appeal', label: 'Appeal', path: `/copyright/notices/${input.noticeId}/appeal` },
-      {
-        key: 'counter_notice',
-        label: 'Counter-notice',
-        path: `/copyright/notices/${input.noticeId}/counter-notice`,
-      },
-      { key: 'court', label: 'Judicial redress', path: null },
-    )
+    if (input.jurisdiction === 'us_dmca')
+      redress.push(
+        { key: 'appeal', label: 'Appeal', path: `/copyright/notices/${input.noticeId}/appeal` },
+        {
+          key: 'counter_notice',
+          label: 'Counter-notice',
+          path: `/copyright/notices/${input.noticeId}/counter-notice`,
+        },
+      )
+    redress.push({ key: 'court', label: 'Judicial redress', path: null })
   }
   if (input.audience === 'claimant' && input.event !== 'restriction_ended') {
-    if (input.event === 'reversed' || input.event === 'not_accepted')
-      redress.push({ key: 'new_notice', label: 'New notice', path: '/copyright/notices/new' })
-    redress.push(
-      { key: 'designated_agent', label: 'Designated agent', path: '/copyright/designated-agent' },
-      { key: 'court', label: 'Judicial redress', path: null },
-    )
+    if (input.jurisdiction === 'us_dmca') {
+      if (input.event === 'reversed' || input.event === 'not_accepted')
+        redress.push({ key: 'new_notice', label: 'New notice', path: '/copyright/notices/new' })
+      redress.push({
+        key: 'designated_agent',
+        label: 'Designated agent',
+        path: '/copyright/designated-agent',
+      })
+    }
+    redress.push({ key: 'court', label: 'Judicial redress', path: null })
   }
   const fields: CopyrightStatementFields = {
     restriction:
@@ -71,7 +78,7 @@ export function buildCopyrightStatementOfReasons(input: CopyrightStatementInput)
             : 'person',
       aiGuidance: input.aiGuidance,
     },
-    legalGround: { jurisdiction: 'us_dmca', legalBasis: 'copyright', citation: '17 U.S.C. 512' },
+    legalGround: legalGround.fields,
     redress,
   }
   return {

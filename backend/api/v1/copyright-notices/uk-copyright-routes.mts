@@ -12,6 +12,7 @@ import {
   submitUkCopyrightRedress,
 } from '@services/copyright-notices'
 import {
+  parseTerritorialDecisionBody,
   parseTerritorialNoticeBody,
   parseTerritorialRedressDecision,
   parseTerritorialText,
@@ -82,12 +83,12 @@ app.route('/api/v1/copyright-uk-notices/:id/reviews').post(async (ctx: Context) 
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   const body = await parseJsonBody<CopyrightTerritorialReviewRequest>(ctx)
   const noticeId = validateUUIDParam(ctx, 'id')
-  const rationale = parseTerritorialText(body, 'rationale')
+  const input = parseTerritorialDecisionBody(body, 'rationale')
   validateRequestContract(ctx, 'POST:/api/v1/copyright-uk-notices/:id/reviews', {
     path: ctx.params,
     body,
   })
-  const review = await recordUkCopyrightReview(currentUser, noticeId, rationale)
+  const review = await recordUkCopyrightReview(currentUser, noticeId, input)
   ctx.setStatus(201)
   ctx.json({ copyright_uk_review: review })
 })

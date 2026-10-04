@@ -127,6 +127,10 @@ environment:
   workflows are live; and
 - the repeat-infringer policy, retention schedule, templates, staffing, and legal review are approved.
 
+For EU/UK, never record jurisdiction approval until the staff web decision screen (#1906) has
+shipped. That prerequisite is separate from `COPYRIGHT_INTAKE_ENABLED`; neither is currently an
+authorization to enable intake.
+
 This switch is the intake kill switch. It stops only new claimant intake: the notice forms, staff
 approval of an emailed notice (which would open a new case), the AI email-intake recommendation
 job, and the AI form-screening job. Existing complaint pages, all ongoing statutory casework, and
@@ -144,9 +148,20 @@ fails when a non-GET copyright route has no class. Approving an emailed notice c
 so it is closed with the forms. Staff approval of an already received form intake is a staff
 decision, so it can still open a case while the switch is off. New EU and UK notices need the
 switch and an unwithdrawn jurisdiction policy approval. Turning the switch on does not approve
-either jurisdiction.
+either jurisdiction. Approval controls new EU/UK receipts only. Withdrawal does not stop staff from
+acknowledging or deciding a received notice, delivering its notices, processing redress, or
+restoring a decision-authorized restriction; those operations use the approval snapshot on the
+receipt. Do not route an existing case through new-intake approval.
 
-Never approve `uk` without counsel's written sign-off. Approval and withdrawal are administrator-only:
+The web staff queue uses `territorial_notice_review` for a received notice without a live decision
+and `territorial_decision_reopened` after a complaint `revoke` of `no_action`. Reviewers resolve the
+notifier's URL to post-image targets. `restrict` requires one or more such targets and the normal
+human-compliant assessment; `no_action` has no targets or withholding. A reopened notice may receive
+a restricting successor only. The public explanation is sent to the poster and notifier, so keep
+personal data out of it; internal rationale remains separate.
+
+Never approve `uk` without counsel's written sign-off. EU/UK approval also remains blocked until
+#1906's staff screen ships. Approval and withdrawal are administrator-only:
 `POST /api/v1/copyright-jurisdiction-policies` and `.../:id/withdrawals`. Basis recorded by the owner
 on 2026-09-28: Online Safety Act 2023 s.59 excludes intellectual property, and e-Commerce Regulations
 2002 reg. 19 is met by the global pipeline. Counsel has not yet confirmed this basis; it is tracked

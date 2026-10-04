@@ -4644,9 +4644,113 @@
           "form_intake_review",
           "legal_hold_review",
           "restriction_review",
-          "staydown_review"
+          "staydown_review",
+          "territorial_decision_reopened",
+          "territorial_notice_review"
         ],
         "type": "string"
+      },
+      "CopyrightStaffTerritorialCase": {
+        "additionalProperties": false,
+        "properties": {
+          "acknowledgment": {
+            "additionalProperties": false,
+            "properties": {
+              "acknowledged_at": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "attempt_count": {
+                "type": "number"
+              },
+              "escalated": {
+                "type": "boolean"
+              },
+              "exhausted_at": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "last_attempt_at": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "acknowledged_at",
+              "attempt_count",
+              "escalated",
+              "exhausted_at",
+              "last_attempt_at"
+            ],
+            "type": "object"
+          },
+          "decision": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "decided_at": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "outcome": {
+                    "enum": ["no_action", "restrict"],
+                    "type": "string"
+                  },
+                  "public_explanation": {
+                    "type": "string"
+                  },
+                  "rationale": {
+                    "type": "string"
+                  }
+                },
+                "required": ["decided_at", "id", "outcome", "public_explanation", "rationale"],
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "grounds": {
+            "type": "string"
+          },
+          "hosted_use_url": {
+            "type": "string"
+          },
+          "reopened_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": ["acknowledgment", "decision", "grounds", "hosted_use_url", "reopened_at"],
+        "type": "object"
       },
       "CopyrightTerritorialNoticeRequest": {
         "additionalProperties": false,
@@ -4708,26 +4812,6 @@
           }
         },
         "required": ["period_end", "period_start"],
-        "type": "object"
-      },
-      "CopyrightTerritorialReviewRequest": {
-        "additionalProperties": false,
-        "properties": {
-          "rationale": {
-            "type": "string"
-          }
-        },
-        "required": ["rationale"],
-        "type": "object"
-      },
-      "CopyrightTerritorialStatementRequest": {
-        "additionalProperties": false,
-        "properties": {
-          "statement": {
-            "type": "string"
-          }
-        },
-        "required": ["statement"],
         "type": "object"
       },
       "CopyrightTerritorialSupervisedComplaintRequest": {
@@ -20493,6 +20577,47 @@
           }
         },
         "required": ["id", "is_duplicate"],
+        "type": "object"
+      },
+      "TerritorialDecisionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "enum": ["no_action", "restrict"],
+            "type": "string"
+          },
+          "public_explanation": {
+            "type": "string"
+          },
+          "targets": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "image_id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "post_id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "surface": {
+                  "const": "post-image"
+                },
+                "target_url": {
+                  "type": "string"
+                }
+              },
+              "required": ["image_id", "post_id", "surface", "target_url"],
+              "type": "object"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": false
+          }
+        },
+        "required": ["outcome", "public_explanation"],
         "type": "object"
       },
       "TopHashtag": {
@@ -44674,7 +44799,48 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CopyrightTerritorialStatementRequest"
+                "additionalProperties": false,
+                "properties": {
+                  "outcome": {
+                    "enum": ["no_action", "restrict"],
+                    "type": "string"
+                  },
+                  "public_explanation": {
+                    "type": "string"
+                  },
+                  "statement": {
+                    "type": "string"
+                  },
+                  "targets": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "image_id": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "post_id": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "surface": {
+                          "const": "post-image"
+                        },
+                        "target_url": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["image_id", "post_id", "surface", "target_url"],
+                      "type": "object"
+                    },
+                    "maxItems": 20,
+                    "minItems": 1,
+                    "type": "array",
+                    "uniqueItems": false
+                  }
+                },
+                "required": ["outcome", "public_explanation", "statement"],
+                "type": "object"
               }
             }
           }
@@ -45615,7 +45781,8 @@
                             "type": "string"
                           },
                           "jurisdiction": {
-                            "const": "us_dmca"
+                            "enum": ["eu_dsa", "uk", "us_dmca"],
+                            "type": "string"
                           },
                           "legal_holds": {
                             "items": {
@@ -45924,6 +46091,9 @@
                               "type": "object"
                             },
                             "type": "array"
+                          },
+                          "territorial": {
+                            "$ref": "#/components/schemas/CopyrightStaffTerritorialCase"
                           },
                           "waiting_since": {
                             "type": "string"
@@ -47818,7 +47988,48 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CopyrightTerritorialReviewRequest"
+                "additionalProperties": false,
+                "properties": {
+                  "outcome": {
+                    "enum": ["no_action", "restrict"],
+                    "type": "string"
+                  },
+                  "public_explanation": {
+                    "type": "string"
+                  },
+                  "rationale": {
+                    "type": "string"
+                  },
+                  "targets": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "image_id": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "post_id": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "surface": {
+                          "const": "post-image"
+                        },
+                        "target_url": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["image_id", "post_id", "surface", "target_url"],
+                      "type": "object"
+                    },
+                    "maxItems": 20,
+                    "minItems": 1,
+                    "type": "array",
+                    "uniqueItems": false
+                  }
+                },
+                "required": ["outcome", "public_explanation", "rationale"],
+                "type": "object"
               }
             }
           }

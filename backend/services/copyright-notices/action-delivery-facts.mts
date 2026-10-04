@@ -6,6 +6,7 @@ import {
   reverseReviewSourceSql,
   appealReversalSourceSql,
   administratorLiftSourceSql,
+  territorialComplaintReversalSourceSql,
 } from './restriction-reversal-sources-sql.mts'
 
 export type CopyrightActionFacts = Omit<
@@ -28,7 +29,9 @@ export function copyrightActionDeliveryFacts() {
     .append(sql` AS reversal_by_review, `)
     .append(appealReversalSourceSql)
     .append(sql` AS reversal_by_appeal, `)
-    .append(administratorLiftSourceSql).append(sql` AS reversal_by_administrator_lift,
+    .append(administratorLiftSourceSql)
+    .append(sql` AS reversal_by_administrator_lift, `)
+    .append(territorialComplaintReversalSourceSql).append(sql` AS reversal_by_complaint,
     EXISTS (
       SELECT 1 FROM copyright_legal_hold_restrictions hold_restriction
       JOIN copyright_notice_legal_hold_resolutions hold_resolution

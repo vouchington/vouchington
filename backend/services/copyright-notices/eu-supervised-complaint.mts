@@ -5,7 +5,6 @@ import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { assertBoundedText } from './territorial-fields.mts'
-import { lockCurrentCopyrightJurisdictionPolicy } from './jurisdiction-policy.mts'
 
 const JURISDICTION = 'eu_dsa'
 
@@ -29,7 +28,7 @@ export async function recordEuCopyrightSupervisedComplaint(
   const { rows: receipts } = await transaction<{ requester_user_id: string | null }>(
     sql`/* recordEuCopyrightSupervisedComplaint:receipt */
     SELECT requester_user_id FROM copyright_territorial_notice_receipts
-    WHERE copyright_notice_id = ${noticeId} AND jurisdiction = ${JURISDICTION}
+    WHERE copyright_notice_id = ${noticeId} AND jurisdiction = ${JURISDICTION} FOR UPDATE
   `,
   )
   const receipt = receipts[0]
@@ -47,7 +46,6 @@ export async function recordEuCopyrightSupervisedComplaint(
   `,
   )
   assert(!existing[0], 409, 'That supervised complaint is already recorded')
-  await lockCurrentCopyrightJurisdictionPolicy(JURISDICTION, transaction)
   const { rows: complaints } = await transaction<{ id: string }>(
     sql`/* recordEuCopyrightSupervisedComplaint */
     INSERT INTO copyright_eu_supervised_complaints (

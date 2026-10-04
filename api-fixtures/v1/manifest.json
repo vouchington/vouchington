@@ -13857,7 +13857,7 @@
     },
     "GET:/api/v1/copyright-notices/review-queue": {
       "bodyKind": "content",
-      "hash": "fa0cd56356b568a7a4d6eedfa0f9777200e4cc3a44e2d937fa09f34a84d53ddc",
+      "hash": "0b5c41c6eb440254b118045a5e12b24aa821f38f00c051ebe1ea6053570990eb",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -14343,8 +14343,168 @@
               {
                 "type": "literal",
                 "value": "staydown_review"
+              },
+              {
+                "type": "literal",
+                "value": "territorial_decision_reopened"
+              },
+              {
+                "type": "literal",
+                "value": "territorial_notice_review"
               }
             ]
+          },
+          "CopyrightStaffTerritorialCase": {
+            "additionalProperties": false,
+            "properties": {
+              "acknowledgment": {
+                "required": true,
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "acknowledged_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "attempt_count": {
+                      "required": true,
+                      "schema": {
+                        "type": "number"
+                      }
+                    },
+                    "escalated": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "exhausted_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "last_attempt_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "decision": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "decided_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "outcome": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "literal",
+                                "value": "no_action"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "restrict"
+                              }
+                            ]
+                          }
+                        },
+                        "public_explanation": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "rationale": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "grounds": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "hosted_use_url": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "reopened_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
           },
           "Record<string,unknown>": {
             "additionalProperties": {
@@ -14963,8 +15123,21 @@
                     "jurisdiction": {
                       "required": true,
                       "schema": {
-                        "type": "literal",
-                        "value": "us_dmca"
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "literal",
+                            "value": "eu_dsa"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "uk"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "us_dmca"
+                          }
+                        ]
                       }
                     },
                     "legal_holds": {
@@ -15430,6 +15603,13 @@
                           "type": "object"
                         },
                         "type": "array"
+                      }
+                    },
+                    "territorial": {
+                      "required": false,
+                      "schema": {
+                        "name": "CopyrightStaffTerritorialCase",
+                        "type": "ref"
                       }
                     },
                     "waiting_since": {

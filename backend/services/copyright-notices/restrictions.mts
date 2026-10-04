@@ -11,6 +11,7 @@ import {
   applyCopyrightConfirmationConsequencesInTransaction,
   enqueueCopyrightStaydownHashes,
 } from './staydown-registration.mts'
+import { territorialAssessmentRevokedSql } from './restriction-reversal-sources-sql.mts'
 
 export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   noticeId: string
@@ -63,7 +64,9 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
     substantially_compliant: boolean
     current_screening_authority: boolean
     has_rejected_form_review: boolean
-  }>(sql`/* acceptCopyrightNoticeAndImposeRestriction:lockAssessment */
+    territorial_revoked: boolean
+  }>(
+    sql`/* acceptCopyrightNoticeAndImposeRestriction:lockAssessment */
     SELECT submission.source_kind, assessment.assessed_by_id, assessment.substantially_compliant, assessment.copyright_notice_form_screening_id,
       assessment.copyright_notice_form_screening_id IS NULL OR fn_current_copyright_form_screening(
         submission.id, assessment.copyright_notice_form_screening_id
@@ -75,7 +78,8 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
           ON review.copyright_notice_form_intake_id = intake.id
         WHERE intake.copyright_notice_submission_id = assessment.copyright_notice_submission_id
           AND NOT review.accepted
-      ) AS has_rejected_form_review
+      ) AS has_rejected_form_review, `.append(territorialAssessmentRevokedSql)
+      .append(sql` AS territorial_revoked
     FROM copyright_notice_submission_assessments assessment
     JOIN copyright_notice_submissions submission
       ON submission.id = assessment.copyright_notice_submission_id
@@ -88,11 +92,13 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
         WHERE newer.supersedes_assessment_id = assessment.id
       )
     FOR UPDATE OF assessment, submission
-  `)
+  `),
+  )
   const assessment = assessmentRows[0]
   assert(assessment, 422, 'A current notice assessment is required before restriction')
   assert(assessment.substantially_compliant, 422, 'Copyright notice assessment is not compliant')
   assert(!assessment.has_rejected_form_review, 422, 'Copyright notice form review was rejected')
+  assert(!assessment.territorial_revoked, 409, 'Territorial decision was revoked')
   assert(
     assessment.current_screening_authority,
     422,

@@ -3,6 +3,15 @@
 // `@services/copyright-notices/territorial-http-input` run first so each rejection keeps its
 // field-named message. `cf_turnstile_response` is optional because an App Attest caller sends none;
 // an explicit `null` is a malformed token and is rejected.
+import type { ApiArrayContract } from '../../response-contract.mts'
+import type { CopyrightNoticeTargetRequest } from './request-types.mts'
+
+type TerritorialPostTargetRequest = Extract<CopyrightNoticeTargetRequest, { surface: 'post-image' }>
+type TerritorialDecisionRequest = {
+  public_explanation: string
+  outcome: 'restrict' | 'no_action'
+  targets?: ApiArrayContract<TerritorialPostTargetRequest, 1, 20, false>
+}
 
 export type CopyrightTerritorialNoticeRequest = {
   contact: string
@@ -12,7 +21,7 @@ export type CopyrightTerritorialNoticeRequest = {
   cf_turnstile_response?: string
 }
 
-export type CopyrightTerritorialStatementRequest = {
+export type CopyrightTerritorialStatementRequest = TerritorialDecisionRequest & {
   statement: string
 }
 
@@ -36,7 +45,7 @@ export type CopyrightTerritorialReportRequest = {
   period_end: string
 }
 
-export type CopyrightTerritorialReviewRequest = {
+export type CopyrightTerritorialReviewRequest = TerritorialDecisionRequest & {
   rationale: string
 }
 

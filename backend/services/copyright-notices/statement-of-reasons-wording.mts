@@ -1,8 +1,11 @@
 import type { CopyrightDeliveryKind } from './delivery-types.mts'
+import { copyrightStatementLegalGround } from './statement-of-reasons-legal-ground.mts'
 import type {
   CopyrightStatementInput,
   CopyrightStatementFields,
 } from './statement-of-reasons-types.mts'
+
+export { copyrightNotificationCopy } from './statement-of-reasons-notification-copy.mts'
 
 export const COPYRIGHT_AI_ASSISTED_SENTENCE = 'Automated tools assisted with processing this case.'
 
@@ -32,7 +35,13 @@ export function copyrightStatementText(
   const assistance = input.aiGuidance
     ? COPYRIGHT_AI_ASSISTED_SENTENCE
     : 'Automated tools did not assist with processing this case.'
-  const legal = 'Legal ground: copyright infringement under 17 U.S.C. 512 (US DMCA).'
+  const legal = copyrightStatementLegalGround(input.jurisdiction).text
+  const explainableEvent =
+    input.event === 'restricted' || input.event === 'confirmed' || input.event === 'not_accepted'
+  const explanation =
+    input.jurisdiction !== 'us_dmca' && explainableEvent && input.explanation
+      ? `Public explanation: ${input.explanation}`
+      : ''
   const redress = fields.redress
     .map(route =>
       route.key === 'court'
@@ -48,6 +57,7 @@ export function copyrightStatementText(
     'Automated detection was not used.',
     assistance,
     legal,
+    explanation,
     redress,
   ]
     .filter(Boolean)
@@ -67,6 +77,8 @@ export function copyrightStatementSummary(input: CopyrightStatementInput): strin
     case 'reversed':
       return `A person reversed the image restriction decision for copyright case ${input.noticeId}. Restoration will be processed separately.`
     case 'not_accepted':
+      if (input.jurisdiction !== 'us_dmca')
+        return `We decided not to restrict the material for copyright case ${input.noticeId}. You may seek judicial redress through a court.`
       return `We could not accept the notice for copyright case ${input.noticeId}. You may file a new notice at /copyright/notices/new, contact /copyright/designated-agent, or seek judicial redress through a court.`
     case 'restriction_ended': {
       const outcome =
@@ -83,25 +95,6 @@ export function copyrightStatementSummary(input: CopyrightStatementInput): strin
 export const copyrightNeedsInformationText =
   'We need more information before we can evaluate your copyright notice.'
 
-export const copyrightStatementNotificationCopy = {
-  claimant_decision_notice: {
-    title: 'Copyright notice decision',
-    body: 'Your copyright notice was decided. You may file a new notice at /copyright/notices/new, contact /copyright/designated-agent, or seek judicial redress through a court. Accepted cases show the reasons on the case page.',
-  },
-  poster_review_notice: {
-    title: 'Copyright restriction reviewed',
-    body: 'A person reviewed the restriction. See the case page for the decision and reasons.',
-  },
-  poster_restoration_notice: {
-    title: 'Copyright restriction ended',
-    body: 'This restriction ended. See the case page for the image availability and reasons.',
-  },
-  owner_information_notice: {
-    title: 'Community image restricted',
-    body: 'An image on a community you own was withheld after a copyright notice.',
-  },
-}
-
 function copyrightRestorationCauseText(cause: CopyrightStatementInput['restorationCause']): string {
   switch (cause) {
     case 'review_reversed':
@@ -112,6 +105,8 @@ function copyrightRestorationCauseText(cause: CopyrightStatementInput['restorati
       return 'the legal hold was resolved'
     case 'administrator_lift':
       return 'an administrator lifted the restriction after review'
+    case 'complaint_reversed':
+      return 'a complaint reversed the decision'
     case 'counter_notice_window':
       return 'the counter-notice waiting period ended'
     default:
@@ -143,34 +138,6 @@ export function copyrightEmailSubject(kind: CopyrightDeliveryKind): string {
       return 'Counter-notice for your copyright claim'
     case 'status_update':
       return 'Update to your copyright case'
-  }
-}
-
-export function copyrightNotificationCopy(
-  deliveryKind:
-    | 'claimant_receipt'
-    | 'status_update'
-    | 'poster_restriction_notice'
-    | 'poster_review_notice'
-    | 'poster_restoration_notice'
-    | 'owner_information_notice'
-    | 'claimant_decision_notice',
-): { title: string; body: string } {
-  switch (deliveryKind) {
-    case 'claimant_receipt':
-      return { title: 'Copyright notice received', body: 'Your copyright notice was received.' }
-    case 'claimant_decision_notice':
-    case 'poster_review_notice':
-    case 'poster_restoration_notice':
-    case 'owner_information_notice':
-      return copyrightStatementNotificationCopy[deliveryKind]
-    case 'poster_restriction_notice':
-      return {
-        title: 'Material restricted for a copyright notice',
-        body: 'Review the case and available response options.',
-      }
-    case 'status_update':
-      return { title: 'Copyright case update', body: 'There is an update to your copyright case.' }
   }
 }
 

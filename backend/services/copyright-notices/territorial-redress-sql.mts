@@ -1,6 +1,15 @@
 import sql from 'sql-template-strings'
 import type { TerritorialCopyrightJurisdiction } from './territorial-fields.mts'
 
+/** A territorial decision remains live until a successor cites it. */
+export function territorialDecisionIsLiveSql(alias = 'decision'): ReturnType<typeof sql> {
+  if (!/^[a-z_][a-z0-9_]*$/.test(alias)) throw new Error('Invalid territorial decision alias')
+  return sql``.append(`NOT EXISTS (
+    SELECT 1 FROM copyright_territorial_decisions successor
+    WHERE successor.supersedes_decision_id = ${alias}.id
+  )`)
+}
+
 export function selectTerritorialRedressParent(
   jurisdiction: TerritorialCopyrightJurisdiction,
   noticeId: string,
@@ -11,7 +20,10 @@ export function selectTerritorialRedressParent(
     JOIN copyright_territorial_notice_receipts receipt
       ON receipt.copyright_notice_id = decision.copyright_notice_id
       AND receipt.jurisdiction = decision.jurisdiction
-    WHERE decision.copyright_notice_id = ${noticeId} AND decision.jurisdiction = ${jurisdiction}`
+    WHERE decision.copyright_notice_id = ${noticeId} AND decision.jurisdiction = ${jurisdiction}
+      AND `
+    .append(territorialDecisionIsLiveSql())
+    .append(sql` FOR UPDATE OF decision`)
 }
 
 export function selectExistingTerritorialRedressRequest(
@@ -54,9 +66,14 @@ export function selectTerritorialRedressRequest(
   noticeId: string,
 ) {
   return sql`/* recordTerritorialCopyrightRedressDecision:request */
-    SELECT id FROM copyright_territorial_redress_requests
-    WHERE id = ${redressId} AND copyright_notice_id = ${noticeId}
-      AND jurisdiction = ${jurisdiction}`
+    SELECT request.id, request.copyright_territorial_decision_id, `.append(
+    territorialDecisionIsLiveSql(),
+  ).append(sql` AS decision_is_live
+    FROM copyright_territorial_redress_requests request
+    JOIN copyright_territorial_decisions decision
+      ON decision.id = request.copyright_territorial_decision_id
+    WHERE request.id = ${redressId} AND request.copyright_notice_id = ${noticeId}
+      AND request.jurisdiction = ${jurisdiction} FOR UPDATE OF request`)
 }
 
 export function selectExistingTerritorialRedressDecision(redressId: string) {

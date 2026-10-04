@@ -1,5 +1,9 @@
 import type { PrivateUser } from '@services/users/types'
-import { recordTerritorialCopyrightDecision } from './territorial-decision.mts'
+import {
+  recordTerritorialCopyrightDecision,
+  type TerritorialCopyrightDecisionInput,
+} from './territorial-decision.mts'
+import { enforceCopyrightAssessment } from './enforce-assessment.mts'
 
 export type UkCopyrightReview = {
   id: string
@@ -11,9 +15,16 @@ export type UkCopyrightReview = {
 export async function recordUkCopyrightReview(
   actor: PrivateUser,
   noticeId: string,
-  rationale: string,
+  input: TerritorialCopyrightDecisionInput,
+  dependencies: { enforceAssessment?: typeof enforceCopyrightAssessment } = {},
 ): Promise<UkCopyrightReview> {
-  const decision = await recordTerritorialCopyrightDecision(actor, 'uk', noticeId, rationale)
+  const decision = await recordTerritorialCopyrightDecision(
+    actor,
+    'uk',
+    noticeId,
+    input,
+    dependencies,
+  )
   return {
     id: decision.id,
     reviewed_at: decision.decided_at,

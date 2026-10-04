@@ -10,8 +10,9 @@ server-resolved hosted image placements. A target is a closed union on `surface`
 recomputes the canonical URL. A claimant names a target only if that claimant could view it at
 submission. A hidden target receives the same `422` as a missing one. Staff approval of an emailed notice
 is not gated by viewability and resolves any existing hosted placement. EU and UK notices are
-separate routes and stay
-unavailable until an administrator records an unwithdrawn jurisdiction policy approval. Duplicate
+separate routes and stay unavailable until an administrator records an unwithdrawn jurisdiction
+policy approval. That gate controls new notice intake only: decisions and other operations on a
+received notice continue from its receipt if approval is later withdrawn. Duplicate
 `(surface, owner, image)` selections receive a validation error
 before persistence. Signed-in and guest claimants may submit a notice, but only a deterministically
 complete signed-in notice with a durable `not_obviously_invalid` anti-spam recommendation is
@@ -211,7 +212,18 @@ an optional string on the notice and redress bodies; an explicit `null` or non-s
 answers 422 instead of being ignored when CAPTCHA verification does not read it (an attested
 caller or an always-approve configuration). Authentication, staff role, and the kill switch
 answer before the schema. The service still decides ownership, jurisdiction availability, and
-existence, so a malformed body answers 422 before those 403, 404, and 409 outcomes. See
+existence, so a malformed body answers 422 before those 403, 404, and 409 outcomes.
+
+For EU and UK staff decisions, the EU statement and UK review routes accept `outcome` (`restrict` or
+`no_action`), internal `statement` or `rationale`, and required `public_explanation` (1–2,000
+characters). `restrict` requires non-empty `targets`; each target names an existing post-image with
+`surface: "post-image"`, `post_id`, `image_id`, and informational `target_url`. The server resolves
+the canonical URL and hosted placement. `no_action` omits `targets`. The public explanation is
+separate from the encrypted internal rationale and must contain no personal data. A `restrict`
+requires the normal human-compliant assessment before withholding; `no_action` creates no
+restriction. The API route contract is not a grant of jurisdiction approval: the staff web screen
+must ship before any approval is recorded. After receipt, decision and redress calls use that
+receipt even if approval is withdrawn. See
 [Copyright EU, UK, and territorial request validation](../../reference-copyright-territorial-request-validation.md).
 
 Administrators may use `POST /api/v1/copyright-notices/:id/restrictions/:restrictionId/lifts`

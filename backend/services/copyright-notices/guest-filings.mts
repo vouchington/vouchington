@@ -21,12 +21,14 @@ async function lockGuestCapability(
 ): Promise<string> {
   const { rows } = await transaction<{ id: string }>(
     sql`/* appendCopyrightGuestFiling:capability */
-    SELECT id FROM copyright_notice_guest_capabilities
-    WHERE copyright_notice_id = ${input.noticeId}
-      AND token_hash = ${hashToken(copyrightGuestCapabilityPurpose, input.token)}
-      AND revoked_at IS NULL
-      AND expires_at > ${input.now}
-    FOR UPDATE
+    SELECT capability.id FROM copyright_notice_guest_capabilities capability
+    JOIN copyright_notices notice ON notice.id = capability.copyright_notice_id
+    WHERE capability.copyright_notice_id = ${input.noticeId}
+      AND notice.jurisdiction = 'us_dmca'
+      AND capability.token_hash = ${hashToken(copyrightGuestCapabilityPurpose, input.token)}
+      AND capability.revoked_at IS NULL
+      AND capability.expires_at > ${input.now}
+    FOR UPDATE OF capability
   `,
   )
   const capability = rows[0]

@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { countEuTransparencyReportsBy } from '@voucha/test-helpers/data-stores/psql/copyright-eu-reports'
 import { readCopyrightTerritorialContractShape } from '@voucha/test-helpers/data-stores/psql/copyright-eu-uk-contracts'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import {
@@ -43,6 +42,9 @@ describe.each(TERRITORIAL_SURFACES)('$label staff request contracts', surface =>
   })
 
   describe('reasons', () => {
+    const decisionBody = (overrides: Record<string, unknown> = {}) =>
+      territorialDecisionBody(surface, overrides)
+
     it('keeps 401 and 403 ahead of the schema diagnostic', async () => {
       const { anonymousRequest, strangerRequest } = await createTerritorialActors()
       const url = `${surface.base}/${crypto.randomUUID()}/${surface.determinationPath}`
@@ -57,7 +59,7 @@ describe.each(TERRITORIAL_SURFACES)('$label staff request contracts', surface =>
       await approveJurisdictionPolicy(actors.administrator, surface.jurisdiction)
       const noticeId = await seedPendingTerritorialNotice(surface.jurisdiction, actors.claimant)
       const url = `${surface.base}/${noticeId}/${surface.determinationPath}`
-      const body = { [surface.determinationField]: 'Staff reasons for the restriction' }
+      const body = territorialDecisionBody(surface)
 
       await actors.staffRequest
         .post(url)
@@ -72,11 +74,107 @@ describe.each(TERRITORIAL_SURFACES)('$label staff request contracts', surface =>
       ).toBe(1)
     })
 
+    it.each([
+      ['missing public_explanation', { public_explanation: undefined }],
+      ['blank public_explanation', { public_explanation: '   ' }],
+      ['non-string public_explanation', { public_explanation: 7 }],
+      ['overlong public_explanation', { public_explanation: 'x'.repeat(2_001) }],
+      ['missing outcome', { outcome: undefined }],
+      ['unknown outcome', { outcome: 'dismiss' }],
+    ])('rejects %s before service lookup', async (_label, override) => {
+      const { staffRequest } = await createTerritorialActors()
+      const rejected = await staffRequest
+        .post(`${surface.base}/${crypto.randomUUID()}/${surface.determinationPath}`)
+        .send(decisionBody(override))
+        .expect(422)
+      expect(rejected.body.message).not.toMatch(/not found/i)
+    })
+
+    const duplicatePostId = crypto.randomUUID()
+    const duplicateImageId = crypto.randomUUID()
+    const malformedTargetOverrides: [string, Record<string, unknown>][] = [
+      ['targets on no_action', { targets: [] }],
+      [
+        'a valid target on no_action',
+        {
+          targets: [
+            {
+              surface: 'post-image',
+              post_id: crypto.randomUUID(),
+              image_id: crypto.randomUUID(),
+              target_url: 'https://example.test/posts/one',
+            },
+          ],
+        },
+      ],
+      ['missing targets on restrict', { outcome: 'restrict', targets: undefined }],
+      ['empty targets on restrict', { outcome: 'restrict', targets: [] }],
+      [
+        'target without a surface discriminator',
+        {
+          outcome: 'restrict',
+          targets: [
+            {
+              post_id: crypto.randomUUID(),
+              image_id: crypto.randomUUID(),
+              target_url: 'https://example.test/posts/one',
+            },
+          ],
+        },
+      ],
+      [
+        'non-post target',
+        {
+          outcome: 'restrict',
+          targets: [
+            {
+              surface: 'community-profile-image',
+              community_id: crypto.randomUUID(),
+              image_id: crypto.randomUUID(),
+              target_url: 'https://example.test/communities/one',
+            },
+          ],
+        },
+      ],
+      [
+        'duplicate target pair',
+        {
+          outcome: 'restrict',
+          targets: [
+            {
+              surface: 'post-image',
+              post_id: duplicatePostId,
+              image_id: duplicateImageId,
+              target_url: 'https://example.test/posts/one',
+            },
+            {
+              surface: 'post-image',
+              post_id: duplicatePostId,
+              image_id: duplicateImageId,
+              target_url: 'https://example.test/posts/one',
+            },
+          ],
+        },
+      ],
+    ]
+
+    it.each(malformedTargetOverrides)(
+      'rejects %s before service lookup',
+      async (_label, override) => {
+        const { staffRequest } = await createTerritorialActors()
+        const rejected = await staffRequest
+          .post(`${surface.base}/${crypto.randomUUID()}/${surface.determinationPath}`)
+          .send(decisionBody(override))
+          .expect(422)
+        expect(rejected.body.message).not.toMatch(/not found/i)
+      },
+    )
+
     // The service decides existence, so a missing notice is a 404 for a valid body only.
     it('leaves the missing-notice 404 to the service behind a malformed body', async () => {
       const { staffRequest } = await createTerritorialActors()
       const url = `${surface.base}/${crypto.randomUUID()}/${surface.determinationPath}`
-      const body = { [surface.determinationField]: 'Staff reasons' }
+      const body = territorialDecisionBody(surface)
 
       await staffRequest.post(url).send(body).expect(404)
       await staffRequest
@@ -91,12 +189,12 @@ describe.each(TERRITORIAL_SURFACES)('$label staff request contracts', surface =>
 
       const rejected = await staffRequest
         .post(`${surface.base}/${crypto.randomUUID()}/${surface.determinationPath}`)
-        .send({ [field]: 7 })
+        .send(territorialDecisionBody(surface, { [field]: 7 }))
         .expect(422)
       expect(rejected.body.message).toBe(`${field} is required`)
       await staffRequest
         .post(`${surface.base}/not-a-uuid/${surface.determinationPath}`)
-        .send({ [field]: 'Staff reasons' })
+        .send(territorialDecisionBody(surface))
         .expect(422)
     })
   })
@@ -182,118 +280,14 @@ describe.each(TERRITORIAL_SURFACES)('$label staff request contracts', surface =>
   })
 })
 
-describe('EU transparency report request contract', () => {
-  useCopyrightIntakeEnvironment()
-  const url = '/api/v1/copyright-eu-reports'
-
-  it('keeps 401 and 403 ahead of the schema diagnostic', async () => {
-    const { anonymousRequest, strangerRequest } = await createTerritorialActors()
-
-    const anonymous = await anonymousRequest.post(url).send({ injected: true }).expect(401)
-    expect(anonymous.text).not.toMatch(SCHEMA_DIAGNOSTIC)
-    await strangerRequest.post(url).send({ injected: true }).expect(403)
-  })
-
-  it('rejects an unknown key before compiling a report', async () => {
-    const { staff, staffRequest, administrator } = await createTerritorialActors()
-    await approveJurisdictionPolicy(administrator, 'eu_dsa')
-    const body = {
-      period_start: new Date(Date.now() - 60_000).toISOString(),
-      period_end: new Date(Date.now() + 60_000).toISOString(),
-    }
-
-    await staffRequest
-      .post(url)
-      .send({ ...body, injected: true })
-      .expect(422)
-    expect(await countEuTransparencyReportsBy(staff.id)).toBe(0)
-    await staffRequest.post(url).send(body).expect(201)
-    expect(await countEuTransparencyReportsBy(staff.id)).toBe(1)
-  })
-
-  it.each([
-    ['period_start', 'period_start is required'],
-    ['period_end', 'period_end is required'],
-  ])('keeps the %s message for a mistyped field', async (field, message) => {
-    const { staff, staffRequest } = await createTerritorialActors()
-    const body = { period_start: new Date().toISOString(), period_end: new Date().toISOString() }
-
-    const rejected = await staffRequest
-      .post(url)
-      .send({ ...body, [field]: 1 })
-      .expect(422)
-    expect(rejected.body.message).toBe(message)
-    expect(await countEuTransparencyReportsBy(staff.id)).toBe(0)
-  })
-})
-
-describe('jurisdiction policy request contracts', () => {
-  const policies = '/api/v1/copyright-jurisdiction-policies'
-
-  it('keeps 401 and 403 ahead of the schema diagnostic on both routes', async () => {
-    const { anonymousRequest, strangerRequest, staffRequest } = await createTerritorialActors()
-    const withdrawal = `${policies}/${crypto.randomUUID()}/withdrawals`
-
-    for (const url of [policies, withdrawal]) {
-      const anonymous = await anonymousRequest.post(url).send({ injected: true }).expect(401)
-      expect(anonymous.text).not.toMatch(SCHEMA_DIAGNOSTIC)
-      await strangerRequest.post(url).send({ injected: true }).expect(403)
-      // Moderators review notices but cannot approve policy.
-      await staffRequest.post(url).send({ injected: true }).expect(403)
-    }
-  })
-
-  it('rejects an unknown key before recording the approval', async () => {
-    const { administratorRequest } = await createTerritorialActors()
-    const body = {
-      jurisdiction: 'uk',
-      policy_version: `uk-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
-    }
-
-    await administratorRequest
-      .post(policies)
-      .send({ ...body, injected: true })
-      .expect(422)
-    // A recorded version would make this retry a 409.
-    await administratorRequest.post(policies).send(body).expect(201)
-    // Once recorded, the service's 409 sits behind a malformed body's 422.
-    await administratorRequest
-      .post(policies)
-      .send({ ...body, injected: true })
-      .expect(422)
-    await administratorRequest.post(policies).send(body).expect(409)
-  })
-
-  it.each([
-    [
-      'an unknown jurisdiction',
-      { jurisdiction: 'us_dmca', policy_version: 'v1' },
-      'jurisdiction is required',
-    ],
-    [
-      'a non-string jurisdiction',
-      { jurisdiction: 7, policy_version: 'v1' },
-      'jurisdiction is required',
-    ],
-    ['a missing policy_version', { jurisdiction: 'uk' }, 'policy_version is required'],
-    [
-      'a non-string policy_version',
-      { jurisdiction: 'uk', policy_version: 7 },
-      'policy_version is required',
-    ],
-  ])('keeps the field message for %s', async (_label, body, message) => {
-    const { administratorRequest } = await createTerritorialActors()
-
-    const rejected = await administratorRequest.post(policies).send(body).expect(422)
-    expect(rejected.body.message).toBe(message)
-  })
-
-  it('rejects a malformed withdrawal id, then withdraws a real approval', async () => {
-    const { administrator, administratorRequest } = await createTerritorialActors()
-    const approval = await approveJurisdictionPolicy(administrator, 'eu_dsa')
-
-    await administratorRequest.post(`${policies}/not-a-uuid/withdrawals`).expect(422)
-    await administratorRequest.post(`${policies}/${approval.id}/withdrawals`).expect(201)
-    await administratorRequest.post(`${policies}/${approval.id}/withdrawals`).expect(409)
-  })
-})
+function territorialDecisionBody(
+  surface: (typeof TERRITORIAL_SURFACES)[number],
+  overrides: Record<string, unknown> = {},
+) {
+  return {
+    [surface.determinationField]: 'Staff internal rationale',
+    public_explanation: 'The identified post-image is unavailable in this territory.',
+    outcome: 'no_action',
+    ...overrides,
+  }
+}

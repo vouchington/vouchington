@@ -606,6 +606,9 @@
     "fn_ensure_retained_identity(family retained_identity_families, identity_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_retained_identity(family retained_identity_families, identity_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  owner_table TEXT := 'retained_' || family::text || '_identities';\n  pinned_id UUID;\nBEGIN\n  -- Cleanup can remove an orphan between the conflict and key-share reads.\n  -- Retry until this transaction pins the retained owner.\n  LOOP\n    EXECUTE format('INSERT INTO %I (id) VALUES ($1) ON CONFLICT (id) DO NOTHING', owner_table)\n      USING identity_id;\n    EXECUTE format('SELECT id FROM %I WHERE id = $1 FOR KEY SHARE', owner_table)\n      INTO pinned_id USING identity_id;\n    EXIT WHEN pinned_id IS NOT NULL;\n  END LOOP;\nEND;\n$function$\n"
     },
+    "fn_guard_copyright_territorial_decision": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_territorial_decision()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.outcome = 'restrict' AND NOT EXISTS (\n    SELECT 1 FROM copyright_notice_submission_assessments assessment\n    JOIN copyright_notice_submissions submission\n      ON submission.id = assessment.copyright_notice_submission_id\n    WHERE assessment.id = NEW.copyright_notice_submission_assessment_id\n      AND submission.copyright_notice_id = NEW.copyright_notice_id\n      AND submission.kind = 'notice'\n      AND assessment.substantially_compliant\n      AND assessment.assessed_by_id IS NOT NULL\n      AND NOT EXISTS (\n        SELECT 1 FROM copyright_notice_submission_assessments newer\n        WHERE newer.supersedes_assessment_id = assessment.id\n      )\n  ) THEN\n    RAISE EXCEPTION 'territorial restriction requires a current compliant human notice assessment in the same case'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.supersedes_decision_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM copyright_territorial_decisions predecessor\n    JOIN copyright_territorial_redress_requests request\n      ON request.copyright_territorial_decision_id = predecessor.id\n    JOIN copyright_territorial_redress_decisions redress\n      ON redress.copyright_territorial_redress_request_id = request.id\n    WHERE predecessor.id = NEW.supersedes_decision_id\n      AND predecessor.copyright_notice_id = NEW.copyright_notice_id\n      AND predecessor.jurisdiction = NEW.jurisdiction\n      AND predecessor.outcome = 'no_action'\n      AND redress.staff_disposition = 'revoke'\n  ) THEN\n    RAISE EXCEPTION 'territorial successor requires a revoked no_action decision'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT EXISTS (\n    SELECT 1\n    FROM images image\n    WHERE image.id = p_image_id\n      AND image.deleted_at IS NULL\n      AND image.upload_completed_at IS NOT NULL\n      AND image.quarantine_pending_at IS NULL\n      AND image.openai_omni_moderation_flagged = FALSE\n      AND image.openai_omni_moderation_results IS NOT NULL\n      AND image.openai_omni_moderation_created_at IS NOT NULL\n      AND EXISTS (\n        SELECT 1\n        FROM media_delivery_registry_records registry\n        WHERE registry.delivery_key = concat('image-placement:', p_placement_id, ':', p_revision, ':', p_image_id)\n          AND registry.desired_state = 'allow'\n          AND registry.state = 'completed'\n      )\n  );\n$function$\n"
     },
@@ -33626,9 +33629,13 @@
     },
     "copyright_territorial_decisions": {
       "checkConstraints": {
+        "chk_copyright_territorial_decisions__assessment": "CHECK (((outcome = 'restrict'::text) = (copyright_notice_submission_assessment_id IS NOT NULL)))",
         "chk_copyright_territorial_decisions__human": "CHECK ((automation_disclosure = 'human'::text))",
         "chk_copyright_territorial_decisions__jurisdiction": "CHECK ((jurisdiction = ANY (ARRAY['eu_dsa'::text, 'uk'::text])))",
-        "chk_copyright_territorial_decisions__rationale": "CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))"
+        "chk_copyright_territorial_decisions__outcome": "CHECK ((outcome = ANY (ARRAY['restrict'::text, 'no_action'::text])))",
+        "chk_copyright_territorial_decisions__public_explanation": "CHECK (((char_length(public_explanation_ciphertext) >= 1) AND (char_length(public_explanation_ciphertext) <= 1048576)))",
+        "chk_copyright_territorial_decisions__rationale": "CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))",
+        "chk_copyright_territorial_decisions__successor": "CHECK (((supersedes_decision_id IS NULL) OR (outcome = 'restrict'::text)))"
       },
       "columns": {
         "automation_disclosure": {
@@ -33639,18 +33646,29 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 9,
           "type": "text"
         },
         "copyright_notice_id": {
           "collation": null,
-          "comment": "Notice this decision explains. One decision per notice.",
+          "comment": "Notice this decision explains. At most one original and one permitted successor per notice.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "copyright_notice_submission_assessment_id": {
+          "collation": null,
+          "comment": "Required compliant human assessment for a restrict decision; absent for no_action.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
           "type": "uuid"
         },
         "created_at": {
@@ -33661,7 +33679,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "decided_at": {
@@ -33708,16 +33726,49 @@
           "ordinalPosition": 3,
           "type": "text"
         },
-        "rationale_ciphertext": {
+        "outcome": {
           "collation": null,
-          "comment": "Encrypted staff-supplied rationale; the statement of reasons for eu_dsa rows. The system does not choose the text.",
+          "comment": "Human decision: restrict the named targets or take no action.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 6,
           "type": "text"
+        },
+        "public_explanation_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted staff-written public explanation for poster and notifier statements; must contain no personal data.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11,
+          "type": "text"
+        },
+        "rationale_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted staff-only rationale; never included in participant notices.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "text"
+        },
+        "supersedes_decision_id": {
+          "collation": null,
+          "comment": "Prior no_action decision reopened by a complaint revoke on the same notice.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "uuid"
         },
         "updated_at": {
           "collation": null,
@@ -33727,12 +33778,21 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         }
       },
-      "comment": "Staff decision on one EU or UK copyright notice. EU rows are the statement of reasons (DSA Art. 17); UK rows are the review. automation_disclosure is human because the system does not decide merits.",
+      "comment": "Human decision on an EU or UK notice. A revoked no_action can be superseded once by a restrict decision; the live decision is the row without a successor.",
       "foreignKeys": {
+        "fk_copyright_territorial_decisions__assessment": {
+          "columns": ["copyright_notice_submission_assessment_id"],
+          "definition": "FOREIGN KEY (copyright_notice_submission_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_submission_assessments",
+          "validated": true
+        },
         "fk_copyright_territorial_decisions__decided_by": {
           "columns": ["decided_by_id"],
           "definition": "FOREIGN KEY (decided_by_id) REFERENCES users(id) ON DELETE SET NULL",
@@ -33749,6 +33809,15 @@
           "onUpdate": "no action",
           "referencedColumns": ["id", "jurisdiction"],
           "referencedTable": "copyright_notices",
+          "validated": true
+        },
+        "fk_copyright_territorial_decisions__predecessor": {
+          "columns": ["copyright_notice_id", "supersedes_decision_id"],
+          "definition": "FOREIGN KEY (copyright_notice_id, supersedes_decision_id) REFERENCES copyright_territorial_decisions(copyright_notice_id, id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["copyright_notice_id", "id"],
+          "referencedTable": "copyright_territorial_decisions",
           "validated": true
         }
       },
@@ -33774,6 +33843,46 @@
           "unique": true,
           "valid": true
         },
+        "copyright_territorial_decisions_supersedes_decision_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_territorial_decisions_supersedes_decision_id_key ON public.copyright_territorial_decisions USING btree (supersedes_decision_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "supersedes_decision_id",
+              "descending": false,
+              "expression": "supersedes_decision_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_territorial_decisions__assessment": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_territorial_decisions__assessment ON public.copyright_territorial_decisions USING btree (copyright_notice_submission_assessment_id) WHERE (copyright_notice_submission_assessment_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_submission_assessment_id",
+              "descending": false,
+              "expression": "copyright_notice_submission_assessment_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(copyright_notice_submission_assessment_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_copyright_territorial_decisions__decided_by": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -33792,33 +33901,6 @@
           "primary": false,
           "ready": true,
           "unique": false,
-          "valid": true
-        },
-        "uq_copyright_territorial_decisions__notice": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX uq_copyright_territorial_decisions__notice ON public.copyright_territorial_decisions USING btree (copyright_notice_id, jurisdiction)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_notice_id",
-              "descending": false,
-              "expression": "copyright_notice_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "jurisdiction",
-              "descending": false,
-              "expression": "jurisdiction",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
           "valid": true
         },
         "uq_copyright_territorial_decisions__notice_id": {
@@ -33847,6 +33929,33 @@
           "ready": true,
           "unique": true,
           "valid": true
+        },
+        "uq_copyright_territorial_decisions__original": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX uq_copyright_territorial_decisions__original ON public.copyright_territorial_decisions USING btree (copyright_notice_id, jurisdiction) WHERE (supersedes_decision_id IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "jurisdiction",
+              "descending": false,
+              "expression": "jurisdiction",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": "(supersedes_decision_id IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
         }
       },
       "partition": null,
@@ -33857,12 +33966,13 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_copyright_territorial_decisions_immutable": "CREATE TRIGGER trigger_copyright_territorial_decisions_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_decisions FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
+        "trigger_copyright_territorial_decisions_immutable": "CREATE TRIGGER trigger_copyright_territorial_decisions_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_decisions FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()",
+        "trigger_copyright_territorial_decisions_scope": "CREATE TRIGGER trigger_copyright_territorial_decisions_scope BEFORE INSERT ON public.copyright_territorial_decisions FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_territorial_decision()"
       },
       "uniqueConstraints": {
-        "uq_copyright_territorial_decisions__notice": {
-          "columns": ["copyright_notice_id", "jurisdiction"],
-          "definition": "UNIQUE (copyright_notice_id, jurisdiction)"
+        "copyright_territorial_decisions_supersedes_decision_id_key": {
+          "columns": ["supersedes_decision_id"],
+          "definition": "UNIQUE (supersedes_decision_id)"
         },
         "uq_copyright_territorial_decisions__notice_id": {
           "columns": ["copyright_notice_id", "id"],

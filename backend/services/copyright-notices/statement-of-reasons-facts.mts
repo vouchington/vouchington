@@ -8,6 +8,9 @@ import {
 } from './automated-assessment-sql.mts'
 import type { CopyrightStatementInput } from './statement-of-reasons.mts'
 import { copyrightPlacementPublicVisibleSql } from '@services/media-delivery-safety/copyright-placement-public-visible-sql'
+import { decryptCopyrightText } from './erased-ciphertext.mts'
+import { territorialLabels } from './territorial-labels.mts'
+import { territorialDecisionIsLiveSql } from './territorial-redress-sql.mts'
 
 type CopyrightStatementFacts = Pick<
   CopyrightStatementInput,
@@ -18,6 +21,7 @@ type CopyrightStatementFacts = Pick<
   | 'targetUrls'
   | 'automatedDecision'
   | 'aiGuidance'
+  | 'explanation'
 >
 
 /** Only public case facts enter a statement. Durable screening provenance survives moderator erasure. */
@@ -34,6 +38,7 @@ export async function selectCopyrightStatementFacts(
     target_urls: string[]
     automated_decision: boolean
     ai_guidance: boolean
+    public_explanation_ciphertext: string | null
   }>(
     sql`/* selectCopyrightStatementFacts */
     SELECT notice.id, notice.received_at, notice.jurisdiction, notice.legal_basis,
@@ -52,9 +57,31 @@ export async function selectCopyrightStatementFacts(
       )
       .append(automaticRestrictionSql())
       .append('))) AS automated_decision, ')
-      .append(aiGuidanceSql()).append(sql` AS ai_guidance
-    FROM copyright_notices notice WHERE notice.id = ${noticeId}
+      .append(aiGuidanceSql())
+      .append(
+        sql` AS ai_guidance,
+      territorial_decision.public_explanation_ciphertext
+    FROM copyright_notices notice
+    LEFT JOIN LATERAL (
+      SELECT decision.public_explanation_ciphertext
+      FROM copyright_territorial_decisions decision
+      WHERE decision.copyright_notice_id = notice.id
+        AND decision.jurisdiction = notice.jurisdiction
+        AND `.append(territorialDecisionIsLiveSql()).append(sql`
+        AND (
+          (${authority.assessmentId ?? null}::uuid IS NULL
+            AND ${authority.restrictionId ?? null}::uuid IS NULL)
+          OR decision.copyright_notice_submission_assessment_id = COALESCE(
+            ${authority.assessmentId ?? null}::uuid,
+            (SELECT restriction.authorizing_assessment_id FROM copyright_restrictions restriction
+              WHERE restriction.id = ${authority.restrictionId ?? null}::uuid)
+          )
+        )
+      LIMIT 1
+    ) territorial_decision ON true
+    WHERE notice.id = ${noticeId}
   `),
+      ),
   )
   const row = rows[0]
   assert(row, 404, 'Copyright notice not found')
@@ -66,5 +93,13 @@ export async function selectCopyrightStatementFacts(
     targetUrls: row.target_urls,
     automatedDecision: row.automated_decision,
     aiGuidance: row.ai_guidance,
+    explanation:
+      row.public_explanation_ciphertext &&
+      (row.jurisdiction === 'eu_dsa' || row.jurisdiction === 'uk')
+        ? (decryptCopyrightText(
+            row.public_explanation_ciphertext,
+            `${territorialLabels(row.jurisdiction).publicExplanationPurpose}:${noticeId}`,
+          ) ?? undefined)
+        : undefined,
   }
 }

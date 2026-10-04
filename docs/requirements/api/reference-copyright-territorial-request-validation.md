@@ -17,18 +17,18 @@ diagnostic. A contract `422` names only the carrier (`Invalid request body` or
 
 ## Validated operations
 
-| Operation                                                                   | Contract                                                      |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `POST /copyright-eu-notices`, `POST /copyright-uk-notices`                  | Closed `CopyrightTerritorialNoticeRequest`                    |
-| `POST /copyright-{eu,uk}-notices/:id/redress-requests`                      | Closed `CopyrightTerritorialRedressRequest` and path          |
-| `POST /copyright-eu-notices/:id/statements-of-reasons`                      | Closed `CopyrightTerritorialStatementRequest` and path        |
-| `POST /copyright-uk-notices/:id/reviews`                                    | Closed `CopyrightTerritorialReviewRequest` and path           |
-| `POST /copyright-{eu,uk}-notices/:id/redress-requests/:redressId/decisions` | Closed `CopyrightTerritorialRedressDecisionRequest` and path  |
-| `POST /copyright-eu-notices/:id/supervised-complaints`                      | Closed `CopyrightTerritorialSupervisedComplaintRequest`, path |
-| `POST /copyright-eu-reports`                                                | Closed `CopyrightTerritorialReportRequest`                    |
-| `POST /copyright-jurisdiction-policies`                                     | Closed `CopyrightJurisdictionPolicyRequest`                   |
-| `POST /copyright-{eu,uk}-notices/:id/acknowledgment-failures`               | `id` path only                                                |
-| `POST /copyright-jurisdiction-policies/:id/withdrawals`                     | `id` path only                                                |
+| Operation                                                                   | Contract                                                                                             |
+| --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `POST /copyright-eu-notices`, `POST /copyright-uk-notices`                  | Closed `CopyrightTerritorialNoticeRequest`                                                           |
+| `POST /copyright-{eu,uk}-notices/:id/redress-requests`                      | Closed `CopyrightTerritorialRedressRequest` and path                                                 |
+| `POST /copyright-eu-notices/:id/statements-of-reasons`                      | Closed decision request (`outcome`, `statement`, `public_explanation`, conditional targets) and path |
+| `POST /copyright-uk-notices/:id/reviews`                                    | Closed decision request (`outcome`, `rationale`, `public_explanation`, conditional targets) and path |
+| `POST /copyright-{eu,uk}-notices/:id/redress-requests/:redressId/decisions` | Closed `CopyrightTerritorialRedressDecisionRequest` and path                                         |
+| `POST /copyright-eu-notices/:id/supervised-complaints`                      | Closed `CopyrightTerritorialSupervisedComplaintRequest`, path                                        |
+| `POST /copyright-eu-reports`                                                | Closed `CopyrightTerritorialReportRequest`                                                           |
+| `POST /copyright-jurisdiction-policies`                                     | Closed `CopyrightJurisdictionPolicyRequest`                                                          |
+| `POST /copyright-{eu,uk}-notices/:id/acknowledgment-failures`               | `id` path only                                                                                       |
+| `POST /copyright-jurisdiction-policies/:id/withdrawals`                     | `id` path only                                                                                       |
 
 The request types live in `territorial-request-types.mts` beside the routes, and the compiler
 extracts the schema from them, so the OpenAPI document, the request-contract bundle, and the runtime
@@ -53,7 +53,7 @@ Each handler keeps the order it had before the contract existed and adds the con
   `Idempotency-Key`, field parsers, contract, service.
 - Supervised complaint (EU): authentication, suspension, content type, body read, path UUID, field
   parsers, contract, service. It has no CAPTCHA, kill switch, or idempotency key.
-- Staff routes (reasons, decisions, reports, acknowledgment failures) and policy routes: authentication
+- Staff routes (decisions, reports, acknowledgment failures) and policy routes: authentication
   and role (`401`, `403`), rate limit, suspension, content type, body read, path UUIDs, field
   parsers, contract, service. The role check is on the route, so a caller without the role never
   reaches the contract.
@@ -70,14 +70,17 @@ look at.
 - A missing or mistyped `contact`, `content_description`, `grounds`, `hosted_use_url`, `explanation`,
   `statement`, `rationale`, `authority_reference`, `period_start`, `period_end`, `jurisdiction`, or
   `policy_version`, a `staff_disposition` outside `maintain` and `revoke`, a malformed path id, and
-  a missing or malformed `Idempotency-Key` keep their existing status and message.
+  a missing or malformed `Idempotency-Key` keep their existing status and message. The new decision
+  fields `outcome`, `public_explanation`, and conditional `targets` are parser-validated with `422`.
 - A redress decision `rationale` that is not a string is now rejected by
   `parseTerritorialRedressDecision` with `422` and `rationale is required`, the message the service
   already gave a missing or blank one. The staff role `403` is on the route and runs first, so no
   status or message changes.
-- String lengths are not in the generated schema. Every length bound stays in the existing parsers
-  and services (for example `policy_version` at 64, `authority_reference` at 200, `contact` at
-  4096, `hosted_use_url` at 2048, and the free-text fields at 50,000).
+- String lengths are not in the generated schema. Every length bound stays in the parsers and
+  services (for example `policy_version` at 64, `authority_reference` at 200, `contact` at 4096,
+  `hosted_use_url` at 2048, free-text receipt fields at 50,000, and `public_explanation` at 2,000).
+  The decision parser also requires `targets` for `restrict` and forbids them for `no_action`; each
+  target must explicitly identify a `post-image` and carry its post id, image id, and notifier URL.
 - No status code changes for a valid request, and none for a request that already failed on a
   field the parsers check. A request that also carries an unknown key (or a non-string
   `cf_turnstile_response`) and that the service would have rejected with `404`, `409`, or an
@@ -99,11 +102,12 @@ before them, as a missing field already did:
 
 - Ownership `403` on a redress request and a supervised complaint: the requester or a staff
   reviewer may file; anyone else gets `403` only for a well-formed body.
-- Jurisdiction availability `403` (`lockCurrentCopyrightJurisdictionPolicy`): the service reads the
-  current policy approval after its idempotent replay lookup. Moving it ahead of the contract would
-  turn a stored receipt's replay after a withdrawal into `403` and an over-length `422` on an
-  unapproved territory into `403`, so it stays a documented exception. The kill switch,
-  authentication, and role checks still run first.
+- Jurisdiction availability `403` (`lockCurrentCopyrightJurisdictionPolicy`) applies to new receipts:
+  the intake service checks current policy approval after its idempotent replay lookup. Post-receipt
+  operations instead validate the stored receipt and its approval snapshot, so withdrawal does not
+  block acknowledgment, decisions, enforcement, delivery, redress, complaint decisions, or
+  restoration. Contract validation still precedes service-level ownership, existence, and conflict
+  checks; the intake kill switch, authentication, and role checks run first where applicable.
 - `404` for a missing notice and `409` for a reused key, an existing decision, or a repeated
   complaint. A request with an unknown key used to reach these and now answers `422` first. The
   route tests pin the missing-notice `404` on the redress, supervised complaint, and statement or

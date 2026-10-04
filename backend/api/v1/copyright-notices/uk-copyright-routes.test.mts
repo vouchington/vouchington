@@ -69,7 +69,11 @@ describe('UK copyright notice routes', () => {
     const noticeId = created.body.copyright_uk_notice.notice_id as string
     const review = await staffRequest
       .post(`/api/v1/copyright-uk-notices/${noticeId}/reviews`)
-      .send({ rationale: 'Staff review rationale' })
+      .send({
+        rationale: 'Staff review rationale',
+        public_explanation: 'The notice did not establish infringement.',
+        outcome: 'no_action',
+      })
       .expect(201)
     expect(review.body.copyright_uk_review.automation_disclosure).toBe('human')
     const redressKey = crypto.randomUUID()
@@ -96,7 +100,11 @@ describe('UK copyright notice routes', () => {
     const otherNoticeId = other.body.copyright_uk_notice.notice_id as string
     await staffRequest
       .post(`/api/v1/copyright-uk-notices/${otherNoticeId}/reviews`)
-      .send({ rationale: 'Second staff review' })
+      .send({
+        rationale: 'Second staff review',
+        public_explanation: 'The notice did not establish infringement.',
+        outcome: 'no_action',
+      })
       .expect(201)
     await claimantRequest
       .post(`/api/v1/copyright-uk-notices/${otherNoticeId}/redress-requests`)

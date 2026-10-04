@@ -10,6 +10,7 @@ import {
   createSignedInCopyrightForm,
 } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
+import { countCopyrightActiveRestrictionsForNotice } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import {
   readTestCopyrightStatementIntents,
   replayTestCopyrightClaimantDecision,
@@ -65,7 +66,7 @@ describe('claimant copyright decision notices', () => {
     expect(decision[0].text).toContain('/copyright/designated-agent')
     expect(decision[0].text).toContain('judicial redress through a court')
   })
-  it('does not add a reversed notifier decision when staff reject an automatic restriction', async () => {
+  it('adds one reversed notifier decision when staff reject an automatically restricted notice', async () => {
     const { notice } = await createClearScreenedForm()
     const caseId = notice.intake.copyright_notice_id
     await applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id)
@@ -80,10 +81,32 @@ describe('claimant copyright decision notices', () => {
     const decisions = (await readTestCopyrightStatementIntents(caseId)).filter(
       row => row.delivery_kind === 'claimant_decision_notice',
     )
-    expect(decisions).toHaveLength(4)
+    expect(decisions).toHaveLength(6)
     const emails = decisions.filter(row => row.channel === 'email')
     expect(emails.filter(row => row.text?.includes('We could not accept'))).toHaveLength(1)
-    expect(emails.filter(row => row.text?.includes('reversed'))).toHaveLength(0)
+    expect(emails.filter(row => row.text?.includes('reversed'))).toHaveLength(1)
+  })
+  it('sends reversed after a restricted claimant notice even when no restriction remains active', async () => {
+    const notice = await createSignedInCopyrightForm()
+    const caseId = notice.intake.copyright_notice_id
+    await reviewCopyrightFormIntake({
+      intakeId: notice.intake.id,
+      currentUser: await createTestUser({ extraRoles: ['moderator'] }),
+      accepted: false,
+      rationale: 'Incomplete notice after review.',
+    })
+    expect(await countCopyrightActiveRestrictionsForNotice(caseId)).toBe(0)
+
+    await replayTestCopyrightClaimantDecision(caseId, 'restricted')
+    expect(await countCopyrightActiveRestrictionsForNotice(caseId)).toBe(0)
+    await replayTestCopyrightClaimantDecision(caseId, 'reversed')
+
+    const decisions = (await readTestCopyrightStatementIntents(caseId)).filter(
+      row => row.delivery_kind === 'claimant_decision_notice',
+    )
+    const reversed = decisions.filter(row => row.text?.includes('reversed'))
+    expect(reversed).toHaveLength(2)
+    expect(new Set(reversed.map(row => row.channel))).toEqual(new Set(['in_app', 'email']))
   })
   it('rejects a form once and recovery does not duplicate the decision', async () => {
     const notice = await createSignedInCopyrightForm()

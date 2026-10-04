@@ -10,6 +10,7 @@ export type CopyrightRestorationCause =
   | 'counter_notice_window'
   | 'hold_resolved'
   | 'administrator_lift'
+  | 'complaint_reversed'
 export type CopyrightRestorationOutcome = 'visible' | 'still_hidden' | 'unavailable'
 export type CopyrightStatementInput = {
   audience: 'poster' | 'claimant'
@@ -21,6 +22,7 @@ export type CopyrightStatementInput = {
   targetUrls: string[]
   automatedDecision: boolean
   aiGuidance: boolean
+  explanation?: string
   restorationCause?: CopyrightRestorationCause
   restorationOutcome?: CopyrightRestorationOutcome
 }
@@ -37,7 +39,11 @@ export type CopyrightStatementFields = {
     decision: 'person' | 'automatic_pending_review' | 'automatic_deadline'
     aiGuidance: boolean
   }
-  legalGround: { jurisdiction: 'us_dmca'; legalBasis: 'copyright'; citation: string }
+  legalGround: {
+    jurisdiction: 'us_dmca' | 'eu_dsa' | 'uk'
+    legalBasis: 'copyright'
+    citation: string
+  }
   redress: {
     key: 'appeal' | 'counter_notice' | 'court' | 'designated_agent' | 'new_notice'
     label: string

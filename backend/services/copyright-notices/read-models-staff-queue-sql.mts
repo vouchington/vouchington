@@ -2,6 +2,7 @@ import sql, { type SQLStatement } from 'sql-template-strings'
 import { automatedAssessmentSql } from './automated-assessment-sql.mts'
 import { unassessedCourtFilingSql } from './unassessed-court-filing-sql.mts'
 import { pendingCopyrightEnforcementSql } from './enforcement-pending-sql.mts'
+import { territorialDecisionIsLiveSql } from './territorial-redress-sql.mts'
 
 /**
  * Opens a `queue_key` CTE with one row per actionable case: the case's urgency tier (0 missed
@@ -31,6 +32,27 @@ export function copyrightStaffQueueKeysSql({
               WHERE newer.supersedes_assessment_id = assessment.id
             )
         ))
+      UNION ALL
+      SELECT receipt.copyright_notice_id, 'territorial_notice_review', receipt.received_at
+      FROM copyright_territorial_notice_receipts receipt
+      WHERE NOT EXISTS (
+        SELECT 1 FROM copyright_territorial_decisions decision
+        WHERE decision.copyright_notice_id = receipt.copyright_notice_id
+          AND decision.jurisdiction = receipt.jurisdiction
+      )
+      UNION ALL
+      SELECT decision.copyright_notice_id, 'territorial_decision_reopened',
+        min(redress.decided_at) AS since
+      FROM copyright_territorial_decisions decision
+      JOIN copyright_territorial_redress_requests request
+        ON request.copyright_territorial_decision_id = decision.id
+      JOIN copyright_territorial_redress_decisions redress
+        ON redress.copyright_territorial_redress_request_id = request.id
+      WHERE decision.outcome = 'no_action' AND redress.staff_disposition = 'revoke'
+        AND `
+    .append(territorialDecisionIsLiveSql())
+    .append(sql`
+      GROUP BY decision.copyright_notice_id
       UNION ALL
       SELECT target.copyright_notice_id, 'restriction_review', restriction.imposed_at
       FROM copyright_restrictions restriction
@@ -73,7 +95,7 @@ export function copyrightStaffQueueKeysSql({
       JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
       WHERE intent.state = 'failed'
       UNION ALL
-      `
+      `)
     .append(
       // Includes the automated assessments the switch, an earlier on-period or a suspended claimant is
       // holding back, so staff see them.

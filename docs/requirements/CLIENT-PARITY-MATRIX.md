@@ -112,7 +112,10 @@ also carries `waiting_reason` and `waiting_since`, which list a declined intake 
 or bounced; only the web consumer reads them. The staydown queue reason
 (`staydown_review`, the "Possible re-upload" status) and its `staydown_matches` list in the staff
 queue fixture `web.copyright.staff-queue.default`, plus the mark-reviewed action, are web-only
-staff tooling as well; native clients have no staff copyright queue. The
+staff tooling as well; native clients have no staff copyright queue. The territorial staff queue reasons `territorial_notice_review` and
+`territorial_decision_reopened`, plus the `territorial` case projection, are web-only staff
+contracts; there is no native staff client consumer. The territorial decision picker ships in #1906
+before approval and uses the post-image target contract and two-stage decision/reopening flow. The
 [request and response contract](api/v1/copyright-notices/README.md) is owned by the API page.
 Table B lists every web copyright surface (policy pages, member cases, notice filing, poster
 responses, guest filing, and the four staff surfaces). Swift and .NET render none of them, and
