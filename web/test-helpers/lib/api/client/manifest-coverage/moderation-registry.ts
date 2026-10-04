@@ -12,8 +12,36 @@ const reviewQueueRejectedPostId = '019e82f2-a2c0-7000-8000-000000000000'
 const reviewQueuePageOneEndCursor = 'eyJpZCI6IjAxOWU4MmYyLWEyYzAtNzAwMC04MDAwLTAwMDAwMDAwMDAwMCJ9'
 const copyrightNoticeId = '00000000-0000-7000-8000-000000000804'
 const copyrightNoticeTargetId = '00000000-0000-7000-8000-000000000805'
+const copyrightTrustedFlaggerId = '00000000-0000-7000-8000-000000001220'
 
 const moderationCoreEndpointRegistry: Record<string, ManifestEndpoint> = {
+  'copyright.trusted-flaggers.list': {
+    method: 'GET',
+    path: '/api/v1/copyright-trusted-flaggers',
+  },
+  'copyright.trusted-flaggers.get': {
+    method: 'GET',
+    path: `/api/v1/copyright-trusted-flaggers/${copyrightTrustedFlaggerId}`,
+  },
+  'copyright.trusted-flaggers.create': {
+    method: 'POST',
+    path: '/api/v1/copyright-trusted-flaggers',
+    requestBody: {
+      area_description: 'Copyright notices',
+      area_of_expertise: 'intellectual_property',
+      award_reference: 'https://example.test/designations/1220',
+      awarded_at: '2026-09-01',
+      awarding_coordinator_name: 'Example Digital Services Coordinator',
+      awarding_member_state: 'DE',
+      name: 'Example copyright flagger',
+      user_id: '00000000-0000-7000-8000-000000001221',
+    },
+  },
+  'copyright.trusted-flaggers.status-change': {
+    method: 'POST',
+    path: `/api/v1/copyright-trusted-flaggers/${copyrightTrustedFlaggerId}/status-changes`,
+    requestBody: { change_type: 'suspended', reason: 'Commission list update' },
+  },
   'native.moderation.copyright.image-similarity-candidates.default': {
     method: 'GET',
     path: `/api/v1/copyright-notices/${copyrightNoticeId}/targets/${copyrightNoticeTargetId}/image-similarity-candidates`,

@@ -14,7 +14,7 @@ import { boundedString } from '@services/copyright-notices/http-input'
 import { assertNotSuspended } from '@services/users'
 import app from '../../app.mts'
 import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
-import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { apiOpenApiNoContent, apiQuery, apiResponse } from '../../response-contract.mts'
 import {
   parseJsonBody,
   requireAuthAndRateLimit,
@@ -31,7 +31,6 @@ const path = '/api/v1/copyright-trusted-flaggers'
 const listRoute = `GET:${path}`
 const createRoute = `POST:${path}`
 const itemRoute = `GET:${path}/:id`
-const changeRoute = `POST:${path}/:id/status-changes`
 const listParser = createPaginationParser({
   cursor: { type: 'simple' },
   limit: { min: 1, max: 100, default: 25 },
@@ -70,9 +69,8 @@ function assertCreateInput(ctx: Context, body: CopyrightTrustedFlaggerCreateRequ
 }
 
 function assertObjectBody(ctx: Context, body: unknown): asserts body is Record<string, unknown> {
-  if (body === null || typeof body !== 'object' || Array.isArray(body)) {
+  if (!body || typeof body !== 'object' || Array.isArray(body))
     ctx.throw(422, 'Invalid request body')
-  }
 }
 
 app.route('/api/v1/copyright-trusted-flaggers').get(async (ctx: Context) => {
@@ -157,12 +155,16 @@ app
     )
   })
   .patch((ctx: Context) => {
+    apiOpenApiNoContent('PATCH:/api/v1/copyright-trusted-flaggers/:id', 405)
     ctx.set('Allow', 'GET')
-    ctx.throw(405, 'Trusted flagger entries cannot be edited')
+    ctx.setStatus(405)
+    ctx.response.empty()
   })
   .delete((ctx: Context) => {
+    apiOpenApiNoContent('DELETE:/api/v1/copyright-trusted-flaggers/:id', 405)
     ctx.set('Allow', 'GET')
-    ctx.throw(405, 'Trusted flagger entries cannot be deleted')
+    ctx.setStatus(405)
+    ctx.response.empty()
   })
 
 app.route('/api/v1/copyright-trusted-flaggers/:id/status-changes').post(async (ctx: Context) => {
@@ -170,7 +172,7 @@ app.route('/api/v1/copyright-trusted-flaggers/:id/status-changes').post(async (c
   const currentUser = await requireAuthAndRateLimit(
     ctx,
     currentUserCanApproveCopyrightJurisdictionPolicy,
-    changeRoute,
+    'POST:/api/v1/copyright-trusted-flaggers/:id/status-changes',
   )
   assertNotSuspended(currentUser)
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
