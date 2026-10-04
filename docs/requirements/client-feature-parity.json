@@ -404,48 +404,6 @@
       }
     },
     {
-      "id": "member-support",
-      "title": "Member support threads",
-      "domain": "Support",
-      "intents": ["chat"],
-      "requirements": ["docs/requirements/reference-support.md"],
-      "matrixRows": [
-        {
-          "table": "A",
-          "surface": "support thread creation and first reply"
-        },
-        {
-          "table": "B",
-          "surface": "member support"
-        }
-      ],
-      "clients": {
-        "web": {
-          "status": "full",
-          "uiEvidence": ["web/app/(chat)/chat/support/new/new-support-thread-client.tsx"],
-          "behaviorTests": []
-        },
-        "swift": {
-          "status": "full",
-          "uiEvidence": [
-            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeSupportSurface.swift"
-          ],
-          "behaviorTests": [
-            "swift-clients/ui/Tests/VouchaUITests/NativeChatSupportSurfaceTests.swift"
-          ]
-        },
-        "dotnet": {
-          "status": "full",
-          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/SupportThreadPage.xaml"],
-          "behaviorTests": [
-            "dotnet-clients/tests/Voucha.Client.Core.Tests/Chat/SupportThreadViewModelPaginationTests.cs",
-            "dotnet-clients/tests/Voucha.Client.Core.Tests/Chat/ChatViewModelTests.cs",
-            "dotnet-clients/tests/Voucha.Client.Core.Tests/Api/VouchaApiClientChatSupportTests.cs"
-          ]
-        }
-      }
-    },
-    {
       "id": "image-upload",
       "title": "Post and profile image upload",
       "domain": "Media",
@@ -2010,48 +1968,6 @@
         "summary": "Native clients present plan status but lack store billing and management.",
         "trackingIssue": "jonathanong/filaments#6582",
         "relatedIssues": ["jonathanong/filaments#6742"]
-      }
-    },
-    {
-      "id": "staff-support",
-      "title": "Staff support console",
-      "domain": "Staff",
-      "intents": [],
-      "requirements": ["docs/requirements/admin/CUSTOMER-SUPPORT.md"],
-      "matrixRows": [
-        {
-          "table": "B",
-          "surface": "staff support"
-        }
-      ],
-      "clients": {
-        "web": {
-          "status": "full",
-          "uiEvidence": ["web/app/(support-admin)/support/admin-support-threads-client.tsx"],
-          "behaviorTests": [
-            "web/app/(support-admin)/support/__tests__/admin-support-threads-client.mock.test.tsx"
-          ]
-        },
-        "swift": {
-          "status": "full",
-          "uiEvidence": [
-            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/StaffSupportSurface.swift"
-          ],
-          "behaviorTests": [
-            "swift-clients/core/Tests/VouchaCoreTests/StaffSupportEndpointTests.swift",
-            "swift-clients/ui/Tests/VouchaUITests/StaffSupportSurfaceTests.swift"
-          ]
-        },
-        "dotnet": {
-          "status": "full",
-          "uiEvidence": [
-            "dotnet-clients/src/Voucha.Client.App/Pages/StaffSupportThreadsPage.cs",
-            "dotnet-clients/src/Voucha.Client.App/Pages/StaffSupportContactsPage.cs"
-          ],
-          "behaviorTests": [
-            "dotnet-clients/tests/Voucha.Client.Core.Tests/Api/StaffSupportEndpointTests.cs"
-          ]
-        }
       }
     },
     {
