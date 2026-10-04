@@ -50,6 +50,12 @@ export async function createSesBounceEvent(
   const dedupKey = deriveDedupKey(input, normalizedRecipients)
 
   const { rows } = await write(sql`/* createSesBounceEvent */
+    WITH registered_subtype AS (
+      INSERT INTO ses_bounce_subtypes (id)
+      SELECT ${input.bounce_sub_type ?? null}::text
+      WHERE ${input.bounce_sub_type ?? null}::text IS NOT NULL
+      ON CONFLICT (id) DO NOTHING
+    )
     INSERT INTO ses_bounce_events (
       notification_type,
       bounce_type,

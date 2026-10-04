@@ -32,7 +32,7 @@ export async function setTestCommunityAutomodAction(
   action: CommunityAutomodAction,
 ): Promise<void> {
   await write(sql`/* setTestCommunityAutomodAction */
-    UPDATE communities SET automod_action = ${action}::community_automod_action
+    UPDATE communities SET automod_action = ${action}::community_automod_actions
     WHERE id = ${communityId}
   `)
 }

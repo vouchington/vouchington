@@ -1,3 +1,4 @@
+import { upsertMediaTypes } from '../../services/urls/media-types.mts'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -11,11 +12,12 @@ export async function setRssFeedItemMediaDetails(
     thumbnailUrl: string | null
   },
 ): Promise<void> {
+  const mediaTypeId = options.enclosureType ? await upsertMediaTypes(options.enclosureType) : null
   await write(sql`/* setRssFeedItemMediaDetails */
     UPDATE rss_feed_items
     SET media_type = ${options.mediaType}::rss_feed_item_media_types,
         enclosure_url = ${options.enclosureUrl},
-        enclosure_type = ${options.enclosureType},
+        enclosure_media_type_id = ${mediaTypeId},
         duration_seconds = ${options.durationSeconds},
         thumbnail_url = ${options.thumbnailUrl}
     WHERE id = ${itemId}

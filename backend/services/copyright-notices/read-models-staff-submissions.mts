@@ -1,3 +1,4 @@
+import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import { decryptSecret } from '@modules/token-secrets'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
@@ -14,7 +15,7 @@ export async function selectStaffAppeals(noticeId: string, query: TransactionQue
     body_ciphertext: string
     target_ids: string[]
     recommendation_id: string | null
-    recommendation: string | null
+    recommendation: FiniteValue<'copyright_notice_appeal_recommendation_outcomes'> | null
     rationale_ciphertext: string | null
   }>(sql`/* getPendingCopyrightStaffCase:appeals */
     SELECT submission.id AS submission_id, submission.body_ciphertext,

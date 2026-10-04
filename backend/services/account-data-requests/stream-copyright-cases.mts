@@ -43,7 +43,7 @@ export function streamCopyrightCases(userId: string) {
       END AS claimant_display_name,
       (SELECT COALESCE(json_agg(json_build_object(
           'id', target.id,
-          'surface', COALESCE(surface.surface_kind, 'post-image'),
+          'surface', COALESCE(surface.surface_kind::text, 'post-image'),
           'hosted_use_url', CASE WHEN `
   statement.append(copyrightPlacementPublicVisibleSql())
   statement.append(sql` THEN target.hosted_use_url END,

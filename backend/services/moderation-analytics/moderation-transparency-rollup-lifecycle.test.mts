@@ -1,3 +1,4 @@
+import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import crypto from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import {
@@ -126,7 +127,7 @@ describe('moderation transparency daily rollup lifecycle', () => {
       ),
     )
     await expectReleasedBucket(now, occurredAt, 'appeals', 'accept')
-    const releasedCohort = { occurredAt, metric: 'appeals', category: 'accept' }
+    const releasedCohort = { occurredAt, metric: 'appeals', category: 'accept' } as const
     await expect(updateTestReleasedModerationTransparencyRollup(releasedCohort)).rejects.toThrow(
       'moderation_transparency_released_daily_rollups rows are append-only',
     )
@@ -247,7 +248,7 @@ async function expectReleasedBucket(
   now: Date,
   occurredAt: Date,
   metric: 'appeals' | 'automated_moderation' | 'moderation_actions',
-  category: string,
+  category: FiniteValue<'moderation_transparency_categories'>,
 ): Promise<void> {
   await expect(getModerationTransparency('7d', now)).resolves.toMatchObject({
     buckets: expect.arrayContaining([
@@ -263,8 +264,8 @@ async function expectReleasedBucket(
 
 async function expectRollupCount(
   occurredAt: Date,
-  metric: string,
-  category: string,
+  metric: FiniteValue<'moderation_transparency_metrics'>,
+  category: FiniteValue<'moderation_transparency_categories'>,
   expectedCount: number,
 ): Promise<void> {
   await expect(

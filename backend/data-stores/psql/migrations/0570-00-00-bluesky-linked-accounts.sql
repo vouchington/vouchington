@@ -3,12 +3,13 @@
 -- and native completions reference one exact authorization generation. UUIDs are identifiers only:
 -- lifecycle ordering and expiry use explicit status and timestamp columns.
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS bluesky_link_authorizations (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
   handle TEXT CHECK (handle IS NULL OR (char_length(handle) > 0 AND char_length(handle) <= 253)),
-  callback_mode TEXT NOT NULL CHECK (callback_mode IN ('web', 'native')),
-  status TEXT NOT NULL DEFAULT 'pending' CHECK (
+  callback_mode oauth_callback_modes NOT NULL CHECK (callback_mode IN ('web', 'native')),
+  status bluesky_link_authorization_statuses NOT NULL DEFAULT 'pending' CHECK (
     status IN ('pending', 'callback_claimed', 'handoff_ready', 'attached', 'revoked', 'expired', 'rejected')
   ),
   completion_proof_challenge TEXT,

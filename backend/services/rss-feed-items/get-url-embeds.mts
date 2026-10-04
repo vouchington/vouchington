@@ -21,9 +21,10 @@ export async function getUrlEmbedsByUrlIds(
       SELECT DISTINCT ON (rfi.url_id)
         rfi.id AS rss_feed_item_id, rfi.url_id,
         rfi.media_type::text AS media_type, rfi.video_id, rfi.video_platform,
-        rfi.enclosure_url, rfi.enclosure_type, rfi.duration_seconds, rfi.thumbnail_url,
+        rfi.enclosure_url, enclosure_media_type.mime_type AS enclosure_type, rfi.duration_seconds, rfi.thumbnail_url,
         NULLIF(TRIM(rfi.data->>'player_url'), '') AS rss_player_url, NULLIF(TRIM(rfi.data->>'title'), '') AS item_title
       FROM rss_feed_items rfi
+      LEFT JOIN media_types enclosure_media_type ON enclosure_media_type.id = rfi.enclosure_media_type_id
       WHERE rfi.url_id = ANY(${urlIds})
         AND rfi.deleted_at IS NULL
       ORDER BY rfi.url_id, rfi.id DESC

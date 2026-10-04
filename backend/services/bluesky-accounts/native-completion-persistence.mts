@@ -1,3 +1,4 @@
+import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import { beginTransaction, write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import createHttpError from 'http-errors'
@@ -11,7 +12,7 @@ import {
 const COMPLETION_TTL_MS = 10 * 60 * 1000
 
 type NativePersistenceState = {
-  status: string
+  status: FiniteValue<'bluesky_link_authorization_statuses'>
   authorization_expires_at: Date
   completion_token_hash: string | null
   completion_expires_at: Date | null

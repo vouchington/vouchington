@@ -49,7 +49,7 @@ export async function readDsaCopyrightNoticeFigures(
     .append(sql`)
         )) AS automated
       FROM copyright_notices notice
-      WHERE notice.jurisdiction = ANY(${population}::text[])
+      WHERE notice.jurisdiction = ANY(${population}::copyright_jurisdictions[])
         AND notice.received_at >= ${periodStartedAt}
         AND notice.received_at < ${periodEndedAt}
     ), imposed AS (
@@ -62,7 +62,7 @@ export async function readDsaCopyrightNoticeFigures(
       JOIN copyright_notices notice ON notice.id = restriction.copyright_notice_id
       WHERE restriction.imposed_at >= ${periodStartedAt}
         AND restriction.imposed_at < ${periodEndedAt}
-        AND notice.jurisdiction = ANY(${population}::text[])
+        AND notice.jurisdiction = ANY(${population}::copyright_jurisdictions[])
     ), acted_notice AS (
       SELECT imposed.notice_id, bool_or(imposed.trusted) AS trusted,
         min(imposed.received_at) AS received_at

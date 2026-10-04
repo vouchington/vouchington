@@ -1,7 +1,8 @@
 -- edited-in-place: pre-launch, never deployed to production
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS ap_inbox_deliveries (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
-  request_method TEXT NOT NULL,
+  request_method http_request_methods NOT NULL,
   request_target TEXT NOT NULL,
   expected_host TEXT NOT NULL,
   signature_header TEXT NOT NULL,
@@ -27,8 +28,8 @@ CREATE TABLE IF NOT EXISTS ap_inbox_deliveries (
   last_error TEXT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT ap_inbox_deliveries__request_method_uppercase CHECK (request_method = UPPER(request_method)),
-  CONSTRAINT ap_inbox_deliveries__request_method_length CHECK (LENGTH(request_method) BETWEEN 1 AND 16),
+  CONSTRAINT ap_inbox_deliveries__request_method_uppercase CHECK (request_method::text = UPPER(request_method::text)),
+  CONSTRAINT ap_inbox_deliveries__request_method_length CHECK (LENGTH(request_method::text) BETWEEN 1 AND 16),
   CONSTRAINT ap_inbox_deliveries__sender_hostname_lowercase CHECK (sender_hostname = LOWER(sender_hostname)),
   CONSTRAINT ap_inbox_deliveries__raw_body_bounded CHECK (OCTET_LENGTH(raw_body) <= 1048576),
   CONSTRAINT ap_inbox_deliveries__verified_actor_paired CHECK ((verified_at IS NULL) = (remote_actor_id IS NULL)),

@@ -15,10 +15,11 @@ CREATE TYPE copyright_notice_lifecycle_change_types AS ENUM ('notice_received', 
 -- Copyright complaints are a distinct legal aggregate.  This migration records
 -- evidence and decisions only; it deliberately enables no media restriction.
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notices (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  jurisdiction text NOT NULL CHECK (jurisdiction IN ('us_dmca', 'eu_dsa', 'uk', 'other')),
-  legal_basis text NOT NULL CHECK (legal_basis = 'copyright'),
+  jurisdiction copyright_jurisdictions NOT NULL CHECK (jurisdiction IN ('us_dmca', 'eu_dsa', 'uk', 'other')),
+  legal_basis copyright_notice_legal_bases NOT NULL CHECK (legal_basis = 'copyright'),
   received_at timestamptz NOT NULL,
   accepted_at timestamptz,
   provisional_withholding_at timestamptz,
@@ -50,11 +51,12 @@ CREATE TABLE copyright_notice_targets (
   UNIQUE (copyright_notice_id, id)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_target_images (
   copyright_notice_target_id uuid PRIMARY KEY REFERENCES copyright_notice_targets(id) ON DELETE CASCADE,
   placement_id uuid NOT NULL,
   image_id uuid NOT NULL REFERENCES retained_image_identities(id) ON DELETE RESTRICT,
-  binding_family text NOT NULL CHECK (binding_family IN ('post', 'surface')),
+  binding_family image_binding_families NOT NULL CHECK (binding_family IN ('post', 'surface')),
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (copyright_notice_target_id, placement_id)
@@ -63,6 +65,7 @@ CREATE TABLE copyright_notice_target_images (
     REFERENCES retained_image_placement_bindings(placement_id, image_id, binding_family) ON DELETE RESTRICT
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_restrictions (
   copyright_notice_id uuid NOT NULL,
   id uuid PRIMARY KEY DEFAULT uuidv7(),
@@ -73,7 +76,7 @@ CREATE TABLE copyright_restrictions (
   imposed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
   lifted_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
   human_reviewed_at timestamptz,
-  human_review_action text CHECK (human_review_action IN ('confirm', 'modify', 'reverse')),
+  human_review_action copyright_restriction_human_review_actions CHECK (human_review_action IN ('confirm', 'modify', 'reverse')),
   human_reviewed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -96,13 +99,14 @@ COMMENT ON COLUMN copyright_restrictions.copyright_notice_id IS 'Parent notice s
 
 CREATE UNIQUE INDEX idx_copyright_restrictions__one_active_per_target ON copyright_restrictions(copyright_notice_target_id) WHERE lifted_at IS NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_submissions (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE CASCADE,
   submitted_by_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
-  kind text NOT NULL CHECK (kind IN ('notice', 'supplement', 'appeal', 'counter_notice', 'withdrawal', 'court_or_ccb_hold', 'complaint')),
+  kind copyright_notice_submission_kinds NOT NULL CHECK (kind IN ('notice', 'supplement', 'appeal', 'counter_notice', 'withdrawal', 'court_or_ccb_hold', 'complaint')),
   received_at timestamptz NOT NULL,
-  source_kind text NOT NULL CHECK (source_kind IN ('signed_in_form', 'guest_form', 'email', 'staff')),
+  source_kind copyright_notice_submission_source_kinds NOT NULL CHECK (source_kind IN ('signed_in_form', 'guest_form', 'email', 'staff')),
   body_ciphertext text NOT NULL CHECK (char_length(body_ciphertext) BETWEEN 1 AND 1048576),
   copyright_notice_guest_capability_id uuid,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -114,13 +118,14 @@ CREATE TABLE copyright_notice_submissions (
   CONSTRAINT copyright_notice_submissions_id_notice_unique UNIQUE (id, copyright_notice_id)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_evidence_artifacts (
   copyright_notice_id uuid NOT NULL,
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_submission_id uuid NOT NULL,
   storage_key text NOT NULL,
   sha256 bytea NOT NULL CHECK (octet_length(sha256) = 32),
-  mime_type text NOT NULL,
+  media_type_id bigint NOT NULL REFERENCES media_types(id) ON DELETE RESTRICT,
   byte_size integer NOT NULL CHECK (byte_size >= 0),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -179,6 +184,7 @@ CREATE TRIGGER trigger_update_copyright_counter_targets_scope
   EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submission_assessments', 'copyright_notice_submission_assessment_id');
 COMMENT ON COLUMN copyright_notice_counter_notice_assessment_targets.copyright_notice_id IS 'Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_legal_hold_assessments (
   copyright_notice_id uuid NOT NULL,
   id uuid PRIMARY KEY DEFAULT uuidv7(),
@@ -186,8 +192,8 @@ CREATE TABLE copyright_notice_legal_hold_assessments (
   assessed_at timestamptz NOT NULL,
   assessed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
   from_original_claimant boolean NOT NULL,
-  proceeding_kind text CHECK (proceeding_kind IN ('federal_court', 'ccb')),
-  ccb_claim_kind text CHECK (ccb_claim_kind IN ('claim', 'counterclaim')),
+  proceeding_kind copyright_notice_legal_hold_assessment_proceeding_kinds CHECK (proceeding_kind IN ('federal_court', 'ccb')),
+  ccb_claim_kind copyright_notice_legal_hold_assessment_ccb_claim_kinds CHECK (ccb_claim_kind IN ('claim', 'counterclaim')),
   commenced_at timestamptz,
   received_by_designated_agent_at timestamptz,
   same_material boolean NOT NULL,
@@ -231,13 +237,14 @@ CREATE TRIGGER trigger_update_copyright_hold_targets_scope
   EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_legal_hold_assessments', 'copyright_notice_legal_hold_assessment_id');
 COMMENT ON COLUMN copyright_notice_legal_hold_assessment_targets.copyright_notice_id IS 'Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_legal_hold_resolutions (
   copyright_notice_id uuid NOT NULL,
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_legal_hold_assessment_id uuid NOT NULL UNIQUE,
   resolved_at timestamptz NOT NULL,
   resolved_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
-  resolution_kind text NOT NULL CHECK (resolution_kind IN ('dismissed', 'proceeding_ended', 'superseded')),
+  resolution_kind copyright_notice_legal_hold_resolution_kinds NOT NULL CHECK (resolution_kind IN ('dismissed', 'proceeding_ended', 'superseded')),
   rationale_ciphertext text NOT NULL CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 65536),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -268,14 +275,15 @@ CREATE TABLE copyright_notice_deadlines (
   UNIQUE (copyright_notice_id, id)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_correspondence_messages (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_email_intake_id uuid,
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
   copyright_notice_submission_id uuid REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
-  direction text NOT NULL CHECK (direction IN ('inbound', 'outbound')),
-  composition_kind text NOT NULL CHECK (composition_kind IN ('inbound', 'deterministic_template', 'staff', 'agent')),
-  correspondence_kind text NOT NULL CONSTRAINT copyright_correspondence_kind_check CHECK (correspondence_kind IN (
+  direction copyright_notice_correspondence_message_directions NOT NULL CHECK (direction IN ('inbound', 'outbound')),
+  composition_kind copyright_notice_correspondence_message_composition_kinds NOT NULL CHECK (composition_kind IN ('inbound', 'deterministic_template', 'staff', 'agent')),
+  correspondence_kind copyright_notice_correspondence_kinds NOT NULL CONSTRAINT copyright_correspondence_kind_check CHECK (correspondence_kind IN (
     'receipt',
     'request_information',
     'restriction_notice', 'decision_notice',
@@ -304,6 +312,7 @@ CREATE TABLE copyright_notice_correspondence_messages (
   CONSTRAINT copyright_notice_correspondence_id_notice_unique UNIQUE (id, copyright_notice_id)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_lifecycle_changes (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid REFERENCES copyright_notices(id) ON DELETE CASCADE,
@@ -322,11 +331,11 @@ CREATE TABLE copyright_notice_lifecycle_changes (
   copyright_notice_delivery_intent_id uuid,
   media_delivery_registry_key text,
   copyright_notice_guest_capability_id uuid,
-  review_action text CHECK (review_action IN ('confirm', 'reverse')),
+  review_action copyright_review_actions CHECK (review_action IN ('confirm', 'reverse')),
   review_rationale_id uuid CHECK (review_rationale_id IS NULL OR review_rationale_id = id),
   counter_notice_accepted boolean,
-  recovery_source text CHECK (recovery_source IN ('durable_review', 'durable_decision')),
-  replay_reason text CHECK (replay_reason = 'operator_replay'),
+  recovery_source copyright_notice_lifecycle_change_recovery_sources CHECK (recovery_source IN ('durable_review', 'durable_decision')),
+  replay_reason copyright_notice_lifecycle_change_replay_reasons CHECK (replay_reason = 'operator_replay'),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CHECK ((review_action IS NULL AND review_rationale_id IS NULL)
     OR (change_type = 'mandatory_human_review_completed' AND review_action IS NOT NULL AND review_rationale_id IS NOT NULL)),
@@ -425,20 +434,21 @@ COMMENT ON COLUMN copyright_notice_lifecycle_change_rationales.id IS 'Owning lif
 COMMENT ON COLUMN copyright_notice_lifecycle_change_rationales.copyright_notice_id IS 'Notice scope enforced together with the owning change by a composite foreign key.';
 COMMENT ON COLUMN copyright_notice_lifecycle_change_rationales.review_rationale_ciphertext IS 'Private review rationale; only the controlled retention workflow can erase it.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_action_intents (
   copyright_notice_id uuid NOT NULL,
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  state text NOT NULL DEFAULT 'pending' CHECK (state IN ('pending', 'claimed', 'completed', 'stale', 'blocked', 'failed')),
+  state copyright_notice_action_intent_states NOT NULL DEFAULT 'pending' CHECK (state IN ('pending', 'claimed', 'completed', 'stale', 'blocked', 'failed')),
   delivery_attempt_count integer NOT NULL DEFAULT 0 CHECK (delivery_attempt_count BETWEEN 0 AND 5),
   lease_token uuid,
   claimed_at timestamptz,
-  completed_at_reason text CHECK (completed_at_reason IS NULL OR completed_at_reason IN ('completed', 'stale', 'blocked', 'failed')),
+  completed_at_reason copyright_notice_action_intent_states CHECK (completed_at_reason IS NULL OR completed_at_reason IN ('completed', 'stale', 'blocked', 'failed')),
   failure_message text CHECK (failure_message IS NULL OR char_length(failure_message) BETWEEN 1 AND 4096),
   next_attempt_at timestamptz,
   copyright_restriction_id uuid NOT NULL,
   copyright_notice_deadline_id uuid REFERENCES copyright_notice_deadlines(id) ON DELETE RESTRICT,
   expected_placement_revision integer NOT NULL CHECK (expected_placement_revision >= 0),
-  action text NOT NULL CHECK (action IN ('withhold', 'restore')),
+  action copyright_notice_action_intent_actions NOT NULL CHECK (action IN ('withhold', 'restore')),
   completed_at timestamptz,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -919,7 +929,7 @@ COMMENT ON COLUMN copyright_restrictions.lifted_at IS 'One-way timestamp recordi
 COMMENT ON COLUMN copyright_restrictions.imposed_by_id IS 'Staff actor that imposed the restriction, or NULL for an authorized automatic provisional action.';
 COMMENT ON COLUMN copyright_restrictions.lifted_by_id IS 'Staff actor that lifted the restriction; NULL denotes an authorized system restoration.';
 COMMENT ON COLUMN copyright_restrictions.human_reviewed_at IS 'When staff completed the mandatory review of this exact provisional restriction.';
-COMMENT ON COLUMN copyright_restrictions.human_review_action IS 'Human outcome for this restriction: confirm, modify, or reverse.';
+COMMENT ON COLUMN copyright_restrictions.human_review_action IS 'Human outcome for this restriction: confirm, modify or reverse.';
 COMMENT ON COLUMN copyright_restrictions.human_reviewed_by_id IS 'Staff reviewer; may become NULL only when the reviewer account is erased.';
 
 COMMENT ON TABLE copyright_notice_submissions IS 'Immutable receipt provenance. Statutory timing always starts from the assessed submission received_at, never parser or approval time.';
@@ -989,7 +999,7 @@ COMMENT ON TABLE copyright_notice_evidence_artifacts IS 'Private immutable evide
 COMMENT ON COLUMN copyright_notice_evidence_artifacts.copyright_notice_submission_id IS 'Submission whose preserved source or attachment this artifact represents.';
 COMMENT ON COLUMN copyright_notice_evidence_artifacts.storage_key IS 'Private object-storage key; never included in member projections.';
 COMMENT ON COLUMN copyright_notice_evidence_artifacts.sha256 IS 'SHA-256 digest used to verify immutable evidence bytes.';
-COMMENT ON COLUMN copyright_notice_evidence_artifacts.mime_type IS 'Untrusted declared or detected media type used only for quarantined processing.';
+COMMENT ON COLUMN copyright_notice_evidence_artifacts.media_type_id IS 'Untrusted declared or detected media type used only for quarantined processing.';
 COMMENT ON COLUMN copyright_notice_evidence_artifacts.byte_size IS 'Preserved artifact byte length for bounds and integrity checks.';
 
 COMMENT ON TABLE copyright_notice_lifecycle_changes IS 'Append-only legal workflow audit trail.';
@@ -1031,3 +1041,5 @@ COMMENT ON COLUMN copyright_notice_action_intents.lease_token IS 'Opaque worker 
 CREATE TRIGGER trigger_ensure_copyright_notice_lifecycle_changes_actor BEFORE INSERT ON copyright_notice_lifecycle_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id');
 
 CREATE TRIGGER trigger_copyright_lifecycle_change_rationales_immutable BEFORE UPDATE OR DELETE ON copyright_notice_lifecycle_change_rationales FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
+
+CREATE INDEX idx_copyright_notice_evidence_artifacts__media_type_id ON copyright_notice_evidence_artifacts (media_type_id);

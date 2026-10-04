@@ -1,3 +1,4 @@
+import { FINITE_VALUES } from '@data-stores/psql/finite-values/index'
 import { listFeedRows } from './identity-feed-paging.mts'
 import { publicationPageLimit } from './page-limit.mts'
 import sql, { type SQLStatement } from 'sql-template-strings'
@@ -133,6 +134,7 @@ function sourceBranchSql(
           ['topic_alias_id', 'source'],
           cursor === null ? null : JSON.parse(cursor),
           1,
+          FINITE_VALUES.post_topic_alias_source_types[0],
         ),
       )
     statement

@@ -118,7 +118,7 @@ async function applyClearanceDecision(
         SELECT post_id, change_type, $2, public_reason_code,
           jsonb_build_object('moderation_version_policy_revision', $3),
           CASE WHEN change_type = 'reject'
-            THEN COALESCE(signal_sources, '{}'::text[]) ELSE '{}'::text[] END
+            THEN COALESCE(signal_sources::moderation_transparency_categories[], '{}'::moderation_transparency_categories[]) ELSE '{}'::moderation_transparency_categories[] END
         FROM changed_decision
         RETURNING id, post_id, change_type, created_at
       )

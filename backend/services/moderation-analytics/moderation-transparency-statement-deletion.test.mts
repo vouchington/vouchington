@@ -1,3 +1,4 @@
+import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   acquireTestModerationTransparencyDateReservation,
@@ -98,7 +99,7 @@ describe('moderation transparency statement deletion', () => {
 
 async function expectRollupCount(
   occurredAt: Date,
-  category: string,
+  category: FiniteValue<'moderation_transparency_categories'>,
   expected: number | undefined,
 ): Promise<void> {
   await expect(

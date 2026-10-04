@@ -14,12 +14,10 @@ export async function getDomainBlacklistSourcesSequenceCurrentValue(
   return BigInt(rows[0].value)
 }
 
-export async function getUrlContentTypesSequenceCurrentValue(
-  options: QueryOptions,
-): Promise<bigint> {
+export async function getMediaTypesSequenceCurrentValue(options: QueryOptions): Promise<bigint> {
   const { rows } = await write(
-    sql`/* getUrlContentTypesSequenceCurrentValue */
-    SELECT currval('url_content_types_id_seq')::bigint AS value
+    sql`/* getMediaTypesSequenceCurrentValue */
+    SELECT currval('media_types_id_seq')::bigint AS value
   `,
     options,
   )

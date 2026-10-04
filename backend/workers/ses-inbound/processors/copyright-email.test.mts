@@ -12,6 +12,7 @@ const intake = {
   received_at: new Date('2026-07-01T12:00:00.000Z'),
   raw_storage_key: 'copyright-evidence/ses-untrusted',
   raw_sha256: Buffer.alloc(32, 1),
+  raw_media_type_id: '1',
   raw_mime_type: 'message/rfc822',
   raw_byte_size: 3,
 }

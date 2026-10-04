@@ -103,7 +103,7 @@ export async function beginValidatedOAuthAuthorizationRequest(
     `/* beginOAuthAuthorizationRequest insert */ INSERT INTO oauth_authorization_requests (
        client_id, user_id, browser_binding_hash, redirect_uri, state, resource, scopes,
        code_challenge, expires_at
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7::text[], $8, $9)
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7::api_scopes[], $8, $9)
      RETURNING id`,
     [
       lockedClient.id,
@@ -160,7 +160,7 @@ export async function getOAuthAuthorizationRequestForUser(
     `/* getOAuthAuthorizationRequestForUser */ SELECT
        request.id,
        request.resource,
-       request.scopes,
+       request.scopes::text[] AS scopes,
        request.expires_at,
        client.client_name,
        client.metadata_url

@@ -821,7 +821,8 @@ decision permits a new complaint. Replay returns the caller's request before che
 window. The six-month period begins at that recipient's earliest sent decision notice for the live
 decision; bounced, failed, pending, earlier-decision, review, and restoration notices do not start
 it. A never-informed party has no cutoff, a reviewer has no cutoff, and a party with both roles
-receives the later window end. Calendar-month arithmetic is performed in PostgreSQL.
+receives the later window end. Calendar-month arithmetic is performed in PostgreSQL using UTC, so the cutoff is independent of
+the database session timezone and daylight-saving changes.
 
 Staff admit an EU guest's reply as correspondence and submission kind `complaint`; mail itself
 provides no authorization. The service checks the guest receipt, live decision, and complaint

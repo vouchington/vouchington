@@ -103,5 +103,6 @@ export type LandingPageItemRow = {
   referral_link_id: string | null
   topic_id: string | null
   link_label: string | null
-  link_url: string | null
+  url_id: string | null
+  url: string | null
 }

@@ -19,6 +19,7 @@ export const EXTRA_UNBOUNDED_TABLES_CONTINUED = [
   'post_moderation_versions',
   'post_moderation_work_items',
   'post_topic_recommendations_hostnames',
+  'post_topic_recommendation_landing_page_urls',
   'referral_program_link_validations',
   'referral_program_link_validations_rules',
   'report_abuse_penalties',

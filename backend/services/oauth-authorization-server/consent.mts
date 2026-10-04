@@ -1,7 +1,8 @@
+import type { AuthorizationRequestRow } from './consent-types.mts'
 import { randomBytes } from 'node:crypto'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
-import { hasEveryScope, type ApiScope } from '@modules/scopes'
+import { hasEveryScope } from '@modules/scopes'
 import { v7 as uuidv7 } from 'uuid'
 import { AUTHORIZATION_CODE_TTL_MS, OAUTH_SECRET_PURPOSES } from './constants.mts'
 import {
@@ -12,18 +13,6 @@ import { OAuthProtocolError } from './errors.mts'
 import { buildOAuthAuthorizationResponseUrl } from './redirects.mts'
 import { mayUserAuthorizeOAuthResource } from './resource-authorization.mts'
 
-type AuthorizationRequestRow = {
-  id: string
-  client_id: string
-  user_id: string
-  redirect_uri: string
-  state: string
-  resource: string
-  scopes: ApiScope[]
-  client_scopes: ApiScope[]
-  code_challenge: string
-  owner_user_id: string | null
-}
 export async function decideOAuthAuthorizationRequest(
   userId: string,
   requestId: string,
@@ -109,7 +98,7 @@ async function insertAuthorizationCode(
   await query(
     `/* insertAuthorizationCode */ INSERT INTO oauth_authorization_codes (
        id, code_hash, grant_id, redirect_uri, resource, scopes, code_challenge, expires_at
-     ) VALUES ($1, $2, $3, $4, $5, $6::text[], $7, $8)`,
+     ) VALUES ($1, $2, $3, $4, $5, $6::api_scopes[], $7, $8)`,
     [
       uuidv7(),
       hashToken(OAUTH_SECRET_PURPOSES.authorizationCode, rawCode),
@@ -132,7 +121,7 @@ async function insertConsentDecision(
   await query(
     `/* insertConsentDecision */ INSERT INTO oauth_authorization_server_events (
        event_type, authorization_request_id, user_id, client_id, grant_id, resource, scopes
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7::text[])`,
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7::api_scopes[])`,
     [
       decision === 'approve' ? 'consent_approved' : 'consent_denied',
       request.id,
@@ -152,8 +141,9 @@ async function lockAuthorizationRequest(
   query: TransactionQuery,
 ): Promise<AuthorizationRequestRow | null> {
   const result = await query<AuthorizationRequestRow>(
-    `/* lockAuthorizationRequest */ SELECT request.*, client.owner_user_id,
-       client.scopes AS client_scopes
+    `/* lockAuthorizationRequest */ SELECT request.id, request.client_id, request.user_id, request.redirect_uri, request.state,
+       request.resource, request.scopes::text[] AS scopes, request.code_challenge, client.owner_user_id,
+       client.scopes::text[] AS client_scopes
      FROM oauth_authorization_requests AS request
      JOIN oauth_clients AS client ON client.id = request.client_id
      WHERE request.id = $1
@@ -177,7 +167,7 @@ async function upsertGrant(
 ): Promise<string> {
   const result = await query<{ id: string }>(
     `/* upsertGrant */ INSERT INTO oauth_grants (user_id, client_id, resource, scopes)
-     VALUES ($1, $2, $3, $4::text[])
+     VALUES ($1, $2, $3, $4::api_scopes[])
      ON CONFLICT (user_id, client_id, resource) WHERE revoked_at IS NULL
      DO UPDATE SET scopes = EXCLUDED.scopes,
                    consented_at = CURRENT_TIMESTAMP

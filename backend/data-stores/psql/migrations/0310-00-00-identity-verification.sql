@@ -12,6 +12,16 @@ CREATE TYPE identity_verification_attempt_sources AS ENUM (
 -- verified_identities table
 -- ============================================================================
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS identity_document_types (
+  id TEXT PRIMARY KEY,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+COMMENT ON TABLE identity_document_types IS 'Identity provider document type names registered on first sight; the provider owns this open set and exact spelling.';
+COMMENT ON COLUMN identity_document_types.id IS 'Exact provider value used as the natural lookup key; never normalized.';
+COMMENT ON COLUMN identity_document_types.created_at IS 'When this provider value was first observed.';
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS verified_identities (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
@@ -19,7 +29,7 @@ CREATE TABLE IF NOT EXISTS verified_identities (
   provider_session_id TEXT NOT NULL,
   identity_fingerprint TEXT NOT NULL CHECK (char_length(identity_fingerprint) = 64),
   issuing_country TEXT NOT NULL,
-  document_type TEXT NOT NULL,
+  document_type TEXT NOT NULL REFERENCES identity_document_types(id) ON DELETE RESTRICT,
   verified_at TIMESTAMPTZ NOT NULL,
   checkout_session_id TEXT NOT NULL,
   revoked_at TIMESTAMPTZ,
@@ -135,3 +145,7 @@ CREATE INDEX IF NOT EXISTS idx_verified_identities__transferred_to_user_id
 CREATE INDEX IF NOT EXISTS idx_verified_identities__user_id
   ON verified_identities (user_id)
   WHERE user_id IS NOT NULL;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_verified_identities__document_type
+  ON verified_identities (document_type);

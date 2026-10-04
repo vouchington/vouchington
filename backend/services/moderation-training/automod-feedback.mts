@@ -203,7 +203,7 @@ export async function recordAutomodActionFeedback(input: RecordAutomodActionFeed
             ${input.actorUserId},
             ${JSON.stringify({ source_key: input.sourceKey, moderation_training: true })}::jsonb,
             COALESCE((
-              SELECT array_agg(latest.source::text ORDER BY latest.source)
+              SELECT array_agg(latest.source::text::moderation_transparency_categories ORDER BY latest.source)
               FROM post_moderation_versions version
               JOIN LATERAL (
                 SELECT DISTINCT ON (source) source, disposition
@@ -215,7 +215,7 @@ export async function recordAutomodActionFeedback(input: RecordAutomodActionFeed
               WHERE version.post_id = p.id
                 AND version.content_sha256 = p.llm_moderation_content_sha256
                 AND version.policy_revision = '2026-09-09.1'
-            ), '{}'::text[])
+            ), '{}'::moderation_transparency_categories[])
           FROM posts p
           WHERE p.id = ${context.post_id}
             AND p.in_review_at IS NOT NULL

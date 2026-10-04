@@ -31,7 +31,7 @@ export async function insertOAuthTokenPair(
   await query(
     `/* insertOAuthTokenPair refresh */ INSERT INTO oauth_refresh_tokens (
        id, family_id, token_hash, scopes, generation, expires_at
-     ) VALUES ($1, $2, $3, $4::text[], $5, $6)`,
+     ) VALUES ($1, $2, $3, $4::api_scopes[], $5, $6)`,
     [
       input.refreshTokenId ?? uuidv7(),
       input.familyId,
@@ -44,7 +44,7 @@ export async function insertOAuthTokenPair(
   await query(
     `/* insertOAuthTokenPair access */ INSERT INTO oauth_access_tokens (
        grant_id, refresh_family_id, token_hash, resource, scopes, expires_at
-     ) VALUES ($1, $2, $3, $4, $5::text[], $6)`,
+     ) VALUES ($1, $2, $3, $4, $5::api_scopes[], $6)`,
     [
       input.grantId,
       input.familyId,

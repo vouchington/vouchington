@@ -94,13 +94,6 @@ WHERE topic_aliases.topic_id IS NULL AND EXCLUDED.topic_id IS NOT NULL;`)
     }
 
     const safeSlug = escapeSqlString(topic.slug)
-    parts.push(`
-UPDATE topics topic
-SET aliases = COALESCE(
-  (SELECT ARRAY_AGG(alias ORDER BY alias) FROM topic_aliases WHERE topic_id = topic.id),
-  '{}'::TEXT[]
-)
-WHERE topic.slug = '${safeSlug}';`)
 
     if (topic === PARENT) continue
     parts.push(`

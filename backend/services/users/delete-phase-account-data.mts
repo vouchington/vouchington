@@ -33,7 +33,7 @@ export async function processUserDeletionAccountDataBatch(
       ), recorded AS (
         INSERT INTO user_deletion_external_works (request_id, work_kind, work_key)
         SELECT ${requestId}::uuid AS request_id,
-          's3-export' AS work_kind,
+          's3-export'::user_deletion_external_work_kinds AS work_kind,
           candidates.request_id::text || '/' || candidates.processing_attempt_id::text || '.zip' AS work_key
         FROM candidates
         ORDER BY request_id ASC NULLS LAST, work_kind ASC NULLS LAST, work_key ASC NULLS LAST
@@ -77,7 +77,7 @@ export async function processUserDeletionAccountDataBatch(
       if (s3Keys.length > 0) {
         await query(sql`/* processUserDeletionAccountData:recordS3 */
           INSERT INTO user_deletion_external_works (request_id, work_kind, work_key)
-          SELECT ${requestId}::uuid AS request_id, 's3-export' AS work_kind, key AS work_key
+          SELECT ${requestId}::uuid AS request_id, 's3-export'::user_deletion_external_work_kinds AS work_kind, key AS work_key
           FROM UNNEST(${s3Keys}::text[]) AS key
           ORDER BY request_id ASC NULLS LAST, work_kind ASC NULLS LAST, work_key ASC NULLS LAST
           ON CONFLICT (request_id, work_kind, work_key) DO NOTHING
@@ -103,7 +103,7 @@ export async function processUserDeletionAccountDataBatch(
     const stripeWork = await query(sql`/* processUserDeletionAccountData:stripe */
       INSERT INTO user_deletion_external_works (request_id, work_kind, work_key)
       SELECT ${requestId}::uuid AS request_id,
-        'stripe-customer' AS work_kind,
+        'stripe-customer'::user_deletion_external_work_kinds AS work_kind,
         lineage.provider_account_id AS work_key
       FROM membership_sources source
       JOIN membership_provider_lineages lineage

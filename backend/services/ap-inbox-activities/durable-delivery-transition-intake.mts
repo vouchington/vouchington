@@ -1,3 +1,4 @@
+import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type {
@@ -149,7 +150,7 @@ type CapacityDetail = {
 type DeliveryIdentityRow = { id: string; processing_attempt_id: string }
 
 type DeliveryRow = DeliveryIdentityRow & {
-  request_method: string
+  request_method: FiniteValue<'http_request_methods'>
   request_target: string
   expected_host: string
   signature_header: string

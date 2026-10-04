@@ -1,24 +1,16 @@
-export type CopyrightJurisdiction = 'us_dmca' | 'eu_dsa' | 'uk' | 'other'
-export type CopyrightHumanReviewAction = 'confirm' | 'reverse'
-type CopyrightFormSubmissionKind = 'notice' | 'appeal' | 'counter_notice' | 'withdrawal'
-type CopyrightLegalFollowupSubmissionKind = 'court_or_ccb_hold' | 'supplement'
-export type CopyrightSubmissionKind =
-  | CopyrightFormSubmissionKind
-  | CopyrightLegalFollowupSubmissionKind
-  | 'complaint'
-export type CopyrightSubmissionSourceKind = 'signed_in_form' | 'guest_form' | 'email' | 'staff'
-export type CopyrightHoldProceedingKind = 'federal_court' | 'ccb'
-export type CopyrightHoldResolutionKind = 'dismissed' | 'proceeding_ended' | 'superseded'
-export type CopyrightCorrespondenceDirection = 'inbound' | 'outbound'
-export type CopyrightCorrespondenceKind =
-  | 'receipt'
-  | 'request_information'
-  | 'restriction_notice'
-  | 'decision_notice'
-  | 'counter_notice_forwarding'
-  | 'restoration_notice'
-  | 'status_update'
-  | 'inbound_message'
+import type { FiniteValue } from '@data-stores/psql/finite-values/index'
+
+export type CopyrightJurisdiction = FiniteValue<'copyright_jurisdictions'>
+export type CopyrightHumanReviewAction = FiniteValue<'copyright_review_actions'>
+export type CopyrightSubmissionKind = FiniteValue<'copyright_notice_submission_kinds'>
+export type CopyrightSubmissionSourceKind = FiniteValue<'copyright_notice_submission_source_kinds'>
+export type CopyrightHoldProceedingKind =
+  FiniteValue<'copyright_notice_legal_hold_assessment_proceeding_kinds'>
+export type CopyrightHoldResolutionKind =
+  FiniteValue<'copyright_notice_legal_hold_resolution_kinds'>
+export type CopyrightCorrespondenceDirection =
+  FiniteValue<'copyright_notice_correspondence_message_directions'>
+export type CopyrightCorrespondenceKind = FiniteValue<'copyright_notice_correspondence_kinds'>
 
 export type CopyrightNoticeTargetInput = {
   bindingFamily: 'post' | 'surface'
@@ -47,7 +39,7 @@ export type CreateCopyrightNoticeAggregateInput = {
 export type CopyrightNoticeRecord = {
   id: string
   jurisdiction: CopyrightJurisdiction
-  legal_basis: 'copyright'
+  legal_basis: FiniteValue<'copyright_notice_legal_bases'>
   received_at: Date
   accepted_at: Date | null
   provisional_withholding_at: Date | null
@@ -67,7 +59,7 @@ export type CopyrightRestrictionRecord = {
   imposed_by_id: string | null
   lifted_by_id: string | null
   human_reviewed_at: Date | null
-  human_review_action: CopyrightHumanReviewAction | null
+  human_review_action: FiniteValue<'copyright_restriction_human_review_actions'> | null
   human_reviewed_by_id: string | null
 }
 
@@ -99,7 +91,7 @@ export type CopyrightLegalHoldAssessmentRecord = {
   assessed_by_id: string | null
   from_original_claimant: boolean
   proceeding_kind: CopyrightHoldProceedingKind | null
-  ccb_claim_kind: 'claim' | 'counterclaim' | null
+  ccb_claim_kind: FiniteValue<'copyright_notice_legal_hold_assessment_ccb_claim_kinds'> | null
   commenced_at: Date | null
   received_by_designated_agent_at: Date | null
   same_material: boolean
@@ -122,7 +114,7 @@ export type CopyrightCorrespondenceRecord = {
   copyright_notice_submission_id: string | null
   copyright_notice_email_intake_id: string | null
   direction: CopyrightCorrespondenceDirection
-  composition_kind: 'inbound' | 'deterministic_template' | 'staff' | 'agent'
+  composition_kind: FiniteValue<'copyright_notice_correspondence_message_composition_kinds'>
   correspondence_kind: CopyrightCorrespondenceKind
   body_ciphertext: string
   drafted_by_id: string | null
@@ -137,12 +129,15 @@ export type CopyrightActionIntentRecord = {
   copyright_restriction_id: string
   copyright_notice_deadline_id: string | null
   expected_placement_revision: number
-  action: 'withhold' | 'restore'
-  state: 'pending' | 'claimed' | 'completed' | 'stale' | 'blocked' | 'failed'
+  action: FiniteValue<'copyright_notice_action_intent_actions'>
+  state: FiniteValue<'copyright_notice_action_intent_states'>
   delivery_attempt_count: number
   claimed_at: Date | null
   completed_at: Date | null
-  completed_at_reason: 'completed' | 'stale' | 'blocked' | 'failed' | null
+  completed_at_reason: Extract<
+    FiniteValue<'copyright_notice_action_intent_states'>,
+    'completed' | 'stale' | 'blocked' | 'failed'
+  > | null
   failure_message: string | null
   next_attempt_at: Date | null
 }

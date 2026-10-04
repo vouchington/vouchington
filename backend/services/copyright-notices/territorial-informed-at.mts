@@ -39,7 +39,7 @@ export async function getTerritorialInformedWindow(
     SELECT CASE WHEN COUNT(*) = ${Number(input.notifier) + Number(Boolean(input.posterUserId))}
       THEN MIN(informed_at) ELSE NULL END AS informed_at,
       CASE WHEN COUNT(*) = ${Number(input.notifier) + Number(Boolean(input.posterUserId))}
-      THEN MAX(informed_at + make_interval(months => ${TERRITORIAL_COMPLAINT_WINDOW_MONTHS}))
+      THEN MAX((informed_at AT TIME ZONE 'UTC' + make_interval(months => ${TERRITORIAL_COMPLAINT_WINDOW_MONTHS})) AT TIME ZONE 'UTC')
       ELSE NULL END AS window_ends_at
     FROM informed
   `)

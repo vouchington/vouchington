@@ -81,7 +81,7 @@ export async function setTestCommunityPostReviewAutomodFlag(options: {
   await write(
     sql`/* setTestCommunityPostReviewAutomodFlag */
     UPDATE community_post_reviews cpr
-    SET automod_action = ${options.action}::community_automod_action,
+    SET automod_action = ${options.action}::community_automod_actions,
         automod_flagged_at = ${(options.flaggedAt ?? new Date()).toISOString()}::timestamptz,
         automod_flagged_content_sha256 = p.llm_moderation_content_sha256,
         automod_dismissed_at = NULL,

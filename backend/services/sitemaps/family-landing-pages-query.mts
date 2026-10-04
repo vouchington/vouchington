@@ -91,7 +91,12 @@ export function buildLandingPagesQuery() {
                   OR (upl.link_type <> 'url' AND upl.handle IS NOT NULL AND upl.handle <> '')
                 )
             )
-            OR (ulpi.item_type = 'link' AND ulpi.link_label IS NOT NULL AND ulpi.link_url IS NOT NULL)
+            OR EXISTS (
+              SELECT 1 FROM urls link_url
+              JOIN url_hostnames link_hostname ON link_hostname.id = link_url.hostname_id
+              WHERE link_url.id = ulpi.url_id AND link_hostname.blocked = FALSE
+                AND ulpi.item_type = 'link' AND ulpi.link_label IS NOT NULL
+            )
             OR EXISTS (
               SELECT 1
               FROM posts p

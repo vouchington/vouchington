@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS topics (
   CHECK (slug = LOWER(slug)),
   CHECK (slug = TRIM(slug)),
 
-  -- NOTE: updated via topic aliases
+  -- Trigger-maintained search cache projected from topic_aliases
   aliases TEXT[] NOT NULL DEFAULT '{}', -- used only for search purposes
   markdown TEXT NOT NULL DEFAULT '',
 
@@ -228,7 +228,7 @@ COMMENT ON COLUMN topics.noindex IS 'When true, exclude this topic''s pages from
 COMMENT ON COLUMN topics.allow_reviews IS 'When false, reviews cannot be created for this topic and review UI is hidden (e.g. private individuals). Replaced the former person topic type.';
 COMMENT ON COLUMN topics.name IS 'Canonical display name for this topic.';
 COMMENT ON COLUMN topics.slug IS 'URL-safe lowercase slug. Unique.';
-COMMENT ON COLUMN topics.aliases IS 'Alternative names for search purposes. Synced from topic_aliases table.';
+COMMENT ON COLUMN topics.aliases IS 'Alternative names for search purposes. Projected by fn_project_topic_aliases from linked topic_aliases.';
 COMMENT ON COLUMN topics.markdown IS 'Topic description in markdown format.';
 COMMENT ON COLUMN topics.votes_snapshot_xmax IS 'Upper transaction-ID boundary of the PostgreSQL snapshot used for the persisted vote-stat aggregate.';
 COMMENT ON COLUMN topics.votes_snapshot_xip_count IS 'Number of transactions still in progress in that vote-stat snapshot; lower is newer when the snapshot xmax is equal.';
@@ -521,6 +521,46 @@ BEFORE UPDATE ON topic_aliases
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE FUNCTION fn_project_topic_aliases() RETURNS TRIGGER
+LANGUAGE plpgsql AS $$
+DECLARE
+  affected_topic_ids UUID[];
+  affected_topic_id UUID;
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    SELECT ARRAY_AGG(DISTINCT topic_id) INTO affected_topic_ids FROM new_aliases;
+  ELSIF TG_OP = 'DELETE' THEN
+    SELECT ARRAY_AGG(DISTINCT topic_id) INTO affected_topic_ids FROM old_aliases;
+  ELSE
+    SELECT ARRAY_AGG(DISTINCT topic_id) INTO affected_topic_ids FROM (
+      SELECT topic_id FROM new_aliases UNION SELECT topic_id FROM old_aliases
+    ) affected;
+  END IF;
+  -- Serialize cache projection by parent in a stable order before reading current aliases.
+  FOR affected_topic_id IN
+    SELECT id FROM topics WHERE id = ANY(affected_topic_ids) ORDER BY id FOR NO KEY UPDATE
+  LOOP
+    UPDATE topics SET aliases = COALESCE((
+      SELECT ARRAY_AGG(alias ORDER BY alias) FROM topic_aliases
+      WHERE topic_id = affected_topic_id
+    ), '{}'::TEXT[]) WHERE id = affected_topic_id;
+  END LOOP;
+  RETURN NULL;
+END;
+$$;
+COMMENT ON FUNCTION fn_project_topic_aliases() IS 'Projects linked aliases to each affected topic search cache after every alias write.';
+
+CREATE OR REPLACE TRIGGER trigger_topic_aliases_project_insert
+AFTER INSERT ON topic_aliases REFERENCING NEW TABLE AS new_aliases
+FOR EACH STATEMENT EXECUTE FUNCTION fn_project_topic_aliases();
+CREATE OR REPLACE TRIGGER trigger_topic_aliases_project_update
+AFTER UPDATE ON topic_aliases REFERENCING NEW TABLE AS new_aliases OLD TABLE AS old_aliases
+FOR EACH STATEMENT EXECUTE FUNCTION fn_project_topic_aliases();
+CREATE OR REPLACE TRIGGER trigger_topic_aliases_project_delete
+AFTER DELETE ON topic_aliases REFERENCING OLD TABLE AS old_aliases
+FOR EACH STATEMENT EXECUTE FUNCTION fn_project_topic_aliases();
+
 -- finding aliases by topic
 CREATE INDEX IF NOT EXISTS topic_aliases__topic_id
 ON topic_aliases (topic_id, alias)
@@ -756,17 +796,7 @@ ON CONFLICT (alias) DO UPDATE
 SET topic_id = EXCLUDED.topic_id
 WHERE topic_aliases.topic_id IS NULL OR topic_aliases.topic_id = EXCLUDED.topic_id;
 
-UPDATE topics topic
-SET aliases = COALESCE(
-  (
-    SELECT ARRAY_AGG(alias ORDER BY alias)
-    FROM topic_aliases
-    WHERE topic_id = topic.id
-  ),
-  '{}'::TEXT[]
-)
-WHERE topic.deleted_at IS NULL
-  AND topic.merged_into_topic_id IS NULL;
+
 
 CREATE INDEX IF NOT EXISTS idx_topics__created_via_oauth_client_id
   ON topics (created_via_oauth_client_id)

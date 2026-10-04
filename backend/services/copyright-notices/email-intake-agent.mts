@@ -30,6 +30,7 @@ export function decryptAgentIntake(
     received_at: intake.received_at,
     raw_storage_key: intake.raw_storage_key,
     raw_sha256: intake.raw_sha256,
+    raw_media_type_id: intake.raw_media_type_id,
     raw_mime_type: intake.raw_mime_type,
     raw_byte_size: intake.raw_byte_size,
     senderEmail: decryptSecret(intake.sender_email_ciphertext, purpose),

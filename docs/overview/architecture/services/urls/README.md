@@ -26,7 +26,7 @@ URL pathnames are stored with a maximum length of 2048 characters, enforced by a
 
 ### Content Types
 
-URL content types are stored in the `url_content_types` lookup table and referenced by `urls.url_content_type_id`. The lookup id is a `BIGINT`, and `upsertUrlContentTypes()` reads by normalized MIME type before writing so existing lookups can use the read replica. Misses take an advisory transaction lock, re-check the primary, and insert only when still missing; this avoids `INSERT ... ON CONFLICT` sequence burn during repeated RSS/feed imports.
+URL content types are stored in the `media_types` lookup table and referenced by `urls.media_type_id`. The lookup id is a `BIGINT`, and `upsertMediaTypes()` reads by normalized MIME type before writing so existing lookups can use the read replica. Misses take an advisory transaction lock, re-check the primary, and insert only when still missing; this avoids `INSERT ... ON CONFLICT` sequence burn during repeated RSS/feed imports.
 
 ## Transactional Invalidation
 

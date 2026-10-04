@@ -27,7 +27,6 @@ import {
   updatePostPublicationDirtyWorkCursors,
   type PostPublicationChange,
 } from './public.mts'
-import { POST_PUBLICATION_REASONS } from './types.mts'
 
 const captureMigrationSql = readFileSync(
   new URL(
@@ -241,10 +240,7 @@ describe('post publication capture', () => {
     ).rejects.toThrow('Unsupported post publication reason')
   })
 
-  it('keeps publication reasons and retained-key columns aligned with database constraints', () => {
-    expect(
-      extractSqlValues(captureMigrationSql, /reasons <@ ARRAY\[([\s\S]*?)\]::TEXT\[\]/u),
-    ).toEqual([...POST_PUBLICATION_REASONS].toSorted())
+  it('keeps retained-key columns aligned with database constraints', () => {
     const payload =
       /chk_post_publication_dirty_work_keys__concrete_payload CHECK \(\s*num_nonnulls\(\s*([\s\S]*?)\s*\) = 1/u.exec(
         captureMigrationSql,
@@ -289,10 +285,4 @@ async function rollbackCapturedTitleMutation(postId: string): Promise<void> {
     reason: 'post_updated',
   })
   throw new Error('force rollback')
-}
-
-function extractSqlValues(sql: string, constraint: RegExp): string[] {
-  const values = constraint.exec(sql)?.[1]
-  if (!values) throw new Error(`Expected migration constraint matching ${constraint}`)
-  return [...values.matchAll(/'([^']+)'/gu)].map(match => match[1]!).toSorted()
 }

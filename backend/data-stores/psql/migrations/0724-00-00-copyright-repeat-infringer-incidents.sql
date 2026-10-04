@@ -20,10 +20,11 @@ CREATE INDEX idx_copyright_repeat_infringer_incidents__operative_account
 CREATE INDEX idx_copyright_repeat_infringer_incidents__notice
   ON copyright_repeat_infringer_incidents (copyright_notice_id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_repeat_infringer_dispositions (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_repeat_infringer_incident_id uuid NOT NULL UNIQUE REFERENCES copyright_repeat_infringer_incidents(id) ON DELETE RESTRICT,
-  disposition text NOT NULL CHECK (disposition IN ('withdrawn', 'duplicate', 'abusive')),
+  disposition copyright_repeat_infringer_disposition_kinds NOT NULL CHECK (disposition IN ('withdrawn', 'duplicate', 'abusive')),
   rationale_ciphertext text NOT NULL CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 65536),
   recorded_at timestamptz NOT NULL,
   recorded_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
@@ -34,11 +35,12 @@ CREATE TABLE copyright_repeat_infringer_dispositions (
 CREATE INDEX idx_copyright_repeat_infringer_dispositions__recorded_by
   ON copyright_repeat_infringer_dispositions (recorded_by_id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_repeat_infringer_reviews (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   account_user_id uuid NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
   opened_at timestamptz NOT NULL,
-  outcome text CHECK (outcome IN ('warning', 'no_action', 'restrict', 'terminate', 'reinstatement')),
+  outcome copyright_repeat_infringer_review_outcomes CHECK (outcome IN ('warning', 'no_action', 'restrict', 'terminate', 'reinstatement')),
   outcome_at timestamptz,
   outcome_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
   rationale_ciphertext text CHECK (

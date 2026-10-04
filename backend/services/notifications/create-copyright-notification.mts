@@ -18,8 +18,8 @@ export async function createCopyrightNoticeNotification(input: {
       ${copy.title}, ${copy.body}, CASE WHEN ${input.targetPath ?? null}::text IS NOT NULL
         THEN ${input.targetPath ?? null}::text
         WHEN notice.accepted_at IS NOT NULL THEN ${`/copyright/notices/${input.noticeId}`} ELSE NULL END,
-      CASE WHEN notice.accepted_at IS NULL AND ${input.targetPath ?? null}::text IS NULL
-        THEN 'notifications_inbox' ELSE NULL END
+      (CASE WHEN notice.accepted_at IS NULL AND ${input.targetPath ?? null}::text IS NULL
+        THEN 'notifications_inbox' ELSE NULL END)::notification_target_intents
     FROM copyright_notices notice WHERE notice.id = ${input.noticeId}
     ORDER BY user_id ASC NULLS LAST, event_key ASC NULLS LAST
     ON CONFLICT (user_id, event_key) WHERE event_key IS NOT NULL DO NOTHING

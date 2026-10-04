@@ -12,7 +12,8 @@ Services for the topic recommendation queue.
 ## Data Model
 
 - base post: rationale title/markdown, shared elections, shared caches, shared metrics
-- extension row: proposed topic title/slug/markdown, aliases, primary hostname, additional hostnames, `topic_type`, `example_referral_link`, `landing_page_urls`, review status, reviewer metadata, created topic ID, and last approval error message
+- extension row: proposed topic title/slug/markdown, aliases, primary hostname, additional hostnames, `topic_type`, `example_referral_url_id`, review status, reviewer metadata, created topic ID, and last approval error message
+- ordered landing-page destinations: `post_topic_recommendation_landing_page_urls` rows reference `urls` and retain submitted order
 - create and update flows share the same normalization/materialization path for hostnames, aliases, and embedding content so partial edits do not drift from create-time behavior
 
 ### Typed Topics
@@ -24,6 +25,10 @@ Services for the topic recommendation queue.
 | `topic` (default)  | —                        | Generic topic; no additional extension row                    |
 | `referral_program` | `example_referral_link`  | Creates `topics__referral_programs` extension row on approval |
 | `card`             | `landing_page_urls` (≥1) | Creates `topics__cards` extension row on approval             |
+
+Submitted URLs pass normalization, Web Risk and blocked-hostname checks during materialization. URL registration commits before recommendation references are written; reference replacement is transactional. Referral examples suppress URL-created crawl events. The API continues exposing `example_referral_link` and `landing_page_urls` as resolved URL strings.
+
+Pending recommendation reads retain submitted URL strings for review and editing if a hostname is blocked later. These posts are excluded from generic public discovery; approval checks URL safety again before publishing the topic.
 
 Conditional-required validation is enforced in `normalizeTopicRecommendationValues` before any DB write. Type-specific landing-page URL relations are created during approval in the same transaction as the topic.
 

@@ -1,7 +1,8 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- edited-in-place: pre-launch, never deployed to production
 DO $$
 BEGIN
-  CREATE TYPE moderation_training_source_type AS ENUM (
+  CREATE TYPE moderation_training_source_types AS ENUM (
     'agent_moderation',
     'openai_omni',
     'spam_detection',
@@ -20,7 +21,7 @@ $$;
 
 DO $$
 BEGIN
-  CREATE TYPE moderation_training_event_type AS ENUM (
+  CREATE TYPE moderation_training_event_types AS ENUM (
     'automod_reviewed',
     'manual_action_inferred',
     'report_resolved',
@@ -37,7 +38,7 @@ $$;
 
 DO $$
 BEGIN
-  CREATE TYPE moderation_training_label AS ENUM (
+  CREATE TYPE moderation_training_labels AS ENUM (
     'true_positive',
     'false_positive',
     'false_negative_candidate',
@@ -52,12 +53,13 @@ EXCEPTION
 END
 $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS moderation_training_feedbacks (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
-  source_type moderation_training_source_type NOT NULL,
-  event_type moderation_training_event_type NOT NULL,
-  label moderation_training_label NOT NULL,
-  human_action TEXT NOT NULL CHECK (human_action = TRIM(human_action) AND char_length(human_action) <= 120),
+  source_type moderation_training_source_types NOT NULL,
+  event_type moderation_training_event_types NOT NULL,
+  label moderation_training_labels NOT NULL,
+  human_action moderation_training_human_actions NOT NULL CHECK (human_action::text = TRIM(human_action::text) AND char_length(human_action::text) <= 120),
   reason_code TEXT CHECK (reason_code IS NULL OR (reason_code = TRIM(reason_code) AND char_length(reason_code) <= 120)),
   note TEXT CHECK (note IS NULL OR char_length(note) <= 2000),
   label_confidence DOUBLE PRECISION NOT NULL DEFAULT 1 CHECK (label_confidence >= 0 AND label_confidence <= 1),

@@ -1,7 +1,8 @@
+import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import type { ApiScope } from '@modules/scopes'
 
-export type OAuthClientType = 'confidential' | 'public'
-export type OAuthClientAuthMethod = 'client_secret_basic' | 'none'
+export type OAuthClientType = FiniteValue<'oauth_client_types'>
+export type OAuthClientAuthMethod = FiniteValue<'oauth_client_token_endpoint_auth_methods'>
 
 export type OAuthClient = {
   id: string
@@ -15,7 +16,7 @@ export type OAuthClient = {
   client_type: OAuthClientType
   token_endpoint_auth_method: OAuthClientAuthMethod
   redirect_uris: string[]
-  grant_types: Array<'authorization_code' | 'refresh_token'>
+  grant_types: FiniteValue<'oauth_grant_types'>[]
   response_types: ['code']
   scopes: ApiScope[]
   client_secret_hash: string | null

@@ -37,7 +37,7 @@ export async function getModerationReportById(id: string): Promise<ModerationRep
         WHEN r.reported_user_id IS NOT NULL THEN 'user'
         WHEN r.hostname_id IS NOT NULL THEN 'url_hostname'
         WHEN r.rss_feed_item_id IS NOT NULL THEN 'rss_feed_item'
-      END::moderation_report_entity_type AS entity_type,
+      END::moderation_report_entity_types AS entity_type,
       COALESCE(r.post_id, r.reported_user_id, r.hostname_id, r.rss_feed_item_id) AS entity_id
     FROM moderation_reports r
     LEFT JOIN posts p ON r.post_id IS NOT NULL AND p.id = r.post_id

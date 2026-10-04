@@ -1,3 +1,4 @@
+import { upsertMediaTypes } from '../../../services/urls/media-types.mts'
 import { randomUUID } from 'node:crypto'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -22,13 +23,14 @@ const validReply: ReplyRow = {
 }
 
 export async function createCopyrightEmailIntakeRow(): Promise<string> {
+  const mediaTypeId = await upsertMediaTypes('message/rfc822')
   const { rows } = await write<{ id: string }>(sql`/* createCopyrightEmailIntakeRow */
     INSERT INTO copyright_notice_email_intakes (
-      ses_message_id, received_at, raw_storage_key, raw_sha256, raw_mime_type, raw_byte_size,
+      ses_message_id, received_at, raw_storage_key, raw_sha256, raw_media_type_id, raw_byte_size,
       spf_verdict, dkim_verdict, dmarc_verdict, spam_verdict, virus_verdict
     ) VALUES (
       ${`ses-${randomUUID()}`}, CURRENT_TIMESTAMP, ${`email/${randomUUID()}.eml`},
-      ${Buffer.alloc(32, 1)}, 'message/rfc822', 1,
+      ${Buffer.alloc(32, 1)}, ${mediaTypeId}, 1,
       'pass', 'pass', 'pass', 'pass', 'pass'
     ) RETURNING id`)
   return rows[0]!.id

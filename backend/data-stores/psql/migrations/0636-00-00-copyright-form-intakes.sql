@@ -19,13 +19,14 @@ CREATE TABLE copyright_notice_form_intakes (
   UNIQUE (requester_identity_sha256, idempotency_key)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_form_screenings (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_form_intake_id uuid NOT NULL REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT,
   input_sha256 bytea NOT NULL CHECK (octet_length(input_sha256) = 32),
   prompt_version text NOT NULL CHECK (char_length(prompt_version) BETWEEN 1 AND 100),
   model text NOT NULL CHECK (char_length(model) BETWEEN 1 AND 255),
-  recommendation text NOT NULL CHECK (recommendation IN ('not_obviously_invalid', 'invalid_or_spam')),
+  recommendation copyright_notice_form_screening_recommendations NOT NULL CHECK (recommendation IN ('not_obviously_invalid', 'invalid_or_spam')),
   rationale_ciphertext text NOT NULL CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 1048576),
   guidance_ciphertext text NOT NULL CHECK (char_length(guidance_ciphertext) BETWEEN 1 AND 1048576),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,

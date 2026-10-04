@@ -1,3 +1,4 @@
+import { OAUTH_CLIENT_COLUMNS } from './client-columns.mts'
 import { write } from '@data-stores/psql'
 import { buildOAuthAuthorizationResponseUrl } from './redirects.mts'
 import { OAuthProtocolError } from './errors.mts'
@@ -17,7 +18,7 @@ export async function getOAuthAuthorizationErrorRedirect(
   clientIdMetadataDependencies: Partial<ClientIdMetadataDependencies> = {},
 ): Promise<string | null> {
   const result = await write<OAuthClient>(
-    `/* getOAuthClientForAuthorizationErrorRedirect */ SELECT *
+    `/* getOAuthClientForAuthorizationErrorRedirect */ SELECT ${OAUTH_CLIENT_COLUMNS}
      FROM oauth_clients
      WHERE client_id = $1
        AND revoked_at IS NULL

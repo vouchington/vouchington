@@ -6,7 +6,7 @@ import { apiKeyIsValidSql } from './lifetime.mts'
 export async function getApiKeyByHash(keyHash: Buffer): Promise<ApiKey | null> {
   const { rows } = await read(
     sql`/* getApiKeyByHash */
-    SELECT id, user_id, prefix, type, label, permissions, created_at, last_used_at,
+    SELECT id, user_id, prefix, type, label, scopes::text[] AS permissions, created_at, last_used_at,
       revoked_at, expires_at, replaced_by_api_key_id, expiry_reminder_sent_at, updated_at
     FROM api_keys
     WHERE key_hash = ${keyHash}

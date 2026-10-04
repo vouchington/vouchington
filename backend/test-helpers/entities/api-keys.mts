@@ -7,7 +7,7 @@ export async function setTestApiKeyPermissions(
 ): Promise<void> {
   await write(sql`/* setTestApiKeyPermissions */
     UPDATE api_keys
-    SET permissions = ${permissions}
+    SET scopes = ${permissions}::api_scopes[]
     WHERE id = ${apiKeyId}::uuid
   `)
 }
@@ -51,9 +51,9 @@ export async function insertTestApiKeysDueForReminder(
   count: number,
 ): Promise<string[]> {
   const { rows } = await write<{ id: string }>(sql`/* insertTestApiKeysDueForReminder */
-    INSERT INTO api_keys (user_id, prefix, key_hash, type, label, permissions, expires_at)
+    INSERT INTO api_keys (user_id, prefix, key_hash, type, label, scopes, expires_at)
     SELECT ${userId}::uuid, 'voucha_rss_test', sha256(uuid_send(uuidv7())), 'rss',
-      'Reminder boundary ' || ordinal, ARRAY['rss:read']::text[], NOW() + INTERVAL '6 days'
+      'Reminder boundary ' || ordinal, ARRAY['rss:read']::api_scopes[], NOW() + INTERVAL '6 days'
     FROM generate_series(1, ${count}::integer) AS ordinal
     RETURNING id
   `)

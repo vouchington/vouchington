@@ -1,21 +1,14 @@
-export type CopyrightEmailIntakeDeliveryKind =
-  | 'email_intake_received'
-  | 'email_intake_rejected'
-  | 'email_intake_needs_information'
+import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 
-export type CopyrightNoticeDeliveryKind =
-  | 'claimant_receipt'
-  | 'status_update'
-  | 'poster_restriction_notice'
-  | 'poster_review_notice'
-  | 'poster_restoration_notice'
-  | 'owner_information_notice'
-  | 'claimant_decision_notice'
-  | 'redress_decision_notice'
-  | 'counter_notice_forwarding'
-  | 'staff_information_request'
-
-export type CopyrightDeliveryKind = CopyrightNoticeDeliveryKind | CopyrightEmailIntakeDeliveryKind
+export type CopyrightEmailIntakeDeliveryKind = Extract<
+  FiniteValue<'copyright_notice_delivery_kinds'>,
+  'email_intake_received' | 'email_intake_rejected' | 'email_intake_needs_information'
+>
+export type CopyrightNoticeDeliveryKind = Exclude<
+  FiniteValue<'copyright_notice_delivery_kinds'>,
+  CopyrightEmailIntakeDeliveryKind
+>
+export type CopyrightDeliveryKind = FiniteValue<'copyright_notice_delivery_kinds'>
 
 export const copyrightDecisionDeliveryKinds = [
   'poster_restriction_notice',
@@ -29,11 +22,11 @@ export type CopyrightDeliveryIntentRecord = {
   copyright_notice_submission_id: string | null
   copyright_notice_correspondence_message_id: string | null
   recipient_user_id: string | null
-  recipient_role: 'claimant' | 'poster' | 'informed_owner' | 'correspondent'
+  recipient_role: FiniteValue<'copyright_notice_delivery_intent_recipient_roles'>
   delivery_kind: CopyrightDeliveryKind
   target_path: string | null
-  channel: 'in_app' | 'email'
-  state: 'pending' | 'claimed' | 'sent' | 'failed' | 'bounced'
+  channel: FiniteValue<'copyright_notice_delivery_intent_channels'>
+  state: FiniteValue<'copyright_notice_delivery_intent_states'>
   ses_message_id: string | null
   delivery_attempt_count: number
 }

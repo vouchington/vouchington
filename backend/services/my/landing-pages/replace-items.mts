@@ -1,6 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
-import sql from 'sql-template-strings'
 import { isHttpUrlWithoutFragment, validateUUID } from '@modules/utils'
 import { getMyLandingPageCandidates } from './candidates.mts'
 import { getMyLandingPage } from './get.mts'
@@ -9,6 +8,8 @@ import { getLandingPageRowForUser } from './reads.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 import type { LandingPageItemInput, LandingPageWithItems } from './types.mts'
 import { buildLandingPageInsertRows } from './replace-item-rows.mts'
+import { replaceLandingPageItemRows } from './replace-item-writes.mts'
+import { registerLandingPageLinkUrls } from './link-urls.mts'
 
 const MAX_LINK_LABEL_LENGTH = 100
 const MAX_LINK_URL_LENGTH = 2048
@@ -112,89 +113,14 @@ export async function replaceMyLandingPageItems(
       assertNoDuplicateSelection('referral_link', entry.referral_link_id, seenSelections)
     }
   }
-  const { groupMemberRows, itemRows } = buildLandingPageInsertRows(items)
   await using query = await beginTransaction()
+  const urls = await registerLandingPageLinkUrls(userId, items, query)
+  const { groupMemberRows, itemRows } = buildLandingPageInsertRows(items, urls.idsByInput)
   await replaceLandingPageItemRows(query, pageId, itemRows, groupMemberRows)
   await query.commit()
   // Public landing-page GET responses are edge-cached and tagged user:<username> (see
   // ts-shared/cache/cache-tags.mts), so a reorder/replace of items must purge that tag.
+  await invalidate.urls(...urls.records.flatMap(url => [url.id, url.url]))
   await invalidate.users(userId)
   return await getMyLandingPage(userId, pageId)
-}
-
-async function replaceLandingPageItemRows(
-  query: Awaited<ReturnType<typeof beginTransaction>>,
-  pageId: string,
-  itemRows: ReturnType<typeof buildLandingPageInsertRows>['itemRows'],
-  groupMemberRows: ReturnType<typeof buildLandingPageInsertRows>['groupMemberRows'],
-): Promise<void> {
-  await query(sql`/* replaceMyLandingPageItems */
-      DELETE FROM user_landing_page_group_members
-      WHERE landing_page_item_id IN (
-        SELECT id FROM user_landing_page_items WHERE landing_page_id = ${pageId}
-      )
-    `)
-  await query(
-    sql`/* replaceMyLandingPageItems */ DELETE FROM user_landing_page_items WHERE landing_page_id = ${pageId}`,
-  )
-  return insertLandingPageItemsAndGroupMembers(query, pageId, itemRows, groupMemberRows)
-}
-
-async function insertLandingPageItemsAndGroupMembers(
-  query: Awaited<ReturnType<typeof beginTransaction>>,
-  pageId: string,
-  itemRows: ReturnType<typeof buildLandingPageInsertRows>['itemRows'],
-  groupMemberRows: ReturnType<typeof buildLandingPageInsertRows>['groupMemberRows'],
-): Promise<void> {
-  await query(sql`/* replaceMyLandingPageItems:insertItems */
-      INSERT INTO user_landing_page_items (
-        landing_page_id, item_type, sort_order, profile_link_id, review_id,
-        referral_link_id, topic_id, link_label, link_url
-      )
-      SELECT
-        ${pageId}::uuid,
-        input.item_type::user_landing_page_item_types,
-        input.sort_order,
-        input.profile_link_id,
-        input.review_id,
-        input.referral_link_id,
-        input.topic_id,
-        input.link_label,
-        input.link_url
-      FROM UNNEST(
-        ${itemRows.map(row => row.type)}::text[],
-        ${itemRows.map(row => row.sortOrder)}::integer[],
-        ${itemRows.map(row => row.profileLinkId)}::uuid[],
-        ${itemRows.map(row => row.reviewId)}::uuid[],
-        ${itemRows.map(row => row.referralLinkId)}::uuid[],
-        ${itemRows.map(row => row.topicId)}::uuid[],
-        ${itemRows.map(row => row.linkLabel)}::text[],
-        ${itemRows.map(row => row.linkUrl)}::text[]
-      ) AS input(
-        item_type, sort_order, profile_link_id, review_id, referral_link_id,
-        topic_id, link_label, link_url
-      )
-    `)
-
-  await query(sql`/* replaceMyLandingPageItems:insertGroupMembers */
-      INSERT INTO user_landing_page_group_members (
-        landing_page_item_id, member_type, sort_order, review_id, referral_link_id
-      )
-      SELECT
-        item.id,
-        input.member_type::user_landing_page_group_member_types,
-        input.sort_order,
-        input.review_id,
-        input.referral_link_id
-      FROM UNNEST(
-        ${groupMemberRows.map(row => row.parentSortOrder)}::integer[],
-        ${groupMemberRows.map(row => row.type)}::text[],
-        ${groupMemberRows.map(row => row.sortOrder)}::integer[],
-        ${groupMemberRows.map(row => row.reviewId)}::uuid[],
-        ${groupMemberRows.map(row => row.referralLinkId)}::uuid[]
-      ) AS input(parent_sort_order, member_type, sort_order, review_id, referral_link_id)
-      JOIN user_landing_page_items item
-        ON item.landing_page_id = ${pageId}::uuid
-       AND item.sort_order = input.parent_sort_order
-  `)
 }

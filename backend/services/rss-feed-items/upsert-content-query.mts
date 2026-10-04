@@ -3,6 +3,7 @@ import type { RssFeedItemWithHash } from './upsert-prepare.mts'
 export function buildUpsertRssFeedItemsQuery(
   identityIdsByGuid: ReadonlyMap<string, string>,
   itemsToUpsert: RssFeedItemWithHash[],
+  mediaTypeIds: ReadonlyMap<string, string | null>,
 ) {
   const rows = itemsToUpsert
     .map(item => ({ id: identityIdsByGuid.get(item.feedItem.guid)!, item }))
@@ -16,7 +17,7 @@ export function buildUpsertRssFeedItemsQuery(
         bedrock_nova_multimodal_v1_content_sha256,
         media_type,
         enclosure_url,
-        enclosure_type,
+        enclosure_media_type_id,
         enclosure_length,
         duration_seconds,
         thumbnail_url,
@@ -30,7 +31,7 @@ export function buildUpsertRssFeedItemsQuery(
         input.bedrock_nova_multimodal_v1_content_sha256,
         input.media_type,
         input.enclosure_url,
-        input.enclosure_type,
+        input.enclosure_media_type_id,
         input.enclosure_length,
         input.duration_seconds,
         input.thumbnail_url,
@@ -38,10 +39,10 @@ export function buildUpsertRssFeedItemsQuery(
         input.video_platform
       FROM unnest(
         $1::uuid[], $2::uuid[], $3::jsonb[], $4::bytea[], $5::rss_feed_item_media_types[],
-        $6::text[], $7::text[], $8::bigint[], $9::integer[], $10::text[], $11::text[], $12::text[]
+        $6::text[], $7::bigint[], $8::bigint[], $9::integer[], $10::text[], $11::text[], $12::text[]
       ) AS input(
         id, url_id, data, bedrock_nova_multimodal_v1_content_sha256, media_type,
-        enclosure_url, enclosure_type, enclosure_length, duration_seconds, thumbnail_url,
+        enclosure_url, enclosure_media_type_id, enclosure_length, duration_seconds, thumbnail_url,
         video_id, video_platform
       )
       ORDER BY input.id
@@ -52,7 +53,7 @@ export function buildUpsertRssFeedItemsQuery(
         bedrock_nova_multimodal_v1_content_sha256 = EXCLUDED.bedrock_nova_multimodal_v1_content_sha256,
         media_type = EXCLUDED.media_type,
         enclosure_url = EXCLUDED.enclosure_url,
-        enclosure_type = EXCLUDED.enclosure_type,
+        enclosure_media_type_id = EXCLUDED.enclosure_media_type_id,
         enclosure_length = EXCLUDED.enclosure_length,
         duration_seconds = EXCLUDED.duration_seconds,
         thumbnail_url = EXCLUDED.thumbnail_url,
@@ -72,7 +73,10 @@ export function buildUpsertRssFeedItemsQuery(
       rows.map(row => row.item.content_sha256),
       rows.map(row => row.item.feedItem.media_type ?? 'article'),
       rows.map(row => row.item.feedItem.enclosure_url ?? null),
-      rows.map(row => row.item.feedItem.enclosure_type ?? null),
+      rows.map(
+        row =>
+          mediaTypeIds.get(row.item.feedItem.enclosure_type?.trim().toLowerCase() ?? '') ?? null,
+      ),
       rows.map(row => row.item.feedItem.enclosure_length ?? null),
       rows.map(row => row.item.feedItem.duration_seconds ?? null),
       rows.map(row => row.item.feedItem.thumbnail_url ?? null),

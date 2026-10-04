@@ -45,7 +45,6 @@ export type UserRssFeedImportRow = {
   batch_id: string
   row_index: number
   input_url: string
-  canonical_url: string | null
   outcome: ImportRssFeedStatus | null
   rss_feed_id: string | null
   completed_at: Date | null

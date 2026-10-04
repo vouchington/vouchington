@@ -602,8 +602,18 @@ END $$;
 CREATE TRIGGER trigger_mrefund_attempt_scans_guard BEFORE INSERT OR UPDATE ON membership_refund_operation_attempt_metadata_scans FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_refund_metadata_scan_mutation();
 CREATE TRIGGER trigger_mrefund_attempt_scans_updated_at BEFORE UPDATE ON membership_refund_operation_attempt_metadata_scans FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS stripe_event_types (
+  id TEXT PRIMARY KEY,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+COMMENT ON TABLE stripe_event_types IS 'Stripe event type names registered on first sight; the provider owns this open set and exact spelling.';
+COMMENT ON COLUMN stripe_event_types.id IS 'Exact provider value used as the natural lookup key; never normalized.';
+COMMENT ON COLUMN stripe_event_types.created_at IS 'When this provider value was first observed.';
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS stripe_events (
-  id UUID PRIMARY KEY DEFAULT uuidv7(), stripe_event_id TEXT NOT NULL, event_type TEXT NOT NULL, livemode BOOLEAN NOT NULL DEFAULT false, api_version TEXT,
+  id UUID PRIMARY KEY DEFAULT uuidv7(), stripe_event_id TEXT NOT NULL, event_type TEXT NOT NULL REFERENCES stripe_event_types(id) ON DELETE RESTRICT, livemode BOOLEAN NOT NULL DEFAULT false, api_version TEXT,
   stripe_created_at TIMESTAMPTZ NOT NULL, customer_id TEXT, subscription_id TEXT, invoice_id TEXT, checkout_session_id TEXT,
   received_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, processing_attempt_id UUID NOT NULL DEFAULT uuidv7(), dispatched_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   processing_started_at TIMESTAMPTZ, processing_attempts INT NOT NULL DEFAULT 0 CHECK (processing_attempts >= 0), processed_at TIMESTAMPTZ, ignored_at TIMESTAMPTZ, failed_at TIMESTAMPTZ,

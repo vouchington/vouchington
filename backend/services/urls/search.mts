@@ -33,7 +33,7 @@ function buildUrlFilters(options: SearchUrlsOptions): SQLStatement[] {
   }
 
   if (contentTypeId !== undefined) {
-    filters.push(sql`urls.url_content_type_id = ${contentTypeId}`)
+    filters.push(sql`urls.media_type_id = ${contentTypeId}`)
   }
 
   if (after) {

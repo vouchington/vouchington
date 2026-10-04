@@ -1,5 +1,5 @@
 import { it, expect, describe } from 'vitest'
-import { createTopicAliases, unlinkTopicAlias, updateTopicAliasesField } from '../aliases.mts'
+import { createTopicAliases, unlinkTopicAlias } from '../aliases.mts'
 import { searchTopicAliases } from '../search-topic-aliases.mts'
 import { getTopicAliases } from '../get-topic-aliases.mts'
 import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
@@ -143,7 +143,7 @@ describe('unlinkTopicAlias', () => {
   })
 })
 
-describe('updateTopicAliasesField', () => {
+describe('trigger-maintained topic aliases', () => {
   it('updates topic.aliases field with all aliases', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const user = await createTestUser({ administrator: true })
@@ -153,7 +153,6 @@ describe('updateTopicAliasesField', () => {
       createdById: user!.id,
     })
     await createTopicAliases(topicId, [`alias1-${random}`, `alias2-${random}`, `alias3-${random}`])
-    await updateTopicAliasesField(topicId)
 
     const topic = await getTopicByAny(topicId)
 
@@ -176,7 +175,6 @@ describe('updateTopicAliasesField', () => {
     for (const alias of created) {
       await unlinkTopicAlias(alias.id, { expectedTopicId: topicId })
     }
-    await updateTopicAliasesField(topicId)
 
     const topic = await getTopicByAny(topicId)
     expect(topic!.aliases).toHaveLength(0)

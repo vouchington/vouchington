@@ -111,8 +111,9 @@ export async function selectEvidenceArtifacts(
 ): Promise<CopyrightEvidenceArtifactRecord[]> {
   const { rows } = await query<CopyrightEvidenceArtifactRecord>(
     sql`/* getCopyrightNoticePrivateAggregate:evidence */
-    SELECT artifact.*
+    SELECT artifact.*, media.mime_type
     FROM copyright_notice_evidence_artifacts artifact
+    JOIN media_types media ON media.id = artifact.media_type_id
     JOIN copyright_notice_submissions submission
       ON submission.id = artifact.copyright_notice_submission_id
     WHERE submission.copyright_notice_id = ${noticeId}

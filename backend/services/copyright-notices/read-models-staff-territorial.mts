@@ -1,7 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { decryptCopyrightText } from './erased-ciphertext.mts'
-import type { CopyrightStaffTerritorialCase } from './read-models-staff-types.mts'
+import type { CopyrightStaffTerritorialCase } from './read-models-staff-territorial-types.mts'
 import type { TerritorialCopyrightJurisdiction } from './territorial-fields.mts'
 import { territorialLabels } from './territorial-labels.mts'
 import { territorialDecisionIsLiveSql } from './territorial-redress-sql.mts'

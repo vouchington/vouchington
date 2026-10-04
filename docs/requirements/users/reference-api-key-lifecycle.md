@@ -4,6 +4,8 @@
 
 `POST /api/v1/my/api-keys` accepts `lifetime_days`: `30`, `90`, `365`, or `null` (no expiry).
 Omitting it selects 90 days for ordinary owners and 30 days for owners with the administrator role.
+A lifetime day is exactly 24 hours; daylight-saving changes do not extend a key or invalidate its
+replacement.
 Administrators may select only 30 or 90 days. Explicit unlimited or over-90-day requests return
 `400`; invalid request shapes return `422`. Other users may select any offered lifetime.
 

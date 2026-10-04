@@ -21,9 +21,11 @@ export async function createTestLandingPageLinkItem(
   label: string,
   url: string,
 ): Promise<{ landingPageItemId: string }> {
+  const urlRecord = await insertTestUrlDirect(null, url)
+  if (!urlRecord) throw new Error(`Failed to create test landing page URL: ${url}`)
   const { rows } = await write(sql`
-    INSERT INTO user_landing_page_items (landing_page_id, item_type, link_label, link_url)
-    VALUES (${landingPageId}, 'link', ${label}, ${url})
+    INSERT INTO user_landing_page_items (landing_page_id, item_type, link_label, url_id)
+    VALUES (${landingPageId}, 'link', ${label}, ${urlRecord.id})
     RETURNING id
   `)
   return { landingPageItemId: rows[0]!.id as string }

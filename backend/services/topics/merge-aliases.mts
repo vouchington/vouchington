@@ -142,26 +142,6 @@ export async function mergeTopicAliases(
     `,
     [destinationTopic.id, merger.id, sourceTopic.id],
   )
-  await query(
-    `/* mergeTopicAliases refreshSourceAliases */
-      UPDATE topics
-      SET aliases = '{}'
-      WHERE id = $1
-    `,
-    [sourceTopic.id],
-  )
-  await query(
-    `/* mergeTopicAliases refreshDestinationAliases */
-      UPDATE topics
-      SET aliases = (
-        SELECT COALESCE(ARRAY_AGG(alias ORDER BY alias), '{}')
-        FROM topic_aliases
-        WHERE topic_id = $1
-      )
-      WHERE id = $1
-    `,
-    [destinationTopic.id],
-  )
   await createTopicAliasMergeRevisions({
     query,
     revisedById: merger.id,

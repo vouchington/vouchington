@@ -10,7 +10,7 @@ export async function setTestOAuthAccessTokenScopes(
 ): Promise<void> {
   await write(
     `/* setTestOAuthAccessTokenScopes */ UPDATE oauth_access_tokens
-     SET scopes = $2::text[]
+     SET scopes = $2::api_scopes[]
      WHERE token_hash = $1`,
     [hashToken(OAUTH_SECRET_PURPOSES.accessToken, rawToken), scopes],
   )

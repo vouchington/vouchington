@@ -1,6 +1,9 @@
 import type { LandingPageItemInput } from './types.mts'
 
-export function buildLandingPageInsertRows(items: LandingPageItemInput[]) {
+export function buildLandingPageInsertRows(
+  items: LandingPageItemInput[],
+  urlIds: ReadonlyMap<string, string>,
+) {
   const itemRows = items.map((item, sortOrder) => ({
     sortOrder,
     type: item.type,
@@ -9,7 +12,7 @@ export function buildLandingPageInsertRows(items: LandingPageItemInput[]) {
     referralLinkId: item.type === 'referral_link' ? item.referral_link_id : null,
     topicId: item.type === 'topic_group' ? item.topic_id : null,
     linkLabel: item.type === 'link' ? item.label.trim() : null,
-    linkUrl: item.type === 'link' ? item.url.trim() : null,
+    urlId: item.type === 'link' ? urlIds.get(item.url.trim())! : null,
   }))
   const groupMemberRows = items.flatMap((item, parentSortOrder) =>
     item.type === 'topic_group'

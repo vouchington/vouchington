@@ -1,0 +1,37 @@
+// Existing enums retain their original creators; this catalog types their current consumers.
+export const EXISTING_FINITE_VALUES_3 = {
+  moderation_report_resolution_actions: ['reviewed', 'actioned', 'dismissed'],
+  moderation_training_event_types: [
+    'automod_reviewed',
+    'manual_action_inferred',
+    'report_resolved',
+    'dispute_resolved',
+    'appeal_resolved',
+    'draft_edited',
+    'agent_accuracy_voted',
+    'prompt_test_labelled',
+  ],
+  moderation_training_labels: [
+    'true_positive',
+    'false_positive',
+    'false_negative_candidate',
+    'true_negative',
+    'accepted',
+    'edited',
+    'rejected',
+    'not_applicable',
+  ],
+  moderation_training_source_types: [
+    'agent_moderation',
+    'openai_omni',
+    'spam_detection',
+    'community_prompt',
+    'community_review',
+    'moderation_report',
+    'moderation_appeal',
+    'review_dispute',
+    'agent_moderation_vote',
+    'prompt_test_run',
+  ],
+  notification_push_endpoint_statuses: ['pending', 'delivered', 'permanently_failed'],
+} as const

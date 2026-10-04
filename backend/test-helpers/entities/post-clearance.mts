@@ -40,7 +40,7 @@ export async function insertTestPostClearanceChange(options: {
       ${TEST_CLEARANCE_STATUS_TO_CHANGE_TYPE[options.status]},
       ${changedById},
       ${JSON.stringify(options.metadata ?? {})}::jsonb
-      , ${options.moderationTransparencyCategories ?? []}::text[]
+      , ${options.moderationTransparencyCategories ?? []}::moderation_transparency_categories[]
     )
     RETURNING id
   `)
@@ -190,7 +190,7 @@ export async function getLatestPostClearanceTransparencyCategories(
   postId: string,
 ): Promise<string[]> {
   const { rows } = await read<{ moderation_transparency_categories: string[] }>(sql`
-    SELECT moderation_transparency_categories
+    SELECT moderation_transparency_categories::text[] AS moderation_transparency_categories
     FROM post_clearance_changes
     WHERE post_id = ${postId}
     ORDER BY id DESC

@@ -14,7 +14,7 @@ export async function getTestOAuthConsentDecisions(
          WHEN 'consent_denied' THEN 'deny'
        END AS decision,
        resource,
-       scopes
+       scopes::text[] AS scopes
      FROM oauth_authorization_server_events
      WHERE client_id = (SELECT id FROM oauth_clients WHERE client_id = $1)
        AND event_type IN ('consent_approved', 'consent_denied')

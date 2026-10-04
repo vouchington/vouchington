@@ -1,3 +1,4 @@
+import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getActiveNativeLinkUserState } from './native-user-state.mts'
@@ -16,7 +17,7 @@ export async function resolveNativeBlueskyCallbackFailure(
     user_id: string
     claimed_did: string | null
     handle: string | null
-    status: string
+    status: FiniteValue<'bluesky_link_authorization_statuses'>
     expires_at: Date
   }>(sql`/* resolveNativeBlueskyCallbackFailure:lock */
     SELECT user_id, claimed_did, handle, status, expires_at

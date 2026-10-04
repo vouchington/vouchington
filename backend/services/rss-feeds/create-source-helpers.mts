@@ -9,7 +9,8 @@ import { createTopicRevision, computeTopicChanges } from '@services/topic-revisi
 import { getTopicByAny } from '@services/topics/get'
 import { finalizeCreatedTopic } from '@services/topics/create'
 import * as topicAliases from '@services/topics/aliases'
-import * as topicAliasClaim from '@services/topics/claim-and-sync-alias'
+import { claimTopicAlias } from '@services/topics/claim-topic-alias'
+import { isTopicAliasOwnershipConflict } from '@services/topics/alias-errors'
 import { enqueueBulkFetchRssFeeds } from '@queues/rss-feeds/enqueues'
 import { enqueueEvaluateRssFeedDiscoverability } from '@queues/rss-feed-discoverability/enqueues'
 import { findExistingFeedByUrlId } from './find-existing-feed.mts'
@@ -94,7 +95,7 @@ export async function createSourceInTransaction(
     )
     const topicId = topicRows[0].id as string
     const [claimedAlias] = await Promise.all([
-      topicAliasClaim.claimTopicAliasAndSync(topicId, slug, options),
+      claimTopicAlias(topicId, slug, options),
       linkHostnameToSourceTopic(topicId, hostnameId, options),
     ])
     if (createdById) {
@@ -120,7 +121,7 @@ export async function createSourceInTransaction(
     await query.commit()
     return result
   } catch (err) {
-    if (isUniqueViolation(err) || topicAliasClaim.isTopicAliasOwnershipConflict(err)) return null
+    if (isUniqueViolation(err) || isTopicAliasOwnershipConflict(err)) return null
     throw err
   }
 }

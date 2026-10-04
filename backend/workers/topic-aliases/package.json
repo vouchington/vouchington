@@ -21,6 +21,7 @@
     "@modules/queue-config": "workspace:^",
     "@queues/rss-feed-item-categories": "workspace:^",
     "@queues/topic-aliases": "workspace:^",
+    "@services/entity-cache": "workspace:^",
     "@services/rss-feed-items": "workspace:^",
     "@services/rss-feeds": "workspace:^",
     "@services/topics": "workspace:^",

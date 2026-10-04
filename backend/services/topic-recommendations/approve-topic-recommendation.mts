@@ -8,7 +8,7 @@ import { updateTopic } from '@services/topics/update'
 import type { EntityRelation } from '@services/entity-relations/upsert-helpers'
 import { getPostByAny } from '@services/posts'
 import assert from 'http-assert'
-import { createTopicAliases, updateTopicAliasesField } from '@services/topics/aliases'
+import { createTopicAliases } from '@services/topics/aliases'
 import { createTopicRecommendationLinkRelation } from './create-topic-recommendation-link-relation.mts'
 import { createTopicRecommendationUrlRelation } from './create-topic-recommendation-url-relation.mts'
 import { getLockedTopicRecommendationApproval } from './get-locked-topic-recommendation-approval.mts'
@@ -52,7 +52,6 @@ export async function approveTopicRecommendationInTransaction(
       ...options,
       skipSideEffects: true,
     })
-    await updateTopicAliasesField(topic.id, { ...options, skipSideEffects: true })
   }
 
   const relations: EntityRelation[] = []

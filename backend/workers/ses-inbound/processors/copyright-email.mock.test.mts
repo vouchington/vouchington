@@ -81,6 +81,7 @@ describe('SES copyright inbound routing while intake is switched off', () => {
         received_at: new Date(),
         raw_storage_key: 'email/ses-copyright-message/original.eml',
         raw_sha256: Buffer.alloc(32, 7),
+        raw_media_type_id: '1',
         raw_mime_type: 'message/rfc822',
         raw_byte_size: 3,
       },
@@ -189,6 +190,7 @@ describe('SES copyright inbound routing while intake is switched off', () => {
       received_at: new Date(),
       raw_storage_key: 'email/ses-malformed-copyright/evidence.eml',
       raw_sha256: Buffer.alloc(32, 8),
+      raw_media_type_id: '1',
       raw_mime_type: 'message/rfc822',
       raw_byte_size: 3,
     }

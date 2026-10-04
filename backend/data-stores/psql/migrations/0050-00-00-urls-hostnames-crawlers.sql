@@ -139,7 +139,8 @@ COMMENT ON COLUMN url_hostnames.votes_snapshot_xip_count IS 'Number of transacti
 -- URL content types
 --------------------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS url_content_types (
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS media_types (
   id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -147,16 +148,17 @@ CREATE TABLE IF NOT EXISTS url_content_types (
   CHECK (mime_type = LOWER(mime_type)),
   CHECK (mime_type = TRIM(mime_type)),
   CHECK (char_length(mime_type) <= 255),
-  CHECK (mime_type ~ '^\s*[\w.+-]+\/[\w.+-]+\s*$')
+  CHECK (mime_type ~ '^[a-z0-9!#$%&''*+.^_`|~-]+/[a-z0-9!#$%&''*+.^_`|~-]+$')
 );
 
-COMMENT ON TABLE url_content_types IS 'Lookup table of MIME content types for URLs (e.g. text/html, application/pdf).';
-COMMENT ON COLUMN url_content_types.mime_type IS 'Lowercase MIME type string (e.g. text/html). Unique.';
+COMMENT ON TABLE media_types IS 'Shared lookup of validated MIME types for URLs, RSS enclosures and legal email/evidence records.';
+COMMENT ON COLUMN media_types.mime_type IS 'Lowercase MIME type string (e.g. text/html). Unique.';
 
 --------------------------------------------------------------------------------
 -- URLs
 --------------------------------------------------------------------------------
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS urls (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
 
@@ -170,7 +172,7 @@ CREATE TABLE IF NOT EXISTS urls (
   CHECK (pathname = TRIM(pathname)),
   search_params JSONB NOT NULL,
 
-  url_content_type_id BIGINT REFERENCES url_content_types ON DELETE SET NULL,
+  media_type_id BIGINT REFERENCES media_types ON DELETE SET NULL,
   canonical_url_id UUID REFERENCES urls ON DELETE SET NULL,
   CHECK (canonical_url_id IS NULL OR canonical_url_id != id),
 
@@ -201,7 +203,7 @@ COMMENT ON COLUMN urls.url IS 'Full HTTPS URL (max 2083 chars). Unique, trimmed.
 COMMENT ON COLUMN urls.hostname_id IS 'The hostname this URL belongs to.';
 COMMENT ON COLUMN urls.pathname IS 'URL pathname component (e.g. /path/to/page). Max 2048 chars.';
 COMMENT ON COLUMN urls.search_params IS 'URL query parameters stored as JSONB.';
-COMMENT ON COLUMN urls.url_content_type_id IS 'Detected MIME content type of the URL.';
+COMMENT ON COLUMN urls.media_type_id IS 'Detected MIME content type of the URL.';
 COMMENT ON COLUMN urls.canonical_url_id IS 'Self-referencing FK to the canonical version of this URL, if different.';
 
 --------------------------------------------------------------------------------
@@ -523,6 +525,7 @@ CREATE INDEX IF NOT EXISTS idx_urls__canonical_url_id
   ON urls (canonical_url_id)
   WHERE canonical_url_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_urls__url_content_type_id
-  ON urls (url_content_type_id)
-  WHERE url_content_type_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_urls__media_type_id
+  ON urls (media_type_id)
+  WHERE media_type_id IS NOT NULL;

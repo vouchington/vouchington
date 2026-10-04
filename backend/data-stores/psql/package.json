@@ -27,6 +27,7 @@
     "@data-stores/graceful-shutdown": "workspace:^",
     "@libpg-query/parser": "^18.0.0",
     "@modules/on-error": "workspace:^",
+    "@modules/scopes": "workspace:^",
     "@modules/utils": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",

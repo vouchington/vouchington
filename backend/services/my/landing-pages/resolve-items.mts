@@ -174,8 +174,8 @@ export async function resolveLandingPageWithItems(
       const entries = groupMembersByItemId.get(item.id) ?? []
       if (topic && entries.length > 0)
         items.push({ id: item.id, type: 'topic_group', topic, entries })
-    } else if (item.item_type === 'link' && item.link_label && item.link_url) {
-      items.push({ id: item.id, type: 'link', label: item.link_label, url: item.link_url })
+    } else if (item.item_type === 'link' && item.link_label && item.url) {
+      items.push({ id: item.id, type: 'link', label: item.link_label, url: item.url })
     }
   }
   return { ...page, items }

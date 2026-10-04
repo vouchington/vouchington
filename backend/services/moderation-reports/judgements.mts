@@ -73,7 +73,7 @@ export async function insertReportJudgement(
   )
   query.append(fkColumn)
   query.append(
-    sql` AS entity_id, ${input.entityType}::moderation_report_entity_type AS entity_type`,
+    sql` AS entity_id, ${input.entityType}::moderation_report_entity_types AS entity_type`,
   )
 
   const { rows } = await write(query)
@@ -87,7 +87,7 @@ export async function getLatestJudgementForEntity(
   const fkColumn = reportEntityFkColumn(entityType)
   const query = sql`/* getLatestJudgementForEntity */ SELECT id, case_id, triggering_report_id, rerun_by_id, recommended_action, public_response, internal_response, model, context_hash, context_report_count, context_note_hash, context_max_reason_rank, created_at, `
   query.append(fkColumn)
-  query.append(sql` AS entity_id, ${entityType}::moderation_report_entity_type AS entity_type`)
+  query.append(sql` AS entity_id, ${entityType}::moderation_report_entity_types AS entity_type`)
   query.append(sql` FROM moderation_report_judgements WHERE `)
   query.append(fkColumn)
   query.append(sql` = ${entityId}::uuid ORDER BY id DESC LIMIT 1`)
@@ -124,12 +124,12 @@ export async function getLatestJudgementsForEntitiesBatch(
     if (fkColumn === ENTITY_TYPE_TO_REPORT_FK.post) {
       subquery.append(
         sql`CASE
-          WHEN _jp.post_type = 'comment' THEN 'comment'::moderation_report_entity_type
-          ELSE 'post'::moderation_report_entity_type
+          WHEN _jp.post_type = 'comment' THEN 'comment'::moderation_report_entity_types
+          ELSE 'post'::moderation_report_entity_types
         END AS entity_type`,
       )
     } else {
-      subquery.append(sql`${entityType}::moderation_report_entity_type AS entity_type`)
+      subquery.append(sql`${entityType}::moderation_report_entity_types AS entity_type`)
     }
     subquery.append(sql` FROM moderation_report_judgements j`)
     if (fkColumn === ENTITY_TYPE_TO_REPORT_FK.post) {

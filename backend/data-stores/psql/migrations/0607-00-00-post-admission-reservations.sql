@@ -1,18 +1,19 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_admission_reservations (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   actor_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   idempotency_key UUID NOT NULL,
   intent_sha256 TEXT NOT NULL,
-  route TEXT NOT NULL,
-  scope TEXT NOT NULL,
-  source TEXT NOT NULL,
-  post_type TEXT NOT NULL,
+  route post_admission_routes NOT NULL,
+  scope post_admission_scope_categories NOT NULL,
+  source contribution_policy_sources NOT NULL,
+  post_type post_types NOT NULL,
   policy_revision TEXT NOT NULL,
-  state TEXT NOT NULL DEFAULT 'in_progress',
+  state post_admission_reservation_states NOT NULL DEFAULT 'in_progress',
   response JSONB,
   replay_metadata JSONB,
   committed_post_id UUID REFERENCES retained_post_identities (id) ON DELETE RESTRICT,
-  committed_status TEXT,
+  committed_status post_admission_committed_statuses,
   retryable_failure JSONB,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -27,10 +28,10 @@ CREATE TABLE IF NOT EXISTS post_admission_reservations (
     state IN ('in_progress', 'committed', 'retryable_failed', 'expired')
   ),
   CONSTRAINT post_admission_reservations_metadata_bounds_check CHECK (
-    char_length(route) BETWEEN 1 AND 128
-    AND char_length(scope) BETWEEN 1 AND 256
-    AND char_length(source) BETWEEN 1 AND 64
-    AND char_length(post_type) BETWEEN 1 AND 64
+    char_length(route::text) BETWEEN 1 AND 128
+    AND char_length(scope::text) BETWEEN 1 AND 256
+    AND char_length(source::text) BETWEEN 1 AND 64
+    AND char_length(post_type::text) BETWEEN 1 AND 64
     AND char_length(policy_revision) BETWEEN 1 AND 128
     AND (response IS NULL OR octet_length(response::text) <= 2097152)
     AND (replay_metadata IS NULL OR (
@@ -56,7 +57,7 @@ COMMENT ON COLUMN post_admission_reservations.actor_id IS 'Authenticated actor t
 COMMENT ON COLUMN post_admission_reservations.idempotency_key IS 'Client-supplied UUID reused only to replay the same actor request.';
 COMMENT ON COLUMN post_admission_reservations.intent_sha256 IS 'SHA-256 of the canonical request intent. Different intent with the same actor and idempotency key is rejected.';
 COMMENT ON COLUMN post_admission_reservations.route IS 'Mutation route recorded for audit and replay metadata.';
-COMMENT ON COLUMN post_admission_reservations.scope IS 'Route-specific contribution scope recorded for audit and replay metadata.';
+COMMENT ON COLUMN post_admission_reservations.scope IS 'Finite contribution scope category; the exact route-specific scope remains in replay_metadata.';
 COMMENT ON COLUMN post_admission_reservations.source IS 'Contribution-policy source charged when this request commits.';
 COMMENT ON COLUMN post_admission_reservations.post_type IS 'Authored post type recorded for contribution-policy audit.';
 COMMENT ON COLUMN post_admission_reservations.policy_revision IS 'Contribution-policy revision evaluated for this request.';

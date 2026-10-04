@@ -47,10 +47,14 @@ export async function getLandingPageRowById(pageId: string): Promise<LandingPage
 
 export async function getLandingPageItemRows(pageId: string): Promise<LandingPageItemRow[]> {
   const { rows } = await read(sql`/* getLandingPageItemRows */
-    SELECT id, item_type, profile_link_id, review_id, referral_link_id, topic_id, link_label, link_url
-    FROM user_landing_page_items
-    WHERE landing_page_id = ${pageId}
-    ORDER BY sort_order ASC, id ASC
+    SELECT item.id, item.item_type, item.profile_link_id, item.review_id, item.referral_link_id,
+      item.topic_id, item.link_label, item.url_id,
+      CASE WHEN hostname.blocked = FALSE THEN link.url END AS url
+    FROM user_landing_page_items item
+    LEFT JOIN urls link ON link.id = item.url_id
+    LEFT JOIN url_hostnames hostname ON hostname.id = link.hostname_id
+    WHERE item.landing_page_id = ${pageId}
+    ORDER BY item.sort_order ASC, item.id ASC
   `)
   return rows as LandingPageItemRow[]
 }

@@ -134,10 +134,10 @@ CREATE TABLE moderation_reports (
   hostname_id      uuid REFERENCES url_hostnames(id) ON DELETE CASCADE,
   rss_feed_item_id uuid REFERENCES rss_feed_items(id) ON DELETE CASCADE,
   case_id          uuid NOT NULL REFERENCES moderation_cases (id) ON DELETE CASCADE,
-  reason           moderation_report_reason NOT NULL,
-  -- moderation_report_reason values: 'spam', 'harassment', 'misinformation', 'illegal_content', 'vote_manipulation', 'other'
+  reason           moderation_report_reasons NOT NULL,
+  -- moderation_report_reasons values: 'spam', 'harassment', 'misinformation', 'illegal_content', 'vote_manipulation', 'other'
   note             text CHECK (note IS NULL OR char_length(note) <= 1000),
-  resolution_action moderation_report_resolution_action,
+  resolution_action moderation_report_resolution_actions,
   resolved_by_id   uuid REFERENCES users(id),
   escalated_at     timestamptz,
   escalated_by_id  uuid REFERENCES users(id) ON DELETE SET NULL,

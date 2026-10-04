@@ -39,6 +39,10 @@ export async function insertStripeEvent(event: Stripe.Event): Promise<InsertStri
 
   const inserted = await write(
     sql`/* insertStripeEvent */
+      WITH registered_type AS (
+        INSERT INTO stripe_event_types (id) VALUES (${event.type})
+        ON CONFLICT (id) DO NOTHING
+      )
       INSERT INTO stripe_events (
         stripe_event_id,
         event_type,

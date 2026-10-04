@@ -258,7 +258,7 @@ async function getAutomodPerformance(
       FROM post_clearance_changes pcc
       JOIN posts p ON p.id = pcc.post_id
       JOIN LATERAL (
-        SELECT category AS source_type,
+        SELECT category::text AS source_type,
           CASE WHEN category = 'spam_detection' THEN (
             SELECT NULLIF(disposition.evidence->>'composite_score', '')::numeric
             FROM post_moderation_versions version

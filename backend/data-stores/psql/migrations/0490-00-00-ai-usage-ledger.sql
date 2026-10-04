@@ -1,5 +1,16 @@
 -- AI usage ledger: per-call cost tracking for every LLM agent, not only community moderation.
 -- edited-in-place: pre-launch, never deployed to production
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS openai_service_tiers (
+  id TEXT PRIMARY KEY,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+COMMENT ON TABLE openai_service_tiers IS 'OpenAI service tier names registered on first sight; the provider owns this open set and exact spelling.';
+COMMENT ON COLUMN openai_service_tiers.id IS 'Exact provider value used as the natural lookup key; never normalized.';
+COMMENT ON COLUMN openai_service_tiers.created_at IS 'When this provider value was first observed.';
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS ai_usage_records (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   -- guardrails-disable-next-line uuid-must-be-key
@@ -13,12 +24,12 @@ CREATE TABLE IF NOT EXISTS ai_usage_records (
   classifier_run_id UUID,
   agent_slug TEXT NOT NULL,
   model TEXT NOT NULL,
-  service_tier TEXT NOT NULL,
+  service_tier TEXT NOT NULL REFERENCES openai_service_tiers(id) ON DELETE RESTRICT,
   input_tokens INTEGER NOT NULL CHECK (input_tokens >= 0),
   cached_input_tokens INTEGER NOT NULL DEFAULT 0 CHECK (cached_input_tokens >= 0),
   output_tokens INTEGER NOT NULL CHECK (output_tokens >= 0),
   latency_ms INTEGER CHECK (latency_ms >= 0),
-  pricing_status TEXT NOT NULL CHECK (pricing_status IN ('priced', 'unpriced')),
+  pricing_status ai_usage_record_pricing_statuses NOT NULL CHECK (pricing_status IN ('priced', 'unpriced')),
   cost_microunits BIGINT,
   CHECK (cost_microunits BETWEEN 0 AND 9007199254740991),
   currency_code TEXT REFERENCES currencies(code) ON DELETE RESTRICT,
@@ -84,3 +95,7 @@ COMMENT ON COLUMN ai_usage_records.cost_microunits IS 'Estimated cost in million
 COMMENT ON COLUMN ai_usage_records.currency_code IS 'Currency of the estimated cost; NULL when unpriced.';
 COMMENT ON COLUMN ai_usage_provider_response_keys.response_id IS 'Provider response or decision id; the primary key prevents duplicate ledger rows across UUIDv7 ledger partitions.';
 COMMENT ON COLUMN ai_usage_provider_response_keys.ai_usage_record_id IS 'The one ai_usage_records row reserved for this provider response or decision id.';
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_ai_usage_records__service_tier
+  ON ai_usage_records (service_tier);

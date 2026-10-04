@@ -7,6 +7,7 @@ CREATE TYPE copyright_trusted_flagger_change_types AS ENUM (
   'revoked'
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_trusted_flaggers (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   name text NOT NULL CHECK (char_length(name) BETWEEN 1 AND 200),
@@ -15,7 +16,7 @@ CREATE TABLE copyright_trusted_flaggers (
   awarding_member_state text NOT NULL CHECK (awarding_member_state ~ '^[A-Z]{2}$'),
   awarded_at date NOT NULL,
   award_reference text CHECK (award_reference IS NULL OR char_length(award_reference) BETWEEN 1 AND 2048),
-  area_of_expertise text NOT NULL CHECK (area_of_expertise IN ('intellectual_property', 'other')),
+  area_of_expertise copyright_trusted_flagger_expertise_areas NOT NULL CHECK (area_of_expertise IN ('intellectual_property', 'other')),
   area_description text NOT NULL CHECK (char_length(area_description) BETWEEN 1 AND 500),
   created_by_id uuid NOT NULL REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,

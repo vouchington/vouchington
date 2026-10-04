@@ -28,7 +28,7 @@ export async function getJudgementById(
         WHEN j.reported_user_id IS NOT NULL THEN 'user'
         WHEN j.hostname_id IS NOT NULL THEN 'url_hostname'
         WHEN j.rss_feed_item_id IS NOT NULL THEN 'rss_feed_item'
-      END::moderation_report_entity_type AS entity_type
+      END::moderation_report_entity_types AS entity_type
     FROM moderation_report_judgements j
     LEFT JOIN posts p ON j.post_id IS NOT NULL AND p.id = j.post_id
     WHERE j.id = ${judgementId}::uuid

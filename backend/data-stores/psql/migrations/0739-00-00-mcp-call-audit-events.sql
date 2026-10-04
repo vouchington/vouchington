@@ -2,9 +2,10 @@
 -- Durable per-call audit records for MCP surfaces. One row per JSON-RPC call (plus a follow-up row
 -- when an admitted tool call fails). No arguments, results, tokens, or headers are stored.
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS mcp_call_audit_events (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
-  surface TEXT NOT NULL CHECK (surface IN ('mcp', 'admin_mcp')),
+  surface mcp_call_audit_event_surfaces NOT NULL CHECK (surface IN ('mcp', 'admin_mcp')),
   correlation_id UUID NOT NULL,
   actor_user_id UUID NOT NULL REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   oauth_client_id UUID REFERENCES oauth_clients (id) ON DELETE RESTRICT,
@@ -12,7 +13,7 @@ CREATE TABLE IF NOT EXISTS mcp_call_audit_events (
   resource TEXT NOT NULL CHECK (char_length(resource) BETWEEN 1 AND 2048),
   jsonrpc_method TEXT CHECK (jsonrpc_method ~ '^[A-Za-z][A-Za-z0-9_./-]{0,63}$'),
   tool_name TEXT CHECK (tool_name ~ '^[A-Za-z0-9_.-]{1,64}$'),
-  outcome TEXT NOT NULL CHECK (outcome IN (
+  outcome mcp_call_audit_event_outcomes NOT NULL CHECK (outcome IN (
     'accepted',
     'tool_error',
     'invalid_request',

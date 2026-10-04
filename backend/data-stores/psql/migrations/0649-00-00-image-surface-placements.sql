@@ -7,14 +7,15 @@ BEFORE UPDATE OF id ON images
 FOR EACH ROW
   WHEN (ROW(OLD.id) IS DISTINCT FROM ROW(NEW.id)) EXECUTE FUNCTION fn_reject_mutation();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE image_surface_placements (
   placement_id uuid PRIMARY KEY REFERENCES media_placements(id) ON DELETE RESTRICT,
-  surface_kind text NOT NULL CHECK (surface_kind IN (
+  surface_kind image_surface_placement_surface_kinds NOT NULL CHECK (surface_kind IN (
     'user-profile-image', 'topic-logo-image', 'topic-hero-image',
     'community-profile-image', 'community-banner-image', 'user-profile-link-image'
   )),
   image_id uuid NOT NULL REFERENCES images(id) ON DELETE RESTRICT,
-  binding_family text NOT NULL DEFAULT 'surface' CHECK (binding_family = 'surface'),
+  binding_family image_binding_families NOT NULL DEFAULT 'surface' CHECK (binding_family = 'surface'),
   user_id uuid REFERENCES users(id) ON DELETE RESTRICT,
   topic_id uuid REFERENCES topics(id) ON DELETE RESTRICT,
   community_id uuid REFERENCES communities(id) ON DELETE RESTRICT,
@@ -33,9 +34,10 @@ CREATE TABLE image_surface_placements (
   )
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE image_surface_placement_activations (
   placement_id uuid NOT NULL,
-  surface_kind text NOT NULL CHECK (surface_kind IN (
+  surface_kind image_surface_placement_surface_kinds NOT NULL CHECK (surface_kind IN (
     'user-profile-image', 'topic-logo-image', 'topic-hero-image',
     'community-profile-image', 'community-banner-image', 'user-profile-link-image'
   )),
@@ -183,7 +185,7 @@ BEFORE UPDATE ON image_surface_placements
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE OR REPLACE FUNCTION fn_sync_image_surface_placement(
-  p_surface_kind text,
+  p_surface_kind image_surface_placement_surface_kinds,
   p_image_id uuid,
   p_user_id uuid,
   p_topic_id uuid,
@@ -199,7 +201,7 @@ BEGIN
     delivery_key, placement_id, placement_revision, image_id, desired_state
   )
   SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', surface.image_id),
-    placement.id, placement.revision, surface.image_id, 'withheld'
+    placement.id, placement.revision, surface.image_id, 'withheld'::media_delivery_desired_states
   FROM media_placements placement
   JOIN image_surface_placements surface ON surface.placement_id = placement.id
   WHERE placement.retired_at IS NULL
@@ -263,7 +265,7 @@ BEGIN
     CASE WHEN image.deleted_at IS NULL
         AND image.quarantine_pending_at IS NULL
         AND image.openai_omni_moderation_flagged IS NOT TRUE
-      THEN 'allow' ELSE 'withheld' END
+      THEN 'allow'::media_delivery_desired_states ELSE 'withheld'::media_delivery_desired_states END
   FROM images image WHERE image.id = p_image_id
   ON CONFLICT (delivery_key) DO NOTHING;
 

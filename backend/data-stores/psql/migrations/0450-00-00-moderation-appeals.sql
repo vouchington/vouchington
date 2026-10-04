@@ -3,7 +3,7 @@
 -- edited-in-place: pre-launch, never deployed to production
 DO $$
 BEGIN
-  CREATE TYPE moderation_appeal_action AS ENUM ('accept', 'deny', 'reduce');
+  CREATE TYPE moderation_appeal_actions AS ENUM ('accept', 'deny', 'reduce');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS moderation_appeals (
   original_decided_at timestamptz,
 
   -- AI draft columns (nullable until agent runs)
-  recommended_action moderation_appeal_action,
+  recommended_action moderation_appeal_actions,
   ai_public_response text,
   ai_internal_response text,
   model text,
@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS moderation_appeals (
   resolved_at timestamptz,
   -- guardrails-disable-next-line uuid-must-be-key
   resolved_by_id uuid REFERENCES users (id) ON DELETE SET NULL,
-  resolution_action moderation_appeal_action,
+  resolution_action moderation_appeal_actions,
   CONSTRAINT chk_moderation_appeals__resolution_pairing CHECK (
     (resolved_at IS NULL AND resolution_action IS NULL)
     OR (resolved_at IS NOT NULL AND resolution_action IS NOT NULL)

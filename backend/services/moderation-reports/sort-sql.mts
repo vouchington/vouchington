@@ -109,7 +109,7 @@ export function appendModerationReportStatusPredicate(
     return
   }
   query.append(`${alias}.reviewed_at IS NOT NULL AND ${alias}.resolution_action = `)
-  query.append(sql`${status}::moderation_report_resolution_action`)
+  query.append(sql`${status}::moderation_report_resolution_actions`)
 }
 
 export async function assertMutableSortCursorIsCurrent(

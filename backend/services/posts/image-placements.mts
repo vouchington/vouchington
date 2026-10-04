@@ -108,7 +108,7 @@ export async function syncPostImagePlacements(
       delivery_key, placement_id, placement_revision, image_id, desired_state
     )
     SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', binding.image_id),
-      placement.id, placement.revision, binding.image_id, 'allow'
+      placement.id, placement.revision, binding.image_id, 'allow'::media_delivery_desired_states
     FROM image_placements binding
     JOIN media_placements placement ON placement.id = binding.placement_id
     JOIN images image ON image.id = binding.image_id

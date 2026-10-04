@@ -79,6 +79,10 @@ export async function runVerifiedIdentityTransaction(
 
     // Insert the verified identity record; ON CONFLICT suppresses a concurrent duplicate
     const { rows: insertedRows } = await query(sql`/* onVerificationSessionVerified:insert */
+      WITH registered_document_type AS (
+        INSERT INTO identity_document_types (id) VALUES (${documentType})
+        ON CONFLICT (id) DO NOTHING
+      )
       INSERT INTO verified_identities (
         user_id, provider, provider_session_id, identity_fingerprint,
         issuing_country, document_type, verified_at, checkout_session_id

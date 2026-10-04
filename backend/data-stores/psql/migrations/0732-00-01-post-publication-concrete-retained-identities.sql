@@ -72,9 +72,10 @@ CREATE OR REPLACE TRIGGER trigger_pub_rss_feed_identities_updated_at BEFORE UPDA
 CREATE OR REPLACE TRIGGER trigger_pub_topic_alias_identities_updated_at BEFORE UPDATE ON post_publication_topic_alias_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 CREATE OR REPLACE TRIGGER trigger_pub_story_identities_updated_at BEFORE UPDATE ON post_publication_story_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_publication_identity_bridge_cleanup_progress (
   singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (singleton),
-  family TEXT NOT NULL DEFAULT 'post' CHECK (family IN ('post', 'community', 'rss_feed_item', 'author', 'rss_feed', 'topic_alias', 'story')),
+  family post_publication_identity_bridge_cleanup_families NOT NULL DEFAULT 'post' CHECK (family IN ('post', 'community', 'rss_feed_item', 'author', 'rss_feed', 'topic_alias', 'story')),
   cursor_identity_id UUID,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

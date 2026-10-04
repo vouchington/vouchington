@@ -1,3 +1,4 @@
+import { setRssFeedItemMediaDetails } from '../../backend/test-helpers/entities/rss-feed-items-media.mts'
 import { write } from '../../backend/data-stores/psql/clients.mts'
 import { insertTestRssFeedItem } from '../../backend/test-helpers/entities/rss-feed-items.mts'
 import { setTopicHostnameLink } from '../../backend/services/topics/hostname-link.mts'
@@ -155,15 +156,13 @@ export async function insertTestPodcastShow(suffix: string): Promise<TestPodcast
     contentSha256: ZERO_SHA,
   })
 
-  await write(
-    `UPDATE rss_feed_items
-     SET media_type = 'audio',
-         enclosure_url = $2,
-         enclosure_type = 'audio/mpeg',
-         duration_seconds = 1800
-     WHERE id = $1`,
-    [episodeId, enclosureUrl],
-  )
+  await setRssFeedItemMediaDetails(episodeId, {
+    mediaType: 'audio',
+    enclosureUrl,
+    enclosureType: 'audio/mpeg',
+    durationSeconds: 1800,
+    thumbnailUrl: null,
+  })
 
   // The /source/[slug]/news page fetches items via:
   //   GET /api/v1/rss-feed-items?category_topic=<topicSlug>

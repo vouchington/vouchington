@@ -9,22 +9,24 @@ ALTER TABLE copyright_notice_correspondence_messages
 ALTER TABLE copyright_notice_correspondence_messages
   VALIDATE CONSTRAINT fk_copyright_correspondence__email_intake;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_thread_references (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_email_intake_id uuid NOT NULL REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT,
   lookup_token text NOT NULL CHECK (char_length(lookup_token) = 64),
-  reference_kind text NOT NULL CHECK (reference_kind IN ('message_id', 'reply_reference')),
+  reference_kind copyright_notice_email_thread_reference_kinds NOT NULL CHECK (reference_kind IN ('message_id', 'reply_reference')),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (copyright_notice_email_intake_id, lookup_token, reference_kind)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_intake_notice_links (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_email_intake_id uuid NOT NULL UNIQUE REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT,
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
   copyright_notice_email_intake_recommendation_id uuid REFERENCES copyright_notice_email_intake_recommendations(id) ON DELETE RESTRICT,
-  link_kind text NOT NULL CHECK (link_kind IN ('initial', 'thread')),
+  link_kind copyright_notice_email_intake_link_kinds NOT NULL CHECK (link_kind IN ('initial', 'thread')),
   matched_reference_lookup text CHECK (matched_reference_lookup IS NULL OR char_length(matched_reference_lookup) = 64),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -39,13 +41,14 @@ ALTER TABLE copyright_notice_lifecycle_changes
 ALTER TABLE copyright_notice_lifecycle_changes
   VALIDATE CONSTRAINT fk_copyright_lifecycle_events__email_intake_notice;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_correspondence_reviews (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_email_intake_id uuid NOT NULL REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT,
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
   copyright_notice_email_intake_recommendation_id uuid,
-  action text NOT NULL CHECK (action IN ('pending', 'admitted', 'rejected')),
-  kind text CHECK (kind IN ('supplement', 'appeal', 'counter_notice', 'withdrawal', 'court_or_ccb_hold', 'complaint')),
+  action copyright_notice_email_correspondence_review_actions NOT NULL CHECK (action IN ('pending', 'admitted', 'rejected')),
+  kind copyright_notice_email_correspondence_review_kinds CHECK (kind IN ('supplement', 'appeal', 'counter_notice', 'withdrawal', 'court_or_ccb_hold', 'complaint')),
   copyright_notice_submission_id uuid UNIQUE REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
   copyright_notice_correspondence_id uuid UNIQUE REFERENCES copyright_notice_correspondence_messages(id) ON DELETE RESTRICT,
   reviewed_at timestamptz,

@@ -45,8 +45,8 @@ describe('contribution admission policy revision', () => {
 
 function admissionAudit(policyRevision: string): ContributionAdmissionAudit {
   return {
-    route: 'test',
-    scope: 'test',
+    route: 'posts.create',
+    scope: 'global',
     source: 'discussion',
     postType: 'discussion',
     policyRevision,

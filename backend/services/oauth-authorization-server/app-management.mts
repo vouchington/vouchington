@@ -29,7 +29,7 @@ export async function listOwnedOAuthApps(
 ): Promise<OAuthManagementPage<OAuthAppView>> {
   const { rows } = await read<OAuthAppView>(
     `/* listOwnedOAuthApps */ SELECT id, client_id, client_name, client_type,
-       token_endpoint_auth_method, redirect_uris, scopes, verified_at, created_at, updated_at
+       token_endpoint_auth_method, redirect_uris, scopes::text[] AS scopes, verified_at, created_at, updated_at
      FROM oauth_clients
      WHERE owner_user_id = $1
        AND revoked_at IS NULL
@@ -122,7 +122,7 @@ export async function updateOwnedOAuthApp(
          AND owner_user_id = $2
          AND revoked_at IS NULL
        RETURNING id, client_id, client_name, client_type, token_endpoint_auth_method,
-         redirect_uris, scopes, verified_at, created_at, updated_at`,
+         redirect_uris, scopes::text[] AS scopes, verified_at, created_at, updated_at`,
       [appId, currentUserId, clientName, redirectUris],
     ),
   )
@@ -149,7 +149,7 @@ export async function rotateOwnedOAuthAppSecret(
          AND revoked_at IS NULL
          AND client_type = 'confidential'
        RETURNING id, client_id, client_name, client_type, token_endpoint_auth_method,
-         redirect_uris, scopes, verified_at, created_at, updated_at`,
+         redirect_uris, scopes::text[] AS scopes, verified_at, created_at, updated_at`,
       [appId, currentUserId, hashToken(OAUTH_SECRET_PURPOSES.clientSecret, clientSecret)],
     )
     const app = rows[0]

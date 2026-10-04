@@ -129,7 +129,7 @@ export async function markCopyrightDeliveryIntentFailed(input: {
   const boundedError = input.error.slice(0, 10_000)
   const { rows } = await write(sql`/* markCopyrightDeliveryIntentFailed */
     UPDATE copyright_notice_delivery_intents
-    SET state = CASE WHEN delivery_attempt_count >= 5 THEN 'failed' ELSE 'pending' END,
+    SET state = (CASE WHEN delivery_attempt_count >= 5 THEN 'failed' ELSE 'pending' END)::copyright_notice_delivery_intent_states,
       claimed_at = NULL,
       failed_at = CASE WHEN delivery_attempt_count >= 5 THEN CURRENT_TIMESTAMP ELSE NULL END,
       next_attempt_at = CASE WHEN delivery_attempt_count >= 5 THEN NULL

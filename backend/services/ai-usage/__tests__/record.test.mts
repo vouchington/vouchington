@@ -155,8 +155,8 @@ describe('recordAiUsage', () => {
       responseId,
       agentSlug: 'test-response-id-concurrent',
       model: 'gpt-5.4-nano',
-      serviceTier: 'flex',
-      usage: { input_tokens: 12, output_tokens: 8 },
+      serviceTier: `future-Tier-${randomUUID()}`,
+      usage: { input_tokens: 12, output_tokens: 8, cost: 0.001 },
     }
 
     const outcomes = await Promise.all(Array.from({ length: 8 }, () => recordAiUsage(options)))

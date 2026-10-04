@@ -84,3 +84,5 @@ Topic deletion is intentionally unsupported. The `DELETE /api/v1/topics/:idOrSlu
 - [backend/api/v1/topics/README.md](../../../../../backend/api/v1/topics/README.md)
 - [docs/overview/architecture/queues/bedrock-embeddings/README.md](../../queues/bedrock-embeddings/README.md)
 - [docs/requirements/content/TOPICS.md](../../../../requirements/content/TOPICS.md)
+
+The `topics.aliases` search cache is projected by `fn_project_topic_aliases` after alias inserts, updates and deletes, including ownership moves. The statement trigger locks affected parent rows in ID order with `NO KEY UPDATE`, then reads current linked aliases. Services retain publication capture and cache invalidation, and no longer write the search cache directly.

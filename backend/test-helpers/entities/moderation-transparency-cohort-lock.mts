@@ -1,3 +1,4 @@
+import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import { writePool, type PoolClient } from '@data-stores/psql'
 
 export type TestModerationTransparencyCohortLock = {
@@ -7,8 +8,8 @@ export type TestModerationTransparencyCohortLock = {
 /** Holds the exact source/release cohort advisory key in a dedicated session. */
 export async function acquireTestModerationTransparencyCohortLock(options: {
   occurredAt: Date
-  metric: string
-  category: string
+  metric: FiniteValue<'moderation_transparency_metrics'>
+  category: FiniteValue<'moderation_transparency_categories'>
 }): Promise<TestModerationTransparencyCohortLock> {
   const key = `moderation-transparency-rollup:${options.occurredAt.toISOString().slice(0, 10)}:global:${options.metric}:${options.category}`
   const client = await writePool.connect()

@@ -4,6 +4,7 @@ import { createPostTextEmbeddingContent } from '@services/posts/content'
 import { upsertUrlHostnames } from '@services/urls-hostnames'
 import sql from 'sql-template-strings'
 import { normalizeTopicRecommendationValues } from './shared.mts'
+import { materializeTopicRecommendationUrls } from './materialize-urls.mts'
 
 export async function materializeTopicRecommendationInput(
   currentUserId: string,
@@ -11,6 +12,11 @@ export async function materializeTopicRecommendationInput(
   options: QueryOptions,
 ) {
   const values = normalizeTopicRecommendationValues(input)
+  const urlIds = await materializeTopicRecommendationUrls(
+    currentUserId,
+    values.example_referral_link,
+    values.landing_page_urls,
+  )
   const hostnameMap = await upsertUrlHostnames(currentUserId, values.topic_hostnames, options)
   const hostname_id = values.topic_hostname
     ? (hostnameMap.get(values.topic_hostname) ?? null)
@@ -34,6 +40,7 @@ export async function materializeTopicRecommendationInput(
 
   return {
     ...values,
+    ...urlIds,
     hostname_id,
     hostname_ids,
     embedding_content_sha,

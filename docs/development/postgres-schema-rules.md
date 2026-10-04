@@ -234,7 +234,7 @@ examples describe the review baseline, rather than the current generated snapsho
   - **Enum** when the values are defined in code and change only with a migration plus a code
     change (almost every case here).
   - **Lookup table** (`<thing>_types` rows, FK column `<thing>_type_id` or the natural key) when
-    rows carry attributes, or when new values arrive at runtime (`url_content_types`,
+    rows carry attributes, or when new values arrive at runtime (`media_types`,
     `user_permission_types`, `user_role_types`).
   - Columns with the same values share one enum (12 groups today, e.g. the three
     `scope_category` columns and the transparency `category` rollups). Conditional state checks
@@ -246,10 +246,10 @@ examples describe the review baseline, rather than the current generated snapsho
     sets them. An enum would reject a new value and lose the record.
     - A vendor we authenticate (`stripe_events.event_type`, `ses_bounce_events.bounce_sub_type`,
       `ai_usage_records.service_tier`, `verified_identities.document_type`): a lookup table that
-      the writer fills on first sight, using the `upsertUrlContentTypes` pattern
+      the writer fills on first sight, using the `upsertMediaTypes` pattern
       (`backend/services/urls/content-types.mts`: normalize, advisory lock, insert).
     - MIME types (the 3 copyright email/evidence `mime_type` columns and
-      `rss_feed_items.enclosure_type`): an FK to the one MIME lookup table. `url_content_types`
+      `rss_feed_items.enclosure_type`): an FK to the one MIME lookup table. `media_types`
       becomes `media_types`, because it no longer holds only URL content types. The writer checks
       the `type/subtype` syntax and length before inserting, since strangers set these values.
     - Values strangers set before we trust them (`ap_inbox_activities.activity_type`,
@@ -265,8 +265,8 @@ examples describe the review baseline, rather than the current generated snapsho
 - Enum names are plural like tables: only the last word is plural (`invoice_statuses`, not
   `invoice_status` or `invoices_statuses`). About 20 renames: the 20 singular names (the two
   `agentic_runs_*` enums left with the agentic-run storage). `verified_identity_statuses` is unused and deleted. The two duplicate
-  pairs (`admin_import_types` = `user_import_request_entity_types`,
-  `community_visibility_types` = `privacy_types`) merge when they mean the same thing.
+  pairs (`import_entity_types` = `import_entity_types`,
+  `privacy_types` = `privacy_types`) merge when they mean the same thing.
 - **Lifecycle timestamps are the facts; status is never stored beside them.** 10 tables store
   both, and the two have to be kept in sync by large CHECKs (a 5-branch CHECK ties
   `copyright_notice_delivery_intents.state` to 5 timestamps).
@@ -306,7 +306,7 @@ examples describe the review baseline, rather than the current generated snapsho
   - Drop the column from 67 tables: 50 with a trigger that rejects UPDATE or allows only actor
     erasure (copyright legal records, classifier results, `agent_moderations`), and 17 that code
     only inserts (copyright evidence-retention previews and dispositions, `og_dependency_manifests`,
-    `url_content_types`, …). Check each for readers of the column (API `updatedAt` fields) first.
+    `media_types`, …). Check each for readers of the column (API `updatedAt` fields) first.
   - Add the trigger to 19 tables: 16 whose writers set `updated_at` by hand today (10 through
     UPDATE, including `membership_source_states` and the 4 `*_cleanup_progress` tables; 6 through
     `ON CONFLICT DO UPDATE`), and 3 whose `updated_at` is wrong today because nobody sets it

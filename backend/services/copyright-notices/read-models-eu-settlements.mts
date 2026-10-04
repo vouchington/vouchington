@@ -1,3 +1,4 @@
+import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { buildPageInfo } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
@@ -7,7 +8,11 @@ export type EuParticipantSettlement = {
   id: string
   body_name: string
   referred_at: Date
-  outcome: { result: string; decided_at: Date; implemented_at: Date | null } | null
+  outcome: {
+    result: FiniteValue<'copyright_eu_dispute_settlement_results'>
+    decided_at: Date
+    implemented_at: Date | null
+  } | null
 }
 export type EuStaffSettlement = EuParticipantSettlement & {
   referred_by_party: 'poster' | 'notifier'
@@ -20,7 +25,7 @@ type SettlementRow = {
   referred_at: Date
   referred_by_party: 'poster' | 'notifier'
   referred_by_user_id: string | null
-  result: string | null
+  result: FiniteValue<'copyright_eu_dispute_settlement_results'> | null
   decided_at: Date | null
   implemented_at: Date | null
 }

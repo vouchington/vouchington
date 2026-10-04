@@ -1,5 +1,5 @@
 import { upsertUrlHostnames } from '@services/urls-hostnames'
-import { upsertUrlContentTypes } from './content-types.mts'
+import { upsertMediaTypes } from './media-types.mts'
 import type { QueryOptions } from '@data-stores/psql/types'
 import type { ViewUrl } from './types.mts'
 import { getUrlsByIds, getUrlById } from './get.mts'
@@ -77,7 +77,7 @@ export const addUrls = async (
 
   let mimeTypeId: string | null = null
   if (content_type) {
-    mimeTypeId = await upsertUrlContentTypes(content_type, queryOptions)
+    mimeTypeId = await upsertMediaTypes(content_type, queryOptions)
   }
 
   const rows = await upsertUrlRows(

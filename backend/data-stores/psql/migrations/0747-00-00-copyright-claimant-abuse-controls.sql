@@ -3,10 +3,11 @@
 -- gated notice with a moderator, and the marker for restrictions lifted because their claimant was
 -- suspended. No table here suspends anyone.
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_claimant_misuse_events (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
-  outcome text NOT NULL CHECK (outcome IN (
+  outcome copyright_claimant_misuse_event_outcomes NOT NULL CHECK (outcome IN (
     'notice_withdrawn',
     'notice_rejected',
     'restriction_reversed_by_counter_notice',
@@ -37,10 +38,11 @@ CREATE TABLE copyright_claimant_misuse_events (
 CREATE INDEX idx_copyright_claimant_misuse_events__notice
   ON copyright_claimant_misuse_events (copyright_notice_id, id DESC);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_automatic_withholding_refusals (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_submission_id uuid NOT NULL UNIQUE REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
-  reason text NOT NULL CHECK (reason IN (
+  reason copyright_automatic_withholding_refusal_reasons NOT NULL CHECK (reason IN (
     'thresholds_unset',
     'switch_on_unrecorded',
     'received_before_switch_on',

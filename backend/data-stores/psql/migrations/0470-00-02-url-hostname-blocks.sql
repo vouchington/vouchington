@@ -1,10 +1,11 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- edited-in-place: pre-launch, never deployed to production
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS url_hostname_blocks (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   url_hostname_id UUID NOT NULL REFERENCES url_hostnames ON DELETE CASCADE,
   blocked_by_id UUID REFERENCES users ON DELETE SET NULL,
-  blocked_source TEXT NOT NULL DEFAULT 'admin',
+  blocked_source url_hostname_block_sources NOT NULL DEFAULT 'admin',
   reason TEXT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,

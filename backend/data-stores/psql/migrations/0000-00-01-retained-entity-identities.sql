@@ -38,10 +38,11 @@ COMMENT ON TABLE retained_image_identities IS 'Concrete image byte identity reta
 CREATE TABLE IF NOT EXISTS retained_image_identities_default
   PARTITION OF retained_image_identities DEFAULT;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS retained_image_placement_bindings (
   placement_id UUID PRIMARY KEY,
   image_id UUID NOT NULL REFERENCES retained_image_identities (id) ON DELETE RESTRICT,
-  binding_family TEXT NOT NULL CHECK (binding_family IN ('post', 'surface')),
+  binding_family image_binding_families NOT NULL CHECK (binding_family IN ('post', 'surface')),
   UNIQUE (placement_id, image_id),
   UNIQUE (placement_id, image_id, binding_family)
 ) PARTITION BY RANGE (placement_id);
@@ -61,8 +62,9 @@ BEFORE UPDATE OF placement_id, image_id, binding_family ON retained_image_placem
 FOR EACH ROW
   WHEN (ROW(OLD.placement_id, OLD.image_id, OLD.binding_family) IS DISTINCT FROM ROW(NEW.placement_id, NEW.image_id, NEW.binding_family)) EXECUTE FUNCTION fn_reject_mutation();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS retained_identity_cleanup_progress (
-  family TEXT PRIMARY KEY CHECK (family IN ('user', 'api_key', 'topic', 'post', 'rss_feed_item', 'image', 'image_placement_binding')),
+  family retained_identity_cleanup_families PRIMARY KEY CHECK (family IN ('user', 'api_key', 'topic', 'post', 'rss_feed_item', 'image', 'image_placement_binding')),
   cursor_identity_id UUID,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

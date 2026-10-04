@@ -10,7 +10,6 @@ import { normalizeHashtag } from '@ts-shared/utils'
 import assert from 'http-assert'
 import type { TopicAlias, TopicAliasOptions } from './alias-types.mts'
 import { invalidatePostsForTopicAliases } from './invalidate-posts-for-topic-aliases.mts'
-import { updateTopicAliasesField } from './update-aliases-field.mts'
 import { recordTopicAliasPublicationChanges } from './publication-change.mts'
 import { lockTopicAliasPublicationScopes } from '@services/post-publication'
 
@@ -92,7 +91,6 @@ export async function unlinkTopicAlias(
           },
         ])
       }
-      await updateTopicAliasesField(existing.topic_id, { query, skipSideEffects: true })
       if (options.revisedById) {
         await createTopicRevision(
           existing.topic_id,

@@ -1,3 +1,4 @@
+import { resolveEnclosureMediaTypes } from './enclosure-media-types.mts'
 import type { RssFeedItemWithHash } from './upsert-prepare.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import { buildUpsertRssFeedItemsQuery } from './upsert-content-query.mts'
@@ -152,7 +153,8 @@ export async function upsertRssFeedItemContent(
     identityIdsByGuid.set(row.guid, row.id)
     identityGuidsById.set(row.id, row.guid)
   }
-  const query = buildUpsertRssFeedItemsQuery(identityIdsByGuid, itemsToUpsert)
+  const mediaTypeIds = await resolveEnclosureMediaTypes(itemsToUpsert, txQuery)
+  const query = buildUpsertRssFeedItemsQuery(identityIdsByGuid, itemsToUpsert, mediaTypeIds)
   const { rows } = await txQuery<UpsertedRssFeedItemContentRow>(query.text, query.values)
   const upserted: Array<UpsertedRssFeedItemContentRow & { guid: string }> = []
   for (const row of rows) upserted.push({ ...row, guid: identityGuidsById.get(row.id)! })
