@@ -44,7 +44,8 @@ export async function activateCommunityRestrictions(
   assert(currentUserCanModerateCommunity(currentUser, community, membership), 403, 'Forbidden')
 
   await using query = await beginTransaction()
-  await lockCommunityRestrictionWrites(query, communityId)
+  const lockedCommunity = await lockCommunityRestrictionWrites(query, communityId, currentUser.id)
+  assert(!lockedCommunity.archived_at, 403, 'Community is archived')
   if (input.expiresAt !== null) {
     assert(input.expiresAt > new Date(), 422, 'expires_at must be in the future')
   }

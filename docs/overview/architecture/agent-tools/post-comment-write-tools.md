@@ -49,5 +49,8 @@ Community restriction activation and lifting acquire the same physical community
 (`FOR NO KEY UPDATE`) as delegated contribution decisions, before reading or changing the active
 restriction set, and retain it through commit. A writer that wins the fence determines the policy
 seen by the next contribution; ordinary foreign-key inserts remain compatible.
+Restriction writers take actor lifecycle and moderator membership fences before the community
+row, then recheck authorization. Activation rechecks archive status and expiry after waiting;
+lifting evaluates expiry and records its timestamp using the post-fence statement clock.
 
 Delegated creation and replies reject archived communities under the retained community row fence. Own-user edits and deletions preserve REST access in archived communities.

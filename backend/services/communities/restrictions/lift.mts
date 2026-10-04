@@ -22,7 +22,7 @@ export async function liftCommunityRestriction(
 
   let restrictionType: string | null = null
   await using query = await beginTransaction()
-  await lockCommunityRestrictionWrites(query, communityId)
+  await lockCommunityRestrictionWrites(query, communityId, currentUser.id)
   const { rows } = await write(
     sql`/* liftCommunityRestriction:find-active */
     SELECT restriction_type
@@ -30,7 +30,7 @@ export async function liftCommunityRestriction(
     WHERE id = ${restrictionId}
       AND community_id = ${communityId}
       AND lifted_at IS NULL
-      AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+      AND (expires_at IS NULL OR expires_at > statement_timestamp())
     LIMIT 1
     `,
     { query },
@@ -41,7 +41,7 @@ export async function liftCommunityRestriction(
   await write(
     sql`/* liftCommunityRestriction */
     UPDATE community_restrictions
-    SET lifted_at = CURRENT_TIMESTAMP,
+    SET lifted_at = statement_timestamp(),
         lifted_by_id = ${currentUser.id}
     WHERE id = ${restrictionId}
       AND lifted_at IS NULL
