@@ -29,7 +29,7 @@ vi.mock(import('@/components/my/spending-categories-manager'), () => ({
 import SpendingCategoriesPage from './page'
 
 describe('SpendingCategoriesPage', () => {
-  it('passes the complete bounded first page to the manager', async () => {
+  it('renders the shared settings header and passes the complete bounded first page to the manager', async () => {
     getMySpendingCategoriesMock.mockResolvedValue({
       results: [
         {
@@ -47,6 +47,15 @@ describe('SpendingCategoriesPage', () => {
     render(await SpendingCategoriesPage())
 
     expect(getMySpendingCategoriesMock).toHaveBeenCalledWith({ limit: 25 })
+    expect(document.querySelector('[data-pw="settings-page-header"]')).toBeInTheDocument()
+    expect(document.querySelector('[data-pw="settings-page-header-title"]')).toHaveTextContent(
+      'extracted.spendingCategories.page.spendingCategories_3ed30dfb',
+    )
+    expect(
+      document.querySelector('[data-pw="settings-page-header-description"]'),
+    ).toHaveTextContent(
+      'extracted.spendingCategories.page.manageYourSpendingCategoriesAndAmounts_72fd1919',
+    )
     expect(screen.getByTestId('spending-categories-page-data')).toHaveTextContent(
       'Coffee|cursor-end',
     )

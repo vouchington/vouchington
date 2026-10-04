@@ -1,11 +1,12 @@
 export const dynamic = 'force-dynamic'
 
 import type { Metadata } from 'next'
-import { createNoIndexMetadata } from '@/lib/seo/metadata'
+import { SettingsPageHeader } from '@/components/my/settings-page-header'
 import { getMyIdentityVerification } from '@/lib/api/server/my'
-import { IdentityVerificationContent } from './identity-verification-content'
-import { getTranslations } from '@/lib/i18n/get-translations'
 import { getResolvedUiLocale } from '@/lib/i18n/get-resolved-ui-locale'
+import { getTranslations } from '@/lib/i18n/get-translations'
+import { createNoIndexMetadata } from '@/lib/seo/metadata'
+import { IdentityVerificationContent } from './identity-verification-content'
 import { formatVerificationFee } from './verification-fee'
 
 export const metadata: Metadata = createNoIndexMetadata('Identity Verification')
@@ -19,17 +20,12 @@ export default async function IdentityVerificationPage() {
 
   return (
     <div className='space-y-6'>
-      <div>
-        <h1
-          data-pw='identity-verification-page-heading'
-          className='text-2xl font-bold'
-        >
-          {t('extracted.identityVerification.page.identityVerification_11c4c9be')}
-        </h1>
-        <p className='text-sm text-muted-foreground'>
-          {t('extracted.identityVerification.page.verifyYourIdentityWithAGovernment_0b76ee2c')}
-        </p>
-      </div>
+      <SettingsPageHeader
+        title={t('extracted.identityVerification.page.identityVerification_11c4c9be')}
+        description={t(
+          'extracted.identityVerification.page.verifyYourIdentityWithAGovernment_0b76ee2c',
+        )}
+      />
       <IdentityVerificationContent
         verificationStatus={data.verification_status}
         verifiedBadgeVisible={data.is_verified_badge_visible}

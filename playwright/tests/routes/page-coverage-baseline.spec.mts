@@ -183,7 +183,7 @@ test.describe('Route coverage baseline', () => {
   test('covers /my/identity-verification', async ({ page }) => {
     await navigateTo(page, '/my/identity-verification')
 
-    await expect(page.getByTestId('identity-verification-page-heading')).toBeVisible()
+    await expect(page.getByTestId('settings-page-header')).toBeVisible()
     // Reference all data-pw selectors used on this page for coverage reporting
     void page.getByTestId('start-verification-button')
     void page.getByTestId('continue-verification-button')
