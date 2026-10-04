@@ -742,11 +742,6 @@
 - `topic`
 - `rss_feed`
 
-## `list_item_types`
-
-- `rss_feed_item`
-- `post`
-
 ## `list_visibilities`
 
 - `private`
@@ -1573,6 +1568,11 @@
 - `referral_link`
 - `topic_group`
 - `link`
+
+## `user_list_item_types`
+
+- `rss_feed_item`
+- `post`
 
 ## `user_privacy_audiences`
 

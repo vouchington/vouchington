@@ -647,31 +647,6 @@ UNION ALL
    FROM relation__rss_feed_item__category__topic_alias__votes;
 ```
 
-## `view_list_items`
-
-```sql
- SELECT li.id,
-    li.user_list_id AS list_id,
-    'rss_feed_item'::list_item_types AS item_type,
-    li.rss_feed_item_id AS entity_id,
-    li.order_index,
-    li.created_at,
-    (rfi.media_type)::text AS media_type
-   FROM (user_list_rss_feed_items li
-     JOIN rss_feed_items rfi ON (((rfi.id = li.rss_feed_item_id) AND (rfi.deleted_at IS NULL))))
-  WHERE (li.removed_at IS NULL)
-UNION ALL
- SELECT li.id,
-    li.user_list_id AS list_id,
-    'post'::list_item_types AS item_type,
-    li.post_id AS entity_id,
-    li.order_index,
-    li.created_at,
-    NULL::text AS media_type
-   FROM user_list_posts li
-  WHERE (li.removed_at IS NULL);
-```
-
 ## `view_memberships`
 
 ```sql
@@ -1203,6 +1178,31 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
     row_to_json(view_url_hostnames.*) AS hostname
    FROM (urls
      JOIN view_url_hostnames ON ((urls.hostname_id = view_url_hostnames.id)));
+```
+
+## `view_user_list_items`
+
+```sql
+ SELECT li.id,
+    li.user_list_id AS list_id,
+    'rss_feed_item'::user_list_item_types AS item_type,
+    li.rss_feed_item_id AS entity_id,
+    li.order_index,
+    li.created_at,
+    (rfi.media_type)::text AS media_type
+   FROM (user_list_rss_feed_items li
+     JOIN rss_feed_items rfi ON (((rfi.id = li.rss_feed_item_id) AND (rfi.deleted_at IS NULL))))
+  WHERE (li.removed_at IS NULL)
+UNION ALL
+ SELECT li.id,
+    li.user_list_id AS list_id,
+    'post'::user_list_item_types AS item_type,
+    li.post_id AS entity_id,
+    li.order_index,
+    li.created_at,
+    NULL::text AS media_type
+   FROM user_list_posts li
+  WHERE (li.removed_at IS NULL);
 ```
 
 ## `view_user_metrics`
