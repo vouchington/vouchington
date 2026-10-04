@@ -1,4 +1,3 @@
-import type { Job } from 'glide-mq'
 import { parseEmbeddingScanCursor } from '@queues/bedrock-embeddings-batch/payload/job-payload'
 import type { EmbeddingScanCursor } from '@queues/bedrock-embeddings-batch/types'
 import type { BatchJobType } from '@services/bedrock-embeddings/batch/types'
@@ -15,16 +14,10 @@ import {
   addImageToBatch,
 } from '@services/bedrock-embeddings-batch/entities/images'
 
-export type EmbeddingCreationJob = Pick<Job, 'data' | 'updateData' | 'moveToDelayed'>
-
-export async function delayEmbeddingCreationJob(
-  job: EmbeddingCreationJob,
-  cursor: EmbeddingScanCursor | undefined,
-  delayMs = 0,
-): Promise<never> {
-  await job.updateData(cursor ? { cursor } : {})
-  return job.moveToDelayed(Date.now() + delayMs)
-}
+import {
+  delayEmbeddingCreationJob,
+  type EmbeddingCreationJob,
+} from '@queues/bedrock-embeddings-batch/payload/creation-deferral'
 
 const textStreams = {
   topics: streamPendingTopics,

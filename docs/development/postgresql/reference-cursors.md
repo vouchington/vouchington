@@ -15,7 +15,8 @@ Cursor batch size bounds memory. Scheduled callers also provide a registered Dyn
 `maxRows` budget, which adds an outer SQL `LIMIT` with one lookahead row and returns
 `{ rowsRead, hasMore, lastRow }`. `rowsRead` counts delivered rows, excluding lookahead.
 Breaking early closes the cursor; handler completion is acknowledged only after the final
-batch succeeds. Complete user-requested account exports may omit the work budget.
+batch succeeds. Complete user-requested account exports may omit the work budget and retain the underlying
+generator fetch default. Handler callers supply a configured batch size.
 
 A cap needs a resume strategy. Mutation-backed selectors can query pending state again.
 Enqueue-only selectors retain a fixed sweep cutoff and a stable keyset position in queue

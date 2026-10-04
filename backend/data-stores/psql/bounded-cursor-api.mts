@@ -58,7 +58,7 @@ export function createBoundedCursorApi(psql: Psql) {
       | (BoundedCursorOptions<Row> & { handler: (rows: Row[]) => Promise<void> }),
     options?: BoundedCursorOptions<Row> & { handler: (rows: Row[]) => Promise<void> },
   ): Promise<CursorRunResult<Row>> {
-    const resolved = resolveOptions(input, valuesOrOptions, options ?? {})
+    const resolved = resolveOptions(input, valuesOrOptions, options ?? {}, true)
     const handler = (resolved.options as typeof options)?.handler
     if (!handler) throw new Error('handler is required')
     let result: CursorRunResult<Row> = { rowsRead: 0, hasMore: false }
@@ -91,15 +91,17 @@ function resolveOptions<Row>(
   input: QueryInput,
   valuesOrOptions: QueryValues | BoundedCursorOptions<Row> | undefined,
   options: BoundedCursorOptions<Row>,
+  requireBatchSize = false,
 ) {
   const finalOptions =
     valuesOrOptions && !Array.isArray(valuesOrOptions)
       ? (valuesOrOptions as BoundedCursorOptions<Row>)
       : options
+  if (requireBatchSize && finalOptions.batchSize === undefined)
+    throw new RangeError('batchSize must be a positive safe integer')
   if (
-    finalOptions.batchSize === undefined ||
-    !Number.isSafeInteger(finalOptions.batchSize) ||
-    finalOptions.batchSize < 1
+    finalOptions.batchSize !== undefined &&
+    (!Number.isSafeInteger(finalOptions.batchSize) || finalOptions.batchSize < 1)
   )
     throw new RangeError('batchSize must be a positive safe integer')
   const values = Array.isArray(valuesOrOptions)
@@ -109,7 +111,7 @@ function resolveOptions<Row>(
       : input.values
   if (finalOptions.maxRows === undefined) return { input, values, options: finalOptions }
   const maxRows = finalOptions.maxRows
-  if (!Number.isSafeInteger(maxRows) || maxRows < 1)
+  if (!Number.isSafeInteger(maxRows) || maxRows < 1 || maxRows === Number.MAX_SAFE_INTEGER)
     throw new RangeError('maxRows must be a positive safe integer')
   const text = typeof input === 'string' ? input : input.text
   const annotation = extractLeadingQueryAnnotation(text) ?? 'boundedCursor'

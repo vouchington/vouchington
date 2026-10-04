@@ -77,7 +77,7 @@ export function enqueueUnfurlReferralLinksDispatcher(
     ...(cursor
       ? {
           deduplication: {
-            id: `referral-unfurl:${cursor.sweepStartedAt}:${cursor.afterId}`,
+            id: `referral-unfurl:${cursor.sweepStartedAt}:${cursor.after?.requestedAt}:${cursor.after?.id}`,
             mode: 'throttle' as const,
             ttl: UNFURL_REFERRAL_LINKS_DEFAULTS.deduplicationTtlMs,
           },

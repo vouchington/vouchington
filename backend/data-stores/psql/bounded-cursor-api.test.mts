@@ -7,6 +7,14 @@ import { readBoundedCursorConnectionProbeForTest } from '@voucha/test-helpers/bo
 import { createAsyncGeneratorFromCursor, executeHandlerWithCursorInBatches } from './setup.mts'
 
 describe('bounded cursor execution', () => {
+  it('preserves the underlying fetch default for complete generators without options', async () => {
+    const rows: number[] = []
+    for await (const row of createAsyncGeneratorFromCursor<{ id: number }>(
+      createBoundedCursorSeriesInputForTest(2),
+    ))
+      rows.push(row.id)
+    expect(rows).toEqual([1, 2])
+  })
   it('reports progress after SQLInput handlers with second-argument options', async () => {
     const events: string[] = []
     const rows: number[] = []
@@ -94,6 +102,15 @@ describe('bounded cursor execution', () => {
         handler: async () => {},
       }),
     ).rejects.toThrow('batchSize')
+  })
+  it('rejects a row cap whose lookahead exceeds safe integer precision', async () => {
+    await expect(
+      executeHandlerWithCursorInBatches(createBoundedCursorSeriesInputForTest(), {
+        batchSize: 1,
+        maxRows: Number.MAX_SAFE_INTEGER,
+        handler: async () => {},
+      }),
+    ).rejects.toThrow('maxRows')
   })
   it.each([0, -1, 1.5, Number.POSITIVE_INFINITY])(
     'rejects invalid batch and row bounds %s before invoking handlers',

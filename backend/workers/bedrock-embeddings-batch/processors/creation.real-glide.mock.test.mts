@@ -13,7 +13,7 @@ import {
   cleanupTestEmbeddingsBatches,
 } from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
 import { createEmbeddingCreationWorker } from '../workers/bedrock-embeddings-batch-creation.mts'
-import { delayEmbeddingCreationJob } from './creation.mts'
+import { delayEmbeddingCreationJob } from '@queues/bedrock-embeddings-batch/payload/creation-deferral'
 import { getIsolatedDatabaseCaseMode } from '../../../../test-helpers/vitest-isolated-database-cases.mts'
 import { runIsolatedDatabaseCase } from '../../../../test-helpers/vitest-isolated-database-case.mts'
 

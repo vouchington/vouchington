@@ -37,8 +37,6 @@ export {
   processPostEmbeddingTriggerRecovery,
 } from './processors/reconciliation.mts'
 
-export { processEmbeddingCreationJob } from './processors/creation.mts'
-
 export const processBatchPolling = async (
   batchId: string,
 ): Promise<{ success: boolean; processed?: boolean; status?: string }> => {

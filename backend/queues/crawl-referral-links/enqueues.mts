@@ -84,7 +84,7 @@ export function enqueueCrawlReferralLinksDispatcher(
     ...(data.cursor
       ? {
           deduplication: {
-            id: `referral-crawl:${data.urlId ?? 'scheduled'}:${JSON.stringify(data.referralLinkIds ?? [])}:${data.cursor.sweepStartedAt}:${data.cursor.afterId}`,
+            id: `referral-crawl:${data.urlId ?? 'scheduled'}:${JSON.stringify(data.referralLinkIds ?? [])}:${data.cursor.sweepStartedAt}:${data.cursor.afterWork?.dueAt}:${data.cursor.afterWork?.id}:${data.cursor.afterId}`,
             mode: 'throttle' as const,
             ttl: CRAWL_REFERRAL_LINKS_DEFAULTS.deduplicationTtlMs,
           },

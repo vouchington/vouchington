@@ -7,7 +7,6 @@ import {
 
 import { getDispatchLimits } from './work-limits.mts'
 import type { UnfurlDispatchCursor } from '@queues/unfurl-referral-links/types'
-import { getMinUUIDv7ForDate } from '@modules/utils'
 
 /**
  * Self-heals parents stuck requested-but-not-completed (e.g. a crashed/lost job) by
@@ -20,21 +19,23 @@ import { getMinUUIDv7ForDate } from '@modules/utils'
 export async function dispatchUnfurlReferralLinks(cursor?: UnfurlDispatchCursor) {
   const limits = getDispatchLimits()
   const sweepStartedAt = cursor?.sweepStartedAt ?? new Date().toISOString()
-  const upperId = getMinUUIDv7ForDate(new Date(sweepStartedAt))
   const queryStatement = sql`/* dispatchUnfurlReferralLinks */
-    SELECT id
+    SELECT id, unfurl_requested_at::text AS requested_at
     FROM user_referral_program_links
-    WHERE id < ${upperId}::uuid
-      AND (${cursor?.afterId ?? null}::uuid IS NULL OR id > ${cursor?.afterId ?? null}::uuid)
-      AND unfurl_requested_at <= ${sweepStartedAt}::timestamptz
+    WHERE unfurl_requested_at <= ${sweepStartedAt}::timestamptz
       AND unfurl_completed_at IS NULL
       AND unfurl_failed_at IS NULL
       AND deleted_at IS NULL
-    ORDER BY id
   `
 
+  if (cursor?.after)
+    queryStatement.append(
+      sql` AND (unfurl_requested_at, id) > (${cursor.after.requestedAt}::timestamptz, ${cursor.after.id}::uuid)`,
+    )
+  queryStatement.append(' ORDER BY unfurl_requested_at, id')
+
   let total = 0
-  const result = await executeHandlerWithCursorInBatches<{ id: string }>(
+  const result = await executeHandlerWithCursorInBatches<{ id: string; requested_at: string }>(
     queryStatement,
     undefined,
     {
@@ -51,6 +52,9 @@ export async function dispatchUnfurlReferralLinks(cursor?: UnfurlDispatchCursor)
     },
   )
   if (result.hasMore && result.lastRow)
-    await enqueueUnfurlReferralLinksDispatcher({ sweepStartedAt, afterId: result.lastRow.id })
+    await enqueueUnfurlReferralLinksDispatcher({
+      sweepStartedAt,
+      after: { requestedAt: result.lastRow.requested_at, id: result.lastRow.id },
+    })
   return { count: total, hasMore: result.hasMore }
 }

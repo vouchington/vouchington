@@ -46,7 +46,7 @@ describe('bounded referral crawl dispatch', () => {
     })
     const data = jobs
       .map(job => job.data as ReferralCrawlDispatchData)
-      .find(data => data.cursor?.afterId === ids[0])!
+      .find(data => data.cursor?.afterWork?.id === ids[0])!
     expect(data.referralLinkIds).toEqual(ids)
     expect(await dispatchReferralLinkCrawls({ ...data, computeHostnameRateLimitMs })).toEqual({
       count: 1,
@@ -55,7 +55,7 @@ describe('bounded referral crawl dispatch', () => {
     expect(
       await dispatchReferralLinkCrawls({
         ...data,
-        cursor: { ...data.cursor!, afterId: ids[1]! },
+        cursor: { ...data.cursor!, afterWork: { dueAt: '-infinity', id: ids[1]! } },
         computeHostnameRateLimitMs,
       }),
     ).toEqual({ count: 1, hasMore: false })
