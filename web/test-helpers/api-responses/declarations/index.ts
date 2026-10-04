@@ -4,6 +4,7 @@ import { CARDS_DECLARATIONS } from './cards'
 import { COPYRIGHT_DECLARATIONS } from './copyright'
 import { COPYRIGHT_EMAIL_INTAKE_DECLARATIONS } from './copyright-email-intakes'
 import { COPYRIGHT_EU_DECLARATIONS } from '../../copyright-eu-fixture-declarations'
+import { COPYRIGHT_EU_REPORT_DECLARATIONS } from '../../copyright-eu-report-fixture-declarations'
 import { COMMUNITIES_CORE_DECLARATIONS } from './communities-core'
 import { COMMUNITY_AUTOMATION_DECLARATIONS } from './community-automation'
 import { COMMUNITY_LISTS_MODERATION_DECLARATIONS } from './community-lists-moderation'
@@ -30,6 +31,7 @@ export const WEB_API_FIXTURE_DECLARATIONS = [
   ...COPYRIGHT_DECLARATIONS,
   ...COPYRIGHT_EMAIL_INTAKE_DECLARATIONS,
   ...COPYRIGHT_EU_DECLARATIONS,
+  ...COPYRIGHT_EU_REPORT_DECLARATIONS,
   ...COMMUNITIES_CORE_DECLARATIONS,
   ...COMMUNITY_AUTOMATION_DECLARATIONS,
   ...COMMUNITY_LISTS_MODERATION_DECLARATIONS,
