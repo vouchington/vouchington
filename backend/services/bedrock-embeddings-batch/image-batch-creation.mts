@@ -58,6 +58,7 @@ export async function processImageBatchCreation<T extends { id: string }>(
   const carriedIds: string[] = []
   let boundaryId: string | undefined
   let submitted = false
+  let shouldContinue = false
   const attemptedIds = new Set<string>()
   try {
     for await (const image of params.streamPending(streamOptions)) {
@@ -86,6 +87,7 @@ export async function processImageBatchCreation<T extends { id: string }>(
         break
     }
 
+    shouldContinue = true
     if (fileBuilder.getEntityCount() === 0) {
       if (attempted === 0) return { empty: true, hasMore: progress.hasMore }
 
@@ -102,15 +104,17 @@ export async function processImageBatchCreation<T extends { id: string }>(
       return { empty: true, hasMore: progress.hasMore }
     }
 
+    shouldContinue = false
     const { filePath, entityIdsFilePath, entityCount, inputSizeMB } = await fileBuilder.close()
     await dependencies.createBatch(filePath, 'images', entityCount, entityIdsFilePath, {
       inputSizeMB,
     })
     submitted = true
+    shouldContinue = true
     return { success: true, hasMore: progress.hasMore }
   } finally {
     await fileBuilder.cleanup()
-    if (progress.hasMore && progress.cursor) {
+    if (shouldContinue && progress.hasMore && progress.cursor) {
       const unattempted = progress.cursor.pendingImageIds?.filter(id => !attemptedIds.has(id)) ?? []
       const pendingImageIds = [
         ...new Set([

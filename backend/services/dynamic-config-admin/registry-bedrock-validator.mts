@@ -14,6 +14,10 @@ export function validateBedrockBatchConfig(next: DynamicConfigFields): void {
       )
     }
   }
+  for (const ceiling of ['max_requests_per_file', 'max_requests_per_hour']) {
+    if (Number(next.min_records_per_job) > Number(next[ceiling]))
+      throw new DynamicConfigValidationError(`min_records_per_job must be <= ${ceiling}`)
+  }
   if (
     Number(next.max_file_size_gb) * 1024 <
     minimumImageBatchSizeMB(Number(next.min_records_per_job))

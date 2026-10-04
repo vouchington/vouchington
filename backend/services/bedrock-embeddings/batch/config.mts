@@ -88,6 +88,14 @@ export function getStaleTtlHours(): number {
 
 export function getPendingEmbeddingScanLimits(images = false) {
   const maxRows = positiveInteger('max_scan_rows_per_run')
+  const minimum = positiveInteger('min_records_per_job')
+  if (
+    minimum > positiveInteger('max_requests_per_file') ||
+    minimum > positiveInteger('max_requests_per_hour')
+  )
+    throw new RangeError(
+      'Embedding minimum records must fit the per-file and hourly request ceilings',
+    )
   if (maxRows < positiveInteger('min_records_per_job'))
     throw new RangeError('Embedding scan budget must cover the minimum records per job')
   if (

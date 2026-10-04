@@ -78,6 +78,10 @@ converted-image record size, including base64 and the canonical JSON framing. Ef
 provider capacity below that minimum schedules a retry using `creation_retry_delay_ms`; it does not
 scan or abandon a partial page. These constraints preserve the configured work cap.
 
+Capacity checks cover the exact JSON framing and worst-case escaping for text records as well as
+base64 image records. Stored minima must fit both hourly and per-file request ceilings. Cloud
+submission failures leave retries to the current job and do not also spawn a forward continuation.
+
 ## Related
 
 - Base single-pipeline service and shared architecture diagram:

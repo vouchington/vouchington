@@ -1,3 +1,4 @@
+import { minimumTextBatchSizeMB } from '@services/bedrock-embeddings/batch/input-size-limits'
 import type { BatchCreationDependencies, CreateBatchResult } from './types.mts'
 export type { BatchCreationDependencies, CreateBatchResult } from './types.mts'
 import {
@@ -61,12 +62,15 @@ export async function processBatchCreation<T extends BatchEntity>(
     return { reEnqueued: true, reason: limits.reason, hasMore: true }
   }
 
-  if (limits.maxRecords < limits.minRecords) {
+  if (
+    limits.maxRecords < limits.minRecords ||
+    limits.maxSizeMB < minimumTextBatchSizeMB(limits.minRecords)
+  ) {
     await params.reEnqueue(
       params.cursor ?? { sweepStartedAt: new Date().toISOString() },
       getEmbeddingCreationRetryDelayMs(),
     )
-    return { reEnqueued: true, reason: 'minimum_record_capacity_unavailable', hasMore: true }
+    return { reEnqueued: true, reason: 'minimum_text_capacity_unavailable', hasMore: true }
   }
   let progress: { hasMore: boolean; cursor?: EmbeddingScanCursor } = { hasMore: false }
   const streamOptions: PendingScanOptions = {
@@ -75,6 +79,7 @@ export async function processBatchCreation<T extends BatchEntity>(
       progress = result
     },
   }
+  let shouldContinue = false
   const fileBuilder = new BatchFileBuilder()
   try {
     const boundary = await streamEntityBatchUntilLimit(
@@ -82,6 +87,7 @@ export async function processBatchCreation<T extends BatchEntity>(
       fileBuilder,
       limits,
     )
+    shouldContinue = true
     if (boundary && progress.cursor) {
       const row = boundary as T & { crawl_id?: string; order_index?: number }
       progress.cursor = {
@@ -94,14 +100,17 @@ export async function processBatchCreation<T extends BatchEntity>(
     if (fileBuilder.getEntityCount() < limits.minRecords)
       return { empty: true, hasMore: progress.hasMore }
 
+    shouldContinue = false
     const { filePath, entityIdsFilePath, entityCount, inputSizeMB } = await fileBuilder.close()
     await dependencies.createBatch(filePath, params.jobType, entityCount, entityIdsFilePath, {
       inputSizeMB,
     })
+    shouldContinue = true
     return { success: true, hasMore: progress.hasMore }
   } finally {
     await fileBuilder.cleanup()
-    if (progress.hasMore && progress.cursor) await params.reEnqueue(progress.cursor)
+    if (shouldContinue && progress.hasMore && progress.cursor)
+      await params.reEnqueue(progress.cursor)
   }
 }
 
