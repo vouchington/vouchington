@@ -64,6 +64,10 @@ const routeClasses = {
     'POST:/api/v1/copyright-uk-notices/:id/redress-requests/:redressId/decisions',
     'POST:/api/v1/copyright-uk-notices/:id/reviews',
   ],
+  unsupportedMethod: [
+    'DELETE:/api/v1/copyright-trusted-flaggers/:id',
+    'PATCH:/api/v1/copyright-trusted-flaggers/:id',
+  ],
 }
 const openRoutes = [...routeClasses.inCaseResponse, ...routeClasses.staff]
 
@@ -134,6 +138,12 @@ describe('copyright routes with intake switched off', () => {
     expect(response.status).not.toBe(503)
     expect(response.body.message).not.toBe(KILL_SWITCH_MESSAGE)
   })
+
+  it.each(routeClasses.unsupportedMethod)('rejects unsupported %s with Allow: GET', async route => {
+    const response = await send(createRequest(), route)
+    expect(response.status).toBe(405)
+    expect(response.headers.allow).toBe('GET')
+  })
 })
 
 describe('copyright routes with intake switched on', () => {
@@ -142,5 +152,11 @@ describe('copyright routes with intake switched on', () => {
   it.each(routeClasses.newIntake)('lets %s past the intake guard', async route => {
     const response = await send(createRequest(), route)
     expect(response.status).not.toBe(503)
+  })
+
+  it.each(routeClasses.unsupportedMethod)('still rejects unsupported %s', async route => {
+    const response = await send(createRequest(), route)
+    expect(response.status).toBe(405)
+    expect(response.headers.allow).toBe('GET')
   })
 })
