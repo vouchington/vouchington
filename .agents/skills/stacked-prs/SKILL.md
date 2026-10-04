@@ -53,7 +53,7 @@ Use only these non-interactive forms:
 - `gh stack sync` — fast-forward against `origin/main`. Do not check out `main`.
 - `gh stack push`
 - `gh stack up <n>`, `gh stack down <n>`, `gh stack top`, `gh stack bottom` (movement only)
-- `gh stack merge <pr> --yes --squash` — see [Merge the bottom layer as soon as it is ready](#merge-the-bottom-layer-as-soon-as-it-is-ready). The PR-number selector is required; bare `gh stack merge` stays banned below. Always include both flags: `--yes` skips the confirmation prompt a non-interactive command runner cannot answer, and `--squash` is the required strategy.
+- `gh stack merge <pr> --yes --squash` — see [Merge every ready bottom layer at once](#merge-every-ready-bottom-layer-at-once). The PR-number selector is required; bare `gh stack merge` stays banned below. Always include both flags: `--yes` skips the confirmation prompt a non-interactive command runner cannot answer, and `--squash` is the required strategy.
 - `gh stack unstack <branch>` / `gh stack delete <branch>` — recovery from a mis-rooted stack. Both
   remove tracking only; pull requests and local branches are preserved, and a merged, merging, or
   queued PR cannot be removed. `unstack` is `delete`'s default-form alias.
@@ -129,10 +129,11 @@ Use the **single-stack** endpoint for one stack's layers — the list form retur
 explicitly (report "stack membership unknown", never assume unstacked) rather than treat a missing
 field as a negative result.
 
-## Procedure: shepherd concurrently, merge serially with a human
+## Procedure: shepherd concurrently, merge the ready prefix with a human
 
-The shape: shepherding a layer to ready and merging a layer are different acts. The first covers
-every PR this agent owns in the stack at once; the second is serial and is never the agent's decision.
+The shape: shepherding a layer to ready and merging are different acts. The first covers every PR
+this agent owns in the stack at once. The second lands every ready bottom layer in one command and
+is never the agent's decision.
 
 ### Who runs the stack
 
@@ -199,9 +200,9 @@ merge policy:
   lower layer is in decent shape. On `FIX_CODE`, finish those instructions on the owning layer
   before more upper edits. A ready-delay schedules the rerun; continue work already owned on a
   later layer, and do not invent unrelated work.
-- **Merging is the human's decision, per layer.** Never run a merge command pr-shepherd prints without
-  that layer's explicit approval and the checks in
-  [Merge the bottom layer as soon as it is ready](#merge-the-bottom-layer-as-soon-as-it-is-ready):
+- **Merging is the human's decision.** Never run a merge command pr-shepherd prints unless the
+  human's approval covers that layer and every open layer below it, and the checks in
+  [Merge every ready bottom layer at once](#merge-every-ready-bottom-layer-at-once) pass:
   `gh stack merge <pr>` lands that PR and every layer below it.
 
 **Mutating git does not parallelize.** A layer fix runs `./dev/rebase-onto-main --stack`,
@@ -231,9 +232,9 @@ on a merge decision, or genuinely blocked — apply the `needs-human` label and 
 escalation event (not per poll) with the layer's position and what it needs. Minimize a superseded
 escalation comment via the GraphQL `minimizeComment` mutation (`classifier: OUTDATED`) when a layer
 re-escalates. Clear the label once the layer stops needing a human. Relay a printed merge command in
-the comment for visibility, but do not present it as safe to run without the bottom-most-layer check
-below — GitHub's own readiness check for an upper layer does not require the layers below it to have
-merged first.
+the comment for visibility, but do not present it as safe to run without the ready-prefix checks
+below. pr-shepherd picks its target from READY receipts alone; it does not know what the human
+approved.
 
 ### C. Report, then let the human decide each merge
 
@@ -241,42 +242,56 @@ When the owned set has settled, present the stack bottom→top: each layer's num
 whether it is ready or blocked and why. Never leave a ready bottom layer sitting under a blocked upper
 layer without saying so.
 
-### Merge the bottom layer as soon as it is ready
+### Merge every ready bottom layer at once
 
-Do not wait for the whole stack. A stack should be as short as it can be: layers accumulate rebase
-surface, CI cost, and review context, and drift against `main`. Merge only on **explicit per-layer
-human approval** — there is no standing drain grant; each ready layer needs its own ask.
+Do not merge a stack one layer at a time, and do not wait for the whole stack. A stack should be as
+short as it can be: layers accumulate rebase surface, CI cost, and review context, and drift against
+`main`. As soon as the bottom layer is ready, merge the **ready prefix** with one command. The ready
+prefix is the bottom-most open layer plus every consecutive layer above it that is also ready and
+inside the human's approval. Its top layer is the merge target. When every layer is ready and
+approved, the target is the top of the stack. This overrides the canonical skill's bottom-most
+merge target.
 
-Immediately before each approved merge, run these checks in order, against the **bottom-most open
-layer**:
+`pnpm exec pr-shepherd --stack <pr> --merge` prints `gh stack merge <highest ready layer>`. If that
+layer is above the approved range, target the highest approved layer of the prefix instead. That is
+still one command.
 
-1. `gh api repos/{o}/{r}/stacks/<bottom>` **must 404.** `gh stack merge` treats a bare number as a
+Merge only on **explicit human approval**. The approval names what it covers: one layer, a range of
+layers, or the whole stack. Approving the whole stack also covers the next ready prefix after an
+earlier merge. It does not cover a layer added to the stack after the approval. Ask before merging
+any layer outside the approval.
+
+Immediately before each approved merge, run these checks in order:
+
+1. `gh api repos/{o}/{r}/stacks/<target>` **must 404.** `gh stack merge` treats a bare number as a
    stack number first, then a pull-request number (verified from `gh stack merge --help`); a 200
-   response means the number resolves stack-first and `--yes` would merge **every layer**. Stop and
-   ask if it 200s.
-2. Re-read topology (A2); confirm the target is still the bottom-most open layer with nothing broken
-   below.
-3. Capture `S0 = pulls/<bottom>.head.sha` before the final poll and `S1` after; require `S0 == S1`. A
-   mismatch means a push landed inside the evaluation window — discard the verdict and re-poll instead
-   of merging on stale state.
-4. `gh stack merge <bottom> --yes --squash`. Because `<bottom>` is the bottom-most open layer,
-   "everything up to and including it" is exactly one PR.
+   response means the number resolves stack-first and `--yes` would merge **every layer** of that
+   stack. Stop and ask if it 200s.
+2. Re-read topology (A2). Confirm every layer from the bottom-most open layer up to the target is
+   open, ready, and inside the approval, with nothing broken below.
+3. For **every** layer in the prefix, capture `S0 = pulls/<N>.head.sha` before the final poll and
+   `S1` after; require `S0 == S1` for each. A mismatch means a push landed inside the evaluation
+   window — discard the verdict and re-poll instead of merging on stale state.
+4. `gh stack merge <target> --yes --squash`. It lands the target and every open layer below it,
+   which is exactly the ready prefix.
 5. Do **not** run `gh stack sync` here — return to A2 and re-read topology remotely instead.
    Unconditional local rebasing right after a merge can replay already-landed commits from a stale
-   local base ref; sync belongs to a layer fix in B. If no unmerged owned layers remain, the drain
-   is complete.
+   local base ref; sync belongs to a layer fix in B. Keep shepherding the layers above the prefix;
+   when the new bottom layer is ready, merge the next ready prefix the same way. If no unmerged
+   owned layers remain, the drain is complete.
 
 **Residual TOCTOU, stated honestly:** the window between `S1` and the merge cannot be closed —
 `gh stack merge` has no head-SHA pin. The backstop is server-side: branch protection and repository
 rules are evaluated when the merge actually runs, and bypassing merge requirements is not supported
 for stacks. If a merge is rejected there, return to A2; do not retry blindly. If `main` uses a merge
-queue, a successful `gh stack merge` does not mean merged yet — the layer stays open until the queue
-processes it; the re-read at step 2 of the next drain iteration handles that normally.
+queue, a successful `gh stack merge` does not mean merged yet. The prefix queues together and
+GitHub evaluates each layer from the bottom; a failure ejects that layer and those above it. The
+re-read at step 2 of the next drain iteration handles that normally.
 
 **When you stop or are blocked, report the stack and ask.** Before yielding on an unresolved
 escalation, a human interrupt or session pause, repeated fixes with no progress, or an
 out-of-scope external blocker: run `gh stack view --json`, report each layer's number and state, and
-if the bottom owned layer is ready, ask whether to merge it before continuing.
+if the bottom layers are ready, ask whether to merge that ready prefix before continuing.
 
 ## Keep track — derive the ledger, never remember it
 

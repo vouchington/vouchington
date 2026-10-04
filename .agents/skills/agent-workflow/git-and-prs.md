@@ -87,8 +87,9 @@ Unmatched commits on origin/<branch> are new commits someone pushed.
   [helper reference](../../../docs/development/local-development/reference-pr-description-helper.md).
 - Branches, commits, pushes, and draft PRs within the task need no repeated approval. Merging or
   arming auto-merge requires explicit human authorization; automation must never do either.
-  Each native stack layer requires its own merge authority. See
-  [merge authority](../../../docs/development/merge-authority.md).
+  A native stack merge lands every ready bottom layer at once; the approval must cover every layer
+  it lands. See [merge authority](../../../docs/development/merge-authority.md) and
+  [stacked-prs](../stacked-prs/SKILL.md#merge-every-ready-bottom-layer-at-once).
 - After PR creation, set `./dev/tmux-name <topic>-pr<number>` outside the sandbox.
   For an ordinary authored PR, mark ready when required checks pass and actionable review is resolved. Authorized [triage handoffs](../ready-and-shepherd/SKILL.md) follow their recovery criteria.
 

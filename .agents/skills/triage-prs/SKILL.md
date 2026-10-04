@@ -180,11 +180,12 @@ Classify the outcome:
 - **Repository auto-merge disabled:** dispatch the shepherd, report manual merge required, and leave
   auto-merge unchanged.
 - **Native GitHub stack:** shepherd owned layers per
-  [stacked-prs](../stacked-prs/SKILL.md#b-shepherd-the-owned-prs). Merge serially bottom-up, each layer on its own explicit human approval, per
-  [Merge the bottom layer as soon as it is ready](../stacked-prs/SKILL.md#merge-the-bottom-layer-as-soon-as-it-is-ready) —
+  [stacked-prs](../stacked-prs/SKILL.md#b-shepherd-the-owned-prs). Merge every ready bottom layer
+  in one command, within explicit human approval, per
+  [Merge every ready bottom layer at once](../stacked-prs/SKILL.md#merge-every-ready-bottom-layer-at-once) —
   but only as far as this triage run's own decisions cover. Resolve the full stack against the
   Step 1 scope and the Step 3 decisions before draining: if the scope covered only some of the
-  stack's layers, or any layer in the stack was classified `CLOSE`, stop the drain before the
+  stack's layers, or any layer in the stack was classified `CLOSE`, end the ready prefix below the
   first layer that is out of scope or not `MERGE` rather than continuing past it — do not shepherd
   or merge a layer this run never reviewed or explicitly rejected. GitHub does not support
   auto-merge for stacks, and this batch path's `automerge: true` does not authorize the drain on
