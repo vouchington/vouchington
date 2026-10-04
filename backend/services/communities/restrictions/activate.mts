@@ -46,9 +46,6 @@ export async function activateCommunityRestrictions(
   await using query = await beginTransaction()
   const lockedCommunity = await lockCommunityRestrictionWrites(query, communityId, currentUser.id)
   assert(!lockedCommunity.archived_at, 403, 'Community is archived')
-  if (input.expiresAt !== null) {
-    assert(input.expiresAt > new Date(), 422, 'expires_at must be in the future')
-  }
   const restrictions = await activateCommunityRestrictionTypes(
     query,
     currentUser.id,
@@ -90,11 +87,13 @@ async function activateCommunityRestrictionTypes(
       community_id,
       restriction_type,
       activated_by_id,
+      activated_at,
       expires_at,
       reason
     )
-      SELECT ${communityId}, restriction_type, ${currentUserId}, ${input.expiresAt}, ${input.reason ?? null}
+      SELECT ${communityId}, restriction_type, ${currentUserId}, statement_timestamp(), ${input.expiresAt}, ${input.reason ?? null}
       FROM restriction_input
+      WHERE ${input.expiresAt}::timestamptz IS NULL OR ${input.expiresAt}::timestamptz > statement_timestamp()
       ORDER BY ordinal
       RETURNING *
     )
@@ -105,7 +104,7 @@ async function activateCommunityRestrictionTypes(
     `,
     { query },
   )
-
+  assert(rows.length > 0, 422, 'expires_at must be in the future')
   return rows as CommunityRestriction[]
 }
 

@@ -6,7 +6,10 @@ import {
   insertTestCommunity,
   insertTestCommunityMember,
 } from '@voucha/test-helpers'
-import { withHeldDelegatedCommunityFenceForTest } from '@voucha/test-helpers/community-restriction-writer-race'
+import {
+  withHeldDelegatedCommunityFenceForTest,
+  withCommunityRestrictionApplicationClockForTest,
+} from '@voucha/test-helpers/community-restriction-writer-race'
 import { callRejectedMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { countTestPostsCreatedBy } from '@voucha/test-helpers/entities/posts-deletion'
 import {
@@ -44,6 +47,23 @@ async function fixture() {
 }
 
 describe('community restriction writers share delegated post fences', () => {
+  it('uses database expiry time when the application clock trails PostgreSQL', async () => {
+    const { currentUser, community } = await fixture()
+    const expiresAt = new Date(Date.now() - 1000)
+    await withCommunityRestrictionApplicationClockForTest(
+      new Date(expiresAt.getTime() - 1000),
+      async () => {
+        await expect(
+          activateCommunityRestrictions(currentUser, community.id, {
+            restrictionTypes: ['no_links'],
+            expiresAt,
+          }),
+        ).rejects.toMatchObject({ status: 422, message: 'expires_at must be in the future' })
+        expect(await countTestCommunityRestrictions(community.id)).toBe(0)
+        expect(await readStaffActionHistory(currentUser.id)).toEqual([])
+      },
+    )
+  })
   it('propagates actual transaction faults without misclassifying the moderator', async () => {
     const { currentUser, community } = await fixture()
     await expect(

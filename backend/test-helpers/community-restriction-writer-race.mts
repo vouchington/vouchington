@@ -1,5 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import { setTimeout } from 'node:timers/promises'
+import { vi } from 'vitest'
 import { lockDelegatedPostCommunity } from '../services/posts/delegated-write-locks.mts'
 import {
   getTestPostgresBackendProcessId,
@@ -30,4 +31,18 @@ export async function withHeldDelegatedCommunityFenceForTest<T>(
     throw err
   }
   return await pending
+}
+
+/** Simulate application clock skew without changing PostgreSQL or real lock-wait timers. */
+export async function withCommunityRestrictionApplicationClockForTest<T>(
+  at: Date,
+  operation: () => Promise<T>,
+): Promise<T> {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(at)
+  try {
+    return await operation()
+  } finally {
+    vi.useRealTimers()
+  }
 }
