@@ -1,12 +1,22 @@
 import { describe, expect, it } from 'vitest'
 import {
   bedrockEmbeddingsBatchConfig,
+  BEDROCK_BATCH_MAX_VALUES,
   getPendingEmbeddingScanLimits,
 } from '@services/bedrock-embeddings/batch/config'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { validateBedrockBatchConfig } from './registry-bedrock-validator.mts'
 
 describe('Bedrock minimum request ceilings', () => {
+  it('rejects creation retries above the registered hard ceiling', () => {
+    expect(() =>
+      validateBedrockBatchConfig({
+        ...bedrockEmbeddingsBatchConfig.defaultFields,
+        creation_retry_delay_ms: BEDROCK_BATCH_MAX_VALUES.creation_retry_delay_ms + 1,
+      }),
+    ).toThrow('creation_retry_delay_ms')
+  })
+
   it.each(['max_requests_per_file', 'max_requests_per_hour'])(
     'rejects lowering %s or raising the minimum across that ceiling',
     ceiling => {

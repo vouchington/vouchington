@@ -3,7 +3,10 @@ import { Queue, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import { creationJobOptions } from '@queues/bedrock-embeddings-batch/enqueues'
-import { bedrockEmbeddingsBatchConfig } from '@services/bedrock-embeddings/batch/config'
+import {
+  bedrockEmbeddingsBatchConfig,
+  BEDROCK_BATCH_MAX_VALUES,
+} from '@services/bedrock-embeddings/batch/config'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   insertTestEmbeddingsBatch,
@@ -113,6 +116,43 @@ describe('same-job embedding continuation', () => {
         await queue.close()
         restore()
         await cleanupTestEmbeddingsBatches([id])
+      }
+    },
+  )
+
+  it.each(['topics', 'posts', 'rss_feed_items', 'crawl_chunks', 'images', 'unknown'])(
+    'drains an empty fixed %s sweep or rejects an unknown creation type',
+    async type => {
+      const restore = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
+        max_inflight_jobs: BEDROCK_BATCH_MAX_VALUES.max_inflight_jobs,
+        max_requests_per_hour: BEDROCK_BATCH_MAX_VALUES.max_requests_per_hour,
+        max_job_size_gb: BEDROCK_BATCH_MAX_VALUES.max_job_size_gb,
+        min_records_per_job: 1,
+        max_scan_rows_per_run: 1,
+      })
+      const queue = new Queue(`embedding_creation_empty_${randomUUID()}`, connection)
+      const cursor = {
+        sweepStartedAt: new Date().toISOString(),
+        afterId: '00000000-0000-7000-8000-000000000001',
+      }
+      const job = await queue.add(type, { cursor }, creationJobOptions(type))
+      if (!job) throw new Error('Expected empty creation sweep job')
+      const worker = await createEmbeddingCreationWorker(queue)
+      try {
+        await vi.waitFor(async () =>
+          expect(await job.getState()).toBe(type === 'unknown' ? 'failed' : 'completed'),
+        )
+        const stored = await queue.getJob(job.id)
+        expect(stored).toMatchObject(
+          type === 'unknown'
+            ? { failedReason: 'Unknown creation job type: unknown' }
+            : { returnvalue: { empty: true, hasMore: false } },
+        )
+      } finally {
+        await worker.close(true)
+        await queue.obliterate({ force: true })
+        await queue.close()
+        restore()
       }
     },
   )
