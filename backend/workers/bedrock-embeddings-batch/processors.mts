@@ -10,23 +10,9 @@ import {
 import { cleanupBatchLocks } from '@services/bedrock-embeddings-batch/orchestrator/cleanup'
 import { runStaleCleanup } from '@services/bedrock-embeddings-batch/orchestrator/stale-cleanup'
 import { applyImageBatchUpdates } from '@services/bedrock-embeddings-batch/orchestrator/save-images'
-import {
-  streamPendingTopics,
-  applyTopicBatchUpdates,
-} from '@services/bedrock-embeddings-batch/entities/topics'
-import {
-  streamPendingPosts,
-  applyPostBatchUpdates,
-} from '@services/bedrock-embeddings-batch/entities/posts'
-import {
-  streamPendingRssFeedItems,
-  applyRssFeedItemBatchUpdates,
-} from '@services/bedrock-embeddings-batch/entities/rss-feed-items'
-import { streamPendingCrawlChunks } from '@services/bedrock-embeddings-batch/entities/crawl-chunks'
-import {
-  addImageToBatch,
-  streamPendingImages,
-} from '@services/bedrock-embeddings-batch/entities/images'
+import { applyTopicBatchUpdates } from '@services/bedrock-embeddings-batch/entities/topics'
+import { applyPostBatchUpdates } from '@services/bedrock-embeddings-batch/entities/posts'
+import { applyRssFeedItemBatchUpdates } from '@services/bedrock-embeddings-batch/entities/rss-feed-items'
 import type { BatchJobType } from '@services/bedrock-embeddings/batch/types'
 import {
   enqueueBulkProcessEmbeddingBatchPolling,
@@ -37,11 +23,6 @@ import {
   enqueueCreateImageEmbeddingsBatch,
   enqueueEmbeddingsBatchCreationDispatcher,
 } from '@queues/bedrock-embeddings-batch/enqueues'
-import {
-  type CreateBatchResult,
-  processBatchCreation,
-  processImageBatchCreation,
-} from '@services/bedrock-embeddings-batch/utils'
 import {
   processBatchResultsInBatches,
   processCrawlChunkBatchResults,
@@ -55,41 +36,6 @@ export {
   processExistingEmbeddingReconciliation,
   processPostEmbeddingTriggerRecovery,
 } from './processors/reconciliation.mts'
-
-export const processTopicBatchCreation = (): Promise<CreateBatchResult> =>
-  processBatchCreation({
-    jobType: 'topics',
-    streamPending: streamPendingTopics,
-    reEnqueue: enqueueCreateTopicEmbeddingsBatch,
-  })
-
-export const processPostBatchCreation = (): Promise<CreateBatchResult> =>
-  processBatchCreation({
-    jobType: 'posts',
-    streamPending: streamPendingPosts,
-    reEnqueue: enqueueCreatePostEmbeddingsBatch,
-  })
-
-export const processRssFeedItemBatchCreation = (): Promise<CreateBatchResult> =>
-  processBatchCreation({
-    jobType: 'rss_feed_items',
-    streamPending: streamPendingRssFeedItems,
-    reEnqueue: enqueueCreateRssFeedItemEmbeddingsBatch,
-  })
-
-export const processCrawlChunkBatchCreation = (): Promise<CreateBatchResult> =>
-  processBatchCreation({
-    jobType: 'crawl_chunks',
-    streamPending: streamPendingCrawlChunks,
-    reEnqueue: enqueueCreateCrawlChunkBatch,
-  })
-
-export const processImageEmbeddingBatchCreation = (): Promise<CreateBatchResult> =>
-  processImageBatchCreation({
-    streamPending: streamPendingImages,
-    addImageToBatch,
-    reEnqueue: enqueueCreateImageEmbeddingsBatch,
-  })
 
 export const processBatchPolling = async (
   batchId: string,

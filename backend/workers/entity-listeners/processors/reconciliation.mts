@@ -1,10 +1,14 @@
+import { getEntityReconciliationLimits } from '@services/entity-listener-reconciliation/work-limits'
 import {
   advanceEntityReconciliationCheckpoint,
   getEntityReconciliationWindow,
   streamEntityReconciliationCandidateBatches,
 } from '@services/entity-listener-reconciliation'
 import { getEntityListenerReconciliationIntervalSeconds } from '@queues/entity-listeners/config'
-import type { ReconcileEntityData } from '@queues/entity-listeners/types'
+import type {
+  ReconcileEntityData,
+  EntityReconciliationDispatchData,
+} from '@queues/entity-listeners/types'
 import { processImageCreated } from './images.mts'
 import { processPostCreated, processPostDeleted, processPostUpdated } from './posts.mts'
 import { processTopicCreated } from './topics.mts'
@@ -33,11 +37,38 @@ const RECONCILE_ENTITY_DEPENDENCIES: ReconcileEntityDependencies = {
   processUserCreated,
 }
 
-export async function reconcileEntities(): Promise<{ reconciled: number }> {
-  const window = await getEntityReconciliationWindow(
-    getEntityListenerReconciliationIntervalSeconds(),
-  )
-  return reconcileEntityBatches(streamEntityReconciliationCandidateBatches(window), window.end)
+export { enqueueReconcileEntities } from '@queues/entity-listeners/enqueues/reconciliation'
+
+export async function reconcileEntities(
+  data: EntityReconciliationDispatchData = {},
+  saveProgress: (data: EntityReconciliationDispatchData) => Promise<void> = async () => {},
+) {
+  const window = data.window
+    ? { start: new Date(data.window.start), end: new Date(data.window.end) }
+    : await getEntityReconciliationWindow(getEntityListenerReconciliationIntervalSeconds())
+  const fixedWindow = {
+    start: window.start.toISOString(),
+    end: window.end.toISOString(),
+  }
+  // Persist the window before any side effect, including a failure on its first candidate.
+  await saveProgress({
+    window: fixedWindow,
+    ...(data.after && { after: data.after }),
+  })
+  const limits = getEntityReconciliationLimits()
+  let hasMore = false
+  const batches = streamEntityReconciliationCandidateBatches(window, {
+    after: data.after,
+    limits,
+    onComplete: result => {
+      hasMore = result.hasMore
+    },
+  })
+  return reconcileEntityBatches(batches, window.end, undefined, {
+    hasMore: () => hasMore,
+    initialAfter: data.after,
+    onMore: after => saveProgress({ window: fixedWindow, ...(after && { after }) }),
+  })
 }
 
 type ReconcileEntityBatchDependencies = {
@@ -52,17 +83,34 @@ export async function reconcileEntityBatches(
     advanceCheckpoint: advanceEntityReconciliationCheckpoint,
     reconcileEntity,
   },
-): Promise<{ reconciled: number }> {
+  options: {
+    hasMore: () => boolean
+    initialAfter?: ReconcileEntityData
+    onMore: (after?: ReconcileEntityData) => Promise<unknown>
+  } = {
+    hasMore: () => false,
+    onMore: async () => {},
+  },
+): Promise<{ reconciled: number; hasMore: boolean }> {
   let reconciled = 0
-  for await (const batch of batches) {
-    for (const candidate of batch) {
-      // oxlint-disable-next-line no-await-in-loop -- the checkpoint must not outrun any entity side effect
-      await dependencies.reconcileEntity(candidate)
-      reconciled += 1
+  let after = options.initialAfter
+  try {
+    for await (const batch of batches) {
+      for (const candidate of batch) {
+        // oxlint-disable-next-line no-await-in-loop -- the checkpoint must not outrun any entity side effect
+        await dependencies.reconcileEntity(candidate)
+        after = candidate
+        reconciled += 1
+      }
     }
+  } catch (err) {
+    if (after) await options.onMore(after)
+    throw err
   }
-  await dependencies.advanceCheckpoint(completedThrough)
-  return { reconciled }
+  const hasMore = options.hasMore()
+  if (hasMore) await options.onMore(after)
+  else await dependencies.advanceCheckpoint(completedThrough)
+  return { reconciled, hasMore }
 }
 
 export async function reconcileEntity(

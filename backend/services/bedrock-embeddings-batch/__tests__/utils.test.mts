@@ -1,3 +1,5 @@
+import { getEmbeddingCreationRetryDelayMs } from '@services/bedrock-embeddings/batch/config'
+import type { EmbeddingScanCursor } from '@queues/bedrock-embeddings-batch/types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 import { processBatchCreation, processImageBatchCreation } from '../utils.mts'
@@ -20,14 +22,35 @@ describe('utils', () => {
     mocks.getBatchCreationLimits.mockResolvedValue({
       allowed: true,
       maxRecords: 10,
-      maxSizeMB: 1,
+      maxSizeMB: 32,
       minRecords: 3,
     })
     mocks.createBatch.mockResolvedValue(undefined)
   })
 
   describe('processBatchCreation', () => {
-    it('defers (returns null) when undersized and never submits a batch', async () => {
+    it('retains a continuation when creation is rate limited', async () => {
+      mocks.getBatchCreationLimits.mockResolvedValue({
+        allowed: false,
+        reason: 'inflight_job_limit_exceeded',
+      })
+      const cursor = { sweepStartedAt: new Date().toISOString(), afterId: 'pending-topic-id' }
+      const reEnqueue = vi.fn<(nextCursor?: EmbeddingScanCursor) => Promise<void>>(async () => {})
+      expect(
+        await processBatchCreation(
+          {
+            jobType: 'topics',
+            cursor,
+            streamPending: () => streamEntities([]),
+            reEnqueue,
+          },
+          dependencies,
+        ),
+      ).toEqual({ reEnqueued: true, reason: 'inflight_job_limit_exceeded', hasMore: true })
+      expect(reEnqueue).toHaveBeenCalledExactlyOnceWith(cursor, getEmbeddingCreationRetryDelayMs())
+    })
+
+    it('returns empty when undersized and never submits a batch', async () => {
       const result = await processBatchCreation(
         {
           jobType: 'topics',
@@ -41,12 +64,12 @@ describe('utils', () => {
         dependencies,
       )
 
-      expect(result).toBeNull()
+      expect(result).toEqual({ empty: true, hasMore: false })
       expect(mocks.createBatch).not.toHaveBeenCalled()
       expect(captureException).not.toHaveBeenCalled()
     })
 
-    it('defers (returns null) when the stream is empty', async () => {
+    it('returns empty when the stream is empty', async () => {
       const result = await processBatchCreation(
         {
           jobType: 'crawl_chunks',
@@ -56,7 +79,7 @@ describe('utils', () => {
         dependencies,
       )
 
-      expect(result).toBeNull()
+      expect(result).toEqual({ empty: true, hasMore: false })
       expect(mocks.createBatch).not.toHaveBeenCalled()
       expect(captureException).not.toHaveBeenCalled()
     })
@@ -76,7 +99,7 @@ describe('utils', () => {
         dependencies,
       )
 
-      expect(result).toEqual({ success: true })
+      expect(result).toEqual({ success: true, hasMore: false })
       expect(mocks.createBatch).toHaveBeenCalledTimes(1)
       expect(captureException).not.toHaveBeenCalled()
     })
@@ -97,7 +120,11 @@ describe('utils', () => {
         dependencies,
       )
 
-      expect(result).toEqual({ reEnqueued: true, reason: 'inflight_job_limit_exceeded' })
+      expect(result).toEqual({
+        reEnqueued: true,
+        reason: 'inflight_job_limit_exceeded',
+        hasMore: true,
+      })
       expect(reEnqueue).toHaveBeenCalledTimes(1)
       expect(mocks.createBatch).not.toHaveBeenCalled()
     })
@@ -114,7 +141,7 @@ describe('utils', () => {
         dependencies,
       )
 
-      expect(result).toBeNull()
+      expect(result).toEqual({ empty: true, hasMore: false })
       const limitsOrder = mocks.getBatchCreationLimits.mock.invocationCallOrder[0]
       const streamOrder = streamPending.mock.invocationCallOrder[0]
       expect(limitsOrder).toBeLessThan(streamOrder)
@@ -133,6 +160,7 @@ describe('utils', () => {
       )
 
       expect(result).toEqual({
+        hasMore: false,
         failed: true,
         reason: 'Failed to add 2/2 images to Bedrock batch input',
         attempted: 2,
@@ -141,7 +169,7 @@ describe('utils', () => {
       expect(captureException).toHaveBeenCalledTimes(3)
     })
 
-    it('returns null without creating an undersized image batch', async () => {
+    it('returns empty without creating an undersized image batch', async () => {
       const result = await processImageBatchCreation(
         {
           streamPending: () => streamImages([{ id: 'image-1' }, { id: 'image-2' }]),
@@ -160,7 +188,7 @@ describe('utils', () => {
         dependencies,
       )
 
-      expect(result).toBeNull()
+      expect(result).toEqual({ empty: true, hasMore: false })
       expect(mocks.createBatch).not.toHaveBeenCalled()
       expect(captureException).not.toHaveBeenCalled()
     })
@@ -180,6 +208,7 @@ describe('utils', () => {
       )
 
       expect(result).toEqual({
+        hasMore: false,
         failed: true,
         reason: 'Failed to add 2/2 images to Bedrock batch input',
         attempted: 2,
@@ -208,7 +237,7 @@ describe('utils', () => {
         dependencies,
       )
 
-      expect(result).toEqual({ success: true })
+      expect(result).toEqual({ success: true, hasMore: false })
       expect(mocks.createBatch).toHaveBeenCalledWith(
         expect.any(String),
         'images',

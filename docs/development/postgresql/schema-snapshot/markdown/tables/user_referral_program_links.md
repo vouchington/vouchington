@@ -57,13 +57,15 @@ _none_
 
 **Indexes:**
 
+- `idx_user_referral_program_links__active_url_id`: `CREATE INDEX idx_user_referral_program_links__active_url_id ON public.user_referral_program_links USING btree (url_id, id) WHERE ((activated_at IS NOT NULL) AND (deactivated_at IS NULL) AND (deleted_at IS NULL))`
+- `idx_user_referral_program_links__crawl_due`: `CREATE INDEX idx_user_referral_program_links__crawl_due ON public.user_referral_program_links USING btree (COALESCE(last_crawl_success_at, '-infinity'::timestamp with time zone), id) WHERE ((activated_at IS NOT NULL) AND (deactivated_at IS NULL) AND (deleted_at IS NULL))`
 - `idx_user_referral_program_links__created_via_oauth_client_id`: `CREATE INDEX idx_user_referral_program_links__created_via_oauth_client_id ON public.user_referral_program_links USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)`
 - `idx_user_referral_program_links__last_crawl_id`: `CREATE INDEX idx_user_referral_program_links__last_crawl_id ON public.user_referral_program_links USING btree (last_crawl_id) WHERE (last_crawl_id IS NOT NULL)`
 - `idx_user_referral_program_links__parent_link_id`: `CREATE INDEX idx_user_referral_program_links__parent_link_id ON public.user_referral_program_links USING btree (parent_link_id) WHERE (parent_link_id IS NOT NULL)`
 - `idx_user_referral_program_links__parent_link_id_active`: `CREATE INDEX idx_user_referral_program_links__parent_link_id_active ON public.user_referral_program_links USING btree (parent_link_id) WHERE ((parent_link_id IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_user_referral_program_links__referral_program_id__fk`: `CREATE INDEX idx_user_referral_program_links__referral_program_id__fk ON public.user_referral_program_links USING btree (referral_program_id) WHERE (referral_program_id IS NOT NULL)`
 - `idx_user_referral_program_links__referral_program_id__user_id`: `CREATE INDEX idx_user_referral_program_links__referral_program_id__user_id ON public.user_referral_program_links USING btree (referral_program_id, user_id) WHERE ((activated_at IS NOT NULL) AND (deleted_at IS NULL))`
-- `idx_user_referral_program_links__unfurl_requested`: `CREATE INDEX idx_user_referral_program_links__unfurl_requested ON public.user_referral_program_links USING btree (unfurl_requested_at) WHERE ((unfurl_requested_at IS NOT NULL) AND (unfurl_completed_at IS NULL) AND (unfurl_failed_at IS NULL) AND (deleted_at IS NULL))`
+- `idx_user_referral_program_links__unfurl_requested`: `CREATE INDEX idx_user_referral_program_links__unfurl_requested ON public.user_referral_program_links USING btree (unfurl_requested_at, id) WHERE ((unfurl_requested_at IS NOT NULL) AND (unfurl_completed_at IS NULL) AND (unfurl_failed_at IS NULL) AND (deleted_at IS NULL))`
 - `idx_user_referral_program_links__unique`: `CREATE UNIQUE INDEX idx_user_referral_program_links__unique ON public.user_referral_program_links USING btree (user_id, referral_program_id, url_id) WHERE (deleted_at IS NULL)`
 - `idx_user_referral_program_links__url_id`: `CREATE INDEX idx_user_referral_program_links__url_id ON public.user_referral_program_links USING btree (url_id) WHERE (deleted_at IS NULL)`
 - `idx_user_referral_program_links__url_id__fk`: `CREATE INDEX idx_user_referral_program_links__url_id__fk ON public.user_referral_program_links USING btree (url_id) WHERE (url_id IS NOT NULL)`

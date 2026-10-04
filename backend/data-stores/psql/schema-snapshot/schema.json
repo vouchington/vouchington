@@ -122458,6 +122458,60 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_user_referral_program_links__active_url_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_referral_program_links__active_url_id ON public.user_referral_program_links USING btree (url_id, id) WHERE ((activated_at IS NOT NULL) AND (deactivated_at IS NULL) AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "url_id",
+              "descending": false,
+              "expression": "url_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((activated_at IS NOT NULL) AND (deactivated_at IS NULL) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_user_referral_program_links__crawl_due": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_referral_program_links__crawl_due ON public.user_referral_program_links USING btree (COALESCE(last_crawl_success_at, '-infinity'::timestamp with time zone), id) WHERE ((activated_at IS NOT NULL) AND (deactivated_at IS NULL) AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": null,
+              "descending": false,
+              "expression": "COALESCE(last_crawl_success_at, '-infinity'::timestamp with time zone)",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((activated_at IS NOT NULL) AND (deactivated_at IS NULL) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_user_referral_program_links__created_via_oauth_client_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -122588,7 +122642,7 @@
         "idx_user_referral_program_links__unfurl_requested": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_user_referral_program_links__unfurl_requested ON public.user_referral_program_links USING btree (unfurl_requested_at) WHERE ((unfurl_requested_at IS NOT NULL) AND (unfurl_completed_at IS NULL) AND (unfurl_failed_at IS NULL) AND (deleted_at IS NULL))",
+          "definition": "CREATE INDEX idx_user_referral_program_links__unfurl_requested ON public.user_referral_program_links USING btree (unfurl_requested_at, id) WHERE ((unfurl_requested_at IS NOT NULL) AND (unfurl_completed_at IS NULL) AND (unfurl_failed_at IS NULL) AND (deleted_at IS NULL))",
           "includedColumns": [],
           "keys": [
             {
@@ -122597,6 +122651,13 @@
               "expression": "unfurl_requested_at",
               "nullsFirst": false,
               "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": "((unfurl_requested_at IS NOT NULL) AND (unfurl_completed_at IS NULL) AND (unfurl_failed_at IS NULL) AND (deleted_at IS NULL))",

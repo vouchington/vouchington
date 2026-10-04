@@ -1,3 +1,4 @@
+import { streamDynamicConfigRegistryEntries } from './registry-stream-entries.mts'
 import { workDynamicConfigRegistryEntries } from './registry-work-entries.mts'
 import { aiUsageDynamicConfigRegistryEntries } from './registry-ai-usage-entries.mts'
 import { coreDynamicConfigRegistryEntries } from './registry-core-entries.mts'
@@ -29,6 +30,11 @@ const REGISTRY_ORDER = [
   'rss-feed-crawl-config',
   'user-import-export-config',
   'data-retention-config',
+  'crawl-dispatch-work-config',
+  'referral-crawl-dispatch-work-config',
+  'referral-unfurl-dispatch-work-config',
+  'friends-dispatch-work-config',
+  'entity-reconciliation-work-config',
   'api-keys-work-config',
   'account-data-requests-work-config',
   'memberships-work-config',
@@ -48,6 +54,7 @@ const REGISTRY_ORDER = [
 
 const unorderedRegistryEntries = [
   ...workDynamicConfigRegistryEntries,
+  ...streamDynamicConfigRegistryEntries,
   ...featureFlagDynamicConfigRegistryEntries,
   ...coreDynamicConfigRegistryEntries,
   ...policyDynamicConfigRegistryEntries,

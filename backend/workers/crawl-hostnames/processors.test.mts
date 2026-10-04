@@ -56,9 +56,9 @@ describe('crawl-hostnames processors', () => {
     vi.clearAllMocks()
     deleteOldInvalidCrawlsMock.mockResolvedValue(3)
     dispatchCrawlHostnamesMock.mockResolvedValue(4)
-    dispatchCrawlUrlsPerHostnameMock.mockResolvedValue(5)
-    dispatchTier1CrawlUrlsMock.mockResolvedValue(6)
-    dispatchTier2CrawlUrlsMock.mockResolvedValue(7)
+    dispatchCrawlUrlsPerHostnameMock.mockResolvedValue({ count: 5, hasMore: false })
+    dispatchTier1CrawlUrlsMock.mockResolvedValue({ count: 6, hasMore: false })
+    dispatchTier2CrawlUrlsMock.mockResolvedValue({ count: 7, hasMore: false })
     enqueueBulkRefreshHostnameCrawlerMock.mockResolvedValue(undefined as never)
     enqueueBulkCrawlUrlsMock.mockResolvedValue(undefined as never)
     computeRateLimitForHostnameMock.mockResolvedValue(250)
@@ -81,14 +81,36 @@ describe('crawl-hostnames processors', () => {
         job('crawl_urls_per_hostname_dispatcher', { hostname_id: 'h1' }),
         deps,
       ),
-    ).resolves.toBe(5)
-    await expect(processCrawlHostnamesJob(job('crawl_tier1_dispatcher'), deps)).resolves.toBe(6)
-    await expect(processCrawlHostnamesJob(job('crawl_tier2_dispatcher'), deps)).resolves.toBe(7)
+    ).resolves.toEqual({ count: 5, hasMore: false })
+    await expect(processCrawlHostnamesJob(job('crawl_tier1_dispatcher'), deps)).resolves.toEqual({
+      count: 6,
+      hasMore: false,
+    })
+    await expect(processCrawlHostnamesJob(job('crawl_tier2_dispatcher'), deps)).resolves.toEqual({
+      count: 7,
+      hasMore: false,
+    })
 
     expect(dispatchCrawlHostnamesMock).toHaveBeenCalled()
-    expect(dispatchCrawlUrlsPerHostnameMock).toHaveBeenCalledWith('h1')
+    expect(dispatchCrawlUrlsPerHostnameMock).toHaveBeenCalledWith(
+      'h1',
+      undefined,
+      expect.any(Function),
+    )
     expect(dispatchTier1CrawlUrlsMock).toHaveBeenCalled()
     expect(dispatchTier2CrawlUrlsMock).toHaveBeenCalled()
+  })
+
+  it('keeps hostname identity when the bounded core saves a successful cursor', async () => {
+    const queued = job('crawl_urls_per_hostname_dispatcher', { hostname_id: 'h1' })
+    queued.updateData = vi.fn<Job['updateData']>(async () => {})
+    const cursor = { sweepStartedAt: new Date().toISOString(), afterId: 'successful-url' }
+    dispatchCrawlUrlsPerHostnameMock.mockImplementationOnce(async (_, __, save) => {
+      await save?.(cursor)
+      return { count: 1, hasMore: false }
+    })
+    await processCrawlHostnamesJob(queued, dependencies())
+    expect(queued.updateData).toHaveBeenCalledExactlyOnceWith({ hostname_id: 'h1', cursor })
   })
 
   it('runs cleanup and refresh dispatcher jobs through helper processors', async () => {

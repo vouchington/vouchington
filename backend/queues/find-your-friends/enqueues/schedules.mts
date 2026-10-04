@@ -5,12 +5,7 @@ import {
 } from '@modules/scheduled-job-manifest'
 import type { FindYourFriendsDispatcherJobs } from '../types.mts'
 import { findYourFriendsQueue } from '../queues.mts'
-import {
-  FIND_YOUR_FRIENDS_ORDERING,
-  FIND_YOUR_FRIENDS_DEFAULTS,
-  PRIORITY_DISPATCHER,
-  QUEUE_NAME,
-} from '../config.mts'
+import { FIND_YOUR_FRIENDS_DEFAULTS, PRIORITY_DISPATCHER, QUEUE_NAME } from '../config.mts'
 import { enqueueDispatchFindYourFriends } from '../enqueues.mts'
 
 export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
@@ -18,7 +13,7 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     schedulerId: 'dispatchFindYourFriends',
     repeat: { pattern: '0 3 * * *' },
     template: {
-      name: 'dispatchFindYourFriends' as FindYourFriendsDispatcherJobs,
+      name: 'enqueueDispatchFindYourFriends' as FindYourFriendsDispatcherJobs,
       data: {},
       opts: {
         attempts: FIND_YOUR_FRIENDS_DEFAULTS.attempts,
@@ -26,7 +21,6 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
         removeOnComplete: FIND_YOUR_FRIENDS_DEFAULTS.removeOnComplete,
         removeOnFail: FIND_YOUR_FRIENDS_DEFAULTS.removeOnFail,
         priority: PRIORITY_DISPATCHER,
-        ordering: FIND_YOUR_FRIENDS_ORDERING.dispatcher,
       } satisfies JobOptions,
     },
     operatorSurfaces: [

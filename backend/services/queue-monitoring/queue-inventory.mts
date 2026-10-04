@@ -3,7 +3,10 @@ import { entitiesListeners } from '@queues/entity-listeners/queues'
 import { urlsDomainsBlacklist } from '@queues/urls-domains-blacklist/queues'
 import { userRssFeedImports } from '@queues/user-rss-feed-imports/queues'
 import * as bedrockEmbeddingsQueues from '@queues/bedrock-embeddings/queues'
-import { bedrock_embeddings_batch } from '@queues/bedrock-embeddings-batch/queues'
+import {
+  bedrock_embeddings_batch,
+  bedrock_embeddings_batch_creation,
+} from '@queues/bedrock-embeddings-batch/queues'
 import * as openaiModerationQueues from '@queues/openai-moderation/queues'
 import * as topicRatingsQueues from '@queues/topic-ratings/queues'
 import { elections } from '@queues/elections/queues'
@@ -67,6 +70,7 @@ const allQueues = [
   topicAliases,
   ...Object.values(bedrockEmbeddingsQueues),
   bedrock_embeddings_batch,
+  bedrock_embeddings_batch_creation,
   ...Object.values(openaiModerationQueues),
   accountDataRequests,
   bloomFilters,

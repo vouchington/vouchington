@@ -1,20 +1,18 @@
+import {
+  createEmbeddingImageRecordLine,
+  createEmbeddingTextRecordLine,
+  type EmbeddingImageInput as BatchFileImage,
+} from '@services/bedrock-embeddings/batch/input-size-limits'
 import { createWriteStream } from 'node:fs'
 import { unlink } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { EMBEDDING_DIMENSION, truncateEmbeddingText } from '@services/bedrock-embeddings/config'
 import { csvEscape } from './csv.mts'
 type BatchFileEntity = {
   entity_id: string
   content: string
   content_sha256: Buffer
-}
-type BatchFileImage = {
-  entity_id: string
-  image_sha_256: Buffer
-  format: 'jpeg' | 'png' | 'webp'
-  bytes: string
 }
 export class BatchFileBuilder {
   private filePath: string
@@ -57,24 +55,7 @@ export class BatchFileBuilder {
     this.entityCount++
   }
   private createEntityLine(entity: BatchFileEntity): { line: string; prefix: string } {
-    const customId = JSON.stringify({
-      entity_id: entity.entity_id,
-      content_sha256: entity.content_sha256.toString('hex'),
-    })
-    const line = JSON.stringify({
-      recordId: customId,
-      modelInput: {
-        taskType: 'SINGLE_EMBEDDING',
-        singleEmbeddingParams: {
-          embeddingPurpose: 'GENERIC_INDEX',
-          embeddingDimension: EMBEDDING_DIMENSION,
-          text: {
-            truncationMode: 'END',
-            value: truncateEmbeddingText(entity.content),
-          },
-        },
-      },
-    })
+    const line = createEmbeddingTextRecordLine(entity)
     const prefix = this.firstWrite ? '' : '\n'
     return { line, prefix }
   }
@@ -104,26 +85,7 @@ export class BatchFileBuilder {
     this.entityCount++
   }
   private createImageLine(image: BatchFileImage): { line: string; prefix: string } {
-    const recordId = JSON.stringify({
-      entity_id: image.entity_id,
-      image_sha_256: image.image_sha_256.toString('hex'),
-    })
-    const line = JSON.stringify({
-      recordId,
-      modelInput: {
-        taskType: 'SINGLE_EMBEDDING',
-        singleEmbeddingParams: {
-          embeddingPurpose: 'GENERIC_INDEX',
-          embeddingDimension: EMBEDDING_DIMENSION,
-          image: {
-            format: image.format,
-            source: {
-              bytes: image.bytes,
-            },
-          },
-        },
-      },
-    })
+    const line = createEmbeddingImageRecordLine(image)
     const prefix = this.firstWrite ? '' : '\n'
     return { line, prefix }
   }

@@ -1,0 +1,28 @@
+import { minimumImageBatchSizeMB } from '@services/bedrock-embeddings/batch/input-size-limits'
+import { BEDROCK_BATCH_MAX_VALUES } from '@services/bedrock-embeddings/batch/config'
+import { DynamicConfigValidationError } from './namespace.mts'
+import type { DynamicConfigFields } from './types.mts'
+import { validatePositiveIntegerFields } from './registry-validators.mts'
+
+export function validateBedrockBatchConfig(next: DynamicConfigFields): void {
+  validatePositiveIntegerFields(next)
+  for (const [key, maxValue] of Object.entries(BEDROCK_BATCH_MAX_VALUES)) {
+    const value = next[key]
+    if (typeof value === 'number' && value > maxValue) {
+      throw new DynamicConfigValidationError(
+        `Field ${key} must be less than or equal to ${maxValue}`,
+      )
+    }
+  }
+  for (const ceiling of ['max_requests_per_file', 'max_requests_per_hour']) {
+    if (Number(next.min_records_per_job) > Number(next[ceiling]))
+      throw new DynamicConfigValidationError(`min_records_per_job must be <= ${ceiling}`)
+  }
+  for (const field of ['max_file_size_gb', 'max_job_size_gb']) {
+    if (Number(next[field]) * 1024 < minimumImageBatchSizeMB(Number(next.min_records_per_job)))
+      throw new DynamicConfigValidationError(`${field} must cover the minimum image records`)
+  }
+  if (Number(next.max_scan_rows_per_run) < Number(next.min_records_per_job)) {
+    throw new DynamicConfigValidationError('max_scan_rows_per_run must be >= min_records_per_job')
+  }
+}

@@ -10,7 +10,9 @@ For the dedup contract, centralized table semantics, race outcomes, and bloom fi
 
 ## Queue Configuration
 
-- Batch jobs run through the queue so worker rate limits are respected; enqueue admission does not process a batch inline.
+- Creation runs on `bedrock-embeddings-batch-creation`, with one globally active job across worker replicas. Capacity checks and cloud reservations are separate operations, so this serialization preserves provider budgets. Delayed creation jobs yield the slot to another entity family.
+- Polling, dispatch and reconciliation remain on `bedrock-embeddings-batch` with their existing ordering lanes. Enqueue admission does not process a batch inline.
+- Creation roots use per-type simple deduplication. Bounded passes and capacity retries update the same durable job and move it to delayed; recurring scheduler roots coalesce until it completes or fails terminally.
 
 ## Scheduler
 
@@ -37,12 +39,11 @@ The `backlog_dispatcher` exists so that very large single-embedding backlogs (e.
 
 | Lane             | Concurrency | Rate Limit | Description                                                                                       |
 | ---------------- | ----------- | ---------- | ------------------------------------------------------------------------------------------------- |
-| `creation`       | 1           | —          | Creates new Bedrock batch files; serialized to avoid exceeding request/file limits                |
 | `polling`        | 10          | 10 jobs/s  | Polls batch status from Bedrock                                                                   |
 | `dispatcher`     | 1           | —          | Scheduled dispatchers (`creation_dispatcher`, `poll_dispatcher`)                                  |
 | `reconciliation` | 1           | —          | Copies reusable embeddings and recovers post/RSS trigger delivery without Bedrock capacity checks |
 
-**Lock duration**: 300,000 ms (5 min); stalled interval: 30,000 ms (default) — lock duration sized for the `creation` lane (p99 minutes for large batch file uploads); applies to all lanes on the single worker.
+**Lock duration**: 300,000 ms (5 min); stalled interval: 30,000 ms. The creation worker uses the same lock duration to cover batch file uploads; its delayed jobs release the global active slot.
 
 ## Processors
 
@@ -52,11 +53,11 @@ The `backlog_dispatcher` exists so that very large single-embedding backlogs (e.
 | `poll_dispatcher`          | `dispatcher`     | Dispatches polling jobs for all pending batches every minute                                           |
 | `backlog_dispatcher`       | `dispatcher`     | Triggers `creation_dispatcher` early when single-queue backlog exceeds the threshold                   |
 | `stale_cleanup_dispatcher` | `dispatcher`     | Hourly: reconciles or force-cancels batches stuck past `stale_ttl_hours` (default 24h, Dynamic Config) |
-| `topics`                   | `creation`       | Streams pending topics, builds batch file, submits to Bedrock                                          |
-| `posts`                    | `creation`       | Streams pending posts, builds batch file, submits to Bedrock                                           |
-| `rss_feed_items`           | `creation`       | Streams pending RSS feed items, builds batch file, submits to Bedrock                                  |
-| `crawl_chunks`             | `creation`       | Streams pending crawl chunks, builds batch file, submits to Bedrock                                    |
-| `images`                   | `creation`       | Streams moderated non-flagged images, builds image batch records, submits to Bedrock                   |
+| `topics`                   | creation queue   | Streams pending topics, builds batch file, submits to Bedrock                                          |
+| `posts`                    | creation queue   | Streams pending posts, builds batch file, submits to Bedrock                                           |
+| `rss_feed_items`           | creation queue   | Streams pending RSS feed items, builds batch file, submits to Bedrock                                  |
+| `crawl_chunks`             | creation queue   | Streams pending crawl chunks, builds batch file, submits to Bedrock                                    |
+| `images`                   | creation queue   | Streams moderated non-flagged images, builds image batch records, submits to Bedrock                   |
 | `poll_batch`               | `polling`        | Polls a single batch by Bedrock Batch ID; on completion calls `applyBatchUpdates`                      |
 | `reconcile_existing`       | `reconciliation` | Scans one bounded topic, post, or RSS item candidate page and copies cache hits                        |
 | `post_trigger_recovery`    | `reconciliation` | Scans one pending post-delivery page and queues ban-evasion detection                                  |
@@ -85,11 +86,11 @@ Bedrock batches are scheduled against configurable service quotas managed via th
 - Single-queue depth threshold for the `backlog_dispatcher` and per-enqueue skip guard (`backlog_threshold`, default 1000)
 - Stale-batch TTL in hours for the `stale_cleanup_dispatcher` (`stale_ttl_hours`, default 24)
 
-If the in-flight job cap would be exceeded, creation jobs re-enqueue themselves every minute until there is enough headroom.
+When capacity cannot fit the minimum batch, the same creation job saves its cursor and carried image IDs, then delays by the configured retry interval. Scheduler roots coalesce while it waits.
 
 ### Undersized Batches Defer
 
-Bedrock requires at least `min_records_per_job` (default 100) entities per batch. When a creation job streams fewer than the minimum, it **defers**: no batch is submitted to AWS, and no fallback to single-embedding jobs runs. The next `creation_dispatcher` cycle (every 5 minutes) re-streams pending entities, so the batch waits to accumulate to the minimum naturally.
+Bedrock requires at least `min_records_per_job` (default 100) entities per batch. When a creation job streams fewer than the minimum, it **defers**: no batch is submitted to AWS, and no fallback to single-embedding jobs runs. Capped image passes retain healthy unsubmitted IDs in the durable payload while scanning forward. Once a sweep drains, the next `creation_dispatcher` cycle re-streams pending entities so undersized tails can accumulate to the minimum naturally.
 
 Rationale: posts, topics, and RSS feed items get real-time embeddings through the single pipeline on creation (see [`../bedrock-embeddings/README.md`](../bedrock-embeddings/README.md)). The batch pipeline is only used for entity _updates_ (and is the only path for `crawl_chunks` and `images`, which have no single-embedding fallback). Updates and bulk indexing have no user-facing latency requirement, so it is correct to wait for the minimum rather than convert undersized tails into many single-embedding jobs.
 

@@ -6,6 +6,11 @@ import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
+  backendAliases,
+  isolatedDatabaseCaseAliases,
+  realGlideMqAlias,
+} from './vitest-config/aliases.mts'
+import {
   assertIsolatedDatabaseCaseRan,
   formatIsolatedDatabaseCaseResult,
 } from './vitest-isolated-database-case-result.mts'
@@ -36,6 +41,15 @@ const childEnv = {
 }
 
 describe('isolated database case selection', () => {
+  it('preserves the selected isolated case queue boundary', () => {
+    const realCase = getIsolatedDatabaseCase('embedding-creation-fairness')
+    const ordinaryCase = getIsolatedDatabaseCase('embedding-reconciliation-router')
+    const realAliases = isolatedDatabaseCaseAliases(realCase.file)
+    expect(realAliases).toContainEqual(realGlideMqAlias())
+    expect(realAliases.filter(alias => String(alias.find) === String(/^glide-mq$/))).toHaveLength(1)
+    expect(isolatedDatabaseCaseAliases(ordinaryCase.file)).toEqual(backendAliases())
+  })
+
   it('registers only exact isolated database tests', () => {
     expect(makeIsolatedDatabaseName('a'.repeat(24))).toBe(databaseName)
     expect(() => makeIsolatedDatabaseName('shared_database')).toThrow(

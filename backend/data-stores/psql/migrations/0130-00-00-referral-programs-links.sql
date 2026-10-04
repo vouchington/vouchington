@@ -88,9 +88,19 @@ ON user_referral_program_links (parent_link_id)
 WHERE parent_link_id IS NOT NULL
   AND deleted_at IS NULL;
 
+-- Scheduled crawler candidates are selected by indexed nominal due time, then checked for host/retry eligibility.
+CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__crawl_due
+ON user_referral_program_links (COALESCE(last_crawl_success_at, '-infinity'::timestamptz), id)
+WHERE activated_at IS NOT NULL AND deactivated_at IS NULL AND deleted_at IS NULL;
+
+-- URL-event fanout uses its indexed parent scope and the same bounded ID continuation.
+CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__active_url_id
+ON user_referral_program_links (url_id, id)
+WHERE activated_at IS NOT NULL AND deactivated_at IS NULL AND deleted_at IS NULL;
+
 -- for the unfurl dispatcher to self-heal parents stuck requested-but-not-completed
 CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__unfurl_requested
-ON user_referral_program_links (unfurl_requested_at)
+ON user_referral_program_links (unfurl_requested_at, id)
 WHERE unfurl_requested_at IS NOT NULL
   AND unfurl_completed_at IS NULL
   AND unfurl_failed_at IS NULL

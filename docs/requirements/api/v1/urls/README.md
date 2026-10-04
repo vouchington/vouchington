@@ -37,6 +37,10 @@ Enqueues the correct crawl job for the URL. RSS feed URLs route to the RSS feed 
 referral-link URLs route to the referral-link crawl queue, and all other URLs route to the HTML
 crawler.
 
+`enqueued_count` counts jobs queued in the initial bounded dispatch page. Referral-link fanout
+continues remaining eligible links in a URL-scoped background job; this count is neither the total
+fanout nor completed crawl work.
+
 Response:
 
 ```json

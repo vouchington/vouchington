@@ -6,7 +6,6 @@ import {
 import type { CrawlReferralLinksJobs } from '../types.mts'
 import { crawlReferralLinksQueue } from '../queues.mts'
 import {
-  CRAWL_REFERRAL_LINKS_ORDERING,
   CRAWL_REFERRAL_LINKS_DEFAULTS,
   PRIORITY_DISPATCHER,
   CRAWL_REFERRAL_LINKS_QUEUE_NAME,
@@ -18,7 +17,7 @@ export const scheduledJobManifest = defineScheduledJobManifest(CRAWL_REFERRAL_LI
     schedulerId: 'crawl_referral_links_dispatcher',
     repeat: { pattern: '0 4 * * 0' },
     template: {
-      name: 'crawl_referral_links_dispatcher' as CrawlReferralLinksJobs,
+      name: 'enqueueCrawlReferralLinksDispatcher' as CrawlReferralLinksJobs,
       data: {},
       opts: {
         attempts: CRAWL_REFERRAL_LINKS_DEFAULTS.attempts,
@@ -26,7 +25,6 @@ export const scheduledJobManifest = defineScheduledJobManifest(CRAWL_REFERRAL_LI
         removeOnComplete: CRAWL_REFERRAL_LINKS_DEFAULTS.removeOnComplete,
         removeOnFail: CRAWL_REFERRAL_LINKS_DEFAULTS.removeOnFail,
         priority: PRIORITY_DISPATCHER,
-        ordering: CRAWL_REFERRAL_LINKS_ORDERING.dispatcher,
       } satisfies JobOptions,
     },
     operatorSurfaces: [

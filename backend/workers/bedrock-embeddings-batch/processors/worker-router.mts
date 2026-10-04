@@ -1,16 +1,10 @@
 import type {
-  BedrockEmbeddingsBatchCreationJob,
   BedrockEmbeddingsBatchPollingJob,
   BedrockEmbeddingsBatchDispatcherJob,
   ReconciliationEntityType,
   ReconciliationJobName,
 } from '@queues/bedrock-embeddings-batch/types'
 import {
-  processTopicBatchCreation,
-  processPostBatchCreation,
-  processRssFeedItemBatchCreation,
-  processCrawlChunkBatchCreation,
-  processImageEmbeddingBatchCreation,
   processBatchPolling,
   processBatchPollingDispatcher,
   processBatchCreationDispatcher,
@@ -32,22 +26,6 @@ export const processBedrockEmbeddingsBatchJob = async (
     const orderingKey = job.opts.ordering?.key
 
     switch (orderingKey) {
-      case 'creation': {
-        switch (job.name as BedrockEmbeddingsBatchCreationJob) {
-          case 'topics':
-            return await processTopicBatchCreation()
-          case 'posts':
-            return await processPostBatchCreation()
-          case 'rss_feed_items':
-            return await processRssFeedItemBatchCreation()
-          case 'crawl_chunks':
-            return await processCrawlChunkBatchCreation()
-          case 'images':
-            return await processImageEmbeddingBatchCreation()
-          default:
-            throw new Error(`Unknown creation job type: ${job.name}`)
-        }
-      }
       case 'polling': {
         switch (job.name as BedrockEmbeddingsBatchPollingJob) {
           case 'poll_batch': {

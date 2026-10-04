@@ -25,5 +25,10 @@
     "@services/crawls": "workspace:^",
     "glide-mq": "^0.16.0"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@modules/scheduled-job-manifest": "workspace:^",
+    "@queues/crawl-referral-links": "workspace:^",
+    "@queues/find-your-friends": "workspace:^",
+    "@queues/unfurl-referral-links": "workspace:^"
+  }
 }

@@ -1,21 +1,18 @@
+import { minimumTextBatchSizeMB } from '@services/bedrock-embeddings/batch/input-size-limits'
+import type { BatchCreationDependencies, CreateBatchResult } from './types.mts'
+export type { BatchCreationDependencies, CreateBatchResult } from './types.mts'
+import {
+  getPendingEmbeddingScanLimits,
+  getEmbeddingCreationRetryDelayMs,
+} from '@services/bedrock-embeddings/batch/config'
+import type { PendingScanOptions } from './entities/scan-options.mts'
+import type { EmbeddingScanCursor } from '@queues/bedrock-embeddings-batch/types'
 import { BatchFileBuilder } from '@services/bedrock-embeddings-batch/orchestrator/file-builder'
 import { createBatch } from '@services/bedrock-embeddings-batch/orchestrator/create'
 import type { BatchJobType } from '@services/bedrock-embeddings/batch/types'
 import { getBatchCreationLimits } from '@services/bedrock-embeddings-batch/rate-limits'
-import onError from '@modules/on-error'
-
-export type CreateBatchResult =
-  | { success: true }
-  | { reEnqueued: true; reason: string }
-  | { failed: true; reason: string; attempted: number }
-  | null
 
 type BatchEntity = { id: string; content: string; content_sha256: Buffer }
-
-type BatchCreationDependencies = {
-  getBatchCreationLimits: typeof getBatchCreationLimits
-  createBatch: typeof createBatch
-}
 
 const defaultBatchCreationDependencies: BatchCreationDependencies = {
   getBatchCreationLimits,
@@ -26,12 +23,9 @@ async function streamEntityBatchUntilLimit<T extends BatchEntity>(
   stream: AsyncGenerator<T, void, unknown>,
   fileBuilder: BatchFileBuilder,
   limits: { maxRecords: number; maxSizeMB: number },
-): Promise<void> {
+): Promise<T | undefined> {
+  let lastAccepted: T | undefined
   for await (const entity of stream) {
-    if (fileBuilder.getEntityCount() >= limits.maxRecords) {
-      break
-    }
-
     const added = await fileBuilder.addEntityIfFits(
       {
         entity_id: entity.id,
@@ -40,110 +34,84 @@ async function streamEntityBatchUntilLimit<T extends BatchEntity>(
       },
       limits.maxSizeMB,
     )
-    if (!added) break
+    if (!added) return lastAccepted
+    lastAccepted = entity
+    if (fileBuilder.getEntityCount() >= limits.maxRecords) break
   }
+  return undefined
 }
 
 /** Generic batch creation processor to reduce code duplication */
 export async function processBatchCreation<T extends BatchEntity>(
   params: {
     jobType: BatchJobType
-    streamPending: () => AsyncGenerator<T, void, unknown>
-    reEnqueue: () => unknown
+    streamPending: (options?: PendingScanOptions) => AsyncGenerator<T, void, unknown>
+    cursor?: EmbeddingScanCursor
+    reEnqueue: (cursor?: EmbeddingScanCursor, delayMs?: number) => unknown
   },
   dependencies: BatchCreationDependencies = defaultBatchCreationDependencies,
 ): Promise<CreateBatchResult> {
+  const scanLimits = getPendingEmbeddingScanLimits()
   const limits = await dependencies.getBatchCreationLimits()
 
   if (!limits.allowed) {
-    params.reEnqueue()
-    return { reEnqueued: true, reason: limits.reason }
+    await params.reEnqueue(
+      params.cursor ?? { sweepStartedAt: new Date().toISOString() },
+      getEmbeddingCreationRetryDelayMs(),
+    )
+    return { reEnqueued: true, reason: limits.reason, hasMore: true }
   }
 
+  if (
+    limits.maxRecords < limits.minRecords ||
+    limits.maxSizeMB < minimumTextBatchSizeMB(limits.minRecords)
+  ) {
+    await params.reEnqueue(
+      params.cursor ?? { sweepStartedAt: new Date().toISOString() },
+      getEmbeddingCreationRetryDelayMs(),
+    )
+    return { reEnqueued: true, reason: 'minimum_text_capacity_unavailable', hasMore: true }
+  }
+  let progress: { hasMore: boolean; cursor?: EmbeddingScanCursor } = { hasMore: false }
+  const streamOptions: PendingScanOptions = {
+    limits: scanLimits,
+    onComplete: result => {
+      progress = result
+    },
+  }
+  let shouldContinue = false
   const fileBuilder = new BatchFileBuilder()
   try {
-    await streamEntityBatchUntilLimit(params.streamPending(), fileBuilder, limits)
+    const boundary = await streamEntityBatchUntilLimit(
+      params.streamPending(streamOptions),
+      fileBuilder,
+      limits,
+    )
+    shouldContinue = true
+    if (boundary && progress.cursor) {
+      const row = boundary as T & { crawl_id?: string; order_index?: number }
+      progress.cursor = {
+        ...progress.cursor,
+        afterId: row.crawl_id ?? row.id,
+        ...(row.order_index !== undefined ? { afterOrderIndex: row.order_index } : {}),
+      }
+    }
 
-    if (fileBuilder.getEntityCount() < limits.minRecords) return null
+    if (fileBuilder.getEntityCount() < limits.minRecords)
+      return { empty: true, hasMore: progress.hasMore }
 
+    shouldContinue = false
     const { filePath, entityIdsFilePath, entityCount, inputSizeMB } = await fileBuilder.close()
     await dependencies.createBatch(filePath, params.jobType, entityCount, entityIdsFilePath, {
       inputSizeMB,
     })
-    return { success: true }
+    shouldContinue = true
+    return { success: true, hasMore: progress.hasMore }
   } finally {
     await fileBuilder.cleanup()
+    if (shouldContinue && progress.hasMore && progress.cursor)
+      await params.reEnqueue(progress.cursor)
   }
 }
 
-export async function processImageBatchCreation<T extends { id: string }>(
-  params: {
-    streamPending: () => AsyncGenerator<T, void, unknown>
-    addImageToBatch: (
-      fileBuilder: BatchFileBuilder,
-      image: T,
-      maxInputSizeMB: number,
-    ) => Promise<boolean>
-    reEnqueue: () => unknown
-  },
-  dependencies: BatchCreationDependencies = defaultBatchCreationDependencies,
-): Promise<CreateBatchResult> {
-  const limits = await dependencies.getBatchCreationLimits()
-
-  if (!limits.allowed) {
-    params.reEnqueue()
-    return { reEnqueued: true, reason: limits.reason }
-  }
-
-  const fileBuilder = new BatchFileBuilder()
-  let attempted = 0
-  let failures = 0
-  try {
-    for await (const image of params.streamPending()) {
-      if (
-        fileBuilder.getEntityCount() >= limits.maxRecords ||
-        fileBuilder.getInputSizeMB() >= limits.maxSizeMB
-      ) {
-        break
-      }
-      attempted += 1
-      try {
-        const added = await params.addImageToBatch(fileBuilder, image, limits.maxSizeMB)
-        if (!added) {
-          failures += 1
-          if (fileBuilder.getEntityCount() === 0) {
-            onError(new Error(`Image ${image.id} exceeds Bedrock batch input size limit`))
-            continue
-          }
-          break
-        }
-      } catch (err) {
-        failures += 1
-        onError(err instanceof Error ? err : new Error(String(err)))
-      }
-    }
-
-    if (fileBuilder.getEntityCount() === 0) {
-      if (attempted === 0) return null
-
-      const result = {
-        failed: true,
-        reason: `Failed to add ${failures}/${attempted} images to Bedrock batch input`,
-        attempted,
-      } as const
-      onError(new Error(result.reason))
-      return result
-    }
-    if (fileBuilder.getEntityCount() < limits.minRecords) {
-      return null
-    }
-
-    const { filePath, entityIdsFilePath, entityCount, inputSizeMB } = await fileBuilder.close()
-    await dependencies.createBatch(filePath, 'images', entityCount, entityIdsFilePath, {
-      inputSizeMB,
-    })
-    return { success: true }
-  } finally {
-    await fileBuilder.cleanup()
-  }
-}
+export { processImageBatchCreation } from './image-batch-creation.mts'

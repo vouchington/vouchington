@@ -35,7 +35,8 @@ revision stream for exact create/update/delete semantics. Revision payloads pres
 semantics without repeatedly resetting unchanged posts. Referred users
 also replay their idempotent auto-follow relation. The dispatcher reconciles each candidate inline
 and advances the checkpoint only after every entity processor finishes, so a Valkey wipe cannot
-strand already-checkpointed child work. The scheduled dispatcher uses a time-bucketed unique job ID;
+strand already-checkpointed child work. The scheduled `enqueueReconcileEntities` job enqueues the same simple-deduplicated sweep as
+the manual backfill. A live sweep retains its job and payload between bounded passes;
 the separately exposed per-entity enqueue uses
 `entity-reconcile__<type>__<id>__<changed-at-us>` as both `jobId` and simple deduplication ID.
 
@@ -104,6 +105,15 @@ Triggered by `enqueueOnPostUpdated(postId, { contentChanged })`.
 Triggered by `enqueueOnPostDeleted(postId)`.
 
 - For comments, refresh ancestor metrics through the `entity-metrics-cache-refresh` queue.
+
+Reconciliation uses `entity-reconciliation-work-config` page and run limits and reports `hasMore`.
+Capped queue continuations retain the exact window and the last successfully processed composite
+position: epoch microseconds, entity ID, entity type, and nullable change ID (NULL last).
+Microseconds remain strings rather than passing through JavaScript Date. Failures persist the
+last successful position before propagating the original error for bounded retry. Successful capped
+passes park that same job, so scheduled roots cannot multiply overlapping sweep chains. Only a
+drained window advances the durable checkpoint.
+Losing a continuation replays the unchanged checkpoint window through the scheduled recovery path.
 
 ## Related
 

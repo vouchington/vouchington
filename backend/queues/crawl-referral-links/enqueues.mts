@@ -1,15 +1,15 @@
+import { createHash } from 'node:crypto'
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import {
   CRAWL_REFERRAL_LINKS_DEFAULTS,
-  CRAWL_REFERRAL_LINKS_ORDERING,
   CRAWL_REFERRAL_LINKS_QUEUE_NAME,
   PRIORITY_DEFAULT,
   PRIORITY_DISPATCHER,
 } from './config.mts'
 import { crawlReferralLinksQueue } from './queues.mts'
-import type { CrawlReferralLinksJobs } from './types.mts'
+import type { CrawlReferralLinksJobs, ReferralCrawlDispatchData } from './types.mts'
 
 type CrawlReferralLinkEntry = { linkId: string; urlId: string; referralProgramId: string }
 type CrawlReferralLinkContext = { hostnameId: string; rateLimitMs: number }
@@ -47,7 +47,7 @@ const enqueueBulkCrawlReferralLinkJobs = createBulkEnqueueFunction<
 })
 
 const enqueueCrawlReferralLinksDispatcherJob = createEnqueueFunction<
-  Record<string, never>,
+  ReferralCrawlDispatchData,
   CrawlReferralLinksJobs
 >({
   queue: crawlReferralLinksQueue,
@@ -76,12 +76,23 @@ export function enqueueBulkCrawlReferralLinks(
   )
 }
 
-export function enqueueCrawlReferralLinksDispatcher(): EnqueueReturnType {
-  return enqueueCrawlReferralLinksDispatcherJob(
-    {},
-    {
-      priority: PRIORITY_DISPATCHER,
-      ordering: CRAWL_REFERRAL_LINKS_ORDERING.dispatcher,
+export function enqueueCrawlReferralLinksDispatcher(
+  data: ReferralCrawlDispatchData = {},
+): EnqueueReturnType {
+  return enqueueCrawlReferralLinksDispatcherJob(data, {
+    priority: PRIORITY_DISPATCHER,
+    deduplication: {
+      // Event windows are distinct requests; periodic roots share the single scheduled sweep.
+      id: `referral-crawl:${createHash('sha256')
+        .update(
+          JSON.stringify({
+            urlId: data.urlId,
+            referralLinkIds: data.referralLinkIds,
+            ...(data.urlId && { eventWindow: data.cursor?.sweepStartedAt }),
+          }),
+        )
+        .digest('hex')}`,
+      mode: 'simple',
     },
-  )
+  })
 }

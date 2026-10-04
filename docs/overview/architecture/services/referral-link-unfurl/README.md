@@ -39,6 +39,13 @@ there is no separate catalog artifact. Adding support for a new Amex card means 
     entry, copying the full query param set captured on `finalUrl` verbatim onto each. No browser,
     no DB — unit-testable with fixtures alone.
 
+Lost-job recovery dispatch uses `referral-unfurl-dispatch-work-config` page and run limits.
+Each `hasMore` continuation retains its fixed request cutoff and exact request timestamp/ID tuple, matching the partial recovery index; newly requested
+links join a later scheduled sweep. Completed and failed rows remain outside recovery selection.
+
+Workers use [retained queue sweep ownership](../../../../development/postgresql/reference-cursors.md#retained-queue-sweeps)
+to coalesce repeated roots and preserve successful cursor progress through bounded passes and retries.
+
 ## Related
 
 - Seed data: [../../../seed/referral-programs-topics.csv](../../../../../seed/referral-programs-topics.csv)

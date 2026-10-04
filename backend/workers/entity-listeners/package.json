@@ -58,6 +58,7 @@
     "glide-mq": "^0.16.0"
   },
   "devDependencies": {
+    "@modules/scheduled-job-manifest": "workspace:^",
     "@services/entity-fetch": "workspace:^",
     "@services/post-revisions": "workspace:^",
     "@services/referral-program-link-validations": "workspace:^",

@@ -1,3 +1,4 @@
+import { createPendingScan, type PendingScanOptions } from './scan-options.mts'
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import { createPostTextEmbeddingContent } from '@services/posts/content'
 import type { Post } from '@services/posts/types'
@@ -26,7 +27,10 @@ export async function copyExistingPostEmbeddings(
   return page
 }
 
-export async function* streamPendingPosts(): AsyncGenerator<PendingPost, void, unknown> {
+export async function* streamPendingPosts(
+  options: PendingScanOptions = {},
+): AsyncGenerator<PendingPost, void, unknown> {
+  const scan = createPendingScan(options)
   const query = `/* streamPendingPosts */
     SELECT
       p.id,
@@ -37,7 +41,8 @@ export async function* streamPendingPosts(): AsyncGenerator<PendingPost, void, u
       vp.topic_recommendation
     FROM posts p
     JOIN view_posts vp ON vp.id = p.id
-    WHERE p.deleted_at IS NULL
+    WHERE p.id < $1::uuid AND ($2::uuid IS NULL OR p.id < $2::uuid)
+      AND p.deleted_at IS NULL
       AND (
         p.bedrock_nova_multimodal_v1_input_sha256 IS NULL
         OR p.bedrock_nova_multimodal_v1_input_sha256 != p.bedrock_nova_multimodal_v1_content_sha256
@@ -54,14 +59,27 @@ export async function* streamPendingPosts(): AsyncGenerator<PendingPost, void, u
     post_type: string
     ai_summary_markdown?: string
     topic_recommendation?: Post['topic_recommendation']
-  }>(createAsyncGeneratorFromCursor(query, [], { batchSize: 1000 }), row =>
-    createPostTextEmbeddingContent({
-      title: row.title || '',
-      markdown: row.markdown || '',
-      post_type: row.post_type as Post['post_type'],
-      ai_summary_markdown: row.ai_summary_markdown ?? undefined,
-      topic_recommendation: row.topic_recommendation ?? undefined,
+  }>(
+    createAsyncGeneratorFromCursor<{
+      id: string
+      title: string
+      markdown: string
+      post_type: string
+      ai_summary_markdown?: string
+      topic_recommendation?: Post['topic_recommendation']
+    }>(query, [scan.upperId, scan.afterId], {
+      batchSize: scan.limits.batchSize,
+      maxRows: scan.limits.maxRows,
+      onComplete: scan.complete,
     }),
+    row =>
+      createPostTextEmbeddingContent({
+        title: row.title || '',
+        markdown: row.markdown || '',
+        post_type: row.post_type as Post['post_type'],
+        ai_summary_markdown: row.ai_summary_markdown ?? undefined,
+        topic_recommendation: row.topic_recommendation ?? undefined,
+      }),
   )
 }
 

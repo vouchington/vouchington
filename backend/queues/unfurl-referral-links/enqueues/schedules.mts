@@ -8,7 +8,6 @@ import { unfurlReferralLinksQueue } from '../queues.mts'
 import {
   PRIORITY_DISPATCHER,
   UNFURL_REFERRAL_LINKS_DEFAULTS,
-  UNFURL_REFERRAL_LINKS_ORDERING,
   UNFURL_REFERRAL_LINKS_QUEUE_NAME,
 } from '../config.mts'
 import { enqueueUnfurlReferralLinksDispatcher } from '../enqueues.mts'
@@ -18,7 +17,7 @@ export const scheduledJobManifest = defineScheduledJobManifest(UNFURL_REFERRAL_L
     schedulerId: 'unfurl_referral_links_dispatcher',
     repeat: { pattern: '0 * * * *' },
     template: {
-      name: 'unfurl_referral_links_dispatcher' as UnfurlReferralLinksJobs,
+      name: 'enqueueUnfurlReferralLinksDispatcher' as UnfurlReferralLinksJobs,
       data: {},
       opts: {
         attempts: UNFURL_REFERRAL_LINKS_DEFAULTS.attempts,
@@ -26,7 +25,6 @@ export const scheduledJobManifest = defineScheduledJobManifest(UNFURL_REFERRAL_L
         removeOnComplete: UNFURL_REFERRAL_LINKS_DEFAULTS.removeOnComplete,
         removeOnFail: UNFURL_REFERRAL_LINKS_DEFAULTS.removeOnFail,
         priority: PRIORITY_DISPATCHER,
-        ordering: UNFURL_REFERRAL_LINKS_ORDERING.dispatcher,
       } satisfies JobOptions,
     },
     operatorSurfaces: [

@@ -7,8 +7,9 @@ import {
   PRIORITY_DEFAULT,
   PRIORITY_DISPATCHER,
   QUEUE_NAME,
+  CREATION_QUEUE_NAME,
 } from './config.mts'
-import { bedrock_embeddings_batch } from './queues.mts'
+import { bedrock_embeddings_batch, bedrock_embeddings_batch_creation } from './queues.mts'
 import type {
   BedrockEmbeddingsBatchDispatcherJob,
   BedrockEmbeddingsBatchPollingJob,
@@ -36,22 +37,23 @@ export {
 
 function createCreationBatchEnqueue(jobName: CreationJobName, deduplicationId: string) {
   const enqueue = createEnqueueFunction<Record<string, never>, CreationJobName>({
-    queue: bedrock_embeddings_batch,
-    queueName: QUEUE_NAME,
+    queue: bedrock_embeddings_batch_creation,
+    queueName: CREATION_QUEUE_NAME,
     jobName,
     defaults,
   })
 
-  return (priority?: number): EnqueueReturnType => {
-    return enqueue({}, {
-      priority: priority ?? PRIORITY_DEFAULT,
-      deduplication: {
-        id: deduplicationId,
-        mode: 'throttle',
-        ttl: BEDROCK_EMBEDDINGS_BATCH_DEFAULTS.deduplicationTtlMs,
-      },
-      ordering: BEDROCK_EMBEDDINGS_BATCH_ORDERING.creation,
-    } satisfies Partial<JobOptions>)
+  return (priority?: number): EnqueueReturnType =>
+    enqueue({}, creationJobOptions(deduplicationId, priority))
+}
+
+export function creationJobOptions(
+  deduplicationId: string,
+  priority?: number,
+): Partial<JobOptions> {
+  return {
+    priority: priority ?? PRIORITY_DEFAULT,
+    deduplication: { id: deduplicationId, mode: 'simple' },
   }
 }
 

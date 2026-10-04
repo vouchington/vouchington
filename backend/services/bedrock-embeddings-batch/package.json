@@ -30,6 +30,7 @@
     "@modules/on-error": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@queues/bedrock-embeddings-batch": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",
     "@services/communities": "workspace:^",
     "@services/crawl-chunks": "workspace:^",

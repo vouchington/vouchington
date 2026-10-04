@@ -1,14 +1,10 @@
+import { randomUUID } from 'node:crypto'
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import {
-  getEntityListenerReconciliationIntervalSeconds,
-  PRIORITY_DEFAULT,
-  PRIORITY_DISPATCHER,
-  QUEUE_NAME,
-} from '../config.mts'
+import { PRIORITY_DEFAULT, PRIORITY_DISPATCHER, QUEUE_NAME } from '../config.mts'
 import { entitiesListeners } from '../queues.mts'
-import type { ReconcileEntityData } from '../types.mts'
+import type { ReconcileEntityData, EntityReconciliationDispatchData } from '../types.mts'
 
 const DEFAULTS = {
   attempts: 3,
@@ -45,7 +41,7 @@ export const enqueueBulkReconcileEntities = createBulkEnqueueFunction<
 })
 
 const enqueueReconcileEntitiesJob = createEnqueueFunction<
-  Record<string, never>,
+  EntityReconciliationDispatchData,
   'reconcileEntities'
 >({
   queue: entitiesListeners,
@@ -55,15 +51,9 @@ const enqueueReconcileEntitiesJob = createEnqueueFunction<
 })
 
 export function enqueueReconcileEntities(): EnqueueReturnType {
-  const intervalMs = getEntityListenerReconciliationIntervalSeconds() * 1000
-  const jobId = `entity-reconciliation-dispatcher__${Math.floor(Date.now() / intervalMs)}`
   return enqueueReconcileEntitiesJob({}, {
-    jobId,
+    jobId: `entity-reconciliation-dispatcher__${randomUUID()}`,
     priority: PRIORITY_DISPATCHER,
-    deduplication: {
-      id: 'entity-reconciliation-dispatcher',
-      mode: 'throttle',
-      ttl: intervalMs,
-    },
+    deduplication: { id: 'entity-reconciliation-dispatcher', mode: 'simple' },
   } satisfies Partial<JobOptions>)
 }

@@ -3,7 +3,6 @@ import {
   DEFAULT_POST_CONTENT_LIMITS,
   POST_CONTENT_LIMITS_MIN_VALUES,
 } from '@services/post-content-limits'
-import { BEDROCK_BATCH_MAX_VALUES } from '@services/bedrock-embeddings/batch/config'
 import {
   USER_IMPORT_EXPORT_MAX_VALUES,
   USER_IMPORT_EXPORT_MIN_VALUES,
@@ -76,18 +75,6 @@ export function validatePostContentLimitsConfig(next: DynamicConfigFields): void
     ) {
       throw new DynamicConfigValidationError(
         `Field ${key} must be an integer between ${POST_CONTENT_LIMITS_MIN_VALUES[key]} and ${POST_CONTENT_LIMITS_MAX_VALUES[key]}`,
-      )
-    }
-  }
-}
-
-export function validateBedrockBatchConfig(next: DynamicConfigFields): void {
-  validatePositiveIntegerFields(next)
-  for (const [key, maxValue] of Object.entries(BEDROCK_BATCH_MAX_VALUES)) {
-    const value = next[key]
-    if (typeof value === 'number' && value > maxValue) {
-      throw new DynamicConfigValidationError(
-        `Field ${key} must be less than or equal to ${maxValue}`,
       )
     }
   }

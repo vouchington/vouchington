@@ -8,7 +8,8 @@ Syncs social connections from Facebook, X, and GitHub to discover existing platf
 
 ### `find-your-friends` (concurrency: 10)
 
-- `dispatchFindYourFriends` — dispatcher that enqueues social sync jobs for all OAuth providers linked to a user
+- `enqueueDispatchFindYourFriends` — daily scheduler producer that coalesces one live sweep
+- `dispatchFindYourFriends` — retained dispatcher that enqueues social sync jobs for all OAuth providers linked to a user
 - `syncFacebookFriends` — fetches the user's Facebook friends list and matches against platform users (global concurrency: 5)
 - `syncXFriends` — fetches the user's X following list and matches against platform users (global concurrency: 2)
 - `syncGithubFriends` — fetches the user's GitHub following list and matches against platform users (global concurrency: 5)
@@ -27,6 +28,15 @@ bounded pages and each page is deleted in its own freshly fenced transaction; on
 candidate page permits `friends_synced_at` to advance. A failed or deletion-interrupted sync can
 therefore leave committed current-page rows for the next idempotent sync without holding the account
 deletion fence across the provider request or the full friend graph.
+
+The dispatcher captures a fixed sweep time and each provider's greatest text ID. It applies the
+registered `friends-dispatch-work-config` budget separately to each provider and reports `hasMore`.
+Continuation payloads retain provider positions and completed providers. Eligibility also checks
+account creation against the sweep time, since a newly inserted text ID can sort below the upper
+bound. Failed or still-queued accounts are retried by the next sweep without starving later IDs.
+
+Workers use [retained queue sweep ownership](../../../../development/postgresql/reference-cursors.md#retained-queue-sweeps)
+to coalesce repeated roots and preserve successful cursor progress through bounded passes and retries.
 
 ## Related
 

@@ -1,3 +1,4 @@
+import { createPendingScan, type PendingScanOptions } from './scan-options.mts'
 import { randomUUID } from 'node:crypto'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
@@ -17,11 +18,10 @@ type PendingCrawlChunk = {
   order_index: number
 }
 
-export async function* streamPendingCrawlChunks(): AsyncGenerator<
-  PendingCrawlChunk,
-  void,
-  unknown
-> {
+export async function* streamPendingCrawlChunks(
+  options: PendingScanOptions = {},
+): AsyncGenerator<PendingCrawlChunk, void, unknown> {
+  const scan = createPendingScan(options)
   const query = `/* streamPendingCrawlChunks */
     SELECT
       c.url_id,
@@ -31,13 +31,15 @@ export async function* streamPendingCrawlChunks(): AsyncGenerator<
       cc.bedrock_nova_multimodal_v1_content_sha256
     FROM crawl_chunks cc
     INNER JOIN crawls c ON cc.crawl_id = c.id
-    WHERE c.has_pending_embeddings = TRUE
+    WHERE c.id < $1::uuid
+      AND ($2::uuid IS NULL OR cc.crawl_id < $2::uuid OR (cc.crawl_id = $2::uuid AND cc.order_index > $3::integer))
+      AND c.has_pending_embeddings = TRUE
       AND (
         cc.bedrock_nova_multimodal_v1_input_sha256 IS NULL
         OR cc.bedrock_nova_multimodal_v1_input_sha256 != cc.bedrock_nova_multimodal_v1_content_sha256
       )
       AND NOT ${lockExistsClause('crawl_chunks', '(cc.crawl_id, cc.order_index)')}
-    ORDER BY COALESCE(c.embeddings_generated_at, uuid_extract_timestamp(c.id)) DESC, cc.crawl_id, cc.order_index
+    ORDER BY cc.crawl_id DESC, cc.order_index ASC
   `
 
   for await (const row of createAsyncGeneratorFromCursor<{
@@ -46,7 +48,11 @@ export async function* streamPendingCrawlChunks(): AsyncGenerator<
     order_index: number
     markdown: string
     bedrock_nova_multimodal_v1_content_sha256: Buffer
-  }>(query, [], { batchSize: 1000 })) {
+  }>(query, [scan.upperId, scan.afterId, options.cursor?.afterOrderIndex ?? null], {
+    batchSize: scan.limits.batchSize,
+    maxRows: scan.limits.maxRows,
+    onComplete: scan.complete,
+  })) {
     const compositeId = createCrawlChunkEntityId(row.crawl_id, row.order_index)
 
     yield {

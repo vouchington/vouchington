@@ -1,3 +1,4 @@
+import { createPendingScan, type PendingScanOptions } from './scan-options.mts'
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import { createRssFeedItemEmbeddingContent } from '@services/rss-feed-items/content'
 import type { RssFeedItemToUpsert } from '@services/rss-feed-items/types'
@@ -26,15 +27,15 @@ export async function copyExistingRssFeedItemEmbeddings(
   return page
 }
 
-export async function* streamPendingRssFeedItems(): AsyncGenerator<
-  PendingRssFeedItem,
-  void,
-  unknown
-> {
+export async function* streamPendingRssFeedItems(
+  options: PendingScanOptions = {},
+): AsyncGenerator<PendingRssFeedItem, void, unknown> {
+  const scan = createPendingScan(options)
   const query = `/* streamPendingRssFeedItems */
     SELECT r.id::text AS id, r.data
     FROM rss_feed_items r
-    WHERE (
+    WHERE r.id < $1::uuid AND ($2::uuid IS NULL OR r.id < $2::uuid)
+      AND (
         r.bedrock_nova_multimodal_v1_input_sha256 IS NULL
         OR r.bedrock_nova_multimodal_v1_input_sha256 != r.bedrock_nova_multimodal_v1_content_sha256
       )
@@ -44,7 +45,11 @@ export async function* streamPendingRssFeedItems(): AsyncGenerator<
   `
 
   yield* streamPendingEntities<{ id: string; data: RssFeedItemToUpsert }>(
-    createAsyncGeneratorFromCursor(query, [], { batchSize: 1000 }),
+    createAsyncGeneratorFromCursor<{ id: string; data: RssFeedItemToUpsert }>(
+      query,
+      [scan.upperId, scan.afterId],
+      { batchSize: scan.limits.batchSize, maxRows: scan.limits.maxRows, onComplete: scan.complete },
+    ),
     row => createRssFeedItemEmbeddingContent(row.data),
   )
 }

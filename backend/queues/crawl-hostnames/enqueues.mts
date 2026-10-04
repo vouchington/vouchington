@@ -23,8 +23,8 @@ function createBulkHostnameEnqueue(jobName: CrawlHostnamesJobs, defaultPriority:
       opts: {
         deduplication: {
           id: `${jobName}__${hostnameId}`,
-          mode: 'debounce',
-          ttl: ONE_MINUTE_MS,
+          mode: jobName === CRAWL_HOSTNAME_JOB_NAME ? ('simple' as const) : ('debounce' as const),
+          ...(jobName === CRAWL_HOSTNAME_JOB_NAME ? {} : { ttl: ONE_MINUTE_MS }),
         },
       },
     }),
@@ -49,13 +49,19 @@ function createDispatcherEnqueue(jobName: CrawlHostnamesJobs, defaultPriority: n
       {},
       {
         priority: defaultPriority,
-        ...(options?.deduplicationId && {
-          deduplication: {
-            id: options.deduplicationId,
-            mode: 'throttle' as const,
-            ttl: BACKFILL_DEDUPLICATION_TTL_MS,
-          },
-        }),
+        ...(jobName === 'crawl_tier1_dispatcher' || jobName === 'crawl_tier2_dispatcher'
+          ? {
+              deduplication: { id: jobName, mode: 'simple' as const },
+            }
+          : options?.deduplicationId
+            ? {
+                deduplication: {
+                  id: options.deduplicationId,
+                  mode: 'throttle' as const,
+                  ttl: BACKFILL_DEDUPLICATION_TTL_MS,
+                },
+              }
+            : {}),
       },
     )
   }

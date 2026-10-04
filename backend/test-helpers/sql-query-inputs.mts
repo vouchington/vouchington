@@ -41,3 +41,10 @@ export function createCrawlChunksMarkdownConditionForTest(): SQLStatement {
 export function createCrawlChunksCreatedAtOrderForTest(): SQLStatement {
   return sql` ORDER BY crawl_chunks.created_at DESC`
 }
+
+export function createBoundedCursorSeriesInputForTest(count = 4): SQLStatement {
+  return sql`/* boundedCursorObject */ SELECT generate_series(1, ${count}) AS id ORDER BY id`
+}
+
+export const BOUNDED_CURSOR_SERIES_QUERY_FOR_TEST =
+  '/* boundedCursorValues */ SELECT generate_series(1, $1::integer) AS id ORDER BY id'

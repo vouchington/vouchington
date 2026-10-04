@@ -59,6 +59,32 @@ Roll this contract out independently per environment: deploy and verify the prod
 then apply that environment's EventBridge filter. Jobs created with the old unscoped name before
 the filter apply remain safe because the permanent poll dispatcher reconciles their terminal state.
 
+Pending-entity reads use registered cursor batch sizes and a per-run scan budget in
+`bedrock-embeddings-batch-config`. Creation reports `hasMore` and carries a fixed UUID sweep bound
+and last attempted position in its continuation (crawl chunks additionally retain the chunk order).
+Chunk scans use crawl ID descending and chunk order ascending for a stable resume order.
+Poison images count as attempted work; their continuation advances to the tail, and the next
+scheduled root sweep retries them. Healthy images below the minimum travel as bounded IDs in the
+continuation; their eligible replay consumes the next run's scan allowance before new candidates.
+Submitted or no-longer-eligible IDs drop, and an unsubmitted boundary image remains pending.
+A smaller subsequent configuration drains a bounded prefix without dropping the carried tail.
+When a complete sweep has fewer healthy records than the minimum, scheduled roots revisit them.
+The worker retains the cursor and carried IDs on the same durable creation job. Successful capped
+pages delay that job for immediate continuation; provider denial uses the configured retry delay.
+Per-type simple deduplication coalesces recurring roots while that job is active or delayed, and a
+completed or terminally failed job permits the next scheduled root.
+
+The scan budget must be at least the configured minimum batch size. Staff edits validate this
+against merged current fields, and runtime validation rejects an invalid combination before file,
+cursor, or provider side effects. Both configured file and aggregate in-flight size must fit the minimum at the maximum
+converted-image record size, including base64 and the canonical JSON framing. Effective remaining
+provider capacity below that minimum schedules a retry using `creation_retry_delay_ms`; it does not
+scan or abandon a partial page. These constraints preserve the configured work cap.
+
+Capacity checks cover the exact JSON framing and worst-case escaping for text records as well as
+base64 image records. Stored minima must fit both hourly and per-file request ceilings. Cloud
+submission failures leave retries to the current job and do not also spawn a forward continuation.
+
 ## Related
 
 - Base single-pipeline service and shared architecture diagram:
