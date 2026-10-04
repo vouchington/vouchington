@@ -32,7 +32,7 @@
     "yazl": "^3.3.1"
   },
   "devDependencies": {
-    "@types/node": "^26.6.3",
+    "@types/node": "^26.6.4",
     "@types/yauzl": "^3.4.0",
     "@types/yazl": "^3.3.1",
     "@voucha/test-helpers": "workspace:^",
