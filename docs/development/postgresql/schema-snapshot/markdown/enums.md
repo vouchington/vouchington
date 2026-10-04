@@ -34,6 +34,18 @@
 - `priced`
 - `unpriced`
 
+## `amazon_ses_bounce_types`
+
+- `permanent`
+- `transient`
+- `undetermined`
+
+## `amazon_ses_notification_types`
+
+- `bounce`
+- `complaint`
+- `delivery`
+
 ## `api_key_types`
 
 - `rss`
@@ -623,7 +635,7 @@
 - `daily`
 - `weekly`
 
-## `domain_blacklist_types`
+## `domain_blocklist_types`
 
 - `url`
 - `email`
@@ -1491,18 +1503,6 @@
 
 - `enablement`
 - `discoverability`
-
-## `ses_bounce_types`
-
-- `permanent`
-- `transient`
-- `undetermined`
-
-## `ses_notification_types`
-
-- `bounce`
-- `complaint`
-- `delivery`
 
 ## `spending_frequencies`
 

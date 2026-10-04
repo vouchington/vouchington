@@ -10,7 +10,7 @@ Not partitioned — growth: unbounded.
 | ---------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------- |
 | `id`                         | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                       |
 | `individual_id`              | `uuid`                     | no       |                              |          |           |           | The individual who set this valuation.                |
-| `rewards_program_id`         | `uuid`                     | no       |                              |          |           |           | The rewards program being valued.                     |
+| `rewards_program_topic_id`   | `uuid`                     | no       |                              |          |           |           | The rewards program being valued.                     |
 | `value_microunits_per_point` | `bigint`                   | no       |                              |          |           |           | Point value in millionths of the major currency unit. |
 | `currency_code`              | `text`                     | no       |                              |          |           |           | Currency used to value each point.                    |
 | `note`                       | `text`                     | yes      |                              |          |           |           | Free-text note about this valuation.                  |
@@ -21,7 +21,7 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `uq_ind_rp_point_valuations__individual_rewards_program`: `UNIQUE (individual_id, rewards_program_id)`
+- `uq_ind_rp_point_valuations__individual_rewards_program`: `UNIQUE (individual_id, rewards_program_topic_id)`
 
 **Check constraints:**
 
@@ -29,17 +29,17 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `individual_rewards_program_point_valuat_rewards_program_id_fkey`: `FOREIGN KEY (rewards_program_id) REFERENCES topics__rewards_programs(topic_id) ON DELETE CASCADE`
+- `individual_rewards_program_point__rewards_program_topic_id_fkey`: `FOREIGN KEY (rewards_program_topic_id) REFERENCES rewards_program_topics(topic_id) ON DELETE CASCADE`
 - `individual_rewards_program_point_valuations_currency_code_fkey`: `FOREIGN KEY (currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
 - `individual_rewards_program_point_valuations_individual_id_fkey`: `FOREIGN KEY (individual_id) REFERENCES individuals(id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `idx_ind_rewards_program_point_valuations__currency_code`: `CREATE INDEX idx_ind_rewards_program_point_valuations__currency_code ON public.individual_rewards_program_point_valuations USING btree (currency_code)`
-- `idx_ind_rewards_program_point_valuations__rewards_program_id`: `CREATE INDEX idx_ind_rewards_program_point_valuations__rewards_program_id ON public.individual_rewards_program_point_valuations USING btree (rewards_program_id)`
+- `idx_ind_rewards_program_point_valuations__program_topic_id`: `CREATE INDEX idx_ind_rewards_program_point_valuations__program_topic_id ON public.individual_rewards_program_point_valuations USING btree (rewards_program_topic_id)`
 - `idx_ind_rp_point_valuations__individual_id_id`: `CREATE INDEX idx_ind_rp_point_valuations__individual_id_id ON public.individual_rewards_program_point_valuations USING btree (individual_id, id)`
 - `individual_rewards_program_point_valuations_pkey`: `CREATE UNIQUE INDEX individual_rewards_program_point_valuations_pkey ON public.individual_rewards_program_point_valuations USING btree (id)`
-- `uq_ind_rp_point_valuations__individual_rewards_program`: `CREATE UNIQUE INDEX uq_ind_rp_point_valuations__individual_rewards_program ON public.individual_rewards_program_point_valuations USING btree (individual_id, rewards_program_id)`
+- `uq_ind_rp_point_valuations__individual_rewards_program`: `CREATE UNIQUE INDEX uq_ind_rp_point_valuations__individual_rewards_program ON public.individual_rewards_program_point_valuations USING btree (individual_id, rewards_program_topic_id)`
 
 **Triggers:**
 

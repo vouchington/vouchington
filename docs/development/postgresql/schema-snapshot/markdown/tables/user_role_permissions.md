@@ -24,7 +24,7 @@ _none_
 **Foreign keys:**
 
 - `user_role_permissions_permission_type_id_fkey`: `FOREIGN KEY (permission_type_id) REFERENCES user_permission_types(id) ON DELETE CASCADE`
-- `user_role_permissions_role_type_id_fkey`: `FOREIGN KEY (role_type_id) REFERENCES user_roles_types(id) ON DELETE CASCADE`
+- `user_role_permissions_role_type_id_fkey`: `FOREIGN KEY (role_type_id) REFERENCES user_role_types(id) ON DELETE CASCADE`
 
 **Indexes:**
 

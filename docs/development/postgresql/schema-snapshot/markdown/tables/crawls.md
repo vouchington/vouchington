@@ -57,7 +57,7 @@ _none_
 
 **Foreign keys:**
 
-- `crawls_crawler_id_fkey`: `FOREIGN KEY (crawler_id) REFERENCES crawlers(id) ON DELETE SET NULL`
+- `crawls_crawler_id_fkey`: `FOREIGN KEY (crawler_id) REFERENCES hostname_crawler_configurations(id) ON DELETE SET NULL`
 - `crawls_redirect_url_id_fkey`: `FOREIGN KEY (redirect_url_id) REFERENCES urls(id) ON DELETE SET NULL`
 - `crawls_url_id_fkey`: `FOREIGN KEY (url_id) REFERENCES urls(id) ON DELETE CASCADE`
 

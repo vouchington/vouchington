@@ -22,7 +22,7 @@ _none_
 **Foreign keys:**
 
 - `retailer_countries_country_id_fkey`: `FOREIGN KEY (country_id) REFERENCES countries(id) ON DELETE CASCADE`
-- `retailer_countries_retailer_id_fkey`: `FOREIGN KEY (retailer_id) REFERENCES topics__retailers(topic_id) ON DELETE CASCADE`
+- `retailer_countries_retailer_id_fkey`: `FOREIGN KEY (retailer_id) REFERENCES retailer_topics(topic_id) ON DELETE CASCADE`
 
 **Indexes:**
 

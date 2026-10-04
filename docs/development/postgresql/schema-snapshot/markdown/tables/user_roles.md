@@ -23,7 +23,7 @@ _none_
 
 **Foreign keys:**
 
-- `user_roles_role_type_id_fkey`: `FOREIGN KEY (role_type_id) REFERENCES user_roles_types(id) ON DELETE CASCADE`
+- `user_roles_role_type_id_fkey`: `FOREIGN KEY (role_type_id) REFERENCES user_role_types(id) ON DELETE CASCADE`
 - `user_roles_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 **Indexes:**

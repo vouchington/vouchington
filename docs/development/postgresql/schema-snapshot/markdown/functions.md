@@ -185,42 +185,42 @@ CREATE OR REPLACE FUNCTION public.fn_notification_target_entity(notification_ent
  IMMUTABLE
 ```
 
-## `fn_project_ap_inbox_delivery_retention`
+## `fn_project_activitypub_inbox_delivery_retention`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_project_ap_inbox_delivery_retention()
+CREATE OR REPLACE FUNCTION public.fn_project_activitypub_inbox_delivery_retention()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_project_ap_inbox_delivery_storage_after_delete`
+## `fn_project_activitypub_inbox_delivery_storage_after_delete`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_project_ap_inbox_delivery_storage_after_delete()
+CREATE OR REPLACE FUNCTION public.fn_project_activitypub_inbox_delivery_storage_after_delete()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_project_ap_inbox_delivery_storage_after_insert`
+## `fn_project_activitypub_inbox_delivery_storage_after_insert`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_project_ap_inbox_delivery_storage_after_insert()
+CREATE OR REPLACE FUNCTION public.fn_project_activitypub_inbox_delivery_storage_after_insert()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_project_ap_inbox_delivery_storage_after_update`
+## `fn_project_activitypub_inbox_delivery_storage_after_update`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_project_ap_inbox_delivery_storage_after_update()
+CREATE OR REPLACE FUNCTION public.fn_project_activitypub_inbox_delivery_storage_after_update()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_project_ap_post_likes`
+## `fn_project_activitypub_post_likes`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_project_ap_post_likes()
+CREATE OR REPLACE FUNCTION public.fn_project_activitypub_post_likes()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
