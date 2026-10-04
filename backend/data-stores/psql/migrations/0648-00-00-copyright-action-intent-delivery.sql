@@ -67,6 +67,7 @@ CREATE TABLE media_delivery_registry_changes (
   delivery_key text NOT NULL REFERENCES media_delivery_registry_records(delivery_key) ON DELETE RESTRICT,
   generation bigint NOT NULL CHECK (generation >= 0),
   change_type media_delivery_registry_change_types NOT NULL,
+  desired_state text NOT NULL CHECK (desired_state IN ('allow', 'withheld')),
   changed_by_id uuid REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
   delivery_attempt_count integer NOT NULL DEFAULT 0 CHECK (delivery_attempt_count BETWEEN 0 AND 5),
   claimed_at timestamptz,
@@ -86,20 +87,23 @@ CREATE TRIGGER trigger_media_delivery_registry_changes_immutable BEFORE UPDATE O
 FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 CREATE TRIGGER trigger_media_delivery_registry_changes_actor BEFORE INSERT ON media_delivery_registry_changes
 FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id');
-CREATE FUNCTION fn_check_media_delivery_change_generation() RETURNS trigger LANGUAGE plpgsql AS $$
-DECLARE current_generation bigint;
+CREATE FUNCTION fn_update_media_delivery_change_authority() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE current_generation bigint; current_desired_state text;
 BEGIN
-  SELECT generation INTO current_generation FROM media_delivery_registry_records
+  SELECT generation, desired_state INTO current_generation, current_desired_state FROM media_delivery_registry_records
     WHERE delivery_key = NEW.delivery_key FOR NO KEY UPDATE;
   IF current_generation IS DISTINCT FROM NEW.generation THEN RETURN NULL; END IF;
+  NEW.desired_state := current_desired_state;
   RETURN NEW;
 END;
 $$;
 CREATE TRIGGER trigger_media_delivery_registry_changes_generation BEFORE INSERT ON media_delivery_registry_changes
-FOR EACH ROW EXECUTE FUNCTION fn_check_media_delivery_change_generation();
+FOR EACH ROW EXECUTE FUNCTION fn_update_media_delivery_change_authority();
 
 CREATE VIEW media_delivery_registry_current_records AS
-SELECT record.*, change.id AS latest_change_id, change.change_type::text AS state,
+SELECT record.delivery_key, record.placement_id, record.placement_revision, record.image_id,
+  change.desired_state, record.generation, record.created_at, record.updated_at,
+  change.id AS latest_change_id, change.change_type::text AS state,
   change.delivery_attempt_count, change.claimed_at, change.projected_at, change.invalidated_at,
   change.completed_at, change.failure_message, change.next_attempt_at
 FROM media_delivery_registry_records record
@@ -110,6 +114,7 @@ COMMENT ON TABLE media_delivery_registry_changes IS 'Append-only edge delivery t
 COMMENT ON VIEW media_delivery_registry_current_records IS 'Current authority record joined to its latest immutable delivery transition; no workflow state is stored on the authority parent.';
 COMMENT ON COLUMN media_delivery_registry_changes.delivery_key IS 'Concrete exact edge-delivery authority whose transition this records.';
 COMMENT ON COLUMN media_delivery_registry_changes.generation IS 'Nontransactional authority generation fencing stale acknowledgements.';
+COMMENT ON COLUMN media_delivery_registry_changes.desired_state IS 'Exact edge state selected by this authority generation, retained after later changes and republishing.';
 COMMENT ON COLUMN media_delivery_registry_changes.change_type IS 'Typed edge-delivery transition.';
 COMMENT ON COLUMN media_delivery_registry_changes.changed_by_id IS 'Retained operator identity, or null for system delivery work.';
 COMMENT ON COLUMN media_delivery_registry_changes.delivery_attempt_count IS 'Number of claims already made in this authority generation.';
@@ -172,9 +177,9 @@ COMMENT ON COLUMN media_delivery_registry_records.delivery_key IS 'Exact canonic
 COMMENT ON COLUMN media_delivery_registry_records.placement_id IS 'Typed placement authority; never inferred from image existence.';
 COMMENT ON COLUMN media_delivery_registry_records.placement_revision IS 'Exact placement revision required by a placement route; stale revisions are independently withheld.';
 COMMENT ON COLUMN media_delivery_registry_records.image_id IS 'Immutable image bound to the exact public-use placement.';
-COMMENT ON COLUMN media_delivery_registry_records.desired_state IS 'Desired legal delivery state; DynamoDB is updated before this row becomes completed.';
+COMMENT ON COLUMN media_delivery_registry_records.desired_state IS 'Staging cache of the desired edge state, captured atomically in each immutable generation transition; current delivery readers use the latest transition.';
 
-CREATE FUNCTION fn_insert_media_delivery_generation_change() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE FUNCTION fn_create_media_delivery_generation_change() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'INSERT' OR NEW.generation IS DISTINCT FROM OLD.generation THEN
     INSERT INTO media_delivery_registry_changes(delivery_key, generation, change_type)
@@ -184,4 +189,4 @@ BEGIN
 END;
 $$;
 CREATE TRIGGER trigger_media_delivery_registry_records_new_generation AFTER INSERT OR UPDATE ON media_delivery_registry_records
-FOR EACH ROW EXECUTE FUNCTION fn_insert_media_delivery_generation_change();
+FOR EACH ROW EXECUTE FUNCTION fn_create_media_delivery_generation_change();

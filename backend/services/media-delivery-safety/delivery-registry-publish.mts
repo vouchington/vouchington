@@ -66,7 +66,7 @@ async function publishCommittedDeliveryRecord(
   const { rows } = await query<ImageDeliveryRecord>(sql`
     /* publishStagedMediaDeliveryRecord */
     SELECT delivery_key, desired_state, placement_id, placement_revision, image_id, generation
-    FROM media_delivery_registry_records
+    FROM media_delivery_registry_current_records
     WHERE delivery_key = ${deliveryKey}
   `)
   const record = rows[0]
@@ -111,12 +111,14 @@ async function readCurrentPlacementDeliveryRecord(
   query: NonNullable<QueryOptions['query']>,
   deliveryKey: string,
 ): Promise<ImageDeliveryRecord | null> {
+  await query(sql`/* readCurrentPlacementDeliveryRecord:lock */
+    SELECT delivery_key FROM media_delivery_registry_records WHERE delivery_key = ${deliveryKey} FOR NO KEY UPDATE
+  `)
   const { rows } = await query<ImageDeliveryRecord>(sql`
     /* readCurrentPlacementDeliveryRecord */
     SELECT delivery_key, desired_state, placement_id, placement_revision, image_id, generation
-    FROM media_delivery_registry_records
+    FROM media_delivery_registry_current_records
     WHERE delivery_key = ${deliveryKey}
-    FOR NO KEY UPDATE
   `)
   return rows[0] ?? null
 }

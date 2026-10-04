@@ -287,9 +287,9 @@ examples describe the review baseline, rather than the current generated snapsho
   - **Rows keep returning to earlier states (no final state):** the table becomes a history table
     (R4). Each attempt or change is an append-only row with its own final lifecycle, and current
     state is the latest row.
-    - `copyright_notice_form_screening_attempts` → `copyright_notice_form_screening_attempts`.
-      Today a restart overwrites the row: `attempt_number + 1`, and it clears the result and the
-      timestamps.
+    - `copyright_notice_form_screening_attempts` retains one row per attempt.
+      A restart appends the next attempt number and leaves the prior result and terminal facts
+      intact.
     - `media_delivery_registry_records`: each desired-state change or republish advances
       `generation` and puts a completed row back to `pending`. Instead, each change becomes an
       append-only `_changes` row that keeps its sequence-assigned `generation` and has its own
@@ -349,11 +349,9 @@ This extends the prelaunch relational-storage rule.
   - Pre-allocated ids (5), reserved before the row they name exists, plus the 2 outbound
     ActivityPub activity ids on generated tables.
   - Natural keys (2).
-  - `community_agent_prompt_revisions.agent_prompt_id` (1). It has no FK because a prompt is
-    hard-deleted when its creator's account is deleted (`created_by_id` → users CASCADE); nothing
-    else hard-deletes prompts. Decision 15 makes `created_by_id` SET NULL, so the prompt lives as
-    long as its community, and the renamed `community_agent_prompt_revisions.community_agent_prompt_id`
-    gets an FK → `community_agent_prompts` ON DELETE CASCADE.
+  - Prompt revisions use `community_agent_prompt_id` → `community_agent_prompts` CASCADE.
+    Prompt creator deletion uses SET NULL, so deleting the live creator does not destroy the
+    community prompt or its history.
   - `curated_aside_items.entity_id`, a `STORED` `COALESCE` of concrete FKs (generated columns
     are skipped).
   - The former relation-vote parent needed two partition-only FK exceptions. The standalone

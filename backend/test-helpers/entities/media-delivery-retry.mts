@@ -1,6 +1,18 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
+export async function getTestMediaDeliveryTransitionHistory(deliveryKey: string) {
+  const { rows } = await read<{
+    generation: string
+    desired_state: 'allow' | 'withheld'
+    change_type: 'pending' | 'claimed' | 'completed' | 'failed'
+  }>(sql`/* getTestMediaDeliveryTransitionHistory */
+    SELECT generation, desired_state, change_type FROM media_delivery_registry_changes
+    WHERE delivery_key = ${deliveryKey} ORDER BY id
+  `)
+  return rows
+}
+
 export async function getTestMediaDeliveryRecordSnapshot(
   deliveryKey: string,
 ): Promise<Record<string, unknown> | null> {
