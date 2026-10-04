@@ -15,14 +15,22 @@ import { writeOpenApi } from './openapi/write-openapi.mts'
 import { writeApiFixtures } from './write.mts'
 
 const start = performance.now()
+function reportPhase(name: string): void {
+  console.log(`${name} after ${((performance.now() - start) / 1000).toFixed(2)}s`)
+}
+
 const loaded = loadBackendProgram()
+reportPhase('Backend program ready')
 assertBackendRowContracts(loaded.program)
+reportPhase('PostgreSQL row contracts verified')
 const builds = getBackendProgramBuildCount()
 
 await writeApiFixtures({ check: true })
+reportPhase('Response fixtures verified')
 const document = buildOpenApiDocument()
 assert.deepEqual(document['x-unavailable-routes'], [])
 assert.deepEqual(document['x-unavailable-request-routes'], [])
+reportPhase('OpenAPI contracts extracted')
 
 const registered = loadRegisteredRouteCatalog().map(
   route => `${route.method}:${routeShape(route.routeTemplate)}`,
@@ -60,6 +68,7 @@ assert.throws(
 )
 
 await writeOpenApi({ check: true, document })
+reportPhase('OpenAPI and request snapshots verified')
 assert.equal(
   getBackendProgramBuildCount(),
   builds,

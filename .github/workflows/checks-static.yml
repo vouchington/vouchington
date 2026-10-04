@@ -65,7 +65,7 @@ jobs:
             printf '%s\n' "$untracked_generated_files"
             exit 1
           fi
-        timeout-minutes: 2
+        timeout-minutes: 5
 
   static-web:
     if: inputs.web
