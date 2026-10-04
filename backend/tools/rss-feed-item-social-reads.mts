@@ -5,6 +5,7 @@ import {
 } from '@services/elections-votes/rss-feed-item'
 import { getRssFeedItemById } from '@services/rss-feed-items/get'
 import { getFollowedUsersByElectionVote } from '@services/users/follow-context'
+import { isAdminUser } from '@services/users/authorization'
 import type { BasicUser } from '@services/users/types'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { pageInfoSchema } from './mcp-read-output.mts'
@@ -138,7 +139,7 @@ export const getRssFeedItemVotesTool: Tool<VotesArgs, VotesResult> = {
       }
       const page = await findPageOrNull(args.after, () => {
         const options = { limit: clampToolLimit(args.limit, 100, 100), after: args.after }
-        return currentUser.roles.includes('administrator')
+        return isAdminUser(currentUser)
           ? getRssFeedItemElectionVotesByElectionId(args.rss_feed_item_id, options)
           : getRssFeedItemElectionVotesByUserForEntity(
               currentUser.id,

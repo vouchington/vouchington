@@ -3,6 +3,7 @@ import type { Tool } from '@services/openai-agents/tool-types'
 import { getRssFeedItemByIdCachedBatch } from '@services/entity-fetch'
 import { getRssFeedItemById } from '@services/rss-feed-items/get'
 import { searchRssFeedItems } from '@services/rss-feed-items'
+import { isAdminUser } from '@services/users/authorization'
 import {
   prepareRssFeedItemsSearchParams,
   resolveRssFeedItemsSearchParams,
@@ -84,7 +85,7 @@ export const listRssFeedItemsTool: Tool<ListArgs, ListResult> = {
           ...searchOptions,
           limit: clampToolLimit(args.limit, 10, 100),
           currentUserId: currentUser.id,
-          isAdministrator: currentUser.roles.includes('administrator'),
+          isAdministrator: isAdminUser(currentUser),
         })
         const items = await getRssFeedItemByIdCachedBatch(result.results.map(entry => entry.id))
         return {
