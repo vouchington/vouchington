@@ -1,11 +1,11 @@
-import type { JournalEntry, JournalLoadResult } from 'vouchington-tooling/session-friction'
+import type { JournalEntry, JournalLoadResult } from 'vouchington-tooling/agent-blackboard'
 
 import {
   createEntriesClient,
   isBlackboardNotFound,
   resolveBlackboardConnection,
   type BlackboardEntriesClient,
-} from '../../blackboard/client.mts'
+} from '../blackboard/client.mts'
 
 export async function loadJournalEntries(
   sessionId: string,

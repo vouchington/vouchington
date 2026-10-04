@@ -60,14 +60,6 @@ command = 'node "$(git rev-parse --show-toplevel)/dev/codex-hooks/pre-tool-use.m
 timeout = 30
 statusMessage = "Checking repository command policy"
 
-[[hooks.PermissionRequest]]
-
-[[hooks.PermissionRequest.hooks]]
-type = "command"
-command = 'node "$(git rev-parse --show-toplevel)/dev/session-friction/record.mts" permission-request 2>/dev/null || true'
-timeout = 30
-statusMessage = "Recording permission request"
-
 [[hooks.SessionStart]]
 
 [[hooks.SessionStart.hooks]]
@@ -107,7 +99,7 @@ matcher = "ExitPlanMode|Bash"
 type = "command"
 command = 'node "$(git rev-parse --show-toplevel)/dev/codex-hooks/post-tool-use-command.mts" codex 2>/dev/null || true'
 timeout = 30
-statusMessage = "Recording session friction"
+statusMessage = "Checking tmux reminder"
 
 [[hooks.PostToolUse]]
 matcher = "Edit|Write|apply_patch"

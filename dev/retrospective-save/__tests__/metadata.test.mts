@@ -6,7 +6,6 @@ import {
   composeRetrospective,
   type RetrospectiveCompositionInput,
 } from 'vouchington-tooling/agent-blackboard'
-import { recordFriction } from 'vouchington-tooling/session-friction'
 
 import { feedbackStore, HOSTED_ENV } from '../../test-helpers/blackboard/client-fixtures.mts'
 import { runSave } from '../save.mts'
@@ -22,7 +21,7 @@ function composition(): RetrospectiveCompositionInput {
     description: 'Generated metadata roundtrip',
     repositories: ['vouchington/vouchington'],
     workOutcome: 'no-change',
-    feedbackCoverage: { status: 'partial', sources: ['journal', 'friction'], droppedCount: 3 },
+    feedbackCoverage: { status: 'partial', sources: ['journal', 'transcript'], droppedCount: 3 },
     narrative: '# Retrospective\nThe task made no changes.',
     facts: { status: 'unavailable', reason: 'repository evidence unavailable' },
     transcript: { status: 'unavailable', reason: 'transcript not captured' },
@@ -112,7 +111,6 @@ describe('generated retrospective metadata handoff', () => {
       transcript,
       `${JSON.stringify({ type: 'event_msg', payload: { type: 'user_message' } })}\n`,
     )
-    recordFriction('sess-1', { type: 'tool-result', command: 'echo clean' }, { directory })
     const input: RetrospectiveCompositionInput = {
       ...composition(),
       facts: {
@@ -133,11 +131,13 @@ describe('generated retrospective metadata handoff', () => {
         }),
       },
       transcript: { jsonlPath: transcript },
-      friction: { directory, journalLoader: () => ({ status: 'not-found' }) },
+      // An existing journal with no entries is an assessed, empty audit source; a missing one is
+      // unavailable and could not carry complete coverage.
+      journal: { journalLoader: () => ({ status: 'ok', entries: [] }) },
       architecture: { status: 'none-observed', reason: 'reviewed the unchanged service boundary' },
       feedbackCoverage: {
         status: 'complete',
-        sources: ['repository', 'transcript', 'journal', 'friction'],
+        sources: ['repository', 'transcript', 'journal'],
         droppedCount: 0,
       },
     }
@@ -187,7 +187,7 @@ describe('generated retrospective metadata handoff', () => {
       '--coverage-source',
       'journal',
       '--coverage-source',
-      'friction',
+      'transcript',
       '--dropped-count',
       '3',
       ...identity,

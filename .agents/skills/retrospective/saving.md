@@ -86,10 +86,10 @@ Status: <findings|none observed (inspected scope)|not assessed (reason)|unavaila
 conditional sections — include each only when it fires. `## Tool Findings` and
 `## Architecture Findings` are required with an explicit assessment status and inspected scope
 or reason; findings require observations, evidence, and dispositions. The CLI composer always
-supplies its trusted friction collector and includes `## Sandbox & Permission Audit`; an unavailable
-source is assessed as unavailable, not empty. For a manually staged retrospective, derive observed
-evidence from `node dev/session-friction/report.mts [--root-codex]` under the canonical evidence
-boundary. Empty capture is not proof of absence.
+builds `## CI Failures` and `## Sandbox & Permission Audit` from the session's hosted journal; an
+unavailable source is assessed as unavailable, not empty. For a manually staged retrospective,
+derive observed evidence from `node dev/blackboard-journal.mts entries [--root-codex]` under the
+canonical evidence boundary. Empty capture is not proof of absence.
 
 If you proactively made a GitHub issue already as a follow-up task, link it in the relevant section.
 
@@ -144,12 +144,13 @@ and a pinned replay command. Do not discard pending records or claim acknowledge
 `compose --input <json-file>` accepts a serializable subset of the portable composition input:
 session and repository identity, date and references, outcome and coverage, concise narrative,
 facts/transcript paths or explicit unavailable reasons, and tool/architecture assessments. The
-JSON must not contain a friction collector, executable facts callbacks, or a transcript environment.
+JSON must not contain a journal collector, executable facts callbacks, or a transcript environment.
 Transcript discovery is bound to the composition session ID; JSON cannot supply `jsonlPath`.
-The CLI builds the trusted friction collector itself from the same session ID, the local friction
-log directory, and the hosted journal connection; it reads those observations once while composing.
-A missing hosted connection is reported as unavailable, not as an empty journal. Declare coverage
-truthfully, including observed dropped records; composition rejects an understated drop count. The
+The CLI builds the trusted journal collector itself from the same session ID and the hosted journal
+connection; it reads the journal once while composing. `## CI Failures` and
+`## Sandbox & Permission Audit` come only from journal entries in the documented block grammar. A
+missing hosted connection or a session unknown to the hosted blackboard is reported as unavailable,
+not as an empty journal. Declare coverage truthfully, including any dropped records. The
 composer generates routine markers and facts plus validated `work_outcome` and `feedback_coverage`
 front matter, then applies local document validation. Use observations with evidence and
 disposition; `none-observed`, `not-assessed`, and `unavailable` remain distinct. No raw transcript
@@ -172,10 +173,9 @@ Both no-retrospective states exit 0 and share the `No retrospective saved yet` p
 branches on two prefixes, not three. Unlike `save`, `check` never creates the agent-blackboard session
 — it is server-read-only, so running it costs nothing even for a session that will never get a
 retrospective. `check --root-codex` may create or refresh the ignored local Codex persistence file.
-Interactive root Codex always passes `--root-codex` here, to
-`node dev/blackboard-journal.mts entries --root-codex`, and to
-`node dev/session-friction/report.mts --root-codex`. Each root-aware read refreshes and reads back
-the worktree-local Codex identity before its server request. An absent-thread new root adds
+Interactive root Codex always passes `--root-codex` here and to
+`node dev/blackboard-journal.mts entries --root-codex`. Each root-aware read refreshes and reads
+back the worktree-local Codex identity before its server request. An absent-thread new root adds
 `--new-root-codex-session` to exactly the first root script call; children do none of them.
 
 A failing `check` (missing token, unreachable server, invalid session id format) exits nonzero with
