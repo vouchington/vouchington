@@ -1,3 +1,4 @@
+import { lockCommunityRestrictionWrites } from './lock.mts'
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
@@ -21,6 +22,7 @@ export async function liftCommunityRestriction(
 
   let restrictionType: string | null = null
   await using query = await beginTransaction()
+  await lockCommunityRestrictionWrites(query, communityId)
   const { rows } = await write(
     sql`/* liftCommunityRestriction:find-active */
     SELECT restriction_type

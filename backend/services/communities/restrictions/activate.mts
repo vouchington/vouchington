@@ -1,3 +1,4 @@
+import { lockCommunityRestrictionWrites } from './lock.mts'
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
@@ -43,6 +44,7 @@ export async function activateCommunityRestrictions(
   assert(currentUserCanModerateCommunity(currentUser, community, membership), 403, 'Forbidden')
 
   await using query = await beginTransaction()
+  await lockCommunityRestrictionWrites(query, communityId)
   const restrictions = await activateCommunityRestrictionTypes(
     query,
     currentUser.id,
