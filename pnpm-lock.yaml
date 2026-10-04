@@ -1937,9 +1937,6 @@ importers:
       '@jongleberry/api-server':
         specifier: ^2.1.0
         version: 2.1.0
-      '@modules/search-utils':
-        specifier: workspace:^
-        version: link:../modules/search-utils
       '@modules/utils':
         specifier: workspace:^
         version: link:../modules/utils
@@ -5080,9 +5077,6 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
-      '@modules/search-utils':
-        specifier: workspace:^
-        version: link:../../modules/search-utils
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
@@ -6194,9 +6188,6 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
-      '@modules/search-utils':
-        specifier: workspace:^
-        version: link:../../modules/search-utils
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
@@ -6301,9 +6292,6 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
-      '@modules/search-utils':
-        specifier: workspace:^
-        version: link:../../modules/search-utils
       '@services/pagination':
         specifier: workspace:^
         version: link:../pagination
@@ -8768,9 +8756,6 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
-      '@modules/search-utils':
-        specifier: workspace:^
-        version: link:../../modules/search-utils
       '@services/pagination':
         specifier: workspace:^
         version: link:../pagination
@@ -8799,9 +8784,6 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
-      '@modules/search-utils':
-        specifier: workspace:^
-        version: link:../../modules/search-utils
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
@@ -10062,9 +10044,6 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
-      '@modules/search-utils':
-        specifier: workspace:^
-        version: link:../../modules/search-utils
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
@@ -10096,9 +10075,6 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
-      '@modules/search-utils':
-        specifier: workspace:^
-        version: link:../../modules/search-utils
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
@@ -10136,9 +10112,6 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
-      '@modules/search-utils':
-        specifier: workspace:^
-        version: link:../../modules/search-utils
       '@services/pagination':
         specifier: workspace:^
         version: link:../pagination
@@ -10160,9 +10133,6 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
-      '@modules/search-utils':
-        specifier: workspace:^
-        version: link:../../modules/search-utils
       '@services/pagination':
         specifier: workspace:^
         version: link:../pagination
@@ -11001,9 +10971,6 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
-      '@modules/search-utils':
-        specifier: workspace:^
-        version: link:../../modules/search-utils
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils

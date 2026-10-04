@@ -22,7 +22,6 @@
   },
   "dependencies": {
     "@jongleberry/api-server": "^2.1.0",
-    "@modules/search-utils": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@services/entity-cache": "workspace:^",

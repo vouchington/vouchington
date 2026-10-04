@@ -30,7 +30,6 @@
     "@modules/feed-query-builders": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/pagination": "workspace:^",
-    "@modules/search-utils": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/crawl-embeds": "workspace:^",
     "@queues/crawl-hostnames": "workspace:^",
