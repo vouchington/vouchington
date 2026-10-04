@@ -31,6 +31,6 @@
     "@jongleberry/vurst-prompt": "^0.4.3",
     "@services/users": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
-    "openai": "^7.25.0"
+    "openai": "^7.27.0"
   }
 }
