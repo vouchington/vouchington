@@ -20,9 +20,8 @@ List this workflow's runs created in the last 24 hours, paging until a page is e
 `gh api "repos/{{REPOSITORY}}/actions/workflows/merge-queue-ejection.yml/runs?created=>=<since>&per_page=100&page=<n>"`.
 Keep the runs whose `conclusion` is not `skipped`; the workflow already skipped every removal reason
 other than a CI failure or timeout. Each run's `head_sha` is the ejected head, and its
-`display_title`, `Merge queue ejection #<N> (<reason>)`, names the pull request. For an older run
-without that title, map the head with `gh api repos/{{REPOSITORY}}/commits/<head_sha>/pulls`. Keep
-the run only when that pull request's base is `main`.
+`display_title`, `Merge queue ejection #<N> (<reason>)`, names the pull request. The workflow runs
+only for removals from `main`, so keep the run even if the pull request was later retargeted.
 
 Each run is one removal, called an occurrence. An occurrence is untriaged while none of its pull
 request's comments containing the triage marker for the run's `head_sha` (see [Report](#report))
