@@ -30,16 +30,34 @@ Journal only friction. Append a journal entry immediately, not at session end, w
 - a command is denied or escalated;
 - a tool, doc or skill gap costs more than one turn;
 - a first-party tool (`no-mistakes`, `pr-shepherd`, `dev/*` and `vouchington` commands) returns a
-  surprising result.
+  surprising result;
+- a CI failure, once per root cause (see the CI block below).
 
-A failed check, a failed CI run, a repeated fix push and leaving the plan are not triggers on their
-own. The retrospective collects CI failures from its own sources, and its Plan vs Actual covers plan
-changes. This list replaces the canonical skill's broader list of observations to capture. Use this
-one-line grammar, then optional brief prose:
+A repeated fix push and leaving the plan are not triggers on their own. The retrospective's
+`## CI Failures` is built only from the `GitHub Actions` blocks below, and its Plan vs Actual covers
+plan changes. This list replaces the canonical skill's broader list of observations to capture. Use
+this one-line grammar, then optional brief prose:
 
 ```
 - `recurring|one-off` — <finding> — <file path(s)> — <evidence: PR / commit / exact command> — <issue #N|none>
 ```
+
+A CI failure uses this block grammar instead, one block per root cause, not per run. A flake counts,
+even one that passed on a later run with no code change. Record whether it was flaky, the gotcha, how
+to get passing CI in fewer commits, and whether the `no-mistakes` test impact assessment selected the
+failing test or check:
+
+```
+- `recurring|one-off` — `GitHub Actions` — <check name>: <gotcha, or flaky: <test>>
+  - Evidence: <run URL and commit>
+  - Root diagnostic: <root cause; for a flake, the nondeterminism observed>
+  - Disposition: no-mistakes impact: selected|missed (<gap>); <fix commit or issue #N>
+```
+
+Agents should know every test to update without running the whole suite locally, and the impact
+assessment is how. A failure in a test it did not name is `missed (<gap>)`, a `no-mistakes` gap: fix
+the impact rules or file an issue, never "run the full suite locally". A flake that `no-mistakes` ran
+and that passed locally is `selected`, recorded as a flake.
 
 Journal the observation before filing or commenting through
 [github-issue](../github-issue/SKILL.md). Append its issue disposition afterward; a one-off or

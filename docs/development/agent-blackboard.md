@@ -214,11 +214,12 @@ session. The root workflow must therefore perform one rotation before any other 
 ## Agent-written journal entries
 
 Agents write their own journal entries, following the triggers in the
-[`blackboard` skill](../../.agents/skills/blackboard/SKILL.md). Hooks do not append them: the
-SessionStart `compact` hook and the PostToolUse checkpoint pipeline that once journaled
-post-compaction facts, repeated command failures, and PR/push milestones (#9337) were removed
-in #1201. Mechanical detail comes from the transcript readers instead, for example
-`pnpm exec vouchington retrospective-transcript`.
+[`blackboard` skill](../../.agents/skills/blackboard/SKILL.md). Those include one `GitHub Actions`
+block per CI failure root cause, the only source of the retrospective's `## CI Failures`. Hooks do
+not append journal entries: the SessionStart `compact` hook and the PostToolUse checkpoint
+pipeline that once journaled post-compaction facts, repeated command failures, and PR/push
+milestones (#9337) were removed in #1201. Mechanical detail comes from the transcript readers
+instead, for example `pnpm exec vouchington retrospective-transcript`.
 
 Entries those hooks already appended keep their structural `checkpoint` field and stay in Blackboard
 until archived, so `node dev/retrospective-distill.mts` still classifies a session made only of them
