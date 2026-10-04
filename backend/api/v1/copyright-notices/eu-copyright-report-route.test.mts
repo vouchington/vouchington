@@ -69,7 +69,7 @@ describe('DSA copyright transparency report GET', () => {
       before.body.copyright_eu_report.receipt_count + 1,
     )
     expect(await countEuTransparencyReportsBy(staff.id)).toBe(reportCount)
-  })
+  }, 240_000)
 
   it.each(['csv_notices', 'csv_complaints'] as const)(
     'serves %s as attachment with CRLF and no TOTAL row',

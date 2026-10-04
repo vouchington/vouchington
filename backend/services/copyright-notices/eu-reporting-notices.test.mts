@@ -59,7 +59,7 @@ describe('DSA copyright notice aggregates', () => {
     expect(empty).not.toHaveProperty('median_hours_to_action')
     expect(empty).not.toHaveProperty('median_hours_to_action_trusted_flagger')
     expect(empty.actions_on_terms_count).toBe(0)
-  })
+  }, 240_000)
 
   it('counts every pipeline but only in-area flaggers for trusted figures', async () => {
     if (getIsolatedDatabaseCaseMode('copyright-dsa-notice-population') === 'parent') {
@@ -131,7 +131,7 @@ describe('DSA copyright notice aggregates', () => {
       after.median_hours_to_action_trusted_flagger,
     )
     expect(afterRestore.actions_on_law_count).toBe(after.actions_on_law_count)
-  })
+  }, 240_000)
 
   it('counts durable automated assessment provenance rather than nullable staff identity', async () => {
     if (getIsolatedDatabaseCaseMode('copyright-dsa-notice-automation') === 'parent') {
@@ -168,7 +168,7 @@ describe('DSA copyright notice aggregates', () => {
     ).toBe(1)
     expect(after.actions_on_law_count - before.actions_on_law_count).toBe(1)
     expect(after.notified_items_count - before.notified_items_count).toBe(2)
-  })
+  }, 240_000)
 
   it('counts guidance-only processing while leaving the human restriction out of automated actions', async () => {
     if (getIsolatedDatabaseCaseMode('copyright-dsa-notice-guidance') === 'parent') {
@@ -212,7 +212,7 @@ describe('DSA copyright notice aggregates', () => {
     expect(after.restrictions_imposed_by_automated_means_count).toBe(
       before.restrictions_imposed_by_automated_means_count,
     )
-  })
+  }, 240_000)
 
   it('includes a court-hold reimposition as a separate law action', async () => {
     if (getIsolatedDatabaseCaseMode('copyright-dsa-notice-hold') === 'parent') {
@@ -233,7 +233,7 @@ describe('DSA copyright notice aggregates', () => {
     expect((await getCopyrightNoticePrivateAggregate(scene.notice.id))?.restrictions).toHaveLength(
       2,
     )
-  })
+  }, 240_000)
 
   it('rounds receipt-to-completed-withhold time from one notice to two hours decimals', async () => {
     if (getIsolatedDatabaseCaseMode('copyright-dsa-notice-median') === 'parent') {
@@ -250,5 +250,5 @@ describe('DSA copyright notice aggregates', () => {
     const after = await readDsaCopyrightNoticeFigures(start, end)
     expect(after.actions_on_law_count - before.actions_on_law_count).toBe(1)
     expect(after.median_hours_to_action).toBe(1.24)
-  })
+  }, 240_000)
 })

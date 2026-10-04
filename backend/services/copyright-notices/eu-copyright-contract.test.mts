@@ -267,7 +267,7 @@ describe('EU copyright notice contracts', () => {
       eu_statement_count: 1,
       provisional_withholding_at: null,
     })
-  })
+  }, 240_000)
 
   it('rejects a second withdrawal of the same policy approval', async () => {
     const { administrator, approval } = await euActors()

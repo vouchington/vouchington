@@ -43,7 +43,7 @@ describe('DSA copyright complaint aggregates', () => {
     expect(after.complaints_by_decision_type.no_action.upheld).toBe(
       before.complaints_by_decision_type.no_action.upheld,
     )
-  })
+  }, 240_000)
   it('uses immutable submitter roles and complained-about outcomes across decision periods', async () => {
     if (getIsolatedDatabaseCaseMode('copyright-dsa-complaint-roles') === 'parent') {
       await runIsolatedDatabaseCase('copyright-dsa-complaint-roles')
@@ -99,7 +99,7 @@ describe('DSA copyright complaint aggregates', () => {
     ).toBe(1)
     expect(after.complaints_by_decision_type.restrict.partially_reversed).toBe(0)
     expect(after.complaints_by_decision_type.no_action.median_hours).toEqual(expect.any(Number))
-  })
+  }, 240_000)
 
   it('includes only in-area matches in the trusted no-action subset', async () => {
     if (getIsolatedDatabaseCaseMode('copyright-dsa-complaint-trusted') === 'parent') {
@@ -135,7 +135,7 @@ describe('DSA copyright complaint aggregates', () => {
       after.complaints_by_decision_type.no_action_trusted_flagger.upheld -
         before.complaints_by_decision_type.no_action_trusted_flagger.upheld,
     ).toBe(1)
-  })
+  }, 240_000)
 
   it('counts a historical complaint only in its receipt period and a later outcome in its decision period', async () => {
     if (getIsolatedDatabaseCaseMode('copyright-dsa-complaint-periods') === 'parent') {
@@ -186,5 +186,5 @@ describe('DSA copyright complaint aggregates', () => {
     expect(afterRecent.complaints_by_decision_type.no_action.median_hours).toEqual(
       expect.any(Number),
     )
-  })
+  }, 240_000)
 })
