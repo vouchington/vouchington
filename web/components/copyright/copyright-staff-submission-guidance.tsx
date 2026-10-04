@@ -2,7 +2,7 @@ import type {
   CopyrightCounterNoticeGuidance,
   CopyrightLegalHoldGuidance,
 } from '@/types/copyright-notices'
-import { COPYRIGHT_AI_GUIDANCE_LABEL } from './copyright-staff-form-guidance'
+import { COPYRIGHT_AI_GUIDANCE_LABEL } from './copyright-staff-guidance-label'
 
 type Props =
   | { kind: 'counter_notice'; guidance: CopyrightCounterNoticeGuidance }

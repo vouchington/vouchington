@@ -265,6 +265,11 @@ describe('PostgreSQL schema static-analysis rule helpers', () => {
     expect(isIgnoredForNameInflection('rss_feed_item')).toBe(false)
   })
 
+  it('exempts only the required singular copyright guidance table name', () => {
+    expect(isIgnoredForNameInflection('copyright_notice_submission_guidance')).toBe(true)
+    expect(isIgnoredForNameInflection('community_guidance')).toBe(false)
+  })
+
   it('derives default-less UUIDv7 id exceptions from the schema-growth registry', () => {
     expect(
       isAllowedUuidConventionViolation({

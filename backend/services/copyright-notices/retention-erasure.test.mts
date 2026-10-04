@@ -8,6 +8,7 @@ import {
 import { createRetentionAdministratorLiftCase } from '@voucha/test-helpers/copyright-retention-administrator-lift'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { createRetentionEmailCase } from '@voucha/test-helpers/services/copyright-notices/retention-email-case'
+import { addTestCopyrightSubmissionGuidanceForRetentionCase } from '@voucha/test-helpers/copyright-submission-guidance-retention'
 import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
 import { createRetentionFormCase } from '@voucha/test-helpers/services/copyright-notices/retention-form-case'
 import { useCopyrightRetentionConfig } from '@voucha/test-helpers/services/copyright-notices/retention-config'
@@ -31,6 +32,7 @@ describe('copyright evidence retention sweep', () => {
   it('overwrites the personal data of an eligible case and deletes every object version', async () => {
     await configure({ evidenceRetentionDeletion: true, evidenceRetentionDays: 30 })
     const cases = await Promise.all([createRetentionEmailCase(), createRetentionFormCase()])
+    await addTestCopyrightSubmissionGuidanceForRetentionCase(cases[1]!.noticeId)
     const noticeIds = cases.map(entry => entry.noticeId)
     const administratorLift = await createRetentionAdministratorLiftCase()
     const coverageNoticeIds = [...noticeIds, administratorLift.noticeId]
