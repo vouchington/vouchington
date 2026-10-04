@@ -10,7 +10,7 @@ stored on the content itself, not on the user profile.
 The body is a closed object: an unknown field or a wrong type returns `422` (`Invalid request body`).
 The check runs after authentication and the suspension check but before the service resolves the
 target user, so a malformed body from a caller who may not edit the target is also `422`. See the
-[request validation decisions](../../reference-content-routes-request-validation.md#status-decisions).
+[selected user-update request cases](../../reference-content-routes-request-validation.md#user-updates-and-data-request-stream).
 
 The `update_my_preferences` MCP tool runs this route's command for the caller only, with an allow-listed
 subset of the body: visibility, messaging, post defaults, country, locale, and Hacker News discussions. It
