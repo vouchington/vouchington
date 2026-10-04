@@ -275,7 +275,7 @@ describe('post-publication writer inventory', () => {
     for (const [path, sql] of [
       [
         'backend/services/rss-feeds/history.mts',
-        'INSERT INTO rss_feed_enablement_changes (rss_feed_id) VALUES ($1)',
+        'INSERT INTO rss_feed_setting_changes (rss_feed_id) VALUES ($1)',
       ],
       ['backend/services/stories/update.mts', 'UPDATE stories SET title = $1'],
     ]) {

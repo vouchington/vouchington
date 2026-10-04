@@ -8,7 +8,7 @@ Central registry and service layer for Valkey-backed `DynamicConfig` namespaces.
 
 - Registers every admin-editable DynamicConfig namespace in code.
 - Enforces per-namespace view/update authorization through role arrays; administrators are always allowed.
-- Validates field updates, records non-noop changes in `dynamic_config_change_logs`, and exposes recent history.
+- Validates field updates, records non-noop changes in `dynamic_configuration_revisions`, and exposes recent history.
 
 ## Key Exports
 

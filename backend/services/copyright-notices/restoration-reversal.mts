@@ -65,7 +65,7 @@ export async function createCopyrightRestoreIntentForReversalInTransaction(
   const intent = intentRows[0]
   assert(intent, 500, 'Copyright reversal restore intent was not recorded')
   await transaction(sql`/* createCopyrightRestoreIntentForReversalInTransaction:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, copyright_notice_action_intent_id)
+    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, copyright_notice_action_intent_id)
     VALUES (${restriction.copyright_notice_id}, 'reversal_restoration_intent_created', ${intent.id})
   `)
   return intent

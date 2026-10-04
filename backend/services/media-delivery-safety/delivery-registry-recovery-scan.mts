@@ -2,7 +2,7 @@ import {
   getMediaDeliverySafetyWorkLimit,
   mediaDeliverySafetyWorkMaxValues,
 } from './work-limits.mts'
-import { write } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import {
   observeSharedDbScope,
   sharedDbCursorScope,
@@ -31,23 +31,27 @@ export async function failExpiredExhaustedMediaDeliveryRegistryRecords(
 ): Promise<number> {
   const MEDIA_DELIVERY_RECOVERY_PAGE_SIZE = getMediaDeliverySafetyWorkLimit('recovery_page_size')
   if (deliveryKeys?.length === 0) return 0
-  const { rowCount } = await write(sql`/* failExpiredExhaustedMediaDeliveryRegistryRecords */
-    WITH candidates AS (
-      SELECT delivery_key FROM media_delivery_registry_records
-      WHERE state = 'claimed' AND delivery_attempt_count >= ${MEDIA_DELIVERY_MAX_ATTEMPTS}
-        AND (${deliveryKeys ?? null}::text[] IS NULL OR delivery_key = ANY(${deliveryKeys ?? null}::text[]))
-        AND claimed_at <= ${now}::timestamptz
-          - ${MEDIA_DELIVERY_CLAIM_TIMEOUT_MS} * interval '1 millisecond'
-      ORDER BY delivery_key LIMIT ${MEDIA_DELIVERY_RECOVERY_PAGE_SIZE}
-      FOR UPDATE SKIP LOCKED
-    ) UPDATE media_delivery_registry_records record
-      SET state = 'failed', completed_at = ${now}::timestamptz, next_attempt_at = NULL,
-        failure_message = 'Final media delivery claim expired before publication completed. Operator replay required.'
-      FROM candidates WHERE record.delivery_key = candidates.delivery_key
-        AND record.state = 'claimed' AND record.delivery_attempt_count >= ${MEDIA_DELIVERY_MAX_ATTEMPTS}
-        AND record.claimed_at <= ${now}::timestamptz
-          - ${MEDIA_DELIVERY_CLAIM_TIMEOUT_MS} * interval '1 millisecond'
+  await using transaction = await beginTransaction()
+  const { rows: candidates } = await transaction<{
+    delivery_key: string
+  }>(sql`/* failExpiredExhaustedMediaDeliveryRegistryRecords:lock */
+    SELECT record.delivery_key FROM media_delivery_registry_records record
+    JOIN media_delivery_registry_current_records current USING (delivery_key)
+    WHERE current.state = 'claimed' AND current.delivery_attempt_count >= ${MEDIA_DELIVERY_MAX_ATTEMPTS}
+      AND (${deliveryKeys ?? null}::text[] IS NULL OR record.delivery_key = ANY(${deliveryKeys ?? null}::text[]))
+      AND current.claimed_at <= ${now}::timestamptz - ${MEDIA_DELIVERY_CLAIM_TIMEOUT_MS} * interval '1 millisecond'
+    ORDER BY record.delivery_key LIMIT ${MEDIA_DELIVERY_RECOVERY_PAGE_SIZE} FOR UPDATE OF record SKIP LOCKED
   `)
+  const { rowCount } = await transaction(sql`/* failExpiredExhaustedMediaDeliveryRegistryRecords */
+    INSERT INTO media_delivery_registry_changes(delivery_key, generation, change_type, delivery_attempt_count, claimed_at, completed_at, failure_message)
+    SELECT delivery_key, generation, 'failed', delivery_attempt_count, claimed_at, ${now}::timestamptz,
+      'Final media delivery claim expired before publication completed. Operator replay required.'
+    FROM media_delivery_registry_current_records
+    WHERE delivery_key = ANY(${candidates.map(row => row.delivery_key)}::text[])
+      AND state = 'claimed' AND delivery_attempt_count >= ${MEDIA_DELIVERY_MAX_ATTEMPTS}
+      AND claimed_at <= ${now}::timestamptz - ${MEDIA_DELIVERY_CLAIM_TIMEOUT_MS} * interval '1 millisecond'
+  `)
+  await transaction.commit()
   return rowCount ?? 0
 }
 
@@ -80,7 +84,7 @@ export async function listRecoverableMediaDeliveryRegistryKeys(input: {
     deliveryKeys ? sharedDbIdsScope(deliveryKeys) : sharedDbCursorScope(after),
   )
   const statement = sql`/* listRecoverableMediaDeliveryRegistryKeys */
-    SELECT delivery_key FROM media_delivery_registry_records
+    SELECT delivery_key FROM media_delivery_registry_current_records
     WHERE created_at <= ${input.scanBefore}::timestamptz
       AND (${deliveryKeys}::text[] IS NULL OR delivery_key = ANY(${deliveryKeys}::text[]))
       AND (${after}::text IS NULL OR delivery_key > ${after}) AND `

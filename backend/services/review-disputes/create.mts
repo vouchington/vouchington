@@ -104,12 +104,6 @@ export async function createReviewDispute(
         review_dispute_id,
         change_type,
         changed_by_id,
-        drafted_at,
-        edited_at,
-        approved_at,
-        sent_at,
-        resolved_at,
-        resolution_action,
         metadata
       )
       SELECT
@@ -117,12 +111,6 @@ export async function createReviewDispute(
         upserted.id,
         'create',
         ${currentUser.id},
-        upserted.drafted_at,
-        upserted.edited_at,
-        upserted.approved_at,
-        upserted.sent_at,
-        upserted.resolved_at,
-        upserted.resolution_action,
         '{}'::jsonb
       FROM upserted
       CROSS JOIN lifecycle_change_id

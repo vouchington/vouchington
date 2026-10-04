@@ -7,11 +7,11 @@ describe('copyright actor erasure', () => {
     await onGracefulShutdown()
   })
 
-  it('nulls user links without erasing immutable legal decisions', async () => {
+  it('erases live-user links and retains the lifecycle actor without erasing legal decisions', async () => {
     await expect(eraseCopyrightActorAndReadAuditLinks()).resolves.toEqual({
       assessedById: null,
       draftedById: null,
-      actorUserId: null,
+      actorUserId: expect.any(String),
       recipientUserId: null,
       recipientUserErasedAt: expect.any(Date),
     })

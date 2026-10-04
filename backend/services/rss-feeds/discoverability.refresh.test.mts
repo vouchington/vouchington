@@ -100,8 +100,8 @@ describe('RSS feed discoverability top-hashtag refresh', () => {
       await query(
         `/* rss feed state publication lock test */
         SELECT 1
-        FROM rss_feed_discoverability_changes
-        WHERE rss_feed_id = $1::uuid
+        FROM rss_feed_setting_changes
+        WHERE change_type = 'discoverability' AND rss_feed_id = $1::uuid
         FOR UPDATE`,
         [feed.id],
       )

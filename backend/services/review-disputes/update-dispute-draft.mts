@@ -60,12 +60,6 @@ export async function updateReviewDisputeDraft(
         review_dispute_id,
         change_type,
         changed_by_id,
-        drafted_at,
-        edited_at,
-        approved_at,
-        sent_at,
-        resolved_at,
-        resolution_action,
         metadata
       )
       SELECT
@@ -73,12 +67,6 @@ export async function updateReviewDisputeDraft(
         updated.id,
         'edit',
         ${staffUserId},
-        updated.drafted_at,
-        updated.edited_at,
-        updated.approved_at,
-        updated.sent_at,
-        updated.resolved_at,
-        updated.resolution_action,
         jsonb_build_object(
           'before', jsonb_build_object('public_response', previous.public_response, 'internal_notes', previous.internal_notes),
           'after', jsonb_build_object('public_response', COALESCE(${input.publicResponse ?? null}, previous.public_response), 'internal_notes', COALESCE(${input.internalNotes ?? null}, previous.internal_notes))

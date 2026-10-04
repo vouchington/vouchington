@@ -3,7 +3,7 @@ import { createTestUser, getTestUserRaw } from '@voucha/test-helpers'
 import {
   getTestUserDeletedById,
   holdTestRetainedUserIdentityLocks,
-  listTestUserDeletionAuditActorIds,
+  listTestUserDeletionRequestActorIds,
   waitForTestUserDeletionBackendsBlockedBehind,
 } from '@voucha/test-helpers/entities/user-deletion-actor-locks'
 import { deleteUser } from '../delete.mts'
@@ -36,8 +36,8 @@ describe('deleteUser reciprocal administrator deletions', () => {
     expect((await getTestUserRaw(second.id))?.deleted_at).toBeInstanceOf(Date)
     expect(await getTestUserDeletedById(second.id)).toBe(first.id)
     expect(await getTestUserDeletedById(first.id)).toBe(second.id)
-    expect(await listTestUserDeletionAuditActorIds(second.id)).toEqual([first.id])
-    expect(await listTestUserDeletionAuditActorIds(first.id)).toEqual([second.id])
+    expect(await listTestUserDeletionRequestActorIds(second.id)).toEqual([first.id])
+    expect(await listTestUserDeletionRequestActorIds(first.id)).toEqual([second.id])
 
     await Promise.all([
       drainUserDeletionForTest(secondDeletion),

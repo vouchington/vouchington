@@ -65,7 +65,7 @@ is current leaves the request pending for the sweep.
 
 ### Clustering Source Eligibility
 
-Items are excluded from clustering when all of their source feeds are not discoverable. Current RSS feed discoverability is read from `view_rss_feed_current_states`, which derives the latest row per feed from `rss_feed_discoverability_changes`.
+Items are excluded from clustering when all of their source feeds are not discoverable. Current RSS feed discoverability is read from `view_rss_feed_current_states`, which derives the latest row per feed from `rss_feed_setting_changes`.
 
 The `rss-feed-discoverability` worker evaluates topic score, follow count, and publisher type. Publisher types `aggregator` and `forum` are forced undiscoverable.
 

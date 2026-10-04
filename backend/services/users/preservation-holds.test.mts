@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-  countUserDeletionAuditLogsForTest,
+  countUserDeletionRequestsForTest,
   createTestUser,
   getModeratorActionRowsForTest,
   safeUsername,
@@ -42,7 +42,7 @@ describe('user preservation holds', () => {
       })
 
       expect(await getPrivateUserByAny(user.id)).not.toBeNull()
-      expect(await countUserDeletionAuditLogsForTest(user.id)).toBe(0)
+      expect(await countUserDeletionRequestsForTest(user.id)).toBe(0)
     })
 
     it('refuses administrator deletion of the held account too', async () => {
@@ -51,7 +51,7 @@ describe('user preservation holds', () => {
       await placeUserPreservationHold(admin, user.id, 'matter-2')
 
       await expect(deleteUser(admin, user)).rejects.toMatchObject({ status: 409 })
-      expect(await countUserDeletionAuditLogsForTest(user.id)).toBe(0)
+      expect(await countUserDeletionRequestsForTest(user.id)).toBe(0)
     })
 
     it('allows deletion once the hold is released', async () => {
@@ -65,7 +65,7 @@ describe('user preservation holds', () => {
       await expect(deleteUser(user, user)).resolves.toEqual(
         expect.objectContaining({ requestId: expect.any(String) }),
       )
-      expect(await countUserDeletionAuditLogsForTest(user.id)).toBe(1)
+      expect(await countUserDeletionRequestsForTest(user.id)).toBe(1)
     })
 
     it('does not affect accounts without a hold', async () => {

@@ -74,7 +74,7 @@ export async function finalizeDeliveredModerationAppeal(
     appealId,
     resolution.lifecycle,
     staffUserId,
-    { resolved_at: row.resolved_at, resolution_action: resolution.resolutionAction },
+    {},
     { query },
   )
   await Promise.all([

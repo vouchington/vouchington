@@ -52,8 +52,8 @@ describe('replaying the failed reply to a declined email intake', () => {
     await expect(readTestCopyrightDeliveryIntentReplayEvents(declined.intentId)).resolves.toEqual([
       {
         copyright_notice_id: null,
-        event_type: 'delivery_intent_replayed',
-        actor_user_id: staff.id,
+        change_type: 'delivery_intent_replayed',
+        changed_by_id: staff.id,
       },
     ])
     const resend = await prepareCopyrightEmailDelivery(declined.intentId)
@@ -115,7 +115,7 @@ describe('replaying the failed reply to a declined email intake', () => {
     expect(outcomes.filter(Boolean)).toEqual([declined.intentId])
     const events = await readTestCopyrightDeliveryIntentReplayEvents(declined.intentId)
     expect(events).toHaveLength(1)
-    expect([first.id, second.id]).toContain(events[0]!.actor_user_id)
+    expect([first.id, second.id]).toContain(events[0]!.changed_by_id)
     await expect(
       readTestCopyrightDeliveryIntentReplayFacts(declined.intentId),
     ).resolves.toMatchObject({ state: 'pending', delivery_attempt_count: 0 })

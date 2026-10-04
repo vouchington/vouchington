@@ -52,8 +52,8 @@ describe('copyright guest capability revocation on withdrawal', () => {
         revoked_at: now,
       })
       expect(await listCopyrightGuestCapabilityEvents(capability.id)).toEqual([
-        { event_type: 'guest_capability_issued', actor_user_id: staff.id },
-        { event_type: 'guest_capability_revoked_by_withdrawal', actor_user_id: null },
+        { change_type: 'guest_capability_issued', changed_by_id: staff.id },
+        { change_type: 'guest_capability_revoked_by_withdrawal', changed_by_id: null },
       ])
       await expect(
         authorizeCopyrightGuestCapability({ noticeId, token: capability.token, now }),
@@ -63,8 +63,8 @@ describe('copyright guest capability revocation on withdrawal', () => {
       staffRevokedAt,
     )
     expect(await listCopyrightGuestCapabilityEvents(alreadyRevoked.id)).toEqual([
-      { event_type: 'guest_capability_issued', actor_user_id: staff.id },
-      { event_type: 'guest_capability_revoked', actor_user_id: staff.id },
+      { change_type: 'guest_capability_issued', changed_by_id: staff.id },
+      { change_type: 'guest_capability_revoked', changed_by_id: staff.id },
     ])
     await expect(
       authorizeCopyrightGuestCapability({
@@ -88,8 +88,8 @@ describe('copyright guest capability revocation on withdrawal', () => {
       expect.any(Date),
     )
     expect(await listCopyrightGuestCapabilityEvents(capability.id)).toEqual([
-      { event_type: 'guest_capability_issued', actor_user_id: staff.id },
-      { event_type: 'guest_capability_revoked_by_withdrawal', actor_user_id: null },
+      { change_type: 'guest_capability_issued', changed_by_id: staff.id },
+      { change_type: 'guest_capability_revoked_by_withdrawal', changed_by_id: null },
     ])
     await expect(
       authorizeCopyrightGuestCapability({ noticeId, token: capability.token, now: new Date() }),

@@ -31,12 +31,12 @@ CREATE TABLE copyright_notice_email_intake_notice_links (
   UNIQUE (copyright_notice_id, copyright_notice_email_intake_id)
 );
 
-ALTER TABLE copyright_notice_lifecycle_events
+ALTER TABLE copyright_notice_lifecycle_changes
   ADD CONSTRAINT fk_copyright_lifecycle_events__email_intake_notice
   FOREIGN KEY (copyright_notice_id, copyright_notice_email_intake_id)
   REFERENCES copyright_notice_email_intake_notice_links(copyright_notice_id, copyright_notice_email_intake_id)
   ON DELETE RESTRICT NOT VALID;
-ALTER TABLE copyright_notice_lifecycle_events
+ALTER TABLE copyright_notice_lifecycle_changes
   VALIDATE CONSTRAINT fk_copyright_lifecycle_events__email_intake_notice;
 
 CREATE TABLE copyright_notice_email_correspondence_reviews (

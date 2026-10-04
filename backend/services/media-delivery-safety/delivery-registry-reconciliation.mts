@@ -18,20 +18,28 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
   )
   const deliveryKeys = input?.deliveryKeys ? [...input.deliveryKeys] : null
   await using transaction = await beginTransaction()
+  await transaction(sql`/* replayFailedMediaDeliveryRegistryRecords:lock */
+    SELECT record.delivery_key FROM media_delivery_registry_records record
+    JOIN media_delivery_registry_current_records current USING (delivery_key)
+    WHERE current.state = 'failed' AND (${deliveryKeys}::text[] IS NULL OR record.delivery_key = ANY(${deliveryKeys}::text[]))
+    ORDER BY record.delivery_key FOR UPDATE OF record
+  `)
   const { rows } = await transaction<{ delivery_key: string; placement_id: string }>(sql`
     /* replayFailedMediaDeliveryRegistryRecords */
-    UPDATE media_delivery_registry_records
-    SET state = 'pending', delivery_attempt_count = 0, claimed_at = NULL, completed_at = NULL,
-      next_attempt_at = NULL, failure_message = 'Reopened by media delivery reconciliation.'
-    WHERE state = 'failed'
-      AND (${deliveryKeys}::text[] IS NULL OR delivery_key = ANY(${deliveryKeys}::text[]))
-    RETURNING delivery_key, placement_id
+    WITH inserted AS (
+      INSERT INTO media_delivery_registry_changes(delivery_key, generation, change_type, changed_by_id, failure_message)
+      SELECT delivery_key, generation, 'pending', ${input?.actorUserId ?? null}, 'Reopened by media delivery reconciliation.'
+      FROM media_delivery_registry_current_records
+      WHERE state = 'failed' AND (${deliveryKeys}::text[] IS NULL OR delivery_key = ANY(${deliveryKeys}::text[]))
+      RETURNING delivery_key
+    ) SELECT record.delivery_key, record.placement_id FROM inserted
+      JOIN media_delivery_registry_records record USING (delivery_key)
   `)
   if (input?.actorUserId) {
     for (const record of rows) {
       // oxlint-disable-next-line no-await-in-loop -- each case receives immutable operator evidence.
       await transaction(sql`/* replayFailedMediaDeliveryRegistryRecords:event */
-        INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id,
+        INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
           media_delivery_registry_key, replay_reason)
         SELECT target.copyright_notice_id, 'media_delivery_registry_replayed', ${input.actorUserId},
           ${record.delivery_key}, 'operator_replay'
@@ -64,7 +72,7 @@ export async function stageAllCurrentImagePlacementDeliveryRecords(
   const statement = sql`/* stageAllCurrentImagePlacementDeliveryRecords */
     WITH candidates AS (
       SELECT delivery_key, placement_id, placement_revision, image_id
-      FROM media_delivery_registry_records
+      FROM media_delivery_registry_current_records
       WHERE (${imageIdScope}::uuid[] IS NULL OR image_id = ANY(${imageIdScope}::uuid[]))
       UNION
       SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', binding.image_id),
@@ -81,7 +89,7 @@ export async function stageAllCurrentImagePlacementDeliveryRecords(
   statement.append(sql` THEN 'allow' ELSE 'withheld' END AS desired_state
       FROM candidates authority
     ) SELECT intended.* FROM intended
-      LEFT JOIN media_delivery_registry_records existing USING (delivery_key)
+      LEFT JOIN media_delivery_registry_current_records existing USING (delivery_key)
       WHERE existing.delivery_key IS NULL OR existing.desired_state IS DISTINCT FROM intended.desired_state
       ORDER BY intended.delivery_key LIMIT ${WORK_PAGE_SIZE}
   `)

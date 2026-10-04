@@ -84,8 +84,7 @@ function buildPendingCopyrightAgentDispatchesQuery() {
       UNION ALL
       SELECT 'form-screening'::text AS kind, intake.copyright_notice_submission_id AS id
       FROM copyright_notice_form_intakes intake
-      JOIN copyright_notice_form_screening_executions execution
-        ON execution.copyright_notice_form_intake_id = intake.id
+      JOIN LATERAL (SELECT * FROM copyright_notice_form_screening_attempts attempt WHERE attempt.copyright_notice_form_intake_id = intake.id ORDER BY attempt.attempt_number DESC LIMIT 1) execution ON true
       WHERE execution.state = 'failed' OR (execution.state = 'pending'
         AND (execution.claimed_at IS NULL OR execution.claimed_at < CURRENT_TIMESTAMP - ${screeningLeaseMinutes}::integer * INTERVAL '1 minute'))
       UNION ALL
@@ -94,8 +93,7 @@ function buildPendingCopyrightAgentDispatchesQuery() {
       JOIN copyright_notice_submissions submission
         ON submission.id = intake.copyright_notice_submission_id
       JOIN copyright_notices notice ON notice.id = intake.copyright_notice_id
-      JOIN copyright_notice_form_screening_executions execution
-        ON execution.copyright_notice_form_intake_id = intake.id AND execution.state = 'completed'
+      JOIN LATERAL (SELECT * FROM copyright_notice_form_screening_attempts attempt WHERE attempt.copyright_notice_form_intake_id = intake.id ORDER BY attempt.attempt_number DESC LIMIT 1) execution ON execution.state = 'completed'
       JOIN copyright_notice_form_screenings screening
         ON screening.id = execution.copyright_notice_form_screening_id
           AND fn_current_copyright_form_screening(submission.id, screening.id)

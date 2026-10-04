@@ -6,12 +6,12 @@ Provides audit trail recording for community agent prompt changes made by modera
 
 ## What It Does
 
-Records every change to a community agent prompt into the `community_agent_prompt_changes`
+Records every change to a community agent prompt into the `community_agent_prompt_revisions`
 Postgres table, enabling full change history with who changed what and when.
 
 ## Data Model
 
-- **community_agent_prompt_changes** — append-only audit log. Each row captures the
+- **community_agent_prompt_revisions** — append-only audit log. Each row captures the
   `agent_prompt_id` (no FK so history survives hard-deletes), `community_id`,
   `changed_by_id` (moderator user ID, SET NULL on deletion), `action` enum,
   and snapshots of `previous_fields` and `next_fields` as JSONB.

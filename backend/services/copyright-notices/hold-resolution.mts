@@ -73,7 +73,7 @@ export async function resolveCopyrightLegalHoldInTransaction(
   const resolution = rows[0] as CopyrightLegalHoldResolutionRecord | undefined
   assert(resolution, 409, 'Copyright legal hold is already resolved')
   await transaction(sql`/* resolveCopyrightLegalHold:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id,
+    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
       copyright_notice_legal_hold_resolution_id)
     VALUES (${assessment.copyright_notice_id}, 'legal_hold_resolved', ${input.currentUser.id}, ${resolution.id})
   `)

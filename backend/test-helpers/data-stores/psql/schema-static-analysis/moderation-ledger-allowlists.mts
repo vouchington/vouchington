@@ -44,4 +44,23 @@ export const MODERATION_LINK_TABLES_WITHOUT_UPDATED_AT = new Map<string, string>
   ],
 ])
 
+export const HISTORY_WORKFLOW_TABLES_WITHOUT_UPDATED_AT = [
+  [
+    'copyright_notice_lifecycle_change_rationales',
+    'Only controlled case retention overwrites ciphertext; the owning retention-erasure ledger records that lifecycle timestamp.',
+  ],
+  [
+    'copyright_notice_form_screening_attempts',
+    'Claim and terminal timestamps describe the monotonic attempt lifecycle.',
+  ],
+  [
+    'copyright_notice_lifecycle_changes',
+    'Immutable lifecycle ledger; private rationale retention lives in the companion row.',
+  ],
+  [
+    'media_delivery_registry_changes',
+    'Immutable delivery transitions; current progress is read from the latest row.',
+  ],
+] as const
+
 /* v8 ignore stop */

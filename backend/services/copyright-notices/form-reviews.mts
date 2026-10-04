@@ -33,7 +33,7 @@ export async function reviewCopyrightFormIntake(input: {
     SELECT intake.copyright_notice_id AS notice_id,
       intake.copyright_notice_submission_id AS submission_id, submission.source_kind,
       submission.received_at,
-      EXISTS (SELECT 1 FROM copyright_notice_form_screening_executions execution
+      EXISTS (SELECT 1 FROM copyright_notice_form_screening_attempts execution
         WHERE execution.copyright_notice_form_intake_id = intake.id
           AND fn_current_copyright_form_screening(submission.id,
             execution.copyright_notice_form_screening_id)) AS current_screening_authority,

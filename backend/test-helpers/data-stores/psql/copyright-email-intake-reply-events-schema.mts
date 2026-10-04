@@ -33,8 +33,8 @@ function insertLifecycleEvent(event: {
   intakeId?: string
 }) {
   return write<{ id: string }>(sql`/* insertCopyrightLifecycleEventRow */
-    INSERT INTO copyright_notice_lifecycle_events (
-      copyright_notice_id, event_type, copyright_notice_delivery_intent_id,
+    INSERT INTO copyright_notice_lifecycle_changes (
+      copyright_notice_id, change_type, copyright_notice_delivery_intent_id,
       copyright_notice_email_intake_id
     ) VALUES (
       ${event.noticeId}, ${event.eventType}, ${event.intentId ?? null}, ${event.intakeId ?? null}

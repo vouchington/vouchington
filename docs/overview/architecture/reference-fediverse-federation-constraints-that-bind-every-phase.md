@@ -76,7 +76,7 @@ uses the proxy only when the flag is true.
   [reuse-mapping table](reference-fediverse-federation-protocol-reality.md#how-the-existing-model-maps-reuse-targets). No new vote tables or endpoints; any new vote schema goes through the config-driven
   generators, never hand-written.
 - **Admin allowlist is append-only history + a sync trigger**, the same pattern as
-  `rss_feed_enablement_changes` → `is_enabled`: every integration decision is an inserted row, never an
+  `rss_feed_setting_changes` → `is_enabled`: every integration decision is an inserted row, never an
   update-in-place, and a denormalized `integration_status` column is trigger-maintained from the latest
   row. The allowlist is advisory by default — it does not block anything until Phase C's outbound
   integration exists.

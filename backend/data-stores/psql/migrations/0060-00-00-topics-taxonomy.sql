@@ -688,8 +688,8 @@ WHERE topic_type = 'fediverse_instance' AND deleted_at IS NULL AND merged_into_t
 CREATE TABLE IF NOT EXISTS fediverse_instance_integration_changes (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   topic_id UUID NOT NULL REFERENCES topics ON DELETE CASCADE,
-  integration_status fediverse_integration_statuses NOT NULL,
-  changed_by_id UUID REFERENCES users ON DELETE SET NULL,
+  change_type fediverse_integration_statuses NOT NULL,
+  changed_by_id UUID REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
   reason TEXT,
   CHECK (reason IS NULL OR char_length(reason) <= 1000),
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
@@ -698,7 +698,7 @@ CREATE INDEX IF NOT EXISTS idx_fediverse_instance_integration_changes__topic_id_
   ON fediverse_instance_integration_changes (topic_id, id DESC);
 COMMENT ON TABLE fediverse_instance_integration_changes IS 'Append-only audit log of admin allowlist decisions for fediverse_instance topics. Current state is the latest row per topic_id.';
 COMMENT ON COLUMN fediverse_instance_integration_changes.topic_id IS 'The fediverse_instance topic whose admin allowlist state changed.';
-COMMENT ON COLUMN fediverse_instance_integration_changes.integration_status IS 'The allowlist decision (pending, approved, blocked) after this change.';
+COMMENT ON COLUMN fediverse_instance_integration_changes.change_type IS 'The allowlist decision (pending, approved, blocked) after this change.';
 COMMENT ON COLUMN fediverse_instance_integration_changes.changed_by_id IS 'Admin user who made this allowlist decision.';
 COMMENT ON COLUMN fediverse_instance_integration_changes.reason IS 'Optional human-readable reason for the allowlist decision.';
 
@@ -710,7 +710,7 @@ COMMENT ON COLUMN fediverse_instance_integration_changes.reason IS 'Optional hum
 CREATE OR REPLACE TRIGGER trigger_sync_fediverse_instance_integration_status
 AFTER INSERT ON fediverse_instance_integration_changes
 FOR EACH ROW
-EXECUTE FUNCTION fn_project_latest_change('topics__fediverse_instances', 'topic_id', 'topic_id', 'integration_status', 'integration_status');
+EXECUTE FUNCTION fn_project_latest_change('topics__fediverse_instances', 'topic_id', 'topic_id', 'integration_status', 'change_type');
 
 -- ==========================================================================
 -- 0160-00-00-review-snippet-categories.sql
@@ -857,3 +857,7 @@ SET aliases = COALESCE(
 )
 WHERE topic.deleted_at IS NULL
   AND topic.merged_into_topic_id IS NULL;
+
+CREATE TRIGGER trigger_ensure_fediverse_instance_integration_changes_actor BEFORE INSERT ON fediverse_instance_integration_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id');
+CREATE TRIGGER trigger_fediverse_instance_integration_changes_append_only BEFORE UPDATE OR DELETE ON fediverse_instance_integration_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+CREATE INDEX idx_fediverse_instance_integration_changes__changed_by_id ON fediverse_instance_integration_changes(changed_by_id) WHERE changed_by_id IS NOT NULL;

@@ -922,3 +922,5 @@ COMMENT ON COLUMN stripe_events.payload IS 'Full Stripe event payload stored as 
 CREATE INDEX IF NOT EXISTS idx_memberships__user_id
   ON memberships (user_id)
   WHERE user_id IS NOT NULL;
+
+CREATE TRIGGER trigger_ensure_membership_changes_actor BEFORE INSERT ON membership_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id');

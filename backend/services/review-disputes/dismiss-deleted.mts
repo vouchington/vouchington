@@ -15,9 +15,9 @@ export async function dismissPendingDisputesForDeletedReview(postId: string): Pr
     ),
     inserted_changes AS (
       INSERT INTO review_dispute_lifecycle_changes (
-        id, review_dispute_id, change_type, changed_by_id, resolved_at, resolution_action
+        id, review_dispute_id, change_type, changed_by_id
       )
-      SELECT latest_lifecycle_change_id, id, 'dismiss', NULL, resolved_at, 'dismiss'
+      SELECT latest_lifecycle_change_id, id, 'dismiss', NULL
       FROM dismissed
     )
     SELECT id FROM dismissed

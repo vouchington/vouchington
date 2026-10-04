@@ -1,7 +1,7 @@
 export type CommunityAgentPrompt = {
   id: string
   community_id: string
-  created_by_id: string
+  created_by_id: string | null
   agent_id: string
   prompt: string
   model_name: string

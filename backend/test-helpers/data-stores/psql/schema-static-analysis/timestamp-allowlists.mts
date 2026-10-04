@@ -76,6 +76,7 @@ export const ALLOWED_MISSING_CREATED_AT = new Map<string, string>([
 
 export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
   ['image_surface_placement_activations', 'Immutable provenance; bound_at records activation.'],
+  ...postModeration.HISTORY_WORKFLOW_TABLES_WITHOUT_UPDATED_AT,
   [
     'user_agent_strings',
     'Insert-only normalized string lookup shared by sessions and votes; existing rows never update.',
@@ -126,8 +127,8 @@ export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
     'list_items__rss_feed_items',
     'Append-only list membership rows; item fields are never updated, only soft-deleted via removed_at.',
   ],
-  ['community_agent_prompt_changes', 'Append-only audit log of community agent prompt changes.'],
-  ['dynamic_config_change_logs', 'Append-only audit log of dynamic configuration changes.'],
+  ['community_agent_prompt_revisions', 'Append-only audit log of community agent prompt changes.'],
+  ['dynamic_configuration_revisions', 'Append-only audit log of dynamic configuration changes.'],
   ['agent_moderations', 'Append-only moderation output keyed by post and agent.'],
   ['ai_usage_records', 'Append-only LLM cost ledger; rows are never updated after insertion.'],
   ['conversation_messages', 'Append-only conversation message log.'],
@@ -146,8 +147,7 @@ export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
   ...postModeration.MODERATION_LINK_TABLES_WITHOUT_UPDATED_AT,
   ['post_revisions', 'Append-only post revision history.'],
   ['rss_feed_crawls', 'Append-only crawl history partitioned by UUIDv7 id.'],
-  ['rss_feed_discoverability_changes', 'Append-only discoverability audit log.'],
-  ['rss_feed_enablement_changes', 'Append-only feed enablement audit log.'],
+  ['rss_feed_setting_changes', 'Append-only discoverability audit log.'],
   ['rss_feed_items', 'Feed item content is immutable after ingestion.'],
   [
     'rss_feed_item_category_rejections',
@@ -163,7 +163,6 @@ export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
   ['review_dispute_lifecycle_changes', 'Append-only lifecycle audit log.'],
   ['topic_history', 'Append-only topic lifecycle history.'],
   ['topic_revisions', 'Append-only topic revision history.'],
-  ['user_deletion_audit_logs', 'Append-only compliance audit log.'],
   ['user_history', 'Append-only user lifecycle history.'],
   [
     'user_mod_notes',

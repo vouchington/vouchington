@@ -33,22 +33,6 @@ async function lockUserDeletionLifecycle(query: TransactionQuery, userId: string
   await lockAuthorPublicationLifecycle(query, userId)
 }
 
-async function auditAndCreateUserDeletionRequest(
-  query: TransactionQuery,
-  target: UserDeletionTarget,
-  requestedById: string,
-) {
-  const request = await createUserDeletionRequest(target.id, requestedById, {
-    priorUsername: target.username,
-    query,
-  })
-  await query(sql`/* deleteUser:audit */
-    INSERT INTO user_deletion_audit_logs (user_id, requested_by_id)
-    VALUES (${target.id}, ${requestedById})
-  `)
-  return request
-}
-
 type DeleteUserDependencies = {
   purgeCacheTags: (tags: readonly string[]) => Promise<unknown>
 }
@@ -59,7 +43,10 @@ async function establishUserDeletionRequest(
   requestedById: string,
 ) {
   const target = await lockAndGetUserDeletionTarget(query, user.id, requestedById)
-  const request = await auditAndCreateUserDeletionRequest(query, target, requestedById)
+  const request = await createUserDeletionRequest(target.id, requestedById, {
+    priorUsername: target.username,
+    query,
+  })
   return { request, target }
 }
 

@@ -20,11 +20,11 @@ CREATE TABLE copyright_notice_email_intakes (
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-ALTER TABLE copyright_notice_lifecycle_events
+ALTER TABLE copyright_notice_lifecycle_changes
   ADD CONSTRAINT copyright_lifecycle_event_email_intake_fk
   FOREIGN KEY (copyright_notice_email_intake_id)
   REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT NOT VALID;
-ALTER TABLE copyright_notice_lifecycle_events
+ALTER TABLE copyright_notice_lifecycle_changes
   VALIDATE CONSTRAINT copyright_lifecycle_event_email_intake_fk;
 
 CREATE TABLE copyright_notice_email_intake_parses (

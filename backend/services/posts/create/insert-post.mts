@@ -62,9 +62,16 @@ export async function insertPost({
   )
   const post = rows[0]
   if (isAdminCreator) {
-    await setPostClearanceStatus(post.id, 'approved', creator.id, options, {
-      creation_moderation_bypassed: isAdminCreator,
-    })
+    await setPostClearanceStatus(
+      post.id,
+      'approved',
+      creator.id,
+      options,
+      {},
+      {
+        isCreationModerationBypass: isAdminCreator,
+      },
+    )
   }
   return post
 }

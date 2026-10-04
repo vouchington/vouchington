@@ -53,6 +53,7 @@ export async function createModerationAppeal(
         user_suspension_id,
         community_id, post_removal_kind,
         appeal_reason,
+        original_decided_by_id, original_decision_reason, original_decided_at,
         case_id,
         latest_lifecycle_change_id,
         created_via,
@@ -66,6 +67,7 @@ export async function createModerationAppeal(
         ${userSuspensionId},
         ${communityId}, ${postRemovalKind},
         ${appealReason},
+        ${originalDecisionActorId}, ${originalDecisionReason}, ${originalDecisionAt},
         ${caseId},
         (SELECT id FROM lifecycle_change_id),
         ${provenance.createdVia},
@@ -96,12 +98,6 @@ export async function createModerationAppeal(
         moderation_appeal_id,
         change_type,
         changed_by_id,
-        drafted_at,
-        edited_at,
-        approved_at,
-        sent_at,
-        resolved_at,
-        resolution_action,
         metadata
       )
       SELECT
@@ -109,20 +105,7 @@ export async function createModerationAppeal(
         upserted.id,
         'create',
         ${currentUser.id},
-        upserted.drafted_at,
-        upserted.edited_at,
-        upserted.approved_at,
-        upserted.sent_at,
-        upserted.resolved_at,
-        upserted.resolution_action,
-        jsonb_build_object(
-          'original_decision',
-          jsonb_build_object(
-            'reason', ${originalDecisionReason}::text,
-            'actor_id', ${originalDecisionActorId}::uuid,
-            'decided_at', ${originalDecisionAt}::timestamptz
-          )
-        )
+        '{}'::jsonb
       FROM upserted
       CROSS JOIN lifecycle_change_id
       WHERE upserted.inserted

@@ -16,7 +16,7 @@ type RssFeedStateChange = {
   id: string
   rss_feed_id: string
   enabled: boolean
-  created_by_id: string | null
+  changed_by_id: string | null
   reason: string | null
   created_at: Date
 }
@@ -29,10 +29,6 @@ type SetRssFeedStateAsSystemInput = SetRssFeedStateInput & {
   overrideHumanLock?: boolean
 }
 
-const TABLES = {
-  discoverability: 'rss_feed_discoverability_changes',
-  enablement: 'rss_feed_enablement_changes',
-} as const
 function assertReason(reason: string | null | undefined): void {
   assert(reason === undefined || reason === null || reason.length <= 1000, 400, 'reason too long')
 }
@@ -41,15 +37,14 @@ async function getLatestChange(
   rssFeedId: string,
   options: QueryOptions = {},
 ): Promise<RssFeedStateChange | null> {
-  const table = TABLES[kind]
   const { rows } = await read(
     `/* getLatestRssFeedStateChange */
-      SELECT id, rss_feed_id, enabled, created_by_id, reason, created_at
-      FROM ${table}
-      WHERE rss_feed_id = $1
+      SELECT id, rss_feed_id, enabled, changed_by_id, reason, created_at
+      FROM rss_feed_setting_changes
+      WHERE rss_feed_id = $1 AND change_type = $2
       ORDER BY id DESC
       LIMIT 1`,
-    [rssFeedId],
+    [rssFeedId, kind],
     options,
   )
   return (rows[0] as RssFeedStateChange | undefined) ?? null
@@ -60,17 +55,12 @@ async function insertChange(
   options: QueryOptions = {},
 ): Promise<void> {
   assertReason(input.reason)
-  const query =
-    kind === 'discoverability'
-      ? `/* insertRssFeedDiscoverabilityChange */
-        INSERT INTO rss_feed_discoverability_changes (rss_feed_id, enabled, created_by_id, reason)
-        VALUES ($1, $2, $3, $4)`
-      : `/* insertRssFeedEnablementChange */
-        INSERT INTO rss_feed_enablement_changes (rss_feed_id, enabled, created_by_id, reason)
-        VALUES ($1, $2, $3, $4)`
+  const query = `/* insertRssFeedSettingChange */
+    INSERT INTO rss_feed_setting_changes (rss_feed_id, enabled, changed_by_id, reason, change_type)
+    VALUES ($1, $2, $3, $4, $5)`
   await write(
     query,
-    [input.rssFeedId, input.enabled, input.createdById, input.reason ?? null],
+    [input.rssFeedId, input.enabled, input.createdById, input.reason ?? null, kind],
     options,
   )
 }
@@ -85,18 +75,17 @@ async function setStateAsCurrentUser(
       ? currentUserCanModifyRssFeedDiscoverability(currentUser)
       : currentUserCanModifyRssFeedEnablement(currentUser)
   assert(canModify, 403, 'Forbidden')
-  const table = TABLES[kind]
   const run = async (query: TransactionQuery): Promise<SetStateResult> => {
     await lockPostPublicationScope(query, { type: 'rss_feed', rssFeedId: input.rssFeedId })
     const { rows } = await query(
       `/* setRssFeedStateAsCurrentUser:latest */
         SELECT enabled
-        FROM ${table}
-        WHERE rss_feed_id = $1
+        FROM rss_feed_setting_changes
+        WHERE rss_feed_id = $1 AND change_type = $2
         ORDER BY id DESC
         LIMIT 1
         FOR UPDATE`,
-      [input.rssFeedId],
+      [input.rssFeedId, kind],
     )
     const latest = rows[0] as { enabled: boolean } | undefined
     if (latest?.enabled === input.enabled) return 'noop'
@@ -114,22 +103,21 @@ async function setStateAsSystem(
   options: QueryOptions = {},
 ): Promise<SetStateResult> {
   const systemUserId = await getRssFeedAutoUpdaterUserId()
-  const table = TABLES[kind]
   const { overrideHumanLock, ...changeInput } = input
   const run = async (query: TransactionQuery): Promise<SetStateResult> => {
     await lockPostPublicationScope(query, { type: 'rss_feed', rssFeedId: input.rssFeedId })
     const { rows } = await query(
       `/* setRssFeedStateAsSystem:latest */
-        SELECT enabled, created_by_id
-        FROM ${table}
-        WHERE rss_feed_id = $1
+        SELECT enabled, changed_by_id
+        FROM rss_feed_setting_changes
+        WHERE rss_feed_id = $1 AND change_type = $2
         ORDER BY id DESC
         LIMIT 1
         FOR UPDATE`,
-      [input.rssFeedId],
+      [input.rssFeedId, kind],
     )
-    const latest = rows[0] as { enabled: boolean; created_by_id: string | null } | undefined
-    if (!overrideHumanLock && latest?.created_by_id && latest.created_by_id !== systemUserId)
+    const latest = rows[0] as { enabled: boolean; changed_by_id: string | null } | undefined
+    if (!overrideHumanLock && latest?.changed_by_id && latest.changed_by_id !== systemUserId)
       return 'skipped:human-locked'
     if (latest?.enabled === input.enabled) return 'noop'
     await insertChange(kind, { ...changeInput, createdById: systemUserId }, { query })

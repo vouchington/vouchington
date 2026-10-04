@@ -66,7 +66,7 @@ describe('copyright case timeline audiences', () => {
       )
       .expect(200)
     const recorded = (await getCopyrightNoticePrivateAggregate(fixture.noticeId))?.lifecycleEvents
-    expect(recorded?.map(event => event.event_type)).toEqual(
+    expect(recorded?.map(event => event.change_type)).toEqual(
       expect.arrayContaining(withheldEventTypes),
     )
 

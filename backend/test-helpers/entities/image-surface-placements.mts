@@ -48,7 +48,7 @@ export async function getTestMediaDeliveryRecord(deliveryKey: string): Promise<{
     state: 'pending' | 'claimed' | 'completed' | 'failed'
   }>(sql`/* getTestMediaDeliveryRecord */
     SELECT desired_state, state
-    FROM media_delivery_registry_records
+    FROM media_delivery_registry_current_records
     WHERE delivery_key = ${deliveryKey}
   `)
   return rows[0] ?? null
@@ -56,8 +56,8 @@ export async function getTestMediaDeliveryRecord(deliveryKey: string): Promise<{
 
 export async function completeTestMediaDeliveryRecord(deliveryKey: string): Promise<void> {
   await write(sql`/* completeTestMediaDeliveryRecord */
-    UPDATE media_delivery_registry_records
-    SET state = 'completed', completed_at = CURRENT_TIMESTAMP
+    INSERT INTO media_delivery_registry_changes(delivery_key, generation, change_type, completed_at)
+    SELECT delivery_key, generation, 'completed', CURRENT_TIMESTAMP FROM media_delivery_registry_current_records
     WHERE delivery_key = ${deliveryKey} AND desired_state = 'allow'
   `)
 }
@@ -115,9 +115,8 @@ export async function allowTestUserProfileImageDelivery(input: {
 
 export async function markTestMediaDeliveryRecordFailed(deliveryKey: string): Promise<void> {
   await write(sql`/* markTestMediaDeliveryRecordFailed */
-    UPDATE media_delivery_registry_records
-    SET state = 'failed', delivery_attempt_count = 5, completed_at = CURRENT_TIMESTAMP,
-      failure_message = 'test provider outage'
+    INSERT INTO media_delivery_registry_changes(delivery_key, generation, change_type, delivery_attempt_count, completed_at, failure_message)
+    SELECT delivery_key, generation, 'failed', 5, CURRENT_TIMESTAMP, 'test provider outage' FROM media_delivery_registry_current_records
     WHERE delivery_key = ${deliveryKey}
   `)
 }

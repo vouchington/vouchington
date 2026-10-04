@@ -9,7 +9,7 @@ export async function readTestCommunityPostReviewHistory(postId: string) {
     platform_override: boolean
   }>(
     sql`/* readTestCommunityPostReviewHistory */
-    SELECT action, actor_user_id, platform_override FROM community_post_review_changes
+    SELECT change_type AS action, changed_by_id AS actor_user_id, platform_override FROM community_post_review_changes
     WHERE post_id = ${postId} ORDER BY id`,
   )
   return rows

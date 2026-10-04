@@ -8,9 +8,9 @@ export async function recordDynamicConfigChange(
   nextFields: Record<string, unknown>,
 ): Promise<void> {
   await write(sql`/* recordDynamicConfigChange */
-    INSERT INTO dynamic_config_change_logs
-      (config_key, changed_by_id, previous_fields, next_fields)
+    INSERT INTO dynamic_configuration_revisions
+      (config_key, revised_by_id, revision_type, changes)
     VALUES
-      (${configKey}, ${currentUserId}, ${JSON.stringify(previousFields)}, ${JSON.stringify(nextFields)})
+      (${configKey}, ${currentUserId}, 'update', fn_field_changes(${JSON.stringify(previousFields)}::jsonb, ${JSON.stringify(nextFields)}::jsonb))
   `)
 }

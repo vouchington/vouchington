@@ -129,7 +129,7 @@ export async function insertCopyrightActionLifecycleEvent(
   query: TransactionQuery,
 ): Promise<void> {
   await query(sql`/* processCopyrightActionIntent:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, copyright_notice_action_intent_id)
+    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, copyright_notice_action_intent_id)
     VALUES (${legal.copyright_notice_id}, ${eventType}, ${intentId})
   `)
 }

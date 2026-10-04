@@ -24,10 +24,7 @@ const UNIVERSAL_TOPIC_CANDIDATE_RELATIONS = new Set([
   'post_review_topic_ratings',
   'post_data_point_topics',
 ])
-const RSS_STATE_HISTORY_RELATIONS = new Set([
-  'rss_feed_enablement_changes',
-  'rss_feed_discoverability_changes',
-])
+const RSS_STATE_HISTORY_RELATIONS = new Set(['rss_feed_setting_changes'])
 const SINGLE_PARTITION_SCENARIOS = new Map([
   ['post-child-by-post', { key: 'post_id', parent: 'post_review_topic_ratings' }],
   ['crawl-chunks-by-crawl', { key: 'crawl_id', parent: 'crawl_chunks' }],

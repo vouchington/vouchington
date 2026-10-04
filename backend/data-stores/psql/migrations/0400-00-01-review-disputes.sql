@@ -130,14 +130,7 @@ CREATE TABLE IF NOT EXISTS review_dispute_lifecycle_changes (
   review_dispute_id uuid NOT NULL REFERENCES review_disputes (id) ON DELETE CASCADE,
   change_type review_dispute_lifecycle_change_types NOT NULL,
   -- guardrails-disable-next-line uuid-must-be-key
-  changed_by_id uuid REFERENCES users (id) ON DELETE SET NULL,
-  -- Snapshot columns for audit
-  drafted_at timestamptz,
-  edited_at timestamptz,
-  approved_at timestamptz,
-  sent_at timestamptz,
-  resolved_at timestamptz,
-  resolution_action review_dispute_action,
+  changed_by_id uuid REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   metadata jsonb NOT NULL DEFAULT '{}',
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
@@ -213,12 +206,6 @@ COMMENT ON COLUMN review_disputes.latest_lifecycle_change_id IS 'Denormalized po
 COMMENT ON COLUMN review_dispute_lifecycle_changes.review_dispute_id IS 'The dispute this lifecycle change belongs to.';
 COMMENT ON COLUMN review_dispute_lifecycle_changes.change_type IS 'The type of state transition recorded by this change row.';
 COMMENT ON COLUMN review_dispute_lifecycle_changes.changed_by_id IS 'The user who performed the action; NULL for system actions.';
-COMMENT ON COLUMN review_dispute_lifecycle_changes.drafted_at IS 'Snapshot of drafted_at at the time of this change.';
-COMMENT ON COLUMN review_dispute_lifecycle_changes.edited_at IS 'Snapshot of edited_at at the time of this change.';
-COMMENT ON COLUMN review_dispute_lifecycle_changes.approved_at IS 'Snapshot of approved_at at the time of this change.';
-COMMENT ON COLUMN review_dispute_lifecycle_changes.sent_at IS 'Snapshot of sent_at at the time of this change.';
-COMMENT ON COLUMN review_dispute_lifecycle_changes.resolved_at IS 'Snapshot of resolved_at at the time of this change.';
-COMMENT ON COLUMN review_dispute_lifecycle_changes.resolution_action IS 'Snapshot of resolution_action at the time of this change.';
 COMMENT ON COLUMN review_dispute_lifecycle_changes.metadata IS 'Extra structured metadata for this lifecycle event (e.g. AI model, token counts).';
 
 COMMENT ON TABLE review_dispute_lifecycle_changes IS 'Append-only audit log of state transitions for review disputes.';
@@ -264,3 +251,7 @@ CREATE INDEX IF NOT EXISTS idx_post_dispute_annotations__post_id
 CREATE INDEX IF NOT EXISTS idx_post_dispute_annotations__review_dispute_id
   ON post_dispute_annotations (review_dispute_id)
   WHERE review_dispute_id IS NOT NULL;
+
+CREATE TRIGGER trigger_ensure_review_dispute_lifecycle_changes_actor BEFORE INSERT ON review_dispute_lifecycle_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id');
+CREATE TRIGGER trigger_review_dispute_lifecycle_changes_append_only BEFORE UPDATE OR DELETE ON review_dispute_lifecycle_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+CREATE INDEX idx_review_dispute_lifecycle_changes__changed_by_id ON review_dispute_lifecycle_changes(changed_by_id) WHERE changed_by_id IS NOT NULL;

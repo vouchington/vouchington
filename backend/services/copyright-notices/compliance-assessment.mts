@@ -188,7 +188,7 @@ export async function appendCopyrightSubmissionAssessmentInTransaction(
     `)
   }
   await transaction(sql`/* appendCopyrightSubmissionAssessment:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id,
+    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
       copyright_notice_submission_assessment_id)
     VALUES (${submissionRows[0].copyright_notice_id}, 'submission_assessed', ${input.currentUser?.id ?? null}, ${assessment.id})
   `)

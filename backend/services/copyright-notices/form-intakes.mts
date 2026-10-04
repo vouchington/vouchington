@@ -133,9 +133,9 @@ export async function createCopyrightFormIntake(
   const intake = rows[0]
   assert(intake, 500, 'Copyright form intake was not created')
   await transaction(sql`/* createCopyrightFormIntake:screeningExecution */
-    INSERT INTO copyright_notice_form_screening_executions (
-      copyright_notice_form_intake_id, attempt_number, state, started_at
-    ) VALUES (${intake.id}, 1, 'pending', CURRENT_TIMESTAMP)
+    INSERT INTO copyright_notice_form_screening_attempts (
+      copyright_notice_form_intake_id, attempt_number, started_at
+    ) VALUES (${intake.id}, 1, CURRENT_TIMESTAMP)
   `)
   await createCopyrightFormReceiptInTransaction(
     {

@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Case-scoped guest access. The raw token is never stored. Email receipt and
 -- thread correlation do not create a row.
 
@@ -27,11 +28,11 @@ ALTER TABLE copyright_notice_submissions
 ALTER TABLE copyright_notice_submissions
   VALIDATE CONSTRAINT copyright_submission_guest_capability_fk;
 
-ALTER TABLE copyright_notice_lifecycle_events
+ALTER TABLE copyright_notice_lifecycle_changes
   ADD CONSTRAINT copyright_lifecycle_event_guest_capability_fk
   FOREIGN KEY (copyright_notice_guest_capability_id, copyright_notice_id)
   REFERENCES copyright_notice_guest_capabilities (id, copyright_notice_id) ON DELETE RESTRICT NOT VALID;
-ALTER TABLE copyright_notice_lifecycle_events
+ALTER TABLE copyright_notice_lifecycle_changes
   VALIDATE CONSTRAINT copyright_lifecycle_event_guest_capability_fk;
 
 CREATE TABLE copyright_notice_urgent_filings (

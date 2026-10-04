@@ -39,17 +39,19 @@ $$;
 
 CREATE OR REPLACE FUNCTION fn_project_latest_change()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
-DECLARE target_id UUID := (to_jsonb(NEW) ->> TG_ARGV[2])::uuid;
+DECLARE
+  target_id UUID := (to_jsonb(NEW) ->> TG_ARGV[2])::uuid;
+  change_filter TEXT := CASE WHEN TG_NARGS = 7 THEN format(' AND %I = %L', TG_ARGV[5], TG_ARGV[6]) ELSE '' END;
 BEGIN
   -- Serialize on the target before re-reading the latest committed log entry.
   EXECUTE format('SELECT %I FROM %I.%I WHERE %I = $1 FOR UPDATE',
     TG_ARGV[1], TG_TABLE_SCHEMA, TG_ARGV[0], TG_ARGV[1]) USING target_id;
   EXECUTE format(
     'UPDATE %I.%I target SET %I = latest.value FROM
-     (SELECT %I AS value FROM %I.%I WHERE %I = $1 ORDER BY id DESC LIMIT 1) latest
+     (SELECT %I AS value FROM %I.%I WHERE %I = $1%s ORDER BY id DESC LIMIT 1) latest
      WHERE target.%I = $1 AND target.%I IS DISTINCT FROM latest.value',
     TG_TABLE_SCHEMA, TG_ARGV[0], TG_ARGV[3], TG_ARGV[4], TG_TABLE_SCHEMA,
-    TG_TABLE_NAME, TG_ARGV[2], TG_ARGV[1], TG_ARGV[3]) USING target_id;
+    TG_TABLE_NAME, TG_ARGV[2], change_filter, TG_ARGV[1], TG_ARGV[3]) USING target_id;
   RETURN NEW;
 END;
 $$;
@@ -325,3 +327,12 @@ INSERT INTO countries (code, name) VALUES
   ('NZ', 'New Zealand'),
   ('TW', 'Taiwan')
 ON CONFLICT (code) DO NOTHING;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE FUNCTION fn_field_changes(before_fields JSONB, after_fields JSONB)
+RETURNS JSONB LANGUAGE sql IMMUTABLE AS $$
+  SELECT COALESCE(jsonb_object_agg(field, jsonb_build_object(
+    'before', before_fields -> field, 'after', after_fields -> field)), '{}'::jsonb)
+  FROM (SELECT jsonb_object_keys(before_fields || after_fields) AS field) fields
+  WHERE before_fields -> field IS DISTINCT FROM after_fields -> field
+$$;

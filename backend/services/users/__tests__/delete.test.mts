@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { v7 } from 'uuid'
 import {
-  countUserDeletionAuditLogsForTest,
+  countUserDeletionRequestsForTest,
   createTestUser,
   insertTestPasskey,
   countTestPasskeys,
@@ -51,10 +51,10 @@ describe('deleteUser', () => {
   it('throws and rolls back when the user is already soft-deleted', async () => {
     const user = await createTestUser()
     await deleteUserAndDrainForTest(user, user)
-    expect(await countUserDeletionAuditLogsForTest(user.id)).toBe(1)
+    expect(await countUserDeletionRequestsForTest(user.id)).toBe(1)
 
     await expect(deleteUser(user, user)).rejects.toMatchObject({ status: 409 })
-    expect(await countUserDeletionAuditLogsForTest(user.id)).toBe(1)
+    expect(await countUserDeletionRequestsForTest(user.id)).toBe(1)
   })
 
   it('deletes passkeys on account deletion', async () => {

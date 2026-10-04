@@ -24,7 +24,7 @@ export function copyrightStaffQueueKeysSql({
       LEFT JOIN copyright_notice_form_intake_reviews review ON review.copyright_notice_form_intake_id = intake.id
       WHERE review.id IS NULL
         AND (submission.source_kind = 'guest_form' OR NOT EXISTS (
-          SELECT 1 FROM copyright_notice_form_screening_executions execution
+          SELECT 1 FROM copyright_notice_form_screening_attempts execution
           JOIN copyright_notice_submission_assessments assessment
             ON assessment.copyright_notice_submission_id = submission.id
               AND assessment.copyright_notice_form_screening_id = execution.copyright_notice_form_screening_id

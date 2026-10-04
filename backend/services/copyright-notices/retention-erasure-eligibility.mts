@@ -66,7 +66,7 @@ export function copyrightRetentionEligibleSql(now: Date, cutoff: Date): SQLState
         AND NOT EXISTS (SELECT 1 FROM blocked WHERE blocked.notice_id = notice.id)
         AND GREATEST(
           notice.created_at,
-          (SELECT event.created_at FROM copyright_notice_lifecycle_events event
+          (SELECT event.created_at FROM copyright_notice_lifecycle_changes event
            WHERE event.copyright_notice_id = notice.id ORDER BY event.id DESC LIMIT 1),
           (SELECT max(intent.updated_at) FROM copyright_notice_delivery_intents intent
            WHERE intent.copyright_notice_id = notice.id),

@@ -64,11 +64,11 @@ export function streamCopyrightCases(userId: string) {
         ) restriction ON true
         WHERE target.copyright_notice_id = notice.id) AS targets,
       (SELECT COALESCE(json_agg(json_build_object(
-          'id', event.id, 'event_type', event.event_type, 'created_at', event.created_at
+          'id', event.id, 'change_type', event.change_type, 'created_at', event.created_at
         ) ORDER BY event.id), '[]'::json)
-        FROM copyright_notice_lifecycle_events event
+        FROM copyright_notice_lifecycle_changes event
         WHERE event.copyright_notice_id = notice.id
-          AND event.event_type = ANY(${COPYRIGHT_CASE_TIMELINE_EVENT_TYPES}::text[])) AS timeline
+          AND event.change_type = ANY(${COPYRIGHT_CASE_TIMELINE_EVENT_TYPES}::text[])) AS timeline
     FROM copyright_notices notice
     LEFT JOIN view_users_public claimant ON claimant.id = notice.claimant_user_id
     WHERE notice.accepted_at IS NOT NULL

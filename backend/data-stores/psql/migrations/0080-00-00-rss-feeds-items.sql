@@ -117,62 +117,40 @@ COMMENT ON COLUMN rss_feeds.last_modified_at IS 'HTTP Last-Modified header from 
 COMMENT ON COLUMN rss_feeds.etag IS 'HTTP ETag header from the last successful fetch.';
 COMMENT ON COLUMN rss_feeds.last_fetched_at IS 'When the feed was last fetched (successful or not).';
 COMMENT ON COLUMN rss_feeds.feed_type IS 'Content type of the feed: article, podcast, video, or mixed.';
-COMMENT ON COLUMN rss_feeds.is_enabled IS 'Whether this feed is enabled for fetching. Denormalized from rss_feed_enablement_changes for query performance; kept in sync by trigger_sync_rss_feed_is_enabled.';
-COMMENT ON COLUMN rss_feeds.is_discoverable IS 'Whether this feed is publicly discoverable. Denormalized from rss_feed_discoverability_changes for query performance; kept in sync by trigger_sync_rss_feed_is_discoverable.';
+COMMENT ON COLUMN rss_feeds.is_enabled IS 'Whether this feed is enabled for fetching. Denormalized from rss_feed_setting_changes for query performance; kept in sync by trigger_project_rss_feed_enablement.';
+COMMENT ON COLUMN rss_feeds.is_discoverable IS 'Whether this feed is publicly discoverable. Denormalized from rss_feed_setting_changes for query performance; kept in sync by trigger_project_rss_feed_discoverability.';
 COMMENT ON COLUMN rss_feeds.canonical_rss_feed_id IS 'The canonical feed this feed permanently redirects to (HTTP 301/308). NULL if this is the canonical feed.';
 COMMENT ON COLUMN rss_feeds.ignore_robots_txt IS 'Whether robots.txt allow/disallow rules are ignored for fetching this RSS feed. NULL = inherit from hostname then global DynamicConfig. TRUE = always ignore. FALSE = always enforce.';
 COMMENT ON COLUMN rss_feeds.unreliable_status_codes IS 'RSS feed fetch HTTP status codes that should retry instead of soft-deleting this feed. NULL = inherit from hostname. Empty array = no unreliable statuses, overriding hostname defaults.';
 COMMENT ON COLUMN rss_feeds.declared_language IS 'Feed-declared language from <language> or xml:lang element';
 
-CREATE TABLE IF NOT EXISTS rss_feed_discoverability_changes (
+CREATE TYPE rss_feed_setting_change_types AS ENUM ('enablement', 'discoverability');
+CREATE TABLE IF NOT EXISTS rss_feed_setting_changes (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
-  rss_feed_id UUID NOT NULL REFERENCES rss_feeds ON DELETE CASCADE,
+  rss_feed_id UUID NOT NULL REFERENCES rss_feeds(id) ON DELETE CASCADE,
+  change_type rss_feed_setting_change_types NOT NULL,
   enabled BOOLEAN NOT NULL,
-  created_by_id UUID REFERENCES users ON DELETE SET NULL,
-  reason TEXT,
-  CHECK (reason IS NULL OR char_length(reason) <= 1000),
+  changed_by_id UUID REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
+  reason TEXT CHECK (reason IS NULL OR char_length(reason) <= 1000),
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
-CREATE INDEX IF NOT EXISTS idx_rss_feed_discoverability_changes__rss_feed_id__id
-  ON rss_feed_discoverability_changes (rss_feed_id, id DESC);
-COMMENT ON TABLE rss_feed_discoverability_changes IS 'Append-only audit log of discoverability state for RSS feeds. Current state is the latest row per rss_feed_id.';
-COMMENT ON COLUMN rss_feed_discoverability_changes.rss_feed_id IS 'RSS feed whose public discoverability state changed.';
-COMMENT ON COLUMN rss_feed_discoverability_changes.enabled IS 'Whether the feed is publicly discoverable after this change.';
-COMMENT ON COLUMN rss_feed_discoverability_changes.reason IS 'Optional human- or system-readable reason for the discoverability change.';
-
-CREATE TABLE IF NOT EXISTS rss_feed_enablement_changes (
-  id UUID PRIMARY KEY DEFAULT uuidv7(),
-  rss_feed_id UUID NOT NULL REFERENCES rss_feeds ON DELETE CASCADE,
-  enabled BOOLEAN NOT NULL,
-  created_by_id UUID REFERENCES users ON DELETE SET NULL,
-  reason TEXT,
-  CHECK (reason IS NULL OR char_length(reason) <= 1000),
-  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
-);
-CREATE INDEX IF NOT EXISTS idx_rss_feed_enablement_changes__rss_feed_id__id
-  ON rss_feed_enablement_changes (rss_feed_id, id DESC);
-COMMENT ON TABLE rss_feed_enablement_changes IS 'Append-only audit log of enablement state for RSS feeds. Current state is the latest row per rss_feed_id.';
-COMMENT ON COLUMN rss_feed_enablement_changes.rss_feed_id IS 'RSS feed whose fetch enablement state changed.';
-COMMENT ON COLUMN rss_feed_enablement_changes.enabled IS 'Whether the feed is enabled for fetching after this change.';
-COMMENT ON COLUMN rss_feed_enablement_changes.reason IS 'Optional human- or system-readable reason for the enablement change.';
-
--- Keep rss_feeds.is_enabled in sync with the latest rss_feed_enablement_changes row.
--- Reads the MAX-id row rather than trusting NEW.enabled to defend against out-of-order
--- transaction commits on the same feed.
-
-CREATE OR REPLACE TRIGGER trigger_sync_rss_feed_is_enabled
-AFTER INSERT ON rss_feed_enablement_changes
-FOR EACH ROW
-EXECUTE FUNCTION fn_project_latest_change('rss_feeds', 'id', 'rss_feed_id', 'is_enabled', 'enabled');
-
--- Keep rss_feeds.is_discoverable in sync with the latest
--- rss_feed_discoverability_changes row. The feed-row lock serializes concurrent
--- state changes before the trigger re-reads the latest UUIDv7 change.
-
-CREATE OR REPLACE TRIGGER trigger_sync_rss_feed_is_discoverable
-AFTER INSERT ON rss_feed_discoverability_changes
-FOR EACH ROW
-EXECUTE FUNCTION fn_project_latest_change('rss_feeds', 'id', 'rss_feed_id', 'is_discoverable', 'enabled');
+CREATE INDEX idx_rss_feed_setting_changes__feed_type_id ON rss_feed_setting_changes(rss_feed_id, change_type, id DESC);
+CREATE INDEX idx_rss_feed_setting_changes__changed_by_id ON rss_feed_setting_changes(changed_by_id) WHERE changed_by_id IS NOT NULL;
+COMMENT ON TYPE rss_feed_setting_change_types IS 'Independent fetch enablement and public discoverability decisions.';
+COMMENT ON TABLE rss_feed_setting_changes IS 'Append-only feed setting decisions; current values are the latest row per feed and change type.';
+COMMENT ON COLUMN rss_feed_setting_changes.rss_feed_id IS 'RSS feed whose setting changed.';
+COMMENT ON COLUMN rss_feed_setting_changes.change_type IS 'Setting whose value this decision changes.';
+COMMENT ON COLUMN rss_feed_setting_changes.enabled IS 'Value after this setting decision.';
+COMMENT ON COLUMN rss_feed_setting_changes.changed_by_id IS 'Retained identity of the decision actor; never current authorization.';
+COMMENT ON COLUMN rss_feed_setting_changes.reason IS 'Optional bounded reason for the decision.';
+CREATE TRIGGER trigger_ensure_rss_feed_setting_changes_actor BEFORE INSERT ON rss_feed_setting_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id');
+CREATE TRIGGER trigger_rss_feed_setting_changes_append_only BEFORE UPDATE OR DELETE ON rss_feed_setting_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+CREATE TRIGGER trigger_project_rss_feed_enablement AFTER INSERT ON rss_feed_setting_changes
+FOR EACH ROW WHEN (NEW.change_type = 'enablement')
+EXECUTE FUNCTION fn_project_latest_change('rss_feeds', 'id', 'rss_feed_id', 'is_enabled', 'enabled', 'change_type', 'enablement');
+CREATE TRIGGER trigger_project_rss_feed_discoverability AFTER INSERT ON rss_feed_setting_changes
+FOR EACH ROW WHEN (NEW.change_type = 'discoverability')
+EXECUTE FUNCTION fn_project_latest_change('rss_feeds', 'id', 'rss_feed_id', 'is_discoverable', 'enabled', 'change_type', 'discoverability');
 
 -------------------------------------------------------------------------------
 -- rss_feed_items

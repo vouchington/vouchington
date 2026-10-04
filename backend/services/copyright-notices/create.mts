@@ -37,9 +37,9 @@ export async function createCopyrightNoticeAggregateInTransaction(
       )
     `),
     transaction(sql`/* createCopyrightNoticeAggregate:event */
-      INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type)
-      VALUES (${notice.id}, 'notice_received')
-    `),
+    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type)
+    VALUES (${notice.id}, 'notice_received')
+  `),
   ])
   return notice
 }

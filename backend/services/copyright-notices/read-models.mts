@@ -272,10 +272,10 @@ export async function getCopyrightPublicNoticeDetail(
     transaction<
       CopyrightPublicNoticeDetail['timeline'][number]
     >(sql`/* getCopyrightPublicNotice:timeline */
-      SELECT id, event_type, created_at
-      FROM copyright_notice_lifecycle_events
+      SELECT id, change_type AS event_type, created_at
+      FROM copyright_notice_lifecycle_changes
       WHERE copyright_notice_id = ${noticeId}
-        AND (${timelineEventTypes}::text[] IS NULL OR event_type = ANY(${timelineEventTypes}::text[]))
+        AND (${timelineEventTypes}::text[] IS NULL OR change_type = ANY(${timelineEventTypes}::copyright_notice_lifecycle_change_types[]))
       ORDER BY id
     `),
   ])

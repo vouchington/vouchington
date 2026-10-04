@@ -21,10 +21,10 @@ export async function findSwitchOnTime(configKey: string = 'copyright'): Promise
     switched_on_at: Date | null
   }>(sql`/* findAutomaticWithholdingSwitchOnTime */
     SELECT uuid_extract_timestamp(id) AS switched_on_at
-    FROM dynamic_config_change_logs
+    FROM dynamic_configuration_revisions
     WHERE config_key = ${configKey}
-      AND next_fields -> 'automaticProvisionalWithholding' = 'true'::jsonb
-      AND previous_fields -> 'automaticProvisionalWithholding' IS DISTINCT FROM 'true'::jsonb
+      AND changes #> '{automaticProvisionalWithholding,after}' = 'true'::jsonb
+      AND changes #> '{automaticProvisionalWithholding,before}' IS DISTINCT FROM 'true'::jsonb
     ORDER BY id DESC
     LIMIT 1
   `)

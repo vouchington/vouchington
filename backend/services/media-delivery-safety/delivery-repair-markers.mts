@@ -18,7 +18,7 @@ export async function recordImageDeliveryRepairMarker(input: {
   await write(sql`/* recordImageDeliveryRepairMarker */
     INSERT INTO media_delivery_repair_markers (delivery_key, marker_token)
     SELECT delivery_key, nextval('media_delivery_registry_generation_sequence')
-    FROM media_delivery_registry_records WHERE delivery_key = ${deliveryKey}
+    FROM media_delivery_registry_current_records WHERE delivery_key = ${deliveryKey}
     ORDER BY delivery_key ASC NULLS LAST
     ON CONFLICT (delivery_key) DO UPDATE SET
       marker_token = nextval('media_delivery_registry_generation_sequence'),

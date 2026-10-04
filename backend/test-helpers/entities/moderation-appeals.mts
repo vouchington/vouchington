@@ -82,12 +82,6 @@ export async function insertTestModerationAppeal(
         moderation_appeal_id,
         change_type,
         changed_by_id,
-        drafted_at,
-        edited_at,
-        approved_at,
-        sent_at,
-        resolved_at,
-        resolution_action,
         metadata
       )
       SELECT
@@ -95,12 +89,6 @@ export async function insertTestModerationAppeal(
         new_appeal.id,
         'create',
         ${options.appellantId}::uuid,
-        new_appeal.drafted_at,
-        new_appeal.edited_at,
-        new_appeal.approved_at,
-        new_appeal.sent_at,
-        new_appeal.resolved_at,
-        new_appeal.resolution_action,
         '{}'::jsonb
       FROM new_appeal
       CROSS JOIN lifecycle_id

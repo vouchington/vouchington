@@ -18,8 +18,8 @@ export async function revokeCopyrightGuestCapabilitiesForWithdrawal(
         AND expires_at > ${input.revokedAt}
       RETURNING id, copyright_notice_id
     )
-    INSERT INTO copyright_notice_lifecycle_events (
-      copyright_notice_id, event_type, copyright_notice_guest_capability_id
+    INSERT INTO copyright_notice_lifecycle_changes (
+      copyright_notice_id, change_type, copyright_notice_guest_capability_id
     )
     SELECT copyright_notice_id, 'guest_capability_revoked_by_withdrawal', id FROM revoked
   `)

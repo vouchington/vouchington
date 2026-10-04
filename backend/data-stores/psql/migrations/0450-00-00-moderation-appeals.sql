@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Moderation appeals: users can appeal moderation actions (warnings, bans, post removals).
 -- edited-in-place: pre-launch, never deployed to production
 DO $$
@@ -65,6 +66,9 @@ CREATE TABLE IF NOT EXISTS moderation_appeals (
   ),
 
   appeal_reason text NOT NULL CHECK (char_length(appeal_reason) <= 4000),
+  original_decided_by_id uuid REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
+  original_decision_reason text,
+  original_decided_at timestamptz,
 
   -- AI draft columns (nullable until agent runs)
   recommended_action moderation_appeal_action,
@@ -183,14 +187,7 @@ CREATE TABLE IF NOT EXISTS moderation_appeal_lifecycle_changes (
   moderation_appeal_id uuid NOT NULL REFERENCES moderation_appeals (id) ON DELETE CASCADE,
   change_type moderation_appeal_lifecycle_change_types NOT NULL,
   -- guardrails-disable-next-line uuid-must-be-key
-  changed_by_id uuid REFERENCES users (id) ON DELETE SET NULL,
-  -- Snapshot columns for audit
-  drafted_at timestamptz,
-  edited_at timestamptz,
-  approved_at timestamptz,
-  sent_at timestamptz,
-  resolved_at timestamptz,
-  resolution_action moderation_appeal_action,
+  changed_by_id uuid REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   metadata jsonb NOT NULL DEFAULT '{}',
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
@@ -316,12 +313,6 @@ COMMENT ON TABLE moderation_appeal_lifecycle_changes IS 'Append-only audit log o
 COMMENT ON COLUMN moderation_appeal_lifecycle_changes.moderation_appeal_id IS 'The appeal this lifecycle change belongs to.';
 COMMENT ON COLUMN moderation_appeal_lifecycle_changes.change_type IS 'The type of state transition recorded by this change row.';
 COMMENT ON COLUMN moderation_appeal_lifecycle_changes.changed_by_id IS 'The user who performed the action; NULL for system/AI actions.';
-COMMENT ON COLUMN moderation_appeal_lifecycle_changes.drafted_at IS 'Snapshot of drafted_at at the time of this change.';
-COMMENT ON COLUMN moderation_appeal_lifecycle_changes.edited_at IS 'Snapshot of edited_at at the time of this change.';
-COMMENT ON COLUMN moderation_appeal_lifecycle_changes.approved_at IS 'Snapshot of approved_at at the time of this change.';
-COMMENT ON COLUMN moderation_appeal_lifecycle_changes.sent_at IS 'Snapshot of sent_at at the time of this change.';
-COMMENT ON COLUMN moderation_appeal_lifecycle_changes.resolved_at IS 'Snapshot of resolved_at at the time of this change.';
-COMMENT ON COLUMN moderation_appeal_lifecycle_changes.resolution_action IS 'Snapshot of resolution_action at the time of this change.';
 COMMENT ON COLUMN moderation_appeal_lifecycle_changes.metadata IS 'Extra structured metadata for this lifecycle event (e.g. AI model, token counts).';
 
 COMMENT ON COLUMN moderator_actions.moderation_appeal_id IS 'Target moderation appeal for resolve_appeal/dismiss_appeal actions.';
@@ -335,3 +326,13 @@ COMMENT ON COLUMN user_warnings.revoked_by_id IS 'The staff user who revoked thi
 CREATE INDEX IF NOT EXISTS idx_moderation_appeals__created_via_oauth_client_id
   ON moderation_appeals (created_via_oauth_client_id)
   WHERE created_via_oauth_client_id IS NOT NULL;
+
+CREATE TRIGGER trigger_ensure_moderation_appeal_lifecycle_changes_actor BEFORE INSERT ON moderation_appeal_lifecycle_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id');
+CREATE TRIGGER trigger_moderation_appeal_lifecycle_changes_append_only BEFORE UPDATE OR DELETE ON moderation_appeal_lifecycle_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+CREATE INDEX idx_moderation_appeal_lifecycle_changes__changed_by_id ON moderation_appeal_lifecycle_changes(changed_by_id) WHERE changed_by_id IS NOT NULL;
+
+CREATE TRIGGER trigger_ensure_moderation_appeals_original_actor BEFORE INSERT ON moderation_appeals FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('original_decided_by_id');
+CREATE INDEX idx_moderation_appeals__original_decided_by_id ON moderation_appeals(original_decided_by_id) WHERE original_decided_by_id IS NOT NULL;
+COMMENT ON COLUMN moderation_appeals.original_decided_by_id IS 'Retained identity of the original decision actor captured when the appeal opens; never authorization.';
+COMMENT ON COLUMN moderation_appeals.original_decision_reason IS 'Original private decision reason captured when the appeal opens, independent of subsequent resolution.';
+COMMENT ON COLUMN moderation_appeals.original_decided_at IS 'Original decision time captured when the appeal opens.';

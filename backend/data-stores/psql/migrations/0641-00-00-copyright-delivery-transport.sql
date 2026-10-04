@@ -26,8 +26,7 @@ CREATE OR REPLACE FUNCTION fn_current_copyright_form_screening(submission_id uui
 RETURNS boolean LANGUAGE sql STABLE AS $$
   SELECT EXISTS (
     SELECT 1 FROM copyright_notice_form_intakes intake
-    JOIN copyright_notice_form_screening_executions execution
-      ON execution.copyright_notice_form_intake_id = intake.id AND execution.state = 'completed'
+    JOIN LATERAL (SELECT * FROM copyright_notice_form_screening_attempts attempt WHERE attempt.copyright_notice_form_intake_id = intake.id ORDER BY attempt.attempt_number DESC LIMIT 1) execution ON execution.state = 'completed'
     JOIN copyright_notice_form_screenings screening
       ON screening.id = execution.copyright_notice_form_screening_id
     JOIN copyright_notice_submissions submission ON submission.id = intake.copyright_notice_submission_id

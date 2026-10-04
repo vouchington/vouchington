@@ -113,7 +113,7 @@ export async function appendCopyrightLegalHoldAssessment(input: {
     )
   }
   await transaction(sql`/* appendCopyrightLegalHoldAssessment:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id,
+    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
       copyright_notice_legal_hold_assessment_id)
     VALUES (${submissionRows[0].copyright_notice_id}, 'legal_hold_assessed', ${input.currentUser.id},
       ${assessment.id})

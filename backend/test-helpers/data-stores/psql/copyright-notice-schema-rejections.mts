@@ -94,13 +94,13 @@ export function rejectCopyrightLifecycleCrossCaseAction(fixture: CopyrightNotice
       VALUES ('us_dmca', 'copyright', CURRENT_TIMESTAMP, 'ciphertext', 'Other work', 'test-v1')
       RETURNING id
     )
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, copyright_notice_action_intent_id)
+    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, copyright_notice_action_intent_id)
     SELECT id, 'copyright_action_replayed', ${fixture.actionIntentId} FROM other_notice`)
 }
 
 export function rejectCopyrightLifecycleWrongSourceShape(fixture: CopyrightNoticeSchemaFixture) {
   return write(sql`/* rejectCopyrightLifecycleWrongSourceShape */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, copyright_notice_submission_id)
+    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, copyright_notice_submission_id)
     VALUES (${fixture.noticeId}, 'copyright_action_replayed', ${fixture.submissionId})`)
 }
 

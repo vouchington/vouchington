@@ -112,8 +112,8 @@ describe('update.generated (state)', () => {
 
     const enablement = await getLatestEnablementChange(feed.id)
     const discoverability = await getLatestDiscoverabilityChange(feed.id)
-    expect(enablement!.created_by_id).toBe(sharedUser.id)
-    expect(discoverability!.created_by_id).toBe(sharedUser.id)
+    expect(enablement!.changed_by_id).toBe(sharedUser.id)
+    expect(discoverability!.changed_by_id).toBe(sharedUser.id)
   })
 
   it('updateRssFeedByIdAsCurrentUser returns null for state-only changes on missing feed', async () => {

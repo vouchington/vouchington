@@ -144,10 +144,10 @@ export async function countTestCopyrightLifecycleEvents(input: {
 }): Promise<number> {
   const { rows } = await read<{ count: number }>(sql`/* countTestCopyrightLifecycleEvents */
     SELECT count(*)::integer AS count
-    FROM copyright_notice_lifecycle_events
+    FROM copyright_notice_lifecycle_changes
     WHERE copyright_notice_id = ${input.noticeId}
-      AND event_type = ${input.eventType}
-      AND actor_user_id = ${input.actorUserId}
+      AND change_type = ${input.eventType}
+      AND changed_by_id = ${input.actorUserId}
   `)
   return rows[0]?.count ?? 0
 }

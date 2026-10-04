@@ -60,11 +60,11 @@ CREATE TABLE copyright_notice_delivery_intents (
     AND copyright_notice_submission_id IS NULL AND copyright_notice_correspondence_message_id IS NULL))
 );
 
-ALTER TABLE copyright_notice_lifecycle_events
+ALTER TABLE copyright_notice_lifecycle_changes
   ADD CONSTRAINT copyright_lifecycle_event_delivery_intent_fk
   FOREIGN KEY (copyright_notice_delivery_intent_id)
   REFERENCES copyright_notice_delivery_intents(id) ON DELETE RESTRICT NOT VALID;
-ALTER TABLE copyright_notice_lifecycle_events
+ALTER TABLE copyright_notice_lifecycle_changes
   VALIDATE CONSTRAINT copyright_lifecycle_event_delivery_intent_fk;
 
 CREATE INDEX idx_copyright_delivery_intents__notice

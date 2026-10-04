@@ -13,8 +13,8 @@ Creation paths:
 
 Enablement and public discoverability are append-only state logs:
 
-- `rss_feed_enablement_changes`
-- `rss_feed_discoverability_changes`
+- `rss_feed_setting_changes`
+- `rss_feed_setting_changes`
 
 `view_rss_feeds` exposes the latest state as `is_enabled` and `is_discoverable`. New feeds start enabled and discoverable, then the discoverability worker can hide them when score, follower, or publisher-type policy requires it. Admins can change either state through `PATCH /api/v1/rss-feeds/:id`; the optional `reason` field is stored on the change row.
 

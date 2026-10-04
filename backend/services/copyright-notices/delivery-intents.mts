@@ -350,8 +350,8 @@ async function resetFailedCopyrightDeliveryIntent(
   const intent = rows[0]
   if (!intent) return null
   await transaction(sql`/* replayFailedCopyrightDeliveryIntent:event */
-    INSERT INTO copyright_notice_lifecycle_events (
-      copyright_notice_id, event_type, actor_user_id, copyright_notice_delivery_intent_id
+    INSERT INTO copyright_notice_lifecycle_changes (
+      copyright_notice_id, change_type, changed_by_id, copyright_notice_delivery_intent_id
     ) VALUES (
       ${intent.copyright_notice_id}, 'delivery_intent_replayed', ${actorUserId}, ${intent.id}
     )

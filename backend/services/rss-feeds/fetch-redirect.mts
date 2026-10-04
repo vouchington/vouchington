@@ -131,8 +131,8 @@ export async function disableAndHideSource(rssFeedId: string): Promise<void> {
   await lockPostPublicationRssFeedScopes(query, [rssFeedId])
   await query(
     `/* disableAndHideSource:rss_feed */
-       INSERT INTO rss_feed_enablement_changes (rss_feed_id, enabled, created_by_id, reason)
-       VALUES ($1, FALSE, $2, 'permanent redirect to canonical feed')
+       INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, enabled, changed_by_id, reason)
+       VALUES ('enablement', $1, FALSE, $2, 'permanent redirect to canonical feed')
       `,
     [rssFeedId, systemUserId],
   )
@@ -142,8 +142,8 @@ export async function disableAndHideSource(rssFeedId: string): Promise<void> {
   })
   await query(
     `/* disableAndHideSource:discoverability */
-       INSERT INTO rss_feed_discoverability_changes (rss_feed_id, enabled, created_by_id, reason)
-       VALUES ($1, FALSE, $2, 'permanent redirect to canonical feed')
+       INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, enabled, changed_by_id, reason)
+       VALUES ('discoverability', $1, FALSE, $2, 'permanent redirect to canonical feed')
       `,
     [rssFeedId, systemUserId],
   )

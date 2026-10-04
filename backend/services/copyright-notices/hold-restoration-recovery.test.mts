@@ -133,7 +133,7 @@ describe('historical blocked copyright restoration recovery', () => {
       before?.actionIntents.filter(intent => intent.action === 'withhold'),
     )
     expect(
-      recovered?.lifecycleEvents.filter(event => event.event_type === 'copyright_action_replayed'),
+      recovered?.lifecycleEvents.filter(event => event.change_type === 'copyright_action_replayed'),
     ).toHaveLength(1)
     await expect(
       readTestOwnedCopyrightSweepIds(
@@ -216,7 +216,7 @@ describe('historical blocked copyright restoration recovery', () => {
     const retained = await getCopyrightNoticePrivateAggregate(scene.notice.id)
     expect(retained?.actionIntents.find(intent => intent.id === scene.restore.id)).toEqual(original)
     expect(
-      retained?.lifecycleEvents.filter(event => event.event_type === 'copyright_action_replayed'),
+      retained?.lifecycleEvents.filter(event => event.change_type === 'copyright_action_replayed'),
     ).toEqual([])
   })
 
@@ -238,7 +238,7 @@ describe('historical blocked copyright restoration recovery', () => {
     )
     expect(
       aggregate?.lifecycleEvents.filter(event =>
-        ['legal_hold_resolved', 'copyright_action_replayed'].includes(event.event_type),
+        ['legal_hold_resolved', 'copyright_action_replayed'].includes(event.change_type),
       ),
     ).toEqual([])
     await expect(
@@ -263,10 +263,10 @@ describe('historical blocked copyright restoration recovery', () => {
       'pending',
     )
     expect(
-      aggregate?.lifecycleEvents.filter(event => event.event_type === 'copyright_action_replayed'),
+      aggregate?.lifecycleEvents.filter(event => event.change_type === 'copyright_action_replayed'),
     ).toEqual([
       expect.objectContaining({
-        actor_user_id: scene.moderator.id,
+        changed_by_id: scene.moderator.id,
         copyright_notice_action_intent_id: scene.restore.id,
         replay_reason: 'operator_replay',
       }),

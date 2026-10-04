@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 DO $$ BEGIN
   CREATE TYPE revision_types AS ENUM ('create', 'update', 'delete');
 EXCEPTION
@@ -57,3 +58,6 @@ CREATE INDEX IF NOT EXISTS idx_topic_revisions__admin_content_update
   WHERE revision_type IN ('create', 'update')
     AND changes ?| ARRAY['name', 'markdown']
     AND revised_by_roles @> ARRAY['administrator']::TEXT[];
+
+CREATE TRIGGER trigger_post_revisions_append_only BEFORE UPDATE OR DELETE ON post_revisions FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation('revised_by_id');
+CREATE TRIGGER trigger_topic_revisions_append_only BEFORE UPDATE OR DELETE ON topic_revisions FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation('revised_by_id');

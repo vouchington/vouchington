@@ -20,8 +20,6 @@ export const ROOT_FAMILIES = {
       ['image_surface_placement_activations', 'uploaded_by_user_id'],
       ['user_deletion_requests', 'user_id'],
       ['user_deletion_requests', 'requested_by_id'],
-      ['user_deletion_audit_logs', 'user_id'],
-      ['user_deletion_audit_logs', 'requested_by_id'],
       ['post_publication_author_identities', 'id'],
       ['membership_changes', 'user_id'],
       ['membership_changes', 'changed_by_id'],

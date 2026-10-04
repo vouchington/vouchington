@@ -15,9 +15,16 @@ describe('hasPostCreationModerationBypass', () => {
       markdown: 'Admin-created post body',
       clearanceStatus: 'pending',
     })
-    await setPostClearanceStatus(postId, 'approved', administrator.id, undefined, {
-      creation_moderation_bypassed: true,
-    })
+    await setPostClearanceStatus(
+      postId,
+      'approved',
+      administrator.id,
+      undefined,
+      {},
+      {
+        isCreationModerationBypass: true,
+      },
+    )
     await setPostClearanceStatus(postId, 'rejected', administrator.id)
 
     await expect(hasPostCreationModerationBypass(postId)).resolves.toBe(true)
@@ -53,7 +60,7 @@ describe('hasPostCreationModerationBypass', () => {
     await expect(hasPostCreationModerationBypass(postId)).resolves.toBe(false)
   })
 
-  it('uses an explicit false marker instead of legacy administrator inference', async () => {
+  it('does not infer a bypass from administrator roles without an explicit creation decision', async () => {
     const administrator = await createTestUser({ administrator: true })
     const postId = await insertTestPost({
       title: `Explicit non-bypass ${crypto.randomUUID()}`,
@@ -63,9 +70,16 @@ describe('hasPostCreationModerationBypass', () => {
       clearanceStatus: 'pending',
     })
     await createPostRevision(postId, 'create', {}, administrator.id)
-    await setPostClearanceStatus(postId, 'approved', administrator.id, undefined, {
-      creation_moderation_bypassed: false,
-    })
+    await setPostClearanceStatus(
+      postId,
+      'approved',
+      administrator.id,
+      undefined,
+      {},
+      {
+        isCreationModerationBypass: false,
+      },
+    )
 
     await expect(hasPostCreationModerationBypass(postId)).resolves.toBe(false)
   })

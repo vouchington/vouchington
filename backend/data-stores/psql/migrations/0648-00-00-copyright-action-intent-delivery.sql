@@ -55,7 +55,19 @@ CREATE TABLE media_delivery_registry_records (
   image_id uuid NOT NULL REFERENCES images(id) ON DELETE RESTRICT,
   desired_state text NOT NULL CHECK (desired_state IN ('allow', 'withheld')),
   generation bigint NOT NULL DEFAULT 0 CHECK (generation >= 0),
-  state text NOT NULL DEFAULT 'pending' CHECK (state IN ('pending', 'claimed', 'completed', 'failed')),
+  created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT media_delivery_registry_records_exact_key
+    CHECK (delivery_key = concat('image-placement:', placement_id, ':', placement_revision, ':', image_id))
+);
+
+CREATE TYPE media_delivery_registry_change_types AS ENUM ('pending', 'claimed', 'completed', 'failed');
+CREATE TABLE media_delivery_registry_changes (
+  id uuid PRIMARY KEY DEFAULT uuidv7(),
+  delivery_key text NOT NULL REFERENCES media_delivery_registry_records(delivery_key) ON DELETE RESTRICT,
+  generation bigint NOT NULL CHECK (generation >= 0),
+  change_type media_delivery_registry_change_types NOT NULL,
+  changed_by_id uuid REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
   delivery_attempt_count integer NOT NULL DEFAULT 0 CHECK (delivery_attempt_count BETWEEN 0 AND 5),
   claimed_at timestamptz,
   projected_at timestamptz,
@@ -63,22 +75,56 @@ CREATE TABLE media_delivery_registry_records (
   completed_at timestamptz,
   failure_message text CHECK (failure_message IS NULL OR char_length(failure_message) BETWEEN 1 AND 4096),
   next_attempt_at timestamptz,
-  created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT media_delivery_registry_records_exact_key
-    CHECK (delivery_key = concat('image-placement:', placement_id, ':', placement_revision, ':', image_id)),
-  CHECK (
-    (state = 'pending' AND claimed_at IS NULL AND completed_at IS NULL)
-    OR (state = 'claimed' AND claimed_at IS NOT NULL AND completed_at IS NULL)
-    OR (state IN ('completed', 'failed') AND completed_at IS NOT NULL)
-  )
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  CHECK ((change_type = 'pending' AND claimed_at IS NULL AND completed_at IS NULL)
+    OR (change_type = 'claimed' AND claimed_at IS NOT NULL AND completed_at IS NULL)
+    OR (change_type IN ('completed', 'failed') AND completed_at IS NOT NULL))
 );
+CREATE INDEX idx_media_delivery_registry_changes__latest ON media_delivery_registry_changes(delivery_key, id DESC);
+CREATE INDEX idx_media_delivery_registry_changes__actor ON media_delivery_registry_changes(changed_by_id) WHERE changed_by_id IS NOT NULL;
+CREATE TRIGGER trigger_media_delivery_registry_changes_immutable BEFORE UPDATE OR DELETE ON media_delivery_registry_changes
+FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+CREATE TRIGGER trigger_media_delivery_registry_changes_actor BEFORE INSERT ON media_delivery_registry_changes
+FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id');
+CREATE FUNCTION fn_check_media_delivery_change_generation() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE current_generation bigint;
+BEGIN
+  SELECT generation INTO current_generation FROM media_delivery_registry_records
+    WHERE delivery_key = NEW.delivery_key FOR NO KEY UPDATE;
+  IF current_generation IS DISTINCT FROM NEW.generation THEN RETURN NULL; END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_media_delivery_registry_changes_generation BEFORE INSERT ON media_delivery_registry_changes
+FOR EACH ROW EXECUTE FUNCTION fn_check_media_delivery_change_generation();
 
-ALTER TABLE copyright_notice_lifecycle_events
+CREATE VIEW media_delivery_registry_current_records AS
+SELECT record.*, change.id AS latest_change_id, change.change_type::text AS state,
+  change.delivery_attempt_count, change.claimed_at, change.projected_at, change.invalidated_at,
+  change.completed_at, change.failure_message, change.next_attempt_at
+FROM media_delivery_registry_records record
+JOIN LATERAL (SELECT * FROM media_delivery_registry_changes history
+  WHERE history.delivery_key = record.delivery_key AND history.generation = record.generation
+  ORDER BY history.id DESC LIMIT 1) change ON true;
+COMMENT ON TABLE media_delivery_registry_changes IS 'Append-only edge delivery transitions. Current workflow state is the latest transition in the current authority generation.';
+COMMENT ON VIEW media_delivery_registry_current_records IS 'Current authority record joined to its latest immutable delivery transition; no workflow state is stored on the authority parent.';
+COMMENT ON COLUMN media_delivery_registry_changes.delivery_key IS 'Concrete exact edge-delivery authority whose transition this records.';
+COMMENT ON COLUMN media_delivery_registry_changes.generation IS 'Nontransactional authority generation fencing stale acknowledgements.';
+COMMENT ON COLUMN media_delivery_registry_changes.change_type IS 'Typed edge-delivery transition.';
+COMMENT ON COLUMN media_delivery_registry_changes.changed_by_id IS 'Retained operator identity, or null for system delivery work.';
+COMMENT ON COLUMN media_delivery_registry_changes.delivery_attempt_count IS 'Number of claims already made in this authority generation.';
+COMMENT ON COLUMN media_delivery_registry_changes.claimed_at IS 'Worker claim represented by this transition.';
+COMMENT ON COLUMN media_delivery_registry_changes.projected_at IS 'Successful edge publication time for this transition.';
+COMMENT ON COLUMN media_delivery_registry_changes.invalidated_at IS 'Successful edge invalidation time for this transition.';
+COMMENT ON COLUMN media_delivery_registry_changes.completed_at IS 'Terminal delivery outcome time for this transition.';
+COMMENT ON COLUMN media_delivery_registry_changes.failure_message IS 'Bounded delivery diagnostic.';
+COMMENT ON COLUMN media_delivery_registry_changes.next_attempt_at IS 'Earliest retry time for this pending transition.';
+
+ALTER TABLE copyright_notice_lifecycle_changes
   ADD CONSTRAINT copyright_lifecycle_event_media_registry_fk
   FOREIGN KEY (media_delivery_registry_key)
   REFERENCES media_delivery_registry_records(delivery_key) ON DELETE RESTRICT NOT VALID;
-ALTER TABLE copyright_notice_lifecycle_events
+ALTER TABLE copyright_notice_lifecycle_changes
   VALIDATE CONSTRAINT copyright_lifecycle_event_media_registry_fk;
 
 ALTER TABLE media_delivery_registry_records
@@ -112,10 +158,6 @@ FOR EACH ROW EXECUTE FUNCTION fn_update_media_delivery_registry_generation();
 COMMENT ON COLUMN media_delivery_registry_records.generation IS
   'Database-assigned, nontransactional monotonic edge authority generation. It advances for a new record, effective desired-state change, or explicit republish, so a rolled-back prepublication cannot be reused.';
 
-CREATE INDEX idx_media_delivery_registry_records__recoverable
-  ON media_delivery_registry_records (next_attempt_at, delivery_key)
-  WHERE state = 'pending';
-
 CREATE INDEX idx_media_delivery_registry_records__placement
   ON media_delivery_registry_records (placement_id);
 CREATE INDEX idx_media_delivery_registry_records__image
@@ -131,11 +173,15 @@ COMMENT ON COLUMN media_delivery_registry_records.placement_id IS 'Typed placeme
 COMMENT ON COLUMN media_delivery_registry_records.placement_revision IS 'Exact placement revision required by a placement route; stale revisions are independently withheld.';
 COMMENT ON COLUMN media_delivery_registry_records.image_id IS 'Immutable image bound to the exact public-use placement.';
 COMMENT ON COLUMN media_delivery_registry_records.desired_state IS 'Desired legal delivery state; DynamoDB is updated before this row becomes completed.';
-COMMENT ON COLUMN media_delivery_registry_records.state IS 'Durable edge-projection workflow state: pending, claimed, completed, or failed.';
-COMMENT ON COLUMN media_delivery_registry_records.delivery_attempt_count IS 'Bounded count of worker claims for this edge-projection operation.';
-COMMENT ON COLUMN media_delivery_registry_records.claimed_at IS 'Time the current worker claim began before it rechecks the authoritative tuple.';
-COMMENT ON COLUMN media_delivery_registry_records.projected_at IS 'Time the worker successfully wrote the desired tuple to the edge authority.';
-COMMENT ON COLUMN media_delivery_registry_records.invalidated_at IS 'Time a superseded edge tuple was explicitly invalidated.';
-COMMENT ON COLUMN media_delivery_registry_records.completed_at IS 'Time this generation reached its terminal projection outcome.';
-COMMENT ON COLUMN media_delivery_registry_records.failure_message IS 'Bounded diagnostic for a retryable or terminal edge-projection failure.';
-COMMENT ON COLUMN media_delivery_registry_records.next_attempt_at IS 'Earliest durable retry time for a pending edge-projection operation.';
+
+CREATE FUNCTION fn_insert_media_delivery_generation_change() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP = 'INSERT' OR NEW.generation IS DISTINCT FROM OLD.generation THEN
+    INSERT INTO media_delivery_registry_changes(delivery_key, generation, change_type)
+      VALUES (NEW.delivery_key, NEW.generation, 'pending');
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_media_delivery_registry_records_new_generation AFTER INSERT OR UPDATE ON media_delivery_registry_records
+FOR EACH ROW EXECUTE FUNCTION fn_insert_media_delivery_generation_change();

@@ -26,7 +26,7 @@ export async function readCopyrightTerritorialContractShape(
         WHERE deadline.copyright_notice_id = notice.id) AS deadline_count,
       (SELECT count(*)::integer FROM copyright_notice_targets target
         WHERE target.copyright_notice_id = notice.id) AS target_count,
-      (SELECT count(*)::integer FROM copyright_notice_lifecycle_events event
+      (SELECT count(*)::integer FROM copyright_notice_lifecycle_changes event
         WHERE event.copyright_notice_id = notice.id) AS lifecycle_event_count,
       (SELECT count(*)::integer FROM copyright_territorial_notice_receipts receipt
         WHERE receipt.copyright_notice_id = notice.id

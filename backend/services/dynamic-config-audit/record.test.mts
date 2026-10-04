@@ -11,7 +11,7 @@ describe('recordDynamicConfigChange', () => {
     adminUser = await createTestUser({ administrator: true })
   })
 
-  it('inserts a row into dynamic_config_change_logs', async () => {
+  it('inserts a row into dynamic_configuration_revisions', async () => {
     const configKey = `test-config-${randomBytes(4).toString('hex')}`
     const prev = { multiplier_mfa: 1.5 }
     const next = { multiplier_mfa: 2.0 }
@@ -23,9 +23,10 @@ describe('recordDynamicConfigChange', () => {
     const row = rows[0]
     expect(row).toBeDefined()
     expect(row.config_key).toBe(configKey)
-    expect(row.previous_fields).toMatchObject(prev)
-    expect(row.next_fields).toMatchObject(next)
-    expect(row.changed_by_id).toBe(adminUser.id)
+    expect(row.changes).toEqual({
+      multiplier_mfa: { before: prev.multiplier_mfa, after: next.multiplier_mfa },
+    })
+    expect(row.revised_by_id).toBe(adminUser.id)
   })
 
   it('records multiple changes for the same config key', async () => {
@@ -40,8 +41,8 @@ describe('recordDynamicConfigChange', () => {
     const rows = await getDynamicConfigChangeLogRows(configKey)
 
     expect(rows).toHaveLength(2)
-    expect(rows[0].next_fields).toMatchObject(change3)
-    expect(rows[1].next_fields).toMatchObject(change2)
+    expect(rows[0].changes.multiplier_mfa.after).toBe(change3.multiplier_mfa)
+    expect(rows[1].changes.multiplier_mfa.after).toBe(change2.multiplier_mfa)
   })
 
   it('resolves without error when writing a valid audit record', async () => {
@@ -55,6 +56,6 @@ describe('recordDynamicConfigChange', () => {
 
     const rows = await getDynamicConfigChangeLogRows(configKey)
 
-    expect(rows[0].changed_by_id).toBe(adminUser.id)
+    expect(rows[0].revised_by_id).toBe(adminUser.id)
   })
 })

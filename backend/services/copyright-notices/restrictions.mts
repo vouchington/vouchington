@@ -166,7 +166,7 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
     )
   }
   await transaction(sql`/* acceptCopyrightNoticeAndImposeRestriction:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, copyright_restriction_id)
+    INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id, copyright_restriction_id)
     VALUES (${input.noticeId}, 'provisional_restriction_imposed', ${input.imposedById}, ${restriction.id})
   `)
   await transaction.commit()

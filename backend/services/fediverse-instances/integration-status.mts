@@ -40,7 +40,7 @@ export async function getLatestIntegrationStatusChange(
 ): Promise<FediverseInstanceIntegrationChange | null> {
   const { rows } = await read(
     `/* getLatestFediverseInstanceIntegrationStatusChange */
-      SELECT id, topic_id, integration_status, changed_by_id, reason, created_at
+      SELECT id, topic_id, change_type AS integration_status, changed_by_id, reason, created_at
       FROM fediverse_instance_integration_changes
       WHERE topic_id = $1
       ORDER BY id DESC
@@ -59,7 +59,7 @@ async function insertChange(
   await write(
     `/* insertFediverseInstanceIntegrationStatusChange */
       INSERT INTO fediverse_instance_integration_changes
-        (topic_id, integration_status, changed_by_id, reason)
+        (topic_id, change_type, changed_by_id, reason)
       VALUES ($1, $2, $3, $4)`,
     [input.topicId, input.integrationStatus, input.changedById, input.reason ?? null],
     options,
@@ -75,7 +75,7 @@ export async function setIntegrationStatusAsAdmin(
   const run = async (query: TransactionQuery): Promise<SetIntegrationStatusResult> => {
     const { rows } = await query(
       `/* setFediverseInstanceIntegrationStatusAsAdmin:latest */
-        SELECT integration_status
+        SELECT change_type AS integration_status
         FROM fediverse_instance_integration_changes
         WHERE topic_id = $1
         ORDER BY id DESC

@@ -42,8 +42,8 @@ export async function issueCopyrightGuestCapability(input: {
   `)
   assert(rows[0], 404, 'Copyright notice was not found')
   await transaction(sql`/* issueCopyrightGuestCapability:event */
-    INSERT INTO copyright_notice_lifecycle_events (
-      copyright_notice_id, event_type, actor_user_id, copyright_notice_guest_capability_id
+    INSERT INTO copyright_notice_lifecycle_changes (
+      copyright_notice_id, change_type, changed_by_id, copyright_notice_guest_capability_id
     ) VALUES (${input.noticeId}, 'guest_capability_issued', ${input.currentUser.id}, ${id})
   `)
   await transaction.commit()
@@ -72,8 +72,8 @@ export async function revokeCopyrightGuestCapability(input: {
   `)
   assert(rows[0], 404, 'Copyright guest capability was not found')
   await transaction(sql`/* revokeCopyrightGuestCapability:event */
-    INSERT INTO copyright_notice_lifecycle_events (
-      copyright_notice_id, event_type, actor_user_id, copyright_notice_guest_capability_id
+    INSERT INTO copyright_notice_lifecycle_changes (
+      copyright_notice_id, change_type, changed_by_id, copyright_notice_guest_capability_id
     ) VALUES (
       ${input.noticeId}, 'guest_capability_revoked', ${input.currentUser.id}, ${input.capabilityId}
     )
