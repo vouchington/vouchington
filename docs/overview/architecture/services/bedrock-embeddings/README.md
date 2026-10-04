@@ -2,7 +2,7 @@
 
 Source entrypoint: [backend/services/bedrock-embeddings/README.md](../../../../../backend/services/bedrock-embeddings/README.md)
 
-Manages generation, deduplication, and storage of `nova-2-multimodal-embeddings-v1` embeddings for posts, topics, RSS feed items, crawl chunks, support messages, and moderated images. Two complementary pipelines cover the full entity lifecycle:
+Manages generation, deduplication, and storage of `nova-2-multimodal-embeddings-v1` embeddings for posts, topics, RSS feed items, crawl chunks, and moderated images. Two complementary pipelines cover the full entity lifecycle:
 
 - **Single pipeline** — real-time, user-visible ASAP, concurrency-10 queue
 - **Batch pipeline** — eventual consistency via the Bedrock Batch API (minutes–hours), covers all entity types including crawl chunks and moderated images

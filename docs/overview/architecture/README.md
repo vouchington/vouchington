@@ -27,7 +27,7 @@ System design, pipelines, and application-layer patterns for Voucha.
 | [Dynamic Config](./dynamic-config.md)                                                   | Admin-managed Valkey DynamicConfig namespaces, authorization hooks, and audit history                        |
 | [API Egress Proxy](./api-egress-proxy.md)                                               | Explicit provider-scoped HTTP CONNECT routing for IPv4-only APIs                                             |
 | [Feature Flags](./feature-flags.md)                                                     | Runtime feature toggles via Valkey DynamicConfig                                                             |
-| [Conversations](./conversations.md)                                                     | Native transcript storage and migration state                                                                |
+| [Conversations](./conversations.md)                                                     | Native transcript storage and synchronization                                                                |
 | [Entity Relations](./entity-relations.md)                                               | Follow, mute, block, and subscription relationships                                                          |
 | [Bookmarks](./bookmarks.md)                                                             | User bookmark system with bloom filter optimization                                                          |
 | [Post Lifecycle](./post-lifecycle.md)                                                   | Post creation, async fan-out, moderation, and sitemap updates                                                |
@@ -58,7 +58,7 @@ When architecture decisions change, update the relevant doc here and cross-link 
 
 - [App Attest](app-attestation.md)
 - [AI Agents reference](reference-ai-agents-content-moderation-pipeline.md)
-- [AI Agents reference](reference-ai-agents-llm-agent-conversations.md)
+- [Native Conversation Sync](reference-ai-agents-native-conversations.md)
 - [AI Agents reference](reference-ai-agents-semantic-search-embeddings.md)
 - [AI Agents reference](reference-ai-agents-systems-overview.md)
 - [Analytics Pipeline reference](reference-analytics-pipeline-code-entry-points.md)

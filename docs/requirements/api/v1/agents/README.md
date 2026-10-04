@@ -2,7 +2,7 @@
 
 Source entrypoint: [backend/api/v1/agents/README.md](../../../../../backend/api/v1/agents/README.md)
 
-Agent moderation vote endpoints remain after the hosted viewer retirement.
+These endpoints expose moderation-accuracy votes to administrators.
 
 ## Endpoints
 

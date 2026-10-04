@@ -1,8 +1,8 @@
 # Conversations
 
-Conversations are durable transcript records shared between a member's native devices. The hosted
-web chat interface has been removed. Native clients generate assistant responses locally or through
-their configured endpoint, then persist completed turns through the transcript API.
+Conversations are durable transcript records shared between a member's native devices. Native
+clients generate assistant responses on device or through their configured endpoint, then persist
+completed turns through the transcript API.
 
 ## Data Model
 
@@ -14,8 +14,8 @@ their configured endpoint, then persist completed turns through the transcript A
 ### Retention
 
 Conversations and messages are retained indefinitely and have no monthly retention partitions; see
-the canonical [PostgreSQL Partitioning Strategy](partitioning-strategy.md). There is no separate
-execution-run storage: a persisted assistant message carries its completion model as JSON
+the canonical [PostgreSQL Partitioning Strategy](partitioning-strategy.md). A persisted assistant
+message carries its completion model as JSON
 (`model_provider`, `model_name`) beside the opaque turn fingerprint.
 
 ## Native Client Flow
@@ -43,16 +43,10 @@ assistant placeholder; incomplete placeholders remain readable in history.
 
 The shared decode examples are generated under `api-fixtures/v1/responses/native.chat.*.json` for
 Swift, Android, .NET and web; clients adopt them through clients#149 and clients#150 independently.
-
-The hosted streaming route, its `chat` and `reconcile-chat-runtime-generations` queue jobs, the
-Valkey token channel, and the stale-run reconciler are removed
-([A6a, #1542](https://github.com/vouchington/vouchington/issues/1542)), so
-`POST /api/v1/conversations/:conversationId/chat` returns 404. The agentic-run tables and their
-services are removed ([A6, #185](https://github.com/vouchington/vouchington/issues/185)).
-The chat orchestrator, its research, discovery and profile subagents, and the streaming tool loop are
-removed ([A4b, #183](https://github.com/vouchington/vouchington/issues/183)). Under decision D1,
-server removal proceeds without waiting on native client migrations; clients adopt independently.
-These retained paths are not a web product surface and must not gain new web consumers.
+The backend also offers a synchronous title endpoint through
+[`@agents/conversation-title`](ai-agents/conversation-title/README.md). It reads up to two recent messages,
+sanitizes them as external prompt content and records the model call's usage. SSE streams elsewhere
+in the API use the shared [cycle-expiry signal](backend/modules/sse-lifecycle/README.md).
 
 Native clients use REST/API calls derived from `backend/tools/manifest.json` for client-surface
 tools rather than runtime MCP. See [Agent Tools](agent-tools/README.md).
@@ -67,8 +61,6 @@ Conversations can be linked to entities for contextual lookup:
 ## Related Services
 
 - [Backend rules](../../../backend/AGENTS.md) — service and data conventions
-- [Web rules](../../../web/AGENTS.md) — UI and routing conventions
-
 - [docs/overview/architecture/services/conversations-messages/README.md](services/conversations-messages/README.md) -- conversation and message CRUD, client-generated turns
 - [docs/requirements/api/v1/conversations/README.md](../../requirements/api/v1/conversations/README.md) -- API endpoints
 - [docs/overview/architecture/queues/psql/README.md](queues/psql/README.md) -- partition cleanup jobs

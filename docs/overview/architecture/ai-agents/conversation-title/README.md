@@ -2,7 +2,7 @@
 
 Source entrypoint: [backend/agents/conversation-title/README.md](../../../../../backend/agents/conversation-title/README.md)
 
-Generates a short title for a conversation from its first messages. It is a single OpenAI Responses
+Generates a short title for a conversation from up to two recent messages. It is a single OpenAI Responses
 call with no tools, called synchronously by
 `POST /api/v1/my/conversations/:conversationId/title`, not through a queue.
 
@@ -15,7 +15,7 @@ call with no tools, called synchronously by
 
 ## Exports
 
-- `getConversationTitleGenerationInput(conversationId)` — loads up to the first two messages,
+- `getConversationTitleGenerationInput(conversationId)` — loads up to two recent messages,
   truncates each to 1,000 characters, sanitizes and wraps them as external data, and returns the
   prompt text. It returns `null` when the conversation has no message content yet.
 - `generateChatTitleFromInput(input, userId)` — makes the model call and returns a trimmed title

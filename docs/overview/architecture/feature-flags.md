@@ -17,10 +17,14 @@ Feature flags use the `DynamicConfig` class from `@data-stores/valkey`, which st
 | ------------------------- | ------- | ------- | ---------------------------------------------------------- |
 | `memberships`             | boolean | `false` | Enable membership features                                 |
 | `membershipStripeBilling` | boolean | `false` | Enable Stripe purchase calls when `memberships` is also on |
-| `chat`                    | boolean | `false` | Enable chat entry points                                   |
+| `chat`                    | boolean | `false` | Registered key; transcript routes do not depend on it      |
 | `combinedSearch`          | boolean | `false` | Use the combined command-search backend endpoint           |
-| `support`                 | boolean | `false` | Enable support chat entry points                           |
+| `support`                 | boolean | `false` | Registered key; no in-app support route exists             |
 | `fediverse`               | boolean | `false` | Enable Fediverse navigation and search UI                  |
+
+The Dynamic Config registry still describes `chat` and `support` using retired UI terminology.
+Those descriptions do not indicate active entrypoints; the current consumers and route ownership
+above determine what the flags affect.
 
 ## Adding a New Flag
 
@@ -73,7 +77,7 @@ export const featureFlagsConfig = new DynamicConfig({
 ## Authorization
 
 Users with the `administrator` or `developer` role can update the `feature-flags` namespace.
-Moderators, customer-support staff, and investors can inspect Dynamic Config but cannot update this
+Moderators and investors can inspect Dynamic Config but cannot update this
 namespace. The API response's `can_update` field is authoritative for every client.
 
 Browser-local overrides use the `ff` cookie. Native clients persist device-local overrides and

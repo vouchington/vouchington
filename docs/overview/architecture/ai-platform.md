@@ -100,9 +100,10 @@ Copyright email intake, form screening and appeal recommendation are separate ag
 DMCA work; they are not classifiers or part of Epic C. See the
 [agent package inventory](ai-agents/README.md) and
 [queue processor inventory](queues/ai-agents/README.md) for current exported entrypoints and jobs.
-Hosted agent chat, customer support, CRM outreach and Wikipedia recommendation are removed runtime
-surfaces. No classifier depends on those surfaces or retains a hosted fallback. Native conversation
-transcripts follow their own [storage contract](conversations.md).
+Native conversation transcripts follow their own [storage contract](conversations.md). Public
+support contact is the [email link](../../requirements/reference-support.md). Topic discovery uses
+freeform hashtags and the retained topic-recommendation service rather than an automated Wikipedia
+recommender.
 
 ## Evidence and measurement
 
