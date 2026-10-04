@@ -38,7 +38,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `cancel-dequeued-merge-group-runs.yml` | `cancel`                        | job    | `ubuntu-slim`                         | 5             |
 | `cancel-replaced-merge-group-runs.yml` | `cancel`                        | job    | `ubuntu-slim`                         | 5             |
 | `checks-backend-smoke.yml`             | `smoke`                         | job    | `ubuntu-latest`                       | 10            |
-| `checks-static.yml`                    | `static-backend`                | job    | `ubuntu-latest`                       | 15            |
+| `checks-static.yml`                    | `static-backend`                | job    | `ubuntu-latest`                       | 21            |
 | `checks-static.yml`                    | `static-cloudflare`             | job    | `ubuntu-latest`                       | 20            |
 | `checks-static.yml`                    | `static-lambdas`                | job    | `ubuntu-latest`                       | 18            |
 | `checks-static.yml`                    | `static-web`                    | job    | `ubuntu-24.04-arm`                    | 35            |
