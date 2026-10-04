@@ -1,3 +1,4 @@
+import { lockCommunityRestrictionWrites } from './lock.mts'
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
@@ -19,33 +20,23 @@ export async function liftCommunityRestriction(
   assert(community, 404, 'Community not found')
   assert(currentUserCanModerateCommunity(currentUser, community, membership), 403, 'Forbidden')
 
-  let restrictionType: string | null = null
   await using query = await beginTransaction()
+  await lockCommunityRestrictionWrites(query, communityId, currentUser.id)
   const { rows } = await write(
-    sql`/* liftCommunityRestriction:find-active */
-    SELECT restriction_type
-    FROM community_restrictions
+    sql`/* liftCommunityRestriction */
+    UPDATE community_restrictions
+    SET lifted_at = statement_timestamp(),
+        lifted_by_id = ${currentUser.id}
     WHERE id = ${restrictionId}
       AND community_id = ${communityId}
       AND lifted_at IS NULL
-      AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
-    LIMIT 1
+      AND (expires_at IS NULL OR expires_at > statement_timestamp())
+    RETURNING restriction_type
     `,
     { query },
   )
-  restrictionType = (rows[0] as { restriction_type: string } | undefined)?.restriction_type ?? null
+  const restrictionType = (rows[0] as { restriction_type: string } | undefined)?.restriction_type
   assert(restrictionType, 404, 'No active restriction found')
-
-  await write(
-    sql`/* liftCommunityRestriction */
-    UPDATE community_restrictions
-    SET lifted_at = CURRENT_TIMESTAMP,
-        lifted_by_id = ${currentUser.id}
-    WHERE id = ${restrictionId}
-      AND lifted_at IS NULL
-    `,
-    { query },
-  )
 
   await query.commit()
 

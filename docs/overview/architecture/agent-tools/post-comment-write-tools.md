@@ -45,4 +45,12 @@ Delete returns `{ success: true }`. Metadata describes creation as idempotent th
 key, updates as non-idempotent, and deletion as destructive and idempotent; the registry and catalog
 checks validate these hints and output schemas.
 
+Community restriction activation and lifting acquire the same physical community row fence
+(`FOR NO KEY UPDATE`) as delegated contribution decisions, before reading or changing the active
+restriction set, and retain it through commit. A writer that wins the fence determines the policy
+seen by the next contribution; ordinary foreign-key inserts remain compatible.
+Restriction writers take actor lifecycle and moderator membership fences before the community
+row, then recheck authorization. Activation rechecks archive status after waiting. Activation and
+lifting enforce expiry in their writes and record timestamps using the same database statement clock.
+
 Delegated creation and replies reject archived communities under the retained community row fence. Own-user edits and deletions preserve REST access in archived communities.

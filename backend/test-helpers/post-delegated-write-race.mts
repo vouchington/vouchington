@@ -56,15 +56,12 @@ export function withConcurrentCommunityDeletionForTest<T>(
 export function withConcurrentCommunityArchiveForTest<T>(
   communityId: string,
   operation: () => Promise<T>,
+  queryMarker = 'lockDelegatedPostCommunity',
 ): Promise<T> {
-  return withConcurrentDelegatedWriteChangeForTest(
-    operation,
-    'lockDelegatedPostCommunity',
-    async query => {
-      await query(sql`/* withConcurrentCommunityArchiveForTest */
+  return withConcurrentDelegatedWriteChangeForTest(operation, queryMarker, async query => {
+    await query(sql`/* withConcurrentCommunityArchiveForTest */
         UPDATE communities SET archived_at = CURRENT_TIMESTAMP WHERE id = ${communityId}`)
-    },
-  )
+  })
 }
 
 /** Commit suspension after a delegated write reaches the canonical author lifecycle fence. */
@@ -106,16 +103,13 @@ export function withConcurrentCommunityMembershipRemovalForTest<T>(
   communityId: string,
   userId: string,
   operation: () => Promise<T>,
+  queryMarker = 'lockDelegatedPostCommunity.membership',
 ): Promise<T> {
-  return withConcurrentDelegatedWriteChangeForTest(
-    operation,
-    'lockDelegatedPostCommunity.membership',
-    async query => {
-      await query(sql`/* withConcurrentCommunityMembershipRemovalForTest */
+  return withConcurrentDelegatedWriteChangeForTest(operation, queryMarker, async query => {
+    await query(sql`/* withConcurrentCommunityMembershipRemovalForTest */
         UPDATE community_members SET removed_at = CURRENT_TIMESTAMP, removed_by_id = ${userId}
         WHERE community_id = ${communityId} AND user_id = ${userId} AND removed_at IS NULL`)
-    },
-  )
+  })
 }
 
 /** Commit the staged change only after the mutation is blocked on the exact writer fence. */
