@@ -41,7 +41,16 @@ against the base ref; that range would charge an upper layer with every lower la
   a lower layer's area on an upper layer is not intended on pull requests.
 - **Combined queue range:** intentional. A merge group tests the queued entries together, as `main`
   will contain them, so one entry's code makes the group select that area even when a later entry
-  is docs-only. Do not narrow it to the last entry.
+  is docs-only. Do not narrow it to the last entry. Selecting test areas from each entry's own diff
+  was measured and declined in [#1745](https://github.com/vouchington/vouchington/issues/1745):
+  `main` runs no test suites, so the merge group is the last test gate.
+- **Queued native stacks:** every enqueued layer runs its own selected suites. Running them only on
+  the highest enqueued layer was measured and not built
+  ([#645 closeout](https://github.com/vouchington/vouchington/issues/645#issuecomment-5975722357)).
+  The top layer's run already contains the layers below and is the critical path, so the change
+  saves runner time but not merge time. Because the queue only merges non-failing entries, a lower
+  layer that skipped its suites would land untested when only the top fails, unless its required
+  gates reported the top layer's result.
 - **Patch coverage:** layer-scoped for the same reason, and run on pull requests only. See
   [coverage gates](reference-ci-coverage-gates.md#area-patch-coverage).
 
