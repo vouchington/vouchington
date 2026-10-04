@@ -270,7 +270,6 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_escalations (
 CREATE TABLE IF NOT EXISTS copyright_eu_transparency_reports (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   jurisdiction text NOT NULL,
-  copyright_jurisdiction_policy_approval_id uuid NOT NULL,
   period_started_at timestamptz NOT NULL,
   period_ended_at timestamptz NOT NULL,
   receipt_count integer NOT NULL,
@@ -283,9 +282,6 @@ CREATE TABLE IF NOT EXISTS copyright_eu_transparency_reports (
   reported_by_id uuid,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_copyright_eu_transparency_reports__approval
-    FOREIGN KEY (copyright_jurisdiction_policy_approval_id, jurisdiction)
-    REFERENCES copyright_jurisdiction_policy_approvals (id, jurisdiction) ON DELETE RESTRICT,
   CONSTRAINT chk_copyright_eu_transparency_reports__jurisdiction CHECK (jurisdiction = 'eu_dsa'),
   CONSTRAINT chk_copyright_eu_transparency_reports__period CHECK (period_started_at < period_ended_at),
   CONSTRAINT chk_copyright_eu_transparency_reports__counts CHECK (
@@ -485,9 +481,7 @@ COMMENT ON COLUMN copyright_territorial_escalations.escalated_at IS
 COMMENT ON TABLE copyright_eu_transparency_reports IS
   'Counts of stored EU copyright facts for a caller-supplied period. EU only. The period is not a statutory clock.';
 COMMENT ON COLUMN copyright_eu_transparency_reports.jurisdiction IS
-  'Always eu_dsa. The composite foreign key requires an eu_dsa policy approval.';
-COMMENT ON COLUMN copyright_eu_transparency_reports.copyright_jurisdiction_policy_approval_id IS
-  'eu_dsa policy approval this report was produced under.';
+  'Always eu_dsa.';
 COMMENT ON COLUMN copyright_eu_transparency_reports.period_started_at IS
   'Start of the caller-supplied reporting period. Not a statutory clock.';
 COMMENT ON COLUMN copyright_eu_transparency_reports.period_ended_at IS
@@ -662,8 +656,6 @@ CREATE INDEX IF NOT EXISTS idx_copyright_eu_dispute_settlement_outcomes__recorde
   ON copyright_eu_dispute_settlement_outcomes (recorded_by_id) WHERE recorded_by_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_copyright_territorial_escalations__notice
   ON copyright_territorial_escalations (copyright_notice_id, jurisdiction);
-CREATE INDEX IF NOT EXISTS idx_copyright_eu_transparency_reports__policy
-  ON copyright_eu_transparency_reports (copyright_jurisdiction_policy_approval_id, jurisdiction);
 CREATE INDEX IF NOT EXISTS idx_copyright_eu_transparency_reports__reported_by
   ON copyright_eu_transparency_reports (reported_by_id) WHERE reported_by_id IS NOT NULL;
 

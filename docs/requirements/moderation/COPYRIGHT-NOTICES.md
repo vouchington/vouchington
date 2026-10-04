@@ -797,6 +797,16 @@ complaint records an external authority reference and escalates that record. UK 
 do not write EU reason, complaint, or report rows. Neither contract imports the US counter-notice
 clock.
 
+DSA transparency reporting is independently gated by the off-by-default
+`copyright.dsaTransparencyReports` switch, not by EU jurisdiction approval. Its six stored counts
+cover EU facts across every approval period. The read-only export also aggregates US, EU, and UK
+notices and restrictions under the drafted D2 population; complaint figures remain EU-only.
+In-area matches supply trusted-flagger subsets, and shared screening/guidance predicates identify
+automated means. Receipt-to-completed-withhold medians survive restoration. Exports include no
+personal data or statement, rationale, or public-explanation text. See the
+[report API contract](../api/v1/copyright-notices/README.md#dsa-transparency-report) and
+[publication runbook](../../runbooks/copyright-notices.md#dsa-transparency-report).
+
 The EU participant case is readable before acceptance and after `no_action`. It shows the live
 decision, the viewer's own stored statements and delivery times, complaint state, and dispute
 settlements. It never exposes another party's complaint or staff-only restriction rationale. The

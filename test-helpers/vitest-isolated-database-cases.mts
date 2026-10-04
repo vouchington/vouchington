@@ -1,8 +1,11 @@
+import { copyrightReportIsolatedCases } from './vitest-isolated-database-copyright-report-cases.mts'
+
 // Vitest matches `testNamePattern` against the suite and test titles joined by " > ", so every
 // registered name keeps that separator; the template type rejects a space-joined name at compile time.
 type IsolatedDatabaseCaseDefinition = { file: string; fullName: `${string} > ${string}` }
 
 const isolatedDatabaseCases = {
+  ...copyrightReportIsolatedCases,
   'semantic-post-window-cap': {
     file: 'backend/services/posts/search/__tests__/get-ids.semantic-window.test.mts',
     fullName:
@@ -33,6 +36,11 @@ const isolatedDatabaseCases = {
     file: 'backend/services/copyright-notices/territorial-withdrawal.isolated.test.mts',
     fullName:
       'territorial approval withdrawal keeps received-case duties > gates new EU and UK intake while pending and decided notices continue',
+  },
+  'copyright-dsa-report-withdrawn-approval': {
+    file: 'backend/api/v1/copyright-notices/eu-copyright-report-route.test.mts',
+    fullName:
+      'DSA copyright transparency report GET > counts a receipt after withdrawing its approval and does not persist GET output',
   },
   'copyright-eu-transparency-report': {
     file: 'backend/services/copyright-notices/eu-copyright-contract.test.mts',

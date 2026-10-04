@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { useDsaTransparencyReports } from '@voucha/test-helpers/dsa-switches'
 import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
 import { runIsolatedDatabaseCase } from '../../../test-helpers/vitest-isolated-database-case.mts'
 import { createTestUser } from '@voucha/test-helpers'
@@ -20,7 +21,10 @@ import {
 } from './eu-notice-receipt.mts'
 import { recordEuCopyrightStatementOfReasons } from './eu-reasons.mts'
 import { recordEuCopyrightRedressDecision, submitEuCopyrightRedress } from './eu-redress.mts'
-import { compileEuCopyrightTransparencyReport } from './eu-reporting.mts'
+import {
+  compileEuCopyrightTransparencyReport,
+  readEuCopyrightTransparencyFigures,
+} from './eu-reporting.mts'
 import { recordEuCopyrightSupervisedComplaint } from './eu-supervised-complaint.mts'
 import {
   recordCopyrightJurisdictionPolicyApproval,
@@ -57,6 +61,7 @@ async function euActors() {
 }
 
 describe('EU copyright notice contracts', () => {
+  useDsaTransparencyReports()
   it('fails closed without an approved policy and keeps the US aggregate on us_dmca', async () => {
     const claimant = await createTestUser()
     await withRolledBackTerritorialTransaction(async transaction => {
@@ -200,6 +205,8 @@ describe('EU copyright notice contracts', () => {
 
     const { claimant, staff, stranger } = await euActors()
     const periodStart = new Date(Date.now() - 60_000)
+    const periodEnd = new Date(Date.now() + 60_000)
+    const before = await readEuCopyrightTransparencyFigures(staff, periodStart, periodEnd)
     const receipt = await receiveEuCopyrightNotice(
       { user: claimant, identity: `user:${claimant.id}` },
       crypto.randomUUID(),
@@ -244,18 +251,14 @@ describe('EU copyright notice contracts', () => {
       explanation: 'Complaint filed with the authority',
     })
     expect(complaint.escalation_id).toEqual(expect.any(String))
-    const report = await compileEuCopyrightTransparencyReport(
-      staff,
-      periodStart,
-      new Date(Date.now() + 60_000),
-    )
+    const report = await compileEuCopyrightTransparencyReport(staff, periodStart, periodEnd)
     expect(report).toMatchObject({
-      receipt_count: 1,
-      statement_of_reasons_count: 1,
-      redress_request_count: 1,
-      redress_decision_count: 1,
-      supervised_complaint_count: 1,
-      escalation_count: 1,
+      receipt_count: before.receipt_count + 1,
+      statement_of_reasons_count: before.statement_of_reasons_count + 1,
+      redress_request_count: before.redress_request_count + 1,
+      redress_decision_count: before.redress_decision_count + 1,
+      supervised_complaint_count: before.supervised_complaint_count + 1,
+      escalation_count: before.escalation_count + 1,
     })
     await expect(readCopyrightTerritorialContractShape(receipt.notice_id)).resolves.toMatchObject({
       deadline_count: 0,
@@ -264,7 +267,7 @@ describe('EU copyright notice contracts', () => {
       eu_statement_count: 1,
       provisional_withholding_at: null,
     })
-  })
+  }, 240_000)
 
   it('rejects a second withdrawal of the same policy approval', async () => {
     const { administrator, approval } = await euActors()

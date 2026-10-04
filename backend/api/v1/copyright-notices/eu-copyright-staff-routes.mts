@@ -7,6 +7,7 @@ import {
   recordEuCopyrightRedressDecision,
   recordEuCopyrightStatementOfReasons,
 } from '@services/copyright-notices'
+import { assertCopyrightDsaTransparencyReportsEnabled } from '@services/copyright-notices/eu-reporting-gate'
 import {
   parseTerritorialDecisionBody,
   parseTerritorialRedressDecision,
@@ -100,6 +101,7 @@ app.route('/api/v1/copyright-eu-reports').post(async (ctx: Context) => {
     'POST:/api/v1/copyright-eu-reports',
   )
   assertNotSuspended(currentUser)
+  await assertCopyrightDsaTransparencyReportsEnabled()
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   const body = await parseJsonBody<CopyrightTerritorialReportRequest>(ctx)
   const period = parseTerritorialReportPeriod(body)

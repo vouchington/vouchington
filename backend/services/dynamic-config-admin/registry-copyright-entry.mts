@@ -38,6 +38,10 @@ export const copyrightRegistryEntry = defineDynamicConfigNamespace({
       description:
         'Prioritize in-area EU trusted-flagger notices within their existing urgency tier only while an EU jurisdiction approval is active. Off by default; receipt-time matches are recorded even while off.',
     },
+    dsaTransparencyReports: {
+      description:
+        'Allow staff to record and export aggregate DSA copyright transparency figures. Off by default; the report covers all receipt periods without requiring a jurisdiction approval.',
+    },
     automaticWithholdingMinTrustTier: {
       description:
         'Lowest claimant trust tier whose clear-screened notice may be withheld automatically. -1 means unset: every gate must be set before any automatic withholding happens, and an unset gate sends the notice to a moderator.',

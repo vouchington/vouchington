@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { useDsaTransparencyReports } from '@voucha/test-helpers/dsa-switches'
 import { receiveEuCopyrightNotice } from '@services/copyright-notices'
 import { createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
@@ -31,6 +32,7 @@ function noticeRequest(body: ReturnType<typeof noticeBody>) {
 
 describe('EU copyright notice routes', () => {
   useCopyrightIntakeEnvironment()
+  useDsaTransparencyReports()
 
   it('records acknowledgment failure, redress reuse, and the remaining EU handlers', async () => {
     const [claimant, staff, administrator] = await Promise.all([
@@ -158,5 +160,16 @@ describe('EU copyright notice routes', () => {
       id: expect.any(String),
       receipt_count: expect.any(Number),
     })
+  })
+})
+
+describe('EU report switch off', () => {
+  useDsaTransparencyReports(false)
+
+  it('returns 404 before validating a staff POST body', async () => {
+    const staff = await createTestUser({ extraRoles: ['moderator'] })
+    const request = createRequest()
+    await request.authenticateAs(staff)
+    await request.post('/api/v1/copyright-eu-reports').send({ period_start: 1 }).expect(404)
   })
 })

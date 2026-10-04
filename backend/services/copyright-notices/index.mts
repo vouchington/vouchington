@@ -108,7 +108,10 @@ export {
 export { receiveEuCopyrightNotice } from './eu-notice-receipt.mts'
 export { recordEuCopyrightStatementOfReasons } from './eu-reasons.mts'
 export { recordEuCopyrightRedressDecision, submitEuCopyrightRedress } from './eu-redress.mts'
-export { compileEuCopyrightTransparencyReport } from './eu-reporting.mts'
+export {
+  compileEuCopyrightTransparencyReport,
+  readEuCopyrightTransparencyFigures,
+} from './eu-reporting.mts'
 export { recordEuCopyrightSupervisedComplaint } from './eu-supervised-complaint.mts'
 export { readCopyrightReviewTargetBreaches } from './review-target-breaches.mts'
 export { getCopyrightReviewTargetMinutes } from './config.mts'

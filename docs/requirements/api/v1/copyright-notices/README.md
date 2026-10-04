@@ -230,6 +230,51 @@ must ship before any approval is recorded. After receipt, decision and redress c
 receipt even if approval is withdrawn. See
 [Copyright EU, UK, and territorial request validation](../../reference-copyright-territorial-request-validation.md).
 
+### DSA transparency report
+
+Both `POST /api/v1/copyright-eu-reports` and `GET /api/v1/copyright-eu-reports` require copyright
+review staff and `copyright.dsaTransparencyReports`, which defaults to `false`. Authentication,
+role, and suspension checks precede the switch; while disabled, authorized staff receive `404`
+before request validation. The service repeats role and switch checks. Neither route reads jurisdiction
+approval, so missing or withdrawn approval does not change reporting availability or population.
+
+POST accepts the existing closed `period_start` and `period_end` body and records the six EU-only
+counts (`receipt_count`, `statement_of_reasons_count`, `redress_request_count`,
+`redress_decision_count`, `supervised_complaint_count`, `escalation_count`) across every approval
+period. Its stored row and response retain those six counts and no approval reference.
+
+GET is private, uncached, sensitive-rate-limited, and read-only. It accepts `period_start`,
+`period_end`, and `format` (`json`, `csv_notices`, or `csv_complaints`; default `json`). Missing,
+invalid, or reversed periods and unknown formats answer `422`. JSON returns
+`{ copyright_eu_report: { period_start, period_end, generated_at, ...figures } }`.
+
+New notice and restriction figures use one population: US, EU, and UK copyright notices. They
+include received notices and notified items, actions on law and terms, trusted-flagger subsets,
+automated processing and restriction counts, and median hours to act. EU and UK receipts count as
+one notified item each; US items use captured targets. Every restriction imposed in the period
+counts as an action on law, including court-hold re-imposition; terms counts are zero. Only the
+shared in-area match predicate supplies trusted-flagger attribution. Shared screening and guidance
+predicates identify automated means, so erasing a human actor never changes that classification.
+
+Action medians are per notice with a restriction imposed in the period, measured from receipt
+to the earliest completed withhold intent, rounded to two decimal hours. Restoration does not
+change that immutable completion time. Notices without completed withholding do not qualify, and
+an empty median is omitted. EU complaint figures group submitters as notifier, poster, or reviewer
+and decisions as `restrict`, `no_action`, or `no_action_trusted_flagger`; each bucket has received,
+upheld, reversed, zero partially reversed, and median hours to decide. Aggregates never include
+personal data or staff-written explanations.
+
+CSV uses the recorded Commission templates: Part 4 has only the intellectual-property category
+and copyright keyword rows with identical figures, and no TOTAL or other categories; Part 7 has
+only the internal-complaint indicators for the three decision buckets and their five scopes.
+Headers, labels, applicability, and intentional whitespace match the recorded templates. Both
+formats use UTF-8, RFC 4180 escaping, CRLF lines, `text/csv; charset=utf-8`, and attachment headers.
+CSV requires midnight UTC bounds and writes the inclusive period as `start/(end minus one day)`;
+JSON permits other valid instants. Service and contextual-information cells are blank, as are
+uncomputed values. Automated-means counts are JSON-only. The
+[operator runbook](../../../../runbooks/copyright-notices.md#dsa-transparency-report) owns merging
+these copyright rows with other moderation data and publication.
+
 ### Trusted-flagger registry
 
 The staff API registry remains available while intake and `copyright.trustedFlaggerPriority` are

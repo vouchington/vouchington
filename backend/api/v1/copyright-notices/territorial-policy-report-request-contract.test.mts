@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { useDsaTransparencyReports } from '@voucha/test-helpers/dsa-switches'
 import { countEuTransparencyReportsBy } from '@voucha/test-helpers/data-stores/psql/copyright-eu-reports'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import {
@@ -10,6 +11,7 @@ const SCHEMA_DIAGNOSTIC = /schema|must be|required|invalid/i
 
 describe('EU transparency report request contract', () => {
   useCopyrightIntakeEnvironment()
+  useDsaTransparencyReports()
   const url = '/api/v1/copyright-eu-reports'
 
   it('keeps 401 and 403 ahead of the schema diagnostic', async () => {
@@ -21,8 +23,7 @@ describe('EU transparency report request contract', () => {
   })
 
   it('rejects an unknown key before compiling a report', async () => {
-    const { staff, staffRequest, administrator } = await createTerritorialActors()
-    await approveJurisdictionPolicy(administrator, 'eu_dsa')
+    const { staff, staffRequest } = await createTerritorialActors()
     const body = {
       period_start: new Date(Date.now() - 60_000).toISOString(),
       period_end: new Date(Date.now() + 60_000).toISOString(),

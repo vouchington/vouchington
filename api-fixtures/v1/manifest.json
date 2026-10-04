@@ -12872,6 +12872,305 @@
       "source": "backend/api/v1/copyright-notices/email-intake-queue-route.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/copyright-eu-reports": {
+      "bodyKind": "content",
+      "hash": "fc1697dd89bf213637431e4e33edee6218fb7e0db429772e0c16a9b1f59e605a",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/copyright-eu-reports",
+      "schema": {
+        "definitions": {
+          "DsaCopyrightComplaintBucket": {
+            "additionalProperties": false,
+            "properties": {
+              "median_hours": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "partially_reversed": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "received": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "reversed": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "upheld": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "DsaCopyrightComplaintFigures": {
+            "additionalProperties": false,
+            "properties": {
+              "complaints_by_decision_type": {
+                "required": true,
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "no_action": {
+                      "required": true,
+                      "schema": {
+                        "name": "DsaCopyrightComplaintBucket",
+                        "type": "ref"
+                      }
+                    },
+                    "no_action_trusted_flagger": {
+                      "required": true,
+                      "schema": {
+                        "name": "DsaCopyrightComplaintBucket",
+                        "type": "ref"
+                      }
+                    },
+                    "restrict": {
+                      "required": true,
+                      "schema": {
+                        "name": "DsaCopyrightComplaintBucket",
+                        "type": "ref"
+                      }
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "complaints_by_submitter": {
+                "required": true,
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "notifier": {
+                      "required": true,
+                      "schema": {
+                        "type": "number"
+                      }
+                    },
+                    "poster": {
+                      "required": true,
+                      "schema": {
+                        "type": "number"
+                      }
+                    },
+                    "reviewer": {
+                      "required": true,
+                      "schema": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "DsaCopyrightNoticeFigures": {
+            "additionalProperties": false,
+            "properties": {
+              "actions_on_law_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "actions_on_law_trusted_flagger_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "actions_on_terms_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "actions_on_terms_trusted_flagger_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "median_hours_to_action": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "median_hours_to_action_trusted_flagger": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "notices_processed_by_automated_means_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "notices_received_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "notices_received_trusted_flagger_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "notified_items_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "notified_items_trusted_flagger_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "restrictions_imposed_by_automated_means_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "EuCounts": {
+            "additionalProperties": false,
+            "properties": {
+              "escalation_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "receipt_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "redress_decision_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "redress_request_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "statement_of_reasons_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "supervised_complaint_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "copyright_eu_report": {
+              "required": true,
+              "schema": {
+                "type": "intersection",
+                "variants": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "generated_at": {
+                        "required": true,
+                        "schema": {
+                          "type": "string"
+                        }
+                      },
+                      "period_end": {
+                        "required": true,
+                        "schema": {
+                          "type": "string"
+                        }
+                      },
+                      "period_start": {
+                        "required": true,
+                        "schema": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "name": "DsaCopyrightComplaintFigures",
+                    "type": "ref"
+                  },
+                  {
+                    "name": "DsaCopyrightNoticeFigures",
+                    "type": "ref"
+                  },
+                  {
+                    "name": "EuCounts",
+                    "type": "ref"
+                  }
+                ]
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/eu-copyright-report-route.mts",
+      "statusKnowledge": "default"
+    },
+    "GET:/api/v1/copyright-eu-reports#implicit-2": {
+      "bodyKind": "content",
+      "hash": "aae1da61edf605092ff13cf4389bdbadcf25b087f3a59f49badcd18c2792395a",
+      "mediaType": "text/csv",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/copyright-eu-reports",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "type": "string"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/eu-copyright-report-route.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/copyright-jurisdiction-availability": {
       "bodyKind": "content",
       "hash": "824d5e44ad511c46f0aeb1ce931275695acc293c67f4b3c64c788d71cae2ba11",
@@ -82608,6 +82907,57 @@
     }
   },
   "fixtures": [
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/copyright-eu-reports#implicit-2",
+      "bodyFile": "responses/web.copyright.eu.transparency-report-csv.json",
+      "consumers": ["web"],
+      "id": "web.copyright.eu.transparency-report-csv",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/copyright-notices/eu-copyright-report-route.mts"],
+      "path": "/api/v1/copyright-eu-reports",
+      "query": {
+        "format": "csv_notices",
+        "period_end": "2026-02-01T00:00:00.000Z",
+        "period_start": "2026-01-01T00:00:00.000Z"
+      },
+      "responseSchema": {
+        "hash": "00404e686415370f1711c4d7acfa2905444d3cf23cef2e10c47d445ebe690f96",
+        "key": "web.copyright.eu.transparency-report-csv"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/copyright-eu-reports"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/copyright-dsa-report-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/copyright-eu-reports",
+      "bodyFile": "responses/web.copyright.eu.transparency-report.json",
+      "consumers": ["web"],
+      "id": "web.copyright.eu.transparency-report",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/copyright-notices/eu-copyright-report-route.mts"],
+      "path": "/api/v1/copyright-eu-reports",
+      "query": {
+        "period_end": "2026-02-01T00:00:00.000Z",
+        "period_start": "2026-01-01T00:00:00.000Z"
+      },
+      "responseSchema": {
+        "hash": "ee101a15fdf28bfad7dd1975a13c0ca5b2774b38ceaed1141b557595a25f643b",
+        "key": "web.copyright.eu.transparency-report"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/copyright-eu-reports"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/copyright-dsa-report-cases.mts"
+      },
+      "status": 200
+    },
     {
       "auth": "fixture-admin",
       "backendResponseContractKey": "GET:/api/v1/copyright-trusted-flaggers",
