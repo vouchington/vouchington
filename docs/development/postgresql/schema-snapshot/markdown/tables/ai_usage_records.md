@@ -6,23 +6,23 @@ Append-only per-call LLM usage and cost ledger for every agent that calls OpenAI
 
 RANGE partitioned on `id` (children: default, no retention owner, access class: target-scoped, growth: unbounded).
 
-| Column                | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                     |
-| --------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `id`                  | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                             |
-| `community_id`        | `uuid`                     | yes      |                              |          |           |           | The community the call is scoped to, if any; NULL for agents that run outside a community.                                  |
-| `post_id`             | `uuid`                     | yes      |                              |          |           |           | The post that was moderated; nullable if the post has been deleted or the call was not post-scoped.                         |
-| `classifier_run_id`   | `uuid`                     | yes      |                              |          |           |           | The classifier run whose provider attempt made this call; NULL for every other agent, and after the run receipt is deleted. |
-| `agent_slug`          | `text`                     | no       |                              |          |           |           | The slug of the agent that made the LLM call (a moderator, or another agent workload identifier).                           |
-| `model`               | `text`                     | no       |                              |          |           |           | The OpenAI model actually served, from the response (e.g. gpt-5.4-nano-2026-03-17) — not necessarily the requested alias.   |
-| `service_tier`        | `text`                     | no       |                              |          |           |           | The OpenAI service tier actually served, from the response (e.g. flex, default) — not necessarily the requested tier.       |
-| `input_tokens`        | `integer`                  | no       |                              |          |           |           | Number of input tokens billed for this call, including any cached_input_tokens.                                             |
-| `cached_input_tokens` | `integer`                  | no       | `0`                          |          |           |           | Of input_tokens, the number served from the prompt cache at the discounted cached-input rate.                               |
-| `output_tokens`       | `integer`                  | no       |                              |          |           |           | Number of output tokens billed for this call.                                                                               |
-| `latency_ms`          | `integer`                  | yes      |                              |          |           |           | Milliseconds from the request leaving to the provider response body being read; NULL when the caller did not measure it.    |
-| `pricing_status`      | `text`                     | no       |                              |          |           |           | Whether pricing was known when this usage record was written.                                                               |
-| `cost_microunits`     | `bigint`                   | yes      |                              |          |           |           | Estimated cost in millionths of the major currency unit; NULL when unpriced.                                                |
-| `currency_code`       | `text`                     | yes      |                              |          |           |           | Currency of the estimated cost; NULL when unpriced.                                                                         |
-| `created_at`          | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | stored    |           |                                                                                                                             |
+| Column                | Type                               | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                     |
+| --------------------- | ---------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | `uuid`                             | no       | `uuidv7()`                   |          |           |           |                                                                                                                             |
+| `community_id`        | `uuid`                             | yes      |                              |          |           |           | The community the call is scoped to, if any; NULL for agents that run outside a community.                                  |
+| `post_id`             | `uuid`                             | yes      |                              |          |           |           | The post that was moderated; nullable if the post has been deleted or the call was not post-scoped.                         |
+| `classifier_run_id`   | `uuid`                             | yes      |                              |          |           |           | The classifier run whose provider attempt made this call; NULL for every other agent, and after the run receipt is deleted. |
+| `agent_slug`          | `text`                             | no       |                              |          |           |           | The slug of the agent that made the LLM call (a moderator, or another agent workload identifier).                           |
+| `model`               | `text`                             | no       |                              |          |           |           | The OpenAI model actually served, from the response (e.g. gpt-5.4-nano-2026-03-17) — not necessarily the requested alias.   |
+| `service_tier`        | `text`                             | no       |                              |          |           |           | The OpenAI service tier actually served, from the response (e.g. flex, default) — not necessarily the requested tier.       |
+| `input_tokens`        | `integer`                          | no       |                              |          |           |           | Number of input tokens billed for this call, including any cached_input_tokens.                                             |
+| `cached_input_tokens` | `integer`                          | no       | `0`                          |          |           |           | Of input_tokens, the number served from the prompt cache at the discounted cached-input rate.                               |
+| `output_tokens`       | `integer`                          | no       |                              |          |           |           | Number of output tokens billed for this call.                                                                               |
+| `latency_ms`          | `integer`                          | yes      |                              |          |           |           | Milliseconds from the request leaving to the provider response body being read; NULL when the caller did not measure it.    |
+| `pricing_status`      | `ai_usage_record_pricing_statuses` | no       |                              |          |           |           | Whether pricing was known when this usage record was written.                                                               |
+| `cost_microunits`     | `bigint`                           | yes      |                              |          |           |           | Estimated cost in millionths of the major currency unit; NULL when unpriced.                                                |
+| `currency_code`       | `text`                             | yes      |                              |          |           |           | Currency of the estimated cost; NULL when unpriced.                                                                         |
+| `created_at`          | `timestamp with time zone`         | yes      | `uuid_extract_timestamp(id)` |          | stored    |           |                                                                                                                             |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -32,18 +32,19 @@ _none_
 **Check constraints:**
 
 - `ai_usage_records_cached_input_tokens_check`: `CHECK ((cached_input_tokens >= 0))`
-- `ai_usage_records_check`: `CHECK ((((pricing_status = 'priced'::text) AND (cost_microunits IS NOT NULL) AND (currency_code IS NOT NULL)) OR ((pricing_status = 'unpriced'::text) AND (cost_microunits IS NULL) AND (currency_code IS NULL))))`
+- `ai_usage_records_check`: `CHECK ((((pricing_status = 'priced'::ai_usage_record_pricing_statuses) AND (cost_microunits IS NOT NULL) AND (currency_code IS NOT NULL)) OR ((pricing_status = 'unpriced'::ai_usage_record_pricing_statuses) AND (cost_microunits IS NULL) AND (currency_code IS NULL))))`
 - `ai_usage_records_cost_microunits_check`: `CHECK (((cost_microunits >= 0) AND (cost_microunits <= '9007199254740991'::bigint)))`
 - `ai_usage_records_input_tokens_check`: `CHECK ((input_tokens >= 0))`
 - `ai_usage_records_latency_ms_check`: `CHECK ((latency_ms >= 0))`
 - `ai_usage_records_output_tokens_check`: `CHECK ((output_tokens >= 0))`
-- `ai_usage_records_pricing_status_check`: `CHECK ((pricing_status = ANY (ARRAY['priced'::text, 'unpriced'::text])))`
+- `ai_usage_records_pricing_status_check`: `CHECK ((pricing_status = ANY (ARRAY['priced'::ai_usage_record_pricing_statuses, 'unpriced'::ai_usage_record_pricing_statuses])))`
 
 **Foreign keys:**
 
 - `ai_usage_records_community_id_fkey`: `FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE SET NULL`
 - `ai_usage_records_currency_code_fkey`: `FOREIGN KEY (currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
 - `ai_usage_records_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE SET NULL`
+- `ai_usage_records_service_tier_fkey`: `FOREIGN KEY (service_tier) REFERENCES openai_service_tiers(id) ON DELETE RESTRICT`
 - `fk_ai_usage_records__classifier_run`: `FOREIGN KEY (classifier_run_id) REFERENCES classifier_runs(id) ON DELETE SET NULL`
 
 **Indexes:**
@@ -53,6 +54,7 @@ _none_
 - `idx_ai_usage_records__classifier_run_id`: `CREATE INDEX idx_ai_usage_records__classifier_run_id ON ONLY public.ai_usage_records USING btree (classifier_run_id) WHERE (classifier_run_id IS NOT NULL)`
 - `idx_ai_usage_records__currency_code`: `CREATE INDEX idx_ai_usage_records__currency_code ON ONLY public.ai_usage_records USING btree (currency_code) WHERE (currency_code IS NOT NULL)`
 - `idx_ai_usage_records__post_id`: `CREATE INDEX idx_ai_usage_records__post_id ON ONLY public.ai_usage_records USING btree (post_id) WHERE (post_id IS NOT NULL)`
+- `idx_ai_usage_records__service_tier`: `CREATE INDEX idx_ai_usage_records__service_tier ON ONLY public.ai_usage_records USING btree (service_tier)`
 
 **Triggers:**
 _none_

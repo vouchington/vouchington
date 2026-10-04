@@ -6,17 +6,17 @@ Immutable bindings for non-post persisted public image surfaces. Each surface ha
 
 Not partitioned — growth: unbounded.
 
-| Column                 | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                             |
-| ---------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------- |
-| `placement_id`         | `uuid`                     | no       |                     |          |           |           | Stable media placement identifier that scopes public delivery to this persisted surface use.        |
-| `surface_kind`         | `text`                     | no       |                     |          |           |           | Typed persisted surface owning this image use; exactly one matching owner branch is required.       |
-| `image_id`             | `uuid`                     | no       |                     |          |           |           | Immutable byte asset bound to this surface placement.                                               |
-| `binding_family`       | `text`                     | no       | `'surface'::text`   |          |           |           | Literal surface family checked by the retained image placement triple foreign key.                  |
-| `user_id`              | `uuid`                     | yes      |                     |          |           |           | Concrete live profile owner; cleared only after terminal owner-removal retirement on hard deletion. |
-| `topic_id`             | `uuid`                     | yes      |                     |          |           |           | Topic owner for a logo or hero image surface.                                                       |
-| `community_id`         | `uuid`                     | yes      |                     |          |           |           | Community owner for a profile or banner image surface.                                              |
-| `user_profile_link_id` | `uuid`                     | yes      |                     |          |           |           | Concrete live profile-link owner; cleared only after terminal owner-removal retirement on deletion. |
-| `updated_at`           | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                     |
+| Column                 | Type                                    | Nullable | Default                             | Identity | Generated | Collation | Comment                                                                                             |
+| ---------------------- | --------------------------------------- | -------- | ----------------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------- |
+| `placement_id`         | `uuid`                                  | no       |                                     |          |           |           | Stable media placement identifier that scopes public delivery to this persisted surface use.        |
+| `surface_kind`         | `image_surface_placement_surface_kinds` | no       |                                     |          |           |           | Typed persisted surface owning this image use; exactly one matching owner branch is required.       |
+| `image_id`             | `uuid`                                  | no       |                                     |          |           |           | Immutable byte asset bound to this surface placement.                                               |
+| `binding_family`       | `image_binding_families`                | no       | `'surface'::image_binding_families` |          |           |           | Literal surface family checked by the retained image placement triple foreign key.                  |
+| `user_id`              | `uuid`                                  | yes      |                                     |          |           |           | Concrete live profile owner; cleared only after terminal owner-removal retirement on hard deletion. |
+| `topic_id`             | `uuid`                                  | yes      |                                     |          |           |           | Topic owner for a logo or hero image surface.                                                       |
+| `community_id`         | `uuid`                                  | yes      |                                     |          |           |           | Community owner for a profile or banner image surface.                                              |
+| `user_profile_link_id` | `uuid`                                  | yes      |                                     |          |           |           | Concrete live profile-link owner; cleared only after terminal owner-removal retirement on deletion. |
+| `updated_at`           | `timestamp with time zone`              | no       | `CURRENT_TIMESTAMP`                 |          |           |           |                                                                                                     |
 
 **Primary key:** `PRIMARY KEY (placement_id)`
 
@@ -26,9 +26,9 @@ Not partitioned — growth: unbounded.
 
 **Check constraints:**
 
-- `image_surface_placements_binding_family_check`: `CHECK ((binding_family = 'surface'::text))`
-- `image_surface_placements_check`: `CHECK ((((surface_kind = 'user-profile-image'::text) AND (topic_id IS NULL) AND (community_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = ANY (ARRAY['topic-logo-image'::text, 'topic-hero-image'::text])) AND (topic_id IS NOT NULL) AND (user_id IS NULL) AND (community_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = ANY (ARRAY['community-profile-image'::text, 'community-banner-image'::text])) AND (community_id IS NOT NULL) AND (user_id IS NULL) AND (topic_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = 'user-profile-link-image'::text) AND (user_id IS NULL) AND (topic_id IS NULL) AND (community_id IS NULL))))`
-- `image_surface_placements_surface_kind_check`: `CHECK ((surface_kind = ANY (ARRAY['user-profile-image'::text, 'topic-logo-image'::text, 'topic-hero-image'::text, 'community-profile-image'::text, 'community-banner-image'::text, 'user-profile-link-image'::text])))`
+- `image_surface_placements_binding_family_check`: `CHECK ((binding_family = 'surface'::image_binding_families))`
+- `image_surface_placements_check`: `CHECK ((((surface_kind = 'user-profile-image'::image_surface_placement_surface_kinds) AND (topic_id IS NULL) AND (community_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = ANY (ARRAY['topic-logo-image'::image_surface_placement_surface_kinds, 'topic-hero-image'::image_surface_placement_surface_kinds])) AND (topic_id IS NOT NULL) AND (user_id IS NULL) AND (community_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = ANY (ARRAY['community-profile-image'::image_surface_placement_surface_kinds, 'community-banner-image'::image_surface_placement_surface_kinds])) AND (community_id IS NOT NULL) AND (user_id IS NULL) AND (topic_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = 'user-profile-link-image'::image_surface_placement_surface_kinds) AND (user_id IS NULL) AND (topic_id IS NULL) AND (community_id IS NULL))))`
+- `image_surface_placements_surface_kind_check`: `CHECK ((surface_kind = ANY (ARRAY['user-profile-image'::image_surface_placement_surface_kinds, 'topic-logo-image'::image_surface_placement_surface_kinds, 'topic-hero-image'::image_surface_placement_surface_kinds, 'community-profile-image'::image_surface_placement_surface_kinds, 'community-banner-image'::image_surface_placement_surface_kinds, 'user-profile-link-image'::image_surface_placement_surface_kinds])))`
 
 **Foreign keys:**
 
@@ -42,17 +42,17 @@ Not partitioned — growth: unbounded.
 
 **Indexes:**
 
-- `idx_image_surface_placements__community_banner`: `CREATE UNIQUE INDEX idx_image_surface_placements__community_banner ON public.image_surface_placements USING btree (community_id, image_id) WHERE (surface_kind = 'community-banner-image'::text)`
+- `idx_image_surface_placements__community_banner`: `CREATE UNIQUE INDEX idx_image_surface_placements__community_banner ON public.image_surface_placements USING btree (community_id, image_id) WHERE (surface_kind = 'community-banner-image'::image_surface_placement_surface_kinds)`
 - `idx_image_surface_placements__community_fk`: `CREATE INDEX idx_image_surface_placements__community_fk ON public.image_surface_placements USING btree (community_id) WHERE (community_id IS NOT NULL)`
-- `idx_image_surface_placements__community_profile`: `CREATE UNIQUE INDEX idx_image_surface_placements__community_profile ON public.image_surface_placements USING btree (community_id, image_id) WHERE (surface_kind = 'community-profile-image'::text)`
+- `idx_image_surface_placements__community_profile`: `CREATE UNIQUE INDEX idx_image_surface_placements__community_profile ON public.image_surface_placements USING btree (community_id, image_id) WHERE (surface_kind = 'community-profile-image'::image_surface_placement_surface_kinds)`
 - `idx_image_surface_placements__image`: `CREATE INDEX idx_image_surface_placements__image ON public.image_surface_placements USING btree (image_id)`
-- `idx_image_surface_placements__profile_link`: `CREATE UNIQUE INDEX idx_image_surface_placements__profile_link ON public.image_surface_placements USING btree (user_profile_link_id, image_id) WHERE (surface_kind = 'user-profile-link-image'::text)`
+- `idx_image_surface_placements__profile_link`: `CREATE UNIQUE INDEX idx_image_surface_placements__profile_link ON public.image_surface_placements USING btree (user_profile_link_id, image_id) WHERE (surface_kind = 'user-profile-link-image'::image_surface_placement_surface_kinds)`
 - `idx_image_surface_placements__profile_link_fk`: `CREATE INDEX idx_image_surface_placements__profile_link_fk ON public.image_surface_placements USING btree (user_profile_link_id) WHERE (user_profile_link_id IS NOT NULL)`
 - `idx_image_surface_placements__topic_fk`: `CREATE INDEX idx_image_surface_placements__topic_fk ON public.image_surface_placements USING btree (topic_id) WHERE (topic_id IS NOT NULL)`
-- `idx_image_surface_placements__topic_hero`: `CREATE UNIQUE INDEX idx_image_surface_placements__topic_hero ON public.image_surface_placements USING btree (topic_id, image_id) WHERE (surface_kind = 'topic-hero-image'::text)`
-- `idx_image_surface_placements__topic_logo`: `CREATE UNIQUE INDEX idx_image_surface_placements__topic_logo ON public.image_surface_placements USING btree (topic_id, image_id) WHERE (surface_kind = 'topic-logo-image'::text)`
+- `idx_image_surface_placements__topic_hero`: `CREATE UNIQUE INDEX idx_image_surface_placements__topic_hero ON public.image_surface_placements USING btree (topic_id, image_id) WHERE (surface_kind = 'topic-hero-image'::image_surface_placement_surface_kinds)`
+- `idx_image_surface_placements__topic_logo`: `CREATE UNIQUE INDEX idx_image_surface_placements__topic_logo ON public.image_surface_placements USING btree (topic_id, image_id) WHERE (surface_kind = 'topic-logo-image'::image_surface_placement_surface_kinds)`
 - `idx_image_surface_placements__user_fk`: `CREATE INDEX idx_image_surface_placements__user_fk ON public.image_surface_placements USING btree (user_id) WHERE (user_id IS NOT NULL)`
-- `idx_image_surface_placements__user_profile`: `CREATE UNIQUE INDEX idx_image_surface_placements__user_profile ON public.image_surface_placements USING btree (user_id, image_id) WHERE (surface_kind = 'user-profile-image'::text)`
+- `idx_image_surface_placements__user_profile`: `CREATE UNIQUE INDEX idx_image_surface_placements__user_profile ON public.image_surface_placements USING btree (user_id, image_id) WHERE (surface_kind = 'user-profile-image'::image_surface_placement_surface_kinds)`
 - `image_surface_placements_pkey`: `CREATE UNIQUE INDEX image_surface_placements_pkey ON public.image_surface_placements USING btree (placement_id)`
 - `image_surface_placements_placement_id_surface_kind_key`: `CREATE UNIQUE INDEX image_surface_placements_placement_id_surface_kind_key ON public.image_surface_placements USING btree (placement_id, surface_kind)`
 

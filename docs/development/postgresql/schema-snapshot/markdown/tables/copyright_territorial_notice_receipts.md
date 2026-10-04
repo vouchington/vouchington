@@ -10,7 +10,7 @@ Not partitioned — growth: unbounded.
 | ------------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`                                        | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                     |
 | `copyright_notice_id`                       | `uuid`                     | no       |                              |          |           |           | Copyright notice this receipt records. One receipt per notice.                                                                                      |
-| `jurisdiction`                              | `text`                     | no       |                              |          |           |           | Jurisdiction of the notice and of the policy approval: eu_dsa or uk. Both foreign keys must agree.                                                  |
+| `jurisdiction`                              | `copyright_jurisdictions`  | no       |                              |          |           |           | Jurisdiction of the notice and of the policy approval: eu_dsa or uk. Both foreign keys must agree.                                                  |
 | `copyright_jurisdiction_policy_approval_id` | `uuid`                     | no       |                              |          |           |           | Unwithdrawn policy approval of the same jurisdiction that made this receipt acceptable.                                                             |
 | `requester_user_id`                         | `uuid`                     | yes      |                              |          |           |           | Signed-in requester identity retained after account deletion; null means a genuine guest only. This historical identity never grants authorization. |
 | `requester_identity_sha256`                 | `bytea`                    | no       |                              |          |           |           | SHA-256 of the signed-in or guest requester identity, used only to scope idempotency.                                                               |
@@ -33,11 +33,11 @@ Not partitioned — growth: unbounded.
 
 **Check constraints:**
 
-- `chk_copyright_territorial_notice_receipts__eu_fields`: `CHECK ((((jurisdiction = 'eu_dsa'::text) AND (notifier_email_ciphertext IS NOT NULL) AND (good_faith_statement IS TRUE)) OR ((jurisdiction = 'uk'::text) AND (notifier_email_ciphertext IS NULL) AND (good_faith_statement IS NULL))))`
+- `chk_copyright_territorial_notice_receipts__eu_fields`: `CHECK ((((jurisdiction = 'eu_dsa'::copyright_jurisdictions) AND (notifier_email_ciphertext IS NOT NULL) AND (good_faith_statement IS TRUE)) OR ((jurisdiction = 'uk'::copyright_jurisdictions) AND (notifier_email_ciphertext IS NULL) AND (good_faith_statement IS NULL))))`
 - `chk_copyright_territorial_notice_receipts__grounds`: `CHECK (((char_length(grounds_ciphertext) >= 1) AND (char_length(grounds_ciphertext) <= 1048576)))`
 - `chk_copyright_territorial_notice_receipts__idempotency`: `CHECK ((char_length(idempotency_key) = 36))`
 - `chk_copyright_territorial_notice_receipts__identity_sha`: `CHECK ((octet_length(requester_identity_sha256) = 32))`
-- `chk_copyright_territorial_notice_receipts__jurisdiction`: `CHECK ((jurisdiction = ANY (ARRAY['eu_dsa'::text, 'uk'::text])))`
+- `chk_copyright_territorial_notice_receipts__jurisdiction`: `CHECK ((jurisdiction = ANY (ARRAY['eu_dsa'::copyright_jurisdictions, 'uk'::copyright_jurisdictions])))`
 - `chk_copyright_territorial_notice_receipts__sha`: `CHECK ((octet_length(request_sha256) = 32))`
 - `chk_copyright_territorial_notice_receipts__url`: `CHECK (((char_length(hosted_use_url) >= 1) AND (char_length(hosted_use_url) <= 2048)))`
 

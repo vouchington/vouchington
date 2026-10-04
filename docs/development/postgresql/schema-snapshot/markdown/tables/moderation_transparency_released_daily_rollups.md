@@ -6,15 +6,15 @@ Immutable aggregate-only daily moderation transparency disclosures; no source or
 
 Not partitioned — growth: unbounded.
 
-| Column               | Type                       | Nullable | Default                   | Identity | Generated | Collation | Comment                                                                      |
-| -------------------- | -------------------------- | -------- | ------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------- |
-| `day`                | `date`                     | no       |                           |          |           |           | UTC day of the permanently released aggregate cohort.                        |
-| `community_id`       | `uuid`                     | yes      |                           |          |           |           | Immutable community scope, or NULL for the global transparency projection.   |
-| `metric`             | `text`                     | no       |                           |          |           |           | Public transparency metric dimension fixed at release.                       |
-| `category`           | `text`                     | no       |                           |          |           |           | Public transparency category dimension fixed at release.                     |
-| `count`              | `integer`                  | no       |                           |          |           |           | Exact released cohort count; API sanitization applies nearest-five rounding. |
-| `latest_occurred_at` | `timestamp with time zone` | no       |                           |          |           |           | Latest source event timestamp observed when the cohort became immutable.     |
-| `released_at`        | `timestamp with time zone` | no       | `transaction_timestamp()` |          |           |           | Transaction timestamp when the aggregate cohort became immutable.            |
+| Column               | Type                                 | Nullable | Default                   | Identity | Generated | Collation | Comment                                                                      |
+| -------------------- | ------------------------------------ | -------- | ------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------- |
+| `day`                | `date`                               | no       |                           |          |           |           | UTC day of the permanently released aggregate cohort.                        |
+| `community_id`       | `uuid`                               | yes      |                           |          |           |           | Immutable community scope, or NULL for the global transparency projection.   |
+| `metric`             | `moderation_transparency_metrics`    | no       |                           |          |           |           | Public transparency metric dimension fixed at release.                       |
+| `category`           | `moderation_transparency_categories` | no       |                           |          |           |           | Public transparency category dimension fixed at release.                     |
+| `count`              | `integer`                            | no       |                           |          |           |           | Exact released cohort count; API sanitization applies nearest-five rounding. |
+| `latest_occurred_at` | `timestamp with time zone`           | no       |                           |          |           |           | Latest source event timestamp observed when the cohort became immutable.     |
+| `released_at`        | `timestamp with time zone`           | no       | `transaction_timestamp()` |          |           |           | Transaction timestamp when the aggregate cohort became immutable.            |
 
 **Primary key:** _none_
 
@@ -25,7 +25,7 @@ Not partitioned — growth: unbounded.
 **Check constraints:**
 
 - `moderation_transparency_released_daily_rollups_count_check`: `CHECK ((count >= 20))`
-- `moderation_transparency_released_daily_rollups_metric_check`: `CHECK ((metric = ANY (ARRAY['reports'::text, 'moderation_actions'::text, 'automated_moderation'::text, 'appeals'::text])))`
+- `moderation_transparency_released_daily_rollups_metric_check`: `CHECK ((metric = ANY (ARRAY['reports'::moderation_transparency_metrics, 'moderation_actions'::moderation_transparency_metrics, 'automated_moderation'::moderation_transparency_metrics, 'appeals'::moderation_transparency_metrics])))`
 
 **Foreign keys:**
 _none_

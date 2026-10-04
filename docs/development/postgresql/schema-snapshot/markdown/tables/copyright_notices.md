@@ -6,21 +6,21 @@ Legal copyright allegation aggregate. Member views must use an allowlisted proje
 
 Not partitioned — growth: unbounded.
 
-| Column                        | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                           |
-| ----------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------- |
-| `id`                          | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                   |
-| `jurisdiction`                | `text`                     | no       |                              |          |           |           | Procedure selected for this allegation: US DMCA, EU DSA, UK, or other counsel-reviewed handling.                  |
-| `legal_basis`                 | `text`                     | no       |                              |          |           |           | Legal basis for the case; this aggregate is restricted to copyright allegations.                                  |
-| `received_at`                 | `timestamp with time zone` | no       |                              |          |           |           | Immutable timestamp when Voucha originally received the allegation.                                               |
-| `accepted_at`                 | `timestamp with time zone` | yes      |                              |          |           |           | When deterministic or staff validation accepted the allegation into the authenticated member record.              |
-| `provisional_withholding_at`  | `timestamp with time zone` | yes      |                              |          |           |           | When the case first caused a provisional restriction; NULL when no restriction was imposed.                       |
-| `claimant_user_id`            | `uuid`                     | yes      |                              |          |           |           | Signed-in claimant account linked to the member record; NULL for guest/email claimants or after account deletion. |
-| `claimant_display_name`       | `text`                     | yes      |                              |          |           |           | Immutable claimant display-name snapshot for authorized legal and staff use.                                      |
-| `claimant_contact_ciphertext` | `text`                     | no       |                              |          |           |           | Authenticated ciphertext containing private claimant contact details.                                             |
-| `work_description`            | `text`                     | no       |                              |          |           |           | Private description identifying the copyrighted work claimed by the submitter.                                    |
-| `policy_version`              | `text`                     | no       |                              |          |           |           | Version of the intake declarations and legal workflow applied when the allegation was received.                   |
-| `created_at`                  | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                   |
-| `updated_at`                  | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                   |
+| Column                        | Type                           | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                           |
+| ----------------------------- | ------------------------------ | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------- |
+| `id`                          | `uuid`                         | no       | `uuidv7()`                   |          |           |           |                                                                                                                   |
+| `jurisdiction`                | `copyright_jurisdictions`      | no       |                              |          |           |           | Procedure selected for this allegation: US DMCA, EU DSA, UK, or other counsel-reviewed handling.                  |
+| `legal_basis`                 | `copyright_notice_legal_bases` | no       |                              |          |           |           | Legal basis for the case; this aggregate is restricted to copyright allegations.                                  |
+| `received_at`                 | `timestamp with time zone`     | no       |                              |          |           |           | Immutable timestamp when Voucha originally received the allegation.                                               |
+| `accepted_at`                 | `timestamp with time zone`     | yes      |                              |          |           |           | When deterministic or staff validation accepted the allegation into the authenticated member record.              |
+| `provisional_withholding_at`  | `timestamp with time zone`     | yes      |                              |          |           |           | When the case first caused a provisional restriction; NULL when no restriction was imposed.                       |
+| `claimant_user_id`            | `uuid`                         | yes      |                              |          |           |           | Signed-in claimant account linked to the member record; NULL for guest/email claimants or after account deletion. |
+| `claimant_display_name`       | `text`                         | yes      |                              |          |           |           | Immutable claimant display-name snapshot for authorized legal and staff use.                                      |
+| `claimant_contact_ciphertext` | `text`                         | no       |                              |          |           |           | Authenticated ciphertext containing private claimant contact details.                                             |
+| `work_description`            | `text`                         | no       |                              |          |           |           | Private description identifying the copyrighted work claimed by the submitter.                                    |
+| `policy_version`              | `text`                         | no       |                              |          |           |           | Version of the intake declarations and legal workflow applied when the allegation was received.                   |
+| `created_at`                  | `timestamp with time zone`     | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                   |
+| `updated_at`                  | `timestamp with time zone`     | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                   |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -32,8 +32,8 @@ Not partitioned — growth: unbounded.
 
 - `copyright_notices_check`: `CHECK (((accepted_at IS NULL) OR (accepted_at >= received_at)))`
 - `copyright_notices_check1`: `CHECK (((provisional_withholding_at IS NULL) OR ((accepted_at IS NOT NULL) AND (provisional_withholding_at >= accepted_at))))`
-- `copyright_notices_jurisdiction_check`: `CHECK ((jurisdiction = ANY (ARRAY['us_dmca'::text, 'eu_dsa'::text, 'uk'::text, 'other'::text])))`
-- `copyright_notices_legal_basis_check`: `CHECK ((legal_basis = 'copyright'::text))`
+- `copyright_notices_jurisdiction_check`: `CHECK ((jurisdiction = ANY (ARRAY['us_dmca'::copyright_jurisdictions, 'eu_dsa'::copyright_jurisdictions, 'uk'::copyright_jurisdictions, 'other'::copyright_jurisdictions])))`
+- `copyright_notices_legal_basis_check`: `CHECK ((legal_basis = 'copyright'::copyright_notice_legal_bases))`
 
 **Foreign keys:**
 

@@ -6,13 +6,13 @@ Staff-queue routing for one EU or UK notice receipt. Routing is administrative, 
 
 Not partitioned — growth: unbounded.
 
-| Column                                    | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                     |
-| ----------------------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ----------------------------------------------------------- |
-| `copyright_territorial_notice_receipt_id` | `uuid`                     | no       |                     |          |           |           | Receipt this routing belongs to. One routing per receipt.   |
-| `destination`                             | `text`                     | no       |                     |          |           |           | Queue that received the notice. Constrained to staff_queue. |
-| `routed_at`                               | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When the receipt was routed to the staff queue.             |
-| `created_at`                              | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                             |
-| `updated_at`                              | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                             |
+| Column                                    | Type                                                | Nullable | Default             | Identity | Generated | Collation | Comment                                                     |
+| ----------------------------------------- | --------------------------------------------------- | -------- | ------------------- | -------- | --------- | --------- | ----------------------------------------------------------- |
+| `copyright_territorial_notice_receipt_id` | `uuid`                                              | no       |                     |          |           |           | Receipt this routing belongs to. One routing per receipt.   |
+| `destination`                             | `copyright_territorial_notice_routing_destinations` | no       |                     |          |           |           | Queue that received the notice. Constrained to staff_queue. |
+| `routed_at`                               | `timestamp with time zone`                          | no       | `CURRENT_TIMESTAMP` |          |           |           | When the receipt was routed to the staff queue.             |
+| `created_at`                              | `timestamp with time zone`                          | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                             |
+| `updated_at`                              | `timestamp with time zone`                          | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                             |
 
 **Primary key:** `PRIMARY KEY (copyright_territorial_notice_receipt_id)`
 
@@ -21,7 +21,7 @@ _none_
 
 **Check constraints:**
 
-- `chk_copyright_territorial_notice_routings__destination`: `CHECK ((destination = 'staff_queue'::text))`
+- `chk_copyright_territorial_notice_routings__destination`: `CHECK ((destination = 'staff_queue'::copyright_territorial_notice_routing_destinations))`
 
 **Foreign keys:**
 

@@ -11,7 +11,7 @@ Not partitioned — growth: unbounded.
 | `copyright_notice_target_id` | `uuid`                     | no       |                     |          |           |           | Copyright target whose hosted media is the referenced image.                                                  |
 | `placement_id`               | `uuid`                     | no       |                     |          |           |           | Retained placement identity shared with the parent target so the image binding matches that exact hosted use. |
 | `image_id`                   | `uuid`                     | no       |                     |          |           |           | Image asset captured for the exact hosted placement revision.                                                 |
-| `binding_family`             | `text`                     | no       |                     |          |           |           | Retained post or surface placement binding family for this image.                                             |
+| `binding_family`             | `image_binding_families`   | no       |                     |          |           |           | Retained post or surface placement binding family for this image.                                             |
 | `created_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                               |
 | `updated_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                               |
 
@@ -22,7 +22,7 @@ _none_
 
 **Check constraints:**
 
-- `copyright_notice_target_images_binding_family_check`: `CHECK ((binding_family = ANY (ARRAY['post'::text, 'surface'::text])))`
+- `copyright_notice_target_images_binding_family_check`: `CHECK ((binding_family = ANY (ARRAY['post'::image_binding_families, 'surface'::image_binding_families])))`
 
 **Foreign keys:**
 

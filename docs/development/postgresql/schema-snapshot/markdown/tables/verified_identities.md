@@ -33,11 +33,13 @@ _none_
 
 **Foreign keys:**
 
+- `verified_identities_document_type_fkey`: `FOREIGN KEY (document_type) REFERENCES identity_document_types(id) ON DELETE RESTRICT`
 - `verified_identities_transferred_to_user_id_fkey`: `FOREIGN KEY (transferred_to_user_id) REFERENCES users(id) ON DELETE RESTRICT`
 - `verified_identities_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
+- `idx_verified_identities__document_type`: `CREATE INDEX idx_verified_identities__document_type ON public.verified_identities USING btree (document_type)`
 - `idx_verified_identities__transferred_to_user_id`: `CREATE INDEX idx_verified_identities__transferred_to_user_id ON public.verified_identities USING btree (transferred_to_user_id) WHERE (transferred_to_user_id IS NOT NULL)`
 - `idx_verified_identities__user_id`: `CREATE INDEX idx_verified_identities__user_id ON public.verified_identities USING btree (user_id) WHERE (user_id IS NOT NULL)`
 - `uq_verified_identities__fingerprint_active`: `CREATE UNIQUE INDEX uq_verified_identities__fingerprint_active ON public.verified_identities USING btree (identity_fingerprint) WHERE ((revoked_at IS NULL) AND (transferred_to_user_id IS NULL))`

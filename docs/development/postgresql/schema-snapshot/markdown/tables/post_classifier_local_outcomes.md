@@ -6,17 +6,17 @@ Insert-only C5 local detector outcome retained once per run, including runs that
 
 Not partitioned — growth: unbounded.
 
-| Column                   | Type               | Nullable | Default | Identity | Generated | Collation | Comment                                                                                                   |
-| ------------------------ | ------------------ | -------- | ------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------- |
-| `run_id`                 | `uuid`             | no       |         |          |           |           | Run that produced this local detector outcome; the outcome is removed with the run.                       |
-| `local_topic_id`         | `uuid`             | no       |         |          |           |           | Concrete local detector topic relationship the outcome applies to; the outcome is removed with the topic. |
-| `flagged`                | `boolean`          | no       |         |          |           |           | Local detector decision retained unchanged for retry-safe topic application.                              |
-| `reason`                 | `text`             | no       |         |          |           |           | Explanation returned by the local AI-generated detector.                                                  |
-| `confidence_score`       | `double precision` | no       |         |          |           |           | Local detector confidence, bounded to the inclusive zero-to-one interval.                                 |
-| `confidence_threshold`   | `double precision` | no       |         |          |           |           | Pinned local detector confidence boundary used for this decision.                                         |
-| `classification`         | `text`             | no       |         |          |           |           | Local detector classification of the content as AI-generated or human-written.                            |
-| `detector`               | `text`             | no       |         |          |           |           | Local detector identifier retained with its complete outcome.                                             |
-| `detector_model_version` | `text`             | no       |         |          |           |           | Local detector model version returned with this outcome.                                                  |
+| Column                   | Type                                            | Nullable | Default | Identity | Generated | Collation | Comment                                                                                                   |
+| ------------------------ | ----------------------------------------------- | -------- | ------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------- |
+| `run_id`                 | `uuid`                                          | no       |         |          |           |           | Run that produced this local detector outcome; the outcome is removed with the run.                       |
+| `local_topic_id`         | `uuid`                                          | no       |         |          |           |           | Concrete local detector topic relationship the outcome applies to; the outcome is removed with the topic. |
+| `flagged`                | `boolean`                                       | no       |         |          |           |           | Local detector decision retained unchanged for retry-safe topic application.                              |
+| `reason`                 | `text`                                          | no       |         |          |           |           | Explanation returned by the local AI-generated detector.                                                  |
+| `confidence_score`       | `double precision`                              | no       |         |          |           |           | Local detector confidence, bounded to the inclusive zero-to-one interval.                                 |
+| `confidence_threshold`   | `double precision`                              | no       |         |          |           |           | Pinned local detector confidence boundary used for this decision.                                         |
+| `classification`         | `post_classifier_local_outcome_classifications` | no       |         |          |           |           | Local detector classification of the content as AI-generated or human-written.                            |
+| `detector`               | `text`                                          | no       |         |          |           |           | Local detector identifier retained with its complete outcome.                                             |
+| `detector_model_version` | `text`                                          | no       |         |          |           |           | Local detector model version returned with this outcome.                                                  |
 
 **Primary key:** `PRIMARY KEY (run_id)`
 
@@ -25,7 +25,7 @@ _none_
 
 **Check constraints:**
 
-- `post_classifier_local_outcomes_classification_check`: `CHECK ((classification = ANY (ARRAY['ai'::text, 'human'::text])))`
+- `post_classifier_local_outcomes_classification_check`: `CHECK ((classification = ANY (ARRAY['ai'::post_classifier_local_outcome_classifications, 'human'::post_classifier_local_outcome_classifications])))`
 - `post_classifier_local_outcomes_confidence_score_check`: `CHECK (((confidence_score >= (0)::double precision) AND (confidence_score <= (1)::double precision)))`
 - `post_classifier_local_outcomes_confidence_threshold_check`: `CHECK (((confidence_threshold >= (0)::double precision) AND (confidence_threshold <= (1)::double precision)))`
 - `post_classifier_local_outcomes_detector_check`: `CHECK ((btrim(detector) <> ''::text))`

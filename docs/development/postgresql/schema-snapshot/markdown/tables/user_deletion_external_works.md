@@ -6,18 +6,18 @@ Required provider cleanup intents. Completion gates the final internal deletion 
 
 Not partitioned — growth: unbounded.
 
-| Column               | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                           |
-| -------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------- |
-| `id`                 | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                   |
-| `request_id`         | `uuid`                     | no       |                              |          |           |           | Owning durable deletion request.                                                                                  |
-| `work_kind`          | `text`                     | no       |                              |          |           |           | Provider or internal side-effect category whose successful completion gates finalization.                         |
-| `work_key`           | `text`                     | yes      |                              |          |           |           | Provider idempotency key while work is pending; cleared after completion and retention cleanup.                   |
-| `relation_impact_id` | `uuid`                     | yes      |                              |          |           |           | Typed pointer to an affected relation for internal effects work; cleared when completed impact history is pruned. |
-| `requested_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | Timestamp when the durable external-work intent was recorded.                                                     |
-| `completed_at`       | `timestamp with time zone` | yes      |                              |          |           |           | Timestamp when the external side effect completed successfully.                                                   |
-| `last_error_message` | `text`                     | yes      |                              |          |           |           | Truncated diagnostic from the latest failed external-work attempt.                                                |
-| `created_at`         | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                   |
-| `updated_at`         | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                   |
+| Column               | Type                                | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                           |
+| -------------------- | ----------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------- |
+| `id`                 | `uuid`                              | no       | `uuidv7()`                   |          |           |           |                                                                                                                   |
+| `request_id`         | `uuid`                              | no       |                              |          |           |           | Owning durable deletion request.                                                                                  |
+| `work_kind`          | `user_deletion_external_work_kinds` | no       |                              |          |           |           | Provider or internal side-effect category whose successful completion gates finalization.                         |
+| `work_key`           | `text`                              | yes      |                              |          |           |           | Provider idempotency key while work is pending; cleared after completion and retention cleanup.                   |
+| `relation_impact_id` | `uuid`                              | yes      |                              |          |           |           | Typed pointer to an affected relation for internal effects work; cleared when completed impact history is pruned. |
+| `requested_at`       | `timestamp with time zone`          | no       | `CURRENT_TIMESTAMP`          |          |           |           | Timestamp when the durable external-work intent was recorded.                                                     |
+| `completed_at`       | `timestamp with time zone`          | yes      |                              |          |           |           | Timestamp when the external side effect completed successfully.                                                   |
+| `last_error_message` | `text`                              | yes      |                              |          |           |           | Truncated diagnostic from the latest failed external-work attempt.                                                |
+| `created_at`         | `timestamp with time zone`          | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                   |
+| `updated_at`         | `timestamp with time zone`          | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                   |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -28,10 +28,10 @@ Not partitioned — growth: unbounded.
 
 **Check constraints:**
 
-- `user_deletion_external_works_check`: `CHECK ((((work_kind = 'entity-relation-effects'::text) AND (work_key IS NULL) AND ((completed_at IS NOT NULL) OR (relation_impact_id IS NOT NULL))) OR ((work_kind <> 'entity-relation-effects'::text) AND (relation_impact_id IS NULL) AND ((completed_at IS NOT NULL) OR (work_key IS NOT NULL)))))`
+- `user_deletion_external_works_check`: `CHECK ((((work_kind = 'entity-relation-effects'::user_deletion_external_work_kinds) AND (work_key IS NULL) AND ((completed_at IS NOT NULL) OR (relation_impact_id IS NOT NULL))) OR ((work_kind <> 'entity-relation-effects'::user_deletion_external_work_kinds) AND (relation_impact_id IS NULL) AND ((completed_at IS NOT NULL) OR (work_key IS NOT NULL)))))`
 - `user_deletion_external_works_last_error_message_check`: `CHECK (((last_error_message IS NULL) OR (char_length(last_error_message) <= 2000)))`
 - `user_deletion_external_works_work_key_check`: `CHECK ((char_length(work_key) <= 1024))`
-- `user_deletion_external_works_work_kind_check`: `CHECK ((work_kind = ANY (ARRAY['cloudflare-cache-tag'::text, 'entity-relation-effects'::text, 's3-export'::text, 'stripe-customer'::text])))`
+- `user_deletion_external_works_work_kind_check`: `CHECK ((work_kind = ANY (ARRAY['cloudflare-cache-tag'::user_deletion_external_work_kinds, 'entity-relation-effects'::user_deletion_external_work_kinds, 's3-export'::user_deletion_external_work_kinds, 'stripe-customer'::user_deletion_external_work_kinds])))`
 
 **Foreign keys:**
 

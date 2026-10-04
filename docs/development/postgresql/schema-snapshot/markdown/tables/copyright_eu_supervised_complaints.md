@@ -10,7 +10,7 @@ Not partitioned — growth: unbounded.
 | ------------------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------ |
 | `id`                     | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                      |
 | `copyright_notice_id`    | `uuid`                     | no       |                              |          |           |           | EU notice this supervised complaint concerns.                                        |
-| `jurisdiction`           | `text`                     | no       |                              |          |           |           | Always eu_dsa. The composite foreign key requires the notice to be an eu_dsa notice. |
+| `jurisdiction`           | `copyright_jurisdictions`  | no       |                              |          |           |           | Always eu_dsa. The composite foreign key requires the notice to be an eu_dsa notice. |
 | `recorded_by_id`         | `uuid`                     | yes      |                              |          |           |           | Staff user who recorded the complaint. Null after that account is deleted.           |
 | `authority_reference`    | `text`                     | no       |                              |          |           |           | Authority reference for this complaint. Unique per notice.                           |
 | `explanation_ciphertext` | `text`                     | no       |                              |          |           |           | Encrypted explanation of the supervised complaint.                                   |
@@ -27,7 +27,7 @@ Not partitioned — growth: unbounded.
 **Check constraints:**
 
 - `chk_copyright_eu_supervised_complaints__explanation`: `CHECK (((char_length(explanation_ciphertext) >= 1) AND (char_length(explanation_ciphertext) <= 1048576)))`
-- `chk_copyright_eu_supervised_complaints__jurisdiction`: `CHECK ((jurisdiction = 'eu_dsa'::text))`
+- `chk_copyright_eu_supervised_complaints__jurisdiction`: `CHECK ((jurisdiction = 'eu_dsa'::copyright_jurisdictions))`
 - `chk_copyright_eu_supervised_complaints__reference`: `CHECK (((char_length(authority_reference) >= 1) AND (char_length(authority_reference) <= 200)))`
 
 **Foreign keys:**

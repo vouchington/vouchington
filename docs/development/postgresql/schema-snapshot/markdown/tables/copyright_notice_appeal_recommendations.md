@@ -6,17 +6,17 @@ Immutable advisory recommendations for a moderator evaluating an ordinary copyri
 
 Not partitioned — growth: unbounded.
 
-| Column                           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                   |
-| -------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------- |
-| `id`                             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                           |
-| `copyright_notice_submission_id` | `uuid`                     | no       |                              |          |           |           | The immutable ordinary appeal receipt evaluated by the agent.             |
-| `input_sha256`                   | `bytea`                    | no       |                              |          |           |           | Digest of the structured appeal and notice context supplied to the model. |
-| `prompt_version`                 | `text`                     | no       |                              |          |           |           | Versioned advisory recommendation prompt.                                 |
-| `model`                          | `text`                     | no       |                              |          |           |           | Model identifier recorded for recommendation provenance.                  |
-| `recommendation`                 | `text`                     | no       |                              |          |           |           | Bounded advisory disposition for a moderator; no worker acts on it.       |
-| `rationale_ciphertext`           | `text`                     | no       |                              |          |           |           | Encrypted bounded agent rationale visible only to authorized staff.       |
-| `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                           |
-| `updated_at`                     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                           |
+| Column                           | Type                                              | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                   |
+| -------------------------------- | ------------------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------- |
+| `id`                             | `uuid`                                            | no       | `uuidv7()`                   |          |           |           |                                                                           |
+| `copyright_notice_submission_id` | `uuid`                                            | no       |                              |          |           |           | The immutable ordinary appeal receipt evaluated by the agent.             |
+| `input_sha256`                   | `bytea`                                           | no       |                              |          |           |           | Digest of the structured appeal and notice context supplied to the model. |
+| `prompt_version`                 | `text`                                            | no       |                              |          |           |           | Versioned advisory recommendation prompt.                                 |
+| `model`                          | `text`                                            | no       |                              |          |           |           | Model identifier recorded for recommendation provenance.                  |
+| `recommendation`                 | `copyright_notice_appeal_recommendation_outcomes` | no       |                              |          |           |           | Bounded advisory disposition for a moderator; no worker acts on it.       |
+| `rationale_ciphertext`           | `text`                                            | no       |                              |          |           |           | Encrypted bounded agent rationale visible only to authorized staff.       |
+| `created_at`                     | `timestamp with time zone`                        | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                           |
+| `updated_at`                     | `timestamp with time zone`                        | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                           |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -31,7 +31,7 @@ Not partitioned — growth: unbounded.
 - `copyright_notice_appeal_recommendations_input_sha256_check`: `CHECK ((octet_length(input_sha256) = 32))`
 - `copyright_notice_appeal_recommendations_model_check`: `CHECK (((char_length(model) >= 1) AND (char_length(model) <= 255)))`
 - `copyright_notice_appeal_recommendations_prompt_version_check`: `CHECK (((char_length(prompt_version) >= 1) AND (char_length(prompt_version) <= 100)))`
-- `copyright_notice_appeal_recommendations_recommendation_check`: `CHECK ((recommendation = ANY (ARRAY['confirm'::text, 'modify'::text, 'reverse'::text, 'uncertain'::text])))`
+- `copyright_notice_appeal_recommendations_recommendation_check`: `CHECK ((recommendation = ANY (ARRAY['confirm'::copyright_notice_appeal_recommendation_outcomes, 'modify'::copyright_notice_appeal_recommendation_outcomes, 'reverse'::copyright_notice_appeal_recommendation_outcomes, 'uncertain'::copyright_notice_appeal_recommendation_outcomes])))`
 
 **Foreign keys:**
 

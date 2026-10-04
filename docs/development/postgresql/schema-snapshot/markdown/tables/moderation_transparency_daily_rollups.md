@@ -6,14 +6,14 @@ Aggregate-only daily moderation transparency cohorts; contains no source-row or 
 
 Not partitioned — growth: unbounded.
 
-| Column               | Type                       | Nullable | Default | Identity | Generated | Collation | Comment                                                                          |
-| -------------------- | -------------------------- | -------- | ------- | -------- | --------- | --------- | -------------------------------------------------------------------------------- |
-| `day`                | `date`                     | no       |         |          |           |           | UTC day shared by every source event in this cohort.                             |
-| `community_id`       | `uuid`                     | yes      |         |          |           |           | Community scope, or NULL for the global transparency projection.                 |
-| `metric`             | `text`                     | no       |         |          |           |           | Public transparency metric dimension.                                            |
-| `category`           | `text`                     | no       |         |          |           |           | Public transparency category dimension.                                          |
-| `count`              | `integer`                  | no       |         |          |           |           | Exact private cohort count; API sanitization enforces thresholding and rounding. |
-| `latest_occurred_at` | `timestamp with time zone` | no       |         |          |           |           | Latest known source event time, used to enforce the 48-hour release delay.       |
+| Column               | Type                                 | Nullable | Default | Identity | Generated | Collation | Comment                                                                          |
+| -------------------- | ------------------------------------ | -------- | ------- | -------- | --------- | --------- | -------------------------------------------------------------------------------- |
+| `day`                | `date`                               | no       |         |          |           |           | UTC day shared by every source event in this cohort.                             |
+| `community_id`       | `uuid`                               | yes      |         |          |           |           | Community scope, or NULL for the global transparency projection.                 |
+| `metric`             | `moderation_transparency_metrics`    | no       |         |          |           |           | Public transparency metric dimension.                                            |
+| `category`           | `moderation_transparency_categories` | no       |         |          |           |           | Public transparency category dimension.                                          |
+| `count`              | `integer`                            | no       |         |          |           |           | Exact private cohort count; API sanitization enforces thresholding and rounding. |
+| `latest_occurred_at` | `timestamp with time zone`           | no       |         |          |           |           | Latest known source event time, used to enforce the 48-hour release delay.       |
 
 **Primary key:** _none_
 
@@ -24,7 +24,7 @@ Not partitioned — growth: unbounded.
 **Check constraints:**
 
 - `moderation_transparency_daily_rollups_count_check`: `CHECK ((count > 0))`
-- `moderation_transparency_daily_rollups_metric_check`: `CHECK ((metric = ANY (ARRAY['reports'::text, 'moderation_actions'::text, 'automated_moderation'::text, 'appeals'::text])))`
+- `moderation_transparency_daily_rollups_metric_check`: `CHECK ((metric = ANY (ARRAY['reports'::moderation_transparency_metrics, 'moderation_actions'::moderation_transparency_metrics, 'automated_moderation'::moderation_transparency_metrics, 'appeals'::moderation_transparency_metrics])))`
 
 **Foreign keys:**
 _none_

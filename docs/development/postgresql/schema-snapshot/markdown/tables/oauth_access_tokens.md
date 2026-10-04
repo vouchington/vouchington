@@ -13,7 +13,7 @@ Not partitioned — growth: bounded.
 | `refresh_family_id` | `uuid`                     | no       |                              |          |           |           | Refresh family that issued the access token.           |
 | `token_hash`        | `text`                     | no       |                              |          |           |           | Purpose-bound hash of the opaque bearer token.         |
 | `resource`          | `text`                     | no       |                              |          |           |           | Protected resource audience bound to the access token. |
-| `scopes`            | `text[]`                   | no       |                              |          |           |           | Canonical scopes carried by the access token.          |
+| `scopes`            | `api_scopes[]`             | no       |                              |          |           |           | Canonical scopes carried by the access token.          |
 | `expires_at`        | `timestamp with time zone` | no       |                              |          |           |           | Time after which the access token is invalid.          |
 | `revoked_at`        | `timestamp with time zone` | yes      |                              |          |           |           | Time at which the access token was revoked.            |
 | `last_used_at`      | `timestamp with time zone` | yes      |                              |          |           |           | Time at which bearer validation last succeeded.        |

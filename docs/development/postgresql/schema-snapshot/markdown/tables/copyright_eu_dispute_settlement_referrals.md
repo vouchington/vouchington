@@ -6,19 +6,19 @@ Staff record of an EU notice party referring a decision to an out-of-court dispu
 
 Not partitioned — growth: unbounded.
 
-| Column                              | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                  |
-| ----------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------ |
-| `id`                                | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                          |
-| `copyright_notice_id`               | `uuid`                     | no       |                              |          |           |           | EU notice involved in the referral; matches the cited decision.          |
-| `jurisdiction`                      | `text`                     | no       | `'eu_dsa'::text`             |          |           |           | Always eu_dsa; composite notice FK enforces the jurisdiction.            |
-| `copyright_territorial_decision_id` | `uuid`                     | no       |                              |          |           |           | Decision the party referred to the body.                                 |
-| `body_name`                         | `text`                     | no       |                              |          |           |           | Name of the out-of-court dispute settlement body.                        |
-| `referred_at`                       | `timestamp with time zone` | no       |                              |          |           |           | When the party referred the decision to the body.                        |
-| `referred_by_party`                 | `text`                     | no       |                              |          |           |           | Whether the referring party was a poster or notifier.                    |
-| `referred_by_user_id`               | `uuid`                     | yes      |                              |          |           |           | Party account if one exists; null for a guest or after account deletion. |
-| `recorded_by_id`                    | `uuid`                     | yes      |                              |          |           |           | Staff account recording the referral; null after account deletion.       |
-| `created_at`                        | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                          |
-| `updated_at`                        | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                          |
+| Column                              | Type                                | Nullable | Default                             | Identity | Generated | Collation | Comment                                                                  |
+| ----------------------------------- | ----------------------------------- | -------- | ----------------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------ |
+| `id`                                | `uuid`                              | no       | `uuidv7()`                          |          |           |           |                                                                          |
+| `copyright_notice_id`               | `uuid`                              | no       |                                     |          |           |           | EU notice involved in the referral; matches the cited decision.          |
+| `jurisdiction`                      | `copyright_jurisdictions`           | no       | `'eu_dsa'::copyright_jurisdictions` |          |           |           | Always eu_dsa; composite notice FK enforces the jurisdiction.            |
+| `copyright_territorial_decision_id` | `uuid`                              | no       |                                     |          |           |           | Decision the party referred to the body.                                 |
+| `body_name`                         | `text`                              | no       |                                     |          |           |           | Name of the out-of-court dispute settlement body.                        |
+| `referred_at`                       | `timestamp with time zone`          | no       |                                     |          |           |           | When the party referred the decision to the body.                        |
+| `referred_by_party`                 | `copyright_territorial_party_roles` | no       |                                     |          |           |           | Whether the referring party was a poster or notifier.                    |
+| `referred_by_user_id`               | `uuid`                              | yes      |                                     |          |           |           | Party account if one exists; null for a guest or after account deletion. |
+| `recorded_by_id`                    | `uuid`                              | yes      |                                     |          |           |           | Staff account recording the referral; null after account deletion.       |
+| `created_at`                        | `timestamp with time zone`          | yes      | `uuid_extract_timestamp(id)`        |          | virtual   |           |                                                                          |
+| `updated_at`                        | `timestamp with time zone`          | no       | `CURRENT_TIMESTAMP`                 |          |           |           |                                                                          |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -28,8 +28,8 @@ _none_
 **Check constraints:**
 
 - `chk_copyright_eu_dispute_settlement_referrals__body_name`: `CHECK (((char_length(body_name) >= 1) AND (char_length(body_name) <= 200)))`
-- `chk_copyright_eu_dispute_settlement_referrals__jurisdiction`: `CHECK ((jurisdiction = 'eu_dsa'::text))`
-- `chk_copyright_eu_dispute_settlement_referrals__party`: `CHECK ((referred_by_party = ANY (ARRAY['poster'::text, 'notifier'::text])))`
+- `chk_copyright_eu_dispute_settlement_referrals__jurisdiction`: `CHECK ((jurisdiction = 'eu_dsa'::copyright_jurisdictions))`
+- `chk_copyright_eu_dispute_settlement_referrals__party`: `CHECK ((referred_by_party = ANY (ARRAY['poster'::copyright_territorial_party_roles, 'notifier'::copyright_territorial_party_roles])))`
 
 **Foreign keys:**
 

@@ -15,7 +15,7 @@ Not partitioned — growth: bounded.
 | `redirect_uri`         | `text`                     | no       |                              |          |           |           | Validated callback URI for this authorization request.                    |
 | `state`                | `text`                     | no       |                              |          |           |           | Opaque client state returned unchanged to the callback.                   |
 | `resource`             | `text`                     | no       |                              |          |           |           | Protected resource audience requested by the client.                      |
-| `scopes`               | `text[]`                   | no       |                              |          |           |           | Canonical scopes presented for user consent.                              |
+| `scopes`               | `api_scopes[]`             | no       |                              |          |           |           | Canonical scopes presented for user consent.                              |
 | `code_challenge`       | `text`                     | no       |                              |          |           |           | Base64url SHA-256 PKCE challenge for the authorization code.              |
 | `expires_at`           | `timestamp with time zone` | no       |                              |          |           |           | Time after which the pending request cannot be decided.                   |
 | `approved_at`          | `timestamp with time zone` | yes      |                              |          |           |           | Time at which the owning user approved the request.                       |

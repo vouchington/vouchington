@@ -12,7 +12,7 @@ Not partitioned — growth: unbounded.
 | `delivery_key`           | `text`                                 | no       |                              |          |           |           | Concrete exact edge-delivery authority whose transition this records.                                  |
 | `generation`             | `bigint`                               | no       |                              |          |           |           | Nontransactional authority generation fencing stale acknowledgements.                                  |
 | `change_type`            | `media_delivery_registry_change_types` | no       |                              |          |           |           | Typed edge-delivery transition.                                                                        |
-| `desired_state`          | `text`                                 | no       |                              |          |           |           | Exact edge state selected by this authority generation, retained after later changes and republishing. |
+| `desired_state`          | `media_delivery_desired_states`        | no       |                              |          |           |           | Exact edge state selected by this authority generation, retained after later changes and republishing. |
 | `changed_by_id`          | `uuid`                                 | yes      |                              |          |           |           | Retained operator identity, or null for system delivery work.                                          |
 | `delivery_attempt_count` | `integer`                              | no       | `0`                          |          |           |           | Number of claims already made in this authority generation.                                            |
 | `claimed_at`             | `timestamp with time zone`             | yes      |                              |          |           |           | Worker claim represented by this transition.                                                           |
@@ -32,7 +32,7 @@ _none_
 
 - `media_delivery_registry_changes_check`: `CHECK ((((change_type = 'pending'::media_delivery_registry_change_types) AND (claimed_at IS NULL) AND (completed_at IS NULL)) OR ((change_type = 'claimed'::media_delivery_registry_change_types) AND (claimed_at IS NOT NULL) AND (completed_at IS NULL)) OR ((change_type = ANY (ARRAY['completed'::media_delivery_registry_change_types, 'failed'::media_delivery_registry_change_types])) AND (completed_at IS NOT NULL))))`
 - `media_delivery_registry_changes_delivery_attempt_count_check`: `CHECK (((delivery_attempt_count >= 0) AND (delivery_attempt_count <= 5)))`
-- `media_delivery_registry_changes_desired_state_check`: `CHECK ((desired_state = ANY (ARRAY['allow'::text, 'withheld'::text])))`
+- `media_delivery_registry_changes_desired_state_check`: `CHECK ((desired_state = ANY (ARRAY['allow'::media_delivery_desired_states, 'withheld'::media_delivery_desired_states])))`
 - `media_delivery_registry_changes_failure_message_check`: `CHECK (((failure_message IS NULL) OR ((char_length(failure_message) >= 1) AND (char_length(failure_message) <= 4096))))`
 - `media_delivery_registry_changes_generation_check`: `CHECK ((generation >= 0))`
 

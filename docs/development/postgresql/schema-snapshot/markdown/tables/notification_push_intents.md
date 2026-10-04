@@ -6,18 +6,18 @@ One durable browser-push effect per notification. Lease fencing permits recovery
 
 Not partitioned — growth: unbounded.
 
-| Column             | Type                              | Nullable | Default                                      | Identity | Generated | Collation | Comment                                                                 |
-| ------------------ | --------------------------------- | -------- | -------------------------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------- |
-| `user_id`          | `uuid`                            | no       |                                              |          |           |           | Notification owner and first half of the durable intent identity.       |
-| `notification_id`  | `uuid`                            | no       |                                              |          |           |           | Notification identifier and second half of the durable intent identity. |
-| `status`           | `notification_push_intent_status` | no       | `'pending'::notification_push_intent_status` |          |           |           | Terminal or pending state for the notification push effect.             |
-| `lease_token`      | `uuid`                            | yes      |                                              |          |           |           | Unique worker fencing token rotated for each delivery claim.            |
-| `leased_at`        | `timestamp with time zone`        | yes      |                                              |          |           |           | Timestamp when the current delivery claim began.                        |
-| `lease_expires_at` | `timestamp with time zone`        | yes      |                                              |          |           |           | Deadline after which another worker may reclaim pending delivery.       |
-| `suppressed_at`    | `timestamp with time zone`        | yes      |                                              |          |           |           | Timestamp when live eligibility prevented push delivery.                |
-| `delivered_at`     | `timestamp with time zone`        | yes      |                                              |          |           |           | Timestamp when every reachable endpoint reached a terminal outcome.     |
-| `created_at`       | `timestamp with time zone`        | no       | `CURRENT_TIMESTAMP`                          |          |           |           |                                                                         |
-| `updated_at`       | `timestamp with time zone`        | no       | `CURRENT_TIMESTAMP`                          |          |           |           |                                                                         |
+| Column             | Type                                | Nullable | Default                                        | Identity | Generated | Collation | Comment                                                                 |
+| ------------------ | ----------------------------------- | -------- | ---------------------------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------- |
+| `user_id`          | `uuid`                              | no       |                                                |          |           |           | Notification owner and first half of the durable intent identity.       |
+| `notification_id`  | `uuid`                              | no       |                                                |          |           |           | Notification identifier and second half of the durable intent identity. |
+| `status`           | `notification_push_intent_statuses` | no       | `'pending'::notification_push_intent_statuses` |          |           |           | Terminal or pending state for the notification push effect.             |
+| `lease_token`      | `uuid`                              | yes      |                                                |          |           |           | Unique worker fencing token rotated for each delivery claim.            |
+| `leased_at`        | `timestamp with time zone`          | yes      |                                                |          |           |           | Timestamp when the current delivery claim began.                        |
+| `lease_expires_at` | `timestamp with time zone`          | yes      |                                                |          |           |           | Deadline after which another worker may reclaim pending delivery.       |
+| `suppressed_at`    | `timestamp with time zone`          | yes      |                                                |          |           |           | Timestamp when live eligibility prevented push delivery.                |
+| `delivered_at`     | `timestamp with time zone`          | yes      |                                                |          |           |           | Timestamp when every reachable endpoint reached a terminal outcome.     |
+| `created_at`       | `timestamp with time zone`          | no       | `CURRENT_TIMESTAMP`                            |          |           |           |                                                                         |
+| `updated_at`       | `timestamp with time zone`          | no       | `CURRENT_TIMESTAMP`                            |          |           |           |                                                                         |
 
 **Primary key:** `PRIMARY KEY (user_id, notification_id)`
 
@@ -29,9 +29,9 @@ Not partitioned — growth: unbounded.
 
 - `notification_push_intents_check`: `CHECK (((lease_token IS NULL) = (leased_at IS NULL)))`
 - `notification_push_intents_check1`: `CHECK (((lease_token IS NULL) = (lease_expires_at IS NULL)))`
-- `notification_push_intents_check2`: `CHECK (((status = 'pending'::notification_push_intent_status) = ((suppressed_at IS NULL) AND (delivered_at IS NULL))))`
-- `notification_push_intents_check3`: `CHECK (((status <> 'suppressed'::notification_push_intent_status) OR (suppressed_at IS NOT NULL)))`
-- `notification_push_intents_check4`: `CHECK (((status <> 'delivered'::notification_push_intent_status) OR (delivered_at IS NOT NULL)))`
+- `notification_push_intents_check2`: `CHECK (((status = 'pending'::notification_push_intent_statuses) = ((suppressed_at IS NULL) AND (delivered_at IS NULL))))`
+- `notification_push_intents_check3`: `CHECK (((status <> 'suppressed'::notification_push_intent_statuses) OR (suppressed_at IS NOT NULL)))`
+- `notification_push_intents_check4`: `CHECK (((status <> 'delivered'::notification_push_intent_statuses) OR (delivered_at IS NOT NULL)))`
 
 **Foreign keys:**
 
@@ -39,8 +39,8 @@ Not partitioned — growth: unbounded.
 
 **Indexes:**
 
-- `idx_notification_push_intents__available`: `CREATE INDEX idx_notification_push_intents__available ON public.notification_push_intents USING btree (updated_at, user_id, notification_id) WHERE (status = 'pending'::notification_push_intent_status)`
-- `idx_notification_push_intents__terminal_retention`: `CREATE INDEX idx_notification_push_intents__terminal_retention ON public.notification_push_intents USING btree (COALESCE(delivered_at, suppressed_at), user_id, notification_id) WHERE (status = ANY (ARRAY['delivered'::notification_push_intent_status, 'suppressed'::notification_push_intent_status]))`
+- `idx_notification_push_intents__available`: `CREATE INDEX idx_notification_push_intents__available ON public.notification_push_intents USING btree (updated_at, user_id, notification_id) WHERE (status = 'pending'::notification_push_intent_statuses)`
+- `idx_notification_push_intents__terminal_retention`: `CREATE INDEX idx_notification_push_intents__terminal_retention ON public.notification_push_intents USING btree (COALESCE(delivered_at, suppressed_at), user_id, notification_id) WHERE (status = ANY (ARRAY['delivered'::notification_push_intent_statuses, 'suppressed'::notification_push_intent_statuses]))`
 - `notification_push_intents_lease_token_key`: `CREATE UNIQUE INDEX notification_push_intents_lease_token_key ON public.notification_push_intents USING btree (lease_token)`
 - `notification_push_intents_pkey`: `CREATE UNIQUE INDEX notification_push_intents_pkey ON public.notification_push_intents USING btree (user_id, notification_id)`
 

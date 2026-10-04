@@ -10,7 +10,7 @@ Not partitioned — growth: unbounded.
 | ------------------------------------------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------- |
 | `id`                                             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                   |
 | `copyright_notice_id`                            | `uuid`                     | no       |                              |          |           |           | Notice this escalation belongs to. The source row must belong to the same notice. |
-| `jurisdiction`                                   | `text`                     | no       |                              |          |           |           | Jurisdiction of the notice: eu_dsa or uk. Must equal the notice jurisdiction.     |
+| `jurisdiction`                                   | `copyright_jurisdictions`  | no       |                              |          |           |           | Jurisdiction of the notice: eu_dsa or uk. Must equal the notice jurisdiction.     |
 | `copyright_territorial_notice_acknowledgment_id` | `uuid`                     | yes      |                              |          |           |           | Exhausted acknowledgment that caused this escalation. Exactly one source is set.  |
 | `copyright_eu_supervised_complaint_id`           | `uuid`                     | yes      |                              |          |           |           | EU supervised complaint that caused this escalation. Exactly one source is set.   |
 | `escalated_at`                                   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When the escalation was recorded.                                                 |
@@ -26,7 +26,7 @@ Not partitioned — growth: unbounded.
 
 **Check constraints:**
 
-- `chk_copyright_territorial_escalations__jurisdiction`: `CHECK ((jurisdiction = ANY (ARRAY['eu_dsa'::text, 'uk'::text])))`
+- `chk_copyright_territorial_escalations__jurisdiction`: `CHECK ((jurisdiction = ANY (ARRAY['eu_dsa'::copyright_jurisdictions, 'uk'::copyright_jurisdictions])))`
 - `chk_copyright_territorial_escalations__source`: `CHECK ((num_nonnulls(copyright_territorial_notice_acknowledgment_id, copyright_eu_supervised_complaint_id) = 1))`
 
 **Foreign keys:**

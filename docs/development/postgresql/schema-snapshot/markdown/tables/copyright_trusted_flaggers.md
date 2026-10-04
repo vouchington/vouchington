@@ -6,20 +6,20 @@ Staff-recorded Digital Services Coordinator designation for a trusted flagger. T
 
 Not partitioned — growth: unbounded.
 
-| Column                      | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                             |
-| --------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------- |
-| `id`                        | `uuid`                     | no       | `uuidv7()`                   |          |           |           | UUIDv7 designation identifier.                                                                                      |
-| `name`                      | `text`                     | no       |                              |          |           |           | Entity name as published in the Commission trusted-flagger list.                                                    |
-| `user_id`                   | `uuid`                     | yes      |                              |          |           |           | Live signed-in account whose EU notices can match; null after account deletion and never inferred from email.       |
-| `awarding_coordinator_name` | `text`                     | no       |                              |          |           |           | Digital Services Coordinator that awarded the designation.                                                          |
-| `awarding_member_state`     | `text`                     | no       |                              |          |           |           | Uppercase two-letter Member State code of the awarding coordinator.                                                 |
-| `awarded_at`                | `date`                     | no       |                              |          |           |           | Date the coordinator awarded the designation.                                                                       |
-| `award_reference`           | `text`                     | yes      |                              |          |           |           | Optional published award URL or document identifier.                                                                |
-| `area_of_expertise`         | `text`                     | no       |                              |          |           |           | Closed platform category for the designated expertise; only intellectual_property is in area for copyright notices. |
-| `area_description`          | `text`                     | no       |                              |          |           |           | Designation wording for the area of expertise.                                                                      |
-| `created_by_id`             | `uuid`                     | no       |                              |          |           |           | Retained identity of the administrator who recorded this designation; never an authorization source.                |
-| `created_at`                | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Creation time derived from the UUIDv7 identifier.                                                                   |
-| `updated_at`                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | Last database update, including removal of a deleted account link.                                                  |
+| Column                      | Type                                        | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                             |
+| --------------------------- | ------------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------- |
+| `id`                        | `uuid`                                      | no       | `uuidv7()`                   |          |           |           | UUIDv7 designation identifier.                                                                                      |
+| `name`                      | `text`                                      | no       |                              |          |           |           | Entity name as published in the Commission trusted-flagger list.                                                    |
+| `user_id`                   | `uuid`                                      | yes      |                              |          |           |           | Live signed-in account whose EU notices can match; null after account deletion and never inferred from email.       |
+| `awarding_coordinator_name` | `text`                                      | no       |                              |          |           |           | Digital Services Coordinator that awarded the designation.                                                          |
+| `awarding_member_state`     | `text`                                      | no       |                              |          |           |           | Uppercase two-letter Member State code of the awarding coordinator.                                                 |
+| `awarded_at`                | `date`                                      | no       |                              |          |           |           | Date the coordinator awarded the designation.                                                                       |
+| `award_reference`           | `text`                                      | yes      |                              |          |           |           | Optional published award URL or document identifier.                                                                |
+| `area_of_expertise`         | `copyright_trusted_flagger_expertise_areas` | no       |                              |          |           |           | Closed platform category for the designated expertise; only intellectual_property is in area for copyright notices. |
+| `area_description`          | `text`                                      | no       |                              |          |           |           | Designation wording for the area of expertise.                                                                      |
+| `created_by_id`             | `uuid`                                      | no       |                              |          |           |           | Retained identity of the administrator who recorded this designation; never an authorization source.                |
+| `created_at`                | `timestamp with time zone`                  | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Creation time derived from the UUIDv7 identifier.                                                                   |
+| `updated_at`                | `timestamp with time zone`                  | no       | `CURRENT_TIMESTAMP`          |          |           |           | Last database update, including removal of a deleted account link.                                                  |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -29,7 +29,7 @@ _none_
 **Check constraints:**
 
 - `copyright_trusted_flaggers_area_description_check`: `CHECK (((char_length(area_description) >= 1) AND (char_length(area_description) <= 500)))`
-- `copyright_trusted_flaggers_area_of_expertise_check`: `CHECK ((area_of_expertise = ANY (ARRAY['intellectual_property'::text, 'other'::text])))`
+- `copyright_trusted_flaggers_area_of_expertise_check`: `CHECK ((area_of_expertise = ANY (ARRAY['intellectual_property'::copyright_trusted_flagger_expertise_areas, 'other'::copyright_trusted_flagger_expertise_areas])))`
 - `copyright_trusted_flaggers_award_reference_check`: `CHECK (((award_reference IS NULL) OR ((char_length(award_reference) >= 1) AND (char_length(award_reference) <= 2048))))`
 - `copyright_trusted_flaggers_awarding_coordinator_name_check`: `CHECK (((char_length(awarding_coordinator_name) >= 1) AND (char_length(awarding_coordinator_name) <= 200)))`
 - `copyright_trusted_flaggers_awarding_member_state_check`: `CHECK ((awarding_member_state ~ '^[A-Z]{2}$'::text))`

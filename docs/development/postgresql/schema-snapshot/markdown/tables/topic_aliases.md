@@ -48,4 +48,7 @@ Not partitioned — growth: unbounded.
 **Triggers:**
 
 - `trigger_topic_aliases_mark_category_mapping_dirty`: `CREATE TRIGGER trigger_topic_aliases_mark_category_mapping_dirty AFTER INSERT OR DELETE OR UPDATE OF topic_id ON public.topic_aliases FOR EACH ROW EXECUTE FUNCTION fn_project_mark_topic_alias_category_mapping_dirty()`
+- `trigger_topic_aliases_project_delete`: `CREATE TRIGGER trigger_topic_aliases_project_delete AFTER DELETE ON public.topic_aliases REFERENCING OLD TABLE AS old_aliases FOR EACH STATEMENT EXECUTE FUNCTION fn_project_topic_aliases()`
+- `trigger_topic_aliases_project_insert`: `CREATE TRIGGER trigger_topic_aliases_project_insert AFTER INSERT ON public.topic_aliases REFERENCING NEW TABLE AS new_aliases FOR EACH STATEMENT EXECUTE FUNCTION fn_project_topic_aliases()`
+- `trigger_topic_aliases_project_update`: `CREATE TRIGGER trigger_topic_aliases_project_update AFTER UPDATE ON public.topic_aliases REFERENCING OLD TABLE AS old_aliases NEW TABLE AS new_aliases FOR EACH STATEMENT EXECUTE FUNCTION fn_project_topic_aliases()`
 - `trigger_topic_aliases_updated_at`: `CREATE TRIGGER trigger_topic_aliases_updated_at BEFORE UPDATE ON public.topic_aliases FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

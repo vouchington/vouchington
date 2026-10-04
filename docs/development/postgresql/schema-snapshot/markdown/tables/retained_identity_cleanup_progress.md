@@ -6,11 +6,11 @@ One operational keyset cursor per concrete retained root family.
 
 Not partitioned — growth: bounded.
 
-| Column               | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                             |
-| -------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------- |
-| `family`             | `text`                     | no       |                     |          |           |           | Concrete retained root family selected by the cleanup worker.       |
-| `cursor_identity_id` | `uuid`                     | yes      |                     |          |           |           | Last scanned identity, not a durable relationship to that identity. |
-| `updated_at`         | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                     |
+| Column               | Type                                 | Nullable | Default             | Identity | Generated | Collation | Comment                                                             |
+| -------------------- | ------------------------------------ | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------- |
+| `family`             | `retained_identity_cleanup_families` | no       |                     |          |           |           | Concrete retained root family selected by the cleanup worker.       |
+| `cursor_identity_id` | `uuid`                               | yes      |                     |          |           |           | Last scanned identity, not a durable relationship to that identity. |
+| `updated_at`         | `timestamp with time zone`           | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                     |
 
 **Primary key:** `PRIMARY KEY (family)`
 
@@ -19,7 +19,7 @@ _none_
 
 **Check constraints:**
 
-- `retained_identity_cleanup_progress_family_check`: `CHECK ((family = ANY (ARRAY['user'::text, 'api_key'::text, 'topic'::text, 'post'::text, 'rss_feed_item'::text, 'image'::text, 'image_placement_binding'::text])))`
+- `retained_identity_cleanup_progress_family_check`: `CHECK ((family = ANY (ARRAY['user'::retained_identity_cleanup_families, 'api_key'::retained_identity_cleanup_families, 'topic'::retained_identity_cleanup_families, 'post'::retained_identity_cleanup_families, 'rss_feed_item'::retained_identity_cleanup_families, 'image'::retained_identity_cleanup_families, 'image_placement_binding'::retained_identity_cleanup_families])))`
 
 **Foreign keys:**
 _none_

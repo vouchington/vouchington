@@ -13,7 +13,7 @@ Not partitioned — growth: unbounded.
 | `ordinal`                          | `integer`                  | no       |                              |          |           |           | Zero-based MIME attachment order; duplicate attachment bytes remain distinct evidence. |
 | `filename_ciphertext`              | `text`                     | yes      |                              |          |           |           | Encrypted attachment filename metadata.                                                |
 | `content_id_ciphertext`            | `text`                     | yes      |                              |          |           |           | Encrypted MIME content identifier metadata.                                            |
-| `mime_type`                        | `text`                     | no       |                              |          |           |           | Declared attachment media type.                                                        |
+| `media_type_id`                    | `bigint`                   | no       |                              |          |           |           | Declared attachment media type.                                                        |
 | `byte_size`                        | `integer`                  | no       |                              |          |           |           | Decoded attachment byte size.                                                          |
 | `sha256`                           | `bytea`                    | no       |                              |          |           |           | SHA-256 digest computed while streaming the attachment.                                |
 | `created_at`                       | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                        |
@@ -30,19 +30,20 @@ Not partitioned — growth: unbounded.
 - `copyright_notice_email_intake_attac_content_id_ciphertext_check`: `CHECK (((char_length(content_id_ciphertext) >= 1) AND (char_length(content_id_ciphertext) <= 16384)))`
 - `copyright_notice_email_intake_attachm_filename_ciphertext_check`: `CHECK (((char_length(filename_ciphertext) >= 1) AND (char_length(filename_ciphertext) <= 16384)))`
 - `copyright_notice_email_intake_attachments_byte_size_check`: `CHECK ((byte_size >= 0))`
-- `copyright_notice_email_intake_attachments_mime_type_check`: `CHECK (((char_length(mime_type) >= 1) AND (char_length(mime_type) <= 255)))`
 - `copyright_notice_email_intake_attachments_ordinal_check`: `CHECK ((ordinal >= 0))`
 - `copyright_notice_email_intake_attachments_sha256_check`: `CHECK ((octet_length(sha256) = 32))`
 
 **Foreign keys:**
 
 - `copyright_notice_email_intak_copyright_notice_email_intak_fkey1`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
+- `copyright_notice_email_intake_attachments_media_type_id_fkey`: `FOREIGN KEY (media_type_id) REFERENCES media_types(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `copyright_notice_email_intake_attachments_pkey`: `CREATE UNIQUE INDEX copyright_notice_email_intake_attachments_pkey ON public.copyright_notice_email_intake_attachments USING btree (id)`
 - `copyright_notice_email_intake_copyright_notice_email_intak_key1`: `CREATE UNIQUE INDEX copyright_notice_email_intake_copyright_notice_email_intak_key1 ON public.copyright_notice_email_intake_attachments USING btree (copyright_notice_email_intake_id, ordinal)`
 - `idx_copyright_email_intake_attachments__intake`: `CREATE INDEX idx_copyright_email_intake_attachments__intake ON public.copyright_notice_email_intake_attachments USING btree (copyright_notice_email_intake_id, id)`
+- `idx_copyright_notice_email_intake_attachments__media_type_id`: `CREATE INDEX idx_copyright_notice_email_intake_attachments__media_type_id ON public.copyright_notice_email_intake_attachments USING btree (media_type_id)`
 
 **Triggers:**
 

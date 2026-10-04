@@ -6,17 +6,17 @@ Append-only history of hostname blocks. url_hostnames.blocked is trigger-maintai
 
 Not partitioned — growth: unbounded.
 
-| Column            | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                |
-| ----------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------- |
-| `id`              | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                        |
-| `url_hostname_id` | `uuid`                     | no       |                              |          |           |           | The blocked hostname.                                                  |
-| `blocked_by_id`   | `uuid`                     | yes      |                              |          |           |           | Admin who issued the block.                                            |
-| `blocked_source`  | `text`                     | no       | `'admin'::text`              |          |           |           | Who initiated the block: admin, google_web_risk, parent_hostname, etc. |
-| `reason`          | `text`                     | yes      |                              |          |           |           | Optional reason for the block.                                         |
-| `created_at`      | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                        |
-| `updated_at`      | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP`          |          |           |           |                                                                        |
-| `lifted_at`       | `timestamp with time zone` | yes      |                              |          |           |           | When the block was lifted. NULL means still active.                    |
-| `lifted_by_id`    | `uuid`                     | yes      |                              |          |           |           | Who lifted the block.                                                  |
+| Column            | Type                         | Nullable | Default                               | Identity | Generated | Collation | Comment                                                                |
+| ----------------- | ---------------------------- | -------- | ------------------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------- |
+| `id`              | `uuid`                       | no       | `uuidv7()`                            |          |           |           |                                                                        |
+| `url_hostname_id` | `uuid`                       | no       |                                       |          |           |           | The blocked hostname.                                                  |
+| `blocked_by_id`   | `uuid`                       | yes      |                                       |          |           |           | Admin who issued the block.                                            |
+| `blocked_source`  | `url_hostname_block_sources` | no       | `'admin'::url_hostname_block_sources` |          |           |           | Who initiated the block: admin, google_web_risk, parent_hostname, etc. |
+| `reason`          | `text`                       | yes      |                                       |          |           |           | Optional reason for the block.                                         |
+| `created_at`      | `timestamp with time zone`   | yes      | `uuid_extract_timestamp(id)`          |          | virtual   |           |                                                                        |
+| `updated_at`      | `timestamp with time zone`   | yes      | `CURRENT_TIMESTAMP`                   |          |           |           |                                                                        |
+| `lifted_at`       | `timestamp with time zone`   | yes      |                                       |          |           |           | When the block was lifted. NULL means still active.                    |
+| `lifted_by_id`    | `uuid`                       | yes      |                                       |          |           |           | Who lifted the block.                                                  |
 
 **Primary key:** `PRIMARY KEY (id)`
 

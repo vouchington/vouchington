@@ -6,16 +6,16 @@ Staff disposition of one EU or UK redress request. The system does not choose th
 
 Not partitioned — growth: unbounded.
 
-| Column                                     | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                   |
-| ------------------------------------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------- |
-| `id`                                       | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                           |
-| `copyright_territorial_redress_request_id` | `uuid`                     | no       |                              |          |           |           | Redress request this decision closes. One decision per request.           |
-| `decided_at`                               | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When staff recorded the redress decision.                                 |
-| `decided_by_id`                            | `uuid`                     | yes      |                              |          |           |           | Staff user who recorded the decision. Null after that account is deleted. |
-| `staff_disposition`                        | `text`                     | no       |                              |          |           |           | Staff outcome: maintain or revoke. The system does not choose it.         |
-| `rationale_ciphertext`                     | `text`                     | no       |                              |          |           |           | Encrypted staff-supplied rationale for the disposition.                   |
-| `created_at`                               | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                           |
-| `updated_at`                               | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                           |
+| Column                                     | Type                                                        | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                   |
+| ------------------------------------------ | ----------------------------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------- |
+| `id`                                       | `uuid`                                                      | no       | `uuidv7()`                   |          |           |           |                                                                           |
+| `copyright_territorial_redress_request_id` | `uuid`                                                      | no       |                              |          |           |           | Redress request this decision closes. One decision per request.           |
+| `decided_at`                               | `timestamp with time zone`                                  | no       | `CURRENT_TIMESTAMP`          |          |           |           | When staff recorded the redress decision.                                 |
+| `decided_by_id`                            | `uuid`                                                      | yes      |                              |          |           |           | Staff user who recorded the decision. Null after that account is deleted. |
+| `staff_disposition`                        | `copyright_territorial_redress_decision_staff_dispositions` | no       |                              |          |           |           | Staff outcome: maintain or revoke. The system does not choose it.         |
+| `rationale_ciphertext`                     | `text`                                                      | no       |                              |          |           |           | Encrypted staff-supplied rationale for the disposition.                   |
+| `created_at`                               | `timestamp with time zone`                                  | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                           |
+| `updated_at`                               | `timestamp with time zone`                                  | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                           |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -25,7 +25,7 @@ Not partitioned — growth: unbounded.
 
 **Check constraints:**
 
-- `chk_copyright_territorial_redress_decisions__disposition`: `CHECK ((staff_disposition = ANY (ARRAY['maintain'::text, 'revoke'::text])))`
+- `chk_copyright_territorial_redress_decisions__disposition`: `CHECK ((staff_disposition = ANY (ARRAY['maintain'::copyright_territorial_redress_decision_staff_dispositions, 'revoke'::copyright_territorial_redress_decision_staff_dispositions])))`
 - `chk_copyright_territorial_redress_decisions__rationale`: `CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))`
 
 **Foreign keys:**

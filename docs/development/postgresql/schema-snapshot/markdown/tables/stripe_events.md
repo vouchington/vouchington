@@ -42,7 +42,8 @@ _none_
 - `stripe_events_processing_attempts_check`: `CHECK ((processing_attempts >= 0))`
 
 **Foreign keys:**
-_none_
+
+- `stripe_events_event_type_fkey`: `FOREIGN KEY (event_type) REFERENCES stripe_event_types(id) ON DELETE RESTRICT`
 
 **Indexes:**
 

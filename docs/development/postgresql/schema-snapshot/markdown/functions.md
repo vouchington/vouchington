@@ -2,10 +2,10 @@
 
 [Schema index](README.md).
 
-## `fn_apply_moderation_transparency_daily_rollup(p_occurred_at timestamp with time zone, p_community_id uuid, p_metric text, p_category text, p_delta integer)`
+## `fn_apply_moderation_transparency_daily_rollup(p_occurred_at timestamp with time zone, p_community_id uuid, p_metric moderation_transparency_metrics, p_category moderation_transparency_categories, p_delta integer)`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_apply_moderation_transparency_daily_rollup(p_occurred_at timestamp with time zone, p_community_id uuid, p_metric text, p_category text, p_delta integer)
+CREATE OR REPLACE FUNCTION public.fn_apply_moderation_transparency_daily_rollup(p_occurred_at timestamp with time zone, p_community_id uuid, p_metric moderation_transparency_metrics, p_category moderation_transparency_categories, p_delta integer)
  RETURNS void
  LANGUAGE plpgsql
 ```
@@ -365,6 +365,14 @@ CREATE OR REPLACE FUNCTION public.fn_project_retire_deleted_user_image_surfaces(
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_project_story_post_related_url_relation_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_project_topic_aliases`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_topic_aliases()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -945,10 +953,10 @@ CREATE OR REPLACE FUNCTION public.fn_reject_web_push_subscription_owner()
  LANGUAGE plpgsql
 ```
 
-## `fn_release_moderation_transparency_daily_rollup(p_day date, p_community_id uuid, p_metric text, p_category text, p_cutoff timestamp with time zone)`
+## `fn_release_moderation_transparency_daily_rollup(p_day date, p_community_id uuid, p_metric moderation_transparency_metrics, p_category moderation_transparency_categories, p_cutoff timestamp with time zone)`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_release_moderation_transparency_daily_rollup(p_day date, p_community_id uuid, p_metric text, p_category text, p_cutoff timestamp with time zone)
+CREATE OR REPLACE FUNCTION public.fn_release_moderation_transparency_daily_rollup(p_day date, p_community_id uuid, p_metric moderation_transparency_metrics, p_category moderation_transparency_categories, p_cutoff timestamp with time zone)
  RETURNS void
  LANGUAGE plpgsql
 ```
@@ -970,10 +978,10 @@ CREATE OR REPLACE FUNCTION public.fn_reverse_hostname_labels(p_hostname text)
  IMMUTABLE STRICT
 ```
 
-## `fn_sync_image_surface_placement(p_surface_kind text, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)`
+## `fn_sync_image_surface_placement(p_surface_kind image_surface_placement_surface_kinds, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind text, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)
+CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind image_surface_placement_surface_kinds, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)
  RETURNS void
  LANGUAGE plpgsql
 ```

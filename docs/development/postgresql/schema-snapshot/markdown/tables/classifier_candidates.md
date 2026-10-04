@@ -6,20 +6,20 @@ Stored topic or story candidate identities, independent of prompt revisions.
 
 Not partitioned — growth: unbounded.
 
-| Column           | Type                        | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                  |
-| ---------------- | --------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------ |
-| `id`             | `uuid`                      | no       | `uuidv7()`                   |          |           |           |                                                                          |
-| `classifier_id`  | `uuid`                      | no       |                              |          |           |           | Classifier that owns this stored candidate.                              |
-| `candidate_kind` | `classifier_candidate_kind` | no       |                              |          |           |           | Concrete candidate kind, constrained to the classifier kind.             |
-| `topic_id`       | `uuid`                      | yes      |                              |          |           |           | Topic candidate; mutually exclusive with story_id.                       |
-| `story_id`       | `uuid`                      | yes      |                              |          |           |           | Story candidate; mutually exclusive with topic_id.                       |
-| `community_id`   | `uuid`                      | yes      |                              |          |           |           | Owning community for a custom candidate, or NULL for a global candidate. |
-| `created_at`     | `timestamp with time zone`  | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                          |
-| `created_by_id`  | `uuid`                      | yes      |                              |          |           |           |                                                                          |
-| `updated_at`     | `timestamp with time zone`  | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                          |
-| `updated_by_id`  | `uuid`                      | yes      |                              |          |           |           |                                                                          |
-| `deleted_at`     | `timestamp with time zone`  | yes      |                              |          |           |           |                                                                          |
-| `deleted_by_id`  | `uuid`                      | yes      |                              |          |           |           |                                                                          |
+| Column           | Type                         | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                  |
+| ---------------- | ---------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------ |
+| `id`             | `uuid`                       | no       | `uuidv7()`                   |          |           |           |                                                                          |
+| `classifier_id`  | `uuid`                       | no       |                              |          |           |           | Classifier that owns this stored candidate.                              |
+| `candidate_kind` | `classifier_candidate_kinds` | no       |                              |          |           |           | Concrete candidate kind, constrained to the classifier kind.             |
+| `topic_id`       | `uuid`                       | yes      |                              |          |           |           | Topic candidate; mutually exclusive with story_id.                       |
+| `story_id`       | `uuid`                       | yes      |                              |          |           |           | Story candidate; mutually exclusive with topic_id.                       |
+| `community_id`   | `uuid`                       | yes      |                              |          |           |           | Owning community for a custom candidate, or NULL for a global candidate. |
+| `created_at`     | `timestamp with time zone`   | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                          |
+| `created_by_id`  | `uuid`                       | yes      |                              |          |           |           |                                                                          |
+| `updated_at`     | `timestamp with time zone`   | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                          |
+| `updated_by_id`  | `uuid`                       | yes      |                              |          |           |           |                                                                          |
+| `deleted_at`     | `timestamp with time zone`   | yes      |                              |          |           |           |                                                                          |
+| `deleted_by_id`  | `uuid`                       | yes      |                              |          |           |           |                                                                          |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -31,7 +31,7 @@ Not partitioned — growth: unbounded.
 
 **Check constraints:**
 
-- `chk_classifier_candidates__entity_kind`: `CHECK ((((candidate_kind = 'topic'::classifier_candidate_kind) AND (topic_id IS NOT NULL)) OR ((candidate_kind = 'story'::classifier_candidate_kind) AND (story_id IS NOT NULL))))`
+- `chk_classifier_candidates__entity_kind`: `CHECK ((((candidate_kind = 'topic'::classifier_candidate_kinds) AND (topic_id IS NOT NULL)) OR ((candidate_kind = 'story'::classifier_candidate_kinds) AND (story_id IS NOT NULL))))`
 - `chk_classifier_candidates__one_entity`: `CHECK ((num_nonnulls(topic_id, story_id) = 1))`
 
 **Foreign keys:**

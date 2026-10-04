@@ -6,17 +6,17 @@ Immutable resolution of a previously assessed restoration hold; a resolved hold 
 
 Not partitioned — growth: unbounded.
 
-| Column                                      | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                     |
-| ------------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------- |
-| `copyright_notice_id`                       | `uuid`                     | no       |                              |          |           |           | Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion. |
-| `id`                                        | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                             |
-| `copyright_notice_legal_hold_assessment_id` | `uuid`                     | no       |                              |          |           |           | Hold assessment resolved by this immutable record.                                                          |
-| `resolved_at`                               | `timestamp with time zone` | no       |                              |          |           |           | When staff determined the hold no longer applied.                                                           |
-| `resolved_by_id`                            | `uuid`                     | yes      |                              |          |           |           | Staff user responsible for resolving the hold.                                                              |
-| `resolution_kind`                           | `text`                     | no       |                              |          |           |           | Why the hold ended: dismissed, proceeding ended, or superseded by a corrected assessment.                   |
-| `rationale_ciphertext`                      | `text`                     | no       |                              |          |           |           | Authenticated ciphertext of private staff rationale and supporting references.                              |
-| `created_at`                                | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                             |
-| `updated_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                             |
+| Column                                      | Type                                           | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                     |
+| ------------------------------------------- | ---------------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------- |
+| `copyright_notice_id`                       | `uuid`                                         | no       |                              |          |           |           | Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion. |
+| `id`                                        | `uuid`                                         | no       | `uuidv7()`                   |          |           |           |                                                                                                             |
+| `copyright_notice_legal_hold_assessment_id` | `uuid`                                         | no       |                              |          |           |           | Hold assessment resolved by this immutable record.                                                          |
+| `resolved_at`                               | `timestamp with time zone`                     | no       |                              |          |           |           | When staff determined the hold no longer applied.                                                           |
+| `resolved_by_id`                            | `uuid`                                         | yes      |                              |          |           |           | Staff user responsible for resolving the hold.                                                              |
+| `resolution_kind`                           | `copyright_notice_legal_hold_resolution_kinds` | no       |                              |          |           |           | Why the hold ended: dismissed, proceeding ended, or superseded by a corrected assessment.                   |
+| `rationale_ciphertext`                      | `text`                                         | no       |                              |          |           |           | Authenticated ciphertext of private staff rationale and supporting references.                              |
+| `created_at`                                | `timestamp with time zone`                     | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                             |
+| `updated_at`                                | `timestamp with time zone`                     | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                             |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -28,7 +28,7 @@ Not partitioned — growth: unbounded.
 **Check constraints:**
 
 - `copyright_notice_legal_hold_resoluti_rationale_ciphertext_check`: `CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 65536)))`
-- `copyright_notice_legal_hold_resolutions_resolution_kind_check`: `CHECK ((resolution_kind = ANY (ARRAY['dismissed'::text, 'proceeding_ended'::text, 'superseded'::text])))`
+- `copyright_notice_legal_hold_resolutions_resolution_kind_check`: `CHECK ((resolution_kind = ANY (ARRAY['dismissed'::copyright_notice_legal_hold_resolution_kinds, 'proceeding_ended'::copyright_notice_legal_hold_resolution_kinds, 'superseded'::copyright_notice_legal_hold_resolution_kinds])))`
 
 **Foreign keys:**
 

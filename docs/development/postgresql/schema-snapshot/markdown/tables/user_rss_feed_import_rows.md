@@ -12,7 +12,6 @@ Not partitioned — growth: unbounded.
 | `batch_id`      | `uuid`                              | no       |                              |          |           |           | The RSS feed import batch this row belongs to.                         |
 | `row_index`     | `integer`                           | no       |                              |          |           |           | Zero-based position of the input URL in the submitted import.          |
 | `input_url`     | `text`                              | no       |                              |          |           |           | Trimmed user-submitted RSS feed URL.                                   |
-| `canonical_url` | `text`                              | yes      |                              |          |           |           | Validated canonical URL used for RSS feed lookup or creation.          |
 | `outcome`       | `user_rss_feed_import_row_outcomes` | yes      |                              |          |           |           | Terminal per-row import result. NULL means pending or retrying.        |
 | `rss_feed_id`   | `uuid`                              | yes      |                              |          |           |           | RSS feed resolved or created for this row.                             |
 | `completed_at`  | `timestamp with time zone`          | yes      |                              |          |           |           | When this row completed with a non-error outcome.                      |
@@ -30,7 +29,6 @@ Not partitioned — growth: unbounded.
 **Check constraints:**
 
 - `chk_user_rss_feed_import_rows__lifecycle`: `CHECK ((((outcome IS NULL) AND (completed_at IS NULL) AND (failed_at IS NULL)) OR ((outcome = 'error'::user_rss_feed_import_row_outcomes) AND (completed_at IS NULL) AND (failed_at IS NOT NULL) AND (error_message IS NOT NULL)) OR ((outcome <> 'error'::user_rss_feed_import_row_outcomes) AND (completed_at IS NOT NULL) AND (failed_at IS NULL) AND (rss_feed_id IS NOT NULL))))`
-- `user_rss_feed_import_rows_canonical_url_check`: `CHECK (((canonical_url IS NULL) OR (canonical_url = TRIM(BOTH FROM canonical_url))))`
 - `user_rss_feed_import_rows_error_message_check`: `CHECK (((error_message IS NULL) OR (error_message = TRIM(BOTH FROM error_message))))`
 - `user_rss_feed_import_rows_input_url_check`: `CHECK ((input_url = TRIM(BOTH FROM input_url)))`
 - `user_rss_feed_import_rows_input_url_check1`: `CHECK ((char_length(input_url) > 0))`
