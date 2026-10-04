@@ -25,10 +25,17 @@ same local MCP wrapper and preauthorize exactly the eight-provider-tool catalog 
 
 ## Mandatory journal triggers
 
-Append a journal entry immediately, not at session end, when a check or CI run fails, a command is
-denied or escalated, implementation leaves the accepted plan, a second fix push lands on one PR, a
-doc/tool/skill gap costs more than one turn, or `no-mistakes` fails or returns a surprising result.
-Use this one-line grammar, then optional brief prose:
+Journal only friction. Append a journal entry immediately, not at session end, when:
+
+- a command is denied or escalated;
+- a tool, doc or skill gap costs more than one turn;
+- a first-party tool (`no-mistakes`, `pr-shepherd`, `dev/*` and `vouchington` commands) returns a
+  surprising result.
+
+A failed check, a failed CI run, a repeated fix push and leaving the plan are not triggers on their
+own. The retrospective collects CI failures from its own sources, and its Plan vs Actual covers plan
+changes. This list replaces the canonical skill's broader list of observations to capture. Use this
+one-line grammar, then optional brief prose:
 
 ```
 - `recurring|one-off` — <finding> — <file path(s)> — <evidence: PR / commit / exact command> — <issue #N|none>
