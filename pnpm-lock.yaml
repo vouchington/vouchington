@@ -11325,6 +11325,9 @@ importers:
       '@services/queue-monitoring':
         specifier: workspace:^
         version: link:../services/queue-monitoring
+      '@services/recommended-rss-feeds':
+        specifier: workspace:^
+        version: link:../services/recommended-rss-feeds
       '@services/recommended-topics':
         specifier: workspace:^
         version: link:../services/recommended-topics
@@ -11370,6 +11373,9 @@ importers:
       '@services/trending-referral-programs':
         specifier: workspace:^
         version: link:../services/trending-referral-programs
+      '@services/trending-rss-feeds':
+        specifier: workspace:^
+        version: link:../services/trending-rss-feeds
       '@services/trending-topics':
         specifier: workspace:^
         version: link:../services/trending-topics

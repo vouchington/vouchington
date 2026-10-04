@@ -76,7 +76,6 @@ import searchCommunitiesTool from '../search-communities.mts'
 import searchDataPointsTool from '../search-data-points.mts'
 import searchHostnamesTool from '../search-hostnames.mts'
 import searchPostsTool from '../search-posts.mts'
-import searchRssFeedItemsTool from '../search-rss-feed-items.mts'
 import searchTopicsTool from '../search-topics.mts'
 import searchUsersTool from '../search-users.mts'
 import setBookmarkTool from '../set-bookmark.mts'
@@ -95,6 +94,7 @@ import { communityListMembershipReadTools } from './community-list-membership-re
 import { entityRelationWriteTools } from './entity-relation-write-tools.mts'
 import { ownDataReadTools } from './own-data-read-tools.mts'
 import { searchReferenceReadTools } from './search-reference-read-tools.mts'
+import { rssReadTools } from './rss-read-tools.mts'
 
 export const ALL_TOOLS: readonly Tool[] = [
   ...postWriteTools,
@@ -125,6 +125,7 @@ export const ALL_TOOLS: readonly Tool[] = [
   ...entityRelationWriteTools,
   ...ownDataReadTools,
   ...searchReferenceReadTools,
+  ...rssReadTools,
   resolveModerationAppealTool,
   resolveReviewDisputeTool,
   activateReferralLinkTool,
@@ -179,7 +180,6 @@ export const ALL_TOOLS: readonly Tool[] = [
   searchDataPointsTool,
   searchHostnamesTool,
   searchPostsTool,
-  searchRssFeedItemsTool,
   searchTopicsTool,
   searchUsersTool,
   setBookmarkTool,

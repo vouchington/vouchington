@@ -11,12 +11,10 @@ scope. The hostname, list and user read tools share
 this shape and are described in
 [Hostname, List and User Read Tools](../../agent-tools/hostname-list-user-read-tools.md).
 
-| Tool                   | REST twin                                 | Arguments                                              |
-| ---------------------- | ----------------------------------------- | ------------------------------------------------------ |
-| `get_post`             | `GET /api/v1/posts/:idOrSlug`             | `post_id` (UUID or slug)                               |
-| `get_post_ancestors`   | `GET /api/v1/posts/:idOrSlug/ancestors`   | `post_id` (UUID or slug)                               |
-| `get_post_descendants` | `GET /api/v1/posts/:idOrSlug/descendants` | `post_id`, `limit` (1-200), `after`                    |
-| `get_story`            | `GET /api/v1/stories/:id`                 | `story_id`, `limit` (1-25), `after`, `exclude_item_id` |
+- `get_post`: `GET /api/v1/posts/:idOrSlug`; `post_id` (UUID or slug).
+- `get_post_ancestors`: `GET /api/v1/posts/:idOrSlug/ancestors`; `post_id` (UUID or slug).
+- `get_post_descendants`: `GET /api/v1/posts/:idOrSlug/descendants`; `post_id`, `limit` (1-200), `after`.
+- `get_story`: `GET /api/v1/stories/:id`; `story_id`, `limit` (1-25), `after`, `exclude_item_id`.
 
 ## Result shape
 
@@ -104,6 +102,44 @@ Community descriptions, rules and post markdown are wrapped with `wrapExternalCo
 names are sanitized. The shared post-page and hashtag-query logic lives in `@services/communities`
 (`getCommunityPostsPage`, `resolveCommunityHashtagQuery`), used by both the REST routes and the
 tools, so the two cannot drift.
+
+## RSS and personalized feed read tools
+
+The RSS tools require `rss-feeds:read` or `rss-feed-items:read`; the three personalized feeds use
+`feeds:read`. All are read-only, declare `plan: free`, and identify their REST route in `meta.api`.
+The domain services decide which rows the caller may see. An RSS feed detail can include a disabled
+or non-discoverable feed because its REST detail route does; RSS feed search retains the REST default
+enabled filter and optional `apply_mutes` behavior. Item search uses the REST parser and search
+service, including its precise timestamp and semantic cursors. RSS item and feed text is sanitized
+and fenced as external content. Item cursors include viewer state, so an MCP caller can round-trip
+its cursor against signed-in REST as the same user; anonymous REST mints its own cursor.
+
+- `search_rss_feeds`: `GET /api/v1/rss-feeds`; feed summaries, cursor, 25 max.
+- `get_rss_feed`: `GET /api/v1/rss-feeds/:id`; feed summary.
+- `get_recommended_rss_feeds`: `GET /api/v1/rss-feeds/recommended`; personalized IDs, scores, reasons, cursor, 100 max.
+- `get_trending_rss_feeds`: `GET /api/v1/rss-feeds/trending`; public IDs and metrics, cursor, 100 max.
+- `list_rss_feed_crawls`: `GET /api/v1/rss-feeds/:id/crawls`; paid or administrator summaries, cursor, 100 max.
+- `get_rss_feed_crawl`: `GET /api/v1/rss-feeds/:id/crawls/:crawlId` (`#paid`, `#privileged`); paid summary or administrator detail.
+- `list_rss_feed_items`: `GET /api/v1/rss-feed-items`; item summaries, cursor, 100 max.
+- `get_rss_feed_item`: `GET /api/v1/rss-feed-items/:id`; item summary and fenced article text.
+- `get_rss_feed_item_follow_context`: `GET /api/v1/rss-feed-items/:id/follow-context`; caller-followed voter IDs and counts.
+- `get_rss_feed_item_votes`: `GET /api/v1/rss-feed-items/:id/votes`; own votes or, for administrators, all votes; cursor, 100 max.
+- `get_rss_feed_item_feed`: `GET /api/v1/feeds/rss_feed_items/:feed_type`; caller feed item IDs and delivery types, cursor, 100 max.
+- `get_post_feed`: `GET /api/v1/feeds/posts/:feed_type`; caller feed post IDs and delivery types, cursor, 100 max.
+- `get_referral_link_feed`: `GET /api/v1/feeds/referral_links/:feed_type`; followed-user referral links, cursor, 100 max.
+
+The existing `search_rss_feed_items` remains an internal agent tool. Its older search service has
+no cursor, so MCP uses `list_rss_feed_items`, which accepts text, semantic and similar-item search
+through the REST parser and returns `page_info`. The `get_list_items` description names
+`get_rss_feed_item` for RSS entries.
+
+The two crawl tools apply `currentUserCanViewLatestRssFeedCrawl` with the caller's current
+membership, exactly as REST does. `get_rss_feed_crawl` uses the same administrator split: paid
+callers receive only `RssFeedCrawlSummary`; administrators may receive `feed_data`, sanitized and
+fenced as external content. `get_rss_feed_item_follow_context` and the personalized feed tools
+read only the credential owner's graph. Votes use the REST service's administrator versus own-vote
+query. These tools return compact records, so callers can fetch entity details separately when
+needed.
 
 ## Administrative actions
 

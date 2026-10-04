@@ -245,6 +245,166 @@
       "requiredScopes": ["web-search:read"]
     },
     {
+      "name": "search_rss_feeds",
+      "description": "Search RSS feeds by title, type and current state. Returns at most 25 feeds per page and page_info.end_cursor for the next page. Text search has no cursor, as on REST.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/rss-feeds"
+        }
+      ],
+      "requiredScopes": ["rss-feeds:read"]
+    },
+    {
+      "name": "get_rss_feed",
+      "description": "Get an RSS feed by UUID, including disabled or non-discoverable feeds as the REST detail route does.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/rss-feeds/:id"
+        }
+      ],
+      "requiredScopes": ["rss-feeds:read"]
+    },
+    {
+      "name": "list_rss_feed_items",
+      "description": "Search and page RSS feed items by keyword, semantic text, similar item, feed, media type or read state. Returns at most 100 items per page and page_info.end_cursor for the next page. The old internal search_rss_feed_items tool has no cursor; use this tool for MCP reads.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/rss-feed-items"
+        }
+      ],
+      "requiredScopes": ["rss-feed-items:read"]
+    },
+    {
+      "name": "get_rss_feed_item",
+      "description": "Get an RSS feed item by UUID, with article text marked as external content.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/rss-feed-items/:id"
+        }
+      ],
+      "requiredScopes": ["rss-feed-items:read"]
+    },
+    {
+      "name": "get_trending_rss_feeds",
+      "description": "List trending RSS feed IDs, scores and counts. Use get_rss_feed for details. Returns at most 100 per page and a cursor for the next page.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/rss-feeds/trending"
+        }
+      ],
+      "requiredScopes": ["rss-feeds:read"]
+    },
+    {
+      "name": "get_recommended_rss_feeds",
+      "description": "List RSS feed recommendations for the current user, with scores and reasons. Use get_rss_feed for details. Returns at most 100 per page and a cursor for the next page.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/rss-feeds/recommended"
+        }
+      ],
+      "requiredScopes": ["rss-feeds:read"]
+    },
+    {
+      "name": "list_rss_feed_crawls",
+      "description": "List crawl summaries for an RSS feed. REST requires a premium membership or administrator role. Returns at most 100 per page with page_info.end_cursor for the next page.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/rss-feeds/:id/crawls"
+        }
+      ],
+      "requiredScopes": ["rss-feeds:read"]
+    },
+    {
+      "name": "get_rss_feed_crawl",
+      "description": "Get one RSS feed crawl. Premium callers receive only the REST paid summary; administrators may also receive raw feed data, fenced as external content.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/rss-feeds/:id/crawls/:crawlId#paid"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/rss-feeds/:id/crawls/:crawlId#privileged"
+        }
+      ],
+      "requiredScopes": ["rss-feeds:read"]
+    },
+    {
+      "name": "get_rss_feed_item_follow_context",
+      "description": "For an RSS item, list up to five users you follow who voted positively or negatively, with the total for each side. Uses the same follow and vote visibility policy as REST.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/rss-feed-items/:id/follow-context"
+        }
+      ],
+      "requiredScopes": ["rss-feed-items:read"]
+    },
+    {
+      "name": "get_rss_feed_item_votes",
+      "description": "List votes on an RSS item. As on REST, administrators see all votes and other callers see only their own. Returns at most 100 per page with page_info.end_cursor.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/rss-feed-items/:id/votes"
+        }
+      ],
+      "requiredScopes": ["rss-feed-items:read"]
+    },
+    {
+      "name": "get_post_feed",
+      "description": "Page posts delivered to your own feed. Results identify each post for get_post; the domain feed service applies the REST follow, community and content policy. Returns at most 100 per page.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/feeds/posts/:feed_type"
+        }
+      ],
+      "requiredScopes": ["feeds:read"]
+    },
+    {
+      "name": "get_rss_feed_item_feed",
+      "description": "Page RSS items delivered to your own feed. Results identify each item for get_rss_feed_item; the domain feed service applies the REST follow, community and content policy. Returns at most 100 per page.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/feeds/rss_feed_items/:feed_type"
+        }
+      ],
+      "requiredScopes": ["feeds:read"]
+    },
+    {
+      "name": "get_referral_link_feed",
+      "description": "Page referral links from users you follow, applying the REST feed privacy and mute policy. Returns at most 100 per page with page_info.end_cursor.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/feeds/referral_links/:feed_type"
+        }
+      ],
+      "requiredScopes": ["feeds:read"]
+    },
+    {
       "name": "compare_topics",
       "description": "Compare data point statistics side-by-side for two topics (cards, bank accounts, etc.). Useful for answering questions like \"which card has a better approval rate?\"",
       "parameters": null,
@@ -306,7 +466,7 @@
     },
     {
       "name": "get_list_items",
-      "description": "List the items on a list, newest first: each is a post or an RSS feed item, with the item_type and entity_id to read it with (get_post, or the RSS item tools). The list must be readable as get_list describes; otherwise this returns { success: false, error: \"List not found\" }. A post the caller cannot read, such as a private or deleted post, is left out, so a page can hold fewer items than limit while page_info.has_next_page is still true: keep paging until it is false. media_type keeps only RSS feed items of that media type. Returns at most 25 items per page and page_info.end_cursor; pass it as after to get the next page. A malformed cursor returns { success: false, error: \"Invalid cursor\" }.",
+      "description": "List the items on a list, newest first: each is a post or an RSS feed item, with the item_type and entity_id to read it with (get_post or get_rss_feed_item). The list must be readable as get_list describes; otherwise this returns { success: false, error: \"List not found\" }. A post the caller cannot read, such as a private or deleted post, is left out, so a page can hold fewer items than limit while page_info.has_next_page is still true: keep paging until it is false. media_type keeps only RSS feed items of that media type. Returns at most 25 items per page and page_info.end_cursor; pass it as after to get the next page. A malformed cursor returns { success: false, error: \"Invalid cursor\" }.",
       "parameters": null,
       "api": [
         {
