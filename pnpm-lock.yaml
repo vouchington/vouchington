@@ -11963,9 +11963,6 @@ importers:
 
   backend/workers/crawl-boilerplate-removal:
     dependencies:
-      '@data-stores/valkey':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
