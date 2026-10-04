@@ -5,11 +5,11 @@ import {
   admitDelegatedContribution,
   executePreparedContribution,
 } from '@services/contribution-gating'
+import { prepareDelegatedTopicRecommendation } from '@services/topic-recommendations/prepare-delegated-topic-recommendation'
 import { getUserActivePlan } from '@services/memberships'
 import { currentUserCanCreatePost } from '@services/posts/authorization'
 import {
   assertValidCreateTopicRecommendationInput,
-  prepareTopicRecommendation,
   type CreateTopicRecommendationInput,
   type TopicRecommendationPost,
 } from '@services/topic-recommendations'
@@ -75,7 +75,7 @@ const tool: Tool<Args, { success: true; post: TopicRecommendationPost }> = {
       intent: { route: 'topic-recommendations.create', body },
       execute: query =>
         executePreparedContribution(query, () =>
-          prepareTopicRecommendation(user, getRequestContentProvenance(), body, { query }),
+          prepareDelegatedTopicRecommendation(user, getRequestContentProvenance(), body, query),
         ),
     })
     return { success: true, post: await toMcpRecommendation(post) }
