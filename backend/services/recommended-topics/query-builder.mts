@@ -1,3 +1,4 @@
+import { getRecommendedTopicsWorkLimit } from './work-limits.mts'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { TopicTypes } from '@services/topics'
 import { POST_TOPIC_CATEGORY_RELATION_TABLE } from '@services/entity-relations/metadata'
@@ -22,12 +23,13 @@ export async function buildRecommendationQuery(
   userId: string,
   options: QueryOptions,
 ): Promise<SQLStatement> {
+  const WORK_PAGE_SIZE = getRecommendedTopicsWorkLimit('candidate_page_size')
   const { score_lt, id_gt, name_gt, limit, topic_types, spending_category, rss_feed, sort } =
     options
 
   const [viewedPostIds, viewedRssFeedItemIds] = await Promise.all([
-    searchRecentlyViewed('post', null, userId, 1000),
-    searchRecentlyViewed('rss_feed_item', null, userId, 1000),
+    searchRecentlyViewed('post', null, userId, WORK_PAGE_SIZE),
+    searchRecentlyViewed('rss_feed_item', null, userId, WORK_PAGE_SIZE),
   ])
 
   const query = sql`/* buildRecommendationQuery */
@@ -68,7 +70,7 @@ export async function buildRecommendationQuery(
         ON pr.subject_id = p.id
         AND pr.deleted_at IS NULL
       WHERE ev.score > 0
-      LIMIT 1000
+      LIMIT ${WORK_PAGE_SIZE}
     ),
 
     -- Topics from RSS feeds you follow (weight: 2.5)
@@ -83,7 +85,7 @@ export async function buildRecommendationQuery(
         AND rf.deleted_at IS NULL
       WHERE ufr.subject_id = ${userId}
         AND ufr.deleted_at IS NULL
-      LIMIT 1000
+      LIMIT ${WORK_PAGE_SIZE}
     ),
 
     -- Topics from RSS feed items you've clicked (weight: 2.0)
@@ -115,7 +117,7 @@ export async function buildRecommendationQuery(
         AND tr.deleted_at IS NULL
       WHERE uft.subject_id = ${userId}
         AND uft.deleted_at IS NULL
-      LIMIT 1000
+      LIMIT ${WORK_PAGE_SIZE}
     ),
 
     -- Combine all sources and aggregate scores

@@ -1,3 +1,4 @@
+import { getClassifiersWorkLimit } from './work-limits.mts'
 import { read } from '@data-stores/psql'
 import {
   buildHumanVoteComparisonQuery,
@@ -7,7 +8,6 @@ import {
 } from './human-vote-comparison-query.mts'
 import {
   CLASSIFIER_COMPARISON_BUCKET_COUNT,
-  CLASSIFIER_COMPARISON_MAX_BATCHES,
   CLASSIFIER_COMPARISON_MAX_WINDOW_DAYS,
   CLASSIFIER_COMPARISON_MIN_HUMAN_COHORT,
   type ClassifierComparisonCell,
@@ -28,6 +28,7 @@ const DAY_MS = 24 * 60 * 60 * 1000
 export async function getClassifierHumanVoteComparison(
   options: ClassifierHumanVoteComparisonOptions,
 ): Promise<ClassifierHumanVoteComparisonResult> {
+  const CLASSIFIER_COMPARISON_MAX_BATCHES = getClassifiersWorkLimit('comparison_max_batches')
   const invalid = validateWindowAndItem(options)
   if (invalid) return { outcome: 'invalid', reason: invalid }
   const { rows: classifiers } = await read<{ candidate_kind: string }>(
@@ -42,7 +43,7 @@ export async function getClassifierHumanVoteComparison(
       reason: 'Only topic classifiers can be compared with human topic votes',
     }
   }
-  const query = buildHumanVoteComparisonQuery(options)
+  const query = buildHumanVoteComparisonQuery(options, CLASSIFIER_COMPARISON_MAX_BATCHES)
   const { rows } = await read<ComparisonQueryRow>(query.text, query.values)
   const batchesSelected = rows[0]?.batches_selected ?? 0
   return {

@@ -1,20 +1,20 @@
 import type Stripe from 'stripe'
 import { getStripeClient } from './client.mts'
 
-const MAX_STRIPE_INVOICE_PAYMENT_PAGES = 10
-
 /* no-mistakes: integration=stripe */
 export async function listAllStripeInvoicePayments(
   invoiceId: string,
+  maxPages: number,
 ): Promise<Stripe.InvoicePayment[]> {
-  return listStripeInvoicePaymentPages(invoiceId, undefined, [], 0)
+  return listStripeInvoicePaymentPages(invoiceId, undefined, [], 0, maxPages)
 }
 
 /* no-mistakes: integration=stripe */
 export async function listAllStripeInvoicePaymentsForPaymentIntent(
   paymentIntentId: string,
+  maxPages: number,
 ): Promise<Stripe.InvoicePayment[]> {
-  return listStripeInvoicePaymentIntentPages(paymentIntentId, undefined, [], 0)
+  return listStripeInvoicePaymentIntentPages(paymentIntentId, undefined, [], 0, maxPages)
 }
 
 async function listStripeInvoicePaymentIntentPages(
@@ -22,8 +22,9 @@ async function listStripeInvoicePaymentIntentPages(
   startingAfter: string | undefined,
   payments: Stripe.InvoicePayment[],
   pageCount: number,
+  maxPages: number,
 ): Promise<Stripe.InvoicePayment[]> {
-  if (pageCount >= MAX_STRIPE_INVOICE_PAYMENT_PAGES)
+  if (pageCount >= maxPages)
     throw new Error(
       `Stripe payment intent ${paymentIntentId} exceeded the invoice payment page limit`,
     )
@@ -45,6 +46,7 @@ async function listStripeInvoicePaymentIntentPages(
     lastPayment.id,
     payments,
     pageCount + 1,
+    maxPages,
   )
 }
 
@@ -53,8 +55,9 @@ async function listStripeInvoicePaymentPages(
   startingAfter: string | undefined,
   payments: Stripe.InvoicePayment[],
   pageCount: number,
+  maxPages: number,
 ): Promise<Stripe.InvoicePayment[]> {
-  if (pageCount >= MAX_STRIPE_INVOICE_PAYMENT_PAGES)
+  if (pageCount >= maxPages)
     throw new Error(`Stripe invoice ${invoiceId} exceeded the payment page limit`)
   const page = await getStripeClient().invoicePayments.list({
     invoice: invoiceId,
@@ -67,5 +70,5 @@ async function listStripeInvoicePaymentPages(
   const lastPayment = page.data.at(-1)
   if (!lastPayment)
     throw new Error(`Stripe returned an empty invoice payment page for invoice ${invoiceId}`)
-  return listStripeInvoicePaymentPages(invoiceId, lastPayment.id, payments, pageCount + 1)
+  return listStripeInvoicePaymentPages(invoiceId, lastPayment.id, payments, pageCount + 1, maxPages)
 }

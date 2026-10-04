@@ -1,3 +1,4 @@
+import { getBookmarksWorkLimit } from './work-limits.mts'
 import { bloomValkeyClient, normalizeBloomCheckResult } from '@data-stores/valkey'
 import { loadScript, registerScript } from '@data-stores/valkey/scripts'
 import type { EntityRelationMetadata } from '@services/entity-relations/metadata'
@@ -13,7 +14,6 @@ import onError from '@modules/on-error'
 // (Redis EVALSHA arg-count safety), independent of BOOKMARK_BLOOM_BATCH_SIZE in bloom-filter-utils.mts,
 // which bounds BF.MADD write payloads and DB backfill cursor size. The two happen to share a value
 // today; do not import one to satisfy the other; tune each for its own operation.
-const BOOKMARK_BLOOM_LUA_LOOKUP_BATCH_SIZE = 5_000
 const checkBloomCandidatesScript = registerScript(
   loadScript('check-bloom-candidates.lua', import.meta.url),
 )
@@ -74,6 +74,7 @@ export async function checkBookmarkBloomCandidatesByRelations(
   relationTableNames: string[],
   objectIds: string[],
 ): Promise<Record<string, BookmarkBloomCandidates>> {
+  const BOOKMARK_BLOOM_LUA_LOOKUP_BATCH_SIZE = getBookmarksWorkLimit('bloom_lookup_batch_size')
   if (relationTableNames.length === 0) return {}
   if (objectIds.length === 0) {
     const emptyResults: Record<string, BookmarkBloomCandidates> = {}

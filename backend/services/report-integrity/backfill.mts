@@ -1,3 +1,4 @@
+import { getReportIntegrityWorkLimit } from './work-limits.mts'
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
@@ -7,8 +8,6 @@ export type PendingReportEntity = {
   entityType: string
   entityId: string
 }
-
-const BACKFILL_BATCH_SIZE = 500
 
 /**
  * Streams batches of entities that currently have >= MASS_REPORT_THRESHOLD distinct
@@ -24,6 +23,7 @@ export async function* streamEntitiesWithPendingReportsBatches(): AsyncGenerator
   void,
   unknown
 > {
+  const BACKFILL_BATCH_SIZE = getReportIntegrityWorkLimit('backfill_batch_size')
   let batch: PendingReportEntity[] = []
   const windowStartId = getMinUUIDv7ForDate(
     new Date(Date.now() - MASS_REPORT_WINDOW_MINUTES * 60 * 1000),

@@ -24,6 +24,8 @@ const DEFAULTS = {
   backlog_threshold: 1000,
   stale_ttl_hours: 24,
   creation_retry_delay_ms: 60000,
+  reconciliation_page_size: 100,
+  bloom_population_batch_size: 1000,
 }
 
 export const BEDROCK_BATCH_MAX_VALUES: Record<keyof typeof DEFAULTS, number> = {
@@ -39,6 +41,8 @@ export const BEDROCK_BATCH_MAX_VALUES: Record<keyof typeof DEFAULTS, number> = {
   backlog_threshold: 10_000_000,
   stale_ttl_hours: 168,
   creation_retry_delay_ms: 3600000,
+  reconciliation_page_size: 1000,
+  bloom_population_batch_size: 10000,
 }
 
 export const bedrockEmbeddingsBatchConfig = new DynamicConfig({
@@ -56,6 +60,8 @@ export const bedrockEmbeddingsBatchConfig = new DynamicConfig({
     backlog_threshold: 'number',
     stale_ttl_hours: 'number',
     creation_retry_delay_ms: 'number',
+    reconciliation_page_size: 'number',
+    bloom_population_batch_size: 'number',
   },
   defaultFields: DEFAULTS,
 })
@@ -110,4 +116,12 @@ export function getPendingEmbeddingScanLimits(images = false) {
 
 export function getEmbeddingCreationRetryDelayMs(): number {
   return positiveInteger('creation_retry_delay_ms')
+}
+
+export function getEmbeddingReconciliationPageSize(): number {
+  return positiveInteger('reconciliation_page_size')
+}
+
+export function getEmbeddingBloomPopulationBatchSize(): number {
+  return positiveInteger('bloom_population_batch_size')
 }

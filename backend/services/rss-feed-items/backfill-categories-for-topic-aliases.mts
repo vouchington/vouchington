@@ -1,3 +1,4 @@
+import { getRssFeedItemsWorkLimit } from '@services/rss-feed-items/work-limits'
 import { beginTransaction, withTransactionOptions } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
@@ -18,9 +19,6 @@ import {
   recordStoryPublicationChangesForCategoryTopics,
 } from './story-publication-change.mts'
 
-const CATEGORY_BACKFILL_BATCH_SIZE = 500
-const INVALIDATION_CHUNK_SIZE = 100
-
 // Backfills topic_id by alias (overwrites stale assignments), or by topic name/slug (fills nulls only).
 export async function backfillCategoriesForTopicAliases(
   topicId: string,
@@ -34,6 +32,7 @@ async function backfillCategoryBatch(
   updated: number,
   options: QueryOptions,
 ): Promise<{ updated: number }> {
+  const CATEGORY_BACKFILL_BATCH_SIZE = getRssFeedItemsWorkLimit('category_backfill_batch_size')
   const run = async (query: TransactionQuery) => {
     const { rows: candidateItems } = await query<{ rss_feed_item_id: string }>(
       `/* backfillCategoriesForTopicAliases.candidateItems */
@@ -137,6 +136,7 @@ async function runInTransaction<Result>(
 }
 
 async function invalidateRssFeedItemChunks(itemIds: string[]): Promise<void> {
+  const INVALIDATION_CHUNK_SIZE = getRssFeedItemsWorkLimit('backfill_invalidation_chunk_size')
   const [chunk, ...remaining] = chunkArray(itemIds, INVALIDATION_CHUNK_SIZE)
   if (!chunk) return
   await invalidateRssFeedItemsAndWaitForPurge(...chunk)

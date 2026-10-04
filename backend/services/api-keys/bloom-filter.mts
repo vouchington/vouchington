@@ -1,18 +1,19 @@
+import { getApiKeyBloomBatchSize } from './work-limits.mts'
 import { ValkeyBloomFilter, bloomValkeyClient } from '@data-stores/valkey'
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import onError from '@modules/on-error'
 import { enqueueRebuildBloomFilter } from '@queues/bloom-filters/enqueues'
 
-const BATCH_SIZE = 1000
-
-const apiKeyBloomFilter = new ValkeyBloomFilter({
-  name: 'api-keys',
-  capacity: 100_000,
-  errorRate: 0.001,
-  batchSize: BATCH_SIZE,
-  client: bloomValkeyClient,
-})
+function getApiKeyBloomFilter() {
+  return new ValkeyBloomFilter({
+    name: 'api-keys',
+    capacity: 100_000,
+    errorRate: 0.001,
+    batchSize: getApiKeyBloomBatchSize(),
+    client: bloomValkeyClient,
+  })
+}
 
 // Marker key set after each successful rebuild — used by warmup as a reliable
 // readiness check instead of a bloom membership probe (which can false-positive).
@@ -25,7 +26,7 @@ const BLOOM_READY_KEY = 'bloom-filter:api-keys:ready'
  */
 export async function checkApiKeyBloomFilter(keyHash: Buffer): Promise<boolean | null> {
   try {
-    return await apiKeyBloomFilter.existsIfReady(BLOOM_READY_KEY, keyHash.toString('hex'))
+    return await getApiKeyBloomFilter().existsIfReady(BLOOM_READY_KEY, keyHash.toString('hex'))
   } catch {
     return null
   }
@@ -39,7 +40,7 @@ export async function checkApiKeyBloomFilter(keyHash: Buffer): Promise<boolean |
  */
 export async function addKeyHashToBloomFilter(keyHash: Buffer): Promise<void> {
   try {
-    await apiKeyBloomFilter.addOrThrow([keyHash.toString('hex')])
+    await getApiKeyBloomFilter().addOrThrow([keyHash.toString('hex')])
   } catch (err) {
     onError(err instanceof Error ? err : new Error(String(err)))
     try {
@@ -55,6 +56,7 @@ export async function addKeyHashToBloomFilter(keyHash: Buffer): Promise<void> {
 }
 
 async function* apiKeyHashBatchesFromDb(): AsyncGenerator<string[]> {
+  const BATCH_SIZE = getApiKeyBloomBatchSize()
   const batch: string[] = []
 
   for await (const row of createAsyncGeneratorFromCursor<{ key_hash_hex: string }>(
@@ -82,7 +84,7 @@ async function* apiKeyHashBatchesFromDb(): AsyncGenerator<string[]> {
  * Sets BLOOM_READY_KEY after the atomic rename so warmup can safely detect readiness.
  */
 export async function rebuildApiKeyBloomFilter(): Promise<void> {
-  await apiKeyBloomFilter.rebuildFromStream(apiKeyHashBatchesFromDb())
+  await getApiKeyBloomFilter().rebuildFromStream(apiKeyHashBatchesFromDb())
   await bloomValkeyClient.set(BLOOM_READY_KEY, '1')
 }
 
@@ -92,7 +94,7 @@ export async function rebuildApiKeyBloomFilter(): Promise<void> {
  * rather than a bloom membership probe, avoiding false-positive misdetection.
  */
 export async function warmUpApiKeyBloomFilter(): Promise<void> {
-  if (await apiKeyBloomFilter.isReady(BLOOM_READY_KEY)) return
+  if (await getApiKeyBloomFilter().isReady(BLOOM_READY_KEY)) return
 
   /* c8 ignore next -- lint-only fire-and-forget enqueue disposition. */
   void enqueueRebuildBloomFilter({ filter: 'api-keys' })
@@ -102,5 +104,5 @@ export async function warmUpApiKeyBloomFilter(): Promise<void> {
  * Delete the API key bloom filter, any building key, and the ready marker.
  */
 export async function deleteApiKeyBloomFilter(): Promise<void> {
-  await apiKeyBloomFilter.deleteWithAdditionalKeys([BLOOM_READY_KEY])
+  await getApiKeyBloomFilter().deleteWithAdditionalKeys([BLOOM_READY_KEY])
 }

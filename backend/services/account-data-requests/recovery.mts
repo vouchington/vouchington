@@ -1,4 +1,4 @@
-import { getDataRequestLimits } from './work-limits.mts'
+import { getAccountDataRequestsWorkLimit, getDataRequestLimits } from './work-limits.mts'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { lockActiveDataRequestUser } from './active-user-lock.mts'
@@ -16,6 +16,12 @@ export async function claimRecoverableDataRequests(
   requests: RecoverableDataRequest[]
   hasMore: boolean
 }> {
+  const ACCOUNT_DATA_REQUESTS_DISPATCH_TIMEOUT_MINUTES = getAccountDataRequestsWorkLimit(
+    'dispatch_timeout_minutes',
+  )
+  const ACCOUNT_DATA_REQUESTS_PROCESSING_TIMEOUT_MINUTES = getAccountDataRequestsWorkLimit(
+    'processing_timeout_minutes',
+  )
   await using transaction = await beginTransaction()
   // Both mutation streams consume one shared, globally ordered candidate page.
   const { rows: candidateRows } = await transaction<{ id: string; user_id: string | null }>(sql`
@@ -30,8 +36,8 @@ export async function claimRecoverableDataRequests(
       JOIN users active_user ON active_user.id = request.user_id AND active_user.deleted_at IS NULL
       WHERE (${requestIds ?? null}::uuid[] IS NULL OR request.id = ANY(${requestIds ?? null}::uuid[]))
         AND request.completed_at IS NULL AND request.failed_at IS NULL
-        AND ((request.processing_started_at IS NULL AND request.dispatched_at < NOW() - INTERVAL '5 minutes')
-          OR request.processing_started_at < NOW() - INTERVAL '30 minutes')
+        AND ((request.processing_started_at IS NULL AND request.dispatched_at < NOW() - ${ACCOUNT_DATA_REQUESTS_DISPATCH_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute')
+          OR request.processing_started_at < NOW() - ${ACCOUNT_DATA_REQUESTS_PROCESSING_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute')
       ORDER BY request.id LIMIT ${batchSize}
     )
     SELECT id, user_id FROM (SELECT * FROM orphan_ids UNION ALL SELECT * FROM active_ids) candidates
@@ -74,8 +80,8 @@ export async function claimRecoverableDataRequests(
         AND request.failed_at IS NULL
         AND request.user_id = ANY(${activeUserIds}::uuid[])
         AND (
-          (request.processing_started_at IS NULL AND request.dispatched_at < NOW() - INTERVAL '5 minutes')
-          OR request.processing_started_at < NOW() - INTERVAL '30 minutes'
+          (request.processing_started_at IS NULL AND request.dispatched_at < NOW() - ${ACCOUNT_DATA_REQUESTS_DISPATCH_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute')
+          OR request.processing_started_at < NOW() - ${ACCOUNT_DATA_REQUESTS_PROCESSING_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute'
         )
       ORDER BY request.id
       LIMIT ${batchSize}
@@ -83,13 +89,13 @@ export async function claimRecoverableDataRequests(
     )
     UPDATE user_data_requests request
     SET processing_attempt_id = CASE
-          WHEN request.processing_started_at < NOW() - INTERVAL '30 minutes'
+          WHEN request.processing_started_at < NOW() - ${ACCOUNT_DATA_REQUESTS_PROCESSING_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute'
           THEN uuidv7()
           ELSE request.processing_attempt_id
         END,
         dispatched_at = CURRENT_TIMESTAMP,
         processing_started_at = CASE
-          WHEN request.processing_started_at < NOW() - INTERVAL '30 minutes'
+          WHEN request.processing_started_at < NOW() - ${ACCOUNT_DATA_REQUESTS_PROCESSING_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute'
           THEN NULL
           ELSE request.processing_started_at
         END

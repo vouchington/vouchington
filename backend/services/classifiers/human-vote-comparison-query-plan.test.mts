@@ -1,3 +1,4 @@
+import { getClassifiersWorkLimit } from './work-limits.mts'
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
   analyzeClassifierComparisonPlanTables,
@@ -17,10 +18,7 @@ import {
 } from '../../test-helpers/query-capture.mts'
 import { explainCapturedTestQuery } from '../../test-helpers/query-plans.mts'
 import { getClassifierHumanVoteComparison } from './get-classifier-human-vote-comparison.mts'
-import {
-  CLASSIFIER_COMPARISON_MAX_BATCHES,
-  type ClassifierHumanVoteComparisonOptions,
-} from './human-vote-comparison-types.mts'
+import type { ClassifierHumanVoteComparisonOptions } from './human-vote-comparison-types.mts'
 
 const WINDOW = { from: seedMoment(-6), to: seedMoment(6) }
 const PLAN_MODES = ['force_custom_plan', 'force_generic_plan'] as const
@@ -72,7 +70,7 @@ describe('classifier human vote comparison query plan', () => {
     // it, and another classifier fills the same window; the report may read none of the excess.
     await insertCompletedEmptyBatches(
       target,
-      CLASSIFIER_COMPARISON_MAX_BATCHES + 100,
+      getClassifiersWorkLimit('comparison_max_batches') + 100,
       seedMoment(0),
     )
     await insertCompletedEmptyBatches(target, 400, seedMoment(-12))
@@ -112,7 +110,7 @@ describe('classifier human vote comparison query plan', () => {
         expect(ALLOWED_INDEXES[filter]).toContain(scan.indexName)
         expect(scan.condition).toMatch(/\bid >= /)
         expect(scan.condition).toMatch(/\bid < /)
-        expect(scan.work).toBeLessThanOrEqual(CLASSIFIER_COMPARISON_MAX_BATCHES + 1)
+        expect(scan.work).toBeLessThanOrEqual(getClassifiersWorkLimit('comparison_max_batches') + 1)
       }
     })
   })

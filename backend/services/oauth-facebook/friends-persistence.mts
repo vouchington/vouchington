@@ -1,12 +1,12 @@
+import { getOauthFacebookWorkLimit } from './work-limits.mts'
 import { beginTransaction, write } from '@data-stores/psql'
-
-const FRIEND_MUTATION_BATCH_SIZE = 1000
 
 export async function persistFacebookFriendPage(
   facebookUserId: string,
   userId: string,
   friendIds: string[],
 ): Promise<boolean> {
+  const FRIEND_MUTATION_BATCH_SIZE = getOauthFacebookWorkLimit('friend_mutation_batch_size')
   const sortedFriendIds = [...new Set(friendIds)].toSorted()
   for (let offset = 0; offset < sortedFriendIds.length; offset += FRIEND_MUTATION_BATCH_SIZE) {
     const batch = sortedFriendIds.slice(offset, offset + FRIEND_MUTATION_BATCH_SIZE)
@@ -22,10 +22,11 @@ export async function finalizeFacebookFriendSync(
   userId: string,
   syncStartTime: string,
 ): Promise<void> {
+  const batchSize = getOauthFacebookWorkLimit('friend_mutation_batch_size')
   while (true) {
     // Candidate discovery does not hold the deletion fence; only the bounded mutation page does.
     // oxlint-disable-next-line no-await-in-loop -- each page commits before selecting its successor.
-    const staleFriendIds = await getStaleFacebookFriendIds(facebookUserId, syncStartTime)
+    const staleFriendIds = await getStaleFacebookFriendIds(facebookUserId, syncStartTime, batchSize)
     if (staleFriendIds.length === 0) {
       // oxlint-disable-next-line no-await-in-loop -- completion follows the final bounded candidate read.
       await markFacebookFriendSyncComplete(facebookUserId, userId)
@@ -66,6 +67,7 @@ async function persistFacebookFriendBatch(
 async function getStaleFacebookFriendIds(
   facebookUserId: string,
   syncStartTime: string,
+  batchSize: number,
 ): Promise<string[]> {
   const { rows } = await write(
     `/* getStaleFacebookFriendIds */ SELECT facebook_friend_id
@@ -73,7 +75,7 @@ async function getStaleFacebookFriendIds(
      WHERE facebook_user_id = $1 AND updated_at <= $2::timestamptz
      ORDER BY facebook_friend_id
      LIMIT $3`,
-    [facebookUserId, syncStartTime, FRIEND_MUTATION_BATCH_SIZE],
+    [facebookUserId, syncStartTime, batchSize],
   )
   return rows.map(row => (row as { facebook_friend_id: string }).facebook_friend_id)
 }

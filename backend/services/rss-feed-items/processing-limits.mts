@@ -1,8 +1,5 @@
 export const RSS_FEED_FETCH_MAX_ITEMS = 500
 export const RSS_FEED_ITEM_MAX_CATEGORIES = 20
-export const RSS_FEED_ITEM_SQL_BATCH_SIZE = 250
-export const RSS_FEED_ITEM_CATEGORY_SQL_BATCH_SIZE = 1000
-export const RSS_FEED_ITEM_ENQUEUE_BATCH_SIZE = 1000
 
 export type RssFeedItemCategoryAnalysis = {
   categories: string[]

@@ -1,3 +1,4 @@
+import { getMediaDeliverySafetyWorkLimit } from './work-limits.mts'
 import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
@@ -56,6 +57,7 @@ export async function stageCurrentImagePlacementDeliveryRecordsForImageIds(
 export async function stageAllCurrentImagePlacementDeliveryRecords(
   imageIds?: readonly string[],
 ): Promise<number> {
+  const WORK_PAGE_SIZE = getMediaDeliverySafetyWorkLimit('registry_reconciliation_page_size')
   if (imageIds?.length === 0) return 0
   observeSharedDbScope('stageAllCurrentImagePlacementDeliveryRecords', sharedDbIdsScope(imageIds))
   const imageIdScope = imageIds ? [...imageIds] : null
@@ -81,7 +83,7 @@ export async function stageAllCurrentImagePlacementDeliveryRecords(
     ) SELECT intended.* FROM intended
       LEFT JOIN media_delivery_registry_records existing USING (delivery_key)
       WHERE existing.delivery_key IS NULL OR existing.desired_state IS DISTINCT FROM intended.desired_state
-      ORDER BY intended.delivery_key LIMIT 1000
+      ORDER BY intended.delivery_key LIMIT ${WORK_PAGE_SIZE}
   `)
   const { rows } = await read<Omit<ImageDeliveryRecord, 'generation'>>(statement)
   for (const record of rows) {

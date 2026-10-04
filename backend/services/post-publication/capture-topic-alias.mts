@@ -1,9 +1,6 @@
+import { getPostPublicationWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { retainPostPublicationImpactKeys } from './capture-keys.mts'
-import {
-  POST_PUBLICATION_CAPTURE_BATCH_SIZE,
-  POST_PUBLICATION_DIRTY_WORK_KEY_BATCH_SIZE,
-} from './constants.mts'
 import { normalizePostPublicationIdentifiers } from './identifiers.mts'
 import { upsertPostPublicationDirtyWork } from './upsert-dirty-work.mts'
 
@@ -11,6 +8,7 @@ export async function recordTopicAliasPublicationWork(
   query: TransactionQuery,
   topicAliasIds: readonly string[],
 ): Promise<void> {
+  const POST_PUBLICATION_CAPTURE_BATCH_SIZE = getPostPublicationWorkLimit('capture_batch_size')
   const ids = normalizePostPublicationIdentifiers(topicAliasIds)
   for (let offset = 0; offset < ids.length; offset += POST_PUBLICATION_CAPTURE_BATCH_SIZE) {
     const batch = ids.slice(offset, offset + POST_PUBLICATION_CAPTURE_BATCH_SIZE)
@@ -26,6 +24,7 @@ export async function lockTopicAliasPublicationScopes(
   query: TransactionQuery,
   topicAliasIds: readonly string[],
 ): Promise<void> {
+  const POST_PUBLICATION_CAPTURE_BATCH_SIZE = getPostPublicationWorkLimit('capture_batch_size')
   const ids = normalizePostPublicationIdentifiers(topicAliasIds)
   for (let offset = 0; offset < ids.length; offset += POST_PUBLICATION_CAPTURE_BATCH_SIZE) {
     const batch = ids.slice(offset, offset + POST_PUBLICATION_CAPTURE_BATCH_SIZE)
@@ -44,6 +43,9 @@ export async function retainTopicAliasPublicationPostImpacts(
   dirtyWorkId: string,
   topicAliasId: string,
 ): Promise<void> {
+  const POST_PUBLICATION_DIRTY_WORK_KEY_BATCH_SIZE = getPostPublicationWorkLimit(
+    'dirty_work_key_batch_size',
+  )
   let afterPostId: string | null = null
   while (true) {
     // oxlint-disable-next-line no-await-in-loop -- each ownership page and retained-key write is bounded.

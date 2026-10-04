@@ -1,3 +1,4 @@
+import { getMembershipWorkLimit } from '@services/memberships/work-limits'
 import { createHash } from 'node:crypto'
 import { write } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
@@ -12,7 +13,6 @@ import sql from 'sql-template-strings'
 import type { GooglePlaySubscriptionsV2Client } from './types.mts'
 
 const RECOVERY_CURSOR_ID = 'active_sources'
-const RECOVERY_BATCH_SIZE = 500
 const SWEEP_BUCKET_MS = 60 * 60 * 1000
 
 export type GooglePlayActiveSourceRecoveryBatch = {
@@ -26,13 +26,18 @@ export type GooglePlayActiveSourceRecoveryBatch = {
 
 /** Finds bounded, currently active or recently stale direct Google sources. */
 export async function findRecoverableGooglePlayActiveSourceJobs(): Promise<GooglePlayActiveSourceRecoveryBatch> {
+  const RECOVERY_BATCH_SIZE = getMembershipWorkLimit('source_recovery_batch_size')
   const cursor = await beginGooglePlayRecoverySweep({
     cursorId: RECOVERY_CURSOR_ID,
     findUpperBound: findActiveSourceSweepUpperBound,
   })
   const page = pageGooglePlayRecoveryItems(
     cursor,
-    await findSourcesAfterCursor(cursor.previousCursor, cursor.sweepUpperBound),
+    await findSourcesAfterCursor(
+      cursor.previousCursor,
+      cursor.sweepUpperBound,
+      RECOVERY_BATCH_SIZE,
+    ),
     RECOVERY_BATCH_SIZE,
   )
   return { ...page, sourceIds: page.items.map(item => item.id) }
@@ -79,7 +84,11 @@ export async function reconcileGooglePlayActiveSource(options: {
   await processGooglePlayMembershipVerification(verification.id, { client: options.client })
 }
 
-async function findSourcesAfterCursor(cursor: string | null, upperBound: string | null) {
+async function findSourcesAfterCursor(
+  cursor: string | null,
+  upperBound: string | null,
+  RECOVERY_BATCH_SIZE: number,
+) {
   const { rows } = await write<{
     sourceId: string
   }>(sql`/* findGooglePlayActiveSourceRecoveryBatch.sources */

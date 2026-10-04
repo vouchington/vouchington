@@ -1,12 +1,12 @@
+import { getOauthGithubWorkLimit } from './work-limits.mts'
 import { beginTransaction, write } from '@data-stores/psql'
-
-const FRIEND_MUTATION_BATCH_SIZE = 1000
 
 export async function persistGithubFriendPage(
   githubUserId: string,
   userId: string,
   friendIds: string[],
 ): Promise<boolean> {
+  const FRIEND_MUTATION_BATCH_SIZE = getOauthGithubWorkLimit('friend_mutation_batch_size')
   const sortedFriendIds = [...new Set(friendIds)].toSorted()
   for (let offset = 0; offset < sortedFriendIds.length; offset += FRIEND_MUTATION_BATCH_SIZE) {
     const batch = sortedFriendIds.slice(offset, offset + FRIEND_MUTATION_BATCH_SIZE)
@@ -22,9 +22,10 @@ export async function finalizeGithubFriendSync(
   userId: string,
   syncStartTime: string,
 ): Promise<void> {
+  const batchSize = getOauthGithubWorkLimit('friend_mutation_batch_size')
   while (true) {
     // oxlint-disable-next-line no-await-in-loop -- each bounded candidate page follows the previous commit.
-    const staleFriendIds = await getStaleGithubFriendIds(githubUserId, syncStartTime)
+    const staleFriendIds = await getStaleGithubFriendIds(githubUserId, syncStartTime, batchSize)
     if (staleFriendIds.length === 0) {
       // oxlint-disable-next-line no-await-in-loop -- completion follows the final bounded candidate read.
       await markGithubFriendSyncComplete(githubUserId, userId)
@@ -64,6 +65,7 @@ async function persistGithubFriendBatch(
 async function getStaleGithubFriendIds(
   githubUserId: string,
   syncStartTime: string,
+  batchSize: number,
 ): Promise<string[]> {
   const { rows } = await write(
     `/* getStaleGithubFriendIds */ SELECT github_friend_id
@@ -71,7 +73,7 @@ async function getStaleGithubFriendIds(
      WHERE github_user_id = $1 AND updated_at <= $2::timestamptz
      ORDER BY github_friend_id
      LIMIT $3`,
-    [githubUserId, syncStartTime, FRIEND_MUTATION_BATCH_SIZE],
+    [githubUserId, syncStartTime, batchSize],
   )
   return rows.map(row => (row as { github_friend_id: string }).github_friend_id)
 }

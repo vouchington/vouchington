@@ -1,12 +1,15 @@
 import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { JobOptions } from 'glide-mq'
-import { ADMIN_IMPORTS_DEFAULTS, PRIORITY_DEFAULT, QUEUE_NAME } from './config.mts'
+import {
+  ADMIN_IMPORTS_DEFAULTS,
+  PRIORITY_DEFAULT,
+  QUEUE_NAME,
+  getAdminImportsWorkLimit,
+} from './config.mts'
 import { adminImports } from './queues.mts'
 import type { AdminImportJobs } from './types.mts'
 
 type ImportRowJob = { batchId: string; rowId: string }
-
-const ENQUEUE_CHUNK_SIZE = 1000
 
 const JOB_NAME: AdminImportJobs = 'processImportRow'
 const buildImportRowJobId = (rowId: string) => `import-row__${rowId}`
@@ -38,6 +41,7 @@ const enqueueBulkImportRowJobs = createBulkEnqueueFunction<
 })
 
 export async function enqueueBulkImportRows(jobs: ImportRowJob[]): Promise<void> {
+  const ENQUEUE_CHUNK_SIZE = getAdminImportsWorkLimit('enqueue_chunk_size')
   for (let i = 0; i < jobs.length; i += ENQUEUE_CHUNK_SIZE) {
     const chunk = jobs.slice(i, i + ENQUEUE_CHUNK_SIZE)
     // oxlint-disable-next-line no-await-in-loop -- one chunk must settle before the next to bound queue enqueue backpressure

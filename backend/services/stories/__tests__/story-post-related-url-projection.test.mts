@@ -1,3 +1,4 @@
+import { getStoriesWorkLimit } from '@services/stories/work-limits'
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
   createTestUserDirect,
@@ -16,7 +17,6 @@ import type { PrivateUser } from '@services/users/types'
 import { createStoryPost } from '../story-posts.mts'
 import { refreshStoryPostForStory } from '../refresh-story-post.mts'
 import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
-import { STORY_POST_RELATED_URL_PROJECTION_PAGE_SIZE } from '../story-post-related-url-projection-source.mts'
 
 let testUser: PrivateUser
 
@@ -56,7 +56,8 @@ describe('story post related URL projection', () => {
       let processed = 0
       let maxPageSize = 0
       let observedReceiptCount: number | undefined
-      const iterationLimit = Math.ceil(itemCount / STORY_POST_RELATED_URL_PROJECTION_PAGE_SIZE) + 10
+      const iterationLimit =
+        Math.ceil(itemCount / getStoriesWorkLimit('post_related_url_projection_page_size')) + 10
       for (let iteration = 0; iteration < iterationLimit; iteration += 1) {
         const result = await reconcileStoryPostRelatedUrlProjection({ postId: post.id })
         maxPageSize = Math.max(maxPageSize, result.processed)
@@ -67,7 +68,9 @@ describe('story post related URL projection', () => {
         if (!result.continue) break
       }
 
-      expect(maxPageSize).toBeLessThanOrEqual(STORY_POST_RELATED_URL_PROJECTION_PAGE_SIZE)
+      expect(maxPageSize).toBeLessThanOrEqual(
+        getStoriesWorkLimit('post_related_url_projection_page_size'),
+      )
       expect(processed).toBe(itemCount)
       expect(observedReceiptCount).toBe(1)
       await expect(getPostRelatedUrlIds(post.id)).resolves.toEqual([url!.id])

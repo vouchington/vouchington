@@ -1,12 +1,12 @@
+import { getOauthXWorkLimit } from './work-limits.mts'
 import { beginTransaction, write } from '@data-stores/psql'
-
-const FRIEND_MUTATION_BATCH_SIZE = 1000
 
 export async function persistXFriendPage(
   xUserId: string,
   userId: string,
   friendIds: string[],
 ): Promise<boolean> {
+  const FRIEND_MUTATION_BATCH_SIZE = getOauthXWorkLimit('friend_mutation_batch_size')
   const sortedFriendIds = [...new Set(friendIds)].toSorted()
   for (let offset = 0; offset < sortedFriendIds.length; offset += FRIEND_MUTATION_BATCH_SIZE) {
     const batch = sortedFriendIds.slice(offset, offset + FRIEND_MUTATION_BATCH_SIZE)
@@ -22,9 +22,10 @@ export async function finalizeXFriendSync(
   userId: string,
   syncStartTime: string,
 ): Promise<void> {
+  const batchSize = getOauthXWorkLimit('friend_mutation_batch_size')
   while (true) {
     // oxlint-disable-next-line no-await-in-loop -- each bounded candidate page follows the previous commit.
-    const staleFriendIds = await getStaleXFriendIds(xUserId, syncStartTime)
+    const staleFriendIds = await getStaleXFriendIds(xUserId, syncStartTime, batchSize)
     if (staleFriendIds.length === 0) {
       // oxlint-disable-next-line no-await-in-loop -- completion follows the final bounded candidate read.
       await markXFriendSyncComplete(xUserId, userId)
@@ -56,14 +57,18 @@ async function persistXFriendBatch(
   return true
 }
 
-async function getStaleXFriendIds(xUserId: string, syncStartTime: string): Promise<string[]> {
+async function getStaleXFriendIds(
+  xUserId: string,
+  syncStartTime: string,
+  batchSize: number,
+): Promise<string[]> {
   const { rows } = await write(
     `/* getStaleXFriendIds */ SELECT x_friend_id
      FROM x_friends
      WHERE x_user_id = $1 AND updated_at <= $2::timestamptz
      ORDER BY x_friend_id
      LIMIT $3`,
-    [xUserId, syncStartTime, FRIEND_MUTATION_BATCH_SIZE],
+    [xUserId, syncStartTime, batchSize],
   )
   return rows.map(row => (row as { x_friend_id: string }).x_friend_id)
 }

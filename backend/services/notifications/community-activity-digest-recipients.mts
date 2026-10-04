@@ -1,7 +1,6 @@
+import { getNotificationsWorkLimit } from './work-limits.mts'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-
-export const COMMUNITY_ACTIVITY_DIGEST_RECIPIENT_BATCH_SIZE = 250
 
 export function getPreviousClosedMondayWindow(now: Date): { start: Date; end: Date } {
   const end = new Date(now)
@@ -13,6 +12,9 @@ export function getPreviousClosedMondayWindow(now: Date): { start: Date; end: Da
 }
 
 export async function listCommunityActivityDigestRecipientPage(afterUserId?: string) {
+  const COMMUNITY_ACTIVITY_DIGEST_RECIPIENT_BATCH_SIZE = getNotificationsWorkLimit(
+    'community_digest_recipient_batch_size',
+  )
   const query = sql`/* listCommunityActivityDigestRecipients */
     SELECT DISTINCT cm.user_id
     FROM community_members cm

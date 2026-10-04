@@ -1,9 +1,7 @@
+import { getRssFeedItemsWorkLimit } from './work-limits.mts'
 import { write } from '@data-stores/psql'
 import { isUUID } from '@modules/utils'
 import sql from 'sql-template-strings'
-
-export const RSS_FEED_ITEM_SOURCE_PUBLICATION_BACKFILL_BATCH_SIZE = 500
-export const RSS_FEED_ITEM_SOURCE_PUBLICATION_BACKFILL_MAX_BATCH_SIZE = 1_000
 
 /**
  * Restrict an operational backfill run to an independently retryable feed shard.
@@ -16,10 +14,14 @@ export type RssFeedItemSourcePublicationBackfillScope = {
 }
 
 export async function backfillRssFeedItemSourcePublications(
-  batchSize = RSS_FEED_ITEM_SOURCE_PUBLICATION_BACKFILL_BATCH_SIZE,
+  requestedBatchSize?: number,
   scope?: RssFeedItemSourcePublicationBackfillScope,
 ): Promise<number> {
-  assertRssFeedItemSourcePublicationBackfillBatchSize(batchSize)
+  const maximum = getRssFeedItemsWorkLimit('source_publication_backfill_max_batch_size')
+  const batchSize =
+    requestedBatchSize ??
+    Math.min(getRssFeedItemsWorkLimit('source_publication_backfill_batch_size'), maximum)
+  assertRssFeedItemSourcePublicationBackfillBatchSize(batchSize, maximum)
   const scopeCondition = buildBackfillScopeCondition(scope)
   const query = sql`/* backfillRssFeedItemSourcePublications */
     WITH candidates AS MATERIALIZED (
@@ -62,7 +64,12 @@ export async function hasRssFeedItemSourcesMissingPublication(
   return rows[0]?.has_missing ?? false
 }
 
-export function assertRssFeedItemSourcePublicationBackfillBatchSize(batchSize: number): void {
+export function assertRssFeedItemSourcePublicationBackfillBatchSize(
+  batchSize: number,
+  RSS_FEED_ITEM_SOURCE_PUBLICATION_BACKFILL_MAX_BATCH_SIZE = getRssFeedItemsWorkLimit(
+    'source_publication_backfill_max_batch_size',
+  ),
+): void {
   if (
     !Number.isSafeInteger(batchSize) ||
     batchSize < 1 ||

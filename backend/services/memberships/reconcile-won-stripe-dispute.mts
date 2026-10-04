@@ -1,3 +1,4 @@
+import { getMembershipWorkLimit } from './work-limits.mts'
 import * as stripeDisputes from '@modules/stripe/disputes'
 import * as stripeInvoices from '@modules/stripe/invoices'
 import * as stripeRefunds from '@modules/stripe/refunds'
@@ -19,7 +20,9 @@ import {
 import type { IneligibleStripePurchaseOperations } from './reverse-ineligible-stripe-purchase-types.mts'
 
 type WonStripeDisputeOperations = IneligibleStripePurchaseOperations & {
-  getWonStripeDisputeInvoice: typeof stripeDisputes.getWonStripeDisputeInvoice
+  getWonStripeDisputeInvoice: (
+    id: string,
+  ) => ReturnType<typeof stripeDisputes.getWonStripeDisputeInvoice>
 }
 
 export async function reconcileWonStripeDispute(options: {
@@ -100,13 +103,22 @@ export async function reconcileWonStripeDispute(options: {
 }
 
 function getStripeOperations(): WonStripeDisputeOperations {
+  const invoiceLimits = {
+    invoicePages: getMembershipWorkLimit('stripe_subscription_invoice_max_pages'),
+    paymentPages: getMembershipWorkLimit('stripe_invoice_payment_max_pages'),
+    linePages: getMembershipWorkLimit('stripe_invoice_line_max_pages'),
+  }
+  const disputePages = getMembershipWorkLimit('stripe_dispute_max_pages')
   return {
     cancelSubscriptionImmediately: stripeSubscriptions.cancelStripeSubscriptionImmediately,
     createRefund: stripeRefunds.createStripeRefund,
-    getDisputeSettlementForPayment: stripeDisputes.getStripeDisputeSettlementForPayment,
-    getWonStripeDisputeInvoice: stripeDisputes.getWonStripeDisputeInvoice,
+    getDisputeSettlementForPayment: options =>
+      stripeDisputes.getStripeDisputeSettlementForPayment(options, disputePages),
+    getWonStripeDisputeInvoice: id =>
+      stripeDisputes.getWonStripeDisputeInvoice(id, invoiceLimits.paymentPages),
     retrieveRefund: stripeRefunds.getStripeRefund,
-    listSubscriptionInvoices: stripeInvoices.listAllStripeSubscriptionInvoices,
+    listSubscriptionInvoices: id =>
+      stripeInvoices.listAllStripeSubscriptionInvoices(id, invoiceLimits),
     listRefundsForPaymentPage: stripeRefunds.listStripeRefundsForPaymentPage,
   }
 }

@@ -1,3 +1,4 @@
+import { getRssFeedItemsWorkLimit } from '@services/rss-feed-items/work-limits'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { upsertRssFeedItems } from '../upsert.mts'
@@ -15,10 +16,7 @@ import {
   insertTestRssFeedDirect,
 } from '@voucha/test-helpers'
 
-import {
-  RSS_FEED_ITEM_MAX_CATEGORIES,
-  RSS_FEED_ITEM_SQL_BATCH_SIZE,
-} from '../processing-limits.mts'
+import { RSS_FEED_ITEM_MAX_CATEGORIES } from '../processing-limits.mts'
 
 describe('upsert.generated', () => {
   afterEach(() => {
@@ -263,11 +261,14 @@ describe('upsert.generated', () => {
     const feed = await insertTestRssFeedDirect({})
     const random = Math.random().toString(36).slice(2, 15)
     const guid = `chunk-dup-${random}`
-    const middleItems = Array.from({ length: RSS_FEED_ITEM_SQL_BATCH_SIZE - 1 }, (_, index) => ({
-      link: `https://example.com/chunk-${random}-${index}`,
-      guid: `chunk-${random}-${index}`,
-      title: `Chunk item ${index}`,
-    }))
+    const middleItems = Array.from(
+      { length: getRssFeedItemsWorkLimit('sql_batch_size') - 1 },
+      (_, index) => ({
+        link: `https://example.com/chunk-${random}-${index}`,
+        guid: `chunk-${random}-${index}`,
+        title: `Chunk item ${index}`,
+      }),
+    )
 
     const items = await upsertRssFeedItems(feed.id, [
       {
@@ -283,7 +284,7 @@ describe('upsert.generated', () => {
       },
     ])
 
-    expect(items).toHaveLength(RSS_FEED_ITEM_SQL_BATCH_SIZE)
+    expect(items).toHaveLength(getRssFeedItemsWorkLimit('sql_batch_size'))
     expect(await getRssFeedItemTitleByGuidForTest(guid)).toBe('New chunk version')
     const duplicate = await upsertRssFeedItems(feed.id, [
       {

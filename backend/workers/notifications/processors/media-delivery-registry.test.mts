@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { mediaDeliverySafetyWorkConfig } from '@services/media-delivery-safety/work-limits'
 import type { enqueueApplyMediaDeliveryRegistryRecord } from '@queues/notifications/enqueues'
 import type {
   listRecoverableMediaDeliveryRegistryKeys,
@@ -42,42 +44,54 @@ describe('media delivery registry processors', () => {
     )
   })
 
-  it('stages current placements then re-enqueues only recoverable registry keys', async () => {
-    const list = vi.fn<typeof listRecoverableMediaDeliveryRegistryKeys>().mockResolvedValue({
-      results: [
-        'image-placement:00000000-0000-7000-8000-000000000001:1:00000000-0000-7000-8000-000000000002',
-        'image-placement:00000000-0000-7000-8000-000000000003:0:00000000-0000-7000-8000-000000000004',
-      ],
-      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-    })
-    const enqueue = vi
-      .fn<typeof enqueueApplyMediaDeliveryRegistryRecord>()
-      .mockResolvedValue(undefined)
-    const stage = vi.fn<typeof stageAllCurrentImagePlacementDeliveryRecords>().mockResolvedValue(2)
-    const repair = vi.fn<typeof reconcileMediaDeliveryRepairMarkers>().mockResolvedValue(0)
-    const now = new Date('2026-07-01T12:00:00.000Z')
+  it.each([100, 1])(
+    'uses configured recovery page size %i for repairs and discovery',
+    async pageSize => {
+      const restore = overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, {
+        recovery_page_size: pageSize,
+      })
+      try {
+        const list = vi.fn<typeof listRecoverableMediaDeliveryRegistryKeys>().mockResolvedValue({
+          results: [
+            'image-placement:00000000-0000-7000-8000-000000000001:1:00000000-0000-7000-8000-000000000002',
+            'image-placement:00000000-0000-7000-8000-000000000003:0:00000000-0000-7000-8000-000000000004',
+          ],
+          page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+        })
+        const enqueue = vi
+          .fn<typeof enqueueApplyMediaDeliveryRegistryRecord>()
+          .mockResolvedValue(undefined)
+        const stage = vi
+          .fn<typeof stageAllCurrentImagePlacementDeliveryRecords>()
+          .mockResolvedValue(2)
+        const repair = vi.fn<typeof reconcileMediaDeliveryRepairMarkers>().mockResolvedValue(0)
+        const now = new Date('2026-07-01T12:00:00.000Z')
 
-    await expect(
-      processReconcileMediaDeliveryRegistry(
-        {},
-        {
-          listRecoverableMediaDeliveryRegistryKeys: list,
-          enqueueApplyMediaDeliveryRegistryRecord: enqueue,
-          stageAllCurrentImagePlacementDeliveryRecords: stage,
-          reconcileMediaDeliveryRepairMarkers: repair,
-          now: () => now,
-          getMediaDeliveryRegistryScanBefore: async () => now.toISOString(),
-          failExpiredExhaustedMediaDeliveryRegistryRecords: async () => 0,
-        },
-      ),
-    ).resolves.toEqual({ enqueued: 2 })
-    expect(stage).toHaveBeenCalledOnce()
-    expect(repair).toHaveBeenCalledWith(100)
-    expect(list).toHaveBeenCalledWith({
-      limit: 100,
-      scanBefore: now.toISOString(),
-      after: undefined,
-    })
-    expect(enqueue).toHaveBeenCalledTimes(2)
-  })
+        await expect(
+          processReconcileMediaDeliveryRegistry(
+            {},
+            {
+              listRecoverableMediaDeliveryRegistryKeys: list,
+              enqueueApplyMediaDeliveryRegistryRecord: enqueue,
+              stageAllCurrentImagePlacementDeliveryRecords: stage,
+              reconcileMediaDeliveryRepairMarkers: repair,
+              now: () => now,
+              getMediaDeliveryRegistryScanBefore: async () => now.toISOString(),
+              failExpiredExhaustedMediaDeliveryRegistryRecords: async () => 0,
+            },
+          ),
+        ).resolves.toEqual({ enqueued: 2 })
+        expect(stage).toHaveBeenCalledOnce()
+        expect(repair).toHaveBeenCalledWith(pageSize)
+        expect(list).toHaveBeenCalledWith({
+          limit: pageSize,
+          scanBefore: now.toISOString(),
+          after: undefined,
+        })
+        expect(enqueue).toHaveBeenCalledTimes(2)
+      } finally {
+        restore()
+      }
+    },
+  )
 })

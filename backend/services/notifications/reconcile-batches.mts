@@ -1,3 +1,4 @@
+import { getNotificationsWorkLimit } from './work-limits.mts'
 import { randomUUID } from 'node:crypto'
 import { writePool, type PoolClient } from '@data-stores/psql'
 import onError from '@modules/on-error'
@@ -25,12 +26,11 @@ type CreatedNotificationCursor = {
   lastNotificationId: string
 }
 
-const DEFAULT_RECONCILE_BATCH_SIZE = 500
-
 export async function reconcileNotificationBatches(
   config: ReconcileNotificationBatchConfig,
   options: ReconcileNotificationsOptions = {},
 ): Promise<{ created: number; pruned: number }> {
+  const DEFAULT_RECONCILE_BATCH_SIZE = getNotificationsWorkLimit('reconcile_batch_size')
   const batchSize = options.batchSize ?? DEFAULT_RECONCILE_BATCH_SIZE
   if (!Number.isInteger(batchSize) || batchSize <= 0) {
     throw new Error('batchSize must be a positive integer')

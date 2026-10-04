@@ -1,13 +1,15 @@
+import { getPostPublicationWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import { retainPostPublicationImpactKeys } from './capture-keys.mts'
-
-const RSS_FEED_HARD_DELETE_CAPTURE_BATCH_SIZE = 500
 
 export async function retainRssFeedHardDeleteTopicImpacts(
   query: TransactionQuery,
   rssFeedId: string,
   dirtyWorkId: string,
 ): Promise<void> {
+  const RSS_FEED_HARD_DELETE_CAPTURE_BATCH_SIZE = getPostPublicationWorkLimit(
+    'rss_feed_hard_delete_capture_batch_size',
+  )
   let afterTopicId: string | null = null
   while (true) {
     // oxlint-disable-next-line no-await-in-loop -- each retained topic page is bounded.

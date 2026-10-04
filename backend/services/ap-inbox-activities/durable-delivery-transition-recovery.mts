@@ -1,3 +1,4 @@
+import { getApInboxActivitiesWorkLimit } from './work-limits.mts'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
@@ -6,6 +7,13 @@ import type { RecoverableActivityPubInboxDelivery } from './durable-delivery-tra
 export async function recoverActivityPubInboxDeliveries(
   deliveryIds?: readonly string[],
 ): Promise<RecoverableActivityPubInboxDelivery[]> {
+  const AP_INBOX_ACTIVITIES_DISPATCH_TIMEOUT_MINUTES = getApInboxActivitiesWorkLimit(
+    'dispatch_timeout_minutes',
+  )
+  const AP_INBOX_ACTIVITIES_PROCESSING_TIMEOUT_MINUTES = getApInboxActivitiesWorkLimit(
+    'processing_timeout_minutes',
+  )
+  const WORK_PAGE_SIZE = getApInboxActivitiesWorkLimit('delivery_transition_recovery_batch_size')
   if (deliveryIds?.length === 0) return []
   observeSharedDbScope('recoverActivityPubInboxDeliveries', sharedDbIdsScope(deliveryIds))
   const idScope = deliveryIds ? [...deliveryIds] : null
@@ -21,12 +29,12 @@ export async function recoverActivityPubInboxDeliveries(
           (
             delivery.processing_at IS NULL
             AND COALESCE(delivery.enqueued_at, delivery.deferred_until, delivery.received_at)
-              < NOW() - INTERVAL '5 minutes'
+              < NOW() - ${AP_INBOX_ACTIVITIES_DISPATCH_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute'
           )
-          OR delivery.processing_at < NOW() - INTERVAL '30 minutes'
+          OR delivery.processing_at < NOW() - ${AP_INBOX_ACTIVITIES_PROCESSING_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute'
         )
       ORDER BY delivery.id
-      LIMIT 500
+      LIMIT ${WORK_PAGE_SIZE}
       FOR UPDATE SKIP LOCKED
     )
     UPDATE ap_inbox_deliveries delivery
@@ -45,6 +53,7 @@ export async function recoverActivityPubInboxDeliveries(
 export async function rearmFailedActivityPubInboxDeliveries(
   deliveryIds?: readonly string[],
 ): Promise<RecoverableActivityPubInboxDelivery[]> {
+  const WORK_PAGE_SIZE = getApInboxActivitiesWorkLimit('delivery_transition_recovery_batch_size')
   if (deliveryIds?.length === 0) return []
   observeSharedDbScope('rearmFailedActivityPubInboxDeliveries', sharedDbIdsScope(deliveryIds))
   const idScope = deliveryIds ? [...deliveryIds] : null
@@ -56,7 +65,7 @@ export async function rearmFailedActivityPubInboxDeliveries(
         AND (${idScope}::uuid[] IS NULL OR delivery.id = ANY(${idScope}::uuid[]))
         AND delivery.retention_expires_at > CURRENT_TIMESTAMP
       ORDER BY delivery.id
-      LIMIT 500
+      LIMIT ${WORK_PAGE_SIZE}
       FOR UPDATE SKIP LOCKED
     )
     UPDATE ap_inbox_deliveries delivery

@@ -1,3 +1,4 @@
+import { getModerationAnalyticsWorkLimit } from './work-limits.mts'
 /* oxlint-disable max-lines -- Moderation analytics keeps related SQL aggregates together for one dashboard contract. */
 import { read } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils/ids'
@@ -355,6 +356,7 @@ async function getModeratorWorkload(
   periodStartUuid: string,
   scope: ModerationAnalyticsScope,
 ): Promise<ModeratorWorkloadMetrics> {
+  const leaderboardPageSize = getModerationAnalyticsWorkLimit('leaderboard_page_size')
   const communityId = getCommunityId(scope)
   const { rows } = await read(sql`/* getModerationModeratorWorkload */
     WITH actions AS (
@@ -375,7 +377,7 @@ async function getModeratorWorkload(
       FROM actions
       GROUP BY actor_id
       ORDER BY total DESC
-      LIMIT 10
+      LIMIT ${leaderboardPageSize}
     ),
     actor_counts AS (
       SELECT

@@ -1,3 +1,4 @@
+import { getUrlsDomainsBlacklistWorkLimit } from './work-limits.mts'
 import { ValkeyBloomFilter, bloomValkeyClient } from '@data-stores/valkey'
 import { createAsyncGeneratorFromCursor, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -14,15 +15,15 @@ import onError from '@modules/on-error'
 import { warmUpBlocklistBloomFilter } from './warmup-orchestration.mts'
 import { withBlocklistBloomFilterLock } from './bloom-filter-lock.mts'
 
-const BATCH_SIZE = 10_000
-
-const emailBloomFilter = new ValkeyBloomFilter({
-  name: 'email-blocklist',
-  capacity: 500_000,
-  errorRate: 0.01,
-  batchSize: BATCH_SIZE,
-  client: bloomValkeyClient,
-})
+function getEmailBloomFilter() {
+  return new ValkeyBloomFilter({
+    name: 'email-blocklist',
+    capacity: 500_000,
+    errorRate: 0.01,
+    batchSize: getUrlsDomainsBlacklistWorkLimit('email_bloom_batch_size'),
+    client: bloomValkeyClient,
+  })
+}
 
 // Marker key set after each successful rebuild — used by reads as a reliable
 // readiness check instead of a bloom membership probe (which can false-positive).
@@ -72,7 +73,7 @@ async function repairStaleReadyMarkerIfFilterUnavailable(): Promise<void> {
       return
     }
 
-    if (await isUnavailableLiveFilterKey(emailBloomFilter.getConfig().liveKey)) {
+    if (await isUnavailableLiveFilterKey(getEmailBloomFilter().getConfig().liveKey)) {
       await enqueueRebuildAndInvalidateReadyMarker(false, readyValue)
       await unlinkReadyMarkerIfValue(BLOOM_READY_KEY, readyValue)
     }
@@ -98,8 +99,8 @@ export async function checkEmailBloomFilter(domain: string): Promise<boolean | n
   return checkBloomFilterRead({
     readyKey: BLOOM_READY_KEY,
     value: domain,
-    liveKey: emailBloomFilter.getConfig().liveKey,
-    existsIfReady: (readyKey, value) => emailBloomFilter.existsIfReady(readyKey, value),
+    liveKey: getEmailBloomFilter().getConfig().liveKey,
+    existsIfReady: (readyKey, value) => getEmailBloomFilter().existsIfReady(readyKey, value),
     repairUnavailableRead: repairEmailBlocklistUnavailableRead,
   })
 }
@@ -117,7 +118,7 @@ export async function addDomainsToEmailBloomFilter(domains: string[]): Promise<v
   })
 
   try {
-    await emailBloomFilter.addOrThrow(validDomains)
+    await getEmailBloomFilter().addOrThrow(validDomains)
   } catch (err) {
     onError(err instanceof Error ? err : new Error(String(err)))
     await enqueueRebuildAndInvalidateReadyMarker()
@@ -125,6 +126,7 @@ export async function addDomainsToEmailBloomFilter(domains: string[]): Promise<v
 }
 
 async function* emailBlocklistBatchesFromDb(): AsyncGenerator<string[]> {
+  const BATCH_SIZE = getUrlsDomainsBlacklistWorkLimit('email_bloom_batch_size')
   const batch: string[] = []
 
   for await (const row of createAsyncGeneratorFromCursor<{ domain: string }>(
@@ -149,7 +151,7 @@ async function* emailBlocklistBatchesFromDb(): AsyncGenerator<string[]> {
 
 export async function rebuildEmailBloomFilter(): Promise<void> {
   await withBlocklistBloomFilterLock('email-blocklist', async () => {
-    await emailBloomFilter.rebuildFromStream(emailBlocklistBatchesFromDb())
+    await getEmailBloomFilter().rebuildFromStream(emailBlocklistBatchesFromDb())
     await bloomValkeyClient.set(BLOOM_READY_KEY, newBloomReadyMarkerValue())
   })
 }
@@ -163,14 +165,14 @@ export async function rebuildEmailBloomFilter(): Promise<void> {
 export async function warmUpEmailBlocklistBloomFilter(): Promise<void> {
   await warmUpBlocklistBloomFilter({
     hasData: hasEmailBlocklistData,
-    isReady: () => emailBloomFilter.isReady(BLOOM_READY_KEY),
+    isReady: () => getEmailBloomFilter().isReady(BLOOM_READY_KEY),
     enqueueRebuild: enqueueEmailBlocklistRebuild,
   })
 }
 
 export async function deleteEmailBloomFilter(): Promise<void> {
   await withBlocklistBloomFilterLock('email-blocklist', () =>
-    emailBloomFilter.deleteWithAdditionalKeys([BLOOM_READY_KEY]),
+    getEmailBloomFilter().deleteWithAdditionalKeys([BLOOM_READY_KEY]),
   )
 }
 

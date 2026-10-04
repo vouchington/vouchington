@@ -1,10 +1,10 @@
+import { getHostnameBlockingWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { recordPostRelatedUrlPublicationChanges } from '@services/entity-relations/post-topic-publication'
 import { getEntityRelationUrlTables } from '@services/entity-relations/url-tables'
 import { lockPostPublicationPostScopes } from '@services/post-publication'
 
 const POST_RELATED_URL_TABLE = 'relation__post__related__url'
-const POST_RELATED_URL_DELETE_BATCH_SIZE = 500
 
 export async function softDeleteBlockedHostnameRelations(
   adminUserId: string,
@@ -69,6 +69,9 @@ async function deletePostRelatedUrls(
   hostnameIds: string[],
   query: TransactionQuery,
 ): Promise<number> {
+  const POST_RELATED_URL_DELETE_BATCH_SIZE = getHostnameBlockingWorkLimit(
+    'post_related_url_delete_batch_size',
+  )
   let totalDeleted = 0
   while (true) {
     // This discovery query deliberately does not lock relation rows: publication locks must be

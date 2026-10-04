@@ -114,6 +114,12 @@ export const operationalDynamicConfigRegistryEntries = [
     config: dataRetentionConfig,
     access: { update_roles: ['developer'] },
     fields: {
+      topic_import_attempt_batch_size: {
+        description: 'Topic import attempt rows per retention page.',
+        min_value: 1,
+        max_value: 250,
+        integer: true,
+      },
       batch_size: {
         description: 'Rows each data retention cleanup deletes per batch.',
         min_value: 1,

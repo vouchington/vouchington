@@ -1,3 +1,4 @@
+import { getRssFeedItemsWorkLimit } from './work-limits.mts'
 import { createRssFeedItemEmbeddingContent } from './content.mts'
 import { sanitizeRssFeedItemDates } from './dates.mts'
 import type { RssFeedItemToUpsert } from './types.mts'
@@ -5,11 +6,7 @@ import { isPublicHostname, normalizeUrlForUrlTable } from '@modules/utils/urls'
 import { addUrls } from '@services/urls'
 import onError from '@modules/on-error'
 import createHttpError from 'http-errors'
-import {
-  chunkArray,
-  normalizeRssFeedItemCategories,
-  RSS_FEED_ITEM_SQL_BATCH_SIZE,
-} from './processing-limits.mts'
+import { chunkArray, normalizeRssFeedItemCategories } from './processing-limits.mts'
 
 export type RssFeedItemWithHash = {
   feedItem: RssFeedItemToUpsert
@@ -18,6 +15,7 @@ export type RssFeedItemWithHash = {
 }
 
 export const prepareRssFeedItemsForUpsert = async (feedItems: RssFeedItemToUpsert[]) => {
+  const RSS_FEED_ITEM_SQL_BATCH_SIZE = getRssFeedItemsWorkLimit('sql_batch_size')
   const sanitizedFeedItems: RssFeedItemToUpsert[] = feedItems.map(feedItem => {
     const sanitized = sanitizeRssFeedItemDates(feedItem)
     const categories = normalizeRssFeedItemCategories(sanitized.categories)

@@ -1,3 +1,4 @@
+import { getEmbeddingReconciliationPageSize } from '@services/bedrock-embeddings/batch/config'
 import { beginTransaction, write } from '@data-stores/psql'
 import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
 import {
@@ -18,8 +19,6 @@ export type EmbeddingReconciliationPage = {
 
 export type EmbeddingReconciliationOptions = { after?: string; limit?: number }
 
-const DEFAULT_RECONCILIATION_PAGE_SIZE = 100
-
 export async function copyExistingEmbeddings(
   tableName: ReconciliationTable,
   options: EmbeddingReconciliationOptions = {},
@@ -27,11 +26,12 @@ export async function copyExistingEmbeddings(
   if (tableName !== 'posts' && tableName !== 'topics' && tableName !== 'rss_feed_items') {
     throw new Error(`Invalid table name: ${tableName}`)
   }
-  const requestedLimit = options.limit ?? DEFAULT_RECONCILIATION_PAGE_SIZE
+  const configuredPageSize = getEmbeddingReconciliationPageSize()
+  const requestedLimit = options.limit ?? configuredPageSize
   if (!Number.isSafeInteger(requestedLimit) || requestedLimit < 1) {
     throw new Error('Invalid embedding reconciliation page size')
   }
-  const limit = Math.min(requestedLimit, 100)
+  const limit = Math.min(requestedLimit, configuredPageSize)
   const scope = `embedding-reconciliation:${tableName}:id-asc`
   const afterId =
     options.after !== undefined

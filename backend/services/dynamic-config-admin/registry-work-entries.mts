@@ -1,8 +1,17 @@
+import {
+  copyrightNoticesAdditionalMaxValues,
+  copyrightSweepConfig,
+} from '@services/copyright-notices/work-limits'
+import {
+  accountDataRequestsAdditionalMaxValues,
+  dataRequestConfig,
+} from '@services/account-data-requests/work-limits'
 import { kagiSmallWebImportConfig } from '@services/kagi-smallweb/import-config'
 import { apiKeyExpiryConfig } from '@services/api-keys/work-limits'
-import { dataRequestConfig } from '@services/account-data-requests/work-limits'
-import { membershipWorkConfig } from '@services/memberships/work-limits'
-import { copyrightSweepConfig } from '@services/copyright-notices/work-limits'
+import {
+  membershipWorkConfig,
+  membershipAdditionalWorkMaxValues,
+} from '@services/memberships/work-limits'
 import { defineDynamicConfigNamespace } from './registry-descriptor.mts'
 
 export const workDynamicConfigRegistryEntries = [
@@ -29,6 +38,12 @@ export const workDynamicConfigRegistryEntries = [
     config: apiKeyExpiryConfig,
     access: { update_roles: ['developer'] },
     fields: {
+      bloom_batch_size: {
+        description: 'API key hashes per bloom population chunk.',
+        min_value: 1,
+        max_value: 10000,
+        integer: true,
+      },
       batch_size: {
         description: 'Maximum rows per page.',
         min_value: 1,
@@ -51,6 +66,12 @@ export const workDynamicConfigRegistryEntries = [
     config: dataRequestConfig,
     access: { update_roles: ['developer'] },
     fields: {
+      ...Object.fromEntries(
+        Object.entries(accountDataRequestsAdditionalMaxValues).map(([field, max_value]) => [
+          field,
+          { description: field.replaceAll('_', ' '), min_value: 1, max_value, integer: true },
+        ]),
+      ),
       batch_size: {
         description: 'Maximum rows per page.',
         min_value: 1,
@@ -73,6 +94,17 @@ export const workDynamicConfigRegistryEntries = [
     config: membershipWorkConfig,
     access: { update_roles: ['developer'] },
     fields: {
+      ...Object.fromEntries(
+        Object.entries(membershipAdditionalWorkMaxValues).map(([field, max_value]) => [
+          field,
+          {
+            description: `Membership processing ${field.replaceAll('_', ' ')}.`,
+            min_value: 1,
+            max_value,
+            integer: true,
+          },
+        ]),
+      ),
       batch_size: {
         description: 'Maximum rows per page.',
         min_value: 1,
@@ -95,6 +127,12 @@ export const workDynamicConfigRegistryEntries = [
     config: copyrightSweepConfig,
     access: { update_roles: ['developer'] },
     fields: {
+      ...Object.fromEntries(
+        Object.entries(copyrightNoticesAdditionalMaxValues).map(([field, max_value]) => [
+          field,
+          { description: field.replaceAll('_', ' '), min_value: 1, max_value, integer: true },
+        ]),
+      ),
       batch_size: {
         description: 'Maximum rows per page.',
         min_value: 1,

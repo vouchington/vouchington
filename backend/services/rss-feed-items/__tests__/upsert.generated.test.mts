@@ -1,3 +1,4 @@
+import { getRssFeedItemsWorkLimit } from '@services/rss-feed-items/work-limits'
 import { it, expect, describe } from 'vitest'
 
 import { upsertRssFeedItems } from '../upsert.mts'
@@ -6,10 +7,7 @@ import { getRssFeedItemById } from '../get.mts'
 
 import { getRssFeedItemTitleByGuidForTest, insertTestRssFeedDirect } from '@voucha/test-helpers'
 
-import {
-  RSS_FEED_ITEM_MAX_CATEGORIES,
-  RSS_FEED_ITEM_SQL_BATCH_SIZE,
-} from '../processing-limits.mts'
+import { RSS_FEED_ITEM_MAX_CATEGORIES } from '../processing-limits.mts'
 
 describe('upsert.generated', () => {
   it('upsertRssFeedItems creates new items', async () => {
@@ -285,5 +283,5 @@ describe('upsert.generated', () => {
   // keep generated shard bindings live for typecheck
   void (0 as unknown as typeof getRssFeedItemTitleByGuidForTest)
   void (0 as unknown as typeof RSS_FEED_ITEM_MAX_CATEGORIES)
-  void (0 as unknown as typeof RSS_FEED_ITEM_SQL_BATCH_SIZE)
+  void (0 as unknown as typeof getRssFeedItemsWorkLimit)
 })

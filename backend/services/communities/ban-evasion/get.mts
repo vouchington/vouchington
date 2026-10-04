@@ -1,10 +1,9 @@
+import { getCommunitiesWorkLimit } from '../work-limits.mts'
 import { read, write } from '@data-stores/psql'
 import { enqueueBulkDetectBanEvasionAfterPostEmbeddings } from '@queues/ban-evasion/enqueues'
 import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
 import sql from 'sql-template-strings'
 
-const EMBEDDED_FIRST_COMMUNITY_POSTS_CHUNK_SIZE = 1000
-const DEFAULT_RECOVERY_PAGE_SIZE = 100
 const RECOVERY_CURSOR_SCOPE = 'ban-evasion:post-embedding:pending:id-asc'
 
 type RecoveryPage = { enqueuedCount: number; scannedCount: number; nextCursor: string | null }
@@ -32,6 +31,9 @@ export async function isFirstCommunityPost(
 export async function enqueueBanEvasionDetectionForEmbeddedFirstCommunityPosts(
   postIds: string[],
 ): Promise<void> {
+  const EMBEDDED_FIRST_COMMUNITY_POSTS_CHUNK_SIZE = getCommunitiesWorkLimit(
+    'embedded_first_posts_chunk_size',
+  )
   if (postIds.length === 0) return
 
   const postIdChunks: string[][] = []
@@ -48,11 +50,12 @@ export async function enqueueBanEvasionDetectionForEmbeddedFirstCommunityPosts(
 export async function enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts(
   options: { after?: string; limit?: number } = {},
 ): Promise<RecoveryPage> {
-  const requestedLimit = options.limit ?? DEFAULT_RECOVERY_PAGE_SIZE
+  const configuredLimit = getCommunitiesWorkLimit('recovery_page_size')
+  const requestedLimit = options.limit ?? configuredLimit
   if (!Number.isSafeInteger(requestedLimit) || requestedLimit < 1) {
     throw new Error('Invalid ban-evasion recovery page size')
   }
-  const limit = Math.min(requestedLimit, 100)
+  const limit = Math.min(requestedLimit, configuredLimit)
   const afterId =
     options.after !== undefined
       ? decodeScopedUuidCursor(options.after, RECOVERY_CURSOR_SCOPE, 'Invalid ban-evasion cursor')

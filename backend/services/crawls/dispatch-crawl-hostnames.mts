@@ -1,14 +1,14 @@
 import { executeHandlerWithCursorInBatches } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { enqueueBulkCrawlHostname } from '@queues/crawl-hostnames/enqueues'
-
-const BATCH_SIZE = Number.parseInt(process.env.CRAWLER_BATCH_SIZE || '', 10) || 1000
+import { getCrawlHostnameBatchSize } from './work-limits.mts'
 
 /**
  * Daily job that dispatches crawl jobs for all crawlable hostnames.
  * For each hostname, it enqueues a job to dispatch URLs for that hostname.
  */
 export const dispatchCrawlHostnames = async (): Promise<number> => {
+  const batchSize = getCrawlHostnameBatchSize()
   const statement = sql`/* dispatchCrawlHostnames */
     SELECT id
     FROM url_hostnames uh
@@ -24,7 +24,7 @@ export const dispatchCrawlHostnames = async (): Promise<number> => {
   let total = 0
 
   await executeHandlerWithCursorInBatches<{ id: string }>(statement, undefined, {
-    batchSize: BATCH_SIZE,
+    batchSize,
     readOnly: true,
     handler: async rows => {
       const ids = rows.map(row => row.id)

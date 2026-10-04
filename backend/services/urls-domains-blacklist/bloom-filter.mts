@@ -1,3 +1,4 @@
+import { getUrlsDomainsBlacklistWorkLimit } from './work-limits.mts'
 import { ValkeyBloomFilter, bloomValkeyClient } from '@data-stores/valkey'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -5,10 +6,7 @@ import { normalizeDomain } from './normalize-domain.mts'
 import { enqueueRebuildBloomFilter } from '@queues/bloom-filters/enqueues'
 import { enqueueRebuildBloomFilterBestEffort } from './rebuild-enqueue.mts'
 import { newBloomReadyMarkerValue, unlinkReadyMarkerIfValue } from './ready-marker.mts'
-import {
-  URL_BLOCKLIST_BLOOM_BATCH_SIZE,
-  urlBlocklistBatchesFromDb,
-} from './bloom-filter-batches.mts'
+import { urlBlocklistBatchesFromDb } from './bloom-filter-batches.mts'
 import {
   checkBloomFilterRead,
   checkBloomFiltersRead,
@@ -19,15 +17,17 @@ import onError from '@modules/on-error'
 import { warmUpBlocklistBloomFilter } from './warmup-orchestration.mts'
 import { withBlocklistBloomFilterLock } from './bloom-filter-lock.mts'
 
-const bloomFilter = new ValkeyBloomFilter({
-  name: 'url-blocklist',
-  capacity: 5_000_000,
-  errorRate: 0.01,
-  batchSize: URL_BLOCKLIST_BLOOM_BATCH_SIZE,
-  // ~5M domains rebuilt in the bloom-filters worker: cap in-flight chunks to limit Valkey pressure
-  concurrencyLimit: 8,
-  client: bloomValkeyClient,
-})
+function getBloomFilter() {
+  return new ValkeyBloomFilter({
+    name: 'url-blocklist',
+    capacity: 5_000_000,
+    errorRate: 0.01,
+    batchSize: getUrlsDomainsBlacklistWorkLimit('bloom_batch_size'),
+    // ~5M domains rebuilt in the bloom-filters worker: cap in-flight chunks to limit Valkey pressure
+    concurrencyLimit: 8,
+    client: bloomValkeyClient,
+  })
+}
 
 // Marker key set after each successful rebuild — used by warmup as a reliable
 // readiness check instead of a bloom membership probe (which can false-positive).
@@ -75,7 +75,7 @@ async function repairStaleReadyMarkerIfFilterUnavailable(): Promise<void> {
     const readyValue = await bloomValkeyClient.get(BLOOM_READY_KEY)
     if (readyValue === null) return
 
-    if (await isUnavailableLiveFilterKey(bloomFilter.getConfig().liveKey)) {
+    if (await isUnavailableLiveFilterKey(getBloomFilter().getConfig().liveKey)) {
       await enqueueRebuildAndInvalidateReadyMarker(false, readyValue)
       await unlinkReadyMarkerIfValue(BLOOM_READY_KEY, readyValue)
     }
@@ -96,8 +96,8 @@ export async function checkBloomFilter(hostname: string): Promise<boolean | null
   return checkBloomFilterRead({
     readyKey: BLOOM_READY_KEY,
     value: hostname,
-    liveKey: bloomFilter.getConfig().liveKey,
-    existsIfReady: (readyKey, value) => bloomFilter.existsIfReady(readyKey, value),
+    liveKey: getBloomFilter().getConfig().liveKey,
+    existsIfReady: (readyKey, value) => getBloomFilter().existsIfReady(readyKey, value),
     repairUnavailableRead: repairUrlBlocklistUnavailableRead,
   })
 }
@@ -105,9 +105,9 @@ export async function checkBloomFilter(hostname: string): Promise<boolean | null
 export async function checkBloomFilters(hostnames: string[]): Promise<Array<boolean | null>> {
   return checkBloomFiltersRead({
     readyKey: BLOOM_READY_KEY,
-    liveKey: bloomFilter.getConfig().liveKey,
+    liveKey: getBloomFilter().getConfig().liveKey,
     values: hostnames,
-    mexistsIfReady: (readyKey, values) => bloomFilter.mexistsIfReady(readyKey, values),
+    mexistsIfReady: (readyKey, values) => getBloomFilter().mexistsIfReady(readyKey, values),
     repairUnavailableRead: repairUrlBlocklistUnavailableRead,
   })
 }
@@ -119,7 +119,7 @@ export async function addDomainsToBloomFilter(domains: string[]): Promise<void> 
   })
 
   try {
-    await bloomFilter.addOrThrow(validDomains)
+    await getBloomFilter().addOrThrow(validDomains)
   } catch (err) {
     onError(err instanceof Error ? err : new Error(String(err)))
     await enqueueRebuildAndInvalidateReadyMarker()
@@ -128,7 +128,7 @@ export async function addDomainsToBloomFilter(domains: string[]): Promise<void> 
 
 export async function rebuildBloomFilter(): Promise<void> {
   await withBlocklistBloomFilterLock('url-blocklist', async () => {
-    await bloomFilter.rebuildFromStream(urlBlocklistBatchesFromDb())
+    await getBloomFilter().rebuildFromStream(urlBlocklistBatchesFromDb())
     await bloomValkeyClient.set(BLOOM_READY_KEY, newBloomReadyMarkerValue())
   })
 }
@@ -136,14 +136,14 @@ export async function rebuildBloomFilter(): Promise<void> {
 export async function warmUpUrlBlocklistBloomFilter(): Promise<void> {
   await warmUpBlocklistBloomFilter({
     hasData: hasUrlBlocklistData,
-    isReady: () => bloomFilter.isReady(BLOOM_READY_KEY),
+    isReady: () => getBloomFilter().isReady(BLOOM_READY_KEY),
     enqueueRebuild: enqueueUrlBlocklistRebuild,
   })
 }
 
 export async function deleteBloomFilter(): Promise<void> {
   await withBlocklistBloomFilterLock('url-blocklist', () =>
-    bloomFilter.deleteWithAdditionalKeys([BLOOM_READY_KEY]),
+    getBloomFilter().deleteWithAdditionalKeys([BLOOM_READY_KEY]),
   )
 }
 

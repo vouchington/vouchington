@@ -1,3 +1,4 @@
+import { stripeLookupMaxPagesForTest } from '@voucha/test-helpers/stripe-pagination-limits'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as stripeClientModule from '@modules/stripe/client'
 import { getWonStripeDisputeInvoice } from './disputes.mts'
@@ -24,7 +25,9 @@ describe('won Stripe dispute recovery lookup', () => {
       invoicePayments: { list: listInvoicePayments },
     } as never)
 
-    await expect(getWonStripeDisputeInvoice('dp_won_recovery')).resolves.toEqual({
+    await expect(
+      getWonStripeDisputeInvoice('dp_won_recovery', stripeLookupMaxPagesForTest),
+    ).resolves.toEqual({
       chargeId: 'ch_won_recovery',
       invoiceIds: ['in_won_recovery'],
       paymentIntentId: 'pi_won_recovery',
@@ -50,7 +53,9 @@ describe('won Stripe dispute recovery lookup', () => {
         disputes: { retrieve: retrieveDispute },
       } as never)
 
-      await expect(getWonStripeDisputeInvoice(`dp_${status}`)).resolves.toBeNull()
+      await expect(
+        getWonStripeDisputeInvoice(`dp_${status}`, stripeLookupMaxPagesForTest),
+      ).resolves.toBeNull()
       expect(retrieveDispute).toHaveBeenCalledWith(`dp_${status}`)
       expect(retrieveCharge).not.toHaveBeenCalled()
     },
@@ -72,7 +77,9 @@ describe('won Stripe dispute recovery lookup', () => {
       invoicePayments: { list: listInvoicePayments },
     } as never)
 
-    await expect(getWonStripeDisputeInvoice('dp_missing_invoice')).resolves.toBeNull()
+    await expect(
+      getWonStripeDisputeInvoice('dp_missing_invoice', stripeLookupMaxPagesForTest),
+    ).resolves.toBeNull()
     expect(retrieveDispute).toHaveBeenCalledWith('dp_missing_invoice')
     expect(retrieveCharge).toHaveBeenCalledWith('ch_missing_invoice')
   })
@@ -83,18 +90,18 @@ describe('won Stripe dispute recovery lookup', () => {
       invoicePayments: { list },
     } as never)
 
-    await expect(listAllStripeInvoicePaymentsForPaymentIntent('pi_empty')).rejects.toThrow(
-      'Stripe returned an empty invoice payment page for payment intent pi_empty',
-    )
+    await expect(
+      listAllStripeInvoicePaymentsForPaymentIntent('pi_empty', stripeLookupMaxPagesForTest),
+    ).rejects.toThrow('Stripe returned an empty invoice payment page for payment intent pi_empty')
 
     list.mockClear()
     list.mockImplementation(async () => ({
       data: [{ id: `inpay_${list.mock.calls.length}` }],
       has_more: true,
     }))
-    await expect(listAllStripeInvoicePaymentsForPaymentIntent('pi_unbounded')).rejects.toThrow(
-      'Stripe payment intent pi_unbounded exceeded the invoice payment page limit',
-    )
+    await expect(
+      listAllStripeInvoicePaymentsForPaymentIntent('pi_unbounded', stripeLookupMaxPagesForTest),
+    ).rejects.toThrow('Stripe payment intent pi_unbounded exceeded the invoice payment page limit')
     expect(list).toHaveBeenCalledTimes(10)
   })
 })

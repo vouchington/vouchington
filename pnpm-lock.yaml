@@ -2454,6 +2454,9 @@ importers:
 
   backend/queues/admin-imports:
     dependencies:
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
@@ -2590,6 +2593,9 @@ importers:
 
   backend/queues/crawl-boilerplate-removal:
     dependencies:
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
@@ -2737,6 +2743,9 @@ importers:
 
   backend/queues/find-your-friends:
     dependencies:
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
@@ -4148,6 +4157,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/bluesky-oauth':
         specifier: workspace:^
         version: link:../../modules/bluesky-oauth
@@ -4336,6 +4348,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@services/classifiers':
         specifier: workspace:^
         version: link:../classifiers
@@ -4358,6 +4373,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
@@ -4423,6 +4441,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@email-templates/core':
         specifier: workspace:^
         version: link:../../../email-templates
@@ -4808,6 +4829,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -5299,6 +5323,15 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@queues/admin-imports':
+        specifier: workspace:^
+        version: link:../../queues/admin-imports
+      '@queues/crawl-boilerplate-removal':
+        specifier: workspace:^
+        version: link:../../queues/crawl-boilerplate-removal
+      '@queues/find-your-friends':
+        specifier: workspace:^
+        version: link:../../queues/find-your-friends
       '@services/account-data-requests':
         specifier: workspace:^
         version: link:../account-data-requests
@@ -5326,15 +5359,33 @@ importers:
       '@services/bloom-filter-config':
         specifier: workspace:^
         version: link:../bloom-filter-config
+      '@services/bluesky-follows':
+        specifier: workspace:^
+        version: link:../bluesky-follows
+      '@services/bookmarks':
+        specifier: workspace:^
+        version: link:../bookmarks
       '@services/captcha':
         specifier: workspace:^
         version: link:../captcha
+      '@services/classifier-runs':
+        specifier: workspace:^
+        version: link:../classifier-runs
+      '@services/classifiers':
+        specifier: workspace:^
+        version: link:../classifiers
+      '@services/communities':
+        specifier: workspace:^
+        version: link:../communities
       '@services/contribution-gating':
         specifier: workspace:^
         version: link:../contribution-gating
       '@services/copyright-notices':
         specifier: workspace:^
         version: link:../copyright-notices
+      '@services/crawl-embeds':
+        specifier: workspace:^
+        version: link:../crawl-embeds
       '@services/crawler-referral-links':
         specifier: workspace:^
         version: link:../crawler-referral-links
@@ -5347,6 +5398,15 @@ importers:
       '@services/dynamic-config-audit':
         specifier: workspace:^
         version: link:../dynamic-config-audit
+      '@services/elections-votes':
+        specifier: workspace:^
+        version: link:../elections-votes
+      '@services/engagement-emails':
+        specifier: workspace:^
+        version: link:../engagement-emails
+      '@services/entity-cache':
+        specifier: workspace:^
+        version: link:../entity-cache
       '@services/entity-listener-reconciliation':
         specifier: workspace:^
         version: link:../entity-listener-reconciliation
@@ -5356,45 +5416,117 @@ importers:
       '@services/feature-flags':
         specifier: workspace:^
         version: link:../feature-flags
+      '@services/follower-distributions':
+        specifier: workspace:^
+        version: link:../follower-distributions
       '@services/friend-recommendations':
         specifier: workspace:^
         version: link:../friend-recommendations
+      '@services/hostname-blocking':
+        specifier: workspace:^
+        version: link:../hostname-blocking
+      '@services/images':
+        specifier: workspace:^
+        version: link:../images
       '@services/kagi-smallweb':
         specifier: workspace:^
         version: link:../kagi-smallweb
+      '@services/language-detection':
+        specifier: workspace:^
+        version: link:../language-detection
+      '@services/media-delivery-safety':
+        specifier: workspace:^
+        version: link:../media-delivery-safety
       '@services/memberships':
         specifier: workspace:^
         version: link:../memberships
       '@services/moderation':
         specifier: workspace:^
         version: link:../moderation
+      '@services/moderation-analytics':
+        specifier: workspace:^
+        version: link:../moderation-analytics
+      '@services/moderation-reports':
+        specifier: workspace:^
+        version: link:../moderation-reports
+      '@services/notifications':
+        specifier: workspace:^
+        version: link:../notifications
       '@services/oauth':
         specifier: workspace:^
         version: link:../oauth
+      '@services/oauth-facebook':
+        specifier: workspace:^
+        version: link:../oauth-facebook
+      '@services/oauth-github':
+        specifier: workspace:^
+        version: link:../oauth-github
+      '@services/oauth-x':
+        specifier: workspace:^
+        version: link:../oauth-x
+      '@services/openai-background-responses':
+        specifier: workspace:^
+        version: link:../openai-background-responses
+      '@services/openai-moderation':
+        specifier: workspace:^
+        version: link:../openai-moderation
+      '@services/post-clearance':
+        specifier: workspace:^
+        version: link:../post-clearance
       '@services/post-content-limits':
         specifier: workspace:^
         version: link:../post-content-limits
+      '@services/post-publication':
+        specifier: workspace:^
+        version: link:../post-publication
+      '@services/posts':
+        specifier: workspace:^
+        version: link:../posts
       '@services/recaptcha':
         specifier: workspace:^
         version: link:../recaptcha
+      '@services/recommended-topics':
+        specifier: workspace:^
+        version: link:../recommended-topics
       '@services/referral-link-unfurl':
         specifier: workspace:^
         version: link:../referral-link-unfurl
+      '@services/remote-actors':
+        specifier: workspace:^
+        version: link:../remote-actors
+      '@services/report-integrity':
+        specifier: workspace:^
+        version: link:../report-integrity
       '@services/request-client-info':
         specifier: workspace:^
         version: link:../request-client-info
       '@services/route-rate-limits':
         specifier: workspace:^
         version: link:../route-rate-limits
+      '@services/rss-feed-items':
+        specifier: workspace:^
+        version: link:../rss-feed-items
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../rss-feeds
       '@services/stories':
         specifier: workspace:^
         version: link:../stories
+      '@services/stripe':
+        specifier: workspace:^
+        version: link:../stripe
       '@services/tag-limits':
         specifier: workspace:^
         version: link:../tag-limits
+      '@services/topics':
+        specifier: workspace:^
+        version: link:../topics
+      '@services/urls-domains-blacklist':
+        specifier: workspace:^
+        version: link:../urls-domains-blacklist
+      '@services/user-deletions':
+        specifier: workspace:^
+        version: link:../user-deletions
       '@services/user-import-export':
         specifier: workspace:^
         version: link:../user-import-export
@@ -5439,6 +5571,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -5562,6 +5697,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@email-templates/core':
         specifier: workspace:^
         version: link:../../../email-templates
@@ -6093,6 +6231,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
@@ -6192,6 +6333,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@queues/vote-weight':
         specifier: workspace:^
         version: link:../../queues/vote-weight
@@ -6290,6 +6434,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
@@ -6505,6 +6652,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
@@ -6671,6 +6821,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
@@ -6883,6 +7036,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/membership-helpers':
         specifier: workspace:^
         version: link:../../modules/membership-helpers
@@ -7053,6 +7209,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -7312,6 +7471,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/feed-query-builders':
         specifier: workspace:^
         version: link:../../modules/feed-query-builders
@@ -7543,6 +7705,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/token-secrets':
         specifier: workspace:^
         version: link:../../modules/token-secrets
@@ -7574,6 +7739,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/api-egress-proxy':
         specifier: workspace:^
         version: link:../../modules/api-egress-proxy
@@ -7683,6 +7851,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/api-egress-proxy':
         specifier: workspace:^
         version: link:../../modules/api-egress-proxy
@@ -7757,6 +7928,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -7785,6 +7959,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@data-stores/valkey-pubsub':
         specifier: workspace:^
         version: link:../../data-stores/valkey-pubsub
@@ -7945,6 +8122,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -8031,6 +8211,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/feed-query-builders':
         specifier: workspace:^
         version: link:../../modules/feed-query-builders
@@ -8069,6 +8252,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
@@ -8208,9 +8394,6 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
     devDependencies:
-      '@data-stores/valkey':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey
       '@services/entity-listener-reconciliation':
         specifier: workspace:^
         version: link:../entity-listener-reconciliation
@@ -8555,6 +8738,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
@@ -8693,6 +8879,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/http-signatures':
         specifier: workspace:^
         version: link:../../modules/http-signatures
@@ -8730,6 +8919,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -8764,9 +8956,6 @@ importers:
         specifier: ^14.0.2
         version: 14.0.2
     devDependencies:
-      '@data-stores/valkey':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
@@ -8865,6 +9054,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
@@ -9447,6 +9639,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -9663,6 +9858,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/feed-query-builders':
         specifier: workspace:^
         version: link:../../modules/feed-query-builders
@@ -9745,9 +9943,6 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
     devDependencies:
-      '@data-stores/valkey':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../elections-votes
@@ -10173,6 +10368,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0

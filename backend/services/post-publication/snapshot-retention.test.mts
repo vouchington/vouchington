@@ -1,3 +1,5 @@
+import { postPublicationWorkConfig } from './work-limits.mts'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { describe, expect, it } from 'vitest'
 import {
   beginTransaction,
@@ -34,6 +36,21 @@ import { recordPostPublicationChange } from './capture.mts'
 import { insertTestPublicationSnapshotHeaderFanout } from '@voucha/test-helpers/entities/post-publication-query-plans'
 
 describe('bounded publication receipt retention and reclamation', () => {
+  it('honors the independent identity snapshot cap on normal reconciliation', async () => {
+    const { work } = await createTestPublicationSnapshotWork()
+    const restore = overrideDynamicConfigFieldsForTest(postPublicationWorkConfig, {
+      reconciliation_page_size: 100,
+      identity_snapshot_page_size: 1,
+    })
+    try {
+      const result = await reconcilePostPublicationDirtyWork(work)
+      expect(result.posts).toHaveLength(1)
+      expect(result.hasIncompleteSnapshots).toBe(true)
+    } finally {
+      restore()
+    }
+  })
+
   it('bounds locked-header candidates and revisits skipped headers after wrap', async () => {
     const { work, candidate } = await createTestPublicationSnapshotWork()
     const ids = await insertTestPublicationSnapshotHeaderFanout({

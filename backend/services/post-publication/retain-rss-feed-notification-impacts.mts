@@ -1,5 +1,5 @@
+import { getPostPublicationWorkLimit } from './work-limits.mts'
 import { beginTransaction } from '@data-stores/psql'
-import { POST_PUBLICATION_DIRTY_WORK_KEY_BATCH_SIZE } from './constants.mts'
 import { retainPostPublicationKeys } from './retained-key-writes.mts'
 
 /**
@@ -21,6 +21,9 @@ async function retainNotificationImpactPage(
   dirtyWorkId: string,
   rssFeedId: string,
 ): Promise<number> {
+  const POST_PUBLICATION_DIRTY_WORK_KEY_BATCH_SIZE = getPostPublicationWorkLimit(
+    'dirty_work_key_batch_size',
+  )
   await using query = await beginTransaction()
   const { rows } = await query<{ rss_feed_item_id: string }>(
     `/* retainRssFeedNotificationImpacts */

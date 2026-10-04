@@ -1,3 +1,4 @@
+import { getClassifierRunsWorkLimit } from './work-limits.mts'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
@@ -6,8 +7,6 @@ import {
 } from './run-retirement.mts'
 import { CLASSIFIER_RUN_SWEEP_ENQUEUE_BOUND } from './run-sweep.mts'
 import type { ClassifierRunAdapter, ClassifierRunSubject } from './types.mts'
-
-export const CLASSIFIER_RUN_DISCOVERY_PAGE_SIZE = 100
 
 const FIRST_UUID = '00000000-0000-0000-0000-000000000000'
 
@@ -47,7 +46,7 @@ type IncompleteRow = {
  */
 export async function listIncompleteClassifierRuns(
   after: string | null,
-  limit = CLASSIFIER_RUN_DISCOVERY_PAGE_SIZE,
+  limit = getClassifierRunsWorkLimit('discovery_page_size'),
 ): Promise<DiscoveryPage<IncompleteClassifierRun>> {
   const { rows } = await write<IncompleteRow>(sql`/* listIncompleteClassifierRuns */
     SELECT run.id, classifier.slug AS classifier_slug, run.post_id, run.rss_feed_item_id,
@@ -102,7 +101,7 @@ function subjectOf(row: RequestRow): ClassifierRunSubject {
 export async function listPendingClassifierRunRequests<C, L, E>(
   adapter: ClassifierRunAdapter<C, L, E>,
   after: string | null,
-  limit = CLASSIFIER_RUN_DISCOVERY_PAGE_SIZE,
+  limit = getClassifierRunsWorkLimit('discovery_page_size'),
 ): Promise<DiscoveryPage<PendingClassifierRunRequest>> {
   const { rows } = await write<RequestRow>(
     sql`/* listPendingClassifierRunRequests */

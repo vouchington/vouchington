@@ -1,3 +1,7 @@
+import {
+  getMediaDeliverySafetyWorkLimit,
+  mediaDeliverySafetyWorkMaxValues,
+} from './work-limits.mts'
 import { write } from '@data-stores/psql'
 import {
   observeSharedDbScope,
@@ -10,7 +14,6 @@ import sql from 'sql-template-strings'
 import {
   MEDIA_DELIVERY_CLAIM_TIMEOUT_MS,
   MEDIA_DELIVERY_MAX_ATTEMPTS,
-  MEDIA_DELIVERY_RECOVERY_PAGE_SIZE,
   mediaDeliveryClaimable,
 } from './delivery-registry-policy.mts'
 
@@ -26,6 +29,7 @@ export async function failExpiredExhaustedMediaDeliveryRegistryRecords(
   now: string,
   deliveryKeys?: readonly string[],
 ): Promise<number> {
+  const MEDIA_DELIVERY_RECOVERY_PAGE_SIZE = getMediaDeliverySafetyWorkLimit('recovery_page_size')
   if (deliveryKeys?.length === 0) return 0
   const { rowCount } = await write(sql`/* failExpiredExhaustedMediaDeliveryRegistryRecords */
     WITH candidates AS (
@@ -53,11 +57,9 @@ export async function listRecoverableMediaDeliveryRegistryKeys(input: {
   after?: string
   deliveryKeys?: readonly string[]
 }): Promise<{ results: string[]; page_info: PageInfo }> {
-  if (
-    !Number.isSafeInteger(input.limit) ||
-    input.limit < 1 ||
-    input.limit > MEDIA_DELIVERY_RECOVERY_PAGE_SIZE
-  )
+  // The caller captures its configured budget before awaits; only the stable hard ceiling applies here.
+  const pageMaximum = mediaDeliverySafetyWorkMaxValues.recovery_page_size
+  if (!Number.isSafeInteger(input.limit) || input.limit < 1 || input.limit > pageMaximum)
     throw new TypeError('Media recovery page limit must be between one and the page maximum')
   const deliveryKeys = input.deliveryKeys ? [...new Set(input.deliveryKeys)].toSorted() : null
   const scope = JSON.stringify({

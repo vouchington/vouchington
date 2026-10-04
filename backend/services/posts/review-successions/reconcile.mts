@@ -1,3 +1,4 @@
+import { getPostsWorkLimit } from '@services/posts/work-limits'
 import { beginTransaction, withTransactionOptions } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import {
@@ -21,6 +22,7 @@ export async function reconcileReviewSuccessionsForPostIds(
   postIds: readonly string[],
   options: ReviewSuccessionReconciliationOptions = {},
 ): Promise<ReviewSuccessionReconciliationResult> {
+  const limit = getPostsWorkLimit('review_succession_candidate_page_size')
   const ids = normalizeReviewSuccessionPostIds(postIds)
   if (ids.length === 0) return { changedPostIds: [] }
   const { query, client } = options
@@ -31,8 +33,8 @@ export async function reconcileReviewSuccessionsForPostIds(
     if (groups.length === 0) return { changedPostIds: [] }
     // ast-grep-ignore: no-three-sequential-awaits -- group, publication-scope, and row locks have a required global order before the locked reread
     await lockReviewSuccessionGroups(transaction, groups)
-    await lockReviewSuccessionCandidates(transaction, groups)
-    const candidates = await listLockedReviewSuccessionCandidates(transaction, groups)
+    await lockReviewSuccessionCandidates(transaction, groups, limit)
+    const candidates = await listLockedReviewSuccessionCandidates(transaction, groups, limit)
     const changedPostIds = await applyReviewSuccessionMutations(
       transaction,
       planReviewSuccessionMutations(candidates),

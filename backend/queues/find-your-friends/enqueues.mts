@@ -2,7 +2,7 @@ import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/v
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import {
-  ENQUEUE_BATCH_SIZE,
+  getFindYourFriendsWorkLimit,
   FIND_YOUR_FRIENDS_DEFAULTS,
   FIND_YOUR_FRIENDS_ORDERING,
   FIND_YOUR_FRIENDS_RATE_LIMITS,
@@ -75,6 +75,7 @@ function createSyncEnqueues<TData>(config: SyncConfig<TData>) {
       )
     },
     bulk: async (ids: string[], priority = PRIORITY_DEFAULT): Promise<void> => {
+      const ENQUEUE_BATCH_SIZE = getFindYourFriendsWorkLimit('enqueue_batch_size')
       if (ids.length === 0) return
       for (let i = 0; i < ids.length; i += ENQUEUE_BATCH_SIZE) {
         const batch = ids.slice(i, i + ENQUEUE_BATCH_SIZE)

@@ -1,3 +1,4 @@
+import { getRssFeedItemsWorkLimit } from '@services/rss-feed-items/work-limits'
 import { describe, expect, it } from 'vitest'
 import { notifications } from '@queues/notifications/queues'
 import {
@@ -10,7 +11,6 @@ import {
 } from '@voucha/test-helpers'
 import {
   acknowledgeRssFeedItemCategorySnapshot,
-  CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE,
   reconcileRssFeedItemCategorySnapshotRows,
   type RssFeedItemCategorySnapshotReconciliation,
 } from '../category-snapshot-reconciliations.mts'
@@ -227,12 +227,12 @@ describe('RSS feed item category snapshot reconciliation', () => {
     const ordered = await listTestRssFeedItemCategorySnapshotReconciliations(itemIds)
     expect(ordered).toHaveLength(26)
 
-    expect(CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE).toBe(25)
+    expect(getRssFeedItemsWorkLimit('category_snapshot_reconciliation_batch_size')).toBe(25)
     await expect(
       reconcileRssFeedItemCategorySnapshotRows(
         ordered.slice(
           0,
-          CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE,
+          getRssFeedItemsWorkLimit('category_snapshot_reconciliation_batch_size'),
         ) as RssFeedItemCategorySnapshotReconciliation[],
       ),
     ).resolves.toEqual({ reconciled: 25 })

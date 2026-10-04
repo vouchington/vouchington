@@ -1,8 +1,8 @@
+import { getPostsWorkLimit } from '@services/posts/work-limits'
 import { read } from '@data-stores/psql'
 import { isUUID } from '@modules/utils'
 import {
   listReviewSuccessionHistoryAuditRows,
-  REVIEW_SUCCESSION_HISTORY_AUDIT_PAGE_SIZE,
   type ReviewSuccessionHistoryAuditRow,
 } from './audit-query.mts'
 
@@ -38,11 +38,16 @@ export async function auditReviewSuccessionHistory(options: {
   cursor: string | null
   cutoffArchivedAt: string | null
 }): Promise<ReviewSuccessionHistoryAuditResult> {
+  const pageSize = getPostsWorkLimit('review_succession_history_audit_page_size')
   assertAuditCursor(options.cursor)
   const cutoffArchivedAt = options.cutoffArchivedAt ?? (await readAuditCutoff())
   assertAuditCutoff(cutoffArchivedAt)
-  const rows = await listReviewSuccessionHistoryAuditRows(options.cursor, cutoffArchivedAt)
-  const page = pageReviewSuccessionHistoryAuditRows(rows)
+  const rows = await listReviewSuccessionHistoryAuditRows(
+    options.cursor,
+    cutoffArchivedAt,
+    pageSize,
+  )
+  const page = pageReviewSuccessionHistoryAuditRows(rows, pageSize)
   return {
     cutoffArchivedAt,
     cursor: page.cursor,
@@ -53,12 +58,13 @@ export async function auditReviewSuccessionHistory(options: {
 
 export function pageReviewSuccessionHistoryAuditRows(
   rows: readonly ReviewSuccessionHistoryAuditRow[],
+  pageSize = getPostsWorkLimit('review_succession_history_audit_page_size'),
 ): { rows: readonly ReviewSuccessionHistoryAuditRow[]; cursor: string | null; hasMore: boolean } {
-  const pageRows = rows.slice(0, REVIEW_SUCCESSION_HISTORY_AUDIT_PAGE_SIZE)
+  const pageRows = rows.slice(0, pageSize)
   return {
     rows: pageRows,
     cursor: pageRows.at(-1)?.id ?? null,
-    hasMore: rows.length > REVIEW_SUCCESSION_HISTORY_AUDIT_PAGE_SIZE,
+    hasMore: rows.length > pageSize,
   }
 }
 

@@ -1,6 +1,6 @@
+import { getUserDeletionsWorkLimit } from './work-limits.mts'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { USER_DELETION_BATCH_SIZE } from './phases.mts'
 import { mapUserDeletionRequest, type UserDeletionRequestRow } from './row.mts'
 import type {
   UserDeletionAttempt,
@@ -47,22 +47,29 @@ export async function renewUserDeletionAttempt(
 }
 
 export async function claimRecoverableUserDeletions(): Promise<UserDeletionAttempt[]> {
+  const USER_DELETIONS_DISPATCH_TIMEOUT_MINUTES = getUserDeletionsWorkLimit(
+    'dispatch_timeout_minutes',
+  )
+  const USER_DELETIONS_PROCESSING_TIMEOUT_MINUTES = getUserDeletionsWorkLimit(
+    'processing_timeout_minutes',
+  )
+  const WORK_PAGE_SIZE = getUserDeletionsWorkLimit('lifecycle_recovery_batch_size')
   const { rows } = await write(sql`/* claimRecoverableUserDeletions */
     WITH candidates AS (
       SELECT request.id
       FROM user_deletion_requests request
       WHERE request.completed_at IS NULL
         AND (
-          (request.processing_started_at IS NULL AND request.dispatched_at < NOW() - INTERVAL '5 minutes')
-          OR request.processing_started_at < NOW() - INTERVAL '30 minutes'
+          (request.processing_started_at IS NULL AND request.dispatched_at < NOW() - ${USER_DELETIONS_DISPATCH_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute')
+          OR request.processing_started_at < NOW() - ${USER_DELETIONS_PROCESSING_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute'
         )
       ORDER BY request.id
-      LIMIT 500
+      LIMIT ${WORK_PAGE_SIZE}
       FOR UPDATE SKIP LOCKED
     )
     UPDATE user_deletion_requests request
     SET processing_attempt_id = CASE
-          WHEN request.processing_started_at < NOW() - INTERVAL '30 minutes' THEN uuidv7()
+          WHEN request.processing_started_at < NOW() - ${USER_DELETIONS_PROCESSING_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute' THEN uuidv7()
           ELSE request.processing_attempt_id
         END,
         dispatched_at = CURRENT_TIMESTAMP,
@@ -107,6 +114,7 @@ async function processCurrentPhaseBatch(
   request: UserDeletionRequest,
   deps: UserDeletionDependencies,
 ): Promise<{ hasMore: boolean; retryAfterMs?: number }> {
+  const USER_DELETION_BATCH_SIZE = getUserDeletionsWorkLimit('batch_size')
   if (!deps.processPhaseBatch) {
     throw new Error(`No processor registered for user deletion phase ${request.currentPhase}`)
   }

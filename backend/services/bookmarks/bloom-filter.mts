@@ -1,3 +1,4 @@
+import { getBookmarksWorkLimit } from './work-limits.mts'
 import { bloomValkeyClient } from '@data-stores/valkey'
 import { Batch, TimeUnit } from '@valkey/valkey-glide'
 import {
@@ -14,7 +15,6 @@ import {
   bookmarkBloomBatchesFromDb,
 } from './bloom-filter-backfill.mts'
 import {
-  BOOKMARK_BLOOM_BATCH_SIZE,
   BOOKMARK_BLOOM_DEFAULT_CAPACITY,
   BOOKMARK_BLOOM_FILTER_TTL_SECONDS,
   BOOKMARK_BLOOM_READY_TTL_SECONDS,
@@ -67,6 +67,7 @@ export async function addBookmarkBloomEntries(
 // one, then atomically RENAMEs it over the live key -- concurrent or retried backfills for the
 // same user converge on one consistent result rather than corrupting a partial filter.
 export async function backfillUserBookmarkBloomFilter(userId: string): Promise<void> {
+  const BOOKMARK_BLOOM_BATCH_SIZE = getBookmarksWorkLimit('bloom_batch_size')
   // A backfill enqueued after deleteUser's post-commit enqueue outranks the delete job under the
   // shared `bookmark:{userId}` ordering key (glide-mq ordering sequences jobs, it does not cancel
   // ones already queued) and would otherwise rebuild the filter for a deleted user. Clean up any

@@ -1,3 +1,4 @@
+import { getPostsWorkLimit } from '@services/posts/work-limits'
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
   createRandomString,
@@ -8,7 +9,6 @@ import {
   insertTestTopic,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
-import { REVIEW_SUCCESSION_CANDIDATE_PAGE_SIZE } from './candidates.mts'
 import { reconcileReviewSuccessionsForPostIds } from './index.mts'
 import { listReviewSuccessionsForPostIds } from './list.mts'
 
@@ -115,7 +115,7 @@ describe('review succession exact-topic routing', () => {
   it('converges prolific exact-topic groups through bounded candidate pages', async () => {
     const reviewIds = (
       await Promise.all(
-        Array.from({ length: REVIEW_SUCCESSION_CANDIDATE_PAGE_SIZE + 2 }, () =>
+        Array.from({ length: getPostsWorkLimit('review_succession_candidate_page_size') + 2 }, () =>
           createReview([topicD]),
         ),
       )
@@ -123,7 +123,9 @@ describe('review succession exact-topic routing', () => {
     const successorId = reviewIds.at(-1)!
 
     const first = await reconcileReviewSuccessionsForPostIds([successorId])
-    expect(first.changedPostIds).toHaveLength(REVIEW_SUCCESSION_CANDIDATE_PAGE_SIZE - 1)
+    expect(first.changedPostIds).toHaveLength(
+      getPostsWorkLimit('review_succession_candidate_page_size') - 1,
+    )
 
     await expect(reconcileReviewSuccessionsForPostIds([first.changedPostIds[0]!])).resolves.toEqual(
       { changedPostIds: reviewIds.slice(0, 2) },

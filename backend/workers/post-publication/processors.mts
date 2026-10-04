@@ -1,3 +1,4 @@
+import { getPostPublicationWorkLimit } from '@services/post-publication/work-limits'
 import { enqueueContinuePostPublicationReconciliation } from '@queues/post-publication/enqueues'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import {
@@ -90,6 +91,8 @@ export async function processReconcilePostPublication(
   _data: Record<string, never>,
   dependencies: Partial<PostPublicationProcessorDependencies> = {},
 ): Promise<{ reconciled: number }> {
+  const limit = getPostPublicationWorkLimit('reconciliation_page_size')
+  const snapshotLimit = getPostPublicationWorkLimit('identity_snapshot_page_size')
   const deps = { ...defaultDependencies, ...dependencies }
   const [available] = await deps.listAvailablePostPublicationDirtyWork(1)
   if (!available) return { reconciled: 0 }
@@ -103,7 +106,12 @@ export async function processReconcilePostPublication(
       // Post work takes its capture lock below; reusing it here would deadlock across connections.
       work.post_id ? `post-publication-work:${work.id}` : postPublicationScopeLockKey(scope),
       async () => {
-        const selected = await deps.reconcilePostPublicationDirtyWork(work)
+        const selected = await deps.reconcilePostPublicationDirtyWork(
+          work,
+          limit,
+          undefined,
+          snapshotLimit,
+        )
         if (
           await reconcileReviewSuccessionBeforePostPublication(
             selected.posts.map(post => post.id),
@@ -117,8 +125,9 @@ export async function processReconcilePostPublication(
             // Re-read canonical primary state after all sorted post locks are held.
             const result = await deps.reconcilePostPublicationDirtyWork(
               work,
-              undefined,
+              limit,
               selected.posts.map(post => post.id),
+              snapshotLimit,
             )
             if (result.hasIncompleteSnapshots) {
               await deps.enqueueContinuePostPublicationReconciliation()

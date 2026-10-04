@@ -1,3 +1,4 @@
+import { getPostPublicationWorkLimit } from '@services/post-publication/work-limits'
 import {
   createTestRssFeedWithTiming,
   createTestTopic,
@@ -13,7 +14,6 @@ import {
   acknowledgePostPublicationProjectionReceipts,
   claimPostPublicationDirtyWork,
   deleteOrphanPostPublicationProjectionReceipts,
-  POST_PUBLICATION_RECONCILIATION_PAGE_SIZE as PAGE_SIZE,
   reconcilePostPublicationDirtyWork,
   recordPostPublicationChange,
   releasePostPublicationDirtyWorkLease,
@@ -30,6 +30,8 @@ import {
   makeResult,
   post,
 } from '@voucha/test-helpers/workers/post-publication/processors/fixtures'
+
+const PAGE_SIZE = getPostPublicationWorkLimit('reconciliation_page_size')
 
 describe('post publication orphan-receipt processor', () => {
   it('fans retained RSS items out to notification reconciliation', async () => {

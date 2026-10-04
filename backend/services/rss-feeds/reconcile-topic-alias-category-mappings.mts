@@ -1,10 +1,9 @@
+import { getRssFeedsWorkLimit } from './work-limits.mts'
 import { write } from '@data-stores/psql'
 import { backfillCategoriesForTopicAliases } from '@services/rss-feed-items/backfill-categories-for-topic-aliases'
 import { clearAllCategoriesForUnlinkedTopicAlias } from '@services/rss-feed-items/clear-all-unlinked-topic-alias-categories'
 import { backfillCategoriesForTopicAlias } from './categories.mts'
 import sql, { type SQLStatement } from 'sql-template-strings'
-
-export const TOPIC_ALIAS_CATEGORY_MAPPING_RECONCILIATION_BATCH_SIZE = 25
 
 type TopicAliasCategoryMappingDirtyRow = {
   topic_alias_id: string
@@ -19,11 +18,13 @@ type CurrentTopicAlias = { topic_id: string | null }
  * generation acknowledgement deletes the row; a newer transition wins the compare-and-delete and
  * remains pending for the next serialized job.
  */
-export async function processReconcileTopicAliasCategoryMappings(): Promise<{
+export async function processReconcileTopicAliasCategoryMappings(
+  limit = getRssFeedsWorkLimit('topic_alias_category_mapping_reconciliation_batch_size'),
+): Promise<{
   reconciled: number
   updated: number
 }> {
-  const candidates = await getTopicAliasCategoryMappingDirtyRows()
+  const candidates = await getTopicAliasCategoryMappingDirtyRows(limit)
   const { errors, ...result } = await reconcileTopicAliasCategoryMappingDirtyRows(
     candidates,
     0,
@@ -36,17 +37,17 @@ export async function processReconcileTopicAliasCategoryMappings(): Promise<{
   return result
 }
 
-async function getTopicAliasCategoryMappingDirtyRows(): Promise<
-  TopicAliasCategoryMappingDirtyRow[]
-> {
+async function getTopicAliasCategoryMappingDirtyRows(
+  limit: number,
+): Promise<TopicAliasCategoryMappingDirtyRow[]> {
   const { rows } = await write<TopicAliasCategoryMappingDirtyRow>(
-    buildTopicAliasCategoryMappingDirtyRowsQuery(),
+    buildTopicAliasCategoryMappingDirtyRowsQuery(limit),
   )
   return rows
 }
 
 export function buildTopicAliasCategoryMappingDirtyRowsQuery(
-  limit = TOPIC_ALIAS_CATEGORY_MAPPING_RECONCILIATION_BATCH_SIZE,
+  limit = getRssFeedsWorkLimit('topic_alias_category_mapping_reconciliation_batch_size'),
 ): SQLStatement {
   return sql`/* getTopicAliasCategoryMappingDirtyRows */
     SELECT topic_alias_id, alias, generation

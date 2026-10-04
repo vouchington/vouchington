@@ -5,6 +5,7 @@ import {
 } from '@aws-sdk/client-s3'
 import { S3ImagesClient } from '@modules/aws'
 
+// S3 DeleteObjects accepts at most 1,000 keys: https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteObjects.html
 const DELETE_BATCH_SIZE = 1000
 
 /** Every stored version and delete marker whose key is exactly `key` (the listing is by prefix). */

@@ -1,6 +1,6 @@
+import { getPostPublicationWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { retainPostPublicationImpacts } from './capture-impacts.mts'
-import { POST_PUBLICATION_CAPTURE_BATCH_SIZE } from './constants.mts'
 import { normalizePostPublicationIdentifiers } from './identifiers.mts'
 import { lockTopicRssFeedAttachmentLifecycle } from './lock.mts'
 import { upsertPostPublicationDirtyWork } from './upsert-dirty-work.mts'
@@ -18,6 +18,7 @@ export async function recordRssFeedDiscoverabilityChanges(
   query: TransactionQuery,
   rssFeedIds: readonly string[],
 ): Promise<PostPublicationDirtyWork[]> {
+  const POST_PUBLICATION_CAPTURE_BATCH_SIZE = getPostPublicationWorkLimit('capture_batch_size')
   const ids = normalizePostPublicationIdentifiers(rssFeedIds)
   const work: PostPublicationDirtyWork[] = []
   for (let offset = 0; offset < ids.length; offset += POST_PUBLICATION_CAPTURE_BATCH_SIZE) {
@@ -40,6 +41,7 @@ export async function recordRssFeedTopicPublicationChanges(
   query: TransactionQuery,
   changes: readonly RssFeedTopicPublicationChange[],
 ): Promise<PostPublicationDirtyWork[]> {
+  const POST_PUBLICATION_CAPTURE_BATCH_SIZE = getPostPublicationWorkLimit('capture_batch_size')
   const topicIdsByFeedId = new Map<string, Set<string>>()
   for (const change of changes) {
     const [rssFeedId] = normalizePostPublicationIdentifiers([change.rssFeedId])
@@ -83,6 +85,7 @@ export async function lockPostPublicationRssFeedScopes(
   query: TransactionQuery,
   rssFeedIds: readonly string[],
 ): Promise<void> {
+  const POST_PUBLICATION_CAPTURE_BATCH_SIZE = getPostPublicationWorkLimit('capture_batch_size')
   const ids = normalizePostPublicationIdentifiers(rssFeedIds)
   for (let offset = 0; offset < ids.length; offset += POST_PUBLICATION_CAPTURE_BATCH_SIZE) {
     const batch = ids.slice(offset, offset + POST_PUBLICATION_CAPTURE_BATCH_SIZE)
@@ -105,6 +108,7 @@ export async function lockTopicRssFeedPublicationScopes(
   query: TransactionQuery,
   topicIds: readonly string[],
 ): Promise<string[]> {
+  const POST_PUBLICATION_CAPTURE_BATCH_SIZE = getPostPublicationWorkLimit('capture_batch_size')
   const ids = normalizePostPublicationIdentifiers(topicIds)
   for (const topicId of ids) {
     // oxlint-disable-next-line no-await-in-loop -- sorted topic lifecycles make feed discovery stable.

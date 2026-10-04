@@ -18,14 +18,13 @@ type CandidateRow = {
   succession_topic_ids: string[] | null
 }
 
-export const REVIEW_SUCCESSION_CANDIDATE_PAGE_SIZE = 100
-
 /** Locks every current candidate once, after all affected exact-topic groups are locked. */
 export async function lockReviewSuccessionCandidates(
   query: TransactionQuery,
   groups: readonly ReviewSuccessionGroup[],
+  limit: number,
 ): Promise<void> {
-  const candidateIds = await listReviewSuccessionCandidateIds(query, groups)
+  const candidateIds = await listReviewSuccessionCandidateIds(query, groups, limit)
   await lockPostPublicationPostScopes(query, candidateIds)
   if (candidateIds.length === 0) return
   await query(
@@ -42,9 +41,10 @@ export async function lockReviewSuccessionCandidates(
 export async function listLockedReviewSuccessionCandidates(
   query: TransactionQuery,
   groups: readonly ReviewSuccessionGroup[],
+  limit: number,
 ): Promise<ReviewSuccessionCandidate[]> {
   const statement = sql`/* listLockedReviewSuccessionCandidates */ WITH `
-  statement.append(reviewSuccessionCandidatePageCte(groups)).append(sql`
+  statement.append(reviewSuccessionCandidatePageCte(groups, limit)).append(sql`
     SELECT grouped.author_user_id, grouped.topic_ids, candidate.id, candidate.archived_at,
       (`)
   statement
@@ -83,15 +83,16 @@ export async function listLockedReviewSuccessionCandidates(
 async function listReviewSuccessionCandidateIds(
   query: TransactionQuery,
   groups: readonly ReviewSuccessionGroup[],
+  limit: number,
 ): Promise<string[]> {
   const statement = sql`/* listReviewSuccessionCandidateIds */ WITH `
-  statement.append(reviewSuccessionCandidatePageCte(groups)).append(sql`
+  statement.append(reviewSuccessionCandidatePageCte(groups, limit)).append(sql`
     SELECT DISTINCT id FROM group_reviews ORDER BY id`)
   const { rows } = await query<{ id: string }>(statement)
   return rows.map(row => row.id)
 }
 
-function reviewSuccessionCandidatePageCte(groups: readonly ReviewSuccessionGroup[]) {
+function reviewSuccessionCandidatePageCte(groups: readonly ReviewSuccessionGroup[], limit: number) {
   const records = groups.map(group => ({
     author_user_id: group.authorUserId,
     topic_ids: group.topicIds,
@@ -136,7 +137,7 @@ function reviewSuccessionCandidatePageCte(groups: readonly ReviewSuccessionGroup
       ORDER BY (`)
     .append(buildPublicPostEligibilityFilter('candidate', 'candidate_root')).append(sql`) DESC,
         candidate.id DESC
-      LIMIT ${REVIEW_SUCCESSION_CANDIDATE_PAGE_SIZE}
+      LIMIT ${limit}
     ) review
   )`)
   return statement

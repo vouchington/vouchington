@@ -1,3 +1,4 @@
+import { getPostPublicationWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import {
   beginTransaction,
@@ -7,7 +8,6 @@ import {
 import { readTestPublicationRetainedKeys } from '@voucha/test-helpers/entities/post-publication-snapshots'
 import { describe, expect, it } from 'vitest'
 import { recordPostPublicationChange } from './capture.mts'
-import { POST_PUBLICATION_DIRTY_WORK_KEY_BATCH_SIZE } from './constants.mts'
 import { retainPublicationIdentityBridges } from './identity-bridges.mts'
 import {
   retainPostPublicationKeys,
@@ -17,8 +17,9 @@ import {
 describe('retained key native conflict ordering', () => {
   it('orders complete conflict keys across mixed-family batch boundaries with precommitted bridges', async () => {
     const postId = crypto.randomUUID()
-    const communityIds = Array.from({ length: POST_PUBLICATION_DIRTY_WORK_KEY_BATCH_SIZE }, () =>
-      crypto.randomUUID(),
+    const communityIds = Array.from(
+      { length: getPostPublicationWorkLimit('dirty_work_key_batch_size') },
+      () => crypto.randomUUID(),
     ).toSorted()
     await using setup = await beginTransaction()
     const work = await recordPostPublicationChange(setup, {
@@ -46,7 +47,7 @@ describe('retained key native conflict ordering', () => {
     await setup.commit()
     const prefix = crypto.randomUUID()
     const shared: PostPublicationRetainedKey[] = Array.from(
-      { length: POST_PUBLICATION_DIRTY_WORK_KEY_BATCH_SIZE },
+      { length: getPostPublicationWorkLimit('dirty_work_key_batch_size') },
       (_, index) => ({
         kind: 'identity_topic_alias',
         textValue: `${prefix}-a${String(index).padStart(4, '0')}`,

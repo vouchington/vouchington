@@ -1,3 +1,4 @@
+import { getUserDeletionsWorkLimit } from './work-limits.mts'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
@@ -13,7 +14,6 @@ import {
   getUserDeletionRelationImpactIdsForTest,
   getUserDeletionRequestForTest,
 } from '@voucha/test-helpers/services/user-deletions/lifecycle.test-support'
-import { USER_DELETION_BATCH_SIZE } from './phases.mts'
 
 describe('user deletion finalization', () => {
   it('removes a late Bluesky follow receipt and completes', async () => {
@@ -62,7 +62,7 @@ describe('user deletion finalization', () => {
     await insertTestBlueskyFollowReceipt(follower.id, user.id)
     const request = await createUserDeletionRequest(user.id, user.id)
     const workKeys = Array.from(
-      { length: USER_DELETION_BATCH_SIZE + 1 },
+      { length: getUserDeletionsWorkLimit('batch_size') + 1 },
       (_, index) => `cache-tag:${user.id}:${index}`,
     )
     for (const workKey of workKeys) {
@@ -93,7 +93,7 @@ describe('user deletion finalization', () => {
     const beforeAuditCleanup = await getUserDeletionCompletionAuditForTest(request.id)
     expect(beforeAuditCleanup.externalWorks.filter(work => work.workKey === null)).toHaveLength(0)
     expect(await getUserDeletionRelationImpactIdsForTest(request.id)).toHaveLength(
-      USER_DELETION_BATCH_SIZE + 1,
+      getUserDeletionsWorkLimit('batch_size') + 1,
     )
 
     const boundedCleanup = await processUserDeletionBatch(
@@ -107,13 +107,13 @@ describe('user deletion finalization', () => {
     )
     expect(boundedCleanup).not.toBeNull()
     const cleanupAudit = await getUserDeletionCompletionAuditForTest(request.id)
-    expect(cleanupAudit.externalWorks).toHaveLength(USER_DELETION_BATCH_SIZE + 1)
+    expect(cleanupAudit.externalWorks).toHaveLength(getUserDeletionsWorkLimit('batch_size') + 1)
     expect(cleanupAudit.externalWorks.filter(work => work.workKey === null)).toHaveLength(
-      USER_DELETION_BATCH_SIZE,
+      getUserDeletionsWorkLimit('batch_size'),
     )
     expect(cleanupAudit.externalWorks.filter(work => work.workKey !== null)).toHaveLength(1)
     expect(await getUserDeletionRelationImpactIdsForTest(request.id)).toHaveLength(
-      USER_DELETION_BATCH_SIZE + 1,
+      getUserDeletionsWorkLimit('batch_size') + 1,
     )
     expect(await getUserDeletionRequestForTest(request.id)).toMatchObject({ completedAt: null })
     if (!boundedCleanup) throw new Error('Expected finalization retry')
@@ -130,7 +130,7 @@ describe('user deletion finalization', () => {
     expect(finalRedaction).not.toBeNull()
     if (!finalRedaction) throw new Error('Expected relation-impact cleanup retry')
     expect(await getUserDeletionRelationImpactIdsForTest(request.id)).toHaveLength(
-      USER_DELETION_BATCH_SIZE + 1,
+      getUserDeletionsWorkLimit('batch_size') + 1,
     )
 
     const firstImpactCleanup = await processUserDeletionBatch(

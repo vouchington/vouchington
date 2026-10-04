@@ -1,6 +1,5 @@
+import { getBlueskyFollowsWorkLimit } from './work-limits.mts'
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
-
-const BACKFILL_BATCH_SIZE = 500
 
 export type BlueskyFollowPropagationCandidate = {
   followerUserId: string
@@ -68,23 +67,25 @@ export async function* streamBlueskyFollowPropagationCandidateBatches(): AsyncGe
   void,
   unknown
 > {
+  const batchSize = getBlueskyFollowsWorkLimit('backfill_batch_size')
   yield* streamBlueskyFollowPropagationCandidateBatchesFromRows(
     createAsyncGeneratorFromCursor<{
       follower_user_id: string
       followee_user_id: string
     }>(BLUESKY_FOLLOW_PROPAGATION_CANDIDATE_QUERY, {
-      batchSize: BACKFILL_BATCH_SIZE,
+      batchSize: batchSize,
     }),
   )
 }
 
 export async function* streamBlueskyFollowPropagationCandidateBatchesFromRows(
   rows: AsyncIterable<{ follower_user_id: string; followee_user_id: string }>,
+  batchSize = getBlueskyFollowsWorkLimit('backfill_batch_size'),
 ): AsyncGenerator<BlueskyFollowPropagationCandidate[], void, unknown> {
   let batch: BlueskyFollowPropagationCandidate[] = []
   for await (const row of rows) {
     batch.push({ followerUserId: row.follower_user_id, followeeUserId: row.followee_user_id })
-    if (batch.length >= BACKFILL_BATCH_SIZE) {
+    if (batch.length >= batchSize) {
       yield batch
       batch = []
     }

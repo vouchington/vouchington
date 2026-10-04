@@ -1,5 +1,5 @@
+import { getPostPublicationWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql'
-import { POST_PUBLICATION_CAPTURE_BATCH_SIZE } from './constants.mts'
 import {
   lockPostPublicationRssFeedScopes,
   recordRssFeedDiscoverabilityChanges,
@@ -12,6 +12,7 @@ export async function recordTopicMergePublicationChanges(
   sourceTopicId: string,
   lockedTopicAliasIds: ReadonlySet<string>,
 ): Promise<void> {
+  const POST_PUBLICATION_CAPTURE_BATCH_SIZE = getPostPublicationWorkLimit('capture_batch_size')
   let afterFeedId: string | null = null
   while (true) {
     // oxlint-disable-next-line no-await-in-loop -- every feed page is locked and captured in ascending order.

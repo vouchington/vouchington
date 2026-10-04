@@ -1,8 +1,8 @@
+import { getPostPublicationWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { PublicationSnapshotKey } from './identity-source.mts'
 import type { PublicationIdentitySourcePage } from './identity-source-paging.mts'
-import { POST_PUBLICATION_IDENTITY_SNAPSHOT_PAGE_SIZE } from './identity-snapshot-page-size.mts'
 import { retainSnapshotPage } from './snapshot-key-writes.mts'
 import { publicationSnapshotKeyPageSql } from './snapshot-key-pages.mts'
 import { publicationPageLimit } from './page-limit.mts'
@@ -12,6 +12,9 @@ export async function retainStoredPublicationIdentities(
   dirtyWorkId: string,
   postId: string,
 ): Promise<void> {
+  const POST_PUBLICATION_IDENTITY_SNAPSHOT_PAGE_SIZE = getPostPublicationWorkLimit(
+    'identity_snapshot_page_size',
+  )
   let kind: string | null = null
   let value: string | null = null
   while (true) {

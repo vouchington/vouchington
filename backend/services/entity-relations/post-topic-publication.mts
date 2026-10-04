@@ -1,3 +1,4 @@
+import { getEntityRelationsWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
@@ -13,8 +14,6 @@ import {
 const POST_RELATED_URL_TABLE = 'relation__post__related__url'
 const RSS_FEED_ITEM_TOPIC_ALIAS_CATEGORY_TABLE = 'relation__rss_feed_item__category__topic_alias'
 const TOPIC_PUBLISHER_TYPE_TABLE = 'relation__topic__publisher_type__topic'
-const ALIAS_RESOLUTION_BATCH_SIZE = 1000
-const PUBLISHER_TYPE_RSS_FEED_BATCH_SIZE = 500
 
 type PostTopicRelationChange = {
   subject_id: string
@@ -110,6 +109,9 @@ async function recordPublisherTypeRelationPublicationChanges(
   query: TransactionQuery,
   changes: readonly PostTopicRelationChange[],
 ): Promise<void> {
+  const PUBLISHER_TYPE_RSS_FEED_BATCH_SIZE = getEntityRelationsWorkLimit(
+    'rss_feed_publisher_batch_size',
+  )
   const topicIds = [...new Set(changes.map(change => change.subject_id))].toSorted()
   let afterRssFeedId: string | null = null
   while (true) {
@@ -157,6 +159,7 @@ async function getCanonicalTopicIdsByAliasId(
   query: TransactionQuery,
   aliasIds: readonly string[],
 ): Promise<Map<string, string>> {
+  const ALIAS_RESOLUTION_BATCH_SIZE = getEntityRelationsWorkLimit('alias_resolution_batch_size')
   const aliases = new Map<string, string>()
   const uniqueAliasIds = [...new Set(aliasIds)].toSorted()
   for (let offset = 0; offset < uniqueAliasIds.length; offset += ALIAS_RESOLUTION_BATCH_SIZE) {

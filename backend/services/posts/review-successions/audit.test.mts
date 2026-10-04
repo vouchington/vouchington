@@ -1,3 +1,6 @@
+import { postsWorkConfig } from '@services/posts/work-limits'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { observeTestPostgresQueryPools } from '@voucha/test-helpers/postgres-query-pool-observer'
 import { readFileSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import {
@@ -150,17 +153,34 @@ describe('review succession history audit', () => {
     await reconcileReviewSuccessionsForPostIds([successorId])
     await archivePost(predecessorId, author.id)
 
-    const result = await auditReviewSuccessionHistory({
-      cursor: `${idPrefix}00`,
-      cutoffArchivedAt: null,
+    const restore = overrideDynamicConfigFieldsForTest(postsWorkConfig, {
+      review_succession_history_audit_page_size: 1,
     })
-
-    expect(result.findings).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ postId: legacyId, classification: 'ambiguous_missing_epoch' }),
-        expect.objectContaining({ postId: predecessorId, classification: 'terminal_manual' }),
-      ]),
-    )
+    try {
+      const { result } = await observeTestPostgresQueryPools(
+        '/* listReviewSuccessionHistoryAuditRows */',
+        () => auditReviewSuccessionHistory({ cursor: `${idPrefix}00`, cutoffArchivedAt: null }),
+        () => {
+          overrideDynamicConfigFieldsForTest(postsWorkConfig, {
+            review_succession_history_audit_page_size: 500,
+          })
+        },
+      )
+      expect(result.findings).toHaveLength(1)
+      expect(result.hasMore).toBe(true)
+      const next = await auditReviewSuccessionHistory({
+        cursor: result.cursor,
+        cutoffArchivedAt: result.cutoffArchivedAt,
+      })
+      expect([...result.findings, ...next.findings]).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ postId: legacyId, classification: 'ambiguous_missing_epoch' }),
+          expect.objectContaining({ postId: predecessorId, classification: 'terminal_manual' }),
+        ]),
+      )
+    } finally {
+      restore()
+    }
   })
 
   it('rejects malformed post IDs before listing succession evidence', () => {

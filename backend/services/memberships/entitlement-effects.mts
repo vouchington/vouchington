@@ -1,9 +1,9 @@
+import { getMembershipWorkLimit } from './work-limits.mts'
 import { markJwtStaleBatch } from '@data-stores/valkey/jwt-stale'
 import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import { enqueueBulkRecalculateUserVoteWeight } from '@queues/vote-weight/enqueues'
 import sql from 'sql-template-strings'
 
-const DEFAULT_ENTITLEMENT_EFFECT_BATCH_SIZE = 100
 const DELIVERY_CLAIM_TTL_SECONDS = 300
 
 export type MembershipEntitlementEffect = {
@@ -30,7 +30,7 @@ export async function recordMembershipEntitlementEffect(
 }
 
 export async function claimPendingMembershipEntitlementEffects(
-  batchSize = DEFAULT_ENTITLEMENT_EFFECT_BATCH_SIZE,
+  batchSize = getMembershipWorkLimit('entitlement_effect_batch_size'),
 ): Promise<MembershipEntitlementEffect[]> {
   const deliveryClaimToken = crypto.randomUUID()
   await using query = await beginTransaction()
@@ -97,7 +97,7 @@ export async function completeMembershipEntitlementEffects(
  * idempotent downstream operation leaves the effect reclaimable until both effects have converged.
  */
 export async function deliverPendingMembershipEntitlementEffects(
-  batchSize = DEFAULT_ENTITLEMENT_EFFECT_BATCH_SIZE,
+  batchSize = getMembershipWorkLimit('entitlement_effect_batch_size'),
 ): Promise<number> {
   const effects = await claimPendingMembershipEntitlementEffects(batchSize)
   if (effects.length === 0) return 0

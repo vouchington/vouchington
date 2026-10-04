@@ -7,6 +7,8 @@ import {
 } from '@voucha/test-helpers'
 import { createDataRequest } from './create.mts'
 import { claimRecoverableDataRequests } from './recovery.mts'
+import { dataRequestConfig } from './work-limits.mts'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   markDataRequestProcessing,
   markDataRequestReady,
@@ -14,6 +16,28 @@ import {
 } from './update.mts'
 
 describe('account data request recovery', () => {
+  it('uses updated dispatch and processing recovery windows in the actual claim predicates', async () => {
+    const user = await createTestUser()
+    const request = await createDataRequest(user.id, user.id)
+    await makeUserDataRequestRecoverableForTest(request.id, 'unstarted', 3)
+    expect((await claimRecoverableDataRequests([request.id])).requests).toEqual([])
+    const restore = overrideDynamicConfigFieldsForTest(dataRequestConfig, {
+      dispatch_timeout_minutes: 2,
+      processing_timeout_minutes: 5,
+    })
+    try {
+      const dispatched = await claimRecoverableDataRequests([request.id])
+      expect(dispatched.requests.map(row => row.requestId)).toEqual([request.id])
+      expect(dispatched.requests[0]!.processingAttemptId).toBe(request.processing_attempt_id)
+      await makeUserDataRequestRecoverableForTest(request.id, 'stale', 10)
+      const processing = await claimRecoverableDataRequests([request.id])
+      expect(processing.requests.map(row => row.requestId)).toEqual([request.id])
+      expect(processing.requests[0]!.processingAttemptId).not.toBe(request.processing_attempt_id)
+    } finally {
+      restore()
+    }
+  })
+
   it('reuses the token for an unstarted attempt and rotates stale attempts', async () => {
     const user = await createTestUser()
     const request = await createDataRequest(user.id, user.id)

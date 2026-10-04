@@ -1,3 +1,4 @@
+import { getBookmarksWorkLimit } from './work-limits.mts'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import {
   entityRelationMetadatum,
@@ -12,7 +13,6 @@ import { ValkeyBloomFilter, bloomValkeyClient } from '@data-stores/valkey'
 // exceeding it forces a second sub-filter, nearly tripling memory and doubling lookup cost.
 export const BOOKMARK_BLOOM_DEFAULT_CAPACITY = 2_500
 export const BOOKMARK_BLOOM_ERROR_RATE = 0.01
-export const BOOKMARK_BLOOM_BATCH_SIZE = 5_000
 
 // Ready markers signal per-relation backfill completion; they refresh on every successful
 // backfill, so a 7-day TTL only matters if backfills stop entirely for a user.
@@ -48,6 +48,7 @@ export function getBookmarkBloomFilterName(userId: string): string {
 }
 
 export function getBookmarkBloomFilter(userId: string): ValkeyBloomFilter {
+  const BOOKMARK_BLOOM_BATCH_SIZE = getBookmarksWorkLimit('bloom_batch_size')
   return new ValkeyBloomFilter({
     name: getBookmarkBloomFilterName(userId),
     capacity: BOOKMARK_BLOOM_DEFAULT_CAPACITY,

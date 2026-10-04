@@ -1,3 +1,4 @@
+import { getRssFeedItemsWorkLimit } from '@services/rss-feed-items/work-limits'
 import { beginTransaction, withTransactionOptions } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import { invalidateRssFeedItemsAndWaitForPurge } from '@services/entity-cache/invalidate-rss-feed-items'
@@ -14,7 +15,6 @@ import { markRssFeedItemCategorySnapshotsForReconciliation } from './category-sn
 import { chunkArray } from './processing-limits.mts'
 import { recordStoryPublicationChangesForCategoryTopics } from './story-publication-change.mts'
 import { clearUnlinkedTopicAliasCategoryBatch } from './clear-unlinked-topic-alias-category-batch.mts'
-const INVALIDATION_CHUNK_SIZE = 100
 /**
  * Re-resolves mappings for an alias that no longer has an active topic owner.
  *
@@ -153,6 +153,7 @@ async function runInTransaction<Result>(
   return result
 }
 async function invalidateRssFeedItemChunks(itemIds: string[]): Promise<void> {
+  const INVALIDATION_CHUNK_SIZE = getRssFeedItemsWorkLimit('backfill_invalidation_chunk_size')
   const [chunk, ...remaining] = chunkArray(itemIds, INVALIDATION_CHUNK_SIZE)
   if (!chunk) return
   await invalidateRssFeedItemsAndWaitForPurge(...chunk)

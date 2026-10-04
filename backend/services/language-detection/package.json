@@ -17,6 +17,7 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/entity-cache": "workspace:^",
     "@ts-shared/languages": "workspace:^",

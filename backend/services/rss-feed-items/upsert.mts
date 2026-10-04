@@ -1,3 +1,4 @@
+import { getRssFeedItemsWorkLimit } from './work-limits.mts'
 import type { RssFeedItemToUpsert } from './types.mts'
 import {
   buildExistingRssFeedItemsMap,
@@ -21,7 +22,7 @@ import { persistRssFeedItemCategorySnapshotReconciliations } from './category-sn
 import { snapshotsForRssFeedItemRows } from './upsert-category-snapshot-reconciliations.mts'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import { chunkArray, RSS_FEED_ITEM_SQL_BATCH_SIZE } from './processing-limits.mts'
+import { chunkArray } from './processing-limits.mts'
 import { requestRssFeedItemClassifierRuns } from '@services/classifier-runs'
 import { recordPostPublicationChange } from '@services/post-publication'
 import { STORY_CLUSTERING_CLASSIFIER_SLUG } from '@voucha/types/entities/story-clustering-classifier'
@@ -47,6 +48,7 @@ export async function upsertRssFeedItems(
   dependencies: UpsertRssFeedItemsDependencies = {},
 ) {
   assert(feedItems.length > 0, 400, 'feedItems is required')
+  const RSS_FEED_ITEM_SQL_BATCH_SIZE = getRssFeedItemsWorkLimit('sql_batch_size')
   const [feedRow] = (
     await read(sql`/* upsertRssFeedItems:hostname */
     SELECT urls.hostname_id AS url_hostname_id,

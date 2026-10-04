@@ -24,6 +24,7 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
     "@modules/feed-query-builders": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/pagination": "workspace:^",
@@ -53,7 +54,6 @@
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
-    "@data-stores/valkey": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@types/pg": "^8.23.1",

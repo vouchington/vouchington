@@ -1,3 +1,4 @@
+import { getStoriesWorkLimit } from './work-limits.mts'
 import { write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
@@ -7,14 +8,13 @@ import { lockPostPublicationPostScopes } from '@services/post-publication'
 import type { ProjectionWork } from './story-post-related-url-projection-types.mts'
 import { isStoryPostRelatedUrlProjectionWorkCurrent } from './story-post-related-url-projection-work.mts'
 
-const CRAWL_EFFECT_PAGE_SIZE = 100
-
 export async function drainPendingStoryPostRelatedUrlProjectionCrawlEffects(
   work: ProjectionWork,
   enqueue: (
     entries: Parameters<typeof enqueueBulkCrawlUrls>[0],
   ) => Promise<unknown> = enqueueBulkCrawlUrls,
 ): Promise<number | null> {
+  const CRAWL_EFFECT_PAGE_SIZE = getStoriesWorkLimit('crawl_effect_page_size')
   const { rows } = await write<{ generation: string; url_id: string }>(
     `/* getPendingStoryPostRelatedUrlProjectionCrawlEffects */
       SELECT generation, url_id

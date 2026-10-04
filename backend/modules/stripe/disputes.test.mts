@@ -1,3 +1,4 @@
+import { stripeLookupMaxPagesForTest } from '@voucha/test-helpers/stripe-pagination-limits'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as stripeClientModule from '@modules/stripe/client'
 import { getStripeDisputeSettlementForPayment } from './disputes.mts'
@@ -24,11 +25,14 @@ describe('Stripe disputes module', () => {
     } as never)
 
     await expect(
-      getStripeDisputeSettlementForPayment({
-        chargeId: 'ch_disputed',
-        currency: 'usd',
-        paymentIntentId: null,
-      }),
+      getStripeDisputeSettlementForPayment(
+        {
+          chargeId: 'ch_disputed',
+          currency: 'usd',
+          paymentIntentId: null,
+        },
+        stripeLookupMaxPagesForTest,
+      ),
     ).resolves.toEqual({ lostDisputeAmountMinorUnits: 0, refundDeferred: true })
     expect(list).toHaveBeenCalledWith({ charge: 'ch_disputed', limit: 100 })
   })
@@ -42,11 +46,14 @@ describe('Stripe disputes module', () => {
     } as never)
 
     await expect(
-      getStripeDisputeSettlementForPayment({
-        chargeId: 'ch_closed',
-        currency: 'usd',
-        paymentIntentId: null,
-      }),
+      getStripeDisputeSettlementForPayment(
+        {
+          chargeId: 'ch_closed',
+          currency: 'usd',
+          paymentIntentId: null,
+        },
+        stripeLookupMaxPagesForTest,
+      ),
     ).resolves.toEqual({ lostDisputeAmountMinorUnits: 0, refundDeferred: false })
   })
 
@@ -59,11 +66,14 @@ describe('Stripe disputes module', () => {
     } as never)
 
     await expect(
-      getStripeDisputeSettlementForPayment({
-        chargeId: 'ch_lost',
-        currency: 'usd',
-        paymentIntentId: null,
-      }),
+      getStripeDisputeSettlementForPayment(
+        {
+          chargeId: 'ch_lost',
+          currency: 'usd',
+          paymentIntentId: null,
+        },
+        stripeLookupMaxPagesForTest,
+      ),
     ).resolves.toEqual({ lostDisputeAmountMinorUnits: 700, refundDeferred: false })
   })
 
@@ -76,11 +86,14 @@ describe('Stripe disputes module', () => {
     } as never)
 
     await expect(
-      getStripeDisputeSettlementForPayment({
-        chargeId: 'ch_warning_closed',
-        currency: 'usd',
-        paymentIntentId: null,
-      }),
+      getStripeDisputeSettlementForPayment(
+        {
+          chargeId: 'ch_warning_closed',
+          currency: 'usd',
+          paymentIntentId: null,
+        },
+        stripeLookupMaxPagesForTest,
+      ),
     ).resolves.toEqual({ lostDisputeAmountMinorUnits: 0, refundDeferred: false })
   })
 
@@ -93,11 +106,14 @@ describe('Stripe disputes module', () => {
     } as never)
 
     await expect(
-      getStripeDisputeSettlementForPayment({
-        chargeId: 'ch_prevented',
-        currency: 'usd',
-        paymentIntentId: null,
-      }),
+      getStripeDisputeSettlementForPayment(
+        {
+          chargeId: 'ch_prevented',
+          currency: 'usd',
+          paymentIntentId: null,
+        },
+        stripeLookupMaxPagesForTest,
+      ),
     ).resolves.toEqual({ lostDisputeAmountMinorUnits: 0, refundDeferred: false })
   })
 
@@ -116,11 +132,14 @@ describe('Stripe disputes module', () => {
     } as never)
 
     await expect(
-      getStripeDisputeSettlementForPayment({
-        chargeId: 'ch_mixed',
-        currency: 'usd',
-        paymentIntentId: null,
-      }),
+      getStripeDisputeSettlementForPayment(
+        {
+          chargeId: 'ch_mixed',
+          currency: 'usd',
+          paymentIntentId: null,
+        },
+        stripeLookupMaxPagesForTest,
+      ),
     ).resolves.toEqual({ lostDisputeAmountMinorUnits: 400, refundDeferred: true })
     expect(list).toHaveBeenNthCalledWith(1, { charge: 'ch_mixed', limit: 100 })
     expect(list).toHaveBeenNthCalledWith(2, {
@@ -139,11 +158,14 @@ describe('Stripe disputes module', () => {
       } as never)
 
       await expect(
-        getStripeDisputeSettlementForPayment({
-          chargeId: 'ch_warning_open',
-          currency: 'usd',
-          paymentIntentId: null,
-        }),
+        getStripeDisputeSettlementForPayment(
+          {
+            chargeId: 'ch_warning_open',
+            currency: 'usd',
+            paymentIntentId: null,
+          },
+          stripeLookupMaxPagesForTest,
+        ),
       ).resolves.toEqual({ lostDisputeAmountMinorUnits: 0, refundDeferred: true })
     },
   )
@@ -155,21 +177,27 @@ describe('Stripe disputes module', () => {
     } as never)
 
     await expect(
-      getStripeDisputeSettlementForPayment({
-        chargeId: 'ch_empty_continuation',
-        currency: 'usd',
-        paymentIntentId: null,
-      }),
+      getStripeDisputeSettlementForPayment(
+        {
+          chargeId: 'ch_empty_continuation',
+          currency: 'usd',
+          paymentIntentId: null,
+        },
+        stripeLookupMaxPagesForTest,
+      ),
     ).rejects.toThrow('Stripe returned an empty dispute page for charge ch_empty_continuation')
 
     list.mockClear()
     list.mockResolvedValue(getStripeDisputePage([{ id: 'dp_repeated', status: 'won' }], true))
     await expect(
-      getStripeDisputeSettlementForPayment({
-        chargeId: 'ch_page_cap',
-        currency: 'usd',
-        paymentIntentId: null,
-      }),
+      getStripeDisputeSettlementForPayment(
+        {
+          chargeId: 'ch_page_cap',
+          currency: 'usd',
+          paymentIntentId: null,
+        },
+        stripeLookupMaxPagesForTest,
+      ),
     ).rejects.toThrow('Stripe charge ch_page_cap exceeded the dispute page limit')
     expect(list).toHaveBeenCalledTimes(10)
   })
@@ -183,30 +211,39 @@ describe('Stripe disputes module', () => {
     } as never)
 
     await expect(
-      getStripeDisputeSettlementForPayment({
-        chargeId: 'ch_wrong_currency',
-        currency: 'usd',
-        paymentIntentId: null,
-      }),
+      getStripeDisputeSettlementForPayment(
+        {
+          chargeId: 'ch_wrong_currency',
+          currency: 'usd',
+          paymentIntentId: null,
+        },
+        stripeLookupMaxPagesForTest,
+      ),
     ).rejects.toThrow('Stripe dispute currency eur did not match usd')
 
     list.mockResolvedValue(getStripeDisputePage([{ status: 'future_status' }]))
     await expect(
-      getStripeDisputeSettlementForPayment({
-        chargeId: 'ch_unknown_status',
-        currency: 'usd',
-        paymentIntentId: null,
-      }),
+      getStripeDisputeSettlementForPayment(
+        {
+          chargeId: 'ch_unknown_status',
+          currency: 'usd',
+          paymentIntentId: null,
+        },
+        stripeLookupMaxPagesForTest,
+      ),
     ).rejects.toThrow('Unsupported Stripe dispute status: future_status')
   })
 
   it('rejects a dispute lookup without a provider payment reference', async () => {
     await expect(
-      getStripeDisputeSettlementForPayment({
-        chargeId: null,
-        currency: 'usd',
-        paymentIntentId: null,
-      }),
+      getStripeDisputeSettlementForPayment(
+        {
+          chargeId: null,
+          currency: 'usd',
+          paymentIntentId: null,
+        },
+        stripeLookupMaxPagesForTest,
+      ),
     ).rejects.toThrow('requires a charge or payment intent')
   })
 
@@ -223,11 +260,14 @@ describe('Stripe disputes module', () => {
     } as never)
 
     await expect(
-      getStripeDisputeSettlementForPayment({
-        chargeId: null,
-        currency: 'usd',
-        paymentIntentId: 'pi_disputed',
-      }),
+      getStripeDisputeSettlementForPayment(
+        {
+          chargeId: null,
+          currency: 'usd',
+          paymentIntentId: 'pi_disputed',
+        },
+        stripeLookupMaxPagesForTest,
+      ),
     ).resolves.toEqual({ lostDisputeAmountMinorUnits: 0, refundDeferred: true })
     expect(retrieve).toHaveBeenCalledWith('pi_disputed', { expand: ['latest_charge'] })
     expect(list).toHaveBeenCalledWith({ charge: 'ch_payment_intent_dispute', limit: 100 })

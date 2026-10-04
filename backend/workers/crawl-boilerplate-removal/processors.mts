@@ -1,3 +1,4 @@
+import { getCrawlBoilerplateRemovalWorkLimit } from '@queues/crawl-boilerplate-removal/config'
 import { getLatestHtmlByUrlIds } from '@services/crawls/get-html-by-url-ids'
 import {
   searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId,
@@ -13,8 +14,6 @@ import { extractDomRemovals } from '@jongleberry/vurst-html'
 import { createReadStream } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import type { CrawlHtmlTempFile } from '@services/crawls/s3'
-
-const BOILERPLATE_REMOVAL_BATCH_SIZE = 500
 
 // extractDomRemovals (vurst-html, Rust N-API) enforces its own hard combined-input byte cap,
 // independent of and coincidentally equal to our unrelated per-page crawl-storage limit
@@ -92,7 +91,9 @@ async function extractDomRemovalsExclusively(files: CrawlHtmlTempFile[]) {
 }
 
 export const processBoilerplateRemovalDispatcher = (): Promise<ParentPathCandidate[]> => {
-  return searchParentPathsNeedingBoilerplateRemoval(BOILERPLATE_REMOVAL_BATCH_SIZE)
+  return searchParentPathsNeedingBoilerplateRemoval(
+    getCrawlBoilerplateRemovalWorkLimit('batch_size'),
+  )
 }
 
 export const processBoilerplateRemoval = async (

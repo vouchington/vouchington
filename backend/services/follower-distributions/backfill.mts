@@ -1,13 +1,13 @@
+import { getFollowerDistributionsWorkLimit } from './work-limits.mts'
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-
-const BACKFILL_BATCH_SIZE = 500
 
 export async function* streamIncompleteFollowerDistributionIdBatches(): AsyncGenerator<
   string[],
   void,
   unknown
 > {
+  const batchSize = getFollowerDistributionsWorkLimit('backfill_batch_size')
   yield* streamIncompleteFollowerDistributionIdBatchesFromRows(
     createAsyncGeneratorFromCursor<{ id: string }>(
       sql`/* streamIncompleteFollowerDistributionIdBatches */
@@ -17,18 +17,20 @@ export async function* streamIncompleteFollowerDistributionIdBatches(): AsyncGen
           AND failed_at IS NULL
         ORDER BY id
       `,
-      { batchSize: BACKFILL_BATCH_SIZE },
+      { batchSize: batchSize },
     ),
+    batchSize,
   )
 }
 
 export async function* streamIncompleteFollowerDistributionIdBatchesFromRows(
   rows: AsyncIterable<{ id: string }>,
+  batchSize = getFollowerDistributionsWorkLimit('backfill_batch_size'),
 ): AsyncGenerator<string[], void, unknown> {
   let batch: string[] = []
   for await (const row of rows) {
     batch.push(row.id)
-    if (batch.length >= BACKFILL_BATCH_SIZE) {
+    if (batch.length >= batchSize) {
       yield batch
       batch = []
     }

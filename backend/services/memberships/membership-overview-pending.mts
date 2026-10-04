@@ -1,3 +1,4 @@
+import { getMembershipWorkLimit } from './work-limits.mts'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { MembershipPurchaseProvider } from './purchase-intent-launches.mts'
@@ -7,6 +8,8 @@ import type {
 } from './verification-contract.mts'
 
 export async function getMembershipPendingState(userId: string) {
+  const verificationPageSize = getMembershipWorkLimit('pending_verifications_page_size')
+  const operationPageSize = getMembershipWorkLimit('pending_operations_page_size')
   const [grantResult, verificationResult, operationResult] = await Promise.all([
     read<{ count: string }>(sql`/* getMembershipPendingState.grants */
       SELECT COUNT(*)::text AS count FROM membership_grants grant_row
@@ -34,7 +37,7 @@ export async function getMembershipPendingState(userId: string) {
       FROM membership_verifications
       WHERE user_id = ${userId}
       ORDER BY id DESC
-      LIMIT 50`),
+      LIMIT ${verificationPageSize}`),
     read<{
       id: string
       provider: MembershipPurchaseProvider
@@ -51,7 +54,7 @@ export async function getMembershipPendingState(userId: string) {
       INNER JOIN membership_sources source ON source.id = operation.membership_source_id
       WHERE source.user_id = ${userId} AND operation.completed_at IS NULL
       ORDER BY operation.id DESC
-      LIMIT 50`),
+      LIMIT ${operationPageSize}`),
   ])
   return {
     grants: Number(grantResult.rows[0]?.count ?? 0),

@@ -1,3 +1,7 @@
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
+import { observeTestPostgresQueryPools } from '@voucha/test-helpers/postgres-query-pool-observer'
+import { classifiersWorkConfig, getClassifiersWorkLimit } from './work-limits.mts'
 import { describe, expect, it } from 'vitest'
 import {
   insertCompletedEmptyBatches,
@@ -6,7 +10,6 @@ import {
 } from '../../test-helpers/data-stores/psql/classifier-comparison-seeding.mts'
 import { createClassifierFixture } from '../../test-helpers/data-stores/psql/classifiers.mts'
 import { getClassifierHumanVoteComparison } from './get-classifier-human-vote-comparison.mts'
-import { CLASSIFIER_COMPARISON_MAX_BATCHES } from './human-vote-comparison-types.mts'
 
 const WINDOW = { from: seedMoment(-6), to: seedMoment(6) }
 
@@ -25,18 +28,56 @@ async function reportWithBatches(others: number) {
 }
 
 describe('getClassifierHumanVoteComparison batch cap', () => {
-  it('examines every batch of a window that holds exactly the cap', async () => {
-    const comparison = await reportWithBatches(CLASSIFIER_COMPARISON_MAX_BATCHES - 1)
+  it('keeps SQL aggregation and truncation metadata on the captured cap across the classifier await', async () => {
+    const fixture = await createClassifierFixture()
+    await fixture.activateClassifierConfigurations()
+    await seedGlobalDecision(fixture, { probability: 0.9, at: seedMoment(-2) })
+    await insertCompletedEmptyBatches(fixture, 2, seedMoment(0))
+    const restore = overrideDynamicConfigFieldsForTest(classifiersWorkConfig, {
+      comparison_max_batches: 2,
+    })
+    try {
+      const { result: observed, queries } = await withCapturedTestQueries(() =>
+        observeTestPostgresQueryPools(
+          '/* classifierHumanVoteComparison:classifier */',
+          () => getClassifierHumanVoteComparison({ classifierId: fixture.classifierId, ...WINDOW }),
+          () => {
+            overrideDynamicConfigFieldsForTest(classifiersWorkConfig, { comparison_max_batches: 1 })
+          },
+        ),
+      )
+      expect(observed.result).toMatchObject({
+        outcome: 'ok',
+        comparison: {
+          batches_examined: 2,
+          truncated: true,
+          cells: [],
+        },
+      })
+      const comparison = queries.find(query =>
+        query.text.includes('/* classifierHumanVoteComparison */'),
+      )!
+      expect(comparison.text).toContain('LIMIT $5')
+      expect(comparison.values.slice(3, 5)).toEqual([3, 2])
+    } finally {
+      restore()
+    }
+  })
 
-    expect(comparison.batches_examined).toBe(CLASSIFIER_COMPARISON_MAX_BATCHES)
+  it('examines every batch of a window that holds exactly the cap', async () => {
+    const comparison = await reportWithBatches(
+      getClassifiersWorkLimit('comparison_max_batches') - 1,
+    )
+
+    expect(comparison.batches_examined).toBe(getClassifiersWorkLimit('comparison_max_batches'))
     expect(comparison.truncated).toBe(false)
     expect(comparison.cells).toMatchObject([{ probability_lower: 0.9, decisions: 1 }])
   })
 
   it('examines only the newest batches of a larger window and says so', async () => {
-    const comparison = await reportWithBatches(CLASSIFIER_COMPARISON_MAX_BATCHES)
+    const comparison = await reportWithBatches(getClassifiersWorkLimit('comparison_max_batches'))
 
-    expect(comparison.batches_examined).toBe(CLASSIFIER_COMPARISON_MAX_BATCHES)
+    expect(comparison.batches_examined).toBe(getClassifiersWorkLimit('comparison_max_batches'))
     expect(comparison.truncated).toBe(true)
     // The decision is the oldest batch, so it is the one the cap leaves out.
     expect(comparison.cells).toEqual([])

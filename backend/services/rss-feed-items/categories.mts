@@ -1,3 +1,4 @@
+import { getRssFeedItemsWorkLimit } from '@services/rss-feed-items/work-limits'
 /* oxlint-disable max-lines -- category upsert retains its staged read, ordered mutation, and post-commit reconciliation boundary together. */
 import { read, beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { chunkArray } from './processing-limits.mts'
@@ -28,7 +29,6 @@ import {
 } from '@services/post-publication'
 
 // Keeps per-call Valkey work below the client in-flight ceiling during large category imports.
-const INVALIDATION_CHUNK_SIZE = 16
 
 // Canonical definition lives in @voucha/types/entities/rss-feed-item (avoids a
 // @queues/rss-feed-item-categories <-> @services/rss-feed-items workspace cycle:
@@ -54,6 +54,7 @@ export async function upsertRssFeedItemCategories(
 async function upsertRssFeedItemCategorySnapshots(
   snapshots: ReturnType<typeof normalizeRssFeedItemCategorySnapshots>,
 ): Promise<void> {
+  const INVALIDATION_CHUNK_SIZE = getRssFeedItemsWorkLimit('category_invalidation_chunk_size')
   const categorySqlBatches = buildRssFeedItemCategorySqlBatches(snapshots)
 
   await insertMissingHashtagAliases(

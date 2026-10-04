@@ -1,18 +1,20 @@
+import { getNotificationsWorkLimit } from './work-limits.mts'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUserDirect,
   insertTestCommunity,
   insertTestCommunityMember,
 } from '@voucha/test-helpers'
-import {
-  COMMUNITY_ACTIVITY_DIGEST_RECIPIENT_BATCH_SIZE,
-  listCommunityActivityDigestRecipientPage,
-} from './community-activity-digest-recipients.mts'
+import { listCommunityActivityDigestRecipientPage } from './community-activity-digest-recipients.mts'
 
 describe('community activity digest recipient pagination', () => {
   it('advances a bounded cursor across 251 eligible recipients', async () => {
     const users = []
-    for (let index = 0; index < COMMUNITY_ACTIVITY_DIGEST_RECIPIENT_BATCH_SIZE + 1; index++) {
+    for (
+      let index = 0;
+      index < getNotificationsWorkLimit('community_digest_recipient_batch_size') + 1;
+      index++
+    ) {
       const user = await createTestUserDirect()
       const community = await insertTestCommunity({ createdById: user.id })
       await insertTestCommunityMember({
@@ -33,9 +35,11 @@ describe('community activity digest recipient pagination', () => {
     const second = await listCommunityActivityDigestRecipientPage(cursor)
     const ownSecond = second.page.filter(row => ids.has(row.user_id))
 
-    expect(first.page).toHaveLength(COMMUNITY_ACTIVITY_DIGEST_RECIPIENT_BATCH_SIZE)
+    expect(first.page).toHaveLength(
+      getNotificationsWorkLimit('community_digest_recipient_batch_size'),
+    )
     expect(first.rows.length).toBeLessThanOrEqual(
-      COMMUNITY_ACTIVITY_DIGEST_RECIPIENT_BATCH_SIZE + 1,
+      getNotificationsWorkLimit('community_digest_recipient_batch_size') + 1,
     )
     expect(new Set([...ownFirst, ...ownSecond].map(row => row.user_id))).toEqual(ids)
   })

@@ -24,6 +24,7 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
     "@modules/aws": "workspace:^",
     "@modules/feed-query-builders": "workspace:^",
     "@modules/on-error": "workspace:^",
@@ -72,7 +73,6 @@
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
-    "@data-stores/valkey": "workspace:^",
     "@services/entity-listener-reconciliation": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^",

@@ -1,3 +1,4 @@
+import { getRssFeedItemsWorkLimit } from './work-limits.mts'
 import { describe, expect, it } from 'vitest'
 import {
   clearRssFeedItemSourcePublicationsForTest,
@@ -7,21 +8,22 @@ import {
   observeTestPostgresQueryPools,
 } from '@voucha/test-helpers'
 import {
-  RSS_FEED_ITEM_SOURCE_PUBLICATION_BACKFILL_MAX_BATCH_SIZE,
   backfillRssFeedItemSourcePublications,
   hasRssFeedItemSourcesMissingPublication,
 } from './backfill-source-publications.mts'
 import { upsertRssFeedItems } from './upsert.mts'
 
 describe('RSS feed item source publications', () => {
-  it.each([0, 1.5, Number.NaN, RSS_FEED_ITEM_SOURCE_PUBLICATION_BACKFILL_MAX_BATCH_SIZE + 1])(
-    'rejects invalid backfill batch size %s before querying',
-    async batchSize => {
-      await expect(backfillRssFeedItemSourcePublications(batchSize)).rejects.toThrow(
-        `batchSize must be an integer from 1 through ${RSS_FEED_ITEM_SOURCE_PUBLICATION_BACKFILL_MAX_BATCH_SIZE}`,
-      )
-    },
-  )
+  it.each([
+    0,
+    1.5,
+    Number.NaN,
+    getRssFeedItemsWorkLimit('source_publication_backfill_max_batch_size') + 1,
+  ])('rejects invalid backfill batch size %s before querying', async batchSize => {
+    await expect(backfillRssFeedItemSourcePublications(batchSize)).rejects.toThrow(
+      `batchSize must be an integer from 1 through ${getRssFeedItemsWorkLimit('source_publication_backfill_max_batch_size')}`,
+    )
+  })
 
   it('rejects an empty item scope before querying', async () => {
     await expect(backfillRssFeedItemSourcePublications(1, { rssFeedItemIds: [] })).rejects.toThrow(

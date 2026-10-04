@@ -17,6 +17,7 @@
   },
   "scripts": {},
   "dependencies": {
+    "@data-stores/valkey": "workspace:^",
     "@data-stores/valkey-glide-mq": "workspace:^",
     "glide-mq": "^0.16.0"
   }

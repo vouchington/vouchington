@@ -1,5 +1,3 @@
-export const USER_DELETION_BATCH_SIZE = 100
-
 export const USER_DELETION_PHASES = [
   'posts',
   'votes',

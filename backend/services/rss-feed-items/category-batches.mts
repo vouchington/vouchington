@@ -1,10 +1,7 @@
+import { getRssFeedItemsWorkLimit } from './work-limits.mts'
 import { normalizeHashtag } from '@ts-shared/utils'
 import type { RssFeedItemCategoryInput } from '@voucha/types/entities/rss-feed-item'
-import {
-  chunkArray,
-  normalizeRssFeedItemCategories,
-  RSS_FEED_ITEM_CATEGORY_SQL_BATCH_SIZE,
-} from './processing-limits.mts'
+import { chunkArray, normalizeRssFeedItemCategories } from './processing-limits.mts'
 
 type RssFeedItemCategorySqlInput = {
   rss_feed_item_id: string
@@ -33,6 +30,7 @@ export function normalizeRssFeedItemCategorySnapshots(
 export function buildRssFeedItemCategorySqlBatches(
   items: RssFeedItemCategoryInput[],
 ): RssFeedItemCategorySqlInput[][] {
+  const RSS_FEED_ITEM_CATEGORY_SQL_BATCH_SIZE = getRssFeedItemsWorkLimit('category_sql_batch_size')
   const allCategories: RssFeedItemCategorySqlInput[] = []
   for (const item of normalizeRssFeedItemCategorySnapshots(items)) {
     for (const category of item.categories) {

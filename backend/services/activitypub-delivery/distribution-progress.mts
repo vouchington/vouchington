@@ -1,5 +1,6 @@
+import { getRemoteActorsWorkLimit } from '@services/remote-actors/work-limits'
 import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
-import { FOLLOWER_INBOX_BATCH_SIZE, listRemoteFollowerInboxPage } from '@services/remote-actors'
+import { listRemoteFollowerInboxPage } from '@services/remote-actors'
 import sql from 'sql-template-strings'
 
 export type PreparedActivityDistributionPage =
@@ -48,6 +49,7 @@ async function prepareActivityDistributionPageInTransaction(
   dependencies: DistributionPageDependencies,
   query: TransactionQuery,
 ): Promise<PreparedActivityDistributionPage> {
+  const FOLLOWER_INBOX_BATCH_SIZE = getRemoteActorsWorkLimit('follower_inbox_batch_size')
   await query(sql`/* prepareActivityDistributionPage:insert */
       INSERT INTO activitypub_distribution_checkpoints (activity_id, source_user_id)
       VALUES (${activityId}, ${sourceUserId})

@@ -117,6 +117,7 @@ export async function getLandingPageAnalyticsByPageId(
         AND event_date >= current_date - INTERVAL '30 days'
       GROUP BY 1
       ORDER BY 2 DESC
+      -- Dashboard contract: Top 20 sources (docs/requirements/admin/LANDING-PAGE-ANALYTICS.md).
       LIMIT 20
     `,
       [pageId],

@@ -1,3 +1,4 @@
+import { getStoriesWorkLimit } from './work-limits.mts'
 import { beginTransaction, write } from '@data-stores/psql'
 import { lockPostPublicationPostScopes } from '@services/post-publication'
 import { recordPostRelatedUrlPublicationChanges } from '@services/entity-relations/post-topic-publication'
@@ -13,7 +14,6 @@ import {
   decideStoryPostRelatedUrlProjectionRows,
   getStoryPostRelatedUrlProjectionSourcePageForWork,
   stageStoryPostRelatedUrlProjectionReceipts,
-  STORY_POST_RELATED_URL_PROJECTION_PAGE_SIZE,
 } from './story-post-related-url-projection-source.mts'
 import type {
   ProjectionResult,
@@ -93,6 +93,9 @@ async function prunePage(
   work: ProjectionWork,
   continueDispatcher: boolean,
 ): Promise<ProjectionResult> {
+  const STORY_POST_RELATED_URL_PROJECTION_PAGE_SIZE = getStoriesWorkLimit(
+    'post_related_url_projection_page_size',
+  )
   const { rows } = await write<{ relation_id: string; object_id: string }>(
     `/* pruneStoryPostRelatedUrlProjection */
       SELECT relation.id AS relation_id, relation.object_id
