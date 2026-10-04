@@ -34033,6 +34033,7 @@
                             "kind": {
                               "enum": [
                                 "appeal",
+                                "complaint",
                                 "counter_notice",
                                 "court_or_ccb_hold",
                                 "supplement",
@@ -34507,7 +34508,8 @@
                             "restriction_review",
                             "staydown_review",
                             "territorial_decision_reopened",
-                            "territorial_notice_review"
+                            "territorial_notice_review",
+                            "territorial_redress_review"
                           ],
                           "type": "string"
                         },
@@ -34720,6 +34722,100 @@
                             ],
                             "type": "object"
                           },
+                          "complaints": {
+                            "items": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "decision": {
+                                  "anyOf": [
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "decided_at": {
+                                          "type": "string"
+                                        },
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "rationale": {
+                                          "type": "string"
+                                        },
+                                        "staff_disposition": {
+                                          "enum": ["maintain", "revoke"],
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "decided_at",
+                                        "id",
+                                        "rationale",
+                                        "staff_disposition"
+                                      ],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "explanation": {
+                                  "type": "string"
+                                },
+                                "filed_by": {
+                                  "enum": ["notifier", "poster", "reviewer"],
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "informed_at": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "received_at": {
+                                  "type": "string"
+                                },
+                                "submitted_by_user_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "window_ends_at": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "decision",
+                                "explanation",
+                                "filed_by",
+                                "id",
+                                "informed_at",
+                                "received_at",
+                                "submitted_by_user_id",
+                                "window_ends_at"
+                              ],
+                              "type": "object"
+                            },
+                            "type": "array"
+                          },
                           "decision": {
                             "anyOf": [
                               {
@@ -34756,11 +34852,164 @@
                               }
                             ]
                           },
+                          "dispute_settlements": {
+                            "items": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "body_name": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "outcome": {
+                                  "anyOf": [
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "decided_at": {
+                                          "type": "string"
+                                        },
+                                        "implemented_at": {
+                                          "anyOf": [
+                                            {
+                                              "type": "null"
+                                            },
+                                            {
+                                              "type": "string"
+                                            }
+                                          ]
+                                        },
+                                        "result": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["decided_at", "implemented_at", "result"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "referred_at": {
+                                  "type": "string"
+                                },
+                                "referred_by_party": {
+                                  "enum": ["notifier", "poster"],
+                                  "type": "string"
+                                },
+                                "referred_by_user_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "body_name",
+                                "id",
+                                "outcome",
+                                "referred_at",
+                                "referred_by_party",
+                                "referred_by_user_id"
+                              ],
+                              "type": "object"
+                            },
+                            "type": "array"
+                          },
                           "grounds": {
                             "type": "string"
                           },
                           "hosted_use_url": {
                             "type": "string"
+                          },
+                          "notifier": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "email": {
+                                "anyOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "name": {
+                                "anyOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": ["email", "name"],
+                            "type": "object"
+                          },
+                          "recipients": {
+                            "items": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "informed_at": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "role": {
+                                  "enum": ["claimant", "poster"],
+                                  "type": "string"
+                                },
+                                "state": {
+                                  "anyOf": [
+                                    {
+                                      "const": "bounced"
+                                    },
+                                    {
+                                      "const": "claimed"
+                                    },
+                                    {
+                                      "const": "failed"
+                                    },
+                                    {
+                                      "const": "pending"
+                                    },
+                                    {
+                                      "const": "sent"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "user_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": ["informed_at", "role", "state", "user_id"],
+                              "type": "object"
+                            },
+                            "type": "array"
                           },
                           "reopened_at": {
                             "anyOf": [
@@ -34775,9 +35024,13 @@
                         },
                         "required": [
                           "acknowledgment",
+                          "complaints",
                           "decision",
+                          "dispute_settlements",
                           "grounds",
                           "hosted_use_url",
+                          "notifier",
+                          "recipients",
                           "reopened_at"
                         ],
                         "type": "object"
@@ -34930,7 +35183,8 @@
                       "type": "string"
                     },
                     "jurisdiction": {
-                      "const": "us_dmca"
+                      "enum": ["eu_dsa", "uk", "us_dmca"],
+                      "type": "string"
                     },
                     "provisional_withholding_at": {
                       "anyOf": [
