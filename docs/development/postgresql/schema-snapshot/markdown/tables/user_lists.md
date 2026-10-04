@@ -26,12 +26,12 @@ _none_
 
 **Check constraints:**
 
-- `lists_created_via_oauth_client_id_check`: `CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))`
+- `user_lists_created_via_oauth_client_id_check`: `CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))`
 - `user_lists_name_check`: `CHECK (((char_length(name) >= 1) AND (char_length(name) <= 255)))`
 
 **Foreign keys:**
 
-- `lists_created_via_oauth_client_id_fkey`: `FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT`
+- `user_lists_created_via_oauth_client_id_fkey`: `FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT`
 - `user_lists_owner_user_id_fkey`: `FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 **Indexes:**
@@ -43,5 +43,5 @@ _none_
 
 **Triggers:**
 
-- `lists_content_provenance_immutable`: `CREATE TRIGGER lists_content_provenance_immutable AFTER UPDATE ON public.user_lists FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_user_lists_updated_at`: `CREATE TRIGGER trigger_user_lists_updated_at BEFORE UPDATE ON public.user_lists FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `user_lists_content_provenance_immutable`: `CREATE TRIGGER user_lists_content_provenance_immutable AFTER UPDATE ON public.user_lists FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()`
