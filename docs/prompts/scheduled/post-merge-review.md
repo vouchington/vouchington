@@ -26,8 +26,8 @@ repository evidence confirms it.
        issueCount
        pageInfo { hasNextPage endCursor }
        nodes { ... on PullRequest {
-         number mergedAt
-         reviews(first: 100) { totalCount nodes { databaseId url submittedAt body } }
+         number mergedAt headRefOid
+         reviews(first: 100) { totalCount nodes { databaseId url submittedAt body author { __typename } commit { oid } } }
          reviewThreads(first: 100) { totalCount nodes { isResolved } }
        } }
      }
@@ -35,15 +35,20 @@ repository evidence confirms it.
      (.nodes[] | . as $p | ([.reviewThreads.nodes[] | select(.isResolved | not)] | length) as $open |
        (select(.reviews.totalCount > 100 or .reviewThreads.totalCount > 100) | {truncated: $p.number}),
        (select($open > 0) | {pr: $p.number, mergedAt: $p.mergedAt, openThreads: $open}),
-       (.reviews.nodes[] | select(.submittedAt > $p.mergedAt and (.body | length) > 0)
+       (.reviews.nodes[] | select((.body | length) > 0 and (.submittedAt > $p.mergedAt
+           or (.commit.oid == $p.headRefOid and .author.__typename != "Bot")))
          | {pr: $p.number, mergedAt: $p.mergedAt, kind: "review", id: .databaseId, url: .url}))'
    ```
 
    Each page prints one `{issueCount, prs}` record, and the `prs` values of a slice must add up to
    its `issueCount`. A `{truncated: <PR>}` record means that PR has more than 100 reviews or threads,
-   so read the rest of it with `after` cursors. A `kind: "review"` record is a review submitted after
-   `mergedAt` with a non-empty body. An `openThreads` record means the PR still has unresolved
-   threads, so read them for each such PR:
+   so read the rest of it with `after` cursors. A `kind: "review"` record is a review with a
+   non-empty body that either was submitted after `mergedAt`, which nothing can have handled, or
+   reviewed the final commit and was written by a person, which can land minutes before the merge
+   with no inline thread to flag it. A review of an earlier commit was followed by a later push, and
+   the shepherd printed its body as a summary then. A bot review body mostly repeats the inline
+   threads scanned below. An `openThreads` record means the PR still has unresolved threads, so read
+   them for each such PR:
 
    ```bash
    gh api graphql -F n=<PR> -f query='
