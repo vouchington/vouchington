@@ -44,6 +44,11 @@ and fork-leak detection remain.
   path binding an un-closeable TCP listener on a fallback port. It is fixed by binding only when
   `NODE_PREWARM_PORT` is set. Check a new occurrence is not that before calling it this flake.
 
+The backend compiler-contract project runs in a separate step without V8 coverage. Precise
+call-count coverage disables optimization inside the TypeScript compiler even though dependency
+coverage is excluded. The runtime projects retain coverage collection and the same LCOV gates;
+fixture runtime helpers remain exercised by their module and ordinary test-helper suites.
+
 | Workflow                                                                                    | Type     | Runner             | Docker | Purpose                                                                                                                                                             |
 | ------------------------------------------------------------------------------------------- | -------- | ------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [Backend Module Tests](../../../../.github/workflows/tests-backend-modules.yml)             | Reusable | `ubuntu-latest`    | No     | Unsharded backend modules, local analytics, test helpers, email templates, and fully mocked tests with no service dependencies.                                     |

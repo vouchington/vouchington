@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
+import { parse } from 'yaml'
 
 const workflow = readFileSync('.github/workflows/tests-backend-modules.yml', 'utf8')
 
@@ -10,13 +11,44 @@ describe('backend module test workflow', () => {
     expect(workflow).toContain('    runs-on: ubuntu-latest')
     expect(workflow).toContain('- uses: ./.github/actions/setup-backend')
     expect(workflow).toContain(
-      'vitest run --bail=3 --project backend/data-stores/analytics --project backend/services/analytics --project backend-modules --project backend-no-data-mocks --project backend-test-helpers --project backend-contract-program --project backend-email-templates',
+      'vitest run --bail=3 --project backend/data-stores/analytics --project backend/services/analytics --project backend-modules --project backend-no-data-mocks --project backend-test-helpers --project backend-email-templates',
     )
     expect(workflow).toContain(
       "VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}",
     )
     expect(workflow).not.toContain('strategy:')
     expect(workflow).not.toContain('--shard')
+  })
+
+  it('runs real compiler contracts separately without V8 instrumentation or duplicate selection', () => {
+    const parsed = parse(workflow) as {
+      jobs: {
+        'backend-modules': {
+          steps: Array<{
+            run?: string
+            env?: Record<string, string>
+            'timeout-minutes'?: number
+          }>
+        }
+      }
+    }
+    const steps = parsed.jobs['backend-modules'].steps.filter(step =>
+      step.run?.includes('vitest run'),
+    )
+    expect(steps).toHaveLength(2)
+    const compiler = steps.find(step => step.run?.includes('--project backend-contract-program'))!
+    const runtime = steps.find(step => step !== compiler)!
+    expect(compiler.run?.match(/--project\s+([^\s]+)/g)).toEqual([
+      '--project backend-contract-program',
+    ])
+    expect(compiler.env?.VITEST_COVERAGE_ENABLED).toBe('false')
+    expect(runtime.env?.VITEST_COVERAGE_ENABLED).toBe(
+      "${{ inputs.publish_coverage && 'true' || 'false' }}",
+    )
+    expect(compiler.env?.VITEST_JUNIT_OUTPUT_FILE).not.toBe(runtime.env?.VITEST_JUNIT_OUTPUT_FILE)
+    expect(compiler.env?.VITEST_JUNIT_OUTPUT_FILE).toBeTruthy()
+    expect(compiler['timeout-minutes']).toBe(5)
+    expect(runtime['timeout-minutes']).toBe(10)
   })
 
   it('contains no service, credential, migration, database, Valkey, or worker setup', () => {
