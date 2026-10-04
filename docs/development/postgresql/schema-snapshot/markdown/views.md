@@ -2,6 +2,48 @@
 
 [Schema index](README.md).
 
+## `media_delivery_registry_current_records`
+
+Current authority record joined to its latest immutable delivery transition; no workflow state is stored on the authority parent.
+
+```sql
+ SELECT record.delivery_key,
+    record.placement_id,
+    record.placement_revision,
+    record.image_id,
+    record.desired_state,
+    record.generation,
+    record.created_at,
+    record.updated_at,
+    change.id AS latest_change_id,
+    (change.change_type)::text AS state,
+    change.delivery_attempt_count,
+    change.claimed_at,
+    change.projected_at,
+    change.invalidated_at,
+    change.completed_at,
+    change.failure_message,
+    change.next_attempt_at
+   FROM (media_delivery_registry_records record
+     JOIN LATERAL ( SELECT history.id,
+            history.delivery_key,
+            history.generation,
+            history.change_type,
+            history.changed_by_id,
+            history.delivery_attempt_count,
+            history.claimed_at,
+            history.projected_at,
+            history.invalidated_at,
+            history.completed_at,
+            history.failure_message,
+            history.next_attempt_at,
+            history.created_at
+           FROM media_delivery_registry_changes history
+          WHERE ((history.delivery_key = record.delivery_key) AND (history.generation = record.generation))
+          ORDER BY history.id DESC
+         LIMIT 1) change ON (true));
+```
+
 ## `mv_rss_feed_crawl_tiers` (materialized)
 
 Precomputed crawl_score and crawl_tier per enabled RSS feed. Refreshed nightly by the psql refreshMaterializedView job (refresh-rss-feed-crawl-tiers). Tier percentile thresholds (0.1%/1%/5%/20%) and score formula (log1p(weighted followers) + votes_score_net) are baked into this SQL. Unique follower demand weights are free=1, Plus=2, Pro=3, based on current active or past-due memberships with expires_at null or future. Unique index enables CONCURRENTLY refresh.

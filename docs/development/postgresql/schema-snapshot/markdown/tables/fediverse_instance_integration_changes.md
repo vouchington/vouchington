@@ -6,14 +6,14 @@ Append-only audit log of admin allowlist decisions for fediverse_instance topics
 
 Not partitioned — growth: unbounded.
 
-| Column               | Type                             | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                |
-| -------------------- | -------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------- |
-| `id`                 | `uuid`                           | no       | `uuidv7()`                   |          |           |           |                                                                        |
-| `topic_id`           | `uuid`                           | no       |                              |          |           |           | The fediverse_instance topic whose admin allowlist state changed.      |
-| `integration_status` | `fediverse_integration_statuses` | no       |                              |          |           |           | The allowlist decision (pending, approved, blocked) after this change. |
-| `changed_by_id`      | `uuid`                           | yes      |                              |          |           |           | Admin user who made this allowlist decision.                           |
-| `reason`             | `text`                           | yes      |                              |          |           |           | Optional human-readable reason for the allowlist decision.             |
-| `created_at`         | `timestamp with time zone`       | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                        |
+| Column          | Type                             | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                |
+| --------------- | -------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------- |
+| `id`            | `uuid`                           | no       | `uuidv7()`                   |          |           |           |                                                                        |
+| `topic_id`      | `uuid`                           | no       |                              |          |           |           | The fediverse_instance topic whose admin allowlist state changed.      |
+| `change_type`   | `fediverse_integration_statuses` | no       |                              |          |           |           | The allowlist decision (pending, approved, blocked) after this change. |
+| `changed_by_id` | `uuid`                           | yes      |                              |          |           |           | Admin user who made this allowlist decision.                           |
+| `reason`        | `text`                           | yes      |                              |          |           |           | Optional human-readable reason for the allowlist decision.             |
+| `created_at`    | `timestamp with time zone`       | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                        |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -26,14 +26,17 @@ _none_
 
 **Foreign keys:**
 
-- `fediverse_instance_integration_changes_changed_by_id_fkey`: `FOREIGN KEY (changed_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fediverse_instance_integration_changes_changed_by_id_fkey`: `FOREIGN KEY (changed_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `fediverse_instance_integration_changes_topic_id_fkey`: `FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `fediverse_instance_integration_changes_pkey`: `CREATE UNIQUE INDEX fediverse_instance_integration_changes_pkey ON public.fediverse_instance_integration_changes USING btree (id)`
+- `idx_fediverse_instance_integration_changes__changed_by_id`: `CREATE INDEX idx_fediverse_instance_integration_changes__changed_by_id ON public.fediverse_instance_integration_changes USING btree (changed_by_id) WHERE (changed_by_id IS NOT NULL)`
 - `idx_fediverse_instance_integration_changes__topic_id__id`: `CREATE INDEX idx_fediverse_instance_integration_changes__topic_id__id ON public.fediverse_instance_integration_changes USING btree (topic_id, id DESC)`
 
 **Triggers:**
 
-- `trigger_sync_fediverse_instance_integration_status`: `CREATE TRIGGER trigger_sync_fediverse_instance_integration_status AFTER INSERT ON public.fediverse_instance_integration_changes FOR EACH ROW EXECUTE FUNCTION fn_project_latest_change('topics__fediverse_instances', 'topic_id', 'topic_id', 'integration_status', 'integration_status')`
+- `trigger_ensure_fediverse_instance_integration_changes_actor`: `CREATE TRIGGER trigger_ensure_fediverse_instance_integration_changes_actor BEFORE INSERT ON public.fediverse_instance_integration_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id')`
+- `trigger_fediverse_instance_integration_changes_append_only`: `CREATE TRIGGER trigger_fediverse_instance_integration_changes_append_only BEFORE DELETE OR UPDATE ON public.fediverse_instance_integration_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_sync_fediverse_instance_integration_status`: `CREATE TRIGGER trigger_sync_fediverse_instance_integration_status AFTER INSERT ON public.fediverse_instance_integration_changes FOR EACH ROW EXECUTE FUNCTION fn_project_latest_change('topics__fediverse_instances', 'topic_id', 'topic_id', 'integration_status', 'change_type')`

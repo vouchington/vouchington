@@ -12,12 +12,6 @@ Not partitioned — growth: unbounded.
 | `moderation_appeal_id` | `uuid`                                     | no       |                              |          |           |           | The appeal this lifecycle change belongs to.                                      |
 | `change_type`          | `moderation_appeal_lifecycle_change_types` | no       |                              |          |           |           | The type of state transition recorded by this change row.                         |
 | `changed_by_id`        | `uuid`                                     | yes      |                              |          |           |           | The user who performed the action; NULL for system/AI actions.                    |
-| `drafted_at`           | `timestamp with time zone`                 | yes      |                              |          |           |           | Snapshot of drafted_at at the time of this change.                                |
-| `edited_at`            | `timestamp with time zone`                 | yes      |                              |          |           |           | Snapshot of edited_at at the time of this change.                                 |
-| `approved_at`          | `timestamp with time zone`                 | yes      |                              |          |           |           | Snapshot of approved_at at the time of this change.                               |
-| `sent_at`              | `timestamp with time zone`                 | yes      |                              |          |           |           | Snapshot of sent_at at the time of this change.                                   |
-| `resolved_at`          | `timestamp with time zone`                 | yes      |                              |          |           |           | Snapshot of resolved_at at the time of this change.                               |
-| `resolution_action`    | `moderation_appeal_action`                 | yes      |                              |          |           |           | Snapshot of resolution_action at the time of this change.                         |
 | `metadata`             | `jsonb`                                    | no       | `'{}'::jsonb`                |          |           |           | Extra structured metadata for this lifecycle event (e.g. AI model, token counts). |
 | `created_at`           | `timestamp with time zone`                 | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                   |
 
@@ -31,13 +25,16 @@ _none_
 
 **Foreign keys:**
 
-- `moderation_appeal_lifecycle_changes_changed_by_id_fkey`: `FOREIGN KEY (changed_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `moderation_appeal_lifecycle_changes_changed_by_id_fkey`: `FOREIGN KEY (changed_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `moderation_appeal_lifecycle_changes_moderation_appeal_id_fkey`: `FOREIGN KEY (moderation_appeal_id) REFERENCES moderation_appeals(id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `idx_moderation_appeal_lifecycle__appeal_created`: `CREATE INDEX idx_moderation_appeal_lifecycle__appeal_created ON public.moderation_appeal_lifecycle_changes USING btree (moderation_appeal_id, id DESC)`
+- `idx_moderation_appeal_lifecycle_changes__changed_by_id`: `CREATE INDEX idx_moderation_appeal_lifecycle_changes__changed_by_id ON public.moderation_appeal_lifecycle_changes USING btree (changed_by_id) WHERE (changed_by_id IS NOT NULL)`
 - `moderation_appeal_lifecycle_changes_pkey`: `CREATE UNIQUE INDEX moderation_appeal_lifecycle_changes_pkey ON public.moderation_appeal_lifecycle_changes USING btree (id)`
 
 **Triggers:**
-_none_
+
+- `trigger_ensure_moderation_appeal_lifecycle_changes_actor`: `CREATE TRIGGER trigger_ensure_moderation_appeal_lifecycle_changes_actor BEFORE INSERT ON public.moderation_appeal_lifecycle_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id')`
+- `trigger_moderation_appeal_lifecycle_changes_append_only`: `CREATE TRIGGER trigger_moderation_appeal_lifecycle_changes_append_only BEFORE DELETE OR UPDATE ON public.moderation_appeal_lifecycle_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

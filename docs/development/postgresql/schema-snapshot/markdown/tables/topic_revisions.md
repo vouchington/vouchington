@@ -36,4 +36,5 @@ _none_
 - `topic_revisions_pkey`: `CREATE UNIQUE INDEX topic_revisions_pkey ON public.topic_revisions USING btree (id)`
 
 **Triggers:**
-_none_
+
+- `trigger_topic_revisions_append_only`: `CREATE TRIGGER trigger_topic_revisions_append_only BEFORE DELETE OR UPDATE ON public.topic_revisions FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation('revised_by_id')`

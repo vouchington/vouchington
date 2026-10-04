@@ -10,7 +10,7 @@ Not partitioned — growth: unbounded.
 | ---------------- | -------------------------- | -------- | ------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------- |
 | `id`             | `uuid`                     | no       |         |          |           |           |                                                                                          |
 | `community_id`   | `uuid`                     | no       |         |          |           |           | The community this agent prompt belongs to.                                              |
-| `created_by_id`  | `uuid`                     | no       |         |          |           |           |                                                                                          |
+| `created_by_id`  | `uuid`                     | yes      |         |          |           |           |                                                                                          |
 | `slot_allocated` | `boolean`                  | no       | `false` |          |           |           | Whether this prompt has been allocated a slot for active use.                            |
 | `activated_at`   | `timestamp with time zone` | yes      |         |          |           |           | When the prompt was activated for community use. Mutually exclusive with deactivated_at. |
 | `deactivated_at` | `timestamp with time zone` | yes      |         |          |           |           | When the prompt was deactivated. Mutually exclusive with activated_at.                   |
@@ -30,7 +30,7 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `community_agent_prompts_community_id_fkey`: `FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE`
-- `community_agent_prompts_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE CASCADE`
+- `community_agent_prompts_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `community_agent_prompts_deleted_by_id_fkey`: `FOREIGN KEY (deleted_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `community_agent_prompts_id_fkey`: `FOREIGN KEY (id) REFERENCES agent_prompts(id) ON DELETE CASCADE`
 
