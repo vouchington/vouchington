@@ -4,14 +4,24 @@
 
 ### 1. Single call
 
-One LLM call. Use `createOpenAIResponse` directly, optionally with `parseLLMJsonResponse` for structured JSON.
+One provider call. Use `createOpenAIResponse` for direct OpenAI workloads or
+`createOpenRouterResponse` for retained OpenRouter workloads, optionally with
+`parseLLMJsonResponse` for structured JSON.
 
 **Used by:** `story-post`
 
 ```typescript
-import { createOpenAIResponse, parseLLMJsonResponse } from '@agents/_shared'
+import {
+  callRecordingAgentResponseUsage,
+  createOpenRouterResponse,
+  parseLLMJsonResponse,
+  toOpenRouterModel,
+} from '@agents/_shared'
 
-const response = await createOpenAIResponse({ model, instructions, input })
+const response = await callRecordingAgentResponseUsage(
+  () => createOpenRouterResponse({ model: toOpenRouterModel(model), instructions, input }),
+  { agentSlug: 'story-post', responseProvider: 'openrouter' },
+)
 const text = extractTextFromOpenAIResponse(response)
 const parsed = parseLLMJsonResponse<MyType>(text)
 ```

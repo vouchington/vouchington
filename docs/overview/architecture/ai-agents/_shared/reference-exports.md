@@ -4,16 +4,21 @@
 
 ### `createOpenAIResponse(params, options?)`
 
-Thin wrapper around `openai.responses.create()`. Marked `/* no-mistakes: integration=openai */` so agents can mock it in tests.
+Re-export of the OpenAI Responses boundary in `@modules/openai-utils`. Its provider module owns
+request dispatch and retry behavior.
 
 ```typescript
-import { createOpenAIResponse } from '@agents/_shared'
+import { callRecordingAgentResponseUsage, createOpenAIResponse } from '@agents/_shared'
 
-const response = await createOpenAIResponse({
-  model: 'gpt-5.4-nano',
-  instructions: 'You are a helpful assistant.',
-  input: 'What is 2+2?',
-})
+const response = await callRecordingAgentResponseUsage(
+  () =>
+    createOpenAIResponse({
+      model: 'gpt-5.4-nano',
+      instructions: 'You are a helpful assistant.',
+      input: 'What is 2+2?',
+    }),
+  { agentSlug: 'my-agent' },
+)
 ```
 
 `options` (second parameter) accepts request options, most notably `{ maxRetries }`. The provider
@@ -29,11 +34,19 @@ full retry-budget table and its accounting contract live in the private
 `vouchington/vouchington-docs` repository.
 
 ```typescript
-import { createOpenAIResponse, QUEUED_BACKGROUND_RETRY_POLICY } from '@agents/_shared'
+import {
+  callRecordingAgentResponseUsage,
+  createOpenAIResponse,
+  QUEUED_BACKGROUND_RETRY_POLICY,
+} from '@agents/_shared'
 
-const response = await createOpenAIResponse(
-  { model: 'gpt-5.4-nano', instructions: systemPrompt, input: userInput },
-  { maxRetries: QUEUED_BACKGROUND_RETRY_POLICY.maxRetries },
+const response = await callRecordingAgentResponseUsage(
+  () =>
+    createOpenAIResponse(
+      { model: 'gpt-5.4-nano', instructions: systemPrompt, input: userInput },
+      { maxRetries: QUEUED_BACKGROUND_RETRY_POLICY.maxRetries },
+    ),
+  { agentSlug: 'my-agent' },
 )
 ```
 

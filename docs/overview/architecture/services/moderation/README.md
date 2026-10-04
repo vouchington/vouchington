@@ -2,22 +2,25 @@
 
 Source entrypoint: [backend/services/moderation/README.md](../../../../../backend/services/moderation/README.md)
 
-Business-logic helpers for post-moderation agents, moderation prompt retrieval, and persisted moderation result metadata.
+Business-logic helpers for moderation policy text, local detector configuration, fixed-label
+community toggles, and reads of stored moderation results.
 
 ## Responsibilities
 
-- fetch active moderator prompts and configs
-- manage per-community enablement for fixed global label agents
-- run local detector-backed moderators such as `ai-generated`
-- determine which moderators still need to run for a given content hash
-- persist agent moderation results
-- search historical moderation results for review tooling
+- render platform content policy for retained moderation and advice agents
+- expose the `ai-generated` detector threshold from Dynamic Config
+- list, enable, and disable fixed-label community toggles in `community_auto_tagger_agents`
+- map fixed moderator slugs to label topics and search stored `agent_moderations` for review tooling
+
+The shared [classifier-run lifecycle](../classifier-runs/README.md) owns durable requests, result
+recording, and recovery. [Community prompt moderation](../../ai-agents/community-moderation/README.md)
+loads custom prompts from [`@services/community-agent-prompts`](../../../../../backend/services/community-agent-prompts/README.md)
+and records prompt results through that lifecycle.
 
 ## AI-Generated Content Detection
 
-`ai-generated` reuses the same `agent_moderations` storage and queue lifecycle as the
-LLM-backed moderators, but it currently uses the local Rust `is-it-slop` detector instead of an
-OpenAI call.
+The C5 post classifier invokes the local Rust `is-it-slop` detector for the `ai-generated` label.
+The result is stored with the classifier run and applied as a label; it uses no model provider call.
 
 - Threshold source: `ai_generated_confidence_threshold` in the `moderation-config` Dynamic Config namespace (editable at `/admin/dynamic-config`)
 - Default threshold: `0.95`
@@ -28,23 +31,17 @@ OpenAI call.
   - `detector`
   - `detector_model_version`
 
-## Political Content Detection
+## Political Label
 
-`politics-averse` is a fixed-label built-in agent that applies to both posts and comments. It is
-a label of the post classifier catalog, not a separate agent package: the classifier asks a
-single-question policy for it and gets no tools.
-
-- Allows neutral news/event discussion
-- Allows sourced political analysis
-- Flags partisan persuasion, campaign-style advocacy, and unsupported political claims
-- On flag: labels the content `political`
+`politics-averse` is a fixed post-classifier identity that can apply the `political` label when
+enabled for a community. It is not a separate agent package.
 
 Moderator agents do not write public post votes. Public voting surfaces are reserved for community users without Voucha roles.
 
 ## Community AI Agent Enablement
 
-Fixed-label moderator agents are global agent definitions. Communities toggle only whether those
-global agents run for posts in that community through `community_auto_tagger_agents`.
+Fixed-label moderator identities are global. Communities toggle whether their labels apply to
+posts in that community through `community_auto_tagger_agents`.
 
 Archived communities reject agent toggle writes.
 

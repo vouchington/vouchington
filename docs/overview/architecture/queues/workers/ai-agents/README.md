@@ -2,10 +2,10 @@
 
 Source entrypoint: [backend/workers/ai-agents/README.md](../../../../../../backend/workers/ai-agents/README.md)
 
-Worker package for AI agent jobs such as moderation, story clustering, autotagging, and recommendations.
-It has no hosted chat processor; native chat is client-generated.
+Worker package for fixed classifier and focused agent jobs such as story clustering, autotagging,
+moderation advice, and copyright recommendations. Native chat turns use the transcript API.
 
-The fixed classifiers (C5 today, C6 next; C8 and C9 later) share one run lifecycle in
+The fixed classifiers share one run lifecycle in
 [`@services/classifier-runs`](../../../services/classifier-runs/README.md); the worker holds only a
 per-classifier registration (`processors/classifier-run-registry.mts`). Approval writes a durable
 classifier-run request. `classifier-run-dispatcher` reserves one immutable run for the current
@@ -129,12 +129,10 @@ dispatch (they only sweep/cancel/re-enqueue existing work, and in particular
 `reconcile-background-responses` cancels orphaned leases that are still billing OpenAI, so blocking
 it on the cap would increase spend, not bound it); `auto-dispatch-judgement` is exempt for the same
 reason (it only applies an already-computed judgement via DB writes — remove, warn, escalate, or
-resolve — and never calls OpenAI itself). A job name that is not in the map, such as a stale
-removed `chat` job, is treated as non-spending and reaches the unknown-job failure. (The
-shared `checkMessageSafety` moderation pre-check
-(`@services/openai-moderation/message-safety`) runs regardless of provider, but the Moderations
-endpoint is free and writes no `ai_usage_records` row — see the token-limiter section above — so it
-can never affect the cap total.) `OPENAI_RPM`/`OPENAI_TPM`
+resolve — and never calls OpenAI itself). Unknown job names reach the unknown-job failure. The API's
+`checkApiMessageSafety` moderation check for client-generated turns is a separate request boundary;
+the Moderations endpoint writes no `ai_usage_records` row and does not affect this cap total.
+`OPENAI_RPM`/`OPENAI_TPM`
 bound rate, not spend; this bounds the daily dollar total across all spend-producing agents
 (`getDailyAiCostTotalMicrounits()`), defaulting to $10/day ($10,000,000 microunits) and adjustable
 from the dynamic-config admin UI without a deploy. `getDailyAiCostTotalMicrounits()` also reports
