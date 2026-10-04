@@ -26408,6 +26408,17 @@
         "type": "object"
       }
     },
+    "DELETE:/api/v1/copyright-trusted-flaggers/:id": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
     "DELETE:/api/v1/curated-aside-items/:id": {
       "path": {
         "properties": {
@@ -32109,6 +32120,17 @@
           }
         },
         "required": ["idOrSlug", "reportId"],
+        "type": "object"
+      }
+    },
+    "PATCH:/api/v1/copyright-trusted-flaggers/:id": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
         "type": "object"
       }
     },
