@@ -9,14 +9,15 @@ repository evidence confirms it.
 
 ## Action steps
 
-1. Scan every PR merged to `main` in the last two gaps between runs of this prompt.
-   `.github/workflows/scheduled-prompts.yml` runs six times a day and cycles through the files in
-   `docs/prompts/scheduled/`, so one gap is the file count divided by six days (about 8 today), and
-   a skipped or failed run doubles it. Cover two gaps (16 days today) so one missed run loses
-   nothing. Search returns at most 1000 results and about 80 PRs merge a day, so scan one slice of
-   at most one gap at a time (`merged:<from>..<to>`, UTC dates), halving a slice whose `issueCount`
-   is over 1000. Per slice, page through the PRs, keeping the query cheap by reading only
-   `isResolved` for threads:
+1. Scan every PR merged to `main` in the last two gaps between runs of this prompt. Derive the gap
+   from the workflow instead of assuming it: `.github/workflows/scheduled-prompts.yml` runs once per
+   `cron` entry each day and selects the next file of `docs/prompts/scheduled/` in rotation, so one
+   gap is the file count divided by the `cron` entry count, in days, and a skipped or failed run
+   doubles it. Cover two gaps, rounded up to whole days, so one missed run loses nothing, and
+   report the two counts and the resulting cutoff. Search returns at most 1000 results and a gap of
+   merges can approach that, so scan one slice of at most one gap at a time
+   (`merged:<from>..<to>`, UTC dates), halving a slice whose `issueCount` is over 1000. Per slice,
+   page through the PRs, keeping the query cheap by reading only `isResolved` for threads:
 
    ```bash
    gh api graphql --paginate -f q='repo:vouchington/vouchington is:pr is:merged base:main merged:<from>..<to>' -f query='
@@ -90,16 +91,20 @@ repository evidence confirms it.
    fixed on `main`, wrong, preference-only, a duplicate, or contradicts a documented decision or
    accepted plan.
 
-4. Take the PR with the earliest `mergedAt` that has an actionable item and fix all of its
-   actionable items in one change, with tests for behavior changes. The marker keeps the other
-   PRs' items findable on later runs. Follow the wrapper's owning-PR rules. If the verified owning
-   PR addresses a different merged PR, do not mix them: report the pending item and stop. If it
-   addresses the same merged PR but does not list an item, push the fix to it as an additional
-   commit and add the item to its body. If an item has no clear or bounded fix, make no change for
-   it and report it as a recommendation; this run cannot file issues.
+4. Take the PR with the earliest `mergedAt` that has an actionable item, because it is the first to
+   leave the window, and fix all of its actionable items in one change, with tests for behavior
+   changes. Follow the wrapper's owning-PR rules. If the verified owning PR addresses a different
+   merged PR, do not mix them: report the pending item and stop. If it addresses the same merged PR
+   but does not list an item, push the fix to it as an additional commit and add the item to its
+   body. If an item has no clear or bounded fix, make no change for it and report it as a
+   recommendation; this run cannot file issues. One run fixes one merged PR, so record every other
+   actionable item as pending: in the run report and under `## Pending post-merge review items` in
+   the PR body, each as its URL and a one-line reason. A pending item is not covered, so a later run
+   finds it again while it stays inside the window, and one that leaves the window unhandled is not
+   revisited. A pending list that keeps growing means the window or the run frequency must change.
 
 5. Immediately before committing or publishing, re-fetch the selected PR's threads and repeat the
-   step 2 search for every handled and declined item. Drop an item that was replied to, resolved,
+   step 2 search for every handled, declined, and pending item. Drop an item that was replied to, resolved,
    or covered since the scan. If no actionable item remains, discard the patch and stop with the
    no-op report, even when declined items remain: a PR that only records declined comments is not
    an improvement.
@@ -112,8 +117,8 @@ repository evidence confirms it.
    after, and `## Impact`. Add `## Post-merge review items` listing each handled item as its URL
    followed by its marker on the next line. Put each non-actionable item of the same merged PR in a
    collapsed `<details>` block titled `Declined comment`, with the reason and its marker: this run
-   cannot reply on the thread. After the scheduled no-source pair under `## Related issues`, add
-   `This follows up #<merged PR>.`
+   cannot reply on the thread. Add `## Pending post-merge review items` when step 4 left any. After
+   the scheduled no-source pair under `## Related issues`, add `This follows up #<merged PR>.`
 
 If no item is actionable, report a verified no-op with the query, the counts of PRs and items
 examined, and each non-actionable or recommended item with its URL and reason. A no-op records
