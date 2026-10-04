@@ -10,6 +10,7 @@ import {
   beginTransaction,
   createTestUser,
   countPostImageRevisions,
+  getPostImageRevisionsForTest,
   getTestPostClearanceState,
   getLatestPostClearanceMetadata,
   getPostClearanceChanges,
@@ -111,7 +112,13 @@ describe('setPostImages', () => {
     await expect(getPostImages(postId)).resolves.toMatchObject([
       { image_id: originalImageId, order_index: 0, caption: '' },
     ])
-    await expect(countPostImageRevisions(postId)).resolves.toBe(0)
+    await expect(countPostImageRevisions(postId)).resolves.toBe(2)
+    const revisions = await getPostImageRevisionsForTest(postId)
+    expect(revisions.map(revision => revision.changes.post_images)).toEqual([
+      { before: [originalImageId], after: [replacementImageId] },
+      { before: [replacementImageId], after: [originalImageId] },
+    ])
+    expect(revisions.map(revision => revision.revised_by_id)).toEqual([creator!.id, null])
     await expect(getTestPostClearanceState(postId)).resolves.toMatchObject({
       approved_at: expect.any(Date),
       rejected_at: null,

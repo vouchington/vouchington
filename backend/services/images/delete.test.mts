@@ -145,7 +145,7 @@ describe('deleteImageById rollback', () => {
       expect(afterPost!.approved_at).not.toEqual(beforePost!.approved_at)
       expect(afterPost!.latest_clearance_change_id).not.toBe(beforePost!.latest_clearance_change_id)
     }
-    await expect(Promise.all(postIds.map(countPostImageRevisions))).resolves.toEqual([0, 0])
+    await expect(Promise.all(postIds.map(countPostImageRevisions))).resolves.toEqual([2, 2])
     const afterDirtyWork = await Promise.all(
       postIds.map(postId => getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId })),
     )

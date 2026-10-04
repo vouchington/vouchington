@@ -68,7 +68,7 @@ export function streamCopyrightCases(userId: string) {
         ) ORDER BY event.id), '[]'::json)
         FROM copyright_notice_lifecycle_changes event
         WHERE event.copyright_notice_id = notice.id
-          AND event.change_type = ANY(${COPYRIGHT_CASE_TIMELINE_EVENT_TYPES}::text[])) AS timeline
+          AND event.change_type = ANY(${COPYRIGHT_CASE_TIMELINE_EVENT_TYPES}::copyright_notice_lifecycle_change_types[])) AS timeline
     FROM copyright_notices notice
     LEFT JOIN view_users_public claimant ON claimant.id = notice.claimant_user_id
     WHERE notice.accepted_at IS NOT NULL
