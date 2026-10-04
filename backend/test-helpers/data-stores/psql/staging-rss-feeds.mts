@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
@@ -8,6 +9,8 @@ import {
 // Package-local helpers for the staging RSS feed seed test. Every read and write goes through one
 // borrowed transaction that the test rolls back, so the shared test database never keeps the
 // seeded feeds (a committed, enabled, never-fetched feed would be picked up by other suites).
+// Nothing here deletes or updates a row that already exists: tests share the database, so they
+// seed only feeds the database lacks and read the rest.
 
 export type SeededFeedRow = {
   url: string
@@ -49,22 +52,60 @@ export async function applySeedSql(tx: OwnedTransaction, seedSql: string): Promi
   for (const statement of splitSqlStatements(seedSql)) await tx(statement)
 }
 
-// A staging database has none of these feeds, but the test database already holds the dev seed's
-// Cloudflare Blog feed (same slug, extra alias). Deleting it inside the rolled-back transaction
-// gives the generator the empty starting point it runs on in staging. Hostnames and URLs are kept:
-// other rows may reference them, and the seed reuses them by natural key.
-export async function clearSeededFeeds(
+// Another topic that already owns the URL's active feed, like a feed an operator created through
+// the product. Its name and slug are random, so they never match the seed's natural keys.
+export async function insertActiveFeedUnderOtherTopic(
   tx: OwnedTransaction,
-  feeds: ReadonlyArray<{ url: string; slug: string }>,
-): Promise<void> {
-  const urls = feeds.map(feed => feed.url)
-  const slugs = feeds.map(feed => feed.slug)
+  feed: { url: string; hostname: string; pathname: string },
+): Promise<{ topicSlug: string }> {
+  const label = randomUUID()
+  const topicName = `Seed fixture ${label}`
+  const topicSlug = `seed-fixture-${label}`
   await tx(sql`
-    DELETE FROM rss_feeds WHERE rss_feed_url_id IN (SELECT id FROM urls WHERE url = ANY(${urls}))`)
+    INSERT INTO url_content_types (mime_type)
+    SELECT 'application/rss+xml'
+    WHERE NOT EXISTS (SELECT 1 FROM url_content_types WHERE mime_type = 'application/rss+xml')
+    ON CONFLICT DO NOTHING`)
   await tx(sql`
-    DELETE FROM topic_aliases
-    WHERE topic_id IN (SELECT id FROM topics WHERE slug = ANY(${slugs}))`)
-  await tx(sql`DELETE FROM topics WHERE slug = ANY(${slugs})`)
+    INSERT INTO url_hostnames (hostname, crawlable)
+    SELECT ${feed.hostname}, TRUE
+    WHERE NOT EXISTS (SELECT 1 FROM url_hostnames WHERE hostname = ${feed.hostname})
+    ON CONFLICT DO NOTHING`)
+  await tx(sql`
+    INSERT INTO urls (url, hostname_id, pathname, search_params, url_content_type_id)
+    SELECT ${feed.url}, h.id, ${feed.pathname}, '{}'::jsonb, ct.id
+    FROM url_hostnames h JOIN url_content_types ct ON ct.mime_type = 'application/rss+xml'
+    WHERE h.hostname = ${feed.hostname} AND NOT EXISTS (SELECT 1 FROM urls WHERE url = ${feed.url})
+    ON CONFLICT DO NOTHING`)
+  await tx(sql`
+    INSERT INTO topics (
+      name, slug, topic_type, hostname_id, created_via, bedrock_nova_multimodal_v1_content_sha256
+    )
+    SELECT ${topicName}, ${topicSlug}, 'rss_feed', h.id, 'system',
+      sha256(convert_to(${topicName}, 'UTF8'))
+    FROM url_hostnames h WHERE h.hostname = ${feed.hostname}`)
+  await tx(sql`
+    INSERT INTO rss_feeds (rss_feed_url_id, topic_id, title, feed_type, created_via)
+    SELECT u.id, t.id, ${topicName}, 'article', 'system'
+    FROM urls u JOIN topics t ON t.slug = ${topicSlug}
+    WHERE u.url = ${feed.url}`)
+  return { topicSlug }
+}
+
+// Slugs of the publisher-type topics related to a topic, as relation__topic__publisher_type__topic
+// stores them (config-driven/0080-00-02-publisher-type-relations.sql).
+export async function readPublisherTypeSlugs(
+  tx: OwnedTransaction,
+  topicSlug: string,
+): Promise<string[]> {
+  const { rows } = await tx<{ slug: string }>(sql`
+    SELECT p.slug
+    FROM topics t
+    JOIN relation__topic__publisher_type__topic r ON r.subject_id = t.id AND r.deleted_at IS NULL
+    JOIN topics p ON p.id = r.object_id
+    WHERE t.slug = ${topicSlug}
+    ORDER BY p.slug`)
+  return rows.map(row => row.slug)
 }
 
 export async function readSeededFeeds(

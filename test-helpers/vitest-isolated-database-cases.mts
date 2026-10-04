@@ -84,6 +84,11 @@ const isolatedDatabaseCases = {
     fullName:
       'copyright API cache policy > marks member, staff, and raw-email responses private and no-store',
   },
+  'staging-rss-feed-publisher-type': {
+    file: 'backend/data-stores/psql/config-driven/__tests__/0080-00-01a-staging-rss-feeds.bootstrap.test.mts',
+    fullName:
+      'staging RSS feed seed on a fresh bootstrap > gives the Cloudflare topic its blog publisher type in one bootstrap pass',
+  },
   'embedding-reconciliation-router': {
     file: 'backend/workers/bedrock-embeddings-batch/__tests__/worker-router.test.mts',
     fullName:

@@ -11,24 +11,28 @@ import {
   appendEnablementChange,
   applySeedSql,
   beginRolledBackSeedTransaction,
-  clearSeededFeeds,
   countSeededRows,
+  insertActiveFeedUnderOtherTopic,
   readSeededFeeds,
 } from '../../../../test-helpers/data-stores/psql/staging-rss-feeds.mts'
-import generateStagingRssFeedsSQL, { STAGING_RSS_FEEDS } from '../0640-00-00-staging-rss-feeds.mts'
+import generateStagingRssFeedsSQL, { STAGING_RSS_FEEDS } from '../0080-00-01a-staging-rss-feeds.mts'
 
 // The three feeds the staging decision names (vouchington/vouchington#1956).
-const SPEC_FEED_URLS = [
-  'https://www.theguardian.com/science/rss',
-  'https://blog.cloudflare.com/rss/',
-  'https://www.quantamagazine.org/feed/',
-]
+const GUARDIAN_URL = 'https://www.theguardian.com/science/rss'
+const CLOUDFLARE_URL = 'https://blog.cloudflare.com/rss/'
+const QUANTA_URL = 'https://www.quantamagazine.org/feed/'
+const SPEC_FEED_URLS = [GUARDIAN_URL, CLOUDFLARE_URL, QUANTA_URL]
 const urls = STAGING_RSS_FEEDS.map(feed => feed.url)
+// The test database already holds the dev seed's Cloudflare Blog feed and no test may delete or
+// update a shared row, so the tests that start from nothing seed only the feeds it lacks. The
+// "existing feed" test below covers Cloudflare.
+const newFeeds = STAGING_RSS_FEEDS.filter(feed => [GUARDIAN_URL, QUANTA_URL].includes(feed.url))
+const newUrls = newFeeds.map(feed => feed.url)
 
 const sortedUrls = urls.toSorted()
 const loadSqlTooling = () => Promise.all([loadSqlParserModule(), initSqlAst()])
 
-describe('0640-00-00-staging-rss-feeds environment gate', () => {
+describe('0080-00-01a-staging-rss-feeds environment gate', () => {
   beforeAll(loadSqlTooling)
   afterEach(() => vi.unstubAllEnvs())
 
@@ -57,7 +61,7 @@ describe('0640-00-00-staging-rss-feeds environment gate', () => {
   })
 })
 
-describe('0640-00-00-staging-rss-feeds feed list', () => {
+describe('0080-00-01a-staging-rss-feeds feed list', () => {
   it('seeds exactly the three feeds the staging decision names', () => {
     expect(urls).toEqual(SPEC_FEED_URLS)
   })
@@ -84,7 +88,7 @@ describe('0640-00-00-staging-rss-feeds feed list', () => {
   })
 })
 
-describe('0640-00-00-staging-rss-feeds generated SQL guards', () => {
+describe('0080-00-01a-staging-rss-feeds generated SQL guards', () => {
   beforeAll(loadSqlTooling)
   const stagingSql = generateStagingRssFeedsSQL('staging')
 
@@ -101,27 +105,26 @@ describe('0640-00-00-staging-rss-feeds generated SQL guards', () => {
   })
 })
 
-describe('0640-00-00-staging-rss-feeds applied to the database', () => {
+describe('0080-00-01a-staging-rss-feeds applied to the database', () => {
   const stagingSql = generateStagingRssFeedsSQL('staging')
   const expectedCounts = {
-    hostnames: 3,
-    urls: 3,
-    topics: 3,
-    aliases: 3,
-    feeds: 3,
-    enablementChanges: 3,
-    discoverabilityChanges: 3,
+    hostnames: 2,
+    urls: 2,
+    topics: 2,
+    aliases: 2,
+    feeds: 2,
+    enablementChanges: 2,
+    discoverabilityChanges: 2,
   }
 
-  it('creates three enabled, discoverable feeds, each with a topic, hostname and URL', async () => {
+  it('creates an enabled, discoverable feed with a topic, hostname and URL for each new feed', async () => {
     await using tx = await beginRolledBackSeedTransaction()
-    await clearSeededFeeds(tx, STAGING_RSS_FEEDS)
     await applySeedSql(tx, stagingSql)
 
-    const feeds = await readSeededFeeds(tx, urls)
-    expect(feeds.map(feed => feed.url)).toEqual(sortedUrls)
+    const feeds = await readSeededFeeds(tx, newUrls)
+    expect(feeds.map(feed => feed.url)).toEqual(newUrls.toSorted())
     for (const feed of feeds) {
-      const seeded = STAGING_RSS_FEEDS.find(candidate => candidate.url === feed.url)!
+      const seeded = newFeeds.find(candidate => candidate.url === feed.url)!
       expect(feed).toMatchObject({
         title: seeded.title,
         topic_name: `${seeded.title} (${seeded.url})`,
@@ -141,20 +144,19 @@ describe('0640-00-00-staging-rss-feeds applied to the database', () => {
         enablement_creator: 'rss-feed-auto-updater',
       })
     }
-    expect(await countSeededRows(tx, STAGING_RSS_FEEDS)).toEqual(expectedCounts)
+    expect(await countSeededRows(tx, newFeeds)).toEqual(expectedCounts)
   })
 
   it('changes no row when applied a second time', async () => {
     await using tx = await beginRolledBackSeedTransaction()
-    await clearSeededFeeds(tx, STAGING_RSS_FEEDS)
     await applySeedSql(tx, stagingSql)
-    const firstFeeds = await readSeededFeeds(tx, urls)
-    expect(await countSeededRows(tx, STAGING_RSS_FEEDS)).toEqual(expectedCounts)
+    const firstFeeds = await readSeededFeeds(tx, newUrls)
+    expect(await countSeededRows(tx, newFeeds)).toEqual(expectedCounts)
 
     await applySeedSql(tx, stagingSql)
 
-    expect(await countSeededRows(tx, STAGING_RSS_FEEDS)).toEqual(expectedCounts)
-    expect(await readSeededFeeds(tx, urls)).toEqual(firstFeeds)
+    expect(await countSeededRows(tx, newFeeds)).toEqual(expectedCounts)
+    expect(await readSeededFeeds(tx, newUrls)).toEqual(firstFeeds)
   })
 
   it('leaves a feed that already exists for the same natural keys untouched', async () => {
@@ -177,20 +179,47 @@ describe('0640-00-00-staging-rss-feeds applied to the database', () => {
 
   it('keeps a feed disabled by a later enablement change disabled when reapplied', async () => {
     await using tx = await beginRolledBackSeedTransaction()
-    await clearSeededFeeds(tx, STAGING_RSS_FEEDS)
     await applySeedSql(tx, stagingSql)
-    const [disabledUrl] = urls
-    await appendEnablementChange(tx, disabledUrl!, false)
+    await appendEnablementChange(tx, GUARDIAN_URL, false)
 
     await applySeedSql(tx, stagingSql)
 
-    const feeds = await readSeededFeeds(tx, urls)
+    const feeds = await readSeededFeeds(tx, newUrls)
     expect(feeds.map(feed => [feed.url, feed.is_enabled])).toEqual(
-      sortedUrls.map(url => [url, url !== disabledUrl]),
+      newUrls.toSorted().map(url => [url, url !== GUARDIAN_URL]),
     )
-    expect(await countSeededRows(tx, STAGING_RSS_FEEDS)).toEqual({
+    expect(await countSeededRows(tx, newFeeds)).toEqual({
       ...expectedCounts,
-      enablementChanges: 4,
+      enablementChanges: 3,
+    })
+  })
+
+  it('adds no topic or alias for a URL whose active feed belongs to another topic', async () => {
+    await using tx = await beginRolledBackSeedTransaction()
+    const guardian = newFeeds.find(feed => feed.url === GUARDIAN_URL)!
+    const { topicSlug } = await insertActiveFeedUnderOtherTopic(tx, guardian)
+
+    await applySeedSql(tx, stagingSql)
+
+    const feeds = await readSeededFeeds(tx, newUrls)
+    expect(feeds.map(feed => feed.url)).toEqual(newUrls.toSorted())
+    expect(feeds.find(feed => feed.url === GUARDIAN_URL)).toMatchObject({
+      slug: topicSlug,
+      is_enabled: false,
+    })
+    // Only the other feed is seeded: no orphan topic or alias, and no second feed for the URL.
+    expect(await countSeededRows(tx, [guardian])).toEqual({
+      hostnames: 1,
+      urls: 1,
+      topics: 0,
+      aliases: 0,
+      feeds: 1,
+      enablementChanges: 0,
+      discoverabilityChanges: 0,
+    })
+    expect(feeds.find(feed => feed.url === QUANTA_URL)).toMatchObject({
+      is_enabled: true,
+      is_discoverable: true,
     })
   })
 })
