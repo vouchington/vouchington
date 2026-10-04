@@ -4,20 +4,21 @@ Source entrypoint: [backend/services/openai-moderation/README.md](../../../../..
 
 ## Acceptance Criteria
 
-### API Chat Text Moderation
+### API Conversation Text Moderation
 
 - `createOpenAIModeration(texts, undefined, { idempotencyKey })` remains the single provider boundary
-  for chat text moderation when a caller needs to forward an external idempotency key.
+  for conversation text moderation when a caller needs to forward an external idempotency key.
 - API callers invoke it in-process. Its provider-scoped egress flag selects the guarded direct
   transport or HTTP CONNECT proxy without changing the moderation operation.
 - Prompt-injection detection and `PROMPT_INJECTION` / `MODERATION_VIOLATION` HTTP policy errors are
-  owned by `checkMessageSafety()` in this service (see [Chat Message Safety](#chat-message-safety)),
+  owned by `checkMessageSafety()` in this service (see
+  [Conversation Message Safety](#conversation-message-safety)),
   not by the worker handler. The API safety adapter only supplies the routed provider call.
 
-### Chat Message Safety
+### Conversation Message Safety
 
 `checkMessageSafety(message, { createTextModeration })` in `message-safety.mts` is the shared guard
-for a user chat message. It lives here, next to the provider boundary, so callers do not import the
+for conversation transcript text. It lives here, next to the provider boundary, so callers do not import the
 API's package.
 
 1. **Pattern detection** — regexes for common prompt-injection phrases throw a 400 with code
@@ -25,10 +26,9 @@ API's package.
 2. **Text moderation** — a flagged result throws a 400 with code `MODERATION_VIOLATION` and the
    flagged `categories`. An empty result list is treated as not flagged.
 
-The provider call is injected as a `CreateTextModeration` capability and defaults to
-`createOpenAIModeration`. The API's `checkApiMessageSafety()` injects its own capability (with
-`apiSafetyCheck` and a per-call idempotency key); a caller that injects nothing uses the default
-provider.
+Callers must inject a `CreateTextModeration` capability; this guard has no default provider.
+The API's `checkApiMessageSafety()` injects a capability backed by `createOpenAIModeration` with
+`apiSafetyCheck` and a per-call idempotency key.
 
 ### Post Moderation
 
