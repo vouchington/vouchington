@@ -1,3 +1,7 @@
+import {
+  createEmbeddingImageRecordLine,
+  type EmbeddingImageInput as BatchFileImage,
+} from '@services/bedrock-embeddings/batch/input-size-limits'
 import { createWriteStream } from 'node:fs'
 import { unlink } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
@@ -9,12 +13,6 @@ type BatchFileEntity = {
   entity_id: string
   content: string
   content_sha256: Buffer
-}
-type BatchFileImage = {
-  entity_id: string
-  image_sha_256: Buffer
-  format: 'jpeg' | 'png' | 'webp'
-  bytes: string
 }
 export class BatchFileBuilder {
   private filePath: string
@@ -104,26 +102,7 @@ export class BatchFileBuilder {
     this.entityCount++
   }
   private createImageLine(image: BatchFileImage): { line: string; prefix: string } {
-    const recordId = JSON.stringify({
-      entity_id: image.entity_id,
-      image_sha_256: image.image_sha_256.toString('hex'),
-    })
-    const line = JSON.stringify({
-      recordId,
-      modelInput: {
-        taskType: 'SINGLE_EMBEDDING',
-        singleEmbeddingParams: {
-          embeddingPurpose: 'GENERIC_INDEX',
-          embeddingDimension: EMBEDDING_DIMENSION,
-          image: {
-            format: image.format,
-            source: {
-              bytes: image.bytes,
-            },
-          },
-        },
-      },
-    })
+    const line = createEmbeddingImageRecordLine(image)
     const prefix = this.firstWrite ? '' : '\n'
     return { line, prefix }
   }

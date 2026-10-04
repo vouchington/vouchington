@@ -47,7 +47,7 @@ describe('embedding scan caps', () => {
   it('continues past poison images and submits the healthy tail at the minimum boundary', async () => {
     const owner = await createTestUser()
     const ids: string[] = []
-    for (let index = 0; index < 4; index++) ids.push(await insertTestImage(owner.id))
+    for (let index = 0; index < 3; index++) ids.push(await insertTestImage(owner.id))
     overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
       min_records_per_job: 2,
       max_scan_rows_per_run: 2,
@@ -57,6 +57,9 @@ describe('embedding scan caps', () => {
     vi.stubEnv('BEDROCK_BATCH_ROLE_ARN', 'arn:aws:iam::123456789012:role/test-bedrock-role')
     vi.stubEnv('ENVIRONMENT', 'staging')
     vi.mocked(S3ImagesClient.send).mockImplementation(
+      async () => ({ Body: Readable.from([gif]) }) as never,
+    )
+    vi.mocked(S3ImagesClient.send).mockImplementationOnce(
       async () => ({ Body: Readable.from([Buffer.from('invalid-image')]) }) as never,
     )
     vi.mocked(S3BedrockBatchClient.send).mockResolvedValue(undefined as never)
@@ -66,19 +69,23 @@ describe('embedding scan caps', () => {
     let continuation: EmbeddingScanCursor | undefined
     const run = (cursor?: EmbeddingScanCursor) =>
       processImageBatchCreation({
+        cursor,
         streamPending: options => streamPendingImages({ ...options, cursor }),
         addImageToBatch,
         reEnqueue: next => {
           continuation = next
         },
       })
-    expect(await run()).toMatchObject({ failed: true, attempted: 2, hasMore: true })
-    expect(continuation?.afterId).toBe(ids[2])
+    expect(await run()).toMatchObject({ empty: true, hasMore: true })
+    expect(continuation?.afterId).toBe(ids[1])
+    expect(continuation?.pendingImageIds).toEqual([ids[1]])
     expect(BedrockControlClient.send).not.toHaveBeenCalled()
     vi.mocked(S3ImagesClient.send).mockImplementation(
       async () => ({ Body: Readable.from([gif]) }) as never,
     )
+    vi.mocked(S3ImagesClient.send).mockClear()
     expect(await run(continuation)).toMatchObject({ success: true })
+    expect(S3ImagesClient.send).toHaveBeenCalledTimes(2)
     const command = vi.mocked(BedrockControlClient.send).mock.calls[0]![0] as {
       input: { jobName: string }
     }
@@ -88,7 +95,63 @@ describe('embedding scan caps', () => {
     vi.mocked(S3ImagesClient.send).mockImplementation(
       async () => ({ Body: Readable.from([Buffer.from('invalid-image')]) }) as never,
     )
-    expect(await run()).toMatchObject({ failed: true, attempted: 2, hasMore: true })
+    expect(await run()).toMatchObject({ failed: true })
+  })
+
+  it('drains carried IDs under a smaller next-run budget without dropping the tail', async () => {
+    const owner = await createTestUser()
+    const ids: string[] = []
+    for (let index = 0; index < 4; index++) ids.push(await insertTestImage(owner.id))
+    overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
+      min_records_per_job: 3,
+      max_scan_rows_per_run: 3,
+      image_cursor_batch_size: 1,
+      max_requests_per_file: 3,
+    })
+    vi.stubEnv('BEDROCK_BATCH_ROLE_ARN', 'arn:aws:iam::123456789012:role/test-bedrock-role')
+    vi.stubEnv('ENVIRONMENT', 'staging')
+    vi.mocked(S3ImagesClient.send).mockImplementation(
+      async () => ({ Body: Readable.from([gif]) }) as never,
+    )
+    vi.mocked(S3ImagesClient.send).mockImplementationOnce(
+      async () => ({ Body: Readable.from([Buffer.from('invalid-image')]) }) as never,
+    )
+    vi.mocked(S3BedrockBatchClient.send).mockResolvedValue(undefined as never)
+    vi.mocked(BedrockControlClient.send).mockImplementation(
+      async () =>
+        ({
+          jobArn: `arn:aws:bedrock:us-west-2:123456789012:model-invocation-job/${randomUUID()}`,
+        }) as never,
+    )
+    let continuation: EmbeddingScanCursor | undefined
+    const run = (cursor?: EmbeddingScanCursor) =>
+      processImageBatchCreation({
+        cursor,
+        streamPending: options => streamPendingImages({ ...options, cursor }),
+        addImageToBatch,
+        reEnqueue: next => {
+          continuation = next
+        },
+      })
+    expect(await run()).toMatchObject({ empty: true, hasMore: true })
+    expect(continuation?.pendingImageIds).toEqual([ids[2], ids[1]])
+    overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
+      min_records_per_job: 1,
+      max_scan_rows_per_run: 1,
+      max_requests_per_file: 1,
+    })
+    for (const id of ids.slice(0, 3).toReversed()) {
+      vi.mocked(S3ImagesClient.send).mockClear()
+      expect(await run(continuation)).toMatchObject({ success: true, hasMore: true })
+      expect(S3ImagesClient.send).toHaveBeenCalledTimes(1)
+      const command = vi.mocked(BedrockControlClient.send).mock.calls.at(-1)![0] as {
+        input: { jobName: string }
+      }
+      const entities = await getTestBatchEntities(
+        command.input.jobName.replace('voucha-staging-', ''),
+      )
+      expect(entities.map(row => row.entity_id)).toEqual([id])
+    }
   })
 
   it('rejects a scan cap below the minimum before file, cursor or provider work', async () => {

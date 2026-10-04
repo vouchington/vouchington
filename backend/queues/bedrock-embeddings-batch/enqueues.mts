@@ -43,18 +43,37 @@ function createCreationBatchEnqueue(jobName: CreationJobName, deduplicationId: s
     defaults,
   })
 
-  return (priority?: number, cursor?: EmbeddingScanCursor): EnqueueReturnType => {
-    return enqueue(cursor ? { cursor } : {}, {
-      priority: priority ?? PRIORITY_DEFAULT,
-      deduplication: {
-        id: cursor
-          ? `${deduplicationId}:${cursor.sweepStartedAt}:${cursor.afterId}:${cursor.afterOrderIndex ?? ''}`
-          : deduplicationId,
-        mode: 'throttle',
-        ttl: BEDROCK_EMBEDDINGS_BATCH_DEFAULTS.deduplicationTtlMs,
-      },
-      ordering: BEDROCK_EMBEDDINGS_BATCH_ORDERING.creation,
-    } satisfies Partial<JobOptions>)
+  return (
+    priority?: number,
+    cursor?: EmbeddingScanCursor,
+    options?: { delayMs?: number },
+  ): EnqueueReturnType => {
+    return enqueue(
+      cursor ? { cursor } : {},
+      creationJobOptions(deduplicationId, priority, cursor, options?.delayMs),
+    )
+  }
+}
+
+export function creationJobOptions(
+  deduplicationId: string,
+  priority?: number,
+  cursor?: EmbeddingScanCursor,
+  delayMs?: number,
+): Partial<JobOptions> {
+  return {
+    priority: priority ?? PRIORITY_DEFAULT,
+    ...(delayMs ? { delay: delayMs } : {}),
+    ...(cursor
+      ? {}
+      : {
+          deduplication: {
+            id: deduplicationId,
+            mode: 'throttle' as const,
+            ttl: BEDROCK_EMBEDDINGS_BATCH_DEFAULTS.deduplicationTtlMs,
+          },
+        }),
+    ordering: BEDROCK_EMBEDDINGS_BATCH_ORDERING.creation,
   }
 }
 

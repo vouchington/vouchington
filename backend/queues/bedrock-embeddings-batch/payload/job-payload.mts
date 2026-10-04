@@ -12,7 +12,9 @@ export function parseEmbeddingScanCursor(data: unknown): EmbeddingScanCursor | u
     throw new Error('Invalid embedding scan cursor')
   const cursor = record.cursor as Record<string, unknown>
   if (
-    Object.keys(cursor).some(key => !['sweepStartedAt', 'afterId', 'afterOrderIndex'].includes(key))
+    Object.keys(cursor).some(
+      key => !['sweepStartedAt', 'afterId', 'afterOrderIndex', 'pendingImageIds'].includes(key),
+    )
   )
     throw new Error('Unexpected embedding scan cursor field')
   if (
@@ -29,5 +31,17 @@ export function parseEmbeddingScanCursor(data: unknown): EmbeddingScanCursor | u
       !cursor.afterId)
   )
     throw new Error('Invalid embedding chunk cursor')
+  if (
+    cursor.pendingImageIds !== undefined &&
+    (!Array.isArray(cursor.pendingImageIds) ||
+      cursor.pendingImageIds.length > 1_000_000 ||
+      cursor.pendingImageIds.some(
+        id =>
+          typeof id !== 'string' ||
+          !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(id),
+      ) ||
+      new Set(cursor.pendingImageIds).size !== cursor.pendingImageIds.length)
+  )
+    throw new Error('Invalid embedding carried image IDs')
   return cursor as EmbeddingScanCursor
 }

@@ -73,12 +73,19 @@ describe('crawl dispatch indexed work selection', () => {
       await dispatchTier1CrawlUrls()
       await dispatchTier2CrawlUrls()
     })
-    for (const name of [
+    for (const [index, name] of [
       'dispatchCrawlUrlsPerHostname',
       'dispatchTier1CrawlUrls',
       'dispatchTier2CrawlUrls',
-    ]) {
-      const query = captured.queries.find(query => query.text.startsWith(`/* ${name} */`))!
+    ].entries()) {
+      const query =
+        index === 0
+          ? captured.queries.find(query =>
+              query.text.startsWith('/* dispatchCrawlUrlsPerHostname */'),
+            )!
+          : captured.queries.filter(query => query.text.startsWith('/* dispatchTierCrawlUrls */'))[
+              index - 1
+            ]!
       expect(query).toBeDefined()
       const plan = await explainCapturedTestQuery(
         name,

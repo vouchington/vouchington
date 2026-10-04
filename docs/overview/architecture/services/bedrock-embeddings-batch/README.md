@@ -64,13 +64,19 @@ Pending-entity reads use registered cursor batch sizes and a per-run scan budget
 and last attempted position in its continuation (crawl chunks additionally retain the chunk order).
 Chunk scans use crawl ID descending and chunk order ascending for a stable resume order.
 Poison images count as attempted work; their continuation advances to the tail, and the next
-scheduled root sweep retries them. The same wrap retry covers undersized pages and submission
-failures. Provider rate denial preserves the current continuation unchanged.
+scheduled root sweep retries them. Healthy images below the minimum travel as bounded IDs in the
+continuation; their eligible replay consumes the next run's scan allowance before new candidates.
+Submitted or no-longer-eligible IDs drop, and an unsubmitted boundary image remains pending.
+A smaller subsequent configuration drains a bounded prefix without dropping the carried tail.
+When a complete sweep has fewer healthy records than the minimum, scheduled roots revisit them.
+Provider denial retains the cursor and carried IDs in a delayed, non-throttled continuation.
 
 The scan budget must be at least the configured minimum batch size. Staff edits validate this
 against merged current fields, and runtime validation rejects an invalid combination before file,
-cursor, or provider side effects. This avoids permanently undersized healthy pages without lifting
-the configured work cap.
+cursor, or provider side effects. The configured file size must also fit the minimum at the maximum
+converted-image record size, including base64 and the canonical JSON framing. Effective remaining
+provider capacity below that minimum schedules a retry using `creation_retry_delay_ms`; it does not
+scan or abandon a partial page. These constraints preserve the configured work cap.
 
 ## Related
 

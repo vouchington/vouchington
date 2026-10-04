@@ -1,3 +1,4 @@
+import { minimumImageBatchSizeMB } from '@services/bedrock-embeddings/batch/input-size-limits'
 import { BEDROCK_BATCH_MAX_VALUES } from '@services/bedrock-embeddings/batch/config'
 import { DynamicConfigValidationError } from './namespace.mts'
 import type { DynamicConfigFields } from './types.mts'
@@ -13,6 +14,11 @@ export function validateBedrockBatchConfig(next: DynamicConfigFields): void {
       )
     }
   }
+  if (
+    Number(next.max_file_size_gb) * 1024 <
+    minimumImageBatchSizeMB(Number(next.min_records_per_job))
+  )
+    throw new DynamicConfigValidationError('max_file_size_gb must cover the minimum image records')
   if (Number(next.max_scan_rows_per_run) < Number(next.min_records_per_job)) {
     throw new DynamicConfigValidationError('max_scan_rows_per_run must be >= min_records_per_job')
   }

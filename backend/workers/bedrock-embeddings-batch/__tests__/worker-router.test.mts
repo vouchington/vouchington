@@ -131,7 +131,7 @@ describe('bedrock embeddings batch worker processor', () => {
 
       await expect(
         processBedrockEmbeddingsBatchJob(makeJob(name, {}, 'creation'), {} as Worker),
-      ).resolves.toEqual({ reEnqueued: true, reason: 'inflight_job_limit_exceeded' })
+      ).resolves.toEqual({ reEnqueued: true, reason: 'inflight_job_limit_exceeded', hasMore: true })
     },
   )
 

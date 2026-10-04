@@ -131,6 +131,10 @@ export const coreDynamicConfigRegistryEntries = [
     config: bedrockEmbeddingsBatchConfig,
     access: { update_roles: ['developer'] },
     fields: {
+      creation_retry_delay_ms: bedrockField(
+        'creation_retry_delay_ms',
+        'Delay before retrying a capacity-denied creation job.',
+      ),
       max_inflight_jobs: bedrockField(
         'max_inflight_jobs',
         'Maximum number of Bedrock batch jobs allowed in flight simultaneously.',

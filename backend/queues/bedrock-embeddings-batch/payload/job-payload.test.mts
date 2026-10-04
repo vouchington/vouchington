@@ -8,6 +8,7 @@ describe('embedding scan payload', () => {
       sweepStartedAt: new Date().toISOString(),
       afterId: 'synthetic-crawl-id',
       afterOrderIndex: 0,
+      pendingImageIds: [crypto.randomUUID()],
     }
     expect(parseEmbeddingScanCursor({ cursor })).toEqual(cursor)
   })
@@ -16,6 +17,7 @@ describe('embedding scan payload', () => {
     { cursor: { sweepStartedAt: new Date().toISOString(), afterOrderIndex: 1 } },
     { cursor: { sweepStartedAt: new Date().toISOString(), afterId: 'id', afterOrderIndex: -1 } },
     { unrelated: true },
+    { cursor: { sweepStartedAt: new Date().toISOString(), pendingImageIds: ['bad-id'] } },
   ])('rejects malformed continuations', data => {
     expect(() => parseEmbeddingScanCursor(data)).toThrow(/embedding/)
   })

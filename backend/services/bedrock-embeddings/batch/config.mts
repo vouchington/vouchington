@@ -1,3 +1,4 @@
+import { minimumImageBatchSizeMB } from './input-size-limits.mts'
 import { DynamicConfig, getBoundedPositiveIntegerField } from '@data-stores/valkey'
 
 export type RateLimitConfig = {
@@ -22,6 +23,7 @@ const DEFAULTS = {
   max_scan_rows_per_run: 100000,
   backlog_threshold: 1000,
   stale_ttl_hours: 24,
+  creation_retry_delay_ms: 60000,
 }
 
 export const BEDROCK_BATCH_MAX_VALUES: Record<keyof typeof DEFAULTS, number> = {
@@ -36,6 +38,7 @@ export const BEDROCK_BATCH_MAX_VALUES: Record<keyof typeof DEFAULTS, number> = {
   max_scan_rows_per_run: 1_000_000,
   backlog_threshold: 10_000_000,
   stale_ttl_hours: 168,
+  creation_retry_delay_ms: 3600000,
 }
 
 export const bedrockEmbeddingsBatchConfig = new DynamicConfig({
@@ -52,6 +55,7 @@ export const bedrockEmbeddingsBatchConfig = new DynamicConfig({
     max_scan_rows_per_run: 'number',
     backlog_threshold: 'number',
     stale_ttl_hours: 'number',
+    creation_retry_delay_ms: 'number',
   },
   defaultFields: DEFAULTS,
 })
@@ -86,8 +90,17 @@ export function getPendingEmbeddingScanLimits(images = false) {
   const maxRows = positiveInteger('max_scan_rows_per_run')
   if (maxRows < positiveInteger('min_records_per_job'))
     throw new RangeError('Embedding scan budget must cover the minimum records per job')
+  if (
+    positiveInteger('max_file_size_gb') * 1024 <
+    minimumImageBatchSizeMB(positiveInteger('min_records_per_job'))
+  )
+    throw new RangeError('Embedding input budget must cover the minimum image records')
   return {
     batchSize: positiveInteger(images ? 'image_cursor_batch_size' : 'cursor_batch_size'),
     maxRows,
   }
+}
+
+export function getEmbeddingCreationRetryDelayMs(): number {
+  return positiveInteger('creation_retry_delay_ms')
 }

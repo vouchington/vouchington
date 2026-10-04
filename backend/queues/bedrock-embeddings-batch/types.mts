@@ -22,4 +22,5 @@ export type EmbeddingScanCursor = {
   sweepStartedAt: string
   afterId?: string
   afterOrderIndex?: number
+  pendingImageIds?: string[]
 }

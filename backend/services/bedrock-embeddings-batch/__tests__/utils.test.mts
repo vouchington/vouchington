@@ -1,3 +1,4 @@
+import { getEmbeddingCreationRetryDelayMs } from '@services/bedrock-embeddings/batch/config'
 import type { EmbeddingScanCursor } from '@queues/bedrock-embeddings-batch/types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
@@ -21,7 +22,7 @@ describe('utils', () => {
     mocks.getBatchCreationLimits.mockResolvedValue({
       allowed: true,
       maxRecords: 10,
-      maxSizeMB: 1,
+      maxSizeMB: 32,
       minRecords: 3,
     })
     mocks.createBatch.mockResolvedValue(undefined)
@@ -46,7 +47,7 @@ describe('utils', () => {
           dependencies,
         ),
       ).toEqual({ reEnqueued: true, reason: 'inflight_job_limit_exceeded', hasMore: true })
-      expect(reEnqueue).toHaveBeenCalledExactlyOnceWith(cursor)
+      expect(reEnqueue).toHaveBeenCalledExactlyOnceWith(cursor, getEmbeddingCreationRetryDelayMs())
     })
 
     it('returns empty when undersized and never submits a batch', async () => {

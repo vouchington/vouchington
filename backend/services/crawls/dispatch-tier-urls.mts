@@ -22,15 +22,22 @@ const ATTEMPT_THRESHOLD_HOURS = 1
  * Tier 1: URLs referenced by entity relations with positive votes,
  * or user profile links.
  */
-export const dispatchTier1CrawlUrls = async (cursor?: CrawlDispatchCursor) => {
+export const dispatchTier1CrawlUrls = (cursor?: CrawlDispatchCursor) =>
+  dispatchTierCrawlUrls(1, cursor)
+
+/** Dispatch non-positive relation URLs outside Tier 1, with the 30-day eligibility cutoff. */
+export const dispatchTier2CrawlUrls = (cursor?: CrawlDispatchCursor) =>
+  dispatchTierCrawlUrls(2, cursor)
+
+async function dispatchTierCrawlUrls(tier: 1 | 2, cursor?: CrawlDispatchCursor) {
   const limits = getCrawlDispatchLimits()
   const sweepStartedAt = cursor?.sweepStartedAt ?? new Date().toISOString()
   const upperId = getMinUUIDv7ForDate(new Date(sweepStartedAt))
   const attemptCutoffId = getMinUUIDv7ForDate(
     new Date(new Date(sweepStartedAt).getTime() - ATTEMPT_THRESHOLD_HOURS * 60 * 60 * 1000),
   )
-  const queryStatement = sql`/* dispatchTier1CrawlUrls */ `
-  queryStatement.append(buildTierWorkCandidates(true, upperId, cursor?.afterId)).append(sql`
+  const queryStatement = sql`/* dispatchTierCrawlUrls */ `
+  queryStatement.append(buildTierWorkCandidates(tier === 1, upperId, cursor?.afterId)).append(sql`
     SELECT u.id, h.id AS hostname_id, h.hostname, h.requests_per_second_limit
     FROM eligible_urls work
     JOIN urls u ON u.id = work.url_id
@@ -38,12 +45,18 @@ export const dispatchTier1CrawlUrls = async (cursor?: CrawlDispatchCursor) => {
     WHERE h.crawlable = true
       AND h.blocked = false
       `)
+  if (tier === 2) {
+    const positive = positiveVoteConditions(getEntityRelationUrlTablesWithElections()).join(' OR ')
+    queryStatement.append(`AND NOT (${positive}) AND NOT EXISTS (
+      SELECT 1 FROM user_profile_links upl WHERE upl.url_id = u.id
+    ) `)
+  }
   queryStatement.append(HTML_CRAWL_EXCLUSIVITY_SQL).append(sql`
       AND NOT EXISTS (
         SELECT 1 FROM crawls c
         WHERE c.url_id = u.id
           AND c.embeddings_generated_at IS NOT NULL
-          AND c.embeddings_generated_at > ${sweepStartedAt}::timestamptz - INTERVAL '1 day' * ${TIER_1_AGE_DAYS}
+          AND c.embeddings_generated_at > ${sweepStartedAt}::timestamptz - INTERVAL '1 day' * ${tier === 1 ? TIER_1_AGE_DAYS : TIER_2_AGE_DAYS}
       )
       AND NOT EXISTS (
         SELECT 1 FROM crawls c
@@ -69,79 +82,12 @@ export const dispatchTier1CrawlUrls = async (cursor?: CrawlDispatchCursor) => {
     },
   })
   if (result.hasMore && result.lastRow)
-    await enqueueCrawlDispatchContinuation('crawl_tier1_dispatcher', {
-      cursor: { sweepStartedAt, afterId: result.lastRow.id },
-    })
-  return { count: total, hasMore: result.hasMore }
-}
-
-/**
- * Dispatch Tier 2 URLs for crawling (every 30 days).
- * Tier 2: URLs referenced by entity relations with non-positive votes,
- * excluding URLs that are already Tier 1.
- */
-export const dispatchTier2CrawlUrls = async (cursor?: CrawlDispatchCursor) => {
-  const limits = getCrawlDispatchLimits()
-  const sweepStartedAt = cursor?.sweepStartedAt ?? new Date().toISOString()
-  const upperId = getMinUUIDv7ForDate(new Date(sweepStartedAt))
-  const attemptCutoffId = getMinUUIDv7ForDate(
-    new Date(new Date(sweepStartedAt).getTime() - ATTEMPT_THRESHOLD_HOURS * 60 * 60 * 1000),
-  )
-  const urlTablesWithElections = getEntityRelationUrlTablesWithElections()
-  const tierCondition = `(
-    NOT (${positiveVoteConditions(urlTablesWithElections).join('\n    OR ')})
-    AND NOT EXISTS (
-      SELECT 1 FROM user_profile_links upl WHERE upl.url_id = u.id
+    await enqueueCrawlDispatchContinuation(
+      tier === 1 ? 'crawl_tier1_dispatcher' : 'crawl_tier2_dispatcher',
+      {
+        cursor: { sweepStartedAt, afterId: result.lastRow.id },
+      },
     )
-  )`
-
-  const queryStatement = sql`/* dispatchTier2CrawlUrls */ `
-  queryStatement.append(buildTierWorkCandidates(false, upperId, cursor?.afterId)).append(sql`
-    SELECT u.id, h.id AS hostname_id, h.hostname, h.requests_per_second_limit
-    FROM eligible_urls work
-    JOIN urls u ON u.id = work.url_id
-    JOIN url_hostnames h ON h.id = u.hostname_id
-    WHERE h.crawlable = true
-      AND h.blocked = false
-      AND `)
-  queryStatement
-    .append(tierCondition)
-    .append(sql`
-      `)
-    .append(HTML_CRAWL_EXCLUSIVITY_SQL).append(sql`
-      AND NOT EXISTS (
-        SELECT 1 FROM crawls c
-        WHERE c.url_id = u.id
-          AND c.embeddings_generated_at IS NOT NULL
-          AND c.embeddings_generated_at > ${sweepStartedAt}::timestamptz - INTERVAL '1 day' * ${TIER_2_AGE_DAYS}
-      )
-      AND NOT EXISTS (
-        SELECT 1 FROM crawls c
-        WHERE c.url_id = u.id
-          AND c.id > ${attemptCutoffId}
-      )
-    ORDER BY u.id ASC
-  `)
-
-  let total = 0
-  const result = await executeHandlerWithCursorInBatches<{
-    id: string
-    hostname_id: string
-    hostname: string
-    requests_per_second_limit: number | null
-  }>(queryStatement, undefined, {
-    batchSize: limits.batchSize,
-    maxRows: limits.maxRows,
-    readOnly: true,
-    handler: async rows => {
-      total += rows.length
-      await enqueueByHostname(rows)
-    },
-  })
-  if (result.hasMore && result.lastRow)
-    await enqueueCrawlDispatchContinuation('crawl_tier2_dispatcher', {
-      cursor: { sweepStartedAt, afterId: result.lastRow.id },
-    })
   return { count: total, hasMore: result.hasMore }
 }
 

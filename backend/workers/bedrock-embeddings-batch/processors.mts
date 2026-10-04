@@ -64,7 +64,7 @@ export const processTopicBatchCreation = (
     cursor,
     jobType: 'topics',
     streamPending: options => streamPendingTopics({ ...options, cursor }),
-    reEnqueue: next => enqueueCreateTopicEmbeddingsBatch(undefined, next),
+    reEnqueue: (next, delayMs) => enqueueCreateTopicEmbeddingsBatch(undefined, next, { delayMs }),
   })
 
 export const processPostBatchCreation = (
@@ -74,7 +74,7 @@ export const processPostBatchCreation = (
     cursor,
     jobType: 'posts',
     streamPending: options => streamPendingPosts({ ...options, cursor }),
-    reEnqueue: next => enqueueCreatePostEmbeddingsBatch(undefined, next),
+    reEnqueue: (next, delayMs) => enqueueCreatePostEmbeddingsBatch(undefined, next, { delayMs }),
   })
 
 export const processRssFeedItemBatchCreation = (
@@ -84,7 +84,8 @@ export const processRssFeedItemBatchCreation = (
     cursor,
     jobType: 'rss_feed_items',
     streamPending: options => streamPendingRssFeedItems({ ...options, cursor }),
-    reEnqueue: next => enqueueCreateRssFeedItemEmbeddingsBatch(undefined, next),
+    reEnqueue: (next, delayMs) =>
+      enqueueCreateRssFeedItemEmbeddingsBatch(undefined, next, { delayMs }),
   })
 
 export const processCrawlChunkBatchCreation = (
@@ -94,7 +95,7 @@ export const processCrawlChunkBatchCreation = (
     cursor,
     jobType: 'crawl_chunks',
     streamPending: options => streamPendingCrawlChunks({ ...options, cursor }),
-    reEnqueue: next => enqueueCreateCrawlChunkBatch(undefined, next),
+    reEnqueue: (next, delayMs) => enqueueCreateCrawlChunkBatch(undefined, next, { delayMs }),
   })
 
 export const processImageEmbeddingBatchCreation = (
@@ -104,7 +105,7 @@ export const processImageEmbeddingBatchCreation = (
     cursor,
     streamPending: options => streamPendingImages({ ...options, cursor }),
     addImageToBatch,
-    reEnqueue: next => enqueueCreateImageEmbeddingsBatch(undefined, next),
+    reEnqueue: (next, delayMs) => enqueueCreateImageEmbeddingsBatch(undefined, next, { delayMs }),
   })
 
 export const processBatchPolling = async (
