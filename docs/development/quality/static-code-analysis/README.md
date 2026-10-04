@@ -562,6 +562,29 @@ active-topic filter (`deleted_at IS NULL` and `merged_into_topic_id IS NULL`) li
 files never contain is still judged at test time by
 `backend/test-helpers/data-stores/psql/config-driven/generated-ddl-insert-invariants.mts`.
 
+## Runtime work tunables
+
+The [bounded work guard](../../../../static-code-analysis/repo-file-policy/bounded-work-tunables.mts)
+runs in the existing repo-file-policy aggregate and CI Node check. It invokes the pinned ast-grep
+scanner with standalone declarative rules and consumes its diagnostic JSON; it does not parse
+TypeScript itself. Only tracked backend runtime TypeScript is scanned. Tests, test helpers and
+backend scripts are excluded.
+
+Numeric `const` declarations ending in `BATCH_SIZE`, `PAGE_SIZE`, `CHUNK_SIZE`, `MAX_BATCHES` or
+`_PER_RUN` must use an owning DynamicConfig value. Typed, signed, parenthesized and `as` numeric
+forms are covered; BigInt and DynamicConfig defaults object properties are outside this numeric
+constant contract. Direct batch/page-size `process.env` reads are rejected, including dot, quoted
+bracket and direct destructured/renamed keys. Alias/dataflow analysis is outside this syntactic guard.
+
+External protocol ceilings need an exact [allow entry](../../../../static-code-analysis/repo-file-policy/bounded-work-tunables-allowlist.mts)
+for file, rule, identifier and captured value, with a reason. Missing, changed or removed matches
+make entries stale; blank reasons and duplicates fail. Scanner execution or malformed diagnostic
+output fails the check. The focused fixtures run with `pnpm exec vitest run
+static-code-analysis/repo-file-policy/bounded-work-tunables*.test.mts`.
+
+SQL statement and literal-LIMIT checks remain a separate upstream handoff after #1864; this guard
+does not enable those no-mistakes rules or change their configuration.
+
 ## Where To Put A New Rule (Priority Order)
 
 Always pick the highest tier that can express the rule. See the [Guard Authoring Checklist](#guard-authoring-checklist) before implementing a new or changed guard, and use #4988 as the context for why static-analysis rules should stay small and focused.
