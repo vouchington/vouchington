@@ -740,9 +740,11 @@ or unassessed filings and another independent restriction never lose their prote
 US timing does not govern EU or UK cases. The US form and original email-notice intake accept
 `us_dmca`; the separate EU form accepts signed-in and guest notifiers. UK notice intake remains
 authenticated and has no web form. New EU and UK notices stay unavailable until an unwithdrawn
-jurisdiction policy approval exists. That approval is an operator record, not a seeded row, and remains
-unapproved until the staff web screen ships. New EU and UK notices need both that approval and
-`COPYRIGHT_INTAKE_ENABLED`; neither replaces the other. Withdrawing approval stops new EU/UK
+jurisdiction policy approval exists. That approval is an operator record, not a seeded row. Never
+approve `eu_dsa` or `uk` before the staff territorial screen ships; approval is administrator-only at
+`POST /api/v1/copyright-jurisdiction-policies`. Follow the [runbook activation gate](../../runbooks/copyright-notices.md#intake-activation).
+New EU and UK notices need both that approval and `COPYRIGHT_INTAKE_ENABLED`; neither replaces the
+other. Withdrawing approval stops new EU/UK
 notice intake only. A notice already received remains decidable, and its acknowledgment, decision,
 enforcement, statement delivery, complaint and complaint decision, restoration, and Article 21
 recording use the notice's receipt rather than current approval. These staff and in-case operations

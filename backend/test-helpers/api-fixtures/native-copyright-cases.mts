@@ -1,5 +1,6 @@
 import { nativeCopyrightClaimantApiFixtureCases } from './native-copyright-claimant-cases.mts'
 import { formGuidance, reviewedStaffCase } from './native-copyright-staff-form-review.mts'
+import { webCopyrightTerritorialStaffApiFixtureCases } from './web-copyright-territorial-staff-cases.mts'
 import type { ApiFixtureCase } from './types.mts'
 
 const postId = '00000000-0000-7000-8000-000000000801'
@@ -20,6 +21,7 @@ const clientConsumers = ['web', 'swift-core', 'swift-ui', 'dotnet-core'] as cons
 
 export const nativeCopyrightApiFixtureCases: ApiFixtureCase[] = [
   ...nativeCopyrightClaimantApiFixtureCases,
+  ...webCopyrightTerritorialStaffApiFixtureCases,
   {
     id: 'web.copyright.staff-queue.default',
     method: 'GET',

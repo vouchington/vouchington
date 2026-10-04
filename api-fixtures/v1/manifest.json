@@ -92064,6 +92064,30 @@
     {
       "auth": "fixture-admin",
       "backendResponseContractKey": "GET:/api/v1/copyright-notices/review-queue",
+      "bodyFile": "responses/web.copyright.staff-queue.territorial.json",
+      "consumers": ["web"],
+      "id": "web.copyright.staff-queue.territorial",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/api/v1/copyright-notices/staff-queue-route.mts",
+        "web/components/copyright/copyright-staff-territorial.tsx"
+      ],
+      "path": "/api/v1/copyright-notices/review-queue",
+      "responseSchema": {
+        "hash": "4c96d681237c8e5002b7bc4c5165bf0b4af95eaa3cd6958f0b1de82c5d319b30",
+        "key": "web.copyright.staff-queue.territorial"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/copyright-notices/review-queue"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-copyright-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/copyright-notices/review-queue",
       "bodyFile": "responses/web.copyright.staff-queue.default.json",
       "consumers": ["web"],
       "id": "web.copyright.staff-queue.default",

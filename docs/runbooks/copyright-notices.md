@@ -127,9 +127,9 @@ environment:
   workflows are live; and
 - the repeat-infringer policy, retention schedule, templates, staffing, and legal review are approved.
 
-For EU/UK, never record jurisdiction approval until the staff web decision screen (#1906) has
-shipped. That prerequisite is separate from `COPYRIGHT_INTAKE_ENABLED`; neither is currently an
-authorization to enable intake.
+Never approve `eu_dsa` or `uk` before the staff territorial screen (#1906) has shipped. Approval is
+administrator-only: `POST /api/v1/copyright-jurisdiction-policies`. This prerequisite is separate
+from `COPYRIGHT_INTAKE_ENABLED`; neither is authorization to enable the other.
 
 This switch is the intake kill switch. It stops only new claimant intake: the notice forms, staff
 approval of an emailed notice (which would open a new case), the AI email-intake recommendation
@@ -189,8 +189,8 @@ the staff case action first, then record implementation: the referral or outcome
 restore media. These records remain usable after withdrawal. UK has no EU filing/complaint UI or
 Art. 21 recording.
 
-Never approve `uk` without counsel's written sign-off. EU/UK approval also remains blocked until
-#1906's staff screen ships. Approval and withdrawal are administrator-only:
+Never approve `uk` without counsel's written sign-off. Keep both EU/UK approvals unapproved until
+the staff territorial screen ships. Approval and withdrawal are administrator-only:
 `POST /api/v1/copyright-jurisdiction-policies` and `.../:id/withdrawals`. Basis recorded by the owner
 on 2026-09-28: Online Safety Act 2023 s.59 excludes intellectual property, and e-Commerce Regulations
 2002 reg. 19 is met by the global pipeline. Counsel has not yet confirmed this basis; it is tracked
