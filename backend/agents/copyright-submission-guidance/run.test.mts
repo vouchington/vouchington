@@ -185,7 +185,8 @@ describe('copyright submission guidance agent', () => {
     for (const [kind, input] of callModel.mock.calls) {
       expect(kind).toBe('court_or_ccb_hold')
       expect(input).not.toContain('@example.test')
-      expect(input).not.toContain('555')
+      expect(input).not.toContain('+1 (555) 010-0100')
+      expect(input).toContain('[phone removed]')
       expect(input).toContain('1:26-cv-01234')
       expect(input).toContain('2026-07-02')
     }
