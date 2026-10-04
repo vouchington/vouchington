@@ -9,7 +9,7 @@ Not partitioned — growth: unbounded.
 | Column                                            | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                          |
 | ------------------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | `id`                                              | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Immutable UUIDv7 byte-asset identity. Public delivery uses a separately revision-fenced placement tuple.                         |
-| `created_by_id`                                   | `uuid`                     | no       |                              |          |           |           |                                                                                                                                  |
+| `created_by_id`                                   | `uuid`                     | no       |                              |          |           |           | Original uploader identity retained after account deletion for shared image provenance; never alone authorizes a deleted user.   |
 | `created_at`                                      | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                  |
 | `updated_at`                                      | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                  |
 | `deleted_at`                                      | `timestamp with time zone` | yes      |                              |          |           |           |                                                                                                                                  |
@@ -47,7 +47,7 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `fk_images__retained_image_identity`: `FOREIGN KEY (id) REFERENCES retained_image_identities(id) ON DELETE RESTRICT`
-- `images_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE CASCADE`
+- `images_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `images_deleted_by_id_fkey`: `FOREIGN KEY (deleted_by_id) REFERENCES users(id) ON DELETE SET NULL`
 
 **Indexes:**

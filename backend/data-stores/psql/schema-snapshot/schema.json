@@ -41086,7 +41086,7 @@
         },
         "created_by_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Original uploader identity retained after account deletion for shared image provenance; never alone authorizes a deleted user.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -41318,11 +41318,11 @@
         },
         "images_created_by_id_fkey": {
           "columns": ["created_by_id"],
-          "definition": "FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
+          "definition": "FOREIGN KEY (created_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
-          "referencedTable": "users",
+          "referencedTable": "retained_user_identities",
           "validated": true
         },
         "images_deleted_by_id_fkey": {
