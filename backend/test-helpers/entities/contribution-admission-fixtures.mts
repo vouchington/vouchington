@@ -27,7 +27,7 @@ export async function insertContributionAdmissionReservationForTest(input: {
     id: string
   }>(sql`/* insertContributionAdmissionReservationForTest */
     INSERT INTO post_admission_reservations (actor_id, idempotency_key, intent_sha256, route, scope, source, post_type, policy_revision)
-    VALUES (${input.actorId}, ${randomUUID()}, ${createHash('sha256').update(randomUUID()).digest('hex')}, 'test', 'test', 'discussion', 'discussion', 'test')
+    VALUES (${input.actorId}, ${randomUUID()}, ${createHash('sha256').update(randomUUID()).digest('hex')}, 'internal', 'internal', 'discussion', 'discussion', 'test')
     RETURNING id`)
   const reservationId = rows[0]?.id
   if (!reservationId) throw new Error('Test contribution admission reservation was not created')
@@ -89,7 +89,7 @@ export async function insertTestCommittedAdmissionReservation(input: {
     )
     VALUES (
       ${input.actorId}, ${randomUUID()}, ${createHash('sha256').update(randomUUID()).digest('hex')},
-      'test', 'test', 'discussion', 'discussion', 'test',
+      'internal', 'internal', 'discussion', 'discussion', 'test',
       'committed', ${JSON.stringify({ post: { id: input.postId } })}::jsonb,
       '{"route":"test","scope":"test"}'::jsonb, ${input.postId}, 'created', NOW(),
       NOW() + INTERVAL '48 hours', NOW() + INTERVAL '48 hours'

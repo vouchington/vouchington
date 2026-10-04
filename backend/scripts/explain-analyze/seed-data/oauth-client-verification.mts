@@ -26,7 +26,7 @@ export async function seedOAuthClientVerification(): Promise<void> {
       format('voucha_%s', lpad(seed_index::text, 32, '0')),
       format('EXPLAIN OAuth client %s', seed_index),
       'public', 'none', ARRAY['https://oauth-client.example/callback'],
-      ARRAY['authorization_code', 'refresh_token'], ARRAY['code'], ARRAY['read'],
+      ARRAY['authorization_code', 'refresh_token']::oauth_grant_types[], ARRAY['code']::oauth_response_types[], ARRAY['profile:read']::api_scopes[],
       CASE WHEN seed_index % $2 = 0 THEN NOW() ELSE NULL END
     FROM client_indexes
     ON CONFLICT DO NOTHING`,

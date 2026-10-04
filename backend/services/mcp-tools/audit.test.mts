@@ -164,7 +164,7 @@ describe('recordMcpCallAudit', () => {
         // @ts-expect-error -- exercising the database CHECK with a value the type forbids
         { jsonrpcMethod: 'ping', toolName: null, outcome: 'whatever' },
       ]),
-    ).rejects.toMatchObject({ code: '23514' })
+    ).rejects.toMatchObject({ code: '22P02' })
   })
 
   it('rejects a tool name on a method other than tools/call', async () => {

@@ -12,7 +12,7 @@ export async function createExpiredContributionAdmissionClaimForTest(input: {
     id: string
   }>(sql`/* createExpiredContributionAdmissionClaimForTest.reservation */
     INSERT INTO post_admission_reservations (actor_id, idempotency_key, intent_sha256, route, scope, source, post_type, policy_revision)
-    VALUES (${input.actorId}, ${input.idempotencyKey}, ${hashTestContributionAdmissionIntent(input.intent)}, 'test', 'test', 'discussion', 'discussion', 'test')
+    VALUES (${input.actorId}, ${input.idempotencyKey}, ${hashTestContributionAdmissionIntent(input.intent)}, 'internal', 'internal', 'discussion', 'discussion', 'test')
     RETURNING id`)
   const reservationId = reservation.rows[0]?.id
   if (!reservationId) throw new Error('Test contribution admission reservation was not created')
