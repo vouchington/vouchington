@@ -211,7 +211,11 @@ describe('copyright in-case responses with intake switched off', () => {
     const euNotice = `/api/v1/copyright-eu-notices/${eu.notice_id}`
     await staff
       .post(`${euNotice}/statements-of-reasons`)
-      .send({ statement: 'Staff statement of reasons' })
+      .send({
+        statement: 'Staff statement of reasons',
+        public_explanation: 'The notice did not establish infringement.',
+        outcome: 'no_action',
+      })
       .expect(201)
     const euRedress = await claimantRequest
       .post(`${euNotice}/redress-requests`)
@@ -236,7 +240,11 @@ describe('copyright in-case responses with intake switched off', () => {
     const ukNotice = `/api/v1/copyright-uk-notices/${uk.notice_id}`
     await staff
       .post(`${ukNotice}/reviews`)
-      .send({ rationale: 'Staff review rationale' })
+      .send({
+        rationale: 'Staff review rationale',
+        public_explanation: 'The notice did not establish infringement.',
+        outcome: 'no_action',
+      })
       .expect(201)
     const ukRedress = await claimantRequest
       .post(`${ukNotice}/redress-requests`)

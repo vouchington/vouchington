@@ -376,7 +376,8 @@ export async function getCopyrightParticipantNoticeDetail(
     ...detail,
     statements,
     viewer_role: viewerRole,
-    respondable_target_ids: respondableTargets.map(target => target.id),
+    respondable_target_ids:
+      detail.jurisdiction === 'us_dmca' ? respondableTargets.map(target => target.id) : [],
     submissions,
   }
 }

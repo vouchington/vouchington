@@ -82,7 +82,11 @@ describe('EU copyright notice routes', () => {
     const noticeId = created.body.copyright_eu_notice.notice_id as string
     const statement = await staffRequest
       .post(`/api/v1/copyright-eu-notices/${noticeId}/statements-of-reasons`)
-      .send({ statement: 'Staff statement of reasons' })
+      .send({
+        statement: 'Staff statement of reasons',
+        public_explanation: 'The notice did not establish infringement.',
+        outcome: 'no_action',
+      })
       .expect(201)
     expect(statement.body.copyright_eu_statement_of_reasons.automation_disclosure).toBe('human')
     const redressKey = crypto.randomUUID()
@@ -109,7 +113,11 @@ describe('EU copyright notice routes', () => {
     const otherNoticeId = other.body.copyright_eu_notice.notice_id as string
     await staffRequest
       .post(`/api/v1/copyright-eu-notices/${otherNoticeId}/statements-of-reasons`)
-      .send({ statement: 'Second staff statement' })
+      .send({
+        statement: 'Second staff statement',
+        public_explanation: 'The notice did not establish infringement.',
+        outcome: 'no_action',
+      })
       .expect(201)
     await claimantRequest
       .post(`/api/v1/copyright-eu-notices/${otherNoticeId}/redress-requests`)

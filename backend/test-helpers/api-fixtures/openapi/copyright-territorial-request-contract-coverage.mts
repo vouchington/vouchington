@@ -17,8 +17,8 @@ export const REQUIRED_KEYS: Record<string, string[]> = {
   [UK_NOTICE]: ['contact', 'content_description', 'grounds', 'hosted_use_url'],
   [EU_REDRESS]: ['explanation'],
   [UK_REDRESS]: ['explanation'],
-  [`POST:${EU}/:id/statements-of-reasons`]: ['statement'],
-  [`POST:${UK}/:id/reviews`]: ['rationale'],
+  [`POST:${EU}/:id/statements-of-reasons`]: ['outcome', 'public_explanation', 'statement'],
+  [`POST:${UK}/:id/reviews`]: ['outcome', 'public_explanation', 'rationale'],
   [`POST:${EU}/:id${REDRESS_DECISION}`]: ['rationale', 'staff_disposition'],
   [`POST:${UK}/:id${REDRESS_DECISION}`]: ['rationale', 'staff_disposition'],
   [`POST:${EU}/:id/supervised-complaints`]: ['authority_reference', 'explanation'],
@@ -31,6 +31,11 @@ export const CAPTCHA_BODIES = [EU_NOTICE, UK_NOTICE, EU_REDRESS, UK_REDRESS]
 
 /** Enumerated body fields and the values the route accepts. */
 export const ENUMS: Record<string, { field: string; values: string[] }> = {
+  [`POST:${EU}/:id/statements-of-reasons`]: {
+    field: 'outcome',
+    values: ['no_action', 'restrict'],
+  },
+  [`POST:${UK}/:id/reviews`]: { field: 'outcome', values: ['no_action', 'restrict'] },
   [`POST:${EU}/:id${REDRESS_DECISION}`]: {
     field: 'staff_disposition',
     values: ['maintain', 'revoke'],
