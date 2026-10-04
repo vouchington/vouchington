@@ -37,8 +37,8 @@ describe('POST /api/v1/copyright-email-intakes/:id/reply/replays', () => {
     await expect(readTestCopyrightDeliveryIntentReplayEvents(declined.intentId)).resolves.toEqual([
       {
         copyright_notice_id: null,
-        event_type: 'delivery_intent_replayed',
-        actor_user_id: user.id,
+        change_type: 'delivery_intent_replayed',
+        changed_by_id: user.id,
       },
     ])
   })
