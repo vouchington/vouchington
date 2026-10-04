@@ -41,6 +41,7 @@ const REPLAY_SAFE_TRIGGER_FUNCTIONS = new Set([
   // Only flips a moderation lock derived from deleted_at; not a column any config-driven
   // generator's ON CONFLICT assigns.
   'fn_lock_agent_moderation_transparency_agent',
+  'fn_project_topic_aliases', // Sorted alias cache; empty transition tables do no work.
 ])
 
 function parseTrigger(trigger: unknown): Record<string, unknown> | undefined {
