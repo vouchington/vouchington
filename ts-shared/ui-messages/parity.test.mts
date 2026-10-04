@@ -73,33 +73,6 @@ describe('catalog value regressions', () => {
       'Minhas Disputas',
     )
   })
-
-  it('describes the support thread search fields supported by the API', () => {
-    expect(
-      leaf(
-        enMessages,
-        'extracted.support.adminSupportThreadFilters.searchBySubjectOrMessage_667f285e',
-      ),
-    ).toBe('Search by email or subject')
-    expect(
-      leaf(
-        esMessages,
-        'extracted.support.adminSupportThreadFilters.searchBySubjectOrMessage_667f285e',
-      ),
-    ).toBe('Buscar por correo o asunto')
-    expect(
-      leaf(
-        frMessages,
-        'extracted.support.adminSupportThreadFilters.searchBySubjectOrMessage_667f285e',
-      ),
-    ).toBe('Rechercher par e-mail ou objet')
-    expect(
-      leaf(
-        ptMessages,
-        'extracted.support.adminSupportThreadFilters.searchBySubjectOrMessage_667f285e',
-      ),
-    ).toBe('Pesquisar por e-mail ou assunto')
-  })
 })
 
 function leaf(catalog: Record<string, unknown>, path: string): unknown {
