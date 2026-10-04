@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- edited-in-place: pre-launch, never deployed to production
 CREATE TABLE IF NOT EXISTS url_hostname_blocks (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
@@ -18,7 +19,7 @@ CREATE INDEX IF NOT EXISTS idx_url_hostname_blocks__hostname ON url_hostname_blo
 
 -- Trigger: keep url_hostnames.blocked in sync with active block history rows.
 -- A hostname is blocked iff at least one url_hostname_blocks row exists with lifted_at IS NULL.
-CREATE OR REPLACE FUNCTION fn_sync_url_hostname_blocked()
+CREATE OR REPLACE FUNCTION fn_project_url_hostname_blocked()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   UPDATE url_hostnames
@@ -35,7 +36,7 @@ $$;
 CREATE OR REPLACE TRIGGER trigger_sync_url_hostname_blocked
   AFTER INSERT OR UPDATE OF lifted_at OR DELETE
   ON url_hostname_blocks
-  FOR EACH ROW EXECUTE FUNCTION fn_sync_url_hostname_blocked();
+  FOR EACH ROW EXECUTE FUNCTION fn_project_url_hostname_blocked();
 
 COMMENT ON TABLE url_hostname_blocks IS 'Append-only history of hostname blocks. url_hostnames.blocked is trigger-maintained from this table and must not be written directly in app code. Canonical insert-then-cancel pattern. See community_bans for reference.';
 COMMENT ON COLUMN url_hostname_blocks.url_hostname_id IS 'The blocked hostname.';

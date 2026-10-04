@@ -55,7 +55,7 @@ export async function getTerminalLifecycleGuardFunctionDefinition(): Promise<str
       SELECT pg_get_functiondef(oid) AS function_definition
       FROM pg_proc
       WHERE pronamespace = 'public'::regnamespace
-        AND proname = 'fn_guard_terminal_lifecycle'`,
+        AND proname = 'fn_reject_terminal_lifecycle'`,
   )
   if (rows.length !== 1)
     throw new Error(`Expected one lifecycle guard function, got ${rows.length}`)
@@ -80,7 +80,7 @@ async function getConstraintDefinition(table: string, constraint: string): Promi
 export async function getFollowerDistributionAudienceConstraint(): Promise<string> {
   const { rows } = await read<{ definition: string }>(
     `/* getFollowerDistributionRecipientBounds */
-      SELECT pg_get_functiondef('fn_assert_follower_distribution_recipient_bounds()'::regprocedure) AS definition`,
+      SELECT pg_get_functiondef('fn_reject_follower_distribution_recipient_bounds()'::regprocedure) AS definition`,
   )
   const definition = rows[0]?.definition
   if (!definition) throw new Error('Missing follower distribution recipient bound function')

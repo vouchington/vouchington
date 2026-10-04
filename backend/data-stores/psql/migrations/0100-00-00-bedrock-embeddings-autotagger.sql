@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Coalesced pre-launch domain baseline.
 -- edited-in-place: pre-launch, never deployed to production
 -- edited-in-place: folded idx_bedrock_embeddings_batches__job_arn from 0360-00-00-bedrock-batch-job-arn-index
@@ -48,7 +49,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 CREATE OR REPLACE TRIGGER trigger_bedrock_embeddings_batches_guard_terminal_lifecycle
 BEFORE UPDATE ON bedrock_embeddings_batches
 FOR EACH ROW
-EXECUTE FUNCTION fn_guard_terminal_lifecycle('completed_at', 'failed_at', 'cancelled_at');
+EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at', 'cancelled_at');
 
 CREATE INDEX IF NOT EXISTS idx_bedrock_embeddings_batches__active
 ON bedrock_embeddings_batches (created_at)

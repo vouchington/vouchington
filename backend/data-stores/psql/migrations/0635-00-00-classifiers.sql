@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Classifiers are decision configuration, not autonomous agents. Keep their durable
 -- configuration and result history independent of the agent tables retired by Epic A.
 
@@ -50,23 +51,12 @@ CREATE OR REPLACE TRIGGER trigger_classifiers_updated_at
   BEFORE UPDATE ON classifiers
   FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
-CREATE OR REPLACE FUNCTION fn_reject_classifier_identity_mutation()
-RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  IF NEW.id IS DISTINCT FROM OLD.id
-    OR NEW.slug IS DISTINCT FROM OLD.slug
-    OR NEW.primitive IS DISTINCT FROM OLD.primitive
-    OR NEW.candidate_kind IS DISTINCT FROM OLD.candidate_kind THEN
-    RAISE EXCEPTION 'classifier identity is immutable' USING ERRCODE = '23514';
-  END IF;
-  RETURN NEW;
-END $$;
-
 CREATE OR REPLACE TRIGGER trigger_classifiers_identity_immutable
-  BEFORE UPDATE ON classifiers
-  FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_identity_mutation();
+  BEFORE UPDATE OF id, slug, primitive, candidate_kind ON classifiers
+  FOR EACH ROW
+  WHEN (ROW(OLD.id, OLD.slug, OLD.primitive, OLD.candidate_kind) IS DISTINCT FROM ROW(NEW.id, NEW.slug, NEW.primitive, NEW.candidate_kind)) EXECUTE FUNCTION fn_reject_mutation();
 
-CREATE OR REPLACE FUNCTION fn_require_classifier_activation_lifecycle()
+CREATE OR REPLACE FUNCTION fn_reject_classifier_activation_lifecycle()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.activated_at IS NOT DISTINCT FROM OLD.activated_at
@@ -90,7 +80,7 @@ END $$;
 
 CREATE OR REPLACE TRIGGER trigger_classifiers_activation_lifecycle
   BEFORE UPDATE ON classifiers
-  FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_activation_lifecycle();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_activation_lifecycle();
 
 CREATE TABLE IF NOT EXISTS classifier_prompt_versions (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -131,28 +121,14 @@ CREATE INDEX IF NOT EXISTS idx_classifier_prompt_versions__updated_by
 CREATE INDEX IF NOT EXISTS idx_classifier_prompt_versions__deleted_by
   ON classifier_prompt_versions (deleted_by_id);
 
-CREATE OR REPLACE FUNCTION fn_reject_classifier_prompt_version_identity_mutation()
-RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  IF NEW.id IS DISTINCT FROM OLD.id
-    OR NEW.classifier_id IS DISTINCT FROM OLD.classifier_id
-    OR NEW.prompt IS DISTINCT FROM OLD.prompt
-    OR NEW.model_name IS DISTINCT FROM OLD.model_name
-    OR NEW.model_provider IS DISTINCT FROM OLD.model_provider
-    OR NEW.default_lower_threshold IS DISTINCT FROM OLD.default_lower_threshold
-    OR NEW.default_upper_threshold IS DISTINCT FROM OLD.default_upper_threshold THEN
-    RAISE EXCEPTION 'classifier prompt version identity is immutable' USING ERRCODE = '23514';
-  END IF;
-  RETURN NEW;
-END $$;
-
 CREATE OR REPLACE TRIGGER trigger_classifier_prompt_versions_identity_immutable
-  BEFORE UPDATE ON classifier_prompt_versions
-  FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_prompt_version_identity_mutation();
+  BEFORE UPDATE OF id, classifier_id, prompt, model_name, model_provider, default_lower_threshold, default_upper_threshold ON classifier_prompt_versions
+  FOR EACH ROW
+  WHEN (ROW(OLD.id, OLD.classifier_id, OLD.prompt, OLD.model_name, OLD.model_provider, OLD.default_lower_threshold, OLD.default_upper_threshold) IS DISTINCT FROM ROW(NEW.id, NEW.classifier_id, NEW.prompt, NEW.model_name, NEW.model_provider, NEW.default_lower_threshold, NEW.default_upper_threshold)) EXECUTE FUNCTION fn_reject_mutation();
 
 CREATE OR REPLACE TRIGGER trigger_classifier_prompt_versions_activation_lifecycle
   BEFORE UPDATE ON classifier_prompt_versions
-  FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_activation_lifecycle();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_activation_lifecycle();
 
 CREATE OR REPLACE TRIGGER trigger_classifier_prompt_versions_updated_at
   BEFORE UPDATE ON classifier_prompt_versions
@@ -207,23 +183,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_classifier_candidates__active_story
   ON classifier_candidates (classifier_id, story_id, community_id) NULLS NOT DISTINCT
   WHERE story_id IS NOT NULL AND deleted_at IS NULL;
 
-CREATE OR REPLACE FUNCTION fn_reject_classifier_candidate_identity_mutation()
-RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  IF NEW.id IS DISTINCT FROM OLD.id
-    OR NEW.classifier_id IS DISTINCT FROM OLD.classifier_id
-    OR NEW.candidate_kind IS DISTINCT FROM OLD.candidate_kind
-    OR NEW.topic_id IS DISTINCT FROM OLD.topic_id
-    OR NEW.story_id IS DISTINCT FROM OLD.story_id
-    OR NEW.community_id IS DISTINCT FROM OLD.community_id THEN
-    RAISE EXCEPTION 'classifier candidate identity is immutable' USING ERRCODE = '23514';
-  END IF;
-  RETURN NEW;
-END $$;
-
 CREATE OR REPLACE TRIGGER trigger_classifier_candidates_identity_immutable
-  BEFORE UPDATE ON classifier_candidates
-  FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_candidate_identity_mutation();
+  BEFORE UPDATE OF id, classifier_id, candidate_kind, topic_id, story_id, community_id ON classifier_candidates
+  FOR EACH ROW
+  WHEN (ROW(OLD.id, OLD.classifier_id, OLD.candidate_kind, OLD.topic_id, OLD.story_id, OLD.community_id) IS DISTINCT FROM ROW(NEW.id, NEW.classifier_id, NEW.candidate_kind, NEW.topic_id, NEW.story_id, NEW.community_id)) EXECUTE FUNCTION fn_reject_mutation();
 
 CREATE OR REPLACE TRIGGER trigger_classifier_candidates_updated_at
   BEFORE UPDATE ON classifier_candidates
@@ -272,7 +235,7 @@ CREATE INDEX IF NOT EXISTS idx_classifier_candidate_thresholds__created_by
 CREATE INDEX IF NOT EXISTS idx_classifier_candidate_thresholds__deactivated_by
   ON classifier_candidate_thresholds (deactivated_by_id);
 
-CREATE OR REPLACE FUNCTION fn_require_classifier_candidate_effective_thresholds()
+CREATE OR REPLACE FUNCTION fn_reject_classifier_candidate_effective_thresholds()
 RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
   defaults classifier_prompt_versions%ROWTYPE;
@@ -292,14 +255,14 @@ END $$;
 CREATE OR REPLACE TRIGGER trigger_classifier_candidate_thresholds_effective
   BEFORE INSERT OR UPDATE OF prompt_version_id, lower_threshold_override, upper_threshold_override
   ON classifier_candidate_thresholds
-  FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_candidate_effective_thresholds();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_candidate_effective_thresholds();
 
 CREATE OR REPLACE FUNCTION fn_classifier_audit_actor_was_deleted(actor_id UUID)
 RETURNS BOOLEAN LANGUAGE sql VOLATILE AS $$
   SELECT actor_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM users WHERE id = actor_id)
 $$;
 
-CREATE OR REPLACE FUNCTION fn_require_classifier_candidate_threshold_lifecycle()
+CREATE OR REPLACE FUNCTION fn_reject_classifier_candidate_threshold_lifecycle()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.id IS DISTINCT FROM OLD.id
@@ -337,7 +300,7 @@ END $$;
 
 CREATE OR REPLACE TRIGGER trigger_classifier_candidate_thresholds_lifecycle
   BEFORE UPDATE ON classifier_candidate_thresholds
-  FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_candidate_threshold_lifecycle();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_candidate_threshold_lifecycle();
 
 CREATE OR REPLACE TRIGGER trigger_classifier_candidate_thresholds_updated_at
   BEFORE UPDATE ON classifier_candidate_thresholds
@@ -370,7 +333,7 @@ CREATE INDEX IF NOT EXISTS idx_classifier_candidate_community_overrides__enabled
 CREATE INDEX IF NOT EXISTS idx_classifier_candidate_community_overrides__disabled_by
   ON classifier_candidate_community_overrides (disabled_by_id);
 
-CREATE OR REPLACE FUNCTION fn_require_global_classifier_candidate_override()
+CREATE OR REPLACE FUNCTION fn_reject_global_classifier_candidate_override()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF EXISTS (
@@ -384,9 +347,9 @@ END $$;
 
 CREATE OR REPLACE TRIGGER trigger_classifier_candidate_community_overrides_global
   BEFORE INSERT OR UPDATE OF candidate_id ON classifier_candidate_community_overrides
-  FOR EACH ROW EXECUTE FUNCTION fn_require_global_classifier_candidate_override();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_global_classifier_candidate_override();
 
-CREATE OR REPLACE FUNCTION fn_require_classifier_candidate_community_override_lifecycle()
+CREATE OR REPLACE FUNCTION fn_reject_classifier_candidate_community_override_lifecycle()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.id IS DISTINCT FROM OLD.id
@@ -421,7 +384,7 @@ END $$;
 
 CREATE OR REPLACE TRIGGER trigger_classifier_candidate_community_overrides_lifecycle
   BEFORE UPDATE ON classifier_candidate_community_overrides
-  FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_candidate_community_override_lifecycle();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_candidate_community_override_lifecycle();
 
 CREATE OR REPLACE TRIGGER trigger_classifier_candidate_community_overrides_updated_at
   BEFORE UPDATE ON classifier_candidate_community_overrides
@@ -464,13 +427,7 @@ CREATE INDEX IF NOT EXISTS idx_classifier_decision_batches__classifier
 CREATE INDEX IF NOT EXISTS idx_classifier_decision_batches__prompt_classifier
   ON classifier_decision_batches (prompt_version_id, classifier_id);
 
-CREATE OR REPLACE FUNCTION fn_reject_classifier_append_only_update()
-RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  RAISE EXCEPTION '% is append-only', TG_TABLE_NAME USING ERRCODE = '23514';
-END $$;
-
-CREATE OR REPLACE FUNCTION fn_require_classifier_decision_batch_completion()
+CREATE OR REPLACE FUNCTION fn_reject_classifier_decision_batch_completion()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF OLD.completed_at IS NOT NULL
@@ -492,7 +449,7 @@ END $$;
 
 CREATE OR REPLACE TRIGGER trigger_classifier_decision_batches_completion
   BEFORE UPDATE ON classifier_decision_batches
-  FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_decision_batch_completion();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_decision_batch_completion();
 
 CREATE OR REPLACE TRIGGER trigger_classifier_decision_batches_updated_at
   BEFORE UPDATE ON classifier_decision_batches
@@ -542,7 +499,7 @@ CREATE INDEX IF NOT EXISTS idx_classifier_decision_batch_candidates__prompt
 CREATE INDEX IF NOT EXISTS idx_classifier_decision_batch_candidates__threshold
   ON classifier_decision_batch_candidates (threshold_id);
 
-CREATE OR REPLACE FUNCTION fn_require_classifier_batch_candidate_configuration()
+CREATE OR REPLACE FUNCTION fn_reject_classifier_batch_candidate_configuration()
 RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
   batch classifier_decision_batches%ROWTYPE;
@@ -585,13 +542,13 @@ END $$;
 
 CREATE OR REPLACE TRIGGER trigger_classifier_decision_batch_candidates_configuration
   BEFORE INSERT ON classifier_decision_batch_candidates
-  FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_batch_candidate_configuration();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_batch_candidate_configuration();
 
 CREATE OR REPLACE TRIGGER trigger_classifier_decision_batch_candidates_append_only
   BEFORE UPDATE ON classifier_decision_batch_candidates
-  FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
-CREATE OR REPLACE FUNCTION fn_require_classifier_batch_candidate_owner_delete()
+CREATE OR REPLACE FUNCTION fn_reject_classifier_batch_candidate_owner_delete()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF EXISTS (SELECT 1 FROM classifier_decision_batches WHERE id = OLD.batch_id)
@@ -603,7 +560,7 @@ END $$;
 
 CREATE OR REPLACE TRIGGER trigger_classifier_decision_batch_candidates_owner_delete
   BEFORE DELETE ON classifier_decision_batch_candidates
-  FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_batch_candidate_owner_delete();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_batch_candidate_owner_delete();
 
 CREATE TABLE IF NOT EXISTS classifier_decision_calls (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -617,7 +574,7 @@ CREATE TABLE IF NOT EXISTS classifier_decision_calls (
 
 CREATE OR REPLACE TRIGGER trigger_classifier_decision_calls_append_only
   BEFORE UPDATE ON classifier_decision_calls
-  FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
 CREATE TABLE IF NOT EXISTS topic_classifier_results (
   topic_id UUID NOT NULL REFERENCES topics ON DELETE CASCADE,
@@ -879,7 +836,7 @@ CREATE INDEX IF NOT EXISTS idx_community_prompt_classifier_results__call_batch
 CREATE INDEX IF NOT EXISTS idx_community_prompt_classifier_results__classifier_kind
   ON community_prompt_classifier_results (classifier_id, candidate_kind);
 
-CREATE OR REPLACE FUNCTION fn_require_classifier_result_batch_scope()
+CREATE OR REPLACE FUNCTION fn_reject_classifier_result_batch_scope()
 RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
   batch classifier_decision_batches%ROWTYPE;
@@ -932,13 +889,13 @@ END $$;
 
 CREATE OR REPLACE TRIGGER trigger_topic_classifier_results_batch_scope
   BEFORE INSERT OR UPDATE OF batch_id, scope_category, scope_community_id ON topic_classifier_results
-  FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_result_batch_scope();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_result_batch_scope();
 
 CREATE OR REPLACE TRIGGER trigger_story_classifier_results_batch_scope
   BEFORE INSERT OR UPDATE OF batch_id, scope_category, scope_community_id ON story_classifier_results
-  FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_result_batch_scope();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_result_batch_scope();
 
-CREATE OR REPLACE FUNCTION fn_require_community_prompt_result_configuration()
+CREATE OR REPLACE FUNCTION fn_reject_community_prompt_result_configuration()
 RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
   batch classifier_decision_batches%ROWTYPE;
@@ -960,19 +917,19 @@ END $$;
 CREATE OR REPLACE TRIGGER trigger_community_prompt_classifier_results_configuration
   BEFORE INSERT OR UPDATE OF batch_id, prompt_version_id, effective_lower_threshold, effective_upper_threshold
   ON community_prompt_classifier_results
-  FOR EACH ROW EXECUTE FUNCTION fn_require_community_prompt_result_configuration();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_community_prompt_result_configuration();
 
 CREATE OR REPLACE TRIGGER trigger_topic_classifier_results_append_only
   BEFORE UPDATE ON topic_classifier_results
-  FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
 CREATE OR REPLACE TRIGGER trigger_story_classifier_results_append_only
   BEFORE UPDATE ON story_classifier_results
-  FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
 CREATE OR REPLACE TRIGGER trigger_community_prompt_classifier_results_append_only
   BEFORE UPDATE ON community_prompt_classifier_results
-  FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
 COMMENT ON TABLE classifiers IS 'Agent-independent classifier definitions with fixed primitive and candidate kind.';
 COMMENT ON TABLE classifier_prompt_versions IS 'Immutable classifier prompt/model revisions; activation lifecycle remains mutable.';

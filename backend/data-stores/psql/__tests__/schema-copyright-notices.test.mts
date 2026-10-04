@@ -77,7 +77,7 @@ describe('copyright notice schema', () => {
 
   it('rejects lifecycle references from another case and wrong event source shapes', async () => {
     await expect(rejectCopyrightLifecycleCrossCaseAction(fixture)).rejects.toMatchObject({
-      code: '23514',
+      code: '23503',
     })
     await expect(rejectCopyrightLifecycleWrongSourceShape(fixture)).rejects.toMatchObject({
       code: '23514',

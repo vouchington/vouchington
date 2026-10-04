@@ -1,4 +1,5 @@
-CREATE OR REPLACE FUNCTION fn_guard_membership_grant_mutation()
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE FUNCTION fn_reject_membership_grant_mutation()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
@@ -32,9 +33,9 @@ END $$;
 CREATE OR REPLACE TRIGGER trigger_membership_grants_guard
 BEFORE UPDATE OR DELETE ON membership_grants
 FOR EACH ROW
-EXECUTE FUNCTION fn_guard_membership_grant_mutation();
+EXECUTE FUNCTION fn_reject_membership_grant_mutation();
 
-CREATE OR REPLACE FUNCTION fn_guard_membership_operation_mutation()
+CREATE OR REPLACE FUNCTION fn_reject_membership_operation_mutation()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
@@ -152,22 +153,14 @@ END $$;
 CREATE OR REPLACE TRIGGER trigger_membership_operations_guard
 BEFORE UPDATE OR DELETE ON membership_operations
 FOR EACH ROW
-EXECUTE FUNCTION fn_guard_membership_operation_mutation();
-
-CREATE OR REPLACE FUNCTION fn_reject_membership_change_mutation()
-RETURNS trigger
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  RAISE EXCEPTION 'membership changes are append-only';
-END $$;
+EXECUTE FUNCTION fn_reject_membership_operation_mutation();
 
 CREATE OR REPLACE TRIGGER trigger_membership_changes_append_only
 BEFORE UPDATE OR DELETE ON membership_changes
 FOR EACH ROW
-EXECUTE FUNCTION fn_reject_membership_change_mutation();
+EXECUTE FUNCTION fn_reject_mutation();
 
-CREATE OR REPLACE FUNCTION fn_guard_membership_lineage_binding_mutation()
+CREATE OR REPLACE FUNCTION fn_reject_membership_lineage_binding_mutation()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
@@ -226,9 +219,9 @@ END $$;
 CREATE OR REPLACE TRIGGER trigger_membership_lineage_bindings_guard
 BEFORE UPDATE OR DELETE ON membership_lineage_bindings
 FOR EACH ROW
-EXECUTE FUNCTION fn_guard_membership_lineage_binding_mutation();
+EXECUTE FUNCTION fn_reject_membership_lineage_binding_mutation();
 
-CREATE OR REPLACE FUNCTION fn_guard_membership_grant_activation_period_mutation()
+CREATE OR REPLACE FUNCTION fn_reject_membership_grant_activation_period_mutation()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
@@ -254,4 +247,4 @@ END $$;
 CREATE OR REPLACE TRIGGER trigger_membership_grant_activation_periods_guard
 BEFORE UPDATE OR DELETE ON membership_grant_activation_periods
 FOR EACH ROW
-EXECUTE FUNCTION fn_guard_membership_grant_activation_period_mutation();
+EXECUTE FUNCTION fn_reject_membership_grant_activation_period_mutation();

@@ -53,15 +53,16 @@ export async function ensureTestAdmittedPostIdentity(
   query: TransactionQuery,
   postId: string,
 ): Promise<void> {
-  await query('/* ensureTestAdmittedPostIdentity */ SELECT fn_ensure_retained_post_identity($1)', [
-    postId,
-  ])
+  await query(
+    "/* ensureTestAdmittedPostIdentity */ SELECT fn_ensure_retained_identity('post', $1)",
+    [postId],
+  )
 }
 
 /** Registers a post's retained identity outside any admission transaction. */
 export async function ensureTestAdmittedPostIdentityDirect(postId: string): Promise<void> {
   await write(sql`/* ensureTestAdmittedPostIdentityDirect */
-    SELECT fn_ensure_retained_post_identity(${postId})`)
+    SELECT fn_ensure_retained_identity('post', ${postId})`)
 }
 
 /** An admission `execute` that "creates" a post with a fresh id and responds with it. */

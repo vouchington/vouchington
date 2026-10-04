@@ -77,7 +77,7 @@ export async function hardDeleteTestModerationPrompt(promptId: string): Promise<
 /** Returns the installed stamp trigger definition for structural lock-order tests. */
 export async function getTestModerationTransparencyStampFunctionDefinition(): Promise<string> {
   const { rows } = await read<{ definition: string }>(sql`
-    SELECT pg_get_functiondef('fn_stamp_agent_moderation_transparency()'::regprocedure) AS definition
+    SELECT pg_get_functiondef('fn_update_agent_moderation_transparency()'::regprocedure) AS definition
   `)
   return rows[0]!.definition
 }

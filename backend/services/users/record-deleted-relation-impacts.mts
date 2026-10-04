@@ -27,8 +27,8 @@ export async function recordDeletedRelationImpacts(
   )) {
     // oxlint-disable-next-line no-await-in-loop -- all concrete roots are pinned in stable order before dependent tuples.
     await query(
-      `/* pinDeletedRelationSubjectRoot */ SELECT fn_ensure_retained_${root.family}_identity($1::uuid)`,
-      [root.id],
+      `/* pinDeletedRelationSubjectRoot */ SELECT fn_ensure_retained_identity($1::retained_identity_families, $2::uuid)`,
+      [root.family, root.id],
     )
   }
   for (const [relationTable, targets] of [...byTable].toSorted(([left], [right]) =>

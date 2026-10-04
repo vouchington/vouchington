@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Coalesced pre-launch membership domain baseline. Never deployed to production.
 
 DO $$ BEGIN CREATE TYPE membership_plan_slugs AS ENUM ('plus', 'pro'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -140,7 +141,7 @@ CREATE INDEX IF NOT EXISTS idx_membership_provider_observations__provider_produc
 CREATE INDEX IF NOT EXISTS idx_membership_provider_observations__observed_currency ON membership_provider_observations (observed_price_currency_code);
 CREATE INDEX IF NOT EXISTS idx_membership_provider_observations__renewal_product ON membership_provider_observations (renewal_membership_provider_product_id) WHERE renewal_membership_provider_product_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_membership_provider_observations__renewal_currency ON membership_provider_observations (renewal_price_currency_code) WHERE renewal_price_currency_code IS NOT NULL;
-CREATE FUNCTION fn_require_verified_membership_provider_observation_evidence() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE FUNCTION fn_reject_verified_membership_provider_observation_evidence() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM membership_provider_evidence_records evidence
@@ -151,12 +152,9 @@ BEGIN
   END IF;
   RETURN NEW;
 END $$;
-CREATE TRIGGER trigger_membership_provider_observations_verified_evidence BEFORE INSERT ON membership_provider_observations FOR EACH ROW EXECUTE FUNCTION fn_require_verified_membership_provider_observation_evidence();
-CREATE FUNCTION fn_reject_membership_provider_observation_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  RAISE EXCEPTION 'membership provider observations are immutable';
-END $$;
-CREATE TRIGGER trigger_membership_provider_observations_immutable BEFORE UPDATE OR DELETE ON membership_provider_observations FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_provider_observation_mutation();
+CREATE TRIGGER trigger_membership_provider_observations_verified_evidence BEFORE INSERT ON membership_provider_observations FOR EACH ROW EXECUTE FUNCTION fn_reject_verified_membership_provider_observation_evidence();
+
+CREATE TRIGGER trigger_membership_provider_observations_immutable BEFORE UPDATE OR DELETE ON membership_provider_observations FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
 CREATE TABLE IF NOT EXISTS membership_purchase_intents (
   id UUID PRIMARY KEY DEFAULT uuidv7(), user_id UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -506,7 +504,7 @@ CREATE INDEX IF NOT EXISTS idx_mrefunds__stripe_charge_id ON membership_refunds 
 CREATE INDEX IF NOT EXISTS idx_mrefunds__stripe_payment_intent_id ON membership_refunds (stripe_payment_intent_id) WHERE stripe_payment_intent_id IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_mrefunds__stripe_idempotency_key ON membership_refunds (stripe_idempotency_key) WHERE stripe_idempotency_key IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_mrefunds__operation_id ON membership_refunds (membership_operation_id, id DESC) WHERE membership_operation_id IS NOT NULL;
-CREATE FUNCTION fn_guard_membership_refund_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE FUNCTION fn_reject_membership_refund_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'membership refund receipts cannot be deleted';
@@ -536,7 +534,7 @@ BEGIN
   END IF;
   RAISE EXCEPTION 'membership refund receipts only allow one-way reconciliation or access revocation';
 END $$;
-CREATE TRIGGER trigger_membership_refunds_guard BEFORE UPDATE OR DELETE ON membership_refunds FOR EACH ROW EXECUTE FUNCTION fn_guard_membership_refund_mutation();
+CREATE TRIGGER trigger_membership_refunds_guard BEFORE UPDATE OR DELETE ON membership_refunds FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_refund_mutation();
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_mrefunds__operation_receipt ON membership_refunds (membership_operation_id) WHERE membership_operation_id IS NOT NULL;
 
@@ -557,33 +555,32 @@ CREATE TABLE IF NOT EXISTS membership_refund_operation_attempts (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_refund_operation_attempts__provider_refund ON membership_refund_operation_attempts (provider, environment, application_id, provider_refund_id) WHERE provider_refund_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_membership_refund_operation_attempts__currency_code ON membership_refund_operation_attempts (currency_code);
 
-CREATE OR REPLACE FUNCTION fn_require_membership_administrator_refund_request_context() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE OR REPLACE FUNCTION fn_reject_membership_administrator_refund_request_context() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE valid_context BOOLEAN;
 BEGIN
   SELECT operation.operation_kind = 'administrator_refund' AND operation.remaining_refundable_minor_units = NEW.amount_minor_units AND operation.currency_code = NEW.currency_code INTO valid_context FROM membership_operations operation WHERE operation.id = NEW.membership_operation_id;
   IF valid_context IS DISTINCT FROM TRUE THEN RAISE EXCEPTION 'administrator refund request does not match its operation context' USING ERRCODE = '23514'; END IF;
   RETURN NEW;
 END $$;
-CREATE TRIGGER trigger_maror_context BEFORE INSERT ON membership_administrator_refund_operation_requests FOR EACH ROW EXECUTE FUNCTION fn_require_membership_administrator_refund_request_context();
-CREATE OR REPLACE FUNCTION fn_reject_membership_administrator_refund_request_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN RAISE EXCEPTION 'membership administrator refund requests are immutable'; END $$;
-CREATE TRIGGER trigger_maror_immutable BEFORE UPDATE OR DELETE ON membership_administrator_refund_operation_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_administrator_refund_request_mutation();
+CREATE TRIGGER trigger_maror_context BEFORE INSERT ON membership_administrator_refund_operation_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_administrator_refund_request_context();
 
-CREATE OR REPLACE FUNCTION fn_require_membership_refund_operation_attempt_context() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE TRIGGER trigger_maror_immutable BEFORE UPDATE OR DELETE ON membership_administrator_refund_operation_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+
+CREATE OR REPLACE FUNCTION fn_reject_membership_refund_operation_attempt_context() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE valid_context BOOLEAN;
 BEGIN
   SELECT operation.operation_kind IN ('automatic_refund', 'ineligible_purchase_reversal', 'collision_resolution', 'administrator_refund') AND operation.provider = NEW.provider AND operation.environment = NEW.environment AND operation.application_id = NEW.application_id AND operation.currency_code = NEW.currency_code AND NEW.amount_minor_units <= operation.remaining_refundable_minor_units INTO valid_context FROM membership_operations operation WHERE operation.id = NEW.membership_operation_id;
   IF valid_context IS DISTINCT FROM TRUE THEN RAISE EXCEPTION 'refund attempt does not match its operation context' USING ERRCODE = '23514'; END IF;
   RETURN NEW;
 END $$;
-CREATE TRIGGER trigger_membership_refund_operation_attempts_context BEFORE INSERT ON membership_refund_operation_attempts FOR EACH ROW EXECUTE FUNCTION fn_require_membership_refund_operation_attempt_context();
-CREATE OR REPLACE FUNCTION fn_guard_membership_refund_operation_attempt_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE TRIGGER trigger_membership_refund_operation_attempts_context BEFORE INSERT ON membership_refund_operation_attempts FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_refund_operation_attempt_context();
+CREATE OR REPLACE FUNCTION fn_reject_membership_refund_operation_attempt_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN RAISE EXCEPTION 'membership refund operation attempts cannot be deleted'; END IF;
   IF OLD.provider_refund_id IS NULL AND NEW.provider_refund_id IS NOT NULL AND ROW(NEW.id, NEW.membership_operation_id, NEW.attempt_ordinal, NEW.provider, NEW.environment, NEW.application_id, NEW.provider_idempotency_key, NEW.amount_minor_units, NEW.currency_code, NEW.created_at) IS NOT DISTINCT FROM ROW(OLD.id, OLD.membership_operation_id, OLD.attempt_ordinal, OLD.provider, OLD.environment, OLD.application_id, OLD.provider_idempotency_key, OLD.amount_minor_units, OLD.currency_code, OLD.created_at) THEN RETURN NEW; END IF;
   RAISE EXCEPTION 'membership refund operation attempts only allow provider refund ID enrichment';
 END $$;
-CREATE TRIGGER trigger_membership_refund_operation_attempts_guard BEFORE UPDATE OR DELETE ON membership_refund_operation_attempts FOR EACH ROW EXECUTE FUNCTION fn_guard_membership_refund_operation_attempt_mutation();
+CREATE TRIGGER trigger_membership_refund_operation_attempts_guard BEFORE UPDATE OR DELETE ON membership_refund_operation_attempts FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_refund_operation_attempt_mutation();
 
 CREATE TABLE IF NOT EXISTS membership_refund_operation_attempt_metadata_scans (
   membership_refund_operation_attempt_id UUID PRIMARY KEY REFERENCES membership_refund_operation_attempts(id) ON DELETE RESTRICT,
@@ -594,7 +591,7 @@ CREATE TABLE IF NOT EXISTS membership_refund_operation_attempt_metadata_scans (
   CHECK (next_provider_refund_id IS NULL OR (char_length(next_provider_refund_id) BETWEEN 1 AND 255 AND next_provider_refund_id = TRIM(next_provider_refund_id))),
   CHECK (completed_at IS NULL OR next_provider_refund_id IS NULL)
 );
-CREATE OR REPLACE FUNCTION fn_guard_membership_refund_metadata_scan_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE OR REPLACE FUNCTION fn_reject_membership_refund_metadata_scan_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE lease_matches BOOLEAN;
 BEGIN
   SELECT operation.execution_claim_token = NEW.lease_token INTO lease_matches FROM membership_refund_operation_attempts attempt INNER JOIN membership_operations operation ON operation.id = attempt.membership_operation_id WHERE attempt.id = NEW.membership_refund_operation_attempt_id;
@@ -602,7 +599,7 @@ BEGIN
   IF TG_OP = 'UPDATE' AND (OLD.completed_at IS NOT NULL OR NEW.created_at IS DISTINCT FROM OLD.created_at OR NEW.membership_refund_operation_attempt_id IS DISTINCT FROM OLD.membership_refund_operation_attempt_id OR (NEW.completed_at IS NOT NULL AND NEW.next_provider_refund_id IS NOT NULL)) THEN RAISE EXCEPTION 'membership refund metadata scan cannot be reopened or rewritten after completion'; END IF;
   RETURN NEW;
 END $$;
-CREATE TRIGGER trigger_mrefund_attempt_scans_guard BEFORE INSERT OR UPDATE ON membership_refund_operation_attempt_metadata_scans FOR EACH ROW EXECUTE FUNCTION fn_guard_membership_refund_metadata_scan_mutation();
+CREATE TRIGGER trigger_mrefund_attempt_scans_guard BEFORE INSERT OR UPDATE ON membership_refund_operation_attempt_metadata_scans FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_refund_metadata_scan_mutation();
 CREATE TRIGGER trigger_mrefund_attempt_scans_updated_at BEFORE UPDATE ON membership_refund_operation_attempt_metadata_scans FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE TABLE IF NOT EXISTS stripe_events (

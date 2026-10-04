@@ -56,20 +56,10 @@ CREATE TABLE IF NOT EXISTS retained_image_placement_bindings_default
 CREATE INDEX IF NOT EXISTS idx_retained_image_placement_bindings__image_id
 ON retained_image_placement_bindings (image_id);
 
-CREATE OR REPLACE FUNCTION fn_guard_retained_image_placement_binding()
-RETURNS TRIGGER LANGUAGE plpgsql AS $$
-BEGIN
-  IF ROW(NEW.placement_id, NEW.image_id, NEW.binding_family)
-    IS DISTINCT FROM ROW(OLD.placement_id, OLD.image_id, OLD.binding_family) THEN
-    RAISE EXCEPTION 'retained image placement binding is immutable' USING ERRCODE = 'check_violation';
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
 CREATE TRIGGER trigger_guard_retained_image_placement_binding
-BEFORE UPDATE ON retained_image_placement_bindings
-FOR EACH ROW EXECUTE FUNCTION fn_guard_retained_image_placement_binding();
+BEFORE UPDATE OF placement_id, image_id, binding_family ON retained_image_placement_bindings
+FOR EACH ROW
+  WHEN (ROW(OLD.placement_id, OLD.image_id, OLD.binding_family) IS DISTINCT FROM ROW(NEW.placement_id, NEW.image_id, NEW.binding_family)) EXECUTE FUNCTION fn_reject_mutation();
 
 CREATE TABLE IF NOT EXISTS retained_identity_cleanup_progress (
   family TEXT PRIMARY KEY CHECK (family IN ('user', 'api_key', 'topic', 'post', 'rss_feed_item', 'image', 'image_placement_binding')),
@@ -84,118 +74,43 @@ INSERT INTO retained_identity_cleanup_progress (family)
 VALUES ('user'), ('api_key'), ('topic'), ('post'), ('rss_feed_item'), ('image'), ('image_placement_binding')
 ON CONFLICT (family) DO NOTHING;
 
-CREATE OR REPLACE FUNCTION fn_ensure_retained_image_identity(identity_id UUID)
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TYPE retained_identity_families AS ENUM ('user', 'api_key', 'topic', 'post', 'rss_feed_item', 'image');
+COMMENT ON TYPE retained_identity_families IS 'Concrete identity owners supported by the shared ownership fence; never authorization.';
+
+CREATE OR REPLACE FUNCTION fn_ensure_retained_identity(family retained_identity_families, identity_id UUID)
 RETURNS VOID LANGUAGE plpgsql AS $$
+DECLARE
+  owner_table TEXT := 'retained_' || family::text || '_identities';
+  pinned_id UUID;
 BEGIN
+  -- Cleanup can remove an orphan between the conflict and key-share reads.
+  -- Retry until this transaction pins the retained owner.
   LOOP
-    INSERT INTO retained_image_identities (id) VALUES (identity_id) ON CONFLICT (id) DO NOTHING;
-    PERFORM id FROM retained_image_identities WHERE id = identity_id FOR KEY SHARE;
-    EXIT WHEN FOUND;
+    EXECUTE format('INSERT INTO %I (id) VALUES ($1) ON CONFLICT (id) DO NOTHING', owner_table)
+      USING identity_id;
+    EXECUTE format('SELECT id FROM %I WHERE id = $1 FOR KEY SHARE', owner_table)
+      INTO pinned_id USING identity_id;
+    EXIT WHEN pinned_id IS NOT NULL;
   END LOOP;
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION fn_register_retained_image_identity()
+CREATE OR REPLACE FUNCTION fn_register_retained_identity()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
-  PERFORM fn_ensure_retained_image_identity(NEW.id);
+  PERFORM fn_ensure_retained_identity(TG_ARGV[0]::retained_identity_families, NEW.id);
   RETURN NEW;
 END;
 $$;
 
--- A conflicting orphan can be deleted by cleanup between ON CONFLICT and key-share.
--- Retry the pin until this transaction holds a durable identity row.
-CREATE OR REPLACE FUNCTION fn_ensure_retained_user_identity(identity_id UUID)
-RETURNS VOID LANGUAGE plpgsql AS $$
-BEGIN
-  LOOP
-    INSERT INTO retained_user_identities (id) VALUES (identity_id) ON CONFLICT (id) DO NOTHING;
-    PERFORM id FROM retained_user_identities WHERE id = identity_id FOR KEY SHARE;
-    EXIT WHEN FOUND;
-  END LOOP;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION fn_ensure_retained_api_key_identity(identity_id UUID)
-RETURNS VOID LANGUAGE plpgsql AS $$
-BEGIN
-  LOOP
-    INSERT INTO retained_api_key_identities (id) VALUES (identity_id) ON CONFLICT (id) DO NOTHING;
-    PERFORM id FROM retained_api_key_identities WHERE id = identity_id FOR KEY SHARE;
-    EXIT WHEN FOUND;
-  END LOOP;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION fn_ensure_retained_topic_identity(identity_id UUID)
-RETURNS VOID LANGUAGE plpgsql AS $$
-BEGIN
-  LOOP
-    INSERT INTO retained_topic_identities (id) VALUES (identity_id) ON CONFLICT (id) DO NOTHING;
-    PERFORM id FROM retained_topic_identities WHERE id = identity_id FOR KEY SHARE;
-    EXIT WHEN FOUND;
-  END LOOP;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION fn_ensure_retained_post_identity(identity_id UUID)
-RETURNS VOID LANGUAGE plpgsql AS $$
-BEGIN
-  LOOP
-    INSERT INTO retained_post_identities (id) VALUES (identity_id) ON CONFLICT (id) DO NOTHING;
-    PERFORM id FROM retained_post_identities WHERE id = identity_id FOR KEY SHARE;
-    EXIT WHEN FOUND;
-  END LOOP;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION fn_ensure_retained_rss_feed_item_identity(identity_id UUID)
-RETURNS VOID LANGUAGE plpgsql AS $$
-BEGIN
-  LOOP
-    INSERT INTO retained_rss_feed_item_identities (id) VALUES (identity_id) ON CONFLICT (id) DO NOTHING;
-    PERFORM id FROM retained_rss_feed_item_identities WHERE id = identity_id FOR KEY SHARE;
-    EXIT WHEN FOUND;
-  END LOOP;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION fn_register_retained_user_identity()
+CREATE OR REPLACE FUNCTION fn_ensure_retained_actor_identity()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE actor_id UUID := (to_jsonb(NEW) ->> TG_ARGV[0])::uuid;
 BEGIN
-  PERFORM fn_ensure_retained_user_identity(NEW.id);
-  RETURN NEW;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION fn_register_retained_api_key_identity()
-RETURNS TRIGGER LANGUAGE plpgsql AS $$
-BEGIN
-  PERFORM fn_ensure_retained_api_key_identity(NEW.id);
-  RETURN NEW;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION fn_register_retained_topic_identity()
-RETURNS TRIGGER LANGUAGE plpgsql AS $$
-BEGIN
-  PERFORM fn_ensure_retained_topic_identity(NEW.id);
-  RETURN NEW;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION fn_register_retained_post_identity()
-RETURNS TRIGGER LANGUAGE plpgsql AS $$
-BEGIN
-  PERFORM fn_ensure_retained_post_identity(NEW.id);
-  RETURN NEW;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION fn_register_retained_rss_feed_item_identity()
-RETURNS TRIGGER LANGUAGE plpgsql AS $$
-BEGIN
-  PERFORM fn_ensure_retained_rss_feed_item_identity(NEW.id);
+  IF actor_id IS NOT NULL THEN
+    PERFORM fn_ensure_retained_identity('user', actor_id);
+  END IF;
   RETURN NEW;
 END;
 $$;

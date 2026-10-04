@@ -22,10 +22,10 @@ describe('membership source-ledger schema constraints', () => {
     await expect(fixture.rejectCrossContextRenewalTarget()).rejects.toMatchObject({ code: '23503' })
     await expect(fixture.rejectFamilyRenewalTarget()).rejects.toMatchObject({ code: '23514' })
     await expect(fixture.rejectObservationUpdate()).rejects.toThrow(
-      'membership provider observations are immutable',
+      'membership_provider_observations rows are append-only',
     )
     await expect(fixture.rejectObservationDeletion()).rejects.toThrow(
-      'membership provider observations are immutable',
+      'membership_provider_observations rows are append-only',
     )
     await expect(fixture.rejectMismatchedGrantUser()).rejects.toMatchObject({ code: '23503' })
     await expect(fixture.rejectMismatchedGrantActivationUser()).rejects.toMatchObject({

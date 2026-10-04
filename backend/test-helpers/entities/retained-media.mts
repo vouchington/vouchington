@@ -7,7 +7,7 @@ export async function seedTestRetainedMediaOrphan(input: {
   bindingFamily: 'post' | 'surface'
 }): Promise<void> {
   await using query = await beginTransaction()
-  await query('SELECT fn_ensure_retained_image_identity($1::uuid)', [input.imageId])
+  await query("SELECT fn_ensure_retained_identity('image', $1::uuid)", [input.imageId])
   await query(
     'INSERT INTO retained_image_placement_bindings (placement_id, image_id, binding_family) VALUES ($1, $2, $3)',
     [input.placementId, input.imageId, input.bindingFamily],

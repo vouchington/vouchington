@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Coalesced pre-launch domain baseline.
 -- edited-in-place: pre-launch, never deployed to production
 -- Merged from: 0120-00-00-user-data-requests.sql
@@ -54,7 +55,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 CREATE OR REPLACE TRIGGER trigger_user_data_requests_guard_terminal_lifecycle
 BEFORE UPDATE ON user_data_requests
 FOR EACH ROW
-EXECUTE FUNCTION fn_guard_terminal_lifecycle('completed_at', 'failed_at');
+EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at');
 
 -- Lookup by subject and requester to find the latest request a caller is allowed to see
 CREATE INDEX IF NOT EXISTS idx_user_data_requests__user_id_requested_by_id

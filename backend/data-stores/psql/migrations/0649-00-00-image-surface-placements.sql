@@ -1,18 +1,11 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- An image is an immutable byte asset.  Public reachability is represented by a
 -- separately versioned placement, never by the asset UUID alone.
-CREATE OR REPLACE FUNCTION fn_guard_images_id_immutable()
-RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  IF NEW.id IS DISTINCT FROM OLD.id THEN
-    RAISE EXCEPTION 'image ids are immutable byte identities' USING ERRCODE = 'check_violation';
-  END IF;
-  RETURN NEW;
-END;
-$$;
 
 CREATE TRIGGER trigger_images_id_immutable
-BEFORE UPDATE ON images
-FOR EACH ROW EXECUTE FUNCTION fn_guard_images_id_immutable();
+BEFORE UPDATE OF id ON images
+FOR EACH ROW
+  WHEN (ROW(OLD.id) IS DISTINCT FROM ROW(NEW.id)) EXECUTE FUNCTION fn_reject_mutation();
 
 CREATE TABLE image_surface_placements (
   placement_id uuid PRIMARY KEY REFERENCES media_placements(id) ON DELETE RESTRICT,
@@ -75,7 +68,7 @@ CREATE INDEX idx_image_surface_placements__community_fk
 CREATE INDEX idx_image_surface_placements__profile_link_fk
   ON image_surface_placements (user_profile_link_id) WHERE user_profile_link_id IS NOT NULL;
 
-CREATE OR REPLACE FUNCTION fn_guard_image_surface_placement()
+CREATE OR REPLACE FUNCTION fn_reject_image_surface_placement()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'UPDATE'
@@ -131,9 +124,9 @@ $$;
 
 CREATE TRIGGER trigger_image_surface_placement_guard
 BEFORE INSERT OR UPDATE OR DELETE ON image_surface_placements
-FOR EACH ROW EXECUTE FUNCTION fn_guard_image_surface_placement();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_image_surface_placement();
 
-CREATE OR REPLACE FUNCTION fn_guard_ownerless_image_surface_retirement()
+CREATE OR REPLACE FUNCTION fn_reject_ownerless_image_surface_retirement()
 RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
   v_ownerless boolean;
@@ -149,7 +142,7 @@ END;
 $$;
 CREATE TRIGGER trigger_guard_ownerless_image_surface_retirement
 BEFORE UPDATE ON media_placements
-FOR EACH ROW EXECUTE FUNCTION fn_guard_ownerless_image_surface_retirement();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_ownerless_image_surface_retirement();
 
 CREATE TRIGGER trigger_image_surface_placements_updated_at
 BEFORE UPDATE ON image_surface_placements
@@ -249,7 +242,7 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION fn_sync_user_profile_image_placement()
+CREATE OR REPLACE FUNCTION fn_project_user_profile_image_placement()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'INSERT' OR NEW.profile_image_id IS DISTINCT FROM OLD.profile_image_id THEN
@@ -260,9 +253,9 @@ END;
 $$;
 CREATE TRIGGER trigger_sync_user_profile_image_placement
 AFTER INSERT OR UPDATE OF profile_image_id ON users
-FOR EACH ROW EXECUTE FUNCTION fn_sync_user_profile_image_placement();
+FOR EACH ROW EXECUTE FUNCTION fn_project_user_profile_image_placement();
 
-CREATE OR REPLACE FUNCTION fn_retire_deleted_user_image_surfaces()
+CREATE OR REPLACE FUNCTION fn_project_retire_deleted_user_image_surfaces()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.deleted_at IS NOT NULL AND OLD.deleted_at IS NULL THEN
@@ -273,9 +266,9 @@ END;
 $$;
 CREATE TRIGGER trigger_retire_deleted_user_image_surfaces
 AFTER UPDATE OF deleted_at ON users
-FOR EACH ROW EXECUTE FUNCTION fn_retire_deleted_user_image_surfaces();
+FOR EACH ROW EXECUTE FUNCTION fn_project_retire_deleted_user_image_surfaces();
 
-CREATE OR REPLACE FUNCTION fn_handoff_deleted_user_image_surfaces()
+CREATE OR REPLACE FUNCTION fn_project_handoff_deleted_user_image_surfaces()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   PERFORM fn_sync_image_surface_placement('user-profile-image', NULL, OLD.id, NULL, NULL, NULL);
@@ -287,9 +280,9 @@ END;
 $$;
 CREATE TRIGGER trigger_handoff_deleted_user_image_surfaces
 BEFORE DELETE ON users
-FOR EACH ROW EXECUTE FUNCTION fn_handoff_deleted_user_image_surfaces();
+FOR EACH ROW EXECUTE FUNCTION fn_project_handoff_deleted_user_image_surfaces();
 
-CREATE OR REPLACE FUNCTION fn_sync_topic_image_placements()
+CREATE OR REPLACE FUNCTION fn_project_topic_image_placements()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'UPDATE' AND (
@@ -311,9 +304,9 @@ END;
 $$;
 CREATE TRIGGER trigger_sync_topic_image_placements
 AFTER INSERT OR UPDATE OF logo_image_id, hero_image_id, deleted_at, merged_into_topic_id ON topics
-FOR EACH ROW EXECUTE FUNCTION fn_sync_topic_image_placements();
+FOR EACH ROW EXECUTE FUNCTION fn_project_topic_image_placements();
 
-CREATE OR REPLACE FUNCTION fn_sync_community_image_placements()
+CREATE OR REPLACE FUNCTION fn_project_community_image_placements()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'UPDATE' AND NEW.deleted_at IS NOT NULL AND OLD.deleted_at IS NULL THEN
@@ -332,9 +325,9 @@ END;
 $$;
 CREATE TRIGGER trigger_sync_community_image_placements
 AFTER INSERT OR UPDATE OF profile_image_id, banner_image_id, deleted_at ON communities
-FOR EACH ROW EXECUTE FUNCTION fn_sync_community_image_placements();
+FOR EACH ROW EXECUTE FUNCTION fn_project_community_image_placements();
 
-CREATE OR REPLACE FUNCTION fn_sync_user_profile_link_image_placement()
+CREATE OR REPLACE FUNCTION fn_project_user_profile_link_image_placement()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'INSERT' OR NEW.image_id IS DISTINCT FROM OLD.image_id THEN
@@ -345,9 +338,9 @@ END;
 $$;
 CREATE TRIGGER trigger_sync_user_profile_link_image_placement
 AFTER INSERT OR UPDATE OF image_id ON user_profile_links
-FOR EACH ROW EXECUTE FUNCTION fn_sync_user_profile_link_image_placement();
+FOR EACH ROW EXECUTE FUNCTION fn_project_user_profile_link_image_placement();
 
-CREATE OR REPLACE FUNCTION fn_retire_deleted_profile_link_image_surfaces()
+CREATE OR REPLACE FUNCTION fn_project_retire_deleted_profile_link_image_surfaces()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   PERFORM fn_sync_image_surface_placement('user-profile-link-image', NULL, NULL, NULL, NULL, OLD.id);
@@ -358,7 +351,7 @@ END;
 $$;
 CREATE TRIGGER trigger_retire_deleted_profile_link_image_surfaces
 BEFORE DELETE ON user_profile_links
-FOR EACH ROW EXECUTE FUNCTION fn_retire_deleted_profile_link_image_surfaces();
+FOR EACH ROW EXECUTE FUNCTION fn_project_retire_deleted_profile_link_image_surfaces();
 
 CREATE OR REPLACE FUNCTION fn_image_placement_publicly_projected(
   p_placement_id uuid,

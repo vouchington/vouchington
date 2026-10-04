@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Copyright evidence retention erasure (#1101). A case that has aged past the counsel-approved
 -- retention period keeps its legal skeleton (receipt, decisions, dates, repeat-infringer facts) but
 -- loses claimant personal data and stored evidence. Legal-record guards stay in force; they allow a
@@ -14,7 +15,7 @@ CREATE TABLE copyright_notice_retention_erasures (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TRIGGER trigger_copyright_retention_erasures_immutable BEFORE UPDATE OR DELETE ON copyright_notice_retention_erasures FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_immutable_evidence();
+CREATE TRIGGER trigger_copyright_retention_erasures_immutable BEFORE UPDATE OR DELETE ON copyright_notice_retention_erasures FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
 
 CREATE OR REPLACE FUNCTION fn_copyright_retention_erasable_columns(table_name text)
 RETURNS text[] LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$

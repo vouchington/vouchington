@@ -53,10 +53,10 @@ describe('membership automatic refund receipts', () => {
       ),
     ).rejects.toMatchObject({ code: '23503' })
     await expect(mutateMembershipAutomaticRefundReceipt(firstReceipt)).rejects.toThrow(
-      'membership automatic refund receipts are immutable',
+      'membership_automatic_refund_receipts rows are append-only',
     )
     await expect(deleteMembershipAutomaticRefundReceipt(firstReceipt)).rejects.toThrow(
-      'membership automatic refund receipts are immutable',
+      'membership_automatic_refund_receipts rows are append-only',
     )
   })
 

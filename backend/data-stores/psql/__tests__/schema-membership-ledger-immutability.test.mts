@@ -128,10 +128,10 @@ describe('membership ledger immutability', () => {
   it('rejects membership change history mutation and deletion', async () => {
     const changeId = await createTestImmutableMembershipChange()
     await expect(mutateTestMembershipChange(changeId)).rejects.toThrow(
-      'membership changes are append-only',
+      'membership_changes rows are append-only',
     )
     await expect(deleteTestMembershipChange(changeId)).rejects.toThrow(
-      'membership changes are append-only',
+      'membership_changes rows are append-only',
     )
   })
 })

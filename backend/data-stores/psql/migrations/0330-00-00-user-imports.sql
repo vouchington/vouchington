@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Coalesced pre-launch domain baseline.
 -- edited-in-place: pre-launch, never deployed to production
 -- Merged from: 0330-00-00-user-import-requests.sql, 0330-00-01-user-rss-feed-imports.sql
@@ -117,7 +118,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 CREATE OR REPLACE TRIGGER trigger_user_rss_feed_import_batches_guard_terminal_lifecycle
 BEFORE UPDATE ON user_rss_feed_import_batches
 FOR EACH ROW
-EXECUTE FUNCTION fn_guard_terminal_lifecycle('completed_at');
+EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at');
 
 CREATE INDEX IF NOT EXISTS idx_user_rss_feed_import_batches__user_id__id_desc
 ON user_rss_feed_import_batches (user_id, id DESC);
@@ -168,7 +169,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 CREATE OR REPLACE TRIGGER trigger_user_rss_feed_import_rows_guard_terminal_lifecycle
 BEFORE UPDATE ON user_rss_feed_import_rows
 FOR EACH ROW
-EXECUTE FUNCTION fn_guard_terminal_lifecycle('completed_at', 'failed_at');
+EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at');
 
 CREATE INDEX IF NOT EXISTS idx_user_rss_feed_import_rows__batch_id__row_index
 ON user_rss_feed_import_rows (batch_id, row_index);

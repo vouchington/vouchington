@@ -59,7 +59,7 @@ Invariants and what enforces each:
 - **Client only on agent channels:** `<table>_created_via_oauth_client_id_check` rejects an OAuth
   client on any channel other than `api` or `mcp`.
 - **Immutable:** the `<table>_content_provenance_immutable` trigger fires `AFTER UPDATE` only when
-  either column changes, and `fn_prevent_content_provenance_update()` rejects the change. Provenance describes the row's creation, so an
+  either column changes, and `fn_reject_content_provenance_update()` rejects the change. Provenance describes the row's creation, so an
   upsert that revives an existing row keeps the original channel, and writers leave both columns
   out of `ON CONFLICT DO UPDATE SET`.
 - **Clients are kept:** `ON DELETE RESTRICT` blocks deleting an OAuth client that created content.

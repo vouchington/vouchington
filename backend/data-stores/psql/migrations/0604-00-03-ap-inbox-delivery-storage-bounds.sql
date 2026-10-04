@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS ap_inbox_delivery_storage_counters (
   singleton BOOLEAN PRIMARY KEY DEFAULT TRUE,
   retained_rows BIGINT NOT NULL,
@@ -23,7 +24,7 @@ INSERT INTO ap_inbox_delivery_storage_counters (
 )
 VALUES (TRUE, 0, 0, 0, 0);
 
-CREATE OR REPLACE FUNCTION fn_ap_inbox_delivery_storage_after_insert()
+CREATE OR REPLACE FUNCTION fn_project_ap_inbox_delivery_storage_after_insert()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
@@ -80,7 +81,7 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION fn_ap_inbox_delivery_storage_after_update()
+CREATE OR REPLACE FUNCTION fn_project_ap_inbox_delivery_storage_after_update()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
@@ -137,7 +138,7 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION fn_ap_inbox_delivery_storage_after_delete()
+CREATE OR REPLACE FUNCTION fn_project_ap_inbox_delivery_storage_after_delete()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
@@ -175,19 +176,19 @@ CREATE OR REPLACE TRIGGER trigger_ap_inbox_deliveries_storage_after_insert
 AFTER INSERT ON ap_inbox_deliveries
 REFERENCING NEW TABLE AS inserted_deliveries
 FOR EACH STATEMENT
-EXECUTE FUNCTION fn_ap_inbox_delivery_storage_after_insert();
+EXECUTE FUNCTION fn_project_ap_inbox_delivery_storage_after_insert();
 
 CREATE OR REPLACE TRIGGER trigger_ap_inbox_deliveries_storage_after_update
 AFTER UPDATE ON ap_inbox_deliveries
 REFERENCING OLD TABLE AS previous_deliveries NEW TABLE AS updated_deliveries
 FOR EACH STATEMENT
-EXECUTE FUNCTION fn_ap_inbox_delivery_storage_after_update();
+EXECUTE FUNCTION fn_project_ap_inbox_delivery_storage_after_update();
 
 CREATE OR REPLACE TRIGGER trigger_ap_inbox_deliveries_storage_after_delete
 AFTER DELETE ON ap_inbox_deliveries
 REFERENCING OLD TABLE AS deleted_deliveries
 FOR EACH STATEMENT
-EXECUTE FUNCTION fn_ap_inbox_delivery_storage_after_delete();
+EXECUTE FUNCTION fn_project_ap_inbox_delivery_storage_after_delete();
 
 COMMENT ON TABLE ap_inbox_delivery_storage_counters IS 'Transactionally maintained singleton ledger for retained and unverified ActivityPub inbox row and raw-body byte totals.';
 COMMENT ON COLUMN ap_inbox_delivery_storage_counters.singleton IS 'Always true; enforces the ledger has at most one aggregate row.';

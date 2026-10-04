@@ -1,14 +1,27 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Structured declarations are retained independently from the free-text record so an automated
 -- recommendation cannot manufacture a statutory statement or broaden a requested target scope.
 
 CREATE TABLE copyright_notice_submission_targets (
+  copyright_notice_id uuid NOT NULL,
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_submission_id uuid NOT NULL REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
-  copyright_notice_target_id uuid NOT NULL REFERENCES copyright_notice_targets(id) ON DELETE RESTRICT,
+  copyright_notice_submission_id uuid NOT NULL,
+  copyright_notice_target_id uuid NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE (copyright_notice_submission_id, copyright_notice_target_id)
+  UNIQUE (copyright_notice_submission_id, copyright_notice_target_id),
+  CONSTRAINT fk_copyright_submission_targets__parent_notice
+    FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id)
+    REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE RESTRICT,
+  UNIQUE (copyright_notice_id, id),
+  CONSTRAINT fk_copyright_submission_targets__target_notice
+    FOREIGN KEY (copyright_notice_id, copyright_notice_target_id)
+    REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE RESTRICT
 );
+CREATE TRIGGER trigger_update_copyright_submission_targets_scope
+  BEFORE INSERT ON copyright_notice_submission_targets FOR EACH ROW
+  EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submissions', 'copyright_notice_submission_id');
+COMMENT ON COLUMN copyright_notice_submission_targets.copyright_notice_id IS 'Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.';
 
 CREATE TABLE copyright_notice_submission_requests (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
@@ -25,8 +38,8 @@ CREATE INDEX idx_copyright_submission_targets__target ON copyright_notice_submis
 
 ALTER TABLE copyright_restrictions
   ADD CONSTRAINT fk_copyright_restrictions__authorizing_assessment
-  FOREIGN KEY (authorizing_assessment_id)
-  REFERENCES copyright_notice_submission_assessments(id)
+  FOREIGN KEY (copyright_notice_id, authorizing_assessment_id)
+  REFERENCES copyright_notice_submission_assessments(copyright_notice_id, id)
   ON DELETE RESTRICT NOT VALID;
 
 ALTER TABLE copyright_restrictions
@@ -44,7 +57,7 @@ ALTER TABLE copyright_notice_submission_assessments
 CREATE INDEX idx_copyright_restrictions__authorizing_assessment ON copyright_restrictions(authorizing_assessment_id);
 CREATE INDEX idx_copyright_assessments__form_screening ON copyright_notice_submission_assessments(copyright_notice_form_screening_id) WHERE copyright_notice_form_screening_id IS NOT NULL;
 
-CREATE OR REPLACE FUNCTION fn_guard_copyright_restriction_assessment_scope()
+CREATE OR REPLACE FUNCTION fn_reject_copyright_restriction_assessment_scope()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'UPDATE' AND NEW.authorizing_assessment_id IS DISTINCT FROM OLD.authorizing_assessment_id THEN
@@ -56,12 +69,9 @@ BEGIN
     FROM copyright_notice_submission_assessments assessment
     JOIN copyright_notice_submissions submission
       ON submission.id = assessment.copyright_notice_submission_id
-    JOIN copyright_notice_targets target
-      ON target.id = NEW.copyright_notice_target_id
     WHERE assessment.id = NEW.authorizing_assessment_id
       AND assessment.substantially_compliant
       AND submission.kind = 'notice'
-      AND submission.copyright_notice_id = target.copyright_notice_id
       AND (
         submission.source_kind <> 'guest_form'
         OR EXISTS (
@@ -87,27 +97,10 @@ $$;
 
 CREATE TRIGGER trigger_copyright_restriction_assessment_scope
 BEFORE INSERT OR UPDATE OF authorizing_assessment_id ON copyright_restrictions
-FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_restriction_assessment_scope();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_restriction_assessment_scope();
 
-CREATE OR REPLACE FUNCTION fn_guard_copyright_submission_target_scope()
-RETURNS TRIGGER LANGUAGE plpgsql AS $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1
-    FROM copyright_notice_submissions submission
-    JOIN copyright_notice_targets target ON target.id = NEW.copyright_notice_target_id
-    WHERE submission.id = NEW.copyright_notice_submission_id
-      AND submission.copyright_notice_id = target.copyright_notice_id
-  ) THEN
-    RAISE EXCEPTION 'copyright submission target must belong to the same notice' USING ERRCODE = 'check_violation';
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER trigger_copyright_submission_targets_scope BEFORE INSERT ON copyright_notice_submission_targets FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_submission_target_scope();
-CREATE TRIGGER trigger_copyright_submission_targets_immutable BEFORE UPDATE OR DELETE ON copyright_notice_submission_targets FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_immutable_evidence();
-CREATE TRIGGER trigger_copyright_submission_requests_immutable BEFORE UPDATE OR DELETE ON copyright_notice_submission_requests FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_immutable_with_actor_erasure('requester_user_id');
+CREATE TRIGGER trigger_copyright_submission_targets_immutable BEFORE UPDATE OR DELETE ON copyright_notice_submission_targets FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
+CREATE TRIGGER trigger_copyright_submission_requests_immutable BEFORE UPDATE OR DELETE ON copyright_notice_submission_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('requester_user_id');
 
 COMMENT ON TABLE copyright_notice_submission_targets IS 'Exact case targets selected by an appellant or statutory counter-notice sender before compliance assessment.';
 COMMENT ON TABLE copyright_notice_submission_requests IS 'Idempotency records for authenticated appeal and counter-notice submissions.';

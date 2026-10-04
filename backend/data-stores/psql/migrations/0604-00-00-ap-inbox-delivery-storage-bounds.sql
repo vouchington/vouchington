@@ -1,4 +1,5 @@
-CREATE OR REPLACE FUNCTION fn_ap_inbox_delivery_retention()
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE FUNCTION fn_project_ap_inbox_delivery_retention()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
@@ -47,4 +48,4 @@ $$;
 CREATE OR REPLACE TRIGGER trigger_ap_inbox_deliveries_retention
 BEFORE INSERT OR UPDATE ON ap_inbox_deliveries
 FOR EACH ROW
-EXECUTE FUNCTION fn_ap_inbox_delivery_retention();
+EXECUTE FUNCTION fn_project_ap_inbox_delivery_retention();

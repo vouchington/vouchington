@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Delivery recipients and notification bindings are deliberately separate from the immutable
 -- notice snapshot. A transport can only decrypt a recipient encrypted specifically for its
 -- durable intent; it never guesses the purpose of claimant evidence.
@@ -57,7 +58,7 @@ RETURNS boolean LANGUAGE sql STABLE AS $$
   );
 $$;
 
-CREATE OR REPLACE FUNCTION fn_guard_copyright_automated_assessment_screening()
+CREATE OR REPLACE FUNCTION fn_reject_copyright_automated_assessment_screening()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'UPDATE' AND OLD.assessed_by_id IS NOT NULL
@@ -81,11 +82,11 @@ $$;
 CREATE TRIGGER trigger_copyright_automated_assessment_screening
 BEFORE INSERT OR UPDATE OF assessed_by_id, copyright_notice_form_screening_id
 ON copyright_notice_submission_assessments
-FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_automated_assessment_screening();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_automated_assessment_screening();
 
 CREATE TRIGGER trigger_copyright_delivery_recipients_immutable
 BEFORE UPDATE OR DELETE ON copyright_notice_delivery_recipients
-FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_immutable_evidence();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
 CREATE TRIGGER trigger_copyright_delivery_recipients_updated_at
 BEFORE UPDATE ON copyright_notice_delivery_recipients
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();

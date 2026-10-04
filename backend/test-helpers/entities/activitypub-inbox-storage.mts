@@ -25,8 +25,8 @@ export async function getActivityPubInboxStorageTriggerDefinitionsForTest(): Pro
 }> {
   const { rows } = await read<{ insert_definition: string; update_definition: string }>(
     sql`/* getActivityPubInboxStorageTriggerDefinitionsForTest */
-      SELECT pg_get_functiondef('fn_ap_inbox_delivery_storage_after_insert()'::regprocedure) AS insert_definition,
-             pg_get_functiondef('fn_ap_inbox_delivery_storage_after_update()'::regprocedure) AS update_definition
+      SELECT pg_get_functiondef('fn_project_ap_inbox_delivery_storage_after_insert()'::regprocedure) AS insert_definition,
+             pg_get_functiondef('fn_project_ap_inbox_delivery_storage_after_update()'::regprocedure) AS update_definition
     `,
   )
   return {

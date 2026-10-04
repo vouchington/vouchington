@@ -1,12 +1,4 @@
-CREATE OR REPLACE FUNCTION fn_prevent_content_provenance_update()
-RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  IF NEW.created_via IS DISTINCT FROM OLD.created_via
-    OR NEW.created_via_oauth_client_id IS DISTINCT FROM OLD.created_via_oauth_client_id THEN
-    RAISE EXCEPTION 'content provenance is immutable';
-  END IF;
-  RETURN NULL;
-END $$;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_oauth_clients__metadata_url
   ON oauth_clients (metadata_url);

@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_cases (
   id UUID CONSTRAINT pk_mipr_cases PRIMARY KEY DEFAULT uuidv7(),
   membership_source_id UUID NOT NULL,
@@ -64,7 +65,7 @@ ALTER TABLE membership_ineligible_purchase_reversal_case_operations
 ALTER TABLE membership_ineligible_purchase_reversal_case_operations
   VALIDATE CONSTRAINT fk_mipr_case_ops__operation;
 
-CREATE OR REPLACE FUNCTION fn_require_mipr_case_op_context()
+CREATE OR REPLACE FUNCTION fn_reject_mipr_case_op_context()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
@@ -91,33 +92,17 @@ END $$;
 CREATE OR REPLACE TRIGGER trigger_mipr_case_ops_context
 BEFORE INSERT ON membership_ineligible_purchase_reversal_case_operations
 FOR EACH ROW
-EXECUTE FUNCTION fn_require_mipr_case_op_context();
-
-CREATE OR REPLACE FUNCTION fn_reject_mipr_case_mutation()
-RETURNS trigger
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  RAISE EXCEPTION 'membership ineligible purchase reversal cases are immutable';
-END $$;
+EXECUTE FUNCTION fn_reject_mipr_case_op_context();
 
 CREATE OR REPLACE TRIGGER trigger_mipr_cases_immutable
 BEFORE UPDATE OR DELETE ON membership_ineligible_purchase_reversal_cases
 FOR EACH ROW
-EXECUTE FUNCTION fn_reject_mipr_case_mutation();
-
-CREATE OR REPLACE FUNCTION fn_reject_mipr_case_op_mutation()
-RETURNS trigger
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  RAISE EXCEPTION 'membership ineligible purchase reversal case operations are immutable';
-END $$;
+EXECUTE FUNCTION fn_reject_mutation();
 
 CREATE OR REPLACE TRIGGER trigger_mipr_case_ops_immutable
 BEFORE UPDATE OR DELETE ON membership_ineligible_purchase_reversal_case_operations
 FOR EACH ROW
-EXECUTE FUNCTION fn_reject_mipr_case_op_mutation();
+EXECUTE FUNCTION fn_reject_mutation();
 
 COMMENT ON TABLE membership_ineligible_purchase_reversal_cases IS
   'Immutable collision snapshot that bounds Stripe refund allocation as invoice payments arrive.';

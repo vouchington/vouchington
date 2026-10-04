@@ -41,7 +41,7 @@ export async function rejectCopyrightTargetImageWithWrongBinding(
   fixture: CopyrightNoticeSchemaFixture,
 ) {
   const otherImageId = randomUUID()
-  await write(sql`SELECT fn_ensure_retained_image_identity(${otherImageId}::uuid)`)
+  await write(sql`SELECT fn_ensure_retained_identity('image', ${otherImageId}::uuid)`)
   return write(sql`/* rejectCopyrightTargetImageWithWrongBinding */
     WITH target AS (
       INSERT INTO copyright_notice_targets (copyright_notice_id, placement_id, placement_revision, hosted_use_url)

@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Coalesced pre-launch domain baseline.
 -- edited-in-place: pre-launch, never deployed to production
 -- Merged from: 0175-00-00-user-landing-pages.sql
@@ -204,7 +205,7 @@ COMMENT ON COLUMN user_landing_page_group_members.sort_order IS 'Display order w
 COMMENT ON COLUMN user_landing_page_group_members.review_id IS 'Reference to a review post; set when member_type is review.';
 COMMENT ON COLUMN user_landing_page_group_members.referral_link_id IS 'Reference to user_referral_program_links; set when member_type is referral_link.';
 
-CREATE OR REPLACE FUNCTION fn_validate_user_landing_page_group_member_item_type()
+CREATE OR REPLACE FUNCTION fn_reject_user_landing_page_group_member_item_type()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
@@ -226,7 +227,7 @@ CREATE CONSTRAINT TRIGGER trigger_validate_user_landing_page_group_member_item_t
 AFTER INSERT OR UPDATE ON user_landing_page_group_members
 DEFERRABLE INITIALLY IMMEDIATE
 FOR EACH ROW
-EXECUTE FUNCTION fn_validate_user_landing_page_group_member_item_type();
+EXECUTE FUNCTION fn_reject_user_landing_page_group_member_item_type();
 
 CREATE OR REPLACE TRIGGER trigger_user_landing_page_group_members_updated_at
 BEFORE UPDATE ON user_landing_page_group_members

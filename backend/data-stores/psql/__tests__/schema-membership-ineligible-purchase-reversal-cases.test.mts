@@ -23,16 +23,16 @@ describe('membership ineligible purchase reversal case schema', () => {
     const fixture = await createReversalCaseFixture()
 
     await expect(mutateTestReversalCase(fixture.caseId)).rejects.toThrow(
-      'membership ineligible purchase reversal cases are immutable',
+      'membership_ineligible_purchase_reversal_cases rows are append-only',
     )
     await expect(deleteTestReversalCase(fixture.caseId)).rejects.toThrow(
-      'membership ineligible purchase reversal cases are immutable',
+      'membership_ineligible_purchase_reversal_cases rows are append-only',
     )
     await expect(mutateTestReversalCaseOperation(fixture.caseId)).rejects.toThrow(
-      'membership ineligible purchase reversal case operations are immutable',
+      'membership_ineligible_purchase_reversal_case_operations rows are append-only',
     )
     await expect(deleteTestReversalCaseOperation(fixture.caseId)).rejects.toThrow(
-      'membership ineligible purchase reversal case operations are immutable',
+      'membership_ineligible_purchase_reversal_case_operations rows are append-only',
     )
   })
 

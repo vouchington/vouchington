@@ -42,7 +42,7 @@ export async function mutateTestOAuthLifecycleEvent(
   if (mutation === 'update') {
     await write(
       `/* mutateTestOAuthLifecycleEvent update */ UPDATE oauth_authorization_server_events
-       SET resource = resource
+       SET resource = resource || '/changed'
        WHERE id = (
          SELECT id FROM oauth_authorization_server_events
          WHERE client_id = (SELECT id FROM oauth_clients WHERE client_id = $1)

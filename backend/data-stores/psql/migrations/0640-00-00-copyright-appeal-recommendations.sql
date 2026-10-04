@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_appeal_recommendations (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_submission_id uuid NOT NULL REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
@@ -12,7 +13,7 @@ CREATE TABLE copyright_notice_appeal_recommendations (
 );
 CREATE INDEX idx_copyright_appeal_recommendations__submission
   ON copyright_notice_appeal_recommendations (copyright_notice_submission_id, id DESC);
-CREATE TRIGGER trigger_copyright_appeal_recommendations_immutable BEFORE UPDATE OR DELETE ON copyright_notice_appeal_recommendations FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_immutable_evidence();
+CREATE TRIGGER trigger_copyright_appeal_recommendations_immutable BEFORE UPDATE OR DELETE ON copyright_notice_appeal_recommendations FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
 
 COMMENT ON TABLE copyright_notice_appeal_recommendations IS 'Immutable advisory recommendations for a moderator evaluating an ordinary copyright appeal; never an authorization to alter material availability.';
 COMMENT ON COLUMN copyright_notice_appeal_recommendations.copyright_notice_submission_id IS 'The immutable ordinary appeal receipt evaluated by the agent.';

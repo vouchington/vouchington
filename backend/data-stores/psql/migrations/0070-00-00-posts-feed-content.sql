@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Coalesced pre-launch domain baseline.
 -- edited-in-place: pre-launch, never deployed to production
 -- edited-in-place: added language detection columns (declared_language, lingua_rs_detected_language, detection sha/results)
@@ -135,7 +136,7 @@ CREATE TABLE IF NOT EXISTS posts (
   llm_moderation_content_sha256 BYTEA NOT NULL,
   CHECK (OCTET_LENGTH(llm_moderation_content_sha256) = 32),
 
-  -- full text search vector; trigger-maintained by fn_sync_posts_search_vector so
+  -- full text search vector; trigger-maintained by fn_update_posts_search_vector so
   -- unrelated updates (embeddings, moderation, language detection) skip the rebuild
   search_vector TSVECTOR,
 
@@ -144,24 +145,16 @@ CREATE TABLE IF NOT EXISTS posts (
 
 CREATE TRIGGER trigger_register_retained_post_identity
 BEFORE INSERT ON posts
-FOR EACH ROW EXECUTE FUNCTION fn_register_retained_post_identity();
+FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('post');
 
 CREATE INDEX IF NOT EXISTS idx_posts__creation_source_url_id
   ON posts (creation_source_url_id)
   WHERE creation_source_url_id IS NOT NULL;
 
-CREATE OR REPLACE FUNCTION fn_prevent_post_creation_source_url_update()
-RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  IF NEW.creation_source_url_id IS DISTINCT FROM OLD.creation_source_url_id THEN
-    RAISE EXCEPTION 'post creation source URL is immutable';
-  END IF;
-  RETURN NEW;
-END $$;
-
 CREATE TRIGGER posts_creation_source_url_id_immutable
   BEFORE UPDATE OF creation_source_url_id ON posts
-  FOR EACH ROW EXECUTE FUNCTION fn_prevent_post_creation_source_url_update();
+  FOR EACH ROW
+  WHEN (ROW(OLD.creation_source_url_id) IS DISTINCT FROM ROW(NEW.creation_source_url_id)) EXECUTE FUNCTION fn_reject_mutation();
 
 COMMENT ON COLUMN posts.creation_source_url_id IS 'Immutable raw URL submitted when creating a link post.';
 
@@ -224,7 +217,7 @@ COMMENT ON COLUMN post_explicit_topic_categories.topic_id IS 'The explicitly sel
 
 -- Recomputes search_vector only when title or markdown change, avoiding a full
 -- tsvector rebuild on every unrelated post update.
-CREATE OR REPLACE FUNCTION fn_sync_posts_search_vector()
+CREATE OR REPLACE FUNCTION fn_update_posts_search_vector()
 RETURNS TRIGGER AS $$
 BEGIN
   NEW.search_vector :=
@@ -237,7 +230,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE TRIGGER trigger_sync_posts_search_vector
 BEFORE INSERT OR UPDATE OF title, markdown ON posts
 FOR EACH ROW
-EXECUTE FUNCTION fn_sync_posts_search_vector();
+EXECUTE FUNCTION fn_update_posts_search_vector();
 
 CREATE OR REPLACE TRIGGER trigger_posts_updated_at
 BEFORE UPDATE OF
@@ -556,7 +549,7 @@ CREATE TABLE IF NOT EXISTS agents (
 );
 
 -- Agent identities must always belong to automated platform accounts.
-CREATE OR REPLACE FUNCTION fn_require_agent_system_account()
+CREATE OR REPLACE FUNCTION fn_reject_agent_system_account()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE account_kind platform_account_kinds;
 BEGIN
@@ -569,9 +562,9 @@ END;
 $$;
 CREATE OR REPLACE TRIGGER trigger_agents_system_account
 BEFORE INSERT OR UPDATE OF system_user_id ON agents
-FOR EACH ROW EXECUTE FUNCTION fn_require_agent_system_account();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_agent_system_account();
 
-CREATE OR REPLACE FUNCTION fn_validate_platform_account_kind_change()
+CREATE OR REPLACE FUNCTION fn_reject_platform_account_kind_change()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.platform_account_kind = 'system' AND EXISTS (SELECT 1 FROM user_roles WHERE user_id = NEW.id) THEN
@@ -585,7 +578,7 @@ END;
 $$;
 CREATE OR REPLACE TRIGGER trigger_users_platform_account_kind
 BEFORE UPDATE OF platform_account_kind ON users
-FOR EACH ROW EXECUTE FUNCTION fn_validate_platform_account_kind_change();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_platform_account_kind_change();
 
 -- Index for finding active agents by type
 CREATE INDEX IF NOT EXISTS idx_agents__active_by_type

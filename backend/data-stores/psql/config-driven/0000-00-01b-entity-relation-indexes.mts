@@ -92,7 +92,7 @@ BEGIN
     CREATE TRIGGER trigger_story_post_related_url_projection_relation_mutation
     AFTER INSERT OR UPDATE OF deleted_at, created_at
     ON relation__post__related__url
-    FOR EACH ROW EXECUTE FUNCTION fn_record_story_post_related_url_projection_relation_mutation();
+    FOR EACH ROW EXECUTE FUNCTION fn_project_story_post_related_url_relation_mutation();
   END IF;
 END $$;
 `

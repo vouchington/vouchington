@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- One operative incident per account per confirmed copyright notice.
 -- Restoration does not clear it. A second operative incident opens a staff review
 -- and does not suspend or delete the account.
@@ -59,7 +60,7 @@ CREATE INDEX idx_copyright_repeat_infringer_reviews__account
 CREATE INDEX idx_copyright_repeat_infringer_reviews__outcome_by
   ON copyright_repeat_infringer_reviews (outcome_by_id);
 
-CREATE FUNCTION fn_guard_copyright_repeat_infringer_incident()
+CREATE FUNCTION fn_reject_copyright_repeat_infringer_incident()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
@@ -73,7 +74,7 @@ BEGIN
 END;
 $$;
 
-CREATE FUNCTION fn_guard_copyright_repeat_infringer_review()
+CREATE FUNCTION fn_reject_copyright_repeat_infringer_review()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
@@ -100,19 +101,19 @@ $$;
 
 CREATE TRIGGER trigger_copyright_repeat_infringer_incidents_guard
   BEFORE UPDATE OR DELETE ON copyright_repeat_infringer_incidents
-  FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_repeat_infringer_incident();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_repeat_infringer_incident();
 
 CREATE TRIGGER trigger_copyright_repeat_infringer_dispositions_immutable
   BEFORE UPDATE OR DELETE ON copyright_repeat_infringer_dispositions
-  FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_immutable_with_actor_erasure('recorded_by_id');
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('recorded_by_id');
 
 CREATE TRIGGER trigger_copyright_repeat_infringer_dispositions_actor
   BEFORE INSERT ON copyright_repeat_infringer_dispositions
-  FOR EACH ROW EXECUTE FUNCTION fn_require_copyright_human_actor('recorded_by_id');
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_human_actor('recorded_by_id');
 
 CREATE TRIGGER trigger_copyright_repeat_infringer_reviews_guard
   BEFORE UPDATE OR DELETE ON copyright_repeat_infringer_reviews
-  FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_repeat_infringer_review();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_repeat_infringer_review();
 
 COMMENT ON TABLE copyright_repeat_infringer_incidents IS 'One account incident per copyright notice. Operative means a human confirm or modify still stands and no withdrawal, duplicate, or abusive disposition exists.';
 COMMENT ON COLUMN copyright_repeat_infringer_incidents.account_user_id IS 'Post author who owned the confirmed placement. Guest placements do not create an incident.';

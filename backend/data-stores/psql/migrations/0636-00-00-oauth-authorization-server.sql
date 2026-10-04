@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE SEQUENCE IF NOT EXISTS oauth_client_metadata_refresh_generation_seq AS BIGINT;
 
 CREATE TABLE IF NOT EXISTS oauth_clients (
@@ -195,15 +196,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_oauth_authorization_server_events__family_
 ON oauth_authorization_server_events (refresh_token_family_id, event_type)
 WHERE refresh_token_family_id IS NOT NULL;
 
-CREATE OR REPLACE FUNCTION fn_reject_oauth_authorization_server_event_mutation()
-RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  RAISE EXCEPTION 'oauth authorization server events are append-only' USING ERRCODE = '23514';
-END $$;
-
 CREATE OR REPLACE TRIGGER trigger_oauth_authorization_server_events_append_only
 BEFORE UPDATE OR DELETE ON oauth_authorization_server_events
-FOR EACH ROW EXECUTE FUNCTION fn_reject_oauth_authorization_server_event_mutation();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
 CREATE TABLE IF NOT EXISTS oauth_authorization_codes (
   id UUID PRIMARY KEY DEFAULT uuidv7(),

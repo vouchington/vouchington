@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Coalesced pre-launch domain baseline.
 -- edited-in-place: pre-launch, never deployed to production
 -- edited-in-place: added declared_language to rss_feeds; added language detection columns to rss_feed_items
@@ -158,53 +159,20 @@ COMMENT ON COLUMN rss_feed_enablement_changes.reason IS 'Optional human- or syst
 -- Keep rss_feeds.is_enabled in sync with the latest rss_feed_enablement_changes row.
 -- Reads the MAX-id row rather than trusting NEW.enabled to defend against out-of-order
 -- transaction commits on the same feed.
-CREATE OR REPLACE FUNCTION fn_sync_rss_feed_is_enabled()
-RETURNS TRIGGER AS $$
-DECLARE
-  v_enabled BOOLEAN;
-BEGIN
-  -- Serialize concurrent triggers for the same feed: acquire a row-level lock on
-  -- rss_feeds before re-reading the latest change, so whichever trigger holds the
-  -- lock last wins and writes the correct (most-recently-committed) value.
-  PERFORM id FROM rss_feeds WHERE id = NEW.rss_feed_id FOR UPDATE;
-  SELECT enabled INTO v_enabled
-  FROM rss_feed_enablement_changes
-  WHERE rss_feed_id = NEW.rss_feed_id
-  ORDER BY id DESC LIMIT 1;
-  UPDATE rss_feeds SET is_enabled = v_enabled
-  WHERE id = NEW.rss_feed_id AND is_enabled IS DISTINCT FROM v_enabled;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE TRIGGER trigger_sync_rss_feed_is_enabled
 AFTER INSERT ON rss_feed_enablement_changes
 FOR EACH ROW
-EXECUTE FUNCTION fn_sync_rss_feed_is_enabled();
+EXECUTE FUNCTION fn_project_latest_change('rss_feeds', 'id', 'rss_feed_id', 'is_enabled', 'enabled');
 
 -- Keep rss_feeds.is_discoverable in sync with the latest
 -- rss_feed_discoverability_changes row. The feed-row lock serializes concurrent
 -- state changes before the trigger re-reads the latest UUIDv7 change.
-CREATE OR REPLACE FUNCTION fn_sync_rss_feed_is_discoverable()
-RETURNS TRIGGER AS $$
-DECLARE
-  v_is_discoverable BOOLEAN;
-BEGIN
-  PERFORM id FROM rss_feeds WHERE id = NEW.rss_feed_id FOR UPDATE;
-  SELECT enabled INTO v_is_discoverable
-  FROM rss_feed_discoverability_changes
-  WHERE rss_feed_id = NEW.rss_feed_id
-  ORDER BY id DESC LIMIT 1;
-  UPDATE rss_feeds SET is_discoverable = v_is_discoverable
-  WHERE id = NEW.rss_feed_id AND is_discoverable IS DISTINCT FROM v_is_discoverable;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE TRIGGER trigger_sync_rss_feed_is_discoverable
 AFTER INSERT ON rss_feed_discoverability_changes
 FOR EACH ROW
-EXECUTE FUNCTION fn_sync_rss_feed_is_discoverable();
+EXECUTE FUNCTION fn_project_latest_change('rss_feeds', 'id', 'rss_feed_id', 'is_discoverable', 'enabled');
 
 -------------------------------------------------------------------------------
 -- rss_feed_items
@@ -255,7 +223,7 @@ CREATE TABLE IF NOT EXISTS rss_feed_items (
   bedrock_nova_multimodal_v1_input_token_count INT,
   CHECK (bedrock_nova_multimodal_v1_input_token_count IS NULL OR bedrock_nova_multimodal_v1_input_token_count >= 0),
 
-  -- full text search vector; trigger-maintained by fn_sync_rss_feed_items_search_vector so
+  -- full text search vector; trigger-maintained by fn_update_rss_feed_items_search_vector so
   -- unrelated updates (embeddings, language detection) skip the tsvector rebuild
   search_vector TSVECTOR,
 
@@ -312,14 +280,14 @@ CREATE TABLE IF NOT EXISTS rss_feed_items (
 
 CREATE TRIGGER trigger_register_retained_rss_feed_item_identity
 BEFORE INSERT ON rss_feed_items
-FOR EACH ROW EXECUTE FUNCTION fn_register_retained_rss_feed_item_identity();
+FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('rss_feed_item');
 
 CREATE TABLE IF NOT EXISTS rss_feed_items_default
 PARTITION OF rss_feed_items DEFAULT;
 
 -- Recomputes search_vector only when data changes, avoiding a full tsvector
 -- rebuild on every unrelated item update (embeddings, language detection).
-CREATE OR REPLACE FUNCTION fn_sync_rss_feed_items_search_vector()
+CREATE OR REPLACE FUNCTION fn_update_rss_feed_items_search_vector()
 RETURNS TRIGGER AS $$
 BEGIN
   NEW.search_vector :=
@@ -340,7 +308,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE TRIGGER trigger_sync_rss_feed_items_search_vector
 BEFORE INSERT OR UPDATE OF data ON rss_feed_items
 FOR EACH ROW
-EXECUTE FUNCTION fn_sync_rss_feed_items_search_vector();
+EXECUTE FUNCTION fn_update_rss_feed_items_search_vector();
 
 CREATE OR REPLACE TRIGGER trigger_rss_feed_items_updated_at
 BEFORE UPDATE ON rss_feed_items
@@ -507,7 +475,7 @@ CREATE TABLE IF NOT EXISTS rss_feed_item_unmapped_category_counts (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE OR REPLACE FUNCTION fn_refresh_rss_feed_item_unmapped_category_count()
+CREATE OR REPLACE FUNCTION fn_project_refresh_rss_feed_item_unmapped_category_count()
 RETURNS TRIGGER AS $$
 DECLARE
   current_item_count BIGINT;
@@ -544,7 +512,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE TRIGGER trigger_refresh_rss_feed_item_unmapped_category_count
 AFTER INSERT OR DELETE OR UPDATE OF category_text, topic_id ON rss_feed_item_categories
 FOR EACH ROW
-EXECUTE FUNCTION fn_refresh_rss_feed_item_unmapped_category_count();
+EXECUTE FUNCTION fn_project_refresh_rss_feed_item_unmapped_category_count();
 
 COMMENT ON TABLE rss_feed_item_categories IS 'Maps RSS feed item categories to internal topics. Categories belong to the item, not to a specific feed.';
 COMMENT ON COLUMN rss_feed_item_categories.rss_feed_item_id IS 'The RSS feed item these categories belong to.';
@@ -628,7 +596,6 @@ COMMENT ON COLUMN url_hostnames.topic_id IS
 -- ==========================================================================
 -- 0370-00-00-rss-feed-open-source-creation.sql
 -- ============================================================================
-
 
 CREATE INDEX IF NOT EXISTS idx_topics__hostname_id
 ON topics (hostname_id)

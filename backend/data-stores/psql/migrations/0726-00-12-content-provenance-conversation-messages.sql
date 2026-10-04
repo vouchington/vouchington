@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- conversation_messages is created in 0110, before oauth_clients (0636) and the immutability
 -- function (0726-00-00) exist, so its foreign key and trigger land here. The foreign key is added
 -- NOT VALID and validated in the same ledger entry; the table is empty when a fresh database
@@ -19,4 +20,4 @@ CREATE OR REPLACE TRIGGER conversation_messages_content_provenance_immutable
     OLD.created_via IS DISTINCT FROM NEW.created_via
     OR OLD.created_via_oauth_client_id IS DISTINCT FROM NEW.created_via_oauth_client_id
   )
-  EXECUTE FUNCTION fn_prevent_content_provenance_update();
+  EXECUTE FUNCTION fn_reject_mutation();

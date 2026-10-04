@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Coalesced pre-launch domain baseline.
 -- edited-in-place: pre-launch, never deployed to production
 -- edited-in-place: added language detection columns to topics
@@ -113,7 +114,7 @@ CREATE TABLE IF NOT EXISTS topics (
 
 CREATE TRIGGER trigger_register_retained_topic_identity
 BEFORE INSERT ON topics
-FOR EACH ROW EXECUTE FUNCTION fn_register_retained_topic_identity();
+FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('topic');
 
 CREATE OR REPLACE TRIGGER trigger_topics_updated_at
 BEFORE UPDATE ON topics
@@ -221,7 +222,6 @@ CREATE INDEX IF NOT EXISTS idx_topics__logo_image_id
 ON topics (logo_image_id)
 WHERE logo_image_id IS NOT NULL;
 
-
 COMMENT ON TABLE topics IS 'Core content entities: topics, rewards programs, cards, etc. Polymorphic via topic_type.';
 COMMENT ON COLUMN topics.topic_type IS 'Discriminator for topic subtype (topic, rewards_program, referral_program, card, rewards_program_status, bank_account, rss_feed, fediverse_instance). Every value must have functional behavior; see docs/requirements/content/TOPICS.md.';
 COMMENT ON COLUMN topics.noindex IS 'When true, exclude this topic''s pages from search-engine indexing.';
@@ -300,21 +300,12 @@ COMMENT ON COLUMN topic_metrics.bookmarks__follow_count IS 'Number of users who 
 COMMENT ON COLUMN topic_metrics.bookmarks__updated_at IS 'When the bookmark count was last recalculated.';
 
 -- Function to auto-create topic_metrics row when topic is created
-CREATE OR REPLACE FUNCTION fn_create_topic_metrics_on_insert()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO topic_metrics (topic_id)
-  VALUES (NEW.id)
-  ON CONFLICT (topic_id) DO NOTHING;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
 
 -- Trigger to create topic_metrics after topic insert
 CREATE TRIGGER trigger_create_topic_metrics
 AFTER INSERT ON topics
 FOR EACH ROW
-EXECUTE FUNCTION fn_create_topic_metrics_on_insert();
+EXECUTE FUNCTION fn_create_metrics('topic_metrics', 'topic_id');
 
 --------------------------------------------------------------------------------
 -- topics__rewards_programs
@@ -567,7 +558,7 @@ CREATE TABLE IF NOT EXISTS topic_alias_category_mapping_reconciliations (
 CREATE INDEX IF NOT EXISTS topic_alias_category_mapping_reconciliations__updated_at
 ON topic_alias_category_mapping_reconciliations (updated_at, topic_alias_id);
 
-CREATE OR REPLACE FUNCTION fn_mark_topic_alias_category_mapping_dirty()
+CREATE OR REPLACE FUNCTION fn_project_mark_topic_alias_category_mapping_dirty()
 RETURNS TRIGGER AS $$
 DECLARE
   dirty_alias_id UUID;
@@ -610,7 +601,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE TRIGGER trigger_topic_aliases_mark_category_mapping_dirty
 AFTER INSERT OR UPDATE OF topic_id OR DELETE ON topic_aliases
 FOR EACH ROW
-EXECUTE FUNCTION fn_mark_topic_alias_category_mapping_dirty();
+EXECUTE FUNCTION fn_project_mark_topic_alias_category_mapping_dirty();
 
 COMMENT ON TABLE topic_alias_category_mapping_reconciliations IS 'Coalesced cleanup/backfill work for linked topic aliases; delete tombstones have no FK by design.';
 COMMENT ON COLUMN topic_alias_category_mapping_reconciliations.topic_alias_id IS 'Alias transition identity; the primary key coalesces pending work for the same alias.';
@@ -715,29 +706,11 @@ COMMENT ON COLUMN fediverse_instance_integration_changes.reason IS 'Optional hum
 -- fediverse_instance_integration_changes row. Reads the MAX-id row rather than
 -- trusting NEW.integration_status to defend against out-of-order transaction
 -- commits on the same topic.
-CREATE OR REPLACE FUNCTION fn_sync_fediverse_instance_integration_status()
-RETURNS TRIGGER AS $$
-DECLARE
-  v_status fediverse_integration_statuses;
-BEGIN
-  -- Serialize concurrent triggers for the same topic: acquire a row-level lock on
-  -- topics__fediverse_instances before re-reading the latest change, so whichever
-  -- trigger holds the lock last wins and writes the correct (most-recently-committed) value.
-  PERFORM topic_id FROM topics__fediverse_instances WHERE topic_id = NEW.topic_id FOR UPDATE;
-  SELECT integration_status INTO v_status
-  FROM fediverse_instance_integration_changes
-  WHERE topic_id = NEW.topic_id
-  ORDER BY id DESC LIMIT 1;
-  UPDATE topics__fediverse_instances SET integration_status = v_status
-  WHERE topic_id = NEW.topic_id AND integration_status IS DISTINCT FROM v_status;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE TRIGGER trigger_sync_fediverse_instance_integration_status
 AFTER INSERT ON fediverse_instance_integration_changes
 FOR EACH ROW
-EXECUTE FUNCTION fn_sync_fediverse_instance_integration_status();
+EXECUTE FUNCTION fn_project_latest_change('topics__fediverse_instances', 'topic_id', 'topic_id', 'integration_status', 'integration_status');
 
 -- ==========================================================================
 -- 0160-00-00-review-snippet-categories.sql

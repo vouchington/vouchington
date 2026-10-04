@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Threading uses only keyed digests.  Plain RFC headers remain encrypted in the
 -- immutable MIME parse and are never used as a public lookup key.
 
@@ -26,15 +27,23 @@ CREATE TABLE copyright_notice_email_intake_notice_links (
   link_kind text NOT NULL CHECK (link_kind IN ('initial', 'thread')),
   matched_reference_lookup text CHECK (matched_reference_lookup IS NULL OR char_length(matched_reference_lookup) = 64),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (copyright_notice_id, copyright_notice_email_intake_id)
 );
+
+ALTER TABLE copyright_notice_lifecycle_events
+  ADD CONSTRAINT fk_copyright_lifecycle_events__email_intake_notice
+  FOREIGN KEY (copyright_notice_id, copyright_notice_email_intake_id)
+  REFERENCES copyright_notice_email_intake_notice_links(copyright_notice_id, copyright_notice_email_intake_id)
+  ON DELETE RESTRICT NOT VALID;
+ALTER TABLE copyright_notice_lifecycle_events
+  VALIDATE CONSTRAINT fk_copyright_lifecycle_events__email_intake_notice;
 
 CREATE TABLE copyright_notice_email_correspondence_reviews (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_email_intake_id uuid NOT NULL REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT,
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
-  copyright_notice_email_intake_recommendation_id uuid
-    REFERENCES copyright_notice_email_intake_recommendations(id) ON DELETE RESTRICT,
+  copyright_notice_email_intake_recommendation_id uuid,
   action text NOT NULL CHECK (action IN ('pending', 'admitted', 'rejected')),
   kind text CHECK (kind IN ('supplement', 'appeal', 'counter_notice', 'withdrawal', 'court_or_ccb_hold')),
   copyright_notice_submission_id uuid UNIQUE REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
@@ -51,7 +60,10 @@ CREATE TABLE copyright_notice_email_correspondence_reviews (
   CHECK ((action = 'admitted') = (copyright_notice_submission_id IS NOT NULL AND copyright_notice_correspondence_id IS NOT NULL)),
   CHECK (rationale_ciphertext IS NULL OR char_length(rationale_ciphertext) BETWEEN 1 AND 65536),
   CHECK (manual_fallback_reason_ciphertext IS NULL OR char_length(manual_fallback_reason_ciphertext) BETWEEN 1 AND 65536),
-  CHECK (action = 'pending' OR ((copyright_notice_email_intake_recommendation_id IS NULL) = (manual_fallback_reason_ciphertext IS NOT NULL)))
+  CHECK (action = 'pending' OR ((copyright_notice_email_intake_recommendation_id IS NULL) = (manual_fallback_reason_ciphertext IS NOT NULL))),
+  CONSTRAINT fk_copyright_email_corresp_reviews__recommendation_intake
+    FOREIGN KEY (copyright_notice_email_intake_id, copyright_notice_email_intake_recommendation_id)
+    REFERENCES copyright_notice_email_intake_recommendations(copyright_notice_email_intake_id, id) ON DELETE RESTRICT
 );
 
 CREATE INDEX idx_copyright_email_thread_references__lookup
@@ -76,36 +88,19 @@ CREATE INDEX idx_copyright_email_correspondence_reviews__recommendation
   ON copyright_notice_email_correspondence_reviews(copyright_notice_email_intake_recommendation_id)
   WHERE copyright_notice_email_intake_recommendation_id IS NOT NULL;
 
-CREATE OR REPLACE FUNCTION fn_guard_copyright_email_correspondence_recommendation_scope()
-RETURNS TRIGGER LANGUAGE plpgsql AS $$
-BEGIN
-  IF NEW.copyright_notice_email_intake_recommendation_id IS NOT NULL AND NOT EXISTS (
-    SELECT 1 FROM copyright_notice_email_intake_recommendations recommendation
-    WHERE recommendation.id = NEW.copyright_notice_email_intake_recommendation_id
-      AND recommendation.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id
-  ) THEN
-    RAISE EXCEPTION 'copyright email correspondence recommendation must belong to the same intake' USING ERRCODE = 'check_violation';
-  END IF;
-  RETURN NEW;
-END;
-$$;
-CREATE TRIGGER trigger_copyright_email_correspondence_recommendation_scope
-BEFORE INSERT ON copyright_notice_email_correspondence_reviews
-FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_email_correspondence_recommendation_scope();
-
 CREATE TRIGGER trigger_copyright_email_thread_references_immutable
   BEFORE UPDATE OR DELETE ON copyright_notice_email_thread_references
-  FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_immutable_evidence();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
 CREATE TRIGGER trigger_copyright_email_thread_links_immutable
   BEFORE UPDATE OR DELETE ON copyright_notice_email_intake_notice_links
-  FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_immutable_evidence();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
 CREATE TRIGGER trigger_copyright_email_correspondence_reviews_immutable
   BEFORE UPDATE OR DELETE ON copyright_notice_email_correspondence_reviews
-  FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_immutable_with_actor_erasure('reviewed_by_id');
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('reviewed_by_id');
 CREATE TRIGGER trigger_copyright_email_correspondence_reviews_require_actor
   BEFORE INSERT ON copyright_notice_email_correspondence_reviews
   FOR EACH ROW WHEN (NEW.action <> 'pending')
-  EXECUTE FUNCTION fn_require_copyright_human_actor('reviewed_by_id');
+  EXECUTE FUNCTION fn_reject_copyright_human_actor('reviewed_by_id');
 
 COMMENT ON TABLE copyright_notice_email_thread_references IS 'Keyed RFC Message-ID and In-Reply-To/References values used only for private case correlation.';
 COMMENT ON COLUMN copyright_notice_email_thread_references.copyright_notice_email_intake_id IS 'Inbound email whose private thread token was recorded.';

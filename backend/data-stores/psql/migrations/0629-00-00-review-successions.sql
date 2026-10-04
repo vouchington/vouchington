@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS review_successions (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   predecessor_post_id UUID NOT NULL REFERENCES posts (id) ON DELETE CASCADE,
@@ -35,7 +36,7 @@ CREATE INDEX IF NOT EXISTS idx_review_successions__active_successor_post_id
 ON review_successions (successor_post_id)
 WHERE automatically_restored_at IS NULL AND manual_override_at IS NULL;
 
-CREATE OR REPLACE FUNCTION fn_guard_review_succession_mutation()
+CREATE OR REPLACE FUNCTION fn_reject_review_succession_mutation()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
@@ -72,7 +73,7 @@ $$;
 
 CREATE OR REPLACE TRIGGER trigger_review_successions_guard
 BEFORE UPDATE ON review_successions
-FOR EACH ROW EXECUTE FUNCTION fn_guard_review_succession_mutation();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_review_succession_mutation();
 
 CREATE TRIGGER trigger_review_successions_updated_at
 BEFORE UPDATE ON review_successions
@@ -99,7 +100,7 @@ CREATE OR REPLACE TRIGGER trigger_review_succession_topics_updated_at
 BEFORE UPDATE ON review_succession_topics
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
-CREATE OR REPLACE FUNCTION fn_guard_review_succession_topic_mutation()
+CREATE OR REPLACE FUNCTION fn_reject_review_succession_topic_mutation()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
@@ -116,9 +117,9 @@ $$;
 
 CREATE TRIGGER trigger_review_succession_topics_immutable
 BEFORE UPDATE OR DELETE ON review_succession_topics
-FOR EACH ROW EXECUTE FUNCTION fn_guard_review_succession_topic_mutation();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_review_succession_topic_mutation();
 
-CREATE OR REPLACE FUNCTION fn_assert_review_succession_topics()
+CREATE OR REPLACE FUNCTION fn_reject_review_succession_topics()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
@@ -153,12 +154,12 @@ $$;
 CREATE CONSTRAINT TRIGGER trigger_review_successions_topics
 AFTER INSERT OR DELETE ON review_successions
 DEFERRABLE INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION fn_assert_review_succession_topics();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_review_succession_topics();
 
 CREATE CONSTRAINT TRIGGER trigger_review_succession_topics_nonempty
 AFTER INSERT OR DELETE ON review_succession_topics
 DEFERRABLE INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION fn_assert_review_succession_topics();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_review_succession_topics();
 
 COMMENT ON TABLE review_succession_topics IS 'Immutable nonempty topic snapshot for one automatic review-succession epoch. topic_id is a retained identity and does not authorize a deleted topic.';
 COMMENT ON COLUMN review_succession_topics.review_succession_id IS 'Automatic review-succession epoch that owns this immutable topic snapshot.';
