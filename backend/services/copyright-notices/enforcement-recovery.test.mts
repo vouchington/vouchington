@@ -30,6 +30,7 @@ describe('durable copyright decision recovery', () => {
             fixture.form.accuracy_authority_under_penalty_of_perjury,
           electronicSignature: fixture.form.electronic_signature,
           claimantTargets: fixture.form.targets.map(target => ({
+            surfaceKind: 'post-image' as const,
             postId: target.post_id,
             imageId: target.image_id,
             hostedUseUrl: target.target_url,
