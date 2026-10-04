@@ -14,7 +14,6 @@ Not partitioned — growth: unbounded.
 | `changed_by_id`                | `uuid`                                   | no       |                              |          |           |           | Retained identity of the administrator who recorded the transition. |
 | `reason`                       | `text`                                   | no       |                              |          |           |           | Staff reason for the recorded status transition.                    |
 | `created_at`                   | `timestamp with time zone`               | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Transition time derived from the UUIDv7 identifier.                 |
-| `updated_at`                   | `timestamp with time zone`               | no       | `CURRENT_TIMESTAMP`          |          |           |           | Insert timestamp; immutable rows cannot be updated.                 |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -39,3 +38,4 @@ _none_
 **Triggers:**
 
 - `trigger_copyright_trusted_flagger_changes_immutable`: `CREATE TRIGGER trigger_copyright_trusted_flagger_changes_immutable BEFORE DELETE OR UPDATE ON public.copyright_trusted_flagger_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_ensure_copyright_trusted_flagger_changes_actor`: `CREATE TRIGGER trigger_ensure_copyright_trusted_flagger_changes_actor BEFORE INSERT ON public.copyright_trusted_flagger_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id')`

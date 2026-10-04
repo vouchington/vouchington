@@ -85,6 +85,15 @@ CREATE OR REPLACE FUNCTION public.fn_ensure_retained_identity(family retained_id
  LANGUAGE plpgsql
 ```
 
+## `fn_field_changes(before_fields jsonb, after_fields jsonb)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_field_changes(before_fields jsonb, after_fields jsonb)
+ RETURNS jsonb
+ LANGUAGE sql
+ IMMUTABLE
+```
+
 ## `fn_guard_copyright_eu_dispute_settlement_outcome`
 
 ```sql
@@ -652,6 +661,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_copyright_restriction_assessment_sco
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_reject_copyright_restriction_lifecycle()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_screening_attempt_rewind`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_screening_attempt_rewind()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
