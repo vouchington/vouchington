@@ -19,12 +19,12 @@ const CONTENT_TABLES = [
   'communities',
   'community_applications',
   'conversation_messages',
-  'user_lists',
   'moderation_appeals',
   'moderation_reports',
   'posts',
   'rss_feeds',
   'topics',
+  'user_lists',
   'user_referral_program_links',
   'user_rss_feed_import_batches',
 ]

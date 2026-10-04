@@ -3,12 +3,12 @@
 -- constraints and 0726-00-11 builds the index online.
 
 ALTER TABLE user_lists
-  ADD CONSTRAINT lists_created_via_oauth_client_id_fkey
+  ADD CONSTRAINT user_lists_created_via_oauth_client_id_fkey
   FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT
   NOT VALID;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER lists_content_provenance_immutable
+CREATE OR REPLACE TRIGGER user_lists_content_provenance_immutable
   AFTER UPDATE ON user_lists
   FOR EACH ROW
   WHEN (
