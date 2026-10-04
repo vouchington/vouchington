@@ -8,9 +8,9 @@
 - [Git And PRs](../../.agents/skills/agent-workflow/git-and-prs.md) — the human-approval rule this
   hook enforces mechanically, including `gh stack merge`.
 - [Native GitHub stack mechanics](../../.agents/skills/stacked-prs/SKILL.md) — auto-merge is
-  unsupported on stacked PRs; a stack layer merges under the same per-layer human-approval rule as any
-  other PR in [Git And PRs](../../.agents/skills/agent-workflow/git-and-prs.md) — there is no standing
-  drain grant.
+  unsupported on stacked PRs; one `gh stack merge` lands every ready bottom layer at once, and the
+  explicit human approval in [Git And PRs](../../.agents/skills/agent-workflow/git-and-prs.md) must
+  cover every layer it lands.
 - [ready-and-shepherd](../../.agents/skills/ready-and-shepherd/SKILL.md) and
   [triage-prs](../../.agents/skills/triage-prs/SKILL.md) — the interactive batch-triage flows that
   arm auto-merge only with explicit human authorization, and the automation-label consumer.

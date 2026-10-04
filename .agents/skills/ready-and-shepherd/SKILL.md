@@ -193,7 +193,7 @@ when the repo setting is true. Do **not** proceed to Step 6: concurrent
 per-PR `/shepherd` dispatch rewrites sibling stack branches when a lower
 layer runs `gh stack rebase --upstack` / `gh stack push`. This batch path's
 `automerge: true` is not the authorization that
-[Merge the bottom layer as soon as it is ready](../stacked-prs/SKILL.md#merge-the-bottom-layer-as-soon-as-it-is-ready)
+[Merge every ready bottom layer at once](../stacked-prs/SKILL.md#merge-every-ready-bottom-layer-at-once)
 requires (see [Git And PRs](../agent-workflow/git-and-prs.md)) — batch triage
 has no human in the loop to ask. Report `/shepherd dispatched: no (stacked;
 requires explicit stack-merge authorization outside this batch run)` and stop
@@ -242,9 +242,9 @@ gh api "repos/{owner}/{repo}/pulls/<N>" --jq '.stack // empty'
 
 If that output is non-empty, do **not** post `/shepherd`. Concurrent per-PR
 dispatch races `gh stack rebase --upstack` / `gh stack push` across layers.
-Report `/shepherd dispatched: no (stacked; shepherd layers serially from the
-bottom with the in-session CLI)` per
-[Merge the bottom layer as soon as it is ready](../stacked-prs/SKILL.md#merge-the-bottom-layer-as-soon-as-it-is-ready).
+Report `/shepherd dispatched: no (stacked; shepherd the stack with one
+in-session CLI poll)` per
+[Merge every ready bottom layer at once](../stacked-prs/SKILL.md#merge-every-ready-bottom-layer-at-once).
 Skip the rest of Step 6 and Step 7.
 
 Dispatching to the external Auto Harness session is the entire point of this
