@@ -12,7 +12,7 @@ export async function getCurrentPostClassifierLabelToggles(
     SELECT moderator.slug, toggle.enabled_at, toggle.disabled_at
     FROM community_auto_tagger_agents toggle
     JOIN agents agent ON agent.id = toggle.agent_id
-    JOIN agents__moderators moderator ON moderator.agent_id = agent.id
+    JOIN moderator_agents moderator ON moderator.agent_id = agent.id
     WHERE toggle.community_id = ${communityId}
       AND agent.agent_type = 'moderator'
       AND agent.activated_at IS NOT NULL AND agent.deactivated_at IS NULL

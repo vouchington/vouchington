@@ -53,7 +53,7 @@ async function seedPlaywrightCleanupAndUsers(
     `INSERT INTO users (id, username) VALUES ('00000000-0000-0000-0000-000000000002', 'blocked-friend'), ('00000000-0000-0000-0000-000000000003', 'muted-friend') ON CONFLICT (id) DO UPDATE SET username = EXCLUDED.username`,
   )
   await query(
-    `INSERT INTO user_roles (user_id, role_type_id) SELECT '019f0000-0000-7000-8000-000000000000', id FROM user_roles_types WHERE slug = 'administrator' ON CONFLICT (user_id, role_type_id) DO NOTHING`,
+    `INSERT INTO user_roles (user_id, role_type_id) SELECT '019f0000-0000-7000-8000-000000000000', id FROM user_role_types WHERE slug = 'administrator' ON CONFLICT (user_id, role_type_id) DO NOTHING`,
   )
   await query(`DELETE FROM user_passkeys WHERE user_id = '019f0000-0000-7000-8000-000000000000'`)
   await query(

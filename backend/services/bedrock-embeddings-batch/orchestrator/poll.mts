@@ -8,7 +8,7 @@ export const processBatch = async (batchId: string): Promise<void> => {
   const { rows: batchRows } = await read(
     `/* processBatch */
     SELECT id, job_arn, completed_at, failed_at, cancelled_at
-    FROM bedrock_embeddings_batches
+    FROM bedrock_embedding_batches
     WHERE id = $1
   `,
     [batchId],
@@ -34,7 +34,7 @@ export const processBatch = async (batchId: string): Promise<void> => {
 
   const transition = await write(
     `/* processBatch */
-    UPDATE bedrock_embeddings_batches
+    UPDATE bedrock_embedding_batches
     SET data = data || $2::jsonb,
         ${column} = COALESCE(${column}, CURRENT_TIMESTAMP)
     WHERE id = $1

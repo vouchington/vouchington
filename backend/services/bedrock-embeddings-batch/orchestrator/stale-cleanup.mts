@@ -57,7 +57,7 @@ export async function runStaleCleanup(ttlHours: number): Promise<StaleCleanupRes
         // oxlint-disable-next-line no-await-in-loop -- cancellation is recorded only after this batch's lock cleanup completes
         await write(
           `/* runStaleCleanup */
-          UPDATE bedrock_embeddings_batches
+          UPDATE bedrock_embedding_batches
           SET cancelled_at = NOW()
           WHERE id = $1 AND cancelled_at IS NULL`,
           [batch.id],

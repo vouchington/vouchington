@@ -96,7 +96,7 @@ export async function countUserRoleAssignments(userId: string, roleSlug: string)
   const { rows } = await write(sql`
     SELECT COUNT(*)::int AS count
     FROM user_roles ur
-    INNER JOIN user_roles_types urt ON ur.role_type_id = urt.id
+    INNER JOIN user_role_types urt ON ur.role_type_id = urt.id
     WHERE ur.user_id = ${userId}
       AND urt.slug = ${roleSlug}
   `)
@@ -108,7 +108,7 @@ export async function getTestUserRoleSlugs(userId: string): Promise<string[]> {
   const { rows } = await read<{ slug: string }>(sql`/* getTestUserRoleSlugs */
     SELECT role.slug
     FROM user_roles grant_row
-    JOIN user_roles_types role ON role.id = grant_row.role_type_id
+    JOIN user_role_types role ON role.id = grant_row.role_type_id
     WHERE grant_row.user_id = ${userId}
     ORDER BY role.slug
   `)

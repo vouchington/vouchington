@@ -24,7 +24,7 @@ import { createLocalTestUser } from '../../../test-helpers/data-stores/psql/user
 const lifecycleConstraints = [
   'admin_import_batches.chk_admin_import_batches__lifecycle',
   'admin_import_rows.chk_admin_import_rows__lifecycle',
-  'bedrock_embeddings_batches.chk_bedrock_embeddings_batches__lifecycle',
+  'bedrock_embedding_batches.chk_bedrock_embedding_batches__lifecycle',
   'images.chk_images__upload_lifecycle',
   'moderation_training_feedbacks.chk_moderation_training_feedbacks__targets',
   'user_data_requests.chk_user_data_requests__lifecycle',
@@ -35,7 +35,7 @@ const lifecycleConstraints = [
 const guardedLifecycleColumns = {
   admin_import_batches: ['completed_at'],
   admin_import_rows: ['completed_at', 'failed_at'],
-  bedrock_embeddings_batches: ['completed_at', 'failed_at', 'cancelled_at'],
+  bedrock_embedding_batches: ['completed_at', 'failed_at', 'cancelled_at'],
   images: ['upload_completed_at', 'upload_failed_at'],
   user_data_requests: ['completed_at', 'failed_at'],
   user_rss_feed_import_batches: ['completed_at'],

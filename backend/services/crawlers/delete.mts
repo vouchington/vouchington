@@ -9,7 +9,7 @@ export const deleteCrawler = async (deleter: PrivateUser, crawlerId: string): Pr
   await using query = await beginTransaction()
 
   await query(
-    sql`/* deleteCrawler:lock */ SELECT id FROM crawlers WHERE id = ${crawlerId} AND deleted_at IS NULL FOR UPDATE`,
+    sql`/* deleteCrawler:lock */ SELECT id FROM hostname_crawler_configurations WHERE id = ${crawlerId} AND deleted_at IS NULL FOR UPDATE`,
   )
 
   // Check if crawler exists and is not already deleted
@@ -21,7 +21,7 @@ export const deleteCrawler = async (deleter: PrivateUser, crawlerId: string): Pr
   // Soft delete the crawler
   await write(
     sql`/* deleteCrawler */
-      UPDATE crawlers
+      UPDATE hostname_crawler_configurations
       SET deleted_at = NOW(), deleted_by_id = ${deleter.id}
       WHERE id = ${crawlerId}
         AND deleted_at IS NULL

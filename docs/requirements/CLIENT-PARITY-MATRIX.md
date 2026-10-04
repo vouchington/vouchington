@@ -252,7 +252,7 @@ repository does not edit `vouchington-clients`.
 ## Retired agent flag action handoff
 
 #188 removes the last per-agent flag action. The seeded moderators are record-only, so
-`agents__moderators.on_flag_action` and the `moderator_on_flag_action` enum are gone, and the
+`moderator_agents.on_flag_action` and the `moderator_on_flag_action` enum are gone, and the
 `community_ai_agent` and `community_ai_agents` responses (`/api/v1/communities/:idOrSlug/ai-agents`)
 no longer carry `on_flag_action`. Web drops the action text from each agent row. The same change
 removes `reason` from the automod simulate results and from the prompt `test-runs` response, which

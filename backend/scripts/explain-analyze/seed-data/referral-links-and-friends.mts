@@ -1,7 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import { contentHash, seedUuid } from './common.mts'
 
-// prioritized-referral-links needs a real referral-program topic (topics__referral_programs)
+// prioritized-referral-links needs a real referral-program topic (referral_program_topics)
 // plus one active, non-owner user_referral_program_links row so getPrioritizedReferralLinks'
 // active_links CTE has a row to rank. User index 2 is the link owner: never followed, muted, or
 // blocked by seedUser (index 0), so it isn't excluded by the query's own filters.
@@ -27,12 +27,12 @@ export async function seedPrioritizedReferralLink(): Promise<void> {
       ],
     )
     await query(
-      `/* seedExplainData */ INSERT INTO topics__referral_programs (topic_id)
+      `/* seedExplainData */ INSERT INTO referral_program_topics (topic_id)
        VALUES ($1) ON CONFLICT DO NOTHING`,
       [referralProgramId],
     )
     await query(
-      `/* seedExplainData */ INSERT INTO user_referral_program_links (user_id, referral_program_id, url_id, created_via)
+      `/* seedExplainData */ INSERT INTO user_referral_program_links (user_id, referral_program_topic_id, url_id, created_via)
        VALUES ($1, $2, $3, 'system') ON CONFLICT DO NOTHING`,
       [linkOwnerId, referralProgramId, urlId],
     )

@@ -21,7 +21,7 @@ export async function listUserModNotes(
 
   const query = sql`/* listUserModNotes */
     SELECT id, created_at, target_user_id, author_user_id, community_id, body, deleted_at
-    FROM user_mod_notes
+    FROM user_moderator_notes
     WHERE target_user_id = ${targetUserId}
       AND deleted_at IS NULL
   `

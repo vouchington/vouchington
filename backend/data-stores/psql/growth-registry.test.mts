@@ -24,7 +24,7 @@ describe('schema growth classification', () => {
     const tables = buildUnboundedUnpartitionedTables(new Set())
 
     expect(tables.get('communities')).toContain('product adoption')
-    expect(tables.get('rss_feed_item_ids')).toContain('Relationship edges')
+    expect(tables.get('rss_feed_item_guids')).toContain('Relationship edges')
     expect(tables.get('admin_import_batches')).toContain('audit/workflow')
     expect(tables.get('ai_usage_provider_response_keys')).toContain(
       'global response-id idempotency',
@@ -187,7 +187,9 @@ describe('schema growth registry', () => {
       key: 'id',
       children: 'default',
     })
-    expect(UNBOUNDED_UNPARTITIONED_TABLES.get('rss_feed_item_ids')).toContain('Relationship edges')
+    expect(UNBOUNDED_UNPARTITIONED_TABLES.get('rss_feed_item_guids')).toContain(
+      'Relationship edges',
+    )
     expect(UNBOUNDED_UNPARTITIONED_TABLES.has('rss_feed_items')).toBe(false)
     expect(NON_DEFAULT_ID_EXCEPTIONS.get('rss_feed_items')).toMatchObject({ policy: 'uuidv7' })
   })

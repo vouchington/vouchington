@@ -37,7 +37,7 @@ export async function searchPostModerationsByPostIds(
         agm.slug AS moderator_slug,
         ROW_NUMBER() OVER (PARTITION BY am.post_id ORDER BY am.id DESC) AS rn
       FROM agent_moderations am
-      LEFT JOIN agents__moderators agm ON agm.agent_id = am.agent_id
+      LEFT JOIN moderator_agents agm ON agm.agent_id = am.agent_id
       WHERE am.post_id = ANY(${postIds}::uuid[])
         AND am.deleted_at IS NULL
     )
@@ -73,7 +73,7 @@ export async function searchPostModerationsByAgent(
       am.updated_at,
       agm.slug AS moderator_slug
     FROM agent_moderations am
-    LEFT JOIN agents__moderators agm ON agm.agent_id = am.agent_id
+    LEFT JOIN moderator_agents agm ON agm.agent_id = am.agent_id
     WHERE am.post_id = ${postId}
       AND am.agent_id = ${agentId}
       AND am.deleted_at IS NULL

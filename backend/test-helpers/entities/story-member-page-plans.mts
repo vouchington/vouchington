@@ -10,7 +10,7 @@ export const analyzeStoryMemberPlanTables = definePlanStatisticsRefresh(async ()
     relation__user__mute__topic, relation__user__mute__rss_feed,
     relation__user__hide__rss_feed_item, relation__user__proxy_mute__community,
     relation__user__block__url_hostname, relation__user__mute__url_hostname,
-    communities, community_members, community_list_items__topics, community_list_items__rss_feeds
+    communities, community_members, community_list_topics, community_list_rss_feeds
   `)
 })
 

@@ -158,7 +158,7 @@ export async function getEmbeddingsJoinForPost(postId: string) {
 
 export async function getBatchMetadata(batchId: string) {
   const { rows } = await read(
-    'SELECT records::int, job_type, model_id FROM bedrock_embeddings_batches WHERE id = $1',
+    'SELECT records::int, job_type, model_id FROM bedrock_embedding_batches WHERE id = $1',
     [batchId],
   )
   return rows[0] ?? null

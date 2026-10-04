@@ -65,7 +65,7 @@ export async function getAgentIdByModeratorSlug(
   const { rows } = await read(sql`/* getAgentIdByModeratorSlug */
     SELECT a.id
     FROM agents a
-    JOIN agents__moderators am ON am.agent_id = a.id
+    JOIN moderator_agents am ON am.agent_id = a.id
     WHERE am.slug = ${moderatorSlug}
       AND a.agent_type = 'moderator'
       AND a.activated_at IS NOT NULL
@@ -90,7 +90,7 @@ export async function getCommunityAutoTaggerAgentRows(
       cata.disabled_at,
       cata.enabled_by_id
     FROM agents a
-    JOIN agents__moderators am ON am.agent_id = a.id
+    JOIN moderator_agents am ON am.agent_id = a.id
     JOIN users u ON u.id = a.system_user_id
     LEFT JOIN community_auto_tagger_agents cata
       ON cata.agent_id = a.id

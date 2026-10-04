@@ -7,7 +7,7 @@ const ZERO_SHA = Buffer.alloc(32)
 
 /**
  * Insert a test topic with spending category support.
- * Uses topic_type='topic' by default to avoid type-specific table requirements (e.g. topics__cards).
+ * Uses topic_type='topic' by default to avoid type-specific table requirements (e.g. card_topics).
  * Returns { id, urlSlug } where urlSlug is the URL path segment (e.g. 'source' for 'rss_feed').
  */
 export async function insertTestTopic(
@@ -68,7 +68,7 @@ export async function insertTestTopic(
   )
   if (topicType === 'topic') {
     await write(
-      `INSERT INTO topics__spending_categories (topic_id) VALUES ($1) ON CONFLICT DO NOTHING`,
+      `INSERT INTO spending_category_topics (topic_id) VALUES ($1) ON CONFLICT DO NOTHING`,
       [id],
     )
   }

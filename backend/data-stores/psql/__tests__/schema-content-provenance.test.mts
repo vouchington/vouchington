@@ -19,7 +19,7 @@ const CONTENT_TABLES = [
   'communities',
   'community_applications',
   'conversation_messages',
-  'lists',
+  'user_lists',
   'moderation_appeals',
   'moderation_reports',
   'posts',
@@ -167,7 +167,7 @@ describe('content provenance schema', () => {
     await using transaction = await beginTransaction()
     const probeView = `content_provenance_probe_${randomUUID().replaceAll('-', '')}`
     await transaction(`/* createContentProvenanceProbeView */
-      CREATE VIEW ${probeView} AS SELECT id, created_via FROM lists`)
+      CREATE VIEW ${probeView} AS SELECT id, created_via FROM user_lists`)
     await expect(readViewsReferencingContentProvenance({ query: transaction })).resolves.toEqual([
       probeView,
     ])

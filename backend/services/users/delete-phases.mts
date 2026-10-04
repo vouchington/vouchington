@@ -96,12 +96,12 @@ async function processUserRelations(userId: string, batchSize: number) {
   return withUserDeletionTransaction(userId, async query => {
     const lists = await query(sql`/* processUserDeletionLists */
       WITH candidates AS (
-        SELECT id FROM lists
+        SELECT id FROM user_lists
         WHERE owner_user_id = ${userId} AND removed_at IS NULL
         ORDER BY id LIMIT ${batchSize} FOR UPDATE
       )
-      UPDATE lists SET removed_at = CURRENT_TIMESTAMP
-      FROM candidates WHERE lists.id = candidates.id
+      UPDATE user_lists SET removed_at = CURRENT_TIMESTAMP
+      FROM candidates WHERE user_lists.id = candidates.id
     `)
     if ((lists.rowCount ?? 0) > 0) return { hasMore: true }
     for (const table of userRelationTables) {

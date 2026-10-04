@@ -1,4 +1,5 @@
 -- Extend the final fenced proof without changing its existing ownership checks.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_user_deletion_has_remaining_owned_data(target_user_id UUID)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -67,7 +68,7 @@ BEGIN
   END LOOP;
 
   IF EXISTS (
-    SELECT 1 FROM lists WHERE owner_user_id = target_user_id AND removed_at IS NULL
+    SELECT 1 FROM user_lists WHERE owner_user_id = target_user_id AND removed_at IS NULL
   ) THEN RETURN TRUE; END IF;
   IF EXISTS (
     SELECT 1 FROM bluesky_link_authorizations

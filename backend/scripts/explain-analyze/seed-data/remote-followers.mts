@@ -129,7 +129,7 @@ async function seedRemoteFollowerDirectories(): Promise<void> {
       topicValues,
     )
     await query(
-      `/* seedExplainData */ INSERT INTO topics__fediverse_instances (topic_id)
+      `/* seedExplainData */ INSERT INTO fediverse_instance_topics (topic_id)
          VALUES ${extensionRows.join(', ')} ON CONFLICT DO NOTHING`,
       extensionValues,
     )

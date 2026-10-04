@@ -110,7 +110,7 @@ export async function createPostStory(
 ): Promise<PostStory | null> {
   const { rows } = await write(
     sql`/* createPostStory */
-    INSERT INTO post__stories (post_id, story_id, initiated_by_id)
+    INSERT INTO story_posts (post_id, story_id, initiated_by_id)
     VALUES (${postId}, ${storyId}, ${initiatedById})
     ON CONFLICT (story_id) DO NOTHING
     RETURNING post_id, story_id, initiated_by_id, created_at

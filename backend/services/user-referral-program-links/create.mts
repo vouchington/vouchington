@@ -59,7 +59,7 @@ export async function createUserReferralLink(
     sql`/* createUserReferralLink */
       INSERT INTO user_referral_program_links (
         user_id,
-        referral_program_id,
+        referral_program_topic_id,
         url_id,
         label,
         activated_at,
@@ -75,7 +75,7 @@ export async function createUserReferralLink(
         ${provenance.createdVia},
         ${provenance.oauthClientId}
       )
-      ON CONFLICT (user_id, referral_program_id, url_id)
+      ON CONFLICT (user_id, referral_program_topic_id, url_id)
         WHERE deleted_at IS NULL
       DO UPDATE SET
         label = COALESCE(EXCLUDED.label, user_referral_program_links.label),

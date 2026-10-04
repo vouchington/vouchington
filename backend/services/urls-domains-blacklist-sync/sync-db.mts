@@ -121,7 +121,7 @@ async function materializeDomainDiff(
       AS
       SELECT n.domain
       FROM ${NEW_DOMAINS_TABLE} n
-      LEFT JOIN domain_blacklists d
+      LEFT JOIN blocklisted_domains d
         ON d.source_id = $1 AND d.domain = n.domain
       WHERE d.domain IS NULL
     `,
@@ -132,7 +132,7 @@ async function materializeDomainDiff(
       CREATE TEMP TABLE ${REMOVED_DOMAINS_TABLE} ON COMMIT DROP
       AS
       SELECT d.domain
-      FROM domain_blacklists d
+      FROM blocklisted_domains d
       LEFT JOIN ${NEW_DOMAINS_TABLE} n
         ON n.domain = d.domain
       WHERE d.source_id = $1 AND n.domain IS NULL
@@ -165,7 +165,7 @@ async function persistDomainDiff(
 ): Promise<void> {
   await query(
     `/* syncDomainsWithDatabase */
-        INSERT INTO domain_blacklists (source_id, domain)
+        INSERT INTO blocklisted_domains (source_id, domain)
         SELECT $1::bigint AS source_id, domain
         FROM ${ADDED_DOMAINS_TABLE}
         ORDER BY domain ASC NULLS LAST, source_id ASC NULLS LAST
@@ -175,7 +175,7 @@ async function persistDomainDiff(
   )
   await query(
     `/* syncDomainsWithDatabase */
-        DELETE FROM domain_blacklists d
+        DELETE FROM blocklisted_domains d
         USING ${REMOVED_DOMAINS_TABLE} r
         WHERE d.source_id = $1 AND d.domain = r.domain
     `,

@@ -16,7 +16,7 @@ export async function listFeedRows(
       ? [null, null, false]
       : (JSON.parse(cursor) as [string, string | null, boolean?])
   const scope = sql`
-    SELECT story.story_id, ${itemId ?? '00000000-0000-0000-0000-000000000000'}::uuid AS cursor_id FROM posts candidate JOIN post__stories story ON story.post_id = COALESCE(candidate.root_id, candidate.id)
+    SELECT story.story_id, ${itemId ?? '00000000-0000-0000-0000-000000000000'}::uuid AS cursor_id FROM posts candidate JOIN story_posts story ON story.post_id = COALESCE(candidate.root_id, candidate.id)
     WHERE candidate.id = ${postId}`
   const itemStatement = sql`/* listPublicationIdentityFeedItem */ `.append(
     publicationStoryItemPageCtes(scope, limit, !itemComplete),

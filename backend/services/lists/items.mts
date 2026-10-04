@@ -32,9 +32,9 @@ export async function addListItem(
     `/* addListItem */
     -- Dynamic table and column come from the closed list-item storage catalog; VALUES is one row.
     /* no-mistakes: deadlock-safe */
-    INSERT INTO ${table} (list_id, ${entityColumn})
+    INSERT INTO ${table} (user_list_id, ${entityColumn})
     VALUES ($1, $2)
-    RETURNING id, list_id, ${entityColumn} AS entity_id, order_index, created_at
+    RETURNING id, user_list_id AS list_id, ${entityColumn} AS entity_id, order_index, created_at
     `,
     [listId, entityId],
   ).catch(async (err: unknown) => {
@@ -43,9 +43,9 @@ export async function addListItem(
       // write() not read() to avoid replica-lag race on immediate re-add
       return write(
         `/* addListItem:existing */
-        SELECT id, list_id, ${entityColumn} AS entity_id, order_index, created_at
+        SELECT id, user_list_id AS list_id, ${entityColumn} AS entity_id, order_index, created_at
         FROM ${table}
-        WHERE list_id = $1
+        WHERE user_list_id = $1
           AND ${entityColumn} = $2
           AND removed_at IS NULL
         LIMIT 1
@@ -91,7 +91,7 @@ export async function removeListItem(
     `/* removeListItem */
     UPDATE ${table}
     SET removed_at = NOW()
-    WHERE list_id = $1
+    WHERE user_list_id = $1
       AND ${entityColumn} = $2
       AND removed_at IS NULL
     RETURNING id

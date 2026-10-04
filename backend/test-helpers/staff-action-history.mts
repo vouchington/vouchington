@@ -63,7 +63,7 @@ const HISTORY_TARGET_TABLES = {
   report_penalty: 'report_abuse_penalties',
   vote_flag: 'vote_integrity_flags',
   vote_penalty: 'vote_weight_penalties',
-  note: 'user_mod_notes',
+  note: 'user_moderator_notes',
   oauth_client: 'oauth_clients',
 } as const
 

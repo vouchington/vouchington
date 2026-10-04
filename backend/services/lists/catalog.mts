@@ -7,11 +7,11 @@ type ListItemStorageConfig = {
 
 export const listItemStorageCatalog = {
   rss_feed_item: {
-    table: 'list_items__rss_feed_items',
+    table: 'user_list_rss_feed_items',
     entityColumn: 'rss_feed_item_id',
   },
   post: {
-    table: 'list_items__posts',
+    table: 'user_list_posts',
     entityColumn: 'post_id',
   },
 } as const satisfies Record<ListItemType, ListItemStorageConfig>

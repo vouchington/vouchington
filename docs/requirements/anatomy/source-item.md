@@ -22,7 +22,7 @@
 | `published_at`     | Publication timestamp from the feed                                       |
 | `story_id`         | Non-null when the item belongs to a story cluster                         |
 
-Identity and content are stored separately. The unpartitioned `rss_feed_item_ids` table maps the
+Identity and content are stored separately. The unpartitioned `rss_feed_item_guids` table maps the
 feed-domain natural key `(url_hostname_id, guid)` to a permanent UUIDv7 `id`. The partitioned
 `rss_feed_items` table stores content and shares that `id` as its primary key and foreign key to the
 identity row. This preserves one item when multiple feeds on the same hostname publish the same

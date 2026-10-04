@@ -179,7 +179,7 @@ export function buildStorySourceAccessClause(rootAlias: string): SQLStatement {
     .append(sql`
     OR EXISTS (
       SELECT 1
-      FROM post__stories post_story
+      FROM story_posts post_story
       JOIN stories publication_story
         ON publication_story.id = post_story.story_id
        AND publication_story.deleted_at IS NULL

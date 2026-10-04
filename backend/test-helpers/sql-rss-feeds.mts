@@ -121,7 +121,7 @@ export async function getRssFeedItemTitleByGuidForTest(guid: string): Promise<st
     data: { title: string }
   }>(sql`/* getRssFeedItemTitleByGuidForTest */
     SELECT items.data
-    FROM rss_feed_item_ids ids
+    FROM rss_feed_item_guids ids
     JOIN rss_feed_items items ON items.id = ids.id
     WHERE ids.guid = ${guid}
     LIMIT 1

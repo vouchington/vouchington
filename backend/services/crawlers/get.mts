@@ -24,11 +24,11 @@ export const getCrawlerById = async (
       c.link_text_content_to_remove,
       c.link_hrefs_to_remove,
       c.content_selectors,
-      c.referral_program_id,
+      c.referral_program_topic_id AS referral_program_id,
       c.created_at,
       c.updated_at,
       c.deleted_at
-    FROM crawlers c
+    FROM hostname_crawler_configurations c
     WHERE c.id = $1
       AND c.deleted_at IS NULL
     LIMIT 1
@@ -62,11 +62,11 @@ export const getCrawlerForHostnameId = async (
       c.link_text_content_to_remove,
       c.link_hrefs_to_remove,
       c.content_selectors,
-      c.referral_program_id,
+      c.referral_program_topic_id AS referral_program_id,
       c.created_at,
       c.updated_at,
       c.deleted_at
-    FROM crawlers c
+    FROM hostname_crawler_configurations c
     WHERE c.hostname_id = $1
       AND c.deleted_at IS NULL
     ORDER BY c.priority DESC, c.id ASC
@@ -101,11 +101,11 @@ export const getCrawlersForHostname = async (
       c.link_text_content_to_remove,
       c.link_hrefs_to_remove,
       c.content_selectors,
-      c.referral_program_id,
+      c.referral_program_topic_id AS referral_program_id,
       c.created_at,
       c.updated_at,
       c.deleted_at
-    FROM crawlers c
+    FROM hostname_crawler_configurations c
     WHERE c.hostname_id = $1
       AND c.deleted_at IS NULL
     ORDER BY c.priority DESC, c.id ASC
@@ -140,11 +140,11 @@ export const getCrawlerForUrl = async (
       c.link_text_content_to_remove,
       c.link_hrefs_to_remove,
       c.content_selectors,
-      c.referral_program_id,
+      c.referral_program_topic_id AS referral_program_id,
       c.created_at,
       c.updated_at,
       c.deleted_at
-    FROM crawlers c
+    FROM hostname_crawler_configurations c
     JOIN url_hostnames h
       ON h.id = c.hostname_id
     WHERE h.hostname = $1

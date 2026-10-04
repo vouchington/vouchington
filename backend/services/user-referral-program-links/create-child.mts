@@ -62,7 +62,7 @@ export async function createChildReferralLink(
     sql`/* createChildReferralLink */
       INSERT INTO user_referral_program_links (
         user_id,
-        referral_program_id,
+        referral_program_topic_id,
         url_id,
         parent_link_id,
         label,
@@ -80,7 +80,7 @@ export async function createChildReferralLink(
         ${provenance.createdVia},
         ${provenance.oauthClientId}
       )
-      ON CONFLICT (user_id, referral_program_id, url_id)
+      ON CONFLICT (user_id, referral_program_topic_id, url_id)
         WHERE deleted_at IS NULL
       DO UPDATE SET
         parent_link_id = EXCLUDED.parent_link_id,

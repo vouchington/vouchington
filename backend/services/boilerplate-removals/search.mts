@@ -48,7 +48,7 @@ export const searchParentPathsNeedingBoilerplateRemoval = async (
     FROM recent_html_urls
     WHERE NOT EXISTS (
       SELECT 1
-      FROM boilerplate_removals br
+      FROM hostname_path_boilerplate_removals br
       WHERE br.hostname_id = recent_html_urls.hostname_id
         AND br.parent_path = recent_html_urls.parent_path
         AND br.id > ${recentCutoffId}

@@ -35,10 +35,10 @@ export async function getHostnamePolicy(
       )
       OR EXISTS (
         SELECT 1
-        FROM domain_blacklists db
-        INNER JOIN domain_blacklist_sources dbs ON dbs.id = db.source_id
+        FROM blocklisted_domains db
+        INNER JOIN domain_blocklist_sources dbs ON dbs.id = db.source_id
         WHERE db.domain = ANY(${candidates}::text[])
-          AND dbs.type = 'url'::domain_blacklist_types
+          AND dbs.type = 'url'::domain_blocklist_types
       ) AS blocked,
       EXISTS (
         SELECT 1

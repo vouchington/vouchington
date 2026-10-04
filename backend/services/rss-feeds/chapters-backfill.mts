@@ -29,7 +29,7 @@ export async function rssFeedNeedsChapterMetadataBackfill(
         SELECT 1
         FROM rss_feed_item_sources s
         JOIN rss_feed_items i ON i.id = s.rss_feed_item_id
-        JOIN rss_feed_item_ids identity ON identity.id = i.id
+        JOIN rss_feed_item_guids identity ON identity.id = i.id
         WHERE s.rss_feed_id = ${rssFeedId}
           AND identity.guid = p.guid
           AND i.deleted_at IS NULL

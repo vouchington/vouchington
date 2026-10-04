@@ -155,7 +155,7 @@ export async function createTestUserWithAge(
 export async function addTestUserRole(userId: string, roleSlug: string): Promise<void> {
   await write(sql`/* addTestUserRole */
     WITH user_role AS (
-      SELECT id FROM user_roles_types WHERE slug = ${roleSlug}
+      SELECT id FROM user_role_types WHERE slug = ${roleSlug}
     )
     INSERT INTO user_roles (user_id, role_type_id)
     SELECT ${userId}, id

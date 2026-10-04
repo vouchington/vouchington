@@ -1,4 +1,5 @@
 -- Only enough information to include in nested JSONs
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_embedded_topics AS
   SELECT
     'topic' AS __entity_type,
@@ -28,12 +29,12 @@ CREATE OR REPLACE VIEW view_embedded_topics AS
         AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)
       ORDER BY placement.id DESC LIMIT 1
     ) AS hero_image_placement,
-    topics.rewards_program_id,
-    topics.referral_program_id,
+    topics.rewards_program_topic_id AS rewards_program_id,
+    topics.referral_program_topic_id AS referral_program_id,
     (
       SELECT t2.slug
       FROM topics t2
-      WHERE t2.id = topics.referral_program_id
+      WHERE t2.id = topics.referral_program_topic_id
         AND t2.deleted_at IS NULL
         AND t2.merged_into_topic_id IS NULL
       LIMIT 1
@@ -44,6 +45,7 @@ CREATE OR REPLACE VIEW view_embedded_topics AS
     AND topics.merged_into_topic_id IS NULL
 ;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_topics AS
   SELECT
     'topic' AS __entity_type,
@@ -73,8 +75,8 @@ CREATE OR REPLACE VIEW view_topics AS
         AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)
       ORDER BY placement.id DESC LIMIT 1
     ) AS hero_image_placement,
-    topics.rewards_program_id,
-    topics.referral_program_id,
+    topics.rewards_program_topic_id AS rewards_program_id,
+    topics.referral_program_topic_id AS referral_program_id,
     topics.aliases,
     CASE
       WHEN view_url_hostnames.id IS NULL THEN NULL

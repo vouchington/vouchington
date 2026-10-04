@@ -39,11 +39,11 @@ official_links AS (
   -- Deduplicate by URL so each distinct official URL appears at most once,
   -- picking the most recently activated row when duplicates exist.
   SELECT DISTINCT ON (l.url_id)
-    l.id, l.user_id, l.referral_program_id, u.url, l.label, l.activated_at
+    l.id, l.user_id, l.referral_program_topic_id, u.url, l.label, l.activated_at
   FROM user_referral_program_links l
   JOIN urls u ON u.id = l.url_id
   JOIN users usr ON usr.id = l.user_id
-  WHERE l.referral_program_id = ${referralProgramId}
+  WHERE l.referral_program_topic_id = ${referralProgramId}
     AND l.activated_at IS NOT NULL
     AND l.deleted_at IS NULL
     AND l.deactivated_at IS NULL
@@ -51,10 +51,10 @@ official_links AS (
   ORDER BY l.url_id, l.activated_at DESC, l.id
 ),
 active_links AS (
-  SELECT al.id, al.user_id, al.referral_program_id, u.url, al.label, al.activated_at
+  SELECT al.id, al.user_id, al.referral_program_topic_id, u.url, al.label, al.activated_at
   FROM user_referral_program_links al
   JOIN urls u ON u.id = al.url_id
-  WHERE al.referral_program_id = ${referralProgramId}
+  WHERE al.referral_program_topic_id = ${referralProgramId}
     AND al.activated_at IS NOT NULL
     AND al.deleted_at IS NULL
     AND al.deactivated_at IS NULL
@@ -73,7 +73,7 @@ active_links AS (
 ),
 linked_topic_ids AS (
   SELECT id FROM topics
-  WHERE referral_program_id = ${referralProgramId}
+  WHERE referral_program_topic_id = ${referralProgramId}
     AND deleted_at IS NULL
   UNION
   SELECT CAST(${referralProgramId} AS uuid)
@@ -137,7 +137,7 @@ user_tiers AS (
 ),
 ranked AS (
   SELECT DISTINCT ON (al.user_id)
-    al.id, al.user_id, al.referral_program_id, al.url, al.label,`)
+    al.id, al.user_id, al.referral_program_topic_id, al.url, al.label,`)
 
   if (all) {
     query.append(sql`

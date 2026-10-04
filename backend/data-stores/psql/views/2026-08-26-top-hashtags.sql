@@ -51,7 +51,7 @@ CREATE MATERIALIZED VIEW mv_top_hashtags AS
       'rss:' || identity.url_hostname_id::TEXT AS contributor_id
     FROM rss_feed_item_categories category
     JOIN rss_feed_items item ON item.id = category.rss_feed_item_id
-    JOIN rss_feed_item_ids identity ON identity.id = item.id
+    JOIN rss_feed_item_guids identity ON identity.id = item.id
     WHERE category.topic_alias_id IS NOT NULL
       AND item.deleted_at IS NULL
       AND item.published_at >= CURRENT_TIMESTAMP - INTERVAL '30 days'
@@ -118,9 +118,11 @@ CREATE MATERIALIZED VIEW mv_top_hashtags AS
   JOIN casing USING (topic_alias_id)
   WHERE aggregate.contributor_count >= 3;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_top_hashtags__topic_alias_id
   ON mv_top_hashtags (topic_alias_id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_mv_top_hashtags__ranking
   ON mv_top_hashtags (item_count DESC, latest_content_at DESC, latest_content_id DESC, topic_alias_id DESC);
 

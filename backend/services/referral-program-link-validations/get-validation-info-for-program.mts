@@ -17,12 +17,12 @@ export async function getValidationInfoForReferralProgram(
       SELECT
         rpv.user_help_text,
         rpvr.example_urls
-      FROM topics__referral_program_link_validations trplv
-      JOIN referral_program_link_validations rpv
-        ON rpv.id = trplv.referral_program_link_validation_id
-      JOIN referral_program_link_validations_rules rpvr
-        ON rpvr.referral_program_link_validation_id = rpv.id
-      WHERE trplv.referral_program_id = ${referralProgramId}
+      FROM referral_program_topic_link_validation_rule_sets trplv
+      JOIN referral_program_link_validation_rule_sets rpv
+        ON rpv.id = trplv.referral_program_link_validation_rule_set_id
+      JOIN referral_program_link_validation_rules rpvr
+        ON rpvr.referral_program_link_validation_rule_set_id = rpv.id
+      WHERE trplv.referral_program_topic_id = ${referralProgramId}
         AND rpvr.example_urls IS NOT NULL
         AND array_length(rpvr.example_urls, 1) > 0
         AND rpvr.is_referral_link_url = TRUE

@@ -39,7 +39,7 @@ async function attachSemanticVectorsAndStories(query: TransactionQuery): Promise
   await query(
     `/* seedExplainData */ WITH semantic_items AS (
        SELECT ids.id, row_number() OVER (ORDER BY ids.id)::int - 1 AS row_index
-       FROM rss_feed_item_ids ids
+       FROM rss_feed_item_guids ids
        WHERE ids.guid LIKE 'seed-item-guid-%'
        ORDER BY ids.id
        LIMIT $1

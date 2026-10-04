@@ -34,7 +34,7 @@ This system manages domain blacklists for URLs and email addresses using a two-l
 
 ## Configuration
 
-Blacklist sources are configured in the database (`domain_blacklist_sources` table) and seeded via `scripts/seed/index.mts`.
+Blacklist sources are configured in the database (`domain_blocklist_sources` table) and seeded via `scripts/seed/index.mts`.
 
 ## Usage
 

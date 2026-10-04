@@ -52,8 +52,8 @@ export async function insertReferralProgramValidationRuleWithExamplesForTest(par
   exampleUrls: string[]
 }): Promise<void> {
   await write(sql`/* insertReferralProgramValidationRuleWithExamplesForTest */
-    INSERT INTO referral_program_link_validations_rules (
-      referral_program_link_validation_id,
+    INSERT INTO referral_program_link_validation_rules (
+      referral_program_link_validation_rule_set_id,
       hostname,
       pathname,
       is_referral_link_url,

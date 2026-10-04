@@ -147,22 +147,22 @@ export const entityRelationEntityTables: Record<
 
   // for subtypes, we JOIN against a smaller table for referential integrity.
   card: {
-    foreign_key_table: 'topics__cards',
+    foreign_key_table: 'card_topics',
     parent_entity_type: 'topic',
     has_soft_delete: false,
   },
   rewards_program: {
-    foreign_key_table: 'topics__rewards_programs',
+    foreign_key_table: 'rewards_program_topics',
     parent_entity_type: 'topic',
     has_soft_delete: false,
   },
   rewards_program_status: {
-    foreign_key_table: 'topics__rewards_program_statuses',
+    foreign_key_table: 'rewards_program_status_topics',
     parent_entity_type: 'topic',
     has_soft_delete: false,
   },
   referral_program: {
-    foreign_key_table: 'topics__referral_programs',
+    foreign_key_table: 'referral_program_topics',
     parent_entity_type: 'topic',
     has_soft_delete: false,
   },

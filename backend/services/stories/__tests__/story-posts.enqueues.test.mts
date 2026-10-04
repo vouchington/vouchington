@@ -52,7 +52,7 @@ describe('story-posts', () => {
     testUser = await createTestUserDirect()
   })
 
-  it('createStoryPost — creates a story post and links via post__stories', async () => {
+  it('createStoryPost — creates a story post and links via story_posts', async () => {
     const story = await insertTestStory({ title: 'Test Story Title' })
     const random = Math.random().toString(36).slice(2, 10)
     const itemData = { title: `Item ${random}`, link: `https://example.com/${random}` }

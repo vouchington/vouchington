@@ -4,7 +4,7 @@ Moderator notes are private staff notes about a user.
 
 ## Scope
 
-- Table: `user_mod_notes`
+- Table: `user_moderator_notes`
 - Services: `backend/services/user-mod-notes/`
 - Audit: note creation writes `moderator_actions` when the service records an action
 

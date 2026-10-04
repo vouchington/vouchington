@@ -9,7 +9,7 @@ export function appendFeedCategoryFilter(
     searchQuery.append(sql`
       AND EXISTS (
         SELECT 1
-        FROM community_list_items__topics clit
+        FROM community_list_topics clit
         WHERE clit.community_id = c.id
           AND clit.removed_at IS NULL
       )`)
@@ -17,7 +17,7 @@ export function appendFeedCategoryFilter(
     searchQuery.append(sql`
       AND EXISTS (
         SELECT 1
-        FROM community_list_items__rss_feeds clir
+        FROM community_list_rss_feeds clir
         WHERE clir.community_id = c.id
           AND clir.removed_at IS NULL
       )`)
@@ -26,13 +26,13 @@ export function appendFeedCategoryFilter(
       AND (
         EXISTS (
           SELECT 1
-          FROM community_list_items__topics clit
+          FROM community_list_topics clit
           WHERE clit.community_id = c.id
             AND clit.removed_at IS NULL
         )
         OR EXISTS (
           SELECT 1
-          FROM community_list_items__rss_feeds clir
+          FROM community_list_rss_feeds clir
           WHERE clir.community_id = c.id
             AND clir.removed_at IS NULL
         )

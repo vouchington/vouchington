@@ -7,7 +7,7 @@ export type ApprovedFediverseInstanceHostname = {
 
 /**
  * Lists the hostnames of every `fediverse_instance` topic an admin has approved for federation
- * (`topics__fediverse_instances.integration_status = 'approved'`). Used by the IPv6-only egress
+ * (`fediverse_instance_topics.integration_status = 'approved'`). Used by the IPv6-only egress
  * diagnostic (backend/entrypoints/api/verify-ipv6-egress-vpc-evidence.mts) to audit that every
  * approved instance's actor host still resolves AAAA before `POST /ap/inbox` relies on IPv6-only
  * egress to fetch it directly — see docs/requirements/content/FEDIVERSE.md.
@@ -24,7 +24,7 @@ export async function listApprovedFediverseInstanceHostnames(): Promise<
   const { rows } = await read<ApprovedFediverseInstanceHostname>(sql`
     /* listApprovedFediverseInstanceHostnames */
     SELECT uh.hostname
-    FROM topics__fediverse_instances tfi
+    FROM fediverse_instance_topics tfi
     JOIN topics t ON t.id = tfi.topic_id
     JOIN url_hostnames uh ON uh.id = t.hostname_id
     WHERE tfi.integration_status = 'approved'

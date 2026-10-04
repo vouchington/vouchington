@@ -84,7 +84,7 @@ export async function insertTestStoryRssFeedItemsBatch(options: {
         SELECT uuidv7() AS id, 'story-projection-' || uuidv7()::text AS guid
         FROM generate_series(1, ${batchSize})
       ), identities AS (
-        INSERT INTO rss_feed_item_ids (id, url_hostname_id, guid)
+        INSERT INTO rss_feed_item_guids (id, url_hostname_id, guid)
         SELECT generated.id, urls.hostname_id, generated.guid
         FROM generated
         CROSS JOIN urls

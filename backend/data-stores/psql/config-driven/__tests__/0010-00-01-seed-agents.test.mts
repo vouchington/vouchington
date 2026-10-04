@@ -35,10 +35,10 @@ describe('0010-00-01-seed-agents idempotent', () => {
     expect(sql).toContain('during db:migrate')
   })
 
-  it('seeds baseline flags using the canonical agents__moderators schema', () => {
+  it('seeds baseline flags using the canonical moderator_agents schema', () => {
     const sql = generateSeedAgentsSQL()
-    expect(sql).not.toContain('ALTER TABLE agents__moderators')
-    expect(sql).toContain('INSERT INTO agents__moderators (agent_id, slug, is_baseline)')
+    expect(sql).not.toContain('ALTER TABLE moderator_agents')
+    expect(sql).toContain('INSERT INTO moderator_agents (agent_id, slug, is_baseline)')
   })
 
   it('guards moderator agent inserts before conflict checks', () => {
@@ -73,9 +73,9 @@ describe('0010-00-01-seed-agents idempotent', () => {
     expect(sql).not.toContain("'recommender',")
   })
 
-  it('generates agents__moderators rows with slug upsert', () => {
+  it('generates moderator_agents rows with slug upsert', () => {
     const sql = generateSeedAgentsSQL()
-    expect(sql).toContain('INSERT INTO agents__moderators')
+    expect(sql).toContain('INSERT INTO moderator_agents')
     expect(sql).toContain('ON CONFLICT (agent_id)')
     expect(sql).toContain('slug = EXCLUDED.slug')
   })
@@ -121,7 +121,7 @@ describe('0010-00-01-seed-agents idempotent', () => {
     )
 
     // ai-generated SQL block uses `true`; all others use `false`
-    const sections = sql.split('INSERT INTO agents__moderators').slice(1)
+    const sections = sql.split('INSERT INTO moderator_agents').slice(1)
     const aiSection = sections.find(s => s.includes("'ai-generated'"))
     const nonAiSections = sections.filter(s => !s.includes("'ai-generated'"))
     expect(aiSection).toContain('\n  true\n')

@@ -41,7 +41,7 @@ export function publicationIdentityRowsSql(postId: SQLStatement): SQLStatement {
   UNION SELECT 'community_slug', NULL, slug, NULL, NULL FROM communities JOIN candidate ON communities.id = candidate.community_id WHERE slug IS NOT NULL
   UNION SELECT 'community_slug', NULL, slug, NULL, NULL FROM communities JOIN root ON communities.id = root.community_id WHERE slug IS NOT NULL
   UNION SELECT 'post_slug', NULL, slug, NULL, NULL FROM post_slugs JOIN candidate ON post_id = candidate.id
-  UNION SELECT 'rss_feed', source.rss_feed_id, NULL, NULL, NULL FROM post__stories ps JOIN root ON ps.post_id = root.id
+  UNION SELECT 'rss_feed', source.rss_feed_id, NULL, NULL, NULL FROM story_posts ps JOIN root ON ps.post_id = root.id
     JOIN rss_feed_items item ON item.story_id = ps.story_id AND item.deleted_at IS NULL JOIN rss_feed_item_sources source ON source.rss_feed_item_id = item.id
   UNION SELECT 'sitemap_target', NULL, NULL, post_type, (created_at AT TIME ZONE 'UTC')::date
     FROM candidate WHERE post_type = ANY(${SITEMAP_CONFIG.POST_TYPES}::post_types[])`)

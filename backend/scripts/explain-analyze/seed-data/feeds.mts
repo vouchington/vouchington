@@ -64,7 +64,7 @@ export async function seedRssFeeds(feedCount = 500, itemCount = 5000): Promise<v
       )
     }
     await itemsTransaction(
-      `/* seedExplainData */ INSERT INTO rss_feed_item_ids (url_hostname_id, guid)
+      `/* seedExplainData */ INSERT INTO rss_feed_item_guids (url_hostname_id, guid)
          VALUES ${identityRows.join(', ')} ON CONFLICT (url_hostname_id, guid) DO NOTHING`,
       identityValues,
     )
@@ -74,7 +74,7 @@ export async function seedRssFeeds(feedCount = 500, itemCount = 5000): Promise<v
          SELECT ids.id, seeded.url_id, seeded.data, seeded.content_sha256
          FROM (VALUES ${itemRows.join(', ')})
            AS seeded(url_hostname_id, guid, url_id, data, content_sha256)
-         JOIN rss_feed_item_ids ids
+         JOIN rss_feed_item_guids ids
            ON ids.url_hostname_id = seeded.url_hostname_id AND ids.guid = seeded.guid
          ON CONFLICT (id) DO NOTHING`,
       itemValues,
@@ -84,7 +84,7 @@ export async function seedRssFeeds(feedCount = 500, itemCount = 5000): Promise<v
   await itemsTransaction.commit()
   await using sourcesTransaction = await beginTransaction()
   await sourcesTransaction(
-    `/* seedExplainData */ INSERT INTO rss_feed_item_sources (rss_feed_id, rss_feed_item_id, published_at) SELECT rf.id, ids.id, items.published_at FROM rss_feed_item_ids ids LEFT JOIN rss_feed_items items ON items.id = ids.id JOIN rss_feeds rf ON rf.rss_feed_url_id IN (SELECT id FROM urls WHERE hostname_id = ids.url_hostname_id) WHERE ids.guid LIKE 'seed-item-guid-%' ON CONFLICT DO NOTHING`,
+    `/* seedExplainData */ INSERT INTO rss_feed_item_sources (rss_feed_id, rss_feed_item_id, published_at) SELECT rf.id, ids.id, items.published_at FROM rss_feed_item_guids ids LEFT JOIN rss_feed_items items ON items.id = ids.id JOIN rss_feeds rf ON rf.rss_feed_url_id IN (SELECT id FROM urls WHERE hostname_id = ids.url_hostname_id) WHERE ids.guid LIKE 'seed-item-guid-%' ON CONFLICT DO NOTHING`,
   )
 
   await sourcesTransaction.commit()
@@ -94,7 +94,7 @@ export async function seedRssFeedItemCategories(count = 5000): Promise<void> {
   console.log(`Seeding ${count} RSS feed item categories...`)
   await using transaction = await beginTransaction()
   await transaction(
-    `/* seedExplainData */ INSERT INTO rss_feed_item_categories (rss_feed_item_id, category_text, topic_id) SELECT seeded.id, 'seed-category-' || (seeded.row_index % 200), topic.topic_id FROM ( SELECT id, (row_number() OVER (ORDER BY id) - 1)::int AS row_index FROM rss_feed_item_ids WHERE guid LIKE 'seed-item-guid-%' LIMIT $1 ) seeded CROSS JOIN LATERAL ( SELECT ($2 || lpad(to_hex(seeded.row_index % 200), 12, '0'))::uuid AS topic_id ) topic ON CONFLICT DO NOTHING`,
+    `/* seedExplainData */ INSERT INTO rss_feed_item_categories (rss_feed_item_id, category_text, topic_id) SELECT seeded.id, 'seed-category-' || (seeded.row_index % 200), topic.topic_id FROM ( SELECT id, (row_number() OVER (ORDER BY id) - 1)::int AS row_index FROM rss_feed_item_guids WHERE guid LIKE 'seed-item-guid-%' LIMIT $1 ) seeded CROSS JOIN LATERAL ( SELECT ($2 || lpad(to_hex(seeded.row_index % 200), 12, '0'))::uuid AS topic_id ) topic ON CONFLICT DO NOTHING`,
     [count, `${SEED_PREFIX}-0400-7000-8000-`],
   )
 

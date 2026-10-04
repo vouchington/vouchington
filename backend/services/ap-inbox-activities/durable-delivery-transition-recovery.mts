@@ -20,7 +20,7 @@ export async function recoverActivityPubInboxDeliveries(
   const { rows } = await write(sql`/* recoverActivityPubInboxDeliveries */
     WITH candidates AS (
       SELECT delivery.id
-      FROM ap_inbox_deliveries delivery
+      FROM activitypub_inbox_deliveries delivery
       WHERE delivery.failed_at IS NULL
         AND (${idScope}::uuid[] IS NULL OR delivery.id = ANY(${idScope}::uuid[]))
         AND (delivery.retention_expires_at IS NULL OR delivery.retention_expires_at > CURRENT_TIMESTAMP)
@@ -37,7 +37,7 @@ export async function recoverActivityPubInboxDeliveries(
       LIMIT ${WORK_PAGE_SIZE}
       FOR UPDATE SKIP LOCKED
     )
-    UPDATE ap_inbox_deliveries delivery
+    UPDATE activitypub_inbox_deliveries delivery
     SET processing_attempt_id = uuidv7(),
         processing_at = NULL,
         enqueued_at = CURRENT_TIMESTAMP,
@@ -60,7 +60,7 @@ export async function rearmFailedActivityPubInboxDeliveries(
   const { rows } = await write(sql`/* rearmFailedActivityPubInboxDeliveries */
     WITH candidates AS (
       SELECT delivery.id
-      FROM ap_inbox_deliveries delivery
+      FROM activitypub_inbox_deliveries delivery
       WHERE delivery.failed_at IS NOT NULL
         AND (${idScope}::uuid[] IS NULL OR delivery.id = ANY(${idScope}::uuid[]))
         AND delivery.retention_expires_at > CURRENT_TIMESTAMP
@@ -68,7 +68,7 @@ export async function rearmFailedActivityPubInboxDeliveries(
       LIMIT ${WORK_PAGE_SIZE}
       FOR UPDATE SKIP LOCKED
     )
-    UPDATE ap_inbox_deliveries delivery
+    UPDATE activitypub_inbox_deliveries delivery
     SET processing_attempt_id = uuidv7(),
         processing_at = NULL,
         enqueued_at = CURRENT_TIMESTAMP,

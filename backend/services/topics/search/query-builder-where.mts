@@ -38,7 +38,7 @@ export function buildTopicSearchWhereClauses(
 
   if (options.spending_category) {
     whereClauses.push(sql`EXISTS (
-      SELECT 1 FROM topics__spending_categories tsc
+      SELECT 1 FROM spending_category_topics tsc
       WHERE tsc.topic_id = t.id
     )`)
   }
@@ -112,7 +112,7 @@ function appendFediverseInstanceFilters(whereClauses: SQLStatement[], options: T
     return
 
   const clause = sql`EXISTS (
-      SELECT 1 FROM topics__fediverse_instances tfi
+      SELECT 1 FROM fediverse_instance_topics tfi
       WHERE tfi.topic_id = t.id`
 
   if (options.fediverse_instance_software) {

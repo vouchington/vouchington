@@ -9,8 +9,8 @@ export async function lockApiKeyOwner(query: TransactionQuery, userId: string): 
   const { rows } = await query(sql`/* lockApiKeyOwner */
     SELECT EXISTS (
       SELECT 1 FROM user_roles
-      JOIN user_roles_types ON user_roles_types.id = user_roles.role_type_id
-      WHERE user_roles.user_id = ${userId}::uuid AND user_roles_types.slug = 'administrator'
+      JOIN user_role_types ON user_role_types.id = user_roles.role_type_id
+      WHERE user_roles.user_id = ${userId}::uuid AND user_role_types.slug = 'administrator'
     ) AS is_administrator
   `)
   return rows[0]!.is_administrator as boolean
@@ -36,9 +36,9 @@ export function apiKeyIsValidSql() {
     AND (api_keys.expires_at IS NULL OR api_keys.expires_at > NOW())
     AND NOT EXISTS (
       SELECT 1 FROM user_roles
-      JOIN user_roles_types ON user_roles_types.id = user_roles.role_type_id
+      JOIN user_role_types ON user_role_types.id = user_roles.role_type_id
       WHERE user_roles.user_id = api_keys.user_id
-        AND user_roles_types.slug = 'administrator'
+        AND user_role_types.slug = 'administrator'
         AND (api_keys.expires_at IS NULL
           OR api_keys.expires_at > api_keys.created_at + INTERVAL '2160 hours')
     )

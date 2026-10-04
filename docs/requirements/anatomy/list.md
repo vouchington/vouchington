@@ -11,7 +11,7 @@
 
 ## Data Model
 
-### `lists`
+### `user_lists`
 
 | Field           | Notes                                                                          |
 | --------------- | ------------------------------------------------------------------------------ |
@@ -24,7 +24,7 @@
 | `removed_at`    | Soft-delete; non-null = deleted                                                |
 | `created_via`   | Required immutable channel; see [provenance](../content/content-provenance.md) |
 
-### `list_items__rss_feed_items` / `list_items__posts`
+### `user_list_rss_feed_items` / `user_list_posts`
 
 Junction tables. Both have a partial unique index on `(list_id, entity_id) WHERE removed_at IS NULL`
 and cursor-pagination index on `(list_id, id DESC) WHERE removed_at IS NULL`.

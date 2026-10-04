@@ -5,7 +5,7 @@ import { BedrockControlClient } from '@modules/aws/bedrock-control'
 export const cleanupBatchLocks = async (batchId: string): Promise<void> => {
   await write(
     `/* cleanupBatchLocks */
-    DELETE FROM bedrock_embeddings_batch_entities
+    DELETE FROM bedrock_embedding_batch_entities
     WHERE batch_id = $1
   `,
     [batchId],

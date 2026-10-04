@@ -8,7 +8,7 @@ export async function seedPlaywrightFeedData(query: TransactionQuery): Promise<v
   const hiltonEmbedding = buildEmbeddingVector(30, 0) // Standalone
   const travelEmbedding = buildEmbeddingVector(40, 0) // Standalone
   await query(`
-    INSERT INTO rss_feed_item_ids (url_hostname_id, guid)
+    INSERT INTO rss_feed_item_guids (url_hostname_id, guid)
     VALUES
       ('019c64e6-1000-7000-b000-000000000004', 'doc-csp-bonus'),
       ('019c64e6-1000-7000-b000-000000000005', 'tpg-csp-bonus'),
@@ -85,7 +85,7 @@ export async function seedPlaywrightFeedData(query: TransactionQuery): Promise<v
   INSERT INTO rss_feed_items (id, url_id, data, bedrock_nova_multimodal_v1_content_sha256, bedrock_nova_multimodal_v1_input_sha256, bedrock_nova_multimodal_v1_embedding, bedrock_nova_multimodal_v1_embedding_created_at)
   SELECT identity.id, seeded.url_id, seeded.data, seeded.content_sha256, seeded.input_sha256, seeded.embedding, seeded.embedding_created_at
   FROM seeded
-  JOIN rss_feed_item_ids identity USING (url_hostname_id, guid)
+  JOIN rss_feed_item_guids identity USING (url_hostname_id, guid)
   ON CONFLICT (id) DO UPDATE SET
     url_id = EXCLUDED.url_id,
     data = EXCLUDED.data,
@@ -96,22 +96,22 @@ export async function seedPlaywrightFeedData(query: TransactionQuery): Promise<v
     deleted_at = NULL
       `)
   await query(
-    `INSERT INTO rss_feed_item_sources (rss_feed_id, rss_feed_item_id, published_at) SELECT '019c64e6-f8c0-7000-8000-000000000002', ids.id, items.published_at FROM rss_feed_item_ids ids LEFT JOIN rss_feed_items items ON items.id = ids.id WHERE ids.url_hostname_id = '019c64e6-1000-7000-b000-000000000004' AND ids.guid IN ('doc-csp-bonus', 'doc-amex-grocery', 'doc-hilton-devalue') ON CONFLICT DO NOTHING`,
+    `INSERT INTO rss_feed_item_sources (rss_feed_id, rss_feed_item_id, published_at) SELECT '019c64e6-f8c0-7000-8000-000000000002', ids.id, items.published_at FROM rss_feed_item_guids ids LEFT JOIN rss_feed_items items ON items.id = ids.id WHERE ids.url_hostname_id = '019c64e6-1000-7000-b000-000000000004' AND ids.guid IN ('doc-csp-bonus', 'doc-amex-grocery', 'doc-hilton-devalue') ON CONFLICT DO NOTHING`,
   )
   await query(
-    `INSERT INTO rss_feed_item_sources (rss_feed_id, rss_feed_item_id, published_at) SELECT '019c64e6-f8c0-7000-8000-000000000003', ids.id, items.published_at FROM rss_feed_item_ids ids LEFT JOIN rss_feed_items items ON items.id = ids.id WHERE ids.url_hostname_id = '019c64e6-1000-7000-b000-000000000005' AND ids.guid IN ('tpg-csp-bonus', 'tpg-amex-grocery', 'tpg-best-travel-cards') ON CONFLICT DO NOTHING`,
+    `INSERT INTO rss_feed_item_sources (rss_feed_id, rss_feed_item_id, published_at) SELECT '019c64e6-f8c0-7000-8000-000000000003', ids.id, items.published_at FROM rss_feed_item_guids ids LEFT JOIN rss_feed_items items ON items.id = ids.id WHERE ids.url_hostname_id = '019c64e6-1000-7000-b000-000000000005' AND ids.guid IN ('tpg-csp-bonus', 'tpg-amex-grocery', 'tpg-best-travel-cards') ON CONFLICT DO NOTHING`,
   )
   await query(
-    `WITH primary_item AS ( SELECT id FROM rss_feed_item_ids WHERE url_hostname_id = '019c64e6-1000-7000-b000-000000000004' AND guid = 'doc-csp-bonus' LIMIT 1 ) INSERT INTO stories (id, title, published_at, cluster_reason, official_rss_feed_item_id) SELECT '019c64e6-f8d0-7000-9000-000000000002', 'Chase Sapphire Preferred Bonus Update', '2025-01-15T00:00:00Z', 'Seeded cluster for related-articles Playwright test', primary_item.id FROM primary_item ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, published_at = EXCLUDED.published_at, cluster_reason = EXCLUDED.cluster_reason, official_rss_feed_item_id = EXCLUDED.official_rss_feed_item_id`,
+    `WITH primary_item AS ( SELECT id FROM rss_feed_item_guids WHERE url_hostname_id = '019c64e6-1000-7000-b000-000000000004' AND guid = 'doc-csp-bonus' LIMIT 1 ) INSERT INTO stories (id, title, published_at, cluster_reason, official_rss_feed_item_id) SELECT '019c64e6-f8d0-7000-9000-000000000002', 'Chase Sapphire Preferred Bonus Update', '2025-01-15T00:00:00Z', 'Seeded cluster for related-articles Playwright test', primary_item.id FROM primary_item ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, published_at = EXCLUDED.published_at, cluster_reason = EXCLUDED.cluster_reason, official_rss_feed_item_id = EXCLUDED.official_rss_feed_item_id`,
   )
   await query(
-    `UPDATE rss_feed_items SET story_id = '019c64e6-f8d0-7000-9000-000000000002' WHERE id IN (SELECT id FROM rss_feed_item_ids WHERE (url_hostname_id = '019c64e6-1000-7000-b000-000000000004' AND guid = 'doc-csp-bonus') OR (url_hostname_id = '019c64e6-1000-7000-b000-000000000005' AND guid = 'tpg-csp-bonus'))`,
+    `UPDATE rss_feed_items SET story_id = '019c64e6-f8d0-7000-9000-000000000002' WHERE id IN (SELECT id FROM rss_feed_item_guids WHERE (url_hostname_id = '019c64e6-1000-7000-b000-000000000004' AND guid = 'doc-csp-bonus') OR (url_hostname_id = '019c64e6-1000-7000-b000-000000000005' AND guid = 'tpg-csp-bonus'))`,
   )
   await query(
-    `WITH primary_item AS ( SELECT id FROM rss_feed_item_ids WHERE url_hostname_id = '019c64e6-1000-7000-b000-000000000004' AND guid = 'doc-amex-grocery' LIMIT 1 ) INSERT INTO stories (id, title, published_at, cluster_reason, official_rss_feed_item_id) SELECT '019c64e6-f8d0-7000-9000-000000000003', 'Amex Gold Grocery Credits', '2025-01-15T00:00:00Z', 'Seeded cluster for related-articles Playwright test', primary_item.id FROM primary_item ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, published_at = EXCLUDED.published_at, cluster_reason = EXCLUDED.cluster_reason, official_rss_feed_item_id = EXCLUDED.official_rss_feed_item_id`,
+    `WITH primary_item AS ( SELECT id FROM rss_feed_item_guids WHERE url_hostname_id = '019c64e6-1000-7000-b000-000000000004' AND guid = 'doc-amex-grocery' LIMIT 1 ) INSERT INTO stories (id, title, published_at, cluster_reason, official_rss_feed_item_id) SELECT '019c64e6-f8d0-7000-9000-000000000003', 'Amex Gold Grocery Credits', '2025-01-15T00:00:00Z', 'Seeded cluster for related-articles Playwright test', primary_item.id FROM primary_item ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, published_at = EXCLUDED.published_at, cluster_reason = EXCLUDED.cluster_reason, official_rss_feed_item_id = EXCLUDED.official_rss_feed_item_id`,
   )
   await query(
-    `UPDATE rss_feed_items SET story_id = '019c64e6-f8d0-7000-9000-000000000003' WHERE id IN (SELECT id FROM rss_feed_item_ids WHERE (url_hostname_id = '019c64e6-1000-7000-b000-000000000004' AND guid = 'doc-amex-grocery') OR (url_hostname_id = '019c64e6-1000-7000-b000-000000000005' AND guid = 'tpg-amex-grocery'))`,
+    `UPDATE rss_feed_items SET story_id = '019c64e6-f8d0-7000-9000-000000000003' WHERE id IN (SELECT id FROM rss_feed_item_guids WHERE (url_hostname_id = '019c64e6-1000-7000-b000-000000000004' AND guid = 'doc-amex-grocery') OR (url_hostname_id = '019c64e6-1000-7000-b000-000000000005' AND guid = 'tpg-amex-grocery'))`,
   )
   await query(
     `DELETE FROM relation__user__follow__topic WHERE subject_id = '019f0000-0000-7000-8000-000000000000' AND object_id IN ( '019c64e6-f710-74cb-b36d-130af8ff1067', '019c64e6-f8a0-7000-a000-000000000001', '019c64e6-f8a0-7000-a000-000000000002', '019c64e6-f8a0-7000-a000-000000000003' )`,
@@ -138,7 +138,7 @@ export async function seedPlaywrightFeedData(query: TransactionQuery): Promise<v
     `DELETE FROM relation__user__mute__user WHERE subject_id = '019f0000-0000-7000-8000-000000000000' AND object_id = '00000000-0000-0000-0000-000000000003'`,
   )
   await query(
-    `DELETE FROM relation__user__save__rss_feed_item WHERE subject_id = '019f0000-0000-7000-8000-000000000000' AND object_id IN ( SELECT id FROM rss_feed_item_ids WHERE guid = 'test-item-1' AND url_hostname_id = '019c64e6-1000-7000-b000-000000000001' )`,
+    `DELETE FROM relation__user__save__rss_feed_item WHERE subject_id = '019f0000-0000-7000-8000-000000000000' AND object_id IN ( SELECT id FROM rss_feed_item_guids WHERE guid = 'test-item-1' AND url_hostname_id = '019c64e6-1000-7000-b000-000000000001' )`,
   )
   await query(
     `INSERT INTO relation__user__follow__topic (subject_id, object_id) VALUES ('019f0000-0000-7000-8000-000000000000', '019c64e6-f710-74cb-b36d-130af8ff1067'), ('019f0000-0000-7000-8000-000000000000', '019c64e6-f8a0-7000-a000-000000000001'), ('019f0000-0000-7000-8000-000000000000', '019c64e6-f8a0-7000-a000-000000000002'), ('019f0000-0000-7000-8000-000000000000', '019c64e6-f8a0-7000-a000-000000000003') ON CONFLICT DO NOTHING`,
@@ -168,6 +168,6 @@ export async function seedPlaywrightFeedData(query: TransactionQuery): Promise<v
     `INSERT INTO relation__user__mute__user (subject_id, object_id) VALUES ('019f0000-0000-7000-8000-000000000000', '00000000-0000-0000-0000-000000000003') ON CONFLICT DO NOTHING`,
   )
   await query(
-    `INSERT INTO relation__user__save__rss_feed_item (subject_id, object_id) SELECT '019f0000-0000-7000-8000-000000000000', id FROM rss_feed_item_ids WHERE guid = 'test-item-1' AND url_hostname_id = '019c64e6-1000-7000-b000-000000000001' ON CONFLICT DO NOTHING`,
+    `INSERT INTO relation__user__save__rss_feed_item (subject_id, object_id) SELECT '019f0000-0000-7000-8000-000000000000', id FROM rss_feed_item_guids WHERE guid = 'test-item-1' AND url_hostname_id = '019c64e6-1000-7000-b000-000000000001' ON CONFLICT DO NOTHING`,
   )
 }

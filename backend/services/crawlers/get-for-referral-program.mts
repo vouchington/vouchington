@@ -21,9 +21,9 @@ export async function getCrawlerForReferralProgram(
   const { rows } = await read(
     `/* getCrawlerForReferralProgram */
     SELECT id
-    FROM crawlers
+    FROM hostname_crawler_configurations
     WHERE hostname_id = $1
-      AND referral_program_id = $2
+      AND referral_program_topic_id = $2
       AND deleted_at IS NULL
     ORDER BY priority DESC, id ASC
     LIMIT 1`,
@@ -58,12 +58,12 @@ export async function getCrawlersByReferralProgramId(
       c.link_text_content_to_remove,
       c.link_hrefs_to_remove,
       c.content_selectors,
-      c.referral_program_id,
+      c.referral_program_topic_id,
       c.created_at,
       c.updated_at,
       c.deleted_at
-    FROM crawlers c
-    WHERE c.referral_program_id = $1
+    FROM hostname_crawler_configurations c
+    WHERE c.referral_program_topic_id = $1
       AND c.deleted_at IS NULL
     ORDER BY c.priority DESC, c.id ASC
   `,

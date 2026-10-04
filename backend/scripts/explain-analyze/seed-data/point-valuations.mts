@@ -14,7 +14,7 @@ export async function seedPointValuations(count = POINT_VALUATION_SEED_COUNT): P
       seedUuid(index, '04'),
     )
     await query(
-      `/* seedExplainData */ INSERT INTO topics__rewards_programs (topic_id)
+      `/* seedExplainData */ INSERT INTO rewards_program_topics (topic_id)
        SELECT id FROM UNNEST($1::UUID[]) AS id
        ON CONFLICT DO NOTHING`,
       [programValues],
@@ -34,11 +34,11 @@ export async function seedPointValuations(count = POINT_VALUATION_SEED_COUNT): P
       }
       await query(
         `/* seedExplainData */ INSERT INTO individual_rewards_program_point_valuations
-           (id, individual_id, rewards_program_id, value_microunits_per_point, currency_code)
+           (id, individual_id, rewards_program_topic_id, value_microunits_per_point, currency_code)
          VALUES ${rows.join(', ')}
          ON CONFLICT (id) DO UPDATE
          SET individual_id = EXCLUDED.individual_id,
-             rewards_program_id = EXCLUDED.rewards_program_id,
+             rewards_program_topic_id = EXCLUDED.rewards_program_topic_id,
              value_microunits_per_point = EXCLUDED.value_microunits_per_point,
              currency_code = EXCLUDED.currency_code`,
         values,

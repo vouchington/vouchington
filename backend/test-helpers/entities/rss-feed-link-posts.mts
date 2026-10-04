@@ -21,7 +21,7 @@ export async function insertTestLinkPostWithAudio(data: {
 
   await write(sql`/* insertTestLinkPostWithAudio */
     WITH identity AS (
-      INSERT INTO rss_feed_item_ids (url_hostname_id, guid)
+      INSERT INTO rss_feed_item_guids (url_hostname_id, guid)
       VALUES (${url.hostname.id}, ${guid})
       ON CONFLICT (url_hostname_id, guid) DO UPDATE SET guid = EXCLUDED.guid
       RETURNING id
@@ -89,7 +89,7 @@ export async function insertTestLinkPostWithPodcastEpisode(data: {
   const sha256 = `\\x${'0'.repeat(64)}`
   const { rows } = await write(sql`/* insertTestLinkPostWithPodcastEpisode */
     WITH identity AS (
-      INSERT INTO rss_feed_item_ids (url_hostname_id, guid)
+      INSERT INTO rss_feed_item_guids (url_hostname_id, guid)
       VALUES (${url.hostname.id}, ${guid})
       ON CONFLICT (url_hostname_id, guid) DO UPDATE SET guid = EXCLUDED.guid
       RETURNING id

@@ -72,7 +72,7 @@ describe('urls-domains-robots', () => {
     expect(result).toBe('User-agent: *\nAllow: /')
   })
 
-  it('returns DISALLOW when domain is in domain_blacklists', async () => {
+  it('returns DISALLOW when domain is in blocklisted_domains', async () => {
     const domain = randomDomain()
     await insertTestDomainBlacklist(domain)
     await addDomainsToBloomFilter([domain])

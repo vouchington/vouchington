@@ -185,7 +185,7 @@ describe('GET /api/v1/feeds/rss_feed_items/:feed_type', () => {
     // The route's story-member expansion adds items sharing a story that were NOT independently
     // delivered by the feed query. Put the second item on a feed the user never follows, so it
     // cannot appear in `results` on its own — only via `story_member_pages`/`rss_feed_items`. There
-    // is no `similar_rss_feed_item_ids` field on results; asserting through it (the prior version
+    // is no `similar_rss_feed_item_guids` field on results; asserting through it (the prior version
     // of this test) always passed trivially, since every primary result ID satisfies the check
     // regardless of whether story-member expansion ran at all.
     const { id: primaryItemId } = await createTestRssFeedItemWithUrl(feedId)

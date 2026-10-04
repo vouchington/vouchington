@@ -18,7 +18,7 @@ export async function createTestStoryMembers(
       SELECT uuidv7() AS id, 'story-page-' || uuidv7()::text AS guid
       FROM generate_series(1, ${count})
     ), identities AS (
-      INSERT INTO rss_feed_item_ids (id, url_hostname_id, guid)
+      INSERT INTO rss_feed_item_guids (id, url_hostname_id, guid)
       SELECT id, ${hostnameId}, guid FROM generated RETURNING id
     ), items AS (
       INSERT INTO rss_feed_items (

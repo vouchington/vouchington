@@ -89,7 +89,7 @@ async function lockRssFeedHardDeletePosts(
       FROM posts post
       WHERE EXISTS (
         SELECT 1
-        FROM post__stories post_story
+        FROM story_posts post_story
         JOIN rss_feed_items item ON item.story_id = post_story.story_id
         JOIN rss_feed_item_sources source ON source.rss_feed_item_id = item.id
         WHERE post_story.post_id = post.id AND source.rss_feed_id = $1::uuid
@@ -235,7 +235,7 @@ async function retainRssFeedHardDeletePostImpacts(
       FROM posts post
       WHERE EXISTS (
         SELECT 1
-        FROM post__stories post_story
+        FROM story_posts post_story
         JOIN rss_feed_items item ON item.story_id = post_story.story_id
         JOIN rss_feed_item_sources source ON source.rss_feed_item_id = item.id
         WHERE post_story.post_id = post.id AND source.rss_feed_id = $1::uuid

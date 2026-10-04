@@ -33,9 +33,9 @@ export async function getReferralClickLog(
       users.profile_image_id AS user__profile_image_id,
       (SELECT account_type FROM view_embedded_users e WHERE e.id = users.id) AS user__account_type,
       (
-        SELECT COALESCE(ARRAY_AGG(user_roles_types.slug), ARRAY[]::TEXT[])
+        SELECT COALESCE(ARRAY_AGG(user_role_types.slug), ARRAY[]::TEXT[])
         FROM user_roles
-        LEFT JOIN user_roles_types ON user_roles_types.id = user_roles.role_type_id
+        LEFT JOIN user_role_types ON user_role_types.id = user_roles.role_type_id
         WHERE user_roles.user_id = users.id
       ) AS user__roles
     FROM session_referral_attributions sra

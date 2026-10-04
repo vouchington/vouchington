@@ -44,7 +44,7 @@ export async function dispatchReferralLinkCrawls(
   const upperId = getMaxUUIDv7ForDate(new Date(sweepStartedAt))
   const queryStatement = sql`/* dispatchReferralLinkCrawls */
     WITH due_candidates AS MATERIALIZED (
-      SELECT id, url_id, referral_program_id, last_crawl_failure_at,
+      SELECT id, url_id, referral_program_topic_id, last_crawl_failure_at,
              COALESCE(last_crawl_success_at, '-infinity'::timestamptz) AS due_at
       FROM user_referral_program_links
       WHERE id <= ${upperId}::uuid
@@ -69,7 +69,7 @@ export async function dispatchReferralLinkCrawls(
       : " ORDER BY COALESCE(last_crawl_success_at, '-infinity'::timestamptz), id",
   )
   queryStatement.append(sql` LIMIT ${limits.maxRows + 1}
-    ) SELECT c.id AS link_id, c.url_id, c.referral_program_id, c.due_at::text AS due_at,
+    ) SELECT c.id AS link_id, c.url_id, c.referral_program_topic_id, c.due_at::text AS due_at,
       h.id AS hostname_id, h.hostname, h.requests_per_second_limit,
       (h.crawlable IS DISTINCT FROM false AND h.blocked = false) AS host_eligible,
       (c.last_crawl_failure_at IS NULL OR c.last_crawl_failure_at

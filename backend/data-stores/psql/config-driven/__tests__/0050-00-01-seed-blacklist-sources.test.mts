@@ -31,9 +31,9 @@ describe('0050-00-01-seed-blacklist-sources', () => {
     expect(sql).not.toContain('last_fetched_at')
   })
 
-  it('inserts into domain_blacklist_sources', () => {
+  it('inserts into domain_blocklist_sources', () => {
     const sql = generateSeedBlacklistSourcesSQL()
-    expect(sql).toContain('INSERT INTO domain_blacklist_sources')
+    expect(sql).toContain('INSERT INTO domain_blocklist_sources')
     expect(sql).toContain('(type, name, url)')
   })
 

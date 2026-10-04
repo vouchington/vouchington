@@ -35,7 +35,7 @@ endpoints are always mounted; the `fediverse` feature flag gates frontend visibi
     `fediverse_instances`, `topic_elections`, and `hostname_elections`, plus `bookmarks` and
     `election_votes` (empty for anonymous callers). All entity sidecars are id-keyed and batch-loaded;
     `fediverse_instances` contains
-    `topics__fediverse_instances` rows, present only for ids that have a row (a topic may exist
+    `fediverse_instance_topics` rows, present only for ids that have a row (a topic may exist
     without one — see [the anatomy doc](../../../anatomy/fediverse-instance.md#data-model)).
   - Anonymous callers are clamped to `ANON_MAX_LIMIT` (25) via `clampAnonLimit`; authenticated
     callers may request up to 100. Caller-supplied `omitLimit` is ignored for every caller.
@@ -56,7 +56,7 @@ endpoints are always mounted; the `fediverse` feature flag gates frontend visibi
 - `GET /api/v1/fediverse/instances/:id`
   - `:id` accepts either a topic UUID or slug. Response:
     `{ topic, fediverse_instance, topic_election, hostname_election }`. `fediverse_instance` is `null` when
-    the topic has no `topics__fediverse_instances` row yet.
+    the topic has no `fediverse_instance_topics` row yet.
   - `404` when `:id` does not resolve to a topic, or resolves to a topic whose `topic_type` is not
     `fediverse_instance`.
 
@@ -65,7 +65,7 @@ endpoints are always mounted; the `fediverse` feature flag gates frontend visibi
   - Admin-only (`currentUserCanModifyFediverseInstanceIntegrationStatus`); `403` for any other
     caller, `404` for a non-`fediverse_instance` topic. Appends a row to
     `fediverse_instance_integration_changes`; a DB trigger re-derives the denormalized
-    `topics__fediverse_instances.integration_status` from the latest row.
+    `fediverse_instance_topics.integration_status` from the latest row.
   - Voting on the instance itself reuses the generic topic/hostname election vote routes — there is
     no dedicated vote endpoint here.
 

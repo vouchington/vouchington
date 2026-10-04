@@ -30,7 +30,7 @@ describe('get', () => {
 
   describe('searchCommunityListItems', () => {
     it('returns empty results for a new community', async () => {
-      expect(communityListItemStorageCatalog.topic.table).toBe('community_list_items__topics')
+      expect(communityListItemStorageCatalog.topic.table).toBe('community_list_topics')
       const emptyCommunity = await insertTestCommunity({ createdById: owner.id })
       const result = await searchCommunityListItems(emptyCommunity.id, 'topic')
       expect(result.results).toHaveLength(0)

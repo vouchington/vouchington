@@ -25,7 +25,7 @@ export const assertRewardsProgramExists = async (id: string, fieldName: string):
   validateUUID(id)
   const { rows } = await read(sql`/* assertRewardsProgramExists */
     SELECT rp.topic_id AS id
-    FROM topics__rewards_programs rp
+    FROM rewards_program_topics rp
     JOIN topics t ON t.id = rp.topic_id
     WHERE rp.topic_id = ${id}
       AND t.deleted_at IS NULL
@@ -44,7 +44,7 @@ export const assertReferralProgramExists = async (
   const { rows } = await read(
     sql`/* assertReferralProgramExists */
     SELECT rp.topic_id AS id
-    FROM topics__referral_programs rp
+    FROM referral_program_topics rp
     JOIN topics t ON t.id = rp.topic_id
     WHERE rp.topic_id = ${id}
       AND t.deleted_at IS NULL
@@ -62,9 +62,9 @@ export const assertRewardsProgramStatusExists = async (
 ): Promise<RewardsProgramStatusRecord> => {
   validateUUID(id)
   const { rows } = await read(sql`/* assertRewardsProgramStatusExists */
-    SELECT t.id, t.rewards_program_id
+    SELECT t.id, t.rewards_program_topic_id AS rewards_program_id
     FROM topics t
-    JOIN topics__rewards_program_statuses rps ON rps.topic_id = t.id
+    JOIN rewards_program_status_topics rps ON rps.topic_id = t.id
     WHERE t.id = ${id}
       AND t.deleted_at IS NULL
       AND t.merged_into_topic_id IS NULL
@@ -109,7 +109,7 @@ export const assertReferralLinkValidationExists = async (
   const { rows } = await read(
     sql`/* assertReferralLinkValidationExists */
     SELECT id
-    FROM referral_program_link_validations
+    FROM referral_program_link_validation_rule_sets
     WHERE id = ${id}
     LIMIT 1
   `,

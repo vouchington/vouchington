@@ -18,7 +18,7 @@ export async function upsertReferralLinkValidationRule(
     sql`/* upsertReferralLinkValidationRule:get */
       SELECT
         id,
-        referral_program_link_validation_id,
+        referral_program_link_validation_rule_set_id,
         hostname,
         pathname,
         is_referral_link_url,
@@ -27,8 +27,8 @@ export async function upsertReferralLinkValidationRule(
         example_urls,
         created_at,
         updated_at
-      FROM referral_program_link_validations_rules
-      WHERE referral_program_link_validation_id = ${validationId}
+      FROM referral_program_link_validation_rules
+      WHERE referral_program_link_validation_rule_set_id = ${validationId}
         AND hostname = ${hostname}
         AND pathname = ${pathname}
       LIMIT 1
@@ -42,8 +42,8 @@ export async function upsertReferralLinkValidationRule(
   return withReferralLinkEligibilityMutationLock({}, async query => {
     const { rows } =
       await query<ReferralLinkValidationRule>(sql`/* upsertReferralLinkValidationRule:insert */
-      INSERT INTO referral_program_link_validations_rules (
-        referral_program_link_validation_id,
+      INSERT INTO referral_program_link_validation_rules (
+        referral_program_link_validation_rule_set_id,
         hostname,
         pathname,
         example_urls
@@ -56,7 +56,7 @@ export async function upsertReferralLinkValidationRule(
       )
       RETURNING
         id,
-        referral_program_link_validation_id,
+        referral_program_link_validation_rule_set_id,
         hostname,
         pathname,
         is_referral_link_url,

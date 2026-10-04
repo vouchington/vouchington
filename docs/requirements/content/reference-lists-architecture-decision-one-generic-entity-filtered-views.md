@@ -24,7 +24,7 @@ View: `backend/data-stores/psql/views/2026-06-28-list-items.sql`
 - **unlisted**: anyone with the URL can view (P3).
 - **public**: discoverable (P3).
 
-### `lists`
+### `user_lists`
 
 | Column          | Type                                                      | Notes                                           |
 | --------------- | --------------------------------------------------------- | ----------------------------------------------- |
@@ -43,7 +43,7 @@ Indexes: `(owner_user_id, id DESC) WHERE removed_at IS NULL` for sidebar/owner-i
 
 `'rss_feed_item' | 'post'`
 
-### `list_items__rss_feed_items` and `list_items__posts`
+### `user_list_rss_feed_items` and `user_list_posts`
 
 Junction tables linking lists to their items; both have `removed_at` soft-delete and a partial
 unique index `(list_id, entity_id) WHERE removed_at IS NULL`.

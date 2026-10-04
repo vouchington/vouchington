@@ -26,7 +26,7 @@ describe('remove', () => {
 
   describe('removeCommunityListItem', () => {
     it('soft-deletes an active item', async () => {
-      expect(getCommunityListItemStorageConfig('topic').table).toBe('community_list_items__topics')
+      expect(getCommunityListItemStorageConfig('topic').table).toBe('community_list_topics')
       const random = createRandomString(8)
       const topicId = await insertTestTopic({
         name: `Remove Topic ${random}`,

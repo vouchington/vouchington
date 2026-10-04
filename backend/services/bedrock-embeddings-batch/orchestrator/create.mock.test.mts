@@ -218,7 +218,7 @@ describe('createBatch', () => {
     const entityIdsFile = await writeTempFile('entity-ids.csv', `${entityId}\n`)
 
     await expect(createBatch(inputFile, 'topics', 1, entityIdsFile)).rejects.toThrow(
-      'idx_bedrock_embeddings_batches__job_arn',
+      'idx_bedrock_embedding_batches__job_arn',
     )
 
     expect(BedrockControlClient.send).toHaveBeenCalledTimes(2)

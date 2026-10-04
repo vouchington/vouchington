@@ -20,7 +20,7 @@ export async function insertTestDomainBlacklist(
   // Get or create the source
   const sourceResult = await read(
     sql`
-    SELECT id FROM domain_blacklist_sources WHERE name = ${sourceName}
+    SELECT id FROM domain_blocklist_sources WHERE name = ${sourceName}
   `,
     options,
   )
@@ -31,8 +31,8 @@ export async function insertTestDomainBlacklist(
   } else {
     const insertResult = await write(
       sql`
-      INSERT INTO domain_blacklist_sources (type, name, url)
-      VALUES ('url'::domain_blacklist_types, ${sourceName}, 'https://example.com/blacklist.txt')
+      INSERT INTO domain_blocklist_sources (type, name, url)
+      VALUES ('url'::domain_blocklist_types, ${sourceName}, 'https://example.com/blacklist.txt')
       ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
       RETURNING id
     `,
@@ -43,7 +43,7 @@ export async function insertTestDomainBlacklist(
 
   await write(
     sql`
-    INSERT INTO domain_blacklists (source_id, domain)
+    INSERT INTO blocklisted_domains (source_id, domain)
     VALUES (${sourceId}, ${domain})
     ON CONFLICT (domain, source_id) DO NOTHING
   `,
@@ -60,8 +60,8 @@ export async function createTestBlacklistSource(
 ): Promise<DomainBlacklistSourceId> {
   const result = await write(
     sql`
-    INSERT INTO domain_blacklist_sources (type, name, url)
-    VALUES (${source.type}::domain_blacklist_types, ${source.name}, ${source.url})
+    INSERT INTO domain_blocklist_sources (type, name, url)
+    VALUES (${source.type}::domain_blocklist_types, ${source.name}, ${source.url})
     ON CONFLICT (name) DO UPDATE SET
       type = EXCLUDED.type,
       url = EXCLUDED.url
@@ -79,7 +79,7 @@ export async function countBlacklistEntriesBySource(
   sourceId: DomainBlacklistSourceId,
 ): Promise<number> {
   const result = await read(sql`
-    SELECT COUNT(*)::int as count FROM domain_blacklists
+    SELECT COUNT(*)::int as count FROM blocklisted_domains
     WHERE source_id = ${sourceId}
   `)
   return result.rows[0].count
@@ -88,7 +88,7 @@ export async function countBlacklistEntriesBySource(
 /** Delete only an owned source; its foreign key cascades to that source's entries. */
 export async function deleteTestBlacklistSource(sourceId: DomainBlacklistSourceId): Promise<void> {
   await write(sql`/* deleteTestBlacklistSource */
-    DELETE FROM domain_blacklist_sources WHERE id = ${sourceId}
+    DELETE FROM domain_blocklist_sources WHERE id = ${sourceId}
   `)
 }
 
@@ -100,7 +100,7 @@ export async function listBlacklistDomainsBySource(
 ): Promise<string[]> {
   const result = await read<{ domain: string }>(sql`
     SELECT domain
-    FROM domain_blacklists
+    FROM blocklisted_domains
     WHERE source_id = ${sourceId}
     ORDER BY domain
   `)
@@ -112,9 +112,9 @@ export async function listBlacklistDomainsBySource(
  */
 export async function hasUrlTypeDomainBlacklists(): Promise<boolean> {
   const result = await read(sql`
-    SELECT 1 FROM domain_blacklists db
-    INNER JOIN domain_blacklist_sources dbs ON dbs.id = db.source_id
-    WHERE dbs.type = 'url'::domain_blacklist_types
+    SELECT 1 FROM blocklisted_domains db
+    INNER JOIN domain_blocklist_sources dbs ON dbs.id = db.source_id
+    WHERE dbs.type = 'url'::domain_blocklist_types
     LIMIT 1
   `)
   return result.rows.length > 0
@@ -125,9 +125,9 @@ export async function hasUrlTypeDomainBlacklists(): Promise<boolean> {
  */
 export async function hasEmailTypeDomainBlacklists(): Promise<boolean> {
   const result = await read(sql`
-    SELECT 1 FROM domain_blacklists db
-    INNER JOIN domain_blacklist_sources dbs ON dbs.id = db.source_id
-    WHERE dbs.type = 'email'::domain_blacklist_types
+    SELECT 1 FROM blocklisted_domains db
+    INNER JOIN domain_blocklist_sources dbs ON dbs.id = db.source_id
+    WHERE dbs.type = 'email'::domain_blocklist_types
     LIMIT 1
   `)
   return result.rows.length > 0
@@ -138,7 +138,7 @@ export async function hasEmailTypeDomainBlacklists(): Promise<boolean> {
  */
 export async function countBlacklistSources(): Promise<number> {
   const result = await read(sql`
-    SELECT COUNT(*)::int as count FROM domain_blacklist_sources
+    SELECT COUNT(*)::int as count FROM domain_blocklist_sources
   `)
   return result.rows[0].count
 }

@@ -48,7 +48,7 @@ export async function updateTopicRecommendation(
             WHERE submitted.post_id = post_topic_recommendations.post_id), '{}'::TEXT[]) AS landing_page_urls
           , COALESCE((
               SELECT ARRAY_AGG(vuh.hostname ORDER BY vuh.hostname)
-              FROM post_topic_recommendations_hostnames ptrh
+              FROM post_topic_recommendation_hostnames ptrh
               JOIN view_url_hostnames vuh ON vuh.id = ptrh.hostname_id
               WHERE ptrh.post_id = post_topic_recommendations.post_id
             ), '{}') AS hostnames

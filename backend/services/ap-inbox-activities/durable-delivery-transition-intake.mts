@@ -12,7 +12,7 @@ import type {
 } from './durable-delivery-capacity-contract.mts'
 import { ACTIVITYPUB_INBOX_STORAGE_POLICY } from '@modules/activitypub-inbox-storage-policy'
 
-const UNVERIFIED_CAPACITY_CONSTRAINT = 'ap_inbox_deliveries_unverified_capacity'
+const UNVERIFIED_CAPACITY_CONSTRAINT = 'activitypub_inbox_deliveries_unverified_capacity'
 
 export async function acceptActivityPubInboxDelivery(
   envelope: ActivityPubInboxEnvelope,
@@ -21,7 +21,7 @@ export async function acceptActivityPubInboxDelivery(
   const verifiedAt = verifiedRemoteActorId ? new Date() : null
   try {
     const { rows } = await write(sql`/* acceptActivityPubInboxDelivery */
-      INSERT INTO ap_inbox_deliveries (
+      INSERT INTO activitypub_inbox_deliveries (
         request_method, request_target, expected_host, signature_header, digest_header, date_header,
         content_type_header, raw_body, claimed_activity_id, claimed_activity_type,
         claimed_actor_uri, sender_hostname, remote_actor_id, verified_at, sender_allowed_at
@@ -54,7 +54,7 @@ export async function acknowledgeActivityPubInboxDeliveryEnqueue(
   processingAttemptId: string,
 ): Promise<ActivityPubInboxTransitionResult> {
   const result = await write(sql`/* acknowledgeActivityPubInboxDeliveryEnqueue */
-    UPDATE ap_inbox_deliveries
+    UPDATE activitypub_inbox_deliveries
     SET enqueued_at = CURRENT_TIMESTAMP
     WHERE id = ${deliveryId}
       AND processing_attempt_id = ${processingAttemptId}
@@ -69,7 +69,7 @@ export async function claimActivityPubInboxDelivery(
   processingAttemptId: string,
 ): Promise<ActivityPubInboxTransitionResult<ActivityPubInboxDelivery>> {
   const { rows } = await write(sql`/* claimActivityPubInboxDelivery */
-    UPDATE ap_inbox_deliveries
+    UPDATE activitypub_inbox_deliveries
     SET processing_at = CURRENT_TIMESTAMP,
         deferred_until = NULL,
         last_error = NULL

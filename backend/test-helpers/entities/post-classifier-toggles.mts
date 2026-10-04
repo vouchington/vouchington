@@ -13,7 +13,7 @@ export async function setPostClassifierToggleForTest(
     SELECT ${communityId}, agent.id, CURRENT_TIMESTAMP,
       CASE WHEN ${enabled} THEN NULL ELSE CURRENT_TIMESTAMP END
     FROM agents agent
-    JOIN agents__moderators moderator ON moderator.agent_id = agent.id
+    JOIN moderator_agents moderator ON moderator.agent_id = agent.id
     WHERE moderator.slug = ${slug}
       AND agent.agent_type = 'moderator'
       AND agent.activated_at IS NOT NULL AND agent.deactivated_at IS NULL

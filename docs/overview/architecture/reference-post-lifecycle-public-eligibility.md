@@ -59,7 +59,7 @@ WHERE post.post_type IN ('article', 'blog_post')
   AND NOT EXISTS (
     SELECT 1
     FROM user_roles role
-    JOIN user_roles_types role_type ON role_type.id = role.role_type_id
+    JOIN user_role_types role_type ON role_type.id = role.role_type_id
     WHERE role.user_id = post.created_by_id
       AND role_type.slug = 'administrator'
   )

@@ -49,12 +49,12 @@ export default function generateSeedAgentsSQL(): string {
   parts.push(buildAgentSeedSQL('autotagger', 'autotagger', true))
   parts.push(buildAgentSeedSQL('story-teller', 'storyteller', true))
 
-  // Upsert agents__moderators rows. The C5 classifiers are record-only (the community action is
+  // Upsert moderator_agents rows. The C5 classifiers are record-only (the community action is
   // communities.automod_action). Their prompt, model and provider are seeded by
   // 0635-00-03-seed-post-classifier, so no per-moderator agent_prompts rows exist.
   for (const config of MODERATOR_CONFIGS) {
     parts.push(`
-INSERT INTO agents__moderators (agent_id, slug, is_baseline)
+INSERT INTO moderator_agents (agent_id, slug, is_baseline)
 SELECT
   a.id,
   '${config.slug}',

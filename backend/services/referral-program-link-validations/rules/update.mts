@@ -34,7 +34,7 @@ export async function updateReferralLinkValidationRule(
   let nextIsInvalidReferralLinkUrl = existing.is_invalid_referral_link_url
   let nextUserErrorText = existing.user_error_text
 
-  const query = sql`/* updateReferralLinkValidationRule */ UPDATE referral_program_link_validations_rules SET `
+  const query = sql`/* updateReferralLinkValidationRule */ UPDATE referral_program_link_validation_rules SET `
   let hasUpdates = false
 
   const appendSet = (fragment: ReturnType<typeof sql>) => {
@@ -114,7 +114,9 @@ export async function updateReferralLinkValidationRule(
     )
   }
 
-  query.append(sql` WHERE id = ${ruleId} RETURNING *`)
+  query.append(
+    sql` WHERE id = ${ruleId} RETURNING id, referral_program_link_validation_rule_set_id AS referral_program_link_validation_id, hostname, pathname, is_referral_link_url, is_invalid_referral_link_url, user_error_text, example_urls, created_at, updated_at`,
+  )
 
   return withReferralLinkEligibilityMutationLock({}, async transactionQuery => {
     const { rows } = await transactionQuery<ReferralLinkValidationRule>(query)

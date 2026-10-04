@@ -29,7 +29,7 @@ flowchart LR
     RC --> RP
     RP --> DT[post ban-evasion delivery]
   end
-  CS -- "isEntityLockedForBatch?" --> LT[(bedrock_embeddings_batch_entities)]
+  CS -- "isEntityLockedForBatch?" --> LT[(bedrock_embedding_batch_entities)]
   CS -- lookupExistingEmbedding --> CT[(bedrock_nova_multimodal_v1_embeddings)]
   CS -- INSERT ON CONFLICT DO NOTHING --> CT
   AU -- INSERT ON CONFLICT DO NOTHING --> CT

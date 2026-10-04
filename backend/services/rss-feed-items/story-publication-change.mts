@@ -98,7 +98,7 @@ export async function recordStoryPublicationChangesForCategoryTopics(
         ) AS post_ids
       FROM changed_categories category
       JOIN rss_feed_items item ON item.id = category.rss_feed_item_id
-      LEFT JOIN post__stories post_story ON post_story.story_id = item.story_id
+      LEFT JOIN story_posts post_story ON post_story.story_id = item.story_id
       CROSS JOIN LATERAL unnest(ARRAY[category.previous_topic_id, category.topic_id]) AS topic(topic_id)
       WHERE item.story_id IS NOT NULL
       GROUP BY item.story_id

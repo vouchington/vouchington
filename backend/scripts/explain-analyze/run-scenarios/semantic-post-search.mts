@@ -47,7 +47,7 @@ export async function runSemanticPostSearchScenarios(): Promise<void> {
 export async function runSimilarPostSearchScenarios(): Promise<void> {
   const { rows } = await read<{ id: string }>(
     `/* explainSimilarRssSource */ SELECT items.id FROM rss_feed_items items
-     JOIN rss_feed_item_ids ids ON ids.id = items.id
+     JOIN rss_feed_item_guids ids ON ids.id = items.id
      WHERE ids.guid LIKE 'seed-item-guid-%'
        AND items.bedrock_nova_multimodal_v1_embedding IS NOT NULL
      ORDER BY items.id LIMIT 1`,

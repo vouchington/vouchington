@@ -45,7 +45,7 @@ function assertDevOnly(env: string | undefined): void {
   }
 }
 
-// All site-scoped role slugs from user_roles_types. CO is community-scoped and cannot
+// All site-scoped role slugs from user_role_types. CO is community-scoped and cannot
 // be granted site-wide via addUserRole — create a community and assign the owner instead.
 const VALID_ROLE_SLUGS = new Set(['administrator', 'moderator', 'investor', 'developer'])
 

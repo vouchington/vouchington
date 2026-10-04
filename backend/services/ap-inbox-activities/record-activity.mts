@@ -15,7 +15,7 @@ export async function recordInboxActivity(
 ): Promise<boolean> {
   const run = options.query ?? write
   const { rows } = await run(sql`/* recordInboxActivity */
-    INSERT INTO ap_inbox_activities (activity_id, activity_type, actor_uri)
+    INSERT INTO activitypub_inbox_activities (activity_id, activity_type, actor_uri)
     VALUES (${activityId}, ${activityType}, ${actorUri})
     ON CONFLICT (activity_id) DO NOTHING
     RETURNING id

@@ -21,9 +21,9 @@ export async function insertTestSpendingCategory(data: {
     createdById: data.createdById,
   })
 
-  // Insert into topics__spending_categories table
+  // Insert into spending_category_topics table
   await write(sql`
-    INSERT INTO topics__spending_categories (topic_id)
+    INSERT INTO spending_category_topics (topic_id)
     VALUES (${topicId})
   `)
 

@@ -146,7 +146,7 @@ export async function hasUniqueSlugIndexOnTopics(): Promise<boolean> {
 
 export async function addSpendingCategoryToTopic(topicId: string): Promise<string> {
   const { rows } = await write(sql`/* addSpendingCategoryToTopic */
-    INSERT INTO topics__spending_categories (topic_id)
+    INSERT INTO spending_category_topics (topic_id)
     VALUES (${topicId})
     RETURNING topic_id
   `)

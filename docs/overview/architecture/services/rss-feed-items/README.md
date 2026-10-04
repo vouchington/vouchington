@@ -16,7 +16,7 @@ trimmed and deduped case-insensitively before the cap is applied.
 Category reads and writes use 1,000-pair SQL batches. Cache invalidation uses awaited 100-item
 batches so a full 500-item import cannot saturate the Valkey client's in-flight request limit.
 
-`rss_feed_item_ids` owns the permanent identity mapping
+`rss_feed_item_guids` owns the permanent identity mapping
 `(url_hostname_id, guid) → id`, where `url_hostname_id` is the RSS feed URL's hostname because GUIDs
 are unique per feed domain rather than per feed. Ingest first upserts this skinny, unpartitioned
 lookup, then upserts the fat content row into the UUIDv7 `id`-partitioned `rss_feed_items` table in

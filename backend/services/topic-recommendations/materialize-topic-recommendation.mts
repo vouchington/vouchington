@@ -54,7 +54,7 @@ export async function replaceTopicRecommendationHostnames(
 ): Promise<void> {
   await write(
     sql`/* replaceTopicRecommendationHostnames */
-      DELETE FROM post_topic_recommendations_hostnames
+      DELETE FROM post_topic_recommendation_hostnames
       WHERE post_id = ${postId}
     `,
     options,
@@ -64,7 +64,7 @@ export async function replaceTopicRecommendationHostnames(
 
   await write(
     sql`/* replaceTopicRecommendationHostnames */
-      INSERT INTO post_topic_recommendations_hostnames (post_id, hostname_id)
+      INSERT INTO post_topic_recommendation_hostnames (post_id, hostname_id)
       SELECT input.post_id, input.hostname_id
       FROM (
         SELECT ${postId}::uuid AS post_id, hostname_id

@@ -20,11 +20,11 @@ Services for the topic recommendation queue.
 
 `topic_type` controls the kind of topic created on approval:
 
-| `topic_type`       | Required field           | Description                                                   |
-| ------------------ | ------------------------ | ------------------------------------------------------------- |
-| `topic` (default)  | —                        | Generic topic; no additional extension row                    |
-| `referral_program` | `example_referral_link`  | Creates `topics__referral_programs` extension row on approval |
-| `card`             | `landing_page_urls` (≥1) | Creates `topics__cards` extension row on approval             |
+| `topic_type`       | Required field           | Description                                                 |
+| ------------------ | ------------------------ | ----------------------------------------------------------- |
+| `topic` (default)  | —                        | Generic topic; no additional extension row                  |
+| `referral_program` | `example_referral_link`  | Creates `referral_program_topics` extension row on approval |
+| `card`             | `landing_page_urls` (≥1) | Creates `card_topics` extension row on approval             |
 
 Submitted URLs pass normalization, Web Risk and blocked-hostname checks during materialization. URL registration commits before recommendation references are written; reference replacement is transactional. Referral examples suppress URL-created crawl events. The API continues exposing `example_referral_link` and `landing_page_urls` as resolved URL strings.
 

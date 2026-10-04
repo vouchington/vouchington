@@ -7,7 +7,7 @@ export const deleteBoilerplateRemovalsByHostnameId = async (
   queryOptions: QueryOptions = {},
 ): Promise<void> => {
   await write(
-    sql`/* deleteBoilerplateRemovalsByHostnameId */ DELETE FROM boilerplate_removals WHERE hostname_id = ${hostnameId}`,
+    sql`/* deleteBoilerplateRemovalsByHostnameId */ DELETE FROM hostname_path_boilerplate_removals WHERE hostname_id = ${hostnameId}`,
     undefined,
     queryOptions,
   )

@@ -20,9 +20,9 @@ const REQUIRED_SEED_DATA: SeedAssertion[] = [
     query: `
       SELECT 1
       FROM user_roles
-      JOIN user_roles_types ON user_roles_types.id = user_roles.role_type_id
+      JOIN user_role_types ON user_role_types.id = user_roles.role_type_id
       WHERE user_roles.user_id = '019f0000-0000-7000-8000-000000000000'
-        AND user_roles_types.slug = 'administrator'
+        AND user_role_types.slug = 'administrator'
       LIMIT 1
     `,
   },
@@ -88,19 +88,19 @@ const REQUIRED_SEED_DATA: SeedAssertion[] = [
       FROM (
         SELECT COUNT(DISTINCT rss_feed_items.id) AS item_count
         FROM rss_feed_items
-        JOIN rss_feed_item_ids
-          ON rss_feed_item_ids.id = rss_feed_items.id
+        JOIN rss_feed_item_guids
+          ON rss_feed_item_guids.id = rss_feed_items.id
         JOIN rss_feed_item_sources
           ON rss_feed_item_sources.rss_feed_item_id = rss_feed_items.id
         JOIN rss_feeds
           ON rss_feeds.id = rss_feed_item_sources.rss_feed_id
         JOIN view_rss_feed_current_states
           ON view_rss_feed_current_states.rss_feed_id = rss_feeds.id
-        WHERE rss_feed_item_ids.url_hostname_id = '019c64e6-1000-7000-b000-000000000001'
+        WHERE rss_feed_item_guids.url_hostname_id = '019c64e6-1000-7000-b000-000000000001'
           AND (
-            (rss_feed_item_ids.guid = 'test-item-1' AND rss_feed_items.url_id = '019c64e6-f8b0-7000-b000-000000000003')
-            OR (rss_feed_item_ids.guid = 'test-item-2' AND rss_feed_items.url_id = '019c64e6-f8b0-7000-b000-000000000004')
-            OR (rss_feed_item_ids.guid = 'modal-story-primary' AND rss_feed_items.url_id = '019c64e6-f8b0-7000-b000-000000000007')
+            (rss_feed_item_guids.guid = 'test-item-1' AND rss_feed_items.url_id = '019c64e6-f8b0-7000-b000-000000000003')
+            OR (rss_feed_item_guids.guid = 'test-item-2' AND rss_feed_items.url_id = '019c64e6-f8b0-7000-b000-000000000004')
+            OR (rss_feed_item_guids.guid = 'modal-story-primary' AND rss_feed_items.url_id = '019c64e6-f8b0-7000-b000-000000000007')
           )
           AND rss_feed_items.deleted_at IS NULL
           AND rss_feeds.deleted_at IS NULL

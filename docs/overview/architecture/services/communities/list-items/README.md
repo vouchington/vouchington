@@ -32,11 +32,11 @@ community_list_items__<type>
 
 Supported tables:
 
-- `community_list_items__topics` (topic_id)
-- `community_list_items__rss_feeds` (rss_feed_id)
-- `community_list_items__posts` (post_id)
-- `community_list_items__url_hostnames` (url_hostname_id)
-- `community_list_items__urls` (url_id)
+- `community_list_topics` (topic_id)
+- `community_list_rss_feeds` (rss_feed_id)
+- `community_list_posts` (post_id)
+- `community_list_url_hostnames` (url_hostname_id)
+- `community_list_urls` (url_id)
 
 ### View
 

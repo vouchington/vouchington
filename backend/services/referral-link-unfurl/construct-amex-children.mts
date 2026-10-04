@@ -24,13 +24,13 @@ export async function getAmexCardSlugCatalog(options?: QueryOptions): Promise<Am
   const { rows } = await read(
     sql`/* getAmexCardSlugCatalog */
       SELECT DISTINCT rpvr.pathname
-      FROM topics__referral_programs rp
-      JOIN topics__referral_program_link_validations trplv
-        ON trplv.referral_program_id = rp.topic_id
-      JOIN referral_program_link_validations rpv
-        ON rpv.id = trplv.referral_program_link_validation_id
-      JOIN referral_program_link_validations_rules rpvr
-        ON rpvr.referral_program_link_validation_id = rpv.id
+      FROM referral_program_topics rp
+      JOIN referral_program_topic_link_validation_rule_sets trplv
+        ON trplv.referral_program_topic_id = rp.topic_id
+      JOIN referral_program_link_validation_rule_sets rpv
+        ON rpv.id = trplv.referral_program_link_validation_rule_set_id
+      JOIN referral_program_link_validation_rules rpvr
+        ON rpvr.referral_program_link_validation_rule_set_id = rpv.id
       WHERE rp.enabled_at IS NOT NULL
         AND rp.disabled_at IS NULL
         AND rpvr.is_referral_link_url = true

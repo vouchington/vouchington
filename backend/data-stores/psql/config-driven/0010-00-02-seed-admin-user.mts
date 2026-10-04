@@ -17,7 +17,7 @@ ON CONFLICT (user_id, email_address) DO UPDATE SET is_primary = TRUE;`)
 
   parts.push(`
 INSERT INTO user_roles (user_id, role_type_id)
-SELECT u.id, urt.id FROM users u, user_roles_types urt
+SELECT u.id, urt.id FROM users u, user_role_types urt
 WHERE u.username = 'jong' AND u.platform_account_kind = 'official' AND urt.slug = 'administrator'
 ON CONFLICT (user_id, role_type_id) DO NOTHING;`)
 

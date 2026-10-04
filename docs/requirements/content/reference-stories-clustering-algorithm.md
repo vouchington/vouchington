@@ -131,12 +131,12 @@ Story posts differ from regular posts:
 - **No user-authored markdown** — story posts have a `markdown` column but it must be empty (enforced by `posts_story_no_markdown` constraint)
 - **AI-generated content only** — the `@story-teller` agent generates the `title` and `ai_summary_markdown`
 - **`ai_summary_markdown`** — a dedicated column on `posts` for AI-generated summaries, separate from user-authored `markdown`. Agents update this field via `updatePost()` (except `topic_recommendation` posts, which use dedicated workflows).
-- **Linked via `post__stories`** — a junction table replaces the old `stories.discussion_post_id` column
+- **Linked via `story_posts`** — a junction table replaces the old `stories.discussion_post_id` column
 
 Creating a story post from a story:
 
 1. Creates a story post (as the `@story-teller` system user) with generated `title` and `ai_summary_markdown`
-2. Inserts a `post__stories` row linking the post to the story (with `initiated_by_id` tracking who triggered creation)
+2. Inserts a `story_posts` row linking the post to the story (with `initiated_by_id` tracking who triggered creation)
 3. Records durable URL-projection work in the same transaction. The visible post returns
    immediately; an IO worker validates active item URLs in 100-row pages and converges all eligible
    `post → related → url` relations asynchronously, including exact pruning after membership changes.

@@ -22,7 +22,7 @@ export async function insertContradictoryDataRequestLifecycle(): Promise<void> {
 
 export async function insertContradictoryBedrockBatchLifecycle(): Promise<void> {
   await write(sql`/* rejectContradictoryBedrockBatchLifecycle */
-    INSERT INTO bedrock_embeddings_batches (
+    INSERT INTO bedrock_embedding_batches (
       id, model_id, job_type, completed_at, failed_at
     ) VALUES (
       ${`lifecycle-${randomUUID()}`}, 'test-model', 'topics',
@@ -94,14 +94,14 @@ export async function rewriteTerminalDataRequest(): Promise<void> {
 export async function rewriteTerminalBedrockBatch(): Promise<void> {
   const id = `lifecycle-${randomUUID()}`
   await write(sql`
-    INSERT INTO bedrock_embeddings_batches (
+    INSERT INTO bedrock_embedding_batches (
       id, model_id, job_type, submitted_at, completed_at
     ) VALUES (
       ${id}, 'test-model', 'topics', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
     )
   `)
   await write(sql`/* rejectTerminalBedrockBatchRewrite */
-    UPDATE bedrock_embeddings_batches
+    UPDATE bedrock_embedding_batches
     SET completed_at = NULL, failed_at = CURRENT_TIMESTAMP
     WHERE id = ${id}`)
 }

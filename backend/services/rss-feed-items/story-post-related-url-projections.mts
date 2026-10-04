@@ -22,7 +22,7 @@ export async function markStoryPostRelatedUrlProjectionsForStories(
     `/* markStoryPostRelatedUrlProjectionsForStories */
       WITH post_stories AS (
         SELECT post_story.post_id, post_story.story_id
-        FROM post__stories post_story
+        FROM story_posts post_story
         JOIN posts ON posts.id = post_story.post_id
         WHERE post_story.story_id = ANY($1::uuid[])
           AND posts.deleted_at IS NULL
@@ -93,7 +93,7 @@ async function lockStoriesAndFindStoryPostIds(
   const { rows: postRows } = await query<{ post_id: string }>(
     `/* markStoryPostRelatedUrlProjectionsForStories:posts */
       SELECT DISTINCT post_story.post_id
-      FROM post__stories post_story
+      FROM story_posts post_story
       JOIN posts ON posts.id = post_story.post_id
       WHERE post_story.story_id = ANY($1::uuid[])
         AND posts.deleted_at IS NULL

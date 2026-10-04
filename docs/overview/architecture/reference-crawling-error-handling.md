@@ -25,14 +25,14 @@ Expected crawler operational failures are not reported to Sentry or stderr. They
 
 External spam/malware domain lists are synced weekly:
 
-1. `domain_blacklist_sources` — sources fetched from external URLs (Spamhaus, etc.)
-2. `domain_blacklists` — normalized domains from all sources
+1. `domain_blocklist_sources` — sources fetched from external URLs (Spamhaus, etc.)
+2. `blocklisted_domains` — normalized domains from all sources
 3. Bloom filters in Valkey — O(1) negative checks; populated after each sync
 
 `checkDomainBlacklisted()` logic:
 
 - **Bloom filter `false`** (definitely not blacklisted): only checks `url_hostnames` flags
-- **Bloom filter `true`/unavailable**: runs full query including `domain_blacklists`
+- **Bloom filter `true`/unavailable**: runs full query including `blocklisted_domains`
 
 ## RSS Feed Crawling
 

@@ -59,8 +59,12 @@ describe('ActivityPub inbox durable storage bounds', () => {
   it('serializes capacity decisions through the singleton counter row', async () => {
     const definitions = await getActivityPubInboxStorageTriggerDefinitionsForTest()
 
-    expect(definitions.insertDefinition).toContain('UPDATE ap_inbox_delivery_storage_counters')
-    expect(definitions.updateDefinition).toContain('UPDATE ap_inbox_delivery_storage_counters')
+    expect(definitions.insertDefinition).toContain(
+      'UPDATE activitypub_inbox_delivery_storage_counters',
+    )
+    expect(definitions.updateDefinition).toContain(
+      'UPDATE activitypub_inbox_delivery_storage_counters',
+    )
   })
 
   it('assigns one-hour retention to never-failed unverified intake and clears it on verification', async () => {

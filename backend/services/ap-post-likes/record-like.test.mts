@@ -6,7 +6,7 @@ import { getApPostLikesTally } from './get-tally.mts'
 import { createRemoteActorFixture } from './test-fixtures.mts'
 
 describe('recordLike', () => {
-  it('creates the ap_posts tally on the first Like', async () => {
+  it('creates the post_activitypub_like_tallies tally on the first Like', async () => {
     const post = await createTestPost()
     const remoteActor = await createRemoteActorFixture()
 

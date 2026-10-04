@@ -26,12 +26,12 @@ export const ALLOWED_OPAQUE_JSON = new Set([
   'rss_feed_crawls.feed_data',
   'rss_feed_items.data',
   'rss_feed_items.lingua_rs_results',
-  'ses_bounce_events.raw_message',
+  'amazon_ses_bounce_events.raw_message',
   'story_classifier_results.raw_response',
   'stripe_events.payload',
   'topic_classifier_results.raw_response',
   'topics.lingua_rs_results',
-  'topics__fediverse_instances.nodeinfo_raw',
+  'fediverse_instance_topics.nodeinfo_raw',
   'user_topic_import_attempts.response',
   'users.lingua_rs_results',
   'x_accounts.x_user_data',
@@ -46,7 +46,7 @@ export {
 
 // Tokens, traversal cursors, and a retained table's own primary identity are not foreign references.
 export const ALLOWED_NONRELATION_UUID = new Set([
-  'ap_inbox_deliveries.processing_attempt_id',
+  'activitypub_inbox_deliveries.processing_attempt_id',
   'follower_distribution_deliveries.delivery_id',
   'membership_google_play_recovery_cursors.last_evidence_id',
   'membership_google_play_recovery_cursors.sweep_upper_bound_id',

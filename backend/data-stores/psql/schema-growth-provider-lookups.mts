@@ -1,6 +1,6 @@
 const providerLookups = [
   ['stripe_event_types', 'Stripe event types'],
-  ['ses_bounce_subtypes', 'SES bounce subtypes'],
+  ['amazon_ses_bounce_subtypes', 'SES bounce subtypes'],
   ['openai_service_tiers', 'OpenAI service tiers'],
   ['identity_document_types', 'Identity provider document types'],
 ] as const

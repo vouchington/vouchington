@@ -13,7 +13,7 @@ export async function assignReferralProgramToCard(
 ): Promise<void> {
   await write(sql`
     UPDATE topics
-    SET referral_program_id = ${referralProgramId}
+    SET referral_program_topic_id = ${referralProgramId}
     WHERE id = ${cardTopicId}
   `)
 }
@@ -34,9 +34,9 @@ export async function insertTestCard(data: {
     topicType: 'card',
   })
 
-  // Insert into topics__cards table
+  // Insert into card_topics table
   await write(sql`
-    INSERT INTO topics__cards (topic_id)
+    INSERT INTO card_topics (topic_id)
     VALUES (${topicId})
   `)
 
@@ -59,9 +59,9 @@ export async function insertTestReferralProgram(data: {
     topicType: 'referral_program',
   })
 
-  // Insert into topics__referral_programs table to satisfy FK constraint
+  // Insert into referral_program_topics table to satisfy FK constraint
   await write(sql`
-    INSERT INTO topics__referral_programs (topic_id, enabled_at)
+    INSERT INTO referral_program_topics (topic_id, enabled_at)
     VALUES (${topicId}, CURRENT_TIMESTAMP)
     ON CONFLICT (topic_id) DO NOTHING
   `)

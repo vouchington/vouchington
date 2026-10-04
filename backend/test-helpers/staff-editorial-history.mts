@@ -7,7 +7,7 @@ export async function readStaffEditorialRows(actorId: string) {
     batches: unknown[]
   }>(sql`/* readStaffEditorialRows */
     SELECT
-      (SELECT COALESCE(jsonb_agg(to_jsonb(c) ORDER BY id), '[]'::jsonb) FROM crawlers c WHERE created_by_id = ${actorId}) AS crawlers,
+      (SELECT COALESCE(jsonb_agg(to_jsonb(c) ORDER BY id), '[]'::jsonb) FROM hostname_crawler_configurations c WHERE created_by_id = ${actorId}) AS hostname_crawler_configurations,
       (SELECT COALESCE(jsonb_agg(to_jsonb(b) ORDER BY id), '[]'::jsonb) FROM admin_import_batches b WHERE created_by_id = ${actorId}) AS batches`)
   return rows[0]!
 }

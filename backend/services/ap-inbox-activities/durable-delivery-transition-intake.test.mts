@@ -7,7 +7,7 @@ describe('ActivityPub inbox intake capacity classification', () => {
     expect(
       mapActivityPubInboxCapacityErrorOrThrow({
         code: '23514',
-        constraint: 'ap_inbox_deliveries_unverified_capacity',
+        constraint: 'activitypub_inbox_deliveries_unverified_capacity',
         detail: JSON.stringify({
           unverifiedRows: ACTIVITYPUB_INBOX_STORAGE_POLICY.maximumUnverifiedRows,
           unverifiedRawBodyBytes: ACTIVITYPUB_INBOX_STORAGE_POLICY.maximumUnverifiedRawBodyBytes,
@@ -41,7 +41,7 @@ describe('ActivityPub inbox intake capacity classification', () => {
     detail => {
       const error = Object.assign(new Error('capacity exceeded'), {
         code: '23514',
-        constraint: 'ap_inbox_deliveries_unverified_capacity',
+        constraint: 'activitypub_inbox_deliveries_unverified_capacity',
         detail,
       })
 

@@ -87,7 +87,7 @@ function resolveSameHostSchemaLink(host: string, href: string): URL | null {
 }
 
 // No caller yet — this is the classification primitive a later Phase B slice's service layer
-// wires up when `topics__fediverse_instances` rows are created/refreshed.
+// wires up when `fediverse_instance_topics` rows are created/refreshed.
 export async function classifyFediverseInstance(
   host: string,
 ): Promise<InstanceClassificationResult> {

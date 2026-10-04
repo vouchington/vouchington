@@ -36,7 +36,7 @@ export const adminUserContextTools = [
     },
   }),
   createAdminTool<{ userId: string; after?: string; limit?: number }>({
-    name: 'list_user_mod_notes',
+    name: 'list_user_moderator_notes',
     description: 'Page staff notes for a user.',
     scope: 'moderation:read',
     api: { method: 'GET', path: '/api/v1/users/:userId/mod-notes' },

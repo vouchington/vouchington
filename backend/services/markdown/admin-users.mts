@@ -54,10 +54,10 @@ async function getAdminUserIdsByIds(userIds: string[]): Promise<Set<string>> {
     SELECT user_roles.user_id
     FROM user_roles
     JOIN users ON users.id = user_roles.user_id
-    JOIN user_roles_types ON user_roles_types.id = user_roles.role_type_id
+    JOIN user_role_types ON user_role_types.id = user_roles.role_type_id
     WHERE user_roles.user_id = ANY(${validUserIds}::uuid[])
       AND users.deleted_at IS NULL
-      AND user_roles_types.slug = 'administrator'
+      AND user_role_types.slug = 'administrator'
   `)
   return new Set(rows.map(row => row.user_id))
 }

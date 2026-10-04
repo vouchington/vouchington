@@ -112,7 +112,7 @@ async function listShadowAuditCandidates(
     )
     SELECT source_page.id, candidate.created_by_id IS NOT NULL AS has_author,
       root.community_id IS NOT NULL AS has_community,
-      EXISTS (SELECT 1 FROM post__stories ps JOIN rss_feed_items item ON item.story_id = ps.story_id
+      EXISTS (SELECT 1 FROM story_posts ps JOIN rss_feed_items item ON item.story_id = ps.story_id
         JOIN rss_feed_item_sources source ON source.rss_feed_item_id = item.id WHERE ps.post_id = root.id) AS has_rss_source,
       (candidate.id IS NULL OR receipt.post_identity_id IS NULL OR receipt.eligibility_fingerprint IS DISTINCT FROM `
   compare.append(publicationEligibilityFingerprintSql())

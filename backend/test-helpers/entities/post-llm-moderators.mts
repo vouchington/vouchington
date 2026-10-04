@@ -10,7 +10,7 @@ export async function getModerator(moderatorId: string): Promise<unknown> {
       a.activated_at,
       a.deactivated_at
     FROM agents a
-    INNER JOIN agents__moderators am ON am.agent_id = a.id
+    INNER JOIN moderator_agents am ON am.agent_id = a.id
     WHERE a.id = ${moderatorId}
       AND a.deleted_at IS NULL
       AND a.agent_type = 'moderator'

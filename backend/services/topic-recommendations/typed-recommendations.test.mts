@@ -48,7 +48,7 @@ describe('typed-recommendations', () => {
       ).rejects.toMatchObject({ status: 422 })
     })
 
-    it('approving a referral_program recommendation creates topics__referral_programs extension row', async () => {
+    it('approving a referral_program recommendation creates referral_program_topics extension row', async () => {
       const random = Math.random().toString(36).slice(2, 10)
       const recommendation = await createTopicRecommendation(user, WEB_PROVENANCE, {
         markdown: `Approve referral program ${random}`,
@@ -120,7 +120,7 @@ describe('typed-recommendations', () => {
       ).rejects.toMatchObject({ status: 422 })
     })
 
-    it('approving a card recommendation creates topics__cards extension row', async () => {
+    it('approving a card recommendation creates card_topics extension row', async () => {
       const random = Math.random().toString(36).slice(2, 10)
       const recommendation = await createTopicRecommendation(user, WEB_PROVENANCE, {
         markdown: `Approve card ${random}`,

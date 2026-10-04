@@ -40,7 +40,7 @@ These flags replaced the `person` topic type: a minimal reference entity is now 
 The taxonomy has two explicit axes:
 
 - **Primary kind — `topic_type`.** Mutually exclusive (a topic has exactly one). It drives routing and the 1:1 structured-attribute extension table for the surviving structured types.
-- **Additive facets — extension tables.** `topics__spending_categories` and `topics__retailers` are roles that ANY topic can carry regardless of `topic_type`. They are not mutually exclusive with each other or with the primary kind. The former "retailer requires brand/organization" restriction was removed — facet membership is no longer gated by `topic_type`.
+- **Additive facets — extension tables.** `spending_category_topics` and `retailer_topics` are roles that ANY topic can carry regardless of `topic_type`. They are not mutually exclusive with each other or with the primary kind. The former "retailer requires brand/organization" restriction was removed — facet membership is no longer gated by `topic_type`.
 
 ### Reference fields
 

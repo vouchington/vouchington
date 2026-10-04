@@ -8,7 +8,7 @@ export async function releaseActivityPubInboxDelivery(
   error: unknown,
 ): Promise<ActivityPubInboxTransitionResult> {
   const result = await write(sql`/* releaseActivityPubInboxDelivery */
-    UPDATE ap_inbox_deliveries
+    UPDATE activitypub_inbox_deliveries
     SET processing_at = NULL,
         last_error = ${boundedErrorMessage(error)}
     WHERE id = ${deliveryId}
@@ -26,7 +26,7 @@ export async function exhaustActivityPubInboxDelivery(
   error: unknown,
 ): Promise<ActivityPubInboxTransitionResult> {
   const result = await write(sql`/* exhaustActivityPubInboxDelivery */
-    UPDATE ap_inbox_deliveries
+    UPDATE activitypub_inbox_deliveries
     SET failed_at = CURRENT_TIMESTAMP,
         first_failed_at = COALESCE(first_failed_at, CURRENT_TIMESTAMP),
         retention_expires_at = LEAST(
@@ -51,7 +51,7 @@ export async function rejectActivityPubInboxDelivery(
   processingAttemptId: string,
 ): Promise<ActivityPubInboxTransitionResult> {
   const result = await write(sql`/* rejectActivityPubInboxDelivery */
-    DELETE FROM ap_inbox_deliveries
+    DELETE FROM activitypub_inbox_deliveries
     WHERE id = ${deliveryId}
       AND processing_attempt_id = ${processingAttemptId}
       AND processing_at IS NOT NULL
@@ -68,7 +68,7 @@ export async function completeActivityPubInboxDelivery(
 ): Promise<ActivityPubInboxTransitionResult> {
   const result = await write(
     sql`/* completeActivityPubInboxDelivery */
-      DELETE FROM ap_inbox_deliveries
+      DELETE FROM activitypub_inbox_deliveries
       WHERE id = ${deliveryId}
         AND processing_attempt_id = ${processingAttemptId}
         AND processing_at IS NOT NULL

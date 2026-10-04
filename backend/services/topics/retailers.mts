@@ -20,7 +20,7 @@ type Country = {
 export async function getRetailerAttributes(topic: Topic): Promise<RetailerAttributes | null> {
   const { rows } = await read(sql`/* getRetailerAttributes */
     SELECT topic_id
-    FROM topics__retailers
+    FROM retailer_topics
     WHERE topic_id = ${topic.id}
     LIMIT 1
   `)
@@ -34,7 +34,7 @@ export async function updateRetailerAttributes(
   assert(currentUser, 401, 'User not logged in')
   assert(currentUserCanUpdateTopic(currentUser), 403, 'Forbidden')
 
-  return upsertTopicAttributes<RetailerAttributes>('topics__retailers', topic.id, [], [])
+  return upsertTopicAttributes<RetailerAttributes>('retailer_topics', topic.id, [], [])
 }
 
 export async function getRetailerCountries(topic: Topic): Promise<Country[]> {
@@ -62,7 +62,7 @@ export async function updateRetailerCountries(
   )
 
   // Ensure the extension row exists before inserting retailer_countries (FK dependency)
-  await upsertTopicAttributes<RetailerAttributes>('topics__retailers', topic.id, [], [])
+  await upsertTopicAttributes<RetailerAttributes>('retailer_topics', topic.id, [], [])
 
   const uniqueCountryIds = [...new Set(countryIds)]
 

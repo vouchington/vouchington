@@ -126,7 +126,7 @@ export async function checkReferralLinksToBannedPosts(
       AND candidate_links.deleted_at IS NULL
     JOIN user_referral_program_links banned_links
       ON banned_links.user_id = cb.user_id
-      AND banned_links.referral_program_id = candidate_links.referral_program_id
+      AND banned_links.referral_program_topic_id = candidate_links.referral_program_topic_id
       AND banned_links.url_id = candidate_links.url_id
       AND banned_links.activated_at IS NOT NULL
       AND banned_links.deactivated_at IS NULL

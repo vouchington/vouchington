@@ -12,13 +12,13 @@ export async function getLandingPageReferralLinksByIds(
     -- no-mistakes-disable-next-line postgres-required-predicates: existing referral links may still point at merged source topics; resolve them to active destinations
     SELECT
       urpl.id,
-      COALESCE(destination_topic.id, source_topic.id) AS referral_program_id,
+      COALESCE(destination_topic.id, source_topic.id) AS referral_program_topic_id,
       COALESCE(destination_topic.name, source_topic.name) AS referral_program_name,
       COALESCE(destination_topic.slug, source_topic.slug) AS referral_program_slug,
       urpl.label,
       u.url
     FROM user_referral_program_links urpl
-    JOIN topics source_topic ON source_topic.id = urpl.referral_program_id
+    JOIN topics source_topic ON source_topic.id = urpl.referral_program_topic_id
     LEFT JOIN topics destination_topic ON destination_topic.id = source_topic.merged_into_topic_id
     JOIN urls u ON u.id = urpl.url_id
     WHERE urpl.user_id = ${userId}
@@ -47,13 +47,13 @@ export async function getOwnedLandingPageReferralLinks(
     -- no-mistakes-disable-next-line postgres-required-predicates: existing referral links may still point at merged source topics; resolve them to active destinations
     SELECT
       urpl.id,
-      COALESCE(destination_topic.id, source_topic.id) AS referral_program_id,
+      COALESCE(destination_topic.id, source_topic.id) AS referral_program_topic_id,
       COALESCE(destination_topic.name, source_topic.name) AS referral_program_name,
       COALESCE(destination_topic.slug, source_topic.slug) AS referral_program_slug,
       urpl.label,
       u.url
     FROM user_referral_program_links urpl
-    JOIN topics source_topic ON source_topic.id = urpl.referral_program_id
+    JOIN topics source_topic ON source_topic.id = urpl.referral_program_topic_id
     LEFT JOIN topics destination_topic ON destination_topic.id = source_topic.merged_into_topic_id
     JOIN urls u ON u.id = urpl.url_id
     WHERE urpl.user_id = ${userId}

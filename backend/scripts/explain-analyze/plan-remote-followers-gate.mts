@@ -4,7 +4,7 @@ import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 const REMOTE_FOLLOWER_INDEX = 'idx_relation__remote_actor__follow__user__active_reverse'
 const REMOTE_FOLLOWER_RELATION = 'relation__remote_actor__follow__user'
 const REMOTE_ACTORS_RELATION = 'remote_actors'
-const FEDIVERSE_DIRECTORY_RELATIONS = new Set(['topics', 'topics__fediverse_instances'])
+const FEDIVERSE_DIRECTORY_RELATIONS = new Set(['topics', 'fediverse_instance_topics'])
 const MAX_REMOTE_FOLLOWER_PAGE_ROWS = 501
 
 export function assertRemoteFollowerPagePlanShapeIfApplicable(result: ExplainResult): void {
@@ -48,7 +48,7 @@ export function assertRemoteFollowerPagePlanShapeIfApplicable(result: ExplainRes
     actualRows !== MAX_REMOTE_FOLLOWER_PAGE_ROWS
   ) {
     throw new Error(
-      `${result.name} must return exactly ${MAX_REMOTE_FOLLOWER_PAGE_ROWS} rows through ${REMOTE_FOLLOWER_INDEX} with object_id and strict subject_id keyset conditions, without a follower relation sequential scan, unbounded sort, or unbounded remote_actors/topics/topics__fediverse_instances work`,
+      `${result.name} must return exactly ${MAX_REMOTE_FOLLOWER_PAGE_ROWS} rows through ${REMOTE_FOLLOWER_INDEX} with object_id and strict subject_id keyset conditions, without a follower relation sequential scan, unbounded sort, or unbounded remote_actors/topics/fediverse_instance_topics work`,
     )
   }
 }

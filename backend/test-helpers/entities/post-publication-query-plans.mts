@@ -12,7 +12,7 @@ export const analyzePublicationSlugPageForTest = definePlanStatisticsRefresh(asy
 })
 export const analyzePublicationFeedItemPageForTest = definePlanStatisticsRefresh(async () => {
   await write(
-    '/* analyzePublicationFeedItemPageForTest */ ANALYZE posts, post__stories, rss_feed_items, rss_feed_item_sources, urls',
+    '/* analyzePublicationFeedItemPageForTest */ ANALYZE posts, story_posts, rss_feed_items, rss_feed_item_sources, urls',
   )
 })
 /** Tiny-relation accounting and EXPLAIN must observe exactly the same MVCC snapshot. */

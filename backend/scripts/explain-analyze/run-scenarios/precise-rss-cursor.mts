@@ -14,7 +14,7 @@ export async function runPreciseRssRecencyCursorScenario(): Promise<void> {
      SELECT items.id,
        to_char(items.published_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS timestamp
      FROM rss_feed_items items
-     JOIN rss_feed_item_ids ids ON ids.id = items.id
+     JOIN rss_feed_item_guids ids ON ids.id = items.id
      WHERE ids.guid = 'seed-item-guid-20000'`,
   )
   if (rows.length !== 1) throw new Error('RSS late cursor boundary must name one seeded item')

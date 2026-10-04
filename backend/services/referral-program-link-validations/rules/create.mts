@@ -22,7 +22,10 @@ export async function createReferralLinkValidationRule(
   assert(currentUser, 401, 'User not logged in')
   assert(currentUserCanUpdateTopic(currentUser), 403, 'Forbidden')
   validateUUID(validationId)
-  await assertReferralLinkValidationExists(validationId, 'referral_program_link_validation_id')
+  await assertReferralLinkValidationExists(
+    validationId,
+    'referral_program_link_validation_rule_set_id',
+  )
 
   const hostname = data.hostname.toLowerCase().trim()
   assert(hostname, 422, 'hostname is required')
@@ -62,8 +65,8 @@ export async function createReferralLinkValidationRule(
   return withReferralLinkEligibilityMutationLock({}, async query => {
     const { rows } =
       await query<ReferralLinkValidationRule>(sql`/* createReferralLinkValidationRule */
-      INSERT INTO referral_program_link_validations_rules (
-        referral_program_link_validation_id,
+      INSERT INTO referral_program_link_validation_rules (
+        referral_program_link_validation_rule_set_id,
         hostname,
         pathname,
         is_referral_link_url,
@@ -80,7 +83,7 @@ export async function createReferralLinkValidationRule(
         ${userErrorText},
         ${exampleUrls}
       )
-      RETURNING *
+      RETURNING id, referral_program_link_validation_rule_set_id AS referral_program_link_validation_id, hostname, pathname, is_referral_link_url, is_invalid_referral_link_url, user_error_text, example_urls, created_at, updated_at
     `)
     return rows[0]
   })

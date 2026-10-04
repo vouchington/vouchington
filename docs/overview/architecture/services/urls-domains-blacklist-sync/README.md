@@ -25,7 +25,7 @@ that actually runs syncs, not by every consumer of the base lookup/check service
 - `syncBlacklistSourceById(sourceId, dependencies?)` — looks up the source by id and syncs it,
   reporting failures via `onError` instead of throwing.
 - `syncDomainsWithDatabase(sourceId, response, sourceType?)` — stages the downloaded domain list
-  via `pg-copy-streams`, applies a short transactional diff to `domain_blacklists`, releases the
+  via `pg-copy-streams`, applies a short transactional diff to `blocklisted_domains`, releases the
   database client, and then schedules the affected Bloom filter rebuild.
 - `createBlacklistFetchHeaders(cache)` — builds conditional request headers from stored cache
   metadata.

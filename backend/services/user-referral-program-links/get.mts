@@ -65,7 +65,7 @@ export async function getUserReferralLinks(
       t.slug AS referral_program_slug
     FROM user_referral_program_links urpl
     JOIN urls u ON u.id = urpl.url_id
-    JOIN topics t ON t.id = urpl.referral_program_id
+    JOIN topics t ON t.id = urpl.referral_program_topic_id
       AND t.deleted_at IS NULL
       AND t.merged_into_topic_id IS NULL
     WHERE urpl.user_id = ${userId}
@@ -75,7 +75,7 @@ export async function getUserReferralLinks(
     )
 
   if (referralProgramId) {
-    query.append(sql` AND urpl.referral_program_id = ${referralProgramId}`)
+    query.append(sql` AND urpl.referral_program_topic_id = ${referralProgramId}`)
   }
 
   // Cursor-based pagination

@@ -31,7 +31,7 @@ async function mergeBlacklistSources(options: QueryOptions): Promise<void> {
 
   await write(
     sql`/* lockBlacklistSources */
-      SELECT pg_advisory_xact_lock(hashtext('domain_blacklist_sources'), 0)
+      SELECT pg_advisory_xact_lock(hashtext('domain_blocklist_sources'), 0)
     `,
     options,
   )
@@ -41,12 +41,12 @@ async function mergeBlacklistSources(options: QueryOptions): Promise<void> {
     WITH input AS (
       SELECT source.type, source.name, source.url
       FROM unnest(
-        ${types}::domain_blacklist_types[],
+        ${types}::domain_blocklist_types[],
         ${names}::text[],
         ${urls}::text[]
       ) AS source(type, name, url)
     )
-    MERGE INTO domain_blacklist_sources AS target
+    MERGE INTO domain_blocklist_sources AS target
     USING input
     ON target.name = input.name
     WHEN MATCHED AND (
@@ -71,7 +71,7 @@ export const getAllBlacklistSources = async (): Promise<
     name: string
     url: string
   }>(sql`/* getAllBlacklistSources */
-    SELECT id, name, url FROM domain_blacklist_sources
+    SELECT id, name, url FROM domain_blocklist_sources
     ORDER BY id
   `)
   return result.rows
@@ -86,7 +86,7 @@ export const getBlacklistSourceById = async (
     name: string
     url: string
   }>(sql`/* getBlacklistSourceById */
-    SELECT id, type, name, url FROM domain_blacklist_sources
+    SELECT id, type, name, url FROM domain_blocklist_sources
     WHERE id = ${id}
   `)
   return result.rows[0] || null
@@ -101,7 +101,7 @@ export const getSourceCacheHeaders = async (
   sourceId: DomainBlacklistSourceId,
 ): Promise<SourceCacheHeaders | null> => {
   const result = await read<SourceCacheHeaders>(sql`/* getSourceCacheHeaders */
-    SELECT etag, last_modified_at FROM domain_blacklist_sources
+    SELECT etag, last_modified_at FROM domain_blocklist_sources
     WHERE id = ${sourceId}
   `)
   return result.rows[0] || null
@@ -112,7 +112,7 @@ export const updateSourceCacheHeaders = async (
   headers: { etag: string | null; lastModifiedAt: Date | null },
 ): Promise<void> => {
   await write(sql`/* updateSourceCacheHeaders */
-    UPDATE domain_blacklist_sources
+    UPDATE domain_blocklist_sources
     SET etag = ${headers.etag},
         last_modified_at = ${headers.lastModifiedAt},
         last_fetched_at = NOW()

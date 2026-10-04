@@ -9,8 +9,9 @@
 -- Retailer Countries
 -- ============================================================================
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS retailer_countries (
-  retailer_id UUID NOT NULL REFERENCES topics__retailers ON DELETE CASCADE,
+  retailer_id UUID NOT NULL REFERENCES retailer_topics ON DELETE CASCADE,
   country_id SMALLINT NOT NULL REFERENCES countries ON DELETE CASCADE,
   PRIMARY KEY (retailer_id, country_id)
 );
@@ -20,6 +21,7 @@ COMMENT ON COLUMN retailer_countries.retailer_id IS 'The retailer topic.';
 COMMENT ON COLUMN retailer_countries.country_id IS 'The country the retailer operates in.';
 
 -- Current indexes for fresh schema bootstrap.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_retailer_countries__country_id
   ON retailer_countries (country_id)
   WHERE country_id IS NOT NULL;

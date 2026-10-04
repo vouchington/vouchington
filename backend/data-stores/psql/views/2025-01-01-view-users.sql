@@ -1,6 +1,7 @@
 -- Lightweight embedded view for nesting in posts/topics JSON.
 -- Uses CASE + scalar subqueries for display_account instead of 7 LEFT JOINs,
 -- so the planner only evaluates one subquery per row (matching provider).
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_embedded_users AS
   SELECT
     'user' AS __entity_type,
@@ -66,9 +67,9 @@ CREATE OR REPLACE VIEW view_embedded_users AS
         ) THEN 'ai_agent' ELSE 'system' END
       WHEN users.platform_account_kind = 'official' OR EXISTS (
         SELECT 1 FROM user_roles
-        JOIN user_roles_types ON user_roles_types.id = user_roles.role_type_id
+        JOIN user_role_types ON user_role_types.id = user_roles.role_type_id
         WHERE user_roles.user_id = users.id
-          AND user_roles_types.slug IN ('administrator', 'investor')
+          AND user_role_types.slug IN ('administrator', 'investor')
       ) THEN 'official'
       ELSE NULL
     END AS account_type
@@ -79,6 +80,7 @@ CREATE OR REPLACE VIEW view_embedded_users AS
 -- Full public user view for direct user queries (e.g. getPublicUserByAny).
 -- Adds markdown which is intentionally excluded from view_embedded_users to keep nested payloads lean.
 -- Use view_embedded_users via scalar subquery when nesting inside other views.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_users_public AS
   SELECT
     e.*,
@@ -106,6 +108,7 @@ CREATE OR REPLACE VIEW view_users_public AS
   JOIN users u ON u.id = e.id
 ;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_users_private AS
   SELECT
     'user' AS __entity_type,
@@ -126,9 +129,9 @@ CREATE OR REPLACE VIEW view_users_private AS
     user_phone_numbers.phone_number,
 
     (
-      SELECT COALESCE(ARRAY_AGG(user_roles_types.slug), ARRAY[]::TEXT[])
+      SELECT COALESCE(ARRAY_AGG(user_role_types.slug), ARRAY[]::TEXT[])
       FROM user_roles
-      LEFT JOIN user_roles_types ON user_roles_types.id = user_roles.role_type_id
+      LEFT JOIN user_role_types ON user_role_types.id = user_roles.role_type_id
       WHERE user_roles.user_id = users.id
     ) AS roles,
 

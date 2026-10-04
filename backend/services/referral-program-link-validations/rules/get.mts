@@ -16,7 +16,7 @@ export async function getReferralLinkValidationRule(
     sql`/* getReferralLinkValidationRule */
       SELECT
         id,
-        referral_program_link_validation_id,
+        referral_program_link_validation_rule_set_id AS referral_program_link_validation_id,
         hostname,
         pathname,
         is_referral_link_url,
@@ -25,7 +25,7 @@ export async function getReferralLinkValidationRule(
         example_urls,
         created_at,
         updated_at
-      FROM referral_program_link_validations_rules
+      FROM referral_program_link_validation_rules
       WHERE id = ${ruleId}
       LIMIT 1
     `,
@@ -69,7 +69,7 @@ export async function getReferralLinkValidationRules(
   const query = sql`/* getReferralLinkValidationRules */
     SELECT
       id,
-      referral_program_link_validation_id,
+      referral_program_link_validation_rule_set_id AS referral_program_link_validation_id,
       hostname,
       pathname,
       is_referral_link_url,
@@ -78,8 +78,8 @@ export async function getReferralLinkValidationRules(
       example_urls,
       created_at,
       updated_at
-    FROM referral_program_link_validations_rules
-    WHERE referral_program_link_validation_id = ${validationId}
+    FROM referral_program_link_validation_rules
+    WHERE referral_program_link_validation_rule_set_id = ${validationId}
   `
 
   // Cursor-based pagination

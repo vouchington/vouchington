@@ -65,9 +65,9 @@ export async function createTopicRevision(
       ${revisedById},
       jsonb_build_object('revised_by_roles', COALESCE(
         (
-          SELECT ARRAY_AGG(user_roles_types.slug)
+          SELECT ARRAY_AGG(user_role_types.slug)
           FROM user_roles
-          LEFT JOIN user_roles_types ON user_roles_types.id = user_roles.role_type_id
+          LEFT JOIN user_role_types ON user_role_types.id = user_roles.role_type_id
           WHERE user_roles.user_id = ${revisedById}
         ),
         ARRAY[]::TEXT[]

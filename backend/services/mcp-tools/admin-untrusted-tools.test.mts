@@ -111,7 +111,7 @@ describe('registered admin authored-content contracts', () => {
     expect(before).toEqual([
       expect.objectContaining({ action_type: 'warn', target_user_id: target.id }),
     ])
-    for (const name of ['list_user_mod_notes', 'get_user_moderation_context']) {
+    for (const name of ['list_user_moderator_notes', 'get_user_moderation_context']) {
       const result = await invoke(name, { userId: target.id })
       expect(result.isError).not.toBe(true)
       expect(result.structuredContent).toMatchObject({

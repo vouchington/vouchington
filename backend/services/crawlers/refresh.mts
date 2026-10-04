@@ -17,7 +17,7 @@ export const searchHostnameIdsNeedingCrawlerRefresh = async (
     sql`/* searchHostnameIdsNeedingCrawlerRefresh */
     SELECT h.id
     FROM url_hostnames h
-    LEFT JOIN crawlers c
+    LEFT JOIN hostname_crawler_configurations c
       ON c.hostname_id = h.id
       AND c.deleted_at IS NULL
     WHERE (h.blocked IS NULL OR h.blocked = false)
@@ -25,7 +25,7 @@ export const searchHostnameIdsNeedingCrawlerRefresh = async (
     GROUP BY h.id
     HAVING (
       NOT EXISTS (
-        SELECT 1 FROM crawlers existing_crawler
+        SELECT 1 FROM hostname_crawler_configurations existing_crawler
         WHERE existing_crawler.hostname_id = h.id AND existing_crawler.deleted_at IS NULL
       )
       OR MAX(c.updated_at) < date_trunc('week', CURRENT_TIMESTAMP)

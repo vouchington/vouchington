@@ -90,7 +90,7 @@ export async function createInstanceInTransaction(
 
     await write(
       sql`/* createInstanceInTransaction:extension */
-        INSERT INTO topics__fediverse_instances (
+        INSERT INTO fediverse_instance_topics (
           topic_id,
           software,
           protocol,

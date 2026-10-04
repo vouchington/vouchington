@@ -13,7 +13,7 @@ export const getLatestBoilerplateRemovalByHostnameAndPath = async (
   const { rows } = await read<BoilerplateRemoval>(
     sql`/* getLatestBoilerplateRemovalByHostnameAndPath */
     SELECT *
-    FROM boilerplate_removals
+    FROM hostname_path_boilerplate_removals
     WHERE hostname_id = ${hostnameId}
       AND parent_path = ${parentPath}
       AND id > ${recentCutoffId}

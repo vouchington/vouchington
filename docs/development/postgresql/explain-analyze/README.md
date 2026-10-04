@@ -285,7 +285,7 @@ required plan gate rejects an underfilled or oversized page and a relation seque
 `idx_relation__remote_actor__follow__user__active_reverse` with the strict
 `(object_id, subject_id)` cursor condition, caps the candidate page and any sort at 501 rows, and
 rejects plans that scan more than 501 follower-relation, `remote_actors`, `topics`, or
-`topics__fediverse_instances` rows. This preserves the bounded durable fan-out contract documented by the
+`fediverse_instance_topics` rows. This preserves the bounded durable fan-out contract documented by the
 [ActivityPub delivery queue](../../../overview/architecture/queues/activitypub-delivery/README.md).
 
 ## Covered service queries

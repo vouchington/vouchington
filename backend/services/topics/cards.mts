@@ -43,7 +43,7 @@ export async function getCardAttributes(topic: Topic): Promise<CardAttributes | 
       brand_id,
       annual_fee_minor_units::TEXT AS annual_fee_minor_units,
       currency_code
-    FROM topics__cards
+    FROM card_topics
     WHERE topic_id = ${topic.id}
     LIMIT 1
   `)
@@ -83,7 +83,7 @@ export async function updateCardAttributes(
   }
 
   const row = await mapCardAttributeReferenceError(() =>
-    upsertTopicAttributes<CardAttributesRow>('topics__cards', topic.id, columns, values),
+    upsertTopicAttributes<CardAttributesRow>('card_topics', topic.id, columns, values),
   )
   return row ? toCardAttributes(row) : null
 }

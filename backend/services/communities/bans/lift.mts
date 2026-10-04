@@ -99,10 +99,10 @@ async function assertModeratorMayLiftAll(
         ) OR EXISTS (
           SELECT 1
           FROM user_roles
-          JOIN user_roles_types ON user_roles_types.id = user_roles.role_type_id
+          JOIN user_role_types ON user_role_types.id = user_roles.role_type_id
           JOIN users ON users.id = user_roles.user_id
           WHERE user_roles.user_id = banner_ids.user_id
-            AND user_roles_types.slug = 'administrator'
+            AND user_role_types.slug = 'administrator'
             AND users.deleted_at IS NULL
         )
       ) AS privileged

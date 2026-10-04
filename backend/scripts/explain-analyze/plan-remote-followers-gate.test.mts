@@ -48,8 +48,8 @@ function validPlan(): Record<string, unknown> {
       },
       {
         'Node Type': 'Index Only Scan',
-        'Relation Name': 'topics__fediverse_instances',
-        'Index Name': 'topics__fediverse_instances_pkey',
+        'Relation Name': 'fediverse_instance_topics',
+        'Index Name': 'fediverse_instance_topics_pkey',
         'Actual Rows': 1,
         'Actual Loops': 501,
       },
@@ -96,7 +96,7 @@ function planWithUnboundedDirectory(): Record<string, unknown> {
       ...(plan.Plans as Record<string, unknown>[]),
       {
         'Node Type': 'Seq Scan',
-        'Relation Name': 'topics__fediverse_instances',
+        'Relation Name': 'fediverse_instance_topics',
         'Actual Rows': 0,
         'Actual Loops': 1,
         'Rows Removed by Filter': 1000,

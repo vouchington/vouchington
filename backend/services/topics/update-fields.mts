@@ -75,12 +75,12 @@ export function appendTopicUpdateFields(
   appendIfDefined(
     updateQuery,
     changes.rewards_program_id,
-    value => sql`, rewards_program_id = ${value}`,
+    value => sql`, rewards_program_topic_id = ${value}`,
   )
   appendIfDefined(
     updateQuery,
     changes.referral_program_id,
-    value => sql`, referral_program_id = ${value}`,
+    value => sql`, referral_program_topic_id = ${value}`,
   )
 }
 

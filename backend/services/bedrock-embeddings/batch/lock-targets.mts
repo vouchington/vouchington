@@ -4,7 +4,7 @@ export type SingleBatchLockType = 'post' | 'topic' | 'rss_feed_item'
 
 export function lockExistsClause(jobType: BatchJobType, entitySql: string): string {
   return `EXISTS (
-    SELECT 1 FROM bedrock_embeddings_batch_entities e
+    SELECT 1 FROM bedrock_embedding_batch_entities e
     WHERE ${lockColumn(jobType)} = ${entitySql}
   )`
 }

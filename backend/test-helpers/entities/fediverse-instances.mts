@@ -34,7 +34,7 @@ export async function insertTestFediverseInstanceExtension(data: {
   openRegistrations?: boolean
 }): Promise<void> {
   await write(sql`/* insertTestFediverseInstanceExtension */
-    INSERT INTO topics__fediverse_instances (topic_id, software, open_registrations)
+    INSERT INTO fediverse_instance_topics (topic_id, software, open_registrations)
     VALUES (${data.topicId}, ${data.software ?? null}, ${data.openRegistrations ?? null})
     ON CONFLICT (topic_id) DO NOTHING
   `)
@@ -44,7 +44,7 @@ export async function getTestFediverseInstanceIntegrationStatus(
   topicId: string,
 ): Promise<string | null> {
   const { rows } = await read(sql`/* getTestFediverseInstanceIntegrationStatus */
-    SELECT integration_status FROM topics__fediverse_instances WHERE topic_id = ${topicId}
+    SELECT integration_status FROM fediverse_instance_topics WHERE topic_id = ${topicId}
   `)
   return (rows[0]?.integration_status as string | undefined) ?? null
 }

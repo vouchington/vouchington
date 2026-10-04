@@ -2,6 +2,7 @@
 -- Keep every writer, including an old application process during a rolling deploy, serialized with
 -- both users' deletion fences. The service takes the same locks before reaching this trigger so a
 -- provider response fails before attempting the write on current deployments.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_lock_bluesky_follow_receipt_active_users()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -20,6 +21,7 @@ BEGIN
 END;
 $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_bluesky_follow_records_active_users
 BEFORE INSERT OR UPDATE OF follower_user_id, followee_user_id ON bluesky_follow_records
 FOR EACH ROW
@@ -30,6 +32,7 @@ COMMENT ON FUNCTION fn_lock_bluesky_follow_receipt_active_users() IS
 
 -- Follow receipts created before the fence migration can remain after the bounded credential
 -- cleanup batch. Finalization must retain the request until that residual receipt is removed.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_user_deletion_has_remaining_owned_data(target_user_id UUID)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -98,7 +101,7 @@ BEGIN
   END LOOP;
 
   IF EXISTS (
-    SELECT 1 FROM lists WHERE owner_user_id = target_user_id AND removed_at IS NULL
+    SELECT 1 FROM user_lists WHERE owner_user_id = target_user_id AND removed_at IS NULL
   ) THEN RETURN TRUE; END IF;
   IF EXISTS (
     SELECT 1 FROM bluesky_link_authorizations

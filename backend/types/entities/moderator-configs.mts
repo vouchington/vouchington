@@ -4,7 +4,7 @@ type ModeratorConfig = {
 }
 
 /**
- * The seven fixed moderator identities seeded into `agents` / `agents__moderators`. Their question
+ * The seven fixed moderator identities seeded into `agents` / `moderator_agents`. Their question
  * text lives in the C5 post classifier catalog (`post-classifier.mts`); nothing here is a prompt.
  */
 export const MODERATOR_CONFIGS: ModeratorConfig[] = [

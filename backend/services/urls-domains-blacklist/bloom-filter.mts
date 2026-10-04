@@ -157,9 +157,9 @@ async function repairUrlBlocklistUnavailableRead(): Promise<void> {
 
 async function hasUrlBlocklistData(): Promise<boolean> {
   const { rows } = await read(sql`/* warmUpUrlBlocklistBloomFilter */
-    SELECT 1 FROM domain_blacklists db
-    INNER JOIN domain_blacklist_sources dbs ON dbs.id = db.source_id
-    WHERE dbs.type = 'url'::domain_blacklist_types
+    SELECT 1 FROM blocklisted_domains db
+    INNER JOIN domain_blocklist_sources dbs ON dbs.id = db.source_id
+    WHERE dbs.type = 'url'::domain_blocklist_types
     LIMIT 1
   `)
   return rows.length > 0

@@ -55,7 +55,7 @@ export async function createOfficialReferralLink(
     sql`/* createOfficialReferralLink */
     INSERT INTO user_referral_program_links (
       user_id,
-      referral_program_id,
+      referral_program_topic_id,
       url_id,
       label,
       activated_at,
@@ -73,7 +73,7 @@ export async function createOfficialReferralLink(
       ${provenance.createdVia},
       ${provenance.oauthClientId}
     )
-    ON CONFLICT (user_id, referral_program_id, url_id) WHERE deleted_at IS NULL
+    ON CONFLICT (user_id, referral_program_topic_id, url_id) WHERE deleted_at IS NULL
     DO NOTHING
     RETURNING `.append(officialReferralLinkColumns()),
   )

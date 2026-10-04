@@ -65,8 +65,8 @@ export async function createMonthlyPartitionRetirementFixture() {
         to_regclass('crawl_chunks__p_2019_01') IS NOT NULL AS chunk_partition,
         to_regclass('rss_feed_crawls__p_2019_01') IS NOT NULL AS rss_partition,
         EXISTS (SELECT 1 FROM crawl_chunks) AS chunk_exists,
-        EXISTS (SELECT 1 FROM bedrock_embeddings_batch_entities) AS entity_exists,
-        (SELECT crawl_id FROM bedrock_embeddings_batches WHERE id = 'owned-batch') AS batch_crawl_id,
+        EXISTS (SELECT 1 FROM bedrock_embedding_batch_entities) AS entity_exists,
+        (SELECT crawl_id FROM bedrock_embedding_batches WHERE id = 'owned-batch') AS batch_crawl_id,
         (SELECT last_crawl_id FROM user_referral_program_links LIMIT 1) AS referral_crawl_id`)
       return rows[0]!
     },

@@ -28,7 +28,7 @@ flowchart LR
     PJ --> BR
     BR --> AU[applyBatchUpdates]
   end
-  CS -- "isEntityLockedForBatch?" --> LT[(bedrock_embeddings_batch_entities)]
+  CS -- "isEntityLockedForBatch?" --> LT[(bedrock_embedding_batch_entities)]
   CS -- lookupExistingEmbedding --> CT[(bedrock_nova_multimodal_v1_embeddings)]
   CS -- INSERT ON CONFLICT DO NOTHING --> CT
   AU -- INSERT ON CONFLICT DO NOTHING --> CT
@@ -43,7 +43,7 @@ flowchart LR
 Single-embedding jobs are no-ops when:
 
 1. The entity row already has `input_sha256 == content_sha256` with a non-null embedding and `created_at` — checked in `upsert*Embedding`.
-2. The entity is locked in `bedrock_embeddings_batch_entities` — checked in `createSingleEmbedding` via `isEntityLockedForBatch`.
+2. The entity is locked in `bedrock_embedding_batch_entities` — checked in `createSingleEmbedding` via `isEntityLockedForBatch`.
 3. The centralized table already has the embedding for this content hash — `createSingleEmbedding` reuses it without calling Bedrock.
 
 Entity UPDATEs in both the single and batch paths guard on `content_sha256` matching the stored value, so a stale write (content changed since job was created) silently no-ops rather than overwriting with outdated data.

@@ -63,15 +63,15 @@ export async function addDisposableEmailForUser(
   domain: string,
 ): Promise<void> {
   const { rows: sourceRows } = await write(sql`
-    INSERT INTO domain_blacklist_sources (type, name, url)
-    VALUES ('email'::domain_blacklist_types, 'test-disposable-email', 'https://example.com/list.txt')
+    INSERT INTO domain_blocklist_sources (type, name, url)
+    VALUES ('email'::domain_blocklist_types, 'test-disposable-email', 'https://example.com/list.txt')
     ON CONFLICT (name) DO UPDATE SET type = EXCLUDED.type, url = EXCLUDED.url
     RETURNING id
   `)
   const sourceId = sourceRows[0].id
 
   await write(sql`
-    INSERT INTO domain_blacklists (source_id, domain)
+    INSERT INTO blocklisted_domains (source_id, domain)
     VALUES (${sourceId}, ${domain})
     ON CONFLICT (domain, source_id) DO NOTHING
   `)
@@ -88,15 +88,15 @@ export async function addDisposableEmailForUser(
  */
 export async function addDisposableDomain(domain: string): Promise<void> {
   const { rows: sourceRows } = await write(sql`
-    INSERT INTO domain_blacklist_sources (type, name, url)
-    VALUES ('email'::domain_blacklist_types, 'test-disposable-email', 'https://example.com/list.txt')
+    INSERT INTO domain_blocklist_sources (type, name, url)
+    VALUES ('email'::domain_blocklist_types, 'test-disposable-email', 'https://example.com/list.txt')
     ON CONFLICT (name) DO UPDATE SET type = EXCLUDED.type, url = EXCLUDED.url
     RETURNING id
   `)
   const sourceId = sourceRows[0].id
 
   await write(sql`
-    INSERT INTO domain_blacklists (source_id, domain)
+    INSERT INTO blocklisted_domains (source_id, domain)
     VALUES (${sourceId}, ${domain})
     ON CONFLICT (domain, source_id) DO NOTHING
   `)
