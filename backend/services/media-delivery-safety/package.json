@@ -9,7 +9,13 @@
     ".": {
       "types": "./index.mts",
       "import": "./index.mts"
-    }
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts"
+    },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null
   },
   "dependencies": {
     "@data-stores/psql": "workspace:^",

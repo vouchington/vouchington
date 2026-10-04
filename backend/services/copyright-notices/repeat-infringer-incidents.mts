@@ -6,7 +6,7 @@ import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { lockCopyrightRepeatInfringerNoticeAccounts } from './repeat-infringer-locks.mts'
 import { anyReversalSourceSql } from './restriction-reversal-sources-sql.mts'
-import { copyrightPlacementPartiesSql } from './placement-parties.mts'
+import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
 
 export type CopyrightRepeatInfringerDisposition = 'withdrawn' | 'duplicate' | 'abusive'
 

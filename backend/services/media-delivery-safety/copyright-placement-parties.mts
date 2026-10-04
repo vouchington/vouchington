@@ -1,6 +1,6 @@
 import sql from 'sql-template-strings'
 import { read } from '@data-stores/psql'
-import { DELETED_USER_ID } from '@services/users/constants'
+import { DELETED_USER_ID } from '@voucha/types/entities/user-constants'
 
 export type CopyrightPlacementPartyPurpose = 'notify' | 'respond' | 'inform' | 'strike' | 'retain'
 

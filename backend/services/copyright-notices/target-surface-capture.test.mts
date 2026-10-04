@@ -7,9 +7,9 @@ import {
   createTestCopyrightRestrictionForImage,
 } from '@voucha/test-helpers/copyright-surface-target-fixtures'
 import { reactivateTestCommunityImageWithoutBinder } from '@voucha/test-helpers/copyright-administrator-lift-fixtures'
-import { updateCommunity } from '../communities/update.mts'
+import { updateCommunity } from '@services/communities/update'
 import { readTestCopyrightSurfaceRetainedEvidence } from '@voucha/test-helpers/copyright-surface-retained-evidence'
-import { selectCopyrightPlacementPartyUserIds } from './placement-parties.mts'
+import { selectCopyrightPlacementPartyUserIds } from '@services/media-delivery-safety/copyright-placement-parties'
 
 describe('copyright target surface activation capture', () => {
   it('keeps a target on its exact setter epoch and captures trigger-only reactivation as unknown', async () => {

@@ -7,7 +7,7 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { currentUserCanLiftCopyrightRestriction } from './authorization.mts'
 import { createCopyrightClaimantDecisionNoticeInTransaction } from './claimant-decision-notices.mts'
-import { copyrightPlacementPartiesSql } from './placement-parties.mts'
+import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
 import { createCopyrightRestoreIntentForReversalInTransaction } from './restoration-reversal.mts'
 import { applyCopyrightConfirmationConsequencesInTransaction } from './staydown-registration.mts'
 

@@ -1,6 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { copyrightPlacementPartiesSql } from './placement-parties.mts'
+import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
 
 /**
  * The body of a `preservation(notice_id, released_at)` CTE: one row per legal-process preservation

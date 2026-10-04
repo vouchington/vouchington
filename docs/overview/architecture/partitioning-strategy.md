@@ -169,6 +169,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `copyright_notice_urgent_filings`, `copyright_notices`,
   `copyright_repeat_infringer_dispositions`, `copyright_repeat_infringer_incidents`,
   `copyright_repeat_infringer_reviews`,
+  `copyright_restriction_administrator_lifts`,
   `copyright_restrictions`, `copyright_staydown_entries`, `copyright_staydown_matches`,
   `copyright_territorial_decisions`, `copyright_territorial_escalations`,
   `copyright_territorial_notice_acknowledgments`, `copyright_territorial_notice_receipts`,

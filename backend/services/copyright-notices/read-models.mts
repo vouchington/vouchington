@@ -12,8 +12,8 @@ import {
   type CopyrightParticipantStatement,
 } from './participant-statements.mts'
 import { liveCopyrightCiphertext } from './erased-ciphertext.mts'
-import { copyrightPlacementPartiesSql } from './placement-parties.mts'
-import { copyrightPlacementPublicVisibleSql } from './placement-public-visible-sql.mts'
+import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
+import { copyrightPlacementPublicVisibleSql } from '@services/media-delivery-safety/copyright-placement-public-visible-sql'
 import {
   copyrightTimelineEventTypesFor,
   type CopyrightTimelineAudience,

@@ -1,4 +1,4 @@
-import { imageSurfaceOwnerIsLiveSql } from '../media-delivery-safety/surface-owner-live-sql.mts'
+import { imageSurfaceOwnerIsLiveSql } from '@services/media-delivery-safety/surface-owner-live-sql'
 import sql from 'sql-template-strings'
 
 /** Host liveness for aliases `post_binding`, `post`, `surface`, and `image`. */

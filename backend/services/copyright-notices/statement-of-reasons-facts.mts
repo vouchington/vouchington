@@ -7,7 +7,7 @@ import {
   aiGuidanceSql,
 } from './automated-assessment-sql.mts'
 import type { CopyrightStatementInput } from './statement-of-reasons.mts'
-import { copyrightPlacementPublicVisibleSql } from './placement-public-visible-sql.mts'
+import { copyrightPlacementPublicVisibleSql } from '@services/media-delivery-safety/copyright-placement-public-visible-sql'
 
 type CopyrightStatementFacts = Pick<
   CopyrightStatementInput,

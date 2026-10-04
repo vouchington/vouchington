@@ -1,7 +1,7 @@
 import type { OwnedTransaction } from '@data-stores/psql'
 import { lockAuthorPublicationLifecycle } from '@services/post-publication'
 import sql from 'sql-template-strings'
-import { copyrightPlacementPartiesSql } from './placement-parties.mts'
+import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
 
 export async function lockCopyrightRepeatInfringerNoticeAccounts(
   noticeId: string,

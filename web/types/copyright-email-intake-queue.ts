@@ -1,5 +1,3 @@
-import type { CopyrightNoticesPage } from './copyright-notices'
-
 export type CopyrightEmailIntakeQueueItem = {
   id: string
   received_at: string
@@ -16,5 +14,9 @@ export type CopyrightEmailIntakeQueueItem = {
 
 export type CopyrightEmailIntakeQueuePage = {
   copyright_email_intakes: CopyrightEmailIntakeQueueItem[]
-  page_info: CopyrightNoticesPage['page_info']
+  page_info: {
+    has_next_page: boolean
+    start_cursor: string | null
+    end_cursor: string | null
+  }
 }

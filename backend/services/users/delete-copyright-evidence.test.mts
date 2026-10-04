@@ -8,7 +8,7 @@ import { hasTestRetainedIdentityRoot } from '@voucha/test-helpers/entities/retai
 import { cleanupRetainedIdentityRoots } from '../data-retention/cleanup-retained-identities.mts'
 import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 import { readTestCopyrightSurfaceRetainedEvidence } from '@voucha/test-helpers/copyright-surface-retained-evidence'
-import { selectCopyrightPlacementPartyUserIds } from '../copyright-notices/placement-parties.mts'
+import { selectCopyrightPlacementPartyUserIds } from '@services/media-delivery-safety/copyright-placement-parties'
 
 describe('deleted copyright surface evidence', () => {
   it('retains profile-link uploader, setter, owner, and notice target evidence without authorizing the deleted user', async () => {

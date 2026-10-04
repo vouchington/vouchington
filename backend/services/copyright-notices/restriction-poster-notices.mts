@@ -7,7 +7,7 @@ import {
   type CopyrightRestorationCause,
   type CopyrightRestorationOutcome,
 } from './statement-of-reasons.mts'
-import { copyrightPlacementPartiesSql } from './placement-parties.mts'
+import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
 
 export async function selectCopyrightTargetPosters(
   targetId: string,

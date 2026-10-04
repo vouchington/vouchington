@@ -1,7 +1,7 @@
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { copyrightPlacementPartiesSql } from '../copyright-notices/placement-parties.mts'
-import { copyrightPlacementPublicVisibleSql } from '../copyright-notices/placement-public-visible-sql.mts'
+import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
+import { copyrightPlacementPublicVisibleSql } from '@services/media-delivery-safety/copyright-placement-public-visible-sql'
 
 /**
  * Lifecycle events a member sees on a case, mirroring `copyrightTimelineEventTypesFor('member')`
@@ -43,6 +43,7 @@ export function streamCopyrightCases(userId: string) {
       END AS claimant_display_name,
       (SELECT COALESCE(json_agg(json_build_object(
           'id', target.id,
+          'surface', COALESCE(surface.surface_kind, 'post-image'),
           'hosted_use_url', CASE WHEN `
   statement.append(copyrightPlacementPublicVisibleSql())
   statement.append(sql` THEN target.hosted_use_url END,
@@ -53,6 +54,7 @@ export function streamCopyrightCases(userId: string) {
           END
         ) ORDER BY target.id), '[]'::json)
         FROM copyright_notice_targets target
+        LEFT JOIN image_surface_placements surface ON surface.placement_id = target.placement_id
         LEFT JOIN LATERAL (
           SELECT current_restriction.id, current_restriction.lifted_at
           FROM copyright_restrictions current_restriction

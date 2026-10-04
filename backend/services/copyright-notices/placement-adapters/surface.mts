@@ -1,9 +1,9 @@
 import type { QueryExecutor } from '@data-stores/psql/types'
-import { imageSurfaceOwnerIsLiveSql } from '../../media-delivery-safety/surface-owner-live-sql.mts'
+import { imageSurfaceOwnerIsLiveSql } from '@services/media-delivery-safety/surface-owner-live-sql'
 import {
   imageSurfaceWhere,
   type ImageSurfaceReference,
-} from '../../media-delivery-safety/surface-lock.mts'
+} from '@services/media-delivery-safety/surface-lock'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
 import { getTopicTypeSlug } from '@voucha/types/entities/topic'
 import assert from 'http-assert'

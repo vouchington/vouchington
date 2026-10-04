@@ -1,6 +1,6 @@
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
-import { copyrightPlacementPartiesSql } from '../copyright-notices/placement-parties.mts'
+import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
 import type { TransactionQuery } from '@data-stores/psql'
 
 /**

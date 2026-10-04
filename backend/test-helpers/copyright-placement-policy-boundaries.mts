@@ -4,7 +4,7 @@ import type { PrivateUser } from '../services/users/types.mts'
 import {
   copyrightPlacementPartiesSql,
   type CopyrightPlacementPartyPurpose,
-} from '../services/copyright-notices/placement-parties.mts'
+} from '../services/media-delivery-safety/copyright-placement-parties.mts'
 import {
   claimantCanViewCopyrightImagePlacement,
   type CopyrightImageSelector,

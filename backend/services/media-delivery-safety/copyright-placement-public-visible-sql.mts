@@ -1,4 +1,4 @@
-import { imageSurfaceOwnerIsLiveSql } from '../media-delivery-safety/surface-owner-live-sql.mts'
+import { imageSurfaceOwnerIsLiveSql } from './surface-owner-live-sql.mts'
 import sql from 'sql-template-strings'
 
 /** A public page exists for the exact target; correlated to alias `target`. */
