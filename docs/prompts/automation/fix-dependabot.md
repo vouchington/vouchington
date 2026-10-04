@@ -17,10 +17,9 @@ not create a code change. A new classifier requires a stable real-log fixture an
 counterfixtures. Repository-owned or deterministic failures require a root-cause fix.
 
 Before choosing a fix, search open issues and pull requests for the dependency and the failing check,
-rule, or test, and search the [docs](../../README.md) for a recorded decision about it. When an open
-issue or pull request already owns this failure, or a recorded decision rules out the fix you would
-make, report that the PR is blocked by it, link it, and leave the PR unchanged. Do not carry out the
-owning issue's plan on this branch.
+rule, or test, and search the [docs](../../README.md) for a recorded decision about it. PR #{{PR_NUMBER}} itself never counts. When another open issue or pull request already owns this
+failure, or a recorded decision rules out the fix you would make, report that the PR is blocked by
+it, link it, and leave the PR unchanged. Do not carry out the owning issue's plan on this branch.
 
 For a dependency-owned failure, retain only the required dependency, lockfile, test, guard, and documentation changes. A rebase alone is not a dependency fix. If no code change is justified, report that clearly without mutating the PR.
 

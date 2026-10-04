@@ -66,18 +66,19 @@ before the ejection time has the failed or timed-out runs that caused it. A reru
 overwrites a run's result, so a run whose `run_attempt` is above 1 can now show success: read the
 attempt that finished before the ejection with
 `gh api repos/{{REPOSITORY}}/actions/runs/<id>/attempts/<n>` and its `/jobs`. A group commit also
-contains every queue entry ahead of this pull request: compare the pull request's own diff with the
-group's base before blaming either side.
+contains every queue entry ahead of this pull request: compare the ejected head's own diff, at the
+occurrence's `head_sha` and never the pull request's live head, with the group's base before
+blaming either side.
 
 ## Classify and group root causes
 
 Read `ci/transient-retry/rules.mts` for the catalogued transient fingerprints. Establish each
 occurrence's failure from logs, and reproduce it locally when that is cheap. Run pull-request code
-on this host only when the pull request is a same-repository branch, in a detached checkout you leave
-before any fix; for a fork, or an ejected head that a force push made unfetchable, classify from CI
-evidence alone. Fingerprint each failure by workflow,
-job, and stable error text, and check whether the same fingerprint appears in other recent
-merge-group or nightly runs that did not include the pull request.
+on this host only when the pull request is a same-repository branch, in a detached checkout of the
+occurrence's `head_sha` that you leave before any fix; for a fork, or an ejected head that a force
+push made unfetchable, classify from CI evidence alone. Fingerprint each failure by workflow, job,
+and stable error text, and check whether the same fingerprint appears in other recent merge-group or
+nightly runs that did not include the pull request.
 
 Group the occurrences that share a fingerprint; one entry's occurrences can land in different
 groups. An occurrence caused by its pull request's own change stays a group of one. Then choose
@@ -134,9 +135,9 @@ too.
 - An entry's one comment covers each of its occurrences: the outcome, the failing run and job, the
   evidence, the PR or issue you opened or found, and the other pull requests that share its root
   cause. Post it even when the pull request has since moved to another head, merged, closed, or
-  been re-enqueued, because its marker is the record that the occurrence was triaged. Then say first
-  which head it covers and that the pull request has changed since, and do not ask the author to fix
-  that head or to re-enqueue.
+  been re-enqueued, because its marker is the record that the occurrence was triaged. Only when the
+  re-fetch shows one of those changes, say first which head the comment covers and that the pull
+  request has changed since, and do not ask the author to fix that head or to re-enqueue.
 - A stack layer's comment names the layer below it that failed, links that layer's triage comment,
   and says the layer can be re-enqueued once the failing layer is resolved. Post it only while the
   layer is open and unmerged at the head you recorded and its `mergeQueueEntry` is null.
