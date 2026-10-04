@@ -15,20 +15,21 @@
 - For user/staff UI or shared API changes, coordinate Vouchington and client work through the
   [client parity matrix](docs/requirements/CLIENT-PARITY-MATRIX.md).
 - Before editing, read every applicable `AGENTS.md` from this root through each target's directory.
-  Startup instructions do not include every subtree. For skills, explicitly read
+  Startup omits subtrees. For skills, read
   [.agents/skills/AGENTS.md](.agents/skills/AGENTS.md).
 - Use the [local workflow](.agents/skills/agent-workflow/SKILL.md) and only its relevant phase.
-  Prefer local skill adapters over direct canonical plugin invocation; they load shared guidance
-  and add repository policy. Select specialized procedures from the [skill catalog](.agents/catalog/README.md).
+  Prefer local adapters; they load shared guidance and repository policy.
+  Select procedures from the [skill catalog](.agents/catalog/README.md).
 - Save plans outside Git: an issue/comment, PR description, or native plan file suffices.
   No new Plan issue or fixed template required.
 - Search [docs](docs/README.md) for relevant prior decisions; update the owning page for behavior
   changes. Follow [instruction placement](docs/AGENTS.md), and link rather than duplicate guidance.
 - Agent hooks and harness configuration follow [hook instructions](dev/codex-hooks/AGENTS.md).
   Keep shared `AGENTS.md`; do not introduce shadowing `CLAUDE.md` files.
-- No AST parsing in this repo. Implement it upstream in `vouchington-tooling`
+- No AST-parsing implementations in this repo. They belong upstream in `vouchington-tooling`
   (Vouchington-specific) or `no-mistakes` (generalizable rules). Before building AST parsing,
   escalate to a human for an architectural decision.
+  AST-based rules in third-party tools such as ast-grep or Oxlint are allowed.
 - Tests use synthetic Git refs; keep production pins, checksums, and intentional historical refs exact.
   Test helpers belong only in `test-helpers/**` or immediately below
   a top-level workspace; never add nested helpers or `test-support` directories.
