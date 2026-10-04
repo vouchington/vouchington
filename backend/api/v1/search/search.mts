@@ -2,13 +2,16 @@ import app from '../../app.mts'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../response-contract.mts'
-import { defineQueryContract, queryNumber, queryString } from '@modules/pagination'
+import { defineQueryContract, queryInteger, queryString } from '@modules/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { searchOmnisearch } from '@services/search'
 import { resolveHashtagTopicSearch } from '@services/search-params'
 import { clampAnonLimit } from '@modules/search-utils'
 
-const searchQuery = defineQueryContract({ q: queryString(), limit: queryNumber() })
+const searchQuery = defineQueryContract({
+  q: queryString(),
+  limit: queryInteger({ minimum: 1, maximum: 100, default: 3 }),
+})
 
 // GET /api/v1/search — combined omnisearch across all five verticals.
 // Returns a lightweight payload with only the fields the command-search dialog renders.
