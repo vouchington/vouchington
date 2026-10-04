@@ -1,19 +1,46 @@
+import { scheduler } from 'node:timers/promises'
 import type pg from 'pg'
 import { describe, expect, it } from 'vitest'
+import { refreshMaterializedViewForTest } from '@voucha/test-helpers/refresh-materialized-view'
 
 import { writePool } from '../setup.mts'
 import type { PoolClient } from '../types.mts'
 import { refreshMaterializedView } from './refresh-materialized-view.mts'
 
+const REFRESH_LOCK_KEY = 'refresh-materialized-view'
+const REFRESH_CONTENTION_MESSAGE = 'Materialized view refresh contention; retryable'
+
 const originalWritePoolConnect = writePool.connect
 
 describe('refreshMaterializedView', () => {
-  it('refreshes an allowlisted materialized view', async () => {
-    await expect(refreshMaterializedView('mv_rss_feed_crawl_tiers')).resolves.toBeUndefined()
+  it('refreshes an allowlisted materialized view after another session releases the shared lock', async () => {
+    const holder = await writePool.connect()
+    let outcome: Promise<'fulfilled' | 'rejected'> | undefined
+    try {
+      await holdRefreshLock(holder)
+      await expect(refreshMaterializedView('mv_rss_feed_crawl_tiers')).rejects.toThrow(
+        REFRESH_CONTENTION_MESSAGE,
+      )
+      outcome = refreshMaterializedViewForTest('mv_rss_feed_crawl_tiers').then(
+        () => 'fulfilled' as const,
+        () => 'rejected' as const,
+      )
+      const early = await Promise.race([outcome, scheduler.wait(80).then(() => 'pending' as const)])
+      expect(early).toBe('pending')
+      await releaseRefreshLock(holder)
+      expect(await outcome).toBe('fulfilled')
+    } finally {
+      try {
+        await releaseRefreshLock(holder)
+      } finally {
+        if (outcome) await outcome
+        holder.release()
+      }
+    }
   })
 
   it('refreshes the top-hashtags view through its serialized refresh path', async () => {
-    await expect(refreshMaterializedView('mv_top_hashtags')).resolves.toBeUndefined()
+    await expect(refreshMaterializedViewForTest('mv_top_hashtags')).resolves.toBeUndefined()
   })
 
   it('rejects a view that is not on the allowlist', async () => {
@@ -57,6 +84,26 @@ describe('refreshMaterializedView', () => {
     }
   })
 })
+
+async function holdRefreshLock(holder: PoolClient): Promise<void> {
+  const deadline = Date.now() + 5_000
+  while (Date.now() < deadline) {
+    const locked = await holder.query<{ locked: boolean }>(
+      '/* refreshMaterializedViewTest.holdLock */ SELECT pg_try_advisory_lock(hashtext($1)) AS locked',
+      [REFRESH_LOCK_KEY],
+    )
+    if (locked.rows[0]?.locked) return
+    await scheduler.wait(50)
+  }
+  throw new Error('timed out acquiring the materialized-view refresh lock')
+}
+
+async function releaseRefreshLock(holder: PoolClient): Promise<void> {
+  await holder.query(
+    '/* refreshMaterializedViewTest.releaseLock */ SELECT pg_advisory_unlock(hashtext($1))',
+    [REFRESH_LOCK_KEY],
+  )
+}
 
 function injectRefreshMaterializedViewContention(): {
   releasedWith(): Error | boolean | undefined
@@ -133,10 +180,17 @@ function wrapRefreshMaterializedViewFault(
   const query = client.query
   const release = client.release
   client.query = ((input: unknown, values?: unknown[]) => {
-    if (fault.refreshError && String(input).includes('/* refreshMaterializedView */')) {
-      return Promise.reject(fault.refreshError)
+    const sql = String(input)
+    // Parallel files share `refresh-materialized-view`. These cases assert client destruction,
+    // not the real lock or refresh, so a concurrent REFRESH must not surface as contention.
+    if (sql.includes('refreshMaterializedView.tryAdvisoryLock')) {
+      return Promise.resolve({ rows: [{ locked: true }] } as pg.QueryResult)
     }
-    if (String(input).includes('refreshMaterializedView.unlock')) {
+    if (sql.includes('/* refreshMaterializedView */')) {
+      if (fault.refreshError) return Promise.reject(fault.refreshError)
+      return Promise.resolve({ rows: [] } as pg.QueryResult)
+    }
+    if (sql.includes('refreshMaterializedView.unlock')) {
       return Promise.reject(fault.unlockError)
     }
     return Reflect.apply(query, client, [input, values]) as Promise<pg.QueryResult>

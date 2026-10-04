@@ -386,6 +386,13 @@ with the registered name passed and none failed.
 `VITEST_ISOLATED_DATABASE_CASE` and `VITEST_ISOLATED_DATABASE_CHILD` are harness-owned, validated
 child markers, not settings for test authors to supply.
 
+### Materialized-view refresh lock
+
+`refreshMaterializedView` uses one shared nonblocking advisory lock. Tests that need the refresh to
+finish call `refreshMaterializedViewForTest` from
+`@voucha/test-helpers/refresh-materialized-view` (`refreshRssFeedCrawlTiers` delegates to it).
+See [Parallel-Safety and Test-Root Hygiene § Materialized-view refreshes share one advisory lock](../../reference-tests-parallel-safety-and-test-root-hygiene.md#materialized-view-refreshes-share-one-advisory-lock).
+
 ### Exact global AI-usage aggregates
 
 Randomized IDs isolate fixture ownership, but they cannot isolate a query that sums every

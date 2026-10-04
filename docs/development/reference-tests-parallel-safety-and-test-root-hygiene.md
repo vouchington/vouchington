@@ -18,6 +18,19 @@ enforces this ordering for const promises later asserted with `expect(...).rejec
 Lock-wait helpers use the same immediate settled-outcome observation while polling, then release
 their holder before returning the value or rethrowing the original action failure.
 
+### Materialized-view refreshes share one advisory lock
+
+`refreshMaterializedView` takes the session advisory lock `refresh-materialized-view` and throws
+`Materialized view refresh contention; retryable` when another session already holds it. Parallel
+`backend-data-stores` forks refresh `mv_rss_feed_crawl_tiers` and `mv_top_hashtags` through that
+same lock, so a direct call can fail while another file is inside `REFRESH MATERIALIZED VIEW`.
+Tests that need the refresh to finish call `refreshMaterializedViewForTest`, including
+`refreshRssFeedCrawlTiers`. Assert the retryable error by injecting a failed lock attempt, or by
+holding the real lock only until that assertion returns. Refresh and unlock fault tests stub lock
+acquisition so they do not depend on the shared lock being free. Do not leave the lock held across
+a refresh the test expects to succeed, and do not replace the nonblocking production lock with a
+blocking wait.
+
 ### Exact global aggregates need owned windows
 
 Randomized fixture IDs prevent uniqueness collisions but cannot isolate an exact query over a shared
