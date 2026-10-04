@@ -55,7 +55,7 @@ describe('cleanupSoftDeletedUsers transaction boundaries', () => {
     }
     await secondPostLocked.promise
 
-    const cleanup = cleanupSoftDeletedUsers({ ...window, batchSize: 2, maxBatches: 1 })
+    const cleanup = cleanupSoftDeletedUsers({ ...window, batchSize: 4, maxBatches: 1 })
     try {
       await vi.waitFor(async () => {
         expect(await getTestUserRaw(firstUser.id)).toBeNull()
@@ -68,7 +68,7 @@ describe('cleanupSoftDeletedUsers transaction boundaries', () => {
       releaseSecondPost.resolve()
     }
     await holder
-    await expect(cleanup).resolves.toEqual({ deleted: 2, hasMore: true })
+    await expect(cleanup).resolves.toEqual({ deleted: 2, hasMore: false })
     expect(await getTestUserRaw(secondUser.id)).toBeNull()
     expect(
       await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: firstPostId }),

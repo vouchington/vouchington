@@ -71,16 +71,14 @@ type RecoverableOAuthAuthorizationExchangeJob = {
 
 type OAuthAuthorizationExchangeRecoveryDependencies = {
   enqueueBulk: typeof enqueueBulkOAuthAuthorizationExchanges
-  getCompletedJobs(): Promise<RecoverableOAuthAuthorizationExchangeJob[]>
-  getFailedJobs(): Promise<RetryableOAuthAuthorizationExchangeJob[]>
+  getCompletedJobs(ids: readonly string[]): Promise<RecoverableOAuthAuthorizationExchangeJob[]>
+  getFailedJobs(ids: readonly string[]): Promise<RetryableOAuthAuthorizationExchangeJob[]>
 }
 
 const recoveryDependencies: OAuthAuthorizationExchangeRecoveryDependencies = {
   enqueueBulk: enqueueBulkOAuthAuthorizationExchanges,
-  getCompletedJobs: () =>
-    oauthAuthorizationExchangeQueue.getJobs('completed', 0, -1, { excludeData: true }),
-  getFailedJobs: () =>
-    oauthAuthorizationExchangeQueue.getJobs('failed', 0, -1, { excludeData: true }),
+  getCompletedJobs: ids => getRecoveryJobs(ids, 'completed'),
+  getFailedJobs: ids => getRecoveryJobs(ids, 'failed'),
 }
 
 export async function enqueueOrReactivateBulkOAuthAuthorizationExchanges(
@@ -90,8 +88,8 @@ export async function enqueueOrReactivateBulkOAuthAuthorizationExchanges(
   if (inputs.length === 0) return 0
   const authorizationIds = new Set(inputs.map(input => input.authorizationId))
   const [completedJobs, failedJobs] = await Promise.all([
-    dependencies.getCompletedJobs(),
-    dependencies.getFailedJobs(),
+    dependencies.getCompletedJobs([...authorizationIds]),
+    dependencies.getFailedJobs([...authorizationIds]),
   ])
   const removableJobs = completedJobs.filter(
     job => job.name === 'exchangeOAuthAuthorization' && authorizationIds.has(job.id),
@@ -134,4 +132,11 @@ function getOAuthAuthorizationExchangeJobOptions(authorizationId: string): Parti
     priority: OAUTH_AUTHORIZATION_EXCHANGE_PRIORITY,
     deduplication: { id: authorizationId, mode: 'simple' },
   }
+}
+
+/** The bounded durable recovery page supplies the only IDs whose retained jobs matter. */
+async function getRecoveryJobs(ids: readonly string[], state: 'completed' | 'failed') {
+  const jobs = await Promise.all(ids.map(id => oauthAuthorizationExchangeQueue.getJob(id)))
+  const states = await Promise.all(jobs.map(async job => job?.getState()))
+  return jobs.flatMap((job, index) => (job && states[index] === state ? [job] : []))
 }

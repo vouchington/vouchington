@@ -84,7 +84,7 @@ export async function prepareMembershipCreation(
   directTermEffectiveAt: Date | undefined,
 ) {
   const productId = await getMembershipProductIdForCreation(options, query)
-  const expiredMemberships = await expireElapsedMemberships(options.userId, query, {
+  const { expired: expiredMemberships } = await expireElapsedMemberships(options.userId, query, {
     expiresThrough: directTermEffectiveAt,
   })
   if (expiredMemberships > 0) enqueueEntitlementEffectsAfterCommit(query, enqueueEntitlementEffects)

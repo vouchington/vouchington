@@ -11,10 +11,12 @@ describe('parseEmailJob', () => {
   it('accepts empty dispatcher payloads and rejects unknown jobs', () => {
     expect(parseEmailJob('dispatchEngagementEmails', null)).toEqual({
       kind: 'dispatcher',
+      data: {},
       name: 'dispatchEngagementEmails',
     })
     expect(parseEmailJob('dispatchCommunityModerationSummaryEmails', undefined)).toEqual({
       kind: 'dispatcher',
+      data: {},
       name: 'dispatchCommunityModerationSummaryEmails',
     })
     expect(parseEmailJob('dispatchEngagementEmails', {}).kind).toBe('dispatcher')
@@ -22,6 +24,14 @@ describe('parseEmailJob', () => {
       /unexpected property extra/,
     )
     expect(() => parseEmailJob('missingJob', {})).toThrow(/unknown job missingJob/)
+    expect(parseEmailJob('dispatchApiKeyExpiryReminders', { afterId: 'owned-cursor' })).toEqual({
+      kind: 'dispatcher',
+      name: 'dispatchApiKeyExpiryReminders',
+      data: { afterId: 'owned-cursor' },
+    })
+    expect(() => parseEmailJob('dispatchApiKeyExpiryReminders', { afterId: 1 })).toThrow(
+      /afterId must be a string/,
+    )
   })
 
   it('accepts only a durable UUID for API-key expiry jobs', () => {

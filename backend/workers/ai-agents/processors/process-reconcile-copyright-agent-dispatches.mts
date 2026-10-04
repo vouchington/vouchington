@@ -1,3 +1,6 @@
+import { getCopyrightSweepLimits } from '@services/copyright-notices/work-limits'
+import { enqueueReconcileCopyrightAgentDispatches } from '@queues/ai-agents/enqueues/reconcile-copyright-agent-dispatches'
+import type { CopyrightAgentSweepData } from '@queues/ai-agents/types'
 import {
   applyNonSpamSignedInCopyrightFormScreening,
   getPendingCopyrightAgentDispatches,
@@ -10,6 +13,7 @@ import { enqueueOrRetryCopyrightAppealRecommendation } from '@queues/ai-agents/e
 import { enqueueOrRetryCopyrightSubmissionGuidance } from '@queues/ai-agents/enqueues/copyright-submission-guidance'
 
 export type ReconcileCopyrightAgentDispatchesDeps = {
+  enqueueContinuation: typeof enqueueReconcileCopyrightAgentDispatches
   getPending: typeof getPendingCopyrightAgentDispatches
   enqueueEmail: typeof enqueueOrRetryCopyrightEmailIntake
   enqueueForm: typeof enqueueOrRetryCopyrightFormScreening
@@ -19,6 +23,7 @@ export type ReconcileCopyrightAgentDispatchesDeps = {
 }
 
 const defaultDeps: ReconcileCopyrightAgentDispatchesDeps = {
+  enqueueContinuation: enqueueReconcileCopyrightAgentDispatches,
   getPending: getPendingCopyrightAgentDispatches,
   enqueueEmail: enqueueOrRetryCopyrightEmailIntake,
   enqueueForm: enqueueOrRetryCopyrightFormScreening,
@@ -28,7 +33,7 @@ const defaultDeps: ReconcileCopyrightAgentDispatchesDeps = {
 }
 
 /**
- * Walks every page of pending copyright dispatches. One failed dispatch does not stop the others or
+ * Processes capped pages of pending copyright dispatches. One failed dispatch does not stop the others or
  * later pages; the job fails afterwards with every error so its retry covers what is still pending.
  *
  * `COPYRIGHT_INTAKE_ENABLED` closes new intake only. While it is off, the `email` and
@@ -37,22 +42,27 @@ const defaultDeps: ReconcileCopyrightAgentDispatchesDeps = {
  */
 export async function processReconcileCopyrightAgentDispatches(
   dependencyOverrides: Partial<ReconcileCopyrightAgentDispatchesDeps> = {},
-): Promise<void> {
+  data: CopyrightAgentSweepData = {},
+): Promise<{ hasMore: boolean }> {
   const deps = { ...defaultDeps, ...dependencyOverrides }
   const intakeEnabled = isCopyrightIntakeEnabled()
   const errors: unknown[] = []
-  let cursor: string | undefined
-  do {
+  const { batchSize, maxBatches } = getCopyrightSweepLimits()
+  let cursor = data.after
+  for (let batch = 0; batch < maxBatches; batch++) {
     // oxlint-disable-next-line no-await-in-loop -- advance only after the page's dispatches settle.
-    const page = await deps.getPending(cursor ? { after: cursor } : {})
+    const page = await deps.getPending({ ...(cursor ? { after: cursor } : {}), limit: batchSize })
     const dispatches = intakeEnabled ? page.results : page.results.filter(isInCaseDispatch)
     // oxlint-disable-next-line no-await-in-loop -- preserves at-least-once delivery before cursor advance.
     errors.push(...(await dispatchCopyrightAgentPage(dispatches, deps)))
-    cursor = page.page_info.end_cursor ?? undefined
-  } while (cursor)
+    cursor = page.page_info.has_next_page ? (page.page_info.end_cursor ?? undefined) : undefined
+    if (!cursor) break
+  }
+  if (cursor) await deps.enqueueContinuation({ after: cursor })
   if (errors.length > 0) {
     throw new AggregateError(errors, 'Copyright agent dispatch reconciliation failed')
   }
+  return { hasMore: cursor !== undefined }
 }
 
 function isInCaseDispatch(item: CopyrightAgentDispatch): boolean {

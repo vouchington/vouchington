@@ -113,3 +113,7 @@ direct expiry timestamps. Both scope deletion to test-owned SQL windows; the exp
 - Account-deletion lifecycle: [../../../docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md](../../../../requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md)
 - Account data requests system: [../../queues/account-data-requests/README.md](../../queues/account-data-requests/README.md)
 - PostgreSQL system: [../../queues/psql/README.md](../../queues/psql/README.md)
+
+Final user purges commit a bounded publication capture and reassignment page before deleting the user. A page that progresses without a purge still reports `hasMore`; the retention run applies its configured page cap and resumes on its next schedule.
+
+Final account purge also pages preserved topics, identity actors, grant terminalization, lineage release, and provider source detachment under one shared candidate-row allowance across users and phases. Author/source candidates, preserved-row candidates, grant candidates, and final user deletion consume this allowance; fixed child writes for a selected grant share its candidate unit. Empty phase probes consume no rows, while an eligibility-lost user attempt reserves one unit. Live membership projections are removed in bounded pages before detaching provider sources, preserving their composite foreign keys. Each mutation removes its candidates from the next page; a full page commits progress and keeps the live user until all phases finish.

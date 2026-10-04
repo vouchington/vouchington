@@ -1,3 +1,4 @@
+import { getDataRetentionLimits } from './config.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { DELETED_USER_ID } from '@services/users/constants'
 import sql from 'sql-template-strings'
@@ -10,8 +11,18 @@ import sql from 'sql-template-strings'
 export async function pseudonymizeIdentityVerificationAttempts(
   query: TransactionQuery,
   targetIds: string[],
-): Promise<void> {
-  await query(sql`/* pseudonymizeIdentityVerificationAttempts */
+  batchSize = getDataRetentionLimits().batchSize,
+): Promise<number> {
+  const { rowCount } = await query(sql`/* pseudonymizeIdentityVerificationAttempts */
+    WITH candidates AS (
+      SELECT id FROM (
+        (SELECT id FROM identity_verification_attempts WHERE user_id = ANY(${targetIds}::uuid[])
+          ORDER BY id LIMIT ${batchSize})
+        UNION
+        (SELECT id FROM identity_verification_attempts WHERE granted_by_id = ANY(${targetIds}::uuid[])
+          ORDER BY id LIMIT ${batchSize})
+      ) actors ORDER BY id LIMIT ${batchSize}
+    )
     UPDATE identity_verification_attempts
     SET user_id = CASE
           WHEN user_id = ANY(${targetIds}::uuid[]) THEN ${DELETED_USER_ID}
@@ -21,6 +32,6 @@ export async function pseudonymizeIdentityVerificationAttempts(
           WHEN granted_by_id = ANY(${targetIds}::uuid[]) THEN ${DELETED_USER_ID}
           ELSE granted_by_id
         END
-    WHERE user_id = ANY(${targetIds}::uuid[])
-       OR granted_by_id = ANY(${targetIds}::uuid[])`)
+    WHERE id IN (SELECT id FROM candidates)`)
+  return rowCount ?? 0
 }

@@ -29,10 +29,10 @@ describe('processCleanupExpiredExports', () => {
   it('treats a bulk S3 deletion failure as non-fatal', async () => {
     expireRequests.mockResolvedValue(['request-1/attempt-1.zip'])
     deleteExports.mockRejectedValueOnce(new Error('S3 error'))
-    await expect(runCleanupExpiredExports()).resolves.toBeUndefined()
+    await expect(runCleanupExpiredExports()).resolves.toEqual({ hasMore: false })
   })
 
-  function runCleanupExpiredExports(): Promise<void> {
+  function runCleanupExpiredExports(): ReturnType<typeof processCleanupExpiredExports> {
     return processCleanupExpiredExports({
       deleteExportsFromS3: deleteExports,
       expireDataRequests: expireRequests,

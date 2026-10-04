@@ -14,13 +14,44 @@ import {
 import { createMembership, grantMembership } from '../create.mts'
 import {
   expireElapsedMembershipsBatch,
-  expireElapsedMembershipsForUser,
   expireElapsedMembershipsForUsers,
   getElapsedMembershipUserIdsBatch,
-} from './expire-elapsed.mts'
+} from './expire-elapsed-batch.mts'
+import { expireElapsedMembershipsForUser } from './expire-elapsed.mts'
 import { getMembershipByUserId, getMembershipHistory } from '../get.mts'
+import { membershipWorkConfig } from '../work-limits.mts'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 
 describe('expireElapsedMembershipsForUser', () => {
+  it('shares one page budget across users and leaves the remainder for the next run', async () => {
+    const admin = await createTestUser({ administrator: true })
+    const members = await Promise.all([createTestUser(), createTestUser()])
+    const sku = await createTestSku({ plan: 'plus' })
+    const memberships = await Promise.all(
+      members.map(member => grantMembership(admin.id, member.id, 'plus', sku.id, 30)),
+    )
+    await Promise.all(
+      memberships.map(membership =>
+        updateTestMembershipExpiresAt(membership.id, new Date('2020-01-01')),
+      ),
+    )
+    overrideDynamicConfigFieldsForTest(membershipWorkConfig, {
+      batch_size: 2,
+      max_batches_per_run: 1,
+    })
+    expect(await expireElapsedMembershipsForUsers(members.map(member => member.id))).toEqual({
+      expired: 1,
+      hasMore: true,
+    })
+    expect(await getMembershipByUserId(members[0]!.id)).toBeNull()
+    expect(
+      (await getMembershipHistory(members[1]!.id)).filter(row => row.change_type === 'expiration'),
+    ).toEqual([])
+    expect(await expireElapsedMembershipsForUsers([members[1]!.id])).toEqual({
+      expired: 1,
+      hasMore: false,
+    })
+  })
   it('restores a retained verified direct Stripe source after the covering grant expires', async () => {
     const admin = await createTestUser({ administrator: true })
     const member = await createTestUser()
@@ -64,7 +95,10 @@ describe('expireElapsedMembershipsForUser', () => {
     await grantMembership(queuedGrantIssuer.id, member.id, 'pro', secondSku.id, 30)
     await updateTestMembershipExpiresAt(first.id, new Date('2020-01-01T00:00:00.000Z'))
 
-    await expect(expireElapsedMembershipsForUsers([member.id])).resolves.toEqual({ expired: 1 })
+    await expect(expireElapsedMembershipsForUsers([member.id])).resolves.toEqual({
+      expired: 1,
+      hasMore: false,
+    })
     const activeMembership = await getMembershipByUserId(member.id)
     expect(activeMembership).toMatchObject({ plan: 'pro' })
     const history = await getMembershipHistory(member.id)
@@ -143,9 +177,19 @@ describe('expireElapsedMembershipsForUser', () => {
     await withTestMembershipUserLocked(member.id, async () => {
       const candidates = await getElapsedMembershipUserIdsBatch(1_000_000)
       expect(candidates).not.toContain(member.id)
-      await expect(expireElapsedMembershipsForUsers([member.id])).resolves.toEqual({ expired: 0 })
+      expect((await expireElapsedMembershipsBatch(1)).hasMore).toBe(true)
+      await expect(expireElapsedMembershipsForUsers([member.id])).resolves.toEqual({
+        expired: 0,
+        hasMore: true,
+      })
     })
-    await expect(expireElapsedMembershipsForUsers([member.id])).resolves.toEqual({ expired: 1 })
-    await expect(expireElapsedMembershipsForUsers([member.id])).resolves.toEqual({ expired: 0 })
+    await expect(expireElapsedMembershipsForUsers([member.id])).resolves.toEqual({
+      expired: 1,
+      hasMore: false,
+    })
+    await expect(expireElapsedMembershipsForUsers([member.id])).resolves.toEqual({
+      expired: 0,
+      hasMore: false,
+    })
   })
 })

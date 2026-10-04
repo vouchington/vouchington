@@ -1,3 +1,4 @@
+import type { CopyrightSweepContinuation } from './types.mts'
 /* oxlint-disable max-lines -- Notification enqueue contracts stay centralized for inventory validation. */
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
@@ -114,7 +115,7 @@ const enqueueDeliverCopyrightNoticeJob = createEnqueueFunction<
 >({ queue: notifications, queueName: QUEUE_NAME, jobName: 'processDeliverCopyrightNotice' })
 
 const enqueueReconcileCopyrightDeliveryIntentsJob = createEnqueueFunction<
-  Record<string, never>,
+  CopyrightSweepContinuation,
   'processReconcileCopyrightDeliveryIntents'
 >({
   queue: notifications,
@@ -128,7 +129,7 @@ const enqueueApplyCopyrightActionJob = createEnqueueFunction<
 >({ queue: notifications, queueName: QUEUE_NAME, jobName: 'processApplyCopyrightAction' })
 
 const enqueueReconcileCopyrightActionIntentsJob = createEnqueueFunction<
-  Record<string, never>,
+  CopyrightSweepContinuation,
   'processReconcileCopyrightActionIntents'
 >({
   queue: notifications,
@@ -204,22 +205,21 @@ export function enqueueDeliverCopyrightNotice(intentId: string): EnqueueReturnTy
   )
 }
 
-export function enqueueReconcileCopyrightDeliveryIntents(): EnqueueReturnType {
-  return enqueueReconcileCopyrightDeliveryIntentsJob(
-    {},
-    {
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-      removeOnComplete: 100,
-      removeOnFail: 100,
-      priority: PRIORITY_DEFAULT,
-      deduplication: {
-        id: 'copyright-delivery-reconciliation',
-        mode: 'throttle',
-        ttl: FIVE_MINUTES_MS,
-      },
+export function enqueueReconcileCopyrightDeliveryIntents(
+  data: CopyrightSweepContinuation = {},
+): EnqueueReturnType {
+  return enqueueReconcileCopyrightDeliveryIntentsJob(data, {
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+    removeOnComplete: 100,
+    removeOnFail: 100,
+    priority: PRIORITY_DEFAULT,
+    deduplication: {
+      id: `copyright-delivery-reconciliation:${JSON.stringify(data)}`,
+      mode: 'throttle',
+      ttl: FIVE_MINUTES_MS,
     },
-  )
+  })
 }
 
 export function enqueueApplyCopyrightAction(intentId: string): EnqueueReturnType {
@@ -240,22 +240,21 @@ export function enqueueApplyCopyrightAction(intentId: string): EnqueueReturnType
   )
 }
 
-export function enqueueReconcileCopyrightActionIntents(): EnqueueReturnType {
-  return enqueueReconcileCopyrightActionIntentsJob(
-    {},
-    {
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-      removeOnComplete: 100,
-      removeOnFail: 100,
-      priority: PRIORITY_DEFAULT,
-      deduplication: {
-        id: 'copyright-action-reconciliation',
-        mode: 'throttle',
-        ttl: FIVE_MINUTES_MS,
-      },
+export function enqueueReconcileCopyrightActionIntents(
+  data: CopyrightSweepContinuation = {},
+): EnqueueReturnType {
+  return enqueueReconcileCopyrightActionIntentsJob(data, {
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+    removeOnComplete: 100,
+    removeOnFail: 100,
+    priority: PRIORITY_DEFAULT,
+    deduplication: {
+      id: `copyright-action-reconciliation:${JSON.stringify(data)}`,
+      mode: 'throttle',
+      ttl: FIVE_MINUTES_MS,
     },
-  )
+  })
 }
 
 export function enqueueBulkReconcilePostNotifications(postIds: string[]): EnqueueReturnType {

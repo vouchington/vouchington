@@ -1,3 +1,5 @@
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { copyrightSweepConfig } from '@services/copyright-notices/work-limits'
 import { describe, expect, it, vi } from 'vitest'
 import type { CopyrightSweepIdPage } from '@services/copyright-notices'
 import {
@@ -15,6 +17,7 @@ function page(results: string[], endCursor: string | null): CopyrightSweepIdPage
 }
 
 type SweepPages = {
+  decisionAssessments?: CopyrightSweepIdPage[]
   formReviews?: CopyrightSweepIdPage[]
   pendingEnforcement?: CopyrightSweepIdPage[]
   suspendedClaimants?: CopyrightSweepIdPage[]
@@ -33,6 +36,7 @@ function sweep(log: string[], name: string, pages: CopyrightSweepIdPage[] = []) 
 
 function reconcileDeps(pages: SweepPages = {}) {
   const log: string[] = []
+  const decisionPages = [...(pages.decisionAssessments ?? [])]
   const deps = {
     searchFormReviews: vi.fn<Deps['searchFormReviews']>(
       sweep(log, 'form reviews', pages.formReviews),
@@ -42,6 +46,7 @@ function reconcileDeps(pages: SweepPages = {}) {
     }),
     recoverDecisionAssessments: vi.fn<Deps['recoverDecisionAssessments']>(async () => {
       log.push('recover decision assessments')
+      return decisionPages.shift() ?? page([], null)
     }),
     searchPendingEnforcement: vi.fn<Deps['searchPendingEnforcement']>(
       sweep(log, 'pending enforcement', pages.pendingEnforcement),
@@ -83,7 +88,7 @@ function reconcileDeps(pages: SweepPages = {}) {
 }
 
 describe('processReconcileCopyrightActionIntents', () => {
-  it('walks every page of each sweep in stage order', async () => {
+  it('rotates one page per unfinished stage under the shared job budget', async () => {
     const { deps, log } = reconcileDeps({
       formReviews: [page(['review-1'], 'review-cursor'), page(['review-2'], null)],
       pendingEnforcement: [
@@ -99,56 +104,62 @@ describe('processReconcileCopyrightActionIntents', () => {
       actionIntents: [page(['intent-1', 'intent-2'], 'intent-cursor'), page(['intent-3'], null)],
     })
 
-    await expect(processReconcileCopyrightActionIntents(deps)).resolves.toEqual({ enqueued: 3 })
+    await expect(processReconcileCopyrightActionIntents(deps)).resolves.toEqual({
+      enqueued: 3,
+      hasMore: false,
+    })
 
     expect(log).toEqual([
       'search form reviews',
       'recover form review review-1',
-      'search form reviews',
-      'recover form review review-2',
       'recover decision assessments',
       'search pending enforcement',
       'enforce assessment assessment-1',
-      'search pending enforcement',
-      'enforce assessment assessment-2',
       'search suspended claimants',
       'lift suspended claimant claimant-notice-1',
-      'search suspended claimants',
-      'lift suspended claimant claimant-notice-2',
       'search blocked hold restorations',
       'recover blocked hold restorations notice-1',
-      'search blocked hold restorations',
-      'recover blocked hold restorations notice-2',
       'search due restorations',
       'create restore intents deadline-1',
-      'search due restorations',
-      'create restore intents deadline-2',
       'search action intents',
       'enqueue intent-1',
       'enqueue intent-2',
+      'search form reviews',
+      'recover form review review-2',
+      'search pending enforcement',
+      'enforce assessment assessment-2',
+      'search suspended claimants',
+      'lift suspended claimant claimant-notice-2',
+      'search blocked hold restorations',
+      'recover blocked hold restorations notice-2',
+      'search due restorations',
+      'create restore intents deadline-2',
       'search action intents',
       'enqueue intent-3',
     ])
-    expect(deps.searchFormReviews.mock.calls).toEqual([[{}], [{ after: 'review-cursor' }]])
+    expect(deps.searchFormReviews.mock.calls).toEqual([
+      [{ limit: 100 }],
+      [{ limit: 100, after: 'review-cursor' }],
+    ])
     expect(deps.searchPendingEnforcement.mock.calls).toEqual([
-      [{}],
-      [{ after: 'assessment-cursor' }],
+      [{ limit: 100 }],
+      [{ limit: 100, after: 'assessment-cursor' }],
     ])
     expect(deps.searchSuspendedClaimantRestrictions.mock.calls).toEqual([
-      [{}],
-      [{ after: 'claimant-cursor' }],
+      [{ limit: 100 }],
+      [{ limit: 100, after: 'claimant-cursor' }],
     ])
     expect(deps.liftSuspendedClaimantRestrictions.mock.calls).toEqual([
       ['claimant-notice-1', NOW],
       ['claimant-notice-2', NOW],
     ])
     expect(deps.searchDueRestorations.mock.calls).toEqual([
-      [{ now: NOW }],
-      [{ now: NOW, after: 'deadline-cursor' }],
+      [{ now: NOW, limit: 100 }],
+      [{ now: NOW, limit: 100, after: 'deadline-cursor' }],
     ])
     expect(deps.searchBlockedHoldRestorations.mock.calls).toEqual([
-      [{}],
-      [{ after: 'notice-cursor' }],
+      [{ limit: 100 }],
+      [{ limit: 100, after: 'notice-cursor' }],
     ])
     expect(deps.recoverBlockedHoldRestorations.mock.calls).toEqual([
       ['notice-1', NOW],
@@ -159,8 +170,8 @@ describe('processReconcileCopyrightActionIntents', () => {
       ['deadline-2', NOW],
     ])
     expect(deps.searchActionIntents.mock.calls).toEqual([
-      [{ now: NOW }],
-      [{ now: NOW, after: 'intent-cursor' }],
+      [{ now: NOW, limit: 100 }],
+      [{ now: NOW, limit: 100, after: 'intent-cursor' }],
     ])
   })
 
@@ -231,5 +242,57 @@ describe('processReconcileCopyrightActionIntents', () => {
     expect(deps.liftSuspendedClaimantRestrictions).toHaveBeenCalledWith('same-page-claimant', NOW)
     expect(deps.recoverBlockedHoldRestorations).toHaveBeenCalledWith('same-page-notice', NOW)
     expect(deps.enqueueApplyCopyrightAction).toHaveBeenCalledWith('same-page-intent')
+  })
+  it('continues only unfinished stages at the configured cap even when a head item fails', async () => {
+    overrideDynamicConfigFieldsForTest(copyrightSweepConfig, {
+      batch_size: 1,
+      max_batches_per_run: 1,
+    })
+    const { deps } = reconcileDeps({ formReviews: [page(['head'], 'head-cursor')] })
+    const failure = new Error('head failed')
+    deps.recoverFormReview.mockRejectedValueOnce(failure)
+    const enqueueContinuation = vi.fn<Deps['enqueueContinuation']>(async () => undefined)
+    await expect(
+      processReconcileCopyrightActionIntents({ ...deps, enqueueContinuation }),
+    ).rejects.toBeInstanceOf(AggregateError)
+    expect(enqueueContinuation).toHaveBeenCalledWith({
+      evaluatedAt: NOW.toISOString(),
+      pending: [
+        'decisions',
+        'enforcement',
+        'suspended',
+        'blocked',
+        'restorations',
+        'actions',
+        'forms',
+      ],
+      cursors: { forms: 'head-cursor' },
+    })
+    const round = reconcileDeps({
+      decisionAssessments: [page(['decision-tail'], 'decision-cursor')],
+    }).deps
+    const continuation = enqueueContinuation.mock.calls[0]?.[0]
+    if (!continuation) throw new Error('Expected pending stage continuation')
+    const nextContinuation = vi.fn<Deps['enqueueContinuation']>(async () => undefined)
+    await processReconcileCopyrightActionIntents(
+      { ...round, enqueueContinuation: nextContinuation },
+      continuation,
+    )
+    expect(round.searchFormReviews).not.toHaveBeenCalled()
+    expect(round.recoverDecisionAssessments).toHaveBeenCalledExactlyOnceWith({ limit: 1 })
+    expect(round.searchPendingEnforcement).not.toHaveBeenCalled()
+    expect(nextContinuation).toHaveBeenCalledWith({
+      evaluatedAt: NOW.toISOString(),
+      pending: [
+        'enforcement',
+        'suspended',
+        'blocked',
+        'restorations',
+        'actions',
+        'forms',
+        'decisions',
+      ],
+      cursors: { forms: 'head-cursor', decisions: 'decision-cursor' },
+    })
   })
 })

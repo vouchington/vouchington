@@ -27,6 +27,8 @@
 | Deep linking                                                      | 🟢  | 🟢           | 🟢           | Both native clients dispatch supported deep links into rendered native destinations.                                                                                                                                                                                                           |
 | Navigation customization                                          | 🟢  | 🟢           | 🟢           | Native navigation behavior is rendered and tested.                                                                                                                                                                                                                                             |
 
+| Membership expiry retry (`409`) | 🟡 | 🟡 | 🟡 | Backend rolls back writes when its expiry budget leaves due projections; clients must retain the pending operation, display the server error, and retry after background expiry. Client behavior needs parity verification. See [membership lifecycle](../overview/architecture/services/memberships/README.md). |
+
 Suspended-account writes receive the existing `403 ACCOUNT_SUSPENDED` error across web, Swift,
 and .NET. Reads, sign-in/session refresh, and the narrow self-service exceptions follow the
 [backend suspension policy](security/reference-security-authentication-sessions.md#suspended-user-write-policy).

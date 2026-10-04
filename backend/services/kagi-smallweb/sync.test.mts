@@ -1,3 +1,5 @@
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { kagiSmallWebImportConfig } from './import-config.mts'
 import { describe, it, expect } from 'vitest'
 import { processFeedEntry } from './process-feed-entry.mts'
 import { dispatchKagiSmallWeb } from './sync.mts'
@@ -91,7 +93,12 @@ describe('getExistingRssFeedUrls', () => {
     }
     await processFeedEntry(entry)
 
-    const urls = await getExistingRssFeedUrls()
+    overrideDynamicConfigFieldsForTest(kagiSmallWebImportConfig, { candidate_batch_size: 1 })
+    const urls = await getExistingRssFeedUrls([
+      `https://missing-${suffix}.example.com/feed`,
+      feedUrl,
+    ])
+    expect(urls.size).toBe(1)
     expect(urls.has(feedUrl)).toBe(true)
   })
 })

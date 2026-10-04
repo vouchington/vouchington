@@ -21,9 +21,11 @@
   },
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@services/account-data-requests": "workspace:^",
     "@services/ai-usage": "workspace:^",
     "@services/ap-inbox-activities": "workspace:^",
     "@services/api-egress-proxy": "workspace:^",
+    "@services/api-keys": "workspace:^",
     "@services/app-attestation": "workspace:^",
     "@services/autotagger": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",

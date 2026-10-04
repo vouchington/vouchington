@@ -24,7 +24,9 @@ describe('emails worker router', () => {
     const dispatchCommunityModerationSummaryEmails = vi.fn<() => Promise<void>>(() =>
       Promise.resolve(),
     )
-    const dispatchApiKeyExpiryReminders = vi.fn<() => Promise<void>>(() => Promise.resolve())
+    const dispatchApiKeyExpiryReminders = vi.fn<() => Promise<{ hasMore: boolean }>>(() =>
+      Promise.resolve({ hasMore: false }),
+    )
     const dispatchers = {
       dispatchApiKeyExpiryReminders,
       dispatchEngagementEmails,
@@ -38,9 +40,12 @@ describe('emails worker router', () => {
       processEmailJob({ name: 'dispatchCommunityModerationSummaryEmails' } as Job, dispatchers),
     ).resolves.toBeUndefined()
     await expect(
-      processEmailJob({ name: 'dispatchApiKeyExpiryReminders', data: {} } as Job, dispatchers),
-    ).resolves.toBeUndefined()
-    expect(dispatchApiKeyExpiryReminders).toHaveBeenCalledOnce()
+      processEmailJob(
+        { name: 'dispatchApiKeyExpiryReminders', data: { afterId: randomUUID() } } as Job,
+        dispatchers,
+      ),
+    ).resolves.toEqual({ hasMore: false })
+    expect(dispatchApiKeyExpiryReminders).toHaveBeenCalledWith({ afterId: expect.any(String) })
     expect(dispatchEngagementEmails).toHaveBeenCalledOnce()
     expect(dispatchCommunityModerationSummaryEmails).toHaveBeenCalledOnce()
   })
@@ -60,7 +65,9 @@ describe('emails worker router', () => {
         {
           dispatchEngagementEmails,
           dispatchCommunityModerationSummaryEmails,
-          dispatchApiKeyExpiryReminders: vi.fn<() => Promise<void>>(() => Promise.resolve()),
+          dispatchApiKeyExpiryReminders: vi.fn<() => Promise<{ hasMore: boolean }>>(() =>
+            Promise.resolve({ hasMore: false }),
+          ),
         },
       ),
     ).rejects.toBeInstanceOf(JobPayloadError)

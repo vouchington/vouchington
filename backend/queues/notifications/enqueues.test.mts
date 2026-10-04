@@ -17,7 +17,7 @@ describe('copyright and media-delivery notification enqueue wiring', () => {
     expect(job?.data).toEqual({})
     expect(job?.opts).toMatchObject({
       deduplication: {
-        id: 'copyright-action-reconciliation',
+        id: 'copyright-action-reconciliation:{}',
         mode: 'throttle',
       },
     })

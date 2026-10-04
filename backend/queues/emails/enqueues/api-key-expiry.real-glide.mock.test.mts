@@ -43,7 +43,7 @@ describe('API-key reminder enqueues with real GlideMQ', () => {
       opts: {
         attempts: 3,
         priority: 100,
-        deduplication: { id: 'api-key-expiry-dispatch', mode: 'throttle', ttl: 60_000 },
+        deduplication: { id: 'api-key-expiry-dispatch:root', mode: 'throttle', ttl: 60_000 },
       },
     })
   })

@@ -15,6 +15,9 @@ settled program verifies fixture, OpenAPI and executable request snapshots, exac
 registered-route completeness and PostgreSQL producer row types. Artifact assertions in Vitest read
 the committed outputs after that job passes. Tiny compiler-host and bounded-settlement tests retain
 filesystem invalidation and retry coverage; Vitest does not repeatedly compile the full backend.
+The checker shares one full response extraction with fixture validation and OpenAPI generation.
+Fixture selection preserves requested parameter spellings, exact response variants and explicit
+binary contracts; missing fixture contracts still fail validation.
 
 ## Backend Response Contracts
 

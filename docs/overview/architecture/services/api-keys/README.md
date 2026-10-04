@@ -90,3 +90,5 @@ continue to preserve audit attribution without authorizing deleted keys.
 | TTL expiry                                         | Queue dedupe expires                                      | Next sweep can enqueue again             | Database claim persists       | `lifecycle.test.mts` repeated claims        |
 | Orphan cleanup                                     | Revoked/replaced/deleted/expired key                      | Processor skips; owner deletion cascades | Revalidated conditional claim | `api-key-expiry.test.mts` inactive keys     |
 | Normal terminal removal                            | Claimed row; bounded queue history                        | No further work                          | Claim survives queue removal  | `api-key-expiry.test.mts` sequential retry  |
+
+Expiry reminder dispatch captures its configured page size and page cap once per run. A full capped pass enqueues a continuation with the last API key ID; reminders remain unclaimed until delivery.

@@ -50,3 +50,5 @@ flowchart LR
 
 - Queue surface: [../../queues/notifications/README.md](../../notifications/README.md)
 - Worker entrypoint: [../../entrypoints/worker-io/README.md](../../../backend/entrypoints/worker-io/README.md)
+
+Copyright action stages and delivery channels share one captured page allowance per job. Each page rotates the unfinished stage/channel to the end of an explicit pending list; continuations preserve that order, each cursor, and the fixed action evaluation time. A page-read failure is deferred to a continuation while other stages use the remaining allowance.

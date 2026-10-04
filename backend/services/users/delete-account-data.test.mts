@@ -65,7 +65,7 @@ describe('user deletion account-data phase', () => {
     const staleAttemptId = exportRequest.processing_attempt_id
     expect(await markDataRequestProcessing(exportRequest.id, staleAttemptId)).toBe(true)
     await makeUserDataRequestRecoverableForTest(exportRequest.id, 'stale')
-    const recovered = (await claimRecoverableDataRequests()).find(
+    const recovered = (await claimRecoverableDataRequests()).requests.find(
       candidate => candidate.requestId === exportRequest.id,
     )
     expect(recovered?.processingAttemptId).not.toBe(staleAttemptId)

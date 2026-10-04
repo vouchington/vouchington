@@ -146,3 +146,5 @@ conflict key before bounded batching. The input ordering and each insert share t
 expressions, including native UUID, text-collation, enum, and date ordering; source reads remain
 independently bounded. Snapshot pages are persisted under their owner's work-row lease lock.
 See the [PostgreSQL ordering guard](../../../../development/quality/static-code-analysis/README.md#postgresql-conflict-ordering).
+
+Author deletion uses mutation-backed source and authored-post pages. Each page retains its exact prior-author footprint and publication identities in the same transaction as reassignment. Final retention keeps the author row until all pages finish.

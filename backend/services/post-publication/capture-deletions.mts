@@ -1,18 +1,13 @@
 /* oxlint-disable max-lines -- deletion capture keeps ordered preimage locks and durable impact retention together. */
 import type { TransactionQuery } from '@data-stores/psql'
 import { retainPostPublicationImpactKeys } from './capture-keys.mts'
-import { lockAuthorPublicationLifecycle, postPublicationScopeLockKey } from './lock.mts'
+import { postPublicationScopeLockKey } from './lock.mts'
 import { recordPostPublicationChange } from './capture.mts'
 import {
   lockRssFeedHardDeleteTopicAliasPublicationScopes,
   recordRssFeedHardDeleteTopicAliasPublicationScopes,
 } from './capture-rss-feed-hard-delete-aliases.mts'
 import { retainRssFeedHardDeleteTopicImpacts } from './capture-rss-feed-hard-delete-topics.mts'
-import {
-  prepareAuthorDeletionBeforePostReassignment,
-  recordPreparedAuthorDeletionPublicationWork,
-} from './capture-author-deletion.mts'
-import { lockAuthorDeletionPublicationScopes } from './lock-author-deletion-scopes.mts'
 import {
   retainPublicationIdentityBridges,
   type PublicationIdentityBridgeFamily,
@@ -22,18 +17,6 @@ export { processAuthorDeletionPublicationBatch } from './capture-author-deletion
 export { lockAuthorPublicationLifecycle } from './lock.mts'
 
 const RSS_FEED_HARD_DELETE_CAPTURE_BATCH_SIZE = 500
-
-/** Captures authored-post tombstones before the account deletion flow reassigns them. */
-export async function recordAuthorDeletionBeforePostReassignment(
-  query: TransactionQuery,
-  authorUserId: string,
-): Promise<void> {
-  // ast-grep-ignore: no-three-sequential-awaits -- author and post scopes must precede the locked deletion preimage.
-  await lockAuthorPublicationLifecycle(query, authorUserId)
-  await lockAuthorDeletionPublicationScopes(query, authorUserId, [])
-  const capture = await prepareAuthorDeletionBeforePostReassignment(query, authorUserId)
-  await recordPreparedAuthorDeletionPublicationWork(query, authorUserId, capture)
-}
 
 /** Retains story-post and category tombstones before a feed cascade removes its source edges. */
 export async function recordRssFeedHardDeletePublicationChange(

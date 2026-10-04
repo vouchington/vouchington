@@ -81,6 +81,7 @@ export type SpendCapRecheckJobData = {
 }
 
 export type AIAgentJobData = (
+  | CopyrightAgentSweepData
   | AutotaggerRssFeedItemJobData
   | ClassifierRunDispatcherJobData
   | ClassifierRunJobData
@@ -97,3 +98,5 @@ export type AIAgentJobData = (
   | AutoDispatchJudgementJobData
 ) &
   SpendCapDelayedData
+
+export type CopyrightAgentSweepData = { after?: string }

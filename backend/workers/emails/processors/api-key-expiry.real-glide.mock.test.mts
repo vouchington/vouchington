@@ -1,3 +1,5 @@
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { apiKeyExpiryConfig } from '@services/api-keys/work-limits'
 import { afterAll, describe, expect, it, vi } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers/entities/users'
 import {
@@ -26,5 +28,32 @@ describe('API-key reminder sweep with real PostgreSQL and GlideMQ', () => {
     )
     expect(queued.every(job => job.name === 'processSendApiKeyExpiryReminder')).toBe(true)
     expect((await getTestApiKeyLifecycle(ids[0]!)).expiry_reminder_sent_at).toBeNull()
+  })
+  it('persists a continuation at its page cap and reaches the next due key', async () => {
+    const owner = await createTestUser()
+    const ids = await insertTestApiKeysDueForReminder(owner.id, 3)
+    overrideDynamicConfigFieldsForTest(apiKeyExpiryConfig, {
+      batch_size: 1,
+      max_batches_per_run: 1,
+    })
+    await dispatchApiKeyExpiryReminders({ afterId: ids[0] })
+    const jobs = (await Promise.all(QUEUE_STATES.map(state => emails.getJobs(state, 0, -1)))).flat()
+    const continuation = jobs.find(
+      job =>
+        job.name === 'dispatchApiKeyExpiryReminders' &&
+        (job.data as { afterId?: string }).afterId === ids[1],
+    )
+    expect(continuation).toBeDefined()
+    await dispatchApiKeyExpiryReminders(continuation!.data as { afterId?: string })
+    const tailJobs = (
+      await Promise.all(QUEUE_STATES.map(state => emails.getJobs(state, 0, -1)))
+    ).flat()
+    expect(
+      tailJobs.some(
+        job =>
+          job.name === 'processSendApiKeyExpiryReminder' &&
+          (job.data as { apiKeyId?: string }).apiKeyId === ids[2],
+      ),
+    ).toBe(true)
   })
 })

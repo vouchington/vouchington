@@ -82,7 +82,10 @@ export function processAIAgent(job: Job<AIAgentJobData>): Promise<unknown> {
     case 'reconcile-background-responses':
       return processReconcileBackgroundResponses()
     case 'reconcile-copyright-agent-dispatches':
-      return processReconcileCopyrightAgentDispatches()
+      return processReconcileCopyrightAgentDispatches(
+        {},
+        job.data as import('@queues/ai-agents/types').CopyrightAgentSweepData,
+      )
     default:
       name satisfies never
       throw new Error(`Unknown AI agent job: ${name}`)

@@ -1,3 +1,5 @@
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { copyrightSweepConfig } from '@services/copyright-notices/work-limits'
 import { describe, expect, it, vi } from 'vitest'
 import type { CopyrightAgentDispatch } from '@services/copyright-notices'
 import type { CopyrightAgentDispatchPage } from '@services/copyright-notices/reconcile-agent-dispatches'
@@ -59,9 +61,40 @@ describe('processReconcileCopyrightAgentDispatches', () => {
 
       await processReconcileCopyrightAgentDispatches({ ...deps, getPending })
 
-      expect(getPending.mock.calls).toEqual([[{}], [{ after: 'first-cursor' }]])
+      expect(getPending.mock.calls).toEqual([
+        [{ limit: 100 }],
+        [{ limit: 100, after: 'first-cursor' }],
+      ])
       expect(deps.enqueueEmail).toHaveBeenCalledWith('first-page')
       expect(deps.applyFormEffect).toHaveBeenCalledWith('last-page')
+    })
+
+    it('continues beyond its cap despite a failed head and resumes at the saved cursor', async () => {
+      overrideDynamicConfigFieldsForTest(copyrightSweepConfig, {
+        batch_size: 1,
+        max_batches_per_run: 1,
+      })
+      const deps = dispatchDeps()
+      deps.enqueueEmail.mockRejectedValueOnce(new Error('head failed'))
+      const enqueueContinuation = vi.fn<
+        ReconcileCopyrightAgentDispatchesDeps['enqueueContinuation']
+      >(async () => null)
+      await expect(
+        processReconcileCopyrightAgentDispatches({
+          ...deps,
+          enqueueContinuation,
+          getPending: async () => page([{ kind: 'email', intakeId: 'head' }], 'head-cursor'),
+        }),
+      ).rejects.toBeInstanceOf(AggregateError)
+      expect(enqueueContinuation).toHaveBeenCalledWith({ after: 'head-cursor' })
+      const getPending = vi.fn<ReconcileCopyrightAgentDispatchesDeps['getPending']>(async () =>
+        page([{ kind: 'email', intakeId: 'tail' }], null),
+      )
+      await expect(
+        processReconcileCopyrightAgentDispatches({ ...deps, getPending }, { after: 'head-cursor' }),
+      ).resolves.toEqual({ hasMore: false })
+      expect(getPending).toHaveBeenCalledWith({ after: 'head-cursor', limit: 1 })
+      expect(deps.enqueueEmail).toHaveBeenCalledWith('tail')
     })
 
     it('keeps dispatching past failed items, then fails with every error', async () => {
@@ -150,7 +183,10 @@ describe('processReconcileCopyrightAgentDispatches', () => {
 
       await processReconcileCopyrightAgentDispatches({ ...deps, getPending })
 
-      expect(getPending.mock.calls).toEqual([[{}], [{ after: 'first-cursor' }]])
+      expect(getPending.mock.calls).toEqual([
+        [{ limit: 100 }],
+        [{ limit: 100, after: 'first-cursor' }],
+      ])
       expect(deps.enqueueAppeal).toHaveBeenCalledExactlyOnceWith('later-appeal')
       expect(deps.enqueueEmail).not.toHaveBeenCalled()
     })

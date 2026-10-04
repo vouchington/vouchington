@@ -12,7 +12,7 @@ import {
 } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
 import {
-  recordAuthorDeletionBeforePostReassignment,
+  processAuthorDeletionPublicationBatch,
   recordRssFeedHardDeletePublicationChange,
 } from './capture-deletions.mts'
 import {
@@ -64,7 +64,7 @@ describe('post publication retained identity keys', () => {
     const oldSlug = `old-publication-${post.id}`
     await using query = await beginTransaction()
     await updateTestPostSlugInTransaction(query, post.id, oldSlug)
-    await recordAuthorDeletionBeforePostReassignment(query, user.id)
+    await processAuthorDeletionPublicationBatch(query, user.id, user.username ?? null, 100)
     await query.commit()
     await expect(
       listTestPostPublicationIdentityKeys({ authorUserId: user.id, postId: post.id }),
@@ -81,7 +81,7 @@ describe('post publication retained identity keys', () => {
     const user = await createTestUser()
     if (!user) throw new Error('Expected scrubbed identity author')
     await using query = await beginTransaction()
-    await recordAuthorDeletionBeforePostReassignment(query, user.id)
+    await processAuthorDeletionPublicationBatch(query, user.id, user.username ?? null, 100)
     await scrubTestUserUsernameInTransaction(query, user.id)
     await query.commit()
     const pendingWork = await getTestPostPublicationDirtyWorkGenerationForAuthor(user.id)
@@ -161,7 +161,12 @@ describe('post publication retained identity keys', () => {
     if (!user) throw new Error('Expected cursor-reset author')
     const post = await createTestPost({ user })
     await using authorChangeQuery = await beginTransaction()
-    await recordAuthorDeletionBeforePostReassignment(authorChangeQuery, user.id)
+    await processAuthorDeletionPublicationBatch(
+      authorChangeQuery,
+      user.id,
+      user.username ?? null,
+      100,
+    )
     await authorChangeQuery.commit()
     await setTestPostPublicationDirtyWorkTopicCursor({
       column: 'author_user_id',
@@ -169,7 +174,12 @@ describe('post publication retained identity keys', () => {
       cursorTopicId: post.id,
     })
     await using replacementAuthorChangeQuery = await beginTransaction()
-    await recordAuthorDeletionBeforePostReassignment(replacementAuthorChangeQuery, user.id)
+    await processAuthorDeletionPublicationBatch(
+      replacementAuthorChangeQuery,
+      user.id,
+      user.username ?? null,
+      100,
+    )
     await replacementAuthorChangeQuery.commit()
     await expectDeletionTopicCursorReset(user.id, 'author_user_id')
     await using rssChangeQuery = await beginTransaction()

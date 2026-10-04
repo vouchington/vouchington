@@ -1,8 +1,8 @@
 import { beginTransaction, createTestUser } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
-import { prepareAuthorDeletionBeforePostReassignment } from './capture-author-deletion.mts'
+import { processAuthorDeletionPublicationBatch } from './capture-author-deletion-batch.mts'
 
-describe('prepareAuthorDeletionBeforePostReassignment', () => {
+describe('processAuthorDeletionPublicationBatch', () => {
   it('waits for a concurrent profile username update before retaining the tombstone', async () => {
     const user = await createTestUser()
     if (!user) throw new Error('Expected user')
@@ -22,6 +22,6 @@ describe('prepareAuthorDeletionBeforePostReassignment', () => {
 async function captureAuthorDeletionWithShortTimeout(userId: string): Promise<void> {
   await using capture = await beginTransaction()
   await capture(`/* author deletion username lock timeout */ SET LOCAL lock_timeout = '50ms'`)
-  await prepareAuthorDeletionBeforePostReassignment(capture, userId)
+  await processAuthorDeletionPublicationBatch(capture, userId, null, 100)
   await capture.commit()
 }

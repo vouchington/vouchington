@@ -71,7 +71,9 @@ describe('recoverExportRequests', () => {
     const requests: RecoverableDataRequest[] = [
       { requestId: 'request-1', userId: 'user-1', processingAttemptId: 'attempt-1' },
     ]
-    const claim = vi.fn<typeof claimRecoverableDataRequests>().mockResolvedValue(requests)
+    const claim = vi
+      .fn<typeof claimRecoverableDataRequests>()
+      .mockResolvedValue({ requests, hasMore: false })
     const enqueue = vi.fn<typeof enqueueBulkExportRequests>().mockResolvedValue([])
 
     await expect(
@@ -79,12 +81,14 @@ describe('recoverExportRequests', () => {
         claimRecoverableDataRequests: claim,
         enqueueBulkExportRequests: enqueue,
       }),
-    ).resolves.toEqual({ enqueued: 1 })
+    ).resolves.toEqual({ enqueued: 1, hasMore: false })
     expect(enqueue).toHaveBeenCalledWith(requests)
   })
 
   it('does not enqueue an empty recovery batch', async () => {
-    const claim = vi.fn<typeof claimRecoverableDataRequests>().mockResolvedValue([])
+    const claim = vi
+      .fn<typeof claimRecoverableDataRequests>()
+      .mockResolvedValue({ requests: [], hasMore: false })
     const enqueue = vi.fn<typeof enqueueBulkExportRequests>()
 
     await expect(
@@ -92,7 +96,7 @@ describe('recoverExportRequests', () => {
         claimRecoverableDataRequests: claim,
         enqueueBulkExportRequests: enqueue,
       }),
-    ).resolves.toEqual({ enqueued: 0 })
+    ).resolves.toEqual({ enqueued: 0, hasMore: false })
     expect(enqueue).not.toHaveBeenCalled()
   })
 })

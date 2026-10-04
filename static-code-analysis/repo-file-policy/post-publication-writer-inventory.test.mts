@@ -9,10 +9,7 @@ function context(
   source = 'recordPostPublicationChange(query, change)',
   captureImport: string | false = 'recordPostPublicationChange',
 ) {
-  const captureModule =
-    captureImport === 'recordUserDeletionPublicationCapture'
-      ? './delete-publication-capture.mts'
-      : '@services/post-publication'
+  const captureModule = '@services/post-publication'
   const files = new Map([
     [inventoryPath, JSON.stringify(inventory)],
     ['backend/services/post-publication/capture.mts', ''],
@@ -56,8 +53,7 @@ describe('post-publication writer inventory', () => {
   it.each([
     'recordPostUpdatePublicationChanges(query, params)',
     'recordPostRelatedUrlPublicationChanges(query, postIds)',
-    'recordPreparedAuthorDeletionPublicationWork(query, userId, capture)',
-    'recordUserDeletionPublicationCapture(query, userId, capture)',
+    'processAuthorDeletionPublicationBatch(query, userId, username, batchSize)',
   ])('accepts the focused capture helper %s', captureCall => {
     const errors: string[] = []
     const captureImport = captureCall.slice(0, captureCall.indexOf('('))

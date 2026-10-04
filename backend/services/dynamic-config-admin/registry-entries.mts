@@ -1,3 +1,4 @@
+import { workDynamicConfigRegistryEntries } from './registry-work-entries.mts'
 import { aiUsageDynamicConfigRegistryEntries } from './registry-ai-usage-entries.mts'
 import { coreDynamicConfigRegistryEntries } from './registry-core-entries.mts'
 import { externalProxyDynamicConfigRegistryEntries } from './registry-external-proxy-entries.mts'
@@ -28,6 +29,10 @@ const REGISTRY_ORDER = [
   'rss-feed-crawl-config',
   'user-import-export-config',
   'data-retention-config',
+  'api-keys-work-config',
+  'account-data-requests-work-config',
+  'memberships-work-config',
+  'copyright-notices-work-config',
   'web-risk-config',
   'moderation-ai-config',
   'moderation-ai-dispatch-config',
@@ -42,6 +47,7 @@ const REGISTRY_ORDER = [
 ] as const
 
 const unorderedRegistryEntries = [
+  ...workDynamicConfigRegistryEntries,
   ...featureFlagDynamicConfigRegistryEntries,
   ...coreDynamicConfigRegistryEntries,
   ...policyDynamicConfigRegistryEntries,

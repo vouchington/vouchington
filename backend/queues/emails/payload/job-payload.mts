@@ -8,6 +8,7 @@ import type {
   ProcessSendEmailVerificationTokenVariables,
   ProcessSendWelcomeEmailVariables,
 } from '../types.mts'
+import { dispatcherPayload } from './job-payload-dispatcher.mts'
 import { parseEngagementVariables } from './job-payload-engagement.mts'
 import { emailVariableKeysCoverCanonicalTypes } from './job-payload-contract.mts'
 import { JobPayloadError } from './job-payload-error.mts'
@@ -33,7 +34,7 @@ type TemplateName = Exclude<
 >
 
 export type ParsedEmailJob =
-  | { kind: 'dispatcher'; name: EmailDispatcherJobs }
+  | { kind: 'dispatcher'; name: EmailDispatcherJobs; data: { afterId?: string } }
   | { kind: 'copyright'; data: { intentId: string } }
   | { kind: 'api-key-expiry'; apiKeyId: string }
   | {
@@ -71,8 +72,7 @@ const templateParsers = {
 
 export function parseEmailJob(name: string, data: unknown): ParsedEmailJob {
   if (isDispatcher(name)) {
-    emptyPayload(data)
-    return { kind: 'dispatcher', name }
+    return { kind: 'dispatcher', name, data: dispatcherPayload(name, data) }
   }
   if (name === 'processSendCopyrightNoticeEmail') {
     return { kind: 'copyright', data: copyrightPayload(data) }
@@ -117,12 +117,6 @@ function isDispatcher(name: string): name is EmailDispatcherJobs {
 
 function isTemplate(name: string): name is TemplateName {
   return Object.hasOwn(templateParsers, name)
-}
-
-function emptyPayload(data: unknown): void {
-  if (data == null) return
-  const record = asRecord(data, 'payload')
-  assertExactKeys(record, [])
 }
 
 function copyrightPayload(data: unknown): { intentId: string } {

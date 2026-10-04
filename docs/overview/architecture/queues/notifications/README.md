@@ -147,3 +147,5 @@ terminal registry failures require the existing operator replay. See the
 Push delivery receives a concrete subscription generation, not merely an endpoint. Persistence
 rechecks the global owner registry under the intent lease before recording a receipt, retry, or
 404/410 cleanup; a stale provider result is ignored.
+
+Copyright reconciliation caps pages per stage through `copyright-notices-work-config`. Continuations carry only unfinished stage cursors and the action sweep evaluation time. They advance the tail even when an individual item fails; retrying the original job and the periodic root sweep retain failed work.

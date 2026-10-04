@@ -1,13 +1,16 @@
+import assert from 'node:assert/strict'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { stableStringify } from '@modules/utils/stable-stringify'
 import { writeGeneratedFiles } from 'vouchington-tooling/api-fixtures'
+import { routeShape } from 'vouchington-tooling/api-contract-discovery'
 
 import { apiFixtureCases } from './cases.mts'
 import { validateFixtureContracts } from './fixture-contract-validation.mts'
 import { loadBackendResponseContracts } from './backend-contract-catalog.mts'
 import { buildApiFixtureSchemaLock, responseSchemaFor } from './schema-lock.mts'
 import type { ApiFixtureManifest } from './types.mts'
+import type { BackendResponseContract } from './response-contract-types.mts'
 
 export { stableStringify } from '@modules/utils/stable-stringify'
 
@@ -21,11 +24,15 @@ function bodyFileFor(id: string): string {
   return `responses/${id}.json`
 }
 
-export function buildApiFixtureManifest(): ApiFixtureManifest {
+export function buildApiFixtureManifest(
+  responseContracts?: Record<string, BackendResponseContract>,
+): ApiFixtureManifest {
   const requestedContractKeys = new Set(
     apiFixtureCases.map(fixtureCase => fixtureCase.backendResponseContractKey),
   )
-  const backendResponseContracts = loadBackendResponseContracts(requestedContractKeys)
+  const backendResponseContracts = responseContracts
+    ? selectFixtureContracts(responseContracts, requestedContractKeys)
+    : loadBackendResponseContracts(requestedContractKeys)
   validateFixtureContracts(apiFixtureCases, backendResponseContracts)
   return {
     version: 2,
@@ -43,9 +50,41 @@ export function buildApiFixtureManifest(): ApiFixtureManifest {
   }
 }
 
-function fixtureFiles(): Map<string, string> {
+function selectFixtureContracts(
+  contracts: Record<string, BackendResponseContract>,
+  requestedKeys: ReadonlySet<string>,
+): Record<string, BackendResponseContract> {
+  const byShape = new Map<string, BackendResponseContract>()
+  for (const [key, contract] of Object.entries(contracts)) {
+    const shape = contractKeyShape(key)
+    assert(!byShape.has(shape), `Ambiguous response contract route shape: ${shape}`)
+    byShape.set(shape, contract)
+  }
+  const selected: Record<string, BackendResponseContract> = {}
+  for (const key of requestedKeys) {
+    const contract = contracts[key] ?? byShape.get(contractKeyShape(key))
+    if (contract) selected[key] = contract
+  }
+  // Discovery retains explicit raw-body contracts even without a JSON fixture.
+  for (const [key, contract] of Object.entries(contracts)) {
+    const root = contract.schema.root
+    if (root.type === 'string' && root.format === 'binary') selected[key] = contract
+  }
+  return selected
+}
+
+function contractKeyShape(key: string): string {
+  const separator = key.indexOf(':')
+  const variant = key.indexOf('#')
+  const end = variant < 0 ? key.length : variant
+  return `${key.slice(0, separator)}:${routeShape(key.slice(separator + 1, end))}${key.slice(end)}`
+}
+
+function fixtureFiles(
+  responseContracts?: Record<string, BackendResponseContract>,
+): Map<string, string> {
   const files = new Map<string, string>()
-  const manifest = buildApiFixtureManifest()
+  const manifest = buildApiFixtureManifest(responseContracts)
   files.set(manifestPath, stableStringify(manifest))
   files.set(
     schemaLockPath,
@@ -61,11 +100,13 @@ function fixtureFiles(): Map<string, string> {
 
 export async function writeApiFixtures({
   check = false,
+  responseContracts,
 }: {
   check?: boolean
+  responseContracts?: Record<string, BackendResponseContract>
 } = {}): Promise<void> {
   await writeGeneratedFiles({
-    files: fixtureFiles(),
+    files: fixtureFiles(responseContracts),
     check,
     obsoleteDirectory: responsesRoot,
     staleError: paths =>

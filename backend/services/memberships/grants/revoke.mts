@@ -61,7 +61,7 @@ async function revokeGrantInTransaction(
     SELECT user_id FROM membership_grants WHERE id = ${grantId}`)
   const userId = (userRows[0] as { user_id: string } | undefined)?.user_id
   if (!userId) return { expired: 0, kind: 'result', result: null }
-  const expired = await expireElapsedMemberships(userId, query)
+  const { expired } = await expireElapsedMemberships(userId, query)
   const { rows } = await query(sql`/* revokeMembershipGrant: lock grant */
     SELECT grant_row.id, grant_row.user_id, grant_row.membership_source_id,
       grant_row.membership_product_id, grant_row.revoked_at,

@@ -1,10 +1,11 @@
+import type { CopyrightAgentSweepData } from '../types.mts'
 import type { JobOptions } from 'glide-mq'
 import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import { AGENT_PRIORITY, AI_AGENTS_DEFAULTS, AI_AGENTS_QUEUE_NAME } from '../config.mts'
 import { ai_agents } from '../queues.mts'
 
 const enqueue = createEnqueueFunction<
-  Record<string, never>,
+  CopyrightAgentSweepData,
   'reconcile-copyright-agent-dispatches'
 >({
   queue: ai_agents,
@@ -12,9 +13,16 @@ const enqueue = createEnqueueFunction<
   jobName: 'reconcile-copyright-agent-dispatches',
 })
 
-export function enqueueReconcileCopyrightAgentDispatches(): ReturnType<typeof enqueue> {
-  return enqueue({}, {
+export function enqueueReconcileCopyrightAgentDispatches(
+  data: CopyrightAgentSweepData = {},
+): ReturnType<typeof enqueue> {
+  return enqueue(data, {
     ...AI_AGENTS_DEFAULTS,
     priority: AGENT_PRIORITY['reconcile-copyright-agent-dispatches'],
+    deduplication: {
+      id: `copyright-agent-sweep:${data.after ?? 'root'}`,
+      mode: 'throttle',
+      ttl: 60_000,
+    },
   } satisfies JobOptions)
 }

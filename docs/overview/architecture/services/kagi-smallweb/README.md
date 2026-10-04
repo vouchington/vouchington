@@ -14,3 +14,5 @@ Syncs RSS feeds from Kagi Small Web feed lists — fetches multiple sources in p
 - Parent: [../AGENTS.md](../../../../../backend/services/AGENTS.md)
 - Kagi Small Web system: [../../queues/kagi-smallweb/README.md](../../queues/kagi-smallweb/README.md)
 - RSS feeds service: [../rss-feeds/README.md](../rss-feeds/README.md)
+
+Feed deduplication probes only fetched candidate URLs in bounded indexed `ANY` chunks, using `candidate_batch_size` from the registered import configuration. The fetched external lists remain the import input; this change does not redesign the source-list sweep.

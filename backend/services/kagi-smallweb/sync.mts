@@ -38,7 +38,7 @@ export async function dispatchKagiSmallWeb(): Promise<DispatchKagiSmallWebResult
 
   const allEntries = changedResponses.flatMap(r => parseFeedList(r!.text!, r!.source.type))
 
-  const existingUrls = await getExistingRssFeedUrls()
+  const existingUrls = await getExistingRssFeedUrls(allEntries.map(entry => entry.feedUrl))
   const newEntries = allEntries.filter(entry => !existingUrls.has(entry.feedUrl))
 
   /* v8 ignore start -- enabled-with-content path requires live HTTP to raw.githubusercontent.com; would enqueue hundreds of real feeds in Valkey */

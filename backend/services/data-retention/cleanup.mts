@@ -227,9 +227,18 @@ export async function cleanupExpiredTopicImportAttempts(
 export async function cleanupSoftDeletedUsers(options: CleanupOptions): Promise<CleanupResult> {
   const retentionDays = normalizeRetentionDays(options.retentionDays, 90)
   const cutoffDate = getRetentionCutoffDate(retentionDays, options.now)
-  return runBoundedBatches(options, async batchSize =>
-    cleanupSoftDeletedUserBatch(cutoffDate, batchSize, options.lowerBoundDate),
-  )
+  const batchSize = normalizePositiveInteger(options.batchSize, DEFAULT_BATCH_SIZE, 'batchSize')
+  const maxBatches = assertPositiveInteger(options.maxBatches, 'maxBatches')
+  let deleted = 0
+  let hasMore = false
+  for (let batch = 0; batch < maxBatches; batch++) {
+    // oxlint-disable-next-line no-await-in-loop -- a committed publication page may progress without purging its user.
+    const result = await cleanupSoftDeletedUserBatch(cutoffDate, batchSize, options.lowerBoundDate)
+    deleted += result.deleted
+    hasMore = result.hasMore
+    if (!hasMore) break
+  }
+  return { deleted, hasMore }
 }
 
 export async function cleanupOldReferralAttributions(
