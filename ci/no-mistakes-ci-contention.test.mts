@@ -1,8 +1,10 @@
 import { execFileSync } from 'node:child_process'
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import ts from 'typescript'
+import { symbols } from 'no-mistakes'
 import { describe, expect, it } from 'vitest'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
@@ -45,30 +47,32 @@ const LIVE_ANALYSIS_IMPORTS = new Set([
   'validateMermaidMarkdown',
 ])
 
-function liveAnalysisImportNames(source: string): string[] {
-  if (!source.includes('no-mistakes')) return []
-  const file = ts.createSourceFile('test.mts', source, ts.ScriptTarget.Latest, true)
-  const names: string[] = []
-  function visit(node: ts.Node) {
-    if (
-      ts.isImportDeclaration(node) &&
-      ts.isStringLiteral(node.moduleSpecifier) &&
-      node.moduleSpecifier.text === 'no-mistakes' &&
-      node.importClause !== undefined &&
-      !node.importClause.isTypeOnly &&
-      node.importClause.namedBindings !== undefined &&
-      ts.isNamedImports(node.importClause.namedBindings)
-    ) {
-      for (const element of node.importClause.namedBindings.elements) {
-        if (element.isTypeOnly) continue
-        const name = (element.propertyName ?? element.name).text
-        if (LIVE_ANALYSIS_IMPORTS.has(name)) names.push(name)
-      }
-    }
-    ts.forEachChild(node, visit)
-  }
-  visit(file)
-  return names
+async function liveAnalysisImportNames(
+  files: string[],
+  root = repoRoot,
+): Promise<Map<string, string[]>> {
+  if (files.length === 0) return new Map()
+  const result = await symbols({
+    root,
+    files,
+    include: 'imports',
+    timeout: 30,
+    lockTimeout: 10,
+    jobs: 1,
+  })
+  return new Map(
+    result.files.map(file => [
+      file.path,
+      (file.imports ?? [])
+        .filter(
+          binding =>
+            binding.source === 'no-mistakes' &&
+            !binding.typeOnly &&
+            LIVE_ANALYSIS_IMPORTS.has(binding.imported),
+        )
+        .map(binding => binding.imported),
+    ]),
+  )
 }
 
 function spawnsNoMistakesCli(source: string): boolean {
@@ -119,7 +123,12 @@ describe('no-mistakes CI contention policy', () => {
     ).not.toMatch(/\bcomputeRouteAliasMap\b/)
   })
 
-  it('does not invoke live no-mistakes analysis from Vitest tests', () => {
+  it('does not invoke live no-mistakes analysis from Vitest tests', async () => {
+    const imports = await liveAnalysisImportNames(
+      policySubjectFiles().filter(
+        path => !/\.mock\.test\./u.test(path) && readRepoFile(path).includes('no-mistakes'),
+      ),
+    )
     expect(
       policySubjectFiles().flatMap(path => {
         const source = readRepoFile(path)
@@ -127,10 +136,38 @@ describe('no-mistakes CI contention policy', () => {
         if (/\.mock\.test\./u.test(path)) {
           return hits.length > 0 ? [`${path}:${hits.join(',')}`] : []
         }
-        hits.push(...liveAnalysisImportNames(source).map(name => `import:${name}`))
+        hits.push(...(imports.get(path) ?? []).map(name => `import:${name}`))
         return hits.length > 0 ? [`${path}:${hits.join(',')}`] : []
       }),
     ).toEqual([])
+  })
+
+  it('selects runtime named imports from the SDK module at their original names', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'live-analysis-imports-'))
+    try {
+      writeFileSync(
+        join(root, 'imports.mts'),
+        [
+          "import { check as runCheck, type CheckOptions } from 'no-mistakes'",
+          "import type { analyzeProject } from 'no-mistakes'",
+          "import { type ciTopology, symbols } from 'no-mistakes'",
+          "import { 'resolveCheck' as resolver, '\\u0063heck' as checker } from 'no-mistakes'",
+          "import defaultApi from 'no-mistakes'",
+          "import * as namespaceApi from 'no-mistakes'",
+          "import { check } from 'other-module'",
+          "const dynamic = import('no-mistakes')",
+          "const { testsPlan } = require('no-mistakes')",
+          "export { ciTopologyImpact } from 'no-mistakes'",
+          "import requiredApi = require('no-mistakes')",
+        ].join('\n'),
+      )
+      expect(await liveAnalysisImportNames([], root)).toEqual(new Map())
+      expect(await liveAnalysisImportNames(['imports.mts'], root)).toEqual(
+        new Map([['imports.mts', ['check', 'resolveCheck', 'check']]]),
+      )
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
   })
 
   it('does not load live topology from Vitest tests', () => {
