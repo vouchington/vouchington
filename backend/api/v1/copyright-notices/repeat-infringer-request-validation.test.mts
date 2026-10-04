@@ -151,7 +151,7 @@ describe('repeat-infringer request contracts', () => {
       // A synthetic keyset cursor past every real case keeps the shared-database read scoped.
       const after = encodeScopedTierPreciseUuidCursor(
         '2999-01-01T00:00:00.000000Z',
-        2,
+        5,
         crypto.randomUUID(),
         copyrightStaffQueueCursorScope,
       )
