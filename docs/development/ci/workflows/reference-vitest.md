@@ -44,10 +44,11 @@ and fork-leak detection remain.
   path binding an un-closeable TCP listener on a fallback port. It is fixed by binding only when
   `NODE_PREWARM_PORT` is set. Check a new occurrence is not that before calling it this flake.
 
-The backend compiler-contract project runs in a separate step without V8 coverage. Precise
-call-count coverage disables optimization inside the TypeScript compiler even though dependency
-coverage is excluded. The runtime projects retain coverage collection and the same LCOV gates;
-fixture runtime helpers remain exercised by their module and ordinary test-helper suites.
+The static backend job compiles current producers once to verify all API fixture, OpenAPI and
+request-contract snapshots, exact query descriptors, registered routes and PostgreSQL row types.
+Vitest checks these verified canonical outputs without compiling the full backend. Small compiler-host
+and bounded-settlement tests still cover filesystem invalidation and build retry rules. Runtime
+projects retain their coverage collection and LCOV gates.
 
 | Workflow                                                                                    | Type     | Runner             | Docker | Purpose                                                                                                                                                             |
 | ------------------------------------------------------------------------------------------- | -------- | ------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

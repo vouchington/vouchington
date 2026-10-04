@@ -1,24 +1,20 @@
 import { execFile } from 'node:child_process'
 import { mkdtemp, readFile } from 'node:fs/promises'
+import { readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import { buildOpenApiDocument } from './build-openapi-document.mts'
 import type {
   OpenApiDocument,
   OpenApiResponse,
   OpenApiSchema,
 } from 'vouchington-tooling/openapi-document'
 import { openApiPaths, writeOpenApi } from './write-openapi.mts'
-import { routeShape } from 'vouchington-tooling/api-contract-discovery'
 
-import { loadRegisteredRouteCatalog } from '../backend-contract-catalog.mts'
-import { COLD_OPENAPI_BUILD_TIMEOUT_MS } from '../cold-build-budget.mts'
-import { getBackendProgramBuildCount, getBackendProgramEntryCount } from '../backend-program.mts'
 import { assertContentRequestContractCoverage } from './content-request-contract-coverage.mts'
 import { assertModerationOperationsRequestContractCoverage } from './moderation-operations-request-contract-coverage.mts'
 import { assertStaffRequestContractCoverage } from './staff-request-contract-coverage.mts'
@@ -26,9 +22,7 @@ import { assertStaffRequestContractCoverage } from './staff-request-contract-cov
 const run = promisify(execFile)
 const repoRoot = fileURLToPath(new URL('../../../..', import.meta.url))
 
-let doc: OpenApiDocument
-let buildCountAfterHoist: number
-let entryCountAfterHoist: number
+const doc = JSON.parse(readFileSync(openApiPaths.openApiPath, 'utf8')) as OpenApiDocument
 
 function productionRequestSchema(path: string): OpenApiSchema {
   const requestBody = doc.paths[path]?.post?.requestBody
@@ -45,36 +39,27 @@ function productionRequestSchema(path: string): OpenApiSchema {
   return component
 }
 
-describe('openapi document generation', () => {
-  // Hoist once; only the two writeOpenApi() tests rebuild to exercise the write path.
-  beforeAll(() => {
-    doc = buildOpenApiDocument()
-    buildCountAfterHoist = getBackendProgramBuildCount()
-    entryCountAfterHoist = getBackendProgramEntryCount()
-  }, COLD_OPENAPI_BUILD_TIMEOUT_MS)
+describe('generated OpenAPI document', () => {
+  it('preserves canonical document and request-bundle serialization', async () => {
+    await expect(writeOpenApi({ check: true, document: doc })).resolves.toBeUndefined()
+  })
 
-  it(
-    'keeps the committed api-fixtures/v1/openapi.json up to date with the generator',
-    async () => {
-      await expect(writeOpenApi({ check: true })).resolves.toBeUndefined()
-    },
-    COLD_OPENAPI_BUILD_TIMEOUT_MS,
-  )
+  it('rejects stale canonical output without writing it', async () => {
+    await expect(
+      writeOpenApi({ check: true, document: { ...doc, info: { ...doc.info, title: 'stale' } } }),
+    ).rejects.toThrow('OpenAPI runtime contracts are stale')
+  })
 
-  it(
-    'writes a well-formed document to disk',
-    async () => {
-      const root = await mkdtemp(join(tmpdir(), 'openapi-write-'))
-      const path = join(root, 'openapi.json')
+  it('writes a well-formed document to disk', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'openapi-write-'))
+    const path = join(root, 'openapi.json')
 
-      await writeOpenApi({ path })
+    await writeOpenApi({ path, document: doc })
 
-      const content = await readFile(path, 'utf8')
-      expect(content).toContain('"openapi": "3.1.0"')
-      expect(JSON.parse(content).paths).toBeTruthy()
-    },
-    COLD_OPENAPI_BUILD_TIMEOUT_MS,
-  )
+    const content = await readFile(path, 'utf8')
+    expect(content).toContain('"openapi": "3.1.0"')
+    expect(JSON.parse(content).paths).toBeTruthy()
+  })
 
   it('extracts every registered response and request contract', () => {
     expect(doc['x-unavailable-routes']).toEqual([])
@@ -203,7 +188,7 @@ describe('openapi document generation', () => {
     })
   })
 
-  it('documents real post creation, multi-format export, SSE, and registered-route completeness', () => {
+  it('documents real post creation, multi-format export, SSE and MCP contracts', () => {
     const createPost = doc.paths['/api/v1/posts']!.post!.responses['201'] as {
       content: Record<string, { schema: { anyOf?: unknown[] } }>
     }
@@ -259,42 +244,14 @@ describe('openapi document generation', () => {
         })
       }
     }
-
-    const registered = new Set(
-      loadRegisteredRouteCatalog().map(
-        route => `${route.method}:${routeShape(route.routeTemplate)}`,
-      ),
-    )
-    const generated = new Set(
-      Object.entries(doc.paths).flatMap(([path, methods]) =>
-        Object.keys(methods).map(
-          method => `${method.toUpperCase()}:${path.replace(/\{[^/]+\}/g, ':')}`,
-        ),
-      ),
-    )
-    expect({
-      missing: [...registered].filter(route => !generated.has(route)).toSorted(),
-      extra: [...generated].filter(route => !registered.has(route)).toSorted(),
-    }).toEqual({ missing: [], extra: [] })
   })
 
-  it(
-    'validates as a structurally sound OpenAPI 3.1 document',
-    async () => {
-      // Minimal checks spec validity and refs without requiring handwritten operation summaries.
-      await expect(
-        run('pnpm', ['exec', 'redocly', 'lint', openApiPaths.openApiPath, '--extends', 'minimal'], {
-          cwd: repoRoot,
-        }),
-      ).resolves.toBeTruthy()
-    },
-    COLD_OPENAPI_BUILD_TIMEOUT_MS,
-  )
-
-  it('never re-enters loadBackendProgram() beyond the hoist and the known rebuilds', () => {
-    // The two writes enter five loaders each; registered-route coverage adds one entry.
-    // Other tests must read the hoisted document even when a loader would hit its cache.
-    expect(getBackendProgramEntryCount()).toBe(entryCountAfterHoist + 11)
-    expect(getBackendProgramBuildCount()).toBe(buildCountAfterHoist)
-  })
+  it('validates as a structurally sound OpenAPI 3.1 document', async () => {
+    // Minimal checks spec validity and refs without requiring handwritten operation summaries.
+    await expect(
+      run('pnpm', ['exec', 'redocly', 'lint', openApiPaths.openApiPath, '--extends', 'minimal'], {
+        cwd: repoRoot,
+      }),
+    ).resolves.toBeTruthy()
+  }, 60_000)
 })

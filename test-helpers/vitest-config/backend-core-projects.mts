@@ -49,11 +49,7 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
         'backend/test-helpers/services/users/test-support.test.mts',
         'backend/test-helpers/workers/entity-listeners/test-support.test.mts',
         'backend/test-helpers/entities/bluesky-link-authorizations.test.mts',
-        // Moved to the dedicated backend-contract-program project below: these four files build the
-        // real backend contract ts.Program, and sharing this fork with the rest of this project's
-        // files makes this project's peak heap a function of whichever unrelated files' retained
-        // heap happens to accumulate here first. See backend-contract-program's own comment.
-        'backend/test-helpers/api-fixtures/backend-program.test.mts',
+        // Canonical contract assertions read artifacts verified by static-backend's compiler job.
         'backend/test-helpers/api-fixtures/openapi/write-openapi.test.mts',
         'backend/test-helpers/api-fixtures/backend-contract-catalog.hardening.test.mts',
         'backend/test-helpers/api-fixtures/native-moderation-optional-contracts.test.mts',
@@ -66,32 +62,15 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
     extends: true,
     test: {
       pool: 'forks',
-      // isolate: false among just these four files: none of them need a per-file module-registry
-      // reset, and when two do land in the same fork they reuse one memoized backend ts.Program via
-      // loadBackendProgram() (see backend-program.mts) instead of each building their own. It does
-      // NOT guarantee all four share one fork — Vitest 5 has no per-project worker cap that survives
-      // VITEST_MAX_WORKERS (CI's env-var worker-count override unconditionally overwrites any
-      // project-level maxWorkers/fileParallelism value during config resolution), so each file can
-      // still land on its own fork. That's fine: what this project boundary actually buys is that no
-      // fork here pays for a program build *plus* whatever unrelated backend-test-helpers files would
-      // otherwise have accumulated in it — see the exclude comment there.
+      // These tests consume generated artifacts; full backend compilation belongs to static-backend.
       isolate: false,
-      name: 'backend-contract-program',
+      name: 'backend-contract-artifacts',
       include: [
-        'backend/test-helpers/api-fixtures/backend-program.test.mts',
         'backend/test-helpers/api-fixtures/openapi/write-openapi.test.mts',
         'backend/test-helpers/api-fixtures/backend-contract-catalog.hardening.test.mts',
         'backend/test-helpers/api-fixtures/native-moderation-optional-contracts.test.mts',
       ],
       exclude: ['**/node_modules/**', '**/.git/**'],
-      // Backstop only, not the real per-test/per-hook budget: every it()/beforeAll() in these four
-      // files that needs more than this already carries its own explicit inline timeout override
-      // composed from cold-build-budget.mts's constants (COLD_BACKEND_PROGRAM_TIMEOUT_MS,
-      // COLD_OPENAPI_BUILD_TIMEOUT_MS, and multiples of them — see those call sites). This
-      // project-level default must stay within dev/vitest-config.test.mts's ceiling policy
-      // (#10762, #8078) rather than track COLD_BACKEND_PROGRAM_TIMEOUT_MS directly, since that
-      // constant (120s) now exceeds the 60s/90s ceiling. 60s matches this project's original,
-      // already-proven-sufficient backstop value.
       testTimeout: 60_000,
       hookTimeout: 60_000,
     },

@@ -1,10 +1,11 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 import type { BackendResponseContract } from '../response-contract-types.mts'
-import { COLD_OPENAPI_BUILD_TIMEOUT_MS } from '../cold-build-budget.mts'
 import { applyRequiredQueryParameterOverrides } from '../required-query-parameter-overrides.mts'
 import { buildOpenApiDocument } from './build-openapi-document.mts'
-import type { OpenApiSchema } from 'vouchington-tooling/openapi-document'
+import type { OpenApiDocument, OpenApiSchema } from 'vouchington-tooling/openapi-document'
+import { openApiPaths } from './write-openapi.mts'
 
 const passkeyOptionRoutes = [
   '/api/v1/auth/mfa/passkeys/authentication/options',
@@ -197,29 +198,25 @@ describe('OpenAPI catalog response helpers', () => {
     )
   })
 
-  it(
-    'keeps passkey option routes available without the non-JSON-safe prf extension',
-    () => {
-      const doc = buildOpenApiDocument()
+  it('keeps passkey option routes available without the non-JSON-safe prf extension', () => {
+    const doc = JSON.parse(readFileSync(openApiPaths.openApiPath, 'utf8')) as OpenApiDocument
 
-      for (const path of passkeyOptionRoutes) {
-        const operation = doc.paths[path]!.post!
-        expect(operation).not.toHaveProperty('x-schema-unavailable')
+    for (const path of passkeyOptionRoutes) {
+      const operation = doc.paths[path]!.post!
+      expect(operation).not.toHaveProperty('x-schema-unavailable')
 
-        const response = operation.responses['200']!
-        if (!('content' in response)) throw new Error(`${path} has no OpenAPI response content`)
-        const schema = response.content!['application/json']!.schema as OpenApiSchema
-        const options = resolveSchema(doc.components.schemas, schema).properties!.options!
-        const extensions = resolveSchema(doc.components.schemas, options).properties!.extensions
+      const response = operation.responses['200']!
+      if (!('content' in response)) throw new Error(`${path} has no OpenAPI response content`)
+      const schema = response.content!['application/json']!.schema as OpenApiSchema
+      const options = resolveSchema(doc.components.schemas, schema).properties!.options!
+      const extensions = resolveSchema(doc.components.schemas, options).properties!.extensions
 
-        expect(extensions).toBeDefined()
-        expect(resolveSchema(doc.components.schemas, extensions!)).not.toHaveProperty(
-          'properties.prf',
-        )
-      }
-    },
-    COLD_OPENAPI_BUILD_TIMEOUT_MS,
-  )
+      expect(extensions).toBeDefined()
+      expect(resolveSchema(doc.components.schemas, extensions!)).not.toHaveProperty(
+        'properties.prf',
+      )
+    }
+  })
 })
 
 function resolveSchema(

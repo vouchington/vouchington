@@ -1,9 +1,8 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { describe, expect, it } from 'vitest'
+import type { OpenApiDocument } from 'vouchington-tooling/openapi-document'
 
-import { loadBackendQueryContracts } from './backend-contract-catalog.mts'
 import { newExpectedParameters } from './query-contract-expected-parameters.mts'
-import { COLD_BACKEND_PROGRAM_TIMEOUT_MS } from './cold-build-budget.mts'
-import { getBackendProgramBuildCount, getBackendProgramEntryCount } from './backend-program.mts'
 
 const expectedParameters = {
   'GET:/api/v1/admin/ai-costs': ['after', 'limit'],
@@ -233,67 +232,57 @@ const expectedParameters = {
   ...newExpectedParameters,
 } as const
 
-const acceptedOperations = new Set(Object.keys(expectedParameters))
+const document = JSON.parse(
+  readFileSync(new URL('../../../api-fixtures/v1/openapi.json', import.meta.url), 'utf8'),
+) as OpenApiDocument
+const queryParameters = Object.fromEntries(
+  Object.entries(document.paths).flatMap(([route, pathItem]) =>
+    Object.entries(pathItem).flatMap(([method, operation]) => {
+      const parameters = operation.parameters?.filter(parameter => parameter.in === 'query') ?? []
+      return parameters.length
+        ? [[`${method.toUpperCase()}:${route.replace(/\{([^}]+)\}/g, ':$1')}`, parameters]]
+        : []
+    }),
+  ),
+)
 
-let contracts: ReturnType<typeof loadBackendQueryContracts>
-let buildCountAfterHoist: number
-let entryCountAfterHoist: number
-
-describe('real backend API query contracts', () => {
-  beforeAll(() => {
-    // Build once here — tests below read this closure instead of re-entering the loader.
-    contracts = loadBackendQueryContracts(acceptedOperations)
-    buildCountAfterHoist = getBackendProgramBuildCount()
-    entryCountAfterHoist = getBackendProgramEntryCount()
-  }, COLD_BACKEND_PROGRAM_TIMEOUT_MS)
-
+describe('generated backend API query contracts', () => {
   it('publishes exactly the accepted operations and parameter sets', () => {
-    expect(Object.keys(contracts).toSorted()).toEqual(Object.keys(expectedParameters).toSorted())
+    expect(Object.keys(queryParameters).toSorted()).toEqual(
+      Object.keys(expectedParameters).toSorted(),
+    )
     for (const [operation, names] of Object.entries(expectedParameters)) {
-      expect(Object.keys(contracts[operation]!.parameters).toSorted()).toEqual(names)
+      expect(queryParameters[operation]!.map(parameter => parameter.name).toSorted()).toEqual(names)
     }
   })
 
-  it('retains the meaningful descriptor kinds added by content validation', () => {
-    expect(contracts['GET:/api/v1/topics/:id/prioritized-referral-links']!.parameters.all).toEqual({
-      kind: 'boolean',
+  it('retains boolean, array, bounded integer and required wire schemas', () => {
+    const parameter = (operation: string, name: string) =>
+      queryParameters[operation]!.find(candidate => candidate.name === name)!
+    expect(parameter('GET:/api/v1/topics/:id/prioritized-referral-links', 'all').schema).toEqual({
+      type: 'boolean',
     })
-    expect(contracts['POST:/api/v1/rss-feeds/:id/refreshes']!.parameters.force).toEqual({
-      kind: 'boolean',
+    expect(parameter('POST:/api/v1/rss-feeds/:id/refreshes', 'force').schema).toEqual({
+      type: 'boolean',
     })
-    expect(contracts['GET:/api/v1/topics/compare']!.parameters.slugs).toMatchObject({
-      kind: 'csv-array',
+    expect(parameter('GET:/api/v1/topics/compare', 'slugs')).toMatchObject({
+      schema: { type: 'array' },
+      style: 'form',
+      explode: false,
     })
-    expect(contracts['GET:/api/v1/referral-links']!.parameters.limit).toMatchObject({
-      kind: 'integer',
+    expect(parameter('GET:/api/v1/referral-links', 'limit').schema).toMatchObject({
+      type: 'integer',
       maximum: 100,
       minimum: 1,
     })
-    expect(contracts['GET:/api/v1/rss-feed-items']!.parameters.media_type).toMatchObject({
-      kind: 'csv-array',
+    expect(parameter('GET:/api/v1/rss-feed-items', 'media_type').schema).toMatchObject({
+      type: 'array',
     })
-    expect(contracts['GET:/api/v1/availability']!.parameters.kind).toHaveProperty('required', true)
-    expect(contracts['GET:/api/v1/availability']!.parameters.value).toHaveProperty('required', true)
-    expect(contracts['GET:/api/v1/localization']!.parameters.consumer).toHaveProperty(
-      'required',
-      true,
-    )
-  })
-
-  it(
-    'does not reuse a permissive known-route cache entry for a stricter route set',
-    () => {
-      expect(Object.keys(contracts)).toHaveLength(Object.keys(expectedParameters).length)
-      // Deliberate cacheKey miss (empty route set) forces a fresh discovery pass — needs its own budget.
-      expect(() => loadBackendQueryContracts(new Set())).toThrow(
-        'apiQuery references unknown response route',
-      )
-    },
-    COLD_BACKEND_PROGRAM_TIMEOUT_MS,
-  )
-
-  it('never re-enters loadBackendProgram() beyond the hoist and the single intentional rebuild', () => {
-    expect(getBackendProgramEntryCount()).toBe(entryCountAfterHoist + 1)
-    expect(getBackendProgramBuildCount()).toBe(buildCountAfterHoist)
+    for (const [operation, name] of [
+      ['GET:/api/v1/availability', 'kind'],
+      ['GET:/api/v1/availability', 'value'],
+      ['GET:/api/v1/localization', 'consumer'],
+    ])
+      expect(parameter(operation, name).required).toBe(true)
   })
 })

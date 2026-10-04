@@ -1,16 +1,14 @@
-import { beforeAll, describe, expect, it } from 'vitest'
-import { COLD_BACKEND_PROGRAM_TIMEOUT_MS } from './cold-build-budget.mts'
+import { readFileSync } from 'node:fs'
+import { describe, expect, it } from 'vitest'
 import { requiredFlagsForProperty } from './native-moderation-optional-contracts.mts'
-import { buildApiFixtureManifest } from './write.mts'
+import type { buildApiFixtureManifest } from './write.mts'
 
 describe('native moderation optional additive contracts', () => {
-  let contracts: ReturnType<typeof buildApiFixtureManifest>['backendResponseContracts']
+  const { backendResponseContracts: contracts } = JSON.parse(
+    readFileSync(new URL('../../../api-fixtures/v1/manifest.json', import.meta.url), 'utf8'),
+  ) as ReturnType<typeof buildApiFixtureManifest>
 
-  beforeAll(() => {
-    contracts = buildApiFixtureManifest().backendResponseContracts
-  }, COLD_BACKEND_PROGRAM_TIMEOUT_MS)
-
-  it('keeps appeal and dispute additions optional for old backends', () => {
+  it('keeps current appeal and dispute context optional and review media required', () => {
     expect(
       requiredFlagsForProperty(contracts['GET:/api/v1/appeals#staff'].schema, 'target_context'),
     ).toEqual([false])

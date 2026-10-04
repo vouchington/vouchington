@@ -38,15 +38,6 @@ const queries = new Map<string, CacheEntry<BackendQueryContractRegistry>>()
 const headers = new Map<string, CacheEntry<HeaderContractRegistry>>()
 let routes: CacheEntry<RegisteredRoute[]> | undefined
 
-export function resetBackendContractCatalogForTest(): void {
-  catalogs.clear()
-  responses.clear()
-  requests.clear()
-  queries.clear()
-  headers.clear()
-  routes = undefined
-}
-
 export function loadBackendResponseContracts(
   requestedKeys?: ReadonlySet<string>,
   options?: DiscoveryOptions,

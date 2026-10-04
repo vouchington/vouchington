@@ -32,9 +32,6 @@ type CachedBackendProgram = BackendProgram & {
 
 let cachedProgram: CachedBackendProgram | undefined
 let buildCount = 0
-let entryCount = 0
-let simulateInputChange = false
-let simulateBuildTimeInputChange = false
 
 /**
  * Memoizes the single `ts.Program` shared by every backend contract loader while its complete
@@ -43,9 +40,8 @@ let simulateBuildTimeInputChange = false
  * replay that exact graph; a changed probe or root set rebuilds and advances the opaque generation.
  */
 export function loadBackendProgram(): BackendProgram {
-  entryCount += 1
   const configuration = readBackendProgramConfiguration()
-  if (cachedProgram && !simulateInputChange) {
+  if (cachedProgram) {
     if (
       cachedProgram.rootSignature === configuration.rootSignature &&
       compilerHostProbesAreFresh(cachedProgram.probeSnapshot)
@@ -53,7 +49,6 @@ export function loadBackendProgram(): BackendProgram {
       return cachedProgram
     }
   }
-  simulateInputChange = false
   return buildBackendProgram(configuration)
 }
 
@@ -67,9 +62,6 @@ function buildBackendProgram(configuration: BackendProgramConfiguration): Cached
       const { probeSnapshot, program } = createTrackedBackendProgramForTest(
         currentConfiguration.rootFileNames,
         currentConfiguration.parsed.options,
-        simulateBuildTimeInputChange
-          ? { afterRead: consumeBuildTimeInputChangeForTest }
-          : undefined,
       )
       buildCount += 1
       return { configuration: currentConfiguration, probeSnapshot, program }
@@ -121,19 +113,10 @@ function readBackendProgramConfiguration(): BackendProgramConfiguration {
 
 /**
  * Number of times loadBackendProgram() has actually built a `ts.Program` (cache misses only,
- * never cache hits) since the last narrow test reset. See backend-program.test.mts.
+ * never cache hits) during this process. The canonical compilation job verifies warm reuse.
  */
 export function getBackendProgramBuildCount(): number {
   return buildCount
-}
-
-/**
- * Number of times loadBackendProgram() has been called at all, including cache hits. Unlike
- * getBackendProgramBuildCount(), this also catches a reintroduced call that hits an already-warm
- * cache — a build-count-only assertion would miss that call silently.
- */
-export function getBackendProgramEntryCount(): number {
-  return entryCount
 }
 
 export function createTrackedBackendProgramForTest(
@@ -154,26 +137,4 @@ export function createBackendProgramCompilerHost(
     ...hooks,
     readFileReplay: 'when-filesystem-metadata-stable',
   })
-}
-
-export function resetBackendProgramCacheForTest(): void {
-  cachedProgram = undefined
-  buildCount = 0
-  entryCount = 0
-  simulateInputChange = false
-  simulateBuildTimeInputChange = false
-}
-
-export function simulateBackendProgramInputChangeForTest(): void {
-  simulateInputChange = true
-}
-
-export function simulateBackendProgramBuildTimeInputChangeForTest(): void {
-  simulateBuildTimeInputChange = true
-}
-
-function consumeBuildTimeInputChangeForTest(): boolean {
-  if (!simulateBuildTimeInputChange) return false
-  simulateBuildTimeInputChange = false
-  return true
 }

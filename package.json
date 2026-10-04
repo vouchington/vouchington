@@ -34,6 +34,7 @@
     "test:ts-shared": "node ci/run-vitest-project-group.mts ts-shared",
     "test:tooling": "node ci/tooling-test-runner.mts",
     "test:web-api": "bash -c 'if [ -f .env ]; then source .env; fi; unset CF_WORKER_SECRET; node ci/run-vitest-project-group.mts web-api \"$@\"' --",
+    "api-contracts:check": "node backend/test-helpers/api-fixtures/check.mts",
     "api-fixtures:generate": "node backend/test-helpers/api-fixtures/generate.mts",
     "api-fixtures:check": "node backend/test-helpers/api-fixtures/generate.mts --check",
     "openapi:generate": "node backend/test-helpers/api-fixtures/openapi/generate.mts",

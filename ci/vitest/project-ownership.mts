@@ -59,7 +59,7 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
       'backend-modules',
       'backend-no-data-mocks',
       'backend-test-helpers',
-      'backend-contract-program',
+      'backend-contract-artifacts',
       'backend-email-templates',
     ]),
   },
