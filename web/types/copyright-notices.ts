@@ -2,12 +2,6 @@ import type { CopyrightImageSurface } from './copyright-image-surfaces'
 import type { CopyrightStaffTerritorialCase } from './copyright-territorial'
 import type { CopyrightEuParticipantCase } from './copyright-eu'
 import type { CopyrightStaffQueueReason } from './copyright-notice-queue'
-export type {
-  CopyrightEuNoticeInput,
-  CopyrightEuNoticeResponse,
-  CopyrightJurisdictionAvailabilityResponse,
-  CopyrightEuRedressResponse,
-} from './copyright-eu'
 export { copyrightImageSurfaceLabel } from './copyright-image-surfaces'
 export type { CopyrightImageSurface } from './copyright-image-surfaces'
 
@@ -191,7 +185,11 @@ export type CopyrightStaffQueueItem = {
   next_deadline: { escalation_at: string; restoration_deadline_at: string } | null
 }
 
-export type { CopyrightStaffQueueReason, CopyrightStaffQueuePage } from './copyright-notice-queue'
+export type CopyrightStaffQueuePage = {
+  copyright_notices: CopyrightStaffQueueItem[]
+  page_info: CopyrightNoticesPage['page_info']
+}
+export type { CopyrightStaffQueueReason } from './copyright-notice-queue'
 
 export type {
   CopyrightEmailIntakeQueueItem,

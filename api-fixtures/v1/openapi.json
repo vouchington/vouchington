@@ -3675,6 +3675,9 @@
             },
             "type": "array"
           },
+          "dispute_settlements_page_info": {
+            "$ref": "#/components/schemas/PageInfo"
+          },
           "informed_at": {
             "anyOf": [
               {
@@ -3713,6 +3716,7 @@
           "complaint",
           "decided_at",
           "dispute_settlements",
+          "dispute_settlements_page_info",
           "informed_at",
           "outcome",
           "reopened_at"
@@ -4945,6 +4949,9 @@
             },
             "type": "array"
           },
+          "complaints_page_info": {
+            "$ref": "#/components/schemas/PageInfo"
+          },
           "decision": {
             "anyOf": [
               {
@@ -5045,6 +5052,9 @@
             },
             "type": "array"
           },
+          "dispute_settlements_page_info": {
+            "$ref": "#/components/schemas/PageInfo"
+          },
           "grounds": {
             "type": "string"
           },
@@ -5098,8 +5108,10 @@
         "required": [
           "acknowledgment",
           "complaints",
+          "complaints_page_info",
           "decision",
           "dispute_settlements",
+          "dispute_settlements_page_info",
           "grounds",
           "hosted_use_url",
           "notifier",
@@ -8017,6 +8029,52 @@
       "EuDisputeSettlementResult": {
         "enum": ["decided_for_platform", "decided_for_recipient", "no_decision", "withdrawn"],
         "type": "string"
+      },
+      "EuParticipantSettlement": {
+        "additionalProperties": false,
+        "properties": {
+          "body_name": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "decided_at": {
+                    "type": "string"
+                  },
+                  "implemented_at": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "result": {
+                    "type": "string"
+                  }
+                },
+                "required": ["decided_at", "implemented_at", "result"],
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "referred_at": {
+            "type": "string"
+          }
+        },
+        "required": ["body_name", "id", "outcome", "referred_at"],
+        "type": "object"
       },
       "ExactTopic": {
         "additionalProperties": false,
@@ -47463,6 +47521,194 @@
         }
       }
     },
+    "/api/v1/copyright-notices/{id}/eu-dispute-settlements": {
+      "get": {
+        "operationId": "get_api_v1_copyright-notices_id_eu-dispute-settlements",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_eu_dispute_settlements": {
+                      "items": {
+                        "$ref": "#/components/schemas/EuParticipantSettlement"
+                      },
+                      "type": "array"
+                    },
+                    "page_info": {
+                      "$ref": "#/components/schemas/PageInfo"
+                    }
+                  },
+                  "required": ["copyright_eu_dispute_settlements", "page_info"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-notices/{id}/eu-dispute-settlements/staff": {
+      "get": {
+        "operationId": "get_api_v1_copyright-notices_id_eu-dispute-settlements_staff",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_eu_dispute_settlements": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "body_name": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "anyOf": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "decided_at": {
+                                    "type": "string"
+                                  },
+                                  "implemented_at": {
+                                    "anyOf": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  },
+                                  "result": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["decided_at", "implemented_at", "result"],
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "referred_at": {
+                            "type": "string"
+                          },
+                          "referred_by_party": {
+                            "enum": ["notifier", "poster"],
+                            "type": "string"
+                          },
+                          "referred_by_user_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "body_name",
+                          "id",
+                          "outcome",
+                          "referred_at",
+                          "referred_by_party",
+                          "referred_by_user_id"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "page_info": {
+                      "$ref": "#/components/schemas/PageInfo"
+                    }
+                  },
+                  "required": ["copyright_eu_dispute_settlements", "page_info"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/api/v1/copyright-notices/{id}/guest-capabilities": {
       "get": {
         "operationId": "get_api_v1_copyright-notices_id_guest-capabilities",
@@ -48300,6 +48546,68 @@
                     }
                   },
                   "required": ["availability", "copyright_image_similarity_candidates"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-notices/{id}/territorial-complaints": {
+      "get": {
+        "operationId": "get_api_v1_copyright-notices_id_territorial-complaints",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_territorial_complaints": {
+                      "items": {
+                        "$ref": "#/components/schemas/CopyrightTerritorialStaffComplaint"
+                      },
+                      "type": "array"
+                    },
+                    "page_info": {
+                      "$ref": "#/components/schemas/PageInfo"
+                    }
+                  },
+                  "required": ["copyright_territorial_complaints", "page_info"],
                   "type": "object"
                 }
               }

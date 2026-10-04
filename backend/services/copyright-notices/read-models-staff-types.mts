@@ -1,3 +1,4 @@
+import type { PageInfo } from '@voucha/types/pagination'
 import type { ClaimantMisuseSummary } from './claimant-misuse-summary.mts'
 import type { CopyrightFormGuidance } from './form-screening-guidance.mts'
 import type {
@@ -6,13 +7,14 @@ import type {
 } from '@ts-shared/utils/copyright-submission-guidance'
 import type { CopyrightTerritorialStaffRecipient } from './read-models-staff-territorial-recipients.mts'
 import type { CopyrightTerritorialStaffComplaint } from './read-models-staff-territorial-complaints.mts'
-
 export type CopyrightStaffTerritorialCase = {
   hosted_use_url: string
   grounds: string
   notifier: { name: string | null; email: string | null }
   recipients: CopyrightTerritorialStaffRecipient[]
   complaints: CopyrightTerritorialStaffComplaint[]
+  complaints_page_info: PageInfo
+  dispute_settlements_page_info: PageInfo
   dispute_settlements: Array<{
     id: string
     body_name: string

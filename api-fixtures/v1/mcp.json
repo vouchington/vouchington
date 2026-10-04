@@ -34816,6 +34816,36 @@
                             },
                             "type": "array"
                           },
+                          "complaints_page_info": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "end_cursor": {
+                                "anyOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "has_next_page": {
+                                "type": "boolean"
+                              },
+                              "start_cursor": {
+                                "anyOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": ["end_cursor", "has_next_page", "start_cursor"],
+                            "type": "object"
+                          },
                           "decision": {
                             "anyOf": [
                               {
@@ -34922,6 +34952,36 @@
                             },
                             "type": "array"
                           },
+                          "dispute_settlements_page_info": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "end_cursor": {
+                                "anyOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "has_next_page": {
+                                "type": "boolean"
+                              },
+                              "start_cursor": {
+                                "anyOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": ["end_cursor", "has_next_page", "start_cursor"],
+                            "type": "object"
+                          },
                           "grounds": {
                             "type": "string"
                           },
@@ -35025,8 +35085,10 @@
                         "required": [
                           "acknowledgment",
                           "complaints",
+                          "complaints_page_info",
                           "decision",
                           "dispute_settlements",
+                          "dispute_settlements_page_info",
                           "grounds",
                           "hosted_use_url",
                           "notifier",

@@ -115,7 +115,6 @@ export { getCopyrightReviewTargetMinutes } from './config.mts'
 export { sweepCopyrightEvidenceRetention } from './retention-erasure.mts'
 export {
   currentUserCanApproveCopyrightJurisdictionPolicy,
-  findCurrentCopyrightJurisdictionPolicy,
   getCopyrightJurisdictionAvailability,
   recordCopyrightJurisdictionPolicyApproval,
   withdrawCopyrightJurisdictionPolicyApproval,
@@ -133,3 +132,8 @@ export {
   recordEuDisputeSettlementOutcome,
   recordEuDisputeSettlementImplementation,
 } from './eu-dispute-settlement.mts'
+
+export {
+  listCopyrightEuSettlements,
+  listCopyrightTerritorialComplaints,
+} from './case-collection-pages.mts'

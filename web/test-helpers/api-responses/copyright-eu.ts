@@ -1,4 +1,8 @@
 import type { CopyrightParticipantNoticeDetail } from '@/types/copyright-notices'
+import type {
+  CopyrightEuDisputeSettlement,
+  CopyrightEuDisputeSettlementsPage,
+} from '@/types/copyright-eu'
 import type { createCopyrightEuRedress } from '@/lib/api/client/copyright-notices'
 
 type EuParticipant = Extract<CopyrightParticipantNoticeDetail, { jurisdiction: 'eu_dsa' }>
@@ -61,6 +65,7 @@ export function makeCopyrightEuParticipantNotice(
         decision: null,
       },
       dispute_settlements: [],
+      dispute_settlements_page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
       ...input.eu,
     },
   }
@@ -74,5 +79,27 @@ export function makeCopyrightEuRedressResponse(
       id: '019f0000-0000-7000-8000-000000000003',
       is_duplicate: isDuplicate,
     },
+  }
+}
+
+export function makeCopyrightEuDisputeSettlement(
+  overrides: Partial<CopyrightEuDisputeSettlement> = {},
+): CopyrightEuDisputeSettlement {
+  return {
+    id: '019f0000-0000-7000-8000-000000000101',
+    body_name: 'Independent dispute body',
+    referred_at: '2026-10-03T12:00:00Z',
+    outcome: null,
+    ...overrides,
+  }
+}
+
+export function makeCopyrightEuDisputeSettlementsPage(
+  rows: CopyrightEuDisputeSettlement[] = [],
+  after: string | null = null,
+): CopyrightEuDisputeSettlementsPage {
+  return {
+    copyright_eu_dispute_settlements: rows,
+    page_info: { has_next_page: after !== null, start_cursor: null, end_cursor: after },
   }
 }

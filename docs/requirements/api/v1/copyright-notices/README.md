@@ -255,6 +255,26 @@ outcome, decision and informed times, reopening state, the viewer's own complain
 dispute settlements, and the viewer's immutable stored statements. Staff-only restriction reasons
 and other parties' complaints remain private. US appeal and counter-notice actions remain US-only.
 
+The participant settlement array and staff territorial complaint and settlement arrays include
+only the first 25 records, ordered by immutable ID. Required adjacent
+`dispute_settlements_page_info` and `complaints_page_info` fields indicate continuation.
+Authenticated clients continue with the following private, uncached reads, using `after` and
+`limit` (1–100; default 25):
+
+- `GET /api/v1/copyright-notices/:id/territorial-complaints` returns
+  `{ copyright_territorial_complaints, page_info }` for reviewers and the live decision;
+- `GET /api/v1/copyright-notices/:id/eu-dispute-settlements` returns
+  `{ copyright_eu_dispute_settlements, page_info }` for the participant's own referrals, or all
+  referrals for staff, without staff attribution fields; and
+- `GET /api/v1/copyright-notices/:id/eu-dispute-settlements/staff` returns the separate reviewer
+  projection, including referral attribution.
+
+Opaque cursors are scoped to the case and collection audience; participant cursors also identify
+the viewer, and complaint cursors identify the live decision. A cursor from another scope answers
+`400`. These reads authorize from the existing case and do not depend on current jurisdiction
+approval. The web participant settlement list provides Load more and retry while retaining rows
+already loaded.
+
 Staff record Art. 21 through three closed, sensitive-rate-limited routes:
 
 - `POST /api/v1/copyright-eu-notices/:id/dispute-settlements` with `body_name`, `referred_at`,

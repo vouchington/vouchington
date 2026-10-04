@@ -1,5 +1,6 @@
 import type { RouteRateLimitEntry } from './types.mts'
 import { CONTENT_ROUTE_REGISTRY } from './registry-content.mts'
+import { JURISDICTION_ROUTE_REGISTRY } from './registry-jurisdiction.mts'
 
 /**
  * Static route registry: maps `METHOD:/path` → rate limit config.
@@ -150,9 +151,6 @@ export const ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
   'POST:/api/v1/copyright-uk-notices/:id/redress-requests/:redressId/decisions': {
     category: 'sensitive',
   },
-  'GET:/api/v1/copyright-jurisdiction-availability': { category: 'read' },
-  'POST:/api/v1/copyright-jurisdiction-policies': { category: 'sensitive' },
-  'POST:/api/v1/copyright-jurisdiction-policies/:id/withdrawals': { category: 'sensitive' },
   'POST:/api/v1/copyright-notices/:id/appeals': { category: 'sensitive', ttlSeconds: 3600 },
   'POST:/api/v1/copyright-notices/:id/counter-notices': {
     category: 'sensitive',
@@ -197,4 +195,5 @@ export const ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
   'POST:/api/v1/communities/:idOrSlug/restrictions': { category: 'write' },
   'DELETE:/api/v1/communities/:idOrSlug/restrictions/:id': { category: 'write' },
   ...CONTENT_ROUTE_REGISTRY,
+  ...JURISDICTION_ROUTE_REGISTRY,
 }

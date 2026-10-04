@@ -3658,6 +3658,9 @@
           },
           "type": "array"
         },
+        "dispute_settlements_page_info": {
+          "$ref": "#/components/schemas/PageInfo"
+        },
         "informed_at": {
           "anyOf": [
             {
@@ -3696,6 +3699,7 @@
         "complaint",
         "decided_at",
         "dispute_settlements",
+        "dispute_settlements_page_info",
         "informed_at",
         "outcome",
         "reopened_at"
@@ -4923,6 +4927,9 @@
           },
           "type": "array"
         },
+        "complaints_page_info": {
+          "$ref": "#/components/schemas/PageInfo"
+        },
         "decision": {
           "anyOf": [
             {
@@ -5023,6 +5030,9 @@
           },
           "type": "array"
         },
+        "dispute_settlements_page_info": {
+          "$ref": "#/components/schemas/PageInfo"
+        },
         "grounds": {
           "type": "string"
         },
@@ -5076,8 +5086,10 @@
       "required": [
         "acknowledgment",
         "complaints",
+        "complaints_page_info",
         "decision",
         "dispute_settlements",
+        "dispute_settlements_page_info",
         "grounds",
         "hosted_use_url",
         "notifier",
@@ -7995,6 +8007,52 @@
     "EuDisputeSettlementResult": {
       "enum": ["decided_for_platform", "decided_for_recipient", "no_decision", "withdrawn"],
       "type": "string"
+    },
+    "EuParticipantSettlement": {
+      "additionalProperties": false,
+      "properties": {
+        "body_name": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "outcome": {
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "decided_at": {
+                  "type": "string"
+                },
+                "implemented_at": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "result": {
+                  "type": "string"
+                }
+              },
+              "required": ["decided_at", "implemented_at", "result"],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "referred_at": {
+          "type": "string"
+        }
+      },
+      "required": ["body_name", "id", "outcome", "referred_at"],
+      "type": "object"
     },
     "ExactTopic": {
       "additionalProperties": false,
@@ -28228,6 +28286,56 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/copyright-notices/:id/eu-dispute-settlements": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/copyright-notices/:id/eu-dispute-settlements/staff": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/copyright-notices/:id/guest-capabilities": {
       "path": {
         "properties": {
@@ -28292,6 +28400,31 @@
         "properties": {
           "limit": {
             "maximum": 50,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/copyright-notices/:id/territorial-complaints": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
             "minimum": 1,
             "type": "integer"
           }

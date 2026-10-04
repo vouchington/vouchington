@@ -1,3 +1,5 @@
+import type { PageInfo } from '@voucha/types/pagination'
+
 export type CopyrightEuNoticeInput = {
   notifier_name: string
   notifier_email: string
@@ -55,10 +57,18 @@ export type CopyrightEuParticipantCase = {
       decided_at: string
     } | null
   }
-  dispute_settlements: Array<{
-    id: string
-    body_name: string
-    referred_at: string
-    outcome: { result: string; decided_at: string; implemented_at: string | null } | null
-  }>
+  dispute_settlements: CopyrightEuDisputeSettlement[]
+  dispute_settlements_page_info: PageInfo
+}
+
+export type CopyrightEuDisputeSettlement = {
+  id: string
+  body_name: string
+  referred_at: string
+  outcome: { result: string; decided_at: string; implemented_at: string | null } | null
+}
+
+export type CopyrightEuDisputeSettlementsPage = {
+  copyright_eu_dispute_settlements: CopyrightEuDisputeSettlement[]
+  page_info: PageInfo
 }

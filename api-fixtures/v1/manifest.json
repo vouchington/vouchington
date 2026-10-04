@@ -13322,6 +13322,335 @@
       "source": "backend/api/v1/copyright-notices/index.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/copyright-notices/:id/eu-dispute-settlements": {
+      "bodyKind": "content",
+      "hash": "c2ac090988053c5a8b7b8b6e1a99ffe1427bb1e5caf9d854cf8f1eddc223687a",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/copyright-notices/:id/eu-dispute-settlements",
+      "schema": {
+        "definitions": {
+          "EuParticipantSettlement": {
+            "additionalProperties": false,
+            "properties": {
+              "body_name": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "outcome": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "decided_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "implemented_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "result": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "referred_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "end_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "has_next_page": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "start_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "copyright_eu_dispute_settlements": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "name": "EuParticipantSettlement",
+                  "type": "ref"
+                },
+                "type": "array"
+              }
+            },
+            "page_info": {
+              "required": true,
+              "schema": {
+                "name": "PageInfo",
+                "type": "ref"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/case-collection-routes.mts",
+      "statusKnowledge": "default"
+    },
+    "GET:/api/v1/copyright-notices/:id/eu-dispute-settlements/staff": {
+      "bodyKind": "content",
+      "hash": "d19cb3686c47524cf4b0b24e93287d15e522f068e465f2bb2d5c59e02fdf0e12",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/copyright-notices/:id/eu-dispute-settlements/staff",
+      "schema": {
+        "definitions": {
+          "EuParticipantSettlement": {
+            "additionalProperties": false,
+            "properties": {
+              "body_name": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "outcome": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "decided_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "implemented_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "result": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "referred_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "end_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "has_next_page": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "start_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "copyright_eu_dispute_settlements": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "type": "intersection",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "referred_by_party": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "literal",
+                                "value": "notifier"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "poster"
+                              }
+                            ]
+                          }
+                        },
+                        "referred_by_user_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "name": "EuParticipantSettlement",
+                      "type": "ref"
+                    }
+                  ]
+                },
+                "type": "array"
+              }
+            },
+            "page_info": {
+              "required": true,
+              "schema": {
+                "name": "PageInfo",
+                "type": "ref"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/case-collection-routes.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/copyright-notices/:id/guest-capabilities": {
       "bodyKind": "content",
       "hash": "248be0ea458957b4f05337cd399dd7934eb2c41a55fc98126b8b8f59b5367056",
@@ -13463,7 +13792,7 @@
     },
     "GET:/api/v1/copyright-notices/:id/participant": {
       "bodyKind": "content",
-      "hash": "2a90d7896d817fc5fc763c593262a6040c37a5f8a38306863315bbb9d1793847",
+      "hash": "c83cec42a6c90e55f69895315ce0896e459bbbd8d0ed8eacd0bf68a19ab69cf0",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -13687,6 +14016,13 @@
                     "type": "object"
                   },
                   "type": "array"
+                }
+              },
+              "dispute_settlements_page_info": {
+                "required": true,
+                "schema": {
+                  "name": "PageInfo",
+                  "type": "ref"
                 }
               },
               "informed_at": {
@@ -14009,6 +14345,46 @@
               }
             },
             "type": "object"
+          },
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "end_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "has_next_page": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "start_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
           }
         },
         "root": {
@@ -14212,9 +14588,223 @@
       "source": "backend/api/v1/copyright-notices/moderator-routes.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/copyright-notices/:id/territorial-complaints": {
+      "bodyKind": "content",
+      "hash": "9198d5ad6c123e8047678b4d5c159b243e2a8b1d8b957331bffa177ec4b168fa",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/copyright-notices/:id/territorial-complaints",
+      "schema": {
+        "definitions": {
+          "CopyrightTerritorialStaffComplaint": {
+            "additionalProperties": false,
+            "properties": {
+              "decision": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "decided_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "rationale": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "staff_disposition": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "literal",
+                                "value": "maintain"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "revoke"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "explanation": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "filed_by": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "notifier"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "poster"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "reviewer"
+                    }
+                  ]
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "informed_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "received_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "submitted_by_user_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "window_ends_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "end_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "has_next_page": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "start_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "copyright_territorial_complaints": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "name": "CopyrightTerritorialStaffComplaint",
+                  "type": "ref"
+                },
+                "type": "array"
+              }
+            },
+            "page_info": {
+              "required": true,
+              "schema": {
+                "name": "PageInfo",
+                "type": "ref"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/case-collection-routes.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/copyright-notices/review-queue": {
       "bodyKind": "content",
-      "hash": "da416f53552685d94201ff7463576b1d9f5f176c9a33f342a94ef98847f59d74",
+      "hash": "5da2f53411f901ca961ba94bcd9b32e1edeaaa1373a2f498b4dfc130d7e764df",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -14791,6 +15381,13 @@
                   "type": "array"
                 }
               },
+              "complaints_page_info": {
+                "required": true,
+                "schema": {
+                  "name": "PageInfo",
+                  "type": "ref"
+                }
+              },
               "decision": {
                 "required": true,
                 "schema": {
@@ -14949,6 +15546,13 @@
                     "type": "object"
                   },
                   "type": "array"
+                }
+              },
+              "dispute_settlements_page_info": {
+                "required": true,
+                "schema": {
+                  "name": "PageInfo",
+                  "type": "ref"
                 }
               },
               "grounds": {
@@ -15229,6 +15833,46 @@
                 }
               },
               "user_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "end_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "has_next_page": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "start_cursor": {
                 "required": true,
                 "schema": {
                   "type": "union",
@@ -81438,6 +82082,110 @@
       },
       "route": {
         "routeTemplate": "/api/v1/copyright-jurisdiction-availability"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-copyright-eu-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/copyright-notices/:id/participant",
+      "bodyFile": "responses/web.copyright.eu.participant.no-action-complaint.json",
+      "consumers": ["web"],
+      "id": "web.copyright.eu.participant.no-action-complaint",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/api/v1/copyright-notices/index.mts",
+        "backend/services/copyright-notices/read-models-territorial.mts",
+        "backend/services/copyright-notices/participant-statements.mts",
+        "web/lib/api/server/copyright-notices.ts"
+      ],
+      "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000001218/participant",
+      "responseSchema": {
+        "hash": "10fd8b03e76dc670e8403bf8d2308e553ca2a297f3504ccd18ea8d6c6dfb6e65",
+        "key": "web.copyright.eu.participant.no-action-complaint"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000001218"
+        },
+        "routeTemplate": "/api/v1/copyright-notices/:id/participant"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-copyright-eu-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/copyright-notices/:id/territorial-complaints",
+      "bodyFile": "responses/web.copyright.eu.territorial-complaints.json",
+      "consumers": ["web"],
+      "id": "web.copyright.eu.territorial-complaints",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/copyright-notices/case-collection-routes.mts"],
+      "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000001218/territorial-complaints",
+      "responseSchema": {
+        "hash": "4c66339888ce391a253a7022ff3e0bb060b6856430b9294c121c910ecbe1275f",
+        "key": "web.copyright.eu.territorial-complaints"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000001218"
+        },
+        "routeTemplate": "/api/v1/copyright-notices/:id/territorial-complaints"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-copyright-eu-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/copyright-notices/:id/eu-dispute-settlements",
+      "bodyFile": "responses/web.copyright.eu.dispute-settlements.participant.json",
+      "consumers": ["web"],
+      "id": "web.copyright.eu.dispute-settlements.participant",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/api/v1/copyright-notices/case-collection-routes.mts",
+        "web/lib/api/client/copyright-eu-dispute-settlements.ts"
+      ],
+      "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000001218/eu-dispute-settlements",
+      "responseSchema": {
+        "hash": "18a68f57833d8975118713b3c550d27891d47b25cf40014d6d2c026ec6f34873",
+        "key": "web.copyright.eu.dispute-settlements.participant"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000001218"
+        },
+        "routeTemplate": "/api/v1/copyright-notices/:id/eu-dispute-settlements"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-copyright-eu-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/copyright-notices/:id/eu-dispute-settlements/staff",
+      "bodyFile": "responses/web.copyright.eu.dispute-settlements.staff.json",
+      "consumers": ["web"],
+      "id": "web.copyright.eu.dispute-settlements.staff",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/copyright-notices/case-collection-routes.mts"],
+      "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000001218/eu-dispute-settlements/staff",
+      "responseSchema": {
+        "hash": "18a68f57833d8975118713b3c550d27891d47b25cf40014d6d2c026ec6f34873",
+        "key": "web.copyright.eu.dispute-settlements.staff"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000001218"
+        },
+        "routeTemplate": "/api/v1/copyright-notices/:id/eu-dispute-settlements/staff"
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/web-copyright-eu-cases.mts"

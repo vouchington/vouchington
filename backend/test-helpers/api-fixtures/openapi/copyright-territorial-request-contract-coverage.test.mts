@@ -89,4 +89,19 @@ describe('copyright territorial request contracts', () => {
   it.each(PATH_ONLY)('%s declares a path carrier only', operation => {
     expect(Object.keys(carriersOf(operation))).toEqual(['path'])
   })
+
+  it.each([
+    'POST:/api/v1/copyright-email-intakes/:id/correspondence',
+    'POST:/api/v1/copyright-email-intakes/:id/correspondence-rejections',
+  ])('%s permits territorial complaints in its closed correspondence kinds', operation => {
+    const properties = resolve(carriersOf(operation).body).properties as Record<string, Schema>
+    expect(((properties.kind?.enum ?? []) as string[]).toSorted()).toEqual([
+      'appeal',
+      'complaint',
+      'counter_notice',
+      'court_or_ccb_hold',
+      'supplement',
+      'withdrawal',
+    ])
+  })
 })

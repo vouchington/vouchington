@@ -1,5 +1,3 @@
-import type { CopyrightNoticesPage, CopyrightStaffQueueItem } from './copyright-notices'
-
 export type CopyrightStaffQueueReason =
   | 'territorial_notice_review'
   | 'territorial_decision_reopened'
@@ -15,8 +13,3 @@ export type CopyrightStaffQueueReason =
   | 'staydown_review'
   | 'deadline_due'
   | 'deadline_missed'
-
-export type CopyrightStaffQueuePage = {
-  copyright_notices: CopyrightStaffQueueItem[]
-  page_info: CopyrightNoticesPage['page_info']
-}

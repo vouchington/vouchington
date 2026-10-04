@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { CopyrightParticipantNoticeDetail } from '@/types/copyright-notices'
+import { CopyrightEuDisputeSettlements } from './copyright-eu-dispute-settlements'
 import { CopyrightNoticeStatements } from './copyright-notice-statements'
 
 export function CopyrightEuNoticeDetail({
@@ -98,37 +99,13 @@ export function CopyrightEuNoticeDetail({
           Article 21. You may also seek judicial redress.
         </p>
       </section>
-      <section className='space-y-2'>
-        <h2 className='text-lg font-semibold'>Dispute settlements</h2>
-        {eu.dispute_settlements.length === 0 ? (
-          <p>No dispute settlement has been recorded.</p>
-        ) : (
-          <ul className='space-y-3'>
-            {eu.dispute_settlements.map(referral => (
-              <li
-                key={referral.id}
-                className='rounded border p-3'
-              >
-                <p>{referral.body_name}</p>
-                <p>Referred {new Date(referral.referred_at).toLocaleDateString()}</p>
-                {referral.outcome ? (
-                  <div>
-                    <p>Outcome: {referral.outcome.result.replaceAll('_', ' ')}</p>
-                    <p>Decided {new Date(referral.outcome.decided_at).toLocaleDateString()}</p>
-                    {referral.outcome.implemented_at && (
-                      <p>
-                        Implemented {new Date(referral.outcome.implemented_at).toLocaleDateString()}
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <p>No outcome has been recorded.</p>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <CopyrightEuDisputeSettlements
+        noticeId={notice.id}
+        data={{
+          copyright_eu_dispute_settlements: eu.dispute_settlements,
+          page_info: eu.dispute_settlements_page_info,
+        }}
+      />
     </section>
   )
 }

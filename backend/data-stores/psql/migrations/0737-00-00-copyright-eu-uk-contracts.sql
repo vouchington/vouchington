@@ -637,6 +637,8 @@ CREATE INDEX idx_copyright_territorial_decisions__assessment
   WHERE copyright_notice_submission_assessment_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_copyright_territorial_redress_requests__decision
   ON copyright_territorial_redress_requests (copyright_notice_id, copyright_territorial_decision_id);
+CREATE INDEX IF NOT EXISTS idx_copyright_territorial_redress_requests__decision_page
+  ON copyright_territorial_redress_requests (copyright_territorial_decision_id, id);
 CREATE INDEX IF NOT EXISTS idx_copyright_territorial_redress_requests__submitter
   ON copyright_territorial_redress_requests (submitted_by_user_id) WHERE submitted_by_user_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_copyright_territorial_redress_decisions__decided_by
@@ -645,10 +647,15 @@ CREATE INDEX IF NOT EXISTS idx_copyright_eu_supervised_complaints__recorded_by
   ON copyright_eu_supervised_complaints (recorded_by_id) WHERE recorded_by_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_copyright_eu_dispute_settlement_referrals__notice
   ON copyright_eu_dispute_settlement_referrals (copyright_notice_id, jurisdiction);
+CREATE INDEX IF NOT EXISTS idx_copyright_eu_dispute_settlement_referrals__notice_page
+  ON copyright_eu_dispute_settlement_referrals (copyright_notice_id, id);
 CREATE INDEX IF NOT EXISTS idx_copyright_eu_dispute_settlement_referrals__decision
   ON copyright_eu_dispute_settlement_referrals (copyright_notice_id, copyright_territorial_decision_id);
 CREATE INDEX IF NOT EXISTS idx_copyright_eu_dispute_settlement_referrals__referred_by
   ON copyright_eu_dispute_settlement_referrals (referred_by_user_id) WHERE referred_by_user_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_copyright_eu_dispute_settlement_referrals__participant_page
+  ON copyright_eu_dispute_settlement_referrals (copyright_notice_id, referred_by_user_id, id)
+  WHERE referred_by_user_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_copyright_eu_dispute_settlement_referrals__recorded_by
   ON copyright_eu_dispute_settlement_referrals (recorded_by_id) WHERE recorded_by_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_copyright_eu_dispute_settlement_outcomes__recorded_by

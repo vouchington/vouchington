@@ -7,40 +7,11 @@ import { selectCopyrightParticipantStatements } from './participant-statements.m
 import type {
   CopyrightParticipantNoticeDetail,
   CopyrightPublicNoticeDetail,
-} from './read-models.mts'
+} from './read-models-notice-types.mts'
 import { getTerritorialInformedWindow } from './territorial-informed-at.mts'
 import { selectEuParticipantSettlements } from './read-models-eu-settlements.mts'
 import { territorialDecisionIsLiveSql } from './territorial-redress-sql.mts'
 import { territorialLabels } from './territorial-labels.mts'
-
-export type CopyrightEuParticipantCase = {
-  outcome: 'restrict' | 'no_action' | null
-  decided_at: Date | null
-  informed_at: Date | null
-  reopened_at: Date | null
-  complaint: {
-    can_submit: boolean
-    window_ends_at: Date | null
-    request: {
-      id: string
-      received_at: Date
-      explanation: string
-      filed_by: 'notifier' | 'poster' | 'reviewer'
-    } | null
-    decision: {
-      staff_disposition: 'maintain' | 'revoke'
-      rationale: string
-      decided_at: Date
-    } | null
-  }
-  dispute_settlements: Array<{
-    id: string
-    body_name: string
-    referred_at: Date
-    outcome: { result: string; decided_at: Date; implemented_at: Date | null } | null
-  }>
-}
-
 /** EU participants can read a received case before staff accepts or declines it. */
 export async function getEuParticipantNoticeDetail(
   noticeId: string,
@@ -192,7 +163,8 @@ export async function getEuParticipantNoticeDetail(
       informed_at: informed.informed_at,
       reopened_at: decision?.reopened_at ?? null,
       complaint,
-      dispute_settlements: settlements,
+      dispute_settlements: settlements.results,
+      dispute_settlements_page_info: settlements.page_info,
     },
   }
 }
