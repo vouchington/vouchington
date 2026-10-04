@@ -13,6 +13,7 @@ export const copyrightConfig = new DynamicConfig({
     evidenceRetentionDays: 'number',
     staydownMatching: 'boolean',
     trustedFlaggerPriority: 'boolean',
+    dsaTransparencyReports: 'boolean',
     automaticWithholdingMinTrustTier: 'number',
     automaticWithholdingMinAccountAgeDays: 'number',
     automaticWithholdingClaimantDailyCap: 'number',
@@ -28,6 +29,7 @@ export const copyrightConfig = new DynamicConfig({
     evidenceRetentionDays: 0,
     staydownMatching: false,
     trustedFlaggerPriority: false,
+    dsaTransparencyReports: false,
     // -1 means unset: automatic withholding is refused until an operator approves every gate.
     automaticWithholdingMinTrustTier: -1,
     automaticWithholdingMinAccountAgeDays: -1,
@@ -113,4 +115,10 @@ export async function isCopyrightStaydownMatchingEnabled(): Promise<boolean> {
 export async function isCopyrightTrustedFlaggerPriorityEnabled(): Promise<boolean> {
   await copyrightConfig.waitForInitialization()
   return copyrightConfig.getFields().trustedFlaggerPriority === true
+}
+
+/** Reporting remains unavailable until the operator explicitly enables it. */
+export async function isCopyrightDsaTransparencyReportsEnabled(): Promise<boolean> {
+  await copyrightConfig.waitForInitialization()
+  return copyrightConfig.getFields().dsaTransparencyReports === true
 }

@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { useDsaTransparencyReports } from '@voucha/test-helpers/dsa-switches'
 import { createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
@@ -126,6 +127,7 @@ describe('copyright intake kill switch route classification', () => {
 
 describe('copyright routes with intake switched off', () => {
   useCopyrightIntakeEnvironment({ enabled: false })
+  useDsaTransparencyReports()
 
   it.each(routeClasses.newIntake)('rejects new intake at %s before authentication', async route => {
     const response = await send(createRequest(), route)
@@ -148,6 +150,7 @@ describe('copyright routes with intake switched off', () => {
 
 describe('copyright routes with intake switched on', () => {
   useCopyrightIntakeEnvironment()
+  useDsaTransparencyReports()
 
   it.each(routeClasses.newIntake)('lets %s past the intake guard', async route => {
     const response = await send(createRequest(), route)

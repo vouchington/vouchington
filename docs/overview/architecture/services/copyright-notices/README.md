@@ -117,7 +117,12 @@ public explanation is encrypted and sent in those notices. A complaint `revoke` 
 decision's restrictions and incident; revoking `no_action` reopens the queue for a restricting
 successor. These flows do not use the US restoration clock or decide legal merits. Seven
 `copyright_territorial_*` tables hold both jurisdictions; only supervised complaints and
-transparency reports are EU-only. Each notice-child row carries `jurisdiction` and a composite
+stored transparency counts are EU-only. The read-only Art. 15 export additionally aggregates US
+and UK notices and restrictions, without reading jurisdiction approval. Its off-by-default
+`dsaTransparencyReports` switch gates both record and export routes. Shared attribution and
+automation predicates drive aggregates; only immutable completed-withhold intents drive action
+medians. No personal data or explanation text leaves the report boundary. See the
+[report API contract](../../../../requirements/api/v1/copyright-notices/README.md#dsa-transparency-report). Each notice-child row carries `jurisdiction` and a composite
 foreign key to `copyright_notices (id, jurisdiction)`, a redress request references the decision on
 its own notice, and an escalation names exactly one source. The `eu-*` and `uk-*` files are
 wrappers that pass the jurisdiction as a value to the shared flows in
@@ -152,7 +157,7 @@ flowchart TD
   redress -->|revoke restrict| restore[Restore decision-authorized restrictions and reverse incident]
   redress -->|revoke no_action| reopened[Reopened staff queue; restrict successor]
   euReceipt --> supervised[Supervised complaint escalates when recorded]
-  policy --> report[Transparency counts for a caller-supplied period]
+  reportSwitch[Off-by-default DSA reporting switch] --> report[Aggregate copyright figures for a caller-supplied period]
   ukReceipt --> review[Staff-supplied review]
   review --> ukRedress[Participant redress and staff disposition]
 ```

@@ -87,6 +87,8 @@ to #853 and #854; this producer change does not complete those client surfaces.
 
 ## Copyright claimant attribution handoff
 
+DSA copyright transparency record/export routes are staff API tooling with no web or native consumer.
+
 Trusted-flagger registry routes are staff API tooling only, with no web registry UI or native consumer.
 
 Vouchington stages the required nullable claimant public-profile contract in the web API fixtures.

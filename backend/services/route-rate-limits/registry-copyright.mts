@@ -23,6 +23,7 @@ export const COPYRIGHT_ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
   },
   'POST:/api/v1/copyright-eu-notices/:id/supervised-complaints': { category: 'sensitive' },
   'POST:/api/v1/copyright-eu-reports': { category: 'sensitive' },
+  'GET:/api/v1/copyright-eu-reports': { category: 'sensitive' },
   'POST:/api/v1/copyright-uk-notices': { category: 'sensitive', ttlSeconds: 3600 },
   'POST:/api/v1/copyright-uk-notices/:id/acknowledgment-failures': { category: 'sensitive' },
   'POST:/api/v1/copyright-uk-notices/:id/reviews': { category: 'sensitive' },

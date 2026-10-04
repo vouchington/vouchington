@@ -1,0 +1,48 @@
+{
+  "copyright_eu_report": {
+    "actions_on_law_count": 0,
+    "actions_on_law_trusted_flagger_count": 0,
+    "actions_on_terms_count": 0,
+    "actions_on_terms_trusted_flagger_count": 0,
+    "complaints_by_decision_type": {
+      "no_action": {
+        "partially_reversed": 0,
+        "received": 0,
+        "reversed": 0,
+        "upheld": 0
+      },
+      "no_action_trusted_flagger": {
+        "partially_reversed": 0,
+        "received": 0,
+        "reversed": 0,
+        "upheld": 0
+      },
+      "restrict": {
+        "partially_reversed": 0,
+        "received": 0,
+        "reversed": 0,
+        "upheld": 0
+      }
+    },
+    "complaints_by_submitter": {
+      "notifier": 0,
+      "poster": 0,
+      "reviewer": 0
+    },
+    "escalation_count": 0,
+    "generated_at": "2026-02-01T00:01:00.000Z",
+    "notices_processed_by_automated_means_count": 0,
+    "notices_received_count": 0,
+    "notices_received_trusted_flagger_count": 0,
+    "notified_items_count": 0,
+    "notified_items_trusted_flagger_count": 0,
+    "period_end": "2026-02-01T00:00:00.000Z",
+    "period_start": "2026-01-01T00:00:00.000Z",
+    "receipt_count": 0,
+    "redress_decision_count": 0,
+    "redress_request_count": 0,
+    "restrictions_imposed_by_automated_means_count": 0,
+    "statement_of_reasons_count": 0,
+    "supervised_complaint_count": 0
+  }
+}

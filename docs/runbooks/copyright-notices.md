@@ -23,6 +23,36 @@ identifiers belong in the private operations repository.
 
 These are product response targets, not representations of safe-harbor eligibility.
 
+## DSA transparency report
+
+`copyright.dsaTransparencyReports` defaults to `false` in the audited copyright namespace.
+Administrators and operators with the developer role may change it through audited dynamic config.
+This implementation does not authorize
+enabling it. Reporting requires no EU intake approval and continues to include notices from all
+approval periods after withdrawal. Copyright review staff may record or export a report; other
+callers keep their authentication and role errors. When disabled, staff receive `404` before
+period or content-type validation.
+
+Export with `GET /api/v1/copyright-eu-reports?period_start=<UTC timestamp>&period_end=<UTC timestamp>`.
+`format=json` is the default; choose `csv_notices` for Commission CSV Part 4 or `csv_complaints`
+for Part 7. Periods are half-open (`start <= time < end`). CSV requires both bounds at UTC midnight
+and prints `start/(end minus one day)` as dates. JSON accepts other valid UTC instants. GET is
+read-only; POST records the existing six EU counts for the supplied period.
+
+The exports contain aggregate copyright figures only, with no personal data, statement text,
+rationale, or public explanation. New notice and restriction figures cover the US, EU, and UK
+pipelines; the six stored legacy counts and complaint figures remain EU-only. Trusted-flagger
+figures count in-area matches only. Median action time runs from receipt to the first completed
+withhold and survives restoration; uncomputed medians stay absent in JSON and blank in CSV.
+Automated-means figures use the shared screening/guidance facts and are JSON-only.
+
+Publication is the operator's job. These CSVs contain copyright rows only. Before publishing,
+add the Service name, merge with the platform's other moderation figures, and supply the TOTAL
+row. Service and contextual-information cells are left blank. An empty Value means not computed;
+it must not be presented as zero or not applicable. The
+[API report contract](../requirements/api/v1/copyright-notices/README.md#dsa-transparency-report)
+defines the exported figures and formats.
+
 ## Trusted flaggers
 
 The trusted-flagger registry is staff API tooling with no web screen. Staff copy designations by

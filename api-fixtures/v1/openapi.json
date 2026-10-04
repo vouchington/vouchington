@@ -7312,6 +7312,121 @@
         "required": ["aside_key"],
         "type": "object"
       },
+      "DsaCopyrightComplaintBucket": {
+        "additionalProperties": false,
+        "properties": {
+          "median_hours": {
+            "type": "number"
+          },
+          "partially_reversed": {
+            "type": "number"
+          },
+          "received": {
+            "type": "number"
+          },
+          "reversed": {
+            "type": "number"
+          },
+          "upheld": {
+            "type": "number"
+          }
+        },
+        "required": ["partially_reversed", "received", "reversed", "upheld"],
+        "type": "object"
+      },
+      "DsaCopyrightComplaintFigures": {
+        "additionalProperties": false,
+        "properties": {
+          "complaints_by_decision_type": {
+            "additionalProperties": false,
+            "properties": {
+              "no_action": {
+                "$ref": "#/components/schemas/DsaCopyrightComplaintBucket"
+              },
+              "no_action_trusted_flagger": {
+                "$ref": "#/components/schemas/DsaCopyrightComplaintBucket"
+              },
+              "restrict": {
+                "$ref": "#/components/schemas/DsaCopyrightComplaintBucket"
+              }
+            },
+            "required": ["no_action", "no_action_trusted_flagger", "restrict"],
+            "type": "object"
+          },
+          "complaints_by_submitter": {
+            "additionalProperties": false,
+            "properties": {
+              "notifier": {
+                "type": "number"
+              },
+              "poster": {
+                "type": "number"
+              },
+              "reviewer": {
+                "type": "number"
+              }
+            },
+            "required": ["notifier", "poster", "reviewer"],
+            "type": "object"
+          }
+        },
+        "required": ["complaints_by_decision_type", "complaints_by_submitter"],
+        "type": "object"
+      },
+      "DsaCopyrightNoticeFigures": {
+        "additionalProperties": false,
+        "properties": {
+          "actions_on_law_count": {
+            "type": "number"
+          },
+          "actions_on_law_trusted_flagger_count": {
+            "type": "number"
+          },
+          "actions_on_terms_count": {
+            "type": "number"
+          },
+          "actions_on_terms_trusted_flagger_count": {
+            "type": "number"
+          },
+          "median_hours_to_action": {
+            "type": "number"
+          },
+          "median_hours_to_action_trusted_flagger": {
+            "type": "number"
+          },
+          "notices_processed_by_automated_means_count": {
+            "type": "number"
+          },
+          "notices_received_count": {
+            "type": "number"
+          },
+          "notices_received_trusted_flagger_count": {
+            "type": "number"
+          },
+          "notified_items_count": {
+            "type": "number"
+          },
+          "notified_items_trusted_flagger_count": {
+            "type": "number"
+          },
+          "restrictions_imposed_by_automated_means_count": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "actions_on_law_count",
+          "actions_on_law_trusted_flagger_count",
+          "actions_on_terms_count",
+          "actions_on_terms_trusted_flagger_count",
+          "notices_processed_by_automated_means_count",
+          "notices_received_count",
+          "notices_received_trusted_flagger_count",
+          "notified_items_count",
+          "notified_items_trusted_flagger_count",
+          "restrictions_imposed_by_automated_means_count"
+        ],
+        "type": "object"
+      },
       "DynamicConfigFieldMetadata": {
         "additionalProperties": false,
         "properties": {
@@ -8100,20 +8215,11 @@
         "required": ["escalation_id", "id"],
         "type": "object"
       },
-      "EuCopyrightTransparencyReport": {
+      "EuCounts": {
         "additionalProperties": false,
         "properties": {
           "escalation_count": {
             "type": "number"
-          },
-          "id": {
-            "type": "string"
-          },
-          "period_ended_at": {
-            "type": "string"
-          },
-          "period_started_at": {
-            "type": "string"
           },
           "receipt_count": {
             "type": "number"
@@ -8133,9 +8239,6 @@
         },
         "required": [
           "escalation_count",
-          "id",
-          "period_ended_at",
-          "period_started_at",
           "receipt_count",
           "redress_decision_count",
           "redress_request_count",
@@ -45970,6 +46073,188 @@
       }
     },
     "/api/v1/copyright-eu-reports": {
+      "get": {
+        "operationId": "get_api_v1_copyright-eu-reports",
+        "parameters": [
+          {
+            "description": "JSON or a Commission CSV template.",
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "default": "json",
+              "enum": ["json", "csv_notices", "csv_complaints"],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exclusive UTC reporting-period end.",
+            "in": "query",
+            "name": "period_end",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Inclusive UTC reporting-period start.",
+            "in": "query",
+            "name": "period_start",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_eu_report": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "actions_on_law_count": {
+                          "type": "number"
+                        },
+                        "actions_on_law_trusted_flagger_count": {
+                          "type": "number"
+                        },
+                        "actions_on_terms_count": {
+                          "type": "number"
+                        },
+                        "actions_on_terms_trusted_flagger_count": {
+                          "type": "number"
+                        },
+                        "complaints_by_decision_type": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "no_action": {
+                              "$ref": "#/components/schemas/DsaCopyrightComplaintBucket"
+                            },
+                            "no_action_trusted_flagger": {
+                              "$ref": "#/components/schemas/DsaCopyrightComplaintBucket"
+                            },
+                            "restrict": {
+                              "$ref": "#/components/schemas/DsaCopyrightComplaintBucket"
+                            }
+                          },
+                          "required": ["no_action", "no_action_trusted_flagger", "restrict"],
+                          "type": "object"
+                        },
+                        "complaints_by_submitter": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "notifier": {
+                              "type": "number"
+                            },
+                            "poster": {
+                              "type": "number"
+                            },
+                            "reviewer": {
+                              "type": "number"
+                            }
+                          },
+                          "required": ["notifier", "poster", "reviewer"],
+                          "type": "object"
+                        },
+                        "escalation_count": {
+                          "type": "number"
+                        },
+                        "generated_at": {
+                          "type": "string"
+                        },
+                        "median_hours_to_action": {
+                          "type": "number"
+                        },
+                        "median_hours_to_action_trusted_flagger": {
+                          "type": "number"
+                        },
+                        "notices_processed_by_automated_means_count": {
+                          "type": "number"
+                        },
+                        "notices_received_count": {
+                          "type": "number"
+                        },
+                        "notices_received_trusted_flagger_count": {
+                          "type": "number"
+                        },
+                        "notified_items_count": {
+                          "type": "number"
+                        },
+                        "notified_items_trusted_flagger_count": {
+                          "type": "number"
+                        },
+                        "period_end": {
+                          "type": "string"
+                        },
+                        "period_start": {
+                          "type": "string"
+                        },
+                        "receipt_count": {
+                          "type": "number"
+                        },
+                        "redress_decision_count": {
+                          "type": "number"
+                        },
+                        "redress_request_count": {
+                          "type": "number"
+                        },
+                        "restrictions_imposed_by_automated_means_count": {
+                          "type": "number"
+                        },
+                        "statement_of_reasons_count": {
+                          "type": "number"
+                        },
+                        "supervised_complaint_count": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "actions_on_law_count",
+                        "actions_on_law_trusted_flagger_count",
+                        "actions_on_terms_count",
+                        "actions_on_terms_trusted_flagger_count",
+                        "complaints_by_decision_type",
+                        "complaints_by_submitter",
+                        "escalation_count",
+                        "generated_at",
+                        "notices_processed_by_automated_means_count",
+                        "notices_received_count",
+                        "notices_received_trusted_flagger_count",
+                        "notified_items_count",
+                        "notified_items_trusted_flagger_count",
+                        "period_end",
+                        "period_start",
+                        "receipt_count",
+                        "redress_decision_count",
+                        "redress_request_count",
+                        "restrictions_imposed_by_automated_means_count",
+                        "statement_of_reasons_count",
+                        "supervised_complaint_count"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["copyright_eu_report"],
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
       "post": {
         "operationId": "post_api_v1_copyright-eu-reports",
         "requestBody": {
@@ -45989,7 +46274,48 @@
                   "additionalProperties": false,
                   "properties": {
                     "copyright_eu_report": {
-                      "$ref": "#/components/schemas/EuCopyrightTransparencyReport"
+                      "additionalProperties": false,
+                      "properties": {
+                        "escalation_count": {
+                          "type": "number"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "period_ended_at": {
+                          "type": "string"
+                        },
+                        "period_started_at": {
+                          "type": "string"
+                        },
+                        "receipt_count": {
+                          "type": "number"
+                        },
+                        "redress_decision_count": {
+                          "type": "number"
+                        },
+                        "redress_request_count": {
+                          "type": "number"
+                        },
+                        "statement_of_reasons_count": {
+                          "type": "number"
+                        },
+                        "supervised_complaint_count": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "escalation_count",
+                        "id",
+                        "period_ended_at",
+                        "period_started_at",
+                        "receipt_count",
+                        "redress_decision_count",
+                        "redress_request_count",
+                        "statement_of_reasons_count",
+                        "supervised_complaint_count"
+                      ],
+                      "type": "object"
                     }
                   },
                   "required": ["copyright_eu_report"],

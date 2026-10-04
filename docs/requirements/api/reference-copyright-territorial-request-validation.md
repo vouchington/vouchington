@@ -29,6 +29,7 @@ diagnostic. EU notice receipt permits guests and uses optional authentication. A
 | `POST /copyright-eu-notices/:id/dispute-settlements`                             | Closed referral request and path                                                                     |
 | `POST /copyright-eu-notices/:id/dispute-settlements/:referralId/outcomes`        | Closed outcome request and path                                                                      |
 | `POST /copyright-eu-notices/:id/dispute-settlements/:referralId/implementations` | Closed implementation request and path                                                               |
+| `GET /copyright-eu-reports`                                                      | Required period query and closed `format` enum (`json`, `csv_notices`, `csv_complaints`)             |
 | `POST /copyright-eu-reports`                                                     | Closed `CopyrightTerritorialReportRequest`                                                           |
 | `POST /copyright-jurisdiction-policies`                                          | Closed `CopyrightJurisdictionPolicyRequest`                                                          |
 | `POST /copyright-{eu,uk}-notices/:id/acknowledgment-failures`                    | `id` path only                                                                                       |
@@ -59,10 +60,15 @@ Each handler keeps the order it had before the contract existed and adds the con
   `Idempotency-Key`, field parsers, contract, service.
 - Supervised complaint (EU): authentication, suspension, content type, body read, path UUID, field
   parsers, contract, service. It has no CAPTCHA, kill switch, or idempotency key.
-- Staff routes (decisions, reports, acknowledgment failures, Art. 21 records) and policy routes: authentication
+- Staff routes (decisions, acknowledgment failures, Art. 21 records) and policy routes: authentication
   and role (`401`, `403`), rate limit, suspension, content type, body read, path UUIDs, field
   parsers, contract, service. The role check is on the route, so a caller without the role never
   reaches the contract.
+
+- Report routes: authentication and review role, rate limit, suspension, reporting switch (`404`
+  while disabled), then content type and closed body validation for POST, or query validation for
+  GET, before the service. No jurisdiction approval is read. CSV midnight bounds are validated
+  after the gate; invalid periods or formats answer `422`.
 
 The route reads each path id and field parser result into a local in the order the handler already
 evaluated them, so the first failing check is the same one that failed before.

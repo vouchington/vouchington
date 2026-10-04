@@ -34,6 +34,11 @@ const isolatedDatabaseCases = {
     fullName:
       'territorial approval withdrawal keeps received-case duties > gates new EU and UK intake while pending and decided notices continue',
   },
+  'copyright-dsa-report-withdrawn-approval': {
+    file: 'backend/api/v1/copyright-notices/eu-copyright-report-route.test.mts',
+    fullName:
+      'DSA copyright transparency report GET > counts a receipt after withdrawing its approval and does not persist GET output',
+  },
   'copyright-eu-transparency-report': {
     file: 'backend/services/copyright-notices/eu-copyright-contract.test.mts',
     fullName:
