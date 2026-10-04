@@ -26,6 +26,11 @@ Reporter policy:
   active-resource context when Vitest's exit watchdog fires at `teardownTimeout`.
 - The `github-actions` reporter must keep job summaries disabled and file links configured from GitHub environment variables.
 
+Backend tests that launch a registered isolated database case keep that database boundary when
+coverage is enabled. Each child writes LCOV to its own directory, and `tests-backend-unit.yml`
+merges those reports with the parent shard before uploading full coverage. A child that ran under
+coverage but did not write LCOV fails its parent case.
+
 <!-- BEGIN GENERATED: vitest-ownership -->
 
 | Vitest project                     | Workflow                         | Job                               | Credential requirement   |

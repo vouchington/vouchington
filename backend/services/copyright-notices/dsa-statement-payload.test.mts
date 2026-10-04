@@ -135,6 +135,8 @@ describe('closed DSA payload validation', () => {
   it('rejects unknown fields and coercible non-string enums', () => {
     const valid = dsaTestPayload()
     expect(() => assertDsaStatementPayload(valid)).not.toThrow()
+    for (const malformed of [null, [], 42])
+      expect(() => assertDsaStatementPayload(malformed)).toThrow('Invalid DSA payload')
     for (const changed of [
       { ...valid, contact: 'private@example.test' },
       { ...valid, source_type: ['SOURCE_ARTICLE_16'] },

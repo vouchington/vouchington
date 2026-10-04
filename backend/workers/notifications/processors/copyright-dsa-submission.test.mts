@@ -20,7 +20,12 @@ import { enqueueSubmitDsaStatementOfReasons } from '@queues/notifications/enqueu
 import { notifications } from '@queues/notifications/queues'
 import { processDsaStatementSubmission } from '@services/copyright-notices/dsa-statement-submission'
 import { replayDsaStatementSubmission } from '@services/copyright-notices/dsa-statement-submission-replay'
-import { processSubmitDsaStatementOfReasons } from './copyright-dsa-submission.mts'
+import { searchRecoverableDsaStatementSubmissionIds } from '@services/copyright-notices/dsa-statement-submission-sweep'
+import { toCopyrightSweepIdPage } from '@services/copyright-notices/sweep-id-pages'
+import {
+  processReconcileDsaStatementSubmissions,
+  processSubmitDsaStatementOfReasons,
+} from './copyright-dsa-submission.mts'
 
 type ExternalFetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>
 
@@ -123,5 +128,52 @@ describe('DSA submission notification processor while disabled', () => {
     } finally {
       restore()
     }
+  })
+})
+
+describe('DSA statement reconciliation notification processor', () => {
+  useDsaStatementSubmissions(false)
+
+  it('leaves durable work untouched when the submission gate is closed', async () => {
+    const submissionId = await createTestDsaSubmission()
+    const search = vi.fn<typeof searchRecoverableDsaStatementSubmissionIds>(async () =>
+      toCopyrightSweepIdPage([{ id: submissionId }], 100),
+    )
+
+    await expect(processReconcileDsaStatementSubmissions({ search })).resolves.toEqual({
+      enqueued: 0,
+    })
+    expect(search).not.toHaveBeenCalled()
+    expect(await readTestDsaAttempts(submissionId)).toEqual([])
+  })
+
+  it('enqueues each due durable ID once from a bounded page without claiming it', async () => {
+    const firstId = await createTestDsaSubmission()
+    const secondId = await createTestDsaSubmission()
+    const from = new Date('2020-01-01T00:00:00.000Z')
+    const search = vi.fn<typeof searchRecoverableDsaStatementSubmissionIds>(async () =>
+      toCopyrightSweepIdPage([{ id: firstId }, { id: secondId }], 100),
+    )
+    const enqueuedJobs: unknown[] = []
+    const enqueue = async (id: string) => {
+      const jobId = await enqueueSubmitDsaStatementOfReasons(id)
+      enqueuedJobs.push(await readEnqueuedJob(notifications, jobId))
+      return jobId
+    }
+
+    await expect(
+      processReconcileDsaStatementSubmissions({
+        prepare: async () => from,
+        search,
+        enqueue,
+      }),
+    ).resolves.toEqual({ enqueued: 2 })
+    expect(search).toHaveBeenCalledExactlyOnceWith({ from, limit: 100 })
+    expect(enqueuedJobs).toMatchObject([
+      { name: 'processSubmitDsaStatementOfReasons', data: { submissionId: firstId } },
+      { name: 'processSubmitDsaStatementOfReasons', data: { submissionId: secondId } },
+    ])
+    expect(await readTestDsaAttempts(firstId)).toEqual([])
+    expect(await readTestDsaAttempts(secondId)).toEqual([])
   })
 })

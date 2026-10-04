@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createTestUser, readAllQueueJobs } from '@voucha/test-helpers'
 import { notifications } from '@queues/notifications/queues'
 import { createRequest } from '@voucha/test-helpers/api/server'
@@ -14,6 +14,7 @@ import {
   seedTestDsaSubmission,
   seedTestDsaSubmitted,
 } from '@voucha/test-helpers/dsa-statement-submission-fixtures'
+import { useDsaStatementSubmissions } from '@voucha/test-helpers/dsa-switches'
 
 const path = (id: string) => `/api/v1/copyright-dsa-statement-submissions/${id}/replays`
 
@@ -79,5 +80,25 @@ describe('POST copyright DSA statement replay', () => {
     await moderator.post(path(id)).expect(403)
     await administrator.post(path('not-a-uuid')).expect(422)
     expect(await readTestDsaAttempts(id)).toHaveLength(5)
+  })
+})
+
+describe('POST copyright DSA statement replay with operator submission gate enabled', () => {
+  useDsaStatementSubmissions()
+  afterEach(() => vi.unstubAllEnvs())
+
+  it('enqueues the rearmed item once when provider credentials are configured', async () => {
+    vi.stubEnv('DSA_TRANSPARENCY_DATABASE_URL', 'https://transparency.dsa.ec.europa.eu/api/v1')
+    vi.stubEnv('DSA_TRANSPARENCY_DATABASE_TOKEN', 'synthetic-token')
+    const id = await deadLetter()
+    const { request } = await requestAs({ extraRoles: ['administrator'] })
+    expect((await request.post(path(id)).expect(200)).body).toEqual({ replayed: true })
+    expect(
+      (await readAllQueueJobs(notifications)).filter(
+        job =>
+          job.name === 'processSubmitDsaStatementOfReasons' &&
+          (job.data as { submissionId?: string }).submissionId === id,
+      ),
+    ).toHaveLength(1)
   })
 })

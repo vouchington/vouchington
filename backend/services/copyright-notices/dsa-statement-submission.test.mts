@@ -15,6 +15,7 @@ import {
   makeTestDsaSubmissionDue,
   readTestDsaAttempts,
   readTestDsaSubmission,
+  seedTestDsaFailureRound,
   seedTestDsaSubmission,
 } from '@voucha/test-helpers/dsa-statement-submission-fixtures'
 import {
@@ -45,21 +46,15 @@ function fetchResponse(response: Response): ReturnType<typeof getExternalFetch> 
 async function processWith(
   submissionId: string,
   response: Response,
-  overrides: {
-    isEnabled?: () => Promise<boolean>
-    getFrom?: () => Promise<Date | null>
-    recordFailure?: ProcessDsaStatementSubmissionDependencies['recordFailure']
-    requestFetch?: ReturnType<typeof getExternalFetch>
-  } = {},
+  overrides: Partial<ProcessDsaStatementSubmissionDependencies> = {},
 ) {
   return processDsaStatementSubmission(submissionId, {
-    isEnabled: overrides.isEnabled ?? (async () => true),
-    getFrom: overrides.getFrom ?? (async () => from()),
-    requestFetch: overrides.requestFetch ?? fetchResponse(response),
+    isEnabled: async () => true,
+    getFrom: async () => from(),
+    requestFetch: fetchResponse(response),
     ...credentials,
-    recordFailure:
-      overrides.recordFailure ??
-      vi.fn<ProcessDsaStatementSubmissionDependencies['recordFailure']>(),
+    recordFailure: vi.fn<ProcessDsaStatementSubmissionDependencies['recordFailure']>(),
+    ...overrides,
   })
 }
 
@@ -102,6 +97,102 @@ describe('durable DSA statement submission', () => {
     ).toBe('not_claimable')
     expect(await readTestDsaAttempts(id)).toEqual([])
     expect((await readTestDsaSubmission(id)).lease_token).toBeNull()
+  })
+
+  it('rechecks the switch, start date, and credentials after claiming without sending', async () => {
+    const response = dsaTestResponse(201, { uuid: DSA_TEST_UUID })
+    const requestFetch = fetchResponse(response)
+    const cases: Array<{
+      name: string
+      expected: 'disabled' | 'configuration_missing' | 'not_claimable'
+      overrides: Partial<ProcessDsaStatementSubmissionDependencies>
+    }> = [
+      {
+        name: 'switch withdrawn',
+        expected: 'disabled',
+        overrides: {
+          isEnabled: (() => {
+            let reads = 0
+            return async () => ++reads === 1
+          })(),
+        },
+      },
+      {
+        name: 'start date unset',
+        expected: 'configuration_missing',
+        overrides: {
+          getFrom: (() => {
+            let reads = 0
+            return async () => (++reads === 1 ? from() : null)
+          })(),
+        },
+      },
+      {
+        name: 'start date moved past the restriction',
+        expected: 'not_claimable',
+        overrides: {
+          getFrom: (() => {
+            let reads = 0
+            return async () => (++reads === 1 ? from() : new Date('2200-01-01T00:00:00.000Z'))
+          })(),
+        },
+      },
+      {
+        name: 'credentials withdrawn',
+        expected: 'configuration_missing',
+        overrides: {
+          token: (() => {
+            let reads = 0
+            return () => (++reads === 1 ? 'synthetic-token' : '')
+          })(),
+        },
+      },
+    ]
+    for (const scenario of cases) {
+      const id = await newSubmission()
+      expect(
+        (await processWith(id, response, { ...scenario.overrides, requestFetch })).status,
+      ).toBe(scenario.expected)
+      expect((await readTestDsaSubmission(id)).lease_token).toBeNull()
+      expect(await readTestDsaAttempts(id)).toEqual([])
+    }
+    expect(requestFetch).not.toHaveBeenCalled()
+  })
+
+  it('releases a claim when the configured endpoint fails its HTTPS allowlist', async () => {
+    const id = await newSubmission()
+    const requestFetch = fetchResponse(dsaTestResponse(201, { uuid: DSA_TEST_UUID }))
+    expect(
+      (
+        await processWith(id, dsaTestResponse(201, { uuid: DSA_TEST_UUID }), {
+          url: () => 'https://attacker.example/api/v1',
+          requestFetch,
+        })
+      ).status,
+    ).toBe('configuration_missing')
+    expect((await readTestDsaSubmission(id)).lease_token).toBeNull()
+    expect(await readTestDsaAttempts(id)).toEqual([])
+    expect(requestFetch).not.toHaveBeenCalled()
+  })
+
+  it('reports a fifth expired worker lease without sending again', async () => {
+    const id = await newSubmission()
+    await seedTestDsaFailureRound(id, 1, 4)
+    expect((await claimDsaStatementSubmission(id, from())).kind).toBe('claimed')
+    await expireTestDsaSubmissionLease(id)
+    const response = dsaTestResponse(201, { uuid: DSA_TEST_UUID })
+    const requestFetch = fetchResponse(response)
+    const report = vi.fn<ProcessDsaStatementSubmissionDependencies['recordFailure']>()
+    expect(await processWith(id, response, { requestFetch, recordFailure: report })).toEqual({
+      status: 'dead_lettered',
+    })
+    expect(report).toHaveBeenCalledExactlyOnceWith({ submissionId: id, statusCode: null })
+    expect((await readTestDsaAttempts(id)).at(-1)).toMatchObject({
+      attempt_number: 5,
+      outcome: 'retryable_failure',
+      error_code: 'lease_expired',
+    })
+    expect(requestFetch).not.toHaveBeenCalled()
   })
 
   it('records a permanent 422 once and will not claim it again', async () => {

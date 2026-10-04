@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
+import { stat } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
@@ -19,6 +20,9 @@ const vitestCli = join(
   'vitest.mjs',
 )
 const isolatedConfig = join(root, 'test-helpers/vitest.config.isolated-database-case.mts')
+const collectCoverage =
+  process.env.VITEST_COVERAGE_ENABLED === 'true' ||
+  process.argv.some(argument => argument === '--coverage' || argument === '--coverage=true')
 
 /** Runs a registered global test against a fresh local database, then drops only that database. */
 export async function runIsolatedDatabaseCase(caseId: IsolatedDatabaseCaseId): Promise<void> {
@@ -40,6 +44,7 @@ export async function runIsolatedDatabaseCase(caseId: IsolatedDatabaseCaseId): P
 
   const suffix = randomBytes(12).toString('hex')
   const databaseName = makeIsolatedDatabaseName(suffix)
+  const isolatedCoverageDirectory = join(root, 'coverage-isolated', suffix)
   const databaseUrl = new URL(source)
   databaseUrl.pathname = `/${databaseName}`
   databaseUrl.searchParams.delete('dbname')
@@ -60,7 +65,8 @@ export async function runIsolatedDatabaseCase(caseId: IsolatedDatabaseCaseId): P
     VITEST_CI_REPORTERS: undefined,
     VITEST_JUNIT_OUTPUT_FILE: undefined,
     VITEST_BLOB_OUTPUT_FILE: undefined,
-    VITEST_COVERAGE_ENABLED: undefined,
+    VITEST_COVERAGE_ENABLED: collectCoverage ? 'true' : undefined,
+    VITEST_ISOLATED_COVERAGE_DIR: collectCoverage ? isolatedCoverageDirectory : undefined,
   }
 
   const adminEnv: NodeJS.ProcessEnv = {
@@ -104,6 +110,12 @@ export async function runIsolatedDatabaseCase(caseId: IsolatedDatabaseCaseId): P
       120_000,
     )
     assertIsolatedDatabaseCaseRan(caseId, childOutput)
+    if (collectCoverage) {
+      const report = await stat(join(isolatedCoverageDirectory, 'lcov.info')).catch(() => null)
+      if (!report?.isFile() || report.size === 0) {
+        throw new Error(`Isolated database case ${caseId} did not write its LCOV report`)
+      }
+    }
   } catch (err) {
     primaryFailure = err
   }

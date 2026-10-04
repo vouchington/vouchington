@@ -57,6 +57,8 @@ coverage/
 coverage-affected/
 coverage-changed/
 coverage-full/
+coverage-isolated/
+coverage-merge-input/
 coverage-html/
 playwright-report/
 playwright/screenshots/

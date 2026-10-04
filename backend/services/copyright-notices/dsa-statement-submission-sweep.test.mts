@@ -40,6 +40,25 @@ async function restrictionIdFor(noticeId: string): Promise<string> {
 }
 
 describe('DSA statement submission materialization', () => {
+  it('stops before searching or recording work when the configured start date is absent', async () => {
+    const warning = vi.fn<DsaStatementSweepDependencies['recordConfigMissing']>()
+    const buildPayload = vi.fn<DsaStatementSweepDependencies['buildPayload']>()
+
+    await expect(
+      prepareDsaStatementSubmissionSweep({
+        isEnabled: async () => true,
+        getFrom: async () => null,
+        recordConfigMissing: warning,
+        buildPayload,
+      }),
+    ).resolves.toBeNull()
+    expect(warning).toHaveBeenCalledExactlyOnceWith(
+      'processReconcileDsaStatementSubmissions',
+      'copyright.dsaSorDatabaseFrom',
+    )
+    expect(buildPayload).not.toHaveBeenCalled()
+  })
+
   it('records each eligible restriction once across cutoff, lift, and jurisdiction', async () => {
     const caseId = 'copyright-dsa-submission-materialization'
     if (getIsolatedDatabaseCaseMode(caseId) === 'parent') {

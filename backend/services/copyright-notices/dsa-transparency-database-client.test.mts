@@ -92,6 +92,7 @@ describe('DSA Transparency Database HTTP boundary', () => {
 
   it.each([
     { url: '', token: 'token' },
+    { url: 'not-a-url', token: 'token' },
     { url: credentials.url, token: '' },
     { url: 'http://transparency.dsa.ec.europa.eu/api/v1', token: 'token' },
     { url: 'https://attacker.example/api/v1', token: 'token' },
