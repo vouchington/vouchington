@@ -1,24 +1,24 @@
-import { createTestUserDirect } from '../../entities/users.mts'
-import { insertTestImage, insertTestPostImage } from '../../entities/images.mts'
-import { insertTestPost } from '../../entities/posts.mts'
-import { getTestPostImagePlacement, removeTestPostImage } from '../../entities/post-images.mts'
-import { insertTestTopic } from '../../entities/topics.mts'
-import { insertTestCommunity } from '../../entities/communities.mts'
-import { getTestImageSurfacePlacements } from '../../entities/image-surface-placements.mts'
+import { createTestUserDirect } from './entities/users.mts'
+import { insertTestImage, insertTestPostImage } from './entities/images.mts'
+import { insertTestPost } from './entities/posts.mts'
+import { getTestPostImagePlacement, removeTestPostImage } from './entities/post-images.mts'
+import { insertTestTopic } from './entities/topics.mts'
+import { insertTestCommunity } from './entities/communities.mts'
+import { getTestImageSurfacePlacements } from './entities/image-surface-placements.mts'
 import {
   setTestCommunitySurfaceImages,
   setTestTopicSurfaceImages,
   setTestUserProfileImage,
-} from '../../entities/media-surface-writes.mts'
-import { createProfileLink, updateProfileLink } from '../../../services/my/profile-links.mts'
+} from './entities/media-surface-writes.mts'
+import { createProfileLink, updateProfileLink } from '../services/my/profile-links.mts'
 import {
   resolveCopyrightImagePlacement,
   type CopyrightImageSelector,
-} from '../../../services/copyright-notices/placement-resolution.mts'
-import { createCopyrightNoticeAggregate } from './create-notice-aggregate.mts'
-import { getCopyrightNoticePrivateAggregate } from './private-aggregate.mts'
-import { appendCopyrightSubmissionAssessment } from '../../../services/copyright-notices/compliance.mts'
-import { acceptCopyrightNoticeAndImposeRestriction } from '../../../services/copyright-notices/restrictions.mts'
+} from '../services/copyright-notices/placement-resolution.mts'
+import { createCopyrightNoticeAggregate } from './services/copyright-notices/create-notice-aggregate.mts'
+import { getCopyrightNoticePrivateAggregate } from './services/copyright-notices/private-aggregate.mts'
+import { appendCopyrightSubmissionAssessment } from '../services/copyright-notices/compliance.mts'
+import { acceptCopyrightNoticeAndImposeRestriction } from '../services/copyright-notices/restrictions.mts'
 
 export const TEST_COPYRIGHT_IMAGE_KINDS = [
   'post-image',
@@ -30,7 +30,6 @@ export const TEST_COPYRIGHT_IMAGE_KINDS = [
   'community-banner-image',
 ] as const
 export type TestCopyrightImageKind = (typeof TEST_COPYRIGHT_IMAGE_KINDS)[number]
-
 type TestCopyrightImageFixture = {
   selector: CopyrightImageSelector
   imageId: string
@@ -41,13 +40,19 @@ type TestCopyrightImageFixture = {
   ownerKind: 'post' | 'user' | 'topic' | 'community'
   detach: () => Promise<void>
 }
-
 export async function createTestCopyrightImageFixture(
   kind: TestCopyrightImageKind,
-  options: { communityVisibility?: 'public' | 'private'; actorAdministrator?: boolean } = {},
+  options: {
+    communityVisibility?: 'public' | 'private'
+    actorAdministrator?: boolean
+    actorModerator?: boolean
+    actorWithEmail?: boolean
+  } = {},
 ): Promise<TestCopyrightImageFixture> {
   const owner = await createTestUserDirect({
     administrator: options.actorAdministrator ?? kind.startsWith('topic-'),
+    extraRoles: options.actorModerator ? ['moderator'] : [],
+    withEmail: options.actorWithEmail ?? false,
   })
   const imageId = await insertTestImage(owner.id)
   const hostedUseUrl = `https://voucha.ai/unused/${crypto.randomUUID()}`
@@ -149,7 +154,6 @@ export async function createTestCopyrightImageFixture(
     detach,
   }
 }
-
 export async function createTestCopyrightRestrictionForImage(fixture: TestCopyrightImageFixture) {
   const moderator = await createTestUserDirect({ extraRoles: ['moderator'] })
   const resolved = await resolveCopyrightImagePlacement(fixture.selector)

@@ -19,6 +19,7 @@ describe('copyright duplicate targets', () => {
         targets: [
           target,
           {
+            surface: 'post-image',
             post_id: target.post_id.toUpperCase(),
             image_id: target.image_id.toUpperCase(),
             target_url: `${target.target_url}?duplicate=1`,

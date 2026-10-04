@@ -4,7 +4,7 @@ import { readTestAutomaticWithholdingOutcome } from '@voucha/test-helpers/servic
 import { useAutomaticWithholdingSwitch } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 import { isTestCopyrightStaffCaseQueued } from '@voucha/test-helpers/services/copyright-notices/screened-form'
-import { createTestCopyrightImageFixture } from '@voucha/test-helpers/services/copyright-notices/surface-target-fixtures'
+import { createTestCopyrightImageFixture } from '@voucha/test-helpers/copyright-surface-target-fixtures'
 import { createCopyrightFormIntake } from './form-intakes.mts'
 import {
   applyNonSpamSignedInCopyrightFormScreening,

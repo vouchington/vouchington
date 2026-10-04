@@ -5,8 +5,8 @@ import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyrigh
 import {
   createTestLiftNotice,
   readTestLiftDeliveryIntents,
-} from '@voucha/test-helpers/services/copyright-notices/administrator-lift-fixtures'
-import { createTestCopyrightImageFixture } from '@voucha/test-helpers/services/copyright-notices/surface-target-fixtures'
+} from '@voucha/test-helpers/copyright-administrator-lift-fixtures'
+import { createTestCopyrightImageFixture } from '@voucha/test-helpers/copyright-surface-target-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import { appendCopyrightNoticeSubmission, processCopyrightActionIntent } from './index.mts'

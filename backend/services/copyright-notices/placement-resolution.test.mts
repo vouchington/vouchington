@@ -1,16 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { write } from '@data-stores/psql'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
 import { getTestImageSurfacePlacements } from '@voucha/test-helpers/entities/image-surface-placements'
 import {
   createTestCopyrightImageFixture,
   TEST_COPYRIGHT_IMAGE_KINDS,
-} from '@voucha/test-helpers/services/copyright-notices/surface-target-fixtures'
-import {
-  claimantCanViewCopyrightImagePlacement,
-  resolveCopyrightImagePlacement,
-} from './placement-resolution.mts'
+} from '@voucha/test-helpers/copyright-surface-target-fixtures'
+import { testClaimantCanViewCopyrightImage } from '@voucha/test-helpers/copyright-placement-policy-boundaries'
+import { resolveCopyrightImagePlacement } from './placement-resolution.mts'
 
 describe('copyright image placement resolution', () => {
   it.each(TEST_COPYRIGHT_IMAGE_KINDS)(
@@ -81,8 +78,6 @@ describe('copyright image placement resolution', () => {
     await expect(resolveCopyrightImagePlacement(fixture.selector)).resolves.toMatchObject({
       placementId: fixture.placementId,
     })
-    await expect(
-      claimantCanViewCopyrightImagePlacement(fixture.selector, claimant, write),
-    ).resolves.toBe(false)
+    await expect(testClaimantCanViewCopyrightImage(fixture.selector, claimant)).resolves.toBe(false)
   })
 })

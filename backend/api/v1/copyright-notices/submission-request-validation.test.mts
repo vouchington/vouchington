@@ -68,6 +68,45 @@ describe('copyright submission request contracts', () => {
         .expect(422)
       expect(response.body.message).toBe(message)
     })
+    it.each<[string, (target: Record<string, unknown>) => Record<string, unknown>, string]>([
+      [
+        'missing surface',
+        target => ({ ...target, surface: undefined }),
+        'targets[].surface is invalid',
+      ],
+      [
+        'unknown surface',
+        target => ({ ...target, surface: 'video-image' }),
+        'targets[].surface is invalid',
+      ],
+      [
+        'missing branch owner',
+        target => ({ ...target, community_id: undefined }),
+        'targets[].community_id must be a UUID',
+      ],
+      [
+        'wrong branch owner',
+        target => ({ ...target, post_id: crypto.randomUUID() }),
+        'Invalid request body',
+      ],
+      ['extra key', target => ({ ...target, injected: true }), 'Invalid request body'],
+    ])('rejects a community image with %s', async (_label, mutate, message) => {
+      const { claimant, form } = await createCopyrightFormFixture()
+      const request = createRequest()
+      await request.authenticateAs(claimant)
+      const target = {
+        surface: 'community-banner-image',
+        community_id: crypto.randomUUID(),
+        image_id: crypto.randomUUID(),
+        target_url: 'https://voucha.ai/communities/example',
+      }
+      const response = await request
+        .post(NOTICES)
+        .set('Idempotency-Key', crypto.randomUUID())
+        .send({ ...form, targets: [mutate(target)] })
+        .expect(422)
+      expect(response.body.message).toBe(message)
+    })
     it.each<[string, (form: Form) => object]>([
       ['an unknown key', form => ({ ...form, injected: true })],
       ['a non-string cf_turnstile_response', form => ({ ...form, cf_turnstile_response: 7 })],

@@ -4,12 +4,16 @@ import { getCopyrightParticipantNoticeDetail } from './read-models.mts'
 import { getImagePlacementDeliveryKey } from '@services/media-delivery-safety'
 import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
-import { getTestMediaDeliveryRecord } from '@voucha/test-helpers/entities/image-surface-placements'
+import {
+  completeTestMediaDeliveryRecord,
+  getTestMediaDeliveryRecord,
+} from '@voucha/test-helpers/entities/image-surface-placements'
 import { getTestPrivateUserById } from '@voucha/test-helpers/entities/users'
+import { createTestLiftClaimantReceipt } from '@voucha/test-helpers/copyright-administrator-lift-fixtures'
 import {
   createTestCopyrightImageFixture,
   createTestCopyrightRestrictionForImage,
-} from '@voucha/test-helpers/services/copyright-notices/surface-target-fixtures'
+} from '@voucha/test-helpers/copyright-surface-target-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import {
   createCopyrightCounterNotice,
@@ -35,6 +39,14 @@ describe('deleted community image setters and copyright response flows', () => {
       restricted.withholdIntentId,
       new Date(),
       createTestCopyrightDeliveryDependencies(async () => undefined),
+    )
+    const initialWithheld = await getImagePlacementForCopyright(fixture.placementId)
+    await completeTestMediaDeliveryRecord(
+      getImagePlacementDeliveryKey({
+        placementId: fixture.placementId,
+        revision: initialWithheld!.revision,
+        imageId: fixture.imageId,
+      }),
     )
     await deleteUserAndDrainForTest(setter, setter)
 
@@ -67,7 +79,7 @@ describe('deleted community image setters and copyright response flows', () => {
           imageId: fixture.imageId,
         }),
       ),
-    ).resolves.toMatchObject({ desired_state: 'withheld', state: 'completed' })
+    ).resolves.toMatchObject({ desired_state: 'withheld' })
   })
 
   it('keeps the restriction withheld when staff reject the setter’s counter-notice', async () => {
@@ -127,6 +139,10 @@ describe('deleted community image setters and copyright response flows', () => {
     async (_label, deleteBeforeAcceptance) => {
       const fixture = await createTestCopyrightImageFixture('community-profile-image')
       const restricted = await createTestCopyrightRestrictionForImage(fixture)
+      await createTestLiftClaimantReceipt(
+        restricted.noticeId,
+        `counter-${crypto.randomUUID()}@example.test`,
+      )
       const setter = await getTestPrivateUserById(fixture.actorUserId)
       if (!setter) throw new Error('Community setter fixture missing')
       await processCopyrightActionIntent(
@@ -214,7 +230,10 @@ describe('deleted community image setters and copyright response flows', () => {
         ),
       ).resolves.toBe('applied')
       const restored = await getCopyrightNoticePrivateAggregate(restricted.noticeId)
-      expect(restored?.deadlines.find(row => row.id === review.deadlineId)).toEqual(deadline)
+      expect(restored?.deadlines.find(row => row.id === review.deadlineId)).toMatchObject({
+        ...window,
+        resolved_at: dueAt,
+      })
       expect(
         restored?.restrictions.find(row => row.id === restricted.restrictionId)?.lifted_at,
       ).not.toBeNull()

@@ -1,11 +1,11 @@
-import { createTestUserDirect } from '../../entities/users.mts'
-import { createTestCopyrightDeliveryDependencies } from '../../copyright-delivery-dependencies.mts'
-import { processCopyrightActionIntent } from '../../../services/copyright-notices/action-delivery.mts'
-import { liftCopyrightRestrictionWithoutSetter } from '../../../services/copyright-notices/restriction-lifts.mts'
+import { createTestUserDirect } from './entities/users.mts'
+import { createTestCopyrightDeliveryDependencies } from './copyright-delivery-dependencies.mts'
+import { processCopyrightActionIntent } from '../services/copyright-notices/action-delivery.mts'
+import { liftCopyrightRestrictionWithoutSetter } from '../services/copyright-notices/restriction-lifts.mts'
 import {
   createTestCopyrightImageFixture,
   createTestCopyrightRestrictionForImage,
-} from './surface-target-fixtures.mts'
+} from './copyright-surface-target-fixtures.mts'
 
 /** Supplies an encrypted administrator rationale row for the retention guard's table inventory. */
 export async function createRetentionAdministratorLiftCase(): Promise<{ noticeId: string }> {

@@ -1,22 +1,23 @@
 import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { createTestUserDirect } from '../../entities/users.mts'
-import { getTestImageSurfacePlacements } from '../../entities/image-surface-placements.mts'
-import { createCopyrightNoticeAggregate } from './create-notice-aggregate.mts'
-import { getCopyrightNoticePrivateAggregate } from './private-aggregate.mts'
-import { createTestCopyrightImageFixture } from './surface-target-fixtures.mts'
-import { resolveCopyrightImagePlacement } from '../../../services/copyright-notices/placement-resolution.mts'
-import { appendCopyrightSubmissionAssessment } from '../../../services/copyright-notices/compliance.mts'
-import { acceptCopyrightNoticeAndImposeRestriction } from '../../../services/copyright-notices/restrictions.mts'
-import { createCopyrightStatementDeliveryInTransaction } from '../../../services/copyright-notices/statement-delivery.mts'
-import { copyrightActionDeliveryFacts } from '../../../services/copyright-notices/action-delivery-facts.mts'
-import { applyCopyrightConfirmationConsequencesInTransaction } from '../../../services/copyright-notices/staydown-registration.mts'
+import { createTestUserDirect } from './entities/users.mts'
+import { getTestImageSurfacePlacements } from './entities/image-surface-placements.mts'
+import { createCopyrightNoticeAggregate } from './services/copyright-notices/create-notice-aggregate.mts'
+import { getCopyrightNoticePrivateAggregate } from './services/copyright-notices/private-aggregate.mts'
+import { createTestCopyrightImageFixture } from './copyright-surface-target-fixtures.mts'
+import { resolveCopyrightImagePlacement } from '../services/copyright-notices/placement-resolution.mts'
+import { appendCopyrightSubmissionAssessment } from '../services/copyright-notices/compliance.mts'
+import { acceptCopyrightNoticeAndImposeRestriction } from '../services/copyright-notices/restrictions.mts'
+import { createCopyrightStatementDeliveryInTransaction } from '../services/copyright-notices/statement-delivery.mts'
+import { copyrightActionDeliveryFacts } from '../services/copyright-notices/action-delivery-facts.mts'
+import { applyCopyrightConfirmationConsequencesInTransaction } from '../services/copyright-notices/staydown-registration.mts'
+import { createCopyrightRestoreIntentForReversalInTransaction } from '../services/copyright-notices/restoration-reversal.mts'
 import {
   anyReversalSourceSql,
   reverseReviewSourceSql,
   appealReversalSourceSql,
   administratorLiftSourceSql,
-} from '../../../services/copyright-notices/restriction-reversal-sources-sql.mts'
+} from '../services/copyright-notices/restriction-reversal-sources-sql.mts'
 
 export type LiftSurfaceFixture = Awaited<ReturnType<typeof createTestCopyrightImageFixture>>
 
@@ -180,4 +181,10 @@ export async function replayTestLiftConfirmationConsequences(noticeId: string): 
   await using transaction = await beginTransaction()
   await applyCopyrightConfirmationConsequencesInTransaction(noticeId, transaction)
   await transaction.commit()
+}
+
+/** Exercises the production reversal guard inside a real transaction. */
+export async function testCreateCopyrightRestoreIntentForReversal(restrictionId: string) {
+  await using transaction = await beginTransaction()
+  return await createCopyrightRestoreIntentForReversalInTransaction(restrictionId, transaction)
 }

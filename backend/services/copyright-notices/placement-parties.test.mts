@@ -1,32 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { read, write } from '@data-stores/psql'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import { insertTestCommunityMember } from '@voucha/test-helpers/entities/community-members'
+import { reactivateTestCommunityImageWithoutBinder } from '@voucha/test-helpers/copyright-administrator-lift-fixtures'
+import { readTestCopyrightPlacementParties as parties } from '@voucha/test-helpers/copyright-placement-policy-boundaries'
 import {
   createTestCopyrightImageFixture,
   createTestCopyrightRestrictionForImage,
   TEST_COPYRIGHT_IMAGE_KINDS,
-} from '@voucha/test-helpers/services/copyright-notices/surface-target-fixtures'
-import sql from 'sql-template-strings'
-import {
-  copyrightPlacementPartiesSql,
-  type CopyrightPlacementPartyPurpose,
-} from './placement-parties.mts'
-
-async function parties(
-  targetId: string,
-  purpose: CopyrightPlacementPartyPurpose,
-): Promise<string[]> {
-  const statement = sql`/* testCopyrightPlacementParties */
-    SELECT DISTINCT party.user_id
-    FROM copyright_notice_targets target
-    CROSS JOIN LATERAL `
-  statement.append(copyrightPlacementPartiesSql(purpose))
-  statement.append(sql` party WHERE target.id = ${targetId} AND party.user_id IS NOT NULL
-    ORDER BY party.user_id`)
-  const { rows } = await read<{ user_id: string }>(statement)
-  return rows.map(row => row.user_id)
-}
+} from '@voucha/test-helpers/copyright-surface-target-fixtures'
 
 describe('copyright placement party policy', () => {
   it.each(TEST_COPYRIGHT_IMAGE_KINDS)('assigns the D1 party sets for %s', async kind => {
@@ -101,9 +82,7 @@ describe('copyright placement party policy', () => {
       userId: otherOwner.id,
       role: 'owner',
     })
-    await fixture.detach()
-    await write(sql`/* testCopyrightTriggerOnlyReactivation */
-      UPDATE communities SET profile_image_id = ${fixture.imageId} WHERE id = ${fixture.ownerId}`)
+    await reactivateTestCommunityImageWithoutBinder(fixture)
     const { targetId } = await createTestCopyrightRestrictionForImage(fixture)
     for (const purpose of ['notify', 'respond', 'strike', 'retain'] as const) {
       expect(await parties(targetId, purpose)).toEqual([])

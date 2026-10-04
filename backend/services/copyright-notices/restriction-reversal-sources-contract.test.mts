@@ -13,11 +13,11 @@ import {
   readTestLiftReversalFacts,
   readTestLiftSourceFlags,
   replayTestLiftConfirmationConsequences,
-} from '@voucha/test-helpers/services/copyright-notices/administrator-lift-fixtures'
+} from '@voucha/test-helpers/copyright-administrator-lift-fixtures'
 import {
   createTestCopyrightImageFixture,
   createTestCopyrightRestrictionForImage,
-} from '@voucha/test-helpers/services/copyright-notices/surface-target-fixtures'
+} from '@voucha/test-helpers/copyright-surface-target-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { liftCopyrightRestrictionWithoutSetter } from './restriction-lifts.mts'
 import { getCopyrightRepeatInfringerAccount } from './repeat-infringer-incidents.mts'
@@ -85,6 +85,14 @@ describe('independent copyright reversal sources', () => {
     const fixture = await createTestCopyrightImageFixture('user-profile-image')
     const restricted = await createTestCopyrightRestrictionForImage(fixture)
     await expect(processCopyrightActionIntent(restricted.withholdIntentId)).resolves.toBe('applied')
+    await completeCopyrightMandatoryHumanReview({
+      noticeId: restricted.noticeId,
+      restrictionId: restricted.restrictionId,
+      currentUser: restricted.moderator,
+      action: 'confirm',
+      rationale: 'Confirm the restriction before the appeal.',
+      reviewedAt: new Date(),
+    })
     const beforeIncident = (
       await getCopyrightRepeatInfringerAccount(fixture.actorUserId)
     ).incidents.find(incident => incident.copyright_notice_id === restricted.noticeId)

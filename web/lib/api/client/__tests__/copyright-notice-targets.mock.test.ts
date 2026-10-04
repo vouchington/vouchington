@@ -24,6 +24,7 @@ describe('resolveCopyrightNoticeTargets', () => {
       resolveCopyrightNoticeTargets('https://voucha.ai/discussion/hosted-material'),
     ).resolves.toEqual([
       {
+        surface: 'post-image',
         post_id: 'post-1',
         image_id: 'image-1',
         target_url: 'https://voucha.ai/discussion/hosted-material',
@@ -43,6 +44,7 @@ describe('resolveCopyrightNoticeTargets', () => {
       resolveCopyrightNoticeTargets('https://voucha.ai/story/hosted-material'),
     ).resolves.toEqual([
       {
+        surface: 'post-image',
         post_id: 'story-1',
         image_id: 'image-1',
         target_url: 'https://voucha.ai/story/hosted-material',
@@ -56,23 +58,23 @@ describe('resolveCopyrightNoticeTargets', () => {
 
   it('rejects incomplete, foreign, and empty hosted-use URLs', async () => {
     await expect(resolveCopyrightNoticeTargets('not a url')).rejects.toThrow(
-      'Enter the full URL of the Voucha post containing the material.',
+      'Enter the full URL of the Voucha page containing the image.',
     )
     await expect(
       resolveCopyrightNoticeTargets('https://example.test/discussion/hosted-material'),
-    ).rejects.toThrow('Enter a canonical Voucha post URL without a query or fragment.')
+    ).rejects.toThrow('Enter a canonical Voucha page URL without a query or fragment.')
     await expect(
       resolveCopyrightNoticeTargets('https://voucha.ai/discussion/hosted-material?ref=1'),
-    ).rejects.toThrow('Enter a canonical Voucha post URL without a query or fragment.')
-    await expect(
-      resolveCopyrightNoticeTargets('https://voucha.ai/communities/slug'),
-    ).rejects.toThrow('Enter the URL of a supported Voucha post.')
+    ).rejects.toThrow('Enter a canonical Voucha page URL without a query or fragment.')
+    await expect(resolveCopyrightNoticeTargets('https://voucha.ai/groups/slug')).rejects.toThrow(
+      'Enter the URL of a supported Voucha page.',
+    )
     await expect(
       resolveCopyrightNoticeTargets('https://voucha.ai/toString/hosted-material'),
-    ).rejects.toThrow('Enter the URL of a supported Voucha post.')
+    ).rejects.toThrow('Enter the URL of a supported Voucha page.')
     await expect(
       resolveCopyrightNoticeTargets('https://voucha.ai/discussion/foo%5Cbar'),
-    ).rejects.toThrow('Enter the URL of a supported Voucha post.')
+    ).rejects.toThrow('Enter the URL of a supported Voucha page.')
     mockGet.mockResolvedValueOnce({ post: { id: 'post-1' } }).mockResolvedValueOnce({ images: [] })
     await expect(
       resolveCopyrightNoticeTargets('https://voucha.ai/article/empty-post'),

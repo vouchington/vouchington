@@ -13,7 +13,7 @@ import {
 import { enableAutomaticProvisionalWithholdingForTest } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { createRetentionEmailCase } from '@voucha/test-helpers/services/copyright-notices/retention-email-case'
 import { createRetentionFormCase } from '@voucha/test-helpers/services/copyright-notices/retention-form-case'
-import { createRetentionAdministratorLiftCase } from '@voucha/test-helpers/services/copyright-notices/retention-administrator-lift'
+import { createRetentionAdministratorLiftCase } from '@voucha/test-helpers/copyright-retention-administrator-lift'
 import { COPYRIGHT_RETENTION_ERASURE } from './retention-erasure-spec.mts'
 
 /** SQLSTATE check_violation, which every legal-record guard raises. */

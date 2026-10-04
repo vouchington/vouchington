@@ -5,7 +5,7 @@ import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/servi
 import {
   createTestCopyrightImageFixture,
   createTestCopyrightRestrictionForImage,
-} from '@voucha/test-helpers/services/copyright-notices/surface-target-fixtures'
+} from '@voucha/test-helpers/copyright-surface-target-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import {

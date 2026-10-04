@@ -6,8 +6,8 @@ import {
   createTestLiftNotice,
   reactivateTestCommunityImageWithoutBinder,
   readTestLiftDeliveryIntents,
-} from '@voucha/test-helpers/services/copyright-notices/administrator-lift-fixtures'
-import { createTestCopyrightImageFixture } from '@voucha/test-helpers/services/copyright-notices/surface-target-fixtures'
+} from '@voucha/test-helpers/copyright-administrator-lift-fixtures'
+import { createTestCopyrightImageFixture } from '@voucha/test-helpers/copyright-surface-target-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { getCopyrightRepeatInfringerAccount } from './repeat-infringer-incidents.mts'
 import { liftCopyrightRestrictionWithoutSetter } from './restriction-lifts.mts'

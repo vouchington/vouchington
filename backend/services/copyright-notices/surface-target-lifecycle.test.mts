@@ -18,7 +18,7 @@ import {
   createTestCopyrightImageFixture,
   createTestCopyrightRestrictionForImage,
   TEST_COPYRIGHT_IMAGE_KINDS,
-} from '@voucha/test-helpers/services/copyright-notices/surface-target-fixtures'
+} from '@voucha/test-helpers/copyright-surface-target-fixtures'
 import {
   getImagePlacementForCopyright,
   getImagePlacementCopyrightOwner,
@@ -128,7 +128,7 @@ describe('copyright surface target lifecycle', () => {
       const caseRecord = await createTestCopyrightRestrictionForImage(fixture)
       const cache = ownerCache(fixture)
       await warmOwnerCache(fixture)
-      expect(cache ? (await cache.get(fixture.ownerId)) !== null : true).toBe(true)
+      if (cache) await pollUntilNotNull(() => cache.get(fixture.ownerId))
       expect(await getImagePlacementCopyrightOwner(fixture.placementId)).toEqual({
         kind: fixture.ownerKind,
         id: fixture.ownerId,
@@ -139,7 +139,7 @@ describe('copyright surface target lifecycle', () => {
       )
       expect(cache ? (await cache.get(fixture.ownerId)) === null : true).toBe(true)
       if (cache) await warmOwnerCache(fixture)
-      expect(cache ? (await cache.get(fixture.ownerId)) !== null : true).toBe(true)
+      if (cache) await pollUntilNotNull(() => cache.get(fixture.ownerId))
       const purgeQueued = cache
         ? true
         : await pollUntilNotNull(async () =>
