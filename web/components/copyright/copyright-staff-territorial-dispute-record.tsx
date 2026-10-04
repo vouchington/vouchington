@@ -6,13 +6,20 @@ import { ButtonGroup } from '@/components/ui/button-group'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  recordCopyrightEuDisputeSettlementImplementation,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   recordCopyrightEuDisputeSettlementOutcome,
   type CopyrightEuDisputeSettlementResult,
 } from '@/lib/api/client/copyright-territorial-redress'
 import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
 import type { SubmitReview } from './copyright-staff-review-buttons'
 import { dateForInput } from './copyright-staff-territorial-dispute-date'
+import { CopyrightStaffTerritorialImplementationFields } from './copyright-staff-territorial-dispute-implementation'
 
 const resultLabels: Record<CopyrightEuDisputeSettlementResult, string> = {
   decided_for_recipient: 'Decided for the recipient',
@@ -63,7 +70,7 @@ export function CopyrightStaffTerritorialSettlementRecord({
               Implementation recorded {new Date(referral.outcome.implemented_at).toLocaleString()}
             </p>
           ) : referral.outcome.result === 'decided_for_recipient' ? (
-            <ImplementationFields
+            <CopyrightStaffTerritorialImplementationFields
               implementedAt={implementedAt}
               noticeId={item.id}
               onReview={onReview}
@@ -103,22 +110,30 @@ function OutcomeFields({
 }) {
   return (
     <div className='space-y-2'>
-      <Label htmlFor={`dispute-result-${referralId}`}>Body outcome</Label>
-      <select
-        className='h-9 w-full rounded-md border border-input bg-background px-3 text-sm'
-        id={`dispute-result-${referralId}`}
-        onChange={event => setResult(event.target.value as CopyrightEuDisputeSettlementResult)}
+      <Label
+        htmlFor={`dispute-result-${referralId}`}
+        id={`dispute-result-${referralId}-label`}
+      >
+        Body outcome
+      </Label>
+      <Select
+        onValueChange={value => setResult(value as CopyrightEuDisputeSettlementResult)}
         value={result}
       >
-        {Object.entries(resultLabels).map(([value, label]) => (
-          <option
-            key={value}
-            value={value}
-          >
-            {label}
-          </option>
-        ))}
-      </select>
+        <SelectTrigger id={`dispute-result-${referralId}`}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {Object.entries(resultLabels).map(([value, label]) => (
+            <SelectItem
+              key={value}
+              value={value}
+            >
+              {label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       <Label htmlFor={`dispute-decided-at-${referralId}`}>Outcome date</Label>
       <Input
         id={`dispute-decided-at-${referralId}`}
@@ -142,51 +157,6 @@ function OutcomeFields({
           size='touchSm'
         >
           Record outcome
-        </Button>
-      </ButtonGroup>
-    </div>
-  )
-}
-
-function ImplementationFields({
-  implementedAt,
-  noticeId,
-  onReview,
-  pending,
-  referralId,
-  setImplementedAt,
-}: {
-  implementedAt: string
-  noticeId: string
-  onReview: SubmitReview
-  pending: boolean
-  referralId: string
-  setImplementedAt: (value: string) => void
-}) {
-  return (
-    <div className='space-y-2'>
-      <Label htmlFor={`dispute-implemented-at-${referralId}`}>Implementation date</Label>
-      <Input
-        id={`dispute-implemented-at-${referralId}`}
-        onChange={event => setImplementedAt(event.target.value)}
-        type='datetime-local'
-        value={implementedAt}
-      />
-      <ButtonGroup>
-        <Button
-          disabled={pending || !implementedAt}
-          onClick={() =>
-            onReview(
-              () =>
-                recordCopyrightEuDisputeSettlementImplementation(noticeId, referralId, {
-                  implemented_at: new Date(implementedAt).toISOString(),
-                }),
-              'Dispute settlement implementation recorded.',
-            )
-          }
-          size='touchSm'
-        >
-          Record implementation
         </Button>
       </ButtonGroup>
     </div>

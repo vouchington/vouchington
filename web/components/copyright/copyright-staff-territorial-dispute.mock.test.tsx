@@ -97,9 +97,8 @@ describe('CopyrightStaffTerritorialDispute', () => {
     fireEvent.change(screen.getByLabelText('Dispute settlement body'), {
       target: { value: 'Independent dispute body' },
     })
-    fireEvent.change(screen.getByLabelText('Party that referred the dispute'), {
-      target: { value: 'notifier' },
-    })
+    fireEvent.click(screen.getByRole('combobox', { name: 'Party that referred the dispute' }))
+    fireEvent.click(screen.getByRole('option', { name: /^Notifier$/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Record referral' }))
     await waitFor(() => expect(mockRefer).toHaveBeenCalledOnce())
     const [noticeId, input] = mockRefer.mock.calls[0]!
@@ -124,9 +123,8 @@ describe('CopyrightStaffTerritorialDispute', () => {
     fireEvent.change(screen.getByLabelText('Dispute settlement body'), {
       target: { value: 'Independent dispute body' },
     })
-    fireEvent.change(screen.getByLabelText('Party that referred the dispute'), {
-      target: { value: 'poster' },
-    })
+    fireEvent.click(screen.getByRole('combobox', { name: 'Party that referred the dispute' }))
+    fireEvent.click(screen.getByRole('option', { name: /^Poster$/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Record referral' }))
     await waitFor(() => expect(mockRefer).toHaveBeenCalledOnce())
     expect(mockRefer.mock.calls[0]?.[1]).toMatchObject({
@@ -153,9 +151,8 @@ describe('CopyrightStaffTerritorialDispute', () => {
         pending={false}
       />,
     )
-    fireEvent.change(screen.getByLabelText('Body outcome'), {
-      target: { value: 'decided_for_recipient' },
-    })
+    fireEvent.click(screen.getByRole('combobox', { name: 'Body outcome' }))
+    fireEvent.click(screen.getByRole('option', { name: /^Decided for the recipient$/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Record outcome' }))
     await waitFor(() => {
       expect(mockOutcome).toHaveBeenCalledWith(
@@ -215,9 +212,8 @@ describe('CopyrightStaffTerritorialDispute', () => {
     )
     const body = screen.getByLabelText('Dispute settlement body')
     fireEvent.change(body, { target: { value: 'Independent dispute body' } })
-    fireEvent.change(screen.getByLabelText('Party that referred the dispute'), {
-      target: { value: 'notifier' },
-    })
+    fireEvent.click(screen.getByRole('combobox', { name: 'Party that referred the dispute' }))
+    fireEvent.click(screen.getByRole('option', { name: /^Notifier$/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Record referral' }))
     await waitFor(() => expect(mockRefer).toHaveBeenCalledOnce())
     expect(body).toHaveValue('Independent dispute body')

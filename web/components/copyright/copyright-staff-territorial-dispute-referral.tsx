@@ -5,6 +5,13 @@ import { Button } from '@/components/ui/button'
 import { ButtonGroup } from '@/components/ui/button-group'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { referCopyrightEuDisputeSettlement } from '@/lib/api/client/copyright-territorial-redress'
 import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
 import type { SubmitReview } from './copyright-staff-review-buttons'
@@ -84,36 +91,51 @@ export function CopyrightStaffTerritorialReferralFields({
         />
       </div>
       <div className='space-y-1'>
-        <Label htmlFor={`dispute-party-${item.id}`}>Party that referred the dispute</Label>
-        <select
-          className='h-9 w-full rounded-md border border-input bg-background px-3 text-sm'
-          id={`dispute-party-${item.id}`}
-          onChange={event => setParty(event.target.value as 'poster' | 'notifier')}
+        <Label
+          htmlFor={`dispute-party-${item.id}`}
+          id={`dispute-party-${item.id}-label`}
+        >
+          Party that referred the dispute
+        </Label>
+        <Select
+          onValueChange={value => setParty(value as 'poster' | 'notifier')}
           value={party}
         >
-          <option value=''>Choose a party</option>
-          <option value='notifier'>Notifier</option>
-          {posterOptions.length > 0 && <option value='poster'>Poster</option>}
-        </select>
+          <SelectTrigger id={`dispute-party-${item.id}`}>
+            <SelectValue placeholder='Choose a party' />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value='notifier'>Notifier</SelectItem>
+            {posterOptions.length > 0 && <SelectItem value='poster'>Poster</SelectItem>}
+          </SelectContent>
+        </Select>
       </div>
       {party === 'poster' && posterOptions.length > 1 && (
         <div className='space-y-1'>
-          <Label htmlFor={`dispute-poster-${item.id}`}>Poster</Label>
-          <select
-            className='h-9 w-full rounded-md border border-input bg-background px-3 text-sm'
-            id={`dispute-poster-${item.id}`}
-            onChange={event => setPosterId(event.target.value)}
+          <Label
+            htmlFor={`dispute-poster-${item.id}`}
+            id={`dispute-poster-${item.id}-label`}
+          >
+            Poster
+          </Label>
+          <Select
+            onValueChange={setPosterId}
             value={posterId}
           >
-            {posterOptions.map(poster => (
-              <option
-                key={poster.id}
-                value={poster.id}
-              >
-                {poster.label}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger id={`dispute-poster-${item.id}`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {posterOptions.map(poster => (
+                <SelectItem
+                  key={poster.id}
+                  value={poster.id}
+                >
+                  {poster.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       )}
       <ButtonGroup>

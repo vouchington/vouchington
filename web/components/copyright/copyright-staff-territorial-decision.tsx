@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Textarea } from '@/components/ui/textarea'
 import {
   decideCopyrightTerritorialNotice,
@@ -77,29 +78,37 @@ export function CopyrightStaffTerritorialDecision({
         </p>
       )}
       <fieldset className='space-y-2'>
-        <legend className='text-sm font-medium'>Decision</legend>
-        <Label className='flex items-center gap-2'>
-          <input
-            checked={outcome === 'restrict'}
-            name={`territorial-outcome-${item.id}`}
-            onChange={() => setOutcome('restrict')}
-            type='radio'
-            value='restrict'
-          />
-          Restrict
-        </Label>
-        {!reopened && (
-          <Label className='flex items-center gap-2'>
-            <input
-              checked={outcome === 'no_action'}
-              name={`territorial-outcome-${item.id}`}
-              onChange={() => setOutcome('no_action')}
-              type='radio'
-              value='no_action'
+        <legend
+          className='text-sm font-medium'
+          id={`territorial-outcome-label-${item.id}`}
+        >
+          Decision
+        </legend>
+        <RadioGroup
+          aria-labelledby={`territorial-outcome-label-${item.id}`}
+          name={`territorial-outcome-${item.id}`}
+          onValueChange={value => {
+            if (value === 'restrict' || (!reopened && value === 'no_action')) setOutcome(value)
+          }}
+          value={outcome}
+        >
+          <div className='flex items-center gap-2'>
+            <RadioGroupItem
+              id={`territorial-restrict-${item.id}`}
+              value='restrict'
             />
-            No action
-          </Label>
-        )}
+            <Label htmlFor={`territorial-restrict-${item.id}`}>Restrict</Label>
+          </div>
+          {!reopened && (
+            <div className='flex items-center gap-2'>
+              <RadioGroupItem
+                id={`territorial-no-action-${item.id}`}
+                value='no_action'
+              />
+              <Label htmlFor={`territorial-no-action-${item.id}`}>No action</Label>
+            </div>
+          )}
+        </RadioGroup>
       </fieldset>
       <div className='space-y-1'>
         <Label htmlFor={`territorial-rationale-${item.id}`}>Internal rationale</Label>
