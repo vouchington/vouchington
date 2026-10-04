@@ -15,7 +15,7 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     schedulerId: 'entityListenerReconciliation',
     repeat: () => ({ every: getEntityListenerReconciliationIntervalSeconds() * 1000 }),
     template: {
-      name: 'reconcileEntities',
+      name: 'enqueueReconcileEntities',
       data: {},
       opts: {
         attempts: 3,

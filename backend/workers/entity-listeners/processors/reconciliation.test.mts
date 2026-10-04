@@ -4,8 +4,12 @@ import { reconcileEntities, reconcileEntity, reconcileEntityBatches } from './re
 
 describe('reconcileEntities', () => {
   it('reconciles the current entity window', async () => {
-    const result = await reconcileEntities()
+    const save = vi.fn<(data: unknown) => Promise<void>>(async () => {})
+    const result = await reconcileEntities({}, save)
     expect(result.reconciled).toBeGreaterThanOrEqual(0)
+    expect(save.mock.calls[0]?.[0]).toEqual({
+      window: { start: expect.any(String), end: expect.any(String) },
+    })
   })
 })
 
@@ -165,13 +169,19 @@ describe('reconcileEntity', () => {
       dependencies,
     )
 
-    expect(dependencies.processUserCreated).toHaveBeenCalledWith({ id: 'user-1' })
+    expect(dependencies.processUserCreated).toHaveBeenCalledWith({
+      id: 'user-1',
+    })
     expect(dependencies.processAutoFollowReferrer).toHaveBeenCalledWith({
       newUserId: 'user-1',
       referrerId: 'user-2',
     })
-    expect(dependencies.processTopicCurrentState).toHaveBeenCalledWith({ id: 'topic-1' })
-    expect(dependencies.processPostCreated).toHaveBeenCalledWith({ id: 'post-2' })
+    expect(dependencies.processTopicCurrentState).toHaveBeenCalledWith({
+      id: 'topic-1',
+    })
+    expect(dependencies.processPostCreated).toHaveBeenCalledWith({
+      id: 'post-2',
+    })
     expect(dependencies.processPostUpdated).toHaveBeenCalledWith({
       id: 'post-3',
       contentChanged: true,
@@ -179,8 +189,12 @@ describe('reconcileEntity', () => {
     expect(dependencies.processPostDeleted).toHaveBeenCalledWith({
       id: 'post-4',
     })
-    expect(dependencies.processImageCreated).toHaveBeenCalledWith({ id: 'image-1' })
-    expect(dependencies.processUrlCreated).toHaveBeenCalledWith({ id: 'url-1' })
+    expect(dependencies.processImageCreated).toHaveBeenCalledWith({
+      id: 'image-1',
+    })
+    expect(dependencies.processUrlCreated).toHaveBeenCalledWith({
+      id: 'url-1',
+    })
   })
 })
 

@@ -12155,6 +12155,9 @@ importers:
         specifier: ^0.16.0
         version: 0.16.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
+      '@modules/scheduled-job-manifest':
+        specifier: workspace:^
+        version: link:../../modules/scheduled-job-manifest
       '@services/entity-fetch':
         specifier: workspace:^
         version: link:../../services/entity-fetch

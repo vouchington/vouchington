@@ -1,28 +1,15 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
-  enqueueReconcileEntities,
   enqueueBulkOnPostUpdated,
   enqueueBulkReconcileEntities,
   enqueueOnTopicDeleted,
 } from './enqueues.mts'
-import { readEnqueuedJob } from '@voucha/test-helpers'
 import { entitiesListeners } from './queues.mts'
 
 const QUEUE_STATES = ['waiting', 'active', 'delayed', 'completed', 'failed'] as const
 
 describe('entity listener enqueues', () => {
-  it('retains fixed-window dispatch data under a deterministic safe job ID', async () => {
-    const end = new Date(Date.now() + Math.floor(Math.random() * 100000)).toISOString()
-    const data = { window: { start: new Date().toISOString(), end } }
-    const job = await readEnqueuedJob(entitiesListeners, await enqueueReconcileEntities(data))
-    expect(job.data).toEqual(data)
-    expect(job.id).toMatch(/^entity-reconciliation-dispatcher__[a-f0-9]{64}$/)
-    expect(job.opts.deduplication?.id).toBe(job.id)
-    const root = await enqueueReconcileEntities()
-    expect(root).toBeDefined()
-  })
-
   it('enqueues each post update with the requested priority', async () => {
     const postA = randomUUID()
     const postB = randomUUID()

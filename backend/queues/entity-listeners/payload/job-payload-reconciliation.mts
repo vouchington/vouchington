@@ -1,7 +1,10 @@
+import type { EntityReconciliationDispatchData } from '../types.mts'
 import { parseReconcileEntity } from './job-payload-records.mts'
 import { asRecord, assertExactKeys, JobPayloadError, requiredString } from './job-payload-read.mts'
 
-export function parseReconciliationDispatch(data: unknown): Record<string, unknown> {
+export function parseReconciliationDispatch(
+  data: unknown,
+): EntityReconciliationDispatchData & Record<string, unknown> {
   if (data == null) return {}
   const record = asRecord(data, 'payload')
   assertExactKeys(record, ['window', 'after'])
@@ -19,5 +22,5 @@ export function parseReconciliationDispatch(data: unknown): Record<string, unkno
     if (record.window === undefined) throw new JobPayloadError('cursor requires a fixed window')
     parseReconcileEntity(record.after)
   }
-  return record
+  return record as EntityReconciliationDispatchData & Record<string, unknown>
 }

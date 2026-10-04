@@ -46,6 +46,7 @@ export type ProcessPostCreatedJobData = {
 }
 
 export type EntityJobs =
+  | 'enqueueReconcileEntities'
   | 'reconcileEntity'
   | 'reconcileEntities'
   | 'processUrlCreated'
@@ -73,6 +74,7 @@ type EntityIdData = { id: string }
 type EmptyEntityJobData = Record<string, never>
 
 type EntityJobPayloads = {
+  enqueueReconcileEntities: EmptyEntityJobData
   reconcileEntity: ReconcileEntityData
   reconcileEntities: EntityReconciliationDispatchData
   processUrlCreated: EntityIdData

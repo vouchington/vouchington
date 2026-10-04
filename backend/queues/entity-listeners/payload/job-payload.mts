@@ -21,6 +21,7 @@ import {
 export { entityJobContractCoversCanonicalTypes, JobPayloadError }
 
 const parsers = {
+  enqueueReconcileEntities: emptyPayload,
   reconcileEntity: parseReconcileEntity,
   reconcileEntities: parseReconciliationDispatch,
   processUrlCreated: idPayload,
