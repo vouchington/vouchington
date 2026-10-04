@@ -26081,6 +26081,7 @@
             "type": "string"
           }
         },
+        "required": ["userId"],
         "type": "object"
       }
     },
@@ -27302,6 +27303,7 @@
             "type": "string"
           }
         },
+        "required": ["type"],
         "type": "object"
       }
     },
@@ -27814,6 +27816,7 @@
             "type": "string"
           }
         },
+        "required": ["ids"],
         "type": "object"
       }
     },
@@ -28020,6 +28023,7 @@
             "type": "string"
           }
         },
+        "required": ["entity_id", "item_type"],
         "type": "object"
       }
     },

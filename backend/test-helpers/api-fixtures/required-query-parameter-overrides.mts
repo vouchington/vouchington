@@ -3,7 +3,11 @@
  * small, reviewed set of request-required query fields explicit until that extractor exposes it.
  */
 export const REQUIRED_QUERY_PARAMETER_OVERRIDES: Readonly<Record<string, readonly string[]>> = {
+  'GET:/api/v1/admin/warnings': ['userId'],
   'GET:/api/v1/availability': ['kind', 'value'],
+  'GET:/api/v1/curated-aside-items': ['type'],
+  'GET:/api/v1/hostnames/compare': ['ids'],
+  'GET:/api/v1/lists/contains': ['item_type', 'entity_id'],
   'GET:/api/v1/localization': ['consumer'],
 }
 

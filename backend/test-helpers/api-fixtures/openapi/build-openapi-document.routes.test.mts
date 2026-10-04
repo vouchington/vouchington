@@ -32,6 +32,28 @@ describe('OpenAPI catalog response helpers', () => {
             ],
           },
         },
+        '/api/v1/admin/warnings': {
+          get: {
+            parameters: [
+              { in: 'query', name: 'userId', required: false },
+              { in: 'query', name: 'after', required: false },
+            ],
+          },
+        },
+        '/api/v1/curated-aside-items': {
+          get: { parameters: [{ in: 'query', name: 'type', required: false }] },
+        },
+        '/api/v1/hostnames/compare': {
+          get: { parameters: [{ in: 'query', name: 'ids', required: false }] },
+        },
+        '/api/v1/lists/contains': {
+          get: {
+            parameters: [
+              { in: 'query', name: 'entity_id', required: false },
+              { in: 'query', name: 'item_type', required: false },
+            ],
+          },
+        },
       },
     }
 
@@ -44,6 +66,20 @@ describe('OpenAPI catalog response helpers', () => {
     expect(document.paths['/api/v1/localization']!.get!.parameters).toEqual([
       { in: 'query', name: 'consumer', required: true },
       { in: 'query', name: 'locales', required: false },
+    ])
+    expect(document.paths['/api/v1/admin/warnings']!.get!.parameters).toEqual([
+      { in: 'query', name: 'userId', required: true },
+      { in: 'query', name: 'after', required: false },
+    ])
+    expect(document.paths['/api/v1/curated-aside-items']!.get!.parameters).toEqual([
+      { in: 'query', name: 'type', required: true },
+    ])
+    expect(document.paths['/api/v1/hostnames/compare']!.get!.parameters).toEqual([
+      { in: 'query', name: 'ids', required: true },
+    ])
+    expect(document.paths['/api/v1/lists/contains']!.get!.parameters).toEqual([
+      { in: 'query', name: 'entity_id', required: true },
+      { in: 'query', name: 'item_type', required: true },
     ])
   })
 

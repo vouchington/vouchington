@@ -26379,7 +26379,7 @@
           {
             "in": "query",
             "name": "userId",
-            "required": false,
+            "required": true,
             "schema": {
               "format": "uuid",
               "type": "string"
@@ -48247,7 +48247,7 @@
           {
             "in": "query",
             "name": "type",
-            "required": false,
+            "required": true,
             "schema": {
               "enum": ["topic", "source", "community"],
               "type": "string"
@@ -53567,7 +53567,7 @@
           {
             "in": "query",
             "name": "ids",
-            "required": false,
+            "required": true,
             "schema": {
               "type": "string"
             }
@@ -55452,7 +55452,7 @@
           {
             "in": "query",
             "name": "entity_id",
-            "required": false,
+            "required": true,
             "schema": {
               "format": "uuid",
               "type": "string"
@@ -55461,7 +55461,7 @@
           {
             "in": "query",
             "name": "item_type",
-            "required": false,
+            "required": true,
             "schema": {
               "enum": ["rss_feed_item", "post"],
               "type": "string"
