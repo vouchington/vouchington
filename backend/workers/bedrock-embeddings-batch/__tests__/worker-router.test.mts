@@ -124,17 +124,6 @@ describe('bedrock embeddings batch worker processor', () => {
       ),
     ).rejects.toThrow(UnrecoverableError)
   })
-  it.each([['topics'], ['posts'], ['rss_feed_items'], ['crawl_chunks'], ['images']] as const)(
-    'routes %s creation jobs through the real batch processors',
-    async name => {
-      await blockBatchCreation()
-
-      await expect(
-        processBedrockEmbeddingsBatchJob(makeJob(name, {}, 'creation'), {} as Worker),
-      ).resolves.toEqual({ reEnqueued: true, reason: 'inflight_job_limit_exceeded', hasMore: true })
-    },
-  )
-
   it('runs the creation dispatcher branch through the real queue enqueues', async () => {
     await expect(
       processBedrockEmbeddingsBatchJob(
@@ -175,10 +164,6 @@ describe('bedrock embeddings batch worker processor', () => {
     await expect(
       processBedrockEmbeddingsBatchJob(makeJob('poll_batch', {}, 'polling'), {} as Worker),
     ).rejects.toThrow('Batch ID is required')
-
-    await expect(
-      processBedrockEmbeddingsBatchJob(makeJob('unexpected', {}, 'creation'), {} as Worker),
-    ).rejects.toThrow('Unknown creation job type: unexpected')
 
     await expect(
       processBedrockEmbeddingsBatchJob(makeJob('unexpected', {}, 'polling'), {} as Worker),

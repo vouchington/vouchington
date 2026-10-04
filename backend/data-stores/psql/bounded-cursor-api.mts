@@ -64,8 +64,7 @@ export function createBoundedCursorApi(psql: Psql) {
     let result: CursorRunResult<Row> = { rowsRead: 0, hasMore: false }
     let batch: Row[] = []
     const batchSize = resolved.options.batchSize
-    if (!batchSize || !Number.isSafeInteger(batchSize) || batchSize < 1)
-      throw new RangeError('batchSize must be a positive safe integer')
+    if (batchSize === undefined) throw new RangeError('batchSize must be a positive safe integer')
     for await (const row of streamResolved<Row>({
       ...resolved,
       options: {
@@ -97,6 +96,12 @@ function resolveOptions<Row>(
     valuesOrOptions && !Array.isArray(valuesOrOptions)
       ? (valuesOrOptions as BoundedCursorOptions<Row>)
       : options
+  if (
+    finalOptions.batchSize === undefined ||
+    !Number.isSafeInteger(finalOptions.batchSize) ||
+    finalOptions.batchSize < 1
+  )
+    throw new RangeError('batchSize must be a positive safe integer')
   const values = Array.isArray(valuesOrOptions)
     ? valuesOrOptions
     : typeof input === 'string'

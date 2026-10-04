@@ -11,6 +11,7 @@
     "ai-spend-cap-rechecks",
     "bedrock_embeddings_nova_multimodal_v1_single",
     "bedrock-embeddings-batch",
+    "bedrock-embeddings-batch-creation",
     "language_detection"
   ],
   "ioCapableQueues": [

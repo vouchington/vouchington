@@ -25,4 +25,24 @@ describe('Bedrock minimum request ceilings', () => {
       }
     },
   )
+
+  it.each(['max_file_size_gb', 'max_job_size_gb'] as const)(
+    'rejects undersized %s before scanning',
+    field => {
+      const fields = {
+        ...bedrockEmbeddingsBatchConfig.defaultFields,
+        min_records_per_job: 200,
+        max_file_size_gb: 2,
+        max_job_size_gb: 2,
+        [field]: 1,
+      }
+      expect(() => validateBedrockBatchConfig(fields)).toThrow(field)
+      const restore = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, fields)
+      try {
+        expect(() => getPendingEmbeddingScanLimits(true)).toThrow(field)
+      } finally {
+        restore()
+      }
+    },
+  )
 })

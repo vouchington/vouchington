@@ -4,6 +4,7 @@ import { parseEmbeddingScanCursor } from './job-payload.mts'
 describe('embedding scan payload', () => {
   it('accepts an empty root and preserves exact chunk continuation fields', () => {
     expect(parseEmbeddingScanCursor({})).toBeUndefined()
+    expect(parseEmbeddingScanCursor(null)).toBeUndefined()
     const cursor = {
       sweepStartedAt: new Date().toISOString(),
       afterId: 'synthetic-crawl-id',
@@ -13,6 +14,12 @@ describe('embedding scan payload', () => {
     expect(parseEmbeddingScanCursor({ cursor })).toEqual(cursor)
   })
   it.each([
+    1,
+    [],
+    { cursor: null },
+    { cursor: [] },
+    { cursor: { sweepStartedAt: new Date().toISOString(), unknown: true } },
+    { cursor: { sweepStartedAt: new Date().toISOString(), afterId: 1 } },
     { cursor: { sweepStartedAt: 'invalid' } },
     { cursor: { sweepStartedAt: new Date().toISOString(), afterOrderIndex: 1 } },
     { cursor: { sweepStartedAt: new Date().toISOString(), afterId: 'id', afterOrderIndex: -1 } },

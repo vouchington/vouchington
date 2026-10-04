@@ -59,6 +59,13 @@ export const CPU_ONLY_WORKER_DEFINITIONS: WorkerDefinition[] = [
       ),
   },
   {
+    queueName: 'bedrock-embeddings-batch-creation',
+    load: () =>
+      import('@workers/bedrock-embeddings-batch/workers/bedrock-embeddings-batch-creation').then(
+        module => module.createEmbeddingCreationWorker(),
+      ),
+  },
+  {
     queueName: 'bedrock-embeddings-batch',
     load: () =>
       import('@workers/bedrock-embeddings-batch/workers').then(

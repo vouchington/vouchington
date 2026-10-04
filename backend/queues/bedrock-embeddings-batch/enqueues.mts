@@ -7,10 +7,10 @@ import {
   PRIORITY_DEFAULT,
   PRIORITY_DISPATCHER,
   QUEUE_NAME,
+  CREATION_QUEUE_NAME,
 } from './config.mts'
-import { bedrock_embeddings_batch } from './queues.mts'
+import { bedrock_embeddings_batch, bedrock_embeddings_batch_creation } from './queues.mts'
 import type {
-  EmbeddingScanCursor,
   BedrockEmbeddingsBatchDispatcherJob,
   BedrockEmbeddingsBatchPollingJob,
 } from './types.mts'
@@ -36,44 +36,24 @@ export {
 } from './enqueues/reconciliation.mts'
 
 function createCreationBatchEnqueue(jobName: CreationJobName, deduplicationId: string) {
-  const enqueue = createEnqueueFunction<{ cursor?: EmbeddingScanCursor }, CreationJobName>({
-    queue: bedrock_embeddings_batch,
-    queueName: QUEUE_NAME,
+  const enqueue = createEnqueueFunction<Record<string, never>, CreationJobName>({
+    queue: bedrock_embeddings_batch_creation,
+    queueName: CREATION_QUEUE_NAME,
     jobName,
     defaults,
   })
 
-  return (
-    priority?: number,
-    cursor?: EmbeddingScanCursor,
-    options?: { delayMs?: number },
-  ): EnqueueReturnType => {
-    return enqueue(
-      cursor ? { cursor } : {},
-      creationJobOptions(deduplicationId, priority, cursor, options?.delayMs),
-    )
-  }
+  return (priority?: number): EnqueueReturnType =>
+    enqueue({}, creationJobOptions(deduplicationId, priority))
 }
 
 export function creationJobOptions(
   deduplicationId: string,
   priority?: number,
-  cursor?: EmbeddingScanCursor,
-  delayMs?: number,
 ): Partial<JobOptions> {
   return {
     priority: priority ?? PRIORITY_DEFAULT,
-    ...(delayMs ? { delay: delayMs } : {}),
-    ...(cursor
-      ? {}
-      : {
-          deduplication: {
-            id: deduplicationId,
-            mode: 'throttle' as const,
-            ttl: BEDROCK_EMBEDDINGS_BATCH_DEFAULTS.deduplicationTtlMs,
-          },
-        }),
-    ordering: BEDROCK_EMBEDDINGS_BATCH_ORDERING.creation,
+    deduplication: { id: deduplicationId, mode: 'simple' },
   }
 }
 

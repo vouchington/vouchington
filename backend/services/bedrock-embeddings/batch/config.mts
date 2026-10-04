@@ -98,11 +98,10 @@ export function getPendingEmbeddingScanLimits(images = false) {
     )
   if (maxRows < positiveInteger('min_records_per_job'))
     throw new RangeError('Embedding scan budget must cover the minimum records per job')
-  if (
-    positiveInteger('max_file_size_gb') * 1024 <
-    minimumImageBatchSizeMB(positiveInteger('min_records_per_job'))
-  )
-    throw new RangeError('Embedding input budget must cover the minimum image records')
+  for (const field of ['max_file_size_gb', 'max_job_size_gb'] as const) {
+    if (positiveInteger(field) * 1024 < minimumImageBatchSizeMB(minimum))
+      throw new RangeError(`${field} must cover the minimum image records`)
+  }
   return {
     batchSize: positiveInteger(images ? 'image_cursor_batch_size' : 'cursor_batch_size'),
     maxRows,

@@ -18,11 +18,10 @@ export function validateBedrockBatchConfig(next: DynamicConfigFields): void {
     if (Number(next.min_records_per_job) > Number(next[ceiling]))
       throw new DynamicConfigValidationError(`min_records_per_job must be <= ${ceiling}`)
   }
-  if (
-    Number(next.max_file_size_gb) * 1024 <
-    minimumImageBatchSizeMB(Number(next.min_records_per_job))
-  )
-    throw new DynamicConfigValidationError('max_file_size_gb must cover the minimum image records')
+  for (const field of ['max_file_size_gb', 'max_job_size_gb']) {
+    if (Number(next[field]) * 1024 < minimumImageBatchSizeMB(Number(next.min_records_per_job)))
+      throw new DynamicConfigValidationError(`${field} must cover the minimum image records`)
+  }
   if (Number(next.max_scan_rows_per_run) < Number(next.min_records_per_job)) {
     throw new DynamicConfigValidationError('max_scan_rows_per_run must be >= min_records_per_job')
   }

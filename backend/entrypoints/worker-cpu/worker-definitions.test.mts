@@ -62,6 +62,11 @@ describe('worker-cpu CPU_ONLY_WORKER_DEFINITIONS load functions', () => {
         'bedrock_embeddings_nova_multimodal_v1_single',
       ],
       [
+        'bedrock-embeddings-batch-creation',
+        '/backend/workers/bedrock-embeddings-batch/workers/bedrock-embeddings-batch-creation.mts',
+        'createEmbeddingCreationWorker',
+      ],
+      [
         'bedrock-embeddings-batch',
         '/backend/workers/bedrock-embeddings-batch/workers.mts',
         'bedrock_embeddings_batch',

@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitest/config'
-import { backendAliases } from './vitest-config/aliases.mts'
+import { isolatedDatabaseCaseAliases } from './vitest-config/aliases.mts'
 import { IsolatedDatabaseCaseReporter } from './vitest-isolated-database-case-reporter.mts'
 import {
   getIsolatedDatabaseChildCase,
@@ -11,7 +11,7 @@ const isolatedCase = getIsolatedDatabaseChildCase()
 const caseId = process.env.VITEST_ISOLATED_DATABASE_CASE as IsolatedDatabaseCaseId
 
 export default defineConfig({
-  resolve: { alias: backendAliases() },
+  resolve: { alias: isolatedDatabaseCaseAliases(isolatedCase.file) },
   test: {
     name: 'isolated-database-case',
     pool: 'forks',

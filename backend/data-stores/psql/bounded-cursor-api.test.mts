@@ -87,4 +87,36 @@ describe('bounded cursor execution', () => {
     ).rejects.toThrow('handler failed')
     expect(completed).toBe(false)
   })
+  it('requires a batch size for handler execution', async () => {
+    await expect(
+      executeHandlerWithCursorInBatches(createBoundedCursorSeriesInputForTest(), {
+        maxRows: 1,
+        handler: async () => {},
+      }),
+    ).rejects.toThrow('batchSize')
+  })
+  it.each([0, -1, 1.5, Number.POSITIVE_INFINITY])(
+    'rejects invalid batch and row bounds %s before invoking handlers',
+    async value => {
+      let handled = false
+      const handler = async () => {
+        handled = true
+      }
+      await expect(
+        executeHandlerWithCursorInBatches(createBoundedCursorSeriesInputForTest(), {
+          batchSize: value,
+          maxRows: 1,
+          handler,
+        }),
+      ).rejects.toThrow('batchSize')
+      await expect(
+        executeHandlerWithCursorInBatches(createBoundedCursorSeriesInputForTest(), {
+          batchSize: 1,
+          maxRows: value,
+          handler,
+        }),
+      ).rejects.toThrow('maxRows')
+      expect(handled).toBe(false)
+    },
+  )
 })

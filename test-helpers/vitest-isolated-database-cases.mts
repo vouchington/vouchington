@@ -107,6 +107,11 @@ const isolatedDatabaseCases = {
     fullName:
       'staging RSS feed seed on a fresh bootstrap > gives the Cloudflare topic its blog publisher type in one bootstrap pass',
   },
+  'embedding-creation-fairness': {
+    file: 'backend/workers/bedrock-embeddings-batch/processors/creation.real-glide.mock.test.mts',
+    fullName:
+      'same-job embedding continuation > yields an image capacity delay to text work while preserving the global creation cap',
+  },
   'embedding-reconciliation-router': {
     file: 'backend/workers/bedrock-embeddings-batch/__tests__/worker-router.test.mts',
     fullName:

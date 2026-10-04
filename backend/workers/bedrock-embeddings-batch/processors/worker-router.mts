@@ -1,17 +1,10 @@
-import { parseEmbeddingScanCursor } from '@queues/bedrock-embeddings-batch/payload/job-payload'
 import type {
-  BedrockEmbeddingsBatchCreationJob,
   BedrockEmbeddingsBatchPollingJob,
   BedrockEmbeddingsBatchDispatcherJob,
   ReconciliationEntityType,
   ReconciliationJobName,
 } from '@queues/bedrock-embeddings-batch/types'
 import {
-  processTopicBatchCreation,
-  processPostBatchCreation,
-  processRssFeedItemBatchCreation,
-  processCrawlChunkBatchCreation,
-  processImageEmbeddingBatchCreation,
   processBatchPolling,
   processBatchPollingDispatcher,
   processBatchCreationDispatcher,
@@ -33,22 +26,6 @@ export const processBedrockEmbeddingsBatchJob = async (
     const orderingKey = job.opts.ordering?.key
 
     switch (orderingKey) {
-      case 'creation': {
-        switch (job.name as BedrockEmbeddingsBatchCreationJob) {
-          case 'topics':
-            return await processTopicBatchCreation(parseEmbeddingScanCursor(job.data))
-          case 'posts':
-            return await processPostBatchCreation(parseEmbeddingScanCursor(job.data))
-          case 'rss_feed_items':
-            return await processRssFeedItemBatchCreation(parseEmbeddingScanCursor(job.data))
-          case 'crawl_chunks':
-            return await processCrawlChunkBatchCreation(parseEmbeddingScanCursor(job.data))
-          case 'images':
-            return await processImageEmbeddingBatchCreation(parseEmbeddingScanCursor(job.data))
-          default:
-            throw new Error(`Unknown creation job type: ${job.name}`)
-        }
-      }
       case 'polling': {
         switch (job.name as BedrockEmbeddingsBatchPollingJob) {
           case 'poll_batch': {

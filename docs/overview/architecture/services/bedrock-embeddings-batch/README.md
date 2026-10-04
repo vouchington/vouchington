@@ -69,11 +69,14 @@ continuation; their eligible replay consumes the next run's scan allowance befor
 Submitted or no-longer-eligible IDs drop, and an unsubmitted boundary image remains pending.
 A smaller subsequent configuration drains a bounded prefix without dropping the carried tail.
 When a complete sweep has fewer healthy records than the minimum, scheduled roots revisit them.
-Provider denial retains the cursor and carried IDs in a delayed, non-throttled continuation.
+The worker retains the cursor and carried IDs on the same durable creation job. Successful capped
+pages delay that job for immediate continuation; provider denial uses the configured retry delay.
+Per-type simple deduplication coalesces recurring roots while that job is active or delayed, and a
+completed or terminally failed job permits the next scheduled root.
 
 The scan budget must be at least the configured minimum batch size. Staff edits validate this
 against merged current fields, and runtime validation rejects an invalid combination before file,
-cursor, or provider side effects. The configured file size must also fit the minimum at the maximum
+cursor, or provider side effects. Both configured file and aggregate in-flight size must fit the minimum at the maximum
 converted-image record size, including base64 and the canonical JSON framing. Effective remaining
 provider capacity below that minimum schedules a retry using `creation_retry_delay_ms`; it does not
 scan or abandon a partial page. These constraints preserve the configured work cap.
