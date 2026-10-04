@@ -1,0 +1,127 @@
+import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
+import sql from 'sql-template-strings'
+import {
+  loadSqlParserModule,
+  splitSqlStatements,
+} from '../../../data-stores/psql/migration-runner/sql-statements.mts'
+
+// Package-local helpers for the staging RSS feed seed test. Every read and write goes through one
+// borrowed transaction that the test rolls back, so the shared test database never keeps the
+// seeded feeds (a committed, enabled, never-fetched feed would be picked up by other suites).
+
+export type SeededFeedRow = {
+  url: string
+  title: string
+  slug: string
+  aliases: string[]
+  topic_type: string
+  topic_hostname: string | null
+  url_hostname: string
+  hostname_topic_id: string | null
+  mime_type: string
+  search_params: unknown
+  is_enabled: boolean
+  is_discoverable: boolean
+  created_via: string
+  created_by_id: string | null
+  feed_type: string
+  enablement_creator: string | null
+}
+
+export type SeededRowCounts = Record<
+  | 'hostnames'
+  | 'urls'
+  | 'topics'
+  | 'aliases'
+  | 'feeds'
+  | 'enablementChanges'
+  | 'discoverabilityChanges',
+  number
+>
+
+export async function beginRolledBackSeedTransaction(): Promise<OwnedTransaction> {
+  await loadSqlParserModule()
+  return beginTransaction()
+}
+
+export async function applySeedSql(tx: OwnedTransaction, seedSql: string): Promise<void> {
+  for (const statement of splitSqlStatements(seedSql)) await tx(statement)
+}
+
+// A staging database has none of these feeds, but the test database already holds the dev seed's
+// Cloudflare Blog feed (same slug, extra alias). Deleting it inside the rolled-back transaction
+// gives the generator the empty starting point it runs on in staging. Hostnames and URLs are kept:
+// other rows may reference them, and the seed reuses them by natural key.
+export async function clearSeededFeeds(
+  tx: OwnedTransaction,
+  feeds: ReadonlyArray<{ url: string; slug: string }>,
+): Promise<void> {
+  const urls = feeds.map(feed => feed.url)
+  const slugs = feeds.map(feed => feed.slug)
+  await tx(sql`
+    DELETE FROM rss_feeds WHERE rss_feed_url_id IN (SELECT id FROM urls WHERE url = ANY(${urls}))`)
+  await tx(sql`
+    DELETE FROM topic_aliases
+    WHERE topic_id IN (SELECT id FROM topics WHERE slug = ANY(${slugs}))`)
+  await tx(sql`DELETE FROM topics WHERE slug = ANY(${slugs})`)
+}
+
+export async function readSeededFeeds(
+  tx: OwnedTransaction,
+  urls: readonly string[],
+): Promise<SeededFeedRow[]> {
+  const { rows } = await tx<SeededFeedRow>(sql`
+    SELECT u.url, f.title, t.slug, t.aliases, t.topic_type, th.hostname AS topic_hostname,
+      h.hostname AS url_hostname, h.topic_id AS hostname_topic_id, ct.mime_type, u.search_params,
+      f.is_enabled, f.is_discoverable, f.created_via, f.created_by_id, f.feed_type,
+      (SELECT cu.username FROM rss_feed_enablement_changes c
+         JOIN users cu ON cu.id = c.created_by_id
+        WHERE c.rss_feed_id = f.id ORDER BY c.id LIMIT 1) AS enablement_creator
+    FROM rss_feeds f
+    JOIN urls u ON u.id = f.rss_feed_url_id
+    JOIN url_hostnames h ON h.id = u.hostname_id
+    JOIN url_content_types ct ON ct.id = u.url_content_type_id
+    JOIN topics t ON t.id = f.topic_id
+    LEFT JOIN url_hostnames th ON th.id = t.hostname_id
+    WHERE u.url = ANY(${urls})
+    ORDER BY u.url`)
+  return rows
+}
+
+export async function countSeededRows(
+  tx: OwnedTransaction,
+  feeds: ReadonlyArray<{ url: string; hostname: string; slug: string }>,
+): Promise<SeededRowCounts> {
+  const urls = feeds.map(feed => feed.url)
+  const hostnames = feeds.map(feed => feed.hostname)
+  const slugs = feeds.map(feed => feed.slug)
+  const { rows } = await tx<SeededRowCounts>(sql`
+    SELECT
+      (SELECT count(*)::int FROM url_hostnames WHERE hostname = ANY(${hostnames})) AS "hostnames",
+      (SELECT count(*)::int FROM urls WHERE url = ANY(${urls})) AS "urls",
+      (SELECT count(*)::int FROM topics WHERE slug = ANY(${slugs})) AS "topics",
+      (SELECT count(*)::int FROM topic_aliases WHERE alias = ANY(${slugs})) AS "aliases",
+      (SELECT count(*)::int FROM rss_feeds f JOIN urls u ON u.id = f.rss_feed_url_id
+        WHERE u.url = ANY(${urls})) AS "feeds",
+      (SELECT count(*)::int FROM rss_feed_enablement_changes c
+        JOIN rss_feeds f ON f.id = c.rss_feed_id JOIN urls u ON u.id = f.rss_feed_url_id
+        WHERE u.url = ANY(${urls})) AS "enablementChanges",
+      (SELECT count(*)::int FROM rss_feed_discoverability_changes c
+        JOIN rss_feeds f ON f.id = c.rss_feed_id JOIN urls u ON u.id = f.rss_feed_url_id
+        WHERE u.url = ANY(${urls})) AS "discoverabilityChanges"`)
+  return rows[0]!
+}
+
+// A later change, like the product's updateRssFeedById: a default uuidv7() id sorts after the
+// seed's fixed id, so the AFTER INSERT sync trigger makes it the feed's current state.
+export async function appendEnablementChange(
+  tx: OwnedTransaction,
+  url: string,
+  enabled: boolean,
+): Promise<void> {
+  await tx(sql`
+    INSERT INTO rss_feed_enablement_changes (rss_feed_id, enabled, reason)
+    SELECT f.id, ${enabled}, 'test'
+    FROM rss_feeds f JOIN urls u ON u.id = f.rss_feed_url_id
+    WHERE u.url = ${url}`)
+}
