@@ -5,12 +5,15 @@ import { encodeUuidCursorBefore } from '@voucha/test-helpers/modules/pagination/
 import { createCopyrightFormFixture } from './route-test-fixtures.mts'
 import { createCopyrightFormIntake } from './form-intakes.mts'
 import { recoverMissingDecisionAssessments } from './enforcement-recovery.mts'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
+import { appendTestCopyrightAssessmentWhileRecoveryWaits } from '@voucha/test-helpers/copyright-recovery-concurrency'
 
 describe('durable copyright decision recovery', () => {
   it('mutates only one page and resumes after the recovered submission without replaying it', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const submissionIds: string[] = []
-    for (let index = 0; index < 2; index++) {
+    const noticeIds: string[] = []
+    for (let index = 0; index < 3; index++) {
       const fixture = await createCopyrightFormFixture()
       const { intake } = await createCopyrightFormIntake({
         currentUser: fixture.claimant,
@@ -39,11 +42,30 @@ describe('durable copyright decision recovery', () => {
         accepted: true,
       })
       submissionIds.push(intake.copyright_notice_submission_id)
+      noticeIds.push(intake.copyright_notice_id)
     }
-    const first = await recoverMissingDecisionAssessments({
-      limit: 1,
-      after: encodeUuidCursorBefore(submissionIds[0]!),
-    })
+    await appendTestCopyrightAssessmentWhileRecoveryWaits(
+      {
+        submissionId: submissionIds[2]!,
+        assessedAt: new Date(),
+        currentUser: moderator,
+        substantiallyCompliant: true,
+      },
+      () =>
+        recoverMissingDecisionAssessments({
+          limit: 1,
+          after: encodeUuidCursorBefore(submissionIds[2]!),
+        }),
+    )
+    const concurrent = await Promise.all(
+      Array.from({ length: 2 }, () =>
+        recoverMissingDecisionAssessments({
+          limit: 1,
+          after: encodeUuidCursorBefore(submissionIds[0]!),
+        }),
+      ),
+    )
+    const first = concurrent.find(page => page.results[0] === submissionIds[0])!
     expect(first.results).toEqual([submissionIds[0]])
     expect(first.page_info.has_next_page).toBe(true)
     const second = await recoverMissingDecisionAssessments({
@@ -57,5 +79,12 @@ describe('durable copyright decision recovery', () => {
     })
     expect(replay.results).not.toContain(submissionIds[0])
     expect(replay.results).not.toContain(submissionIds[1])
+    for (const noticeId of noticeIds) {
+      const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
+      expect(aggregate?.assessments).toHaveLength(1)
+      expect(
+        aggregate?.lifecycleEvents.filter(event => event.event_type === 'submission_assessed'),
+      ).toHaveLength(1)
+    }
   })
 })

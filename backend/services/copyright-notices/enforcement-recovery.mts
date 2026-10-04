@@ -5,7 +5,7 @@ import {
   type CopyrightSweepIdPage,
   type CopyrightSweepPageOptions,
 } from './sweep-id-pages.mts'
-import { write } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 /**
@@ -19,7 +19,12 @@ export async function recoverMissingDecisionAssessments(
     { ...options, limit: options.limit ?? getCopyrightSweepLimits().batchSize },
     'Invalid decision assessment cursor',
   )
-  const { rows } = await write<{ id: string }>(sql`/* recoverMissingCopyrightDecisionAssessments */
+  await using transaction = await beginTransaction()
+  const { rows } = await transaction<{
+    id: string
+    assessed_by_id: string
+    screening_id: string | null
+  }>(sql`/* recoverMissingCopyrightDecisionAssessments */
     WITH candidate_page AS (
       SELECT DISTINCT ON (submission_id)
         submission_id, copyright_notice_id, assessed_by_id, screening_id
@@ -48,8 +53,26 @@ export async function recoverMissingDecisionAssessments(
       )
       ORDER BY submission_id, priority DESC
       LIMIT ${limit + 1}
-    ), candidates AS (
-      SELECT * FROM candidate_page ORDER BY submission_id LIMIT ${limit}
+    )
+    SELECT submission.id, candidate.assessed_by_id, candidate.screening_id
+    FROM candidate_page candidate
+    JOIN copyright_notice_submissions submission ON submission.id = candidate.submission_id
+    JOIN copyright_notices notice ON notice.id = submission.copyright_notice_id
+    ORDER BY submission.id LIMIT ${limit + 1}
+    FOR UPDATE OF notice, submission
+  `)
+  const page = rows.slice(0, limit)
+  // Parent locks match normal assessment writers; this separate statement observes their commits.
+  await transaction(sql`/* recoverMissingCopyrightDecisionAssessments:insert */
+    WITH candidates AS (
+      SELECT * FROM unnest(${page.map(row => row.id)}::uuid[],
+        ${page.map(row => row.assessed_by_id)}::uuid[], ${page.map(row => row.screening_id)}::uuid[])
+        AS candidate(submission_id, assessed_by_id, screening_id)
+      WHERE NOT EXISTS (
+        SELECT 1 FROM copyright_notice_submission_assessments assessment
+        WHERE assessment.copyright_notice_submission_id = candidate.submission_id
+      )
+      ORDER BY submission_id LIMIT ${limit}
     ), inserted AS (
       INSERT INTO copyright_notice_submission_assessments (
         copyright_notice_submission_id, assessed_at, assessed_by_id,
@@ -59,7 +82,7 @@ export async function recoverMissingDecisionAssessments(
       FROM candidates
       RETURNING id, copyright_notice_submission_id, assessed_by_id
     )
-    , events AS (INSERT INTO copyright_notice_lifecycle_events (
+    INSERT INTO copyright_notice_lifecycle_events (
       copyright_notice_id, event_type, actor_user_id,
       copyright_notice_submission_assessment_id, recovery_source
     )
@@ -68,10 +91,9 @@ export async function recoverMissingDecisionAssessments(
     FROM inserted
     JOIN copyright_notice_submissions submission
       ON submission.id = inserted.copyright_notice_submission_id
-    RETURNING id)
-    SELECT submission_id AS id FROM candidate_page ORDER BY submission_id
+    LIMIT ${limit}
   `)
-  const page = rows.slice(0, limit)
+  await transaction.commit()
   return {
     results: page.map(row => row.id),
     page_info: buildPageInfo(page, {

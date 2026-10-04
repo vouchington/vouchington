@@ -5,10 +5,8 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { membershipWorkConfig } from '../work-limits.mts'
 import { grantMembership } from '../create.mts'
 import { getMembershipByUserId, getMembershipHistory } from '../get.mts'
-import {
-  expireElapsedMembershipsForUser,
-  expireElapsedMembershipsForUsers,
-} from './expire-elapsed.mts'
+import { expireElapsedMembershipsForUser } from './expire-elapsed.mts'
+import { expireElapsedMembershipsForUsers } from './expire-elapsed-batch.mts'
 
 describe('membership expiry run budget', () => {
   it('rolls back incomplete synchronous normalization and commits resumable background pages', async () => {
