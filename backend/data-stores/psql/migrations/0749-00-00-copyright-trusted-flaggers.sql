@@ -30,14 +30,14 @@ CREATE TRIGGER trigger_copyright_trusted_flaggers_updated_at
   BEFORE UPDATE ON copyright_trusted_flaggers
   FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_trusted_flagger_changes (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_trusted_flagger_id uuid NOT NULL REFERENCES copyright_trusted_flaggers(id) ON DELETE RESTRICT,
   change_type copyright_trusted_flagger_change_types NOT NULL,
   changed_by_id uuid NOT NULL REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
   reason text NOT NULL CHECK (char_length(reason) BETWEEN 1 AND 4000),
-  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
 
 CREATE INDEX idx_copyright_trusted_flagger_changes__entry_id__id
@@ -83,7 +83,6 @@ COMMENT ON COLUMN copyright_trusted_flagger_changes.change_type IS 'Suspension, 
 COMMENT ON COLUMN copyright_trusted_flagger_changes.changed_by_id IS 'Retained identity of the administrator who recorded the transition.';
 COMMENT ON COLUMN copyright_trusted_flagger_changes.reason IS 'Staff reason for the recorded status transition.';
 COMMENT ON COLUMN copyright_trusted_flagger_changes.created_at IS 'Transition time derived from the UUIDv7 identifier.';
-COMMENT ON COLUMN copyright_trusted_flagger_changes.updated_at IS 'Insert timestamp; immutable rows cannot be updated.';
 
 COMMENT ON TABLE copyright_trusted_flagger_matches IS 'Immutable match captured when a signed-in linked account files an EU copyright notice; matches are recorded even while priority is off.';
 COMMENT ON COLUMN copyright_trusted_flagger_matches.id IS 'UUIDv7 receipt-time match identifier.';
@@ -91,3 +90,7 @@ COMMENT ON COLUMN copyright_trusted_flagger_matches.copyright_notice_id IS 'EU n
 COMMENT ON COLUMN copyright_trusted_flagger_matches.copyright_trusted_flagger_id IS 'Designation selected at receipt time, preferring intellectual-property expertise.';
 COMMENT ON COLUMN copyright_trusted_flagger_matches.created_at IS 'Match time derived from the UUIDv7 identifier.';
 COMMENT ON COLUMN copyright_trusted_flagger_matches.updated_at IS 'Insert timestamp; immutable rows cannot be updated.';
+
+CREATE TRIGGER trigger_ensure_copyright_trusted_flagger_changes_actor
+  BEFORE INSERT ON copyright_trusted_flagger_changes
+  FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id');

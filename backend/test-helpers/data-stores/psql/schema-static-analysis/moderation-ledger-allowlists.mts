@@ -46,6 +46,10 @@ export const MODERATION_LINK_TABLES_WITHOUT_UPDATED_AT = new Map<string, string>
 
 export const HISTORY_WORKFLOW_TABLES_WITHOUT_UPDATED_AT = [
   [
+    'copyright_trusted_flagger_changes',
+    'Immutable trusted-flagger transitions; creation time records the transition.',
+  ],
+  [
     'copyright_notice_lifecycle_change_rationales',
     'Only controlled case retention overwrites ciphertext; the owning retention-erasure ledger records that lifecycle timestamp.',
   ],

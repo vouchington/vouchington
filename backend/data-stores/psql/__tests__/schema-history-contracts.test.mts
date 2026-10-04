@@ -16,7 +16,7 @@ describe('history storage contracts', () => {
 
   it('retains change actors and erases only revision author links', async () => {
     const rows = await getHistoryActorContracts()
-    expect(rows.filter(row => row.actor_column === 'changed_by_id')).toHaveLength(9)
+    expect(rows.filter(row => row.actor_column === 'changed_by_id')).toHaveLength(10)
     expect(rows.filter(row => row.actor_column === 'revised_by_id')).toHaveLength(4)
     expect(
       rows
