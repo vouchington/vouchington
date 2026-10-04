@@ -105,7 +105,8 @@ whose change was already made.
 | `PUT /api/v1/bookmarks/:entityType/:entityId/dismiss_recommendation`                                           | No tool: stays REST-only                                                                                 |
 
 `create_topic_recommendation` uses `admitDelegatedContribution` beside `admitRouteContribution`.
-The credential replaces challenges and keeps the REST owner budget and administrator exemption. A UUID
+The credential replaces challenges and keeps the REST owner budget and administrator exemption.
+Creation rechecks account status under deletion/suspension fences inside admission; refusal consumes no quota or replay. A UUID
 `idempotency_key` identifies the submission: the same body replays the original record, another
 body conflicts, and an in-progress submission returns its retry delay. See the
 [admission policy](../../../requirements/platform/agent-access.md#delegated-contribution-admission).
