@@ -43,7 +43,7 @@ export async function selectTerritorialStaffRecipients(
       AND intent.delivery_kind = CASE recipient.role
         WHEN 'claimant' THEN ${copyrightDecisionDeliveryKinds[1]}
         ELSE ${copyrightDecisionDeliveryKinds[0]} END
-      AND intent.created_at >= ${decidedAt}
+      AND (intent.created_at >= ${decidedAt} OR intent.sent_at >= ${decidedAt})
     GROUP BY recipient.role, recipient.user_id
     ORDER BY recipient.role, recipient.user_id
   `)

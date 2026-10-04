@@ -2,6 +2,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { withdrawAllTestTerritorialApprovals } from '@voucha/test-helpers/copyright-territorial-withdrawal'
+import {
+  assertTestEuWithdrawalContinuity,
+  prepareTestEuWithdrawalGuestCase,
+} from '@voucha/test-helpers/copyright-eu-withdrawal-continuity'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { createHostedImagePost } from '@voucha/test-helpers/services/copyright-notices/hosted-post-audience'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
@@ -143,6 +147,7 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
       crypto.randomUUID(),
       'Please reconsider the no-action decision.',
     )
+    const euGuest = await prepareTestEuWithdrawalGuestCase()
     expect(await withdrawAllTestTerritorialApprovals(administrator, 'eu_dsa')).toBeGreaterThan(0)
     await expect(
       receiveEuCopyrightNotice(
@@ -151,6 +156,12 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
         euNoticeRequest(),
       ),
     ).rejects.toMatchObject({ status: 403, message: 'EU copyright notices are not available' })
+    await assertTestEuWithdrawalContinuity({
+      staff,
+      notifier: claimant,
+      restrictedNoticeId: euA.notice_id,
+      guest: euGuest,
+    })
 
     const failure = await recordEuCopyrightAcknowledgmentFailure(staff, euB.notice_id)
     expect(failure.attempt_count).toBe(1)
