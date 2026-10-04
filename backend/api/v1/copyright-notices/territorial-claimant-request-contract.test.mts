@@ -21,14 +21,14 @@ const MALFORMED_FIELDS = [
 describe.each(TERRITORIAL_SURFACES)('$label claimant request contracts', surface => {
   useCopyrightIntakeEnvironment()
 
-  it('keeps 401 ahead of the schema diagnostic on the notice and redress routes', async () => {
+  it('keeps the caller boundary ahead of the schema diagnostic on notice and redress routes', async () => {
     const anonymous = createRequest()
     const notice = await anonymous
       .post(surface.base)
       .set('Idempotency-Key', crypto.randomUUID())
       .send({ injected: true })
-      .expect(401)
-    expect(notice.text).not.toMatch(SCHEMA_DIAGNOSTIC)
+      .expect(surface.jurisdiction === 'eu_dsa' ? 422 : 401)
+    expect(SCHEMA_DIAGNOSTIC.test(notice.text)).toBe(surface.jurisdiction === 'eu_dsa')
     const redress = await anonymous
       .post(`${surface.base}/${crypto.randomUUID()}/redress-requests`)
       .set('Idempotency-Key', crypto.randomUUID())

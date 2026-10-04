@@ -187,6 +187,7 @@ describe('copyright pages', () => {
     mockNotice.mockResolvedValue({ id: 'notice-1', timeline: [] } as never)
     mockParticipant.mockResolvedValue({
       viewer_role: 'poster',
+      jurisdiction: 'us_dmca',
       respondable_target_ids: ['target-1'],
       timeline: [{ id: 'event-1', event_type: 'notice_received', created_at: '2026-07-01' }],
     } as never)

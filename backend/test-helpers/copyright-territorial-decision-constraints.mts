@@ -88,8 +88,8 @@ async function revoke(
     WITH request AS (
       INSERT INTO copyright_territorial_redress_requests (
         copyright_notice_id, jurisdiction, copyright_territorial_decision_id,
-        submitted_by_user_id, idempotency_key, explanation_ciphertext
-      ) VALUES (${noticeId}, 'eu_dsa', ${decisionId}, ${actorId}, ${crypto.randomUUID()}, 'appeal')
+        filed_by, submitted_by_user_id, idempotency_key, explanation_ciphertext
+      ) VALUES (${noticeId}, 'eu_dsa', ${decisionId}, 'notifier', ${actorId}, ${crypto.randomUUID()}, 'appeal')
       RETURNING id
     )
     INSERT INTO copyright_territorial_redress_decisions (

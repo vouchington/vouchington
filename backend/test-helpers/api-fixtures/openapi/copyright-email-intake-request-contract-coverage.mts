@@ -33,6 +33,7 @@ export const REQUIRED_KEYS: Record<string, string[]> = {
 
 const CORRESPONDENCE_KINDS = [
   'appeal',
+  'complaint',
   'counter_notice',
   'court_or_ccb_hold',
   'supplement',

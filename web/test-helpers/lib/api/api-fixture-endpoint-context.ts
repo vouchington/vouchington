@@ -15,6 +15,7 @@ import * as clientCommunitySearch from '../../../lib/api/client/community-search
 import * as clientCommunityModeratorStats from '../../../lib/api/client/community-moderator-stats'
 import * as clientCurrencies from '../../../lib/api/client/currencies'
 import * as clientCopyrightEmailIntakes from '../../../lib/api/client/copyright-email-intakes'
+import * as clientCopyrightEuDisputeSettlements from '../../../lib/api/client/copyright-eu-dispute-settlements'
 import * as clientCopyrightGuest from '../../../lib/api/client/copyright-guest'
 import * as clientCopyrightNotices from '../../../lib/api/client/copyright-notices'
 import * as clientDynamicConfig from '../../../lib/api/client/dynamic-config'
@@ -92,6 +93,7 @@ export const WEB_FIXTURE_ENDPOINT_CONTEXT = {
     communityModeratorStats: clientCommunityModeratorStats,
     currencies: clientCurrencies,
     copyrightEmailIntakes: clientCopyrightEmailIntakes,
+    copyrightEuDisputeSettlements: clientCopyrightEuDisputeSettlements,
     copyrightGuest: clientCopyrightGuest,
     copyrightNotices: clientCopyrightNotices,
     dynamicConfig: clientDynamicConfig,

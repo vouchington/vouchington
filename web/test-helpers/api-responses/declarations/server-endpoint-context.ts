@@ -2,6 +2,7 @@ export interface WebFixtureServerEndpointContext {
   readonly copyrightNotices: Pick<
     typeof import('@/lib/api/server/copyright-notices'),
     | 'getCopyrightEmailIntakeReviewQueue'
+    | 'getCopyrightJurisdictionAvailabilityServer'
     | 'getCopyrightNotices'
     | 'getCopyrightNoticeServer'
     | 'getCopyrightParticipantNoticeServer'
