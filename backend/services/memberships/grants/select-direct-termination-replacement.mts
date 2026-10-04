@@ -37,7 +37,7 @@ export async function selectDirectTerminationReplacement(
           SELECT 1 FROM membership_grant_activation_periods activation
           WHERE activation.membership_grant_id = grant_row.id AND activation.ended_at IS NULL
         )
-      ORDER BY product.plan, grant_row.created_at ASC, grant_row.id ASC
+      ORDER BY product.plan, grant_row.id ASC
     )
     SELECT source.id AS membership_source_id, source.source_kind, source_state.effective_at,
       product.plan

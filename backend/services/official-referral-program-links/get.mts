@@ -41,7 +41,7 @@ export async function getOfficialReferralLinks(
       AND l.activated_at IS NOT NULL
       AND l.deactivated_at IS NULL
       AND usr.username = 'voucha'
-    ORDER BY l.created_at DESC
+    ORDER BY l.id DESC
   `,
       ),
   )

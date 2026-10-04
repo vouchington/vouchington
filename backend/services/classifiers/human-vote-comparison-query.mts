@@ -61,7 +61,7 @@ function humanOutcomeSelect(subject: (typeof SUBJECT_RELATIONS)[number]): string
     FROM decisions decision
     CROSS JOIN LATERAL (
       SELECT CASE
-        WHEN count(*) = 0 THEN 'none'
+        WHEN sum(ballot.score) IS NULL THEN 'none'
         WHEN sum(ballot.score) > 0 THEN 'up'
         WHEN sum(ballot.score) < 0 THEN 'down'
         ELSE 'neutral'

@@ -281,7 +281,7 @@ export async function getCopyrightPublicNoticeDetail(
         SELECT current_restriction.id, current_restriction.lifted_at
         FROM copyright_restrictions current_restriction
         WHERE current_restriction.copyright_notice_target_id = target.id
-        ORDER BY current_restriction.created_at DESC, current_restriction.id DESC
+        ORDER BY current_restriction.id DESC
         LIMIT 1
       ) restriction ON true
       WHERE target.copyright_notice_id = ${noticeId}
@@ -294,7 +294,7 @@ export async function getCopyrightPublicNoticeDetail(
       FROM copyright_notice_lifecycle_events
       WHERE copyright_notice_id = ${noticeId}
         AND (${timelineEventTypes}::text[] IS NULL OR event_type = ANY(${timelineEventTypes}::text[]))
-      ORDER BY created_at, id
+      ORDER BY id
     `),
   ])
   await transaction.commit()

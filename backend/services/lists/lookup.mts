@@ -22,7 +22,7 @@ export async function getListsContainingEntity(
       ${privateFilter}
       AND li.${entityColumn} = $2
       AND li.removed_at IS NULL
-    ORDER BY l.created_at DESC
+    ORDER BY l.id DESC
     `,
     [ownerUserId, entityId],
   )

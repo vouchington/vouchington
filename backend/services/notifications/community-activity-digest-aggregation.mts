@@ -71,12 +71,11 @@ export async function aggregateCommunityActivityDigestBatch(input: {
       SELECT p.community_id, concat(c.name, ': ', p.title, ' (', count(reply.id), ' replies)') AS label,
         count(reply.id)::int AS replies, row_number() OVER (PARTITION BY p.community_id ORDER BY count(reply.id) DESC, p.id ASC) AS rank
       FROM posts p JOIN communities c ON c.id = p.community_id JOIN community_ids ids ON ids.community_id = p.community_id
-      LEFT JOIN posts reply ON reply.parent_id = p.id AND reply.post_type = 'comment'
+      JOIN posts reply ON reply.parent_id = p.id AND reply.post_type = 'comment'
         AND reply.id >= ${input.windowStartId} AND reply.id < ${input.windowEndId}
         AND reply.deleted_at IS NULL
       WHERE p.post_type = 'discussion' AND p.id < ${input.windowEndId} AND p.deleted_at IS NULL
       GROUP BY p.community_id, p.id, p.title, c.name
-      HAVING count(reply.id) > 0
     ), activity AS (
       SELECT e.user_id, e.community_id, COALESCE(j.value,0) AS joins, COALESCE(d.value,0) AS departures,
         COALESCE(pa.discussions,0) AS discussions, COALESCE(pa.reviews,0) AS reviews,

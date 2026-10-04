@@ -57,13 +57,13 @@ export function streamCopyrightCases(userId: string) {
           SELECT current_restriction.id, current_restriction.lifted_at
           FROM copyright_restrictions current_restriction
           WHERE current_restriction.copyright_notice_target_id = target.id
-          ORDER BY current_restriction.created_at DESC, current_restriction.id DESC
+          ORDER BY current_restriction.id DESC
           LIMIT 1
         ) restriction ON true
         WHERE target.copyright_notice_id = notice.id) AS targets,
       (SELECT COALESCE(json_agg(json_build_object(
           'id', event.id, 'event_type', event.event_type, 'created_at', event.created_at
-        ) ORDER BY event.created_at, event.id), '[]'::json)
+        ) ORDER BY event.id), '[]'::json)
         FROM copyright_notice_lifecycle_events event
         WHERE event.copyright_notice_id = notice.id
           AND event.event_type = ANY(${COPYRIGHT_CASE_TIMELINE_EVENT_TYPES}::text[])) AS timeline

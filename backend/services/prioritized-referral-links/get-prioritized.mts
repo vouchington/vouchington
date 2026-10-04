@@ -58,7 +58,7 @@ active_links AS (
     AND al.activated_at IS NOT NULL
     AND al.deleted_at IS NULL
     AND al.deactivated_at IS NULL
-    AND al.user_id NOT IN (SELECT user_id FROM official_links WHERE user_id IS NOT NULL)`
+    AND NOT EXISTS (SELECT 1 FROM official_links WHERE official_links.user_id = al.user_id)`
 
   if (!all) {
     query.append(sql`
@@ -66,7 +66,7 @@ active_links AS (
   }
 
   query.append(sql`
-    AND al.user_id NOT IN (SELECT user_id FROM excluded_users)
+    AND NOT EXISTS (SELECT 1 FROM excluded_users WHERE excluded_users.user_id = al.user_id)
     AND `)
   query.append(childVisibilitySql('al.parent_link_id', 'al.user_id'))
   query.append(sql`

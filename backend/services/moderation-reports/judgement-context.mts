@@ -104,7 +104,7 @@ async function selectReportContextRows(
           COUNT(r.id) OVER (PARTITION BY entity_ids.entity_id)::integer AS report_count,
           ROW_NUMBER() OVER (
             PARTITION BY entity_ids.entity_id
-            ORDER BY r.created_at DESC, r.id DESC
+            ORDER BY r.id DESC
           ) AS report_rank
         FROM entity_ids
         LEFT JOIN moderation_reports r ON r.`
@@ -117,7 +117,7 @@ async function selectReportContextRows(
         COALESCE(
           jsonb_agg(
             jsonb_build_object('id', id, 'reason', reason, 'note', note)
-            ORDER BY created_at DESC, id DESC
+            ORDER BY id DESC
           ) FILTER (WHERE id IS NOT NULL AND report_rank <= ${MAX_REPORTS_FOR_JUDGEMENT}),
           '[]'::jsonb
         ) AS reports

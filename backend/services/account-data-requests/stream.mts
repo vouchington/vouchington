@@ -56,7 +56,8 @@ export function streamPosts(userId: string) {
 /** Streams all votes for the given user. */
 export function streamVotes(userId: string) {
   return createAsyncGeneratorFromCursor(sql`/* streamVotes */
-    SELECT 'post' AS entity_type, pv.post_id AS entity_id,
+    SELECT entity_type, entity_id, choice, created_at FROM (
+    SELECT pv.id AS sort_id, 'post' AS entity_type, pv.post_id AS entity_id,
       CASE WHEN pv.score IS NULL THEN 'clear'
         WHEN pv.score = 0 AND NOT pv.score_is_neutral THEN 'clear'
         WHEN p.post_type = 'topic_recommendation' AND pv.score = 1 THEN 'support'
@@ -70,32 +71,33 @@ export function streamVotes(userId: string) {
     WHERE pv.user_id = ${userId}
       AND (pv.score IN (-2, 2) AND NOT pv.score_is_semantic) IS NOT TRUE
     UNION ALL
-    SELECT 'topic' AS entity_type, topic_id AS entity_id, CASE WHEN score IS NULL OR (score = 0 AND NOT score_is_neutral) THEN 'clear' WHEN score = 2 THEN 'vouch' WHEN score = 1 AND score_is_semantic THEN 'like' WHEN score = 1 THEN 'vouch' WHEN score = 0 THEN 'neutral' WHEN score = -1 AND score_is_semantic THEN 'dislike' WHEN score = -1 THEN 'disavow' ELSE 'disavow' END AS choice, created_at
+    SELECT id AS sort_id, 'topic' AS entity_type, topic_id AS entity_id, CASE WHEN score IS NULL OR (score = 0 AND NOT score_is_neutral) THEN 'clear' WHEN score = 2 THEN 'vouch' WHEN score = 1 AND score_is_semantic THEN 'like' WHEN score = 1 THEN 'vouch' WHEN score = 0 THEN 'neutral' WHEN score = -1 AND score_is_semantic THEN 'dislike' WHEN score = -1 THEN 'disavow' ELSE 'disavow' END AS choice, created_at
     FROM topic_votes
     WHERE user_id = ${userId}
       AND (score IN (-2, 2) AND NOT score_is_semantic) IS NOT TRUE
     UNION ALL
-    SELECT 'hostname' AS entity_type, hostname_id AS entity_id, CASE WHEN score IS NULL OR (score = 0 AND NOT score_is_neutral) THEN 'clear' WHEN score = 2 THEN 'vouch' WHEN score = 1 AND score_is_semantic THEN 'like' WHEN score = 1 THEN 'vouch' WHEN score = 0 THEN 'neutral' WHEN score = -1 AND score_is_semantic THEN 'dislike' WHEN score = -1 THEN 'disavow' ELSE 'disavow' END AS choice, created_at
+    SELECT id AS sort_id, 'hostname' AS entity_type, hostname_id AS entity_id, CASE WHEN score IS NULL OR (score = 0 AND NOT score_is_neutral) THEN 'clear' WHEN score = 2 THEN 'vouch' WHEN score = 1 AND score_is_semantic THEN 'like' WHEN score = 1 THEN 'vouch' WHEN score = 0 THEN 'neutral' WHEN score = -1 AND score_is_semantic THEN 'dislike' WHEN score = -1 THEN 'disavow' ELSE 'disavow' END AS choice, created_at
     FROM hostname_votes
     WHERE user_id = ${userId}
       AND (score IN (-2, 2) AND NOT score_is_semantic) IS NOT TRUE
     UNION ALL
-    SELECT 'rss_feed_item' AS entity_type, rss_feed_item_id AS entity_id, CASE WHEN score IS NULL OR (score = 0 AND NOT score_is_neutral) THEN 'clear' WHEN score = 2 THEN 'vouch' WHEN score = 1 AND score_is_semantic THEN 'like' WHEN score = 1 THEN 'vouch' WHEN score = 0 THEN 'neutral' WHEN score = -1 AND score_is_semantic THEN 'dislike' WHEN score = -1 THEN 'disavow' ELSE 'disavow' END AS choice, created_at
+    SELECT id AS sort_id, 'rss_feed_item' AS entity_type, rss_feed_item_id AS entity_id, CASE WHEN score IS NULL OR (score = 0 AND NOT score_is_neutral) THEN 'clear' WHEN score = 2 THEN 'vouch' WHEN score = 1 AND score_is_semantic THEN 'like' WHEN score = 1 THEN 'vouch' WHEN score = 0 THEN 'neutral' WHEN score = -1 AND score_is_semantic THEN 'dislike' WHEN score = -1 THEN 'disavow' ELSE 'disavow' END AS choice, created_at
     FROM rss_feed_item_votes
     WHERE user_id = ${userId}
       AND (score IN (-2, 2) AND NOT score_is_semantic) IS NOT TRUE
     UNION ALL
-    SELECT 'entity_relation' AS entity_type, entity_relation_id AS entity_id, CASE WHEN score IS NULL OR score = 0 THEN 'clear' WHEN score = 1 THEN 'confirm' ELSE 'dispute' END AS choice, created_at
+    SELECT id AS sort_id, 'entity_relation' AS entity_type, entity_relation_id AS entity_id, CASE WHEN score IS NULL OR score = 0 THEN 'clear' WHEN score = 1 THEN 'confirm' ELSE 'dispute' END AS choice, created_at
     FROM view_entity_relation_votes WHERE user_id = ${userId}
     UNION ALL
-    SELECT 'agent_moderation' AS entity_type, agent_moderation_id AS entity_id, CASE WHEN score IS NULL OR score = 0 THEN 'clear' WHEN score = 1 THEN 'accurate' ELSE 'inaccurate' END AS choice, created_at
+    SELECT id AS sort_id, 'agent_moderation' AS entity_type, agent_moderation_id AS entity_id, CASE WHEN score IS NULL OR score = 0 THEN 'clear' WHEN score = 1 THEN 'accurate' ELSE 'inaccurate' END AS choice, created_at
     FROM agent_moderation_votes WHERE user_id = ${userId}
     UNION ALL
-    SELECT 'user_vouch' AS entity_type, target_user_id AS entity_id, CASE WHEN score IS NULL OR (score = 0 AND NOT score_is_neutral) THEN 'clear' WHEN score = 2 THEN 'vouch' WHEN score = 1 AND score_is_semantic THEN 'like' WHEN score = 1 THEN 'vouch' WHEN score = 0 THEN 'neutral' WHEN score = -1 AND score_is_semantic THEN 'dislike' WHEN score = -1 THEN 'disavow' ELSE 'disavow' END AS choice, created_at
+    SELECT id AS sort_id, 'user_vouch' AS entity_type, target_user_id AS entity_id, CASE WHEN score IS NULL OR (score = 0 AND NOT score_is_neutral) THEN 'clear' WHEN score = 2 THEN 'vouch' WHEN score = 1 AND score_is_semantic THEN 'like' WHEN score = 1 THEN 'vouch' WHEN score = 0 THEN 'neutral' WHEN score = -1 AND score_is_semantic THEN 'dislike' WHEN score = -1 THEN 'disavow' ELSE 'disavow' END AS choice, created_at
     FROM user_vouch_votes
     WHERE user_id = ${userId}
       AND (score IN (-2, 2) AND NOT score_is_semantic) IS NOT TRUE
-    ORDER BY created_at ASC
+    ) votes
+    ORDER BY sort_id ASC
   `)
 }
 

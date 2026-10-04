@@ -71,7 +71,7 @@ export async function getFollowedUsersByElectionVote(
   // Vote tables are append-only — DISTINCT ON resolves each voter's latest vote
   // before bucketing by sign. Choice strength is deliberately not exposed here.
   const currentVotesCte = `WITH current_votes AS (
-      SELECT DISTINCT ON (user_id) user_id, score, created_at
+      SELECT DISTINCT ON (user_id) id, user_id, score, created_at
       FROM ${voteTable}
       WHERE ${entityIdColumn} = $2
       ORDER BY user_id, id DESC
@@ -103,7 +103,7 @@ export async function getFollowedUsersByElectionVote(
     WHERE cv.score * $3 > 0
       AND vote_user.deleted_at IS NULL
       ${likesVisibilityFilter}
-    ORDER BY cv.created_at DESC, cv.user_id ASC
+    ORDER BY cv.id DESC, cv.user_id ASC
     LIMIT $4
   `
 

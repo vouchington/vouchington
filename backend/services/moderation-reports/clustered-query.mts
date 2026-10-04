@@ -34,7 +34,7 @@ export function selectEntityClusterRows(options: SelectClusterRowsOptions): Prom
   appendModerationReportStatusPredicate(query, 'r', status)
   query.append(sql`
       ORDER BY r.entity_type, r.entity_id, `)
-  query.append(sortAsc ? sql`r.created_at ASC, r.id ASC` : sql`r.created_at DESC, r.id DESC`)
+  query.append(sortAsc ? sql`r.id ASC` : sql`r.id DESC`)
   query.append(sql`
     ),
     paged_entities AS (
@@ -110,7 +110,7 @@ export function selectEntityClusterRows(options: SelectClusterRowsOptions): Prom
         AND `)
   appendModerationReportStatusPredicate(query, 'r', status)
   query.append(sql`
-      ORDER BY r.created_at DESC, r.id DESC
+      ORDER BY r.id DESC
       LIMIT 1
     ) r ON true
   `)
@@ -139,8 +139,8 @@ export async function selectReportsByCluster(
         r.*,
         ROW_NUMBER() OVER (
           PARTITION BY r.entity_type, r.entity_id
-          ORDER BY r.created_at `
-  query.append(sortAsc ? sql`ASC, r.id ASC` : sql`DESC, r.id DESC`)
+          ORDER BY r.id `
+  query.append(sortAsc ? sql`ASC` : sql`DESC`)
   query.append(sql`
         ) AS report_rank
       FROM `)
@@ -190,8 +190,8 @@ export async function selectReportsByCluster(
   `)
   query.append(sql`
     WHERE r.report_rank <= ${MAX_REPORTS_PER_CLUSTER}
-    ORDER BY r.entity_type, r.entity_id, r.created_at `)
-  query.append(sortAsc ? sql`ASC, r.id ASC` : sql`DESC, r.id DESC`)
+    ORDER BY r.entity_type, r.entity_id, r.id `)
+  query.append(sortAsc ? sql`ASC` : sql`DESC`)
   const { rows } = await read<PendingModerationReport>(query)
   const reports = await enrichClusteredReports(rows)
   return groupReportsByCluster(reports)

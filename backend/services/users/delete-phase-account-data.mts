@@ -55,7 +55,6 @@ export async function processUserDeletionAccountDataBatch(
       JOIN user_data_requests request ON request.id = attempt.request_id
       WHERE request.user_id = ${userId}
         AND attempt.upload_lease_expires_at > CURRENT_TIMESTAMP
-      HAVING COUNT(*) > 0
     `,
     )
     const retryAfterMs = blockedAttempts[0]?.retry_after_ms

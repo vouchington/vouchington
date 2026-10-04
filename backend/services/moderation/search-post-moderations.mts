@@ -35,7 +35,7 @@ export async function searchPostModerationsByPostIds(
         am.created_at,
         am.updated_at,
         agm.slug AS moderator_slug,
-        ROW_NUMBER() OVER (PARTITION BY am.post_id ORDER BY am.created_at DESC) AS rn
+        ROW_NUMBER() OVER (PARTITION BY am.post_id ORDER BY am.id DESC) AS rn
       FROM agent_moderations am
       LEFT JOIN agents__moderators agm ON agm.agent_id = am.agent_id
       WHERE am.post_id = ANY(${postIds}::uuid[])
@@ -44,7 +44,7 @@ export async function searchPostModerationsByPostIds(
     SELECT id, post_id, prompt_id, agent_id, input_sha256, flagged, results, created_at, updated_at, moderator_slug
     FROM ranked
     WHERE rn <= ${MAX_MODERATIONS_PER_POST}
-    ORDER BY post_id, created_at DESC
+    ORDER BY post_id, id DESC
   `)
 
   return rows as AgentModerationResult[]

@@ -101,7 +101,7 @@ export async function getReferralLinksFeed(
       AND urpl.user_id <> ${currentUser.id}
       AND t.deleted_at IS NULL
       AND t.merged_into_topic_id IS NULL
-      AND u.hostname_id NOT IN (SELECT hostname_id FROM excluded_hostname_ids)
+      AND NOT EXISTS (SELECT 1 FROM excluded_hostname_ids WHERE excluded_hostname_ids.hostname_id = u.hostname_id)
       AND NOT EXISTS (SELECT 1 FROM excluded_users WHERE excluded_users.user_id = urpl.user_id)
       AND NOT EXISTS (SELECT 1 FROM excluded_topics WHERE excluded_topics.topic_id = urpl.referral_program_id)
       AND `,

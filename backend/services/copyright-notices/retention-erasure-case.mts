@@ -42,11 +42,11 @@ function evidenceKeysSql(noticeId: string) {
     WHERE key IS NOT NULL AND NOT starts_with(key, ${COPYRIGHT_ERASED_KEY_PREFIX})
       AND NOT EXISTS (
         SELECT 1 FROM copyright_notice_email_intakes other
-        WHERE other.raw_storage_key = own_key.key AND other.id NOT IN (SELECT id FROM own_intake)
+        WHERE other.raw_storage_key = own_key.key AND NOT EXISTS (SELECT 1 FROM own_intake WHERE own_intake.id = other.id)
       )
       AND NOT EXISTS (
         SELECT 1 FROM copyright_notice_evidence_artifacts other
-        WHERE other.storage_key = own_key.key AND other.id NOT IN (SELECT id FROM own_artifact)
+        WHERE other.storage_key = own_key.key AND NOT EXISTS (SELECT 1 FROM own_artifact WHERE own_artifact.id = other.id)
       )
     ORDER BY key`,
     )

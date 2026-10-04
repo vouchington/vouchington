@@ -55,7 +55,7 @@ async function revokeFamilies(
   batchSize: number,
   query: TransactionQuery,
 ): Promise<boolean> {
-  const result = await query<{ count: number }>(
+  const result = await query<{ has_updates: boolean }>(
     `/* revokeOAuthCredentialsForDeletedUser:families */ WITH candidates AS (
        SELECT family.id FROM oauth_refresh_token_families family JOIN oauth_grants oauth_grant ON oauth_grant.id = family.grant_id
        WHERE oauth_grant.user_id = $1 AND family.revoked_at IS NULL ORDER BY family.id LIMIT $2
@@ -70,10 +70,10 @@ async function revokeFamilies(
        JOIN oauth_grants oauth_grant ON oauth_grant.id = updated.grant_id
        ON CONFLICT (refresh_token_family_id, event_type)
          WHERE refresh_token_family_id IS NOT NULL DO NOTHING
-     ) SELECT COUNT(*)::int AS count FROM updated`,
+     ) SELECT EXISTS (SELECT 1 FROM updated) AS has_updates`,
     [userId, batchSize],
   )
-  return (result.rows[0]?.count ?? 0) > 0
+  return result.rows[0]?.has_updates ?? false
 }
 
 async function revokeAccessTokens(

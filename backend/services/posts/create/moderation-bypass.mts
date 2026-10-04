@@ -22,7 +22,7 @@ export async function hasPostCreationModerationBypass(postId: string): Promise<b
           FROM posts
           INNER JOIN user_roles
             ON user_roles.user_id = posts.created_by_id
-            AND user_roles.created_at <= posts.created_at
+            AND user_roles.created_at <= uuid_extract_timestamp(posts.id)
           INNER JOIN user_roles_types
             ON user_roles_types.id = user_roles.role_type_id
             AND user_roles_types.slug = 'administrator'

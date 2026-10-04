@@ -82,8 +82,8 @@ export async function getRecommendedRssFeeds(
         AND current_state.is_discoverable = TRUE
       WHERE ufu.subject_id = $1
         AND ufu.deleted_at IS NULL
-        AND ufr.object_id NOT IN (SELECT feed_id FROM user_followed_feeds)
-        AND ufr.object_id NOT IN (SELECT feed_id FROM user_muted_feeds)
+        AND NOT EXISTS (SELECT 1 FROM user_followed_feeds WHERE user_followed_feeds.feed_id = ufr.object_id)
+        AND NOT EXISTS (SELECT 1 FROM user_muted_feeds WHERE user_muted_feeds.feed_id = ufr.object_id)
     ),
     -- Topic-based feeds (weight 2.5)
     topic_feeds AS (
@@ -99,8 +99,8 @@ export async function getRecommendedRssFeeds(
         ON current_state.rss_feed_id = rf.id
         AND current_state.is_enabled = TRUE
         AND current_state.is_discoverable = TRUE
-      WHERE rf.id NOT IN (SELECT feed_id FROM user_followed_feeds)
-        AND rf.id NOT IN (SELECT feed_id FROM user_muted_feeds)
+      WHERE NOT EXISTS (SELECT 1 FROM user_followed_feeds WHERE user_followed_feeds.feed_id = rf.id)
+        AND NOT EXISTS (SELECT 1 FROM user_muted_feeds WHERE user_muted_feeds.feed_id = rf.id)
     ),
     -- Collaborative feeds (weight 2.0): feeds followed by users who share feed overlap
     collaborative_feeds AS (
@@ -123,8 +123,8 @@ export async function getRecommendedRssFeeds(
       WHERE ufr1.subject_id != $1
         AND ufr1.object_id IN (SELECT feed_id FROM user_followed_feeds)
         AND ufr1.deleted_at IS NULL
-        AND ufr2.object_id NOT IN (SELECT feed_id FROM user_followed_feeds)
-        AND ufr2.object_id NOT IN (SELECT feed_id FROM user_muted_feeds)
+        AND NOT EXISTS (SELECT 1 FROM user_followed_feeds WHERE user_followed_feeds.feed_id = ufr2.object_id)
+        AND NOT EXISTS (SELECT 1 FROM user_muted_feeds WHERE user_muted_feeds.feed_id = ufr2.object_id)
     ),
     -- Union of selected sources
     all_candidates AS (
