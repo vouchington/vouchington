@@ -25,6 +25,7 @@ and measurement method; [AI agents](../ai-agents.md) links the surrounding pipel
 - [Copyright Appeal Recommendation](copyright-appeal-recommendation/README.md)
 - [Copyright Email Intake](copyright-email-intake/README.md)
 - [Copyright Form Screening](copyright-form-screening/README.md)
+- [Copyright Submission Guidance](copyright-submission-guidance/README.md)
 - [Dispute Resolution](dispute-resolution/README.md)
 - [Post Classifier](post-classifier/README.md)
 - [Report Judgement](report-judgement/README.md)

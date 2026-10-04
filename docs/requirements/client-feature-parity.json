@@ -2865,7 +2865,7 @@
     },
     {
       "id": "copyright-staff-ai-guidance",
-      "title": "Copyright staff AI form-screening guidance",
+      "title": "Copyright staff AI guidance",
       "domain": "Staff",
       "intents": [],
       "requirements": [
@@ -2876,6 +2876,10 @@
         {
           "table": "B",
           "surface": "copyright ai guidance (staff)"
+        },
+        {
+          "table": "C",
+          "surface": "copyright-staff-ai-guidance"
         }
       ],
       "clients": {
@@ -2883,9 +2887,15 @@
           "status": "full",
           "uiEvidence": [
             "web/components/copyright/copyright-staff-form-guidance.tsx",
-            "web/components/copyright/copyright-staff-case-form-review.tsx"
+            "web/components/copyright/copyright-staff-case-form-review.tsx",
+            "web/components/copyright/copyright-staff-submission-guidance.tsx",
+            "web/components/copyright/copyright-staff-case-detail.tsx",
+            "web/components/copyright/copyright-staff-case-legal-hold.tsx"
           ],
-          "behaviorTests": ["web/components/copyright/copyright-staff-form-guidance.test.tsx"]
+          "behaviorTests": [
+            "web/components/copyright/copyright-staff-form-guidance.test.tsx",
+            "web/components/copyright/copyright-staff-submission-guidance.test.tsx"
+          ]
         },
         "swift": {
           "status": "none",
@@ -2899,7 +2909,7 @@
         }
       },
       "gap": {
-        "summary": "Swift and .NET render no copyright form-screening guidance panel. The panel is advisory staff tooling on the web staff case.",
+        "summary": "Swift and .NET render no copyright AI guidance panels. Advisory form-screening, counter-notice, and court/CCB filing guidance remain web-only staff tooling.",
         "trackingIssue": "https://github.com/vouchington/vouchington/issues/1229"
       }
     },

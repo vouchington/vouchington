@@ -1,0 +1,25 @@
+{
+  "name": "@agents/copyright-submission-guidance",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    }
+  },
+  "dependencies": {
+    "@agents/_shared": "workspace:^",
+    "@jongleberry/vurst-prompt": "^0.4.3",
+    "@modules/openai-utils": "workspace:^",
+    "@services/copyright-notices": "workspace:^",
+    "@ts-shared/utils": "workspace:^"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

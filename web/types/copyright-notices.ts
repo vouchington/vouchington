@@ -5,6 +5,16 @@ export type { CopyrightImageSurface } from './copyright-image-surfaces'
 import type { CopyrightParticipantStatement } from './copyright-statements'
 import type { CopyrightStaffClaimant } from './copyright-claimant-misuse'
 import type { CopyrightStaydownMatch } from './copyright-staydown'
+import type {
+  CopyrightFormGuidance,
+  CopyrightCounterNoticeGuidance,
+  CopyrightLegalHoldGuidance,
+} from './copyright-submission-guidance'
+export type {
+  CopyrightFormGuidance,
+  CopyrightCounterNoticeGuidance,
+  CopyrightLegalHoldGuidance,
+} from './copyright-submission-guidance'
 
 export type CopyrightNoticeSummary = {
   id: string
@@ -46,31 +56,6 @@ export type CopyrightNoticeResponseEligibility = Pick<
   CopyrightParticipantNoticeDetail,
   'viewer_role' | 'respondable_target_ids'
 >
-
-/** Advisory AI guidance for a structured form; never a decision. */
-export type CopyrightFormGuidance = {
-  summary: string
-  elements: Array<{
-    element:
-      | 'signature'
-      | 'work_identification'
-      | 'material_identification'
-      | 'contact_information'
-      | 'good_faith_statement'
-      | 'accuracy_authority_statement'
-    status: 'present' | 'missing' | 'unclear'
-    gap: string | null
-  }>
-  risk_notes: Array<{
-    kind: 'possible_fair_use' | 'abuse_signal' | 'mismatched_claimant'
-    note: string
-  }>
-  suggested_action:
-    | 'approve_intake'
-    | 'request_information'
-    | 'reject_intake'
-    | 'escalate_to_counsel'
-}
 
 export type CopyrightStaffQueueItem = {
   id: string
@@ -130,11 +115,13 @@ export type CopyrightStaffQueueItem = {
     received_at: string
     target_ids: string[]
     statement: Record<string, unknown>
+    guidance: CopyrightCounterNoticeGuidance | null
   }>
   legal_holds: Array<{
     submission_id: string
     received_at: string
     statement: Record<string, unknown>
+    guidance: CopyrightLegalHoldGuidance | null
     assessment: {
       id: string
       from_original_claimant: boolean

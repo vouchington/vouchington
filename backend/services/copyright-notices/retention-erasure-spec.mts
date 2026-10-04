@@ -62,6 +62,7 @@ export const COPYRIGHT_RETENTION_ERASURE: readonly CopyrightRetentionErasureTabl
     own,
   ),
   table('copyright_notice_submission_requests', { requester_user_id: 'null' }, viaSubmissions),
+  table('copyright_notice_submission_guidance', { guidance_ciphertext: 'redact' }, viaSubmissions),
   table('copyright_notice_form_intakes', {
     requester_user_id: 'null',
     requester_identity_sha256: 'digest',

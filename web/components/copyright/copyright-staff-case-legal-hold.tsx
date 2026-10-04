@@ -8,12 +8,12 @@ import {
 } from '@/lib/api/client/copyright-notices'
 import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
 import { ReviewButtons, type SubmitReview } from './copyright-staff-review-buttons'
+import { CopyrightStaffSubmissionGuidance } from './copyright-staff-submission-guidance'
 import {
   CopyrightStaffLegalHoldTargetSelector,
   CopyrightStaffProceedingFields,
   type LegalHoldProceedingKind,
 } from './copyright-staff-legal-hold-fields'
-
 export function CopyrightStaffLegalHoldReview({
   hold,
   targets,
@@ -49,6 +49,12 @@ export function CopyrightStaffLegalHoldReview({
       <pre className='overflow-auto rounded bg-muted p-2 text-xs'>
         {JSON.stringify(hold.statement, null, 2)}
       </pre>
+      {hold.guidance ? (
+        <CopyrightStaffSubmissionGuidance
+          kind='court_or_ccb_hold'
+          guidance={hold.guidance}
+        />
+      ) : null}
       {!assessment ? (
         <LegalHoldAssessmentFields
           ccbClaimKind={ccbClaimKind}
@@ -93,7 +99,6 @@ export function CopyrightStaffLegalHoldReview({
     </section>
   )
 }
-
 type LegalHoldAssessmentFieldsProps = {
   ccbClaimKind: 'claim' | 'counterclaim'
   commencedAt: string
@@ -115,7 +120,6 @@ type LegalHoldAssessmentFieldsProps = {
   submit: SubmitReview
   targets: CopyrightStaffQueueItem['targets']
 }
-
 function LegalHoldAssessmentFields({
   ccbClaimKind,
   commencedAt,

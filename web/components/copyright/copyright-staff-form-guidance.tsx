@@ -1,6 +1,6 @@
 import type { CopyrightFormGuidance } from '@/types/copyright-notices'
 
-const COPYRIGHT_AI_GUIDANCE_LABEL = 'AI guidance — not a decision'
+export const COPYRIGHT_AI_GUIDANCE_LABEL = 'AI guidance — not a decision'
 
 const ELEMENT_LABELS: Record<CopyrightFormGuidance['elements'][number]['element'], string> = {
   signature: 'Signature',

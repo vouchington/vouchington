@@ -187,6 +187,9 @@ a case already open:
   one, returns without a model call.
 - Appeal recommendation (`appeal`) runs. An appeal answers a restriction on an open case and stays
   open, so the advisory recommendation for staff keeps going.
+- Submission guidance (`submission-guidance`) runs for filed counter-notices and court/CCB filings
+  on open cases. It is advisory processing of an existing case, so it remains eligible while intake
+  is off; a missing result is recovered by the next sweep.
 - Saved form screening applied (`form-effect`) runs. The form was received and screened before the
   pause, applying it calls no model, and the effect has its own switch.
 
@@ -331,6 +334,12 @@ Notes for operators:
    restoration. A threat, unrelated filing, different claimant, different material, non-commenced
    matter, or CCB filing outside the qualifying claim and counterclaim categories is not a hold.
 5. Resolve a hold only with an immutable resolution record and staff rationale.
+6. Read the submission-guidance panel as advisory evidence alongside the filed counter-notice or
+   court/CCB submission. It neither supplies the assessment nor decides qualification, and it never
+   changes a deadline, restriction, restoration, or hold. Contact redaction removes email addresses
+   and phone numbers from free-text filings before sanitization and hashing; erased bodies are not
+   dispatched. Preserve human review and the recorded filing receipt as the source of statutory
+   timing.
 
 ## Repeat-infringer review
 
@@ -676,9 +685,14 @@ sufficient to identify an alleged infringer, to the extent Voucha has it.
 
 ## Statements of reasons and decision notices
 
-US copyright decisions persist the exact statement sent to each participant. Community owners who
-are information-only recipients have no case, appeal or counter-notice access; their in-app notice
-links to the community. Administrator lifts send a reversed claimant decision once per notice.
+US copyright decisions persist the exact statement sent to each participant. If counter-notice or
+court/CCB submission guidance existed before the decision, disclose AI assistance with the shared
+sentence “Automated tools assisted with processing this case.” The shared statement-of-reasons
+builder covers builder-backed decisions. Fixed-text counter-notice decision emails, in-app decision
+updates, and acceptance forwarding append that same sentence; counter-notice filing receipts are
+not decisions and exclude it. Future hold-decision notices must use the shared builder. Community
+owners who are information-only recipients have no case, appeal or counter-notice access; their
+in-app notice links to the community. Administrator lifts send a reversed claimant decision once per notice.
 Their `administrator_lift` restoration notice is created only when delivery lifts the restriction,
 with the actual outcome; topics have no owner recipient. Check the private delivery
 intent state and `sent_at` before treating a notice as informed; retry a failed notice through the existing Delivery failures replay; a human reversal and later restoration

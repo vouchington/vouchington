@@ -6,6 +6,7 @@ import {
 } from '@/lib/api/client/copyright-notices'
 import { copyrightImageSurfaceLabel, type CopyrightStaffQueueItem } from '@/types/copyright-notices'
 import { CopyrightStaffClaimantMisuse } from './copyright-staff-claimant-misuse'
+import { CopyrightStaffSubmissionGuidance } from './copyright-staff-submission-guidance'
 import {
   ReviewButtons,
   type SubmitRecovery,
@@ -36,6 +37,12 @@ export function CopyrightStaffCounterNotices({
       <pre className='overflow-auto rounded bg-muted p-2 text-xs'>
         {JSON.stringify(counter.statement, null, 2)}
       </pre>
+      {counter.guidance ? (
+        <CopyrightStaffSubmissionGuidance
+          kind='counter_notice'
+          guidance={counter.guidance}
+        />
+      ) : null}
       <ReviewButtons
         pending={pending}
         canSubmit={canSubmit}

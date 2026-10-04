@@ -59,6 +59,7 @@ export type CopyrightEmailIntakeJobData = {
 }
 export type CopyrightFormScreeningJobData = { submission_id: string }
 export type CopyrightAppealRecommendationJobData = { submission_id: string }
+export type CopyrightSubmissionGuidanceJobData = { submission_id: string }
 
 export type BackfillReportJudgementsJobData = Record<string, never>
 
@@ -89,6 +90,7 @@ export type AIAgentJobData = (
   | CopyrightEmailIntakeJobData
   | CopyrightFormScreeningJobData
   | CopyrightAppealRecommendationJobData
+  | CopyrightSubmissionGuidanceJobData
   | StoryPostJobData
   | BackfillReportJudgementsJobData
   | ReconcileClassifierRunsJobData

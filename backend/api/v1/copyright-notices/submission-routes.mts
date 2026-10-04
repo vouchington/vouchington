@@ -29,6 +29,7 @@ import type {
   CopyrightCounterNoticeRequest,
   CopyrightNoticeFormRequest,
 } from './request-types.mts'
+import { enqueueCopyrightSubmissionGuidanceBestEffort } from './submission-guidance-enqueue.mts'
 
 // Each handler keeps its existing admission order (kill switch, content type, authentication,
 // rate limit, CAPTCHA, field-named parsers, idempotency key). The generated contract then closes
@@ -98,6 +99,7 @@ app.route('/api/v1/copyright-notices/:id/counter-notices').post(async (ctx: Cont
     body,
   })
   const result = await createCopyrightCounterNotice(currentUser, noticeId, idempotencyKey, input)
+  if (!result.isDuplicate) await enqueueCopyrightSubmissionGuidanceBestEffort(result.submission.id)
   ctx.setStatus(result.isDuplicate ? 200 : 201)
   ctx.json({ copyright_submission: { id: result.submission.id }, is_duplicate: result.isDuplicate })
 })

@@ -3033,6 +3033,71 @@
         "required": ["decisions", "rationale"],
         "type": "object"
       },
+      "CopyrightCounterNoticeGuidance": {
+        "additionalProperties": false,
+        "properties": {
+          "elements": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "element": {
+                  "enum": [
+                    "contact_and_jurisdiction_consent",
+                    "good_faith_statement",
+                    "material_identification",
+                    "signature"
+                  ],
+                  "type": "string"
+                },
+                "gap": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "status": {
+                  "$ref": "#/components/schemas/CopyrightGuidanceStatus"
+                }
+              },
+              "required": ["element", "gap", "status"],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "risk_notes": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "abuse_signal",
+                    "good_faith_concern",
+                    "jurisdiction_consent_gap",
+                    "material_mismatch",
+                    "other"
+                  ],
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                }
+              },
+              "required": ["kind", "note"],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "summary": {
+            "type": "string"
+          }
+        },
+        "required": ["elements", "risk_notes", "summary"],
+        "type": "object"
+      },
       "CopyrightCounterNoticeRequest": {
         "additionalProperties": false,
         "properties": {
@@ -3540,6 +3605,10 @@
         "required": ["statement"],
         "type": "object"
       },
+      "CopyrightGuidanceStatus": {
+        "enum": ["missing", "present", "unclear"],
+        "type": "string"
+      },
       "CopyrightHoldResolutionKind": {
         "enum": ["dismissed", "proceeding_ended", "superseded"],
         "type": "string"
@@ -3744,6 +3813,72 @@
           }
         },
         "required": ["from_original_claimant", "rationale", "same_material", "target_ids"],
+        "type": "object"
+      },
+      "CopyrightLegalHoldGuidance": {
+        "additionalProperties": false,
+        "properties": {
+          "criteria": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "criterion": {
+                  "enum": [
+                    "commenced_at",
+                    "from_original_claimant",
+                    "proceeding_kind",
+                    "received_by_designated_agent_at",
+                    "same_material"
+                  ],
+                  "type": "string"
+                },
+                "gap": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "status": {
+                  "$ref": "#/components/schemas/CopyrightGuidanceStatus"
+                }
+              },
+              "required": ["criterion", "gap", "status"],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "risk_notes": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "claimant_mismatch",
+                    "material_mismatch",
+                    "other",
+                    "proceeding_gap",
+                    "timing_gap"
+                  ],
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                }
+              },
+              "required": ["kind", "note"],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "summary": {
+            "type": "string"
+          }
+        },
+        "required": ["criteria", "risk_notes", "summary"],
         "type": "object"
       },
       "CopyrightLegalHoldResolutionRecord": {
@@ -45235,6 +45370,16 @@
                             "items": {
                               "additionalProperties": false,
                               "properties": {
+                                "guidance": {
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/CopyrightCounterNoticeGuidance"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
                                 "received_at": {
                                   "type": "string"
                                 },
@@ -45252,6 +45397,7 @@
                                 }
                               },
                               "required": [
+                                "guidance",
                                 "received_at",
                                 "statement",
                                 "submission_id",
@@ -45567,6 +45713,16 @@
                                     }
                                   ]
                                 },
+                                "guidance": {
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/CopyrightLegalHoldGuidance"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
                                 "received_at": {
                                   "type": "string"
                                 },
@@ -45579,6 +45735,7 @@
                               },
                               "required": [
                                 "assessment",
+                                "guidance",
                                 "received_at",
                                 "statement",
                                 "submission_id"

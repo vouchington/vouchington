@@ -9,6 +9,7 @@ import { processAppealResolution } from './processors/process-appeal-resolution.
 import { processCopyrightEmailIntake } from './processors/process-copyright-email-intake.mts'
 import { processCopyrightFormScreening } from './processors/process-copyright-form-screening.mts'
 import { processCopyrightAppealRecommendation } from './processors/process-copyright-appeal-recommendation.mts'
+import { processCopyrightSubmissionGuidance } from './processors/process-copyright-submission-guidance.mts'
 import {
   processClassifierRun,
   processClassifierRunDispatcher,
@@ -65,6 +66,10 @@ export function processAIAgent(job: Job<AIAgentJobData>): Promise<unknown> {
     case 'copyright-appeal-recommendation':
       return processCopyrightAppealRecommendation(
         job as Job<import('@queues/ai-agents/types').CopyrightAppealRecommendationJobData>,
+      )
+    case 'copyright-submission-guidance':
+      return processCopyrightSubmissionGuidance(
+        job as Job<import('@queues/ai-agents/types').CopyrightSubmissionGuidanceJobData>,
       )
     case 'backfill_report_judgements':
       return processBackfillReportJudgements()

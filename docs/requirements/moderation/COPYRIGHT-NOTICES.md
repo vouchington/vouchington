@@ -77,6 +77,18 @@ suggested action. The model sees no claimant contact details, email, address, or
 The staff case labels it "AI guidance — not a decision"; no workflow predicate reads it, so it
 never creates an assessment or restriction.
 
+Filed counter-notices and court/CCB filings also receive advisory submission guidance for staff:
+a summary, a statutory-element checklist with gaps, and bounded risk notes, with no suggested
+action. Counter-notice prompts use only statutory answers, field-presence booleans, receipt/source,
+notice context, target URLs, and restricted-target count; names, addresses, telephone numbers,
+email, signature text, and claimant display name are excluded. For free-text filings, deterministic
+contact redaction replaces emails and phone numbers before sanitization and input hashing. Names and
+postal addresses typed into free text remain subject to counsel's #1230 decision. Erased bodies are
+not sent. Guidance is encrypted, immutable, retention-erased with its submission, and advisory only.
+There is no guidance activation switch; `COPYRIGHT_INTAKE_ENABLED` does not gate guidance for an
+already-filed case. The panel uses the same "AI guidance — not a decision" label and no workflow
+predicate reads the result.
+
 The staff case keeps the screening and guidance after a moderator records the intake review, so a
 later reviewer of a restriction, appeal, or counter-notice sees what the intake reviewer saw. The
 case's `form_review.review` is null while the intake awaits a decision. Once decided it holds the
@@ -125,9 +137,15 @@ statement says whether restoration is authorized pending delivery, the image rem
 restriction, or the image is unavailable. It never treats pending or failed edge delivery as proof
 that the image is already visible.
 The statement identifies the case, receipt time, public target URLs, global image visibility restriction,
-US copyright basis, and actual automatic-decision and AI-guidance provenance. Moderator deletion does
+US copyright basis, and actual automatic-decision and AI-guidance provenance. Counter-notice and
+court/CCB submission guidance count as AI-guidance provenance. When a decision notice discloses
+assistance, use the shared sentence exactly: “Automated tools assisted with processing this case.”
+The statement-of-reasons builder supplies it for builder-backed notices. Fixed-text counter-notice
+decision email, in-app decision update, and acceptance forwarding append the same sentence when
+eligible guidance existed before the decision; filing receipts are excluded. Moderator deletion does
 not turn a human decision into an automatic decision. Statements exclude contact details, signatures,
-private evidence, and staff rationale. Only supported US copyright grounds are rendered.
+private evidence, and staff rationale. Only supported US copyright grounds are rendered. Any future
+hold-decision notice must use the shared statement-of-reasons builder.
 
 Each affected poster receives one immutable email and in-app obligation per event. The notifier receives
 one decision pair per notice, using the retained receipt email address for email delivery; guest and
