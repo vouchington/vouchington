@@ -3,8 +3,10 @@ import { decryptSecret } from '@modules/token-secrets'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import { createTestUserDirect, softDeleteUser } from '@voucha/test-helpers'
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
+import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
 import { readCopyrightRetentionColumns } from '@voucha/test-helpers/data-stores/psql/copyright-retention'
 import { readTestCopyrightRestrictionAdministratorLift } from '@voucha/test-helpers/services/copyright-notices/administrator-lifts'
+import { createTestLiftClaimantReceipt } from '@voucha/test-helpers/services/copyright-notices/administrator-lift-fixtures'
 import { confirmTestRepeatInfringerNotice } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { useCopyrightRetentionConfig } from '@voucha/test-helpers/services/copyright-notices/retention-config'
@@ -28,6 +30,7 @@ describe('administrator copyright restriction lifts', () => {
       createTestUserDirect({ administrator: true }),
     ])
     const noticeId = await confirmTestRepeatInfringerNotice(poster.id, moderator)
+    await createTestLiftClaimantReceipt(noticeId, `lift-${crypto.randomUUID()}@example.test`)
     const before = await getCopyrightNoticePrivateAggregate(noticeId)
     const restriction = before?.restrictions[0]
     const incident = (await getCopyrightRepeatInfringerAccount(poster.id)).incidents.find(
@@ -91,6 +94,11 @@ describe('administrator copyright restriction lifts', () => {
         expect.objectContaining({ copyright_restriction_id: restriction.id, action: 'restore' }),
       ]),
     )
+    const claimantReversals = (await readTestCopyrightStatementIntents(noticeId)).filter(
+      row => row.delivery_kind === 'claimant_decision_notice' && row.text?.includes('reversed'),
+    )
+    expect(claimantReversals).toHaveLength(1)
+    expect(claimantReversals[0]).toMatchObject({ channel: 'email', recipient_role: 'claimant' })
     const restore = after?.actionIntents.find(
       row => row.copyright_restriction_id === restriction.id && row.action === 'restore',
     )

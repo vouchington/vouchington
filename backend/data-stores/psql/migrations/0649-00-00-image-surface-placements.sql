@@ -56,7 +56,7 @@ CREATE INDEX idx_image_surface_placement_activations__uploaded_by_user
   ON image_surface_placement_activations(uploaded_by_user_id);
 CREATE TRIGGER trigger_image_surface_placement_activations_guard
 BEFORE UPDATE OR DELETE ON image_surface_placement_activations
-FOR EACH ROW EXECUTE FUNCTION fn_guard_image_placement();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 COMMENT ON TABLE image_surface_placement_activations IS 'Immutable record of each application activation of an image surface placement.';
 COMMENT ON COLUMN image_surface_placement_activations.placement_id IS 'Placement activated by the application.';
 COMMENT ON COLUMN image_surface_placement_activations.surface_kind IS 'Surface kind captured with the placement identity.';

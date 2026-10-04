@@ -13,10 +13,10 @@ CREATE INDEX idx_copyright_restriction_administrator_lifts__actor
   ON copyright_restriction_administrator_lifts(lifted_by_id) WHERE lifted_by_id IS NOT NULL;
 CREATE TRIGGER trigger_copyright_restriction_administrator_lifts_immutable BEFORE UPDATE OR DELETE
   ON copyright_restriction_administrator_lifts FOR EACH ROW
-  EXECUTE FUNCTION fn_guard_copyright_immutable_with_actor_erasure('lifted_by_id');
+  EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('lifted_by_id');
 CREATE TRIGGER trigger_copyright_restriction_administrator_lifts_require_actor BEFORE INSERT
   ON copyright_restriction_administrator_lifts FOR EACH ROW
-  EXECUTE FUNCTION fn_require_copyright_human_actor('lifted_by_id');
+  EXECUTE FUNCTION fn_reject_copyright_human_actor('lifted_by_id');
 
 COMMENT ON TABLE copyright_restriction_administrator_lifts IS 'Immutable administrator decisions to restore a restricted image when no live subscriber can respond.';
 COMMENT ON COLUMN copyright_restriction_administrator_lifts.id IS 'UUIDv7 identity of the administrator lift.';

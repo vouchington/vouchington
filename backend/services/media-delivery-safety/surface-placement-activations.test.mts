@@ -216,12 +216,12 @@ describe('image surface placement activation provenance', () => {
         activation!.placement_id,
         activation!.placement_revision,
       ),
-    ).rejects.toThrow('image placement bindings are immutable')
+    ).rejects.toThrow('image_surface_placement_activations rows are append-only')
     await expect(
       deleteTestImageSurfacePlacementActivation(
         activation!.placement_id,
         activation!.placement_revision,
       ),
-    ).rejects.toThrow('image placement bindings are immutable')
+    ).rejects.toThrow('image_surface_placement_activations rows are append-only')
   })
 })
