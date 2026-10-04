@@ -6,10 +6,8 @@ import {
   createParsedCopyrightEmailIntake,
   createUnparsedCopyrightEmailIntake,
 } from './email-intake-test-fixtures.mts'
-import {
-  recordCopyrightEmailIntakeLegalProcess,
-  searchCopyrightStaffEmailIntakes,
-} from './index.mts'
+import { recordCopyrightEmailIntakeLegalProcess } from './index.mts'
+import { searchCopyrightStaffEmailIntakes } from './read-models-staff-email-intakes.mts'
 
 describe('copyright email legal process queue', () => {
   it('removes a legal-process intake from the staff email queue and keeps the undecided ones', async () => {

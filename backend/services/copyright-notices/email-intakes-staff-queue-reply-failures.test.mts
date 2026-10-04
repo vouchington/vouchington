@@ -9,11 +9,8 @@ import {
 } from '@voucha/test-helpers/services/copyright-notices/declined-email-intake'
 import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
 import { runIsolatedDatabaseCase } from '../../../test-helpers/vitest-isolated-database-case.mts'
-import {
-  markCopyrightDeliveryIntentSent,
-  prepareCopyrightEmailDelivery,
-  searchCopyrightStaffEmailIntakes,
-} from './index.mts'
+import { markCopyrightDeliveryIntentSent, prepareCopyrightEmailDelivery } from './index.mts'
+import { searchCopyrightStaffEmailIntakes } from './read-models-staff-email-intakes.mts'
 import { createParsedCopyrightEmailIntake } from './email-intake-test-fixtures.mts'
 
 describe('copyright email intake queue reply failures', () => {
