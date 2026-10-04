@@ -52,4 +52,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_membership_provider_evidence_immutable`: `CREATE TRIGGER trigger_membership_provider_evidence_immutable BEFORE DELETE OR UPDATE ON public.membership_provider_evidence_records FOR EACH ROW EXECUTE FUNCTION fn_enforce_membership_provider_evidence_immutability()`
+- `trigger_membership_provider_evidence_immutable`: `CREATE TRIGGER trigger_membership_provider_evidence_immutable BEFORE DELETE OR UPDATE ON public.membership_provider_evidence_records FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_provider_evidence_immutability()`

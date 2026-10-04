@@ -169,10 +169,10 @@ describe('OAuth consent', () => {
     ])
     await expect(
       mutateTestOAuthLifecycleEvent(approved.client.client_id, 'update'),
-    ).rejects.toThrow('oauth authorization server events are append-only')
+    ).rejects.toThrow('oauth_authorization_server_events rows are append-only')
     await expect(
       mutateTestOAuthLifecycleEvent(approved.client.client_id, 'delete'),
-    ).rejects.toThrow('oauth authorization server events are append-only')
+    ).rejects.toThrow('oauth_authorization_server_events rows are append-only')
   })
 
   it('does not write issued credentials to captured console output', async () => {

@@ -6,22 +6,24 @@ Private immutable evidence, including original inbound email MIME and attachment
 
 Not partitioned — growth: unbounded.
 
-| Column                           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                         |
-| -------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------- |
-| `id`                             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                 |
-| `copyright_notice_submission_id` | `uuid`                     | no       |                              |          |           |           | Submission whose preserved source or attachment this artifact represents.       |
-| `storage_key`                    | `text`                     | no       |                              |          |           |           | Private object-storage key; never included in member projections.               |
-| `sha256`                         | `bytea`                    | no       |                              |          |           |           | SHA-256 digest used to verify immutable evidence bytes.                         |
-| `mime_type`                      | `text`                     | no       |                              |          |           |           | Untrusted declared or detected media type used only for quarantined processing. |
-| `byte_size`                      | `integer`                  | no       |                              |          |           |           | Preserved artifact byte length for bounds and integrity checks.                 |
-| `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                 |
-| `updated_at`                     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                 |
+| Column                           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                     |
+| -------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------- |
+| `copyright_notice_id`            | `uuid`                     | no       |                              |          |           |           | Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion. |
+| `id`                             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                             |
+| `copyright_notice_submission_id` | `uuid`                     | no       |                              |          |           |           | Submission whose preserved source or attachment this artifact represents.                                   |
+| `storage_key`                    | `text`                     | no       |                              |          |           |           | Private object-storage key; never included in member projections.                                           |
+| `sha256`                         | `bytea`                    | no       |                              |          |           |           | SHA-256 digest used to verify immutable evidence bytes.                                                     |
+| `mime_type`                      | `text`                     | no       |                              |          |           |           | Untrusted declared or detected media type used only for quarantined processing.                             |
+| `byte_size`                      | `integer`                  | no       |                              |          |           |           | Preserved artifact byte length for bounds and integrity checks.                                             |
+| `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                             |
+| `updated_at`                     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                             |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
 
 - `copyright_notice_evidence_art_copyright_notice_submission_i_key`: `UNIQUE (copyright_notice_submission_id, storage_key)`
+- `copyright_notice_evidence_artifacts_copyright_notice_id_id_key`: `UNIQUE (copyright_notice_id, id)`
 
 **Check constraints:**
 
@@ -30,13 +32,15 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_notice_evidence_art_copyright_notice_submission__fkey`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE CASCADE`
+- `fk_copyright_artifacts__parent_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id) REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `copyright_notice_evidence_art_copyright_notice_submission_i_key`: `CREATE UNIQUE INDEX copyright_notice_evidence_art_copyright_notice_submission_i_key ON public.copyright_notice_evidence_artifacts USING btree (copyright_notice_submission_id, storage_key)`
+- `copyright_notice_evidence_artifacts_copyright_notice_id_id_key`: `CREATE UNIQUE INDEX copyright_notice_evidence_artifacts_copyright_notice_id_id_key ON public.copyright_notice_evidence_artifacts USING btree (copyright_notice_id, id)`
 - `copyright_notice_evidence_artifacts_pkey`: `CREATE UNIQUE INDEX copyright_notice_evidence_artifacts_pkey ON public.copyright_notice_evidence_artifacts USING btree (id)`
 
 **Triggers:**
 
-- `trigger_copyright_notice_evidence_immutable`: `CREATE TRIGGER trigger_copyright_notice_evidence_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_immutable_evidence()`
+- `trigger_copyright_notice_evidence_immutable`: `CREATE TRIGGER trigger_copyright_notice_evidence_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
+- `trigger_update_copyright_artifacts_scope`: `CREATE TRIGGER trigger_update_copyright_artifacts_scope BEFORE INSERT ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submissions', 'copyright_notice_submission_id')`

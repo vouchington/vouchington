@@ -46,4 +46,4 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_appeal_recommendations_immutable`: `CREATE TRIGGER trigger_copyright_appeal_recommendations_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_appeal_recommendations FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_immutable_evidence()`
+- `trigger_copyright_appeal_recommendations_immutable`: `CREATE TRIGGER trigger_copyright_appeal_recommendations_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_appeal_recommendations FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`

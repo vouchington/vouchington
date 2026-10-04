@@ -52,5 +52,5 @@ _none_
 
 **Triggers:**
 
-- `trigger_fd_distributions_recipient_bounds`: `CREATE CONSTRAINT TRIGGER trigger_fd_distributions_recipient_bounds AFTER INSERT OR UPDATE OF audience ON public.follower_distributions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_follower_distribution_recipient_bounds()`
+- `trigger_fd_distributions_recipient_bounds`: `CREATE CONSTRAINT TRIGGER trigger_fd_distributions_recipient_bounds AFTER INSERT OR UPDATE OF audience ON public.follower_distributions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_reject_follower_distribution_recipient_bounds()`
 - `trigger_follower_distributions_updated_at`: `CREATE TRIGGER trigger_follower_distributions_updated_at BEFORE UPDATE ON public.follower_distributions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

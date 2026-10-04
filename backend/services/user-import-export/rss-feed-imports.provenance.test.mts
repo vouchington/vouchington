@@ -142,13 +142,13 @@ describe('user RSS feed import provenance', () => {
         createdVia: 'system',
         oauthClientId: null,
       }),
-    ).rejects.toThrow('content provenance is immutable')
+    ).rejects.toThrow('rows are append-only')
     await expect(
       rewriteRssFeedImportBatchProvenanceForTest(created.import.id, {
         createdVia: 'api',
         oauthClientId: null,
       }),
-    ).rejects.toThrow('content provenance is immutable')
+    ).rejects.toThrow('rows are append-only')
   })
 
   it('rejects an OAuth client on a channel that cannot name one', async () => {

@@ -20,10 +20,10 @@ describe('post creation source URL schema', () => {
 
     expect(rows).toHaveLength(1)
     expect(rows[0]!.definition).toContain('BEFORE UPDATE OF creation_source_url_id')
-    expect(rows[0]!.definition).toContain('fn_prevent_post_creation_source_url_update()')
-    expect(rows[0]!.function_definition).toContain(
-      'NEW.creation_source_url_id IS DISTINCT FROM OLD.creation_source_url_id',
-    )
-    expect(rows[0]!.function_definition).toContain('post creation source URL is immutable')
+    expect(rows[0]!.definition).toContain('fn_reject_mutation()')
+    expect(rows[0]!.definition).toContain('old.creation_source_url_id')
+    expect(rows[0]!.definition).toContain('new.creation_source_url_id')
+    expect(rows[0]!.definition).toContain('IS DISTINCT FROM')
+    expect(rows[0]!.function_definition).toContain('rows are append-only')
   })
 })

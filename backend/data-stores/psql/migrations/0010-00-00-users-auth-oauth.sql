@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Coalesced pre-launch domain baseline.
 -- edited-in-place: pre-launch, never deployed to production
 -- edited-in-place: added ui_locale and language detection columns for bio
@@ -234,7 +235,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TRIGGER trigger_register_retained_user_identity
 BEFORE INSERT ON users
-FOR EACH ROW EXECUTE FUNCTION fn_register_retained_user_identity();
+FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('user');
 
 CREATE OR REPLACE TRIGGER trigger_users_updated_at
 BEFORE UPDATE ON users
@@ -601,7 +602,7 @@ CREATE TABLE IF NOT EXISTS user_roles (
 );
 
 -- Automated accounts never receive human/staff role authority.
-CREATE OR REPLACE FUNCTION fn_require_role_user_is_not_system()
+CREATE OR REPLACE FUNCTION fn_reject_role_user_is_not_system()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE account_kind platform_account_kinds;
 BEGIN
@@ -614,7 +615,7 @@ END;
 $$;
 CREATE OR REPLACE TRIGGER trigger_user_roles_account_kind
 BEFORE INSERT OR UPDATE OF user_id ON user_roles
-FOR EACH ROW EXECUTE FUNCTION fn_require_role_user_is_not_system();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_role_user_is_not_system();
 
 CREATE OR REPLACE TRIGGER trigger_user_roles_updated_at
 BEFORE UPDATE ON user_roles

@@ -46,6 +46,6 @@ RANGE partitioned on `batch_id` (children: default, no retention owner, access c
 
 **Triggers:**
 
-- `trigger_classifier_decision_batch_candidates_append_only`: `CREATE TRIGGER trigger_classifier_decision_batch_candidates_append_only BEFORE UPDATE ON public.classifier_decision_batch_candidates FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update()`
-- `trigger_classifier_decision_batch_candidates_configuration`: `CREATE TRIGGER trigger_classifier_decision_batch_candidates_configuration BEFORE INSERT ON public.classifier_decision_batch_candidates FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_batch_candidate_configuration()`
-- `trigger_classifier_decision_batch_candidates_owner_delete`: `CREATE TRIGGER trigger_classifier_decision_batch_candidates_owner_delete BEFORE DELETE ON public.classifier_decision_batch_candidates FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_batch_candidate_owner_delete()`
+- `trigger_classifier_decision_batch_candidates_append_only`: `CREATE TRIGGER trigger_classifier_decision_batch_candidates_append_only BEFORE UPDATE ON public.classifier_decision_batch_candidates FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_classifier_decision_batch_candidates_configuration`: `CREATE TRIGGER trigger_classifier_decision_batch_candidates_configuration BEFORE INSERT ON public.classifier_decision_batch_candidates FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_batch_candidate_configuration()`
+- `trigger_classifier_decision_batch_candidates_owner_delete`: `CREATE TRIGGER trigger_classifier_decision_batch_candidates_owner_delete BEFORE DELETE ON public.classifier_decision_batch_candidates FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_batch_candidate_owner_delete()`

@@ -67,5 +67,5 @@ _none_
 
 **Triggers:**
 
-- `trigger_review_disputes_guard_subject_snapshot`: `CREATE TRIGGER trigger_review_disputes_guard_subject_snapshot BEFORE UPDATE OF post_id, topic_id, disputed_rating ON public.review_disputes FOR EACH ROW EXECUTE FUNCTION fn_guard_review_dispute_subject_snapshot()`
+- `trigger_review_disputes_guard_subject_snapshot`: `CREATE TRIGGER trigger_review_disputes_guard_subject_snapshot BEFORE UPDATE OF post_id, topic_id, disputed_rating ON public.review_disputes FOR EACH ROW EXECUTE FUNCTION fn_reject_review_dispute_subject_snapshot()`
 - `trigger_review_disputes_updated_at`: `CREATE TRIGGER trigger_review_disputes_updated_at BEFORE UPDATE ON public.review_disputes FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

@@ -57,4 +57,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_membership_grants_guard`: `CREATE TRIGGER trigger_membership_grants_guard BEFORE DELETE OR UPDATE ON public.membership_grants FOR EACH ROW EXECUTE FUNCTION fn_guard_membership_grant_mutation()`
+- `trigger_membership_grants_guard`: `CREATE TRIGGER trigger_membership_grants_guard BEFORE DELETE OR UPDATE ON public.membership_grants FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_grant_mutation()`

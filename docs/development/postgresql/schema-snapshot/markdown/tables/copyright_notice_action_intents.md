@@ -8,6 +8,7 @@ Not partitioned — growth: unbounded.
 
 | Column                         | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                       |
 | ------------------------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `copyright_notice_id`          | `uuid`                     | no       |                              |          |           |           | Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.                                   |
 | `id`                           | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                               |
 | `state`                        | `text`                     | no       | `'pending'::text`            |          |           |           | Durable media-delivery state: pending, worker-claimed, or terminal completed, stale, blocked, or failed.                                      |
 | `delivery_attempt_count`       | `integer`                  | no       | `0`                          |          |           |           | Bounded count of worker claims for this media-delivery saga.                                                                                  |
@@ -29,6 +30,7 @@ Not partitioned — growth: unbounded.
 **Unique constraints:**
 
 - `copyright_notice_action_inten_copyright_restriction_id_expe_key`: `UNIQUE (copyright_restriction_id, expected_placement_revision, action)`
+- `copyright_notice_action_intents_copyright_notice_id_id_key`: `UNIQUE (copyright_notice_id, id)`
 
 **Check constraints:**
 
@@ -45,16 +47,18 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `copyright_notice_action_inten_copyright_notice_deadline_id_fkey`: `FOREIGN KEY (copyright_notice_deadline_id) REFERENCES copyright_notice_deadlines(id) ON DELETE RESTRICT`
-- `copyright_notice_action_intents_copyright_restriction_id_fkey`: `FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE CASCADE`
+- `fk_copyright_action_intents__parent_notice`: `FOREIGN KEY (copyright_notice_id, copyright_restriction_id) REFERENCES copyright_restrictions(copyright_notice_id, id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `copyright_notice_action_inten_copyright_restriction_id_expe_key`: `CREATE UNIQUE INDEX copyright_notice_action_inten_copyright_restriction_id_expe_key ON public.copyright_notice_action_intents USING btree (copyright_restriction_id, expected_placement_revision, action)`
+- `copyright_notice_action_intents_copyright_notice_id_id_key`: `CREATE UNIQUE INDEX copyright_notice_action_intents_copyright_notice_id_id_key ON public.copyright_notice_action_intents USING btree (copyright_notice_id, id)`
 - `copyright_notice_action_intents_pkey`: `CREATE UNIQUE INDEX copyright_notice_action_intents_pkey ON public.copyright_notice_action_intents USING btree (id)`
 - `idx_copyright_notice_intents__deadline`: `CREATE INDEX idx_copyright_notice_intents__deadline ON public.copyright_notice_action_intents USING btree (copyright_notice_deadline_id) WHERE (copyright_notice_deadline_id IS NOT NULL)`
 - `idx_copyright_notice_intents__pending`: `CREATE INDEX idx_copyright_notice_intents__pending ON public.copyright_notice_action_intents USING btree (id) WHERE (completed_at IS NULL)`
 
 **Triggers:**
 
-- `trigger_copyright_action_intents_guard`: `CREATE TRIGGER trigger_copyright_action_intents_guard BEFORE DELETE OR UPDATE ON public.copyright_notice_action_intents FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_action_intent()`
+- `trigger_copyright_action_intents_guard`: `CREATE TRIGGER trigger_copyright_action_intents_guard BEFORE DELETE OR UPDATE ON public.copyright_notice_action_intents FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_action_intent()`
 - `trigger_copyright_action_intents_updated_at`: `CREATE TRIGGER trigger_copyright_action_intents_updated_at BEFORE UPDATE ON public.copyright_notice_action_intents FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_update_copyright_action_intents_scope`: `CREATE TRIGGER trigger_update_copyright_action_intents_scope BEFORE INSERT ON public.copyright_notice_action_intents FOR EACH ROW EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_restrictions', 'copyright_restriction_id')`

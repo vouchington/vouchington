@@ -49,5 +49,5 @@ _none_
 
 **Triggers:**
 
-- `trigger_bedrock_embeddings_batches_guard_terminal_lifecycle`: `CREATE TRIGGER trigger_bedrock_embeddings_batches_guard_terminal_lifecycle BEFORE UPDATE ON public.bedrock_embeddings_batches FOR EACH ROW EXECUTE FUNCTION fn_guard_terminal_lifecycle('completed_at', 'failed_at', 'cancelled_at')`
+- `trigger_bedrock_embeddings_batches_guard_terminal_lifecycle`: `CREATE TRIGGER trigger_bedrock_embeddings_batches_guard_terminal_lifecycle BEFORE UPDATE ON public.bedrock_embeddings_batches FOR EACH ROW EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at', 'cancelled_at')`
 - `trigger_bedrock_embeddings_batches_updated_at`: `CREATE TRIGGER trigger_bedrock_embeddings_batches_updated_at BEFORE UPDATE ON public.bedrock_embeddings_batches FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

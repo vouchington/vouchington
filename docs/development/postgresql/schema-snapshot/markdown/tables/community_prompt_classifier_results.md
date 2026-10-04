@@ -55,5 +55,5 @@ _none_
 
 **Triggers:**
 
-- `trigger_community_prompt_classifier_results_append_only`: `CREATE TRIGGER trigger_community_prompt_classifier_results_append_only BEFORE UPDATE ON public.community_prompt_classifier_results FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update()`
-- `trigger_community_prompt_classifier_results_configuration`: `CREATE TRIGGER trigger_community_prompt_classifier_results_configuration BEFORE INSERT OR UPDATE OF batch_id, prompt_version_id, effective_lower_threshold, effective_upper_threshold ON public.community_prompt_classifier_results FOR EACH ROW EXECUTE FUNCTION fn_require_community_prompt_result_configuration()`
+- `trigger_community_prompt_classifier_results_append_only`: `CREATE TRIGGER trigger_community_prompt_classifier_results_append_only BEFORE UPDATE ON public.community_prompt_classifier_results FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_community_prompt_classifier_results_configuration`: `CREATE TRIGGER trigger_community_prompt_classifier_results_configuration BEFORE INSERT OR UPDATE OF batch_id, prompt_version_id, effective_lower_threshold, effective_upper_threshold ON public.community_prompt_classifier_results FOR EACH ROW EXECUTE FUNCTION fn_reject_community_prompt_result_configuration()`

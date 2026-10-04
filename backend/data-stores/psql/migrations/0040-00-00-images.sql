@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Coalesced pre-launch domain baseline.
 -- edited-in-place: pre-launch, never deployed to production
 -- Merged from: 0003-00-00-images.sql, 0140-00-00-post-images.sql
@@ -55,7 +56,7 @@ ALTER TABLE images VALIDATE CONSTRAINT fk_images__retained_image_identity;
 
 CREATE OR REPLACE TRIGGER trigger_register_retained_image_identity
 BEFORE INSERT ON images
-FOR EACH ROW EXECUTE FUNCTION fn_register_retained_image_identity();
+FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('image');
 
 CREATE OR REPLACE TRIGGER trigger_images_updated_at
 BEFORE UPDATE ON images
@@ -65,7 +66,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 CREATE OR REPLACE TRIGGER trigger_images_guard_terminal_lifecycle
 BEFORE UPDATE ON images
 FOR EACH ROW
-EXECUTE FUNCTION fn_guard_terminal_lifecycle('upload_completed_at', 'upload_failed_at');
+EXECUTE FUNCTION fn_reject_terminal_lifecycle('upload_completed_at', 'upload_failed_at');
 
 -- Index for cleanup job to find in-flight uploads (upload_completed_at and upload_failed_at both null = pending or processing)
 CREATE INDEX IF NOT EXISTS idx_images__upload_in_flight

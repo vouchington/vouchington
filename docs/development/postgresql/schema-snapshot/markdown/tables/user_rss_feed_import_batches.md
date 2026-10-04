@@ -46,6 +46,6 @@ _none_
 
 **Triggers:**
 
-- `trigger_user_rss_feed_import_batches_guard_terminal_lifecycle`: `CREATE TRIGGER trigger_user_rss_feed_import_batches_guard_terminal_lifecycle BEFORE UPDATE ON public.user_rss_feed_import_batches FOR EACH ROW EXECUTE FUNCTION fn_guard_terminal_lifecycle('completed_at')`
+- `trigger_user_rss_feed_import_batches_guard_terminal_lifecycle`: `CREATE TRIGGER trigger_user_rss_feed_import_batches_guard_terminal_lifecycle BEFORE UPDATE ON public.user_rss_feed_import_batches FOR EACH ROW EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at')`
 - `trigger_user_rss_feed_import_batches_updated_at`: `CREATE TRIGGER trigger_user_rss_feed_import_batches_updated_at BEFORE UPDATE ON public.user_rss_feed_import_batches FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
-- `user_rss_feed_import_batches_content_provenance_immutable`: `CREATE TRIGGER user_rss_feed_import_batches_content_provenance_immutable AFTER UPDATE ON public.user_rss_feed_import_batches FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()`
+- `user_rss_feed_import_batches_content_provenance_immutable`: `CREATE TRIGGER user_rss_feed_import_batches_content_provenance_immutable AFTER UPDATE ON public.user_rss_feed_import_batches FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()`

@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Coalesced pre-launch domain baseline.
 -- edited-in-place: pre-launch, never deployed to production
 -- Merged from: 0400-00-02-post-dispute-annotations.sql
@@ -103,7 +104,7 @@ CREATE OR REPLACE TRIGGER trigger_review_disputes_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION fn_update_updated_at();
 
-CREATE OR REPLACE FUNCTION fn_guard_review_dispute_subject_snapshot()
+CREATE OR REPLACE FUNCTION fn_reject_review_dispute_subject_snapshot()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
@@ -121,7 +122,7 @@ $$;
 CREATE OR REPLACE TRIGGER trigger_review_disputes_guard_subject_snapshot
   BEFORE UPDATE OF post_id, topic_id, disputed_rating ON review_disputes
   FOR EACH ROW
-  EXECUTE FUNCTION fn_guard_review_dispute_subject_snapshot();
+  EXECUTE FUNCTION fn_reject_review_dispute_subject_snapshot();
 
 -- Append-only audit/lifecycle log
 CREATE TABLE IF NOT EXISTS review_dispute_lifecycle_changes (

@@ -63,5 +63,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_classifier_candidates_identity_immutable`: `CREATE TRIGGER trigger_classifier_candidates_identity_immutable BEFORE UPDATE ON public.classifier_candidates FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_candidate_identity_mutation()`
+- `trigger_classifier_candidates_identity_immutable`: `CREATE TRIGGER trigger_classifier_candidates_identity_immutable BEFORE UPDATE OF id, classifier_id, candidate_kind, topic_id, story_id, community_id ON public.classifier_candidates FOR EACH ROW WHEN (((((((old.id IS DISTINCT FROM new.id) OR (old.classifier_id IS DISTINCT FROM new.classifier_id)) OR (old.candidate_kind IS DISTINCT FROM new.candidate_kind)) OR (old.topic_id IS DISTINCT FROM new.topic_id)) OR (old.story_id IS DISTINCT FROM new.story_id)) OR (old.community_id IS DISTINCT FROM new.community_id))) EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_classifier_candidates_updated_at`: `CREATE TRIGGER trigger_classifier_candidates_updated_at BEFORE UPDATE ON public.classifier_candidates FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

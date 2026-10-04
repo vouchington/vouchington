@@ -41,7 +41,7 @@ describe('membership refund reconciliation schema', () => {
     const operation = await createTestAdministratorRefundOperation()
     const requestId = await createTestAdministratorRefundRequest(operation.id)
     await expect(mutateTestAdministratorRefundRequest(requestId)).rejects.toThrow(
-      'membership administrator refund requests are immutable',
+      'membership_administrator_refund_operation_requests rows are append-only',
     )
 
     const attemptId = await createTestRefundOperationAttempt(operation)

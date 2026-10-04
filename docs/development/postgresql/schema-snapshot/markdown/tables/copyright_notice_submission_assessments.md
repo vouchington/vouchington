@@ -8,6 +8,7 @@ Not partitioned — growth: unbounded.
 
 | Column                               | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                       |
 | ------------------------------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------- |
+| `copyright_notice_id`                | `uuid`                     | no       |                              |          |           |           | Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.   |
 | `id`                                 | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                               |
 | `copyright_notice_form_screening_id` | `uuid`                     | yes      |                              |          |           |           | Exact clear anti-spam screening authorizing an automated initial-notice assessment; null for human decisions. |
 | `copyright_notice_submission_id`     | `uuid`                     | no       |                              |          |           |           | Immutable submission evaluated by this assessment.                                                            |
@@ -22,21 +23,25 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
+- `copyright_notice_submission_a_copyright_notice_submission_i_key`: `UNIQUE (copyright_notice_submission_id, id)`
 - `copyright_notice_submission_assess_supersedes_assessment_id_key`: `UNIQUE (supersedes_assessment_id)`
+- `copyright_notice_submission_assessme_copyright_notice_id_id_key`: `UNIQUE (copyright_notice_id, id)`
 
 **Check constraints:**
 _none_
 
 **Foreign keys:**
 
-- `copyright_notice_submission_a_copyright_notice_submission__fkey`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE CASCADE`
-- `copyright_notice_submission_asses_supersedes_assessment_id_fkey`: `FOREIGN KEY (supersedes_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT`
 - `copyright_notice_submission_assessments_assessed_by_id_fkey`: `FOREIGN KEY (assessed_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `fk_copyright_assessments__form_screening`: `FOREIGN KEY (copyright_notice_form_screening_id) REFERENCES copyright_notice_form_screenings(id) ON DELETE RESTRICT`
+- `fk_copyright_assessments__parent_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id) REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE CASCADE`
+- `fk_copyright_assessments__supersedes_submission`: `FOREIGN KEY (copyright_notice_submission_id, supersedes_assessment_id) REFERENCES copyright_notice_submission_assessments(copyright_notice_submission_id, id) ON DELETE RESTRICT`
 
 **Indexes:**
 
+- `copyright_notice_submission_a_copyright_notice_submission_i_key`: `CREATE UNIQUE INDEX copyright_notice_submission_a_copyright_notice_submission_i_key ON public.copyright_notice_submission_assessments USING btree (copyright_notice_submission_id, id)`
 - `copyright_notice_submission_assess_supersedes_assessment_id_key`: `CREATE UNIQUE INDEX copyright_notice_submission_assess_supersedes_assessment_id_key ON public.copyright_notice_submission_assessments USING btree (supersedes_assessment_id)`
+- `copyright_notice_submission_assessme_copyright_notice_id_id_key`: `CREATE UNIQUE INDEX copyright_notice_submission_assessme_copyright_notice_id_id_key ON public.copyright_notice_submission_assessments USING btree (copyright_notice_id, id)`
 - `copyright_notice_submission_assessments_pkey`: `CREATE UNIQUE INDEX copyright_notice_submission_assessments_pkey ON public.copyright_notice_submission_assessments USING btree (id)`
 - `idx_copyright_assessments__form_screening`: `CREATE INDEX idx_copyright_assessments__form_screening ON public.copyright_notice_submission_assessments USING btree (copyright_notice_form_screening_id) WHERE (copyright_notice_form_screening_id IS NOT NULL)`
 - `idx_copyright_notice_assessments__assessed_by`: `CREATE INDEX idx_copyright_notice_assessments__assessed_by ON public.copyright_notice_submission_assessments USING btree (assessed_by_id) WHERE (assessed_by_id IS NOT NULL)`
@@ -44,7 +49,7 @@ _none_
 
 **Triggers:**
 
-- `trigger_copyright_automated_assessment_screening`: `CREATE TRIGGER trigger_copyright_automated_assessment_screening BEFORE INSERT OR UPDATE OF assessed_by_id, copyright_notice_form_screening_id ON public.copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_automated_assessment_screening()`
-- `trigger_copyright_notice_assessments_immutable`: `CREATE TRIGGER trigger_copyright_notice_assessments_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_immutable_with_actor_erasure('assessed_by_id')`
-- `trigger_copyright_notice_assessments_scope`: `CREATE TRIGGER trigger_copyright_notice_assessments_scope BEFORE INSERT ON public.copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_assessment_supersession()`
-- `trigger_copyright_notice_assessments_source`: `CREATE TRIGGER trigger_copyright_notice_assessments_source BEFORE INSERT ON public.copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_assessment_source()`
+- `trigger_copyright_automated_assessment_screening`: `CREATE TRIGGER trigger_copyright_automated_assessment_screening BEFORE INSERT OR UPDATE OF assessed_by_id, copyright_notice_form_screening_id ON public.copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_automated_assessment_screening()`
+- `trigger_copyright_notice_assessments_immutable`: `CREATE TRIGGER trigger_copyright_notice_assessments_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('assessed_by_id')`
+- `trigger_copyright_notice_assessments_source`: `CREATE TRIGGER trigger_copyright_notice_assessments_source BEFORE INSERT ON public.copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_assessment_source()`
+- `trigger_update_copyright_assessments_scope`: `CREATE TRIGGER trigger_update_copyright_assessments_scope BEFORE INSERT ON public.copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submissions', 'copyright_notice_submission_id')`

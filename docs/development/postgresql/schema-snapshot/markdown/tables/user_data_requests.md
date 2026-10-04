@@ -51,6 +51,6 @@ _none_
 
 **Triggers:**
 
-- `trigger_user_data_requests_guard_terminal_lifecycle`: `CREATE TRIGGER trigger_user_data_requests_guard_terminal_lifecycle BEFORE UPDATE ON public.user_data_requests FOR EACH ROW EXECUTE FUNCTION fn_guard_terminal_lifecycle('completed_at', 'failed_at')`
+- `trigger_user_data_requests_guard_terminal_lifecycle`: `CREATE TRIGGER trigger_user_data_requests_guard_terminal_lifecycle BEFORE UPDATE ON public.user_data_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at')`
 - `trigger_user_data_requests_updated_at`: `CREATE TRIGGER trigger_user_data_requests_updated_at BEFORE UPDATE ON public.user_data_requests FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
-- `user_data_requests_record_attempt`: `CREATE TRIGGER user_data_requests_record_attempt AFTER INSERT OR UPDATE OF processing_started_at, processing_attempt_id ON public.user_data_requests FOR EACH ROW EXECUTE FUNCTION fn_record_user_data_request_attempt()`
+- `user_data_requests_record_attempt`: `CREATE TRIGGER user_data_requests_record_attempt AFTER INSERT OR UPDATE OF processing_started_at, processing_attempt_id ON public.user_data_requests FOR EACH ROW EXECUTE FUNCTION fn_project_record_user_data_request_attempt()`

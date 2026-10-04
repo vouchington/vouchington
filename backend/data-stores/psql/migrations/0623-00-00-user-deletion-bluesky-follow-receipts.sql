@@ -1,7 +1,8 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Keep every writer, including an old application process during a rolling deploy, serialized with
 -- both users' deletion fences. The service takes the same locks before reaching this trigger so a
 -- provider response fails before attempting the write on current deployments.
-CREATE OR REPLACE FUNCTION fn_fence_bluesky_follow_receipt_active_users()
+CREATE OR REPLACE FUNCTION fn_lock_bluesky_follow_receipt_active_users()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
@@ -22,9 +23,9 @@ $$;
 CREATE OR REPLACE TRIGGER trigger_bluesky_follow_records_active_users
 BEFORE INSERT OR UPDATE OF follower_user_id, followee_user_id ON bluesky_follow_records
 FOR EACH ROW
-EXECUTE FUNCTION fn_fence_bluesky_follow_receipt_active_users();
+EXECUTE FUNCTION fn_lock_bluesky_follow_receipt_active_users();
 
-COMMENT ON FUNCTION fn_fence_bluesky_follow_receipt_active_users() IS
+COMMENT ON FUNCTION fn_lock_bluesky_follow_receipt_active_users() IS
   'Prevents any Bluesky follow receipt writer from restoring user-owned data after deletion.';
 
 -- Follow receipts created before the fence migration can remain after the bounded credential

@@ -52,4 +52,4 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_territorial_notice_receipts_immutable`: `CREATE TRIGGER trigger_copyright_territorial_notice_receipts_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_notice_receipts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()`
+- `trigger_copyright_territorial_notice_receipts_immutable`: `CREATE TRIGGER trigger_copyright_territorial_notice_receipts_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_notice_receipts FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

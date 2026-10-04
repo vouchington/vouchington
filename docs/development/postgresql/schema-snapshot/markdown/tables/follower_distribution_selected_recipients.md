@@ -31,4 +31,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_fd_selected_recipients_bounds`: `CREATE CONSTRAINT TRIGGER trigger_fd_selected_recipients_bounds AFTER INSERT OR DELETE OR UPDATE ON public.follower_distribution_selected_recipients DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_follower_distribution_recipient_bounds()`
+- `trigger_fd_selected_recipients_bounds`: `CREATE CONSTRAINT TRIGGER trigger_fd_selected_recipients_bounds AFTER INSERT OR DELETE OR UPDATE ON public.follower_distribution_selected_recipients DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_reject_follower_distribution_recipient_bounds()`

@@ -57,5 +57,5 @@ _none_
 
 **Triggers:**
 
-- `trigger_media_delivery_registry_records_generation`: `CREATE TRIGGER trigger_media_delivery_registry_records_generation BEFORE INSERT OR UPDATE ON public.media_delivery_registry_records FOR EACH ROW EXECUTE FUNCTION fn_assign_media_delivery_registry_generation()`
+- `trigger_media_delivery_registry_records_generation`: `CREATE TRIGGER trigger_media_delivery_registry_records_generation BEFORE INSERT OR UPDATE ON public.media_delivery_registry_records FOR EACH ROW EXECUTE FUNCTION fn_update_media_delivery_registry_generation()`
 - `trigger_media_delivery_registry_records_updated_at`: `CREATE TRIGGER trigger_media_delivery_registry_records_updated_at BEFORE UPDATE ON public.media_delivery_registry_records FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

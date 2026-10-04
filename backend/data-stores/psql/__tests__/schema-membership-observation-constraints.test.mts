@@ -50,10 +50,10 @@ describe('membership provider observation schema constraints', () => {
       rowCount: 1,
     })
     await expect(mutateMembershipProductPlan(productId)).rejects.toThrow(
-      'membership product identity is immutable',
+      'membership_products rows are append-only',
     )
     await expect(mutateMembershipProductInterval(productId)).rejects.toThrow(
-      'membership product identity is immutable',
+      'membership_products rows are append-only',
     )
   })
 })

@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Durable per-call audit records for MCP surfaces. One row per JSON-RPC call (plus a follow-up row
 -- when an admitted tool call fails). No arguments, results, tokens, or headers are stored.
 
@@ -43,15 +44,9 @@ CREATE INDEX IF NOT EXISTS idx_mcp_call_audit_events__api_key
 CREATE INDEX IF NOT EXISTS idx_mcp_call_audit_events__correlation
   ON mcp_call_audit_events (correlation_id, id);
 
-CREATE OR REPLACE FUNCTION fn_reject_mcp_call_audit_event_mutation()
-RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  RAISE EXCEPTION 'mcp call audit events are append-only' USING ERRCODE = '23514';
-END $$;
-
 CREATE OR REPLACE TRIGGER trigger_mcp_call_audit_events_append_only
 BEFORE UPDATE OR DELETE ON mcp_call_audit_events
-FOR EACH ROW EXECUTE FUNCTION fn_reject_mcp_call_audit_event_mutation();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
 COMMENT ON TABLE mcp_call_audit_events IS 'Append-only durable audit of MCP calls made with a verified OAuth access token or user API key; one row per JSON-RPC message, plus a tool_error follow-up row for an admitted tool call that failed. Arguments, results, tokens, keys, and headers are never stored.';
 COMMENT ON COLUMN mcp_call_audit_events.surface IS 'MCP surface that received the call: mcp (user) or admin_mcp.';

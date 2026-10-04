@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Durable, generation-fenced exact projection of active story RSS URLs onto story posts.
 CREATE TABLE IF NOT EXISTS story_post_related_url_projection_jobs (
   post_id UUID PRIMARY KEY,
@@ -58,7 +59,7 @@ CREATE TABLE IF NOT EXISTS story_post_related_url_projection_relation_mutations 
   PRIMARY KEY (post_id, generation, relation_id)
 );
 
-CREATE OR REPLACE FUNCTION fn_record_story_post_related_url_projection_relation_mutation()
+CREATE OR REPLACE FUNCTION fn_project_story_post_related_url_relation_mutation()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.deleted_at IS NOT NULL OR

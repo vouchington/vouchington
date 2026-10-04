@@ -38,5 +38,5 @@ _none_
 
 **Triggers:**
 
-- `trigger_mrefund_attempt_scans_guard`: `CREATE TRIGGER trigger_mrefund_attempt_scans_guard BEFORE INSERT OR UPDATE ON public.membership_refund_operation_attempt_metadata_scans FOR EACH ROW EXECUTE FUNCTION fn_guard_membership_refund_metadata_scan_mutation()`
+- `trigger_mrefund_attempt_scans_guard`: `CREATE TRIGGER trigger_mrefund_attempt_scans_guard BEFORE INSERT OR UPDATE ON public.membership_refund_operation_attempt_metadata_scans FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_refund_metadata_scan_mutation()`
 - `trigger_mrefund_attempt_scans_updated_at`: `CREATE TRIGGER trigger_mrefund_attempt_scans_updated_at BEFORE UPDATE ON public.membership_refund_operation_attempt_metadata_scans FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

@@ -2,91 +2,11 @@
 
 [Schema index](README.md).
 
-## `fn_ap_inbox_delivery_retention`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_ap_inbox_delivery_retention()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_ap_inbox_delivery_storage_after_delete`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_ap_inbox_delivery_storage_after_delete()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_ap_inbox_delivery_storage_after_insert`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_ap_inbox_delivery_storage_after_insert()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_ap_inbox_delivery_storage_after_update`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_ap_inbox_delivery_storage_after_update()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_apply_moderation_transparency_daily_rollup(p_occurred_at timestamp with time zone, p_community_id uuid, p_metric text, p_category text, p_delta integer)`
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_apply_moderation_transparency_daily_rollup(p_occurred_at timestamp with time zone, p_community_id uuid, p_metric text, p_category text, p_delta integer)
  RETURNS void
- LANGUAGE plpgsql
-```
-
-## `fn_assert_follower_distribution_recipient_bounds`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_assert_follower_distribution_recipient_bounds()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_assert_review_succession_topics`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_assert_review_succession_topics()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_assert_web_push_endpoint_owner_subscription`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_assert_web_push_endpoint_owner_subscription()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_assert_web_push_subscription_owner`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_assert_web_push_subscription_owner()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_assign_media_delivery_registry_generation`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_assign_media_delivery_registry_generation()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_capture_notification_push_intent`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_capture_notification_push_intent()
- RETURNS trigger
  LANGUAGE plpgsql
 ```
 
@@ -116,10 +36,10 @@ CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasure_permitted(table
  STABLE
 ```
 
-## `fn_create_topic_metrics_on_insert`
+## `fn_create_metrics`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_create_topic_metrics_on_insert()
+CREATE OR REPLACE FUNCTION public.fn_create_metrics()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -128,14 +48,6 @@ CREATE OR REPLACE FUNCTION public.fn_create_topic_metrics_on_insert()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_create_user_individual_household()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_create_user_metrics_on_insert`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_create_user_metrics_on_insert()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -149,411 +61,19 @@ CREATE OR REPLACE FUNCTION public.fn_current_copyright_form_screening(submission
  STABLE
 ```
 
-## `fn_enforce_membership_provider_evidence_immutability`
+## `fn_ensure_retained_actor_identity`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_enforce_membership_provider_evidence_immutability()
+CREATE OR REPLACE FUNCTION public.fn_ensure_retained_actor_identity()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_ensure_retained_api_key_identity(identity_id uuid)`
+## `fn_ensure_retained_identity(family retained_identity_families, identity_id uuid)`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_ensure_retained_api_key_identity(identity_id uuid)
+CREATE OR REPLACE FUNCTION public.fn_ensure_retained_identity(family retained_identity_families, identity_id uuid)
  RETURNS void
- LANGUAGE plpgsql
-```
-
-## `fn_ensure_retained_image_identity(identity_id uuid)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_ensure_retained_image_identity(identity_id uuid)
- RETURNS void
- LANGUAGE plpgsql
-```
-
-## `fn_ensure_retained_post_identity(identity_id uuid)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_ensure_retained_post_identity(identity_id uuid)
- RETURNS void
- LANGUAGE plpgsql
-```
-
-## `fn_ensure_retained_rss_feed_item_identity(identity_id uuid)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_ensure_retained_rss_feed_item_identity(identity_id uuid)
- RETURNS void
- LANGUAGE plpgsql
-```
-
-## `fn_ensure_retained_topic_identity(identity_id uuid)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_ensure_retained_topic_identity(identity_id uuid)
- RETURNS void
- LANGUAGE plpgsql
-```
-
-## `fn_ensure_retained_user_identity(identity_id uuid)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_ensure_retained_user_identity(identity_id uuid)
- RETURNS void
- LANGUAGE plpgsql
-```
-
-## `fn_fence_bluesky_follow_receipt_active_users`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_fence_bluesky_follow_receipt_active_users()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_admin_import_batch_type`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_admin_import_batch_type()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_copyright_action_intent`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_action_intent()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_copyright_assessment_source`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_assessment_source()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_copyright_assessment_supersession`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_assessment_supersession()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_copyright_automated_assessment_screening`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_automated_assessment_screening()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_copyright_correspondence`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_correspondence()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_copyright_counter_notice_assessment_target_scope`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_counter_notice_assessment_target_scope()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_copyright_deadline`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_deadline()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_copyright_delivery_intent_transition`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_delivery_intent_transition()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_copyright_email_correspondence_recommendation_scope`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_email_correspondence_recommendation_scope()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_copyright_email_review_recommendation_scope`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_email_review_recommendation_scope()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_copyright_hold_target_scope`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_hold_target_scope()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_copyright_immutable_with_actor_erasure`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_immutable_with_actor_erasure()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_copyright_lifecycle_event_source_notice`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_lifecycle_event_source_notice()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_copyright_notice_identity`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_notice_identity()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_copyright_notice_immutable_evidence`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_notice_immutable_evidence()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_copyright_notice_lifecycle`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_notice_lifecycle()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_copyright_notice_submission`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_notice_submission()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_copyright_repeat_infringer_incident`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_repeat_infringer_incident()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_copyright_repeat_infringer_review`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_repeat_infringer_review()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_copyright_restriction_assessment_scope`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_restriction_assessment_scope()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_copyright_restriction_lifecycle`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_restriction_lifecycle()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_copyright_submission_target_scope`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_submission_target_scope()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_copyright_territorial_acknowledgment_attempt`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_territorial_acknowledgment_attempt()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_copyright_territorial_escalation`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_territorial_escalation()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_image_placement`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_image_placement()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_image_surface_placement`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_image_surface_placement()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_images_id_immutable`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_images_id_immutable()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_media_placement`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_media_placement()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_membership_grant_activation_period_mutation`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_membership_grant_activation_period_mutation()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_membership_grant_mutation`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_membership_grant_mutation()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_membership_lineage_binding_mutation`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_membership_lineage_binding_mutation()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_membership_operation_mutation`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_membership_operation_mutation()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_membership_refund_metadata_scan_mutation`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_membership_refund_metadata_scan_mutation()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_membership_refund_mutation`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_membership_refund_mutation()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_membership_refund_operation_attempt_mutation`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_membership_refund_operation_attempt_mutation()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_ownerless_image_surface_retirement`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_ownerless_image_surface_retirement()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_retained_image_placement_binding`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_retained_image_placement_binding()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_review_dispute_subject_snapshot`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_review_dispute_subject_snapshot()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_review_succession_mutation`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_review_succession_mutation()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_review_succession_topic_mutation`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_review_succession_topic_mutation()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_terminal_lifecycle`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_terminal_lifecycle()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_handoff_deleted_user_image_surfaces`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_handoff_deleted_user_image_surfaces()
- RETURNS trigger
  LANGUAGE plpgsql
 ```
 
@@ -607,116 +127,20 @@ CREATE OR REPLACE FUNCTION public.fn_lock_agent_moderation_transparency_prompt()
  LANGUAGE plpgsql
 ```
 
+## `fn_lock_bluesky_follow_receipt_active_users`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_lock_bluesky_follow_receipt_active_users()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_lock_moderation_transparency_projection(p_domain text, p_id uuid)`
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_lock_moderation_transparency_projection(p_domain text, p_id uuid)
  RETURNS void
  LANGUAGE sql
-```
-
-## `fn_mark_topic_alias_category_mapping_dirty`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_mark_topic_alias_category_mapping_dirty()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_moderation_transparency_actions_delete_rollup`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_moderation_transparency_actions_delete_rollup()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_moderation_transparency_actions_insert_rollup`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_moderation_transparency_actions_insert_rollup()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_moderation_transparency_agent_delete_rollup`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_moderation_transparency_agent_delete_rollup()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_moderation_transparency_agent_insert_rollup`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_moderation_transparency_agent_insert_rollup()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_moderation_transparency_agent_update_rollup`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_moderation_transparency_agent_update_rollup()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_moderation_transparency_appeals_delete_rollup`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_moderation_transparency_appeals_delete_rollup()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_moderation_transparency_appeals_insert_rollup`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_moderation_transparency_appeals_insert_rollup()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_moderation_transparency_appeals_update_rollup`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_moderation_transparency_appeals_update_rollup()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_moderation_transparency_clearance_delete_rollup`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_moderation_transparency_clearance_delete_rollup()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_moderation_transparency_clearance_insert_rollup`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_moderation_transparency_clearance_insert_rollup()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_moderation_transparency_reports_delete_rollup`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_moderation_transparency_reports_delete_rollup()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_moderation_transparency_reports_insert_rollup`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_moderation_transparency_reports_insert_rollup()
- RETURNS trigger
- LANGUAGE plpgsql
 ```
 
 ## `fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid)`
@@ -728,250 +152,578 @@ CREATE OR REPLACE FUNCTION public.fn_notification_target_entity(notification_ent
  IMMUTABLE
 ```
 
-## `fn_preserve_notification_publication_target`
+## `fn_project_ap_inbox_delivery_retention`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_preserve_notification_publication_target()
+CREATE OR REPLACE FUNCTION public.fn_project_ap_inbox_delivery_retention()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_prevent_content_provenance_update`
+## `fn_project_ap_inbox_delivery_storage_after_delete`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_prevent_content_provenance_update()
+CREATE OR REPLACE FUNCTION public.fn_project_ap_inbox_delivery_storage_after_delete()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_prevent_post_creation_source_url_update`
+## `fn_project_ap_inbox_delivery_storage_after_insert`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_prevent_post_creation_source_url_update()
+CREATE OR REPLACE FUNCTION public.fn_project_ap_inbox_delivery_storage_after_insert()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_protect_agent_moderation_transparency_projection`
+## `fn_project_ap_inbox_delivery_storage_after_update`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_protect_agent_moderation_transparency_projection()
+CREATE OR REPLACE FUNCTION public.fn_project_ap_inbox_delivery_storage_after_update()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_protect_classifier_run`
+## `fn_project_ap_post_likes`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_protect_classifier_run()
+CREATE OR REPLACE FUNCTION public.fn_project_ap_post_likes()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_protect_clearance_transparency_categories`
+## `fn_project_capture_notification_push_intent`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_protect_clearance_transparency_categories()
+CREATE OR REPLACE FUNCTION public.fn_project_capture_notification_push_intent()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_protect_moderation_appeal_resolution`
+## `fn_project_community_image_placements`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_protect_moderation_appeal_resolution()
+CREATE OR REPLACE FUNCTION public.fn_project_community_image_placements()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_protect_moderation_report_original_reason`
+## `fn_project_handoff_deleted_user_image_surfaces`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_protect_moderation_report_original_reason()
+CREATE OR REPLACE FUNCTION public.fn_project_handoff_deleted_user_image_surfaces()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_protect_moderation_transparency_scope`
+## `fn_project_latest_change`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_protect_moderation_transparency_scope()
+CREATE OR REPLACE FUNCTION public.fn_project_latest_change()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_protect_moderator_action_type`
+## `fn_project_mark_topic_alias_category_mapping_dirty`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_protect_moderator_action_type()
+CREATE OR REPLACE FUNCTION public.fn_project_mark_topic_alias_category_mapping_dirty()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_protect_post_clearance_change_type`
+## `fn_project_moderation_transparency_agent_delete_rollup`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_protect_post_clearance_change_type()
+CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_agent_delete_rollup()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_protect_released_moderation_transparency_rollup`
+## `fn_project_moderation_transparency_agent_insert_rollup`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_protect_released_moderation_transparency_rollup()
+CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_agent_insert_rollup()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_record_story_post_related_url_projection_relation_mutation`
+## `fn_project_moderation_transparency_agent_update_rollup`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_record_story_post_related_url_projection_relation_mutation()
+CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_agent_update_rollup()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_record_user_data_request_attempt`
+## `fn_project_moderation_transparency_appeals_delete_rollup`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_record_user_data_request_attempt()
+CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_appeals_delete_rollup()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_refresh_rss_feed_item_unmapped_category_count`
+## `fn_project_moderation_transparency_appeals_insert_rollup`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_refresh_rss_feed_item_unmapped_category_count()
+CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_appeals_insert_rollup()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_register_retained_api_key_identity`
+## `fn_project_moderation_transparency_appeals_update_rollup`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_register_retained_api_key_identity()
+CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_appeals_update_rollup()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_register_retained_image_identity`
+## `fn_project_moderation_transparency_clearance_delete_rollup`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_register_retained_image_identity()
+CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_clearance_delete_rollup()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_register_retained_post_identity`
+## `fn_project_moderation_transparency_clearance_insert_rollup`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_register_retained_post_identity()
+CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_clearance_insert_rollup()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_register_retained_rss_feed_item_identity`
+## `fn_project_record_user_data_request_attempt`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_register_retained_rss_feed_item_identity()
+CREATE OR REPLACE FUNCTION public.fn_project_record_user_data_request_attempt()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_register_retained_topic_identity`
+## `fn_project_refresh_rss_feed_item_unmapped_category_count`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_register_retained_topic_identity()
+CREATE OR REPLACE FUNCTION public.fn_project_refresh_rss_feed_item_unmapped_category_count()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_register_retained_user_identity`
+## `fn_project_retire_deleted_profile_link_image_surfaces`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_register_retained_user_identity()
+CREATE OR REPLACE FUNCTION public.fn_project_retire_deleted_profile_link_image_surfaces()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_reject_classifier_append_only_update`
+## `fn_project_retire_deleted_user_image_surfaces`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_reject_classifier_append_only_update()
+CREATE OR REPLACE FUNCTION public.fn_project_retire_deleted_user_image_surfaces()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_reject_classifier_candidate_identity_mutation`
+## `fn_project_story_post_related_url_relation_mutation`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_reject_classifier_candidate_identity_mutation()
+CREATE OR REPLACE FUNCTION public.fn_project_story_post_related_url_relation_mutation()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_reject_classifier_identity_mutation`
+## `fn_project_topic_image_placements`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_reject_classifier_identity_mutation()
+CREATE OR REPLACE FUNCTION public.fn_project_topic_image_placements()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_reject_classifier_prompt_version_identity_mutation`
+## `fn_project_transparency_rollup`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_reject_classifier_prompt_version_identity_mutation()
+CREATE OR REPLACE FUNCTION public.fn_project_transparency_rollup()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_reject_copyright_territorial_mutation`
+## `fn_project_url_hostname_blocked`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_reject_copyright_territorial_mutation()
+CREATE OR REPLACE FUNCTION public.fn_project_url_hostname_blocked()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_reject_mcp_call_audit_event_mutation`
+## `fn_project_user_profile_image_placement`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_reject_mcp_call_audit_event_mutation()
+CREATE OR REPLACE FUNCTION public.fn_project_user_profile_image_placement()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_reject_membership_administrator_refund_request_mutation`
+## `fn_project_user_profile_link_image_placement`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_reject_membership_administrator_refund_request_mutation()
+CREATE OR REPLACE FUNCTION public.fn_project_user_profile_link_image_placement()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_reject_membership_automatic_refund_receipt_mutation`
+## `fn_register_retained_identity`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_reject_membership_automatic_refund_receipt_mutation()
+CREATE OR REPLACE FUNCTION public.fn_register_retained_identity()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_reject_membership_change_mutation`
+## `fn_reject_admin_import_row_target`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_reject_membership_change_mutation()
+CREATE OR REPLACE FUNCTION public.fn_reject_admin_import_row_target()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_reject_membership_product_identity_mutation`
+## `fn_reject_agent_moderation_transparency_projection`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_reject_membership_product_identity_mutation()
+CREATE OR REPLACE FUNCTION public.fn_reject_agent_moderation_transparency_projection()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_agent_system_account`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_agent_system_account()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_classifier_activation_lifecycle`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_classifier_activation_lifecycle()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_classifier_batch_candidate_configuration`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_classifier_batch_candidate_configuration()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_classifier_batch_candidate_owner_delete`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_classifier_batch_candidate_owner_delete()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_classifier_candidate_community_override_lifecycle`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_classifier_candidate_community_override_lifecycle()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_classifier_candidate_effective_thresholds`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_classifier_candidate_effective_thresholds()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_classifier_candidate_threshold_lifecycle`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_classifier_candidate_threshold_lifecycle()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_classifier_decision_batch_completion`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_classifier_decision_batch_completion()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_classifier_result_batch_scope`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_classifier_result_batch_scope()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_classifier_run`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_classifier_run()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_community_prompt_result_configuration`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_community_prompt_result_configuration()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_action_intent`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_action_intent()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_assessment_source`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_assessment_source()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_automated_assessment_screening`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_automated_assessment_screening()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_correspondence`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_correspondence()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_counter_notice_assessment_target_scope`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_counter_notice_assessment_target_scope()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_deadline`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_deadline()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_delivery_intent_transition`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_delivery_intent_transition()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_human_actor`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_human_actor()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_immutable_with_actor_erasure`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_immutable_with_actor_erasure()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_lifecycle_event_source_notice`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_lifecycle_event_source_notice()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_notice_identity`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_notice_identity()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_notice_immutable_evidence`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_notice_immutable_evidence()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_notice_lifecycle`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_notice_lifecycle()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_notice_submission`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_notice_submission()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_repeat_infringer_incident`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_repeat_infringer_incident()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_repeat_infringer_review`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_repeat_infringer_review()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_restriction_assessment_scope`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_restriction_assessment_scope()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_restriction_lifecycle`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_restriction_lifecycle()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_territorial_acknowledgment_attempt`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_territorial_acknowledgment_attempt()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_territorial_escalation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_territorial_escalation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_follower_distribution_recipient_bounds`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_follower_distribution_recipient_bounds()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_global_classifier_candidate_override`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_global_classifier_candidate_override()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_image_surface_placement`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_image_surface_placement()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_media_placement`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_media_placement()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_membership_administrator_refund_request_context`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_membership_administrator_refund_request_context()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_membership_grant_activation_period_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_membership_grant_activation_period_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_membership_grant_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_membership_grant_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_membership_lineage_binding_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_membership_lineage_binding_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_membership_operation_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_membership_operation_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_membership_provider_evidence_immutability`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_membership_provider_evidence_immutability()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -984,42 +736,138 @@ CREATE OR REPLACE FUNCTION public.fn_reject_membership_provider_lineage_mutation
  LANGUAGE plpgsql
 ```
 
-## `fn_reject_membership_provider_observation_mutation`
+## `fn_reject_membership_refund_metadata_scan_mutation`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_reject_membership_provider_observation_mutation()
+CREATE OR REPLACE FUNCTION public.fn_reject_membership_refund_metadata_scan_mutation()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_reject_mipr_case_mutation`
+## `fn_reject_membership_refund_mutation`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_reject_mipr_case_mutation()
+CREATE OR REPLACE FUNCTION public.fn_reject_membership_refund_mutation()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_reject_mipr_case_op_mutation`
+## `fn_reject_membership_refund_operation_attempt_context`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_reject_mipr_case_op_mutation()
+CREATE OR REPLACE FUNCTION public.fn_reject_membership_refund_operation_attempt_context()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_reject_mipr_succeeded_refund_observation_mutation`
+## `fn_reject_membership_refund_operation_attempt_mutation`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_reject_mipr_succeeded_refund_observation_mutation()
+CREATE OR REPLACE FUNCTION public.fn_reject_membership_refund_operation_attempt_mutation()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_reject_oauth_authorization_server_event_mutation`
+## `fn_reject_mipr_case_op_context`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_reject_oauth_authorization_server_event_mutation()
+CREATE OR REPLACE FUNCTION public.fn_reject_mipr_case_op_context()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_mipr_succeeded_refund_observation_context`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_mipr_succeeded_refund_observation_context()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_moderation_appeal_resolution`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_moderation_appeal_resolution()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_ownerless_image_surface_retirement`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_ownerless_image_surface_retirement()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_platform_account_kind_change`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_platform_account_kind_change()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_review_dispute_subject_snapshot`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_review_dispute_subject_snapshot()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_review_succession_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_review_succession_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_review_succession_topic_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_review_succession_topic_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_review_succession_topics`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_review_succession_topics()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_role_user_is_not_system`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_role_user_is_not_system()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_terminal_lifecycle`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_terminal_lifecycle()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_user_landing_page_group_member_item_type`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_user_landing_page_group_member_item_type()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -1028,6 +876,30 @@ CREATE OR REPLACE FUNCTION public.fn_reject_oauth_authorization_server_event_mut
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_reject_user_legal_preservation_hold_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_verified_membership_provider_observation_evidence`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_verified_membership_provider_observation_evidence()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_web_push_endpoint_owner_subscription`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_web_push_endpoint_owner_subscription()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_web_push_subscription_owner`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_web_push_subscription_owner()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -1048,166 +920,6 @@ CREATE OR REPLACE FUNCTION public.fn_release_next_moderation_transparency_daily_
  LANGUAGE plpgsql
 ```
 
-## `fn_require_agent_system_account`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_require_agent_system_account()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_require_classifier_activation_lifecycle`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_require_classifier_activation_lifecycle()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_require_classifier_batch_candidate_configuration`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_require_classifier_batch_candidate_configuration()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_require_classifier_batch_candidate_owner_delete`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_require_classifier_batch_candidate_owner_delete()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_require_classifier_candidate_community_override_lifecycle`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_require_classifier_candidate_community_override_lifecycle()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_require_classifier_candidate_effective_thresholds`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_require_classifier_candidate_effective_thresholds()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_require_classifier_candidate_threshold_lifecycle`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_require_classifier_candidate_threshold_lifecycle()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_require_classifier_decision_batch_completion`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_require_classifier_decision_batch_completion()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_require_classifier_result_batch_scope`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_require_classifier_result_batch_scope()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_require_community_prompt_result_configuration`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_require_community_prompt_result_configuration()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_require_copyright_human_actor`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_require_copyright_human_actor()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_require_global_classifier_candidate_override`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_require_global_classifier_candidate_override()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_require_membership_administrator_refund_request_context`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_require_membership_administrator_refund_request_context()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_require_membership_refund_operation_attempt_context`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_require_membership_refund_operation_attempt_context()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_require_mipr_case_op_context`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_require_mipr_case_op_context()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_require_mipr_succeeded_refund_observation_context`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_require_mipr_succeeded_refund_observation_context()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_require_role_user_is_not_system`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_require_role_user_is_not_system()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_require_verified_membership_provider_observation_evidence`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_require_verified_membership_provider_observation_evidence()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_retire_deleted_profile_link_image_surfaces`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_retire_deleted_profile_link_image_surfaces()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_retire_deleted_user_image_surfaces`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_retire_deleted_user_image_surfaces()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_reverse_hostname_labels(p_hostname text)`
 
 ```sql
@@ -1217,147 +929,11 @@ CREATE OR REPLACE FUNCTION public.fn_reverse_hostname_labels(p_hostname text)
  IMMUTABLE STRICT
 ```
 
-## `fn_stamp_agent_moderation_transparency`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_stamp_agent_moderation_transparency()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_stamp_classifier_run_scope`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_stamp_classifier_run_scope()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_stamp_clearance_transparency_scope`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_stamp_clearance_transparency_scope()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_stamp_moderation_appeal_transparency_scope`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_stamp_moderation_appeal_transparency_scope()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_stamp_moderation_report_transparency_scope`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_stamp_moderation_report_transparency_scope()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_stamp_moderator_action_transparency_scope`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_stamp_moderator_action_transparency_scope()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_sync_ap_post_likes`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_sync_ap_post_likes()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_sync_community_image_placements`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_sync_community_image_placements()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_sync_fediverse_instance_integration_status`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_sync_fediverse_instance_integration_status()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_sync_image_surface_placement(p_surface_kind text, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)`
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind text, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)
  RETURNS void
- LANGUAGE plpgsql
-```
-
-## `fn_sync_posts_search_vector`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_sync_posts_search_vector()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_sync_rss_feed_is_discoverable`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_sync_rss_feed_is_discoverable()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_sync_rss_feed_is_enabled`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_sync_rss_feed_is_enabled()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_sync_rss_feed_items_search_vector`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_sync_rss_feed_items_search_vector()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_sync_topic_image_placements`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_sync_topic_image_placements()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_sync_url_hostname_blocked`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_sync_url_hostname_blocked()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_sync_user_profile_image_placement`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_sync_user_profile_image_placement()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_sync_user_profile_link_image_placement`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_sync_user_profile_link_image_placement()
- RETURNS trigger
  LANGUAGE plpgsql
 ```
 
@@ -1370,12 +946,92 @@ CREATE OR REPLACE FUNCTION public.fn_text_to_timestamptz(text_value text)
  IMMUTABLE
 ```
 
+## `fn_update_agent_moderation_transparency`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_agent_moderation_transparency()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_classifier_run_scope`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_classifier_run_scope()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_clearance_transparency_scope`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_clearance_transparency_scope()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_media_delivery_registry_generation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_media_delivery_registry_generation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_moderation_report_transparency_scope`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_moderation_report_transparency_scope()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_notification_publication_target`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_notification_publication_target()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_parent_notice_scope`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_parent_notice_scope()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_posts_search_vector`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_posts_search_vector()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_rss_feed_items_search_vector`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_rss_feed_items_search_vector()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_update_topic_bookmark_stats_for_topic_id(target_topic_id uuid)`
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_update_topic_bookmark_stats_for_topic_id(target_topic_id uuid)
  RETURNS void
  LANGUAGE sql
+```
+
+## `fn_update_transparency_scope`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_transparency_scope()
+ RETURNS trigger
+ LANGUAGE plpgsql
 ```
 
 ## `fn_update_updated_at`
@@ -1399,30 +1055,6 @@ CREATE OR REPLACE FUNCTION public.fn_update_user_bookmark_stats_for_user_id(targ
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_user_deletion_has_remaining_owned_data(target_user_id uuid)
  RETURNS boolean
- LANGUAGE plpgsql
-```
-
-## `fn_validate_admin_import_row_target`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_validate_admin_import_row_target()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_validate_platform_account_kind_change`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_validate_platform_account_kind_change()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_validate_user_landing_page_group_member_item_type`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_validate_user_landing_page_group_member_item_type()
- RETURNS trigger
  LANGUAGE plpgsql
 ```
 

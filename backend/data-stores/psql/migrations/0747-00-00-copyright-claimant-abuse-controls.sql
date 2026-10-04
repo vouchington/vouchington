@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Claimant misuse ledger (DSA Art. 23, 17 U.S.C. 512(f) evidence), the sticky refusals that keep a
 -- gated notice with a moderator, and the marker for restrictions lifted because their claimant was
 -- suspended. No table here suspends anyone.
@@ -65,15 +66,15 @@ CREATE TABLE copyright_claimant_suspension_reversals (
 
 CREATE TRIGGER trigger_copyright_claimant_misuse_events_immutable
   BEFORE UPDATE OR DELETE ON copyright_claimant_misuse_events
-  FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_immutable_evidence();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
 
 CREATE TRIGGER trigger_copyright_automatic_withholding_refusals_immutable
   BEFORE UPDATE OR DELETE ON copyright_automatic_withholding_refusals
-  FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_immutable_evidence();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
 
 CREATE TRIGGER trigger_copyright_claimant_suspension_reversals_immutable
   BEFORE UPDATE OR DELETE ON copyright_claimant_suspension_reversals
-  FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_immutable_evidence();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
 
 COMMENT ON TABLE copyright_claimant_misuse_events IS 'Append-only ledger of claimant misuse evidence: a notice withdrawn, a notice rejected on staff review, or a restriction reversed by counter-notice restoration or appeal. Recorded whatever the automatic-withholding switch says. The claimant is the notice''s claimant_user_id, so erasing that account erases the link and nothing here suspends anyone.';
 COMMENT ON COLUMN copyright_claimant_misuse_events.copyright_notice_id IS 'Notice this event is evidence about.';

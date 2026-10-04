@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- edited-in-place: pre-launch, never deployed to production
 -- Persist only aggregate daily moderation-transparency cohorts.  This is the
 -- privacy boundary for paid transparency: no user, post, prompt, or action id
@@ -63,14 +64,10 @@ COMMENT ON COLUMN moderation_transparency_released_daily_rollups.category IS 'Pu
 COMMENT ON COLUMN moderation_transparency_released_daily_rollups.count IS 'Exact released cohort count; API sanitization applies nearest-five rounding.';
 COMMENT ON COLUMN moderation_transparency_released_daily_rollups.latest_occurred_at IS 'Latest source event timestamp observed when the cohort became immutable.';
 COMMENT ON COLUMN moderation_transparency_released_daily_rollups.released_at IS 'Transaction timestamp when the aggregate cohort became immutable.';
-CREATE FUNCTION fn_protect_released_moderation_transparency_rollup()
-RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  RAISE EXCEPTION 'released moderation transparency cohorts are immutable';
-END $$;
+
 CREATE TRIGGER moderation_transparency_released_rollup_guard
   BEFORE UPDATE OR DELETE ON moderation_transparency_released_daily_rollups
-  FOR EACH ROW EXECUTE FUNCTION fn_protect_released_moderation_transparency_rollup();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
 -- This repository is pre-launch: the baseline migrations are edited in place
 -- and clean bootstrap is the only supported migration path. Refuse a dirty
@@ -200,7 +197,35 @@ RETURNS void LANGUAGE sql AS $$
   SELECT pg_advisory_xact_lock(hashtextextended(p_domain || ':' || p_id::text, 0))
 $$;
 
-CREATE FUNCTION fn_stamp_moderation_report_transparency_scope() RETURNS trigger LANGUAGE plpgsql AS $$
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE FUNCTION fn_project_transparency_rollup() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE
+  cohort RECORD;
+  delta_sign INTEGER := CASE WHEN TG_OP = 'DELETE' THEN -1 ELSE 1 END;
+BEGIN
+  FOR cohort IN EXECUTE format(
+    'SELECT (uuid_extract_timestamp(id) AT TIME ZONE ''UTC'')::date AS day,
+      NULL::uuid AS community_id, $1::text AS metric, %I::text AS category,
+      count(*)::integer AS count FROM %I
+      WHERE moderation_transparency_community_id IS NULL
+      GROUP BY 1, 2, 3, 4 ORDER BY 1, 2 NULLS FIRST, 3, 4', TG_ARGV[1], TG_ARGV[0])
+    USING TG_ARGV[2]
+  LOOP
+    PERFORM fn_apply_moderation_transparency_daily_rollup(
+      cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,
+      cohort.metric, cohort.category, delta_sign * cohort.count);
+  END LOOP;
+  RETURN NULL;
+END $$;
+
+CREATE FUNCTION fn_update_transparency_scope() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  NEW := jsonb_populate_record(NEW, jsonb_build_object(
+    TG_ARGV[0], to_jsonb(NEW) -> TG_ARGV[1]));
+  RETURN NEW;
+END $$;
+
+CREATE FUNCTION fn_update_moderation_report_transparency_scope() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.moderation_transparency_community_id IS NULL THEN
     SELECT community_id INTO NEW.moderation_transparency_community_id FROM posts WHERE id = NEW.post_id;
@@ -209,145 +234,50 @@ BEGIN
 END $$;
 CREATE TRIGGER moderation_transparency_reports_scope_stamp
   BEFORE INSERT ON moderation_reports FOR EACH ROW
-  EXECUTE FUNCTION fn_stamp_moderation_report_transparency_scope();
-CREATE FUNCTION fn_protect_moderation_transparency_scope() RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  IF OLD.moderation_transparency_community_id IS DISTINCT FROM NEW.moderation_transparency_community_id THEN
-    RAISE EXCEPTION 'moderation transparency community scope is immutable';
-  END IF;
-  RETURN NEW;
-END $$;
+  EXECUTE FUNCTION fn_update_moderation_report_transparency_scope();
+
 CREATE TRIGGER moderation_transparency_reports_scope_guard
   BEFORE UPDATE OF moderation_transparency_community_id ON moderation_reports
-  FOR EACH ROW EXECUTE FUNCTION fn_protect_moderation_transparency_scope();
-CREATE FUNCTION fn_protect_moderation_report_original_reason() RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  IF OLD.original_reason IS DISTINCT FROM NEW.original_reason THEN
-    RAISE EXCEPTION 'moderation report original reason is immutable';
-  END IF;
-  RETURN NEW;
-END $$;
+  FOR EACH ROW
+  WHEN (ROW(OLD.moderation_transparency_community_id) IS DISTINCT FROM ROW(NEW.moderation_transparency_community_id)) EXECUTE FUNCTION fn_reject_mutation();
+
 CREATE TRIGGER moderation_transparency_reports_original_reason_guard
   BEFORE UPDATE OF original_reason ON moderation_reports
-  FOR EACH ROW EXECUTE FUNCTION fn_protect_moderation_report_original_reason();
-CREATE FUNCTION fn_moderation_transparency_reports_delete_rollup() RETURNS trigger LANGUAGE plpgsql AS $$
-DECLARE cohort record;
-BEGIN
-  -- Transition tables preserve every immutable source classification while
-  -- coalescing a cascade into one canonical decrement per cohort.
-  FOR cohort IN
-    SELECT (uuid_extract_timestamp(id) AT TIME ZONE 'UTC')::date AS day,
-      NULL::uuid AS community_id, 'reports'::text AS metric,
-      original_reason::text AS category, count(*)::integer AS count
-    FROM deleted_reports
-    WHERE moderation_transparency_community_id IS NULL
-    GROUP BY 1, 2, 3, 4
-    ORDER BY 1, 2 NULLS FIRST, 3, 4
-  LOOP
-    PERFORM fn_apply_moderation_transparency_daily_rollup(
-      cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,
-      cohort.metric, cohort.category, -cohort.count
-    );
-  END LOOP;
-  RETURN NULL;
-END $$;
-CREATE FUNCTION fn_moderation_transparency_reports_insert_rollup() RETURNS trigger LANGUAGE plpgsql AS $$
-DECLARE cohort record;
-BEGIN
-  FOR cohort IN
-    SELECT (uuid_extract_timestamp(id) AT TIME ZONE 'UTC')::date AS day,
-      NULL::uuid AS community_id, 'reports'::text AS metric,
-      original_reason::text AS category, count(*)::integer AS count
-    FROM new_reports
-    WHERE moderation_transparency_community_id IS NULL
-    GROUP BY 1, 2, 3, 4
-    ORDER BY 1, 2 NULLS FIRST, 3, 4
-  LOOP
-    PERFORM fn_apply_moderation_transparency_daily_rollup(
-      cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,
-      cohort.metric, cohort.category, cohort.count
-    );
-  END LOOP;
-  RETURN NULL;
-END $$;
+  FOR EACH ROW
+  WHEN (ROW(OLD.original_reason) IS DISTINCT FROM ROW(NEW.original_reason)) EXECUTE FUNCTION fn_reject_mutation();
+
 CREATE TRIGGER moderation_transparency_reports_rollup
   AFTER INSERT ON moderation_reports
   REFERENCING NEW TABLE AS new_reports
-  FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_reports_insert_rollup();
+  FOR EACH STATEMENT EXECUTE FUNCTION fn_project_transparency_rollup('new_reports', 'original_reason', 'reports');
 CREATE TRIGGER moderation_transparency_reports_delete_rollup
   AFTER DELETE ON moderation_reports
   REFERENCING OLD TABLE AS deleted_reports
-  FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_reports_delete_rollup();
+  FOR EACH STATEMENT EXECUTE FUNCTION fn_project_transparency_rollup('deleted_reports', 'original_reason', 'reports');
 
-CREATE FUNCTION fn_stamp_moderator_action_transparency_scope() RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  NEW.moderation_transparency_community_id := NEW.community_id;
-  RETURN NEW;
-END $$;
 CREATE TRIGGER moderation_transparency_actions_scope_stamp
   BEFORE INSERT ON moderator_actions FOR EACH ROW
-  EXECUTE FUNCTION fn_stamp_moderator_action_transparency_scope();
+  EXECUTE FUNCTION fn_update_transparency_scope('moderation_transparency_community_id', 'community_id');
 CREATE TRIGGER moderation_transparency_actions_scope_guard
   BEFORE UPDATE OF moderation_transparency_community_id ON moderator_actions
-  FOR EACH ROW EXECUTE FUNCTION fn_protect_moderation_transparency_scope();
-CREATE FUNCTION fn_protect_moderator_action_type() RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  IF OLD.action_type IS DISTINCT FROM NEW.action_type THEN
-    RAISE EXCEPTION 'moderator action type is immutable';
-  END IF;
-  RETURN NEW;
-END $$;
+  FOR EACH ROW
+  WHEN (ROW(OLD.moderation_transparency_community_id) IS DISTINCT FROM ROW(NEW.moderation_transparency_community_id)) EXECUTE FUNCTION fn_reject_mutation();
+
 CREATE TRIGGER moderation_transparency_actions_type_guard
   BEFORE UPDATE OF action_type ON moderator_actions
-  FOR EACH ROW EXECUTE FUNCTION fn_protect_moderator_action_type();
-CREATE FUNCTION fn_moderation_transparency_actions_delete_rollup() RETURNS trigger LANGUAGE plpgsql AS $$
-DECLARE cohort record;
-BEGIN
-  FOR cohort IN
-    SELECT (uuid_extract_timestamp(id) AT TIME ZONE 'UTC')::date AS day,
-      NULL::uuid AS community_id, 'moderation_actions'::text AS metric,
-      action_type::text AS category, count(*)::integer AS count
-    FROM deleted_actions
-    WHERE moderation_transparency_community_id IS NULL
-    GROUP BY 1, 2, 3, 4
-    ORDER BY 1, 2 NULLS FIRST, 3, 4
-  LOOP
-    PERFORM fn_apply_moderation_transparency_daily_rollup(
-      cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,
-      cohort.metric, cohort.category, -cohort.count
-    );
-  END LOOP;
-  RETURN NULL;
-END $$;
-CREATE FUNCTION fn_moderation_transparency_actions_insert_rollup() RETURNS trigger LANGUAGE plpgsql AS $$
-DECLARE cohort record;
-BEGIN
-  FOR cohort IN
-    SELECT (uuid_extract_timestamp(id) AT TIME ZONE 'UTC')::date AS day,
-      NULL::uuid AS community_id, 'moderation_actions'::text AS metric,
-      action_type::text AS category, count(*)::integer AS count
-    FROM new_actions
-    WHERE moderation_transparency_community_id IS NULL
-    GROUP BY 1, 2, 3, 4
-    ORDER BY 1, 2 NULLS FIRST, 3, 4
-  LOOP
-    PERFORM fn_apply_moderation_transparency_daily_rollup(
-      cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,
-      cohort.metric, cohort.category, cohort.count
-    );
-  END LOOP;
-  RETURN NULL;
-END $$;
+  FOR EACH ROW
+  WHEN (ROW(OLD.action_type) IS DISTINCT FROM ROW(NEW.action_type)) EXECUTE FUNCTION fn_reject_mutation();
+
 CREATE TRIGGER moderation_transparency_actions_rollup
   AFTER INSERT ON moderator_actions
   REFERENCING NEW TABLE AS new_actions
-  FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_actions_insert_rollup();
+  FOR EACH STATEMENT EXECUTE FUNCTION fn_project_transparency_rollup('new_actions', 'action_type', 'moderation_actions');
 CREATE TRIGGER moderation_transparency_actions_delete_rollup
   AFTER DELETE ON moderator_actions
   REFERENCING OLD TABLE AS deleted_actions
-  FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_actions_delete_rollup();
+  FOR EACH STATEMENT EXECUTE FUNCTION fn_project_transparency_rollup('deleted_actions', 'action_type', 'moderation_actions');
 
-CREATE FUNCTION fn_stamp_agent_moderation_transparency() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE FUNCTION fn_update_agent_moderation_transparency() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE v_community_id uuid; v_post_community_id uuid; v_current_community_id uuid; v_agent_deleted_at timestamptz; v_prompt_deleted_at timestamptz; v_cap_deleted_at timestamptz;
 BEGIN
   -- Lock the FK parents before taking the projection locks. A concurrent hard
@@ -458,8 +388,8 @@ CREATE TRIGGER moderation_transparency_community_prompts_lock
   EXECUTE FUNCTION fn_lock_agent_moderation_transparency_community_prompt();
 CREATE TRIGGER moderation_transparency_agent_stamp
   BEFORE INSERT OR UPDATE OF deleted_at ON agent_moderations
-  FOR EACH ROW EXECUTE FUNCTION fn_stamp_agent_moderation_transparency();
-CREATE FUNCTION fn_protect_agent_moderation_transparency_projection() RETURNS trigger LANGUAGE plpgsql AS $$
+  FOR EACH ROW EXECUTE FUNCTION fn_update_agent_moderation_transparency();
+CREATE FUNCTION fn_reject_agent_moderation_transparency_projection() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF OLD.id IS DISTINCT FROM NEW.id
     OR OLD.agent_id IS DISTINCT FROM NEW.agent_id
@@ -476,8 +406,8 @@ END $$;
 CREATE TRIGGER moderation_transparency_agent_projection_guard
   BEFORE UPDATE OF id, agent_id, prompt_id, moderation_transparency_category,
     moderation_transparency_community_id ON agent_moderations
-  FOR EACH ROW EXECUTE FUNCTION fn_protect_agent_moderation_transparency_projection();
-CREATE FUNCTION fn_moderation_transparency_agent_insert_rollup() RETURNS trigger LANGUAGE plpgsql AS $$
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_agent_moderation_transparency_projection();
+CREATE FUNCTION fn_project_moderation_transparency_agent_insert_rollup() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE cohort record;
 BEGIN
   FOR cohort IN
@@ -497,7 +427,7 @@ BEGIN
   END LOOP;
   RETURN NULL;
 END $$;
-CREATE FUNCTION fn_moderation_transparency_agent_update_rollup() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE FUNCTION fn_project_moderation_transparency_agent_update_rollup() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE cohort record;
 BEGIN
   FOR cohort IN
@@ -526,7 +456,7 @@ BEGIN
   END LOOP;
   RETURN NULL;
 END $$;
-CREATE FUNCTION fn_moderation_transparency_agent_delete_rollup() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE FUNCTION fn_project_moderation_transparency_agent_delete_rollup() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE cohort record;
 BEGIN
   FOR cohort IN
@@ -549,28 +479,24 @@ END $$;
 CREATE TRIGGER moderation_transparency_agent_rollup
   AFTER INSERT ON agent_moderations
   REFERENCING NEW TABLE AS new_agent_moderations
-  FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_agent_insert_rollup();
+  FOR EACH STATEMENT EXECUTE FUNCTION fn_project_moderation_transparency_agent_insert_rollup();
 CREATE TRIGGER moderation_transparency_agent_update_rollup
   AFTER UPDATE ON agent_moderations
   REFERENCING OLD TABLE AS old_agent_moderations NEW TABLE AS new_agent_moderations
-  FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_agent_update_rollup();
+  FOR EACH STATEMENT EXECUTE FUNCTION fn_project_moderation_transparency_agent_update_rollup();
 CREATE TRIGGER moderation_transparency_agent_delete_rollup
   AFTER DELETE ON agent_moderations
   REFERENCING OLD TABLE AS deleted_agent_moderations
-  FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_agent_delete_rollup();
+  FOR EACH STATEMENT EXECUTE FUNCTION fn_project_moderation_transparency_agent_delete_rollup();
 
-CREATE FUNCTION fn_stamp_moderation_appeal_transparency_scope() RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  NEW.moderation_transparency_community_id := NEW.community_id;
-  RETURN NEW;
-END $$;
 CREATE TRIGGER moderation_transparency_appeals_scope_stamp
   BEFORE INSERT ON moderation_appeals FOR EACH ROW
-  EXECUTE FUNCTION fn_stamp_moderation_appeal_transparency_scope();
+  EXECUTE FUNCTION fn_update_transparency_scope('moderation_transparency_community_id', 'community_id');
 CREATE TRIGGER moderation_transparency_appeals_scope_guard
   BEFORE UPDATE OF moderation_transparency_community_id ON moderation_appeals
-  FOR EACH ROW EXECUTE FUNCTION fn_protect_moderation_transparency_scope();
-CREATE FUNCTION fn_protect_moderation_appeal_resolution() RETURNS trigger LANGUAGE plpgsql AS $$
+  FOR EACH ROW
+  WHEN (ROW(OLD.moderation_transparency_community_id) IS DISTINCT FROM ROW(NEW.moderation_transparency_community_id)) EXECUTE FUNCTION fn_reject_mutation();
+CREATE FUNCTION fn_reject_moderation_appeal_resolution() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF OLD.resolved_at IS NULL AND OLD.resolution_action IS NULL
     AND NEW.resolved_at IS NOT NULL AND NEW.resolution_action IS NOT NULL THEN
@@ -584,8 +510,8 @@ BEGIN
 END $$;
 CREATE TRIGGER moderation_transparency_appeals_resolution_guard
   BEFORE UPDATE OF resolved_at, resolution_action ON moderation_appeals
-  FOR EACH ROW EXECUTE FUNCTION fn_protect_moderation_appeal_resolution();
-CREATE FUNCTION fn_moderation_transparency_appeals_insert_rollup() RETURNS trigger LANGUAGE plpgsql AS $$
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_moderation_appeal_resolution();
+CREATE FUNCTION fn_project_moderation_transparency_appeals_insert_rollup() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE cohort record;
 BEGIN
   FOR cohort IN
@@ -605,7 +531,7 @@ BEGIN
   END LOOP;
   RETURN NULL;
 END $$;
-CREATE FUNCTION fn_moderation_transparency_appeals_update_rollup() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE FUNCTION fn_project_moderation_transparency_appeals_update_rollup() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE cohort record;
 BEGIN
   FOR cohort IN
@@ -635,7 +561,7 @@ BEGIN
   END LOOP;
   RETURN NULL;
 END $$;
-CREATE FUNCTION fn_moderation_transparency_appeals_delete_rollup() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE FUNCTION fn_project_moderation_transparency_appeals_delete_rollup() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE cohort record;
 BEGIN
   FOR cohort IN
@@ -658,48 +584,39 @@ END $$;
 CREATE TRIGGER moderation_transparency_appeals_rollup
   AFTER INSERT ON moderation_appeals
   REFERENCING NEW TABLE AS new_appeals
-  FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_appeals_insert_rollup();
+  FOR EACH STATEMENT EXECUTE FUNCTION fn_project_moderation_transparency_appeals_insert_rollup();
 CREATE TRIGGER moderation_transparency_appeals_update_rollup
   AFTER UPDATE ON moderation_appeals
   REFERENCING OLD TABLE AS old_appeals NEW TABLE AS new_appeals
-  FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_appeals_update_rollup();
+  FOR EACH STATEMENT EXECUTE FUNCTION fn_project_moderation_transparency_appeals_update_rollup();
 CREATE TRIGGER moderation_transparency_appeals_delete_rollup
   AFTER DELETE ON moderation_appeals
   REFERENCING OLD TABLE AS deleted_appeals
-  FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_appeals_delete_rollup();
+  FOR EACH STATEMENT EXECUTE FUNCTION fn_project_moderation_transparency_appeals_delete_rollup();
 
-CREATE FUNCTION fn_stamp_clearance_transparency_scope() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE FUNCTION fn_update_clearance_transparency_scope() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   SELECT community_id INTO NEW.moderation_transparency_community_id FROM posts WHERE id = NEW.post_id;
   RETURN NEW;
 END $$;
 CREATE TRIGGER moderation_transparency_clearance_scope_stamp
   BEFORE INSERT ON post_clearance_changes FOR EACH ROW
-  EXECUTE FUNCTION fn_stamp_clearance_transparency_scope();
+  EXECUTE FUNCTION fn_update_clearance_transparency_scope();
 CREATE TRIGGER moderation_transparency_clearance_scope_guard
   BEFORE UPDATE OF moderation_transparency_community_id ON post_clearance_changes
-  FOR EACH ROW EXECUTE FUNCTION fn_protect_moderation_transparency_scope();
-CREATE FUNCTION fn_protect_clearance_transparency_categories() RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  IF OLD.moderation_transparency_categories IS DISTINCT FROM NEW.moderation_transparency_categories THEN
-    RAISE EXCEPTION 'clearance moderation transparency categories are immutable';
-  END IF;
-  RETURN NEW;
-END $$;
+  FOR EACH ROW
+  WHEN (ROW(OLD.moderation_transparency_community_id) IS DISTINCT FROM ROW(NEW.moderation_transparency_community_id)) EXECUTE FUNCTION fn_reject_mutation();
+
 CREATE TRIGGER moderation_transparency_clearance_categories_guard
   BEFORE UPDATE OF moderation_transparency_categories ON post_clearance_changes
-  FOR EACH ROW EXECUTE FUNCTION fn_protect_clearance_transparency_categories();
-CREATE FUNCTION fn_protect_post_clearance_change_type() RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  IF OLD.change_type IS DISTINCT FROM NEW.change_type THEN
-    RAISE EXCEPTION 'post clearance change type is immutable';
-  END IF;
-  RETURN NEW;
-END $$;
+  FOR EACH ROW
+  WHEN (ROW(OLD.moderation_transparency_categories) IS DISTINCT FROM ROW(NEW.moderation_transparency_categories)) EXECUTE FUNCTION fn_reject_mutation();
+
 CREATE TRIGGER moderation_transparency_clearance_type_guard
   BEFORE UPDATE OF change_type ON post_clearance_changes
-  FOR EACH ROW EXECUTE FUNCTION fn_protect_post_clearance_change_type();
-CREATE FUNCTION fn_moderation_transparency_clearance_insert_rollup() RETURNS trigger LANGUAGE plpgsql AS $$
+  FOR EACH ROW
+  WHEN (ROW(OLD.change_type) IS DISTINCT FROM ROW(NEW.change_type)) EXECUTE FUNCTION fn_reject_mutation();
+CREATE FUNCTION fn_project_moderation_transparency_clearance_insert_rollup() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE cohort record;
 BEGIN
   FOR cohort IN
@@ -720,7 +637,7 @@ BEGIN
   END LOOP;
   RETURN NULL;
 END $$;
-CREATE FUNCTION fn_moderation_transparency_clearance_delete_rollup() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE FUNCTION fn_project_moderation_transparency_clearance_delete_rollup() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE cohort record;
 BEGIN
   FOR cohort IN
@@ -744,8 +661,8 @@ END $$;
 CREATE TRIGGER moderation_transparency_clearance_rollup
   AFTER INSERT ON post_clearance_changes
   REFERENCING NEW TABLE AS new_clearance_changes
-  FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_clearance_insert_rollup();
+  FOR EACH STATEMENT EXECUTE FUNCTION fn_project_moderation_transparency_clearance_insert_rollup();
 CREATE TRIGGER moderation_transparency_clearance_delete_rollup
   AFTER DELETE ON post_clearance_changes
   REFERENCING OLD TABLE AS deleted_clearance_changes
-  FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_clearance_delete_rollup();
+  FOR EACH STATEMENT EXECUTE FUNCTION fn_project_moderation_transparency_clearance_delete_rollup();

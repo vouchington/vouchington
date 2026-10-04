@@ -50,6 +50,6 @@ _none_
 
 **Triggers:**
 
-- `trigger_classifier_candidate_thresholds_effective`: `CREATE TRIGGER trigger_classifier_candidate_thresholds_effective BEFORE INSERT OR UPDATE OF prompt_version_id, lower_threshold_override, upper_threshold_override ON public.classifier_candidate_thresholds FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_candidate_effective_thresholds()`
-- `trigger_classifier_candidate_thresholds_lifecycle`: `CREATE TRIGGER trigger_classifier_candidate_thresholds_lifecycle BEFORE UPDATE ON public.classifier_candidate_thresholds FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_candidate_threshold_lifecycle()`
+- `trigger_classifier_candidate_thresholds_effective`: `CREATE TRIGGER trigger_classifier_candidate_thresholds_effective BEFORE INSERT OR UPDATE OF prompt_version_id, lower_threshold_override, upper_threshold_override ON public.classifier_candidate_thresholds FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_candidate_effective_thresholds()`
+- `trigger_classifier_candidate_thresholds_lifecycle`: `CREATE TRIGGER trigger_classifier_candidate_thresholds_lifecycle BEFORE UPDATE ON public.classifier_candidate_thresholds FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_candidate_threshold_lifecycle()`
 - `trigger_classifier_candidate_thresholds_updated_at`: `CREATE TRIGGER trigger_classifier_candidate_thresholds_updated_at BEFORE UPDATE ON public.classifier_candidate_thresholds FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

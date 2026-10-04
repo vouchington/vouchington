@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 ALTER TABLE copyright_notice_appeal_recommendations
   -- squawk-ignore disallowed-unique-constraint, constraint-missing-not-valid -- Copyright intake is activation-gated and this stacked table is empty at deployment.
   ADD CONSTRAINT copyright_appeal_recommendations_id_submission_unique
@@ -40,10 +41,10 @@ CREATE INDEX idx_copyright_appeal_reviews__restriction ON copyright_notice_appea
 CREATE INDEX idx_copyright_appeal_reviews__recommendation ON copyright_notice_appeal_reviews(copyright_notice_appeal_recommendation_id) WHERE copyright_notice_appeal_recommendation_id IS NOT NULL;
 CREATE INDEX idx_copyright_counter_notice_reviews__reviewer ON copyright_notice_counter_notice_reviews(reviewed_by_id) WHERE reviewed_by_id IS NOT NULL;
 
-CREATE TRIGGER trigger_copyright_appeal_reviews_immutable BEFORE UPDATE OR DELETE ON copyright_notice_appeal_reviews FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_immutable_with_actor_erasure('reviewed_by_id');
-CREATE TRIGGER trigger_copyright_appeal_reviews_require_actor BEFORE INSERT ON copyright_notice_appeal_reviews FOR EACH ROW EXECUTE FUNCTION fn_require_copyright_human_actor('reviewed_by_id');
-CREATE TRIGGER trigger_copyright_counter_reviews_immutable BEFORE UPDATE OR DELETE ON copyright_notice_counter_notice_reviews FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_immutable_with_actor_erasure('reviewed_by_id');
-CREATE TRIGGER trigger_copyright_counter_reviews_require_actor BEFORE INSERT ON copyright_notice_counter_notice_reviews FOR EACH ROW EXECUTE FUNCTION fn_require_copyright_human_actor('reviewed_by_id');
+CREATE TRIGGER trigger_copyright_appeal_reviews_immutable BEFORE UPDATE OR DELETE ON copyright_notice_appeal_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('reviewed_by_id');
+CREATE TRIGGER trigger_copyright_appeal_reviews_require_actor BEFORE INSERT ON copyright_notice_appeal_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_human_actor('reviewed_by_id');
+CREATE TRIGGER trigger_copyright_counter_reviews_immutable BEFORE UPDATE OR DELETE ON copyright_notice_counter_notice_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('reviewed_by_id');
+CREATE TRIGGER trigger_copyright_counter_reviews_require_actor BEFORE INSERT ON copyright_notice_counter_notice_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_human_actor('reviewed_by_id');
 
 COMMENT ON TABLE copyright_notice_appeal_reviews IS 'Immutable target-level moderator decisions on informal copyright appeals; agent recommendations remain advisory.';
 COMMENT ON COLUMN copyright_notice_appeal_reviews.copyright_notice_submission_id IS 'Informal appeal decided by the moderator.';

@@ -64,4 +64,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_membership_refunds_guard`: `CREATE TRIGGER trigger_membership_refunds_guard BEFORE DELETE OR UPDATE ON public.membership_refunds FOR EACH ROW EXECUTE FUNCTION fn_guard_membership_refund_mutation()`
+- `trigger_membership_refunds_guard`: `CREATE TRIGGER trigger_membership_refunds_guard BEFORE DELETE OR UPDATE ON public.membership_refunds FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_refund_mutation()`

@@ -1,4 +1,5 @@
-CREATE OR REPLACE FUNCTION fn_enforce_membership_provider_evidence_immutability()
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE FUNCTION fn_reject_membership_provider_evidence_immutability()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
@@ -48,7 +49,7 @@ END $$;
 CREATE OR REPLACE TRIGGER trigger_membership_provider_evidence_immutable
 BEFORE UPDATE OR DELETE ON membership_provider_evidence_records
 FOR EACH ROW
-EXECUTE FUNCTION fn_enforce_membership_provider_evidence_immutability();
+EXECUTE FUNCTION fn_reject_membership_provider_evidence_immutability();
 
 ALTER TABLE membership_changes
 ADD CONSTRAINT membership_changes_lifecycle_mutually_exclusive

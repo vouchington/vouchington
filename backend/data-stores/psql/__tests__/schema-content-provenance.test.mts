@@ -111,13 +111,13 @@ describe('content provenance schema', () => {
         createdVia: 'api',
         oauthClientId: fixture.oauthClientId,
       }),
-    ).rejects.toThrow('content provenance is immutable')
+    ).rejects.toThrow('rows are append-only')
     await expect(
       fixture.updateProvenance(agentListId, { createdVia: 'mcp', oauthClientId: null }),
-    ).rejects.toThrow('content provenance is immutable')
+    ).rejects.toThrow('rows are append-only')
     await expect(
       fixture.updateProvenance(systemListId, { createdVia: 'web', oauthClientId: null }),
-    ).rejects.toThrow('content provenance is immutable')
+    ).rejects.toThrow('rows are append-only')
     await expect(fixture.keepProvenance(agentListId)).resolves.toMatchObject({ rowCount: 1 })
     await expect(fixture.renameList(agentListId)).resolves.toMatchObject({ rowCount: 1 })
   })
@@ -133,7 +133,7 @@ describe('content provenance schema', () => {
       post.updateProvenance({ createdVia: 'mcp', oauthClientId: randomUUID() }),
     ).rejects.toMatchObject({ code: '23503' })
     await expect(post.updateProvenance({ createdVia: 'web', oauthClientId: null })).rejects.toThrow(
-      'content provenance is immutable',
+      'rows are append-only',
     )
     await expect(
       post.updateProvenance({ createdVia: 'system', oauthClientId: null }),
@@ -155,7 +155,7 @@ describe('content provenance schema', () => {
     ).rejects.toMatchObject({ code: '23503' })
     await expect(
       message.updateProvenance({ createdVia: 'web', oauthClientId: null }),
-    ).rejects.toThrow('content provenance is immutable')
+    ).rejects.toThrow('rows are append-only')
     await expect(
       message.updateProvenance({ createdVia: 'system', oauthClientId: null }),
     ).resolves.toMatchObject({ rowCount: 1 })

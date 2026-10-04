@@ -28,7 +28,7 @@ describe('moderation transparency report immutability', () => {
     })
 
     await expect(updateTestModerationReportOriginalReason(ids[0]!, 'harassment')).rejects.toThrow(
-      'moderation report original reason is immutable',
+      'moderation_reports rows are append-only',
     )
     await expect(
       getTestModerationTransparencyRollupCount({

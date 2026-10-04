@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_refund_scans (
   id UUID CONSTRAINT pk_mipr_refund_scans PRIMARY KEY DEFAULT uuidv7(),
   membership_ineligible_purchase_reversal_case_id UUID NOT NULL,
@@ -76,20 +77,12 @@ ALTER TABLE membership_ineligible_purchase_reversal_refund_observations
 ALTER TABLE membership_ineligible_purchase_reversal_refund_observations
   VALIDATE CONSTRAINT fk_mipr_succeeded_refund_observations__currency;
 
-CREATE OR REPLACE FUNCTION fn_reject_mipr_succeeded_refund_observation_mutation()
-RETURNS trigger
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  RAISE EXCEPTION 'membership ineligible purchase reversal succeeded refund observations are immutable';
-END $$;
-
 CREATE OR REPLACE TRIGGER trigger_mipr_succeeded_refund_observations_immutable
 BEFORE UPDATE OR DELETE ON membership_ineligible_purchase_reversal_refund_observations
 FOR EACH ROW
-EXECUTE FUNCTION fn_reject_mipr_succeeded_refund_observation_mutation();
+EXECUTE FUNCTION fn_reject_mutation();
 
-CREATE OR REPLACE FUNCTION fn_require_mipr_succeeded_refund_observation_context()
+CREATE OR REPLACE FUNCTION fn_reject_mipr_succeeded_refund_observation_context()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
@@ -109,7 +102,7 @@ END $$;
 CREATE OR REPLACE TRIGGER trigger_mipr_succeeded_refund_observations_context
 BEFORE INSERT ON membership_ineligible_purchase_reversal_refund_observations
 FOR EACH ROW
-EXECUTE FUNCTION fn_require_mipr_succeeded_refund_observation_context();
+EXECUTE FUNCTION fn_reject_mipr_succeeded_refund_observation_context();
 
 COMMENT ON TABLE membership_ineligible_purchase_reversal_refund_scans IS
   'Mutable fenced Stripe refund-pagination cursor for one immutable reversal case payment target.';

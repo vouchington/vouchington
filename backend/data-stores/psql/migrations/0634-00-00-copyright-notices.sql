@@ -31,7 +31,8 @@ CREATE TABLE copyright_notice_targets (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (copyright_notice_id, placement_id, placement_revision),
-  UNIQUE (id, placement_id)
+  UNIQUE (id, placement_id),
+  UNIQUE (copyright_notice_id, id)
 );
 
 CREATE TABLE copyright_notice_target_images (
@@ -48,9 +49,10 @@ CREATE TABLE copyright_notice_target_images (
 );
 
 CREATE TABLE copyright_restrictions (
+  copyright_notice_id uuid NOT NULL,
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   authorizing_assessment_id uuid NOT NULL,
-  copyright_notice_target_id uuid NOT NULL REFERENCES copyright_notice_targets(id) ON DELETE CASCADE,
+  copyright_notice_target_id uuid NOT NULL,
   imposed_at timestamptz NOT NULL,
   lifted_at timestamptz,
   imposed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
@@ -66,8 +68,17 @@ CREATE TABLE copyright_restrictions (
     (human_reviewed_at IS NULL AND human_review_action IS NULL AND human_reviewed_by_id IS NULL)
     OR
     (human_reviewed_at IS NOT NULL AND human_review_action IS NOT NULL)
-  )
+  ),
+  CONSTRAINT fk_copyright_restrictions__parent_notice
+    FOREIGN KEY (copyright_notice_id, copyright_notice_target_id)
+    REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE CASCADE,
+  UNIQUE (copyright_notice_id, id)
 );
+CREATE TRIGGER trigger_update_copyright_restrictions_scope
+  BEFORE INSERT ON copyright_restrictions FOR EACH ROW
+  EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_targets', 'copyright_notice_target_id');
+COMMENT ON COLUMN copyright_restrictions.copyright_notice_id IS 'Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.';
+
 CREATE UNIQUE INDEX idx_copyright_restrictions__one_active_per_target ON copyright_restrictions(copyright_notice_target_id) WHERE lifted_at IS NULL;
 
 CREATE TABLE copyright_notice_submissions (
@@ -84,44 +95,79 @@ CREATE TABLE copyright_notice_submissions (
   CONSTRAINT copyright_submission_guest_capability_shape CHECK (
     copyright_notice_guest_capability_id IS NULL
     OR (source_kind = 'guest_form' AND kind IN ('supplement', 'withdrawal', 'court_or_ccb_hold'))
-  )
+  ),
+  CONSTRAINT copyright_notice_submissions_id_notice_unique UNIQUE (id, copyright_notice_id)
 );
 
 CREATE TABLE copyright_notice_evidence_artifacts (
+  copyright_notice_id uuid NOT NULL,
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_submission_id uuid NOT NULL REFERENCES copyright_notice_submissions(id) ON DELETE CASCADE,
+  copyright_notice_submission_id uuid NOT NULL,
   storage_key text NOT NULL,
   sha256 bytea NOT NULL CHECK (octet_length(sha256) = 32),
   mime_type text NOT NULL,
   byte_size integer NOT NULL CHECK (byte_size >= 0),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE (copyright_notice_submission_id, storage_key)
+  UNIQUE (copyright_notice_submission_id, storage_key),
+  CONSTRAINT fk_copyright_artifacts__parent_notice
+    FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id)
+    REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE CASCADE,
+  UNIQUE (copyright_notice_id, id)
 );
+CREATE TRIGGER trigger_update_copyright_artifacts_scope
+  BEFORE INSERT ON copyright_notice_evidence_artifacts FOR EACH ROW
+  EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submissions', 'copyright_notice_submission_id');
+COMMENT ON COLUMN copyright_notice_evidence_artifacts.copyright_notice_id IS 'Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.';
 
 CREATE TABLE copyright_notice_submission_assessments (
+  copyright_notice_id uuid NOT NULL,
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_form_screening_id uuid,
-  copyright_notice_submission_id uuid NOT NULL REFERENCES copyright_notice_submissions(id) ON DELETE CASCADE,
-  supersedes_assessment_id uuid UNIQUE REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT,
+  copyright_notice_submission_id uuid NOT NULL,
+  supersedes_assessment_id uuid UNIQUE,
   assessed_at timestamptz NOT NULL,
   assessed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
   substantially_compliant boolean NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_copyright_assessments__parent_notice
+    FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id)
+    REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE CASCADE,
+  UNIQUE (copyright_notice_id, id),
+  UNIQUE (copyright_notice_submission_id, id),
+  CONSTRAINT fk_copyright_assessments__supersedes_submission
+    FOREIGN KEY (copyright_notice_submission_id, supersedes_assessment_id)
+    REFERENCES copyright_notice_submission_assessments(copyright_notice_submission_id, id) ON DELETE RESTRICT
 );
+CREATE TRIGGER trigger_update_copyright_assessments_scope
+  BEFORE INSERT ON copyright_notice_submission_assessments FOR EACH ROW
+  EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submissions', 'copyright_notice_submission_id');
+COMMENT ON COLUMN copyright_notice_submission_assessments.copyright_notice_id IS 'Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.';
 
 CREATE TABLE copyright_notice_counter_notice_assessment_targets (
-  copyright_notice_submission_assessment_id uuid NOT NULL REFERENCES copyright_notice_submission_assessments(id) ON DELETE CASCADE,
-  copyright_notice_target_id uuid NOT NULL REFERENCES copyright_notice_targets(id) ON DELETE RESTRICT,
+  copyright_notice_id uuid NOT NULL,
+  copyright_notice_submission_assessment_id uuid NOT NULL,
+  copyright_notice_target_id uuid NOT NULL,
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (copyright_notice_submission_assessment_id, copyright_notice_target_id)
+  PRIMARY KEY (copyright_notice_submission_assessment_id, copyright_notice_target_id),
+  CONSTRAINT fk_copyright_counter_targets__parent_notice
+    FOREIGN KEY (copyright_notice_id, copyright_notice_submission_assessment_id)
+    REFERENCES copyright_notice_submission_assessments(copyright_notice_id, id) ON DELETE CASCADE,
+  CONSTRAINT fk_copyright_counter_targets__target_notice
+    FOREIGN KEY (copyright_notice_id, copyright_notice_target_id)
+    REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE RESTRICT
 );
+CREATE TRIGGER trigger_update_copyright_counter_targets_scope
+  BEFORE INSERT ON copyright_notice_counter_notice_assessment_targets FOR EACH ROW
+  EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submission_assessments', 'copyright_notice_submission_assessment_id');
+COMMENT ON COLUMN copyright_notice_counter_notice_assessment_targets.copyright_notice_id IS 'Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.';
 
 CREATE TABLE copyright_notice_legal_hold_assessments (
+  copyright_notice_id uuid NOT NULL,
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_submission_id uuid NOT NULL REFERENCES copyright_notice_submissions(id) ON DELETE CASCADE,
+  copyright_notice_submission_id uuid NOT NULL,
   assessed_at timestamptz NOT NULL,
   assessed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
   from_original_claimant boolean NOT NULL,
@@ -138,29 +184,57 @@ CREATE TABLE copyright_notice_legal_hold_assessments (
     (proceeding_kind = 'ccb' AND ccb_claim_kind IS NOT NULL)
     OR
     (proceeding_kind IS DISTINCT FROM 'ccb' AND ccb_claim_kind IS NULL)
-  )
+  ),
+  CONSTRAINT fk_copyright_hold_assessments__parent_notice
+    FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id)
+    REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE CASCADE,
+  UNIQUE (copyright_notice_id, id)
 );
+CREATE TRIGGER trigger_update_copyright_hold_assessments_scope
+  BEFORE INSERT ON copyright_notice_legal_hold_assessments FOR EACH ROW
+  EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submissions', 'copyright_notice_submission_id');
+COMMENT ON COLUMN copyright_notice_legal_hold_assessments.copyright_notice_id IS 'Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.';
 
 COMMENT ON COLUMN copyright_notice_legal_hold_assessments.rationale_ciphertext IS 'Encrypted moderator rationale supporting the immutable legal-hold qualification assessment.';
 
 CREATE TABLE copyright_notice_legal_hold_assessment_targets (
-  copyright_notice_legal_hold_assessment_id uuid NOT NULL REFERENCES copyright_notice_legal_hold_assessments(id) ON DELETE CASCADE,
-  copyright_notice_target_id uuid NOT NULL REFERENCES copyright_notice_targets(id) ON DELETE RESTRICT,
+  copyright_notice_id uuid NOT NULL,
+  copyright_notice_legal_hold_assessment_id uuid NOT NULL,
+  copyright_notice_target_id uuid NOT NULL,
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (copyright_notice_legal_hold_assessment_id, copyright_notice_target_id)
+  PRIMARY KEY (copyright_notice_legal_hold_assessment_id, copyright_notice_target_id),
+  CONSTRAINT fk_copyright_hold_targets__parent_notice
+    FOREIGN KEY (copyright_notice_id, copyright_notice_legal_hold_assessment_id)
+    REFERENCES copyright_notice_legal_hold_assessments(copyright_notice_id, id) ON DELETE CASCADE,
+  CONSTRAINT fk_copyright_hold_targets__target_notice
+    FOREIGN KEY (copyright_notice_id, copyright_notice_target_id)
+    REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE RESTRICT
 );
+CREATE TRIGGER trigger_update_copyright_hold_targets_scope
+  BEFORE INSERT ON copyright_notice_legal_hold_assessment_targets FOR EACH ROW
+  EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_legal_hold_assessments', 'copyright_notice_legal_hold_assessment_id');
+COMMENT ON COLUMN copyright_notice_legal_hold_assessment_targets.copyright_notice_id IS 'Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.';
 
 CREATE TABLE copyright_notice_legal_hold_resolutions (
+  copyright_notice_id uuid NOT NULL,
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_legal_hold_assessment_id uuid NOT NULL UNIQUE REFERENCES copyright_notice_legal_hold_assessments(id) ON DELETE RESTRICT,
+  copyright_notice_legal_hold_assessment_id uuid NOT NULL UNIQUE,
   resolved_at timestamptz NOT NULL,
   resolved_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
   resolution_kind text NOT NULL CHECK (resolution_kind IN ('dismissed', 'proceeding_ended', 'superseded')),
   rationale_ciphertext text NOT NULL CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 65536),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_copyright_hold_resolutions__parent_notice
+    FOREIGN KEY (copyright_notice_id, copyright_notice_legal_hold_assessment_id)
+    REFERENCES copyright_notice_legal_hold_assessments(copyright_notice_id, id) ON DELETE RESTRICT,
+  UNIQUE (copyright_notice_id, id)
 );
+CREATE TRIGGER trigger_update_copyright_hold_resolutions_scope
+  BEFORE INSERT ON copyright_notice_legal_hold_resolutions FOR EACH ROW
+  EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_legal_hold_assessments', 'copyright_notice_legal_hold_assessment_id');
+COMMENT ON COLUMN copyright_notice_legal_hold_resolutions.copyright_notice_id IS 'Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.';
 
 CREATE TABLE copyright_notice_deadlines (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
@@ -175,7 +249,8 @@ CREATE TABLE copyright_notice_deadlines (
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK (earliest_restoration_at < escalation_at),
   CHECK (escalation_at < restoration_deadline_at),
-  CHECK (num_nonnulls(resolved_at, cancelled_at) <= 1)
+  CHECK (num_nonnulls(resolved_at, cancelled_at) <= 1),
+  UNIQUE (copyright_notice_id, id)
 );
 
 CREATE TABLE copyright_notice_correspondence_messages (
@@ -210,7 +285,8 @@ CREATE TABLE copyright_notice_correspondence_messages (
     (direction = 'inbound' AND composition_kind = 'inbound' AND copyright_notice_submission_id IS NOT NULL)
     OR
     (direction = 'outbound' AND composition_kind <> 'inbound')
-  )
+  ),
+  CONSTRAINT copyright_notice_correspondence_id_notice_unique UNIQUE (id, copyright_notice_id)
 );
 
 CREATE TABLE copyright_notice_lifecycle_events (
@@ -232,14 +308,14 @@ CREATE TABLE copyright_notice_lifecycle_events (
     'guest_capability_revoked', 'guest_capability_revoked_by_withdrawal'
   )),
   actor_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
-  copyright_notice_submission_id uuid REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
-  copyright_notice_submission_assessment_id uuid REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT,
-  copyright_notice_evidence_artifact_id uuid REFERENCES copyright_notice_evidence_artifacts(id) ON DELETE RESTRICT,
-  copyright_notice_correspondence_id uuid REFERENCES copyright_notice_correspondence_messages(id) ON DELETE RESTRICT,
-  copyright_notice_legal_hold_assessment_id uuid REFERENCES copyright_notice_legal_hold_assessments(id) ON DELETE RESTRICT,
-  copyright_notice_legal_hold_resolution_id uuid REFERENCES copyright_notice_legal_hold_resolutions(id) ON DELETE RESTRICT,
-  copyright_notice_deadline_id uuid REFERENCES copyright_notice_deadlines(id) ON DELETE RESTRICT,
-  copyright_restriction_id uuid REFERENCES copyright_restrictions(id) ON DELETE RESTRICT,
+  copyright_notice_submission_id uuid,
+  copyright_notice_submission_assessment_id uuid,
+  copyright_notice_evidence_artifact_id uuid,
+  copyright_notice_correspondence_id uuid,
+  copyright_notice_legal_hold_assessment_id uuid,
+  copyright_notice_legal_hold_resolution_id uuid,
+  copyright_notice_deadline_id uuid,
+  copyright_restriction_id uuid,
   copyright_notice_action_intent_id uuid,
   copyright_notice_email_intake_id uuid,
   copyright_notice_delivery_intent_id uuid,
@@ -298,10 +374,35 @@ CREATE TABLE copyright_notice_lifecycle_events (
         'guest_capability_revoked_by_withdrawal') THEN copyright_notice_guest_capability_id IS NOT NULL
       ELSE false
     END
-  )
+  ),
+  CONSTRAINT fk_copyright_lifecycle_events__submission_notice
+    FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id)
+    REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE RESTRICT,
+  CONSTRAINT fk_copyright_lifecycle_events__correspondence_notice
+    FOREIGN KEY (copyright_notice_id, copyright_notice_correspondence_id)
+    REFERENCES copyright_notice_correspondence_messages(copyright_notice_id, id) ON DELETE RESTRICT,
+  CONSTRAINT fk_copyright_lifecycle_events__deadline_notice
+    FOREIGN KEY (copyright_notice_id, copyright_notice_deadline_id)
+    REFERENCES copyright_notice_deadlines(copyright_notice_id, id) ON DELETE RESTRICT,
+  CONSTRAINT fk_copyright_lifecycle_events__assessment_notice
+    FOREIGN KEY (copyright_notice_id, copyright_notice_submission_assessment_id)
+    REFERENCES copyright_notice_submission_assessments(copyright_notice_id, id) ON DELETE RESTRICT,
+  CONSTRAINT fk_copyright_lifecycle_events__artifact_notice
+    FOREIGN KEY (copyright_notice_id, copyright_notice_evidence_artifact_id)
+    REFERENCES copyright_notice_evidence_artifacts(copyright_notice_id, id) ON DELETE RESTRICT,
+  CONSTRAINT fk_copyright_lifecycle_events__hold_assessment_notice
+    FOREIGN KEY (copyright_notice_id, copyright_notice_legal_hold_assessment_id)
+    REFERENCES copyright_notice_legal_hold_assessments(copyright_notice_id, id) ON DELETE RESTRICT,
+  CONSTRAINT fk_copyright_lifecycle_events__hold_resolution_notice
+    FOREIGN KEY (copyright_notice_id, copyright_notice_legal_hold_resolution_id)
+    REFERENCES copyright_notice_legal_hold_resolutions(copyright_notice_id, id) ON DELETE RESTRICT,
+  CONSTRAINT fk_copyright_lifecycle_events__restriction_notice
+    FOREIGN KEY (copyright_notice_id, copyright_restriction_id)
+    REFERENCES copyright_restrictions(copyright_notice_id, id) ON DELETE RESTRICT
 );
 
 CREATE TABLE copyright_notice_action_intents (
+  copyright_notice_id uuid NOT NULL,
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   state text NOT NULL DEFAULT 'pending' CHECK (state IN ('pending', 'claimed', 'completed', 'stale', 'blocked', 'failed')),
   delivery_attempt_count integer NOT NULL DEFAULT 0 CHECK (delivery_attempt_count BETWEEN 0 AND 5),
@@ -310,7 +411,7 @@ CREATE TABLE copyright_notice_action_intents (
   completed_at_reason text CHECK (completed_at_reason IS NULL OR completed_at_reason IN ('completed', 'stale', 'blocked', 'failed')),
   failure_message text CHECK (failure_message IS NULL OR char_length(failure_message) BETWEEN 1 AND 4096),
   next_attempt_at timestamptz,
-  copyright_restriction_id uuid NOT NULL REFERENCES copyright_restrictions(id) ON DELETE CASCADE,
+  copyright_restriction_id uuid NOT NULL,
   copyright_notice_deadline_id uuid REFERENCES copyright_notice_deadlines(id) ON DELETE RESTRICT,
   expected_placement_revision integer NOT NULL CHECK (expected_placement_revision >= 0),
   action text NOT NULL CHECK (action IN ('withhold', 'restore')),
@@ -328,86 +429,27 @@ CREATE TABLE copyright_notice_action_intents (
   CONSTRAINT copyright_action_intents_retry_schedule CHECK (
     ((state = 'pending' AND (delivery_attempt_count = 0 OR next_attempt_at IS NOT NULL)) OR state <> 'pending')
     AND (state <> 'claimed' OR next_attempt_at IS NULL)
-  )
+  ),
+  CONSTRAINT fk_copyright_action_intents__parent_notice
+    FOREIGN KEY (copyright_notice_id, copyright_restriction_id)
+    REFERENCES copyright_restrictions(copyright_notice_id, id) ON DELETE CASCADE,
+  UNIQUE (copyright_notice_id, id)
 );
+CREATE TRIGGER trigger_update_copyright_action_intents_scope
+  BEFORE INSERT ON copyright_notice_action_intents FOR EACH ROW
+  EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_restrictions', 'copyright_restriction_id');
+COMMENT ON COLUMN copyright_notice_action_intents.copyright_notice_id IS 'Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.';
 
 ALTER TABLE copyright_notice_lifecycle_events
   ADD CONSTRAINT copyright_lifecycle_event_action_intent_fk
-  FOREIGN KEY (copyright_notice_action_intent_id)
-  REFERENCES copyright_notice_action_intents(id) ON DELETE RESTRICT NOT VALID;
+  FOREIGN KEY (copyright_notice_id, copyright_notice_action_intent_id)
+  REFERENCES copyright_notice_action_intents(copyright_notice_id, id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE copyright_notice_lifecycle_events
   VALIDATE CONSTRAINT copyright_lifecycle_event_action_intent_fk;
 
-CREATE OR REPLACE FUNCTION fn_guard_copyright_lifecycle_event_source_notice()
+CREATE OR REPLACE FUNCTION fn_reject_copyright_lifecycle_event_source_notice()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
-  IF NEW.copyright_notice_submission_id IS NOT NULL AND NOT EXISTS (
-    SELECT 1 FROM copyright_notice_submissions source
-    WHERE source.id = NEW.copyright_notice_submission_id
-      AND source.copyright_notice_id = NEW.copyright_notice_id
-  ) THEN RAISE EXCEPTION 'lifecycle submission belongs to another notice' USING ERRCODE = 'check_violation'; END IF;
-
-  IF NEW.copyright_notice_submission_assessment_id IS NOT NULL AND NOT EXISTS (
-    SELECT 1 FROM copyright_notice_submission_assessments source
-    JOIN copyright_notice_submissions submission ON submission.id = source.copyright_notice_submission_id
-    WHERE source.id = NEW.copyright_notice_submission_assessment_id
-      AND submission.copyright_notice_id = NEW.copyright_notice_id
-  ) THEN RAISE EXCEPTION 'lifecycle assessment belongs to another notice' USING ERRCODE = 'check_violation'; END IF;
-
-  IF NEW.copyright_notice_evidence_artifact_id IS NOT NULL AND NOT EXISTS (
-    SELECT 1 FROM copyright_notice_evidence_artifacts source
-    JOIN copyright_notice_submissions submission ON submission.id = source.copyright_notice_submission_id
-    WHERE source.id = NEW.copyright_notice_evidence_artifact_id
-      AND submission.copyright_notice_id = NEW.copyright_notice_id
-  ) THEN RAISE EXCEPTION 'lifecycle artifact belongs to another notice' USING ERRCODE = 'check_violation'; END IF;
-
-  IF NEW.copyright_notice_correspondence_id IS NOT NULL AND NOT EXISTS (
-    SELECT 1 FROM copyright_notice_correspondence_messages source
-    WHERE source.id = NEW.copyright_notice_correspondence_id
-      AND source.copyright_notice_id = NEW.copyright_notice_id
-  ) THEN RAISE EXCEPTION 'lifecycle correspondence belongs to another notice' USING ERRCODE = 'check_violation'; END IF;
-
-  IF NEW.copyright_notice_legal_hold_assessment_id IS NOT NULL AND NOT EXISTS (
-    SELECT 1 FROM copyright_notice_legal_hold_assessments source
-    JOIN copyright_notice_submissions submission ON submission.id = source.copyright_notice_submission_id
-    WHERE source.id = NEW.copyright_notice_legal_hold_assessment_id
-      AND submission.copyright_notice_id = NEW.copyright_notice_id
-  ) THEN RAISE EXCEPTION 'lifecycle hold assessment belongs to another notice' USING ERRCODE = 'check_violation'; END IF;
-
-  IF NEW.copyright_notice_legal_hold_resolution_id IS NOT NULL AND NOT EXISTS (
-    SELECT 1 FROM copyright_notice_legal_hold_resolutions source
-    JOIN copyright_notice_legal_hold_assessments assessment ON assessment.id = source.copyright_notice_legal_hold_assessment_id
-    JOIN copyright_notice_submissions submission ON submission.id = assessment.copyright_notice_submission_id
-    WHERE source.id = NEW.copyright_notice_legal_hold_resolution_id
-      AND submission.copyright_notice_id = NEW.copyright_notice_id
-  ) THEN RAISE EXCEPTION 'lifecycle hold resolution belongs to another notice' USING ERRCODE = 'check_violation'; END IF;
-
-  IF NEW.copyright_notice_deadline_id IS NOT NULL AND NOT EXISTS (
-    SELECT 1 FROM copyright_notice_deadlines source
-    WHERE source.id = NEW.copyright_notice_deadline_id
-      AND source.copyright_notice_id = NEW.copyright_notice_id
-  ) THEN RAISE EXCEPTION 'lifecycle deadline belongs to another notice' USING ERRCODE = 'check_violation'; END IF;
-
-  IF NEW.copyright_restriction_id IS NOT NULL AND NOT EXISTS (
-    SELECT 1 FROM copyright_restrictions source
-    JOIN copyright_notice_targets target ON target.id = source.copyright_notice_target_id
-    WHERE source.id = NEW.copyright_restriction_id
-      AND target.copyright_notice_id = NEW.copyright_notice_id
-  ) THEN RAISE EXCEPTION 'lifecycle restriction belongs to another notice' USING ERRCODE = 'check_violation'; END IF;
-
-  IF NEW.copyright_notice_action_intent_id IS NOT NULL AND NOT EXISTS (
-    SELECT 1 FROM copyright_notice_action_intents source
-    JOIN copyright_restrictions restriction ON restriction.id = source.copyright_restriction_id
-    JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-    WHERE source.id = NEW.copyright_notice_action_intent_id
-      AND target.copyright_notice_id = NEW.copyright_notice_id
-  ) THEN RAISE EXCEPTION 'lifecycle action intent belongs to another notice' USING ERRCODE = 'check_violation'; END IF;
-
-  IF NEW.copyright_notice_email_intake_id IS NOT NULL AND NOT EXISTS (
-    SELECT 1 FROM copyright_notice_email_intake_notice_links source
-    WHERE source.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id
-      AND source.copyright_notice_id = NEW.copyright_notice_id
-  ) THEN RAISE EXCEPTION 'lifecycle email intake belongs to another notice' USING ERRCODE = 'check_violation'; END IF;
 
   -- A NULL notice pairs only with an email-intake reply, which is the one intent with no notice.
   IF NEW.copyright_notice_delivery_intent_id IS NOT NULL AND NOT EXISTS (
@@ -428,7 +470,7 @@ $$;
 
 CREATE TRIGGER trigger_guard_copyright_lifecycle_event_source_notice
 BEFORE INSERT ON copyright_notice_lifecycle_events
-FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_lifecycle_event_source_notice();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_lifecycle_event_source_notice();
 
 CREATE INDEX idx_copyright_notice_targets__placement ON copyright_notice_targets(placement_id, placement_revision);
 CREATE INDEX idx_copyright_notice_target_images__image ON copyright_notice_target_images(image_id);
@@ -442,9 +484,13 @@ CREATE UNIQUE INDEX idx_copyright_notice_submissions__one_guest_court_hold ON co
 CREATE INDEX idx_copyright_notice_assessments__submission ON copyright_notice_submission_assessments(copyright_notice_submission_id, id DESC);
 CREATE INDEX idx_copyright_notice_assessments__assessed_by ON copyright_notice_submission_assessments(assessed_by_id) WHERE assessed_by_id IS NOT NULL;
 CREATE INDEX idx_copyright_notice_counter_assessment_targets__target ON copyright_notice_counter_notice_assessment_targets(copyright_notice_target_id, copyright_notice_submission_assessment_id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_copyright_notice_counter_assessment_targets__notice ON copyright_notice_counter_notice_assessment_targets(copyright_notice_id);
 CREATE INDEX idx_copyright_notice_hold_assessments__submission ON copyright_notice_legal_hold_assessments(copyright_notice_submission_id, id DESC);
 CREATE INDEX idx_copyright_notice_hold_assessments__assessed_by ON copyright_notice_legal_hold_assessments(assessed_by_id, id DESC);
 CREATE INDEX idx_copyright_notice_hold_targets__target ON copyright_notice_legal_hold_assessment_targets(copyright_notice_target_id, copyright_notice_legal_hold_assessment_id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_copyright_notice_hold_targets__notice ON copyright_notice_legal_hold_assessment_targets(copyright_notice_id);
 CREATE INDEX idx_copyright_notice_hold_resolutions__resolved_by ON copyright_notice_legal_hold_resolutions(resolved_by_id, id DESC);
 CREATE INDEX idx_copyright_notice_deadlines__notice ON copyright_notice_deadlines(copyright_notice_id, id DESC);
 CREATE INDEX idx_copyright_notice_deadlines__pending ON copyright_notice_deadlines(escalation_at, id) WHERE resolved_at IS NULL AND cancelled_at IS NULL;
@@ -473,7 +519,7 @@ CREATE INDEX idx_copyright_restrictions__imposed_by ON copyright_restrictions(im
 CREATE INDEX idx_copyright_restrictions__lifted_by ON copyright_restrictions(lifted_by_id) WHERE lifted_by_id IS NOT NULL;
 CREATE INDEX idx_copyright_notice_events__actor ON copyright_notice_lifecycle_events(actor_user_id) WHERE actor_user_id IS NOT NULL;
 
-CREATE OR REPLACE FUNCTION fn_guard_copyright_notice_immutable_evidence()
+CREATE OR REPLACE FUNCTION fn_reject_copyright_notice_immutable_evidence()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN
@@ -483,7 +529,7 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION fn_guard_copyright_immutable_with_actor_erasure()
+CREATE OR REPLACE FUNCTION fn_reject_copyright_immutable_with_actor_erasure()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE
   actor_column text;
@@ -511,7 +557,7 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION fn_require_copyright_human_actor()
+CREATE OR REPLACE FUNCTION fn_reject_copyright_human_actor()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF to_jsonb(NEW) ->> TG_ARGV[0] IS NULL THEN
@@ -521,22 +567,7 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION fn_guard_copyright_assessment_supersession()
-RETURNS TRIGGER LANGUAGE plpgsql AS $$
-BEGIN
-  IF NEW.supersedes_assessment_id IS NOT NULL AND NOT EXISTS (
-    SELECT 1
-    FROM copyright_notice_submission_assessments prior
-    WHERE prior.id = NEW.supersedes_assessment_id
-      AND prior.copyright_notice_submission_id = NEW.copyright_notice_submission_id
-  ) THEN
-    RAISE EXCEPTION 'copyright assessment corrections must stay within one submission' USING ERRCODE = 'check_violation';
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION fn_guard_copyright_assessment_source()
+CREATE OR REPLACE FUNCTION fn_reject_copyright_assessment_source()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF EXISTS (
@@ -551,7 +582,7 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION fn_guard_copyright_counter_notice_assessment_target_scope()
+CREATE OR REPLACE FUNCTION fn_reject_copyright_counter_notice_assessment_target_scope()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF NOT EXISTS (
@@ -559,11 +590,8 @@ BEGIN
     FROM copyright_notice_submission_assessments assessment
     JOIN copyright_notice_submissions submission
       ON submission.id = assessment.copyright_notice_submission_id
-    JOIN copyright_notice_targets target
-      ON target.id = NEW.copyright_notice_target_id
     WHERE assessment.id = NEW.copyright_notice_submission_assessment_id
       AND submission.kind = 'counter_notice'
-      AND target.copyright_notice_id = submission.copyright_notice_id
   ) THEN
     RAISE EXCEPTION 'counter-notice assessments may cover only targets in the same case' USING ERRCODE = 'check_violation';
   END IF;
@@ -571,26 +599,7 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION fn_guard_copyright_hold_target_scope()
-RETURNS TRIGGER LANGUAGE plpgsql AS $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1
-    FROM copyright_notice_legal_hold_assessments assessment
-    JOIN copyright_notice_submissions submission
-      ON submission.id = assessment.copyright_notice_submission_id
-    JOIN copyright_notice_targets target
-      ON target.id = NEW.copyright_notice_target_id
-    WHERE assessment.id = NEW.copyright_notice_legal_hold_assessment_id
-      AND target.copyright_notice_id = submission.copyright_notice_id
-  ) THEN
-    RAISE EXCEPTION 'copyright legal holds may cover only targets in the same case' USING ERRCODE = 'check_violation';
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION fn_guard_copyright_notice_submission()
+CREATE OR REPLACE FUNCTION fn_reject_copyright_notice_submission()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN
@@ -628,22 +637,22 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER trigger_copyright_notice_submissions_immutable BEFORE UPDATE OR DELETE ON copyright_notice_submissions FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_submission();
-CREATE TRIGGER trigger_copyright_notice_evidence_immutable BEFORE UPDATE OR DELETE ON copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_immutable_evidence();
-CREATE TRIGGER trigger_copyright_notice_assessments_immutable BEFORE UPDATE OR DELETE ON copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_immutable_with_actor_erasure('assessed_by_id');
-CREATE TRIGGER trigger_copyright_notice_assessments_scope BEFORE INSERT ON copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_assessment_supersession();
-CREATE TRIGGER trigger_copyright_notice_assessments_source BEFORE INSERT ON copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_assessment_source();
-CREATE TRIGGER trigger_copyright_notice_counter_assessment_targets_immutable BEFORE UPDATE OR DELETE ON copyright_notice_counter_notice_assessment_targets FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_immutable_evidence();
-CREATE TRIGGER trigger_copyright_notice_counter_assessment_targets_scope BEFORE INSERT ON copyright_notice_counter_notice_assessment_targets FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_counter_notice_assessment_target_scope();
-CREATE TRIGGER trigger_copyright_notice_hold_assessments_immutable BEFORE UPDATE OR DELETE ON copyright_notice_legal_hold_assessments FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_immutable_with_actor_erasure('assessed_by_id');
-CREATE TRIGGER trigger_copyright_notice_hold_assessments_require_actor BEFORE INSERT ON copyright_notice_legal_hold_assessments FOR EACH ROW EXECUTE FUNCTION fn_require_copyright_human_actor('assessed_by_id');
-CREATE TRIGGER trigger_copyright_notice_hold_targets_immutable BEFORE UPDATE OR DELETE ON copyright_notice_legal_hold_assessment_targets FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_immutable_evidence();
-CREATE TRIGGER trigger_copyright_notice_hold_targets_scope BEFORE INSERT ON copyright_notice_legal_hold_assessment_targets FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_hold_target_scope();
-CREATE TRIGGER trigger_copyright_notice_hold_resolutions_immutable BEFORE UPDATE OR DELETE ON copyright_notice_legal_hold_resolutions FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_immutable_with_actor_erasure('resolved_by_id');
-CREATE TRIGGER trigger_copyright_notice_hold_resolutions_require_actor BEFORE INSERT ON copyright_notice_legal_hold_resolutions FOR EACH ROW EXECUTE FUNCTION fn_require_copyright_human_actor('resolved_by_id');
-CREATE TRIGGER trigger_copyright_notice_events_immutable BEFORE UPDATE OR DELETE ON copyright_notice_lifecycle_events FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_immutable_with_actor_erasure('actor_user_id');
+CREATE TRIGGER trigger_copyright_notice_submissions_immutable BEFORE UPDATE OR DELETE ON copyright_notice_submissions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_submission();
+CREATE TRIGGER trigger_copyright_notice_evidence_immutable BEFORE UPDATE OR DELETE ON copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
+CREATE TRIGGER trigger_copyright_notice_assessments_immutable BEFORE UPDATE OR DELETE ON copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('assessed_by_id');
 
-CREATE OR REPLACE FUNCTION fn_guard_copyright_notice_identity()
+CREATE TRIGGER trigger_copyright_notice_assessments_source BEFORE INSERT ON copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_assessment_source();
+CREATE TRIGGER trigger_copyright_notice_counter_assessment_targets_immutable BEFORE UPDATE OR DELETE ON copyright_notice_counter_notice_assessment_targets FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
+CREATE TRIGGER trigger_copyright_notice_counter_assessment_targets_scope BEFORE INSERT ON copyright_notice_counter_notice_assessment_targets FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_counter_notice_assessment_target_scope();
+CREATE TRIGGER trigger_copyright_notice_hold_assessments_immutable BEFORE UPDATE OR DELETE ON copyright_notice_legal_hold_assessments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('assessed_by_id');
+CREATE TRIGGER trigger_copyright_notice_hold_assessments_require_actor BEFORE INSERT ON copyright_notice_legal_hold_assessments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_human_actor('assessed_by_id');
+CREATE TRIGGER trigger_copyright_notice_hold_targets_immutable BEFORE UPDATE OR DELETE ON copyright_notice_legal_hold_assessment_targets FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
+
+CREATE TRIGGER trigger_copyright_notice_hold_resolutions_immutable BEFORE UPDATE OR DELETE ON copyright_notice_legal_hold_resolutions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('resolved_by_id');
+CREATE TRIGGER trigger_copyright_notice_hold_resolutions_require_actor BEFORE INSERT ON copyright_notice_legal_hold_resolutions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_human_actor('resolved_by_id');
+CREATE TRIGGER trigger_copyright_notice_events_immutable BEFORE UPDATE OR DELETE ON copyright_notice_lifecycle_events FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('actor_user_id');
+
+CREATE OR REPLACE FUNCTION fn_reject_copyright_notice_identity()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN
@@ -678,11 +687,11 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER trigger_copyright_notices_identity_immutable BEFORE UPDATE OR DELETE ON copyright_notices FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_identity();
-CREATE TRIGGER trigger_copyright_notice_targets_immutable BEFORE UPDATE OR DELETE ON copyright_notice_targets FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_immutable_evidence();
-CREATE TRIGGER trigger_copyright_notice_target_images_immutable BEFORE UPDATE OR DELETE ON copyright_notice_target_images FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_immutable_evidence();
+CREATE TRIGGER trigger_copyright_notices_identity_immutable BEFORE UPDATE OR DELETE ON copyright_notices FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_identity();
+CREATE TRIGGER trigger_copyright_notice_targets_immutable BEFORE UPDATE OR DELETE ON copyright_notice_targets FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
+CREATE TRIGGER trigger_copyright_notice_target_images_immutable BEFORE UPDATE OR DELETE ON copyright_notice_target_images FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
 
-CREATE OR REPLACE FUNCTION fn_guard_copyright_notice_lifecycle()
+CREATE OR REPLACE FUNCTION fn_reject_copyright_notice_lifecycle()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
@@ -699,10 +708,10 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER trigger_copyright_notices_lifecycle_guard BEFORE UPDATE ON copyright_notices FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_lifecycle();
+CREATE TRIGGER trigger_copyright_notices_lifecycle_guard BEFORE UPDATE ON copyright_notices FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_lifecycle();
 CREATE TRIGGER trigger_copyright_notices_updated_at BEFORE UPDATE ON copyright_notices FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
-CREATE OR REPLACE FUNCTION fn_guard_copyright_restriction_lifecycle()
+CREATE OR REPLACE FUNCTION fn_reject_copyright_restriction_lifecycle()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
@@ -734,10 +743,10 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER trigger_copyright_restrictions_lifecycle_guard BEFORE UPDATE OR DELETE ON copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_restriction_lifecycle();
+CREATE TRIGGER trigger_copyright_restrictions_lifecycle_guard BEFORE UPDATE OR DELETE ON copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_restriction_lifecycle();
 CREATE TRIGGER trigger_copyright_restrictions_updated_at BEFORE UPDATE ON copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
-CREATE OR REPLACE FUNCTION fn_guard_copyright_action_intent()
+CREATE OR REPLACE FUNCTION fn_reject_copyright_action_intent()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
@@ -754,10 +763,10 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER trigger_copyright_action_intents_guard BEFORE UPDATE OR DELETE ON copyright_notice_action_intents FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_action_intent();
+CREATE TRIGGER trigger_copyright_action_intents_guard BEFORE UPDATE OR DELETE ON copyright_notice_action_intents FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_action_intent();
 CREATE TRIGGER trigger_copyright_action_intents_updated_at BEFORE UPDATE ON copyright_notice_action_intents FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
-CREATE OR REPLACE FUNCTION fn_guard_copyright_deadline()
+CREATE OR REPLACE FUNCTION fn_reject_copyright_deadline()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
@@ -786,10 +795,10 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER trigger_copyright_deadlines_guard BEFORE UPDATE OR DELETE ON copyright_notice_deadlines FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_deadline();
+CREATE TRIGGER trigger_copyright_deadlines_guard BEFORE UPDATE OR DELETE ON copyright_notice_deadlines FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_deadline();
 CREATE TRIGGER trigger_copyright_deadlines_updated_at BEFORE UPDATE ON copyright_notice_deadlines FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
-CREATE OR REPLACE FUNCTION fn_guard_copyright_correspondence()
+CREATE OR REPLACE FUNCTION fn_reject_copyright_correspondence()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN
@@ -848,7 +857,7 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER trigger_copyright_correspondence_guard BEFORE UPDATE OR DELETE ON copyright_notice_correspondence_messages FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_correspondence();
+CREATE TRIGGER trigger_copyright_correspondence_guard BEFORE UPDATE OR DELETE ON copyright_notice_correspondence_messages FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_correspondence();
 CREATE TRIGGER trigger_copyright_correspondence_updated_at BEFORE UPDATE ON copyright_notice_correspondence_messages FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 COMMENT ON TABLE copyright_notices IS 'Legal copyright allegation aggregate. Member views must use an allowlisted projection and never expose contact or evidence.';

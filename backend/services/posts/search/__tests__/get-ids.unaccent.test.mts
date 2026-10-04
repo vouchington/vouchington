@@ -2,7 +2,7 @@ import { it, expect, describe } from 'vitest'
 import { getPostIds } from '../get-ids.mts'
 import { createTestPost, createTestUser, createRandomString } from '@voucha/test-helpers'
 
-// posts.search_vector is trigger-maintained (fn_sync_posts_search_vector, scoped to
+// posts.search_vector is trigger-maintained (fn_update_posts_search_vector, scoped to
 // BEFORE INSERT OR UPDATE OF title, markdown — see 0070-00-00-posts-feed-content.sql) rather than
 // a generated column, so this exercises the write-side trigger and the read-side
 // websearch_to_tsquery('voucha_english', ...) CTE (query-builder/ctes.mts) end to end.

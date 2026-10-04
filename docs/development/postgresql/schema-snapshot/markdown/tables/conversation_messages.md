@@ -73,5 +73,5 @@ _none_
 
 **Triggers:**
 
-- `conversation_messages_content_provenance_immutable`: `CREATE TRIGGER conversation_messages_content_provenance_immutable AFTER UPDATE ON public.conversation_messages FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()`
+- `conversation_messages_content_provenance_immutable`: `CREATE TRIGGER conversation_messages_content_provenance_immutable AFTER UPDATE ON public.conversation_messages FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_conversation_messages_updated_at`: `CREATE TRIGGER trigger_conversation_messages_updated_at BEFORE UPDATE ON public.conversation_messages FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

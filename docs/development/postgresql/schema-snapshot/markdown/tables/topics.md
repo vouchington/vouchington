@@ -133,8 +133,8 @@ _none_
 
 **Triggers:**
 
-- `topics_content_provenance_immutable`: `CREATE TRIGGER topics_content_provenance_immutable AFTER UPDATE ON public.topics FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()`
-- `trigger_create_topic_metrics`: `CREATE TRIGGER trigger_create_topic_metrics AFTER INSERT ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_create_topic_metrics_on_insert()`
-- `trigger_register_retained_topic_identity`: `CREATE TRIGGER trigger_register_retained_topic_identity BEFORE INSERT ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_register_retained_topic_identity()`
-- `trigger_sync_topic_image_placements`: `CREATE TRIGGER trigger_sync_topic_image_placements AFTER INSERT OR UPDATE OF logo_image_id, hero_image_id, deleted_at, merged_into_topic_id ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_sync_topic_image_placements()`
+- `topics_content_provenance_immutable`: `CREATE TRIGGER topics_content_provenance_immutable AFTER UPDATE ON public.topics FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_create_topic_metrics`: `CREATE TRIGGER trigger_create_topic_metrics AFTER INSERT ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_create_metrics('topic_metrics', 'topic_id')`
+- `trigger_register_retained_topic_identity`: `CREATE TRIGGER trigger_register_retained_topic_identity BEFORE INSERT ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('topic')`
+- `trigger_sync_topic_image_placements`: `CREATE TRIGGER trigger_sync_topic_image_placements AFTER INSERT OR UPDATE OF logo_image_id, hero_image_id, deleted_at, merged_into_topic_id ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_project_topic_image_placements()`
 - `trigger_topics_updated_at`: `CREATE TRIGGER trigger_topics_updated_at BEFORE UPDATE ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

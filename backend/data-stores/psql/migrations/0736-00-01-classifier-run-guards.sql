@@ -1,5 +1,6 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Retained community provenance is captured from the owning post, not accepted from callers.
-CREATE OR REPLACE FUNCTION fn_stamp_classifier_run_scope()
+CREATE OR REPLACE FUNCTION fn_update_classifier_run_scope()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.post_id IS NULL THEN
@@ -13,12 +14,12 @@ END $$;
 
 CREATE OR REPLACE TRIGGER classifier_runs_scope_stamp
 BEFORE INSERT ON classifier_runs
-FOR EACH ROW EXECUTE FUNCTION fn_stamp_classifier_run_scope();
+FOR EACH ROW EXECUTE FUNCTION fn_update_classifier_run_scope();
 
 -- A run's identity, attempt budget and terminal outcome only move forward. Its remote C3 batch is
 -- reserved with the run before provider execution. Phase stamps are durable proof of completed
 -- effects, not mutable progress flags.
-CREATE OR REPLACE FUNCTION fn_protect_classifier_run()
+CREATE OR REPLACE FUNCTION fn_reject_classifier_run()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF OLD.id IS DISTINCT FROM NEW.id
@@ -58,7 +59,7 @@ END $$;
 
 CREATE OR REPLACE TRIGGER classifier_runs_guard
 BEFORE UPDATE ON classifier_runs
-FOR EACH ROW EXECUTE FUNCTION fn_protect_classifier_run();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_run();
 
 CREATE OR REPLACE TRIGGER classifier_runs_updated_at
 BEFORE UPDATE ON classifier_runs
@@ -71,9 +72,9 @@ FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 -- The local detector outcome is written once and never revised.
 CREATE OR REPLACE TRIGGER post_classifier_local_outcomes_append_only
 BEFORE UPDATE ON post_classifier_local_outcomes
-FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
 -- The captured candidate set is written once with the run and never revised.
 CREATE OR REPLACE TRIGGER classifier_run_candidates_append_only
 BEFORE UPDATE ON classifier_run_candidates
-FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();

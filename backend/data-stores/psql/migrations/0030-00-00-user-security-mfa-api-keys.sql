@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Coalesced pre-launch domain baseline.
 -- edited-in-place: pre-launch, never deployed to production
 -- Merged from: 0340-00-00-mfa-totp-authenticators.sql, 0190-00-00-api-keys.sql
@@ -67,7 +68,7 @@ CREATE TABLE IF NOT EXISTS api_keys (
 );
 
 CREATE OR REPLACE TRIGGER trigger_register_retained_api_key_identity
-  BEFORE INSERT ON api_keys FOR EACH ROW EXECUTE FUNCTION fn_register_retained_api_key_identity();
+  BEFORE INSERT ON api_keys FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('api_key');
 
 CREATE OR REPLACE TRIGGER trigger_api_keys_updated_at
   BEFORE UPDATE ON api_keys FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();

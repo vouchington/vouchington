@@ -40,5 +40,5 @@ _none_
 
 **Triggers:**
 
-- `trigger_refresh_rss_feed_item_unmapped_category_count`: `CREATE TRIGGER trigger_refresh_rss_feed_item_unmapped_category_count AFTER INSERT OR DELETE OR UPDATE OF category_text, topic_id ON public.rss_feed_item_categories FOR EACH ROW EXECUTE FUNCTION fn_refresh_rss_feed_item_unmapped_category_count()`
+- `trigger_refresh_rss_feed_item_unmapped_category_count`: `CREATE TRIGGER trigger_refresh_rss_feed_item_unmapped_category_count AFTER INSERT OR DELETE OR UPDATE OF category_text, topic_id ON public.rss_feed_item_categories FOR EACH ROW EXECUTE FUNCTION fn_project_refresh_rss_feed_item_unmapped_category_count()`
 - `trigger_rss_feed_item_categories_updated_at`: `CREATE TRIGGER trigger_rss_feed_item_categories_updated_at BEFORE UPDATE ON public.rss_feed_item_categories FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

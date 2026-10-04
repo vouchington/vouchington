@@ -54,4 +54,4 @@ _none_
 **Triggers:**
 
 - `trigger_api_keys_updated_at`: `CREATE TRIGGER trigger_api_keys_updated_at BEFORE UPDATE ON public.api_keys FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
-- `trigger_register_retained_api_key_identity`: `CREATE TRIGGER trigger_register_retained_api_key_identity BEFORE INSERT ON public.api_keys FOR EACH ROW EXECUTE FUNCTION fn_register_retained_api_key_identity()`
+- `trigger_register_retained_api_key_identity`: `CREATE TRIGGER trigger_register_retained_api_key_identity BEFORE INSERT ON public.api_keys FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('api_key')`

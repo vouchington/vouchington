@@ -54,5 +54,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `community_applications_content_provenance_immutable`: `CREATE TRIGGER community_applications_content_provenance_immutable AFTER UPDATE ON public.community_applications FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()`
+- `community_applications_content_provenance_immutable`: `CREATE TRIGGER community_applications_content_provenance_immutable AFTER UPDATE ON public.community_applications FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_community_applications_updated_at`: `CREATE TRIGGER trigger_community_applications_updated_at BEFORE UPDATE ON public.community_applications FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

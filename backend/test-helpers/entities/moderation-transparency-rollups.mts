@@ -13,7 +13,7 @@ export async function getTestModerationTransparencyRollupFunctionDefinition(): P
 
 export async function getTestModerationTransparencyClearanceRollupFunctionDefinition(): Promise<string> {
   const { rows } = await read<{ definition: string }>(sql`
-    SELECT pg_get_functiondef('fn_moderation_transparency_clearance_insert_rollup()'::regprocedure) AS definition
+    SELECT pg_get_functiondef('fn_project_moderation_transparency_clearance_insert_rollup()'::regprocedure) AS definition
   `)
   return rows[0]!.definition
 }
@@ -23,17 +23,19 @@ export async function getTestModerationTransparencyDeleteRollupFunctionDefinitio
   Record<string, string>
 > {
   const { rows } = await read<{ name: string; definition: string }>(sql`
-    SELECT p.proname AS name, pg_get_functiondef(p.oid) AS definition
+    SELECT p.proname AS name,
+      pg_get_functiondef(p.oid) || COALESCE(string_agg(pg_get_triggerdef(t.oid), E'\n' ORDER BY t.tgname), '') AS definition
     FROM pg_proc p
+    LEFT JOIN pg_trigger t ON t.tgfoid = p.oid
     WHERE p.proname = ANY(
       ARRAY[
-        'fn_moderation_transparency_reports_delete_rollup',
-        'fn_moderation_transparency_actions_delete_rollup',
-        'fn_moderation_transparency_agent_delete_rollup',
-        'fn_moderation_transparency_appeals_delete_rollup',
-        'fn_moderation_transparency_clearance_delete_rollup'
+        'fn_project_transparency_rollup',
+        'fn_project_moderation_transparency_agent_delete_rollup',
+        'fn_project_moderation_transparency_appeals_delete_rollup',
+        'fn_project_moderation_transparency_clearance_delete_rollup'
       ]
     )
+    GROUP BY p.oid
   `)
   return Object.fromEntries(rows.map(row => [row.name, row.definition]))
 }
@@ -151,7 +153,7 @@ export async function updateTestReleasedModerationTransparencyRollup(options: {
   const day = options.occurredAt.toISOString().slice(0, 10)
   await write(sql`/* updateTestReleasedModerationTransparencyRollup */
     UPDATE moderation_transparency_released_daily_rollups
-    SET count = count
+    SET count = count + 1
     WHERE community_id IS NULL AND day = ${day}::date
       AND metric = ${options.metric} AND category = ${options.category}
   `)

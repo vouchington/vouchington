@@ -6,7 +6,7 @@ export interface ApPostLikesTally {
   ap_likes_count: number
 }
 
-// Reads the AP-only like tally for a post, trigger-maintained by fn_sync_ap_post_likes. Returns
+// Reads the AP-only like tally for a post, trigger-maintained by fn_project_ap_post_likes. Returns
 // null when no remote actor has ever liked this post — ap_posts is lazily created on first Like,
 // so a null result means "zero", not an error.
 export async function getApPostLikesTally(postId: string): Promise<ApPostLikesTally | null> {

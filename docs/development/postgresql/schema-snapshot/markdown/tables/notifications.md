@@ -117,6 +117,6 @@ _none_
 
 **Triggers:**
 
-- `trigger_notifications_capture_push_intent`: `CREATE TRIGGER trigger_notifications_capture_push_intent AFTER INSERT OR UPDATE OF id ON public.notifications FOR EACH ROW EXECUTE FUNCTION fn_capture_notification_push_intent()`
-- `trigger_notifications_preserve_publication_target`: `CREATE TRIGGER trigger_notifications_preserve_publication_target BEFORE INSERT OR UPDATE OF post_id, rss_feed_item_id ON public.notifications FOR EACH ROW EXECUTE FUNCTION fn_preserve_notification_publication_target()`
+- `trigger_notifications_capture_push_intent`: `CREATE TRIGGER trigger_notifications_capture_push_intent AFTER INSERT OR UPDATE OF id ON public.notifications FOR EACH ROW EXECUTE FUNCTION fn_project_capture_notification_push_intent()`
+- `trigger_notifications_preserve_publication_target`: `CREATE TRIGGER trigger_notifications_preserve_publication_target BEFORE INSERT OR UPDATE OF post_id, rss_feed_item_id ON public.notifications FOR EACH ROW EXECUTE FUNCTION fn_update_notification_publication_target()`
 - `trigger_notifications_updated_at`: `CREATE TRIGGER trigger_notifications_updated_at BEFORE UPDATE ON public.notifications FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

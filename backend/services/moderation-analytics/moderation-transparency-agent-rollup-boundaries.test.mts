@@ -24,18 +24,22 @@ describe('moderation transparency agent rollup boundaries', () => {
   it('aggregates every hard-delete source through ordered transition tables', async () => {
     const definitions = await getTestModerationTransparencyDeleteRollupFunctionDefinitions()
     const expectedTransitionTables = {
-      fn_moderation_transparency_reports_delete_rollup: 'deleted_reports',
-      fn_moderation_transparency_actions_delete_rollup: 'deleted_actions',
-      fn_moderation_transparency_agent_delete_rollup: 'deleted_agent_moderations',
-      fn_moderation_transparency_appeals_delete_rollup: 'deleted_appeals',
-      fn_moderation_transparency_clearance_delete_rollup: 'deleted_clearance_changes',
+      fn_project_transparency_rollup: ['deleted_reports', 'deleted_actions'],
+      fn_project_moderation_transparency_agent_delete_rollup: ['deleted_agent_moderations'],
+      fn_project_moderation_transparency_appeals_delete_rollup: ['deleted_appeals'],
+      fn_project_moderation_transparency_clearance_delete_rollup: ['deleted_clearance_changes'],
     }
     expect(Object.keys(definitions).toSorted()).toEqual(
       Object.keys(expectedTransitionTables).toSorted(),
     )
-    for (const [name, transitionTable] of Object.entries(expectedTransitionTables)) {
+    for (const [name, transitionTables] of Object.entries(expectedTransitionTables)) {
       const definition = definitions[name]!
-      expect(definition).toContain(`FROM ${transitionTable}`)
+      for (const transitionTable of transitionTables) {
+        expect(definition).toContain(`OLD TABLE AS ${transitionTable}`)
+      }
+      expect(definition).toContain(
+        name === 'fn_project_transparency_rollup' ? 'FROM %I' : `FROM ${transitionTables[0]}`,
+      )
       expect(definition).toContain('GROUP BY 1, 2, 3, 4')
       expect(definition).toContain('ORDER BY 1, 2 NULLS FIRST, 3, 4')
       expect(definition).toContain('fn_apply_moderation_transparency_daily_rollup')

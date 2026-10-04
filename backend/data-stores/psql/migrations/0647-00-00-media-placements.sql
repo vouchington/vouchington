@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE media_placements (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   revision integer NOT NULL DEFAULT 0 CHECK (revision >= 0),
@@ -35,7 +36,7 @@ ALTER TABLE image_placements VALIDATE CONSTRAINT fk_image_placements__retained_i
 
 CREATE INDEX idx_image_placements__image ON image_placements (image_id);
 
-CREATE OR REPLACE FUNCTION fn_guard_media_placement()
+CREATE OR REPLACE FUNCTION fn_reject_media_placement()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
@@ -55,23 +56,15 @@ $$;
 
 CREATE TRIGGER trigger_media_placement_guard
 BEFORE UPDATE OR DELETE ON media_placements
-FOR EACH ROW EXECUTE FUNCTION fn_guard_media_placement();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_media_placement();
 
 CREATE TRIGGER trigger_media_placements_updated_at
 BEFORE UPDATE ON media_placements
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
-CREATE OR REPLACE FUNCTION fn_guard_image_placement()
-RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  RAISE EXCEPTION 'image placement bindings are immutable' USING ERRCODE = 'check_violation';
-END;
-$$;
-
 CREATE TRIGGER trigger_image_placement_guard
 BEFORE UPDATE OR DELETE ON image_placements
-FOR EACH ROW EXECUTE FUNCTION fn_guard_image_placement();
-
+FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
 COMMENT ON TABLE media_placements IS 'Durable image-use placements; exact binding and revision authority governs public delivery.';
 COMMENT ON COLUMN media_placements.revision IS 'Monotonic delivery revision; every availability change advances it exactly once.';

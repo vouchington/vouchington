@@ -4,7 +4,7 @@ import { recordLike } from './record-like.mts'
 import { getApPostLikesTally } from './get-tally.mts'
 import { createRemoteActorFixture } from './test-fixtures.mts'
 
-// Regression test for the TOCTOU race fn_sync_ap_post_likes used to have (see the trigger's
+// Regression test for the TOCTOU race fn_project_ap_post_likes used to have (see the trigger's
 // comment in the ap_post_likes migration): the old trigger read
 // `SELECT count(*) ... WHERE deleted_at IS NULL` before writing it back to ap_posts, so two
 // concurrent Like inserts for the same post from different remote actors could each compute their

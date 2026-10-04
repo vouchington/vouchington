@@ -495,15 +495,7 @@ CREATE INDEX IF NOT EXISTS idx_copyright_eu_transparency_reports__policy
 CREATE INDEX IF NOT EXISTS idx_copyright_eu_transparency_reports__reported_by
   ON copyright_eu_transparency_reports (reported_by_id) WHERE reported_by_id IS NOT NULL;
 
-CREATE OR REPLACE FUNCTION fn_reject_copyright_territorial_mutation()
-RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  RAISE EXCEPTION 'copyright territorial contract rows are immutable'
-    USING ERRCODE = 'check_violation';
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION fn_guard_copyright_territorial_escalation()
+CREATE OR REPLACE FUNCTION fn_reject_copyright_territorial_escalation()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF (
@@ -529,7 +521,7 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION fn_guard_copyright_territorial_acknowledgment_attempt()
+CREATE OR REPLACE FUNCTION fn_reject_copyright_territorial_acknowledgment_attempt()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
@@ -548,40 +540,40 @@ $$;
 
 CREATE TRIGGER trigger_copyright_jurisdiction_policy_approvals_immutable
   BEFORE UPDATE OR DELETE ON copyright_jurisdiction_policy_approvals
-  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 CREATE TRIGGER trigger_copyright_jurisdiction_policy_withdrawals_immutable
   BEFORE UPDATE OR DELETE ON copyright_jurisdiction_policy_withdrawals
-  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 CREATE TRIGGER trigger_copyright_territorial_notice_receipts_immutable
   BEFORE UPDATE OR DELETE ON copyright_territorial_notice_receipts
-  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 CREATE TRIGGER trigger_copyright_territorial_notice_routings_immutable
   BEFORE UPDATE OR DELETE ON copyright_territorial_notice_routings
-  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 CREATE TRIGGER trigger_copyright_territorial_notice_acknowledgments_attempt
   BEFORE UPDATE OR DELETE ON copyright_territorial_notice_acknowledgments
-  FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_territorial_acknowledgment_attempt();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_acknowledgment_attempt();
 CREATE TRIGGER trigger_copyright_territorial_decisions_immutable
   BEFORE UPDATE OR DELETE ON copyright_territorial_decisions
-  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 CREATE TRIGGER trigger_copyright_territorial_redress_requests_immutable
   BEFORE UPDATE OR DELETE ON copyright_territorial_redress_requests
-  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 CREATE TRIGGER trigger_copyright_territorial_redress_decisions_immutable
   BEFORE UPDATE OR DELETE ON copyright_territorial_redress_decisions
-  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 CREATE TRIGGER trigger_copyright_eu_supervised_complaints_immutable
   BEFORE UPDATE OR DELETE ON copyright_eu_supervised_complaints
-  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 CREATE TRIGGER trigger_copyright_territorial_escalations_source
   BEFORE INSERT ON copyright_territorial_escalations
-  FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_territorial_escalation();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_escalation();
 CREATE TRIGGER trigger_copyright_territorial_escalations_immutable
   BEFORE UPDATE OR DELETE ON copyright_territorial_escalations
-  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 CREATE TRIGGER trigger_copyright_eu_transparency_reports_immutable
   BEFORE UPDATE OR DELETE ON copyright_eu_transparency_reports
-  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
 CREATE TRIGGER trigger_copyright_jurisdiction_policy_approvals_updated_at
   BEFORE UPDATE ON copyright_jurisdiction_policy_approvals

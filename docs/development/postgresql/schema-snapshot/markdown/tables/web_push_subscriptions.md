@@ -44,5 +44,5 @@ _none_
 
 **Triggers:**
 
-- `trigger_assert_web_push_subscription_owner`: `CREATE CONSTRAINT TRIGGER trigger_assert_web_push_subscription_owner AFTER INSERT OR DELETE OR UPDATE ON public.web_push_subscriptions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_web_push_subscription_owner()`
+- `trigger_assert_web_push_subscription_owner`: `CREATE CONSTRAINT TRIGGER trigger_assert_web_push_subscription_owner AFTER INSERT OR DELETE OR UPDATE ON public.web_push_subscriptions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_reject_web_push_subscription_owner()`
 - `trigger_web_push_subscriptions_updated_at`: `CREATE TRIGGER trigger_web_push_subscriptions_updated_at BEFORE UPDATE ON public.web_push_subscriptions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

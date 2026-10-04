@@ -75,7 +75,7 @@ describe('moderation transparency daily rollup lifecycle', () => {
     await expectReleasedBucket(now, occurredAt, 'automated_moderation', 'openai_omni')
     await expect(
       updateTestPostClearanceChange({ id: changes[0]!.id, status: 'approved' }),
-    ).rejects.toThrow('post clearance change type is immutable')
+    ).rejects.toThrow(/post_clearance_changes(?:__[a-z0-9_]+)? rows are append-only/)
     await expectReleasedBucket(now, occurredAt, 'automated_moderation', 'openai_omni')
   })
 
@@ -128,10 +128,10 @@ describe('moderation transparency daily rollup lifecycle', () => {
     await expectReleasedBucket(now, occurredAt, 'appeals', 'accept')
     const releasedCohort = { occurredAt, metric: 'appeals', category: 'accept' }
     await expect(updateTestReleasedModerationTransparencyRollup(releasedCohort)).rejects.toThrow(
-      'released moderation transparency cohorts are immutable',
+      'moderation_transparency_released_daily_rollups rows are append-only',
     )
     await expect(deleteTestReleasedModerationTransparencyRollup(releasedCohort)).rejects.toThrow(
-      'released moderation transparency cohorts are immutable',
+      'moderation_transparency_released_daily_rollups rows are append-only',
     )
 
     await expect(clearTestModerationAppealResolution(appeals[0]!.id)).rejects.toThrow(
@@ -189,7 +189,7 @@ describe('moderation transparency daily rollup lifecycle', () => {
     )
     await expectReleasedBucket(now, occurredAt, 'moderation_actions', 'pin')
     await expect(updateTestModeratorActionType(actions[0]!.id, 'warn')).rejects.toThrow(
-      'moderator action type is immutable',
+      'moderator_actions rows are append-only',
     )
     await expectReleasedBucket(now, occurredAt, 'moderation_actions', 'pin')
   })

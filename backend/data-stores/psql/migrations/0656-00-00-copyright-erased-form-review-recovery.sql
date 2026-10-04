@@ -1,4 +1,5 @@
-CREATE OR REPLACE FUNCTION fn_guard_copyright_restriction_lifecycle()
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE FUNCTION fn_reject_copyright_restriction_lifecycle()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
@@ -45,5 +46,5 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION fn_guard_copyright_restriction_lifecycle() IS
+COMMENT ON FUNCTION fn_reject_copyright_restriction_lifecycle() IS
   'Retains copyright restriction history while allowing a deleted moderator''s durable rejected form review to reverse only its automated restriction.';

@@ -63,7 +63,7 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_images_guard_terminal_lifecycle`: `CREATE TRIGGER trigger_images_guard_terminal_lifecycle BEFORE UPDATE ON public.images FOR EACH ROW EXECUTE FUNCTION fn_guard_terminal_lifecycle('upload_completed_at', 'upload_failed_at')`
-- `trigger_images_id_immutable`: `CREATE TRIGGER trigger_images_id_immutable BEFORE UPDATE ON public.images FOR EACH ROW EXECUTE FUNCTION fn_guard_images_id_immutable()`
+- `trigger_images_guard_terminal_lifecycle`: `CREATE TRIGGER trigger_images_guard_terminal_lifecycle BEFORE UPDATE ON public.images FOR EACH ROW EXECUTE FUNCTION fn_reject_terminal_lifecycle('upload_completed_at', 'upload_failed_at')`
+- `trigger_images_id_immutable`: `CREATE TRIGGER trigger_images_id_immutable BEFORE UPDATE OF id ON public.images FOR EACH ROW WHEN ((old.id IS DISTINCT FROM new.id)) EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_images_updated_at`: `CREATE TRIGGER trigger_images_updated_at BEFORE UPDATE ON public.images FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
-- `trigger_register_retained_image_identity`: `CREATE TRIGGER trigger_register_retained_image_identity BEFORE INSERT ON public.images FOR EACH ROW EXECUTE FUNCTION fn_register_retained_image_identity()`
+- `trigger_register_retained_image_identity`: `CREATE TRIGGER trigger_register_retained_image_identity BEFORE INSERT ON public.images FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('image')`

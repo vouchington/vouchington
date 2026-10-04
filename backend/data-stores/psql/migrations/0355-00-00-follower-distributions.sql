@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 DO $$ BEGIN
   CREATE TYPE follower_distribution_actions AS ENUM (
     'post_share',
@@ -126,7 +127,7 @@ COMMENT ON TABLE follower_distribution_selected_recipients IS 'Distribution-owne
 COMMENT ON COLUMN follower_distribution_selected_recipients.distribution_id IS 'Selected-followers distribution that owns this recipient.';
 COMMENT ON COLUMN follower_distribution_selected_recipients.recipient_user_id IS 'User selected at acceptance. Later unfollows do not remove the row; hard deletion does.';
 
-CREATE OR REPLACE FUNCTION fn_assert_follower_distribution_recipient_bounds()
+CREATE OR REPLACE FUNCTION fn_reject_follower_distribution_recipient_bounds()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
@@ -182,17 +183,17 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION fn_assert_follower_distribution_recipient_bounds() IS
+COMMENT ON FUNCTION fn_reject_follower_distribution_recipient_bounds() IS
   'Keeps selected-followers membership between 1 and 100 at acceptance and rejects selected rows on all-followers distributions. Recipient deletion may shrink the snapshot so user hard-deletion is not blocked.';
 
 CREATE CONSTRAINT TRIGGER trigger_fd_distributions_recipient_bounds
 AFTER INSERT OR UPDATE OF audience ON follower_distributions
 DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW
-EXECUTE FUNCTION fn_assert_follower_distribution_recipient_bounds();
+EXECUTE FUNCTION fn_reject_follower_distribution_recipient_bounds();
 
 CREATE CONSTRAINT TRIGGER trigger_fd_selected_recipients_bounds
 AFTER INSERT OR UPDATE OR DELETE ON follower_distribution_selected_recipients
 DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW
-EXECUTE FUNCTION fn_assert_follower_distribution_recipient_bounds();
+EXECUTE FUNCTION fn_reject_follower_distribution_recipient_bounds();

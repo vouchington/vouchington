@@ -2,15 +2,6 @@
 -- Copyright communications are legal records. Delivery is a separate, retryable concern so a
 -- transport outage cannot erase the obligation to notify either party.
 
-ALTER TABLE copyright_notice_submissions
-  -- squawk-ignore disallowed-unique-constraint, constraint-missing-not-valid -- Copyright intake is activation-gated and this stack has not accepted production submissions.
-  ADD CONSTRAINT copyright_notice_submissions_id_notice_unique
-  UNIQUE (id, copyright_notice_id);
-ALTER TABLE copyright_notice_correspondence_messages
-  -- squawk-ignore disallowed-unique-constraint, constraint-missing-not-valid -- Copyright intake is activation-gated and this stack has not created production correspondence.
-  ADD CONSTRAINT copyright_notice_correspondence_id_notice_unique
-  UNIQUE (id, copyright_notice_id);
-
 CREATE TABLE copyright_notice_delivery_intents (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid REFERENCES copyright_notices(id) ON DELETE RESTRICT,
@@ -87,7 +78,7 @@ CREATE INDEX idx_copyright_delivery_intents__recipient_user
 CREATE INDEX idx_copyright_delivery_intents__ses_message
   ON copyright_notice_delivery_intents (ses_message_id) WHERE ses_message_id IS NOT NULL;
 
-CREATE OR REPLACE FUNCTION fn_guard_copyright_delivery_intent_transition()
+CREATE OR REPLACE FUNCTION fn_reject_copyright_delivery_intent_transition()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
@@ -121,7 +112,7 @@ END;
 $$;
 CREATE TRIGGER trigger_copyright_delivery_intent_transition
 BEFORE UPDATE OR DELETE ON copyright_notice_delivery_intents
-FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_delivery_intent_transition();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_delivery_intent_transition();
 CREATE TRIGGER trigger_copyright_delivery_intents_updated_at
 BEFORE UPDATE ON copyright_notice_delivery_intents
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();

@@ -50,5 +50,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_user_rss_feed_import_rows_guard_terminal_lifecycle`: `CREATE TRIGGER trigger_user_rss_feed_import_rows_guard_terminal_lifecycle BEFORE UPDATE ON public.user_rss_feed_import_rows FOR EACH ROW EXECUTE FUNCTION fn_guard_terminal_lifecycle('completed_at', 'failed_at')`
+- `trigger_user_rss_feed_import_rows_guard_terminal_lifecycle`: `CREATE TRIGGER trigger_user_rss_feed_import_rows_guard_terminal_lifecycle BEFORE UPDATE ON public.user_rss_feed_import_rows FOR EACH ROW EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at')`
 - `trigger_user_rss_feed_import_rows_updated_at`: `CREATE TRIGGER trigger_user_rss_feed_import_rows_updated_at BEFORE UPDATE ON public.user_rss_feed_import_rows FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

@@ -36,4 +36,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_sync_fediverse_instance_integration_status`: `CREATE TRIGGER trigger_sync_fediverse_instance_integration_status AFTER INSERT ON public.fediverse_instance_integration_changes FOR EACH ROW EXECUTE FUNCTION fn_sync_fediverse_instance_integration_status()`
+- `trigger_sync_fediverse_instance_integration_status`: `CREATE TRIGGER trigger_sync_fediverse_instance_integration_status AFTER INSERT ON public.fediverse_instance_integration_changes FOR EACH ROW EXECUTE FUNCTION fn_project_latest_change('topics__fediverse_instances', 'topic_id', 'topic_id', 'integration_status', 'integration_status')`

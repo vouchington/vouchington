@@ -635,6 +635,15 @@
 - `dismissed`
 - `penalized`
 
+## `retained_identity_families`
+
+- `user`
+- `api_key`
+- `topic`
+- `post`
+- `rss_feed_item`
+- `image`
+
 ## `review_dispute_action`
 
 - `no_action`

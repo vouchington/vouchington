@@ -4,7 +4,7 @@ import sql from 'sql-template-strings'
 // Records (or idempotently re-records) a remote actor's Like on a local post. Isolated from
 // post_votes/votes_score_net by design — see the ap_post_likes migration and
 // docs/overview/architecture/fediverse-federation.md's Like reuse-mapping row. `ap_posts`'s tally
-// columns stay in sync via the fn_sync_ap_post_likes trigger; this function never touches ap_posts
+// columns stay in sync via the fn_project_ap_post_likes trigger; this function never touches ap_posts
 // directly.
 //
 // A plain `INSERT ... ON CONFLICT (post_id, remote_actor_id)` cannot resurrect a prior

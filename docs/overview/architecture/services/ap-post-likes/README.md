@@ -8,7 +8,7 @@ See `docs/overview/architecture/fediverse-federation.md`'s Like reuse-mapping ro
 `post_votes.user_id` has no polymorphic slot for a non-`users` actor (no polymorphic
 relationships — see `data-stores/psql/AGENTS.md`), and a remote actor must never move local
 `votes_score_net` ranking. `ap_posts.ap_likes_score`/`ap_likes_count` are trigger-maintained from
-`ap_post_likes` by `fn_sync_ap_post_likes` — nothing in this package writes `ap_posts` directly.
+`ap_post_likes` by `fn_project_ap_post_likes` — nothing in this package writes `ap_posts` directly.
 
 - `recordLike(postId, remoteActorId, likeApId)` — upserts the active Like row for
   `(postId, remoteActorId)`. Idempotent: a redelivered Like with the same `like_ap_id` is a no-op
@@ -31,6 +31,6 @@ Both functions take a bare `postId`/`remoteActorId` pair — resolving an inboun
 
 Both functions are single-statement writes on the inbox's request hot path. `recordLike` is one
 statement (a `WITH` CTE combining the conditional resurrect-update with the fallback
-insert-or-update, not two round-trips); `undoLike` is a single `UPDATE`. The `fn_sync_ap_post_likes`
+insert-or-update, not two round-trips); `undoLike` is a single `UPDATE`. The `fn_project_ap_post_likes`
 trigger recomputes `ap_posts`'s tally with a `COUNT(*)` scoped to the one affected `post_id`, using
 the `idx_ap_post_likes__post_remote_actor` partial index.

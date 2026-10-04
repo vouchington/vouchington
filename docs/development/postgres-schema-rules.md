@@ -135,7 +135,7 @@ examples describe the review baseline, rather than the current generated snapsho
   `activitypub_distribution_work_items`, decision 17) already uses the long form, next to `ap_*`.
 
   When the full words would push a name past 63 bytes, choose a shorter name made of full words; don't
-  abbreviate. For example, `fn_require_mipr_case_op_context` becomes
+  abbreviate. For example, `fn_reject_mipr_case_op_context` becomes
   `fn_require_purchase_reversal_case_operation_context`, not a 73-byte full expansion.
 
 - Index names are `idx_<table>__<suffix>`, where `<table>` is the index's own table and `__`
@@ -543,10 +543,10 @@ History details (decision 15):
 - Trigger functions that differ only by table or message become one generic function
   parameterized by `TG_ARGV`/`TG_TABLE_NAME`:
   - `fn_reject_mutation(<actor column>, …)` replaces the always-raise functions (14 bodies that
-    differ only in their message: `fn_reject_*_mutation`, `fn_guard_image_placement`,
-    `fn_guard_copyright_notice_immutable_evidence`, …) and the column-immutability functions
-    (`fn_protect_*`, `fn_prevent_*`, `fn_guard_images_id_immutable`,
-    `fn_guard_admin_import_batch_type`, `fn_reject_classifier_*_identity_mutation`,
+    differ only in their message: `fn_reject_*_mutation`, `fn_reject_image_placement`,
+    `fn_reject_copyright_notice_immutable_evidence`, …) and the column-immutability functions
+    (`fn_protect_*`, `fn_prevent_*`, `fn_reject_images_id_immutable`,
+    `fn_reject_admin_import_batch_type`, `fn_reject_classifier_*_identity_mutation`,
     `fn_reject_membership_product_identity_mutation`). Append-only tables attach it
     `BEFORE UPDATE OR DELETE … FOR EACH ROW`. A table where only some columns are immutable
     attaches it `BEFORE UPDATE OF <cols> … FOR EACH ROW WHEN (ROW(OLD.<cols>) IS DISTINCT FROM
@@ -561,7 +561,7 @@ ROW(NEW.<cols>))`: the `WHEN` clause does the comparison, so the function only r
     `fn_sync_fediverse_instance_integration_status`. They are the same code: lock the target row,
     read the latest change by `id DESC`, and update the target column when it differs. `TG_ARGV`
     names the target table, its key, the log's key column, and the value columns; the body uses
-    `format('%I')`. `fn_sync_url_hostname_blocked` derives "any unlifted block", not the latest
+    `format('%I')`. `fn_project_url_hostname_blocked` derives "any unlifted block", not the latest
     row, so it stays separate as `fn_project_url_hostname_blocked`.
   - `fn_register_retained_identity()` (a trigger) replaces the 6 `fn_register_retained_*`
     functions. The 6 `fn_ensure_retained_*` functions are helpers called from SQL
@@ -581,6 +581,12 @@ ROW(NEW.<cols>))`: the `WHEN` clause does the comparison, so the function only r
 t (parent_id, id)`, with a `UNIQUE (parent_id, id)` on the referenced table. The default
   `MATCH SIMPLE` skips the check when `ref_id` is NULL, which is today's
   `IS NOT NULL AND NOT EXISTS`.
+  A multi-hop copyright source carries its owning `copyright_notice_id` so the reference can
+  use a concrete composite FK. `fn_update_parent_notice_scope` populates this scope on insertion;
+  the FK enforces supplied values and later updates. Policy checks such as counter-notice kind,
+  current compliance, and null-safe notice-less delivery intent pairing remain separate.
+  Controlled legal erasure and retained legal receipts keep their dedicated mutation guards.
+  Content-provenance rejection runs after all row mutators so it checks the final row.
 - **Trigger-function verbs are a closed list** (decision 19). A function that `RETURNS trigger`
   is named `fn_<verb>_<what>`:
   - `fn_reject_*` raises when a write breaks a rule (today also `guard`, `require`, `assert`,

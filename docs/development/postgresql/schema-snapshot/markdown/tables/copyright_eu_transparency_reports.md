@@ -48,4 +48,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_copyright_eu_transparency_reports_immutable`: `CREATE TRIGGER trigger_copyright_eu_transparency_reports_immutable BEFORE DELETE OR UPDATE ON public.copyright_eu_transparency_reports FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()`
+- `trigger_copyright_eu_transparency_reports_immutable`: `CREATE TRIGGER trigger_copyright_eu_transparency_reports_immutable BEFORE DELETE OR UPDATE ON public.copyright_eu_transparency_reports FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

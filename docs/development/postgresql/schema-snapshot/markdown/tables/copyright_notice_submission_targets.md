@@ -6,35 +6,38 @@ Exact case targets selected by an appellant or statutory counter-notice sender b
 
 Not partitioned — growth: unbounded.
 
-| Column                           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                 |
-| -------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------- |
-| `id`                             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                         |
-| `copyright_notice_submission_id` | `uuid`                     | no       |                              |          |           |           | Appeal or counter-notice whose scope is being recorded. |
-| `copyright_notice_target_id`     | `uuid`                     | no       |                              |          |           |           | Exact case target selected by the affected poster.      |
-| `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                         |
-| `updated_at`                     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                         |
+| Column                           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                     |
+| -------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------- |
+| `copyright_notice_id`            | `uuid`                     | no       |                              |          |           |           | Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion. |
+| `id`                             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                             |
+| `copyright_notice_submission_id` | `uuid`                     | no       |                              |          |           |           | Appeal or counter-notice whose scope is being recorded.                                                     |
+| `copyright_notice_target_id`     | `uuid`                     | no       |                              |          |           |           | Exact case target selected by the affected poster.                                                          |
+| `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                             |
+| `updated_at`                     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                             |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
 
 - `copyright_notice_submission_t_copyright_notice_submission_i_key`: `UNIQUE (copyright_notice_submission_id, copyright_notice_target_id)`
+- `copyright_notice_submission_targets_copyright_notice_id_id_key`: `UNIQUE (copyright_notice_id, id)`
 
 **Check constraints:**
 _none_
 
 **Foreign keys:**
 
-- `copyright_notice_submission_t_copyright_notice_submission__fkey`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
-- `copyright_notice_submission_tar_copyright_notice_target_id_fkey`: `FOREIGN KEY (copyright_notice_target_id) REFERENCES copyright_notice_targets(id) ON DELETE RESTRICT`
+- `fk_copyright_submission_targets__parent_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id) REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE RESTRICT`
+- `fk_copyright_submission_targets__target_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_target_id) REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `copyright_notice_submission_t_copyright_notice_submission_i_key`: `CREATE UNIQUE INDEX copyright_notice_submission_t_copyright_notice_submission_i_key ON public.copyright_notice_submission_targets USING btree (copyright_notice_submission_id, copyright_notice_target_id)`
+- `copyright_notice_submission_targets_copyright_notice_id_id_key`: `CREATE UNIQUE INDEX copyright_notice_submission_targets_copyright_notice_id_id_key ON public.copyright_notice_submission_targets USING btree (copyright_notice_id, id)`
 - `copyright_notice_submission_targets_pkey`: `CREATE UNIQUE INDEX copyright_notice_submission_targets_pkey ON public.copyright_notice_submission_targets USING btree (id)`
 - `idx_copyright_submission_targets__target`: `CREATE INDEX idx_copyright_submission_targets__target ON public.copyright_notice_submission_targets USING btree (copyright_notice_target_id, copyright_notice_submission_id)`
 
 **Triggers:**
 
-- `trigger_copyright_submission_targets_immutable`: `CREATE TRIGGER trigger_copyright_submission_targets_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_submission_targets FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_immutable_evidence()`
-- `trigger_copyright_submission_targets_scope`: `CREATE TRIGGER trigger_copyright_submission_targets_scope BEFORE INSERT ON public.copyright_notice_submission_targets FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_submission_target_scope()`
+- `trigger_copyright_submission_targets_immutable`: `CREATE TRIGGER trigger_copyright_submission_targets_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_submission_targets FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
+- `trigger_update_copyright_submission_targets_scope`: `CREATE TRIGGER trigger_update_copyright_submission_targets_scope BEFORE INSERT ON public.copyright_notice_submission_targets FOR EACH ROW EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submissions', 'copyright_notice_submission_id')`

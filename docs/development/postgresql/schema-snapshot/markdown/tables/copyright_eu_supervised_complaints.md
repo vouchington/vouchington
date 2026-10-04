@@ -43,4 +43,4 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_eu_supervised_complaints_immutable`: `CREATE TRIGGER trigger_copyright_eu_supervised_complaints_immutable BEFORE DELETE OR UPDATE ON public.copyright_eu_supervised_complaints FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()`
+- `trigger_copyright_eu_supervised_complaints_immutable`: `CREATE TRIGGER trigger_copyright_eu_supervised_complaints_immutable BEFORE DELETE OR UPDATE ON public.copyright_eu_supervised_complaints FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

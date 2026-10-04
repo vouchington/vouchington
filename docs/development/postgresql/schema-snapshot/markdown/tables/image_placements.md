@@ -38,4 +38,4 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_image_placement_guard`: `CREATE TRIGGER trigger_image_placement_guard BEFORE DELETE OR UPDATE ON public.image_placements FOR EACH ROW EXECUTE FUNCTION fn_guard_image_placement()`
+- `trigger_image_placement_guard`: `CREATE TRIGGER trigger_image_placement_guard BEFORE DELETE OR UPDATE ON public.image_placements FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

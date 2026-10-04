@@ -53,10 +53,10 @@ export const PUBLICATION_IDENTITY_BRIDGES = {
 } as const
 export type PublicationIdentityBridgeFamily = keyof typeof PUBLICATION_IDENTITY_BRIDGES
 
-const RETAINED_ROOT_ENSURERS: Partial<Record<PublicationIdentityBridgeFamily, string>> = {
-  post: 'fn_ensure_retained_post_identity',
-  rss_feed_item: 'fn_ensure_retained_rss_feed_item_identity',
-  author: 'fn_ensure_retained_user_identity',
+const RETAINED_ROOT_FAMILIES: Partial<Record<PublicationIdentityBridgeFamily, string>> = {
+  post: 'post',
+  rss_feed_item: 'rss_feed_item',
+  author: 'user',
 }
 
 /** Shared ownership fences reclamation without serializing independent captures of the same identity. */
@@ -74,13 +74,13 @@ export async function retainPublicationIdentityBridges(
     FROM unnest($2::uuid[]) input(id) ORDER BY input.id`,
     [family, ordered],
   )
-  const ensureRoot = RETAINED_ROOT_ENSURERS[family]
-  if (ensureRoot) {
+  const retainedFamily = RETAINED_ROOT_FAMILIES[family]
+  if (retainedFamily) {
     await query(
       `/* retainPublicationIdentityRoots */
-      SELECT ${ensureRoot}(ordered.id)
+      SELECT fn_ensure_retained_identity($2::retained_identity_families, ordered.id)
       FROM (SELECT id FROM unnest($1::uuid[]) input(id) ORDER BY id) ordered`,
-      [ordered],
+      [ordered, retainedFamily],
     )
   }
   await insertOwnedIdentityBridges(query, table, liveTable, liveColumn, ordered)

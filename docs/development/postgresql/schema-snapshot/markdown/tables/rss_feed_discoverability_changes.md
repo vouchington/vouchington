@@ -36,4 +36,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_sync_rss_feed_is_discoverable`: `CREATE TRIGGER trigger_sync_rss_feed_is_discoverable AFTER INSERT ON public.rss_feed_discoverability_changes FOR EACH ROW EXECUTE FUNCTION fn_sync_rss_feed_is_discoverable()`
+- `trigger_sync_rss_feed_is_discoverable`: `CREATE TRIGGER trigger_sync_rss_feed_is_discoverable AFTER INSERT ON public.rss_feed_discoverability_changes FOR EACH ROW EXECUTE FUNCTION fn_project_latest_change('rss_feeds', 'id', 'rss_feed_id', 'is_discoverable', 'enabled')`

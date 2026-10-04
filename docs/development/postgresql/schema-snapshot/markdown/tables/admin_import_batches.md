@@ -42,6 +42,6 @@ _none_
 
 **Triggers:**
 
-- `trigger_admin_import_batches_guard_import_type`: `CREATE TRIGGER trigger_admin_import_batches_guard_import_type BEFORE UPDATE OF import_type ON public.admin_import_batches FOR EACH ROW EXECUTE FUNCTION fn_guard_admin_import_batch_type()`
-- `trigger_admin_import_batches_guard_terminal_lifecycle`: `CREATE TRIGGER trigger_admin_import_batches_guard_terminal_lifecycle BEFORE UPDATE ON public.admin_import_batches FOR EACH ROW EXECUTE FUNCTION fn_guard_terminal_lifecycle('completed_at')`
+- `trigger_admin_import_batches_guard_import_type`: `CREATE TRIGGER trigger_admin_import_batches_guard_import_type BEFORE UPDATE OF import_type ON public.admin_import_batches FOR EACH ROW WHEN ((old.import_type IS DISTINCT FROM new.import_type)) EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_admin_import_batches_guard_terminal_lifecycle`: `CREATE TRIGGER trigger_admin_import_batches_guard_terminal_lifecycle BEFORE UPDATE ON public.admin_import_batches FOR EACH ROW EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at')`
 - `trigger_admin_import_batches_updated_at`: `CREATE TRIGGER trigger_admin_import_batches_updated_at BEFORE UPDATE ON public.admin_import_batches FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

@@ -48,4 +48,4 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_territorial_redress_requests_immutable`: `CREATE TRIGGER trigger_copyright_territorial_redress_requests_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_redress_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()`
+- `trigger_copyright_territorial_redress_requests_immutable`: `CREATE TRIGGER trigger_copyright_territorial_redress_requests_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_redress_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

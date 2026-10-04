@@ -58,5 +58,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_classifier_decision_batches_completion`: `CREATE TRIGGER trigger_classifier_decision_batches_completion BEFORE UPDATE ON public.classifier_decision_batches FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_decision_batch_completion()`
+- `trigger_classifier_decision_batches_completion`: `CREATE TRIGGER trigger_classifier_decision_batches_completion BEFORE UPDATE ON public.classifier_decision_batches FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_decision_batch_completion()`
 - `trigger_classifier_decision_batches_updated_at`: `CREATE TRIGGER trigger_classifier_decision_batches_updated_at BEFORE UPDATE ON public.classifier_decision_batches FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

@@ -1,9 +1,8 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Copyright action intents are durable media-delivery sagas. Legal eligibility is evaluated
 -- before an intent is created and again by the worker against the authoritative placement.
 
-
-
-CREATE OR REPLACE FUNCTION fn_guard_copyright_action_intent()
+CREATE OR REPLACE FUNCTION fn_reject_copyright_action_intent()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
@@ -92,7 +91,7 @@ VALIDATE CONSTRAINT fk_media_delivery_registry_records__retained_image_binding;
 
 CREATE SEQUENCE media_delivery_registry_generation_sequence AS bigint;
 
-CREATE OR REPLACE FUNCTION fn_assign_media_delivery_registry_generation()
+CREATE OR REPLACE FUNCTION fn_update_media_delivery_registry_generation()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'INSERT'
@@ -108,7 +107,7 @@ $$;
 
 CREATE TRIGGER trigger_media_delivery_registry_records_generation
 BEFORE INSERT OR UPDATE ON media_delivery_registry_records
-FOR EACH ROW EXECUTE FUNCTION fn_assign_media_delivery_registry_generation();
+FOR EACH ROW EXECUTE FUNCTION fn_update_media_delivery_registry_generation();
 
 COMMENT ON COLUMN media_delivery_registry_records.generation IS
   'Database-assigned, nontransactional monotonic edge authority generation. It advances for a new record, effective desired-state change, or explicit republish, so a rolled-back prepublication cannot be reused.';

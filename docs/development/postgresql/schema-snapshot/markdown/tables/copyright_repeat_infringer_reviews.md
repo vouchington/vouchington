@@ -44,4 +44,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_copyright_repeat_infringer_reviews_guard`: `CREATE TRIGGER trigger_copyright_repeat_infringer_reviews_guard BEFORE DELETE OR UPDATE ON public.copyright_repeat_infringer_reviews FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_repeat_infringer_review()`
+- `trigger_copyright_repeat_infringer_reviews_guard`: `CREATE TRIGGER trigger_copyright_repeat_infringer_reviews_guard BEFORE DELETE OR UPDATE ON public.copyright_repeat_infringer_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_repeat_infringer_review()`

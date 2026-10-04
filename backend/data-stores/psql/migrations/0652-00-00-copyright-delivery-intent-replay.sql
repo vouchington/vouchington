@@ -1,6 +1,7 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Staff replay reopens a failed delivery obligation. Bounced mail stays terminal.
 
-CREATE OR REPLACE FUNCTION fn_guard_copyright_delivery_intent_transition()
+CREATE OR REPLACE FUNCTION fn_reject_copyright_delivery_intent_transition()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN

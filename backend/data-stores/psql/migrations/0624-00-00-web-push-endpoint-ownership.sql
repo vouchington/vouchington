@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Global endpoint ownership is deliberately unpartitioned: it is the serialization point that
 -- prevents a physical browser endpoint from being active for more than one user generation.
 CREATE TABLE web_push_endpoint_owners (
@@ -42,7 +43,7 @@ CREATE OR REPLACE TRIGGER trigger_notification_push_receipts_updated_at
 BEFORE UPDATE ON notification_push_intent_subscription_receipts
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
-CREATE OR REPLACE FUNCTION fn_assert_web_push_subscription_owner() RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION fn_reject_web_push_subscription_owner() RETURNS TRIGGER AS $$
 DECLARE
   checked_user_id UUID := COALESCE(NEW.user_id, OLD.user_id);
   checked_subscription_id UUID := COALESCE(NEW.id, OLD.id);
@@ -86,7 +87,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION fn_assert_web_push_endpoint_owner_subscription() RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION fn_reject_web_push_endpoint_owner_subscription() RETURNS TRIGGER AS $$
 DECLARE
   checked_endpoint_digest BYTEA := COALESCE(NEW.endpoint_digest, OLD.endpoint_digest);
 BEGIN
@@ -131,14 +132,14 @@ $$ LANGUAGE plpgsql;
 CREATE CONSTRAINT TRIGGER trigger_assert_web_push_subscription_owner
 AFTER INSERT OR UPDATE OR DELETE ON web_push_subscriptions
 DEFERRABLE INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION fn_assert_web_push_subscription_owner();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_web_push_subscription_owner();
 
 CREATE CONSTRAINT TRIGGER trigger_assert_web_push_owner_subscription
 AFTER INSERT OR UPDATE OR DELETE ON web_push_endpoint_owners
 DEFERRABLE INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION fn_assert_web_push_endpoint_owner_subscription();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_web_push_endpoint_owner_subscription();
 
-CREATE OR REPLACE FUNCTION fn_capture_notification_push_intent() RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION fn_project_capture_notification_push_intent() RETURNS TRIGGER AS $$
 BEGIN
   IF TG_OP = 'UPDATE' THEN
     DELETE FROM notification_push_intent_subscription_receipts
@@ -161,7 +162,7 @@ $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trigger_notifications_capture_push_intent
 AFTER INSERT OR UPDATE OF id ON notifications
-FOR EACH ROW EXECUTE FUNCTION fn_capture_notification_push_intent();
+FOR EACH ROW EXECUTE FUNCTION fn_project_capture_notification_push_intent();
 
 COMMENT ON TABLE web_push_endpoint_owners IS 'Global exact browser endpoint owner; SHA-256 digest serializes endpoint claims while exact endpoint comparison detects digest collisions.';
 COMMENT ON COLUMN web_push_endpoint_owners.endpoint_digest IS 'SHA-256 digest of endpoint, used as the global registry primary key.';

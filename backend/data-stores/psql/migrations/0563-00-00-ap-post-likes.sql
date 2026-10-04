@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- edited-in-place: pre-launch, never deployed to production
 -- Remote ActivityPub likes on local posts (Phase C2). Isolated from the local voting system by
 -- design: remote Likes must never affect `post_votes`/`votes_score_net` or any local ranking —
@@ -46,7 +47,7 @@ COMMENT ON TABLE ap_post_likes IS 'Append-only ledger of remote ActivityPub Like
 COMMENT ON COLUMN ap_post_likes.post_id IS 'The local post that was liked.';
 COMMENT ON COLUMN ap_post_likes.remote_actor_id IS 'The remote actor who sent the Like. One active row per (post_id, remote_actor_id) — see idx_ap_post_likes__post_remote_actor.';
 COMMENT ON COLUMN ap_post_likes.like_ap_id IS 'The inbound Like activity''s ActivityPub `id`. Unique while active — a second live Like from the same remote actor on the same post is rejected by idx_ap_post_likes__post_remote_actor before this could collide.';
-COMMENT ON COLUMN ap_post_likes.deleted_at IS 'Set by an inbound Undo(Like). NULL while the like is active. A later re-Like from the same (post_id, remote_actor_id) resurrects this same row rather than inserting a new one — see fn_sync_ap_post_likes.';
+COMMENT ON COLUMN ap_post_likes.deleted_at IS 'Set by an inbound Undo(Like). NULL while the like is active. A later re-Like from the same (post_id, remote_actor_id) resurrects this same row rather than inserting a new one — see fn_project_ap_post_likes.';
 
 -- Keeps ap_posts in sync with the count of active (deleted_at IS NULL) ap_post_likes rows for the
 -- affected post via an atomic delta-based upsert, not a read-then-write COUNT: two concurrent
@@ -68,7 +69,7 @@ COMMENT ON COLUMN ap_post_likes.deleted_at IS 'Set by an inbound Undo(Like). NUL
 -- Undo replay or any other delta-accounting bug must not drive the tally negative). Same
 -- lazy-creation upsert shape as Phase B's fn_sync_fediverse_instance_integration_status trigger,
 -- delta-accumulation instead of latest-row-wins.
-CREATE OR REPLACE FUNCTION fn_sync_ap_post_likes()
+CREATE OR REPLACE FUNCTION fn_project_ap_post_likes()
 RETURNS TRIGGER AS $$
 DECLARE
   v_delta INT;
@@ -95,4 +96,4 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE TRIGGER trigger_sync_ap_post_likes
 AFTER INSERT OR UPDATE ON ap_post_likes
 FOR EACH ROW
-EXECUTE FUNCTION fn_sync_ap_post_likes();
+EXECUTE FUNCTION fn_project_ap_post_likes();

@@ -10,6 +10,79 @@
 CREATE TYPE content_creation_channels AS ENUM ('web', 'swift', 'dotnet', 'api', 'mcp', 'system');
 COMMENT ON TYPE content_creation_channels IS 'Channel that created a row: a first-party client (web, swift, dotnet), a credentialed agent path (api, mcp), or a platform job (system).';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE FUNCTION fn_reject_mutation()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE
+  actor_column TEXT;
+  actor_columns TEXT[] := COALESCE(TG_ARGV, ARRAY[]::TEXT[]);
+  old_row JSONB;
+  new_row JSONB;
+BEGIN
+  IF TG_OP = 'DELETE' AND pg_trigger_depth() > 1 THEN RETURN OLD; END IF;
+  IF TG_OP = 'UPDATE' THEN
+    old_row := to_jsonb(OLD);
+    new_row := to_jsonb(NEW);
+    IF (old_row - actor_columns) IS NOT DISTINCT FROM (new_row - actor_columns) THEN
+      FOREACH actor_column IN ARRAY actor_columns LOOP
+        IF new_row -> actor_column IS DISTINCT FROM old_row -> actor_column
+          AND new_row -> actor_column IS DISTINCT FROM 'null'::jsonb THEN
+          RAISE EXCEPTION '% rows are append-only', TG_TABLE_NAME USING ERRCODE = 'check_violation';
+        END IF;
+      END LOOP;
+      RETURN NEW;
+    END IF;
+  END IF;
+  RAISE EXCEPTION '% rows are append-only', TG_TABLE_NAME USING ERRCODE = 'check_violation';
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION fn_project_latest_change()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE target_id UUID := (to_jsonb(NEW) ->> TG_ARGV[2])::uuid;
+BEGIN
+  -- Serialize on the target before re-reading the latest committed log entry.
+  EXECUTE format('SELECT %I FROM %I.%I WHERE %I = $1 FOR UPDATE',
+    TG_ARGV[1], TG_TABLE_SCHEMA, TG_ARGV[0], TG_ARGV[1]) USING target_id;
+  EXECUTE format(
+    'UPDATE %I.%I target SET %I = latest.value FROM
+     (SELECT %I AS value FROM %I.%I WHERE %I = $1 ORDER BY id DESC LIMIT 1) latest
+     WHERE target.%I = $1 AND target.%I IS DISTINCT FROM latest.value',
+    TG_TABLE_SCHEMA, TG_ARGV[0], TG_ARGV[3], TG_ARGV[4], TG_TABLE_SCHEMA,
+    TG_TABLE_NAME, TG_ARGV[2], TG_ARGV[1], TG_ARGV[3]) USING target_id;
+  RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION fn_create_metrics()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  EXECUTE format('INSERT INTO %I.%I (%I) VALUES ($1) ON CONFLICT (%I) DO NOTHING',
+    TG_TABLE_SCHEMA, TG_ARGV[0], TG_ARGV[1], TG_ARGV[1]) USING NEW.id;
+  RETURN NEW;
+END;
+$$;
+
+-- Parent scope is stored solely to express concrete composite foreign keys.
+-- Fill it on insertion; the FK also enforces explicit scope and every later UPDATE.
+CREATE OR REPLACE FUNCTION fn_update_parent_notice_scope()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE notice_id UUID;
+BEGIN
+  IF NEW.copyright_notice_id IS NULL THEN
+    EXECUTE format('SELECT copyright_notice_id FROM %I.%I WHERE id = $1',
+      TG_TABLE_SCHEMA, TG_ARGV[0]) INTO notice_id
+      USING (to_jsonb(NEW) ->> TG_ARGV[1])::uuid;
+    IF notice_id IS NULL AND to_jsonb(NEW) ->> TG_ARGV[1] IS NOT NULL THEN
+      RAISE EXCEPTION '% parent % does not exist', TG_TABLE_NAME, TG_ARGV[0]
+        USING ERRCODE = 'foreign_key_violation';
+    END IF;
+    NEW.copyright_notice_id := notice_id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
 -- Wilson score lower bound function for ranking
 CREATE OR REPLACE FUNCTION fn_wilson_score_lower_bound(pos double precision, tot double precision)
 RETURNS double precision
@@ -36,7 +109,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION fn_guard_terminal_lifecycle()
+CREATE OR REPLACE FUNCTION fn_reject_terminal_lifecycle()
 RETURNS TRIGGER AS $$
 DECLARE
   terminal_column TEXT;

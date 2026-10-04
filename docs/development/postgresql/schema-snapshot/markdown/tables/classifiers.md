@@ -50,6 +50,6 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_classifiers_activation_lifecycle`: `CREATE TRIGGER trigger_classifiers_activation_lifecycle BEFORE UPDATE ON public.classifiers FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_activation_lifecycle()`
-- `trigger_classifiers_identity_immutable`: `CREATE TRIGGER trigger_classifiers_identity_immutable BEFORE UPDATE ON public.classifiers FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_identity_mutation()`
+- `trigger_classifiers_activation_lifecycle`: `CREATE TRIGGER trigger_classifiers_activation_lifecycle BEFORE UPDATE ON public.classifiers FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_activation_lifecycle()`
+- `trigger_classifiers_identity_immutable`: `CREATE TRIGGER trigger_classifiers_identity_immutable BEFORE UPDATE OF id, slug, primitive, candidate_kind ON public.classifiers FOR EACH ROW WHEN (((((old.id IS DISTINCT FROM new.id) OR (old.slug IS DISTINCT FROM new.slug)) OR (old.primitive IS DISTINCT FROM new.primitive)) OR (old.candidate_kind IS DISTINCT FROM new.candidate_kind))) EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_classifiers_updated_at`: `CREATE TRIGGER trigger_classifiers_updated_at BEFORE UPDATE ON public.classifiers FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

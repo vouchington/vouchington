@@ -1,4 +1,5 @@
-CREATE FUNCTION fn_record_user_data_request_attempt() RETURNS trigger LANGUAGE plpgsql AS $$
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE FUNCTION fn_project_record_user_data_request_attempt() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.processing_started_at IS NOT NULL THEN
     INSERT INTO user_data_request_attempts (
@@ -20,4 +21,4 @@ $$;
 
 CREATE TRIGGER user_data_requests_record_attempt
 AFTER INSERT OR UPDATE OF processing_started_at, processing_attempt_id ON user_data_requests
-FOR EACH ROW EXECUTE FUNCTION fn_record_user_data_request_attempt();
+FOR EACH ROW EXECUTE FUNCTION fn_project_record_user_data_request_attempt();

@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Coalesced pre-launch domain baseline.
 -- edited-in-place: pre-launch, never deployed to production
 -- Merged from: 0232-00-00-admin-import-batches.sql
@@ -36,25 +37,13 @@ CREATE TRIGGER trigger_admin_import_batches_updated_at
 CREATE TRIGGER trigger_admin_import_batches_guard_terminal_lifecycle
   BEFORE UPDATE ON admin_import_batches
   FOR EACH ROW
-  EXECUTE FUNCTION fn_guard_terminal_lifecycle('completed_at');
-
-CREATE OR REPLACE FUNCTION fn_guard_admin_import_batch_type()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  IF OLD.import_type IS DISTINCT FROM NEW.import_type THEN
-    RAISE EXCEPTION 'admin import batch type cannot change'
-      USING ERRCODE = 'check_violation';
-  END IF;
-  RETURN NEW;
-END;
-$$;
+  EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at');
 
 CREATE TRIGGER trigger_admin_import_batches_guard_import_type
   BEFORE UPDATE OF import_type ON admin_import_batches
   FOR EACH ROW
-  EXECUTE FUNCTION fn_guard_admin_import_batch_type();
+  WHEN (ROW(OLD.import_type) IS DISTINCT FROM ROW(NEW.import_type))
+  EXECUTE FUNCTION fn_reject_mutation();
 
 CREATE INDEX IF NOT EXISTS idx_admin_import_batches__created_by
   ON admin_import_batches (created_by_id);
@@ -98,9 +87,9 @@ CREATE TRIGGER trigger_admin_import_rows_updated_at
 CREATE TRIGGER trigger_admin_import_rows_guard_terminal_lifecycle
   BEFORE UPDATE ON admin_import_rows
   FOR EACH ROW
-  EXECUTE FUNCTION fn_guard_terminal_lifecycle('completed_at', 'failed_at');
+  EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at');
 
-CREATE OR REPLACE FUNCTION fn_validate_admin_import_row_target()
+CREATE OR REPLACE FUNCTION fn_reject_admin_import_row_target()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
@@ -128,7 +117,7 @@ CREATE TRIGGER trigger_admin_import_rows_validate_target
   BEFORE INSERT OR UPDATE OF batch_id, completed_at, topic_id, rss_feed_id ON admin_import_rows
   FOR EACH ROW
   WHEN (NEW.completed_at IS NOT NULL)
-  EXECUTE FUNCTION fn_validate_admin_import_row_target();
+  EXECUTE FUNCTION fn_reject_admin_import_row_target();
 
 CREATE INDEX IF NOT EXISTS idx_admin_import_rows__batch_id
   ON admin_import_rows (batch_id);

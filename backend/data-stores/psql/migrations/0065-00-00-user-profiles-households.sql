@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Coalesced pre-launch domain baseline.
 -- edited-in-place: pre-launch, never deployed to production
 -- edited-in-place: folded github oauth-retention-cleanup-indexes idempotent
@@ -603,21 +604,12 @@ COMMENT ON COLUMN user_metrics.bookmarkers__follow_count IS 'Number of users who
 COMMENT ON COLUMN user_metrics.bookmarks__updated_at IS 'When the bookmark/follow metrics were last recalculated.';
 
 -- Function to auto-create user_metrics row when user is created
-CREATE OR REPLACE FUNCTION fn_create_user_metrics_on_insert()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO user_metrics (id)
-  VALUES (NEW.id)
-  ON CONFLICT (id) DO NOTHING;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
 
 -- Trigger to create user_metrics after user insert
 CREATE TRIGGER trigger_create_user_metrics
 AFTER INSERT ON users
 FOR EACH ROW
-EXECUTE FUNCTION fn_create_user_metrics_on_insert();
+EXECUTE FUNCTION fn_create_metrics('user_metrics', 'id');
 
 -- Partial index supporting orphaned GitHub OAuth account retention cleanup:
 -- WHERE user_id IS NULL AND created_at is older than the retention cutoff

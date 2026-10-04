@@ -28,7 +28,7 @@ PostgreSQL container stats and tmpfs usage. Both files are retained by the exist
 artifact even when seeding fails.
 
 On a freshly migrated database, the first post batch can leave the planner with empty-table
-statistics while the [`fn_ensure_retained_post_identity` trigger](../../../../backend/data-stores/psql/migrations/0000-00-01-retained-entity-identities.sql)
+statistics while the [`fn_ensure_retained_identity('post', id)` helper](../../../../backend/data-stores/psql/migrations/0000-00-01-retained-entity-identities.sql)
 looks up each inserted identity. An exact-schema local reproduction found repeated sequential scans
 of the growing retained-identity partition in that trigger. After the first completed batch, the
 seed runs one timed `ANALYZE retained_post_identities, posts` inside its existing transaction. Plain

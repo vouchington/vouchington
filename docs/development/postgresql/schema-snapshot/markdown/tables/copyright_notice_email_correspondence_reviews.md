@@ -43,12 +43,12 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_notice_email_corre_copyright_notice_email_intak_fkey1`: `FOREIGN KEY (copyright_notice_email_intake_recommendation_id) REFERENCES copyright_notice_email_intake_recommendations(id) ON DELETE RESTRICT`
 - `copyright_notice_email_corres_copyright_notice_corresponde_fkey`: `FOREIGN KEY (copyright_notice_correspondence_id) REFERENCES copyright_notice_correspondence_messages(id) ON DELETE RESTRICT`
 - `copyright_notice_email_corres_copyright_notice_email_intak_fkey`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
 - `copyright_notice_email_corres_copyright_notice_submission__fkey`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
 - `copyright_notice_email_correspondence__copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
 - `copyright_notice_email_correspondence_revie_reviewed_by_id_fkey`: `FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_copyright_email_corresp_reviews__recommendation_intake`: `FOREIGN KEY (copyright_notice_email_intake_id, copyright_notice_email_intake_recommendation_id) REFERENCES copyright_notice_email_intake_recommendations(copyright_notice_email_intake_id, id) ON DELETE RESTRICT`
 
 **Indexes:**
 
@@ -63,6 +63,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_email_correspondence_recommendation_scope`: `CREATE TRIGGER trigger_copyright_email_correspondence_recommendation_scope BEFORE INSERT ON public.copyright_notice_email_correspondence_reviews FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_email_correspondence_recommendation_scope()`
-- `trigger_copyright_email_correspondence_reviews_immutable`: `CREATE TRIGGER trigger_copyright_email_correspondence_reviews_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_correspondence_reviews FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_immutable_with_actor_erasure('reviewed_by_id')`
-- `trigger_copyright_email_correspondence_reviews_require_actor`: `CREATE TRIGGER trigger_copyright_email_correspondence_reviews_require_actor BEFORE INSERT ON public.copyright_notice_email_correspondence_reviews FOR EACH ROW WHEN ((new.action <> 'pending'::text)) EXECUTE FUNCTION fn_require_copyright_human_actor('reviewed_by_id')`
+- `trigger_copyright_email_correspondence_reviews_immutable`: `CREATE TRIGGER trigger_copyright_email_correspondence_reviews_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_correspondence_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('reviewed_by_id')`
+- `trigger_copyright_email_correspondence_reviews_require_actor`: `CREATE TRIGGER trigger_copyright_email_correspondence_reviews_require_actor BEFORE INSERT ON public.copyright_notice_email_correspondence_reviews FOR EACH ROW WHEN ((new.action <> 'pending'::text)) EXECUTE FUNCTION fn_reject_copyright_human_actor('reviewed_by_id')`

@@ -9,7 +9,7 @@
 | Timestamps         | Use `TIMESTAMPTZ`, not `TIMESTAMP`                                                                                                                                                   |
 | Index names        | `idx_<table>__<suffix>` or UNIQUE `uq_`; at most 63 bytes                                                                                                                            |
 | Trigger names      | Prefix with `trigger_`                                                                                                                                                               |
-| Function names     | Prefix with `fn_`                                                                                                                                                                    |
+| Function names     | Helpers use `fn_`; trigger functions use the [closed R5 verb list](../postgres-schema-rules.md#r5--helpers-not-copies)                                                               |
 | View names         | Prefix with `view_` or `view_embedded_`                                                                                                                                              |
 | Table names        | Plural owner/thing names; only the last word is plural                                                                                                                               |
 | R1: names          | [Full words, owner/thing names, subtype names, and expandable index names](../postgres-schema-rules.md#r1--names-explain-the-stored-thing-in-full-words)                             |
