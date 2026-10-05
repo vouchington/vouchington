@@ -2,12 +2,14 @@ import { getUserDeletionsWorkLimit } from './work-limits.mts'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
+  countTestBlueskyFollowReceiptsForUser,
   insertTestBlueskyFollowReceipt,
   insertTestBlueskyLinkedAccount,
 } from '@voucha/test-helpers'
 import { createUserDeletionRequest } from './create.mts'
 import { addUserDeletionExternalWork, completeUserDeletionExternalWork } from './external-work.mts'
 import { processUserDeletionBatch } from './lifecycle.mts'
+import { processUserDeletionCredentialsBatch } from '../users/delete-phase-credentials.mts'
 import {
   addUserDeletionRelationImpactForTest,
   getUserDeletionCompletionAuditForTest,
@@ -19,8 +21,16 @@ describe('user deletion finalization', () => {
   it('removes a late Bluesky follow receipt and completes', async () => {
     const user = await createTestUser({ withEmail: false })
     const follower = await createTestUser()
+    const followee = await createTestUser()
+    const unrelatedFollower = await createTestUser()
+    const unrelatedFollowee = await createTestUser()
+    await insertTestBlueskyLinkedAccount({ userId: user.id })
     await insertTestBlueskyLinkedAccount({ userId: follower.id })
+    await insertTestBlueskyLinkedAccount({ userId: unrelatedFollower.id })
+    await insertTestBlueskyFollowReceipt(user.id, followee.id)
     await insertTestBlueskyFollowReceipt(follower.id, user.id)
+    await insertTestBlueskyFollowReceipt(unrelatedFollower.id, unrelatedFollowee.id)
+    expect(await countTestBlueskyFollowReceiptsForUser(user.id)).toBe(2)
     const request = await createUserDeletionRequest(user.id, user.id)
     let attemptId = request.processingAttemptId
 
@@ -42,6 +52,22 @@ describe('user deletion finalization', () => {
     })
     expect(receiptCleanup).not.toBeNull()
     if (!receiptCleanup) throw new Error('Expected receipt-cleanup retry')
+    expect(await countTestBlueskyFollowReceiptsForUser(user.id)).toBe(0)
+    expect(await countTestBlueskyFollowReceiptsForUser(unrelatedFollower.id)).toBe(1)
+    expect(await getUserDeletionRequestForTest(request.id)).toMatchObject({ completedAt: null })
+
+    let credentialsComplete = false
+    for (let page = 0; page < 3; page++) {
+      const result = await processUserDeletionCredentialsBatch(
+        user.id,
+        getUserDeletionsWorkLimit('batch_size'),
+      )
+      if (!result.hasMore) {
+        credentialsComplete = true
+        break
+      }
+    }
+    expect(credentialsComplete).toBe(true)
 
     await expect(
       processUserDeletionBatch(request.id, receiptCleanup.processingAttemptId, {
@@ -53,6 +79,34 @@ describe('user deletion finalization', () => {
     expect(await getUserDeletionRequestForTest(request.id)).toMatchObject({
       completedAt: expect.any(Date),
     })
+    expect(await countTestBlueskyFollowReceiptsForUser(user.id)).toBe(0)
+    expect(await countTestBlueskyFollowReceiptsForUser(unrelatedFollower.id)).toBe(1)
+  })
+
+  it('completes when finalization finds no Bluesky follow receipts', async () => {
+    const user = await createTestUser({ withEmail: false })
+    const request = await createUserDeletionRequest(user.id, user.id)
+    let attemptId = request.processingAttemptId
+
+    for (let phase = 0; phase < 7; phase++) {
+      const successor = await processUserDeletionBatch(request.id, attemptId, {
+        async processPhaseBatch() {
+          return { hasMore: false }
+        },
+      })
+      expect(successor).not.toBeNull()
+      if (!successor) throw new Error('Expected successor')
+      attemptId = successor.processingAttemptId
+    }
+
+    await expect(
+      processUserDeletionBatch(request.id, attemptId, {
+        async processPhaseBatch() {
+          return { hasMore: false }
+        },
+      }),
+    ).resolves.toBeNull()
+    expect(await countTestBlueskyFollowReceiptsForUser(user.id)).toBe(0)
   })
 
   it('bounds finalization audit cleanup and retries until it converges', async () => {

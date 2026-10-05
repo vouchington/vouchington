@@ -10,7 +10,7 @@ Comprehensive sitemap generation service — builds XML sitemaps for posts by da
 - `generatePostsIndex()` / `generateRootIndex()` — generates top-level sitemap index files
 - `generateSitemapFamilyFiles(family)` — generates paginated dynamic family sitemaps for users, topics, communities, domains, and landing pages
 - `putSitemapObjectFile(key, filePath)` — uploads an existing sitemap file to S3 and closes its read handle before returning, so callers can delete the file immediately
-- `isPostPotentiallySitemapEligible(post)` — checks whether a post should appear in the sitemap
+- `isPostPotentiallySitemapEligible(post)` — checks whether a post is potentially eligible for a sitemap. The current reconciliation path selects sitemap candidates from canonical post state; production use of this helper is unconfirmed, and it may be removed after intended-use review.
 - `buildSitemapUrl(path)` / `buildPostUrl(post)` — constructs public sitemap URLs
 - `getNightlyBackfillEntries()` / `getWeeklyBackfillEntries()` / `getMonthlyBackfillEntries()` — returns backfill schedule entries
 

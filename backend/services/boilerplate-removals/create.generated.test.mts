@@ -4,11 +4,11 @@ import { addUrl } from '@services/urls'
 import { createCrawler } from '@services/crawlers'
 import { updateUrlHostname } from '@services/urls-hostnames/update'
 import { createTestUser, insertUrlHostname } from '@voucha/test-helpers'
+import { deleteTestBoilerplateRemovalsForHostname } from '@voucha/test-helpers/boilerplate-removals'
 import type { PrivateUser } from '@services/users/types'
 import { createCrawl } from '@services/crawls/create'
 import { updateCrawl } from '@services/crawls/update'
 import { createBoilerplateRemoval } from './create.mts'
-import { deleteBoilerplateRemovalsByHostnameId } from './delete.mts'
 import { getLatestBoilerplateRemovalByHostnameAndPath } from './get.mts'
 import { searchParentPathsNeedingBoilerplateRemoval } from './search.mts'
 
@@ -23,7 +23,7 @@ describe('create.generated', () => {
     const random = Math.random().toString(36).slice(2, 15)
     const url = await addUrl(null, `https://bp-create-${random}.example.com/blog/post1`)
     await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
-    await deleteBoilerplateRemovalsByHostnameId(url!.hostname.id)
+    await deleteTestBoilerplateRemovalsForHostname(url!.hostname.id)
 
     const result = await createBoilerplateRemoval(
       url!.hostname.id,
@@ -40,7 +40,7 @@ describe('create.generated', () => {
     const random = Math.random().toString(36).slice(2, 15)
     const url = await addUrl(null, `https://bp-history-${random}.example.com/docs/page1`)
     await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
-    await deleteBoilerplateRemovalsByHostnameId(url!.hostname.id)
+    await deleteTestBoilerplateRemovalsForHostname(url!.hostname.id)
 
     const first = await createBoilerplateRemoval(
       url!.hostname.id,
@@ -68,7 +68,7 @@ describe('create.generated', () => {
     const random = Math.random().toString(36).slice(2, 15)
     const url = await addUrl(null, `https://bp-get-${random}.example.com/articles/a1`)
     await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
-    await deleteBoilerplateRemovalsByHostnameId(url!.hostname.id)
+    await deleteTestBoilerplateRemovalsForHostname(url!.hostname.id)
 
     const created = await createBoilerplateRemoval(
       url!.hostname.id,
@@ -104,7 +104,7 @@ describe('create.generated', () => {
     const url1 = await addUrl(null, `${base}/blog/post1`)
     const url2 = await addUrl(null, `${base}/blog/post2`)
     // Clear any removals created by URL listeners before checking candidates.
-    await deleteBoilerplateRemovalsByHostnameId(url1!.hostname.id)
+    await deleteTestBoilerplateRemovalsForHostname(url1!.hostname.id)
     await updateUrlHostname(url1!.hostname.id, { is_crawlable: true })
     const crawler = await createCrawler(user!, {
       hostname_id: url1!.hostname.id,

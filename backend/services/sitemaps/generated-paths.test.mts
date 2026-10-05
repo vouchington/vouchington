@@ -12,7 +12,6 @@ import {
   buildPostDayPageStorageKey,
   buildPostsIndexRoutePath,
   buildPostsIndexStorageKey,
-  buildRootSitemapRoutePath,
   buildRootSitemapStorageKey,
   buildStaticPagesRoutePath,
   buildStaticPagesStorageKey,
@@ -22,7 +21,6 @@ import {
 
 describe('generated sitemap paths', () => {
   it('builds route paths for daily post sitemaps', () => {
-    expect(buildRootSitemapRoutePath()).toBe('sitemap.xml')
     expect(buildPostsIndexRoutePath()).toBe('sitemaps/posts.xml')
     expect(buildStaticPagesRoutePath()).toBe('sitemaps/static.xml')
     expect(buildTypeIndexRoutePath('discussion')).toBe('sitemaps/discussion.xml')

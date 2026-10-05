@@ -1,5 +1,4 @@
 export * from './types.mts'
 export * from './get.mts'
 export * from './create.mts'
-export * from './delete.mts'
 export * from './search.mts'

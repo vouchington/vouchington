@@ -216,9 +216,8 @@ describe('DELETE /api/v1/auth/bluesky/link', () => {
 
 // Phase D3 web UI: GET /api/v1/my/identity is the only place a linked Bluesky account persists
 // across a page reload (the callback's `?bluesky=linked` query param is a one-shot flash). Both
-// connect and disconnect enqueue processUserUpdated to bust the cached identity read — see
-// connect.mts/disconnect.mts and README.md's "Both connectBlueskyAccountToUser and
-// disconnectBlueskyAccountFromUser call void enqueueOnUserUpdated" note.
+// connect and accepted-generation disconnect enqueue processUserUpdated to bust the cached
+// identity read — see connect.mts/disconnect.mts and the Bluesky-account service README.
 describe('bluesky_account on GET /api/v1/my/identity', () => {
   beforeEach(() => {
     revokeBlueskySessionMock.mockReset()

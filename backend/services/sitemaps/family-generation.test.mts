@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
+import { gunzipSync } from 'node:zlib'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { gunzipUtf8 } from './gzip.mts'
 import { buildSitemapFamilyIndexEntry, generateSitemapFamilyFiles } from './family-generation.mts'
 
 async function* familyEntries() {
@@ -31,7 +31,7 @@ describe('family sitemap generation', () => {
   it('writes family page, index, and manifest files', async () => {
     const uploadedXml = new Map<string, string>()
     putSitemapObjectFile.mockImplementation(async (key: string, filePath: string) => {
-      uploadedXml.set(key, await gunzipUtf8(await readFile(filePath)))
+      uploadedXml.set(key, gunzipSync(await readFile(filePath)).toString())
     })
 
     const manifest = await generateSitemapFamilyFiles('landing-pages', {
@@ -66,7 +66,7 @@ describe('family sitemap generation', () => {
   it('rewrites stale family pages when the active page count shrinks', async () => {
     const uploadedXml = new Map<string, string>()
     putSitemapObjectFile.mockImplementation(async (key: string, filePath: string) => {
-      uploadedXml.set(key, await gunzipUtf8(await readFile(filePath)))
+      uploadedXml.set(key, gunzipSync(await readFile(filePath)).toString())
     })
     getSitemapFamilyManifest.mockResolvedValue({
       active_page_count: 3,

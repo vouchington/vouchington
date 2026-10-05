@@ -2,7 +2,7 @@ import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { isUUID } from '@modules/utils'
 import createError from 'http-errors'
-import type { PaidSafeUrlCrawlHistory } from './public-url-response.mts'
+import type { PaidSafeUrlCrawlHistory } from './types.mts'
 
 export const getPublicUrlCrawlDetailById = async (
   crawlId: string,

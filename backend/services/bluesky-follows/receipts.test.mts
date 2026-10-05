@@ -6,23 +6,8 @@ import {
   insertTestBlueskyLinkedAccount,
   softDeleteUser,
 } from '@voucha/test-helpers'
-import {
-  deleteBlueskyFollowReceiptsForUser,
-  getBlueskyFollowReceipt as getScopedBlueskyFollowReceipt,
-  saveBlueskyFollowReceipt as saveScopedBlueskyFollowReceipt,
-} from './receipts.mts'
+import { saveBlueskyFollowReceipt as saveScopedBlueskyFollowReceipt } from './receipts.mts'
 import { getBlueskyLinkedAccountForUser } from '@services/bluesky-accounts'
-
-async function getBlueskyFollowReceipt(followerUserId: string, followeeUserId: string) {
-  const account = await getBlueskyLinkedAccountForUser(followerUserId)
-  if (!account) return null
-  return getScopedBlueskyFollowReceipt(
-    followerUserId,
-    followeeUserId,
-    account.bluesky_did,
-    account.link_authorization_id,
-  )
-}
 
 async function saveBlueskyFollowReceipt(
   followerUserId: string,
@@ -45,7 +30,7 @@ function fakeRecordUri(): string {
   return `at://did:plc:${createRandomString(24)}/app.bsky.graph.follow/${createRandomString(13)}`
 }
 
-describe('deleteBlueskyFollowReceiptsForUser', () => {
+describe('bluesky follow receipt ownership', () => {
   it('rejects a late receipt for a deleted follower', async () => {
     const follower = await createTestUserDirect()
     const followee = await createTestUserDirect()
@@ -83,44 +68,5 @@ describe('deleteBlueskyFollowReceiptsForUser', () => {
     await expect(insertTestBlueskyFollowReceipt(follower.id, followee.id)).rejects.toThrow(
       'cannot own new data after deletion',
     )
-  })
-
-  it('deletes a receipt in which the user is the follower', async () => {
-    const follower = await createTestUserDirect()
-    const followee = await createTestUserDirect()
-    await saveBlueskyFollowReceipt(follower.id, followee.id, fakeRecordUri())
-
-    await deleteBlueskyFollowReceiptsForUser(follower.id)
-
-    expect(await getBlueskyFollowReceipt(follower.id, followee.id)).toBeNull()
-  })
-
-  it('deletes a receipt in which the user is the followee', async () => {
-    const follower = await createTestUserDirect()
-    const followee = await createTestUserDirect()
-    await saveBlueskyFollowReceipt(follower.id, followee.id, fakeRecordUri())
-
-    await deleteBlueskyFollowReceiptsForUser(followee.id)
-
-    expect(await getBlueskyFollowReceipt(follower.id, followee.id)).toBeNull()
-  })
-
-  it('does not touch receipts for other users', async () => {
-    const follower = await createTestUserDirect()
-    const followee = await createTestUserDirect()
-    const bystander = await createTestUserDirect()
-    const recordUri = fakeRecordUri()
-    await saveBlueskyFollowReceipt(follower.id, followee.id, recordUri)
-
-    await deleteBlueskyFollowReceiptsForUser(bystander.id)
-
-    const receipt = await getBlueskyFollowReceipt(follower.id, followee.id)
-    expect(receipt?.record_uri).toBe(recordUri)
-  })
-
-  it('is a no-op when the user has no receipts', async () => {
-    const user = await createTestUserDirect()
-
-    await expect(deleteBlueskyFollowReceiptsForUser(user.id)).resolves.toBeUndefined()
   })
 })

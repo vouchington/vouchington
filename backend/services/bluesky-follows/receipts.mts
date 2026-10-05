@@ -122,18 +122,3 @@ export async function deleteBlueskyFollowReceiptsForFolloweeFromOtherFollowers(
     options,
   )
 }
-
-// Clears every receipt referencing userId in either role during full user deletion. Ordinary
-// unlink relies on the exact account-generation foreign key for follower-role cleanup and the
-// explicit other-follower cleanup above.
-export async function deleteBlueskyFollowReceiptsForUser(
-  userId: string,
-  options: QueryOptions = {},
-): Promise<void> {
-  await write(
-    sql`/* deleteBlueskyFollowReceiptsForUser */
-      DELETE FROM bluesky_follow_records
-      WHERE follower_user_id = ${userId} OR followee_user_id = ${userId}`,
-    options,
-  )
-}

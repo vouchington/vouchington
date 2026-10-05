@@ -44,11 +44,10 @@ completion, provider session, or authorization generation.
   `@services/oauth-accounts`'s `connectOAuthAccountToUser`) and `getBlueskyLinkedAccountForUser`.
   Attachment locks the user then DID, rechecks active/deleted/suspended state on the writer, and
   requires the exact pending authorization owner and generation.
-- `disconnect.mts` — `disconnectBlueskyAccountFromUser`, scoped to the calling user's own DID, then
-  delegates to `revokeBlueskySession` (which deletes the row via `SessionStore.del()` — no separate
-  application-level delete step). Durable accepted requests use a separate exact-generation path
-  that requires `disconnect_requested_at`; its authorization lookup reads the primary so a newly
-  accepted request cannot be missed by an immediately running worker.
+- `disconnect.mts` — `disconnectAcceptedBlueskyGeneration(userId, generation)` handles only the
+  exact user, DID, and authorization generation from a durable accepted disconnect request. It
+  requires `disconnect_requested_at` on a primary read before revoking the provider session; the
+  request and replayable worker are owned by `@services/bluesky-follows`.
 - `callback-completion.mts` — resumes web/native callback completion for one exact authorization
   generation after the provider callback has durably claimed the session. Callback completion
   authorization reads use the PostgreSQL primary because they immediately follow primary session
@@ -67,11 +66,10 @@ completion, provider session, or authorization generation.
 
 `view_users_private` (`data-stores/psql/views/2025-01-01-view-users.sql`) exposes the link as
 `bluesky_account: { did, handle } | null` on `GET /api/v1/my/identity`, read through the
-`users_private` Valkey cache (`getUserPrivateByAnyCached`). Both `connectBlueskyAccountToUser` and
-`disconnectBlueskyAccountFromUser` call `void enqueueOnUserUpdated(userId)` after their write so
-that cache is busted — mirroring `@services/my/oauth-account`'s `disconnectOAuthAccount`. Without
-this, a freshly linked/unlinked account would not show up in the identity response until the
-1-hour `users_private` TTL expires.
+`users_private` Valkey cache (`getUserPrivateByAnyCached`). Link completion invalidates this cache;
+accepting a disconnect request also hides the account immediately and invalidates it, then the
+accepted-generation worker invalidates again after provider revocation. Without these invalidations,
+the identity response could remain stale until the 1-hour `users_private` TTL expires.
 Rows with `disconnect_requested_at` are hidden immediately from this view and ordinary linked-
 account reads while the replayable disconnect worker finishes provider cleanup.
 

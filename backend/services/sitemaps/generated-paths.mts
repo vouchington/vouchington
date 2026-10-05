@@ -1,10 +1,6 @@
 import { parseUtcDay } from '@ts-shared/utils/dates'
 import type { SitemapFamilyType, SitemapPostType } from './types.mts'
 
-export function buildRootSitemapRoutePath(): string {
-  return 'sitemap.xml'
-}
-
 export function buildPostsIndexRoutePath(): string {
   return 'sitemaps/posts.xml'
 }

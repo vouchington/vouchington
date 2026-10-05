@@ -1,7 +1,5 @@
-import fs from 'node:fs/promises'
 import {
   GetObjectCommand,
-  PutObjectCommand,
   CopyObjectCommand,
   ListObjectsV2Command,
   DeleteObjectsCommand,
@@ -10,57 +8,12 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { getS3EnvironmentKey, S3Buckets, S3ImagesClient } from '@modules/aws'
 import { getDeployEnvironment } from '@ts-shared/deploy-environment'
 
-/**
- * Local subset of sharp's `Metadata` we actually use here.
- * Avoids pulling sharp into the API container.
- */
-interface ImageMetadata {
-  format?: string
-}
-
-export const MIME_TYPES: Record<string, string> = {
-  jpeg: 'image/jpeg',
-  jpg: 'image/jpeg',
-  png: 'image/png',
-  webp: 'image/webp',
-  avif: 'image/avif',
-  gif: 'image/gif',
-  tiff: 'image/tiff',
-  tif: 'image/tiff',
-  svg: 'image/svg+xml',
-  heif: 'image/heif',
-  heic: 'image/heic',
-  jp2: 'image/jp2',
-  jxl: 'image/jxl',
-}
-
-interface ImageFile {
-  filename: string
-  hash: Buffer
-  metadata: ImageMetadata
-  s3Key?: string
-}
-
 interface ImageRecord {
   id?: string
   s3_key?: string
   hash?: Buffer
   sha_256?: Buffer | null
   upload_staged_at?: Date | null
-}
-
-/* no-mistakes: integration=aws */
-export const uploadImageToS3 = async (image: ImageFile) => {
-  await using fd = await fs.open(image.filename, 'r')
-  const command = new PutObjectCommand({
-    Bucket: S3Buckets.images,
-    Key: image.s3Key || image.hash.toString('hex'),
-    Body: fd.createReadStream(),
-    ContentType:
-      (image.metadata.format && MIME_TYPES[image.metadata.format]) || 'application/octet-stream',
-  })
-
-  return await S3ImagesClient.send(command)
 }
 
 /* no-mistakes: integration=aws */

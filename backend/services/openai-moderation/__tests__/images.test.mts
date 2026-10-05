@@ -8,7 +8,6 @@ import { upsertImageOpenAIModeration } from '../images.mts'
 import { createImageUploadUrl } from '@services/images/create-upload-url'
 import { getImageByAny } from '@services/images/get'
 import { markImageComplete } from '@voucha/test-helpers/entities/images'
-import * as s3Module from '@services/images/s3'
 import * as s3Lifecycle from '@services/images/s3-upload-lifecycle'
 import * as imageEmbeddingEnqueues from '@queues/bedrock-embeddings-batch/enqueues'
 import type { PrivateUser } from '@services/users/types'
@@ -31,9 +30,6 @@ describe('images', () => {
   })
 
   beforeEach(() => {
-    vi.spyOn(s3Module, 'uploadImageToS3').mockResolvedValue(
-      {} as Awaited<ReturnType<typeof s3Module.uploadImageToS3>>,
-    )
     vi.spyOn(s3Lifecycle, 'deleteKnownImageStorageFromS3').mockResolvedValue()
   })
 

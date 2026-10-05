@@ -87,20 +87,6 @@ export async function searchFediverse(
   return { buckets }
 }
 
-export function buildUnavailableFediverseSearchResponse(
-  options: FediverseSearchOptions,
-): FediverseSearchResponse {
-  if (options.q.trim().length < 2) return { buckets: [] }
-  return {
-    buckets: selectFediverseSearchProviders(options).map(provider => ({
-      provider,
-      status: 'error',
-      items: [],
-      error_code: 'provider_error',
-    })),
-  }
-}
-
 function selectFediverseSearchProviders(
   options: FediverseSearchOptions,
 ): FediverseSearchProvider[] {

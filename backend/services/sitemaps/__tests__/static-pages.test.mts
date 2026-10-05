@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
+import { gunzipSync } from 'node:zlib'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { gunzipUtf8 } from '../gzip.mts'
 import {
   STATIC_PAGE_PATHS,
   buildStaticPageUrlEntries,
@@ -17,7 +17,7 @@ describe('static pages sitemap', () => {
     uploadedXml = ''
     putSitemapObjectFile.mockReset()
     putSitemapObjectFile.mockImplementation(async (_key: string, filePath: string) => {
-      uploadedXml = await gunzipUtf8(await readFile(filePath))
+      uploadedXml = gunzipSync(await readFile(filePath)).toString()
     })
   })
 

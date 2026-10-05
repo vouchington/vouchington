@@ -6,13 +6,6 @@ import { tmpdir } from 'node:os'
 import { Readable, Transform } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { createGzip } from 'node:zlib'
-import { gunzipBytes } from '@modules/utils/compression'
-
-const utf8Decoder = new TextDecoder()
-
-export async function gunzipUtf8(value: Uint8Array): Promise<string> {
-  return utf8Decoder.decode(await gunzipBytes(value))
-}
 
 export async function createGzipFileFromUtf8Chunks(
   chunks: Iterable<string> | AsyncIterable<string>,

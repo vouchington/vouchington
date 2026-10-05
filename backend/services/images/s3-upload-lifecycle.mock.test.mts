@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { mkdtempDisposable, readFile, writeFile } from 'node:fs/promises'
+import { mkdtempDisposable, open, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Readable } from 'node:stream'
@@ -75,6 +75,28 @@ describe('image upload S3 lifecycle', () => {
       ContentType: 'image/png',
     })
     expect(await readFile(filename)).toEqual(bytes)
+  })
+
+  it('disposes the frozen file handle when S3 rejects before reading the stream', async () => {
+    await using directory = await mkdtempDisposable(join(tmpdir(), 'image-promotion-'))
+    const filename = join(directory.path, 'frozen')
+    const bytes = Buffer.from('immutable image')
+    const sha256 = createHash('sha256').update(bytes).digest()
+    await writeFile(filename, bytes)
+    const probe = await open(filename, 'r')
+    const fileHandlePrototype = Object.getPrototypeOf(probe) as {
+      [Symbol.asyncDispose]: () => Promise<void>
+    }
+    await probe.close()
+    const dispose = vi.spyOn(fileHandlePrototype, Symbol.asyncDispose)
+    finalSend.mockRejectedValueOnce(new Error('upload failed'))
+
+    try {
+      await expect(promoteFrozenImageToS3({ filename, sha256 })).rejects.toThrow('upload failed')
+      expect(dispose).toHaveBeenCalledOnce()
+    } finally {
+      dispose.mockRestore()
+    }
   })
 
   it('accepts an existing digest object only when its bytes match', async () => {

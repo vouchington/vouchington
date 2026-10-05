@@ -176,9 +176,9 @@ app.route('/api/v1/auth/bluesky/link-completions').post(async (ctx: Context) => 
   ctx.setStatus(204)
 })
 
-// DELETE /api/v1/auth/bluesky/link - unlinks the current user's Bluesky account (revokes the AT
-// Protocol session, deletes the bluesky_linked_accounts row, and clears any bluesky_follow_records
-// receipts for this user — see disconnectBlueskyAccountAndCleanupFollows).
+// DELETE /api/v1/auth/bluesky/link - accepts a durable unlink request for the current linked
+// generation. The row is hidden immediately; the replayable queue worker cleans up follows and
+// revokes the provider session — see disconnectBlueskyAccountAndCleanupFollows.
 app.route('/api/v1/auth/bluesky/link').delete(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/auth/bluesky/link')
   assertNotSuspended(currentUser)

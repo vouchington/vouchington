@@ -150,6 +150,48 @@ describe('identity verification fields in public batch', () => {
     expect(results[0]?.verified_display_name).toBe('Alice Smith')
   })
 
+  it('preserves SQL NULL versus empty-string behavior for first-name displays', async () => {
+    const emptyName = await createTestUser()
+    const missingName = await createTestUser()
+    for (const user of [emptyName, missingName]) {
+      const fingerprint = v7().replaceAll('-', '').padEnd(64, '0')
+      await insertTestVerifiedIdentity(user.id, fingerprint, `vs_${v7()}`)
+    }
+    await setUserVerificationFields(emptyName.id, {
+      verificationStatus: 'verified',
+      verifiedBadgeVisible: true,
+      publicVerifiedNameDisplay: 'first_name_last_initial',
+      verifiedFirstName: '',
+      verifiedLastNameInitial: 'S',
+    })
+    await setUserVerificationFields(missingName.id, {
+      verificationStatus: 'verified',
+      verifiedBadgeVisible: true,
+      publicVerifiedNameDisplay: 'first_name_last_initial',
+      verifiedFirstName: null,
+      verifiedLastNameInitial: 'S',
+    })
+
+    const results = await getPublicUsersByAnyBatch([emptyName.id, missingName.id])
+    expect(results[0]?.verified_display_name).toBe(' S.')
+    expect(results[1]?.verified_display_name).toBeNull()
+  })
+
+  it('returns an empty full name when the verified value is an empty string', async () => {
+    const user = await createTestUser()
+    const fingerprint = v7().replaceAll('-', '').padEnd(64, '0')
+    await insertTestVerifiedIdentity(user.id, fingerprint, `vs_${v7()}`)
+    await setUserVerificationFields(user.id, {
+      verificationStatus: 'verified',
+      verifiedBadgeVisible: true,
+      publicVerifiedNameDisplay: 'full_name',
+      verifiedFullName: '',
+    })
+
+    const results = await getPublicUsersByAnyBatch([user.id])
+    expect(results[0]?.verified_display_name).toBe('')
+  })
+
   it('returns null verified_display_name when is_verified_badge_visible=false', async () => {
     const user = await createTestUser()
     const fingerprint = v7().replaceAll('-', '').padEnd(64, '0')

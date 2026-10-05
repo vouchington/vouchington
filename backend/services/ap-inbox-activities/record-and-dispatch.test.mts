@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { describe, it, expect, beforeEach } from 'vitest'
 import { getActorUri } from '@modules/activitypub-uris'
 import { generateRsaSha256KeyPair } from '@modules/http-signatures'
-import { readAllQueueJobs } from '@voucha/test-helpers'
+import { getEntityRelation, readAllQueueJobs } from '@voucha/test-helpers'
 import { recordAndDispatchInboundActivity } from './record-and-dispatch.mts'
 import { recordInboxActivity } from './record-activity.mts'
 import {
@@ -12,10 +12,7 @@ import {
   acceptJobsFor,
 } from '@voucha/test-helpers/ap-inbox-activity-fixtures'
 import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
-import {
-  getEntityRelationDeletionState,
-  getEntityRelationMetadataOrThrow,
-} from '@services/entity-relations'
+import { getEntityRelationMetadataOrThrow } from '@services/entity-relations'
 import type { RemoteActorRow } from '@services/remote-actors'
 import { activityPubInboxDeliveryTransitions } from './durable-delivery-transitions.mts'
 
@@ -112,17 +109,12 @@ describe('recordAndDispatchInboundActivity', () => {
     const result = await recordAndDispatchInboundActivity(remoteActor, activity, accepted.value)
 
     expect(result).toEqual({ outcome: 'stale', duplicate: false })
-    expect(
-      await getEntityRelationDeletionState(
-        getEntityRelationMetadataOrThrow({
-          subjectType: 'remote_actor',
-          objectType: 'user',
-          predicate: 'follow',
-        }),
-        { id: remoteActor.id },
-        { id: user.id },
-      ),
-    ).toBe('absent')
+    const followRelation = getEntityRelationMetadataOrThrow({
+      subjectType: 'remote_actor',
+      objectType: 'user',
+      predicate: 'follow',
+    })
+    expect(await getEntityRelation(followRelation.table_name, remoteActor.id, user.id)).toEqual([])
     // Fence queue commands issued by the completed service call before reading once. Polling for
     // an event that must remain absent would otherwise hammer every queue state until timeout.
     await activitypubDelivery.getJobCounts()
@@ -160,17 +152,14 @@ describe('recordAndDispatchInboundActivity duplicate Follow Accept resend', () =
 
     const replay = await recordAndDispatchInboundActivity(remoteActor, activity)
     expect(replay).toEqual({ outcome: 'applied', duplicate: true })
-    expect(
-      await getEntityRelationDeletionState(
-        getEntityRelationMetadataOrThrow({
-          subjectType: 'remote_actor',
-          objectType: 'user',
-          predicate: 'follow',
-        }),
-        { id: remoteActor.id },
-        { id: user.id },
-      ),
-    ).toBe('active')
+    const followRelation = getEntityRelationMetadataOrThrow({
+      subjectType: 'remote_actor',
+      objectType: 'user',
+      predicate: 'follow',
+    })
+    const relation = await getEntityRelation(followRelation.table_name, remoteActor.id, user.id)
+    expect(relation).toHaveLength(1)
+    expect(relation[0]).toMatchObject({ deleted_at: null })
 
     const jobs = await waitForDeliverActivityJobs(
       j => acceptJobsFor(j, followActivityId).length > 0,
@@ -218,16 +207,14 @@ describe('recordAndDispatchInboundActivity duplicate Follow Accept resend', () =
     const staleReplay = await recordAndDispatchInboundActivity(remoteActor, followActivity)
     expect(staleReplay).toEqual({ outcome: 'applied', duplicate: true })
 
-    const deletionState = await getEntityRelationDeletionState(
-      getEntityRelationMetadataOrThrow({
-        subjectType: 'remote_actor',
-        objectType: 'user',
-        predicate: 'follow',
-      }),
-      { id: remoteActor.id },
-      { id: user.id },
-    )
-    expect(deletionState).toBe('deleted')
+    const followRelation = getEntityRelationMetadataOrThrow({
+      subjectType: 'remote_actor',
+      objectType: 'user',
+      predicate: 'follow',
+    })
+    const relation = await getEntityRelation(followRelation.table_name, remoteActor.id, user.id)
+    expect(relation).toHaveLength(1)
+    expect(relation[0]).toMatchObject({ deleted_at: expect.any(Date) })
 
     await activitypubDelivery.getJobCounts()
     const jobsAfterReplay = await readAllQueueJobs(activitypubDelivery)

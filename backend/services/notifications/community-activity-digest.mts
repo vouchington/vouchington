@@ -2,15 +2,10 @@ import { getNotificationsWorkLimit } from './work-limits.mts'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getMinUUIDv7ForDate } from '@modules/utils'
-import {
-  getPreviousClosedMondayWindow,
-  listCommunityActivityDigestRecipientPage,
-} from './community-activity-digest-recipients.mts'
+import { listCommunityActivityDigestRecipientPage } from './community-activity-digest-recipients.mts'
 import { buildCommunityActivityDigestBody } from './community-activity-digest-body.mts'
 import { aggregateCommunityActivityDigestBatch } from './community-activity-digest-aggregation.mts'
 import { ensureNotificationPushIntents } from './ensure-push-intents.mts'
-
-export { getPreviousClosedMondayWindow }
 
 export async function createCommunityActivityDigestBatch(input: {
   windowStart: Date
