@@ -30,6 +30,46 @@ describe('required entrypoint reachability configuration', () => {
   it('covers scheduled-job manifests, worker modules, and service registrations from their runtime roots', () => {
     expect(configuredReachabilityRules()).toEqual([
       {
+        name: 'Valkey pubsub loads its shutdown owner',
+        rule: 'required-entrypoint-reachability',
+        scope: 'repository',
+        options: {
+          sourceGlobs: ['backend/data-stores/valkey-core/shutdown.mts'],
+          entrypoints: ['backend/data-stores/valkey-pubsub/index.mts'],
+          maxDepth: 2,
+        },
+      },
+      {
+        name: 'Valkey rate limiter loads its shutdown owner',
+        rule: 'required-entrypoint-reachability',
+        scope: 'repository',
+        options: {
+          sourceGlobs: ['backend/data-stores/valkey-core/shutdown.mts'],
+          entrypoints: ['backend/data-stores/valkey-rate-limiter/index.mts'],
+          maxDepth: 1,
+        },
+      },
+      {
+        name: 'Valkey GlideMQ root loads its shutdown owner',
+        rule: 'required-entrypoint-reachability',
+        scope: 'repository',
+        options: {
+          sourceGlobs: ['backend/data-stores/valkey-core/shutdown.mts'],
+          entrypoints: ['backend/data-stores/valkey-glide-mq/index.mts'],
+          maxDepth: 2,
+        },
+      },
+      {
+        name: 'Valkey GlideMQ factory loads its shutdown owner',
+        rule: 'required-entrypoint-reachability',
+        scope: 'repository',
+        options: {
+          sourceGlobs: ['backend/data-stores/valkey-core/shutdown.mts'],
+          entrypoints: ['backend/data-stores/valkey-glide-mq/glide-mq-factory.mts'],
+          maxDepth: 1,
+        },
+      },
+      {
         name: 'scheduled job manifests are registered in the API catalog',
         rule: 'required-entrypoint-reachability',
         scope: 'repository',
