@@ -53,6 +53,7 @@
         "cards:write",
         "communities:read",
         "copyright-notices:read",
+        "copyright-notices:write",
         "data-points:read",
         "domain-ratings:read",
         "editorial:read",
@@ -48007,6 +48008,10 @@
           "validated": true
         },
         "mcp_call_audit_events_check1": {
+          "definition": "CHECK (((copyright_rationale_ciphertext IS NULL) OR ((surface = 'admin_mcp'::mcp_call_audit_event_surfaces) AND (jsonrpc_method = 'tools/call'::text) AND (outcome = 'accepted'::mcp_call_audit_event_outcomes) AND (tool_name IS NOT NULL))))",
+          "validated": true
+        },
+        "mcp_call_audit_events_check2": {
           "definition": "CHECK ((num_nonnulls(oauth_client_id, api_key_id) = 1))",
           "validated": true
         },
@@ -48051,6 +48056,16 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 6
+        },
+        "copyright_rationale_ciphertext": {
+          "comment": "Encrypted validated rationale for an admitted administrator copyright decision call, bound to this audit row id. No general argument or result text is stored.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11
         },
         "correlation_id": {
           "comment": "Server-minted id shared by every row written for one HTTP request; returned to the caller in the X-Correlation-Id response header.",
@@ -48100,7 +48115,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11
+          "ordinalPosition": 12
         },
         "outcome": {
           "comment": "Authorization and dispatch result of the call, or tool_error when an admitted tool call failed; never derived from result content.",
@@ -48143,7 +48158,7 @@
           "ordinalPosition": 9
         }
       },
-      "comment": "Append-only durable audit of MCP calls made with a verified OAuth access token or user API key; one row per JSON-RPC message, plus a tool_error follow-up row for an admitted tool call that failed. Arguments, results, tokens, keys, and headers are never stored.",
+      "comment": "Append-only durable audit of MCP calls made with a verified OAuth access token or user API key; one row per JSON-RPC message, plus a tool_error follow-up row for an admitted tool call that failed. Only validated copyright decision rationales are encrypted; arbitrary arguments, results, tokens, keys, and headers are never stored.",
       "foreignKeys": {
         "mcp_call_audit_events_actor_user_id_fkey": {
           "columns": ["actor_user_id"],
