@@ -9,6 +9,11 @@ const OXLINT = resolve('node_modules/.bin/oxlint')
 const CONFIG = resolve('.oxlintrc.json')
 const CASES = [
   {
+    rule: 'no-empty-file',
+    rejected: '',
+    accepted: '// Intentional empty package root; public APIs live on subpaths.\nexport {}\n',
+  },
+  {
     rule: 'no-array-fill-with-reference-type',
     rejected: 'export const batch = new Array(2).fill({})\n',
     accepted:
