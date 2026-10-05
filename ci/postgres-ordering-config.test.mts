@@ -20,7 +20,7 @@ describe('PostgreSQL ordering guard config', () => {
     }
     const expectedOptions = {
       importSpecifier: '@data-stores/psql',
-      schemaCatalogPath: 'backend/data-stores/psql/schema-snapshot/schema.json',
+      schemaCatalogPath: 'backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json',
       sqlInclude: ['backend/data-stores/psql/config-driven/**/*.sql'],
       include: ['backend/**/*.mts', 'backend/**/*.ts'],
       exclude: [
@@ -65,6 +65,7 @@ describe('PostgreSQL ordering guard config', () => {
     ])
 
     const trackedBackendPaths = trackedFiles(repoRoot, ['backend'])
+    expect(trackedBackendPaths).toContain(expectedOptions.schemaCatalogPath)
     const includedPaths = trackedBackendPaths.filter(
       path =>
         [...expectedOptions.include, ...expectedOptions.sqlInclude].some(pattern =>

@@ -79,7 +79,12 @@ export function assertCurrentPullRequest(
 }
 
 export function isGeneratedSnapshotPath(path: string): boolean {
-  return path === 'schema.json' || path === 'markdown/README.md' || generatedPathPattern.test(path)
+  return (
+    path === 'schema.json' ||
+    path === 'no-mistakes-catalog.json' ||
+    path === 'markdown/README.md' ||
+    generatedPathPattern.test(path)
+  )
 }
 
 export async function describeGeneratedSnapshotFiles(
@@ -88,9 +93,10 @@ export async function describeGeneratedSnapshotFiles(
   const files: SnapshotManifest['files'] = {}
   const paths = (await regularSnapshotFiles(root)).filter(path => path !== 'manifest.json')
   if (
-    paths.length < 2 ||
+    paths.length < 3 ||
     paths.length > 1000 ||
     !paths.includes('schema.json') ||
+    !paths.includes('no-mistakes-catalog.json') ||
     !paths.includes('markdown/README.md')
   ) {
     throw new Error('Snapshot artifact has missing or excessive generated files')

@@ -181,6 +181,7 @@ describe('PostgreSQL snapshot controller process', () => {
     await mkdir(snapshot, { recursive: true })
     await writeFile(join(snapshot, 'generate.mts'), '// source sentinel\n')
     await writeFile(join(snapshot, 'schema.json'), '{}\n')
+    await writeFile(join(snapshot, 'no-mistakes-catalog.json'), '{}\n')
     await writeFile(join(markdown, 'README.md'), '# Schema\n')
     await writeFile(join(markdown, 'orphan.md'), '# Old leaf\n')
     await writeFile(join(markdown, '../README.md'), '# Documentation owner\n')
@@ -232,6 +233,7 @@ describe('PostgreSQL snapshot controller process', () => {
     expect(Object.keys(generatedManifest.files)).toEqual([
       'markdown/README.md',
       'markdown/orphan.md',
+      'no-mistakes-catalog.json',
       'schema.json',
     ])
     expect(generatedManifest).toMatchObject({ headSha: actualHead, postgresImage: image })
@@ -255,6 +257,7 @@ describe('PostgreSQL snapshot controller process', () => {
     expect(await git(candidate, 'rev-parse', 'HEAD')).toBe(actualHead)
 
     await writeFile(join(artifact, 'schema.json'), '{"formatVersion":2}\n')
+    await writeFile(join(artifact, 'no-mistakes-catalog.json'), '{"coverage":"complete"}\n')
     await writeFile(join(artifact, 'markdown/README.md'), '# Updated schema\n')
     await rm(join(artifact, 'markdown/orphan.md'))
     await writeManifest()
@@ -267,10 +270,18 @@ describe('PostgreSQL snapshot controller process', () => {
       await git(candidate, 'show', 'HEAD:backend/data-stores/psql/schema-snapshot/schema.json'),
     ).toBe('{"formatVersion":2}')
     expect(
+      await git(
+        candidate,
+        'show',
+        'HEAD:backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json',
+      ),
+    ).toBe('{"coverage":"complete"}')
+    expect(
       (await git(candidate, 'diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD')).split(
         '\n',
       ),
     ).toEqual([
+      'backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json',
       'backend/data-stores/psql/schema-snapshot/schema.json',
       'docs/development/postgresql/schema-snapshot/markdown/README.md',
       'docs/development/postgresql/schema-snapshot/markdown/orphan.md',

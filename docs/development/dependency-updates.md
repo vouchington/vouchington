@@ -25,6 +25,14 @@ An enforced pin would make pnpm 12 write `pnpm-lock.yaml` as two YAML documents,
 single-document lockfile readers and GitHub's dependency graph (dependabot/dependabot-core#15904) do
 not fully read.
 
+<a id="no-mistakes-releases"></a>A `no-mistakes` release can change more than rule behavior: the package also generates
+`backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json`, which `db:snapshot:check` compares
+byte for byte. When a bump changes the generated catalog, `tests-postgres-schema.yml` fails until a
+maintainer comments `/postgresql-snapshot-update` on the PR, which commits the regenerated catalog. See
+[schema snapshot](postgresql/schema-snapshot/README.md#no-mistakes-catalog). Its executor options
+(`importSpecifier`) are explicit in `.no-mistakes.yml` and every `.oxlintrc.json`, so a release that
+tightens executor selection reports a configuration error instead of skipping checks.
+
 Dependabot checks all configured ecosystems every day at 04:00 America/Los_Angeles. Renovate runs before 6am Monday in the same timezone.
 
 Dependabot groups only verified package families and release trains, across major, minor, and patch

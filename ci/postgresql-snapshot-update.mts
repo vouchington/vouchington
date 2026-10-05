@@ -14,6 +14,7 @@ import { prepareSnapshotRequest } from './postgresql-snapshot-prepare.mts'
 
 import {
   snapshotArtifactPath,
+  snapshotCatalogPath,
   snapshotJsonPath,
   snapshotMarkdownPath,
   snapshotRepositoryPath,
@@ -54,6 +55,9 @@ async function generateManifest(): Promise<void> {
   await mkdir(target, { recursive: true })
   await Promise.all([
     cp(join(source, snapshotJsonPath), join(target, 'schema.json'), { dereference: false }),
+    cp(join(source, snapshotCatalogPath), join(target, 'no-mistakes-catalog.json'), {
+      dereference: false,
+    }),
     cp(join(source, snapshotMarkdownPath), join(target, 'markdown'), {
       recursive: true,
       dereference: false,
@@ -98,7 +102,7 @@ async function publish(): Promise<void> {
 
   const tracked = await execFile(
     'git',
-    ['ls-files', '-z', '--', snapshotJsonPath, snapshotMarkdownPath],
+    ['ls-files', '-z', '--', snapshotJsonPath, snapshotCatalogPath, snapshotMarkdownPath],
     { cwd: checkout },
   )
   for (const path of tracked.stdout.split('\0').filter(Boolean)) {
@@ -110,9 +114,11 @@ async function publish(): Promise<void> {
   for (const relative of files) {
     await copySnapshotFile(checkout, artifactRoot, relative)
   }
-  await execFile('git', ['add', '-A', '--', snapshotJsonPath, snapshotMarkdownPath], {
-    cwd: checkout,
-  })
+  await execFile(
+    'git',
+    ['add', '-A', '--', snapshotJsonPath, snapshotCatalogPath, snapshotMarkdownPath],
+    { cwd: checkout },
+  )
   const staged = (
     await execFile('git', ['diff', '--cached', '--name-only', '-z'], { cwd: checkout })
   ).stdout

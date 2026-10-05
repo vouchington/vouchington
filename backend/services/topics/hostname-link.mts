@@ -48,8 +48,8 @@ async function clearOtherHostnameLinks(
     sql`/* clearOtherHostnameLinks */
       UPDATE url_hostnames
       SET topic_id = NULL
+      -- no-mistakes-disable-next-line postgres-required-predicates: id-scoped lookup of a specific, already-validated topic's hostname_id, not a listing/existence query
       WHERE id = (SELECT hostname_id FROM topics WHERE id = ${topicId})
-        -- no-mistakes-disable-next-line postgres-required-predicates: id-scoped lookup of a specific, already-validated topic's hostname_id, not a listing/existence query
         AND topic_id = ${topicId}
         AND (${hostnameId}::uuid IS NULL OR id <> ${hostnameId}::uuid)
     `,

@@ -39,6 +39,7 @@ async function fixtureRoot(): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), 'postgresql-snapshot-update-'))
   await mkdir(join(root, 'markdown/tables'), { recursive: true })
   await writeFile(join(root, 'schema.json'), '{"formatVersion":2}\n')
+  await writeFile(join(root, 'no-mistakes-catalog.json'), '{"coverage":"complete"}\n')
   await writeFile(join(root, 'markdown/README.md'), '# Schema\n')
   await writeFile(join(root, 'markdown/tables/posts.md'), '# Posts\n')
   return root
@@ -122,6 +123,7 @@ describe('PostgreSQL snapshot update contracts', () => {
       await expect(assertSnapshotManifest(root, manifest, identity)).resolves.toEqual([
         'markdown/README.md',
         'markdown/tables/posts.md',
+        'no-mistakes-catalog.json',
         'schema.json',
       ])
       await expect(
@@ -140,6 +142,21 @@ describe('PostgreSQL snapshot update contracts', () => {
       await rm(root, { recursive: true, force: true })
     }
   })
+
+  it.each(['schema.json', 'no-mistakes-catalog.json', 'markdown/README.md'])(
+    'requires %s in the generated snapshot artifact',
+    async required => {
+      const root = await fixtureRoot()
+      try {
+        await rm(join(root, required))
+        await expect(describeGeneratedSnapshotFiles(root)).rejects.toThrow(
+          'Snapshot artifact has missing or excessive generated files',
+        )
+      } finally {
+        await rm(root, { recursive: true, force: true })
+      }
+    },
+  )
 
   it('rejects candidate checkout symlinks in generated-file ancestors and leaves', async () => {
     const root = await fixtureRoot()
