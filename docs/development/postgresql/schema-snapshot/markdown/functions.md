@@ -434,6 +434,14 @@ CREATE OR REPLACE FUNCTION public.fn_project_retire_deleted_user_image_surfaces(
  LANGUAGE plpgsql
 ```
 
+## `fn_project_retire_notification_push_intent`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_retire_notification_push_intent()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_project_story_post_related_url_relation_mutation`
 
 ```sql
