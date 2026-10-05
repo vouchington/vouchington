@@ -19,6 +19,7 @@ describe('PostgreSQL ordering guard config', () => {
       rules: Array<{ name: string; options?: Record<string, unknown>; rule: string; scope: string }>
     }
     const expectedOptions = {
+      importSpecifier: '@data-stores/psql',
       schemaCatalogPath: 'backend/data-stores/psql/schema-snapshot/schema.json',
       sqlInclude: ['backend/data-stores/psql/config-driven/**/*.sql'],
       include: ['backend/**/*.mts', 'backend/**/*.ts'],

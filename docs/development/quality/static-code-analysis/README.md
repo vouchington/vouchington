@@ -530,6 +530,11 @@ analyzer misses SQL assigned to a function-scoped `var` inside a conditional blo
 executed afterward. The existing runtime-guard fixture protects this case; remove the
 duplicate annotation check after the package-owned rule covers it.
 
+Every `postgres-*` rule that scans executor calls, in `.no-mistakes.yml` and in the nested
+`.oxlintrc.json` files, sets `importSpecifier: '@data-stores/psql'` explicitly. `no-mistakes` does
+not own our module layout, so a rule without `importSpecifier` can scan zero calls once the package
+drops its default. Migration-only rules and `postgres-sql-statement-policy` do not take the option.
+
 PostgreSQL final-state inventories in `repo-file-policy` load the tracked, versioned
 [`schema.json`](../../../../backend/data-stores/psql/schema-snapshot/schema.json) once and fail closed when it
 is missing, malformed, or stale-format. Migration authoring, deploy sequencing, inline directives,
