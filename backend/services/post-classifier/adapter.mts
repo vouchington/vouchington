@@ -22,8 +22,9 @@ export type PostClassifierRunAdapter = ClassifierRunAdapter<
 
 /**
  * The C5 adapter: how an approved post's current input is read and its configuration resolved, plus
- * how the durable outcomes become topic votes and tags. The shared classifier-run lifecycle owns
- * receipt, lease, attempts, terminal failure, completion, supersession and sweep.
+ * how the durable outcomes become the post's topic relations and the classifier's relation votes.
+ * The shared classifier-run lifecycle owns receipt, lease, attempts, terminal failure, completion,
+ * supersession and sweep.
  */
 export function createPostClassifierRunAdapter(
   detectorPackageVersion: string,

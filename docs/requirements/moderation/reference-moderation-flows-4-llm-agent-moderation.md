@@ -46,8 +46,8 @@ act on a flag, through the community-level `communities.automod_action` setting.
    enabled the latch rejects further AI calls for the day
 
 The fixed-label built-in agents apply through the post classifier
-(`backend/agents/post-classifier/`), which records durable receipts and applies topic votes and
-tags after clearance approval.
+(`backend/agents/post-classifier/`), which records durable receipts and applies topic relations and
+relation votes after clearance approval.
 
 Automated review-queue moves are attributed to `automod` in `post_clearance_changes`. They do not create modlog rows because `in_review` is a triage state, not a terminal action.
 

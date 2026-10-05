@@ -25,4 +25,6 @@ Staff or other affiliated people may use separate non-role personal accounts for
 | Moderator agent: tag post + move to review queue  | ✅ Allowed                   | Structural           |
 | Following / commenting / reporting                | ✅ Not restricted            | Social               |
 
-The restriction is enforced only at HTTP and authorization guards, not in the service-level relation and vote writers. The [platform-account writer audit](platform-account-writer-audit.md) lists every non-HTTP writer that casts a vote or writes an entity relation as a platform account, whether the restriction applies and why, and four mismatches with this table (M1 to M4).
+The restriction is enforced only at HTTP and authorization guards, not in the service-level relation and vote writers. The [platform-account writer audit](platform-account-writer-audit.md) lists every non-HTTP writer that casts a vote or writes an entity relation as a platform account, whether the restriction applies and why, and the mismatches with this table (M1 is resolved; M2 to M4 remain).
+
+Classifier and AI accounts vote only on entity relations, never on topic or post elections.

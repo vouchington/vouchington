@@ -196,7 +196,7 @@ describe('applyTopicClassifierDecisionRelations', () => {
     ).rejects.toThrow('Classifier topic relation application subject does not match the decision')
     const human = await createTestUser()
     await expect(applyDecisionRelationsForTest(decision, human.id, [first])).rejects.toThrow(
-      'Classifier topic votes require a system actor',
+      'Classifier topic relation votes require a system actor',
     )
 
     expect(await readSubjectTopicRelationFacts(postSubject)).toEqual([])

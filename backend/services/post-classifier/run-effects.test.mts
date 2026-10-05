@@ -73,24 +73,21 @@ describe('post classifier effects on the shared lifecycle (real PG)', () => {
     await persist(local, { localFlagged: true, remotePositive: false })
     expect(await completeClassifierRun(local.adapter, local.lease)).toEqual({
       kind: 'completed',
-      effects: { appliedTopicIds: [], taggedTopicIds: [topicIds(local).local] },
+      effects: { addedTopicIds: [topicIds(local).local] },
     })
 
     const remote = await createPostClassifierExecutionFixture(true, false)
     await persist(remote, { localFlagged: false, remotePositive: true })
     expect(await completeClassifierRun(remote.adapter, remote.lease)).toEqual({
       kind: 'completed',
-      effects: {
-        appliedTopicIds: [topicIds(remote).remote],
-        taggedTopicIds: [topicIds(remote).remote],
-      },
+      effects: { addedTopicIds: [topicIds(remote).remote] },
     })
 
     const mixed = await createPostClassifierExecutionFixture(true, true)
     await persist(mixed, { localFlagged: true, remotePositive: true })
     const expected = [topicIds(mixed).local!, topicIds(mixed).remote!].toSorted()
     const result = await completeClassifierRun(mixed.adapter, mixed.lease)
-    expect(result).toMatchObject({ kind: 'completed', effects: { taggedTopicIds: expected } })
+    expect(result).toMatchObject({ kind: 'completed', effects: { addedTopicIds: expected } })
     expect(await relationTopicIds(mixed.post.id)).toEqual(expected)
     expect(await facts(mixed)).toMatchObject({ completed_at: expect.any(Date), lease_token: null })
   })
@@ -101,7 +98,7 @@ describe('post classifier effects on the shared lifecycle (real PG)', () => {
 
     expect(await completeClassifierRun(setup.adapter, setup.lease)).toMatchObject({
       kind: 'completed',
-      effects: { taggedTopicIds: [] },
+      effects: { addedTopicIds: [] },
     })
 
     expect(await categoryRelationsForTest(setup.post.id)).toEqual([])

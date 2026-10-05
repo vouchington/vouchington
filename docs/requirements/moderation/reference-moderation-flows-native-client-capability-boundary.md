@@ -50,7 +50,7 @@ flowchart TD
   Flagged -- no --> Approved
   Approved --> Classifier[Post classifier dispatcher]
   Classifier --> Builtins[Baseline and community-enabled label classifiers]
-  Builtins --> Tags[Apply topic votes and tags]
+  Builtins --> Tags[Apply topic relations and relation votes]
   Post --> Community{Community post?}
   Community -- yes --> Manual[Community moderation queue]
   Community -- yes --> CommunityAgents[Community agent prompts]
