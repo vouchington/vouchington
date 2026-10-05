@@ -84,8 +84,10 @@ generated contract before releasing a client that adopts the optional logout bin
 The participant case contract now requires `statements`, with immutable email text, delivery kind,
 canonical delivery state, and nullable sent time. Failed and bounced delivery must be shown as terminal outcomes rather than pending. Web displays these notices; Swift and .NET must regenerate from the updated
 participant fixtures and render only the server-projected participant texts. Staff responses use an
-empty array and public member cases have no statement field. Native copyright UI remains deferred
-to #853 and #854; this producer change does not complete those client surfaces.
+empty array and public member cases have no statement field. Statement text carries absolute site
+URLs and a plain UTC date, so a client renders it as given and never prefixes an origin. Native
+copyright UI remains deferred to #853 and #854; this producer change does not complete those client
+surfaces.
 
 ## Copyright claimant attribution handoff
 
@@ -132,7 +134,9 @@ new filing; existing case and complaint pages remain usable after withdrawal. Gu
 complain by admitted email reply. `territorial_redress_review`, notifier receipt details, live
 recipient informed times, complaint decisions, and Art. 21 records are part of the staff territorial
 projection. Swift and .NET have no EU filing or complaint surface; the capability
-`copyright-eu-notices` is tracked in #1229. UK public filing and participant UI remain out of scope.
+`copyright-eu-notices` is tracked in #1229. UK public filing and participant UI remain out of scope,
+and UK redress has no participant route: `POST /api/v1/copyright-uk-notices/:id/redress-requests` is
+staff-only, so staff record a UK complaint received by another channel.
 
 Table B lists every web copyright surface (policy pages, member cases, notice filing, poster
 responses, guest filing, and the four staff surfaces). Swift and .NET render none of them, and

@@ -100,13 +100,13 @@ app.route('/api/v1/copyright-uk-notices/:id/reviews').post(async (ctx: Context) 
 // Staff record a UK complaint received through another channel. UK redress has no participant route.
 app.route('/api/v1/copyright-uk-notices/:id/redress-requests').post(async (ctx: Context) => {
   setPrivateNoStoreCacheHeaders(ctx)
-  ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   const currentUser = await requireAuthAndRateLimit(
     ctx,
     currentUserCanReviewCopyrightNotices,
     'POST:/api/v1/copyright-uk-notices/:id/redress-requests',
   )
   assertNotSuspended(currentUser)
+  ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   const body = await parseJsonBody<CopyrightUkRedressRequest>(ctx)
   const noticeId = validateUUIDParam(ctx, 'id')
   const idempotencyKey = requireIdempotencyKey(ctx)
