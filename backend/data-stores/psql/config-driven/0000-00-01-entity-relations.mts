@@ -18,7 +18,7 @@ import { createEntityRelationVoteIntegrityTargets } from './utils/entity-relatio
 import { createRetainedEntityRelationImpacts } from './utils/retained-entity-relation-impacts.mts'
 
 /** @public loaded by path by the config-driven migration runner */
-export default () => {
+export default function generateEntityRelationSchemaSql(): string {
   const tableCreation = entityRelationMetadatum.map(createEntityRelationTable).join('\n\n')
   const electionRelations = entityRelationMetadatum.filter(metadata => metadata.election)
   const relationVoteView = createEntityRelationVoteView(electionRelations)

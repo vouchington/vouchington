@@ -68,6 +68,7 @@ export const toolingProjects = [
         'static-code-analysis/__tests__/ssrf-guard-import-options-oxlint.test.mts',
         'static-code-analysis/__tests__/semantic-string-and-spread-oxlint.test.mts',
         'static-code-analysis/__tests__/prefer-array-some-oxlint.test.mts',
+        'static-code-analysis/__tests__/unicorn-approved-rules-oxlint.test.mts',
       ],
       exclude: defaultExcludes,
       setupFiles: [isolatedSetupFile],
