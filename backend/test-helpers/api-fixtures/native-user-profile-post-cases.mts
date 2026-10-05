@@ -134,7 +134,7 @@ export const nativeUserProfilePostApiFixtureCases: ApiFixtureCase[] = [
     auth: 'fixture-user',
     status: 200,
     body: profilePostFeedBody([profileMcpPost, profileApiPost, profileDiscussionPost]),
-    consumers: ['web'],
+    consumers: [],
     migratedFrom: [],
   },
   {
@@ -160,7 +160,7 @@ export const nativeUserProfilePostApiFixtureCases: ApiFixtureCase[] = [
       },
       { ...profileReviewPost, staff_provenance: { created_via: 'web', oauth_client: null } },
     ]),
-    consumers: ['web'],
+    consumers: [],
     migratedFrom: [],
   },
   {
