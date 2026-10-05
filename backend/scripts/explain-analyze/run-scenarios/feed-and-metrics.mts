@@ -41,10 +41,10 @@ export async function runFeedAndMetricScenarios() {
   await runAndCapture('rss-feed-search', () => searchRssFeeds({ limit: 25 }))
 
   await runAndCapture('rss-feed-search-disabled', () =>
-    searchRssFeeds({ enabled: false, limit: 25 }),
+    searchRssFeeds({ is_enabled: false, limit: 25 }),
   )
   await runAndCapture('rss-feed-search-all-enable-states', () =>
-    searchRssFeeds({ enabled: null, limit: 25 }),
+    searchRssFeeds({ is_enabled: null, limit: 25 }),
   )
   await runAndCapture('rss-feed-text-search', () =>
     searchRssFeeds({ text_search_query: 'seed', limit: 25 }),

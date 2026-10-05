@@ -45,7 +45,7 @@ export function BlockHostnameQuickAdd({ isAdmin }: Props) {
     if (!trimmed || isBusy) return
     setIsSubmitting(true)
     try {
-      await createHostname({ hostname: trimmed, blocked: true })
+      await createHostname({ hostname: trimmed, is_blocked: true })
       setHostname('')
       startTransition(() => refresh())
       toast.success(

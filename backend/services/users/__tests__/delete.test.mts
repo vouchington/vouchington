@@ -240,7 +240,7 @@ describe('deleteUser', () => {
     expect(state?.verification_status).toBe('unverified')
     expect(state?.verification_provider).toBeNull()
     expect(state?.verification_completed_at).toBeNull()
-    expect(state?.verified_badge_visible).toBe(true) // DEFAULT
+    expect(state?.is_verified_badge_visible).toBe(true) // DEFAULT
     expect(state?.public_verified_name_display).toBe('hidden') // DEFAULT
     expect(state?.verified_first_name).toBeNull()
     expect(state?.verified_last_name_initial).toBeNull()

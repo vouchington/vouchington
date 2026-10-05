@@ -62,7 +62,7 @@ export function appendFinalSelectCTE(query: SQLStatement): SQLStatement {
       limited_rss_feed_items.sort_rank,
       limited_rss_feed_items.story_id,
       limited_rss_feed_items.delivery_type,
-      limited_rss_feed_items.shared_by_user_id,
+      limited_rss_feed_items.shared_by_id,
       limited_rss_feed_items.shared_at,
       limited_rss_feed_items.item_id,
       limited_rss_feed_items.share_event_id,

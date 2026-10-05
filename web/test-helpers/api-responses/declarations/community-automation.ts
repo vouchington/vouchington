@@ -103,8 +103,8 @@ export const COMMUNITY_AUTOMATION_DECLARATIONS = [
     communitiesPostTypeSettingsUpdateDefault,
     context =>
       context.client.communities.updateCommunityPostTypeSettings('test-community', {
-        allow_review_posts: true,
-        allow_data_point_posts: true,
+        should_allow_review_posts: true,
+        should_allow_data_point_posts: true,
       }),
   ),
   defineWebApiFixture<SavedRepliesResponseBody>()(

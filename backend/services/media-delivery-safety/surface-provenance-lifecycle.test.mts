@@ -37,15 +37,15 @@ describe('surface activation identity across ownership changes', () => {
     expect(await getTestImageSurfacePlacementActivations(initial.placement_id)).toEqual([
       expect.objectContaining({
         placement_revision: initial.placement_revision,
-        bound_by_user_id: creator.id,
-        uploaded_by_user_id: uploader.id,
-        bound_by_administrator: false,
+        bound_by_id: creator.id,
+        uploaded_by_id: uploader.id,
+        is_bound_by_administrator: false,
       }),
       expect.objectContaining({
         placement_revision: current!.placement_revision,
-        bound_by_user_id: administrator.id,
-        uploaded_by_user_id: uploader.id,
-        bound_by_administrator: true,
+        bound_by_id: administrator.id,
+        uploaded_by_id: uploader.id,
+        is_bound_by_administrator: true,
       }),
     ])
   })

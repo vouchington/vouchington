@@ -80,7 +80,7 @@ curl -sS -D - -o /dev/null -X POST "${STAGING_BASE_URL}/ap/inbox"
 2. Set `api-egress-proxy.fediverse_search_enabled: false` independently. Verify search and NodeInfo
    classification use the direct API path with unchanged response shapes.
 3. Send `Undo(Follow)` from every remote account that still follows the Voucha actor.
-4. Set `fediverse_federation_enabled: false` for the dedicated Voucha user.
+4. Set `is_fediverse_federation_enabled: false` for the dedicated Voucha user.
 5. Restore each prior instance integration status by appending an integration change. Never update
    the projection column directly.
 6. Revoke temporary remote sessions or tokens and remove private worksheets or credential files.

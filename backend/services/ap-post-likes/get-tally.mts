@@ -2,8 +2,8 @@ import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export interface ApPostLikesTally {
-  ap_likes_score: number
-  ap_likes_count: number
+  activitypub_likes_score: number
+  activitypub_likes_count: number
 }
 
 // Reads the AP-only like tally for a post, trigger-maintained by fn_project_activitypub_post_likes. Returns
@@ -11,7 +11,7 @@ export interface ApPostLikesTally {
 // so a null result means "zero", not an error.
 export async function getApPostLikesTally(postId: string): Promise<ApPostLikesTally | null> {
   const { rows } = await read<ApPostLikesTally>(sql`/* getApPostLikesTally */
-    SELECT ap_likes_score, ap_likes_count
+    SELECT activitypub_likes_score, activitypub_likes_count
     FROM post_activitypub_like_tallies
     WHERE post_id = ${postId}
   `)

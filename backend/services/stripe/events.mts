@@ -15,7 +15,7 @@ export async function getStripeEventByStripeEventId(
       id,
       stripe_event_id,
       event_type,
-      livemode,
+      is_live_mode,
       api_version,
       stripe_created_at,
       customer_id,

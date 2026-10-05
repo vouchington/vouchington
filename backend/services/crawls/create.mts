@@ -7,7 +7,7 @@ import createError from 'http-errors'
 export const createCrawl = async (
   urlId: string,
   crawlerId: string,
-  options: Omit<CreateCrawlOptions, 'url_id' | 'crawler_id'> = {},
+  options: Omit<CreateCrawlOptions, 'url_id' | 'hostname_crawler_configuration_id'> = {},
   queryOptions: QueryOptions = {},
 ): Promise<CrawlBasic> => {
   if (!isUUID(urlId)) {
@@ -21,7 +21,7 @@ export const createCrawl = async (
     `/* createCrawl */
     INSERT INTO crawls (
       url_id,
-      crawler_id,
+      hostname_crawler_configuration_id,
       last_modified_at,
       etag,
       request_headers,

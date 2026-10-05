@@ -11,7 +11,7 @@ const ID = randomUUID()
 describe('staff list query contract ordering', () => {
   registerStaffRequestContractTests([
     ['modlog malformed community_id', 'get', '/api/v1/admin/modlog?community_id=not-a-uuid'],
-    ['modlog malformed actor_id', 'get', '/api/v1/admin/modlog?actor_id=not-a-uuid'],
+    ['modlog malformed actor_user_id', 'get', '/api/v1/admin/modlog?actor_user_id=not-a-uuid'],
     [
       'modlog repeated community_id',
       'get',

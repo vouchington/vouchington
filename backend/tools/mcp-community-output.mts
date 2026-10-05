@@ -22,8 +22,8 @@ const COMMUNITY_FIELDS = [
   'rules_markdown',
   'member_roster_visibility',
   'list_type',
-  'allow_review_posts',
-  'allow_data_point_posts',
+  'should_allow_review_posts',
+  'should_allow_data_point_posts',
   'archived_at',
   'created_at',
   'updated_at',
@@ -47,8 +47,8 @@ export type McpCommunity = {
   rules_markdown: string | null
   member_roster_visibility: Community['member_roster_visibility']
   list_type: Community['list_type']
-  allow_review_posts: boolean
-  allow_data_point_posts: boolean
+  should_allow_review_posts: boolean
+  should_allow_data_point_posts: boolean
   archived_at: string | null
   created_at: string
   updated_at: string
@@ -102,8 +102,8 @@ export async function toMcpCommunity(community: Community): Promise<McpCommunity
     rules_markdown: rulesMarkdown,
     member_roster_visibility: community.member_roster_visibility,
     list_type: community.list_type,
-    allow_review_posts: community.allow_review_posts,
-    allow_data_point_posts: community.allow_data_point_posts,
+    should_allow_review_posts: community.should_allow_review_posts,
+    should_allow_data_point_posts: community.should_allow_data_point_posts,
     archived_at: community.archived_at ? iso(community.archived_at) : null,
     created_at: iso(community.created_at),
     updated_at: iso(community.updated_at),

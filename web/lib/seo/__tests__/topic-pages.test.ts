@@ -16,8 +16,8 @@ const topic: Topic = {
   markdown: 'A rewards card.',
   aliases: [],
   topic_type: 'card',
-  noindex: false,
-  allow_reviews: true,
+  is_noindexed: false,
+  should_allow_reviews: true,
   created_at: '2026-03-01T00:00:00.000Z',
   logo_image_id: null,
   hero_image_id: null,
@@ -61,7 +61,7 @@ describe('createTopicSectionMetadata', () => {
   const section = { label: 'Posts', path: 'posts' }
 
   it('emits noindex metadata for a noindex topic on every section page', () => {
-    const result = createTopicSectionMetadata({ ...topic, noindex: true }, 'card', section)
+    const result = createTopicSectionMetadata({ ...topic, is_noindexed: true }, 'card', section)
     // Literal shape createNoIndexMetadata() produces (see web/lib/seo/metadata.ts) — asserted
     // directly rather than by re-invoking the production helper.
     expect(result).toEqual({

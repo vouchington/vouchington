@@ -61,7 +61,7 @@ describe('enqueueCrawlUrlAndWait', () => {
     expect(job!.data).toMatchObject({
       crawl_timeout_ms: 10_000,
       ensure_crawler_for_redirects: true,
-      ignore_robots_txt: true,
+      should_ignore_robots_txt: true,
       max_response_size_bytes: 256 * 1024,
       preserve_http_redirects: true,
       skip_canonical_url: true,

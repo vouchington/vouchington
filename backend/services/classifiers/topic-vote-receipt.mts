@@ -23,7 +23,7 @@ export async function recordTopicVoteApplication(
     SELECT EXISTS (
       SELECT 1
       FROM classifier_topic_vote_applications
-      WHERE shared_actor_id = ${sharedActorId}
+      WHERE shared_actor_user_id = ${sharedActorId}
         AND topic_id = ${result.topicId}
         AND batch_id >= ${decision.batchId}
     ) AS exists
@@ -32,13 +32,13 @@ export async function recordTopicVoteApplication(
   const { rows } = await query<{ batch_id: string }>(sql`
     /* recordTopicClassifierVoteApplication */
     INSERT INTO classifier_topic_vote_applications (
-      shared_actor_id, topic_id, post_id, rss_feed_item_id, classifier_id,
+      shared_actor_user_id, topic_id, post_id, rss_feed_item_id, classifier_id,
       prompt_version_id, batch_id, result_id
     ) VALUES (
       ${sharedActorId}, ${result.topicId}, ${decision.subject.postId}, ${decision.subject.rssFeedItemId},
       ${decision.classifierId}, ${decision.promptVersionId}, ${decision.batchId}, ${result.id}
     )
-    ON CONFLICT (shared_actor_id, topic_id, post_id, rss_feed_item_id)
+    ON CONFLICT (shared_actor_user_id, topic_id, post_id, rss_feed_item_id)
     DO UPDATE SET
       classifier_id = EXCLUDED.classifier_id,
       prompt_version_id = EXCLUDED.prompt_version_id,

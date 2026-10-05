@@ -78,7 +78,7 @@ export async function admitCopyrightEmailCorrespondence(input: {
   await using transaction = await beginTransaction()
   const { rows } =
     await transaction<PendingCorrespondence>(sql`/* admitCopyrightEmailCorrespondence:lock */
-    SELECT intake.id, intake.ses_message_id, intake.received_at, intake.raw_storage_key,
+    SELECT intake.id, intake.amazon_ses_message_id, intake.received_at, intake.raw_storage_key,
       intake.raw_sha256, intake.raw_media_type_id,
         (SELECT mime_type FROM media_types WHERE id = intake.raw_media_type_id) AS raw_mime_type, intake.raw_byte_size,
       link.copyright_notice_id AS notice_id, parse.body_ciphertext
@@ -98,7 +98,7 @@ export async function admitCopyrightEmailCorrespondence(input: {
     AdmittedCorrespondence & { action: 'admitted' | 'rejected' }
   >(sql`/* admitCopyrightEmailCorrespondence:existing */
     SELECT copyright_notice_submission_id AS submission_id,
-      copyright_notice_correspondence_id AS correspondence_id, action
+      copyright_notice_correspondence_message_id AS correspondence_id, action
     FROM copyright_notice_email_correspondence_reviews
     WHERE copyright_notice_email_intake_id = ${input.intakeId} AND action IN ('admitted', 'rejected')
   `)
@@ -129,7 +129,7 @@ export async function admitCopyrightEmailCorrespondence(input: {
     id: string
   }>(sql`/* admitCopyrightEmailCorrespondence:submission */
     INSERT INTO copyright_notice_submissions (
-      id, copyright_notice_id, submitted_by_user_id, kind, received_at, source_kind, body_ciphertext
+      id, copyright_notice_id, submitted_by_id, kind, received_at, source_kind, body_ciphertext
     ) VALUES (
       ${submissionId}, ${pending.notice_id}, NULL, ${input.kind}::copyright_notice_submission_kinds, ${pending.received_at}, 'email',
       ${encryptSecret(JSON.stringify(input.structuredSubmission), copyrightSubmissionPurpose(submissionId))}
@@ -143,7 +143,7 @@ export async function admitCopyrightEmailCorrespondence(input: {
         noticeId: pending.notice_id,
         submissionId: submission.id,
         receivedAt: pending.received_at,
-        sesMessageId: pending.ses_message_id,
+        sesMessageId: pending.amazon_ses_message_id,
         bodyCiphertext: pending.body_ciphertext,
       },
       transaction,
@@ -185,13 +185,13 @@ export async function admitCopyrightEmailCorrespondence(input: {
     INSERT INTO copyright_notice_email_correspondence_reviews (
       copyright_notice_email_intake_id, copyright_notice_id, action, kind,
       copyright_notice_email_intake_recommendation_id,
-      copyright_notice_submission_id, copyright_notice_correspondence_id,
+      copyright_notice_submission_id, copyright_notice_correspondence_message_id,
       reviewed_at, reviewed_by_id, rationale_ciphertext, manual_fallback_reason_ciphertext
     ) VALUES (
       ${input.intakeId}, ${pending.notice_id}, 'admitted', ${input.kind}::copyright_notice_email_correspondence_review_kinds, ${input.recommendationId}, ${submission.id},
       ${correspondence.id}, CURRENT_TIMESTAMP, ${input.currentUser.id},
-      ${encryptSecret(input.rationale, copyrightEmailIntakePurpose(pending.ses_message_id))},
-      ${input.manualFallbackReason ? encryptSecret(input.manualFallbackReason, copyrightEmailIntakePurpose(pending.ses_message_id)) : null}
+      ${encryptSecret(input.rationale, copyrightEmailIntakePurpose(pending.amazon_ses_message_id))},
+      ${input.manualFallbackReason ? encryptSecret(input.manualFallbackReason, copyrightEmailIntakePurpose(pending.amazon_ses_message_id)) : null}
     )
   `)
   await transaction(sql`/* admitCopyrightEmailCorrespondence:event */
@@ -237,9 +237,9 @@ export async function rejectCopyrightEmailCorrespondence(input: {
   await using transaction = await beginTransaction()
   const { rows } = await transaction<{
     notice_id: string
-    ses_message_id: string
+    amazon_ses_message_id: string
   }>(sql`/* rejectCopyrightEmailCorrespondence:lock */
-    SELECT link.copyright_notice_id AS notice_id, intake.ses_message_id
+    SELECT link.copyright_notice_id AS notice_id, intake.amazon_ses_message_id
     FROM copyright_notice_email_intakes intake
     JOIN copyright_notice_email_intake_notice_links link
       ON link.copyright_notice_email_intake_id = intake.id AND link.link_kind = 'thread'
@@ -272,8 +272,8 @@ export async function rejectCopyrightEmailCorrespondence(input: {
       rationale_ciphertext, manual_fallback_reason_ciphertext
     ) VALUES (${input.intakeId}, ${pending.notice_id}, 'rejected', ${input.kind}::copyright_notice_email_correspondence_review_kinds,
       ${input.recommendationId}, CURRENT_TIMESTAMP, ${input.currentUser.id},
-      ${encryptSecret(input.rationale, copyrightEmailIntakePurpose(pending.ses_message_id))},
-      ${input.manualFallbackReason ? encryptSecret(input.manualFallbackReason, copyrightEmailIntakePurpose(pending.ses_message_id)) : null})
+      ${encryptSecret(input.rationale, copyrightEmailIntakePurpose(pending.amazon_ses_message_id))},
+      ${input.manualFallbackReason ? encryptSecret(input.manualFallbackReason, copyrightEmailIntakePurpose(pending.amazon_ses_message_id)) : null})
   `)
   await transaction(sql`/* rejectCopyrightEmailCorrespondence:event */
     INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
@@ -327,7 +327,7 @@ function assertRecommendationOrFallback(
 
 type PendingCorrespondence = {
   id: string
-  ses_message_id: string
+  amazon_ses_message_id: string
   received_at: Date
   raw_storage_key: string
   raw_sha256: Buffer

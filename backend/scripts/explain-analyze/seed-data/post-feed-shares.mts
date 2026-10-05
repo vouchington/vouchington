@@ -33,7 +33,7 @@ export async function seedPostFeedShares(): Promise<void> {
     const rows = postShareSeedRows(recipientIndex, targetCount, deliveriesPerTarget)
     await transaction(
       `/* seedExplainData */ INSERT INTO post_feed_shares
-        (recipient_user_id, id, shared_by_user_id, post_id, sort_at)
+        (recipient_user_id, id, shared_by_id, post_id, sort_at)
        SELECT $1::uuid, delivery.id, $2::uuid, delivery.post_id, delivery.sort_at
        FROM UNNEST($3::uuid[], $4::uuid[], $5::timestamptz[])
          AS delivery(id, post_id, sort_at)

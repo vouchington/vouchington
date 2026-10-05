@@ -28,12 +28,12 @@ When adding, removing, or renaming a `topic_type`, follow the [Finite Enum Rippl
 
 Two per-topic boolean columns on `topics` carry the behavior that the removed `person` type used to imply. Admins set both in the **Visibility** section (`TopicFlagsSection`) of the topic Behavior settings page (`/:topic-type/:idOrSlug/settings/behavior`).
 
-| Flag            | Default | Semantics                                                                                                                                                                                              |
-| --------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `noindex`       | `false` | When `true`, the topic's pages emit `noindex` robots metadata (via `createNoIndexMetadata`). Sitemap membership is unaffected — that is still governed by the per-type `sitemap` flag in `topicTypes`. |
-| `allow_reviews` | `true`  | When `false`, blocks review creation and hides review UI (Menubar `Reviews` item and the Contribute **Write a Review** link).                                                                          |
+| Flag                   | Default | Semantics                                                                                                                                                                                              |
+| ---------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `noindex`              | `false` | When `true`, the topic's pages emit `noindex` robots metadata (via `createNoIndexMetadata`). Sitemap membership is unaffected — that is still governed by the per-type `sitemap` flag in `topicTypes`. |
+| `should_allow_reviews` | `true`  | When `false`, blocks review creation and hides review UI (Menubar `Reviews` item and the Contribute **Write a Review** link).                                                                          |
 
-These flags replaced the `person` topic type: a minimal reference entity is now a default `topic` with `noindex = true` and `allow_reviews = false`, rather than a distinct type.
+These flags replaced the `person` topic type: a minimal reference entity is now a default `topic` with `noindex = true` and `should_allow_reviews = false`, rather than a distinct type.
 
 ### Type vs facet
 
@@ -51,8 +51,8 @@ Some structured topic types store references to other topics by id. The single s
 | `rewards_program_id`  | `rewards_program`        | Yes — `assertRewardsProgramExists`                     |
 | `referral_program_id` | `referral_program`       | Yes — `assertReferralProgramExists`                    |
 | `lifetime_version_id` | `rewards_program_status` | Yes — `assertRewardsProgramStatusExists`               |
-| `company_id`          | any (unfiltered)         | No — backend only `assertTopicExists` (existence only) |
-| `bank_id`             | any (unfiltered)         | No — backend only `assertTopicExists` (existence only) |
-| `brand_id`            | any (unfiltered)         | No — backend only `assertTopicExists` (existence only) |
+| `company_topic_id`    | any (unfiltered)         | No — backend only `assertTopicExists` (existence only) |
+| `bank_topic_id`       | any (unfiltered)         | No — backend only `assertTopicExists` (existence only) |
+| `brand_topic_id`      | any (unfiltered)         | No — backend only `assertTopicExists` (existence only) |
 
-`company_id`, `bank_id`, and `brand_id` are intentionally unfiltered/unenforced — the picker accepts any topic and the backend only checks the referenced topic exists. Never hand-pass a `topicTypes` array literal at a call site; derive it from `topicReferenceFieldTypes`.
+`company_topic_id`, `bank_topic_id`, and `brand_topic_id` are intentionally unfiltered/unenforced — the picker accepts any topic and the backend only checks the referenced topic exists. Never hand-pass a `topicTypes` array literal at a call site; derive it from `topicReferenceFieldTypes`.

@@ -33,12 +33,12 @@ export async function getVerifiedProviderObservation(
   const { rows } = await query(sql`/* getVerifiedProviderObservation */
     SELECT observation.source_kind, observation.membership_product_id,
       observation.effective_at, observation.expires_at, observation.cancelled_at,
-      observation.expired_at, observation.past_due_at, observation.paused_at, observation.auto_renews,
-      observation.membership_provider_evidence_id, product.plan, lineage.provider, lineage.environment,
+      observation.expired_at, observation.past_due_at, observation.paused_at, observation.should_auto_renew,
+      observation.membership_provider_evidence_record_id, product.plan, lineage.provider, lineage.environment,
       lineage.application_id, lineage.provider_lineage_id, lineage.provider_account_id
     FROM membership_provider_observations observation
     INNER JOIN membership_provider_evidence_records evidence
-      ON evidence.id = observation.membership_provider_evidence_id
+      ON evidence.id = observation.membership_provider_evidence_record_id
     INNER JOIN membership_provider_lineages lineage
       ON lineage.id = observation.membership_provider_lineage_id
     INNER JOIN membership_products product ON product.id = observation.membership_product_id
@@ -59,11 +59,11 @@ export async function getVerifiedProviderObservation(
     throw new Error('Provider observation identity does not match the requested source')
   const status = getObservationStatus(row)
   return {
-    autoRenews: row.auto_renews,
+    autoRenews: row.should_auto_renew,
     effectiveAt: row.effective_at,
     expiresAt: row.expires_at,
     membershipProductId: row.membership_product_id,
-    membershipProviderEvidenceId: row.membership_provider_evidence_id,
+    membershipProviderEvidenceId: row.membership_provider_evidence_record_id,
     plan: row.plan,
     sourceIdentity,
     sourceKind: row.source_kind,
@@ -86,7 +86,7 @@ export async function getLatestProviderSourceProjection(
   const { rows } = await query(sql`/* getLatestProviderSourceProjection */
     SELECT membership.id, membership.membership_source_id, membership.membership_product_id,
       product.plan, membership.expires_at, membership.cancelled_at, membership.expired_at,
-      membership.past_due_at, membership.paused_at, membership.cancel_at_period_end,
+      membership.past_due_at, membership.paused_at, membership.should_cancel_at_period_end,
       membership.projection_ended_at
     FROM memberships membership
     INNER JOIN membership_products product ON product.id = membership.membership_product_id
@@ -104,7 +104,7 @@ export async function getCurrentProviderProjection(
   const { rows } = await query(sql`/* getCurrentProviderProjection */
     SELECT membership.id, membership.membership_source_id, membership.membership_product_id,
       product.plan, membership.expires_at, membership.cancelled_at, membership.expired_at,
-      membership.past_due_at, membership.paused_at, membership.cancel_at_period_end,
+      membership.past_due_at, membership.paused_at, membership.should_cancel_at_period_end,
       membership.projection_ended_at, source.source_kind
     FROM memberships membership
     INNER JOIN membership_sources source ON source.id = membership.membership_source_id
@@ -143,14 +143,14 @@ function getObservationStatus(row: ObservationRow): MembershipStatus {
 
 type ObservationRow = {
   application_id: string
-  auto_renews: boolean
+  should_auto_renew: boolean
   cancelled_at: Date | null
   effective_at: Date
   environment: 'test' | 'production'
   expired_at: Date | null
   expires_at: Date | null
   membership_product_id: string
-  membership_provider_evidence_id: string
+  membership_provider_evidence_record_id: string
   past_due_at: Date | null
   paused_at: Date | null
   plan: MembershipPlanSlug

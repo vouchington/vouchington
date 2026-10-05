@@ -25,7 +25,7 @@ describe('GET /api/v1/web-search', () => {
     const token = randomUUID().replace(/-/g, '')
     const hostnameId = await insertTestUrlHostname({
       hostname: `api-ws-anon-${randomUUID()}.com`,
-      crawlable: true,
+      is_crawlable: true,
     })
     const urlId = await insertTestUrl({
       url: `https://api-ws-anon-${randomUUID()}.com/page`,
@@ -60,7 +60,7 @@ describe('GET /api/v1/web-search', () => {
     const token = randomUUID().replace(/-/g, '')
     const hostnameId = await insertTestUrlHostname({
       hostname: `api-ws-auth-${randomUUID()}.com`,
-      crawlable: true,
+      is_crawlable: true,
     })
     const urlId = await insertTestUrl({
       url: `https://api-ws-auth-${randomUUID()}.com/page`,
@@ -111,8 +111,8 @@ describe('GET /api/v1/web-search', () => {
     const token = randomUUID().replace(/-/g, '')
     const blockedHostnameId = await insertTestUrlHostname({
       hostname: `api-ws-blocked-${randomUUID()}.com`,
-      crawlable: true,
-      blocked: true,
+      is_crawlable: true,
+      is_blocked: true,
     })
     const urlId = await insertTestUrl({
       url: `https://api-ws-blocked-${randomUUID()}.com/${token}/page`,
@@ -145,7 +145,7 @@ describe('GET /api/v1/web-search', () => {
     const token = randomUUID().replace(/-/g, '')
     const hostnameId = await insertTestUrlHostname({
       hostname: `api-ws-paging-${randomUUID()}.com`,
-      crawlable: true,
+      is_crawlable: true,
     })
     await insertTestUrl({
       url: `https://api-ws-paging-${randomUUID()}.com/${token}/page`,

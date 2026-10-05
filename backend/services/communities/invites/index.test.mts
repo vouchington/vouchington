@@ -155,7 +155,7 @@ describe('index', () => {
 
       const redeemed = await redeemInviteCode(invitee.id, invite.code)
       expect(redeemed.accepted_at).not.toBeNull()
-      expect(redeemed.accepted_by_user_id).toBe(invitee.id)
+      expect(redeemed.accepted_by_id).toBe(invitee.id)
 
       const membership = await getCommunityMember(community.id, invitee.id)
       expect(membership).not.toBeNull()

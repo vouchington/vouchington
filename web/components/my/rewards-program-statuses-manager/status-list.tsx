@@ -8,8 +8,8 @@ import { StatusSummary } from './status-summary'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface EditForm {
-  since: string
-  until: string
+  started_on: string
+  expires_on: string
 }
 
 interface StatusListProps {
@@ -104,30 +104,30 @@ function StatusEditForm({
       <div className='grid gap-3 sm:grid-cols-2'>
         <div className='space-y-1'>
           <Label
-            htmlFor={`since-${status.id}`}
+            htmlFor={`started_on-${status.id}`}
             data-pw='rewards-status-since-label'
           >
             {t('extracted.rewardsProgramStatusesManager.statusList.since_98af1ed6')}
           </Label>
           <Input
-            id={`since-${status.id}`}
+            id={`started_on-${status.id}`}
             type='date'
-            value={editForm.since}
-            onChange={e => setEditForm(f => ({ ...f, since: e.target.value }))}
+            value={editForm.started_on}
+            onChange={e => setEditForm(f => ({ ...f, started_on: e.target.value }))}
           />
         </div>
         <div className='space-y-1'>
           <Label
-            htmlFor={`until-${status.id}`}
+            htmlFor={`expires_on-${status.id}`}
             data-pw='rewards-status-until-label'
           >
             {t('extracted.rewardsProgramStatusesManager.statusList.until_7caf856e')}
           </Label>
           <Input
-            id={`until-${status.id}`}
+            id={`expires_on-${status.id}`}
             type='date'
-            value={editForm.until}
-            onChange={e => setEditForm(f => ({ ...f, until: e.target.value }))}
+            value={editForm.expires_on}
+            onChange={e => setEditForm(f => ({ ...f, expires_on: e.target.value }))}
           />
         </div>
       </div>

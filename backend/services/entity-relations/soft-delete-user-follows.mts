@@ -29,7 +29,7 @@ export async function softDeleteUserFollowRelations(
     WHERE subject_id = ${subjectUserId}
       AND object_id = ANY(${objectUserIds}::uuid[])
       AND deleted_at IS NULL
-    RETURNING subject_id, object_id, outbound_ap_follow_activity_id, uuidv7() AS undo_activity_id
+    RETURNING subject_id, object_id, outbound_activitypub_follow_activity_id, uuidv7() AS undo_activity_id
   `)
   return getDeletedFollowPairs(rows)
 }

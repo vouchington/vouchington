@@ -29,7 +29,7 @@ export function RepeatInfringerAccount({
     <section className='space-y-2'>
       <h3 className='font-medium'>Repeat-infringer review</h3>
       <p className='text-sm text-muted-foreground'>Account {account.account_user_id}</p>
-      {account.operative ? (
+      {account.is_operative ? (
         <div className='flex flex-wrap gap-2'>
           <DecisionButton
             disabled={disabled}

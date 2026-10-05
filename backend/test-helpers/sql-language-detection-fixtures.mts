@@ -97,7 +97,7 @@ export async function insertLanguageDetectionTopicForTest(params: {
 }): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* insertLanguageDetectionTopicForTest */
     INSERT INTO topics (created_via,
-      name, slug, created_by_id, topic_type, noindex, allow_reviews,
+      name, slug, created_by_id, topic_type, is_noindexed, should_allow_reviews,
       bedrock_nova_multimodal_v1_content_sha256, lingua_rs_input_sha256, deleted_at
     )
     VALUES ('system',
@@ -125,7 +125,7 @@ export async function insertLanguageDetectionCrawlForTest(params: {
   url: string
   markdown: string
   title?: string
-  lang?: string
+  language?: string
   inputSha256?: Buffer
 }): Promise<string> {
   const hostnameResult = await write<{
@@ -144,14 +144,14 @@ export async function insertLanguageDetectionCrawlForTest(params: {
   `)
   const { rows } = await write<{ id: string }>(sql`/* insertLanguageDetectionCrawlForTest */
     INSERT INTO crawls (
-      url_id, response_status_code, title, lang, markdown, completed_at, embeddings_generated_at,
+      url_id, response_status_code, title, language, markdown, completed_at, embeddings_generated_at,
       network_error, lingua_rs_input_sha256
     )
     VALUES (
       ${urlResult.rows[0]!.id},
       200,
       ${params.title ?? null},
-      ${params.lang ?? null},
+      ${params.language ?? null},
       ${params.markdown},
       NOW(),
       NOW(),

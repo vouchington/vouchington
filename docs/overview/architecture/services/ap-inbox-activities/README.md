@@ -20,7 +20,7 @@ deadline.
   and `actor_uri` are recorded for operational visibility only.
 - `dispatchInboundActivity(remoteActor, activity)` — maps `Follow` / `Undo(Follow)` onto the
   existing `remote_actor -> user -> follow` entity relation via `@services/entity-relations`,
-  gated on the target user having `fediverse_federation_enabled`. Writes use `origin: 'remote'` so
+  gated on the target user having `is_fediverse_federation_enabled`. Writes use `origin: 'remote'` so
   Phase C3's loop-prevention gate suppresses outbound fan-out for relations that originated from a
   remote activity. `Like` / `Undo(Like)` map onto the isolated `post_activitypub_like_tallies`/`activitypub_post_likes` ledger via
   `@services/ap-post-likes` — deliberately never `post_votes`, so a remote actor's Like can never

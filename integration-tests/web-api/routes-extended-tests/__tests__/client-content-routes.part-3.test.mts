@@ -28,7 +28,7 @@ describe('client-content-routes', () => {
         () =>
           importRssFeeds({
             urls: [`https://import-test-${rssFeedUrlId}.example.com/feed.xml`],
-            follow: false,
+            should_follow_imported_feeds: false,
           }),
         harness.adminCookieHeader,
       )

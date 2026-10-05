@@ -20,12 +20,12 @@ const migratedFrom = [
 
 const ownedHousehold: HouseholdFixture = {
   id: householdId,
-  owner_id: '00000000-0000-7000-8000-000000000001',
+  owner_user_id: '00000000-0000-7000-8000-000000000001',
   updated_at: '2026-07-02T00:00:00Z',
 }
 const sharedHousehold: HouseholdFixture = {
   id: sharedHouseholdId,
-  owner_id: '00000000-0000-7000-8000-000000000002',
+  owner_user_id: '00000000-0000-7000-8000-000000000002',
   updated_at: '2026-07-01T00:00:00Z',
 }
 const membership: MembershipFixture = {

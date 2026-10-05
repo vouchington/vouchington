@@ -20,9 +20,11 @@ describe('user-subject entity relation tables', () => {
   it('stores a durable outbound Follow activity id only on user follow relations', () => {
     const sql = generateEntityRelationsSql()
 
-    expect(sql).toContain('outbound_ap_follow_activity_id UUID DEFAULT uuidv7()')
-    expect(sql.match(/outbound_ap_follow_activity_id UUID DEFAULT uuidv7\(\)/g)).toHaveLength(1)
-    expect(sql).not.toContain('ADD COLUMN outbound_ap_follow_activity_id')
+    expect(sql).toContain('outbound_activitypub_follow_activity_id UUID DEFAULT uuidv7()')
+    expect(
+      sql.match(/outbound_activitypub_follow_activity_id UUID DEFAULT uuidv7\(\)/g),
+    ).toHaveLength(1)
+    expect(sql).not.toContain('ADD COLUMN outbound_activitypub_follow_activity_id')
   })
 
   it('generates a concrete vote table and composite relation foreign key per election table', () => {

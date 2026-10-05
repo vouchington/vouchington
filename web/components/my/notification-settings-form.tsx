@@ -56,10 +56,10 @@ export function NotificationSettingsForm({
       <section className='space-y-4'>
         <h2 className='text-lg font-semibold'>Engagement Emails</h2>
         <EngagementEmailsSwitchRow
-          checked={settings.engagement_emails_enabled}
-          disabled={pending.has('engagement_emails_enabled')}
+          checked={settings.is_engagement_emails_enabled}
+          disabled={pending.has('is_engagement_emails_enabled')}
           onCheckedChange={enabled => {
-            void updateNotificationSetting('engagement_emails_enabled', enabled)
+            void updateNotificationSetting('is_engagement_emails_enabled', enabled)
           }}
         />
       </section>
@@ -91,13 +91,13 @@ export function NotificationSettingsForm({
       <section className='space-y-4'>
         <h2 className='text-lg font-semibold'>Moderation Emails</h2>
         <ModerationEmailsSwitchRow
-          checked={settings.moderation_emails_enabled}
-          disabled={pending.has('moderation_emails_enabled')}
+          checked={settings.is_moderation_emails_enabled}
+          disabled={pending.has('is_moderation_emails_enabled')}
           onCheckedChange={enabled => {
-            void updateNotificationSetting('moderation_emails_enabled', enabled)
+            void updateNotificationSetting('is_moderation_emails_enabled', enabled)
           }}
         />
-        {settings.moderation_emails_enabled && (
+        {settings.is_moderation_emails_enabled && (
           <ModerationSchedule
             pending={pending}
             settings={settings}

@@ -62,11 +62,11 @@ CREATE TABLE copyright_notice_counter_notice_reviews (
   copyright_notice_deadline_id uuid CONSTRAINT uq_copyright_notice_counter_notice_reviews__deadline_id UNIQUE CONSTRAINT fk_copyright_notice_counter_notice_reviews__deadline REFERENCES copyright_notice_deadlines(id) ON DELETE RESTRICT,
   reviewed_at timestamptz NOT NULL,
   reviewed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
-  accepted boolean NOT NULL,
+  is_accepted boolean NOT NULL,
   rationale_ciphertext text NOT NULL CONSTRAINT chk_copyrig_notice_counter_notice_reviews__rationale_ciphertext CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 1048576),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CHECK (accepted = (copyright_notice_deadline_id IS NOT NULL))
+  CHECK (is_accepted = (copyright_notice_deadline_id IS NOT NULL))
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -102,5 +102,5 @@ COMMENT ON COLUMN copyright_notice_counter_notice_reviews.copyright_notice_submi
 COMMENT ON COLUMN copyright_notice_counter_notice_reviews.copyright_notice_deadline_id IS 'Restoration clock created for an accepted counter-notice.';
 COMMENT ON COLUMN copyright_notice_counter_notice_reviews.reviewed_at IS 'Time the moderator completed formal review.';
 COMMENT ON COLUMN copyright_notice_counter_notice_reviews.reviewed_by_id IS 'Moderator who completed formal review.';
-COMMENT ON COLUMN copyright_notice_counter_notice_reviews.accepted IS 'Whether the counter-notice was formally compliant.';
+COMMENT ON COLUMN copyright_notice_counter_notice_reviews.is_accepted IS 'Whether the counter-notice was formally compliant.';
 COMMENT ON COLUMN copyright_notice_counter_notice_reviews.rationale_ciphertext IS 'Encrypted moderator rationale.';

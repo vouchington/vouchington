@@ -6,7 +6,7 @@ Update hostname moderation fields.
 
 **Admin only.** Returns 401 for unauthenticated, 403 for non-admin.
 
-Request body: `{ blocked?: boolean, crawlable?: boolean, link_rel_follow?: boolean, ignore_robots_txt?: boolean | null, unreliable_status_codes?: number[] | null }`
+Request body: `{ blocked?: boolean, crawlable?: boolean, should_follow_link_rel?: boolean, should_ignore_robots_txt?: boolean | null, unreliable_status_codes?: number[] | null }`
 
 ### Blocking side effects (`blocked: true`)
 
@@ -28,6 +28,6 @@ After a hostname is blocked, any user who tries to add an entity relation to a U
 
 ### Other fields
 
-Returns 204 with no body for `crawlable`, `link_rel_follow`, `ignore_robots_txt`, and
+Returns 204 with no body for `crawlable`, `should_follow_link_rel`, `should_ignore_robots_txt`, and
 `unreliable_status_codes` changes. `unreliable_status_codes` marks RSS fetch 4xx statuses as
 retryable instead of soft-deleting feeds on the hostname; `null` clears the hostname override.

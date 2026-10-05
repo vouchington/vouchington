@@ -21,8 +21,8 @@ import type { PostType, PostBroadcast, PostPrivacy } from '@/types/posts'
 
 interface CreatePostOptions {
   post_type: PostType
-  parent_id?: string
-  root_id?: string
+  parent_post_id?: string
+  root_post_id?: string
   community_id?: string
   markdown?: string
   title?: string

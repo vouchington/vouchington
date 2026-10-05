@@ -7,6 +7,6 @@ export async function expectStaffOperationHistory(actorId: string, actionType: s
   const request = rows.at(-2)
   expect(request?.metadata.phase).toBe('requested')
   expect(outcome?.metadata).toMatchObject({ phase: 'finished', outcome: 'succeeded' })
-  expect(outcome?.operation_request_id).toBeDefined()
-  expect(outcome?.operation_request_id).toBe(request?.id)
+  expect(outcome?.operation_request_action_id).toBeDefined()
+  expect(outcome?.operation_request_action_id).toBe(request?.id)
 }

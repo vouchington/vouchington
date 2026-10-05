@@ -20,8 +20,8 @@ export async function createCopyrightFormFixture(
       claimant_contact: 'claimant@example.test',
       claimant_email: 'claimant@example.test',
       work_description: 'A photograph owned by the claimant.',
-      good_faith_belief: true,
-      accuracy_authority_under_penalty_of_perjury: true,
+      has_good_faith_belief: true,
+      has_accuracy_authority_under_penalty_of_perjury: true,
       electronic_signature: 'Copyright claimant',
       targets: [
         {

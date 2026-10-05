@@ -48,7 +48,7 @@ export async function createRetentionFormCase(): Promise<RetentionCase> {
   await createTestCopyrightFormIntakeReview({
     intakeId: intake.id,
     moderatorId: moderator.id,
-    accepted: true,
+    is_accepted: true,
   })
   await reviewRetentionRestriction({ noticeId, posterId: poster.id, moderator })
   const artifactKey = `copyright-inbound/${randomUUID()}.pdf`
@@ -138,7 +138,7 @@ export async function createRetentionFormCase(): Promise<RetentionCase> {
   const counterReview = await reviewCopyrightCounterNotice({
     submissionId: counterNotice.submission.id,
     currentUser: moderator,
-    accepted: true,
+    is_accepted: true,
     rationale: `The counter-notice is formally complete ${randomUUID()}.`,
   })
   if (!counterReview.deadlineId) throw new Error('fixture counter-notice deadline missing')

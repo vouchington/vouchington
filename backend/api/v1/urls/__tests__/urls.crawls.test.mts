@@ -121,7 +121,7 @@ describe('index', () => {
         expect(crawl).not.toHaveProperty('links')
         expect(crawl).not.toHaveProperty('meta_tags')
         expect(crawl).not.toHaveProperty('etag')
-        expect(crawl).not.toHaveProperty('crawler_id')
+        expect(crawl).not.toHaveProperty('hostname_crawler_configuration_id')
       })
 
       it('should return 403 for free users', async () => {

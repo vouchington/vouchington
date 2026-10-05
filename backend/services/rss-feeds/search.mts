@@ -15,7 +15,7 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
     publisher_type_ids = [],
     publisher_type_match = 'any',
     current_user_id,
-    enabled = true,
+    is_enabled = true,
     discoverable = null,
     text_search_query,
     limit = 100,
@@ -26,7 +26,7 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
 
   const filters: ReturnType<typeof sql>[] = [sql`rss_feeds.deleted_at IS NULL`]
   let sortBy = sql`rss_feeds.id DESC`
-  const shouldJoinCurrentState = enabled !== null || discoverable !== null
+  const shouldJoinCurrentState = is_enabled !== null || discoverable !== null
   const effectiveTopicIds = Array.from(new Set([...(topic_id ? [topic_id] : []), ...topic_ids]))
   const effectiveTopicMatch = topic_id && effectiveTopicIds.length > 1 ? 'all' : topic_match
   const effectivePublisherTypeIds = Array.from(
@@ -46,7 +46,7 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
   if (effectiveTopicIds.length > 0 && include_descendants) {
     if (effectiveTopicMatch === 'all' && effectiveTopicIds.length > 1) {
       filters.push(sql`(
-        SELECT COUNT(DISTINCT topic_descendants.root_id)
+        SELECT COUNT(DISTINCT topic_descendants.root_post_id)
         FROM topic_descendants
         WHERE topic_descendants.topic_id = rss_feeds.topic_id
       ) = ${effectiveTopicIds.length}`)
@@ -109,10 +109,10 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
     )`)
   }
   if (cursorId) filters.push(sql`rss_feeds.id < ${cursorId}::uuid`)
-  // enabled/discoverable === null means no filter
-  if (enabled === true) {
+  // is_enabled/discoverable === null means no filter
+  if (is_enabled === true) {
     filters.push(sql`current_state.is_enabled = TRUE`)
-  } else if (enabled === false) {
+  } else if (is_enabled === false) {
     filters.push(sql`current_state.is_enabled = FALSE`)
   }
   if (discoverable === true) {

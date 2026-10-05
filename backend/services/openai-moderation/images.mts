@@ -44,7 +44,7 @@ export async function upsertImageOpenAIModeration(
 
   const isUpToDate = await isImageOpenAIModerationUpToDate(imageId)
   if (isUpToDate) {
-    if (image.openai_omni_moderation_flagged === true) {
+    if (image.is_flagged_by_openai_omni_moderation === true) {
       await publishTerminalImageState(imageId, true)
       await deleteFlaggedImage(imageId)
       return {
@@ -135,7 +135,7 @@ async function applyImageOpenAIModerationResults(
   const { rows } = await transaction(sql`/* applyImageOpenAIModerationResults */
     UPDATE images
     SET openai_omni_moderation_results = ${JSON.stringify(results)}::jsonb,
-        openai_omni_moderation_flagged = ${flagged},
+        is_flagged_by_openai_omni_moderation = ${flagged},
         openai_omni_moderation_created_at = NOW()
     WHERE id = ${imageId}
       AND deleted_at IS NULL
@@ -152,7 +152,7 @@ async function isImageOpenAIModerationUpToDate(imageId: string): Promise<boolean
     FROM images
     WHERE id = ${imageId}
       AND openai_omni_moderation_results IS NOT NULL
-      AND openai_omni_moderation_flagged IS NOT NULL
+      AND is_flagged_by_openai_omni_moderation IS NOT NULL
       AND openai_omni_moderation_created_at IS NOT NULL
   `)
 
@@ -163,11 +163,11 @@ async function findExistingImageOpenAIModeration(
   sha256: Buffer | null,
 ): Promise<{ results: unknown; flagged: boolean } | null> {
   const { rows } = await read(sql`/* findExistingImageOpenAIModeration */
-    SELECT openai_omni_moderation_results, openai_omni_moderation_flagged
+    SELECT openai_omni_moderation_results, is_flagged_by_openai_omni_moderation
     FROM images
     WHERE sha_256 = ${sha256}
       AND openai_omni_moderation_results IS NOT NULL
-      AND openai_omni_moderation_flagged IS NOT NULL
+      AND is_flagged_by_openai_omni_moderation IS NOT NULL
     LIMIT 1
   `)
 
@@ -175,6 +175,6 @@ async function findExistingImageOpenAIModeration(
 
   return {
     results: rows[0].openai_omni_moderation_results,
-    flagged: rows[0].openai_omni_moderation_flagged,
+    flagged: rows[0].is_flagged_by_openai_omni_moderation,
   }
 }

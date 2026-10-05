@@ -3,9 +3,9 @@
 import { clientApi } from './instance'
 
 export type EmailPreferences = {
-  engagement_emails_enabled: boolean
+  is_engagement_emails_enabled: boolean
   news_digest_frequency: 'none' | 'daily' | 'weekly'
-  moderation_emails_enabled: boolean
+  is_moderation_emails_enabled: boolean
   community_digest_frequency: 'none' | 'daily' | 'weekly'
   moderation_email_cadence: 'daily' | 'selected_days' | 'weekly'
   moderation_email_days_of_week: number[]

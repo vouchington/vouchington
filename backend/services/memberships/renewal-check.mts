@@ -28,9 +28,9 @@ export async function getUsersApproachingRenewalWithPriceIncrease(
       ON observation.id = state.membership_provider_observation_id
       AND observation.membership_provider_lineage_id = state.membership_provider_lineage_id
       AND observation.membership_product_id = state.membership_product_id
-      AND observation.source_kind = 'direct' AND observation.auto_renews = true
+      AND observation.source_kind = 'direct' AND observation.should_auto_renew = true
     INNER JOIN membership_provider_evidence_records evidence
-      ON evidence.id = observation.membership_provider_evidence_id
+      ON evidence.id = observation.membership_provider_evidence_record_id
       AND evidence.verified_at IS NOT NULL AND evidence.rejected_at IS NULL
     INNER JOIN membership_products product ON product.id = m.membership_product_id
     INNER JOIN membership_products renewal_product
@@ -39,7 +39,7 @@ export async function getUsersApproachingRenewalWithPriceIncrease(
       AND renewal_product.billing_interval = product.billing_interval
     WHERE (${afterId ?? null}::uuid IS NULL OR m.id > ${afterId ?? null}::uuid)
       AND m.projection_ended_at IS NULL
-      AND state.auto_renews = true AND state.cancelled_at IS NULL
+      AND state.should_auto_renew = true AND state.cancelled_at IS NULL
       AND state.past_due_at IS NULL AND state.expires_at > CURRENT_TIMESTAMP
       AND observation.cancelled_at IS NULL AND observation.past_due_at IS NULL
       AND observation.expires_at > CURRENT_TIMESTAMP
@@ -47,7 +47,7 @@ export async function getUsersApproachingRenewalWithPriceIncrease(
       AND m.expired_at IS NULL
       AND m.past_due_at IS NULL
       AND m.paused_at IS NULL
-      AND m.cancel_at_period_end = false
+      AND m.should_cancel_at_period_end = false
       AND m.expires_at > CURRENT_TIMESTAMP
       AND observation.renewal_effective_at > CURRENT_TIMESTAMP
       AND observation.renewal_effective_at <= CURRENT_TIMESTAMP + INTERVAL '30 days'
@@ -98,9 +98,9 @@ export async function claimRenewalPriceIncreaseNotification(
       ON observation.id = state.membership_provider_observation_id
       AND observation.membership_provider_lineage_id = state.membership_provider_lineage_id
       AND observation.membership_product_id = state.membership_product_id
-      AND observation.source_kind = 'direct' AND observation.auto_renews = true
+      AND observation.source_kind = 'direct' AND observation.should_auto_renew = true
     INNER JOIN membership_provider_evidence_records evidence
-      ON evidence.id = observation.membership_provider_evidence_id
+      ON evidence.id = observation.membership_provider_evidence_record_id
       AND evidence.verified_at IS NOT NULL AND evidence.rejected_at IS NULL
     INNER JOIN membership_products current_product
       ON current_product.id = state.membership_product_id
@@ -112,14 +112,14 @@ export async function claimRenewalPriceIncreaseNotification(
       AND observation.id = ${membershipProviderObservationId}
       AND state.membership_source_id = m.membership_source_id
       AND state.membership_product_id = m.membership_product_id
-      AND state.source_kind = 'direct' AND state.auto_renews = true
+      AND state.source_kind = 'direct' AND state.should_auto_renew = true
       AND state.cancelled_at IS NULL AND state.past_due_at IS NULL
       AND state.expires_at > CURRENT_TIMESTAMP
       AND observation.cancelled_at IS NULL AND observation.past_due_at IS NULL
       AND observation.expires_at > CURRENT_TIMESTAMP
       AND m.projection_ended_at IS NULL AND m.cancelled_at IS NULL
       AND m.expired_at IS NULL AND m.past_due_at IS NULL AND m.paused_at IS NULL
-      AND m.cancel_at_period_end = false
+      AND m.should_cancel_at_period_end = false
       AND m.expires_at > CURRENT_TIMESTAMP
       AND observation.renewal_effective_at > CURRENT_TIMESTAMP
       AND observation.renewal_effective_at <= CURRENT_TIMESTAMP + INTERVAL '30 days'

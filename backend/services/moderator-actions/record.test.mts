@@ -42,7 +42,7 @@ describe('recordModeratorAction', () => {
     const row = rows[0]!
     expect(row.action_type).toBe('ban')
     expect(row.community_id).toBe(community.id)
-    expect(row.actor_id).toBe(actor.id)
+    expect(row.actor_user_id).toBe(actor.id)
     expect(row.target_user_id).toBe(target.id)
     expect(row.reason).toBe(reason)
     expect(row.post_id).toBeNull()
@@ -101,7 +101,7 @@ describe('recordModeratorAction', () => {
     const rows = await getModeratorActionRowsForTest({ targetUserId: target.id })
     const row = rows.find(r => r.action_type === 'suspend')
     expect(row).toBeDefined()
-    expect(row!.actor_id).toBeNull()
+    expect(row!.actor_user_id).toBeNull()
   })
 
   it('stores each targeted restriction once as a child row, not in metadata', async () => {

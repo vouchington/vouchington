@@ -23,7 +23,7 @@ describe('getUsedSlotsForUser', () => {
       createCommunityAgentPrompt(user.id, community.id, { prompt: 'Test prompt 2' }),
     ])
 
-    // Newly created prompts have slot_allocated = false by default
+    // Newly created prompts have is_slot_allocated = false by default
     const usedSlots = await getUsedSlotsForUser(user.id)
     expect(usedSlots).toBe(0)
   })

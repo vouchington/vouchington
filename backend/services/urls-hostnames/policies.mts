@@ -3,8 +3,8 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 
 export type HostnamePolicy = {
-  blocked: boolean
-  skip_web_risk: boolean
+  is_blocked: boolean
+  should_skip_web_risk: boolean
 }
 
 export function getHostnamePolicyCandidates(hostname: string): string[] {
@@ -22,7 +22,7 @@ export async function getHostnamePolicy(
   options: QueryOptions = {},
 ): Promise<HostnamePolicy> {
   const candidates = getHostnamePolicyCandidates(hostname)
-  if (candidates.length === 0) return { blocked: false, skip_web_risk: false }
+  if (candidates.length === 0) return { is_blocked: false, should_skip_web_risk: false }
 
   const { rows } = await read(
     sql`/* getHostnamePolicy */
@@ -31,7 +31,7 @@ export async function getHostnamePolicy(
         SELECT 1
         FROM url_hostnames
         WHERE hostname = ANY(${candidates}::text[])
-          AND blocked = TRUE
+          AND is_blocked = TRUE
       )
       OR EXISTS (
         SELECT 1
@@ -39,21 +39,21 @@ export async function getHostnamePolicy(
         INNER JOIN domain_blocklist_sources dbs ON dbs.id = db.source_id
         WHERE db.domain = ANY(${candidates}::text[])
           AND dbs.type = 'url'::domain_blocklist_types
-      ) AS blocked,
+      ) AS is_blocked,
       EXISTS (
         SELECT 1
         FROM url_hostnames
         WHERE hostname = ANY(${candidates}::text[])
-          AND skip_web_risk = TRUE
-      ) AS skip_web_risk
+          AND should_skip_web_risk = TRUE
+      ) AS should_skip_web_risk
   `,
     options,
   )
 
   const row = rows[0] as Partial<HostnamePolicy> | undefined
   return {
-    blocked: row?.blocked === true,
-    skip_web_risk: row?.skip_web_risk === true,
+    is_blocked: row?.is_blocked === true,
+    should_skip_web_risk: row?.should_skip_web_risk === true,
   }
 }
 
@@ -62,7 +62,7 @@ export async function getLocalHostnamePolicy(
   options: QueryOptions = {},
 ): Promise<HostnamePolicy> {
   const candidates = getHostnamePolicyCandidates(hostname)
-  if (candidates.length === 0) return { blocked: false, skip_web_risk: false }
+  if (candidates.length === 0) return { is_blocked: false, should_skip_web_risk: false }
 
   const { rows } = await read(
     sql`/* getLocalHostnamePolicy */
@@ -71,21 +71,21 @@ export async function getLocalHostnamePolicy(
         SELECT 1
         FROM url_hostnames
         WHERE hostname = ANY(${candidates}::text[])
-          AND blocked = TRUE
-      ) AS blocked,
+          AND is_blocked = TRUE
+      ) AS is_blocked,
       EXISTS (
         SELECT 1
         FROM url_hostnames
         WHERE hostname = ANY(${candidates}::text[])
-          AND skip_web_risk = TRUE
-      ) AS skip_web_risk
+          AND should_skip_web_risk = TRUE
+      ) AS should_skip_web_risk
   `,
     options,
   )
 
   const row = rows[0] as Partial<HostnamePolicy> | undefined
   return {
-    blocked: row?.blocked === true,
-    skip_web_risk: row?.skip_web_risk === true,
+    is_blocked: row?.is_blocked === true,
+    should_skip_web_risk: row?.should_skip_web_risk === true,
   }
 }

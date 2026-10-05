@@ -40,7 +40,9 @@ export async function flagTestDeliveryImageInTransaction(
   query: TransactionQuery,
   imageId: string,
 ): Promise<void> {
-  await query(sql`UPDATE images SET openai_omni_moderation_flagged = TRUE WHERE id = ${imageId}`)
+  await query(
+    sql`UPDATE images SET is_flagged_by_openai_omni_moderation = TRUE WHERE id = ${imageId}`,
+  )
 }
 
 export async function setTestDeliveryUserImageInTransaction(

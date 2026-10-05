@@ -14,7 +14,7 @@ const guidance: CopyrightFormGuidance = {
     { element: 'work_identification', status: 'present', gap: null },
     { element: 'material_identification', status: 'present', gap: null },
     { element: 'contact_information', status: 'present', gap: null },
-    { element: 'good_faith_statement', status: 'present', gap: null },
+    { element: 'has_good_faith_statement', status: 'present', gap: null },
     { element: 'accuracy_authority_statement', status: 'present', gap: null },
   ],
   risk_notes: [],
@@ -25,7 +25,7 @@ const counterGuidance: CopyrightCounterNoticeGuidance = {
   elements: [
     { element: 'signature', status: 'present', gap: null },
     { element: 'material_identification', status: 'present', gap: null },
-    { element: 'good_faith_statement', status: 'present', gap: null },
+    { element: 'has_good_faith_statement', status: 'present', gap: null },
     { element: 'contact_and_jurisdiction_consent', status: 'present', gap: null },
   ],
   risk_notes: [],
@@ -33,11 +33,11 @@ const counterGuidance: CopyrightCounterNoticeGuidance = {
 const holdGuidance: CopyrightLegalHoldGuidance = {
   summary: 'The filing describes a court action.',
   criteria: [
-    { criterion: 'from_original_claimant', status: 'unclear', gap: 'Check the sender.' },
+    { criterion: 'is_from_original_claimant', status: 'unclear', gap: 'Check the sender.' },
     { criterion: 'proceeding_kind', status: 'present', gap: null },
     { criterion: 'commenced_at', status: 'present', gap: null },
     { criterion: 'received_by_designated_agent_at', status: 'unclear', gap: 'Check receipt.' },
-    { criterion: 'same_material', status: 'present', gap: null },
+    { criterion: 'is_same_material', status: 'present', gap: null },
   ],
   risk_notes: [],
 }
@@ -260,7 +260,7 @@ describe('CopyrightStaffQueue', () => {
                     guidance,
                   },
                   review: {
-                    accepted,
+                    is_accepted: accepted,
                     reviewed_at: '2026-01-02T00:00:00.000Z',
                     reviewed_by_id: reviewedById,
                   },

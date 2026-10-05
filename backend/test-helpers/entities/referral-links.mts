@@ -116,8 +116,8 @@ export async function isReferralLinkDispatchable(linkId: string): Promise<boolea
     WHERE urpl.activated_at IS NOT NULL
       AND urpl.deactivated_at IS NULL
       AND urpl.deleted_at IS NULL
-      AND h.crawlable = true
-      AND h.blocked = false
+      AND h.is_crawlable = true
+      AND h.is_blocked = false
       AND (urpl.last_crawl_success_at IS NULL OR urpl.last_crawl_success_at < NOW() - INTERVAL '7 days')
       AND (urpl.last_crawl_failure_at IS NULL OR urpl.last_crawl_failure_at < NOW() - INTERVAL '1 hour')
       AND urpl.id = ${linkId}`,
@@ -141,8 +141,8 @@ export async function getReferralLinkDispatchRows(
     WHERE urpl.activated_at IS NOT NULL
       AND urpl.deactivated_at IS NULL
       AND urpl.deleted_at IS NULL
-      AND h.crawlable = true
-      AND h.blocked = false
+      AND h.is_crawlable = true
+      AND h.is_blocked = false
       AND (urpl.last_crawl_success_at IS NULL OR urpl.last_crawl_success_at < NOW() - INTERVAL '7 days')
       AND (urpl.last_crawl_failure_at IS NULL OR urpl.last_crawl_failure_at < NOW() - INTERVAL '1 hour')
       AND urpl.id = ANY(${linkIds})

@@ -37,7 +37,7 @@ export async function getClaimedAppleVerification(
       evidence.encrypted_evidence AS "encryptedEvidence", evidence.evidence_lookup_sha256 AS "evidenceLookupSha256"
     FROM membership_verifications verification
     INNER JOIN membership_provider_evidence_records evidence
-      ON evidence.id = verification.membership_provider_evidence_id
+      ON evidence.id = verification.membership_provider_evidence_record_id
     WHERE verification.id = ${verificationId} AND verification.provider = 'apple_app_store'
       AND verification.processing_claim_token = ${processingClaimToken}
       AND verification.verified_at IS NULL AND verification.conflicted_at IS NULL

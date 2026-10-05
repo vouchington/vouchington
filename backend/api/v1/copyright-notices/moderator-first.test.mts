@@ -67,7 +67,7 @@ async function createFormReceivedBeforeSwitchOn() {
 function reviewFormIntake(request: StaffRequest, intakeId: string) {
   return request
     .post(`/api/v1/copyright-form-intakes/${intakeId}/reviews`)
-    .send({ accepted: true, rationale: 'The signed notice is complete.' })
+    .send({ is_accepted: true, rationale: 'The signed notice is complete.' })
 }
 
 describe('moderator-first copyright withholding', () => {
@@ -138,7 +138,7 @@ describe('moderator-first copyright withholding', () => {
 
     const response = await reviewFormIntake(staff, notice.intake.id).expect(200)
 
-    expect(response.body).toMatchObject({ accepted: true })
+    expect(response.body).toMatchObject({ is_accepted: true })
     await expect(
       countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
     ).resolves.toBe(1)
@@ -146,7 +146,7 @@ describe('moderator-first copyright withholding', () => {
     expect(aggregate?.assessments).toEqual([
       expect.objectContaining({
         copyright_notice_form_screening_id: null,
-        substantially_compliant: true,
+        is_substantially_compliant: true,
       }),
     ])
   })
@@ -167,7 +167,7 @@ describe('moderator-first copyright withholding', () => {
         expect.objectContaining({
           assessed_by_id: null,
           copyright_notice_form_screening_id: screeningId,
-          substantially_compliant: true,
+          is_substantially_compliant: true,
         }),
       ])
       await expect(

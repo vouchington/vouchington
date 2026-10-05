@@ -93,11 +93,11 @@ export const upsertEntityRelation = async (
           // Delivery no-ops unless both actors enabled federation.
           void enqueueBulkDistributeActivity(
             newlyActiveRelations.map(r => {
-              if (!r.outbound_ap_follow_activity_id) {
+              if (!r.outbound_activitypub_follow_activity_id) {
                 throw new Error('Active user follow relation is missing its ActivityPub identity')
               }
               return {
-                activityId: r.outbound_ap_follow_activity_id,
+                activityId: r.outbound_activitypub_follow_activity_id,
                 activityType: 'Follow' as const,
                 sourceUserId: r.subject_id,
                 targetUserId: r.object_id,

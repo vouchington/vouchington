@@ -56,7 +56,7 @@ describe('story projection source eligibility database failure', () => {
       expect(result).toBe(error)
       expect(await getTestStoryPostProjectionReceiptCount(postId)).toBe(0)
       await expect(decideStoryPostRelatedUrlProjectionRows(work, rows)).resolves.toEqual([
-        { ...rows[0], eligible: true },
+        { ...rows[0], is_eligible: true },
       ])
       expect(await getTestStoryPostProjectionReceiptCount(postId)).toBe(0)
     } finally {

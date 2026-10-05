@@ -11,14 +11,16 @@ export function validateCreateCommunityInput(input: CreateCommunityInput): void 
   assert(countWords(name) >= 3, 422, 'Community name must have at least 3 words')
   if (input.slug) validateCommunitySlug(input.slug)
   assert(
-    input.allow_review_posts === undefined || typeof input.allow_review_posts === 'boolean',
+    input.should_allow_review_posts === undefined ||
+      typeof input.should_allow_review_posts === 'boolean',
     422,
-    'allow_review_posts must be boolean',
+    'should_allow_review_posts must be boolean',
   )
   assert(
-    input.allow_data_point_posts === undefined || typeof input.allow_data_point_posts === 'boolean',
+    input.should_allow_data_point_posts === undefined ||
+      typeof input.should_allow_data_point_posts === 'boolean',
     422,
-    'allow_data_point_posts must be boolean',
+    'should_allow_data_point_posts must be boolean',
   )
   assert(
     input.default_language == null || typeof input.default_language === 'string',

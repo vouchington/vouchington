@@ -55,7 +55,7 @@ describe('query.generated', () => {
     const result = results.find(row => row.object_id === followee!.id)
 
     expect(result).toBeDefined()
-    expect(result).not.toHaveProperty('outbound_ap_follow_activity_id')
+    expect(result).not.toHaveProperty('outbound_activitypub_follow_activity_id')
   })
 
   it('getEntityRelations returns empty array when no relations exist', async () => {

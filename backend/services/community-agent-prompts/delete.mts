@@ -38,7 +38,7 @@ export async function deleteCommunityAgentPrompt(
     UPDATE community_agent_prompts
     SET deleted_at = CURRENT_TIMESTAMP,
         deleted_by_id = ${currentUser.id},
-        slot_allocated = false,
+        is_slot_allocated = false,
         activated_at = NULL,
         deactivated_at = CASE WHEN activated_at IS NOT NULL AND deactivated_at IS NULL THEN CURRENT_TIMESTAMP ELSE deactivated_at END
     WHERE id = ${promptId}

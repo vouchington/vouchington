@@ -159,7 +159,7 @@ describe('database integration', () => {
 
   it('validates domain from database emailable=false', async () => {
     const hostname = `test-blocked-${Date.now()}.com`
-    await insertUrlHostname(hostname, { emailable: false })
+    await insertUrlHostname(hostname, { is_emailable: false })
 
     await expect(validateEmailAddress(`user@${hostname}`)).rejects.toThrow(EmailDomainInvalidError)
   })

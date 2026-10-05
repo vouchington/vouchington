@@ -29,24 +29,24 @@ export async function getHouseholdsByUser(
     WITH accessible_households AS (`
   if (options.access === 'owned' || options.access === 'all') {
     query.append(sql`
-      SELECT h.id, h.owner_id, h.updated_at
+      SELECT h.id, h.owner_user_id, h.updated_at
       FROM households h
-      WHERE h.owner_id = ${currentUser.id}`)
+      WHERE h.owner_user_id = ${currentUser.id}`)
   }
   if (options.access === 'all') query.append(sql` UNION ALL `)
   if (options.access === 'member' || options.access === 'all') {
     query.append(sql`
-      SELECT h.id, h.owner_id, h.updated_at
+      SELECT h.id, h.owner_user_id, h.updated_at
       FROM household_members access_membership
       JOIN households h ON h.id = access_membership.household_id
       WHERE access_membership.individual_id = ${currentUser.individual_id}::uuid
-        AND h.owner_id != ${currentUser.id}`)
+        AND h.owner_user_id != ${currentUser.id}`)
   }
   query.append(sql`
     )
     SELECT
       h.id,
-      h.owner_id,
+      h.owner_user_id,
       h.updated_at,
       to_char(
         h.updated_at AT TIME ZONE 'UTC',
@@ -100,7 +100,7 @@ export async function getHouseholdMemberships(
         authorized_household.id IS NOT NULL AS household_exists,
         authorized_household.id IS NOT NULL AND (
           ${currentUser.roles.includes('administrator')}
-          OR authorized_household.owner_id = ${currentUser.id}
+          OR authorized_household.owner_user_id = ${currentUser.id}
           OR (
             ${currentUser.individual_id}::uuid IS NOT NULL
             AND EXISTS (

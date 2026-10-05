@@ -1,8 +1,8 @@
 import type { TopicsResponseBody, Topic, TopicTypes } from './types'
 import { now, page_info, basicUser } from './shared'
 
-// Each tuple is [topic_type, name, allow_reviews]. A not-reviewable topic
-// (allow_reviews=false) replaces the former `person` type behavior.
+// Each tuple is [topic_type, name, should_allow_reviews]. A not-reviewable topic
+// (should_allow_reviews=false) replaces the former `person` type behavior.
 const topicNames: Array<[TopicTypes, string, boolean]> = [
   ['topic', 'Open Banking', true],
   ['card', 'Sapphire Reserve', true],
@@ -17,7 +17,7 @@ const topicNames: Array<[TopicTypes, string, boolean]> = [
   ['rss_feed', 'Fintech Daily (https://fintech.example/feed/rss)', true],
   ['fediverse_instance', 'mastodon.example', true],
 ]
-export const topics = topicNames.map(([topic_type, name, allow_reviews], index) => ({
+export const topics = topicNames.map(([topic_type, name, should_allow_reviews], index) => ({
   __entity_type: 'topic',
   id: `topic-${name.toLowerCase().replaceAll(' ', '-')}`,
   name,
@@ -25,8 +25,8 @@ export const topics = topicNames.map(([topic_type, name, allow_reviews], index) 
   markdown: `${name} gathers reviews, discussions, data points, and related news.`,
   aliases: [name],
   topic_type,
-  noindex: false,
-  allow_reviews,
+  is_noindexed: false,
+  should_allow_reviews,
   created_at: now,
   created_by: basicUser,
   updated_by: basicUser,
@@ -96,6 +96,6 @@ export const topicsResponse: TopicsResponseBody = {
     ]),
   ),
   bookmarks: Object.fromEntries(
-    topics.map(topic => [topic.id, { follow: topic.allow_reviews, mute: false }]),
+    topics.map(topic => [topic.id, { follow: topic.should_allow_reviews, mute: false }]),
   ),
 } as unknown as TopicsResponseBody

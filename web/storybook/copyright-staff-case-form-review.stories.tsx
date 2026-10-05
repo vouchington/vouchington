@@ -15,7 +15,7 @@ const guidance: CopyrightFormGuidance = {
       gap: 'The hosted URL points to a post with several images; the image is not named.',
     },
     { element: 'contact_information', status: 'present', gap: null },
-    { element: 'good_faith_statement', status: 'present', gap: null },
+    { element: 'has_good_faith_statement', status: 'present', gap: null },
     { element: 'accuracy_authority_statement', status: 'present', gap: null },
   ],
   risk_notes: [
@@ -64,7 +64,7 @@ export const ReviewedApproved: Story = {
       source_kind: 'guest_form',
       screening,
       review: {
-        accepted: true,
+        is_accepted: true,
         reviewed_at: '2026-07-01T11:30:00.000Z',
         reviewed_by_id: '00000000-0000-7000-8000-000000000817',
       },
@@ -84,7 +84,7 @@ export const ReviewedRejectedByDeletedModerator: Story = {
       intake_id: 'intake-2',
       source_kind: 'signed_in_form',
       screening,
-      review: { accepted: false, reviewed_at: '2026-07-01T11:30:00.000Z', reviewed_by_id: null },
+      review: { is_accepted: false, reviewed_at: '2026-07-01T11:30:00.000Z', reviewed_by_id: null },
     },
   },
 }

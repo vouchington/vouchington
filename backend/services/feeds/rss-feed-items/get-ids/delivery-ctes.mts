@@ -92,7 +92,7 @@ function appendSharedFeedItemsCTE(
         rss_feed_item_feed_shares.sort_at,
         eligible_rss_feed_items.story_id,
         'share'::text AS delivery_type,
-        rss_feed_item_feed_shares.shared_by_user_id,
+        rss_feed_item_feed_shares.shared_by_id,
         rss_feed_item_feed_shares.created_at AS shared_at,
         1::int AS sort_rank,
         rss_feed_item_feed_shares.id AS share_event_id,
@@ -104,7 +104,7 @@ function appendSharedFeedItemsCTE(
       WHERE rss_feed_item_feed_shares.recipient_user_id = ${currentUserId ?? '00000000-0000-0000-0000-000000000000'}
         AND ${includeSharedItems}
         AND NOT EXISTS (
-          SELECT 1 FROM excluded_users WHERE excluded_users.user_id = rss_feed_item_feed_shares.shared_by_user_id
+          SELECT 1 FROM excluded_users WHERE excluded_users.user_id = rss_feed_item_feed_shares.shared_by_id
         )
   `)
   if (cutoffDate) query.append(sql` AND rss_feed_item_feed_shares.sort_at >= ${cutoffDate}`)

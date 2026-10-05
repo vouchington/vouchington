@@ -59,7 +59,7 @@ describe('resolveModerationReport', () => {
         expect.objectContaining({
           report_id: reportId,
           community_id: community.id,
-          actor_id: moderator.id,
+          actor_user_id: moderator.id,
           action_type: 'dismiss_report',
         }),
       ]),

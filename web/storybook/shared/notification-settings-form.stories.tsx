@@ -11,8 +11,8 @@ import { storyCurrentUser } from '../entities/entity-fixtures'
 
 const notificationSettingsUser = {
   ...storyCurrentUser,
-  engagement_emails_enabled: true,
-  moderation_emails_enabled: true,
+  is_engagement_emails_enabled: true,
+  is_moderation_emails_enabled: true,
   moderation_email_cadence: 'selected_days',
   moderation_email_days_of_week: [1, 3, 5],
   moderation_email_time_of_day: '08:30',
@@ -43,9 +43,9 @@ function notificationSettingsFixture(preferences: EmailPreferences) {
 }
 
 const defaultPreferences = {
-  engagement_emails_enabled: true,
+  is_engagement_emails_enabled: true,
   news_digest_frequency: 'weekly',
-  moderation_emails_enabled: true,
+  is_moderation_emails_enabled: true,
   community_digest_frequency: 'weekly',
   moderation_email_cadence: 'selected_days',
   moderation_email_days_of_week: [1, 3, 5],
@@ -55,7 +55,7 @@ const defaultPreferences = {
 
 const moderationDisabledPreferences = {
   ...defaultPreferences,
-  moderation_emails_enabled: false,
+  is_moderation_emails_enabled: false,
 } satisfies EmailPreferences
 
 export const Default: Story = {

@@ -5,12 +5,12 @@ import type { PostPublicationReason } from '../../services/post-publication/type
 import sql from 'sql-template-strings'
 export type TestPostPublicationDirtyWork = {
   id: string
-  post_id: string | null
-  author_user_id: string | null
-  community_id: string | null
-  rss_feed_id: string | null
-  topic_alias_id: string | null
-  story_id: string | null
+  post_identity_id: string | null
+  author_identity_id: string | null
+  community_identity_id: string | null
+  rss_feed_identity_id: string | null
+  topic_alias_identity_id: string | null
+  story_identity_id: string | null
   reasons: PostPublicationReason[]
   generation: string
   cursor_post_id: string | null
@@ -34,7 +34,7 @@ export async function getTestPostPublicationDirtyWork(
   const { rows } = await read<TestPostPublicationDirtyWork>(
     sql`
     /* getTestPostPublicationDirtyWork */
-    SELECT id, post_id, author_user_id, community_id, rss_feed_id, topic_alias_id, story_id, reasons::text[] AS reasons,
+    SELECT id, post_identity_id, author_identity_id, community_identity_id, rss_feed_identity_id, topic_alias_identity_id, story_identity_id, reasons::text[] AS reasons,
       generation, cursor_post_id, cursor_topic_id, cursor_key_id, lease_token, leased_at, lease_expires_at
     FROM post_publication_dirty_work
     WHERE id = ${dirtyWorkId}
@@ -49,19 +49,19 @@ export async function getTestPostPublicationDirtyWorkForScope(
 ): Promise<TestPostPublicationDirtyWork | undefined> {
   const condition =
     scope.type === 'post'
-      ? sql`post_id = ${scope.id}`
+      ? sql`post_identity_id = ${scope.id}`
       : scope.type === 'author'
-        ? sql`author_user_id = ${scope.id}`
+        ? sql`author_identity_id = ${scope.id}`
         : scope.type === 'community'
-          ? sql`community_id = ${scope.id}`
+          ? sql`community_identity_id = ${scope.id}`
           : scope.type === 'rss_feed'
-            ? sql`rss_feed_id = ${scope.id}`
+            ? sql`rss_feed_identity_id = ${scope.id}`
             : scope.type === 'topic_alias'
-              ? sql`topic_alias_id = ${scope.id}`
-              : sql`story_id = ${scope.id}`
+              ? sql`topic_alias_identity_id = ${scope.id}`
+              : sql`story_identity_id = ${scope.id}`
   const statement = sql`
     /* getTestPostPublicationDirtyWorkForScope */
-    SELECT id, post_id, author_user_id, community_id, rss_feed_id, topic_alias_id, story_id, reasons::text[] AS reasons,
+    SELECT id, post_identity_id, author_identity_id, community_identity_id, rss_feed_identity_id, topic_alias_identity_id, story_identity_id, reasons::text[] AS reasons,
       generation, cursor_post_id, cursor_topic_id, cursor_key_id, lease_token, leased_at, lease_expires_at
     FROM post_publication_dirty_work
     WHERE `
@@ -73,7 +73,7 @@ export async function countTestStoryPostPublicationDirtyWork(storyIds: string[])
   const { rows } = await read<{ count: string }>(sql`
     /* countTestStoryPostPublicationDirtyWork */
     SELECT COUNT(*)::text AS count FROM post_publication_dirty_work
-    WHERE story_id = ANY(${storyIds}::uuid[])
+    WHERE story_identity_id = ANY(${storyIds}::uuid[])
   `)
   return Number(rows[0]?.count ?? 0)
 }
@@ -83,7 +83,7 @@ export async function countTestPostPublicationDirtyWorkForPosts(
   const { rows } = await read<{ count: string }>(sql`
     /* countTestPostPublicationDirtyWorkForPosts */
     SELECT COUNT(*)::text AS count FROM post_publication_dirty_work
-    WHERE post_id = ANY(${postIds}::uuid[])
+    WHERE post_identity_id = ANY(${postIds}::uuid[])
   `)
   return Number(rows[0]?.count ?? 0)
 }
@@ -94,7 +94,7 @@ export async function countTestPostPublicationDirtyWorkForRssFeeds(
   const { rows } = await read<{ count: string }>(sql`
     /* countTestPostPublicationDirtyWorkForRssFeeds */
     SELECT COUNT(*)::text AS count FROM post_publication_dirty_work
-    WHERE rss_feed_id = ANY(${rssFeedIds}::uuid[])
+    WHERE rss_feed_identity_id = ANY(${rssFeedIds}::uuid[])
   `)
   return Number(rows[0]?.count ?? 0)
 }
@@ -107,7 +107,7 @@ export async function countTestPostPublicationIdentityKeysForRssFeeds(
     SELECT COUNT(*)::text AS count
     FROM post_publication_dirty_work_keys keys
     JOIN post_publication_dirty_work work ON work.id = keys.dirty_work_id
-    WHERE work.rss_feed_id = ANY(${rssFeedIds}::uuid[])
+    WHERE work.rss_feed_identity_id = ANY(${rssFeedIds}::uuid[])
       AND keys.rss_feed_key IS NOT NULL
   `)
   return Number(rows[0]?.count ?? 0)
@@ -120,7 +120,7 @@ export async function countTestPostPublicationDirtyWorkForPostsWithReason(
   const { rows } = await read<{ count: string }>(sql`
     /* countTestPostPublicationDirtyWorkForPostsWithReason */
     SELECT COUNT(*)::text AS count FROM post_publication_dirty_work
-    WHERE post_id = ANY(${postIds}::uuid[]) AND ${reason} = ANY(reasons)
+    WHERE post_identity_id = ANY(${postIds}::uuid[]) AND ${reason} = ANY(reasons)
   `)
   return Number(rows[0]?.count ?? 0)
 }

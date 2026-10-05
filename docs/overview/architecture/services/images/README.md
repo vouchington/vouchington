@@ -78,7 +78,7 @@ deleted_by_id UUID                 -- Who deleted it
 
 -- AI moderation
 openai_omni_moderation_results JSONB
-openai_omni_moderation_flagged BOOLEAN
+is_flagged_by_openai_omni_moderation BOOLEAN
 openai_omni_moderation_created_at TIMESTAMPTZ
 ```
 

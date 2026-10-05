@@ -11,7 +11,7 @@ Postgres table, enabling full change history with who changed what and when.
 
 ## Data Model
 
-- **dynamic_configuration_revisions** — append-only audit log. Each row captures the `config_key`
+- **dynamic_configuration_revisions** — append-only audit log. Each row captures the `configuration_key`
   (Valkey DynamicConfig key), the `changed_by_id` (administrator user ID, SET NULL on deletion),
   and snapshots of `previous_fields` and `next_fields` as JSONB.
 

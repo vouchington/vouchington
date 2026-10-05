@@ -15,9 +15,9 @@ describe('notification settings Storybook fixtures', () => {
 
   it('serves the configured preference snapshot through the Storybook client request seam', async () => {
     setNotificationSettingsFixture({
-      engagement_emails_enabled: true,
+      is_engagement_emails_enabled: true,
       news_digest_frequency: 'weekly',
-      moderation_emails_enabled: false,
+      is_moderation_emails_enabled: false,
       community_digest_frequency: 'weekly',
       moderation_email_cadence: 'selected_days',
       moderation_email_days_of_week: [1, 3, 5],
@@ -26,7 +26,7 @@ describe('notification settings Storybook fixtures', () => {
     })
 
     await expect(new ClientRequest().get('/api/v1/my/email-preferences')).resolves.toEqual({
-      email_preferences: expect.objectContaining({ moderation_emails_enabled: false }),
+      email_preferences: expect.objectContaining({ is_moderation_emails_enabled: false }),
     })
   })
 

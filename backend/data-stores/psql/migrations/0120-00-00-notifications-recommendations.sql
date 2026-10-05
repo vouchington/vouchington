@@ -198,11 +198,11 @@ CREATE TABLE IF NOT EXISTS notifications (
       )
     ),
   delivery_type notification_delivery_types NOT NULL DEFAULT 'subscription',
-  sent_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  sent_by_id UUID REFERENCES users(id) ON DELETE SET NULL,
   CONSTRAINT chk_notifications__delivery_sender
     CHECK (
-      (delivery_type = 'subscription' AND sent_by_user_id IS NULL)
-      OR (delivery_type = 'manual_send' AND sent_by_user_id IS NOT NULL)
+      (delivery_type = 'subscription' AND sent_by_id IS NULL)
+      OR (delivery_type = 'manual_send' AND sent_by_id IS NOT NULL)
     ),
 
   title TEXT NOT NULL DEFAULT '' CHECK (length(title) <= 300),
@@ -329,8 +329,8 @@ WHERE rss_feed_item_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__sent_by_user_id
-ON notifications (sent_by_user_id)
-WHERE sent_by_user_id IS NOT NULL;
+ON notifications (sent_by_id)
+WHERE sent_by_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__user_warning_id__foreign_key
@@ -339,12 +339,12 @@ WHERE user_warning_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS community_activity_digest_dispatch_windows (
-  window_start TIMESTAMPTZ PRIMARY KEY,
-  window_end TIMESTAMPTZ NOT NULL,
+  window_starts_at TIMESTAMPTZ PRIMARY KEY,
+  window_ends_at TIMESTAMPTZ NOT NULL,
   enqueued_at TIMESTAMPTZ,
   completed_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CHECK (window_end = window_start + INTERVAL '7 days')
+  CHECK (window_ends_at = window_starts_at + INTERVAL '7 days')
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -354,8 +354,8 @@ FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 COMMENT ON TABLE community_activity_digest_dispatch_windows IS 'Durable weekly cursor and queue-enqueue state for community activity digest dispatch.';
-COMMENT ON COLUMN community_activity_digest_dispatch_windows.window_start IS 'Inclusive UTC start of the closed weekly digest window.';
-COMMENT ON COLUMN community_activity_digest_dispatch_windows.window_end IS 'Exclusive UTC end of the closed weekly digest window.';
+COMMENT ON COLUMN community_activity_digest_dispatch_windows.window_starts_at IS 'Inclusive UTC start of the closed weekly digest window.';
+COMMENT ON COLUMN community_activity_digest_dispatch_windows.window_ends_at IS 'Exclusive UTC end of the closed weekly digest window.';
 COMMENT ON COLUMN community_activity_digest_dispatch_windows.enqueued_at IS 'Latest dispatch acceptance or batch activity time; stale incomplete windows are retryable.';
 COMMENT ON COLUMN community_activity_digest_dispatch_windows.completed_at IS 'Time every recipient batch for the window completed; incomplete stale enqueues are eligible for replay.';
 COMMENT ON COLUMN community_activity_digest_dispatch_windows.updated_at IS 'Time this dispatch-window state was last updated.';
@@ -444,7 +444,7 @@ COMMENT ON COLUMN notifications.post_id IS 'The post this notification refers to
 COMMENT ON COLUMN notifications.rss_feed_item_id IS 'The RSS feed item this notification refers to; set when entity_type is rss_feed_item.';
 COMMENT ON COLUMN notifications.actor_user_id IS 'The user who performed the action triggering this notification. For follow: the follower. For referral_signup: the newly signed-up user (not the referrer). Required for follow and referral_signup types.';
 COMMENT ON COLUMN notifications.delivery_type IS 'How the notification was triggered: subscription (automatic) or manual_send.';
-COMMENT ON COLUMN notifications.sent_by_user_id IS 'The user who manually sent this notification; set when delivery_type is manual_send.';
+COMMENT ON COLUMN notifications.sent_by_id IS 'The user who manually sent this notification; set when delivery_type is manual_send.';
 COMMENT ON COLUMN notifications.title IS 'Notification title text.';
 COMMENT ON COLUMN notifications.body IS 'Notification body text.';
 COMMENT ON COLUMN notifications.actor_label IS 'Optional display label for the actor who triggered the notification.';
@@ -664,7 +664,7 @@ CREATE TABLE IF NOT EXISTS post_feed_shares (
   id UUID NOT NULL DEFAULT uuidv7(),
   PRIMARY KEY (recipient_user_id, id),
 
-  shared_by_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  shared_by_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
   sort_at TIMESTAMPTZ NOT NULL,
 
@@ -688,7 +688,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 COMMENT ON TABLE post_feed_shares IS 'Records of posts shared to another user''s feed, range-partitioned by recipient UUIDv7.';
 COMMENT ON COLUMN post_feed_shares.recipient_user_id IS 'The user who receives this shared post in their feed; also the partition key.';
-COMMENT ON COLUMN post_feed_shares.shared_by_user_id IS 'The user who shared the post.';
+COMMENT ON COLUMN post_feed_shares.shared_by_id IS 'The user who shared the post.';
 COMMENT ON COLUMN post_feed_shares.post_id IS 'The post being shared.';
 COMMENT ON COLUMN post_feed_shares.sort_at IS 'Timestamp used for sorting this share in the recipient''s feed.';
 
@@ -698,7 +698,7 @@ CREATE TABLE IF NOT EXISTS rss_feed_item_feed_shares (
   id UUID NOT NULL DEFAULT uuidv7(),
   PRIMARY KEY (recipient_user_id, id),
 
-  shared_by_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  shared_by_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   rss_feed_item_id UUID NOT NULL REFERENCES rss_feed_items ON DELETE CASCADE,
   sort_at TIMESTAMPTZ NOT NULL,
 
@@ -722,6 +722,6 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 COMMENT ON TABLE rss_feed_item_feed_shares IS 'Records of RSS feed items shared to another user''s feed, range-partitioned by recipient UUIDv7.';
 COMMENT ON COLUMN rss_feed_item_feed_shares.recipient_user_id IS 'The user who receives this shared item in their feed; also the partition key.';
-COMMENT ON COLUMN rss_feed_item_feed_shares.shared_by_user_id IS 'The user who shared the RSS feed item.';
+COMMENT ON COLUMN rss_feed_item_feed_shares.shared_by_id IS 'The user who shared the RSS feed item.';
 COMMENT ON COLUMN rss_feed_item_feed_shares.rss_feed_item_id IS 'The RSS feed item that was shared.';
 COMMENT ON COLUMN rss_feed_item_feed_shares.sort_at IS 'Timestamp used for sorting this share in the recipient''s feed.';

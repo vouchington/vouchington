@@ -53,7 +53,7 @@ export async function executePostClassifierRun(
           { confidenceThreshold: local.confidenceThreshold },
         )
         return {
-          flagged: detected.flagged,
+          is_flagged: detected.flagged,
           reason: detected.reason,
           confidenceScore: detected.confidence_score,
           confidenceThreshold: detected.confidence_threshold,

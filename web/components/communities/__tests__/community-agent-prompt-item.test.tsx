@@ -73,7 +73,7 @@ describe('CommunityAgentPromptItem', () => {
   it('renders Allocate button when slot is not allocated', () => {
     render(
       <CommunityAgentPromptItem
-        prompt={prompt({ slot_allocated: false })}
+        prompt={prompt({ is_slot_allocated: false })}
         communitySlug={COMMUNITY_SLUG}
       />,
     )
@@ -86,7 +86,7 @@ describe('CommunityAgentPromptItem', () => {
   it('renders Deallocate button when slot is allocated', () => {
     render(
       <CommunityAgentPromptItem
-        prompt={prompt({ slot_allocated: true })}
+        prompt={prompt({ is_slot_allocated: true })}
         communitySlug={COMMUNITY_SLUG}
       />,
     )
@@ -192,7 +192,7 @@ describe('CommunityAgentPromptItem', () => {
 
     render(
       <CommunityAgentPromptItem
-        prompt={prompt({ slot_allocated: false })}
+        prompt={prompt({ is_slot_allocated: false })}
         communitySlug={COMMUNITY_SLUG}
       />,
     )
@@ -217,7 +217,7 @@ describe('CommunityAgentPromptItem', () => {
 
     render(
       <CommunityAgentPromptItem
-        prompt={prompt({ slot_allocated: true })}
+        prompt={prompt({ is_slot_allocated: true })}
         communitySlug={COMMUNITY_SLUG}
       />,
     )

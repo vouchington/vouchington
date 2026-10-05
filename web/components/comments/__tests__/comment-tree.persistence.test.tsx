@@ -27,7 +27,7 @@ describe('comment-tree', () => {
           { __entity_type: 'post', id: 'c2', ranking: 0, search_vector_ts: null },
         ],
         page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
-        posts: { c1: parent, c2: { ...child, parent_id: 'c1' } },
+        posts: { c1: parent, c2: { ...child, parent_post_id: 'c1' } },
         posts_metrics: {},
         markdown_to_html: {
           c1: '<p>Parent</p>',

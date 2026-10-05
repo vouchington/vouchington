@@ -118,13 +118,13 @@ describe('post_moderation_context — listModerationReports (staff tier)', () =>
     expect(found).toBeDefined()
     const ctx = found!.post_moderation_context!
     expect(ctx.platform_moderation).not.toBeNull()
-    expect(ctx.platform_moderation!.flagged).toBe(true)
+    expect(ctx.platform_moderation!.is_flagged).toBe(true)
     // Staff tier: full categories present
     expect(Array.isArray(ctx.platform_moderation!.categories)).toBe(true)
     expect(ctx.platform_moderation!.categories).toContain('violence')
     const agentMod = ctx.agent_moderations.find(m => m.slug === agentSlug)
     expect(agentMod).toBeDefined()
-    expect(agentMod!.flagged).toBe(true)
+    expect(agentMod!.is_flagged).toBe(true)
     expect(Array.isArray(agentMod!.categories)).toBe(true)
     expect(agentMod!.categories).toContain('violence')
     expect(ctx.agent_added_tags).toContain(topicSlug)
@@ -203,12 +203,12 @@ describe('post_moderation_context — listRedactedModerationReports (public tier
     expect(found).toBeDefined()
     const ctx = found!.post_moderation_context!
     expect(ctx.platform_moderation).not.toBeNull()
-    expect(ctx.platform_moderation!.flagged).toBe(true)
+    expect(ctx.platform_moderation!.is_flagged).toBe(true)
     // Public tier: no categories key
     expect('categories' in ctx.platform_moderation!).toBe(false)
     const agentMod = ctx.agent_moderations.find(m => m.slug === agentSlug)
     expect(agentMod).toBeDefined()
-    expect(agentMod!.flagged).toBe(true)
+    expect(agentMod!.is_flagged).toBe(true)
     // Public tier: no categories key on agent moderations
     expect('categories' in agentMod!).toBe(false)
     // agent_added_tags still present
@@ -243,12 +243,12 @@ describe('attachPostModerationContext — unit edge cases', () => {
 describe('toPublicPostModerationContext', () => {
   it('drops category details but keeps coarse flags and tags', () => {
     const result = toPublicPostModerationContext({
-      platform_moderation: { flagged: true, categories: ['hate'] },
-      agent_moderations: [{ slug: 'spam', flagged: true, categories: ['promo'] }],
+      platform_moderation: { is_flagged: true, categories: ['hate'] },
+      agent_moderations: [{ slug: 'spam', is_flagged: true, categories: ['promo'] }],
       agent_added_tags: ['ai-generated'],
     })
-    expect(result!.platform_moderation).toEqual({ flagged: true })
-    expect(result!.agent_moderations).toEqual([{ slug: 'spam', flagged: true }])
+    expect(result!.platform_moderation).toEqual({ is_flagged: true })
+    expect(result!.agent_moderations).toEqual([{ slug: 'spam', is_flagged: true }])
     expect(result!.agent_added_tags).toEqual(['ai-generated'])
   })
 

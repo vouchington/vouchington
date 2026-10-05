@@ -18,13 +18,13 @@ export async function deleteNotificationsSentByUserIds(userIds: string[]) {
   if (userIds.length === 0) return
   await write(sql`
     DELETE FROM notifications
-    WHERE sent_by_user_id = ANY(${userIds}::uuid[])
+    WHERE sent_by_id = ANY(${userIds}::uuid[])
   `)
 }
 
 export async function getNotificationById(notificationId: string) {
   const { rows } = await read(sql`
-    SELECT delivery_type, sent_by_user_id, post_id, rss_feed_item_id,
+    SELECT delivery_type, sent_by_id, post_id, rss_feed_item_id,
       publication_post_id, publication_rss_feed_item_id, read_at, pushed_at,
       deleted_at, delete_reason
     FROM notifications
@@ -34,7 +34,7 @@ export async function getNotificationById(notificationId: string) {
   return rows[0] as
     | {
         delivery_type: string
-        sent_by_user_id: string | null
+        sent_by_id: string | null
         post_id: string | null
         rss_feed_item_id: string | null
         publication_post_id: string | null
@@ -171,7 +171,7 @@ export async function createTestManualPostNotification(input: {
 }): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* createTestManualPostNotification */
     INSERT INTO notifications (
-      user_id, entity_type, delivery_type, sent_by_user_id, post_id, title, body, target_path
+      user_id, entity_type, delivery_type, sent_by_id, post_id, title, body, target_path
     )
     VALUES (
       ${input.userId}, 'post', 'manual_send', ${input.sentByUserId}, ${input.postId},
@@ -188,7 +188,7 @@ export async function createTestManualRssFeedItemNotification(input: {
 }): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* createTestManualRssFeedItemNotification */
     INSERT INTO notifications (
-      user_id, entity_type, delivery_type, sent_by_user_id, rss_feed_item_id, title, body, target_path
+      user_id, entity_type, delivery_type, sent_by_id, rss_feed_item_id, title, body, target_path
     )
     VALUES (
       ${input.userId}, 'rss_feed_item', 'manual_send', ${input.sentByUserId}, ${input.rssFeedItemId},

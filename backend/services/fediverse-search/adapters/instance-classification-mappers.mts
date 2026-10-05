@@ -31,7 +31,7 @@ export type InstanceClassificationMetadata = {
   nodeinfo_software_version: string | null
   total_users: number | null
   monthly_active_users: number | null
-  open_registrations: boolean | null
+  is_open_for_registrations: boolean | null
   nodeinfo_raw: NodeInfoDocument | null
 }
 
@@ -76,7 +76,7 @@ export function mapNodeInfoDocument(document: unknown): InstanceClassificationMe
       : null
   const total_users = readFiniteInteger(nodeinfo?.usage?.users?.total)
   const monthly_active_users = readFiniteInteger(nodeinfo?.usage?.users?.activeMonth)
-  const open_registrations =
+  const is_open_for_registrations =
     typeof nodeinfo?.openRegistrations === 'boolean' ? nodeinfo.openRegistrations : null
 
   return {
@@ -85,7 +85,7 @@ export function mapNodeInfoDocument(document: unknown): InstanceClassificationMe
     nodeinfo_software_version,
     total_users,
     monthly_active_users,
-    open_registrations,
+    is_open_for_registrations,
     nodeinfo_raw: isObject ? (document as NodeInfoDocument) : null,
   }
 }

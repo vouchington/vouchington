@@ -114,7 +114,7 @@ export async function createMembershipVerificationInTransaction(
   const inserted = await query<{ id: string }>(sql`/* createMembershipVerification.insert */
     INSERT INTO membership_verifications (
       user_id, idempotency_key, request_fingerprint, membership_purchase_intent_id,
-      membership_provider_evidence_id, provider, environment, application_id
+      membership_provider_evidence_record_id, provider, environment, application_id
     ) VALUES (
       ${options.userId}, ${options.idempotencyKey}, ${requestFingerprint},
       ${options.purchaseIntentId}, ${evidenceId}, ${options.provider},

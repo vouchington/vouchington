@@ -34,7 +34,7 @@ describe('rewards program status suspension guards', () => {
           : method === 'patch'
             ? await request
                 .patch(`/api/v1/my/rewards-program-statuses/${existing.id}`)
-                .send({ since: '2024-01-01' })
+                .send({ started_on: '2024-01-01' })
             : await request.delete(`/api/v1/my/rewards-program-statuses/${existing.id}`)
       expect(response.status).toBe(403)
       expect(response.body.code).toBe(ACCOUNT_SUSPENDED)

@@ -20,7 +20,7 @@ const parser = createPaginationParser({
 
 const modlogFilterQuery = defineQueryContract({
   community_id: queryUuid(),
-  actor_id: queryUuid(),
+  actor_user_id: queryUuid(),
   action_type: queryEnum(MODERATOR_ACTION_TYPES, { description: 'Unknown values are ignored.' }),
 })
 
@@ -32,7 +32,7 @@ app.route('/api/v1/admin/modlog').get(async (ctx: Context) => {
   const { limit, after } = parseRuntimePagination(parser, ctx.query)
   // Normalize empty strings to undefined so falsy checks are consistent
   const communityId = ctx.query.community_id ? (ctx.query.community_id as string) : undefined
-  const actorId = ctx.query.actor_id ? (ctx.query.actor_id as string) : undefined
+  const actorId = ctx.query.actor_user_id ? (ctx.query.actor_user_id as string) : undefined
   const rawActionType = ctx.query.action_type as string | undefined
   const actionType = MODERATOR_ACTION_TYPES.includes(rawActionType as never)
     ? (rawActionType as (typeof MODERATOR_ACTION_TYPES)[number])
@@ -45,7 +45,7 @@ app.route('/api/v1/admin/modlog').get(async (ctx: Context) => {
       limit,
       ...(after !== undefined && { after }),
       ...(communityId && { community_id: communityId }),
-      ...(actorId && { actor_id: actorId }),
+      ...(actorId && { actor_user_id: actorId }),
       ...(actionType && { action_type: actionType }),
     },
   })
@@ -60,7 +60,7 @@ app.route('/api/v1/admin/modlog').get(async (ctx: Context) => {
 
   const actorIds: string[] = []
   for (const r of result.results) {
-    if (r.actor_id !== null) actorIds.push(r.actor_id)
+    if (r.actor_user_id !== null) actorIds.push(r.actor_user_id)
   }
   const actors = await getUserPublicByAnyCachedBatch(actorIds).then(us =>
     us.reduce<Record<string, unknown>>((acc, u) => {

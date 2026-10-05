@@ -22,7 +22,7 @@ describe('recordDynamicConfigChange', () => {
 
     const row = rows[0]
     expect(row).toBeDefined()
-    expect(row.config_key).toBe(configKey)
+    expect(row.configuration_key).toBe(configKey)
     expect(row.changes).toEqual({
       multiplier_mfa: { before: prev.multiplier_mfa, after: next.multiplier_mfa },
     })

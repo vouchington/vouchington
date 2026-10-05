@@ -103,7 +103,7 @@ describe('CardsManager editing cards', () => {
       card: {
         ...initialCards[1]!,
         is_authorized_user: false,
-        authorized_user_of_id: null,
+        authorized_user_of_card_id: null,
       },
     })
 
@@ -114,7 +114,7 @@ describe('CardsManager editing cards', () => {
     await waitFor(() => {
       expect(mockUpdate).toHaveBeenCalledWith('card-owner-2', {
         is_authorized_user: false,
-        authorized_user_of_id: null,
+        authorized_user_of_card_id: null,
       })
       expect(screen.queryByText('Auth user of: Chase Sapphire Preferred')).not.toBeInTheDocument()
     })
@@ -139,7 +139,7 @@ describe('CardsManager editing cards', () => {
       card: {
         ...initialCards[0]!,
         is_authorized_user: true,
-        authorized_user_of_id: 'card-owner-2',
+        authorized_user_of_card_id: 'card-owner-2',
       },
     })
 
@@ -150,7 +150,7 @@ describe('CardsManager editing cards', () => {
     await waitFor(() => {
       expect(mockUpdate).toHaveBeenCalledWith('card-owner-1', {
         is_authorized_user: true,
-        authorized_user_of_id: 'card-owner-2',
+        authorized_user_of_card_id: 'card-owner-2',
       })
       expect(screen.getByText('Auth user of: Chase Freedom Flex')).toBeInTheDocument()
     })

@@ -9,7 +9,7 @@ export type TestReportIntegrityFlag = {
   rss_feed_item_id: string | null
   flag_type: string
   reporter_count: number
-  new_account_reporter_pct: number
+  new_account_reporter_percent: number
   resolved_at: Date | null
   resolution: string | null
 }
@@ -27,7 +27,7 @@ export async function getTestReportIntegrityFlagsByPostId(
 ): Promise<TestReportIntegrityFlag[]> {
   const { rows } = await read(sql`/* getTestReportIntegrityFlagsByPostId */
     SELECT id, post_id, reported_user_id, hostname_id, rss_feed_item_id,
-           flag_type, reporter_count, new_account_reporter_pct, resolved_at, resolution
+           flag_type, reporter_count, new_account_reporter_percent, resolved_at, resolution
     FROM report_integrity_flags
     WHERE post_id = ${postId}
     ORDER BY id DESC
@@ -40,7 +40,7 @@ export async function getTestReportIntegrityFlagsByUserId(
 ): Promise<TestReportIntegrityFlag[]> {
   const { rows } = await read(sql`/* getTestReportIntegrityFlagsByUserId */
     SELECT id, post_id, reported_user_id, hostname_id, rss_feed_item_id,
-           flag_type, reporter_count, new_account_reporter_pct, resolved_at, resolution
+           flag_type, reporter_count, new_account_reporter_percent, resolved_at, resolution
     FROM report_integrity_flags
     WHERE reported_user_id = ${reportedUserId}
     ORDER BY id DESC
@@ -157,7 +157,7 @@ export async function insertTestReportIntegrityFlag(options: {
     WITH flag AS (
       INSERT INTO report_integrity_flags
         (post_id, reported_user_id, hostname_id, rss_feed_item_id,
-         flag_type, reporter_count, new_account_reporter_pct, resolved_at, resolution)
+         flag_type, reporter_count, new_account_reporter_percent, resolved_at, resolution)
       VALUES (
         ${postId}::uuid,
         ${reportedUserId}::uuid,

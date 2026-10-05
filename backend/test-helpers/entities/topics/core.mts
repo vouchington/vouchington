@@ -17,19 +17,19 @@ export async function insertTestTopic(data: {
   createdById: string
   embeddingSha256?: string
   topicType?: string
-  noindex?: boolean
+  is_noindexed?: boolean
   allowReviews?: boolean
   hostnameId?: string | null
   aliases?: string[]
 }): Promise<string> {
   const embeddingSha256 = data.embeddingSha256 || `\\x${'0'.repeat(64)}`
   const topicType = data.topicType || 'topic'
-  const noindex = data.noindex ?? false
+  const noindex = data.is_noindexed ?? false
   const allowReviews = data.allowReviews ?? true
   const hostnameId = data.hostnameId === undefined ? null : data.hostnameId
   const aliases = data.aliases ?? []
   const { rows } = await write(sql`/* insertTestTopic */
-    INSERT INTO topics (name, slug, created_by_id, topic_type, noindex, allow_reviews, hostname_id, bedrock_nova_multimodal_v1_content_sha256, aliases, created_via)
+    INSERT INTO topics (name, slug, created_by_id, topic_type, is_noindexed, should_allow_reviews, hostname_id, bedrock_nova_multimodal_v1_content_sha256, aliases, created_via)
     VALUES (${data.name}, ${data.slug}, ${data.createdById}, ${topicType}, ${noindex}, ${allowReviews}, ${hostnameId}, ${embeddingSha256}, ${aliases}, 'system')
     RETURNING id
   `)

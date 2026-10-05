@@ -10,7 +10,7 @@ design (see the doc comment at the top of each route file). See
 phased design and [FEDIVERSE.md](../../content/FEDIVERSE.md) for current-state
 boundaries.
 
-Federation is per-user opt-in (`users.fediverse_federation_enabled`, default off). A user who has
+Federation is per-user opt-in (`users.is_fediverse_federation_enabled`, default off). A user who has
 not opted in has no reachable actor document, aliases, or WebFinger entry — every route below
 gates on `isFederationEnabledForUser` and returns `404` for an opted-out or nonexistent user.
 

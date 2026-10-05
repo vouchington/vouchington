@@ -37,7 +37,7 @@ describe('get.generated', () => {
     expect(retrieved).toBeDefined()
     expect(retrieved!.id).toBe(crawl.id)
     expect(retrieved!.url_id).toBe(url!.id)
-    expect(retrieved!.crawler_id).toBe(crawler.id)
+    expect(retrieved!.hostname_crawler_configuration_id).toBe(crawler.id)
   })
 
   it('getLatestSuccessfulCrawl returns null when no successful crawl exists', async () => {

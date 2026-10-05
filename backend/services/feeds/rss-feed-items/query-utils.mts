@@ -28,7 +28,7 @@ export function appendRelatedPostsFilter(
             FROM "relation__post__related__url" rel
             JOIN posts related_post ON related_post.id = rel.subject_id
             JOIN posts related_root_post
-              ON related_root_post.id = COALESCE(related_post.root_id, related_post.id)
+              ON related_root_post.id = COALESCE(related_post.root_post_id, related_post.id)
             WHERE rel.object_id = `)
     query.append(rssFeedItemUrlId).append(sql`
               AND rel.deleted_at IS NULL
@@ -40,7 +40,7 @@ export function appendRelatedPostsFilter(
             SELECT 1
             FROM posts related_post
             JOIN posts related_root_post
-              ON related_root_post.id = COALESCE(related_post.root_id, related_post.id)
+              ON related_root_post.id = COALESCE(related_post.root_post_id, related_post.id)
             WHERE related_post.post_type = 'link'
               AND related_post.url_id = `)
     query.append(rssFeedItemUrlId).append(sql`
@@ -59,7 +59,7 @@ export function appendRelatedPostsFilter(
           FROM "relation__post__related__url" rel
           JOIN posts related_post ON related_post.id = rel.subject_id
           JOIN posts related_root_post
-            ON related_root_post.id = COALESCE(related_post.root_id, related_post.id)
+            ON related_root_post.id = COALESCE(related_post.root_post_id, related_post.id)
           WHERE rel.object_id = `)
     query.append(rssFeedItemUrlId).append(sql`
             AND rel.deleted_at IS NULL
@@ -71,7 +71,7 @@ export function appendRelatedPostsFilter(
           SELECT 1
           FROM posts related_post
           JOIN posts related_root_post
-            ON related_root_post.id = COALESCE(related_post.root_id, related_post.id)
+            ON related_root_post.id = COALESCE(related_post.root_post_id, related_post.id)
           WHERE related_post.post_type = 'link'
             AND related_post.url_id = `)
     query.append(rssFeedItemUrlId).append(sql`

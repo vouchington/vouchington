@@ -70,14 +70,14 @@ export async function recordLocalTestPostOpenAIModerationDisposition(
 export async function queryLocalTestPostOpenAIModerationFlag(
   postId: string,
 ): Promise<boolean | null | undefined> {
-  const { rows } = await read<{ openai_omni_moderation_flagged: boolean | null }>(sql`
+  const { rows } = await read<{ is_flagged_by_openai_omni_moderation: boolean | null }>(sql`
     /* queryLocalTestPostOpenAIModerationFlag */
-    SELECT openai_omni_moderation_flagged
+    SELECT is_flagged_by_openai_omni_moderation
     FROM view_posts
     WHERE id = ${postId}
     LIMIT 1
   `)
-  return rows[0]?.openai_omni_moderation_flagged
+  return rows[0]?.is_flagged_by_openai_omni_moderation
 }
 
 export async function queryLocalTestPostImageIds(postId: string): Promise<string[]> {

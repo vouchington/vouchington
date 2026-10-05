@@ -39,14 +39,14 @@ describe('delegated thread fences and ordinary foreign-key inserts', () => {
         {
           idempotency_key: crypto.randomUUID(),
           post_type: 'comment',
-          parent_id: root,
+          parent_post_id: root,
           markdown: 'Reply',
           images: [{ image_id: imageId, order_index: 0 }],
         },
         ['posts:read', 'posts:write'],
       ),
     )
-    expect(result).toMatchObject({ success: true, post: { parent_id: root } })
+    expect(result).toMatchObject({ success: true, post: { parent_post_id: root } })
   })
 
   it('permits member and reply inserts while retaining community and ancestry fences', async () => {

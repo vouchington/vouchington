@@ -75,7 +75,7 @@ export function makeRecommendationTableFixture(): {
     post_type: 'topic_recommendation',
     title: 'Need this topic',
     markdown: 'Detailed rationale',
-    root_id: null,
+    root_post_id: null,
     created_by_id: 'user-1',
     created_by: {
       account_type: null,

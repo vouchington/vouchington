@@ -114,7 +114,7 @@ export async function recordTerritorialCopyrightDecision(
     const { rows: submissions } = await transaction<{ id: string }>(sql`
       /* recordTerritorialCopyrightDecision:submission */
       INSERT INTO copyright_notice_submissions (
-        id, copyright_notice_id, submitted_by_user_id, kind, received_at, source_kind, body_ciphertext
+        id, copyright_notice_id, submitted_by_id, kind, received_at, source_kind, body_ciphertext
       ) VALUES (
         ${submissionId}, ${noticeId}, ${actor.id}, 'notice', ${receipt.received_at}, 'staff',
         ${encryptSecret(JSON.stringify({ territorialReceiptId: receipt.id, text }), copyrightSubmissionPurpose(submissionId))}

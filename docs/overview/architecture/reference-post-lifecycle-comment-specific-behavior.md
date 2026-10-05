@@ -10,8 +10,8 @@ Comments use the same `createPost()` path with `post_type='comment'`. Key differ
 | --------------------- | ------------------------------------------------------- |
 | `broadcast`           | Always `'everyone'`                                     |
 | `privacy`             | Always `'public'`                                       |
-| `parent_id`           | Required                                                |
-| `root_id`             | Derived from parent chain                               |
+| `parent_post_id`      | Required                                                |
+| `root_post_id`        | Derived from parent chain                               |
 | Community scope       | Inherited from the parent post/comment                  |
 | Review topic ratings  | Not applicable                                          |
 | `handleCommentAction` | Refreshes metrics for ALL ancestor posts (up the chain) |

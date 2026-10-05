@@ -8,7 +8,11 @@ describe('get_post_descendants database failure', () => {
   it('reports a database failure instead of an invalid cursor and returns the page on retry', async () => {
     const caller = { ...(await createTestUser()), membership_plan: null }
     const post = await createTestPost({ user: caller })
-    const reply = await createTestPost({ user: caller, post_type: 'comment', parent_id: post.id })
+    const reply = await createTestPost({
+      user: caller,
+      post_type: 'comment',
+      parent_post_id: post.id,
+    })
     const args = { post_id: post.id }
 
     const { result, error } = await withPostgresPoolQueryFailureForTest(

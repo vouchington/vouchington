@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_memberships AS
   SELECT
     'membership' AS __entity_type,
@@ -33,7 +34,7 @@ CREATE OR REPLACE VIEW view_memberships AS
     m.expired_at,
     m.past_due_at,
     m.paused_at,
-    m.cancel_at_period_end,
+    m.should_cancel_at_period_end,
     m.latest_change_id,
     m.created_at,
     m.updated_at,
@@ -61,7 +62,7 @@ CREATE OR REPLACE VIEW view_memberships AS
   LEFT JOIN membership_provider_observations observation
     ON observation.id = source_state.membership_provider_observation_id
   LEFT JOIN membership_provider_evidence_records evidence
-    ON evidence.id = observation.membership_provider_evidence_id
+    ON evidence.id = observation.membership_provider_evidence_record_id
   LEFT JOIN membership_grants membership_grant ON membership_grant.membership_source_id = source.id
   LEFT JOIN membership_provider_lineages lineage ON lineage.id = source.membership_provider_lineage_id
   LEFT JOIN LATERAL (

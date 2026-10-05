@@ -11,7 +11,7 @@ test.describe('Admin Hostname Blocking', () => {
     page,
   }) => {
     const hostname = `pw-block-${rand()}.example.com`
-    const hostnameId = await insertTestUrlHostname({ hostname, crawlable: false })
+    const hostnameId = await insertTestUrlHostname({ hostname, is_crawlable: false })
 
     await navigateTo(page, '/')
 
@@ -21,7 +21,7 @@ test.describe('Admin Hostname Blocking', () => {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ blocked: true }),
+        body: JSON.stringify({ is_blocked: true }),
       })
       return { status: response.status, body: await response.json() }
     }, hostnameId)
@@ -38,7 +38,11 @@ test.describe('Admin Hostname Blocking', () => {
 
   test('blocked hostname returns 404 for non-admin GET', async ({ page }) => {
     const hostname = `pw-blocked-404-${rand()}.example.com`
-    const hostnameId = await insertTestUrlHostname({ hostname, crawlable: false, blocked: true })
+    const hostnameId = await insertTestUrlHostname({
+      hostname,
+      is_crawlable: false,
+      is_blocked: true,
+    })
 
     // Navigate as non-logged-in user — no login
     await page.context().clearCookies()
@@ -56,7 +60,7 @@ test.describe('Admin Hostname Blocking', () => {
 
   test('admin sees blocked hostname in /api/v1/hostnames/blocked list', async ({ page }) => {
     const hostname = `pw-blocked-list-${rand()}.example.com`
-    const hostnameId = await insertTestUrlHostname({ hostname, blocked: true })
+    const hostnameId = await insertTestUrlHostname({ hostname, is_blocked: true })
 
     await navigateTo(page, '/')
 
@@ -80,7 +84,7 @@ test.describe('Admin Hostname Blocking', () => {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ blocked: true }),
+        body: JSON.stringify({ is_blocked: true }),
       })
       return { status: response.status }
     }, hostnameId)

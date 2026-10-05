@@ -20,7 +20,7 @@ export interface MembershipRefund {
   stripe_charge_id: string
   amount: Money
   reason: string
-  revoked_access: boolean
+  has_revoked_access: boolean
   issued_by_id: string | null
   source: string
   note: string | null

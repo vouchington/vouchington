@@ -92,7 +92,7 @@ describe('CommunityAgentPromptForm', () => {
         prompt: 'Test prompt',
         model_name: 'model',
         model_provider: 'provider',
-        slot_allocated: false,
+        is_slot_allocated: false,
         activated_at: null,
         deactivated_at: null,
         created_at: '2026-01-01T00:00:00.000Z',

@@ -39,7 +39,7 @@ describe('getFediverseInstancesContinuationPage', () => {
           nodeinfo_software_version: '4.4.0',
           total_users: 100,
           monthly_active_users: 25,
-          open_registrations: true,
+          is_open_for_registrations: true,
           nodeinfo_raw: { internal: true },
         },
       },
@@ -62,7 +62,7 @@ describe('getFediverseInstancesContinuationPage', () => {
       nodeinfo_software_version: '4.4.0',
       total_users: 100,
       monthly_active_users: 25,
-      open_registrations: true,
+      is_open_for_registrations: true,
     })
   })
 
@@ -118,7 +118,7 @@ describe('getFediverseInstancesContinuationPage', () => {
       nodeinfo_software_version: null,
       total_users: null,
       monthly_active_users: null,
-      open_registrations: null,
+      is_open_for_registrations: null,
     })
     expect(result).toMatchObject({
       topics_metrics: {},

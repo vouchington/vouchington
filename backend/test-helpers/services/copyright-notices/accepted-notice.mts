@@ -22,9 +22,9 @@ export async function createAcceptedCopyrightNotice(
       claimantContact: fixture.form.claimant_contact,
       claimantEmail: fixture.form.claimant_email,
       workDescription: fixture.form.work_description,
-      goodFaithBelief: fixture.form.good_faith_belief,
+      goodFaithBelief: fixture.form.has_good_faith_belief,
       accuracyAuthorityUnderPenaltyOfPerjury:
-        fixture.form.accuracy_authority_under_penalty_of_perjury,
+        fixture.form.has_accuracy_authority_under_penalty_of_perjury,
       electronicSignature: fixture.form.electronic_signature,
       claimantTargets: fixture.form.targets.map(target => ({
         surfaceKind: 'post-image' as const,
@@ -37,7 +37,7 @@ export async function createAcceptedCopyrightNotice(
   await reviewCopyrightFormIntake({
     intakeId: intake.intake.id,
     currentUser: await createTestUser({ extraRoles: ['moderator'] }),
-    accepted: true,
+    is_accepted: true,
     rationale: 'The notice is complete.',
   })
   return intake.intake.copyright_notice_id

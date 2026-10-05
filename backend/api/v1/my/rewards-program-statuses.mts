@@ -16,8 +16,8 @@ import { prepareQueryForValidation } from '@services/search-params/prepare-query
 type CreateRewardsProgramStatusRequest = { rewards_program_status_id: string }
 
 type UpdateRewardsProgramStatusRequest = {
-  since?: string | null
-  until?: string | null
+  started_on?: string | null
+  expires_on?: string | null
 }
 
 const rewardsProgramStatusesPagination = createPaginationParser({
@@ -70,7 +70,7 @@ app.route('/api/v1/my/rewards-program-statuses/:id').patch(async (ctx: Context) 
     currentUser,
     currentUser,
     ctx.params.id!,
-    { since: body.since, until: body.until },
+    { started_on: body.started_on, expires_on: body.expires_on },
   )
 
   ctx.json({ rewards_program_status: status })

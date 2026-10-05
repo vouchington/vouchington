@@ -31,7 +31,7 @@ export const IMPORT_EXPORT_DECLARATIONS = [
     nativeImportExportRssFeedsSubmitDefault,
     context =>
       context.client.importExport.importRssFeeds({
-        follow: true,
+        should_follow_imported_feeds: true,
         urls: ['https://example.test/feed.xml', 'https://invalid.example.test/feed.xml'],
       }),
   ),

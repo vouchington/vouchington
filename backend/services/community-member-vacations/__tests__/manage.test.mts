@@ -125,7 +125,7 @@ describe('community digest vacation suppression preference', () => {
     })
     expect(settings).toEqual({
       vacation: null,
-      suppress_community_digests_while_on_vacation: false,
+      should_suppress_community_digests_while_on_vacation: false,
     })
   })
 
@@ -140,7 +140,7 @@ describe('community digest vacation suppression preference', () => {
       communityId: community.id,
     })
     expect(settings.vacation).toBeNull()
-    expect(settings.suppress_community_digests_while_on_vacation).toBe(true)
+    expect(settings.should_suppress_community_digests_while_on_vacation).toBe(true)
   })
 
   it('survives clearing a vacation', async () => {
@@ -156,6 +156,6 @@ describe('community digest vacation suppression preference', () => {
       communityId: community.id,
     })
     expect(settings.vacation).toBeNull()
-    expect(settings.suppress_community_digests_while_on_vacation).toBe(true)
+    expect(settings.should_suppress_community_digests_while_on_vacation).toBe(true)
   })
 })

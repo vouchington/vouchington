@@ -21,7 +21,7 @@ describe('manage_my_cards tool — real DB', () => {
     const execute = manageMyCardsTool.function(paginationUser)
     for (let index = 0; index < 2; index += 1) {
       const topicId = await insertTestCard({ createdById: paginationUser.id })
-      await execute({ action: 'add', card_id: topicId })
+      await execute({ action: 'add', card_topic_id: topicId })
     }
 
     const list = getMyCardsTool.function(paginationUser)
@@ -50,23 +50,25 @@ describe('manage_my_cards tool — real DB', () => {
 
   it('add creates a card', async () => {
     const execute = manageMyCardsTool.function(user)
-    const result = await execute({ action: 'add', card_id: cardId })
+    const result = await execute({ action: 'add', card_topic_id: cardId })
     expect(result.success).toBe(true)
     expect(result.result).toHaveProperty('id')
-    expect((result.result as { card_id: string }).card_id).toBe(cardId)
+    expect((result.result as { card_topic_id: string }).card_topic_id).toBe(cardId)
   })
 
   it('list after add returns the card', async () => {
     const result = await getMyCardsTool.function(user)({})
     expect(result.success).toBe(true)
-    const cards = (result.result as { results: Array<{ card_id: string }> }).results
-    expect(cards.some(c => c.card_id === cardId)).toBe(true)
+    const cards = (result.result as { results: Array<{ card_topic_id: string }> }).results
+    expect(cards.some(c => c.card_topic_id === cardId)).toBe(true)
   })
 
   it('update modifies fields', async () => {
     const addExecute = manageMyCardsTool.function(user)
     const cardId2 = await insertTestCard({ createdById: user.id })
-    const added = (await addExecute({ action: 'add', card_id: cardId2 })).result as { id: string }
+    const added = (await addExecute({ action: 'add', card_topic_id: cardId2 })).result as {
+      id: string
+    }
 
     const execute = manageMyCardsTool.function(user)
     const result = await execute({
@@ -104,7 +106,7 @@ describe('manage_my_cards tool — real DB', () => {
           ],
         },
         note: { anyOf: [{ type: 'string' }, { type: 'null' }] },
-        authorized_user_of_id: { anyOf: [{ type: 'string' }, { type: 'null' }] },
+        authorized_user_of_card_id: { anyOf: [{ type: 'string' }, { type: 'null' }] },
       },
     })
 
@@ -113,8 +115,10 @@ describe('manage_my_cards tool — real DB', () => {
       insertTestCard({ createdById: user.id }),
       insertTestCard({ createdById: user.id }),
     ])
-    const child = (await execute({ action: 'add', card_id: childTopicId })).result as { id: string }
-    const parent = (await execute({ action: 'add', card_id: parentTopicId })).result as {
+    const child = (await execute({ action: 'add', card_topic_id: childTopicId })).result as {
+      id: string
+    }
+    const parent = (await execute({ action: 'add', card_topic_id: parentTopicId })).result as {
       id: string
     }
     await execute({
@@ -122,7 +126,7 @@ describe('manage_my_cards tool — real DB', () => {
       id: child.id,
       credit_limit: { amount: 500_000, currency: 'usd' },
       is_authorized_user: true,
-      authorized_user_of_id: parent.id,
+      authorized_user_of_card_id: parent.id,
     })
 
     const cleared = await execute({
@@ -130,20 +134,22 @@ describe('manage_my_cards tool — real DB', () => {
       id: child.id,
       credit_limit: null,
       is_authorized_user: false,
-      authorized_user_of_id: null,
+      authorized_user_of_card_id: null,
     })
 
     expect(cleared.result).toMatchObject({
       credit_limit: null,
       is_authorized_user: false,
-      authorized_user_of_id: null,
+      authorized_user_of_card_id: null,
     })
   })
 
   it('remove deletes the card', async () => {
     const addExecute = manageMyCardsTool.function(user)
     const cardId3 = await insertTestCard({ createdById: user.id })
-    const added = (await addExecute({ action: 'add', card_id: cardId3 })).result as { id: string }
+    const added = (await addExecute({ action: 'add', card_topic_id: cardId3 })).result as {
+      id: string
+    }
 
     const execute = manageMyCardsTool.function(user)
     const result = await execute({ action: 'remove', id: added.id })

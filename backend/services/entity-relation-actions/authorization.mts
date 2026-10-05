@@ -23,7 +23,7 @@ export async function currentUserCanBookmarkTarget(
     case 'post': {
       const post = await getPostByAnyCached(entityId)
       if (!post || post.deleted_at || BLOCKED_POST_TYPES.has(post.post_type)) return false
-      const rootPost = await getPostByAnyCached(post.root_id ?? post.id)
+      const rootPost = await getPostByAnyCached(post.root_post_id ?? post.id)
       if (!rootPost || rootPost.deleted_at || BLOCKED_POST_TYPES.has(rootPost.post_type)) {
         return false
       }
@@ -40,13 +40,13 @@ export async function currentUserCanBookmarkTarget(
     case 'url': {
       const url = await getUrlByAnyCached(entityId)
       return (
-        !!url && (!url.hostname?.blocked || currentUserCanFilterHostnameModeration(currentUser))
+        !!url && (!url.hostname?.is_blocked || currentUserCanFilterHostnameModeration(currentUser))
       )
     }
     case 'url_hostname': {
       const hostname = await getUrlHostnameByAnyCached(entityId)
       return (
-        !!hostname && (!hostname.blocked || currentUserCanFilterHostnameModeration(currentUser))
+        !!hostname && (!hostname.is_blocked || currentUserCanFilterHostnameModeration(currentUser))
       )
     }
     case 'community':

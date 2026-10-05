@@ -15,10 +15,10 @@ export const nativeHostname = {
 
 export const nativeModeratedHostname = {
   ...nativeHostname,
-  blocked: false,
-  crawlable: true,
-  link_rel_follow: true,
-  skip_web_risk: false,
+  is_blocked: false,
+  is_crawlable: true,
+  should_follow_link_rel: true,
+  should_skip_web_risk: false,
   votes_count_down: 2,
   votes_count_up: 12,
   votes_score_net: 10,
@@ -32,7 +32,7 @@ export const nativeDomainTopic = {
   topic_type: 'topic',
   markdown: '',
   aliases: [],
-  allow_reviews: true,
+  should_allow_reviews: true,
   created_at: '2026-01-01T00:00:00Z',
   created_by: fixtureUser,
   hero_image_id: null,
@@ -41,7 +41,7 @@ export const nativeDomainTopic = {
   hostname_id: 'hostname-1',
   lingua_rs_detected_language: null,
   logo_image_id: null,
-  noindex: false,
+  is_noindexed: false,
   referral_program_id: null,
   referral_program_slug: null,
   rewards_program_id: null,
@@ -89,7 +89,7 @@ export const nativeLatestCrawl = {
   url_id: 'url-1',
   created_at: '2026-01-02T00:00:00Z',
   completed_at: '2026-01-02T00:01:00Z',
-  crawler_id: 'crawler-1',
+  hostname_crawler_configuration_id: 'crawler-1',
   last_modified_at: null,
   etag: null,
   html_sha256: null,
@@ -135,7 +135,7 @@ export const nativeLatestCrawl = {
   embed_oembed_url: 'https://www.youtube.com/oembed?url=video-123',
   embed_oembed_resolved_at: '2026-01-02T00:01:00Z',
   links: {},
-  lang: 'en',
+  language: 'en',
 }
 
 export const adminNativeUrlEmbed = {

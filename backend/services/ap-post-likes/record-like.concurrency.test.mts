@@ -29,6 +29,9 @@ describe('recordLike concurrency', () => {
       ),
     )
 
-    expect(await getApPostLikesTally(post.id)).toEqual({ ap_likes_score: 8, ap_likes_count: 8 })
+    expect(await getApPostLikesTally(post.id)).toEqual({
+      activitypub_likes_score: 8,
+      activitypub_likes_count: 8,
+    })
   })
 })

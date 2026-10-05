@@ -45,7 +45,7 @@ export function makeTopicData(topicType = 'rss_feed') {
       topic_type: topicType,
       name: 'Level1Techs',
       referral_program_id: null,
-      allow_reviews: false,
+      should_allow_reviews: false,
       lingua_rs_detected_language: 'fr',
     },
     topic_redirect: null,

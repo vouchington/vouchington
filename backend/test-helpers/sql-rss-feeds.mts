@@ -3,7 +3,7 @@ import sql from 'sql-template-strings'
 
 export async function getRssFeedImportFollowForTest(importId: string): Promise<boolean> {
   const { rows } = await read<{ follow: boolean }>(sql`/* getRssFeedImportFollowForTest */
-    SELECT follow
+    SELECT should_follow_imported_feeds
     FROM user_rss_feed_import_batches
     WHERE id = ${importId}
     LIMIT 1
@@ -82,14 +82,14 @@ export async function getRssFeedTypeForTest(feedId: string): Promise<string | nu
 }
 
 export async function getRssFeedIgnoreRobotsTxtForTest(feedId: string): Promise<boolean | null> {
-  const { rows } = await read<{ ignore_robots_txt: boolean | null }>(
+  const { rows } = await read<{ should_ignore_robots_txt: boolean | null }>(
     sql`/* getRssFeedIgnoreRobotsTxtForTest */
-      SELECT ignore_robots_txt
+      SELECT should_ignore_robots_txt
       FROM rss_feeds
       WHERE id = ${feedId}
     `,
   )
-  return rows[0]?.ignore_robots_txt ?? null
+  return rows[0]?.should_ignore_robots_txt ?? null
 }
 
 export async function getRssFeedUnreliableStatusCodesForTest(

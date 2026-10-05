@@ -48,8 +48,8 @@ describe('search_web — real DB', () => {
   async function crawledPage(host: string, path: string, options: { blocked?: boolean } = {}) {
     const hostnameId = await insertTestUrlHostname({
       hostname: host,
-      crawlable: true,
-      blocked: options.blocked,
+      is_crawlable: true,
+      is_blocked: options.blocked,
     })
     const urlId = await insertTestUrl({ url: `https://${host}${path}`, hostnameId })
     return { hostnameId, urlId }

@@ -16,7 +16,7 @@ export const REQUIRED_KEYS: Record<string, string[]> = {
   [EU_NOTICE]: [
     'contact',
     'content_description',
-    'good_faith_statement',
+    'has_good_faith_statement',
     'grounds',
     'hosted_use_url',
     'notifier_email',

@@ -64,7 +64,7 @@ export function CommunityModlogPanel({ community, initialData }: Props) {
           resetKey={resetKey}
         >
           {actions.map(action => {
-            const actor = action.actor_id ? users[action.actor_id] : null
+            const actor = action.actor_user_id ? users[action.actor_user_id] : null
             return (
               <div
                 key={action.id}
@@ -73,7 +73,7 @@ export function CommunityModlogPanel({ community, initialData }: Props) {
               >
                 <div className='flex flex-wrap items-center gap-2'>
                   <span className='font-medium'>
-                    {actor?.username ? `@${actor.username}` : (action.actor_id ?? 'System')}
+                    {actor?.username ? `@${actor.username}` : (action.actor_user_id ?? 'System')}
                   </span>
                   <span className='text-muted-foreground'>
                     {t('extracted.communities.communityModlogPanel.text_a137f17a')}

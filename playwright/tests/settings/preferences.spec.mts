@@ -84,7 +84,7 @@ test.describe('Preferences Page', () => {
 
   test('Hacker News discussions preference persists after page reload', async ({ page }) => {
     const user = await withCleanUser(page)
-    await updateUserFields(user.id, { hn_discussions: false })
+    await updateUserFields(user.id, { should_import_hacker_news_discussions: false })
     await navigateTo(page, '/my/preferences')
     await waitForBelowFoldHydration(page)
 

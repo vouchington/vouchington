@@ -44,11 +44,11 @@ export async function reserveIdentityVerificationAttempt(
           FROM identity_verification_attempts AS entitlement
           WHERE entitlement.user_id = ${userId}
             AND entitlement.source = 'support_grant'
-            AND entitlement.grant_entitlement_id IS NULL
+            AND entitlement.grant_entitlement_attempt_id IS NULL
             AND NOT EXISTS (
               SELECT 1
               FROM identity_verification_attempts AS attempt
-              WHERE attempt.grant_entitlement_id = entitlement.id
+              WHERE attempt.grant_entitlement_attempt_id = entitlement.id
                 AND attempt.released_at IS NULL
             )
           ORDER BY entitlement.id
@@ -56,9 +56,9 @@ export async function reserveIdentityVerificationAttempt(
           /* deadlock-safe: SKIP LOCKED plus ORDER BY id */
           FOR UPDATE SKIP LOCKED
         )
-        INSERT INTO identity_verification_attempts (user_id, source, grant_entitlement_id)
+        INSERT INTO identity_verification_attempts (user_id, source, grant_entitlement_attempt_id)
         SELECT user_id, 'support_grant', id FROM candidate
-        ON CONFLICT (grant_entitlement_id) WHERE grant_entitlement_id IS NOT NULL AND released_at IS NULL
+        ON CONFLICT (grant_entitlement_attempt_id) WHERE grant_entitlement_attempt_id IS NOT NULL AND released_at IS NULL
         DO NOTHING
         RETURNING id, source
       `)
@@ -75,7 +75,7 @@ export async function reserveIdentityVerificationAttempt(
         FROM identity_verification_attempts
         WHERE user_id = ${userId}
           AND source = 'support_grant'
-          AND grant_entitlement_id IS NULL
+          AND grant_entitlement_attempt_id IS NULL
         LIMIT 1
       `)
     if (!eligibleForIncluded && supportGrantRows.length) {

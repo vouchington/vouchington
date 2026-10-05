@@ -17,7 +17,7 @@ export type { CommunityBanEvasionContext, ModerationQueueClaim }
 export type { ModeratorActionType }
 
 export interface CommunityModeratorStatEntry {
-  actor_id: string
+  actor_user_id: string
   total: number
   counts: Partial<Record<ModeratorActionType, number>>
 }
@@ -77,9 +77,9 @@ export interface CommunityMemberVacation {
 
 export interface ModeratorVacationResponseBody {
   vacation: CommunityMemberVacation | null
-  suppress_community_digests_while_on_vacation: boolean
+  should_suppress_community_digests_while_on_vacation: boolean
 }
 
 export interface ModeratorVacationDigestPreferenceResponseBody {
-  suppress_community_digests_while_on_vacation: boolean
+  should_suppress_community_digests_while_on_vacation: boolean
 }

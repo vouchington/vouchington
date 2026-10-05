@@ -7,8 +7,8 @@ const scope = 'my-rewards-program-statuses:00000000-0000-7000-8000-000000000740:
 const one = {
   id: '00000000-0000-7000-8000-000000000741',
   rewards_program_status_id: '00000000-0000-7000-8000-000000000751',
-  since: '2025-01-01',
-  until: null,
+  started_on: '2025-01-01',
+  expires_on: null,
   rewards_program_status: {
     id: '00000000-0000-7000-8000-000000000751',
     name: 'Gold',
@@ -18,8 +18,8 @@ const one = {
 const two = {
   id: '00000000-0000-7000-8000-000000000742',
   rewards_program_status_id: '00000000-0000-7000-8000-000000000752',
-  since: null,
-  until: '2026-12-31',
+  started_on: null,
+  expires_on: '2026-12-31',
   rewards_program_status: {
     id: '00000000-0000-7000-8000-000000000752',
     name: 'Platinum',
@@ -29,20 +29,20 @@ const two = {
 const three = {
   id: '00000000-0000-7000-8000-000000000743',
   rewards_program_status_id: '00000000-0000-7000-8000-000000000753',
-  since: null,
-  until: null,
+  started_on: null,
+  expires_on: null,
   rewards_program_status: {
     id: '00000000-0000-7000-8000-000000000753',
     name: 'Diamond',
     slug: 'diamond',
   },
 }
-const topicOnlyStatus = { ...one, since: null, until: null }
-const fullyUpdatedStatus = { ...one, since: '2025-02-01', until: '2026-12-31' }
+const topicOnlyStatus = { ...one, started_on: null, expires_on: null }
+const fullyUpdatedStatus = { ...one, started_on: '2025-02-01', expires_on: '2026-12-31' }
 const rewardsProgramStatusTopic = {
   __entity_type: 'topic',
   aliases: [],
-  allow_reviews: true,
+  should_allow_reviews: true,
   created_at: '2026-01-01T00:00:00Z',
   created_by: {
     __entity_type: 'user',
@@ -60,7 +60,7 @@ const rewardsProgramStatusTopic = {
   logo_image_id: null,
   markdown: '',
   name: one.rewards_program_status.name,
-  noindex: false,
+  is_noindexed: false,
   referral_program_id: null,
   referral_program_slug: null,
   rewards_program_id: null,
@@ -164,7 +164,10 @@ export const nativeRewardsStatusApiFixtureCases: ApiFixtureCase[] = [
     method: 'PATCH',
     path: `${path}/${one.id}`,
     route: { routeTemplate: `${path}/:id`, pathParams: { id: one.id } },
-    requestBody: { since: fullyUpdatedStatus.since, until: fullyUpdatedStatus.until },
+    requestBody: {
+      started_on: fullyUpdatedStatus.started_on,
+      expires_on: fullyUpdatedStatus.expires_on,
+    },
     status: 200,
     body: { rewards_program_status: fullyUpdatedStatus },
     ...shared,
@@ -174,9 +177,9 @@ export const nativeRewardsStatusApiFixtureCases: ApiFixtureCase[] = [
     method: 'PATCH',
     path: `${path}/${one.id}`,
     route: { routeTemplate: `${path}/:id`, pathParams: { id: one.id } },
-    requestBody: { since: null, until: null },
+    requestBody: { started_on: null, expires_on: null },
     status: 200,
-    body: { rewards_program_status: { ...one, since: null } },
+    body: { rewards_program_status: { ...one, started_on: null } },
     ...shared,
   },
   {

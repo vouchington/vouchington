@@ -108,7 +108,7 @@ async function createCommunityPostReviewWithOptions(
     await write(
       sql`/* recordAutomaticPublicationReviewChange */
         INSERT INTO community_post_review_changes (
-          community_id, post_id, changed_by_id, change_type, platform_override
+          community_id, post_id, changed_by_id, change_type, is_platform_override
         ) VALUES (
           ${communityId}, ${postId}, NULL, 'approve', false
         )`,

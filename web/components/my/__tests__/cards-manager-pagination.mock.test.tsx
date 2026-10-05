@@ -91,13 +91,13 @@ vi.mock(import('../cards-manager/card-edit-form'), () => ({
 function makeCard(id: string, overrides: Partial<IndividualCard> = {}): IndividualCard {
   return {
     id,
-    card_id: `topic-${id}`,
+    card_topic_id: `topic-${id}`,
     opened_on: null,
     closed_on: null,
     received_sign_up_bonus_on: null,
     credit_limit: null,
     is_authorized_user: false,
-    authorized_user_of_id: null,
+    authorized_user_of_card_id: null,
     note: null,
     card: { id: `topic-${id}`, name: `Card ${id}`, slug: `card-${id}` },
     authorized_user_of_card: null,
@@ -214,7 +214,7 @@ describe('CardsManager pagination', () => {
     const parentId = '00000000-0000-7000-8000-000000000703'
     const child = makeCard('child', {
       is_authorized_user: true,
-      authorized_user_of_id: parentId,
+      authorized_user_of_card_id: parentId,
       authorized_user_of_card: {
         id: parentId,
         opened_on: null,

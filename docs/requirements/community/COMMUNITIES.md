@@ -78,7 +78,7 @@ community membership, even when the post URL is known.
 
 Each community post has one `community_post_reviews` row for pending/approved/rejected/unpublished
 state. A public global post may be cross-posted into a community by creating a community-scoped
-`discussion` whose `parent_id` points to the global source post.
+`discussion` whose `parent_post_id` points to the global source post.
 
 The canonical community post feed is `/communities/:slug/posts`. It uses the shared post search
 field and supports `sort=new` and `sort=hot`; the default is `new`. Pinned posts appear at the top of

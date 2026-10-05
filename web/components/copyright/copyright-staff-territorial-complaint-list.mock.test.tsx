@@ -20,7 +20,7 @@ const mockList = vi.mocked(listCopyrightTerritorialComplaints)
 const firstComplaint = {
   id: 'complaint-1',
   filed_by: 'poster' as const,
-  submitted_by_user_id: 'poster-1',
+  submitted_by_id: 'poster-1',
   received_at: '2026-09-02T10:00:00Z',
   explanation: 'I have permission to use this image.',
   informed_at: '2026-09-01T10:00:00Z',

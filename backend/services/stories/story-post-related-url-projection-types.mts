@@ -12,6 +12,6 @@ export type ProjectionWork = {
 }
 
 export type SourceRow = { id: string; url_id: string; url: string }
-export type SourceDecision = SourceRow & { eligible: boolean }
+export type SourceDecision = SourceRow & { is_eligible: boolean }
 
 export type ProjectionResult = { processed: number; continue: boolean }

@@ -93,7 +93,7 @@ function makeThread(overrides: Partial<ModmailThread> = {}): ModmailThread {
     resolved_at: null,
     created_at: '2026-01-01T00:00:00Z',
     community_id: 'c1',
-    assigned_mod_id: null,
+    assigned_moderator_user_id: null,
     assigned_at: null,
     resolved_by_id: null,
     created_by_id: 'user-1',

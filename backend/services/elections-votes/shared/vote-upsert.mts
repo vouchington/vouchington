@@ -108,7 +108,7 @@ async function insertElectionVoteRows(
         ${values.map(() => userAgentId)}::uuid[],
         ${values.map(v => v.scoreIsNeutral)}::boolean[],
         ${values.map(v => v.scoreIsSemantic)}::boolean[]
-      ) AS raw(user_id, entity_id, score, ip_address, device_id, session_id, user_agent_id, score_is_neutral, score_is_semantic)
+      ) AS raw(user_id, entity_id, score, ip_address, device_id, session_id, user_agent_string_id, score_is_neutral, score_is_semantic)
     ), previous_votes AS (
       SELECT DISTINCT ON (`
 
@@ -128,7 +128,9 @@ async function insertElectionVoteRows(
     query.append(sql`, FALSE AS previous_score_is_semantic`)
   }
   if (config.tracksOutboundActivityPubLike) {
-    query.append(sql`, outbound_ap_like_activity_id AS previous_outbound_ap_like_activity_id`)
+    query.append(
+      sql`, outbound_activitypub_like_activity_id AS previous_outbound_ap_like_activity_id`,
+    )
   } else {
     query.append(sql`, NULL::uuid AS previous_outbound_ap_like_activity_id`)
   }
@@ -147,16 +149,16 @@ async function insertElectionVoteRows(
   query.append(config.voteTable)
   query.append(sql` (user_id, `)
   query.append(config.entityIdColumn)
-  query.append(sql`, id, score, ip_address, device_id, session_id, user_agent_id`)
+  query.append(sql`, id, score, ip_address, device_id, session_id, user_agent_string_id`)
   if (config.tracksNeutralScore) query.append(sql`, score_is_neutral`)
   if (config.tracksSemanticScore) query.append(sql`, score_is_semantic`)
   if (config.tracksOutboundActivityPubLike) {
-    query.append(sql`, outbound_ap_like_activity_id`)
+    query.append(sql`, outbound_activitypub_like_activity_id`)
   }
   query.append(sql`)
       SELECT input_data.user_id, input_data.entity_id, input_data.id, input_data.score,
              input_data.ip_address, input_data.device_id, input_data.session_id,
-             input_data.user_agent_id`)
+             input_data.user_agent_string_id`)
   if (config.tracksNeutralScore) query.append(sql`, input_data.score_is_neutral`)
   if (config.tracksSemanticScore) query.append(sql`, input_data.score_is_semantic`)
   if (config.tracksOutboundActivityPubLike) {
@@ -178,14 +180,14 @@ async function insertElectionVoteRows(
   query.append(config.entityIdColumn)
   query.append(sql` AS entity_id, id, user_id, score, created_at`)
   if (config.tracksOutboundActivityPubLike) {
-    query.append(sql`, outbound_ap_like_activity_id`)
+    query.append(sql`, outbound_activitypub_like_activity_id`)
   } else {
-    query.append(sql`, NULL::uuid AS outbound_ap_like_activity_id`)
+    query.append(sql`, NULL::uuid AS outbound_activitypub_like_activity_id`)
   }
   query.append(sql`
     )
     SELECT inserted.entity_id, inserted.id, inserted.user_id, inserted.score, inserted.created_at,
-           inserted.outbound_ap_like_activity_id, previous_votes.previous_score,
+           inserted.outbound_activitypub_like_activity_id, previous_votes.previous_score,
            previous_votes.previous_outbound_ap_like_activity_id
     FROM inserted
     LEFT JOIN previous_votes ON previous_votes.entity_id = inserted.entity_id

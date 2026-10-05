@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_notice_receipts (
   hosted_use_url text NOT NULL,
   grounds_ciphertext text NOT NULL,
   notifier_email_ciphertext text,
-  good_faith_statement boolean,
+  has_good_faith_statement boolean,
   received_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -62,8 +62,8 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_notice_receipts (
   CONSTRAINT chk_copyright_territorial_notice_receipts__sha CHECK (octet_length(request_sha256) = 32),
   CONSTRAINT chk_copyright_territorial_notice_receipts__identity_sha CHECK (octet_length(requester_identity_sha256) = 32),
   CONSTRAINT chk_copyright_territorial_notice_receipts__eu_fields CHECK (
-    (jurisdiction = 'eu_dsa' AND notifier_email_ciphertext IS NOT NULL AND good_faith_statement IS TRUE)
-    OR (jurisdiction = 'uk' AND notifier_email_ciphertext IS NULL AND good_faith_statement IS NULL)
+    (jurisdiction = 'eu_dsa' AND notifier_email_ciphertext IS NOT NULL AND has_good_faith_statement IS TRUE)
+    OR (jurisdiction = 'uk' AND notifier_email_ciphertext IS NULL AND has_good_faith_statement IS NULL)
   ),
   CONSTRAINT chk_copyright_territorial_notice_receipts__url CHECK (char_length(hosted_use_url) BETWEEN 1 AND 2048),
   CONSTRAINT chk_copyright_territorial_notice_receipts__grounds CHECK (
@@ -142,7 +142,7 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_redress_requests (
   copyright_notice_id uuid NOT NULL,
   jurisdiction copyright_jurisdictions NOT NULL,
   copyright_territorial_decision_id uuid NOT NULL,
-  submitted_by_user_id uuid,
+  submitted_by_id uuid,
   filed_by copyright_territorial_party_roles NOT NULL,
   idempotency_key text NOT NULL,
   explanation_ciphertext text NOT NULL,
@@ -150,10 +150,10 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_redress_requests (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT uq_copyright_territorial_redress_requests__party UNIQUE (
-    copyright_territorial_decision_id, submitted_by_user_id
+    copyright_territorial_decision_id, submitted_by_id
   ),
   CONSTRAINT uq_copyright_territorial_redress_requests__idempotency UNIQUE (
-    submitted_by_user_id, jurisdiction, idempotency_key
+    submitted_by_id, jurisdiction, idempotency_key
   ),
   CONSTRAINT fk_copyright_territorial_redress_requests__decision
     FOREIGN KEY (copyright_notice_id, copyright_territorial_decision_id)
@@ -161,16 +161,17 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_redress_requests (
   CONSTRAINT chk_copyright_territorial_redress_requests__jurisdiction CHECK (jurisdiction IN ('eu_dsa', 'uk')),
   CONSTRAINT chk_copyright_territorial_redress_requests__filed_by CHECK (
     filed_by IN ('notifier', 'poster', 'reviewer')
-    AND (submitted_by_user_id IS NOT NULL OR filed_by = 'notifier')
+    AND (submitted_by_id IS NOT NULL OR filed_by = 'notifier')
   ),
   CONSTRAINT chk_copyright_territorial_redress_requests__idempotency CHECK (char_length(idempotency_key) = 36),
   CONSTRAINT chk_copyright_territorial_redress_requests__explanation CHECK (
     char_length(explanation_ciphertext) BETWEEN 1 AND 1048576
   )
 );
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX uq_copyright_territorial_redress_requests__guest
   ON copyright_territorial_redress_requests (copyright_territorial_decision_id)
-  WHERE submitted_by_user_id IS NULL;
+  WHERE submitted_by_id IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS copyright_territorial_redress_decisions (
@@ -223,7 +224,7 @@ CREATE TABLE IF NOT EXISTS copyright_eu_dispute_settlement_referrals (
   body_name text NOT NULL,
   referred_at timestamptz NOT NULL,
   referred_by_party copyright_territorial_party_roles NOT NULL,
-  referred_by_user_id uuid,
+  referred_by_id uuid,
   recorded_by_id uuid,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -345,7 +346,7 @@ COMMENT ON COLUMN copyright_territorial_notice_receipts.grounds_ciphertext IS
   'Encrypted grounds supplied with the notice. The system does not decide merits.';
 COMMENT ON COLUMN copyright_territorial_notice_receipts.notifier_email_ciphertext IS
   'Encrypted EU notifier address of record for receipt and later decision notices; absent for UK.';
-COMMENT ON COLUMN copyright_territorial_notice_receipts.good_faith_statement IS
+COMMENT ON COLUMN copyright_territorial_notice_receipts.has_good_faith_statement IS
   'EU notifier good-faith declaration, required true; absent for UK.';
 COMMENT ON COLUMN copyright_territorial_notice_receipts.received_at IS
   'When Voucha stored this notice receipt.';
@@ -405,10 +406,10 @@ COMMENT ON COLUMN copyright_territorial_redress_requests.jurisdiction IS
   'Jurisdiction of the notice: eu_dsa or uk. Must equal the notice jurisdiction.';
 COMMENT ON COLUMN copyright_territorial_redress_requests.copyright_territorial_decision_id IS
   'Decision this redress request cites, on the same notice.';
-COMMENT ON COLUMN copyright_territorial_redress_requests.submitted_by_user_id IS
+COMMENT ON COLUMN copyright_territorial_redress_requests.submitted_by_id IS
   'Retained identity of the submitting account; null only for a guest notifier. Never authorizes a deleted account.';
 COMMENT ON COLUMN copyright_territorial_redress_requests.idempotency_key IS
-  'Caller idempotency key, unique together with submitted_by_user_id and jurisdiction.';
+  'Caller idempotency key, unique together with submitted_by_id and jurisdiction.';
 COMMENT ON COLUMN copyright_territorial_redress_requests.explanation_ciphertext IS
   'Encrypted explanation supplied by the participant.';
 COMMENT ON COLUMN copyright_territorial_redress_requests.received_at IS
@@ -456,7 +457,7 @@ COMMENT ON COLUMN copyright_eu_dispute_settlement_referrals.referred_at IS
   'When the party referred the decision to the body.';
 COMMENT ON COLUMN copyright_eu_dispute_settlement_referrals.referred_by_party IS
   'Whether the referring party was a poster or notifier.';
-COMMENT ON COLUMN copyright_eu_dispute_settlement_referrals.referred_by_user_id IS
+COMMENT ON COLUMN copyright_eu_dispute_settlement_referrals.referred_by_id IS
   'Party account if one exists; null for a guest or after account deletion.';
 COMMENT ON COLUMN copyright_eu_dispute_settlement_referrals.recorded_by_id IS
   'Staff account recording the referral; null after account deletion.';
@@ -568,7 +569,7 @@ ALTER TABLE copyright_territorial_redress_requests
   VALIDATE CONSTRAINT fk_copyright_territorial_redress_requests__notice;
 ALTER TABLE copyright_territorial_redress_requests
   ADD CONSTRAINT fk_copyright_territorial_redress_requests__submitter
-  FOREIGN KEY (submitted_by_user_id) REFERENCES retained_user_identities (id) ON DELETE RESTRICT NOT VALID;
+  FOREIGN KEY (submitted_by_id) REFERENCES retained_user_identities (id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE copyright_territorial_redress_requests
   VALIDATE CONSTRAINT fk_copyright_territorial_redress_requests__submitter;
 
@@ -598,7 +599,7 @@ ALTER TABLE copyright_eu_dispute_settlement_referrals
   VALIDATE CONSTRAINT fk_copyright_eu_dispute_settlement_referrals__notice;
 ALTER TABLE copyright_eu_dispute_settlement_referrals
   ADD CONSTRAINT fk_copyright_eu_dispute_settlement_referrals__referred_by
-  FOREIGN KEY (referred_by_user_id) REFERENCES users (id) ON DELETE SET NULL NOT VALID;
+  FOREIGN KEY (referred_by_id) REFERENCES users (id) ON DELETE SET NULL NOT VALID;
 ALTER TABLE copyright_eu_dispute_settlement_referrals
   VALIDATE CONSTRAINT fk_copyright_eu_dispute_settlement_referrals__referred_by;
 ALTER TABLE copyright_eu_dispute_settlement_referrals
@@ -642,8 +643,9 @@ CREATE INDEX IF NOT EXISTS idx_copyright_territorial_redress_requests__decision
   ON copyright_territorial_redress_requests (copyright_notice_id, copyright_territorial_decision_id);
 CREATE INDEX IF NOT EXISTS idx_copyright_territorial_redress_requests__decision_page
   ON copyright_territorial_redress_requests (copyright_territorial_decision_id, id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_copyright_territorial_redress_requests__submitter
-  ON copyright_territorial_redress_requests (submitted_by_user_id) WHERE submitted_by_user_id IS NOT NULL;
+  ON copyright_territorial_redress_requests (submitted_by_id) WHERE submitted_by_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_copyright_territorial_redress_decisions__decided_by
   ON copyright_territorial_redress_decisions (decided_by_id) WHERE decided_by_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_copyright_eu_supervised_complaints__recorded_by
@@ -654,11 +656,13 @@ CREATE INDEX IF NOT EXISTS idx_copyright_eu_dispute_settlement_referrals__notice
   ON copyright_eu_dispute_settlement_referrals (copyright_notice_id, id);
 CREATE INDEX IF NOT EXISTS idx_copyright_eu_dispute_settlement_referrals__decision
   ON copyright_eu_dispute_settlement_referrals (copyright_notice_id, copyright_territorial_decision_id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_copyright_eu_dispute_settlement_referrals__referred_by
-  ON copyright_eu_dispute_settlement_referrals (referred_by_user_id) WHERE referred_by_user_id IS NOT NULL;
+  ON copyright_eu_dispute_settlement_referrals (referred_by_id) WHERE referred_by_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_copyright_eu_dispute_settlement_referrals__participant_page
-  ON copyright_eu_dispute_settlement_referrals (copyright_notice_id, referred_by_user_id, id)
-  WHERE referred_by_user_id IS NOT NULL;
+  ON copyright_eu_dispute_settlement_referrals (copyright_notice_id, referred_by_id, id)
+  WHERE referred_by_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_copyright_eu_dispute_settlement_referrals__recorded_by
   ON copyright_eu_dispute_settlement_referrals (recorded_by_id) WHERE recorded_by_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_copyright_eu_dispute_settlement_outcomes__recorded_by
@@ -711,6 +715,7 @@ BEGIN
 END;
 $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_guard_copyright_territorial_decision()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -721,7 +726,7 @@ BEGIN
     WHERE assessment.id = NEW.copyright_notice_submission_assessment_id
       AND submission.copyright_notice_id = NEW.copyright_notice_id
       AND submission.kind = 'notice'
-      AND assessment.substantially_compliant
+      AND assessment.is_substantially_compliant
       AND assessment.assessed_by_id IS NOT NULL
       AND NOT EXISTS (
         SELECT 1 FROM copyright_notice_submission_assessments newer
@@ -811,9 +816,10 @@ CREATE TRIGGER trigger_copyright_territorial_redress_decisions_immutable
 CREATE TRIGGER trigger_copyright_eu_supervised_complaints_immutable
   BEFORE UPDATE OR DELETE ON copyright_eu_supervised_complaints
   FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_eu_dispute_settlement_referrals_immutable
   BEFORE UPDATE OR DELETE ON copyright_eu_dispute_settlement_referrals
-  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation('referred_by_user_id', 'recorded_by_id');
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation('referred_by_id', 'recorded_by_id');
 CREATE TRIGGER trigger_copyright_eu_dispute_settlement_outcomes_guard
   BEFORE INSERT OR UPDATE OR DELETE ON copyright_eu_dispute_settlement_outcomes
   FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_eu_dispute_settlement_outcome();

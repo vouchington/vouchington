@@ -48,7 +48,7 @@ design choices:
 
 **Built, in dependency order, all Shipped:** an HTTP-signature verification module and an actor-keys
 table (private key encrypted via `@modules/token-secrets`) — `@modules/http-signatures`,
-`activitypub_actor_keys`, and the per-user `fediverse_federation_enabled` opt-in toggle, default off (C0+C1) →
+`activitypub_actor_keys`, and the per-user `is_fediverse_federation_enabled` opt-in toggle, default off (C0+C1) →
 an inbound receiver (WebFinger, NodeInfo, actor document, inbox with signature verification and replay
 dedup) that maps incoming `Follow`/`Undo` onto the existing bookmarks write-path (tagged as
 remote-origin) and incoming `Like`/`Undo` onto the new isolated `post_activitypub_like_tallies`/`activitypub_post_likes` ledger

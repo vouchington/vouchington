@@ -7,10 +7,10 @@ async function seedPlaywrightCrawlersAndCrawls(
 ): Promise<void> {
   /* v8 ignore stop */
   await query(
-    `INSERT INTO url_hostnames (id, hostname, crawlable) VALUES ('019c64e6-1000-7000-b000-000000000001', 'example.com', TRUE), ('019c64e6-1000-7000-b000-000000000002', 'test.org', TRUE), ('019c64e6-1000-7000-b000-000000000003', 'blocked-site.com', FALSE), ('019c64e6-1000-7000-b000-000000000004', 'www.doctorofcredit.com', TRUE), ('019c64e6-1000-7000-b000-000000000005', 'thepointsguy.com', TRUE) ON CONFLICT (hostname) DO UPDATE SET crawlable = EXCLUDED.crawlable`,
+    `INSERT INTO url_hostnames (id, hostname, is_crawlable) VALUES ('019c64e6-1000-7000-b000-000000000001', 'example.com', TRUE), ('019c64e6-1000-7000-b000-000000000002', 'test.org', TRUE), ('019c64e6-1000-7000-b000-000000000003', 'blocked-site.com', FALSE), ('019c64e6-1000-7000-b000-000000000004', 'www.doctorofcredit.com', TRUE), ('019c64e6-1000-7000-b000-000000000005', 'thepointsguy.com', TRUE) ON CONFLICT (hostname) DO UPDATE SET is_crawlable = EXCLUDED.is_crawlable`,
   )
   // Insert the history row so blocked-site.com has a url_hostname_blocks entry that the
-  // trigger-maintained url_hostnames.blocked column stays consistent with, and so
+  // trigger-maintained url_hostnames.is_blocked column stays consistent with, and so
   // unblockHostname() can lift it.  WHERE NOT EXISTS makes this idempotent across re-seeds.
   await query(
     `INSERT INTO url_hostname_blocks (url_hostname_id, blocked_source)
@@ -35,7 +35,7 @@ async function seedPlaywrightCrawlersAndCrawls(
   const crawlId3 = recentSeedCrawlId(3)
   const crawlId4 = recentSeedCrawlId(4)
   await query(`
-  INSERT INTO crawls (id, url_id, crawler_id, response_status_code, completed_at, embeddings_generated_at, markdown, title)
+  INSERT INTO crawls (id, url_id, hostname_crawler_configuration_id, response_status_code, completed_at, embeddings_generated_at, markdown, title)
   VALUES
     (
       '${crawlId1}',

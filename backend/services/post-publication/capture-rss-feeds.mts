@@ -62,7 +62,9 @@ export async function recordRssFeedTopicPublicationChanges(
       'post_topics_changed',
     ])
     const workByFeedId = new Map(
-      batchWork.flatMap(row => (row.rss_feed_id ? [[row.rss_feed_id, row.id] as const] : [])),
+      batchWork.flatMap(row =>
+        row.rss_feed_identity_id ? [[row.rss_feed_identity_id, row.id] as const] : [],
+      ),
     )
     // oxlint-disable-next-line no-await-in-loop -- retained topic impacts are bounded with the feed batch.
     await retainPostPublicationImpacts(
@@ -141,10 +143,10 @@ export async function lockTopicRssFeedPublicationScopes(
 
 export async function retainCurrentRssFeedPublicationKeys(
   query: TransactionQuery,
-  work: ReadonlyArray<Pick<PostPublicationDirtyWork, 'id' | 'rss_feed_id'>>,
+  work: ReadonlyArray<Pick<PostPublicationDirtyWork, 'id' | 'rss_feed_identity_id'>>,
 ): Promise<void> {
   const rows = work.flatMap(row =>
-    row.rss_feed_id ? [{ dirtyWorkId: row.id, rssFeedId: row.rss_feed_id }] : [],
+    row.rss_feed_identity_id ? [{ dirtyWorkId: row.id, rssFeedId: row.rss_feed_identity_id }] : [],
   )
   if (rows.length === 0) return
   await query(

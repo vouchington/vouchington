@@ -4,17 +4,17 @@ import { v7 as uuidv7 } from 'uuid'
 
 export async function setUserReferrerId(userId: string, referrerId: string): Promise<void> {
   await write(sql`
-    UPDATE users SET referrer_id = ${referrerId} WHERE id = ${userId}
+    UPDATE users SET referrer_user_id = ${referrerId} WHERE id = ${userId}
   `)
 }
 
 export async function getUserReferrerId(userId: string): Promise<string | null> {
   const { rows } = await read(sql`
-    SELECT referrer_id
+    SELECT referrer_user_id
     FROM users
     WHERE id = ${userId}
   `)
-  return rows[0]?.referrer_id ?? null
+  return rows[0]?.referrer_user_id ?? null
 }
 
 export async function insertSessionReferralAttribution(
@@ -24,7 +24,7 @@ export async function insertSessionReferralAttribution(
   userId: string | null = null,
 ): Promise<void> {
   await write(sql`
-    INSERT INTO session_referral_attributions (session_id, referrer_id, landing_url, user_id)
+    INSERT INTO session_referral_attributions (session_id, referrer_user_id, landing_url, user_id)
     VALUES (${sessionId}, ${referrerId}, ${landingUrl}, ${userId})
   `)
 }
@@ -49,7 +49,7 @@ export async function insertReferralAttributionAt(
   const id = uuidv7({ msecs: createdAt.getTime() })
   await write(sql`
     INSERT INTO session_referral_attributions
-      (id, session_id, referrer_id, landing_url, user_id, signed_up_at)
+      (id, session_id, referrer_user_id, landing_url, user_id, signed_up_at)
     VALUES (${id}, ${uuidv7()}, ${referrerId}, ${'https://example.com/'}, ${userId}, ${signedUpAt})
   `)
   return id
@@ -64,7 +64,7 @@ export async function insertAnonymousReferralAttributionForSessionAt(
 ): Promise<string> {
   const id = uuidv7({ msecs: createdAt.getTime() })
   await write(sql`
-    INSERT INTO session_referral_attributions (id, session_id, referrer_id, landing_url)
+    INSERT INTO session_referral_attributions (id, session_id, referrer_user_id, landing_url)
     VALUES (${id}, ${sessionId}, ${referrerId}, ${'https://example.com/'})
   `)
   return id
@@ -85,7 +85,7 @@ export async function referralAttributionExistsById(id: string): Promise<boolean
 
 export async function getSessionReferralAttributions(sessionId: string) {
   const { rows } = await read(sql`
-    SELECT id, session_id, referrer_id, landing_url, user_id, signed_up_at
+    SELECT id, session_id, referrer_user_id, landing_url, user_id, signed_up_at
     FROM session_referral_attributions
     WHERE session_id = ${sessionId}
     ORDER BY id ASC
@@ -93,7 +93,7 @@ export async function getSessionReferralAttributions(sessionId: string) {
   return rows as Array<{
     id: string
     session_id: string
-    referrer_id: string | null
+    referrer_user_id: string | null
     landing_url: string
     user_id: string | null
     signed_up_at: Date | null
@@ -102,14 +102,14 @@ export async function getSessionReferralAttributions(sessionId: string) {
 
 export async function getSessionReferralAttributionsWithUtm(sessionId: string) {
   const { rows } = await read(sql`
-    SELECT session_id, referrer_id, landing_url, user_id, utm_source, utm_medium, utm_campaign, utm_content
+    SELECT session_id, referrer_user_id, landing_url, user_id, utm_source, utm_medium, utm_campaign, utm_content
     FROM session_referral_attributions
     WHERE session_id = ${sessionId}
     ORDER BY id ASC
   `)
   return rows as Array<{
     session_id: string
-    referrer_id: string | null
+    referrer_user_id: string | null
     landing_url: string
     user_id: string | null
     utm_source: string | null

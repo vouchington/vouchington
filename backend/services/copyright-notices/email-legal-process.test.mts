@@ -49,7 +49,7 @@ describe('recordCopyrightEmailIntakeLegalProcess', () => {
       JSON.parse(
         decryptSecret(
           review?.rationale_ciphertext as string,
-          copyrightEmailIntakePurpose(intake.ses_message_id),
+          copyrightEmailIntakePurpose(intake.amazon_ses_message_id),
         ),
       ),
     ).toEqual({ rationale: reason, manual_fallback_reason: null })

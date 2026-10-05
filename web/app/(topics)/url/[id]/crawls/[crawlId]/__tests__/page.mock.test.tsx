@@ -36,7 +36,7 @@ vi.mock(import('@/lib/api/server/urls'), () => ({
       completed_at: '2024-01-01T00:01:00Z',
       title: 'Test Crawl',
       meta_tags: { 'og:title': 'Test' },
-      lang: 'en',
+      language: 'en',
     },
     og_image_sideload: '/sideload/aHR0cHM6Ly9leGFtcGxlLmNvbS9pbWcucG5n?w=400',
   }),

@@ -10,7 +10,7 @@ and modmail notification recipients while the vacation is active.
 
 `community_member_vacations (community_id, user_id, starts_at, ends_at, created_at)`
 
-The independent `community_members.suppress_community_digests_while_on_vacation` preference defaults to false. Setting or clearing a vacation never changes it, and changing it never changes the vacation period.
+The independent `community_members.should_suppress_community_digests_while_on_vacation` preference defaults to false. Setting or clearing a vacation never changes it, and changing it never changes the vacation period.
 
 - One row per moderator per community; upsert to set, delete to clear.
 - Active predicate: `starts_at <= now() AND (ends_at IS NULL OR ends_at > now())`

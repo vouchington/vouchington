@@ -40,7 +40,7 @@ export async function searchBlockedHostnames(
     Math.min(100, Number.isFinite(options.limit) ? (options.limit as number) : 25),
   )
   const values: unknown[] = []
-  const filters: string[] = ['blocked = TRUE']
+  const filters: string[] = ['is_blocked = TRUE']
 
   if (options.after) {
     const cursor = decodeUuidCursor(

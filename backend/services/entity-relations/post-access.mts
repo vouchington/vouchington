@@ -105,7 +105,7 @@ async function selectAccessiblePostIds(
   const query = sql`/* getRelatablePostIds */
     SELECT candidate_post.id
     FROM posts candidate_post
-    JOIN posts access_post ON access_post.id = COALESCE(candidate_post.root_id, candidate_post.id)
+    JOIN posts access_post ON access_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
     WHERE candidate_post.id = ANY(${postIds}::uuid[])`
   if (filter) query.append(sql` AND `).append(filter)
   const { rows } = await write<{ id: string }>(query, options)
@@ -130,13 +130,13 @@ export async function assertPostMutationAccess(
   const snapshots = await getPostMutationAccessSnapshots(postIds, options)
   if (expectedRootIds) {
     for (const snapshot of snapshots) {
-      if (expectedRootIds.get(snapshot.id) !== snapshot.root_id) {
+      if (expectedRootIds.get(snapshot.id) !== snapshot.root_post_id) {
         throw createHttpError(404, 'Not found')
       }
     }
   }
   if (authority.kind === 'first_party') {
-    return new Map(snapshots.map(snapshot => [snapshot.id, snapshot.root_id]))
+    return new Map(snapshots.map(snapshot => [snapshot.id, snapshot.root_post_id]))
   }
   for (const post of snapshots) {
     if (post.root_privacy !== 'private') continue
@@ -148,7 +148,7 @@ export async function assertPostMutationAccess(
       throw createHttpError(403, 'Forbidden')
     }
   }
-  return new Map(snapshots.map(snapshot => [snapshot.id, snapshot.root_id]))
+  return new Map(snapshots.map(snapshot => [snapshot.id, snapshot.root_post_id]))
 }
 
 /** Ordinary existence/visibility preflight, deliberately separate from private diagnostics. */
@@ -173,7 +173,7 @@ export async function assertRelatablePostAccess(
 async function getPostMutationAccessSnapshots(postIds: readonly string[], options?: QueryOptions) {
   const { rows } = await write<{
     id: string
-    root_id: string
+    root_post_id: string
     candidate_created_by_id: string | null
     root_created_by_id: string | null
     root_privacy: 'public' | 'private'
@@ -181,12 +181,12 @@ async function getPostMutationAccessSnapshots(postIds: readonly string[], option
     sql`/* assertPostMutationAccess */
       SELECT
         candidate_post.id,
-        access_post.id AS root_id,
+        access_post.id AS root_post_id,
         candidate_post.created_by_id AS candidate_created_by_id,
         access_post.created_by_id AS root_created_by_id,
         access_post.privacy AS root_privacy
       FROM posts candidate_post
-      JOIN posts access_post ON access_post.id = COALESCE(candidate_post.root_id, candidate_post.id)
+      JOIN posts access_post ON access_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
       WHERE candidate_post.id = ANY(${postIds}::uuid[])
     `,
     options,

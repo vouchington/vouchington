@@ -6,6 +6,7 @@
   },
   "results": [
     {
+      "expires_on": null,
       "id": "00000000-0000-7000-8000-000000000741",
       "rewards_program_status": {
         "id": "00000000-0000-7000-8000-000000000751",
@@ -13,10 +14,10 @@
         "slug": "gold"
       },
       "rewards_program_status_id": "00000000-0000-7000-8000-000000000751",
-      "since": "2025-01-01",
-      "until": null
+      "started_on": "2025-01-01"
     },
     {
+      "expires_on": "2026-12-31",
       "id": "00000000-0000-7000-8000-000000000742",
       "rewards_program_status": {
         "id": "00000000-0000-7000-8000-000000000752",
@@ -24,8 +25,7 @@
         "slug": "platinum"
       },
       "rewards_program_status_id": "00000000-0000-7000-8000-000000000752",
-      "since": null,
-      "until": "2026-12-31"
+      "started_on": null
     }
   ]
 }

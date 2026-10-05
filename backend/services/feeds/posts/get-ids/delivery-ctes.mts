@@ -75,7 +75,7 @@ function appendDirectCandidatePosts(
         eligible_posts.created_by_id,
         eligible_posts.broadcast,
         'direct'::text AS delivery_type,
-        NULL::uuid AS shared_by_user_id,
+        NULL::uuid AS shared_by_id,
         NULL::timestamptz AS shared_at,`)
   if (sort === 'hot') query.append(sql`\n        eligible_posts.hot_score,`)
   query
@@ -124,7 +124,7 @@ function appendDirectPosts(
         direct_candidate_posts.post_type,
         direct_candidate_posts.sort_at,
         direct_candidate_posts.delivery_type,
-        direct_candidate_posts.shared_by_user_id,
+        direct_candidate_posts.shared_by_id,
         direct_candidate_posts.shared_at`)
   if (sort === 'hot') query.append(sql`,\n        direct_candidate_posts.hot_score`)
   query.append(sql`

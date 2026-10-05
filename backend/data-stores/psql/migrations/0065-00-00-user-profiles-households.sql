@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS households (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
 
   -- the person who owns this household
-  owner_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
+  owner_user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
 
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -44,10 +44,10 @@ CREATE OR REPLACE TRIGGER trigger_households_fn_update_updated_at
 -- Supports deterministic owned-household selection and cursor pagination.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_households__owner_updated_id
-ON households (owner_id, updated_at DESC, id DESC);
+ON households (owner_user_id, updated_at DESC, id DESC);
 
 COMMENT ON TABLE households IS 'A household owned by a user, grouping individuals for shared finance tracking.';
-COMMENT ON COLUMN households.owner_id IS 'The user who owns and manages this household.';
+COMMENT ON COLUMN households.owner_user_id IS 'The user who owns and manages this household.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS household_members (
@@ -96,7 +96,7 @@ CREATE TABLE IF NOT EXISTS individual_cards (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
 
   individual_id UUID NOT NULL REFERENCES individuals ON DELETE CASCADE,
-  card_id UUID NOT NULL REFERENCES topics ON DELETE CASCADE,
+  card_topic_id UUID NOT NULL REFERENCES topics ON DELETE CASCADE,
 
   opened_on DATE,
   closed_on DATE,
@@ -108,9 +108,9 @@ CREATE TABLE IF NOT EXISTS individual_cards (
 
   -- set `is_authorized_user` to `true` if this card is an AU of another card
   is_authorized_user BOOLEAN DEFAULT FALSE,
-  -- set `authorized_user_of_id` to the card that this card is an AU of
-  authorized_user_of_id UUID REFERENCES individual_cards ON DELETE SET NULL,
-  CHECK (NOT (authorized_user_of_id IS NOT NULL AND is_authorized_user IS FALSE)),
+  -- set `authorized_user_of_card_id` to the card that this card is an AU of
+  authorized_user_of_card_id UUID REFERENCES individual_cards ON DELETE SET NULL,
+  CHECK (NOT (authorized_user_of_card_id IS NOT NULL AND is_authorized_user IS FALSE)),
 
   note TEXT,
 
@@ -127,7 +127,7 @@ CREATE OR REPLACE TRIGGER trigger_individual_cards_fn_update_updated_at
 -- find a card's users
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_individual_cards__card_id
-ON individual_cards (card_id);
+ON individual_cards (card_topic_id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_individual_cards__currency_code
@@ -136,14 +136,14 @@ WHERE currency_code IS NOT NULL;
 
 COMMENT ON TABLE individual_cards IS 'Credit/debit cards held by individuals. An individual can hold multiple cards of the same type.';
 COMMENT ON COLUMN individual_cards.individual_id IS 'The individual who holds this card.';
-COMMENT ON COLUMN individual_cards.card_id IS 'The card topic (references topics where topic_type = ''card'').';
+COMMENT ON COLUMN individual_cards.card_topic_id IS 'The card topic (references topics where topic_type = ''card'').';
 COMMENT ON COLUMN individual_cards.opened_on IS 'Date the card account was opened.';
 COMMENT ON COLUMN individual_cards.closed_on IS 'Date the card account was closed. NULL if still open.';
 COMMENT ON COLUMN individual_cards.credit_limit_minor_units IS 'Credit limit in the currency minor unit.';
 COMMENT ON COLUMN individual_cards.currency_code IS 'Currency for the credit limit.';
 COMMENT ON COLUMN individual_cards.received_sign_up_bonus_on IS 'Date the sign-up bonus was received.';
 COMMENT ON COLUMN individual_cards.is_authorized_user IS 'TRUE if this card is an authorized user card on another account.';
-COMMENT ON COLUMN individual_cards.authorized_user_of_id IS 'The primary cardholder''s individual_cards row, if this is an AU.';
+COMMENT ON COLUMN individual_cards.authorized_user_of_card_id IS 'The primary cardholder''s individual_cards row, if this is an AU.';
 COMMENT ON COLUMN individual_cards.note IS 'Free-text note about this card.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -153,9 +153,9 @@ CREATE TABLE IF NOT EXISTS individual_rewards_program_statuses (
   individual_id UUID NOT NULL REFERENCES individuals ON DELETE CASCADE,
   rewards_program_status_id UUID NOT NULL CONSTRAINT fk_individual_rewards_program_statuses__rewards_program_status REFERENCES rewards_program_status_topics ON DELETE CASCADE, -- e.g. Marriott Bonvoy Platinum Elite Status
 
-  since DATE,
-  until DATE,
-  CHECK ((since IS NULL OR until IS NULL) OR since <= until),
+  started_on DATE,
+  expires_on DATE,
+  CHECK ((started_on IS NULL OR expires_on IS NULL) OR started_on <= expires_on),
 
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -175,8 +175,8 @@ ON individual_rewards_program_statuses (rewards_program_status_id);
 COMMENT ON TABLE individual_rewards_program_statuses IS 'Rewards program tier statuses held by individuals (e.g. Marriott Platinum Elite).';
 COMMENT ON COLUMN individual_rewards_program_statuses.individual_id IS 'The individual who holds this status.';
 COMMENT ON COLUMN individual_rewards_program_statuses.rewards_program_status_id IS 'The specific tier status (references rewards_program_status_topics).';
-COMMENT ON COLUMN individual_rewards_program_statuses.since IS 'Date the status was earned or started.';
-COMMENT ON COLUMN individual_rewards_program_statuses.until IS 'Date the status expires. NULL if ongoing.';
+COMMENT ON COLUMN individual_rewards_program_statuses.started_on IS 'Date the status was earned or started.';
+COMMENT ON COLUMN individual_rewards_program_statuses.expires_on IS 'Date the status expires. NULL if ongoing.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS spending_entries (
@@ -259,7 +259,7 @@ BEGIN
   WHERE id = NEW.id;
 
   -- Create household owned by user
-  INSERT INTO households (owner_id)
+  INSERT INTO households (owner_user_id)
   VALUES (NEW.id)
   RETURNING id INTO new_household_id;
 
@@ -584,11 +584,11 @@ CREATE TABLE IF NOT EXISTS amazon_ses_bounce_events (
   bounce_sub_type TEXT REFERENCES amazon_ses_bounce_subtypes(id) ON DELETE RESTRICT,
   CHECK (bounce_sub_type IS NULL OR (char_length(bounce_sub_type) <= 255 AND TRIM(bounce_sub_type) = bounce_sub_type)),
   recipients JSONB NOT NULL DEFAULT '[]'::jsonb,
-  ses_message_id TEXT,
-  CHECK (ses_message_id IS NULL OR (char_length(ses_message_id) <= 1024 AND TRIM(ses_message_id) = ses_message_id)),
-  ses_feedback_id TEXT,
-  CHECK (ses_feedback_id IS NULL OR (char_length(ses_feedback_id) <= 1024 AND TRIM(ses_feedback_id) = ses_feedback_id)),
-  ses_timestamp TIMESTAMPTZ,
+  amazon_ses_message_id TEXT,
+  CHECK (amazon_ses_message_id IS NULL OR (char_length(amazon_ses_message_id) <= 1024 AND TRIM(amazon_ses_message_id) = amazon_ses_message_id)),
+  amazon_ses_feedback_id TEXT,
+  CHECK (amazon_ses_feedback_id IS NULL OR (char_length(amazon_ses_feedback_id) <= 1024 AND TRIM(amazon_ses_feedback_id) = amazon_ses_feedback_id)),
+  occurred_at TIMESTAMPTZ,
   raw_message JSONB NOT NULL,
   diagnostic_code TEXT,
   CHECK (diagnostic_code IS NULL OR (char_length(diagnostic_code) <= 1024 AND TRIM(diagnostic_code) = diagnostic_code)),
@@ -606,8 +606,8 @@ ON amazon_ses_bounce_events USING GIN (recipients);
 -- Index to correlate with sent emails by SES message ID
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_amazon_ses_bounce_events__amazon_ses_message_id
-ON amazon_ses_bounce_events (ses_message_id)
-WHERE ses_message_id IS NOT NULL;
+ON amazon_ses_bounce_events (amazon_ses_message_id)
+WHERE amazon_ses_message_id IS NOT NULL;
 
 -- Index for looking up bounces by notification type and id (for pagination)
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -615,7 +615,7 @@ CREATE INDEX IF NOT EXISTS idx_amazon_ses_bounce_events__notification_type
 ON amazon_ses_bounce_events (notification_type, id DESC);
 
 -- Enforces at-least-once redelivery (SQS, or a retried Lambda invocation) does not create a
--- duplicate row. NULL (missing ses_message_id or ses_timestamp) is never deduplicated.
+-- duplicate row. NULL (missing amazon_ses_message_id or occurred_at) is never deduplicated.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_amazon_ses_bounce_events__dedup_key
 ON amazon_ses_bounce_events (dedup_key)
@@ -626,13 +626,13 @@ COMMENT ON COLUMN amazon_ses_bounce_events.notification_type IS 'SES notificatio
 COMMENT ON COLUMN amazon_ses_bounce_events.bounce_type IS 'Bounce classification: permanent, transient, or undetermined.';
 COMMENT ON COLUMN amazon_ses_bounce_events.bounce_sub_type IS 'Detailed bounce sub-type from SES (e.g. General, NoEmail).';
 COMMENT ON COLUMN amazon_ses_bounce_events.recipients IS 'JSONB array of recipient email addresses affected by this event.';
-COMMENT ON COLUMN amazon_ses_bounce_events.ses_message_id IS 'SES message ID for correlating with sent emails.';
-COMMENT ON COLUMN amazon_ses_bounce_events.ses_feedback_id IS 'SES feedback ID for the notification.';
-COMMENT ON COLUMN amazon_ses_bounce_events.ses_timestamp IS 'Timestamp from the SES notification payload.';
+COMMENT ON COLUMN amazon_ses_bounce_events.amazon_ses_message_id IS 'SES message ID for correlating with sent emails.';
+COMMENT ON COLUMN amazon_ses_bounce_events.amazon_ses_feedback_id IS 'SES feedback ID for the notification.';
+COMMENT ON COLUMN amazon_ses_bounce_events.occurred_at IS 'Timestamp from the SES notification payload.';
 COMMENT ON COLUMN amazon_ses_bounce_events.raw_message IS 'Full raw SES notification payload for debugging.';
 COMMENT ON COLUMN amazon_ses_bounce_events.diagnostic_code IS 'SMTP diagnostic code from the bounce (e.g. 550 5.1.1).';
 COMMENT ON COLUMN amazon_ses_bounce_events.reporting_mta IS 'The MTA that reported the bounce.';
-COMMENT ON COLUMN amazon_ses_bounce_events.dedup_key IS 'SHA-256 hex digest of ses_message_id, notification_type, ses_timestamp, and the sorted normalized recipients; NULL when ses_message_id or ses_timestamp is missing. Absorbs at-least-once redelivery duplicates without collapsing distinct per-recipient notifications that share a mail.messageId and timestamp.';
+COMMENT ON COLUMN amazon_ses_bounce_events.dedup_key IS 'SHA-256 hex digest of amazon_ses_message_id, notification_type, occurred_at, and the sorted normalized recipients; NULL when amazon_ses_message_id or occurred_at is missing. Absorbs at-least-once redelivery duplicates without collapsing distinct per-recipient notifications that share a mail.messageId and timestamp.';
 
 -- ==========================================================================
 -- 0009-00-00-user-metrics.sql
@@ -688,8 +688,8 @@ WHERE user_id IS NULL;
 -- Current indexes for fresh schema bootstrap.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_individual_cards__authorized_user_of_id
-  ON individual_cards (authorized_user_of_id)
-  WHERE authorized_user_of_id IS NOT NULL;
+  ON individual_cards (authorized_user_of_card_id)
+  WHERE authorized_user_of_card_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_profile_links__image_id

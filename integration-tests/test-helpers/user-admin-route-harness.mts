@@ -122,8 +122,8 @@ export function installUserAdminRouteHarness(
     const hostname = `web-api-ua-${randomUUID()}.example.com`
     const hostnameId = await insertTestUrlHostname({
       hostname,
-      blocked: false,
-      crawlable: true,
+      is_blocked: false,
+      is_crawlable: true,
     })
     const urlId = await insertTestUrl({
       url: `https://${hostname}/path`,

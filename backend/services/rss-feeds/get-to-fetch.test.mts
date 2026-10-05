@@ -49,8 +49,8 @@ describe('get-to-fetch', () => {
     await Promise.all([
       updateRssFeedTiming(staleFetchedId, new Date(Date.now() - 2 * TTL_MS)),
       updateRssFeedTiming(recentFetchedId, new Date(Date.now() - TTL_MS / 2)),
-      updateRssFeedById(disabledId, { enabled: false }),
-      updateRssFeedById(undiscoverableId, { enabled: true, discoverable: false }),
+      updateRssFeedById(disabledId, { is_enabled: false }),
+      updateRssFeedById(undiscoverableId, { is_enabled: true, discoverable: false }),
     ])
   })
 
@@ -138,13 +138,13 @@ describe('get-to-fetch', () => {
   })
 
   it('getRssFeedByIdToFetch returns feed_ignore_robots_txt when set on feed', async () => {
-    await updateRssFeedById(neverFetchedId, { ignore_robots_txt: true })
+    await updateRssFeedById(neverFetchedId, { should_ignore_robots_txt: true })
     try {
       const feed = await getRssFeedByIdToFetch(neverFetchedId, { ttl: TTL_MS })
       expect(feed).not.toBeNull()
       expect(feed?.feed_ignore_robots_txt).toBe(true)
     } finally {
-      await updateRssFeedById(neverFetchedId, { ignore_robots_txt: null })
+      await updateRssFeedById(neverFetchedId, { should_ignore_robots_txt: null })
     }
   })
 
@@ -226,14 +226,14 @@ describe('get-to-fetch', () => {
     })
 
     it('returns feed_ignore_robots_txt from tiered projection', async () => {
-      await updateRssFeedById(neverFetchedId, { ignore_robots_txt: false })
+      await updateRssFeedById(neverFetchedId, { should_ignore_robots_txt: false })
       try {
         const feeds = await getRssFeedsToFetch({ limit: LIMIT })
         const found = feeds.find(f => f.id === neverFetchedId)
         expect(found).toBeDefined()
         expect(found?.feed_ignore_robots_txt).toBe(false)
       } finally {
-        await updateRssFeedById(neverFetchedId, { ignore_robots_txt: null })
+        await updateRssFeedById(neverFetchedId, { should_ignore_robots_txt: null })
       }
     })
 

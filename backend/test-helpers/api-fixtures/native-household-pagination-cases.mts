@@ -14,7 +14,7 @@ const migratedFrom = [
 
 export type HouseholdFixture = {
   id: string
-  owner_id: string
+  owner_user_id: string
   updated_at: string
 }
 
@@ -33,17 +33,17 @@ export type MembershipFixture = {
 
 const ownedHousehold: HouseholdFixture = {
   id: householdId,
-  owner_id: fixtureUserId,
+  owner_user_id: fixtureUserId,
   updated_at: '2026-07-02T00:00:00Z',
 }
 const sharedHousehold: HouseholdFixture = {
   id: '00000000-0000-7000-8000-000000000102',
-  owner_id: '00000000-0000-7000-8000-000000000002',
+  owner_user_id: '00000000-0000-7000-8000-000000000002',
   updated_at: '2026-07-01T00:00:00Z',
 }
 const secondSharedHousehold: HouseholdFixture = {
   id: '00000000-0000-7000-8000-000000000103',
-  owner_id: '00000000-0000-7000-8000-000000000004',
+  owner_user_id: '00000000-0000-7000-8000-000000000004',
   updated_at: '2026-06-30T00:00:00Z',
 }
 const membership: MembershipFixture = {

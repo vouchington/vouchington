@@ -128,11 +128,11 @@ export function ModmailInbox({ communitySlug, initialData }: Props) {
                   <p className='text-xs text-muted-foreground'>
                     {t('extracted.communities.modmailInbox.opened_b19fb8d1')}{' '}
                     <TimeAgo date={thread.created_at} />
-                    {thread.assigned_mod_id
+                    {thread.assigned_moderator_user_id
                       ? ` ${t(
                           'extracted.communities.modmailInbox.assignedToAssignedmodid_8de12935',
                           {
-                            assignedModId: thread.assigned_mod_id,
+                            assignedModId: thread.assigned_moderator_user_id,
                           },
                         )}`
                       : ''}

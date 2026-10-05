@@ -80,7 +80,7 @@ describe('crawl-url.errors', () => {
         hostname_id: url!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
       await updateUrlHostnameBlocked(url!.hostname.id, true)
 
       const result = await crawlUrlForTest(url!.id)
@@ -97,7 +97,7 @@ describe('crawl-url.errors', () => {
         hostname_id: url!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(url!.hostname.id, { crawlable: false })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: false })
 
       const result = await crawlUrlForTest(url!.id)
       expect(result).toBeNull()
@@ -112,7 +112,7 @@ describe('crawl-url.errors', () => {
 
       const url = await addUrl(user!.id, `https://${hostname}/page`)
       await createCrawler(user!, { hostname_id: url!.hostname.id, crawler_type: 'fetch' })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       resolveDnsCanary.mockRejectedValueOnce(new Error('getaddrinfo ENOTFOUND cloudflare.com'))
       fetchCrawlerHtml.mockRejectedValueOnce(

@@ -41,7 +41,7 @@ export async function assertTestEuWithdrawalContinuity(input: {
       body_name: 'Independent test dispute body',
       referred_at: referredAt.toISOString(),
       referred_by_party: 'notifier',
-      referred_by_user_id: input.notifier.id,
+      referred_by_id: input.notifier.id,
     })
     .expect(201)
   const referralId: string = referral.body.copyright_eu_dispute_settlement_referral.id

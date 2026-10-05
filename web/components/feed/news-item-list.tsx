@@ -110,9 +110,7 @@ export function NewsItemList({
                 view={feedStyle}
                 thumbnailUrl={allThumbnailUrls[item.id]}
                 embed={allEmbeds[item.id]}
-                sharedByUser={
-                  result.shared_by_user_id ? allUsers[result.shared_by_user_id] : undefined
-                }
+                sharedByUser={result.shared_by_id ? allUsers[result.shared_by_id] : undefined}
                 sharedAt={result.shared_at}
                 footer={modalHref => (
                   <NewsItemActions

@@ -30,7 +30,7 @@ const privacyUser = {
   default_post_broadcast: 'followers',
   default_post_privacy: 'private',
   processing_restricted_at: null,
-  third_party_marketing: false,
+  should_receive_third_party_marketing: false,
 } satisfies typeof storyCurrentUser
 
 const meta = {
@@ -60,7 +60,7 @@ const privacyFormInitialUser = {
   ...sectionSettings,
   id: 'storybook-privacy-user',
   processing_restricted_at: null,
-  third_party_marketing: false,
+  should_receive_third_party_marketing: false,
 } satisfies PrivacyFormInitialUser
 
 export const PrivacySettings: Story = {

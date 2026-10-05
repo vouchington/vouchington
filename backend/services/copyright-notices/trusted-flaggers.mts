@@ -20,7 +20,7 @@ export type CopyrightTrustedFlagger = {
   user_id: string | null
   awarding_coordinator_name: string
   awarding_member_state: string
-  awarded_at: string
+  awarded_on: string
   award_reference: string | null
   area_of_expertise: 'intellectual_property' | 'other'
   area_description: string
@@ -56,14 +56,14 @@ export async function createCopyrightTrustedFlagger(
   const { rows } = await transaction<Omit<CopyrightTrustedFlagger, 'status'>>(sql`
     /* createCopyrightTrustedFlagger */
     INSERT INTO copyright_trusted_flaggers (
-      name, user_id, awarding_coordinator_name, awarding_member_state, awarded_at,
+      name, user_id, awarding_coordinator_name, awarding_member_state, awarded_on,
       award_reference, area_of_expertise, area_description, created_by_id
     ) VALUES (
       ${validated.name}, ${input.userId}, ${validated.coordinator}, ${validated.memberState},
       ${validated.awardedAt}::date, ${validated.awardReference}, ${validated.areaOfExpertise},
       ${validated.areaDescription}, ${currentUser.id}
     ) RETURNING id, name, user_id, awarding_coordinator_name, awarding_member_state,
-      awarded_at::text AS awarded_at, award_reference, area_of_expertise, area_description
+      awarded_on::text AS awarded_on, award_reference, area_of_expertise, area_description
   `)
   const created = rows[0]
   assert(created, 500, 'Trusted flagger was not recorded')
@@ -164,7 +164,7 @@ export async function listCopyrightTrustedFlaggers(
 function flaggerRowsSql() {
   return sql`/* flaggerRowsSql */
     SELECT flagger.id, flagger.name, flagger.user_id, flagger.awarding_coordinator_name,
-      flagger.awarding_member_state, flagger.awarded_at::text AS awarded_at, flagger.award_reference,
+      flagger.awarding_member_state, flagger.awarded_on::text AS awarded_on, flagger.award_reference,
       flagger.area_of_expertise, flagger.area_description, latest.change_type AS latest_change_type
     FROM copyright_trusted_flaggers flagger
     LEFT JOIN LATERAL (

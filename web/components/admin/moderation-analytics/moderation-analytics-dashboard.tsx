@@ -308,14 +308,14 @@ export default function ModerationAnalyticsDashboard({
                   </tr>
                 )}
                 {metrics.moderator_workload.moderators.map(moderator => {
-                  const user = metrics.moderator_workload.users[moderator.actor_id]
+                  const user = metrics.moderator_workload.users[moderator.actor_user_id]
                   const topAction = Object.entries(moderator.counts).toSorted(
                     (a, b) => b[1] - a[1],
                   )[0]
                   return (
-                    <tr key={moderator.actor_id}>
+                    <tr key={moderator.actor_user_id}>
                       <td className='py-3 pr-4 font-medium'>
-                        {user?.username ? `@${user.username}` : moderator.actor_id}
+                        {user?.username ? `@${user.username}` : moderator.actor_user_id}
                       </td>
                       <td className='py-3 pr-4'>{formatNumber(moderator.total, uiLocale)}</td>
                       <td className='py-3 pr-4 text-muted-foreground'>

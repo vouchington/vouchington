@@ -93,7 +93,7 @@ export async function upsertAgentModerationElectionVotes(
       AND agent_moderation_id = ANY(${values.map(vote => vote.agentModerationId)}::uuid[])
     ORDER BY agent_moderation_id, id DESC
   )
-  INSERT INTO agent_moderation_votes (user_id, agent_moderation_id, post_id, score, ip_address, device_id, session_id, user_agent_id)
+  INSERT INTO agent_moderation_votes (user_id, agent_moderation_id, post_id, score, ip_address, device_id, session_id, user_agent_string_id)
   SELECT input_votes.user_id, am.id, am.post_id, input_votes.score,
     ${context.ipAddress}::inet, ${context.deviceId}::uuid, ${context.sessionId}::uuid, ${userAgentId}::uuid
   FROM input_votes

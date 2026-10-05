@@ -7,12 +7,12 @@ import type {
 } from './types.mts'
 
 const SCOPE_COLUMNS = {
-  post: 'post_id',
-  author: 'author_user_id',
-  community: 'community_id',
-  rss_feed: 'rss_feed_id',
-  topic_alias: 'topic_alias_id',
-  story: 'story_id',
+  post: 'post_identity_id',
+  author: 'author_identity_id',
+  community: 'community_identity_id',
+  rss_feed: 'rss_feed_identity_id',
+  topic_alias: 'topic_alias_identity_id',
+  story: 'story_identity_id',
 } as const satisfies Record<PostPublicationScope['type'], string>
 
 export async function upsertPostPublicationDirtyWork(
@@ -40,7 +40,7 @@ export async function upsertPostPublicationDirtyWork(
       generation = post_publication_dirty_work.generation + 1,
       cursor_post_id = NULL, cursor_topic_id = NULL, cursor_key_id = NULL, cursor_updated_at = NULL,
       lease_token = NULL, leased_at = NULL, lease_expires_at = NULL
-    RETURNING id, post_id, author_user_id, community_id, rss_feed_id, topic_alias_id, story_id, reasons::text[] AS reasons,
+    RETURNING id, post_identity_id, author_identity_id, community_identity_id, rss_feed_identity_id, topic_alias_identity_id, story_identity_id, reasons::text[] AS reasons,
       generation, cursor_post_id, cursor_topic_id, cursor_key_id, lease_token, leased_at, lease_expires_at
     )
     SELECT upserted.* FROM upserted

@@ -53,27 +53,27 @@ describe('HostnameListItem — blocked badge visibility', () => {
   it('does not render blocked badge when isAdmin is false', () => {
     render(
       <HostnameListItem
-        hostname={makeHostname({ blocked: true })}
+        hostname={makeHostname({ is_blocked: true })}
         isAdmin={false}
       />,
     )
     expect(screen.queryByText('Blocked')).toBeNull()
   })
 
-  it('does not render blocked badge when isAdmin is true but hostname.blocked is false', () => {
+  it('does not render blocked badge when isAdmin is true but hostname.is_blocked is false', () => {
     render(
       <HostnameListItem
-        hostname={makeHostname({ blocked: false })}
+        hostname={makeHostname({ is_blocked: false })}
         isAdmin
       />,
     )
     expect(screen.queryByText('Blocked')).toBeNull()
   })
 
-  it('renders blocked badge when isAdmin is true and hostname.blocked is true', () => {
+  it('renders blocked badge when isAdmin is true and hostname.is_blocked is true', () => {
     render(
       <HostnameListItem
-        hostname={makeHostname({ blocked: true })}
+        hostname={makeHostname({ is_blocked: true })}
         isAdmin
       />,
     )

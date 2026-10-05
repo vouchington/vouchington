@@ -19,7 +19,7 @@
 | `topic_type`           | Enum; drives routing, extension table, and type-specific UI                    |
 | `markdown`             | Admin-authored description                                                     |
 | `noindex`              | When true, topic pages emit noindex robots metadata                            |
-| `allow_reviews`        | When false, blocks review creation and hides review UI                         |
+| `should_allow_reviews` | When false, blocks review creation and hides review UI                         |
 | `deleted_at`           | Non-null when soft-deleted                                                     |
 | `merged_into_topic_id` | Non-null when merged into another topic                                        |
 | `created_via`          | Required immutable channel; see [provenance](../content/content-provenance.md) |
@@ -76,22 +76,22 @@ unsupported — use merge instead.
 
 **Menubar** (display order, items hidden when count is 0 unless currently active):
 
-| Item           | Count source                                | Visibility condition                      |
-| -------------- | ------------------------------------------- | ----------------------------------------- |
-| Posts          | Sum of discussions + reviews + data-points  | When count > 0 (or current page)          |
-| Reviews        | `topic_metrics.count.reviews`               | When count > 0 and `allow_reviews = true` |
-| Data Points    | `topic_metrics.count['data-points']`        | When count > 0                            |
-| Referral Links | —                                           | When topic has a referral program         |
-| Latest         | `topic_metrics.count.latest` (source items) | RSS feed topics only; always numeric      |
-| News           | `topic_metrics.count.news` (tagged items)   | Always numeric, never shows `+`           |
-| Manage Tags    | —                                           | Always (logged-in users)                  |
-| Settings       | —                                           | Admin only                                |
+| Item           | Count source                                | Visibility condition                             |
+| -------------- | ------------------------------------------- | ------------------------------------------------ |
+| Posts          | Sum of discussions + reviews + data-points  | When count > 0 (or current page)                 |
+| Reviews        | `topic_metrics.count.reviews`               | When count > 0 and `should_allow_reviews = true` |
+| Data Points    | `topic_metrics.count['data-points']`        | When count > 0                                   |
+| Referral Links | —                                           | When topic has a referral program                |
+| Latest         | `topic_metrics.count.latest` (source items) | RSS feed topics only; always numeric             |
+| News           | `topic_metrics.count.news` (tagged items)   | Always numeric, never shows `+`                  |
+| Manage Tags    | —                                           | Always (logged-in users)                         |
+| Settings       | —                                           | Admin only                                       |
 
 **Contribute aside** (quick-action links, each pre-seeded with `?topic_id=<id>`):
 
 | Action             | Visible when                                               |
 | ------------------ | ---------------------------------------------------------- |
-| Write a Review     | `allow_reviews = true`                                     |
+| Write a Review     | `should_allow_reviews = true`                              |
 | Share a Data Point | `topic_type === 'card'` or `topic_type === 'bank_account'` |
 | Start a Discussion | Always                                                     |
 
@@ -109,17 +109,17 @@ unsupported — use merge instead.
 
 ## Actions
 
-| Action             | Who can act                              |
-| ------------------ | ---------------------------------------- |
-| Follow / Unfollow  | Signed-in users                          |
-| Vouch / Disavow    | Signed-in users                          |
-| Mute               | Signed-in users                          |
-| Write a Review     | Signed-in users (`allow_reviews = true`) |
-| Share a Data Point | Signed-in users (eligible types only)    |
-| Start a Discussion | Signed-in users                          |
-| Edit settings      | Admins                                   |
-| Merge / Alias      | Admins                                   |
-| Soft-delete        | Admins                                   |
+| Action             | Who can act                                     |
+| ------------------ | ----------------------------------------------- |
+| Follow / Unfollow  | Signed-in users                                 |
+| Vouch / Disavow    | Signed-in users                                 |
+| Mute               | Signed-in users                                 |
+| Write a Review     | Signed-in users (`should_allow_reviews = true`) |
+| Share a Data Point | Signed-in users (eligible types only)           |
+| Start a Discussion | Signed-in users                                 |
+| Edit settings      | Admins                                          |
+| Merge / Alias      | Admins                                          |
+| Soft-delete        | Admins                                          |
 
 Signed-out users clicking vote/follow/join/comment CTAs are redirected to `/login?next=…`.
 

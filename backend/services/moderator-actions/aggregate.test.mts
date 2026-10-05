@@ -42,7 +42,7 @@ describe('aggregateModeratorActionCounts', () => {
     })
 
     // modA has more actions, should appear first
-    const actorIds = stats.map(s => s.actor_id)
+    const actorIds = stats.map(s => s.actor_user_id)
     const modAIndex = actorIds.indexOf(modA.id)
     const modBIndex = actorIds.indexOf(modB.id)
     expect(modAIndex).toBeGreaterThanOrEqual(0)
@@ -55,7 +55,7 @@ describe('aggregateModeratorActionCounts', () => {
       communityId: community.id,
       windowDays: 30,
     })
-    const modAStats = stats.find(s => s.actor_id === modA.id)
+    const modAStats = stats.find(s => s.actor_user_id === modA.id)
     expect(modAStats).toBeDefined()
     expect(modAStats!.total).toBeGreaterThanOrEqual(3)
     expect(modAStats!.counts.remove).toBeGreaterThanOrEqual(2)
@@ -67,7 +67,7 @@ describe('aggregateModeratorActionCounts', () => {
       communityId: community.id,
       windowDays: 30,
     })
-    const modBStats = stats.find(s => s.actor_id === modB.id)
+    const modBStats = stats.find(s => s.actor_user_id === modB.id)
     expect(modBStats).toBeDefined()
     expect(modBStats!.total).toBeGreaterThanOrEqual(1)
     expect(modBStats!.counts.approve).toBeGreaterThanOrEqual(1)
@@ -84,14 +84,14 @@ describe('aggregateModeratorActionCounts', () => {
       communityId: community.id,
       windowDays: 30,
     })
-    const modAStats = stats.find(s => s.actor_id === modA.id)
+    const modAStats = stats.find(s => s.actor_user_id === modA.id)
     // The count should not include the action from the other community
     // (This assertion checks the total does not unexpectedly grow to include the other community)
     const otherStats = await aggregateModeratorActionCounts({
       communityId: otherCommunity.id,
       windowDays: 30,
     })
-    const modAOtherStats = otherStats.find(s => s.actor_id === modA.id)
+    const modAOtherStats = otherStats.find(s => s.actor_user_id === modA.id)
     expect(modAOtherStats?.counts.remove).toBeGreaterThanOrEqual(1)
     // Sanity: this community's stats are unaffected
     expect(modAStats?.counts.remove).toBeGreaterThanOrEqual(2)

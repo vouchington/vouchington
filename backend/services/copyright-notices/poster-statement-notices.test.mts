@@ -34,7 +34,7 @@ describe('poster statements on human imposition', () => {
     await reviewCopyrightFormIntake({
       intakeId: notice.intake.id,
       currentUser: await createTestUser({ extraRoles: ['moderator'] }),
-      accepted: true,
+      is_accepted: true,
       rationale: 'Complete notice.',
     })
     const before = await readTestCopyrightStatementIntents(noticeId)
@@ -66,7 +66,7 @@ describe('poster statements on human imposition', () => {
     await reviewCopyrightFormIntake({
       intakeId: notice.intake.id,
       currentUser: await createTestUser({ extraRoles: ['moderator'] }),
-      accepted: true,
+      is_accepted: true,
       rationale: 'Complete notice.',
     })
     const intents = (

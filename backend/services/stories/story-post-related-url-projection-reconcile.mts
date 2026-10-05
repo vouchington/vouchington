@@ -76,11 +76,14 @@ async function projectSourcePageWithCurrentLease(work: ProjectionWork): Promise<
   const decisions = await decideStoryPostRelatedUrlProjectionRows(work, rows)
   if (!(await stageStoryPostRelatedUrlProjectionReceipts(work, decisions)))
     return { processed: 0, continue: false }
-  const eligible: SourceDecision[] = []
+  const is_eligible: SourceDecision[] = []
   for (const row of decisions) {
-    if (row.eligible) eligible.push(row)
+    if (row.is_eligible) is_eligible.push(row)
   }
-  if (eligible.length > 0 && !(await writeStoryPostRelatedUrlProjectionRelations(work, eligible))) {
+  if (
+    is_eligible.length > 0 &&
+    !(await writeStoryPostRelatedUrlProjectionRelations(work, is_eligible))
+  ) {
     return { processed: 0, continue: false }
   }
   if (!(await drainStoryPostRelatedUrlProjectionInvalidation(work)))
@@ -162,7 +165,7 @@ async function prunePage(
           AND NOT EXISTS (
             SELECT 1 FROM story_post_related_url_projection_receipts receipt
             WHERE receipt.post_id = $1 AND receipt.generation = $3
-              AND receipt.url_id = relation.object_id AND receipt.eligible = TRUE
+              AND receipt.url_id = relation.object_id AND receipt.is_eligible = TRUE
           )
           AND NOT EXISTS (
             SELECT 1 FROM story_post_related_url_projection_relation_mutations mutation

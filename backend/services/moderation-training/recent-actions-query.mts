@@ -32,7 +32,7 @@ export function buildRecentAutomodActionsQuery(
             THEN (am.results->>'confidence_score')::double precision
           ELSE NULL
         END AS confidence_score,
-        am.flagged,
+        am.is_flagged,
         CASE
           WHEN jsonb_typeof(am.results->'categories') = 'array' THEN am.results->'categories'
           ELSE '[]'::jsonb
@@ -43,7 +43,7 @@ export function buildRecentAutomodActionsQuery(
       FROM agent_moderations am
       JOIN community_agent_prompts cap ON cap.id = am.prompt_id
       JOIN posts p ON p.id = am.post_id
-      LEFT JOIN posts root_post ON root_post.id = p.root_id AND p.post_type = 'comment'
+      LEFT JOIN posts root_post ON root_post.id = p.root_post_id AND p.post_type = 'comment'
       JOIN community_post_reviews cpr ON cpr.post_id = p.id AND cpr.community_id = cap.community_id
       LEFT JOIN LATERAL (
         SELECT label
@@ -55,7 +55,7 @@ export function buildRecentAutomodActionsQuery(
         LIMIT 1
       ) latest_feedback ON true
       WHERE cap.community_id = ${communityId}
-        AND am.flagged IS TRUE
+        AND am.is_flagged IS TRUE
         AND am.deleted_at IS NULL
         AND p.deleted_at IS NULL
         AND am.input_sha256 IS NOT DISTINCT FROM p.llm_moderation_content_sha256
@@ -68,7 +68,7 @@ export function buildRecentAutomodActionsQuery(
           JOIN community_agent_prompts newer_cap ON newer_cap.id = newer_am.prompt_id
           WHERE newer_am.post_id = am.post_id
             AND newer_cap.community_id = cap.community_id
-            AND newer_am.flagged IS TRUE
+            AND newer_am.is_flagged IS TRUE
             AND newer_am.deleted_at IS NULL
             AND newer_am.input_sha256 IS NOT DISTINCT FROM p.llm_moderation_content_sha256
             AND (newer_am.created_at, newer_am.id) > (am.created_at, am.id)
@@ -96,7 +96,7 @@ export function buildRecentAutomodActionsQuery(
             THEN (am.results->>'confidence_score')::double precision
           ELSE NULL
         END AS confidence_score,
-        am.flagged,
+        am.is_flagged,
         CASE
           WHEN jsonb_typeof(am.results->'categories') = 'array' THEN am.results->'categories'
           ELSE '[]'::jsonb
@@ -107,7 +107,7 @@ export function buildRecentAutomodActionsQuery(
       FROM agent_moderations am
       JOIN moderator_agents mod ON mod.agent_id = am.agent_id
       JOIN posts p ON p.id = am.post_id
-      LEFT JOIN posts root_post ON root_post.id = p.root_id AND p.post_type = 'comment'
+      LEFT JOIN posts root_post ON root_post.id = p.root_post_id AND p.post_type = 'comment'
       LEFT JOIN community_agent_prompts cap ON cap.id = am.prompt_id
       LEFT JOIN LATERAL (
         SELECT label
@@ -120,7 +120,7 @@ export function buildRecentAutomodActionsQuery(
       ) latest_feedback ON true
       WHERE p.community_id = ${communityId}
         AND cap.id IS NULL
-        AND am.flagged IS TRUE
+        AND am.is_flagged IS TRUE
         AND am.deleted_at IS NULL
         AND p.deleted_at IS NULL
         AND am.input_sha256 IS NOT DISTINCT FROM p.llm_moderation_content_sha256
@@ -155,7 +155,7 @@ export function buildRecentAutomodActionsQuery(
         p.created_at,
         p.rejected_at AS action_at,
         NULL::double precision AS confidence_score,
-        TRUE AS flagged,
+        TRUE AS is_flagged,
         '[]'::jsonb AS categories,
         disposition.evidence AS model_output,
         'rejected'::text AS current_state,
@@ -184,7 +184,7 @@ export function buildRecentAutomodActionsQuery(
         ORDER BY mtf.id DESC
         LIMIT 1
       ) latest_feedback ON true
-      LEFT JOIN posts root_post ON root_post.id = p.root_id AND p.post_type = 'comment'
+      LEFT JOIN posts root_post ON root_post.id = p.root_post_id AND p.post_type = 'comment'
       WHERE p.community_id = ${communityId}
         AND p.deleted_at IS NULL
         AND p.rejected_at IS NOT NULL
@@ -207,7 +207,7 @@ export function buildRecentAutomodActionsQuery(
         p.created_at,
         p.rejected_at AS action_at,
         NULLIF(disposition.evidence->>'composite_score', '')::double precision AS confidence_score,
-        TRUE AS flagged,
+        TRUE AS is_flagged,
         '[]'::jsonb AS categories,
         disposition.evidence AS model_output,
         'rejected'::text AS current_state,
@@ -236,7 +236,7 @@ export function buildRecentAutomodActionsQuery(
         ORDER BY mtf.id DESC
         LIMIT 1
       ) latest_feedback ON true
-      LEFT JOIN posts root_post ON root_post.id = p.root_id AND p.post_type = 'comment'
+      LEFT JOIN posts root_post ON root_post.id = p.root_post_id AND p.post_type = 'comment'
       WHERE p.community_id = ${communityId}
         AND p.deleted_at IS NULL
         AND p.rejected_at IS NOT NULL

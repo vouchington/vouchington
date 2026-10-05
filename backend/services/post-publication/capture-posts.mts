@@ -73,11 +73,13 @@ async function recordPostPublicationChangeBatch(
   await lockPostPublicationPostScopes(query, postIds)
   const work = await upsertPostPublicationDirtyWork(query, 'post', postIds, [reason])
   const workByPostId = new Map(
-    work.flatMap(row => (row.post_id ? [[row.post_id, row.id] as const] : [])),
+    work.flatMap(row => (row.post_identity_id ? [[row.post_identity_id, row.id] as const] : [])),
   )
   await retainPostPublicationPostScopeContext(
     query,
-    work.flatMap(row => (row.post_id ? [{ dirtyWorkId: row.id, postId: row.post_id }] : [])),
+    work.flatMap(row =>
+      row.post_identity_id ? [{ dirtyWorkId: row.id, postId: row.post_identity_id }] : [],
+    ),
   )
   await retainPostPublicationImpacts(query, workByPostId, batch)
   return work

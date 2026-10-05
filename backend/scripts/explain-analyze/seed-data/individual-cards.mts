@@ -51,11 +51,11 @@ export async function seedIndividualCards(count = INDIVIDUAL_CARD_SEED_COUNT): P
         rows.push(`($${base}, $${base + 1}, $${base + 2})`)
       }
       await query(
-        `/* seedExplainData */ INSERT INTO individual_cards (id, individual_id, card_id)
+        `/* seedExplainData */ INSERT INTO individual_cards (id, individual_id, card_topic_id)
          VALUES ${rows.join(', ')}
          ON CONFLICT (id) DO UPDATE
          SET individual_id = EXCLUDED.individual_id,
-             card_id = EXCLUDED.card_id`,
+             card_topic_id = EXCLUDED.card_topic_id`,
         values,
       )
     }

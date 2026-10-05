@@ -95,9 +95,9 @@ function reportModerationDispatchError(error: unknown, userId: string): void {
 /* c8 ignore stop */
 
 export async function isModerationEmailsEnabled(userId: string): Promise<boolean> {
-  const { rows } = await read<{ moderation_emails_enabled: boolean }>(
+  const { rows } = await read<{ is_moderation_emails_enabled: boolean }>(
     sql`/* isModerationEmailsEnabled */
-      SELECT moderation_emails_enabled
+      SELECT is_moderation_emails_enabled
       FROM users
       WHERE id = ${userId}
         AND deleted_at IS NULL
@@ -107,7 +107,7 @@ export async function isModerationEmailsEnabled(userId: string): Promise<boolean
       LIMIT 1
     `,
   )
-  return rows.at(0)?.moderation_emails_enabled ?? false
+  return rows.at(0)?.is_moderation_emails_enabled ?? false
 }
 
 export async function getModerationEmailTimezone(userId: string): Promise<string> {
@@ -217,7 +217,7 @@ async function getModerationSummaryRecipients(): Promise<ModerationRecipientRow[
       AND cm.removed_at IS NULL
       AND cm.role IN ('owner', 'moderator')
       AND (
-        NOT cm.suppress_community_digests_while_on_vacation
+        NOT cm.should_suppress_community_digests_while_on_vacation
         OR NOT EXISTS (
         SELECT 1
         FROM community_member_vacations v
@@ -239,7 +239,7 @@ async function getModerationSummaryRecipients(): Promise<ModerationRecipientRow[
         ) AS local_now
     ) moderation_email_schedule
     WHERE u.email_address IS NOT NULL
-      AND u.moderation_emails_enabled = TRUE
+      AND u.is_moderation_emails_enabled = TRUE
       AND u.suspended_at IS NULL
       AND u.moderation_email_time_of_day <=
         to_char(moderation_email_schedule.local_now, 'HH24:MI')
@@ -465,7 +465,7 @@ export async function getCommunityModerationSummaryCommunities(
         COUNT(reply.id)::int AS reply_count
       FROM posts top_post
       LEFT JOIN posts reply
-        ON reply.parent_id = top_post.id
+        ON reply.parent_post_id = top_post.id
         AND reply.post_type = 'comment'
         AND reply.id > top_post.id
         AND reply.id < ${windowEndId}
@@ -483,7 +483,7 @@ export async function getCommunityModerationSummaryCommunities(
       AND cm.removed_at IS NULL
       AND cm.role IN ('owner', 'moderator')
       AND (
-        NOT cm.suppress_community_digests_while_on_vacation
+        NOT cm.should_suppress_community_digests_while_on_vacation
         OR NOT EXISTS (
         SELECT 1
         FROM community_member_vacations v

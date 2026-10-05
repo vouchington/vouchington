@@ -30,7 +30,7 @@ export function buildExcludedHostnameIdsCTE(userId: string): SQLStatement {
       JOIN url_hostnames uh ON uh.reversed_hostname = eh.reversed_hostname
         OR uh.reversed_hostname LIKE eh.reversed_hostname || '.%'
       UNION ALL
-      SELECT id AS hostname_id FROM url_hostnames WHERE blocked = TRUE
+      SELECT id AS hostname_id FROM url_hostnames WHERE is_blocked = TRUE
     )`
 }
 
@@ -56,6 +56,6 @@ export function buildCommunityExcludedHostnameIdsCTE(communityId: string): SQLSt
       JOIN url_hostnames uh ON uh.reversed_hostname = eh.reversed_hostname
         OR uh.reversed_hostname LIKE eh.reversed_hostname || '.%'
       UNION ALL
-      SELECT id AS hostname_id FROM url_hostnames WHERE blocked = TRUE
+      SELECT id AS hostname_id FROM url_hostnames WHERE is_blocked = TRUE
     )`
 }

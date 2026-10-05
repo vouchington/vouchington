@@ -78,7 +78,7 @@ export const webCommunityAutomodApiFixtureCases: ApiFixtureCase[] = [
           created_at: timestamp,
           action_at: timestamp,
           confidence_score: 0.82,
-          flagged: true,
+          is_flagged: true,
           categories: ['quality'],
           model_output: { flagged: true, confidence_score: 0.82 },
           current_state: 'rejected',

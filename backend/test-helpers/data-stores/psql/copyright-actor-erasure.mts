@@ -9,7 +9,7 @@ export async function eraseCopyrightActorAndReadAuditLinks(): Promise<{
   recipientUserId: null
   recipientUserErasedAt: Date
 }> {
-  const { rows } = await write<{ actor_id: string; notice_id: string; submission_id: string }>(
+  const { rows } = await write<{ actor_user_id: string; notice_id: string; submission_id: string }>(
     sql`/* createCopyrightErasureAuditFixture */
       WITH actor AS (INSERT INTO users DEFAULT VALUES RETURNING id),
       notice AS (
@@ -19,7 +19,7 @@ export async function eraseCopyrightActorAndReadAuditLinks(): Promise<{
         INSERT INTO copyright_notice_submissions (copyright_notice_id, kind, received_at, source_kind, body_ciphertext)
         SELECT id, 'notice', CURRENT_TIMESTAMP, 'staff', ${`body-${randomUUID()}`} FROM notice RETURNING id
       ), assessment AS (
-        INSERT INTO copyright_notice_submission_assessments (copyright_notice_submission_id, assessed_at, assessed_by_id, substantially_compliant)
+        INSERT INTO copyright_notice_submission_assessments (copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant)
         SELECT submission.id, CURRENT_TIMESTAMP, actor.id, true FROM submission CROSS JOIN actor
       ), correspondence AS (
         INSERT INTO copyright_notice_correspondence_messages (copyright_notice_id, direction, composition_kind, correspondence_kind, body_ciphertext, drafted_by_id)
@@ -36,10 +36,12 @@ export async function eraseCopyrightActorAndReadAuditLinks(): Promise<{
         ) SELECT notice.id, actor.id, 'poster', 'poster_restriction_notice', 'in_app',
           ${`copyright-erasure-delivery-${randomUUID()}`} FROM notice CROSS JOIN actor
       )
-      SELECT actor.id AS actor_id, notice.id AS notice_id, submission.id AS submission_id FROM actor CROSS JOIN notice CROSS JOIN submission`,
+      SELECT actor.id AS actor_user_id, notice.id AS notice_id, submission.id AS submission_id FROM actor CROSS JOIN notice CROSS JOIN submission`,
   )
   const fixture = rows[0]!
-  await write(sql`/* eraseCopyrightAuditActor */ DELETE FROM users WHERE id = ${fixture.actor_id}`)
+  await write(
+    sql`/* eraseCopyrightAuditActor */ DELETE FROM users WHERE id = ${fixture.actor_user_id}`,
+  )
   const result = await read<{
     assessed_by_id: null
     drafted_by_id: null

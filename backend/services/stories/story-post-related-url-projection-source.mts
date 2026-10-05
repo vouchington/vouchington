@@ -63,14 +63,14 @@ export async function decideStoryPostRelatedUrlProjectionRows(
   const uniqueRows = [...uniqueByUrlId.values()]
   const uniqueUrlIds: string[] = []
   for (const row of uniqueRows) uniqueUrlIds.push(row.url_id)
-  const { rows: receiptRows } = await write<{ url_id: string; eligible: boolean }>(
+  const { rows: receiptRows } = await write<{ url_id: string; is_eligible: boolean }>(
     `/* storyPostRelatedUrlProjectionExistingReceipts */
-      SELECT url_id, eligible FROM story_post_related_url_projection_receipts
+      SELECT url_id, is_eligible FROM story_post_related_url_projection_receipts
       WHERE post_id = $1 AND generation = $2 AND url_id = ANY($3::uuid[])`,
     [work.post_id, work.generation, uniqueUrlIds],
   )
   const receiptDecisions = new Map<string, boolean>()
-  for (const row of receiptRows) receiptDecisions.set(row.url_id, row.eligible)
+  for (const row of receiptRows) receiptDecisions.set(row.url_id, row.is_eligible)
   const pendingRows: SourceRow[] = []
   for (const row of uniqueRows) {
     if (!receiptDecisions.has(row.url_id)) pendingRows.push(row)
@@ -94,7 +94,7 @@ export async function decideStoryPostRelatedUrlProjectionRows(
   for (const row of uniqueRows) {
     sourceDecisions.push({
       ...row,
-      eligible: receiptDecisions.get(row.url_id) ?? pendingDecisions.get(row.url_id) ?? false,
+      is_eligible: receiptDecisions.get(row.url_id) ?? pendingDecisions.get(row.url_id) ?? false,
     })
   }
   return sourceDecisions
@@ -124,9 +124,9 @@ export async function stageStoryPostRelatedUrlProjectionReceipts(
   await query(
     `/* stageStoryPostRelatedUrlProjectionReceipts */
       INSERT INTO story_post_related_url_projection_receipts
-        (post_id, generation, url_id, source_item_id, eligible)
-      SELECT $1, $2, url_id, source_item_id, eligible
-      FROM unnest($3::uuid[], $4::uuid[], $5::boolean[]) AS input(url_id, source_item_id, eligible)
+        (post_id, generation, url_id, source_item_id, is_eligible)
+      SELECT $1, $2, url_id, source_item_id, is_eligible
+      FROM unnest($3::uuid[], $4::uuid[], $5::boolean[]) AS input(url_id, source_item_id, is_eligible)
       ORDER BY url_id
       ON CONFLICT (post_id, generation, url_id) DO NOTHING`,
     [
@@ -155,7 +155,7 @@ function sourceRowIds(rows: SourceRow[]): string[] {
 
 function sourceRowEligibility(rows: SourceDecision[]): boolean[] {
   const eligibility: boolean[] = []
-  for (const row of rows) eligibility.push(row.eligible)
+  for (const row of rows) eligibility.push(row.is_eligible)
   return eligibility
 }
 

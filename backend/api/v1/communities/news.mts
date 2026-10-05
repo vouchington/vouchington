@@ -85,7 +85,7 @@ app.route('/api/v1/communities/:idOrSlug/news').get(async (ctx: Context) => {
   })
   const rssFeedItemIds = result.results.map(r => r.entity_id)
   const sharedByUserIds = [
-    ...new Set(result.results.flatMap(r => (r.shared_by_user_id ? [r.shared_by_user_id] : []))),
+    ...new Set(result.results.flatMap(r => (r.shared_by_id ? [r.shared_by_id] : []))),
   ]
   const storyIds = [
     ...new Set(result.results.flatMap(r => (r.story_id !== null ? [r.story_id] : []))),

@@ -12,7 +12,7 @@ describe('migration constraint guard', () => {
       'backend/data-stores/psql/migrations/0999-valid-constraint.sql',
       [
         'ALTER TABLE children ADD CONSTRAINT fk_children_parent -- fk-index-guard-allow: unrelated fixture, not testing FK indexing',
-        '  FOREIGN KEY (parent_id) REFERENCES parents(id) ON DELETE CASCADE NOT VALID;',
+        '  FOREIGN KEY (parent_post_id) REFERENCES parents(id) ON DELETE CASCADE NOT VALID;',
         'ALTER TABLE children VALIDATE CONSTRAINT fk_children_parent;',
       ].join('\n'),
     )

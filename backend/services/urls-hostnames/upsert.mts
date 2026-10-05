@@ -58,10 +58,10 @@ export const upsertUrlHostnames = async (
     parent_policy AS (
       SELECT
         hostname,
-        blocked,
+        is_blocked,
         REPLACE(REPLACE(REPLACE(hostname, chr(92), chr(92) || chr(92)), '%', chr(92) || '%'), '_', chr(92) || '_') AS hostname_like
       FROM url_hostnames
-      WHERE blocked = TRUE
+      WHERE is_blocked = TRUE
     ),
     inherited AS (
       SELECT
@@ -69,36 +69,36 @@ export const upsertUrlHostnames = async (
         EXISTS (
           SELECT 1
           FROM parent_policy parent
-          WHERE parent.blocked = TRUE
+          WHERE parent.is_blocked = TRUE
             AND (
               input.hostname = parent.hostname
               OR input.hostname LIKE '%.' || parent.hostname_like ESCAPE '\\'
             )
-        ) AS blocked,
-        FALSE AS skip_web_risk
+        ) AS is_blocked,
+        FALSE AS should_skip_web_risk
       FROM input
     )
-    INSERT INTO url_hostnames (hostname, created_by_id, crawlable, blocked, skip_web_risk)
+    INSERT INTO url_hostnames (hostname, created_by_id, is_crawlable, is_blocked, should_skip_web_risk)
     SELECT
       hostname,
       $2,
       true,
-      blocked,
-      skip_web_risk
+      is_blocked,
+      should_skip_web_risk
     FROM inherited
     ORDER BY hostname
     ON CONFLICT (hostname) DO UPDATE SET hostname = EXCLUDED.hostname
-    RETURNING id, hostname, blocked
+    RETURNING id, hostname, is_blocked
   `,
     [missingHostnames, userId || null],
     options,
   )
 
   // For newly-inserted hostnames that inherited a block from a parent hostname,
-  // insert a url_hostname_blocks row so the trigger keeps url_hostnames.blocked in sync.
+  // insert a url_hostname_blocks row so the trigger keeps url_hostnames.is_blocked in sync.
   const inheritedBlockedIds: string[] = []
-  for (const row of newRows as Array<{ id: string; hostname: string; blocked: boolean }>) {
-    if (row.blocked) inheritedBlockedIds.push(row.id)
+  for (const row of newRows as Array<{ id: string; hostname: string; is_blocked: boolean }>) {
+    if (row.is_blocked) inheritedBlockedIds.push(row.id)
   }
 
   if (inheritedBlockedIds.length > 0) {

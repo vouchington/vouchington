@@ -4,7 +4,7 @@ export type ElectionVoteMutationResult = ElectionVoteEvent & {
   id: string
   /** Internal only; route responses never serialize numeric ballots. */
   score: ElectionVoteScore
-  outbound_ap_like_activity_id: string | null
+  outbound_activitypub_like_activity_id: string | null
   previous_outbound_ap_like_activity_id: string | null
 }
 

@@ -52,7 +52,7 @@ describe('sendClassifiedEmail', () => {
 
   it('suppresses user-category marketing email when the user has opted out', async () => {
     const user = await createTestUser()
-    await updateUserFields(user!.id, { engagement_emails_enabled: false })
+    await updateUserFields(user!.id, { is_engagement_emails_enabled: false })
 
     const result = await sendClassifiedEmail('processSendFollowTopicsEmail', {
       to: user!.email_address!,
@@ -66,7 +66,7 @@ describe('sendClassifiedEmail', () => {
 
   it('suppresses community_digest marketing email when moderation emails are disabled', async () => {
     const user = await createTestUser()
-    await updateUserFields(user!.id, { moderation_emails_enabled: false })
+    await updateUserFields(user!.id, { is_moderation_emails_enabled: false })
 
     const result = await sendClassifiedEmail('processSendCommunityModerationSummaryEmail', {
       to: user!.email_address!,

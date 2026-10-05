@@ -1,5 +1,6 @@
 -- Inline url/hostname base tables instead of chaining views to reduce planner expansion depth.
 -- Previously: view_rss_feeds → view_urls → view_url_hostnames (2 levels) + separate hostname JOIN.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_rss_feeds AS
   SELECT
       'rss_feed' AS __entity_type,
@@ -25,9 +26,9 @@ CREATE OR REPLACE VIEW view_rss_feeds AS
           'id', feed_hostname.id,
           'hostname', feed_hostname.hostname,
           'topic_id', feed_hostname.topic_id,
-          'blocked', feed_hostname.blocked,
-          'crawlable', feed_hostname.crawlable,
-          'link_rel_follow', feed_hostname.link_rel_follow
+          'is_blocked', feed_hostname.is_blocked,
+          'is_crawlable', feed_hostname.is_crawlable,
+          'should_follow_link_rel', feed_hostname.should_follow_link_rel
         )
       ) AS rss_feed_url,
       CASE

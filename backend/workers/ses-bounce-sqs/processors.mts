@@ -55,9 +55,9 @@ export async function processSesBounceSqsMessage(message: SqsMessage): Promise<v
   const notification = JSON.parse(message.body) as SesNotification
   const input = buildCreateSesBounceEventInput(notification)
   await createSesBounceEvent(input)
-  if (isTerminalCopyrightDeliveryFailure(input) && input.ses_message_id) {
+  if (isTerminalCopyrightDeliveryFailure(input) && input.amazon_ses_message_id) {
     await markCopyrightDeliveryIntentBouncedBySesMessageId({
-      sesMessageId: input.ses_message_id,
+      sesMessageId: input.amazon_ses_message_id,
       recipientEmails: input.recipients,
     })
   }
@@ -84,9 +84,9 @@ function buildCreateSesBounceEventInput(notification: SesNotification): CreateSe
   const input: CreateSesBounceEventInput = {
     notification_type: notificationType,
     recipients: [],
-    ses_message_id: notification.mail?.messageId ?? null,
-    ses_feedback_id: null,
-    ses_timestamp: null,
+    amazon_ses_message_id: notification.mail?.messageId ?? null,
+    amazon_ses_feedback_id: null,
+    occurred_at: null,
     raw_message: notification,
     bounce_type: null,
     bounce_sub_type: null,
@@ -107,7 +107,7 @@ function buildCreateSesBounceEventInput(notification: SesNotification): CreateSe
     input.recipients = bouncedRecipients.flatMap(r =>
       typeof r?.emailAddress === 'string' ? [r.emailAddress] : [],
     )
-    input.ses_feedback_id = notification.bounce.feedbackId ?? null
+    input.amazon_ses_feedback_id = notification.bounce.feedbackId ?? null
     timestamp = notification.bounce.timestamp ?? timestamp
     input.reporting_mta = notification.bounce.reportingMTA ?? null
     const diagnosticCodes = bouncedRecipients.flatMap(r =>
@@ -122,7 +122,7 @@ function buildCreateSesBounceEventInput(notification: SesNotification): CreateSe
     input.recipients = complainedRecipients.flatMap(r =>
       typeof r?.emailAddress === 'string' ? [r.emailAddress] : [],
     )
-    input.ses_feedback_id = notification.complaint.feedbackId ?? null
+    input.amazon_ses_feedback_id = notification.complaint.feedbackId ?? null
     timestamp = notification.complaint.timestamp ?? timestamp
   } else {
     assert(notification.delivery, 422, 'Delivery notification missing .delivery')
@@ -136,7 +136,7 @@ function buildCreateSesBounceEventInput(notification: SesNotification): CreateSe
   if (timestamp) {
     const ts = new Date(timestamp)
     assert(!Number.isNaN(ts.getTime()), 422, `Invalid SES timestamp: ${timestamp}`)
-    input.ses_timestamp = ts
+    input.occurred_at = ts
   }
 
   return input

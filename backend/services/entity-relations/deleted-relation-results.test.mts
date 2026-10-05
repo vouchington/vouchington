@@ -26,14 +26,14 @@ describe('deleted relation results', () => {
     appendDeletedRelationReturning(followQuery, followRelation)
 
     expect(followQuery.text).toContain(
-      'RETURNING subject_id, object_id, outbound_ap_follow_activity_id, uuidv7() AS undo_activity_id',
+      'RETURNING subject_id, object_id, outbound_activitypub_follow_activity_id, uuidv7() AS undo_activity_id',
     )
 
     const muteQuery = createUserMuteRelationUpdateStatementForTest()
     appendDeletedRelationReturning(muteQuery, muteRelation)
 
     expect(muteQuery.text).toContain('RETURNING subject_id, object_id')
-    expect(muteQuery.text).not.toContain('outbound_ap_follow_activity_id')
+    expect(muteQuery.text).not.toContain('outbound_activitypub_follow_activity_id')
     expect(muteQuery.text).not.toContain('undo_activity_id')
   })
 
@@ -43,13 +43,13 @@ describe('deleted relation results', () => {
         {
           subject_id: 'follower',
           object_id: 'followee',
-          outbound_ap_follow_activity_id: 'follow-activity',
+          outbound_activitypub_follow_activity_id: 'follow-activity',
           undo_activity_id: 'undo-activity',
         },
         {
           subject_id: 'missing-undo',
           object_id: 'followee',
-          outbound_ap_follow_activity_id: 'follow-activity',
+          outbound_activitypub_follow_activity_id: 'follow-activity',
         },
         {
           subject_id: 'missing-original',

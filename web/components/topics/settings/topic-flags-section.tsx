@@ -7,22 +7,22 @@ import { useTranslations } from '@/lib/i18n/use-translations'
 
 /**
  * Per-topic policy flags (see docs/requirements/content/TOPICS.md § Policy flags):
- * - `noindex` excludes the topic's pages from search-engine indexing.
- * - `allow_reviews` (when false) blocks review creation and hides review UI — used for
+ * - `is_noindexed` excludes the topic's pages from search-engine indexing.
+ * - `should_allow_reviews` (when false) blocks review creation and hides review UI — used for
  *   private individuals. These flags replaced the former `person` topic type.
  */
 export function TopicFlagsSection({
-  noindex,
+  is_noindexed,
   allowReviews,
   onFlagsSubmit,
   setNoindex,
   setAllowReviews,
   flagsSaving,
 }: {
-  noindex: boolean
+  is_noindexed: boolean
   allowReviews: boolean
   onFlagsSubmit: (e: React.FormEvent<HTMLFormElement>) => void
-  setNoindex: (noindex: boolean) => void
+  setNoindex: (is_noindexed: boolean) => void
   setAllowReviews: (allowReviews: boolean) => void
   flagsSaving: boolean
 }) {
@@ -46,7 +46,7 @@ export function TopicFlagsSection({
           <Checkbox
             id='topic_noindex'
             data-pw='topic-noindex'
-            checked={noindex}
+            checked={is_noindexed}
             onCheckedChange={(checked: boolean | 'indeterminate') => setNoindex(checked === true)}
           />
           <Label htmlFor='topic_noindex'>

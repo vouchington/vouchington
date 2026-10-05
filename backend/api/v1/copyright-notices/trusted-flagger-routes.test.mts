@@ -13,7 +13,7 @@ function entryBody(userId: string) {
     user_id: userId,
     awarding_coordinator_name: 'Example Digital Services Coordinator',
     awarding_member_state: 'DE',
-    awarded_at: '2026-09-01',
+    awarded_on: '2026-09-01',
     area_of_expertise: 'intellectual_property',
     area_description: 'Copyright notices',
     award_reference: `https://example.test/${crypto.randomUUID()}`,
@@ -119,8 +119,8 @@ describe('copyright trusted-flagger registry routes', () => {
       { ...body, user_id: 'not-a-uuid' },
       { ...body, awarding_member_state: 'GBR' },
       { ...body, awarding_member_state: 'de' },
-      { ...body, awarded_at: '2026-13-40' },
-      { ...body, awarded_at: '0000-01-01' },
+      { ...body, awarded_on: '2026-13-40' },
+      { ...body, awarded_on: '0000-01-01' },
       { ...body, area_of_expertise: 'other-kind' },
       { ...body, extra: true },
     ])
@@ -165,7 +165,7 @@ describe('copyright trusted-flagger registry routes', () => {
       .send({
         notifier_name: 'Guest notifier',
         notifier_email: `guest-${suffix}@example.test`,
-        good_faith_statement: true,
+        has_good_faith_statement: true,
         contact: `Contact ${suffix}`,
         content_description: `Work ${suffix}`,
         grounds: `Grounds ${suffix}`,

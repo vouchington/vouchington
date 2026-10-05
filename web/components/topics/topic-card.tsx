@@ -41,7 +41,7 @@ export interface TopicCardProps {
     | 'markdown'
     | 'logo_image_id'
     | 'logo_image_placement'
-    | 'allow_reviews'
+    | 'should_allow_reviews'
     | 'hostname'
   >
   metrics?: Pick<TopicMetrics, 'ratings' | 'bookmarks'>
@@ -122,7 +122,7 @@ export function TopicCard({
             {/* Metrics */}
             <div className='mt-2 flex items-center gap-4 text-sm text-muted-foreground'>
               {/* Average rating — hidden for topics that don't allow reviews */}
-              {topic.allow_reviews && averageRating !== null && (
+              {topic.should_allow_reviews && averageRating !== null && (
                 <div className='flex items-center gap-1'>
                   <Star className='h-4 w-4 fill-yellow-400 text-yellow-400' />
                   <span>{averageRating.toFixed(1)}</span>
@@ -130,7 +130,7 @@ export function TopicCard({
               )}
 
               {/* Review count — hidden for topics that don't allow reviews */}
-              {topic.allow_reviews && reviewCount > 0 && (
+              {topic.should_allow_reviews && reviewCount > 0 && (
                 <span>{formatCompactNumber(reviewCount, uiLocale)} reviews</span>
               )}
 

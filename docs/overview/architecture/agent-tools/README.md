@@ -107,7 +107,7 @@ reference.
   slug, like the REST `:idOrSlug` routes, and results return the resolved topic UUID. A value that
   names no topic returns `{ success: false, error: 'Topic not found' }`. The search tools'
   `similar_topic_id` is a similarity-search seed and takes a UUID, and write-tool fields that
-  mirror a REST request body (such as `manage_my_cards.card_id`) take what that body takes.
+  mirror a REST request body (such as `manage_my_cards.card_topic_id`) take what that body takes.
 - **Search queries** — a tool with a REST equivalent names its query after the REST parameter
   (`q`, `text_search_query`, `semantic_search_query`) and pages like it (`after`, `limit`,
   `page_info`; see [Paged results](../../../requirements/api/v1/mcp/README.md#paged-results)).

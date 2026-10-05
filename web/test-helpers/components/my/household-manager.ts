@@ -18,7 +18,7 @@ export function makeMembership(overrides: Partial<Membership> = {}): Membership 
 
 export function makeSection(overrides: Partial<HouseholdSection> = {}): HouseholdSection {
   return {
-    household: { id: 'household-1', owner_id: 'user-1', updated_at: '2026-07-01T00:00:00Z' },
+    household: { id: 'household-1', owner_user_id: 'user-1', updated_at: '2026-07-01T00:00:00Z' },
     isOwner: true,
     memberships: [makeMembership()],
     membershipPageInfo: {

@@ -49,7 +49,7 @@ export function CreateSourceForm({ onSuccess }: { onSuccess?: () => void }) {
         const controller = new AbortController()
         abortControllerRef.current = controller
 
-        const data = await importRssFeeds({ urls: parsedUrls, follow: true })
+        const data = await importRssFeeds({ urls: parsedUrls, should_follow_imported_feeds: true })
         setUrls('')
         setImportProgress({
           batchId: data.import.id,

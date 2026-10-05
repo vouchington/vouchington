@@ -6,7 +6,7 @@ import type { StripeEventRecord, StripeEventRow } from './events-types.mts'
 export async function getStripeEventById(id: string): Promise<StripeEventRecord | null> {
   const { rows } = await read(sql`/* getStripeEventById */
     SELECT
-      id, stripe_event_id, event_type, livemode, api_version, stripe_created_at,
+      id, stripe_event_id, event_type, is_live_mode, api_version, stripe_created_at,
       customer_id, subscription_id, invoice_id, checkout_session_id, received_at,
       processing_attempt_id, dispatched_at, processing_started_at, processing_attempts,
       processed_at, ignored_at, failed_at, last_error_at, last_error_message, payload, created_at
@@ -54,7 +54,7 @@ export async function markStripeEventProcessing(
       AND failed_at IS NULL
       AND (processing_started_at IS NULL OR last_error_at IS NOT NULL)
     RETURNING
-      id, stripe_event_id, event_type, livemode, api_version, stripe_created_at,
+      id, stripe_event_id, event_type, is_live_mode, api_version, stripe_created_at,
       customer_id, subscription_id, invoice_id, checkout_session_id, received_at,
       processing_attempt_id, dispatched_at, processing_started_at, processing_attempts,
       processed_at, ignored_at, failed_at, last_error_at, last_error_message, payload, created_at

@@ -3,7 +3,7 @@ import type { PageInfo } from '@voucha/types/pagination'
 export type CopyrightEuNoticeInput = {
   notifier_name: string
   notifier_email: string
-  good_faith_statement: true
+  has_good_faith_statement: true
   contact: string
   content_description: string
   grounds: string

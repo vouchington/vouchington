@@ -69,7 +69,7 @@ export async function getTrendingCommunities(
         AND cpr.approved_at IS NOT NULL
         AND cpr.unpublished_at IS NULL
         AND cpr.rejected_at IS NULL
-      JOIN posts access_post ON access_post.id = COALESCE(p.root_id, p.id)
+      JOIN posts access_post ON access_post.id = COALESCE(p.root_post_id, p.id)
       WHERE p.community_id IS NOT NULL
         AND p.id >= ${postCutoffId}
         AND `

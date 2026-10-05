@@ -385,7 +385,7 @@ app.route('/api/v1/copyright-form-intakes/:id/reviews').post(async (ctx: Context
     ctx,
     'POST:/api/v1/copyright-form-intakes/:id/reviews',
   )
-  ctx.assert(typeof body.accepted === 'boolean', 422, 'accepted must be a boolean')
+  ctx.assert(typeof body.is_accepted === 'boolean', 422, 'is_accepted must be a boolean')
   validateRequestContract(ctx, 'POST:/api/v1/copyright-form-intakes/:id/reviews', {
     path: ctx.params,
     body,
@@ -393,13 +393,13 @@ app.route('/api/v1/copyright-form-intakes/:id/reviews').post(async (ctx: Context
   const reviewed = await reviewCopyrightFormIntake({
     intakeId,
     currentUser,
-    accepted: body.accepted,
+    is_accepted: body.is_accepted,
     rationale: body.rationale as string,
   })
   ctx.json({
     copyright_notice: { id: reviewed.noticeId },
     copyright_submission: { id: reviewed.submissionId },
-    accepted: reviewed.accepted,
+    is_accepted: reviewed.is_accepted,
   })
 })
 
@@ -510,7 +510,7 @@ app.route('/api/v1/copyright-submissions/:id/counter-notice-reviews').post(async
     ctx,
     'POST:/api/v1/copyright-submissions/:id/counter-notice-reviews',
   )
-  ctx.assert(typeof body.accepted === 'boolean', 422, 'accepted must be a boolean')
+  ctx.assert(typeof body.is_accepted === 'boolean', 422, 'is_accepted must be a boolean')
   validateRequestContract(ctx, 'POST:/api/v1/copyright-submissions/:id/counter-notice-reviews', {
     path: ctx.params,
     body,
@@ -518,7 +518,7 @@ app.route('/api/v1/copyright-submissions/:id/counter-notice-reviews').post(async
   const result = await reviewCopyrightCounterNotice({
     submissionId,
     currentUser,
-    accepted: body.accepted,
+    is_accepted: body.is_accepted,
     rationale: body.rationale as string,
   })
   ctx.json({
@@ -560,11 +560,11 @@ app.route('/api/v1/copyright-submissions/:id/legal-hold-assessments').post(async
     'received_by_designated_agent_at',
   )
   ctx.assert(
-    typeof body.from_original_claimant === 'boolean',
+    typeof body.is_from_original_claimant === 'boolean',
     422,
-    'from_original_claimant is required',
+    'is_from_original_claimant is required',
   )
-  ctx.assert(typeof body.same_material === 'boolean', 422, 'same_material is required')
+  ctx.assert(typeof body.is_same_material === 'boolean', 422, 'is_same_material is required')
   ctx.assert(
     (proceedingKind === null && commencedAt === null) ||
       (proceedingKind !== null && commencedAt !== null),
@@ -586,12 +586,12 @@ app.route('/api/v1/copyright-submissions/:id/legal-hold-assessments').post(async
     currentUser,
     submissionId,
     assessedAt: new Date(),
-    fromOriginalClaimant: body.from_original_claimant,
+    fromOriginalClaimant: body.is_from_original_claimant,
     proceedingKind,
     ccbClaimKind,
     commencedAt,
     receivedByDesignatedAgentAt,
-    sameMaterial: body.same_material,
+    sameMaterial: body.is_same_material,
     targetIds,
     rationale: body.rationale as string,
   })

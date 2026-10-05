@@ -240,7 +240,7 @@ function makeCrawlBasic(data: {
     id: data.id,
     url_id: data.urlId,
     created_at: new Date(),
-    crawler_id: data.crawlerId,
+    hostname_crawler_configuration_id: data.crawlerId,
     last_modified_at: null,
     etag: null,
     html_sha256: null,
@@ -260,6 +260,6 @@ function makeCrawlBasic(data: {
     embed_metadata: null,
     embed_oembed_url: null,
     embed_oembed_resolved_at: null,
-    lang: null,
+    language: null,
   }
 }

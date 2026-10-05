@@ -10,8 +10,8 @@ import { invalidate } from '@services/entity-cache/invalidate'
 export type CommunityRootPostType = 'discussion' | 'review' | 'data_point'
 
 export type UpdateCommunityPostTypeSettingsInput = {
-  allow_review_posts?: boolean
-  allow_data_point_posts?: boolean
+  should_allow_review_posts?: boolean
+  should_allow_data_point_posts?: boolean
 }
 
 export function isCommunityRootPostType(postType: string): postType is CommunityRootPostType {
@@ -19,12 +19,12 @@ export function isCommunityRootPostType(postType: string): postType is Community
 }
 
 export function communityAllowsPostType(
-  community: Pick<Community, 'allow_review_posts' | 'allow_data_point_posts'>,
+  community: Pick<Community, 'should_allow_review_posts' | 'should_allow_data_point_posts'>,
   postType: CommunityRootPostType,
 ): boolean {
   if (postType === 'discussion') return true
-  if (postType === 'review') return community.allow_review_posts
-  return community.allow_data_point_posts
+  if (postType === 'review') return community.should_allow_review_posts
+  return community.should_allow_data_point_posts
 }
 
 export async function updateCommunityPostTypeSettings(
@@ -38,25 +38,31 @@ export async function updateCommunityPostTypeSettings(
   assert(!community.archived_at, 403, 'Cannot update archived community')
   assert(currentUserCanModerateCommunity(currentUser, community, membership), 403, 'Forbidden')
 
-  if ('allow_review_posts' in input) {
-    assert(typeof input.allow_review_posts === 'boolean', 422, 'allow_review_posts must be boolean')
-  }
-  if ('allow_data_point_posts' in input) {
+  if ('should_allow_review_posts' in input) {
     assert(
-      typeof input.allow_data_point_posts === 'boolean',
+      typeof input.should_allow_review_posts === 'boolean',
       422,
-      'allow_data_point_posts must be boolean',
+      'should_allow_review_posts must be boolean',
+    )
+  }
+  if ('should_allow_data_point_posts' in input) {
+    assert(
+      typeof input.should_allow_data_point_posts === 'boolean',
+      422,
+      'should_allow_data_point_posts must be boolean',
     )
   }
 
   const updateQuery = sql`/* updateCommunityPostTypeSettings */
     UPDATE communities SET updated_at = CURRENT_TIMESTAMP`
 
-  if ('allow_review_posts' in input) {
-    updateQuery.append(sql`, allow_review_posts = ${input.allow_review_posts}`)
+  if ('should_allow_review_posts' in input) {
+    updateQuery.append(sql`, should_allow_review_posts = ${input.should_allow_review_posts}`)
   }
-  if ('allow_data_point_posts' in input) {
-    updateQuery.append(sql`, allow_data_point_posts = ${input.allow_data_point_posts}`)
+  if ('should_allow_data_point_posts' in input) {
+    updateQuery.append(
+      sql`, should_allow_data_point_posts = ${input.should_allow_data_point_posts}`,
+    )
   }
 
   updateQuery.append(sql`

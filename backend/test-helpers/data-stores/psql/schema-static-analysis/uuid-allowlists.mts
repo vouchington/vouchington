@@ -76,11 +76,11 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'Opaque fencing token rotated for the current exclusive claimant; it intentionally identifies no durable relation.',
   ],
   [
-    'post_votes.outbound_ap_like_activity_id',
+    'post_votes.outbound_activitypub_like_activity_id',
     'ActivityPub protocol identity for the current Like generation; it intentionally identifies no database row.',
   ],
   [
-    'relation__user__follow__user.outbound_ap_follow_activity_id',
+    'relation__user__follow__user.outbound_activitypub_follow_activity_id',
     'ActivityPub protocol identity for the active Follow generation; it intentionally identifies no database row.',
   ],
   ['moderation_appeals.approved_by_id', 'Audit ownership survives moderator deletion.'],

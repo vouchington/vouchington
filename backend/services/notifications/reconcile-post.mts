@@ -142,7 +142,7 @@ async function populatePostNotificationRecipients(
     ON CONFLICT (user_id) DO NOTHING
   `,
     [
-      post.parent_id,
+      post.parent_post_id,
       post.post_type,
       post.created_at,
       post.created_by_id,

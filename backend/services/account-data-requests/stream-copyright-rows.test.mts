@@ -59,8 +59,8 @@ describe('copyright export rows that tolerate erased content', () => {
       claimant_contact_ciphertext: encryptSecret('1 Claimant Road', purpose),
       work_description: 'Original photograph',
       idempotency_key: 'key-1',
-      good_faith_belief: true,
-      accuracy_authority_under_penalty_of_perjury: true,
+      has_good_faith_belief: true,
+      has_accuracy_authority_under_penalty_of_perjury: true,
       electronic_signature_ciphertext: encryptSecret('/s/ Claimant', purpose),
       body_ciphertext: encryptSecret(
         JSON.stringify({ claimant_targets: [{ postId: 'p' }] }),
@@ -101,8 +101,8 @@ describe('copyright export rows that tolerate erased content', () => {
       claimant_display_name: 'Claimant Legal Name',
       claimant_contact: '1 Claimant Road',
       work_description: 'Original photograph',
-      good_faith_belief: true,
-      accuracy_authority_under_penalty_of_perjury: true,
+      has_good_faith_belief: true,
+      has_accuracy_authority_under_penalty_of_perjury: true,
       electronic_signature: '/s/ Claimant',
       claimant_targets: [{ postId: 'p' }],
     })
@@ -147,7 +147,7 @@ describe('copyright export rows that tolerate erased content', () => {
       work_description: EXPORT_COPYRIGHT_ERASED_TEXT,
       electronic_signature: EXPORT_COPYRIGHT_ERASED_TEXT,
       claimant_targets: EXPORT_COPYRIGHT_ERASED_TEXT,
-      good_faith_belief: true,
+      has_good_faith_belief: true,
     })
   })
 

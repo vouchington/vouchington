@@ -53,7 +53,7 @@ const community = { id: 'c-1', slug: 'test-community', name: 'Test' } as Communi
 const action1 = {
   id: 'a-1',
   community_id: 'c-1',
-  actor_id: 'u-1',
+  actor_user_id: 'u-1',
   action_type: 'ban' as const,
   post_id: null,
   target_user_id: 'u-2',

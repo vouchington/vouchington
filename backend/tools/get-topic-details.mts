@@ -116,8 +116,8 @@ const tool: Tool<ToolArgs, ToolResult> = {
 
         // Resolve bank and brand IDs to names
         const idsToResolve: string[] = []
-        if (cardAttrs?.bank_id) idsToResolve.push(cardAttrs.bank_id)
-        if (cardAttrs?.brand_id) idsToResolve.push(cardAttrs.brand_id)
+        if (cardAttrs?.bank_topic_id) idsToResolve.push(cardAttrs.bank_topic_id)
+        if (cardAttrs?.brand_topic_id) idsToResolve.push(cardAttrs.brand_topic_id)
 
         let bankName: string | null = null
         let brandName: string | null = null
@@ -125,11 +125,11 @@ const tool: Tool<ToolArgs, ToolResult> = {
         if (idsToResolve.length > 0) {
           const resolved = await getTopicsByAnyBatch(idsToResolve)
           let idx = 0
-          if (cardAttrs?.bank_id) {
+          if (cardAttrs?.bank_topic_id) {
             bankName = resolved[idx]?.name ?? null
             idx++
           }
-          if (cardAttrs?.brand_id) {
+          if (cardAttrs?.brand_topic_id) {
             brandName = resolved[idx]?.name ?? null
           }
         }
@@ -146,8 +146,8 @@ const tool: Tool<ToolArgs, ToolResult> = {
         const rewardsAttrs = await getRewardsProgramAttributes(topic)
 
         let companyName: string | null = null
-        if (rewardsAttrs?.company_id) {
-          const [resolved] = await getTopicsByAnyBatch([rewardsAttrs.company_id])
+        if (rewardsAttrs?.company_topic_id) {
+          const [resolved] = await getTopicsByAnyBatch([rewardsAttrs.company_topic_id])
           companyName = resolved?.name ?? null
         }
 

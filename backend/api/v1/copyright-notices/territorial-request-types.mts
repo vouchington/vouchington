@@ -24,7 +24,7 @@ export type CopyrightTerritorialNoticeRequest = {
 export type CopyrightEuNoticeRequest = CopyrightTerritorialNoticeRequest & {
   notifier_name: string
   notifier_email: string
-  good_faith_statement: true
+  has_good_faith_statement: true
 }
 
 export type CopyrightTerritorialStatementRequest = TerritorialDecisionRequest & {
@@ -64,7 +64,7 @@ export type CopyrightEuDisputeSettlementReferralRequest = {
   body_name: string
   referred_at: string
   referred_by_party: 'poster' | 'notifier'
-  referred_by_user_id?: string
+  referred_by_id?: string
 }
 
 export type CopyrightEuDisputeSettlementOutcomeRequest = {

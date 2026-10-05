@@ -7,6 +7,7 @@
 -- 0003-00-00-images.sql
 -- ============================================================================
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS images (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
 
@@ -38,7 +39,7 @@ CREATE TABLE IF NOT EXISTS images (
   ),
 
   openai_omni_moderation_results JSONB,
-  openai_omni_moderation_flagged BOOLEAN,
+  is_flagged_by_openai_omni_moderation BOOLEAN,
   openai_omni_moderation_created_at TIMESTAMPTZ,
 
   quarantine_pending_at TIMESTAMPTZ, -- moderation-history-guard-allow: a sensitive-image transfer remains blocked until its permanent evidence copy succeeds
@@ -105,7 +106,7 @@ COMMENT ON COLUMN images.upload_completed_at IS 'When upload processing finished
 COMMENT ON COLUMN images.upload_failed_at IS 'When upload processing failed terminally. NULL until failed.';
 COMMENT ON COLUMN images.upload_error IS 'Error message if upload processing failed.';
 COMMENT ON COLUMN images.openai_omni_moderation_results IS 'Raw JSONB results from OpenAI omni moderation API.';
-COMMENT ON COLUMN images.openai_omni_moderation_flagged IS 'Whether OpenAI moderation flagged this image.';
+COMMENT ON COLUMN images.is_flagged_by_openai_omni_moderation IS 'Whether OpenAI moderation flagged this image.';
 COMMENT ON COLUMN images.openai_omni_moderation_created_at IS 'When the moderation check was performed.';
 COMMENT ON COLUMN images.quarantine_pending_at IS 'When CSAM quarantine began. Pending images are unavailable until permanent copy and deletion complete.';
 COMMENT ON COLUMN images.quarantined_at IS 'When the image was copied to the CSAM quarantine bucket. NULL until the permanent copy succeeds.';

@@ -150,7 +150,7 @@ describe('identity verification fields in public batch', () => {
     expect(results[0]?.verified_display_name).toBe('Alice Smith')
   })
 
-  it('returns null verified_display_name when verified_badge_visible=false', async () => {
+  it('returns null verified_display_name when is_verified_badge_visible=false', async () => {
     const user = await createTestUser()
     const fingerprint = v7().replaceAll('-', '').padEnd(64, '0')
     await insertTestVerifiedIdentity(user.id, fingerprint, `vs_${v7()}`)

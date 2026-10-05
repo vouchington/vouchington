@@ -118,9 +118,7 @@ export function PostList({
               electionVote={allElectionVotes[post.id]}
               view={listStyle}
               filterReviewTopicIds={filterReviewTopicIds}
-              sharedByUser={
-                result.shared_by_user_id ? allUsers[result.shared_by_user_id] : undefined
-              }
+              sharedByUser={result.shared_by_id ? allUsers[result.shared_by_id] : undefined}
               community={post.community_id ? allCommunities[post.community_id] : undefined}
               sharedAt={result.shared_at}
               linkEmbed={allLinkEmbeds[post.id]}

@@ -46,14 +46,14 @@ CREATE TABLE IF NOT EXISTS posts (
   -- posts need some content
   CHECK ((title IS NOT NULL AND title <> '') OR (markdown IS NOT NULL AND markdown <> '') OR (ai_summary_markdown IS NOT NULL AND ai_summary_markdown <> '')),
 
-  parent_id UUID REFERENCES posts ON DELETE CASCADE,
-  CHECK (parent_id != id), -- a post cannot be its own parent
-  CHECK (NOT (post_type = 'comment' AND parent_id IS NULL)), -- a comment must have a parent. In the future, a post could have a parent so we don't add a CHECK for that.
-  CHECK (parent_id IS NULL OR id > parent_id), -- UUIDv7 partition pruning: child posts created after parent
+  parent_post_id UUID REFERENCES posts ON DELETE CASCADE,
+  CHECK (parent_post_id != id), -- a post cannot be its own parent
+  CHECK (NOT (post_type = 'comment' AND parent_post_id IS NULL)), -- a comment must have a parent. In the future, a post could have a parent so we don't add a CHECK for that.
+  CHECK (parent_post_id IS NULL OR id > parent_post_id), -- UUIDv7 partition pruning: child posts created after parent
 
-  root_id UUID REFERENCES posts ON DELETE CASCADE, -- the root post in a comment thread
-  CHECK (root_id != id), -- a post cannot be its own root
-  CHECK (root_id IS NULL OR id > root_id), -- UUIDv7 partition pruning: descendants created after root
+  root_post_id UUID REFERENCES posts ON DELETE CASCADE, -- the root post in a comment thread
+  CHECK (root_post_id != id), -- a post cannot be its own root
+  CHECK (root_post_id IS NULL OR id > root_post_id), -- UUIDv7 partition pruning: descendants created after root
 
   broadcast broadcast_types NOT NULL DEFAULT 'everyone',
   privacy privacy_types NOT NULL DEFAULT 'public',
@@ -169,7 +169,7 @@ CREATE TABLE IF NOT EXISTS post_topic_alias_sources (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   post_id UUID NOT NULL REFERENCES posts ON DELETE CASCADE,
   topic_alias_id UUID NOT NULL REFERENCES topic_aliases ON DELETE RESTRICT,
-  contributor_id UUID NOT NULL REFERENCES users ON DELETE RESTRICT,
+  contributor_user_id UUID NOT NULL REFERENCES users ON DELETE RESTRICT,
   source post_topic_alias_source_types NOT NULL CHECK (source IN ('title', 'markdown', 'explicit')),
   authored_token TEXT NOT NULL,
   CHECK (char_length(authored_token) <= 255),
@@ -191,12 +191,12 @@ ON post_topic_alias_sources (topic_alias_id, post_id DESC);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_topic_alias_sources__contributor_id
-ON post_topic_alias_sources (contributor_id);
+ON post_topic_alias_sources (contributor_user_id);
 
 COMMENT ON TABLE post_topic_alias_sources IS 'Exact authored post hashtag tokens, keyed by canonical topic alias.';
 COMMENT ON COLUMN post_topic_alias_sources.post_id IS 'The post containing this hashtag occurrence.';
 COMMENT ON COLUMN post_topic_alias_sources.topic_alias_id IS 'The canonical hashtag alias referenced by the authored token.';
-COMMENT ON COLUMN post_topic_alias_sources.contributor_id IS 'The durable author identity used for hashtag contributor aggregation when a deleted account’s posts are reassigned to the tombstone user.';
+COMMENT ON COLUMN post_topic_alias_sources.contributor_user_id IS 'The durable author identity used for hashtag contributor aggregation when a deleted account’s posts are reassigned to the tombstone user.';
 COMMENT ON COLUMN post_topic_alias_sources.source IS 'Where the hashtag was authored: title, markdown, or an explicit category.';
 COMMENT ON COLUMN post_topic_alias_sources.authored_token IS 'The exact authored hashtag token, including its original casing.';
 
@@ -252,8 +252,8 @@ BEFORE UPDATE OF
   title,
   markdown,
   ai_summary_markdown,
-  parent_id,
-  root_id,
+  parent_post_id,
+  root_post_id,
   broadcast,
   privacy,
   is_anonymous,
@@ -332,20 +332,20 @@ WHERE archived_by_id IS NOT NULL;
 -- NOT filtered by deleted_at IS NOT NULL as that would break the comment tree structure
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__parent_id__id
-ON posts (parent_id, id)
-WHERE parent_id IS NOT NULL;
+ON posts (parent_post_id, id)
+WHERE parent_post_id IS NOT NULL;
 
--- find comments in chronological order for a given root post (also the RI-usable index for root_id's FK)
+-- find comments in chronological order for a given root post (also the RI-usable index for root_post_id's FK)
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__root_id__id
-ON posts (root_id, id)
-WHERE root_id IS NOT NULL;
+ON posts (root_post_id, id)
+WHERE root_post_id IS NOT NULL;
 
 -- filter comments by root post and community scope, with id for sorted retrieval
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__root_id__community_id__id
-ON posts (root_id, community_id, id)
-WHERE root_id IS NOT NULL;
+ON posts (root_post_id, community_id, id)
+WHERE root_post_id IS NOT NULL;
 
 -- find existing embeddings by input hash
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -447,8 +447,8 @@ COMMENT ON COLUMN posts.url_id IS 'For link posts: the single external URL this 
 COMMENT ON COLUMN posts.title IS 'Post title (max 255 chars). At least one of title, markdown, or ai_summary_markdown must be non-empty.';
 COMMENT ON COLUMN posts.markdown IS 'Post body in markdown format.';
 COMMENT ON COLUMN posts.ai_summary_markdown IS 'AI-generated summary in markdown. Separate from user-authored markdown. Only administrators can update this via updatePost().';
-COMMENT ON COLUMN posts.parent_id IS 'Parent post for threaded comments. NULL for top-level posts.';
-COMMENT ON COLUMN posts.root_id IS 'Root post of a comment thread. NULL for top-level posts.';
+COMMENT ON COLUMN posts.parent_post_id IS 'Parent post for threaded comments. NULL for top-level posts.';
+COMMENT ON COLUMN posts.root_post_id IS 'Root post of a comment thread. NULL for top-level posts.';
 COMMENT ON COLUMN posts.broadcast IS 'Audience for this post: everyone, users, followers, or mutual_followers.';
 COMMENT ON COLUMN posts.privacy IS 'Visibility: public or private.';
 COMMENT ON COLUMN posts.is_anonymous IS 'Whether the author''s identity is hidden from other users.';
@@ -753,7 +753,7 @@ CREATE TABLE IF NOT EXISTS agent_moderations (
 
   -- results
   results JSONB NOT NULL,
-  flagged BOOLEAN NOT NULL,
+  is_flagged BOOLEAN NOT NULL,
 
   votes_snapshot_xmax XID8,
   votes_snapshot_xip_count INTEGER,
@@ -801,8 +801,8 @@ CREATE INDEX IF NOT EXISTS idx_agent_moderations__prompt_id ON agent_moderations
 CREATE INDEX IF NOT EXISTS idx_agent_moderations__agent_id ON agent_moderations (agent_id, post_id DESC);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_agent_moderations__flagged_agent ON agent_moderations (agent_id, flagged, post_id DESC)
-WHERE deleted_at IS NULL AND flagged = TRUE;
+CREATE INDEX IF NOT EXISTS idx_agent_moderations__flagged_agent ON agent_moderations (agent_id, is_flagged, post_id DESC)
+WHERE deleted_at IS NULL AND is_flagged = TRUE;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_agent_moderations__lookup ON agent_moderations (post_id, prompt_id, input_sha256)
@@ -811,7 +811,7 @@ WHERE deleted_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_agent_moderations__flagged_prompt
   ON agent_moderations (prompt_id, post_id DESC)
-  WHERE deleted_at IS NULL AND flagged = TRUE;
+  WHERE deleted_at IS NULL AND is_flagged = TRUE;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_agent_moderations__transparency_global
@@ -836,7 +836,7 @@ COMMENT ON COLUMN agent_moderations.moderation_transparency_community_id IS 'Imm
 
 -- Prime per-column planner statistics for the columns getPostMetricsByAnyBatch filters `posts` on
 -- (backend/services/posts/metrics-batch.mts). Those predicates are estimated from per-column stats --
--- null_frac for `deleted_at IS NULL`, n_distinct/MCVs for `root_id` / `parent_id` equality -- which
+-- null_frac for `deleted_at IS NULL`, n_distinct/MCVs for `root_post_id` / `parent_post_id` equality -- which
 -- autoanalyze maintains in production; this ANALYZE just primes them for the freshly loaded table.
 -- A `dependencies` extended-statistics object (stat_posts__root_parent_deleted) previously sat here
 -- and was removed as a measured no-op for this query: `dependencies` only engages when two of its
@@ -844,8 +844,8 @@ COMMENT ON COLUMN agent_moderations.moderation_transparency_community_id IS 'Imm
 -- column-to-outer-reference, `IS NULL`, and `OR`; and on a RANGE-partitioned table like `posts` a
 -- parent-level object is not consulted once the plan scans individual partitions. See
 -- .agents/skills/postgres-node-performance-tuning/SKILL.md#extended-statistics-create-statistics.
-ANALYZE posts (root_id, parent_id, deleted_at);
-COMMENT ON COLUMN agent_moderations.flagged IS 'Whether the moderation flagged this content as problematic.';
+ANALYZE posts (root_post_id, parent_post_id, deleted_at);
+COMMENT ON COLUMN agent_moderations.is_flagged IS 'Whether the moderation flagged this content as problematic.';
 
 -- ==========================================================================
 -- 0270-00-00-post-data-point-topics.sql

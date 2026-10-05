@@ -23,7 +23,7 @@ export async function assertUrlsHaveNoBlockedHostnames(
     FROM urls
     JOIN url_hostnames ON url_hostnames.id = urls.hostname_id
     WHERE urls.id = ANY(${urlIds}::uuid[])
-      AND url_hostnames.blocked = TRUE
+      AND url_hostnames.is_blocked = TRUE
     LIMIT 1
   `)
 

@@ -35,7 +35,7 @@ describe('changes', () => {
       expect(change.user_id).toBe(user.id)
       expect(change.change_type).toBe('admin_grant')
       expect(change.to_plan).toBe('plus')
-      expect(change.cancel_at_period_end).toBe(false)
+      expect(change.should_cancel_at_period_end).toBe(false)
       expect(change.cancelled_at).toBeNull()
       expect(change.expired_at).toBeNull()
       expect(change.past_due_at).toBeNull()

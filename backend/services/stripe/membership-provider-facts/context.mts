@@ -14,9 +14,9 @@ export type MembershipFact = {
   expired_at: Date | null
   past_due_at: Date | null
   paused_at: Date | null
-  auto_renews: boolean
+  should_auto_renew: boolean
   received_at: Date
-  livemode: boolean
+  is_live_mode: boolean
   provider_lineage_id: string
   subscription_id: string | null
   customer_id: string | null
@@ -71,7 +71,7 @@ async function getMembershipFact(
     SELECT membership.user_id, source.id AS membership_source_id, source.membership_provider_lineage_id,
       lineage.application_id, lineage.environment, lineage.provider_lineage_id, lineage.provider_account_id, state.membership_product_id,
       state.effective_at, state.expires_at, state.cancelled_at, state.expired_at, state.past_due_at, state.paused_at,
-      state.auto_renews, event.received_at, event.livemode,
+      state.should_auto_renew, event.received_at, event.is_live_mode,
       event.subscription_id, event.customer_id
     FROM memberships membership
     INNER JOIN membership_sources source ON source.id = membership.membership_source_id

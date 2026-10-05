@@ -151,7 +151,7 @@ function sourceBranchSql(
       SELECT 'post_slug'::text AS kind, NULL::text AS "uuidValue", slug AS "textValue", NULL::text AS "postType", NULL::text AS day, slug AS cursor FROM page ORDER BY slug`)
   } else {
     statement
-      .append(sql`SELECT * FROM posts WHERE id = ${postId}), root AS (SELECT posts.* FROM posts JOIN page ON posts.id = COALESCE(page.root_id, page.id)), keys AS (
+      .append(sql`SELECT * FROM posts WHERE id = ${postId}), root AS (SELECT posts.* FROM posts JOIN page ON posts.id = COALESCE(page.root_post_id, page.id)), keys AS (
       SELECT 'author'::text AS kind, page.created_by_id::text AS "uuidValue", NULL::text AS "textValue", NULL::text AS "postType", NULL::text AS day, '1'::text AS cursor FROM page WHERE created_by_id IS NOT NULL
       UNION ALL SELECT 'author_username', NULL, username, NULL, NULL, '2' FROM users JOIN page ON users.id = page.created_by_id WHERE username IS NOT NULL
       UNION ALL SELECT 'community', community_id::text, NULL, NULL, NULL, '3' FROM page WHERE community_id IS NOT NULL

@@ -33,7 +33,7 @@ describe('allocate', () => {
       await allocateCommunityAgentPromptSlot(plusUser.id, p.id)
 
       const fetched = await getCommunityAgentPrompt(p.id)
-      expect(fetched!.slot_allocated).toBe(true)
+      expect(fetched!.is_slot_allocated).toBe(true)
       expect(fetched!.activated_at).not.toBeNull()
       expect(fetched!.deactivated_at).toBeNull()
     })
@@ -143,7 +143,7 @@ describe('allocate', () => {
       const results = await Promise.all(
         [p1.id, p2.id, p3.id].map(id => getCommunityAgentPrompt(id)),
       )
-      expect(results.every(r => r!.slot_allocated)).toBe(true)
+      expect(results.every(r => r!.is_slot_allocated)).toBe(true)
     })
   })
 
@@ -161,7 +161,7 @@ describe('allocate', () => {
       await deallocateCommunityAgentPromptSlot(plusUser.id, p.id)
 
       const fetched = await getCommunityAgentPrompt(p.id)
-      expect(fetched!.slot_allocated).toBe(false)
+      expect(fetched!.is_slot_allocated).toBe(false)
       expect(fetched!.activated_at).toBeNull()
       expect(fetched!.deactivated_at).not.toBeNull()
     })
@@ -194,7 +194,7 @@ describe('allocate', () => {
       await deallocateCommunityAgentPromptSlot(plusUser.id, p.id)
 
       const fetched = await getCommunityAgentPrompt(p.id)
-      expect(fetched!.slot_allocated).toBe(false)
+      expect(fetched!.is_slot_allocated).toBe(false)
       expect(fetched!.activated_at).toBeNull()
       expect(fetched!.deactivated_at).not.toBeNull()
     })
@@ -219,7 +219,7 @@ describe('allocate', () => {
       await allocateCommunityAgentPromptSlot(plusUser.id, reusablePrompt.id)
 
       const fetchedReusablePrompt = await getCommunityAgentPrompt(reusablePrompt.id)
-      expect(fetchedReusablePrompt!.slot_allocated).toBe(true)
+      expect(fetchedReusablePrompt!.is_slot_allocated).toBe(true)
     })
 
     it('rejects deallocation of unallocated prompt', async () => {

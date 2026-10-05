@@ -27,7 +27,7 @@ endpoints are always mounted; the `fediverse` feature flag gates frontend visibi
     HTTP CONNECT proxy and fail closed if the proxy is unavailable.
 
 - `GET /api/v1/fediverse/instances`
-  - Query: `q`, `sort=new|best|relevance`, `limit`, `after` (opaque cursor), `software`, `open_registrations`,
+  - Query: `q`, `sort=new|best|relevance`, `limit`, `after` (opaque cursor), `software`, `is_open_for_registrations`,
     `integration_status=pending|approved|blocked`. The `integration_status` filter is admin-only;
     anonymous and non-admin callers receive `403` when they supply it. The unfiltered directory
     remains public.

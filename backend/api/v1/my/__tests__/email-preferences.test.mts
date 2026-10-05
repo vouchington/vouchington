@@ -29,9 +29,9 @@ describe('GET /api/v1/my/email-preferences', () => {
 
     const response = await request.get('/api/v1/my/email-preferences').expect(200)
     expect(response.body.email_preferences).toMatchObject({
-      engagement_emails_enabled: true,
+      is_engagement_emails_enabled: true,
       news_digest_frequency: 'weekly',
-      moderation_emails_enabled: true,
+      is_moderation_emails_enabled: true,
       community_digest_frequency: 'weekly',
     } satisfies Partial<EmailPreferences>)
   })
@@ -52,9 +52,9 @@ describe('PATCH /api/v1/my/email-preferences', () => {
     const response = await request
       .patch('/api/v1/my/email-preferences')
       .send({
-        engagement_emails_enabled: false,
+        is_engagement_emails_enabled: false,
         news_digest_frequency: 'daily',
-        moderation_emails_enabled: false,
+        is_moderation_emails_enabled: false,
         community_digest_frequency: 'none',
         moderation_email_cadence: 'selected_days',
         moderation_email_days_of_week: [1, 3, 5],
@@ -64,9 +64,9 @@ describe('PATCH /api/v1/my/email-preferences', () => {
       .expect(200)
 
     expect(response.body.email_preferences).toMatchObject({
-      engagement_emails_enabled: false,
+      is_engagement_emails_enabled: false,
       news_digest_frequency: 'daily',
-      moderation_emails_enabled: false,
+      is_moderation_emails_enabled: false,
       community_digest_frequency: 'none',
       moderation_email_cadence: 'selected_days',
       moderation_email_days_of_week: [1, 3, 5],
@@ -103,7 +103,7 @@ describe('POST /api/v1/email-unsubscribe', () => {
       .expect(200)
 
     await expect(getEmailPreferences(user.id)).resolves.toMatchObject({
-      engagement_emails_enabled: false,
+      is_engagement_emails_enabled: false,
     } satisfies Partial<EmailPreferences>)
   })
 
@@ -111,7 +111,7 @@ describe('POST /api/v1/email-unsubscribe', () => {
     ['news_digest' as const, { news_digest_frequency: 'none' }],
     [
       'community_digest' as const,
-      { moderation_emails_enabled: false, community_digest_frequency: 'none' },
+      { is_moderation_emails_enabled: false, community_digest_frequency: 'none' },
     ],
   ])('unsubscribes from the %s category', async (category, expected) => {
     const user = await createTestUser()
@@ -135,7 +135,7 @@ describe('POST /api/v1/email-unsubscribe', () => {
     await createRequest().post('/api/v1/email-unsubscribe').send({ token }).expect(200)
 
     await expect(getEmailPreferences(user.id)).resolves.toMatchObject({
-      engagement_emails_enabled: false,
+      is_engagement_emails_enabled: false,
     } satisfies Partial<EmailPreferences>)
   })
 })

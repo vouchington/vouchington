@@ -28,9 +28,12 @@ import { reconcileTestPublicationUntilSnapshotsComplete as reconcilePostPublicat
 describe('post publication reconciliation', () => {
   it('expands an intermediate post scope through every nested reply', async () => {
     const root = await createTestPost()
-    const post = await createTestPost({ parent_id: root.id, post_type: 'comment' })
-    const nestedReply = await createTestPost({ parent_id: post.id, post_type: 'comment' })
-    const linkedDiscussion = await createTestPost({ parent_id: post.id, post_type: 'discussion' })
+    const post = await createTestPost({ parent_post_id: root.id, post_type: 'comment' })
+    const nestedReply = await createTestPost({ parent_post_id: post.id, post_type: 'comment' })
+    const linkedDiscussion = await createTestPost({
+      parent_post_id: post.id,
+      post_type: 'discussion',
+    })
     await using query = await beginTransaction()
     const work = await recordPostPublicationChange(query, {
       scope: { type: 'post', postId: post.id },
@@ -58,12 +61,12 @@ describe('post publication reconciliation', () => {
     const root = await createTestPost({ user: author, community_id: community.id })
     const reply = await createTestPost({
       user: replyAuthor,
-      parent_id: root.id,
+      parent_post_id: root.id,
       post_type: 'comment',
     })
     const nestedReply = await createTestPost({
       user: author,
-      parent_id: reply.id,
+      parent_post_id: reply.id,
       post_type: 'comment',
     })
     await using authorChangeQuery = await beginTransaction()
@@ -102,7 +105,7 @@ describe('post publication reconciliation', () => {
     const story = await insertTestStory()
     await setTestItemStoryId(item.id, story.id)
     const root = await createTestPost({ user })
-    const reply = await createTestPost({ user, parent_id: root.id, post_type: 'comment' })
+    const reply = await createTestPost({ user, parent_post_id: root.id, post_type: 'comment' })
     await insertTestPostStory(root.id, story.id, user.id)
     await using query = await beginTransaction()
     const work = await recordPostPublicationChange(query, {
@@ -252,8 +255,8 @@ describe('post publication reconciliation', () => {
 
     const stalePost = {
       id: post.id,
-      parent_id: post.parent_id ?? null,
-      root_id: post.root_id,
+      parent_post_id: post.parent_post_id ?? null,
+      root_post_id: post.root_post_id,
       created_by_id: post.created_by_id,
       community_id: post.community_id,
       post_type: post.post_type,

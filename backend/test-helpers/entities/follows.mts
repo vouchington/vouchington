@@ -23,7 +23,7 @@ export async function insertTestLegacyLocalFollow(
     INSERT INTO relation__user__follow__user (
       subject_id,
       object_id,
-      outbound_ap_follow_activity_id
+      outbound_activitypub_follow_activity_id
     )
     VALUES (${followerId}, ${followingId}, NULL)
     ON CONFLICT DO NOTHING

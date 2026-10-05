@@ -46,7 +46,7 @@ export async function getVisiblePostCollectionRows(
     .append(sql` relation
     JOIN posts candidate_post ON candidate_post.id = relation.object_id
     JOIN posts access_post
-      ON access_post.id = COALESCE(candidate_post.root_id, candidate_post.id)
+      ON access_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
     WHERE relation.subject_id = ${userId}
       AND relation.deleted_at IS NULL
       AND candidate_post.post_type::text != ALL(${[...BLOCKED_POST_TYPES]}::text[])

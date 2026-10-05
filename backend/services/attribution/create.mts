@@ -27,11 +27,11 @@ export async function createSessionReferralAttribution({
   assert(referrerId, 404, 'Referrer not found')
   assert(referrerId !== userId, 400, 'Cannot refer yourself')
 
-  // Dedup on (session_id, referrer_id): a repeat click replaces the prior row with a
+  // Dedup on (session_id, referrer_user_id): a repeat click replaces the prior row with a
   // fresh id, moving it to the front of both the 30-day retention sweep and the
   // recency-ordered click log — see docs/overview/architecture/partitioning-strategy.md.
   // ON CONFLICT is unavailable here: a unique index on a RANGE(id)-partitioned table
-  // must include the partition key, so (session_id, referrer_id) can't be made unique.
+  // must include the partition key, so (session_id, referrer_user_id) can't be made unique.
   //
   // A converted row (signed_up_at set) is frozen instead of moved: minting a new id
   // would make created_at (uuid_extract_timestamp(id)) postdate signed_up_at, which
@@ -45,7 +45,7 @@ export async function createSessionReferralAttribution({
     sql`/* createSessionReferralAttribution: read prior candidate owners */
       SELECT user_id FROM session_referral_attributions
       WHERE session_id = ${sessionId}
-        AND referrer_id = ${referrerId}
+        AND referrer_user_id = ${referrerId}
         AND signed_up_at IS NULL
     `,
   )
@@ -81,7 +81,7 @@ export async function createSessionReferralAttribution({
   }>(sql`/* createSessionReferralAttribution: remove prior unconverted click for this pair */
     DELETE FROM session_referral_attributions
     WHERE session_id = ${sessionId}
-      AND referrer_id = ${referrerId}
+      AND referrer_user_id = ${referrerId}
       AND signed_up_at IS NULL
     RETURNING user_id
   `)
@@ -92,7 +92,7 @@ export async function createSessionReferralAttribution({
       await query(sql`/* createSessionReferralAttribution: check for a frozen converted row */
       SELECT 1 FROM session_referral_attributions
       WHERE session_id = ${sessionId}
-        AND referrer_id = ${referrerId}
+        AND referrer_user_id = ${referrerId}
         AND signed_up_at IS NOT NULL
       LIMIT 1
     `)
@@ -108,7 +108,7 @@ export async function createSessionReferralAttribution({
       row => row.user_id !== null && activeOwnerIds.has(row.user_id),
     )?.user_id
     await query(sql`/* createSessionReferralAttribution: insert click (new or moved-to-latest) */
-      INSERT INTO session_referral_attributions (session_id, referrer_id, landing_url, user_id, utm_source, utm_medium, utm_campaign, utm_content)
+      INSERT INTO session_referral_attributions (session_id, referrer_user_id, landing_url, user_id, utm_source, utm_medium, utm_campaign, utm_content)
       VALUES (${sessionId}, ${referrerId}, ${landingUrl}, ${userId ?? priorUserId ?? null}, ${utm?.utmSource ?? null}, ${utm?.utmMedium ?? null}, ${utm?.utmCampaign ?? null}, ${utm?.utmContent ?? null})
     `)
   }

@@ -14,7 +14,7 @@ export async function releaseActivityPubInboxDelivery(
     WHERE id = ${deliveryId}
       AND processing_attempt_id = ${processingAttemptId}
       AND processing_at IS NOT NULL
-      AND deferred_until IS NULL
+      AND earliest_retry_at IS NULL
       AND failed_at IS NULL
   `)
   return mutationResult(result.rowCount)
@@ -40,7 +40,7 @@ export async function exhaustActivityPubInboxDelivery(
     WHERE id = ${deliveryId}
       AND processing_attempt_id = ${processingAttemptId}
       AND processing_at IS NOT NULL
-      AND deferred_until IS NULL
+      AND earliest_retry_at IS NULL
       AND failed_at IS NULL
   `)
   return mutationResult(result.rowCount)
@@ -55,7 +55,7 @@ export async function rejectActivityPubInboxDelivery(
     WHERE id = ${deliveryId}
       AND processing_attempt_id = ${processingAttemptId}
       AND processing_at IS NOT NULL
-      AND deferred_until IS NULL
+      AND earliest_retry_at IS NULL
       AND failed_at IS NULL
   `)
   return mutationResult(result.rowCount)
@@ -75,7 +75,7 @@ export async function completeActivityPubInboxDelivery(
         AND verified_at IS NOT NULL
         AND remote_actor_id IS NOT NULL
         AND sender_allowed_at IS NOT NULL
-        AND deferred_until IS NULL
+        AND earliest_retry_at IS NULL
         AND failed_at IS NULL
     `,
     options,

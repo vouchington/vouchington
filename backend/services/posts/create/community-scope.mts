@@ -33,7 +33,11 @@ export async function resolvePostScope({
   if (updates.community_id !== undefined) {
     return resolveCommunityPostScope({ creator, defaults, options, updates })
   }
-  assert(!updates.parent_id, 422, 'parent_id is only allowed for comments or community discussions')
+  assert(
+    !updates.parent_post_id,
+    422,
+    'parent_post_id is only allowed for comments or community discussions',
+  )
   return { communityId: null, parentId: null, rootId: null }
 }
 
@@ -82,7 +86,7 @@ async function resolveCommunityPostScope({
     422,
     'Private community posts must be private for signed-in users',
   )
-  if (!updates.parent_id) return { communityId: community.id, parentId: null, rootId: null }
+  if (!updates.parent_post_id) return { communityId: community.id, parentId: null, rootId: null }
   return resolveDiscussInCommunityScope({ communityId: community.id, options, updates })
 }
 
@@ -100,13 +104,13 @@ async function resolveDiscussInCommunityScope({
     422,
     'Only discussions can be discussed in a community',
   )
-  assert(isUUID(updates.parent_id!), 422, 'Invalid parent_id')
-  const sourcePost = await getPostByAny(updates.parent_id!, options)
+  assert(isUUID(updates.parent_post_id!), 422, 'Invalid parent_post_id')
+  const sourcePost = await getPostByAny(updates.parent_post_id!, options)
   assert(sourcePost, 422, 'Source post not found')
   assert(!sourcePost.deleted_at, 422, 'Source post not found')
   assert(!sourcePost.community_id, 422, 'Only global posts can be discussed in a community')
   assert(sourcePost.post_type !== 'comment', 422, 'Comments cannot be discussed in a community')
-  assert(!sourcePost.root_id, 422, 'Only root posts can be discussed in a community')
+  assert(!sourcePost.root_post_id, 422, 'Only root posts can be discussed in a community')
   assert(
     sourcePost.broadcast === 'everyone' && sourcePost.privacy === 'public',
     422,

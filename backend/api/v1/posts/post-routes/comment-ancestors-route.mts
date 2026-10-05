@@ -43,8 +43,8 @@ const postVoteOptions: CreateVoteHandlerOptions = {
         ? targetPost
         : await getRouteAccessPost(targetPost)
     const commentRecommendationRoot =
-      routeAccessPost === null && targetPost.root_id
-        ? await getPostByAnyCached(targetPost.root_id)
+      routeAccessPost === null && targetPost.root_post_id
+        ? await getPostByAnyCached(targetPost.root_post_id)
         : null
     const accessPost =
       commentRecommendationRoot?.post_type === 'topic_recommendation'
@@ -96,7 +96,7 @@ const postVoteOptions: CreateVoteHandlerOptions = {
       const rootPost = await getRouteAccessPost(votedPost)
       if (!rootPost || !(await canViewPost(null, rootPost))) return
       if (!vote.id) throw new Error('Post vote event is missing its durable identity')
-      const activityId = isLike ? vote.outbound_ap_like_activity_id : vote.id
+      const activityId = isLike ? vote.outbound_activitypub_like_activity_id : vote.id
       const originalActivityId = vote.previous_outbound_ap_like_activity_id
       if (!activityId) throw new Error('Post Like is missing its durable activity identity')
       // A pre-identity Like cannot be linked to the activity that was actually delivered.

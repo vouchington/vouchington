@@ -59,7 +59,7 @@ export async function assertImagesReadyForSurface(
     SELECT id, (SELECT count(DISTINCT asset) FROM unnest(${ids}::uuid[]) AS requested(asset)) AS expected
     FROM images WHERE id = ANY(${ids}::uuid[])
       AND deleted_at IS NULL AND upload_completed_at IS NOT NULL AND quarantine_pending_at IS NULL
-      AND openai_omni_moderation_flagged = FALSE AND openai_omni_moderation_results IS NOT NULL
+      AND is_flagged_by_openai_omni_moderation = FALSE AND openai_omni_moderation_results IS NOT NULL
       AND openai_omni_moderation_created_at IS NOT NULL
     ORDER BY id FOR SHARE
   `)

@@ -93,7 +93,7 @@ async function createAuthenticatedCopyrightSubmission(
     }
   >(sql`/* createCopyrightSubmission:existing */
     SELECT submission.id, submission.copyright_notice_id, submission.kind, submission.received_at,
-      submission.source_kind, submission.submitted_by_user_id, submission.body_ciphertext,
+      submission.source_kind, submission.submitted_by_id, submission.body_ciphertext,
       request.request_sha256
     FROM copyright_notice_submission_requests request
     JOIN copyright_notice_submissions submission ON submission.id = request.copyright_notice_submission_id
@@ -138,10 +138,10 @@ async function createAuthenticatedCopyrightSubmission(
   const { rows } =
     await transaction<CopyrightNoticeSubmissionRecord>(sql`/* createCopyrightSubmission */
     INSERT INTO copyright_notice_submissions (
-      id, copyright_notice_id, kind, received_at, source_kind, submitted_by_user_id, body_ciphertext
+      id, copyright_notice_id, kind, received_at, source_kind, submitted_by_id, body_ciphertext
     ) VALUES (${submissionId}, ${noticeId}, ${kind}, ${now}, 'signed_in_form', ${currentUser.id},
       ${encryptSecret(JSON.stringify(input), purpose)})
-    RETURNING id, copyright_notice_id, kind, received_at, source_kind, submitted_by_user_id, body_ciphertext
+    RETURNING id, copyright_notice_id, kind, received_at, source_kind, submitted_by_id, body_ciphertext
   `)
   const submission = rows[0]
   assert(submission, 500, 'Copyright submission was not created')

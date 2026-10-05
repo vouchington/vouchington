@@ -33,7 +33,7 @@ describe('authorization', () => {
       createTestRssFeed({}).then(async f => {
         await setRssFeedDiscoverabilityAsSystem({
           rssFeedId: f.id,
-          enabled: false,
+          is_enabled: false,
           reason: 'authorization.test fixture',
         })
         return f.id

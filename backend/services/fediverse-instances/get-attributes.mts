@@ -12,7 +12,7 @@ export type FediverseInstanceAttributes = {
   nodeinfo_software_version: string | null
   total_users: number | null
   monthly_active_users: number | null
-  open_registrations: boolean | null
+  is_open_for_registrations: boolean | null
   nodeinfo_raw: NodeInfoDocument | null
   integration_status: FediverseIntegrationStatus
 }
@@ -27,7 +27,7 @@ export async function getFediverseInstanceAttributes(
       nodeinfo_software_version,
       total_users,
       monthly_active_users,
-      open_registrations,
+      is_open_for_registrations,
       nodeinfo_raw,
       integration_status
     FROM fediverse_instance_topics
@@ -65,7 +65,7 @@ export async function getFediverseInstanceAttributesByIdBatch(
       tfi.nodeinfo_software_version,
       tfi.total_users,
       tfi.monthly_active_users,
-      tfi.open_registrations,
+      tfi.is_open_for_registrations,
       tfi.nodeinfo_raw,
       tfi.integration_status,
       input_data.input_order

@@ -1,7 +1,7 @@
 {
   "stats": [
     {
-      "actor_id": "user-1",
+      "actor_user_id": "user-1",
       "counts": {
         "approve": 2,
         "remove": 1

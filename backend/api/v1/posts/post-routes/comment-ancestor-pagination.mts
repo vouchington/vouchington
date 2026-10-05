@@ -30,12 +30,12 @@ export async function resolveCommentAncestorPage({
 }): Promise<ResolvedCommentAncestorPage | null> {
   const target = await getCommentAncestorTargetByAny(idOrSlug)
   if (!target) return null
-  const rootId = target.root_id ?? target.id
+  const rootId = target.root_post_id ?? target.id
   const cursor =
     after === undefined
       ? undefined
       : decodeCommentAncestorCursor(stringFromUnknown(after), {
-          root_id: rootId,
+          root_post_id: rootId,
           target_id: target.id,
         })
   const page = await getCommentAncestorPage({
@@ -56,7 +56,7 @@ export async function resolveCommentAncestorPage({
               id: page.startId,
               next_id: page.startNextId,
               role: 'start',
-              root_id: page.rootId,
+              root_post_id: page.rootId,
               target_id: page.targetId,
             }),
       end_cursor:
@@ -65,7 +65,7 @@ export async function resolveCommentAncestorPage({
               id: page.ancestors[1]?.id ?? page.startId,
               next_id: page.nextId,
               role: 'end',
-              root_id: page.rootId,
+              root_post_id: page.rootId,
               target_id: page.targetId,
             })
           : null,

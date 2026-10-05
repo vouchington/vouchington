@@ -31,7 +31,7 @@ describe('elapsed membership replacement', () => {
       expired_at: expect.any(Date),
       past_due_at: null,
       paused_at: null,
-      cancel_at_period_end: false,
+      should_cancel_at_period_end: false,
     })
     await expect(getTestMembershipRaw(replacement.id)).resolves.toMatchObject({
       plan: 'pro',

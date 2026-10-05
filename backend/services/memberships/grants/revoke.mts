@@ -119,7 +119,7 @@ async function revokeGrantInTransaction(
   }
   const { rows: memberships } = await query(sql`/* revokeMembershipGrant: close projection */
     UPDATE memberships SET cancelled_at = ${revokedAt}, expired_at = NULL, past_due_at = NULL,
-      paused_at = NULL, cancel_at_period_end = false
+      paused_at = NULL, should_cancel_at_period_end = false
     WHERE user_id = ${grant.user_id} AND membership_source_id = ${grant.membership_source_id}
       AND projection_ended_at IS NULL
     RETURNING id, membership_product_id`)

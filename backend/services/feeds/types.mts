@@ -57,7 +57,7 @@ type PostFeedResult = PaginatedResult<'post'> & {
   entity_id: string
   post_type: string
   delivery_type: 'direct' | 'share'
-  shared_by_user_id?: string
+  shared_by_id?: string
   shared_at?: Date
 }
 
@@ -65,7 +65,7 @@ type PostFeedResult = PaginatedResult<'post'> & {
 type RssFeedItemFeedResult = RssFeedItemsResult & {
   entity_id: string
   delivery_type: 'direct' | 'share'
-  shared_by_user_id?: string
+  shared_by_id?: string
   shared_at?: Date
 }
 

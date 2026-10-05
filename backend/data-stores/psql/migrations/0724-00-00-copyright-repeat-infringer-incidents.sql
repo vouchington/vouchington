@@ -3,19 +3,21 @@
 -- Restoration does not clear it. A second operative incident opens a staff review
 -- and does not suspend or delete the account.
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_repeat_infringer_incidents (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   account_user_id uuid NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
-  operative boolean NOT NULL,
+  is_operative boolean NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT uq_copyrig_repeat_infringe_incident__account_user_id__notice_id UNIQUE (account_user_id, copyright_notice_id)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_repeat_infringer_incidents__operative_account
   ON copyright_repeat_infringer_incidents (account_user_id)
-  WHERE operative;
+  WHERE is_operative;
 
 CREATE INDEX idx_copyright_repeat_infringer_incidents__notice
   ON copyright_repeat_infringer_incidents (copyright_notice_id);
@@ -120,7 +122,7 @@ CREATE TRIGGER trigger_copyright_repeat_infringer_reviews_guard
 COMMENT ON TABLE copyright_repeat_infringer_incidents IS 'One account incident per copyright notice. Operative means a human confirm or modify still stands and no withdrawal, duplicate, or abusive disposition exists.';
 COMMENT ON COLUMN copyright_repeat_infringer_incidents.account_user_id IS 'Post author who owned the confirmed placement. Guest placements do not create an incident.';
 COMMENT ON COLUMN copyright_repeat_infringer_incidents.copyright_notice_id IS 'Copyright notice this incident belongs to. Several targets on one notice are still one incident.';
-COMMENT ON COLUMN copyright_repeat_infringer_incidents.operative IS 'Whether this notice still counts toward the repeat-infringer review threshold.';
+COMMENT ON COLUMN copyright_repeat_infringer_incidents.is_operative IS 'Whether this notice still counts toward the repeat-infringer review threshold.';
 COMMENT ON TABLE copyright_repeat_infringer_dispositions IS 'Staff decision that a confirmed incident no longer counts: withdrawn, duplicate, or abusive.';
 COMMENT ON COLUMN copyright_repeat_infringer_dispositions.copyright_repeat_infringer_incident_id IS 'Incident this disposition removes from the operative count.';
 COMMENT ON COLUMN copyright_repeat_infringer_dispositions.disposition IS 'Why the incident stopped counting. Restoration is not a disposition.';

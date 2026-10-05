@@ -41,7 +41,7 @@ describe('automatic withholding caps', () => {
     await reviewCopyrightFormIntake({
       intakeId: second.intake.id,
       currentUser: moderator as Awaited<ReturnType<typeof createTestUser>>,
-      accepted: true,
+      is_accepted: true,
       rationale: 'The over-cap notice is complete.',
     })
     await expect(readTestAutomaticWithholdingOutcome(second)).resolves.toMatchObject({

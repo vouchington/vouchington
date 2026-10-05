@@ -64,7 +64,7 @@ async function replayOriginalRestore(
   const { rows: images } = await input.query<{ ready: boolean }>(sql`
     /* replayEligibleCopyrightRestoreIntentsInTransaction:readiness */
     SELECT upload_completed_at IS NOT NULL AND deleted_at IS NULL
-      AND quarantine_pending_at IS NULL AND openai_omni_moderation_flagged = FALSE
+      AND quarantine_pending_at IS NULL AND is_flagged_by_openai_omni_moderation = FALSE
       AND openai_omni_moderation_results IS NOT NULL
       AND openai_omni_moderation_created_at IS NOT NULL AS ready
     FROM images WHERE id = ${legal.image_id}
@@ -106,7 +106,7 @@ async function originalRestorationAuthorityIsValid(
       WHERE deadline.id = ${legal.copyright_notice_deadline_id}
         AND deadline.copyright_notice_id = ${legal.copyright_notice_id}
         AND restriction.id = ${legal.copyright_restriction_id}
-        AND submission.kind = 'counter_notice' AND assessment.substantially_compliant
+        AND submission.kind = 'counter_notice' AND assessment.is_substantially_compliant
         AND NOT EXISTS (SELECT 1 FROM copyright_notice_submission_assessments newer
           WHERE newer.supersedes_assessment_id = assessment.id)
     ) AS valid

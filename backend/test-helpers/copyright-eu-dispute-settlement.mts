@@ -40,7 +40,7 @@ export function prematurelyImplementTestEuDisputeSettlementOutcome(outcomeId: st
 export function eraseTestEuDisputeSettlementReferralActors(referralId: string) {
   return write(sql`/* eraseTestEuDisputeSettlementReferralActors */
     UPDATE copyright_eu_dispute_settlement_referrals
-    SET referred_by_user_id = NULL, recorded_by_id = NULL WHERE id = ${referralId}`)
+    SET referred_by_id = NULL, recorded_by_id = NULL WHERE id = ${referralId}`)
 }
 
 export function eraseTestEuDisputeSettlementOutcomeRecorder(outcomeId: string) {

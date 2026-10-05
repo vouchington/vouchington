@@ -1,3 +1,4 @@
+import { createTestRetainedMembershipIdentity } from './retained-identities.mts'
 import { read, write } from '@data-stores/psql'
 import { randomUUID } from 'node:crypto'
 import sql from 'sql-template-strings'
@@ -90,10 +91,10 @@ export async function createTestAdministratorRefundRequest(operationId: string):
   const { rows } = await write<{ id: string }>(sql`/* createTestAdministratorRefundRequest */
     INSERT INTO membership_administrator_refund_operation_requests (
       membership_operation_id, membership_id, issued_by_id, provider_payment_reference,
-      amount_minor_units, currency_code, reason, cancel_requested, request_fingerprint,
+      amount_minor_units, currency_code, reason, is_cancel_requested, request_fingerprint,
       administrator_request_key, note
     ) VALUES (
-      ${operationId}, ${randomUUID()}, (SELECT id FROM users ORDER BY id LIMIT 1), ${`payment-${randomUUID()}`},
+      ${operationId}, ${await createTestRetainedMembershipIdentity()}, (SELECT id FROM users ORDER BY id LIMIT 1), ${`payment-${randomUUID()}`},
       100, 'usd', 'requested', true, ${'a'.repeat(64)}, ${`request-${randomUUID()}`},
       'Customer requested a refund'
     ) RETURNING id`)
@@ -157,10 +158,10 @@ export async function createTestLinkedRefundReceiptRequest(
   await write(sql`/* createTestLinkedRefundReceiptRequest */
     INSERT INTO membership_administrator_refund_operation_requests (
       membership_operation_id, administrator_request_key, membership_id, issued_by_id,
-      provider_payment_reference, amount_minor_units, currency_code, reason, cancel_requested,
+      provider_payment_reference, amount_minor_units, currency_code, reason, is_cancel_requested,
       request_fingerprint
     ) VALUES (
-      ${operationId}, ${requestKey}, ${randomUUID()}, (SELECT id FROM users ORDER BY id LIMIT 1), ${`ch_${randomUUID()}`},
+      ${operationId}, ${requestKey}, ${await createTestRetainedMembershipIdentity()}, (SELECT id FROM users ORDER BY id LIMIT 1), ${`ch_${randomUUID()}`},
       100, 'usd', 'requested', false, ${'b'.repeat(64)}
     )`)
   return { requestKey }
@@ -172,9 +173,9 @@ export async function insertTestLegacyUnlinkedRefundReceipt(
   const result = await write(sql`/* insertTestLegacyUnlinkedRefundReceipt */
     INSERT INTO membership_refunds (
       membership_id, membership_source_id, stripe_refund_id, stripe_charge_id,
-      amount_minor_units, currency_code, reason, revoked_access, source
+      amount_minor_units, currency_code, reason, has_revoked_access, source
     ) VALUES (
-      ${randomUUID()}, ${membershipSourceId}, ${`re_legacy_${randomUUID()}`},
+      ${await createTestRetainedMembershipIdentity()}, ${membershipSourceId}, ${`re_legacy_${randomUUID()}`},
       ${`ch_legacy_${randomUUID()}`}, 100, 'usd', 'other', FALSE, 'stripe_dashboard'
     )`)
   return result.rowCount ?? 0
@@ -188,9 +189,9 @@ export async function insertTestLinkedOperationRefundReceipt(
     INSERT INTO membership_refunds (
       membership_operation_id, membership_id, membership_source_id, stripe_refund_id,
       stripe_charge_id, stripe_idempotency_key, admin_request_fingerprint,
-      amount_minor_units, currency_code, reason, revoked_access, issued_by_id, source
+      amount_minor_units, currency_code, reason, has_revoked_access, issued_by_id, source
     ) VALUES (
-      ${operation.id}, ${randomUUID()}, ${operation.membershipSourceId}, ${`re_linked_${randomUUID()}`},
+      ${operation.id}, ${await createTestRetainedMembershipIdentity()}, ${operation.membershipSourceId}, ${`re_linked_${randomUUID()}`},
       ${`ch_linked_${randomUUID()}`}, ${requestKey}, ${'b'.repeat(64)},
       100, 'usd', 'requested', FALSE, (SELECT id FROM users ORDER BY id LIMIT 1), 'admin'
     )`)

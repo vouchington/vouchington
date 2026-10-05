@@ -8,7 +8,7 @@ import {
 
 const intake = {
   id: '00000000-0000-7000-8000-000000000081',
-  ses_message_id: 'ses-untrusted',
+  amazon_ses_message_id: 'ses-untrusted',
   received_at: new Date('2026-07-01T12:00:00.000Z'),
   raw_storage_key: 'copyright-evidence/ses-untrusted',
   raw_sha256: Buffer.alloc(32, 1),
@@ -45,7 +45,7 @@ describe('processCopyrightInboundEmail', () => {
 
     await processCopyrightInboundEmail(
       {
-        sesMessageId: intake.ses_message_id,
+        sesMessageId: intake.amazon_ses_message_id,
         objectKey: 'copyright-incoming/ses-untrusted',
       },
       dependencies,

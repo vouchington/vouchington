@@ -36,7 +36,7 @@ export async function createTestLandingPageReviewItem(
   reviewId: string,
 ): Promise<void> {
   await write(sql`
-    INSERT INTO user_landing_page_items (landing_page_id, item_type, review_id)
+    INSERT INTO user_landing_page_items (landing_page_id, item_type, review_post_id)
     VALUES (${landingPageId}, 'review', ${reviewId})
   `)
 }
@@ -52,7 +52,7 @@ export async function createTestLandingPageGroupedReviewItem(
     RETURNING id
   `)
   await write(sql`
-    INSERT INTO user_landing_page_group_members (landing_page_item_id, member_type, review_id)
+    INSERT INTO user_landing_page_group_members (landing_page_item_id, member_type, review_post_id)
     VALUES (${rows[0]!.id}, 'review', ${reviewId})
   `)
 }

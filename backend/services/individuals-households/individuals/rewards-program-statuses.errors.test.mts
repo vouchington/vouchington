@@ -25,14 +25,14 @@ describe('rewards program status database failures', () => {
     const statusId = await insertTestRewardsProgramStatus({ createdById: user.id })
     const created = await createIndividualRewardsProgramStatus(user, user, statusId)
     const existing = await updateIndividualRewardsProgramStatusById(user, user, created.id, {
-      since: '2026-01-01',
-      until: '2026-12-31',
+      started_on: '2026-01-01',
+      expires_on: '2026-12-31',
     })
 
     await expect(
       updateIndividualRewardsProgramStatusById(user, user, 'not-a-uuid', {
-        since: '2026-02-01',
-        until: '2026-11-30',
+        started_on: '2026-02-01',
+        expires_on: '2026-11-30',
       }),
     ).rejects.toMatchObject({ code: '22P02' })
 

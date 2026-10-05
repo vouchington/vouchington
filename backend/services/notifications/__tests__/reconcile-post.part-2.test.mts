@@ -130,7 +130,7 @@ describe('reconcile-post', () => {
     const reply = await createTestPost({
       user: replier,
       post_type: 'comment',
-      parent_id: root.id,
+      parent_post_id: root.id,
       title: '',
       markdown: 'Anonymous reply body',
       is_anonymous: true,
@@ -160,7 +160,7 @@ describe('reconcile-post', () => {
     const reply = await createTestPost({
       user: replier,
       post_type: 'comment',
-      parent_id: root.id,
+      parent_post_id: root.id,
       title: '',
       markdown: 'Reply body',
     })

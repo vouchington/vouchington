@@ -58,7 +58,7 @@ export async function assertContributionAdmissionCapacity(
       COUNT(*) FILTER (WHERE source = ${quotaSource} AND committed_at >= observed_at.value - (${policy.type.daily.windowSeconds} * INTERVAL '1 second')) AS type_daily
     FROM post_admission_quota_consumptions
     CROSS JOIN observed_at
-    WHERE actor_id = ${actorId}`)
+    WHERE actor_user_id = ${actorId}`)
   const row = counts.rows[0]
   if (!row) throw new Error('Contribution admission quota counts were not returned')
   if (isOverCapacity(row, policy))
@@ -80,7 +80,7 @@ export async function recordContributionAdmissionConsumption(
   const result = await query<{
     committed_at: Date
   }>(sql`/* recordContributionAdmissionConsumption.insert */
-    INSERT INTO post_admission_quota_consumptions (reservation_id, actor_id, source, committed_at, consumption_mode)
+    INSERT INTO post_admission_quota_consumptions (reservation_id, actor_user_id, source, committed_at, consumption_mode)
     VALUES (${reservationId}, ${actorId}, ${contributionQuotaSource(source)}, ${committedAt}, ${consumptionMode})
     RETURNING committed_at`)
   const recordedAt = result.rows[0]?.committed_at

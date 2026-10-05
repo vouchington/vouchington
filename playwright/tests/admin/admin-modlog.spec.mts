@@ -21,7 +21,7 @@ test.describe('admin modlog', () => {
   })
 
   test('admin sees the filtered moderation action', async ({ page }) => {
-    await navigateTo(page, `/admin/modlog?actor_id=${actorId}`)
+    await navigateTo(page, `/admin/modlog?actor_user_id=${actorId}`)
     await expect(page.getByTestId('admin-modlog-heading')).toBeVisible()
     const row = page.getByTestId('admin-modlog-row')
     await expect(row).toHaveCount(1)

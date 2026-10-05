@@ -78,7 +78,7 @@ describe('replayed Stripe invoice payment failures', () => {
     expect(afterFirstFailure).toMatchObject({ status: 'past_due' })
     await expect(getTestMembershipRaw(membership.id)).resolves.toMatchObject({
       status: 'past_due',
-      cancel_at_period_end: true,
+      should_cancel_at_period_end: true,
       latest_change_id: afterSchedule?.latest_change_id,
     })
     expect(

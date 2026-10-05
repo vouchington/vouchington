@@ -123,8 +123,8 @@ describe('createEntityRelationAction', () => {
     const ownReply = await createTestPost({
       user: replyAuthor,
       post_type: 'comment',
-      parent_id: privateRoot.id,
-      root_id: privateRoot.id,
+      parent_post_id: privateRoot.id,
+      root_post_id: privateRoot.id,
     })
     const urlId = await createTestUrlWithHostname()
     const authority = {

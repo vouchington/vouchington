@@ -107,7 +107,7 @@ describe('CopyrightStaffTerritorialDispute', () => {
       body_name: 'Independent dispute body',
       referred_by_party: 'notifier',
     })
-    expect(input).not.toHaveProperty('referred_by_user_id')
+    expect(input).not.toHaveProperty('referred_by_id')
     expect(new Date(input.referred_at).toString()).not.toBe('Invalid Date')
   })
 
@@ -129,7 +129,7 @@ describe('CopyrightStaffTerritorialDispute', () => {
     await waitFor(() => expect(mockRefer).toHaveBeenCalledOnce())
     expect(mockRefer.mock.calls[0]?.[1]).toMatchObject({
       referred_by_party: 'poster',
-      referred_by_user_id: 'poster-1',
+      referred_by_id: 'poster-1',
     })
   })
 
@@ -139,7 +139,7 @@ describe('CopyrightStaffTerritorialDispute', () => {
       body_name: 'Independent dispute body',
       referred_at: '2026-09-01T10:00:00Z',
       referred_by_party: 'poster' as const,
-      referred_by_user_id: 'poster-1',
+      referred_by_id: 'poster-1',
       outcome: null,
     }
     const outcomeItem = makeItem([referral])
@@ -225,7 +225,7 @@ describe('CopyrightStaffTerritorialDispute', () => {
       body_name: 'Independent dispute body',
       referred_at: '2026-09-01T10:00:00Z',
       referred_by_party: 'poster' as const,
-      referred_by_user_id: 'poster-1',
+      referred_by_id: 'poster-1',
       outcome: null,
     }
     mockList.mockResolvedValueOnce({

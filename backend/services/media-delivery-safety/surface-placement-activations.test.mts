@@ -41,9 +41,9 @@ describe('image surface placement activation provenance', () => {
         placement_id: placement!.placement_id,
         surface_kind: 'community-profile-image',
         placement_revision: placement!.placement_revision,
-        bound_by_user_id: administrator.id,
-        uploaded_by_user_id: uploader.id,
-        bound_by_administrator: true,
+        bound_by_id: administrator.id,
+        uploaded_by_id: uploader.id,
+        is_bound_by_administrator: true,
         bound_at: expect.any(Date),
       }),
     ])
@@ -51,7 +51,7 @@ describe('image surface placement activation provenance', () => {
     await removeTestUserRole(administrator.id, 'administrator')
     await expect(
       getTestImageSurfacePlacementActivations(placement!.placement_id),
-    ).resolves.toMatchObject([{ bound_by_user_id: administrator.id, bound_by_administrator: true }])
+    ).resolves.toMatchObject([{ bound_by_id: administrator.id, is_bound_by_administrator: true }])
   })
 
   it('records a community owner moderator as a non-administrator setter', async () => {
@@ -79,9 +79,9 @@ describe('image surface placement activation provenance', () => {
       getTestImageSurfacePlacementActivations(placement!.placement_id),
     ).resolves.toMatchObject([
       {
-        bound_by_user_id: moderator.id,
-        uploaded_by_user_id: uploader.id,
-        bound_by_administrator: false,
+        bound_by_id: moderator.id,
+        uploaded_by_id: uploader.id,
+        is_bound_by_administrator: false,
       },
     ])
   })
@@ -114,9 +114,9 @@ describe('image surface placement activation provenance', () => {
       await expect(getTestImageSurfacePlacementActivations(placementId)).resolves.toMatchObject([
         {
           surface_kind: surfaceKind,
-          bound_by_user_id: owner.id,
-          uploaded_by_user_id: uploader.id,
-          bound_by_administrator: null,
+          bound_by_id: owner.id,
+          uploaded_by_id: uploader.id,
+          is_bound_by_administrator: null,
         },
       ])
     },
@@ -167,9 +167,9 @@ describe('image surface placement activation provenance', () => {
     expect(reactivated[0]).toEqual(initial[0])
     expect(reactivated[1]).toMatchObject({
       placement_id: placement!.placement_id,
-      bound_by_user_id: owner.id,
-      uploaded_by_user_id: owner.id,
-      bound_by_administrator: null,
+      bound_by_id: owner.id,
+      uploaded_by_id: owner.id,
+      is_bound_by_administrator: null,
     })
     expect(reactivated[1]!.placement_revision).toBeGreaterThan(reactivated[0]!.placement_revision)
   })

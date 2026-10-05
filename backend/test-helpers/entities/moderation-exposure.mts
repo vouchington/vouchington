@@ -13,7 +13,7 @@ export async function insertTestModerationMediaReveals(
 ): Promise<void> {
   for (let i = 0; i < count; i++) {
     await write(sql`/* insertTestModerationMediaReveals */
-      INSERT INTO moderation_media_reveals (moderator_id, surface, revealed_at)
+      INSERT INTO moderation_media_reveals (moderator_user_id, surface, revealed_at)
       VALUES (${moderatorId}, ${surface}, now() - (${i} || ' seconds')::interval)
     `)
   }

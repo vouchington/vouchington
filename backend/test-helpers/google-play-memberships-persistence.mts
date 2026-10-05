@@ -73,7 +73,7 @@ export async function createTestMalformedGooglePlayMembershipVerification(option
       ) RETURNING id
     )
     INSERT INTO membership_verifications (
-      user_id, idempotency_key, request_fingerprint, membership_provider_evidence_id,
+      user_id, idempotency_key, request_fingerprint, membership_provider_evidence_record_id,
       provider, environment, application_id
     ) SELECT
       ${options.userId}, ${randomUUID()}, ${createHash('sha256').update(randomUUID()).digest('hex')}, id,

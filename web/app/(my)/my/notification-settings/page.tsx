@@ -18,9 +18,9 @@ export default async function NotificationSettingsPage() {
       />
       <NotificationSettingsForm
         initialSettings={{
-          engagement_emails_enabled: currentUser.engagement_emails_enabled ?? true,
+          is_engagement_emails_enabled: currentUser.is_engagement_emails_enabled ?? true,
           news_digest_frequency: currentUser.news_digest_frequency ?? 'weekly',
-          moderation_emails_enabled: currentUser.moderation_emails_enabled ?? true,
+          is_moderation_emails_enabled: currentUser.is_moderation_emails_enabled ?? true,
           community_digest_frequency: currentUser.community_digest_frequency ?? 'weekly',
           moderation_email_cadence: currentUser.moderation_email_cadence ?? 'daily',
           moderation_email_days_of_week: currentUser.moderation_email_days_of_week ?? [

@@ -77,7 +77,7 @@ BEGIN
     JOIN copyright_notice_submissions submission
       ON submission.id = assessment.copyright_notice_submission_id
     WHERE assessment.id = NEW.authorizing_assessment_id
-      AND assessment.substantially_compliant
+      AND assessment.is_substantially_compliant
       AND submission.kind = 'notice'
       AND (
         submission.source_kind <> 'guest_form'
@@ -87,7 +87,7 @@ BEGIN
           JOIN copyright_notice_form_intake_reviews review
             ON review.copyright_notice_form_intake_id = intake.id
           WHERE intake.copyright_notice_submission_id = submission.id
-            AND review.accepted
+            AND review.is_accepted
         )
       )
       AND NOT EXISTS (

@@ -18,13 +18,13 @@ country, content language, and translation requirements.
 
 ## Persisted user settings
 
-| Setting                 | Field            | Type    | Default | Description                                                                                        |
-| ----------------------- | ---------------- | ------- | ------- | -------------------------------------------------------------------------------------------------- |
-| Hacker News discussions | `hn_discussions` | boolean | `false` | When on, post and article detail asides fetch related HN threads for linked URLs. Signed-out: off. |
+| Setting                 | Field                                   | Type    | Default | Description                                                                                        |
+| ----------------------- | --------------------------------------- | ------- | ------- | -------------------------------------------------------------------------------------------------- |
+| Hacker News discussions | `should_import_hacker_news_discussions` | boolean | `false` | When on, post and article detail asides fetch related HN threads for linked URLs. Signed-out: off. |
 
-`hn_discussions` is stored on `users`, returned on the private user view, and updated with
+`should_import_hacker_news_discussions` is stored on `users`, returned on the private user view, and updated with
 `PATCH /api/v1/users/:idOrSlug`. The preferences form writes it the same way privacy toggles
-write `third_party_marketing`.
+write `should_receive_third_party_marketing`.
 
 ## Architecture
 
@@ -34,7 +34,7 @@ write `third_party_marketing`.
 - **`web/lib/preferences/list-style-context.tsx`** — `ListStyleProvider` + `useListStyle()` hook
 - **`web/lib/preferences/feed-style-context.tsx`** — `FeedStyleProvider` + `useFeedStyle()` hook
 - **`web/lib/preferences/theme-script.tsx`** — Inline blocking script injected in `<head>` to prevent flash of wrong theme; reads localStorage
-- **`web/components/my/hn-discussions-preference.tsx`** — Preferences-page toggle that PATCHes `hn_discussions`
+- **`web/components/my/hn-discussions-preference.tsx`** — Preferences-page toggle that PATCHes `should_import_hacker_news_discussions`
 
 Layout preferences that change SSR-rendered markup, such as list style and feed style, must hydrate
 with their default server snapshot first and then sync from localStorage after hydration. Do not read

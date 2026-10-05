@@ -13,7 +13,7 @@ describe('landing page link safety', () => {
       { type: 'link', label: 'Existing', url: 'https://example.com/existing' },
     ])
     const hostname = `blocked-${randomUUID()}.example.com`
-    await insertTestUrlHostname({ hostname, blocked: true })
+    await insertTestUrlHostname({ hostname, is_blocked: true })
 
     await expect(
       replaceMyLandingPageItems(user.id, page.id, [

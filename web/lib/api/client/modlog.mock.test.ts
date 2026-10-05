@@ -50,7 +50,7 @@ describe('modlog client api helpers', () => {
       expect(mockGet).toHaveBeenCalledWith('/api/v1/admin/modlog', {
         searchParams: {
           community_id: undefined,
-          actor_id: undefined,
+          actor_user_id: undefined,
           action_type: undefined,
           after: undefined,
         },
@@ -67,7 +67,7 @@ describe('modlog client api helpers', () => {
       expect(mockGet).toHaveBeenCalledWith('/api/v1/admin/modlog', {
         searchParams: {
           community_id: 'c-1',
-          actor_id: 'u-1',
+          actor_user_id: 'u-1',
           action_type: 'ban',
           after: 'cursor',
         },

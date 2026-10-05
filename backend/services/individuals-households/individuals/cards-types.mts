@@ -16,13 +16,13 @@ export type AuthorizedUserOfCardSummary = {
 
 export type IndividualCard = {
   id: string
-  card_id: string
+  card_topic_id: string
   opened_on: string | null
   closed_on: string | null
   credit_limit: Money | null
   received_sign_up_bonus_on: string | null
   is_authorized_user: boolean
-  authorized_user_of_id: string | null
+  authorized_user_of_card_id: string | null
   note: string | null
   card: IndividualCardTopicSummary
   authorized_user_of_card: AuthorizedUserOfCardSummary | null

@@ -31,7 +31,7 @@ test.describe('My Privacy', () => {
       default_post_broadcast: 'everyone',
       default_post_privacy: 'public',
       processing_restricted_at: false,
-      third_party_marketing: false,
+      should_receive_third_party_marketing: false,
     })
 
     await navigateTo(page, '/my/privacy')

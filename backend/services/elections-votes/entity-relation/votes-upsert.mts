@@ -65,7 +65,7 @@ export async function upsertEntityRelationElectionVotes(
         ${values.map(() => context.deviceId)}::uuid[],
         ${values.map(() => context.sessionId)}::uuid[],
         ${values.map(() => userAgentId)}::uuid[]
-      ) AS input(user_id, entity_relation_id, score, ip_address, device_id, session_id, user_agent_id)
+      ) AS input(user_id, entity_relation_id, score, ip_address, device_id, session_id, user_agent_string_id)
     ), matched_relations AS (`
 
   targetRelations.forEach((metadata, index) => {
@@ -96,10 +96,10 @@ export async function upsertEntityRelationElectionVotes(
     )
     query.append(sql` (
         user_id, subject_id, entity_relation_id, score,
-        ip_address, device_id, session_id, user_agent_id
+        ip_address, device_id, session_id, user_agent_string_id
       )
       SELECT user_id, subject_id, entity_relation_id, score,
-        ip_address, device_id, session_id, user_agent_id
+        ip_address, device_id, session_id, user_agent_string_id
       FROM matched_relations
       WHERE relation_index = `)
     query.append(String(index))

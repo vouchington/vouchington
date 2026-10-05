@@ -27,7 +27,7 @@ export async function* urlBlocklistBatchesFromDb(): AsyncGenerator<string[]> {
   }
 
   for await (const row of createAsyncGeneratorFromCursor<{ hostname: string }>(
-    sql`/* urlBlocklistBatchesFromDb */ SELECT hostname FROM url_hostnames WHERE blocked = TRUE OR crawlable = FALSE`,
+    sql`/* urlBlocklistBatchesFromDb */ SELECT hostname FROM url_hostnames WHERE is_blocked = TRUE OR is_crawlable = FALSE`,
     { batchSize: URL_BLOCKLIST_BLOOM_BATCH_SIZE },
   )) {
     batch.push(row.hostname)

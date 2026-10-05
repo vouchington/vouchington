@@ -18,7 +18,7 @@ export async function processReportIntegrityCheck(
         entityType,
         entityId,
         result.reporter_count,
-        result.new_account_reporter_pct,
+        result.new_account_reporter_percent,
         result.details,
         result.reporter_user_ids,
       )

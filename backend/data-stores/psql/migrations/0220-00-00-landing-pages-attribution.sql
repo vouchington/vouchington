@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS user_landing_page_items (
   item_type user_landing_page_item_types NOT NULL,
   sort_order INT NOT NULL DEFAULT 0,
   profile_link_id UUID REFERENCES user_profile_links(id) ON DELETE CASCADE,
-  review_id UUID REFERENCES posts(id) ON DELETE CASCADE,
+  review_post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
   referral_link_id UUID REFERENCES user_referral_program_links(id) ON DELETE CASCADE,
   topic_id UUID REFERENCES topics(id) ON DELETE CASCADE,
   link_label TEXT,
@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS user_landing_page_items (
     (
       item_type = 'profile_link'
       AND profile_link_id IS NOT NULL
-      AND review_id IS NULL
+      AND review_post_id IS NULL
       AND referral_link_id IS NULL
       AND topic_id IS NULL
       AND link_label IS NULL
@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS user_landing_page_items (
     OR (
       item_type = 'review'
       AND profile_link_id IS NULL
-      AND review_id IS NOT NULL
+      AND review_post_id IS NOT NULL
       AND referral_link_id IS NULL
       AND topic_id IS NULL
       AND link_label IS NULL
@@ -119,7 +119,7 @@ CREATE TABLE IF NOT EXISTS user_landing_page_items (
     OR (
       item_type = 'referral_link'
       AND profile_link_id IS NULL
-      AND review_id IS NULL
+      AND review_post_id IS NULL
       AND referral_link_id IS NOT NULL
       AND topic_id IS NULL
       AND link_label IS NULL
@@ -128,7 +128,7 @@ CREATE TABLE IF NOT EXISTS user_landing_page_items (
     OR (
       item_type = 'topic_group'
       AND profile_link_id IS NULL
-      AND review_id IS NULL
+      AND review_post_id IS NULL
       AND referral_link_id IS NULL
       AND topic_id IS NOT NULL
       AND link_label IS NULL
@@ -137,7 +137,7 @@ CREATE TABLE IF NOT EXISTS user_landing_page_items (
     OR (
       item_type = 'link'
       AND profile_link_id IS NULL
-      AND review_id IS NULL
+      AND review_post_id IS NULL
       AND referral_link_id IS NULL
       AND topic_id IS NULL
       AND link_label IS NOT NULL
@@ -163,7 +163,7 @@ COMMENT ON COLUMN user_landing_page_items.landing_page_id IS 'The landing page t
 COMMENT ON COLUMN user_landing_page_items.item_type IS 'The type of item: profile_link, review, referral_link, or topic_group.';
 COMMENT ON COLUMN user_landing_page_items.sort_order IS 'Display order of this item on the landing page.';
 COMMENT ON COLUMN user_landing_page_items.profile_link_id IS 'Reference to user_profile_links; set when item_type is profile_link.';
-COMMENT ON COLUMN user_landing_page_items.review_id IS 'Reference to a review post; set when item_type is review.';
+COMMENT ON COLUMN user_landing_page_items.review_post_id IS 'Reference to a review post; set when item_type is review.';
 COMMENT ON COLUMN user_landing_page_items.referral_link_id IS 'Reference to user_referral_program_links; set when item_type is referral_link.';
 COMMENT ON COLUMN user_landing_page_items.topic_id IS 'Reference to a topic for grouping; set when item_type is topic_group.';
 COMMENT ON COLUMN user_landing_page_items.link_label IS 'Display label for a free-form link; set when item_type is link.';
@@ -173,24 +173,25 @@ COMMENT ON COLUMN user_landing_page_items.url_id IS 'Normalized URL relation for
 -- user_landing_page_group_members
 --------------------------------------------------------------------------------
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_landing_page_group_members (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   landing_page_item_id UUID NOT NULL REFERENCES user_landing_page_items(id) ON DELETE CASCADE,
   member_type user_landing_page_group_member_types NOT NULL,
   sort_order INT NOT NULL DEFAULT 0,
-  review_id UUID REFERENCES posts(id) ON DELETE CASCADE,
+  review_post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
   referral_link_id UUID REFERENCES user_referral_program_links(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK (
     (
       member_type = 'review'
-      AND review_id IS NOT NULL
+      AND review_post_id IS NOT NULL
       AND referral_link_id IS NULL
     )
     OR (
       member_type = 'referral_link'
-      AND review_id IS NULL
+      AND review_post_id IS NULL
       AND referral_link_id IS NOT NULL
     )
   )
@@ -203,7 +204,7 @@ COMMENT ON TABLE user_landing_page_group_members IS 'Members within a topic_grou
 COMMENT ON COLUMN user_landing_page_group_members.landing_page_item_id IS 'The topic_group item this member belongs to.';
 COMMENT ON COLUMN user_landing_page_group_members.member_type IS 'The type of group member: review or referral_link.';
 COMMENT ON COLUMN user_landing_page_group_members.sort_order IS 'Display order within the group.';
-COMMENT ON COLUMN user_landing_page_group_members.review_id IS 'Reference to a review post; set when member_type is review.';
+COMMENT ON COLUMN user_landing_page_group_members.review_post_id IS 'Reference to a review post; set when member_type is review.';
 COMMENT ON COLUMN user_landing_page_group_members.referral_link_id IS 'Reference to user_referral_program_links; set when member_type is referral_link.';
 
 CREATE OR REPLACE FUNCTION fn_reject_user_landing_page_group_member_item_type()
@@ -240,9 +241,10 @@ CREATE INDEX IF NOT EXISTS idx_user_landing_page_group_members__referral_link_id
   ON user_landing_page_group_members (referral_link_id)
   WHERE referral_link_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_landing_page_group_members__review_id
-  ON user_landing_page_group_members (review_id)
-  WHERE review_id IS NOT NULL;
+  ON user_landing_page_group_members (review_post_id)
+  WHERE review_post_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_user_landing_page_items__profile_link_id
   ON user_landing_page_items (profile_link_id)
@@ -252,9 +254,10 @@ CREATE INDEX IF NOT EXISTS idx_user_landing_page_items__referral_link_id
   ON user_landing_page_items (referral_link_id)
   WHERE referral_link_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_landing_page_items__review_id
-  ON user_landing_page_items (review_id)
-  WHERE review_id IS NOT NULL;
+  ON user_landing_page_items (review_post_id)
+  WHERE review_post_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_user_landing_page_items__topic_id
   ON user_landing_page_items (topic_id)

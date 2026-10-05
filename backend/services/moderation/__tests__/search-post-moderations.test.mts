@@ -71,7 +71,7 @@ describe('search-post-moderations', () => {
     expect(results[0].agent_id).toBe(agentId)
     expect(results[0].prompt_id).toBe(promptId)
     expect(results[0].id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
-    expect(results[0].flagged).toBe(true)
+    expect(results[0].is_flagged).toBe(true)
     expect(results[0].results).toEqual({
       flagged: true,
       confidence_score: 0.87,

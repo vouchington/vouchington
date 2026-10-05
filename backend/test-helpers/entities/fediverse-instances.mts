@@ -34,7 +34,7 @@ export async function insertTestFediverseInstanceExtension(data: {
   openRegistrations?: boolean
 }): Promise<void> {
   await write(sql`/* insertTestFediverseInstanceExtension */
-    INSERT INTO fediverse_instance_topics (topic_id, software, open_registrations)
+    INSERT INTO fediverse_instance_topics (topic_id, software, is_open_for_registrations)
     VALUES (${data.topicId}, ${data.software ?? null}, ${data.openRegistrations ?? null})
     ON CONFLICT (topic_id) DO NOTHING
   `)

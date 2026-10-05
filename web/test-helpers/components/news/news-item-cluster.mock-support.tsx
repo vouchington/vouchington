@@ -142,7 +142,7 @@ export const makePost = (overrides?: Partial<Post>): Post => ({
   title: 'Test Post',
   slug: 'test-post',
   markdown: '',
-  root_id: null,
+  root_post_id: null,
   created_by_id: 'user-1',
   created_at: '2025-01-15T10:00:00Z',
   updated_at: '2025-01-15T10:00:00Z',

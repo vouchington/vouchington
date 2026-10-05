@@ -124,7 +124,7 @@ describe('post publication shadow audit', () => {
     expect(repair.checkpoint).toBe(postId)
     await expect(
       getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId }),
-    ).resolves.toEqual(expect.objectContaining({ post_id: postId }))
+    ).resolves.toEqual(expect.objectContaining({ post_identity_id: postId }))
     await expect(getTestPostPublicationShadowAuditCheckpoint(checkpointName)).resolves.toBe(postId)
   })
 

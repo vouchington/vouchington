@@ -38,12 +38,12 @@ export async function getPendingCopyrightStaffCase(
     claimant_contact_ciphertext: string
     work_description: string
     form_key: string | null
-    ses_message_id: string | null
+    amazon_ses_message_id: string | null
     territorial_key: string | null
   }>(sql`/* getPendingCopyrightStaffCase:notice */
     SELECT notice.id, notice.received_at, notice.jurisdiction, notice.claimant_user_id,
       notice.claimant_display_name, notice.claimant_contact_ciphertext, notice.work_description,
-      form.idempotency_key AS form_key, email.ses_message_id,
+      form.idempotency_key AS form_key, email.amazon_ses_message_id,
       receipt.idempotency_key AS territorial_key
     FROM copyright_notices notice
     LEFT JOIN copyright_notice_form_intakes form ON form.copyright_notice_id = notice.id
@@ -59,8 +59,8 @@ export async function getPendingCopyrightStaffCase(
     notice.jurisdiction === 'us_dmca'
       ? notice.form_key
         ? copyrightFormSecretPurpose(notice.form_key)
-        : notice.ses_message_id
-          ? copyrightEmailIntakePurpose(notice.ses_message_id)
+        : notice.amazon_ses_message_id
+          ? copyrightEmailIntakePurpose(notice.amazon_ses_message_id)
           : null
       : notice.territorial_key
         ? `${territorialLabels(notice.jurisdiction).noticePurpose}:${notice.territorial_key}:contact`

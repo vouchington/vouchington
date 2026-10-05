@@ -65,8 +65,8 @@ describe('CommunityPostTypeSettingsForm', () => {
       <CommunityPostTypeSettingsForm
         community={{
           slug: 'rewards',
-          allow_review_posts: false,
-          allow_data_point_posts: true,
+          should_allow_review_posts: false,
+          should_allow_data_point_posts: true,
         }}
       />,
     )
@@ -77,8 +77,8 @@ describe('CommunityPostTypeSettingsForm', () => {
 
     await waitFor(() => {
       expect(mockUpdateCommunityPostTypeSettings).toHaveBeenCalledWith('rewards', {
-        allow_review_posts: true,
-        allow_data_point_posts: false,
+        should_allow_review_posts: true,
+        should_allow_data_point_posts: false,
       })
     })
     expect(mockOnSuccess).toHaveBeenCalledWith('Post type settings saved')
@@ -95,8 +95,8 @@ describe('CommunityPostTypeSettingsForm', () => {
       <CommunityPostTypeSettingsForm
         community={{
           slug: 'rewards',
-          allow_review_posts: false,
-          allow_data_point_posts: false,
+          should_allow_review_posts: false,
+          should_allow_data_point_posts: false,
         }}
       />,
     )

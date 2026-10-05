@@ -6,8 +6,8 @@ export async function getCrawlableHostnames(hostnameIds: string[]): Promise<Arra
   const result = await read<{ id: string }>(sql`
     SELECT id
     FROM url_hostnames
-    WHERE crawlable = true
-      AND blocked = false
+    WHERE is_crawlable = true
+      AND is_blocked = false
       AND id = ANY(${hostnameIds})
   `)
   return result.rows
@@ -17,8 +17,8 @@ export async function isHostnameDispatchable(hostname: string): Promise<boolean>
   const result = await read(sql`
     SELECT 1 FROM url_hostnames uh
     WHERE uh.hostname = ${hostname}
-      AND uh.crawlable = true
-      AND uh.blocked = false
+      AND uh.is_crawlable = true
+      AND uh.is_blocked = false
       AND NOT EXISTS (
         SELECT 1 FROM blocklisted_domains db
         JOIN domain_blocklist_sources dbs ON dbs.id = db.source_id
@@ -41,7 +41,7 @@ export async function getUrlHostnameTopicId(hostnameId: string): Promise<string 
 export type TestUrlHostnameRow = {
   id: string
   hostname: string
-  blocked: boolean
+  is_blocked: boolean
   blocked_at: Date | null
   blocked_by_id: string | null
 }
@@ -53,7 +53,7 @@ export async function getTestHostnameRow(
     SELECT
       uh.id,
       uh.hostname,
-      uh.blocked,
+      uh.is_blocked,
       uhb.created_at AS blocked_at,
       uhb.blocked_by_id
     FROM url_hostnames uh

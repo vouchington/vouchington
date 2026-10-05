@@ -8,8 +8,8 @@ const baseTopic = {
   slug: 'topic',
   markdown: '',
   topic_type: 'topic',
-  noindex: false,
-  allow_reviews: true,
+  is_noindexed: false,
+  should_allow_reviews: true,
   logo_image_id: null,
   hero_image_id: null,
   homepage_url_id: null,
@@ -19,24 +19,24 @@ const baseTopic = {
 } as unknown as Topic
 
 describe('buildTopicRevisionChanges', () => {
-  it('records noindex and allow_reviews flag changes', () => {
+  it('records noindex and should_allow_reviews flag changes', () => {
     const changes = buildTopicRevisionChanges(
       baseTopic,
-      { noindex: true, allow_reviews: false },
+      { is_noindexed: true, should_allow_reviews: false },
       undefined,
     )
-    expect(changes.noindex).toEqual({ before: false, after: true })
-    expect(changes.allow_reviews).toEqual({ before: true, after: false })
+    expect(changes.is_noindexed).toEqual({ before: false, after: true })
+    expect(changes.should_allow_reviews).toEqual({ before: true, after: false })
   })
 
   it('omits flags when unchanged', () => {
     const changes = buildTopicRevisionChanges(
       baseTopic,
-      { noindex: false, allow_reviews: true },
+      { is_noindexed: false, should_allow_reviews: true },
       undefined,
     )
-    expect(changes.noindex).toBeUndefined()
-    expect(changes.allow_reviews).toBeUndefined()
+    expect(changes.is_noindexed).toBeUndefined()
+    expect(changes.should_allow_reviews).toBeUndefined()
   })
 
   it('returns an empty diff when nothing changed', () => {

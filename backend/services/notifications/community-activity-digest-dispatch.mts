@@ -9,32 +9,32 @@ export async function prepareCommunityActivityDigestDispatchWindows(
   await write(sql`
     /* prepareCommunityActivityDigestDispatchWindows */
     WITH latest AS (
-      SELECT max(window_start) AS window_start
+      SELECT max(window_starts_at) AS window_starts_at
       FROM community_activity_digest_dispatch_windows
     ), missing AS (
       SELECT generate_series(
-        COALESCE((SELECT window_start + INTERVAL '7 days' FROM latest), ${targetWindowStart}),
+        COALESCE((SELECT window_starts_at + INTERVAL '7 days' FROM latest), ${targetWindowStart}),
         ${targetWindowStart},
         INTERVAL '7 days'
-      ) AS window_start
+      ) AS window_starts_at
     )
-    INSERT INTO community_activity_digest_dispatch_windows (window_start, window_end)
-    SELECT window_start, window_start + INTERVAL '7 days'
+    INSERT INTO community_activity_digest_dispatch_windows (window_starts_at, window_ends_at)
+    SELECT window_starts_at, window_starts_at + INTERVAL '7 days'
     FROM missing
-    ORDER BY window_start
-    ON CONFLICT (window_start) DO NOTHING
-    RETURNING window_start, window_end
+    ORDER BY window_starts_at
+    ON CONFLICT (window_starts_at) DO NOTHING
+    RETURNING window_starts_at, window_ends_at
   `)
-  const { rows: pending } = await write<{ window_start: Date; window_end: Date }>(sql`
+  const { rows: pending } = await write<{ window_starts_at: Date; window_ends_at: Date }>(sql`
     /* listPendingCommunityActivityDigestDispatchWindows */
-    SELECT window_start, window_end
+    SELECT window_starts_at, window_ends_at
     FROM community_activity_digest_dispatch_windows
     WHERE completed_at IS NULL
       AND (enqueued_at IS NULL OR enqueued_at <= ${recoveryBefore})
-      AND window_start <= ${targetWindowStart}
-    ORDER BY window_start
+      AND window_starts_at <= ${targetWindowStart}
+    ORDER BY window_starts_at
   `)
-  return pending.map(row => ({ windowStart: row.window_start, windowEnd: row.window_end }))
+  return pending.map(row => ({ windowStart: row.window_starts_at, windowEnd: row.window_ends_at }))
 }
 
 export async function markCommunityActivityDigestDispatchWindowEnqueued(
@@ -44,7 +44,7 @@ export async function markCommunityActivityDigestDispatchWindowEnqueued(
     /* markCommunityActivityDigestDispatchWindowEnqueued */
     UPDATE community_activity_digest_dispatch_windows
     SET enqueued_at = CURRENT_TIMESTAMP
-    WHERE window_start = ${windowStart}
+    WHERE window_starts_at = ${windowStart}
   `)
 }
 
@@ -55,7 +55,7 @@ export async function refreshCommunityActivityDigestDispatchWindowActivity(
     /* refreshCommunityActivityDigestDispatchWindowActivity */
     UPDATE community_activity_digest_dispatch_windows
     SET enqueued_at = CURRENT_TIMESTAMP
-    WHERE window_start = ${windowStart}
+    WHERE window_starts_at = ${windowStart}
       AND completed_at IS NULL
   `)
 }
@@ -67,6 +67,6 @@ export async function markCommunityActivityDigestDispatchWindowCompleted(
     /* markCommunityActivityDigestDispatchWindowCompleted */
     UPDATE community_activity_digest_dispatch_windows
     SET completed_at = COALESCE(completed_at, CURRENT_TIMESTAMP)
-    WHERE window_start = ${windowStart}
+    WHERE window_starts_at = ${windowStart}
   `)
 }

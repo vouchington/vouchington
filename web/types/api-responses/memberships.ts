@@ -101,7 +101,7 @@ export interface SubscriptionMembership {
   expired_at: string | null
   past_due_at: string | null
   paused_at: string | null
-  cancel_at_period_end: boolean
+  should_cancel_at_period_end: boolean
   latest_change_id: string | null
   created_at: string
   updated_at: string
@@ -124,7 +124,7 @@ export interface MembershipSourceSummary {
   status: 'active' | 'cancelled' | 'expired' | 'past_due' | 'paused' | 'revoked'
   effective_at: string
   access_ends_at: string | null
-  auto_renews: boolean
+  should_auto_renew: boolean
   is_effective: boolean
   renewal: { product_id: string; effective_at: string; price: Money | null } | null
 }

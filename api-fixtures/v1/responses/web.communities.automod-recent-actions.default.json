@@ -11,7 +11,7 @@
       "current_state": "rejected",
       "declared_language": null,
       "feedback_label": null,
-      "flagged": true,
+      "is_flagged": true,
       "lingua_rs_detected_language": null,
       "markdown_preview": "Hello from the community.",
       "model_output": {

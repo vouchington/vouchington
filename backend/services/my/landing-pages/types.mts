@@ -47,13 +47,14 @@ export type LandingPageCandidates = {
 
 export type LandingPageItemInput =
   | { type: 'profile_link'; profile_link_id: string }
-  | { type: 'review'; review_id: string }
+  | { type: 'review'; review_post_id: string }
   | { type: 'referral_link'; referral_link_id: string }
   | {
       type: 'topic_group'
       topic_id: string
       entries: Array<
-        { type: 'review'; review_id: string } | { type: 'referral_link'; referral_link_id: string }
+        | { type: 'review'; review_post_id: string }
+        | { type: 'referral_link'; referral_link_id: string }
       >
     }
   | { type: 'link'; label: string; url: string }
@@ -99,7 +100,7 @@ export type LandingPageItemRow = {
   id: string
   item_type: 'profile_link' | 'review' | 'referral_link' | 'topic_group' | 'link'
   profile_link_id: string | null
-  review_id: string | null
+  review_post_id: string | null
   referral_link_id: string | null
   topic_id: string | null
   link_label: string | null

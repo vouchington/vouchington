@@ -48,7 +48,7 @@ export async function createCopyrightNoticeSchemaFixture(): Promise<CopyrightNot
       RETURNING id
     ), assessment AS (
       INSERT INTO copyright_notice_submission_assessments (
-        copyright_notice_submission_id, assessed_at, assessed_by_id, substantially_compliant
+        copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant
       ) SELECT id, CURRENT_TIMESTAMP, ${actorUserId}, true FROM submission
       RETURNING id
     ), restriction AS (
@@ -140,7 +140,7 @@ export async function createSecondCopyrightRestrictionForPlacement(
         FROM second_notice RETURNING id
     ), second_assessment AS (
       INSERT INTO copyright_notice_submission_assessments (
-        copyright_notice_submission_id, assessed_at, assessed_by_id, substantially_compliant
+        copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant
       ) SELECT second_submission.id, CURRENT_TIMESTAMP, second_actor.id, true
         FROM second_submission CROSS JOIN second_actor RETURNING id
     )

@@ -28,7 +28,7 @@ describe('topic.card', () => {
         await request
           .patch(`/api/v1/topics/${cardTopicId}/card`)
           .send({
-            bank_id: bankTopicId,
+            bank_topic_id: bankTopicId,
             annual_fee: { amount: 9500, currency: 'usd' },
           })
           .expect(200)
@@ -38,7 +38,7 @@ describe('topic.card', () => {
           .get(`/api/v1/topics/${cardTopicId}/card`)
           .expect(200)
 
-        expect(response.body.card_attributes.bank_id).toBe(bankTopicId)
+        expect(response.body.card_attributes.bank_topic_id).toBe(bankTopicId)
         expect(response.body.card_attributes.annual_fee).toEqual({
           amount: 9500,
           currency: 'usd',
@@ -101,12 +101,12 @@ describe('topic.card', () => {
         const response = await request
           .patch(`/api/v1/topics/${cardTopicId}/card`)
           .send({
-            bank_id: bankTopicId,
+            bank_topic_id: bankTopicId,
             annual_fee: { amount: 9500, currency: 'usd' },
           })
           .expect(200)
 
-        expect(response.body.card_attributes.bank_id).toBe(bankTopicId)
+        expect(response.body.card_attributes.bank_topic_id).toBe(bankTopicId)
         expect(response.body.card_attributes.annual_fee).toEqual({
           amount: 9500,
           currency: 'usd',

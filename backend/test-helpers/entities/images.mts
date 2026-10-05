@@ -32,7 +32,7 @@ export async function markImageDeleted(imageId: string) {
 export async function markImageModerationFlagged(imageId: string) {
   await write(sql`
     UPDATE images
-    SET openai_omni_moderation_flagged = true,
+    SET is_flagged_by_openai_omni_moderation = true,
         openai_omni_moderation_created_at = NOW()
     WHERE id = ${imageId}
   `)
@@ -46,7 +46,7 @@ export async function setImageOpenAIModerationResults(
   await write(sql`
     UPDATE images
     SET openai_omni_moderation_results = ${JSON.stringify(results)}::jsonb,
-        openai_omni_moderation_flagged = ${flagged},
+        is_flagged_by_openai_omni_moderation = ${flagged},
         openai_omni_moderation_created_at = NOW()
     WHERE id = ${imageId}
   `)
@@ -55,7 +55,7 @@ export async function setImageOpenAIModerationResults(
 export async function getImageModerationState(imageId: string): Promise<{
   deleted_at: Date | null
   openai_omni_moderation_results: unknown | null
-  openai_omni_moderation_flagged: boolean | null
+  is_flagged_by_openai_omni_moderation: boolean | null
   openai_omni_moderation_created_at: Date | null
 } | null> {
   const { rows } = await read<{
@@ -63,12 +63,12 @@ export async function getImageModerationState(imageId: string): Promise<{
     quarantine_pending_at: Date | null
     quarantined_at: Date | null
     openai_omni_moderation_results: unknown | null
-    openai_omni_moderation_flagged: boolean | null
+    is_flagged_by_openai_omni_moderation: boolean | null
     openai_omni_moderation_created_at: Date | null
   }>(sql`
     SELECT deleted_at, quarantine_pending_at, quarantined_at,
       openai_omni_moderation_results,
-      openai_omni_moderation_flagged,
+      is_flagged_by_openai_omni_moderation,
       openai_omni_moderation_created_at
     FROM images
     WHERE id = ${imageId}

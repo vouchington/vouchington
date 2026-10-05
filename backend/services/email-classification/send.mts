@@ -63,7 +63,7 @@ function isUnsubscribedFromCategory(
   prefs: EmailPreferences,
   category: 'outcome_emails' | 'news_digest' | 'community_digest',
 ): boolean {
-  if (category === 'outcome_emails') return !prefs.engagement_emails_enabled
+  if (category === 'outcome_emails') return !prefs.is_engagement_emails_enabled
   if (category === 'news_digest') return prefs.news_digest_frequency === 'none'
-  return !prefs.moderation_emails_enabled || prefs.community_digest_frequency === 'none'
+  return !prefs.is_moderation_emails_enabled || prefs.community_digest_frequency === 'none'
 }

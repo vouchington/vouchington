@@ -32,7 +32,7 @@ export interface PaidSafeCrawlHistory {
   completed_at: string | null
   title: string | null
   created_at: string
-  lang: string | null
+  language: string | null
 }
 
 export type CrawlResponse = PaidSafeCrawlHistory & {

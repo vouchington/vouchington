@@ -53,8 +53,6 @@ describe('get', () => {
 
       expect(communities[0].lingua_rs_detected_language).toBe('fr')
       const expectedKeys = [
-        'allow_data_point_posts',
-        'allow_review_posts',
         'archived_at',
         'archived_by_id',
         'automod_action',
@@ -77,6 +75,8 @@ describe('get', () => {
         'profile_image_id',
         'profile_image_placement',
         'rules_markdown',
+        'should_allow_data_point_posts',
+        'should_allow_review_posts',
         'slug',
         'trusted_at',
         'updated_at',

@@ -105,7 +105,7 @@ app.route('/api/v1/appeals/:id').get(async (ctx: Context) => {
     ? getModerationAppealByIdFromPrimary(id)
     : getModerationAppealById(id))
   ctx.assert(appeal, 404, 'Appeal not found')
-  const isOwner = appeal.appellant_id === currentUser.id
+  const isOwner = appeal.appellant_user_id === currentUser.id
 
   ctx.assert(isStaff || isOwner, 403, 'Forbidden')
 

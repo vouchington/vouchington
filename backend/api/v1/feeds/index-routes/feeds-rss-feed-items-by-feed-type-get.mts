@@ -99,7 +99,7 @@ app.route('/api/v1/feeds/rss_feed_items/:feed_type').get(async (ctx: Context) =>
   const allItemIds = [...rssFeedItemIds, ...memberItemIds]
 
   const sharedByUserIds = [
-    ...new Set(result.results.flatMap(r => (r.shared_by_user_id ? [r.shared_by_user_id] : []))),
+    ...new Set(result.results.flatMap(r => (r.shared_by_id ? [r.shared_by_id] : []))),
   ]
 
   // Use streaming pattern: pass promises directly to allow independent streaming

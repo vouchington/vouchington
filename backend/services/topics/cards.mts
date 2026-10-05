@@ -10,8 +10,8 @@ import { isMoney, parsePostgresMoneyAmount, type CurrencyCode, type Money } from
 import { mapCardAttributeReferenceError } from './card-attribute-errors.mts'
 
 type CardAttributes = {
-  bank_id?: string | null
-  brand_id?: string | null
+  bank_topic_id?: string | null
+  brand_topic_id?: string | null
   annual_fee?: Money | null
 }
 
@@ -22,8 +22,8 @@ type CardAttributesRow = Omit<CardAttributes, 'annual_fee'> & {
 
 function toCardAttributes(row: CardAttributesRow): CardAttributes {
   return {
-    bank_id: row.bank_id,
-    brand_id: row.brand_id,
+    bank_topic_id: row.bank_topic_id,
+    brand_topic_id: row.brand_topic_id,
     annual_fee:
       row.annual_fee_minor_units === null || row.currency_code === null
         ? null
@@ -39,8 +39,8 @@ export async function getCardAttributes(topic: Topic): Promise<CardAttributes | 
 
   const { rows } = await read<CardAttributesRow>(sql`/* getCardAttributes */
     SELECT
-      bank_id,
-      brand_id,
+      bank_topic_id,
+      brand_topic_id,
       annual_fee_minor_units::TEXT AS annual_fee_minor_units,
       currency_code
     FROM card_topics
@@ -62,15 +62,17 @@ export async function updateCardAttributes(
   const columns: string[] = []
   const values: unknown[] = []
 
-  if ('bank_id' in attributes) {
-    if (attributes.bank_id != null) await assertTopicExists(attributes.bank_id, 'bank_id')
-    columns.push('bank_id')
-    values.push(attributes.bank_id ?? null)
+  if ('bank_topic_id' in attributes) {
+    if (attributes.bank_topic_id != null)
+      await assertTopicExists(attributes.bank_topic_id, 'bank_topic_id')
+    columns.push('bank_topic_id')
+    values.push(attributes.bank_topic_id ?? null)
   }
-  if ('brand_id' in attributes) {
-    if (attributes.brand_id != null) await assertTopicExists(attributes.brand_id, 'brand_id')
-    columns.push('brand_id')
-    values.push(attributes.brand_id ?? null)
+  if ('brand_topic_id' in attributes) {
+    if (attributes.brand_topic_id != null)
+      await assertTopicExists(attributes.brand_topic_id, 'brand_topic_id')
+    columns.push('brand_topic_id')
+    values.push(attributes.brand_topic_id ?? null)
   }
   if ('annual_fee' in attributes) {
     assert(

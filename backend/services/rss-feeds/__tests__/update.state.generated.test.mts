@@ -39,7 +39,7 @@ describe('update.generated (state)', () => {
       topic_id: topic.id,
       title: `Test Feed ${random}`,
     })
-    await updateRssFeedById(feed.id, { enabled: true })
+    await updateRssFeedById(feed.id, { is_enabled: true })
     const updated = await getRssFeedById(feed.id)
     expect(updated!.is_enabled).toBe(true)
   })
@@ -60,7 +60,7 @@ describe('update.generated (state)', () => {
     })
     await updateRssFeedById(
       feed.id,
-      { enabled: false, discoverable: false },
+      { is_enabled: false, discoverable: false },
       { stateChangeReason: 'test: focused state reason' },
     )
 
@@ -84,8 +84,8 @@ describe('update.generated (state)', () => {
       topic_id: topic.id,
       title: `Test Feed ${random}`,
     })
-    await updateRssFeedById(feed.id, { enabled: true })
-    await updateRssFeedById(feed.id, { enabled: false })
+    await updateRssFeedById(feed.id, { is_enabled: true })
+    await updateRssFeedById(feed.id, { is_enabled: false })
 
     const updated = await getRssFeedById(feed.id)
     expect(updated!.is_enabled).toBe(false)
@@ -106,7 +106,7 @@ describe('update.generated (state)', () => {
       title: `Test Feed ${random}`,
     })
     await updateRssFeedByIdAsCurrentUser(sharedUser, feed.id, {
-      enabled: false,
+      is_enabled: false,
       discoverable: false,
     })
 

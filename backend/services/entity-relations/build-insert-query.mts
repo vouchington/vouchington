@@ -11,7 +11,7 @@ function buildRelationColumns(relation: EntityRelationMetadata): {
   const primaryKeyColumns: string[] = ['subject_id', 'object_id']
   const columns: string[] = [...primaryKeyColumns, 'created_by_id']
   if (isUserFollowRelation(relation)) {
-    columns.push('outbound_ap_follow_activity_id')
+    columns.push('outbound_activitypub_follow_activity_id')
   }
   /* c8 ignore next 3 -- no entity relation currently configures order_index */
   if (relation.order_index) {
@@ -95,13 +95,13 @@ export function buildInsertQuery(
 	          deleted_by_id = NULL`)
   if (isUserFollowRelation(relation)) {
     query.append(sql`,
-            outbound_ap_follow_activity_id = CASE
+            outbound_activitypub_follow_activity_id = CASE
               WHEN `)
     query.append(table)
     query.append(sql`.deleted_at IS NULL
                 THEN `)
     query.append(table)
-    query.append(sql`.outbound_ap_follow_activity_id
+    query.append(sql`.outbound_activitypub_follow_activity_id
               ELSE uuidv7()
             END`)
   }

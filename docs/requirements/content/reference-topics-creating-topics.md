@@ -91,7 +91,7 @@ Topic detail Menubar items use counts from the topic detail entity payload, not 
 - For all post-type items, logged-in viewers may receive `topic_metrics.viewer_count` data; the `+` indicator is shown when viewer-accessible count exceeds public count
 - When the public count is `0` but the viewer can see restricted posts, the UI shows `0+`
 - Post-type items are hidden only when both the public count and viewer-aware count are `0`
-- The `Reviews` item is hidden when the topic's `allow_reviews` flag is `false` (see [Policy flags](reference-topics-topic-types.md#policy-flags))
+- The `Reviews` item is hidden when the topic's `should_allow_reviews` flag is `false` (see [Policy flags](reference-topics-topic-types.md#policy-flags))
 - `Latest` item shows RSS feed items from feeds owned by this topic (source-based). Uses `topic_metrics.count.latest` which counts items from enabled feeds where `rss_feeds.topic_id` matches. `Latest` is always numeric-only and never shows `+`
 - `News` item shows RSS feed items that have this topic tagged via category classification (via `rss_feed_item_categories.topic_id`). Uses `topic_metrics.count.news`. `News` is always numeric-only and never shows `+`
 - Display order: Posts, Reviews, Data Points, Referral Links, Latest, News, Manage Tags
@@ -111,7 +111,7 @@ The `TopicActionsAside` on every topic detail page includes a **Contribute** sec
 
 Visibility rules by topic type:
 
-- **Write a Review** — hidden when the topic's `allow_reviews` flag is `false` (see [Policy flags](reference-topics-topic-types.md#policy-flags); topics with reviews disabled forbid review creation).
+- **Write a Review** — hidden when the topic's `should_allow_reviews` flag is `false` (see [Policy flags](reference-topics-topic-types.md#policy-flags); topics with reviews disabled forbid review creation).
 - **Share a Data Point** — visible only when `topic_type === 'card'` or `topic_type === 'bank_account'` (the only data-point-eligible types). When visible, the create form pre-seeds the correct vertical (`credit_card` or `bank_account`) and pre-selects the topic.
 - **Start a Discussion** — always visible. The discussion create form shows a pre-populated **Categories** field with the current topic; on submit, `relation__post__category__topic` entity relations are created so the discussion appears on the topic's Posts tab.
 

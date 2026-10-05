@@ -9,7 +9,7 @@ const ourHostname = new URL(getSiteOrigin()).hostname
 
 async function createFederatedUser() {
   const user = await createTestUserDirect()
-  await updateUserFields(user.id, { fediverse_federation_enabled: true })
+  await updateUserFields(user.id, { is_fediverse_federation_enabled: true })
   return user
 }
 

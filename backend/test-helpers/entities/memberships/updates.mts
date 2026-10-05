@@ -52,7 +52,7 @@ export async function updateTestMembershipCancelAtPeriodEnd(
 ): Promise<void> {
   await write(sql`/* updateTestMembershipCancelAtPeriodEnd */
     UPDATE memberships
-    SET cancel_at_period_end = ${cancelAtPeriodEnd}
+    SET should_cancel_at_period_end = ${cancelAtPeriodEnd}
     WHERE id = ${membershipId}
   `)
 }
@@ -82,6 +82,6 @@ export async function rejectTestMembershipProviderEvidence(membershipId: string)
     INNER JOIN membership_provider_observations observation
       ON observation.id = source_state.membership_provider_observation_id
     WHERE membership.id = ${membershipId}
-      AND evidence.id = observation.membership_provider_evidence_id
+      AND evidence.id = observation.membership_provider_evidence_record_id
   `)
 }

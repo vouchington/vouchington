@@ -36,9 +36,9 @@ export async function recordCopyrightEmailIntakeLegalProcess(input: {
     'Legal process reason is too long',
   )
   await using transaction = await beginTransaction()
-  const { rows } = await transaction<{ ses_message_id: string }>(
+  const { rows } = await transaction<{ amazon_ses_message_id: string }>(
     sql`/* recordCopyrightEmailIntakeLegalProcess:lock */
-      SELECT ses_message_id FROM copyright_notice_email_intakes
+      SELECT amazon_ses_message_id FROM copyright_notice_email_intakes
       WHERE id = ${input.intakeId}
       FOR UPDATE`,
   )
@@ -58,7 +58,7 @@ export async function recordCopyrightEmailIntakeLegalProcess(input: {
       ${input.intakeId}, CURRENT_TIMESTAMP, ${input.currentUser.id}, 'legal_process',
       ${encryptSecret(
         JSON.stringify({ rationale: reason, manual_fallback_reason: null }),
-        copyrightEmailIntakePurpose(intake.ses_message_id),
+        copyrightEmailIntakePurpose(intake.amazon_ses_message_id),
       )}
     )
   `)

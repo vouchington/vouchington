@@ -23,7 +23,7 @@ export const WithGapsAndRisks: Story = {
           gap: 'The hosted URL points to a post with several images; the image is not named.',
         },
         { element: 'contact_information', status: 'present', gap: null },
-        { element: 'good_faith_statement', status: 'present', gap: null },
+        { element: 'has_good_faith_statement', status: 'present', gap: null },
         {
           element: 'accuracy_authority_statement',
           status: 'missing',
@@ -54,7 +54,7 @@ export const CompleteNotice: Story = {
         { element: 'work_identification', status: 'present', gap: null },
         { element: 'material_identification', status: 'present', gap: null },
         { element: 'contact_information', status: 'present', gap: null },
-        { element: 'good_faith_statement', status: 'present', gap: null },
+        { element: 'has_good_faith_statement', status: 'present', gap: null },
         { element: 'accuracy_authority_statement', status: 'present', gap: null },
       ],
       risk_notes: [],

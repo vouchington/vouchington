@@ -44,7 +44,7 @@
                 "status": "present"
               },
               {
-                "element": "good_faith_statement",
+                "element": "has_good_faith_statement",
                 "gap": null,
                 "status": "present"
               },
@@ -99,7 +99,7 @@
       "form_review": {
         "intake_id": "00000000-0000-7000-8000-000000000816",
         "review": {
-          "accepted": true,
+          "is_accepted": true,
           "reviewed_at": "2026-07-01T11:30:00.000Z",
           "reviewed_by_id": "00000000-0000-7000-8000-000000000817"
         },
@@ -127,7 +127,7 @@
                 "status": "present"
               },
               {
-                "element": "good_faith_statement",
+                "element": "has_good_faith_statement",
                 "gap": null,
                 "status": "present"
               },

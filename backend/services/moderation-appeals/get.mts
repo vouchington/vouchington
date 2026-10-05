@@ -77,7 +77,7 @@ export async function listModerationAppeals(
   query.append(sql`
   `)
   if (appellantUserId) {
-    query.append(sql` AND ma.appellant_id = ${appellantUserId}`)
+    query.append(sql` AND ma.appellant_user_id = ${appellantUserId}`)
   }
   if (beforeId) {
     query.append(sql` AND ma.id < ${beforeId}`)

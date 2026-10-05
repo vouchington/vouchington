@@ -3,7 +3,7 @@ import type { ModerationAppealResponse } from './types.mts'
 export type RedactedModerationAppeal = Omit<
   ModerationAppealResponse,
   | 'case_id'
-  | 'appellant_id'
+  | 'appellant_user_id'
   | 'appeal_reason'
   | 'recommended_action'
   | 'ai_public_response'
@@ -29,7 +29,7 @@ export type RedactedModerationAppeal = Omit<
 export function redactModerationAppeal(appeal: ModerationAppealResponse): RedactedModerationAppeal {
   const {
     case_id: _ci,
-    appellant_id: _ai,
+    appellant_user_id: _ai,
     appeal_reason: _ar,
     recommended_action: _ra,
     ai_public_response: _apr,

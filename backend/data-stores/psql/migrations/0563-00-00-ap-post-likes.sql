@@ -10,8 +10,8 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_activitypub_like_tallies (
   post_id UUID PRIMARY KEY REFERENCES posts ON DELETE CASCADE,
-  ap_likes_score DOUBLE PRECISION NOT NULL DEFAULT 0,
-  ap_likes_count INT NOT NULL DEFAULT 0,
+  activitypub_likes_score DOUBLE PRECISION NOT NULL DEFAULT 0,
+  activitypub_likes_count INT NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -24,22 +24,22 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 COMMENT ON TABLE post_activitypub_like_tallies IS 'AP-only like tally per post, trigger-maintained from activitypub_post_likes. Isolated from post_votes — remote likes never affect local ranking.';
 COMMENT ON COLUMN post_activitypub_like_tallies.post_id IS 'The local post this tally is for (1:1, lazily created on first remote like).';
-COMMENT ON COLUMN post_activitypub_like_tallies.ap_likes_score IS 'COUNT of active (non-Undo''d) activitypub_post_likes rows for this post. DOUBLE PRECISION to match the shape of other score columns even though every Like currently weighs 1.';
-COMMENT ON COLUMN post_activitypub_like_tallies.ap_likes_count IS 'Same value as ap_likes_score, stored separately as a plain display count in case score gains per-actor weighting later.';
+COMMENT ON COLUMN post_activitypub_like_tallies.activitypub_likes_score IS 'COUNT of active (non-Undo''d) activitypub_post_likes rows for this post. DOUBLE PRECISION to match the shape of other score columns even though every Like currently weighs 1.';
+COMMENT ON COLUMN post_activitypub_like_tallies.activitypub_likes_count IS 'Same value as activitypub_likes_score, stored separately as a plain display count in case score gains per-actor weighting later.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS activitypub_post_likes (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   post_id UUID NOT NULL REFERENCES posts ON DELETE CASCADE,
   remote_actor_id UUID NOT NULL REFERENCES remote_actors ON DELETE CASCADE,
-  like_ap_id TEXT NOT NULL,
-  CHECK (char_length(like_ap_id) > 0 AND char_length(like_ap_id) <= 2048),
+  like_activitypub_id TEXT NOT NULL,
+  CHECK (char_length(like_activitypub_id) > 0 AND char_length(like_activitypub_id) <= 2048),
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   deleted_at TIMESTAMPTZ
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_activitypub_post_likes__like_activitypub_id ON activitypub_post_likes (like_ap_id) WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_activitypub_post_likes__like_activitypub_id ON activitypub_post_likes (like_activitypub_id) WHERE deleted_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_activitypub_post_likes__post_remote_actor ON activitypub_post_likes (post_id, remote_actor_id) WHERE deleted_at IS NULL;
 -- RI-usable leading indexes for the post_id/remote_actor_id FKs — the unique index above is
@@ -53,7 +53,7 @@ CREATE INDEX IF NOT EXISTS idx_activitypub_post_likes__remote_actor_id ON activi
 COMMENT ON TABLE activitypub_post_likes IS 'Append-only ledger of remote ActivityPub Like/Undo(Like) activity against local posts. FKs post_id directly (not post_activitypub_like_tallies) so writes never depend on post_activitypub_like_tallies row-creation order; the sync trigger below lazily creates it.';
 COMMENT ON COLUMN activitypub_post_likes.post_id IS 'The local post that was liked.';
 COMMENT ON COLUMN activitypub_post_likes.remote_actor_id IS 'The remote actor who sent the Like. One active row per (post_id, remote_actor_id) — see idx_activitypub_post_likes__post_remote_actor.';
-COMMENT ON COLUMN activitypub_post_likes.like_ap_id IS 'The inbound Like activity''s ActivityPub `id`. Unique while active — a second live Like from the same remote actor on the same post is rejected by idx_activitypub_post_likes__post_remote_actor before this could collide.';
+COMMENT ON COLUMN activitypub_post_likes.like_activitypub_id IS 'The inbound Like activity''s ActivityPub `id`. Unique while active — a second live Like from the same remote actor on the same post is rejected by idx_activitypub_post_likes__post_remote_actor before this could collide.';
 COMMENT ON COLUMN activitypub_post_likes.deleted_at IS 'Set by an inbound Undo(Like). NULL while the like is active. A later re-Like from the same (post_id, remote_actor_id) resurrects this same row rather than inserting a new one — see fn_project_activitypub_post_likes.';
 
 -- Keeps post_activitypub_like_tallies in sync with the count of active (deleted_at IS NULL) activitypub_post_likes rows for the
@@ -92,11 +92,11 @@ BEGIN
     v_delta := 1;
   END IF;
 
-  INSERT INTO post_activitypub_like_tallies (post_id, ap_likes_score, ap_likes_count)
+  INSERT INTO post_activitypub_like_tallies (post_id, activitypub_likes_score, activitypub_likes_count)
   VALUES (NEW.post_id, GREATEST(v_delta, 0), GREATEST(v_delta, 0))
   ON CONFLICT (post_id) DO UPDATE SET
-    ap_likes_score = GREATEST(post_activitypub_like_tallies.ap_likes_score + v_delta, 0),
-    ap_likes_count = GREATEST(post_activitypub_like_tallies.ap_likes_count + v_delta, 0);
+    activitypub_likes_score = GREATEST(post_activitypub_like_tallies.activitypub_likes_score + v_delta, 0),
+    activitypub_likes_count = GREATEST(post_activitypub_like_tallies.activitypub_likes_count + v_delta, 0);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;

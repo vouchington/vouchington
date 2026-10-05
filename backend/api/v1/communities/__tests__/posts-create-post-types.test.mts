@@ -55,7 +55,7 @@ describe('POST /api/v1/communities/:slug/posts post type gates', () => {
 
   it('passes enabled review posts through to review validation', async () => {
     const { community, request } = await setupCommunityPostTypeRequest('review-enabled', {
-      allow_review_posts: true,
+      should_allow_review_posts: true,
     })
 
     await request
@@ -95,7 +95,7 @@ describe('POST /api/v1/communities/:slug/posts post type gates', () => {
 
   it('passes enabled data point posts through to data point validation', async () => {
     const { community, request } = await setupCommunityPostTypeRequest('data-point-enabled', {
-      allow_data_point_posts: true,
+      should_allow_data_point_posts: true,
     })
 
     await request
@@ -108,8 +108,8 @@ describe('POST /api/v1/communities/:slug/posts post type gates', () => {
 async function setupCommunityPostTypeRequest(
   slugPrefix: string,
   options: {
-    allow_review_posts?: boolean
-    allow_data_point_posts?: boolean
+    should_allow_review_posts?: boolean
+    should_allow_data_point_posts?: boolean
     administrator?: boolean
   } = {},
 ) {

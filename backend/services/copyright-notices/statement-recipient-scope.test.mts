@@ -57,7 +57,7 @@ describe('statement recipient scope and lifecycle', () => {
     await reviewCopyrightFormIntake({
       intakeId: notice.intake.id,
       currentUser: await createTestUser({ extraRoles: ['moderator'] }),
-      accepted: true,
+      is_accepted: true,
       rationale: 'Complete notice.',
     })
     const aggregate = (await getCopyrightNoticePrivateAggregate(noticeId))!
@@ -98,7 +98,7 @@ describe('statement recipient scope and lifecycle', () => {
     await reviewCopyrightFormIntake({
       intakeId: notice.intake.id,
       currentUser: await createTestUser({ extraRoles: ['moderator'] }),
-      accepted: false,
+      is_accepted: false,
       rationale: 'Incomplete notice.',
     })
     const intents = (

@@ -15,7 +15,7 @@ type OutcomeRow = {
   input_sha256: Buffer
   configuration_json: string
   configuration_sha256: Buffer
-  shared_actor_id: string
+  shared_actor_user_id: string
   decision_batch_id: string | null
   outcomes_persisted_at: Date | null
 }
@@ -25,7 +25,7 @@ function matchesLease<C>(row: OutcomeRow, lease: ClassifierRunLease<C>): boolean
     row.input_sha256.equals(lease.inputSha256) &&
     row.configuration_sha256.equals(lease.resolved.configurationSha256) &&
     row.configuration_json === lease.resolved.configurationJson &&
-    row.shared_actor_id === lease.resolved.actorId &&
+    row.shared_actor_user_id === lease.resolved.actorId &&
     row.decision_batch_id === lease.decisionBatchId
   )
 }
@@ -43,7 +43,7 @@ export async function readClassifierRunOutcomes<C, L, E>(
   const query = options.query ?? write
   const { rows } = await query<OutcomeRow>(sql`/* readClassifierRunOutcomes */
     SELECT input_sha256, configuration_json::text AS configuration_json, configuration_sha256,
-      shared_actor_id, decision_batch_id, outcomes_persisted_at
+      shared_actor_user_id, decision_batch_id, outcomes_persisted_at
     FROM classifier_runs WHERE id = ${lease.runId}
   `)
   const row = rows[0]

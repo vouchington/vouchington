@@ -13,9 +13,9 @@ export type UserPrivacySettings = {
   direct_messages_audience: UserPrivacyAudience
   default_post_broadcast: 'everyone' | 'users' | 'followers' | 'mutual_followers'
   default_post_privacy: 'public' | 'private'
-  engagement_emails_enabled: boolean
+  is_engagement_emails_enabled: boolean
   news_digest_frequency: 'none' | 'daily' | 'weekly'
-  moderation_emails_enabled: boolean
+  is_moderation_emails_enabled: boolean
   community_digest_frequency: 'none' | 'daily' | 'weekly'
   moderation_email_cadence: 'daily' | 'selected_days' | 'weekly'
   moderation_email_days_of_week: number[]
@@ -23,7 +23,7 @@ export type UserPrivacySettings = {
   moderation_email_timezone: string | null
   // Phase C opt-in to ActivityPub federation. Default FALSE; when TRUE, a public AP actor is
   // exposed at /ap/users/:id and inbound follows are auto-accepted.
-  fediverse_federation_enabled: boolean
+  is_fediverse_federation_enabled: boolean
 }
 
 type DisplayNameSource =
@@ -81,7 +81,7 @@ export type BasicUser = {
   markdown?: string | null
   account_type: import('@ts-shared/utils/account-type').AccountType
   verification_status?: IdentityVerificationStatus | null
-  verified_badge_visible?: boolean | null
+  is_verified_badge_visible?: boolean | null
   verified_display_name?: string | null
 }
 
@@ -107,15 +107,15 @@ export type PrivateUser = BasicUser & {
   email_address?: string | null
   phone_number?: string | null
   processing_restricted_at?: Date | null
-  third_party_marketing?: boolean | null
-  hn_discussions?: boolean
+  should_receive_third_party_marketing?: boolean | null
+  should_import_hacker_news_discussions?: boolean
   suspended_at?: Date | null
   suspended_reason?: string | null
   suspended_by_id?: string | null
   bad_faith_reporter_at?: Date | null
   membership_plan?: import('./membership.mts').MembershipPlanSlug | null
   // Identity-verification private fields — not exposed on PublicUser
-  // (verified_badge_visible is on PublicUser/BasicUser; public_verified_name_display is on both PublicUser and PrivateUser)
+  // (is_verified_badge_visible is on PublicUser/BasicUser; public_verified_name_display is on both PublicUser and PrivateUser)
   verification_provider?: string | null
   verification_completed_at?: Date | null
   public_verified_name_display?: PublicVerifiedNameDisplay

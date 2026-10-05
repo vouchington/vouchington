@@ -764,7 +764,7 @@ The fail-closed flow is diagrammed in the
 [copyright notices service README](../../../backend/services/copyright-notices/README.md).
 
 Receipt stores the notifier's contact, content location, and grounds. EU receipts also record
-`notifier_name`, `notifier_email`, and the literal-true `good_faith_statement`; UK rejects these EU
+`notifier_name`, `notifier_email`, and the literal-true `has_good_faith_statement`; UK rejects these EU
 fields. Guest receipt identity is derived from the client IP, and signed-in identity from the
 account, so same-client idempotent replay creates no second receipt or delivery. EU notifiers
 receive the receipt and later decisions at the retained receipt email address; signed-in notifiers

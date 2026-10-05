@@ -126,13 +126,13 @@ describe('commentSeedTimestampMs', () => {
     expect(tier3).toBeGreaterThan(tier2)
   })
 
-  it('satisfies CHECK (id > parent_id) / CHECK (id > root_id) for every L1/L2/L3 comment id seedComments generates', () => {
+  it('satisfies CHECK (id > parent_post_id) / CHECK (id > root_post_id) for every L1/L2/L3 comment id seedComments generates', () => {
     const rootPostId = seedUuid(0, '05')
     const rootPostTimestampMs = timestampMsOf(rootPostId)
 
     for (let i = 0; i < 5; i++) {
       const l1Id = seedUuidAtTimestamp(commentSeedTimestampMs(0, 1), i)
-      // L1's parent_id and root_id are both rootPostId.
+      // L1's parent_post_id and root_post_id are both rootPostId.
       expect(timestampMsOf(l1Id)).toBeGreaterThan(rootPostTimestampMs)
     }
 
@@ -140,14 +140,14 @@ describe('commentSeedTimestampMs', () => {
       const l2Id = seedUuidAtTimestamp(commentSeedTimestampMs(0, 2), i)
       const l1ParentId = seedUuidAtTimestamp(commentSeedTimestampMs(0, 1), i)
       expect(timestampMsOf(l2Id)).toBeGreaterThan(timestampMsOf(l1ParentId))
-      expect(timestampMsOf(l2Id)).toBeGreaterThan(rootPostTimestampMs) // root_id
+      expect(timestampMsOf(l2Id)).toBeGreaterThan(rootPostTimestampMs) // root_post_id
     }
 
     for (let i = 0; i < 10; i++) {
       const l3Id = seedUuidAtTimestamp(commentSeedTimestampMs(0, 3), i)
       const l2ParentId = seedUuidAtTimestamp(commentSeedTimestampMs(0, 2), i % 5)
       expect(timestampMsOf(l3Id)).toBeGreaterThan(timestampMsOf(l2ParentId))
-      expect(timestampMsOf(l3Id)).toBeGreaterThan(rootPostTimestampMs) // root_id
+      expect(timestampMsOf(l3Id)).toBeGreaterThan(rootPostTimestampMs) // root_post_id
     }
   })
 

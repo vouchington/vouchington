@@ -16,7 +16,7 @@ type CurrentMembership = {
 }
 
 type ValidFallbackSource = {
-  auto_renews: boolean
+  should_auto_renew: boolean
   effective_at: Date
   expires_at: Date | null
   grant_created_at: Date | null
@@ -77,7 +77,7 @@ export async function restoreFallbackAfterCurrentAccessEndsInTransaction(
   const { rows } = await query(sql`/* restoreFallbackAfterCurrentAccessEnds: project fallback */
     INSERT INTO memberships (
       user_id, membership_source_id, membership_product_id, effective_at, expires_at,
-      cancelled_at, expired_at, past_due_at, paused_at, cancel_at_period_end,
+      cancelled_at, expired_at, past_due_at, paused_at, should_cancel_at_period_end,
       renewal_price_increase_notified_observation_id,
       renewal_price_increase_notified_provider_product_id,
       renewal_price_increase_notified_minor_units,
@@ -89,7 +89,7 @@ export async function restoreFallbackAfterCurrentAccessEndsInTransaction(
       ${userId}, ${fallback.membership_source_id}, ${fallback.membership_product_id},
       ${fallback.effective_at}, ${fallback.expires_at}, NULL, NULL,
       ${fallback.source_kind === 'direct' ? fallback.past_due_at : null}, NULL,
-      ${fallback.source_kind === 'direct' && !fallback.auto_renews},
+      ${fallback.source_kind === 'direct' && !fallback.should_auto_renew},
       ${renewalNotification?.renewal_price_increase_notified_observation_id ?? null},
       ${renewalNotification?.renewal_price_increase_notified_provider_product_id ?? null},
       ${renewalNotification?.renewal_price_increase_notified_minor_units ?? null},
@@ -110,7 +110,7 @@ export async function restoreFallbackAfterCurrentAccessEndsInTransaction(
     fromSkuId: current.membership_product_id,
     toSkuId: fallback.membership_product_id,
     pastDueAt: fallback.source_kind === 'direct' ? fallback.past_due_at : null,
-    cancelAtPeriodEnd: fallback.source_kind === 'direct' && !fallback.auto_renews,
+    cancelAtPeriodEnd: fallback.source_kind === 'direct' && !fallback.should_auto_renew,
     query,
   })
   return true
@@ -154,7 +154,7 @@ async function getHighestPriorityFallbackSource(
 ): Promise<ValidFallbackSource | undefined> {
   const { rows } = await query(sql`/* restoreFallbackAfterCurrentAccessEnds: sources */
     SELECT source.id AS membership_source_id, source_state.membership_product_id,
-      source.source_kind, source_state.auto_renews, source_state.effective_at,
+      source.source_kind, source_state.should_auto_renew, source_state.effective_at,
       source_state.expires_at, source_state.past_due_at, product.plan,
       grant_row.created_at AS grant_created_at, activation.id IS NOT NULL AS has_open_grant_activation
     FROM membership_sources source
@@ -164,7 +164,7 @@ async function getHighestPriorityFallbackSource(
     LEFT JOIN membership_provider_observations observation
       ON observation.id = source_state.membership_provider_observation_id
     LEFT JOIN membership_provider_evidence_records evidence
-      ON evidence.id = observation.membership_provider_evidence_id
+      ON evidence.id = observation.membership_provider_evidence_record_id
     LEFT JOIN membership_grants grant_row ON grant_row.membership_source_id = source.id
     LEFT JOIN membership_grant_activation_periods activation
       ON activation.membership_grant_id = grant_row.id AND activation.ended_at IS NULL

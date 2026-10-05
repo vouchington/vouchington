@@ -132,7 +132,7 @@ describe('Community Agent Prompts Routes', () => {
         .expect(201)
 
       expect(res.body.community_agent_prompt).toHaveProperty('id')
-      expect(res.body.community_agent_prompt.slot_allocated).toBe(false)
+      expect(res.body.community_agent_prompt.is_slot_allocated).toBe(false)
     })
 
     it('returns 422 when prompt is missing', async () => {

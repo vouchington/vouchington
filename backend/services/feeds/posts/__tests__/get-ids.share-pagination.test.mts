@@ -139,7 +139,7 @@ describe('post share delivery pagination', () => {
     const comment = await createTestPost({
       user: commenter,
       post_type: 'comment',
-      parent_id: root.id,
+      parent_post_id: root.id,
     })
     const shareId = await insertPostFeedShareForTest({
       recipientUserId: viewer.id,

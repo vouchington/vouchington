@@ -6,7 +6,7 @@ import type {
 export interface ModerationAppeal {
   id: string
   case_id: string
-  appellant_id: string
+  appellant_user_id: string
   user_warning_id: string | null
   community_ban_id: string | null
   post_id: string | null

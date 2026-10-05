@@ -5,9 +5,9 @@ import sql from 'sql-template-strings'
 export async function getTestMembershipProviderEvidenceId(
   membershipId: string,
 ): Promise<string | undefined> {
-  const { rows } = await read<{ membership_provider_evidence_id: string }>(
+  const { rows } = await read<{ membership_provider_evidence_record_id: string }>(
     sql`/* getTestMembershipProviderEvidenceId */
-      SELECT observation.membership_provider_evidence_id
+      SELECT observation.membership_provider_evidence_record_id
       FROM memberships membership
       INNER JOIN membership_source_states source_state
         ON source_state.membership_source_id = membership.membership_source_id
@@ -15,7 +15,7 @@ export async function getTestMembershipProviderEvidenceId(
         ON observation.id = source_state.membership_provider_observation_id
       WHERE membership.id = ${membershipId}`,
   )
-  return rows[0]?.membership_provider_evidence_id
+  return rows[0]?.membership_provider_evidence_record_id
 }
 
 export async function getTestMembershipProviderEvidence(
@@ -43,7 +43,7 @@ export async function getTestMembershipProviderEvidenceTerminalState(evidenceId:
       COUNT(observation.id)::int AS observation_count
     FROM membership_provider_evidence_records evidence
     LEFT JOIN membership_provider_observations observation
-      ON observation.membership_provider_evidence_id = evidence.id
+      ON observation.membership_provider_evidence_record_id = evidence.id
     WHERE evidence.id = ${evidenceId}
     GROUP BY evidence.id`)
   return rows[0]
@@ -62,7 +62,7 @@ export async function createTestPendingMembershipVerification(userId: string): P
 
   const { rows } = await write<{ id: string }>(sql`
     INSERT INTO membership_verifications (
-      user_id, idempotency_key, request_fingerprint, membership_provider_evidence_id,
+      user_id, idempotency_key, request_fingerprint, membership_provider_evidence_record_id,
       provider, environment, application_id
     ) VALUES (
       ${userId}, ${randomUUID()}, ${'b'.repeat(64)}, ${evidenceId},

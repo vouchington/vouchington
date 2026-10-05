@@ -15,12 +15,12 @@ function queueItem(assessed: boolean): CopyrightStaffQueueItem {
         assessment: assessed
           ? {
               id: 'assessment-test',
-              from_original_claimant: false,
+              is_from_original_claimant: false,
               proceeding_kind: null,
               ccb_claim_kind: null,
               commenced_at: null,
               received_by_designated_agent_at: null,
-              same_material: false,
+              is_same_material: false,
               target_ids: [],
               qualifying: false,
               resolved: false,

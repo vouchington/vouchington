@@ -37,7 +37,7 @@ describe('crawl dispatch indexed work selection', () => {
     const suffix = randomUUID()
     const hostname = `crawl-plan-${suffix}.example.com`
     const target = (await insertTestUrlDirect(actor.id, `https://${hostname}/base`))!
-    await updateUrlHostname(target.hostname.id, { crawlable: true })
+    await updateUrlHostname(target.hostname.id, { is_crawlable: true })
     await setTestRobotsTxtCache(hostname, 'User-agent: *\nAllow: /')
     const unrelated = (await insertTestUrlDirect(
       actor.id,

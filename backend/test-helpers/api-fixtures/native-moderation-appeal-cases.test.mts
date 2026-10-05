@@ -31,7 +31,7 @@ describe('native moderation appeal and dispute cursor fixtures', () => {
     expect(fixture.backendResponseContractKey).toBe('GET:/api/v1/appeals/:id#staff')
     expect(fixture.body).toMatchObject({
       appeal: {
-        appellant_id: 'user-1',
+        appellant_user_id: 'user-1',
         appeal_reason: 'Please review this again.',
         staff_context: { appellant: { id: 'user-1' } },
       },

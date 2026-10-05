@@ -50,9 +50,9 @@ export function FediverseInstanceMetadata({
     {
       label: t('extracted.topics.fediverseInstanceMetadata.registrations_98da9fa3'),
       value:
-        attributes?.open_registrations == null
+        attributes?.is_open_for_registrations == null
           ? unknown
-          : attributes.open_registrations
+          : attributes.is_open_for_registrations
             ? t('extracted.topics.fediverseInstanceMetadata.open_ed077f3d')
             : t('extracted.topics.fediverseInstanceMetadata.closed_c21ead06'),
     },

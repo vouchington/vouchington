@@ -60,7 +60,7 @@ export async function listLockedReviewSuccessionCandidates(
       ) AS succession_topic_ids
     FROM group_reviews grouped
     JOIN posts candidate ON candidate.id = grouped.id
-    JOIN posts root ON root.id = COALESCE(candidate.root_id, candidate.id)
+    JOIN posts root ON root.id = COALESCE(candidate.root_post_id, candidate.id)
     LEFT JOIN review_successions succession
       ON succession.predecessor_post_id = candidate.id
       AND succession.predecessor_archived_at = candidate.archived_at
@@ -107,7 +107,7 @@ function reviewSuccessionCandidatePageCte(groups: readonly ReviewSuccessionGroup
     CROSS JOIN LATERAL (
       SELECT candidate.id
       FROM posts candidate
-      JOIN posts candidate_root ON candidate_root.id = COALESCE(candidate.root_id, candidate.id)
+      JOIN posts candidate_root ON candidate_root.id = COALESCE(candidate.root_post_id, candidate.id)
       LEFT JOIN review_successions active_succession
         ON active_succession.predecessor_post_id = candidate.id
         AND active_succession.predecessor_archived_at = candidate.archived_at
@@ -115,7 +115,7 @@ function reviewSuccessionCandidatePageCte(groups: readonly ReviewSuccessionGroup
         AND active_succession.manual_override_at IS NULL
       WHERE candidate.created_by_id = group_input.author_user_id
         AND candidate.post_type = 'review'
-        AND candidate.root_id IS NULL
+        AND candidate.root_post_id IS NULL
         AND candidate.deleted_at IS NULL
         AND EXISTS (
           SELECT 1

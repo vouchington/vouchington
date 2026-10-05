@@ -37,7 +37,7 @@ describe('persist post OpenAI moderation results', () => {
     ).resolves.toBe(true)
 
     await expect(getPostModerationData(postId)).resolves.toMatchObject({
-      openai_omni_moderation_flagged: true,
+      is_flagged_by_openai_omni_moderation: true,
       openai_omni_moderation_results: { flagged_categories: ['harassment'] },
     })
   })
@@ -58,7 +58,7 @@ describe('persist post OpenAI moderation results', () => {
     ).resolves.toBe(true)
 
     await expect(getPostModerationData(postId)).resolves.toMatchObject({
-      openai_omni_moderation_flagged: true,
+      is_flagged_by_openai_omni_moderation: true,
       openai_omni_moderation_results: { flagged_categories: ['harassment', 'sexual/minors'] },
     })
   })
@@ -69,7 +69,7 @@ describe('persist post OpenAI moderation results', () => {
     await expect(markPostOpenAIModerationNoContent(postId)).resolves.toBe(true)
 
     await expect(getPostModerationData(postId)).resolves.toMatchObject({
-      openai_omni_moderation_flagged: false,
+      is_flagged_by_openai_omni_moderation: false,
       openai_omni_moderation_results: {},
     })
   })
@@ -82,7 +82,7 @@ describe('persist post OpenAI moderation results', () => {
     await expect(markPostOpenAIModerationNoContent(postId, attempt!)).resolves.toBe(true)
 
     await expect(getPostModerationData(postId)).resolves.toMatchObject({
-      openai_omni_moderation_flagged: false,
+      is_flagged_by_openai_omni_moderation: false,
       openai_omni_moderation_results: {},
     })
   })

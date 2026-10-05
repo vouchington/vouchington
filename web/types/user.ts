@@ -48,7 +48,7 @@ export interface User {
   markdown?: string
   account_type: AccountType
   verification_status?: IdentityVerificationStatus | null
-  verified_badge_visible?: boolean | null
+  is_verified_badge_visible?: boolean | null
   verified_display_name?: string | null
   use_display_name_from?:
     | 'username'
@@ -80,17 +80,17 @@ export interface User {
   direct_messages_audience?: UserPrivacyAudience
   default_post_broadcast?: 'everyone' | 'users' | 'followers' | 'mutual_followers'
   default_post_privacy?: 'public' | 'private'
-  engagement_emails_enabled?: boolean | null
+  is_engagement_emails_enabled?: boolean | null
   news_digest_frequency?: 'none' | 'daily' | 'weekly' | null
-  moderation_emails_enabled?: boolean | null
+  is_moderation_emails_enabled?: boolean | null
   community_digest_frequency?: 'none' | 'daily' | 'weekly' | null
   moderation_email_cadence?: 'daily' | 'selected_days' | 'weekly' | null
   moderation_email_days_of_week?: number[] | null
   moderation_email_time_of_day?: string | null
   moderation_email_timezone?: string | null
   processing_restricted_at?: string | null
-  third_party_marketing?: boolean | null
-  hn_discussions?: boolean
+  should_receive_third_party_marketing?: boolean | null
+  should_import_hacker_news_discussions?: boolean
   suspended_at?: string | null
   suspended_reason?: string | null
   suspended_by_id?: string | null
@@ -115,9 +115,9 @@ export type UpdateUserBody = Pick<
   | 'direct_messages_audience'
   | 'default_post_broadcast'
   | 'default_post_privacy'
-  | 'engagement_emails_enabled'
+  | 'is_engagement_emails_enabled'
   | 'news_digest_frequency'
-  | 'moderation_emails_enabled'
+  | 'is_moderation_emails_enabled'
   | 'community_digest_frequency'
   | 'moderation_email_cadence'
   | 'moderation_email_days_of_week'
@@ -127,8 +127,8 @@ export type UpdateUserBody = Pick<
   | 'ui_locale'
 > & {
   processing_restricted_at?: boolean
-  third_party_marketing?: boolean
-  hn_discussions?: boolean
+  should_receive_third_party_marketing?: boolean
+  should_import_hacker_news_discussions?: boolean
 }
 export interface PublicUser {
   id: string
@@ -138,7 +138,7 @@ export interface PublicUser {
   profile_image_placement?: ImagePlacementTuple | null
   account_type: AccountType
   verification_status?: IdentityVerificationStatus | null
-  verified_badge_visible?: boolean | null
+  is_verified_badge_visible?: boolean | null
   verified_display_name?: string | null
   public_verified_name_display?: PublicVerifiedNameDisplay | null
   use_display_name_from?:
@@ -208,7 +208,7 @@ export interface Passkey {
   id: string
   name: string
   device_type: 'singleDevice' | 'multiDevice'
-  backed_up: boolean
+  is_backed_up: boolean
   created_at: string
   last_used_at: string | null
 }

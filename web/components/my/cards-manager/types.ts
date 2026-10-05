@@ -5,7 +5,7 @@ export interface CardEditForm {
   credit_limit: string
   currency: CurrencyCode
   is_authorized_user: boolean
-  authorized_user_of_id: string
+  authorized_user_of_card_id: string
   note: string
 }
 import type { CurrencyCode } from '@ts-shared/money'

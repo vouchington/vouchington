@@ -65,7 +65,7 @@ describe('IdentityVerificationContent', () => {
       fireEvent.click(screen.getByRole('button', { name: /save preferences/i }))
       await waitFor(() => {
         expect(mockUpdatePrefs).toHaveBeenCalledWith({
-          verified_badge_visible: true,
+          is_verified_badge_visible: true,
           public_verified_name_display: 'hidden',
         })
       })

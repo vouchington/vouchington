@@ -105,7 +105,7 @@ export async function getTopicViewerCounts(
           FROM (`.append(buildTopicPostCandidateSelect(topicId)).append(sql`) candidate
           JOIN posts candidate_post ON candidate_post.id = candidate.post_id
           JOIN posts root_post
-            ON root_post.id = COALESCE(candidate_post.root_id, candidate_post.id)
+            ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
           WHERE candidate_post.post_type = 'discussion'
             AND `)
   query.append(eligibility).append(sql`
@@ -114,7 +114,7 @@ export async function getTopicViewerCounts(
           SELECT COUNT(DISTINCT candidate_post.id)::bigint
           FROM posts candidate_post
           JOIN posts root_post
-            ON root_post.id = COALESCE(candidate_post.root_id, candidate_post.id)
+            ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
           JOIN post_review_topic_ratings prtr
             ON prtr.post_id = candidate_post.id
            AND prtr.topic_id = ${topicId}
@@ -126,7 +126,7 @@ export async function getTopicViewerCounts(
           SELECT COUNT(DISTINCT candidate_post.id)::bigint
           FROM posts candidate_post
           JOIN posts root_post
-            ON root_post.id = COALESCE(candidate_post.root_id, candidate_post.id)
+            ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
           JOIN post_data_point_topics pdpt
             ON pdpt.post_id = candidate_post.id
            AND pdpt.topic_id = ${topicId}

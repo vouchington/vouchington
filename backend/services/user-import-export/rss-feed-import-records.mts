@@ -15,7 +15,7 @@ export async function createRssFeedImport(
   userId: string,
   provenance: ContentProvenance,
   urls: string[],
-  follow: boolean,
+  should_follow_imported_feeds: boolean,
 ): Promise<CreateUserRssFeedImportResult> {
   await using query = await beginTransaction()
   const { rows: batchRows } = await write(
@@ -24,14 +24,14 @@ export async function createRssFeedImport(
           user_id,
           created_via,
           created_via_oauth_client_id,
-          follow,
+          should_follow_imported_feeds,
           total_rows
         )
         VALUES (
           ${userId},
           ${provenance.createdVia},
           ${provenance.oauthClientId},
-          ${follow},
+          ${should_follow_imported_feeds},
           ${urls.length}
         )
         RETURNING *
@@ -110,7 +110,7 @@ export async function getRssFeedImportRowWithBatch(rowId: string): Promise<{
         b.user_id AS batch_user_id,
         b.created_via AS batch_created_via,
         b.created_via_oauth_client_id AS batch_created_via_oauth_client_id,
-        b.follow AS batch_follow,
+        b.should_follow_imported_feeds AS batch_follow,
         b.total_rows AS batch_total_rows,
         b.completed_rows AS batch_completed_rows,
         b.failed_rows AS batch_failed_rows,
@@ -143,7 +143,7 @@ export async function getRssFeedImportRowWithBatch(rowId: string): Promise<{
       user_id: raw.batch_user_id,
       created_via: raw.batch_created_via,
       created_via_oauth_client_id: raw.batch_created_via_oauth_client_id,
-      follow: raw.batch_follow,
+      should_follow_imported_feeds: raw.batch_follow,
       total_rows: raw.batch_total_rows,
       completed_rows: raw.batch_completed_rows,
       failed_rows: raw.batch_failed_rows,

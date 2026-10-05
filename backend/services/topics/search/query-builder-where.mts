@@ -121,7 +121,7 @@ function appendFediverseInstanceFilters(whereClauses: SQLStatement[], options: T
 
   if (options.fediverse_instance_open_registrations !== undefined) {
     clause.append(
-      sql` AND tfi.open_registrations = ${options.fediverse_instance_open_registrations}`,
+      sql` AND tfi.is_open_for_registrations = ${options.fediverse_instance_open_registrations}`,
     )
   }
 

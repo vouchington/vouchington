@@ -22,8 +22,8 @@ describe('search.generated', () => {
     expect(results.some(h => h.hostname === h2)).toBe(true)
   })
 
-  it('searchUrlHostnames filters by blocked status', async () => {
-    const blockedHost = `search-blocked-${suffix}.com`
+  it('searchUrlHostnames filters by is_blocked status', async () => {
+    const blockedHost = `search-is_blocked-${suffix}.com`
     const hostnamesMap = await upsertUrlHostnames(null, [
       blockedHost,
       `search-unblocked-${suffix}.com`,
@@ -35,8 +35,8 @@ describe('search.generated', () => {
     }
 
     const { results: blockedResults } = await searchUrlHostnames({
-      blocked: true,
-      query: `search-blocked-${suffix}`,
+      is_blocked: true,
+      query: `search-is_blocked-${suffix}`,
     })
     expect(blockedResults.some(h => h.hostname === blockedHost)).toBe(true)
   })

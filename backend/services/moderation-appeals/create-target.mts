@@ -95,7 +95,7 @@ export async function resolveAppealTarget(
     const { rows: banDupRows } = await read<{ id: string }>(
       sql`/* resolveAppealTarget:checkBanDuplicate */
       SELECT id FROM moderation_appeals
-      WHERE appellant_id = ${currentUser.id}
+      WHERE appellant_user_id = ${currentUser.id}
         AND community_ban_id = ${targetId!}
         AND resolved_at IS NULL
       LIMIT 1

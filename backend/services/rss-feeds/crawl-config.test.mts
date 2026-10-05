@@ -77,17 +77,17 @@ describe('crawl-config', () => {
       expect(isRobotsTxtIgnoredForFeeds()).toBe(true)
     })
 
-    it('returns false when ignore_robots_txt is set to false via config', async () => {
-      overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { ignore_robots_txt: false })
+    it('returns false when should_ignore_robots_txt is set to false via config', async () => {
+      overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { should_ignore_robots_txt: false })
       try {
         expect(isRobotsTxtIgnoredForFeeds()).toBe(false)
       } finally {
-        overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { ignore_robots_txt: true })
+        overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { should_ignore_robots_txt: true })
       }
     })
 
-    it('returns true when ignore_robots_txt is explicitly set to true via config', async () => {
-      overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { ignore_robots_txt: true })
+    it('returns true when should_ignore_robots_txt is explicitly set to true via config', async () => {
+      overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { should_ignore_robots_txt: true })
       expect(isRobotsTxtIgnoredForFeeds()).toBe(true)
     })
   })

@@ -78,7 +78,7 @@ export async function listDynamicConfigNamespaceHistory(
 
   const { rows } = await read<{
     id: string
-    config_key: string
+    configuration_key: string
     revised_by_id: string | null
     changed_by_user_id: string | null
     changed_by_username: string | null
@@ -88,7 +88,7 @@ export async function listDynamicConfigNamespaceHistory(
   }>(sql`/* listDynamicConfigNamespaceHistory */
     SELECT
       dcl.id,
-      dcl.config_key,
+      dcl.configuration_key,
       dcl.revised_by_id,
       users.id AS changed_by_user_id,
       users.username AS changed_by_username,
@@ -97,7 +97,7 @@ export async function listDynamicConfigNamespaceHistory(
       dcl.created_at
     FROM dynamic_configuration_revisions dcl
     LEFT JOIN users ON users.id = dcl.revised_by_id AND users.deleted_at IS NULL
-    WHERE dcl.config_key = ${namespace}
+    WHERE dcl.configuration_key = ${namespace}
     ORDER BY dcl.id DESC
     -- API/MCP contract: latest 50 audit rows (docs/requirements/api/v1/dynamic-config/README.md).
     LIMIT 50
@@ -108,7 +108,7 @@ export async function listDynamicConfigNamespaceHistory(
     const nextFields = row.next_fields ?? {}
     return {
       id: row.id,
-      namespace: row.config_key,
+      namespace: row.configuration_key,
       changed_by: row.changed_by_user_id
         ? {
             id: row.changed_by_user_id,

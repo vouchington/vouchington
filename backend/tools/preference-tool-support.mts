@@ -10,12 +10,12 @@ export type EmailPreferencesToolArgs = Partial<EmailPreferences>
 export const EMAIL_PREFERENCES_PARAMETERS = {
   type: 'object',
   properties: {
-    engagement_emails_enabled: {
+    is_engagement_emails_enabled: {
       type: 'boolean',
       description: 'Whether to receive setup recommendation emails.',
     },
     news_digest_frequency: { ...FREQUENCY, description: 'How often to receive the news digest.' },
-    moderation_emails_enabled: {
+    is_moderation_emails_enabled: {
       type: 'boolean',
       description: 'Whether to receive community moderation summary emails.',
     },
@@ -72,7 +72,7 @@ export const SETTING_FIELDS = [
   'default_post_privacy',
   'country',
   'ui_locale',
-  'hn_discussions',
+  'should_import_hacker_news_discussions',
 ] as const satisfies readonly (keyof UpdateUserOptions)[]
 
 export type SettingField = (typeof SETTING_FIELDS)[number]
@@ -118,7 +118,7 @@ export const SETTINGS_PARAMETERS = {
       ...setting('ui_locale'),
       description: 'A supported interface locale, or null to use the default.',
     },
-    hn_discussions: {
+    should_import_hacker_news_discussions: {
       type: 'boolean',
       description: 'Whether post and article pages show related Hacker News discussions.',
     },

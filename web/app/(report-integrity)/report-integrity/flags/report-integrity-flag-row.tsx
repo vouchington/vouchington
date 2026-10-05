@@ -41,7 +41,7 @@ export function ReportIntegrityFlagRow({ flag, state }: FlagRowProps) {
       <td className='px-4 py-4 text-sm text-foreground'>{flag.reporter_count}</td>
       <td className='px-4 py-4 text-sm text-foreground'>
         {t('extracted.flags.reportIntegrityFlagsTable.pct_76b8d2be', {
-          pct: (flag.new_account_reporter_pct * 100).toFixed(1),
+          pct: (flag.new_account_reporter_percent * 100).toFixed(1),
         })}
       </td>
       <td

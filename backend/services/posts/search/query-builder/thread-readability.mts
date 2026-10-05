@@ -13,13 +13,13 @@ import { BLOCKED_POST_TYPES } from '../../blocked-post-types.mts'
 export function buildThreadReadabilityFilter(): SQLStatement {
   return sql`(posts.post_type <> 'comment' OR NOT EXISTS (
       WITH RECURSIVE thread_ancestors AS (
-        SELECT ancestor.id, ancestor.parent_id, ancestor.post_type, ancestor.approved_at, ancestor.deleted_at
+        SELECT ancestor.id, ancestor.parent_post_id, ancestor.post_type, ancestor.approved_at, ancestor.deleted_at
         FROM posts ancestor
-        WHERE ancestor.id = posts.parent_id
+        WHERE ancestor.id = posts.parent_post_id
         UNION ALL
-        SELECT parent.id, parent.parent_id, parent.post_type, parent.approved_at, parent.deleted_at
+        SELECT parent.id, parent.parent_post_id, parent.post_type, parent.approved_at, parent.deleted_at
         FROM posts parent
-        JOIN thread_ancestors child ON child.post_type = 'comment' AND parent.id = child.parent_id
+        JOIN thread_ancestors child ON child.post_type = 'comment' AND parent.id = child.parent_post_id
       )
       SELECT 1
       FROM thread_ancestors

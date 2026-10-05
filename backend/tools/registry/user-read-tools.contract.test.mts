@@ -70,7 +70,7 @@ describe('get_user and search_users — real DB', () => {
           username: ada.username,
           markdown: expect.stringContaining('Analytical engines and notes'),
           verification_status: null,
-          verified_badge_visible: null,
+          is_verified_badge_visible: null,
           verified_display_name: null,
           account_type: null,
         },
@@ -108,7 +108,7 @@ describe('get_user and search_users — real DB', () => {
           'username',
           'markdown',
           'verification_status',
-          'verified_badge_visible',
+          'is_verified_badge_visible',
           'verified_display_name',
           'account_type',
         ].toSorted(),
@@ -140,7 +140,7 @@ describe('get_user and search_users — real DB', () => {
       expect(await getUser(verified.id)).toMatchObject({
         user: {
           verification_status: 'verified',
-          verified_badge_visible: true,
+          is_verified_badge_visible: true,
           verified_display_name: 'Alice',
         },
       })
@@ -150,7 +150,7 @@ describe('get_user and search_users — real DB', () => {
       expect(await getUser(verified.id)).toMatchObject({
         user: {
           verification_status: null,
-          verified_badge_visible: null,
+          is_verified_badge_visible: null,
           verified_display_name: null,
         },
       })
@@ -193,7 +193,7 @@ describe('get_user and search_users — real DB', () => {
         username: ada.username,
         markdown: expect.any(String),
         verification_status: null,
-        verified_badge_visible: null,
+        is_verified_badge_visible: null,
         verified_display_name: null,
         account_type: null,
       })

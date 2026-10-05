@@ -5,7 +5,7 @@ import { clientApi } from './instance'
 export type CopyrightRepeatInfringerAccountRecord = {
   account_user_id: string
   incident_id: string
-  operative: boolean
+  is_operative: boolean
   open_review_id: string | null
   termination_in_effect: boolean
 }

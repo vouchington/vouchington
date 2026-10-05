@@ -84,17 +84,17 @@ describe('initial Stripe renewal decision', () => {
     )
     expect(membership).not.toBeNull()
     await expect(getTestMembershipSourceState(membership!.id)).resolves.toMatchObject({
-      auto_renews: false,
+      should_auto_renew: false,
     })
     await expect(getTestMembershipRaw(membership!.id)).resolves.toMatchObject({
-      cancel_at_period_end: true,
+      should_cancel_at_period_end: true,
     })
     expect(
       (await getMembershipHistory(user.id)).find(change => change.stripe_event_id === eventId),
     ).toMatchObject({
       membership_id: membership!.id,
-      cancel_at_period_end: true,
-      membership_provider_evidence_id: expect.stringMatching(/^[0-9a-f-]{36}$/),
+      should_cancel_at_period_end: true,
+      membership_provider_evidence_record_id: expect.stringMatching(/^[0-9a-f-]{36}$/),
     })
   })
 })

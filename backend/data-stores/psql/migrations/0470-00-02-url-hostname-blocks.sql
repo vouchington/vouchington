@@ -20,11 +20,12 @@ CREATE INDEX IF NOT EXISTS idx_url_hostname_blocks__hostname ON url_hostname_blo
 
 -- Trigger: keep url_hostnames.blocked in sync with active block history rows.
 -- A hostname is blocked iff at least one url_hostname_blocks row exists with lifted_at IS NULL.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_url_hostname_blocked()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   UPDATE url_hostnames
-  SET blocked = EXISTS (
+  SET is_blocked = EXISTS (
     SELECT 1 FROM url_hostname_blocks
     WHERE url_hostname_id = COALESCE(NEW.url_hostname_id, OLD.url_hostname_id)
       AND lifted_at IS NULL

@@ -12,6 +12,6 @@ describe('ancestor-page.generated', () => {
     expect(query.sql).toContain('ancestor_window.depth <')
     expect(query.values).toContain(6)
     expect(query.sql).toContain('ancestor_window.id !=')
-    expect(query.sql.match(/posts\.root_id =/g)).toHaveLength(2)
+    expect(query.sql.match(/posts\.root_post_id =/g)).toHaveLength(2)
   })
 })

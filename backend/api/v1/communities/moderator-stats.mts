@@ -48,7 +48,7 @@ app.route('/api/v1/communities/:idOrSlug/moderator-stats').get(async (ctx: Conte
     windowDays,
   })
 
-  const actorIds = stats.map(s => s.actor_id)
+  const actorIds = stats.map(s => s.actor_user_id)
   const users =
     actorIds.length === 0
       ? {}

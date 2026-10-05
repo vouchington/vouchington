@@ -17,7 +17,7 @@ export async function getActiveCommunityAgentPrompts(
       cap.id,
       cap.community_id,
       cap.created_by_id,
-      cap.slot_allocated,
+      cap.is_slot_allocated,
       cap.activated_at,
       cap.deactivated_at,
       cap.deleted_at,
@@ -32,7 +32,7 @@ export async function getActiveCommunityAgentPrompts(
     FROM community_agent_prompts cap
     JOIN agent_prompts ap ON ap.id = cap.id
     JOIN view_memberships vm ON vm.user_id = cap.created_by_id
-    WHERE cap.slot_allocated = true
+    WHERE cap.is_slot_allocated = true
       AND cap.activated_at IS NOT NULL
       AND cap.deactivated_at IS NULL
       AND cap.deleted_at IS NULL

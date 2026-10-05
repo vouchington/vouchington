@@ -71,7 +71,7 @@ describe('community restriction enforcement', () => {
     await expect(
       createPost(member, WEB_PROVENANCE, {
         post_type: 'comment',
-        parent_id: post.id,
+        parent_post_id: post.id,
         markdown: 'see https://example.com',
       }),
     ).rejects.toMatchObject({ status: 403 })
@@ -189,7 +189,7 @@ describe('community restriction enforcement', () => {
     await expect(
       createPost(member, WEB_PROVENANCE, {
         post_type: 'comment',
-        parent_id: post.id,
+        parent_post_id: post.id,
         markdown: 'join discord.gg/raid please',
       }),
     ).rejects.toMatchObject({ status: 403 })
@@ -222,7 +222,7 @@ describe('community restriction enforcement', () => {
     await expect(
       createPost(member, WEB_PROVENANCE, {
         post_type: 'comment',
-        parent_id: post.id,
+        parent_post_id: post.id,
         markdown: 'see e.g. the docs and use version v1.0 today',
       }),
     ).resolves.toMatchObject({ post_type: 'comment' })

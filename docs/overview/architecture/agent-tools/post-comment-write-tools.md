@@ -5,14 +5,14 @@ and both `posts:read` and `posts:write`. The scope catalog supplies resource/act
 API-key and OAuth consent, including the read prerequisite. The existing generic consent copy
 covers the new write scope; no separate frontend permission contract is needed.
 
-| Web action                                                        | Tool                                                 | REST twin                                  | Shared service                                      |
-| ----------------------------------------------------------------- | ---------------------------------------------------- | ------------------------------------------ | --------------------------------------------------- |
-| Create discussion, review, data point, link, article or blog post | `create_post`                                        | `POST /api/v1/posts`                       | `preparePostWithCommunityReviews`                   |
-| Create a community post                                           | `create_post` with `community_id`                    | `POST /api/v1/communities/:idOrSlug/posts` | Same prepared post service and community guards     |
-| Reply to a post or comment                                        | `create_post` with `post_type: comment`, `parent_id` | `POST /api/v1/posts`                       | Same prepared post service and comment-scope guards |
-| Edit title, content, structured data or categories                | `update_post`                                        | `PATCH /api/v1/posts/:idOrSlug`            | `assertPostUpdatePreflight`, `updatePost`           |
-| Archive or unarchive                                              | `update_post` with `archive: true/false`             | Same PATCH route                           | Same update service                                 |
-| Delete own post or comment                                        | `delete_post`                                        | `DELETE /api/v1/posts/:idOrSlug`           | `deletePost`                                        |
+| Web action                                                        | Tool                                                      | REST twin                                  | Shared service                                      |
+| ----------------------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------ | --------------------------------------------------- |
+| Create discussion, review, data point, link, article or blog post | `create_post`                                             | `POST /api/v1/posts`                       | `preparePostWithCommunityReviews`                   |
+| Create a community post                                           | `create_post` with `community_id`                         | `POST /api/v1/communities/:idOrSlug/posts` | Same prepared post service and community guards     |
+| Reply to a post or comment                                        | `create_post` with `post_type: comment`, `parent_post_id` | `POST /api/v1/posts`                       | Same prepared post service and comment-scope guards |
+| Edit title, content, structured data or categories                | `update_post`                                             | `PATCH /api/v1/posts/:idOrSlug`            | `assertPostUpdatePreflight`, `updatePost`           |
+| Archive or unarchive                                              | `update_post` with `archive: true/false`                  | Same PATCH route                           | Same update service                                 |
+| Delete own post or comment                                        | `delete_post`                                             | `DELETE /api/v1/posts/:idOrSlug`           | `deletePost`                                        |
 
 Story creation uses its dedicated workflow and is excluded. Replies to readable public stories
 remain ordinary comments. Topic recommendations use the [dedicated recommendation tools](relation-referral-recommendation-write-tools.md).
@@ -20,7 +20,7 @@ Articles and blog posts keep the existing administrator restriction; official an
 create reviews or data points. These tools never grant administrator mutation authority over
 another member's content.
 
-Image attachment edits use the separate REST post-images endpoint. `update_post` rejects images and immutable type, thread, community and source URL fields; creation derives `root_id` from its parent. Comments inherit their thread audience and reject audience inputs in both creation and edits. Creation accepts review_topic_ratings only for reviews and one of url or url_id for links.
+Image attachment edits use the separate REST post-images endpoint. `update_post` rejects images and immutable type, thread, community and source URL fields; creation derives `root_post_id` from its parent. Comments inherit their thread audience and reject audience inputs in both creation and edits. Creation accepts review_topic_ratings only for reviews and one of url or url_id for links.
 Community creation accepts a canonical UUID `community_id`; exact retries consult admission before mutable community access checks.
 
 Creation requires a UUID `idempotency_key`. The

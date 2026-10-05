@@ -22,7 +22,7 @@ export type PublicationSnapshotKey = {
 export function publicationIdentityRowsSql(postId: SQLStatement): SQLStatement {
   const statement = sql`WITH candidate AS (SELECT * FROM posts WHERE id = `
   statement.append(postId).append(sql`), root AS (
-    SELECT post.* FROM posts post JOIN candidate ON post.id = COALESCE(candidate.root_id, candidate.id)
+    SELECT post.* FROM posts post JOIN candidate ON post.id = COALESCE(candidate.root_post_id, candidate.id)
   )
   SELECT 'topic'::text AS kind, topic_id AS uuid_value, NULL::text AS text_value,
     NULL::post_types AS post_type, NULL::date AS day

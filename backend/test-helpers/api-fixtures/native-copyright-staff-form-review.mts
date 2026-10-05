@@ -9,7 +9,7 @@ export const formGuidance = {
       gap: 'The hosted use URL does not name the specific image.',
     },
     { element: 'contact_information', status: 'present', gap: null },
-    { element: 'good_faith_statement', status: 'present', gap: null },
+    { element: 'has_good_faith_statement', status: 'present', gap: null },
     { element: 'accuracy_authority_statement', status: 'present', gap: null },
   ],
   risk_notes: [{ kind: 'possible_fair_use', note: 'The post may be a critical review.' }],
@@ -35,7 +35,7 @@ export const reviewedStaffCase = {
       guidance: formGuidance,
     },
     review: {
-      accepted: true,
+      is_accepted: true,
       reviewed_at: '2026-07-01T11:30:00.000Z',
       reviewed_by_id: '00000000-0000-7000-8000-000000000817',
     },

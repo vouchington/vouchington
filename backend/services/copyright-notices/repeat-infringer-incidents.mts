@@ -11,7 +11,7 @@ import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/co
 export type CopyrightRepeatInfringerDisposition = 'withdrawn' | 'duplicate' | 'abusive'
 
 export type CopyrightRepeatInfringerAccount = {
-  incidents: Array<{ id: string; copyright_notice_id: string; operative: boolean }>
+  incidents: Array<{ id: string; copyright_notice_id: string; is_operative: boolean }>
   open_review_id: string | null
 }
 
@@ -49,28 +49,28 @@ export async function syncCopyrightRepeatInfringerIncidents(
             ON incident.id = disposition.copyright_repeat_infringer_incident_id
           WHERE incident.copyright_notice_id = ${noticeId}
             AND incident.account_user_id = owners.account_user_id
-        ) AS operative
+        ) AS is_operative
       FROM owners
     ), upserted AS (
       INSERT INTO copyright_repeat_infringer_incidents (
-        account_user_id, copyright_notice_id, operative
+        account_user_id, copyright_notice_id, is_operative
       )
-      SELECT account_user_id, ${noticeId}, operative FROM desired
+      SELECT account_user_id, ${noticeId}, is_operative FROM desired
       ON CONFLICT (account_user_id, copyright_notice_id) DO UPDATE
-      SET operative = EXCLUDED.operative, updated_at = CURRENT_TIMESTAMP
-      WHERE copyright_repeat_infringer_incidents.operative IS DISTINCT FROM EXCLUDED.operative
-      RETURNING account_user_id, operative
+      SET is_operative = EXCLUDED.is_operative, updated_at = CURRENT_TIMESTAMP
+      WHERE copyright_repeat_infringer_incidents.is_operative IS DISTINCT FROM EXCLUDED.is_operative
+      RETURNING account_user_id, is_operative
     ), cleared AS (
       UPDATE copyright_repeat_infringer_incidents incident
-      SET operative = false, updated_at = CURRENT_TIMESTAMP
+      SET is_operative = false, updated_at = CURRENT_TIMESTAMP
       WHERE incident.copyright_notice_id = ${noticeId}
-        AND incident.operative
+        AND incident.is_operative
         AND NOT EXISTS (
           SELECT 1 FROM desired WHERE desired.account_user_id = incident.account_user_id
         )
       RETURNING incident.account_user_id
     )
-    SELECT account_user_id, operative FROM upserted
+    SELECT account_user_id, is_operative FROM upserted
     UNION ALL
     SELECT account_user_id, false FROM cleared
   `),
@@ -83,7 +83,7 @@ export async function syncCopyrightRepeatInfringerIncidents(
     FROM copyright_repeat_infringer_incidents incident
     JOIN UNNEST(${accountIds}::uuid[]) AS account(id)
       ON incident.account_user_id = account.id
-    WHERE incident.operative
+    WHERE incident.is_operative
     GROUP BY incident.account_user_id
     HAVING count(*) >= 2
     ON CONFLICT (account_user_id) WHERE outcome IS NULL DO NOTHING
@@ -140,10 +140,10 @@ export async function getCopyrightRepeatInfringerAccount(
   const { rows: incidents } = await read<{
     id: string
     copyright_notice_id: string
-    operative: boolean
+    is_operative: boolean
   }>(sql`
     /* getCopyrightRepeatInfringerAccount:incidents */
-    SELECT id, copyright_notice_id, operative
+    SELECT id, copyright_notice_id, is_operative
     FROM copyright_repeat_infringer_incidents
     WHERE account_user_id = ${accountUserId}
     ORDER BY copyright_notice_id

@@ -35,7 +35,7 @@ const basePost: Post = {
   post_type: 'discussion',
   title: 'Test Post',
   markdown: 'Content',
-  root_id: null,
+  root_post_id: null,
   created_by_id: 'user-1',
   created_at: '2026-05-17T20:00:00Z',
   updated_at: '2026-05-17T20:00:00Z',

@@ -12,8 +12,8 @@ export function hasTopicFieldUpdates(changes: Partial<CreateTopicUpdates>): bool
     changes.slug !== undefined ||
     changes.markdown !== undefined ||
     changes.topic_type !== undefined ||
-    changes.noindex !== undefined ||
-    changes.allow_reviews !== undefined ||
+    changes.is_noindexed !== undefined ||
+    changes.should_allow_reviews !== undefined ||
     changes.hostname !== undefined ||
     changes.homepage_url_id !== undefined ||
     changes.logo_image_id !== undefined ||
@@ -54,8 +54,8 @@ export async function assertValidTopicFieldUpdates(
       'Source topics can only be created by ingesting a URL',
     )
   }
-  assertBooleanField(changes.noindex, 'noindex must be a boolean')
-  assertBooleanField(changes.allow_reviews, 'allow_reviews must be a boolean')
+  assertBooleanField(changes.is_noindexed, 'is_noindexed must be a boolean')
+  assertBooleanField(changes.should_allow_reviews, 'should_allow_reviews must be a boolean')
   await assertValidTopicReferences(changes, options)
 }
 
@@ -67,8 +67,12 @@ export function appendTopicUpdateFields(
   appendIfDefined(updateQuery, changes.slug, value => sql`, slug = ${value}`)
   appendIfDefined(updateQuery, changes.markdown, value => sql`, markdown = ${value}`)
   appendIfDefined(updateQuery, changes.topic_type, value => sql`, topic_type = ${value}`)
-  appendIfDefined(updateQuery, changes.noindex, value => sql`, noindex = ${value}`)
-  appendIfDefined(updateQuery, changes.allow_reviews, value => sql`, allow_reviews = ${value}`)
+  appendIfDefined(updateQuery, changes.is_noindexed, value => sql`, is_noindexed = ${value}`)
+  appendIfDefined(
+    updateQuery,
+    changes.should_allow_reviews,
+    value => sql`, should_allow_reviews = ${value}`,
+  )
   appendIfDefined(updateQuery, changes.homepage_url_id, value => sql`, homepage_url_id = ${value}`)
   appendIfDefined(updateQuery, changes.logo_image_id, value => sql`, logo_image_id = ${value}`)
   appendIfDefined(updateQuery, changes.hero_image_id, value => sql`, hero_image_id = ${value}`)

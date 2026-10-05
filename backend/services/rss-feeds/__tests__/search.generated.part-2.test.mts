@@ -29,7 +29,7 @@ describe('search.generated', () => {
       topic_id: topic.id,
       title: `Unique Title ${random}`,
     })
-    await updateRssFeedById(feed.id, { enabled: true })
+    await updateRssFeedById(feed.id, { is_enabled: true })
 
     const results = await searchRssFeeds({ text_search_query: `Unique Title ${random}` })
     const found = results.find(r => r.id === feed.id)

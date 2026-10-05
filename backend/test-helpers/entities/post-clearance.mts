@@ -113,7 +113,7 @@ export async function appendTestPlatformRejectionNote(postId: string, note: stri
     ), inserted_change AS (
       INSERT INTO post_clearance_changes (
         post_id, change_type, changed_by_id, public_reason_code, private_note,
-        platform_override, metadata
+        is_platform_override, metadata
       )
       SELECT post_id, 'reject', changed_by_id, 'staff_rejected', ${note}, TRUE,
         '{"test_fixture":true}'::jsonb
@@ -168,16 +168,16 @@ export async function getLatestPostClearanceDecision(postId: string): Promise<{
   changed_by_id: string | null
   public_reason_code: string | null
   private_note: string | null
-  platform_override: boolean
+  is_platform_override: boolean
 } | null> {
   const { rows } = await read<{
     id: string
     changed_by_id: string | null
     public_reason_code: string | null
     private_note: string | null
-    platform_override: boolean
+    is_platform_override: boolean
   }>(sql`
-    SELECT id, changed_by_id, public_reason_code, private_note, platform_override
+    SELECT id, changed_by_id, public_reason_code, private_note, is_platform_override
     FROM post_clearance_changes
     WHERE post_id = ${postId}
     ORDER BY id DESC

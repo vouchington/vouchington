@@ -110,7 +110,7 @@ describe('user preservation holds', () => {
       expect(audit).toEqual([
         expect.objectContaining({
           action_type: 'preservation_hold_place',
-          actor_id: admin.id,
+          actor_user_id: admin.id,
           target_user_id: user.id,
           community_id: null,
           reason: null,
@@ -174,7 +174,7 @@ describe('user preservation holds', () => {
       expect(released.released_at).toBeInstanceOf(Date)
       await expect(listUserPreservationHolds(admin, user.id)).resolves.toEqual([released])
       const audit = await getModeratorActionRowsForTest({ targetUserId: user.id })
-      expect(audit.map(row => [row.action_type, row.actor_id, row.reason])).toEqual([
+      expect(audit.map(row => [row.action_type, row.actor_user_id, row.reason])).toEqual([
         ['preservation_hold_release', releaser.id, null],
         ['preservation_hold_place', admin.id, null],
       ])

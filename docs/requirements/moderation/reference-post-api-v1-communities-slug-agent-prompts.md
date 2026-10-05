@@ -23,7 +23,7 @@ Response (201):
     "prompt": "...",
     "model_name": "gpt-5.4-nano",
     "model_provider": "openai",
-    "slot_allocated": false,
+    "is_slot_allocated": false,
     "activated_at": null,
     "deactivated_at": null,
     "created_at": "...",

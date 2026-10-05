@@ -24,11 +24,11 @@ export async function recoverActivityPubInboxDeliveries(
       WHERE delivery.failed_at IS NULL
         AND (${idScope}::uuid[] IS NULL OR delivery.id = ANY(${idScope}::uuid[]))
         AND (delivery.retention_expires_at IS NULL OR delivery.retention_expires_at > CURRENT_TIMESTAMP)
-        AND (delivery.deferred_until IS NULL OR delivery.deferred_until <= CURRENT_TIMESTAMP)
+        AND (delivery.earliest_retry_at IS NULL OR delivery.earliest_retry_at <= CURRENT_TIMESTAMP)
         AND (
           (
             delivery.processing_at IS NULL
-            AND COALESCE(delivery.enqueued_at, delivery.deferred_until, delivery.received_at)
+            AND COALESCE(delivery.enqueued_at, delivery.earliest_retry_at, delivery.received_at)
               < NOW() - ${AP_INBOX_ACTIVITIES_DISPATCH_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute'
           )
           OR delivery.processing_at < NOW() - ${AP_INBOX_ACTIVITIES_PROCESSING_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute'
@@ -41,7 +41,7 @@ export async function recoverActivityPubInboxDeliveries(
     SET processing_attempt_id = uuidv7(),
         processing_at = NULL,
         enqueued_at = CURRENT_TIMESTAMP,
-        deferred_until = NULL,
+        earliest_retry_at = NULL,
         last_error = NULL
     FROM candidates
     WHERE delivery.id = candidates.id
@@ -73,7 +73,7 @@ export async function rearmFailedActivityPubInboxDeliveries(
         processing_at = NULL,
         enqueued_at = CURRENT_TIMESTAMP,
         failed_at = NULL,
-        deferred_until = NULL,
+        earliest_retry_at = NULL,
         last_error = NULL
     FROM candidates
     WHERE delivery.id = candidates.id

@@ -144,7 +144,7 @@ export async function getTestConversationParticipants(
 }
 
 type GetTestConversationThreadFields = {
-  assigned_mod_id: string | null
+  assigned_moderator_user_id: string | null
   assigned_at: Date | null
   resolved_at: Date | null
   resolved_by_id: string | null
@@ -191,7 +191,7 @@ export async function getTestConversationThreadFields(
   conversationId: string,
 ): Promise<GetTestConversationThreadFields> {
   const { rows } = await write(sql`/* getTestConversationThreadFields */
-    SELECT assigned_mod_id, assigned_at, resolved_at, resolved_by_id
+    SELECT assigned_moderator_user_id, assigned_at, resolved_at, resolved_by_id
     FROM conversations WHERE id = ${conversationId}
   `)
   return rows[0] as GetTestConversationThreadFields

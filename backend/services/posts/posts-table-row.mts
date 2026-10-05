@@ -13,8 +13,8 @@ export type PostsTableRow = {
   title: string
   markdown: string
   ai_summary_markdown: string
-  parent_id: string | null
-  root_id: string | null
+  parent_post_id: string | null
+  root_post_id: string | null
   broadcast: PostBroadcast
   privacy: PostPrivacy
   is_anonymous: boolean

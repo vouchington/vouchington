@@ -20,7 +20,7 @@ export async function recordAgentModerationVoteTrainingFeedback(
       trainingEvidence: input.trainingEvidence,
       sourceType: 'agent_moderation_vote',
       eventType: 'agent_accuracy_voted',
-      label: getAgentModerationVoteLabel(score, context.flagged),
+      label: getAgentModerationVoteLabel(score, context.is_flagged),
       humanAction:
         score === 1 ? 'accuracy_upvote' : score === -1 ? 'accuracy_downvote' : 'accuracy_unvote',
       actorUserId: input.actorUserId,
@@ -36,10 +36,14 @@ export async function recordAgentModerationVoteTrainingFeedback(
 async function getAgentModerationTrainingContext(
   agentModerationId: string,
   options?: QueryOptions,
-): Promise<{ post_id: string; community_id: string | null; flagged: boolean } | null> {
-  const { rows } = await read<{ post_id: string; community_id: string | null; flagged: boolean }>(
+): Promise<{ post_id: string; community_id: string | null; is_flagged: boolean } | null> {
+  const { rows } = await read<{
+    post_id: string
+    community_id: string | null
+    is_flagged: boolean
+  }>(
     `/* getAgentModerationTrainingContext */
-    SELECT am.post_id, COALESCE(p.community_id, cap.community_id) AS community_id, am.flagged
+    SELECT am.post_id, COALESCE(p.community_id, cap.community_id) AS community_id, am.is_flagged
     FROM agent_moderations am
     JOIN posts p ON p.id = am.post_id
     LEFT JOIN community_agent_prompts cap ON cap.id = am.prompt_id
@@ -51,8 +55,8 @@ async function getAgentModerationTrainingContext(
   return rows[0] ?? null
 }
 
-function getAgentModerationVoteLabel(score: number, flagged: boolean) {
+function getAgentModerationVoteLabel(score: number, is_flagged: boolean) {
   if (score === 0) return 'not_applicable'
-  if (flagged) return score === 1 ? 'true_positive' : 'false_positive'
+  if (is_flagged) return score === 1 ? 'true_positive' : 'false_positive'
   return score === 1 ? 'true_negative' : 'false_negative_candidate'
 }

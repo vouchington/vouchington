@@ -52,7 +52,7 @@ async function restrict(
     await reviewCopyrightFormIntake({
       intakeId: notice.intake.id,
       currentUser: moderator,
-      accepted: true,
+      is_accepted: true,
       rationale: 'The notice is complete.',
     })
   }
@@ -82,7 +82,7 @@ describe.each(switchStates)('claimant misuse ledger with the switch %s', (_state
     await reviewCopyrightFormIntake({
       intakeId: notice.intake.id,
       currentUser: await createTestCopyrightStaff(),
-      accepted: false,
+      is_accepted: false,
       rationale: 'The claimed work is not described.',
     })
 
@@ -174,7 +174,7 @@ describe('claimant misuse ledger scope', () => {
       reviewCopyrightFormIntake({
         intakeId: form.notice.intake.id,
         currentUser: moderator,
-        accepted: isAccepted,
+        is_accepted: isAccepted,
         rationale: 'A moderator decision.',
       })
 
@@ -196,7 +196,7 @@ describe('claimant misuse ledger scope', () => {
       reviewCopyrightFormIntake({
         intakeId: notice.intake.id,
         currentUser: moderator,
-        accepted: false,
+        is_accepted: false,
         rationale: 'Not a complete notice.',
       })
 

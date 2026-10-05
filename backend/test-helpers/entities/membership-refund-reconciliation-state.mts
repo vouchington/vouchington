@@ -45,7 +45,7 @@ export async function getRefundCancellationConvergenceForTest(
     revokedAccess: boolean
     status: string
   }>(sql`/* administratorRefundCancellationConvergence */
-    SELECT operation.completed_at IS NOT NULL AS completed, COALESCE(receipt.revoked_access, FALSE) AS "revokedAccess",
+    SELECT operation.completed_at IS NOT NULL AS completed, COALESCE(receipt.has_revoked_access, FALSE) AS "revokedAccess",
       CASE WHEN membership.cancelled_at IS NULL THEN 'active' ELSE 'cancelled' END AS status,
       (SELECT COUNT(*)::TEXT FROM membership_refunds WHERE membership_operation_id = operation.id) AS "receiptCount",
       (SELECT COUNT(*)::TEXT FROM membership_changes WHERE membership_id = ${membershipId} AND change_type = 'refund') AS "auditCount"

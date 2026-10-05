@@ -31,8 +31,8 @@ export async function getCopyrightFormIntakeForScreening(
     has_claimant_contact: boolean
     has_claimant_email: boolean
     has_hosted_target: boolean
-    good_faith_belief: boolean
-    accuracy_authority_under_penalty_of_perjury: boolean
+    has_good_faith_belief: boolean
+    has_accuracy_authority_under_penalty_of_perjury: boolean
     has_electronic_signature: boolean
   }>(sql`/* getCopyrightFormIntakeForScreening */
     SELECT intake.id, submission.source_kind, notice.work_description, notice.jurisdiction,
@@ -61,7 +61,7 @@ export async function getCopyrightFormIntakeForScreening(
         WHERE target.copyright_notice_id = notice.id
           AND char_length(btrim(target.hosted_use_url)) > 0
       ) AS has_hosted_target,
-      intake.good_faith_belief, intake.accuracy_authority_under_penalty_of_perjury,
+      intake.has_good_faith_belief, intake.has_accuracy_authority_under_penalty_of_perjury,
       char_length(intake.electronic_signature_ciphertext) > 0 AS has_electronic_signature
     FROM copyright_notice_form_intakes intake
     JOIN copyright_notice_submissions submission ON submission.id = intake.copyright_notice_submission_id
@@ -80,8 +80,8 @@ export async function getCopyrightFormIntakeForScreening(
       row.has_claimant_email &&
       row.has_hosted_target &&
       row.work_description.trim().length > 0 &&
-      row.good_faith_belief &&
-      row.accuracy_authority_under_penalty_of_perjury &&
+      row.has_good_faith_belief &&
+      row.has_accuracy_authority_under_penalty_of_perjury &&
       row.has_electronic_signature,
     claimantDisplayName: row.claimant_display_name,
     workDescription: row.work_description,
@@ -89,7 +89,7 @@ export async function getCopyrightFormIntakeForScreening(
     hasClaimantContact: row.has_claimant_contact,
     hasClaimantEmail: row.has_claimant_email,
     hasElectronicSignature: row.has_electronic_signature,
-    goodFaithBelief: row.good_faith_belief,
-    accuracyAuthorityUnderPenaltyOfPerjury: row.accuracy_authority_under_penalty_of_perjury,
+    goodFaithBelief: row.has_good_faith_belief,
+    accuracyAuthorityUnderPenaltyOfPerjury: row.has_accuracy_authority_under_penalty_of_perjury,
   }
 }

@@ -22,8 +22,8 @@ export function streamProfile(userId: string) {
       default_post_broadcast,
       default_post_privacy,
       processing_restricted_at,
-      third_party_marketing,
-      hn_discussions,
+      should_receive_third_party_marketing,
+      should_import_hacker_news_discussions,
       country,
       ui_locale,
       uuid_extract_timestamp(id) AS created_at,
@@ -133,7 +133,7 @@ export function streamPasskeys(userId: string) {
     SELECT
       name,
       device_type,
-      backed_up,
+      is_backed_up,
       uuid_extract_timestamp(id) AS created_at,
       last_used_at
     FROM user_passkeys

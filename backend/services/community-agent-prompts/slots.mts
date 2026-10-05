@@ -13,7 +13,7 @@ export async function getUsedSlotsForUser(userId: string): Promise<number> {
     SELECT COUNT(*) AS count
     FROM community_agent_prompts
     WHERE created_by_id = ${userId}
-      AND slot_allocated = true
+      AND is_slot_allocated = true
       AND deleted_at IS NULL
     `,
   )

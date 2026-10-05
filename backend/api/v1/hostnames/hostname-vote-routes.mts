@@ -67,11 +67,11 @@ app.route('/api/v1/hostnames/:id/vote').delete(async ctx => {
   await clearHostnameVoteHandler(ctx)
 })
 
-function isBlockedHostname(hostname: unknown): hostname is { blocked: boolean } {
+function isBlockedHostname(hostname: unknown): hostname is { is_blocked: boolean } {
   return (
     typeof hostname === 'object' &&
     hostname !== null &&
-    'blocked' in hostname &&
-    (hostname as { blocked?: unknown }).blocked === true
+    'is_blocked' in hostname &&
+    (hostname as { is_blocked?: unknown }).is_blocked === true
   )
 }

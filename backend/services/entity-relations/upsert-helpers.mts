@@ -12,13 +12,13 @@ export type UpsertEntityTypes = Post | Topic | PrivateUser
 export type EntityIdentifier = { id: string }
 
 export type InternalEntityRelationMutationResult = EntityRelation & {
-  outbound_ap_follow_activity_id?: string | null
+  outbound_activitypub_follow_activity_id?: string | null
 }
 
 export function toPublicEntityRelations(
   relations: InternalEntityRelationMutationResult[],
 ): EntityRelation[] {
-  return relations.map(({ outbound_ap_follow_activity_id: _, ...relation }) => relation)
+  return relations.map(({ outbound_activitypub_follow_activity_id: _, ...relation }) => relation)
 }
 
 export async function handleElectionVotes(

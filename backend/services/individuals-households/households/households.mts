@@ -15,7 +15,7 @@ async function getHouseholdById(householdId: string) {
   const { rows } = await read<HouseholdRow>(sql`/* getHouseholdById */
     SELECT
       id,
-      owner_id,
+      owner_user_id,
       updated_at
     FROM households
     WHERE id = ${householdId}
@@ -33,10 +33,10 @@ export async function getOrCreateHousehold(currentUser: PrivateUser | null) {
   const { rows: households } = await read<HouseholdRow>(sql`/* getOrCreateHousehold */
     SELECT
       id,
-      owner_id,
+      owner_user_id,
       updated_at
     FROM households
-    WHERE owner_id = ${currentUser.id}
+    WHERE owner_user_id = ${currentUser.id}
     ORDER BY updated_at DESC, id DESC
     LIMIT 1
   `)
@@ -46,14 +46,14 @@ export async function getOrCreateHousehold(currentUser: PrivateUser | null) {
   const {
     rows: [household],
   } = await write<HouseholdRow>(sql`/* getOrCreateHousehold */
-    INSERT INTO households (owner_id) VALUES (${currentUser.id}) RETURNING *
+    INSERT INTO households (owner_user_id) VALUES (${currentUser.id}) RETURNING *
   `)
   return household
 }
 export async function createHousehold(currentUser: PrivateUser | null) {
   assert(currentUser, 401, 'User not logged in')
   const { rows } = await write<HouseholdRow>(sql`/* createHousehold */
-    INSERT INTO households (owner_id)
+    INSERT INTO households (owner_user_id)
     VALUES (${currentUser.id})
     RETURNING *
   `)
@@ -74,7 +74,7 @@ export async function updateHousehold(currentUser: PrivateUser | null, household
   assert(household, 404, 'Household not found')
   const canUpdate = await currentUserCanUpdateHousehold(currentUser, householdId)
   assert(canUpdate, 403, 'Only household owner can update')
-  // Currently households table only has owner_id and timestamps
+  // Currently households table only has owner_user_id and timestamps
   // No other updatable fields yet - return existing household
   return household
 }

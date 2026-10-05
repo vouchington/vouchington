@@ -11,7 +11,7 @@ export type RssFeedCrawlNumberField =
 
 const DEFAULTS = {
   enabled: true,
-  ignore_robots_txt: true,
+  should_ignore_robots_txt: true,
   tier1_sla_ms: 5 * 60_000,
   tier2_sla_ms: 15 * 60_000,
   tier3_sla_ms: 60 * 60_000,
@@ -42,7 +42,7 @@ export const rssFeedCrawlConfig = new DynamicConfig({
   key: 'rss-feed-crawl-config',
   fieldTypes: {
     enabled: 'boolean',
-    ignore_robots_txt: 'boolean',
+    should_ignore_robots_txt: 'boolean',
     tier1_sla_ms: 'number',
     tier2_sla_ms: 'number',
     tier3_sla_ms: 'number',
@@ -59,8 +59,8 @@ export function isCrawlPrioritizationEnabled(): boolean {
 }
 
 export function isRobotsTxtIgnoredForFeeds(): boolean {
-  const value = rssFeedCrawlConfig.getFields().ignore_robots_txt
-  return typeof value === 'boolean' ? value : DEFAULTS.ignore_robots_txt
+  const value = rssFeedCrawlConfig.getFields().should_ignore_robots_txt
+  return typeof value === 'boolean' ? value : DEFAULTS.should_ignore_robots_txt
 }
 
 export function getTierSlaMs(tier: RssFeedCrawlTier): number {

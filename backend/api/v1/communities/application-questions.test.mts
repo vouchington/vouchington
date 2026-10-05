@@ -53,7 +53,7 @@ describe('Community Application Questions Routes', () => {
             await removeTestCommunityMember(community.id, caller.id)
           }
           const questions = await setApplicationQuestions(owner.id, community.id, [
-            { question: 'Applicant content', field_type: 'long_text', required: false },
+            { question: 'Applicant content', field_type: 'long_text', is_required: false },
           ])
           const request = createRequest()
           if (caller) await request.authenticateAs(caller)
@@ -93,7 +93,7 @@ describe('Community Application Questions Routes', () => {
           role: 'owner',
         })
         const questions = await setApplicationQuestions(owner.id, community.id, [
-          { question: 'Application content', field_type: 'long_text', required: false },
+          { question: 'Application content', field_type: 'long_text', is_required: false },
         ])
         await insertTestCommunityApplication({ communityId: community.id, userId: caller.id })
         if (state === 'archived') {
@@ -138,7 +138,7 @@ describe('Community Application Questions Routes', () => {
           role: 'owner',
         })
         await setApplicationQuestions(owner.id, community.id, [
-          { question: 'Private content', field_type: 'long_text', required: false },
+          { question: 'Private content', field_type: 'long_text', is_required: false },
         ])
         if (reason === 'archived') {
           await archiveTestCommunity({ communityId: community.id, archivedById: owner.id })
@@ -220,7 +220,7 @@ describe('Community Application Questions Routes', () => {
         {
           question: 'Why do you want to join?',
           field_type: 'long_text',
-          required: true,
+          is_required: true,
         },
       ]
 

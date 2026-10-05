@@ -1,3 +1,4 @@
+import { mintUUIDv7 } from '@modules/utils/ids'
 import { beginTransaction, read, write } from '@data-stores/psql'
 import {
   entityRelationMetadatum,
@@ -6,6 +7,7 @@ import {
 
 const ROOT_TABLES = {
   user: 'retained_user_identities',
+  membership: 'retained_membership_identities',
   api_key: 'retained_api_key_identities',
   topic: 'retained_topic_identities',
   post: 'retained_post_identities',
@@ -107,4 +109,18 @@ export async function insertTestRetainedIdentityRoot(
     `/* insertTestRetainedIdentityRoot */ INSERT INTO ${ROOT_TABLES[family]} (id) VALUES ($1)`,
     [id],
   )
+}
+
+export async function createTestRetainedMembershipIdentity(): Promise<string> {
+  const id = mintUUIDv7()
+  await insertTestRetainedIdentityRoot('membership', id)
+  return id
+}
+
+export async function readTestRetainedMembershipChangeIds(membershipId: string): Promise<string[]> {
+  const { rows } = await read<{ id: string }>(
+    '/* readTestRetainedMembershipChangeIds */ SELECT id FROM membership_changes WHERE membership_id = $1 ORDER BY id',
+    [membershipId],
+  )
+  return rows.map(row => row.id)
 }

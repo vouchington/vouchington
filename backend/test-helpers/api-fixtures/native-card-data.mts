@@ -20,26 +20,26 @@ const primaryTopicSummary = {
 }
 export const primaryCard = {
   id: primaryId,
-  card_id: primaryTopicId,
+  card_topic_id: primaryTopicId,
   opened_on: '2021-04-15',
   closed_on: null,
   credit_limit: { amount: 2_500_000, currency: 'usd' },
   received_sign_up_bonus_on: '2021-07-01',
   is_authorized_user: false,
-  authorized_user_of_id: null,
+  authorized_user_of_card_id: null,
   note: 'Primary travel card',
   card: primaryTopicSummary,
   authorized_user_of_card: null,
 }
 export const authorizedCard = {
   id: authorizedId,
-  card_id: authorizedTopicId,
+  card_topic_id: authorizedTopicId,
   opened_on: '2024-01-20',
   closed_on: null,
   credit_limit: { amount: 0, currency: 'usd' },
   received_sign_up_bonus_on: null,
   is_authorized_user: true,
-  authorized_user_of_id: primaryId,
+  authorized_user_of_card_id: primaryId,
   note: 'Authorized-user account',
   card: {
     id: authorizedTopicId,
@@ -55,13 +55,13 @@ export const authorizedCard = {
 }
 export const secondCard = {
   id: secondId,
-  card_id: secondTopicId,
+  card_topic_id: secondTopicId,
   opened_on: null,
   closed_on: '2025-12-31',
   credit_limit: null,
   received_sign_up_bonus_on: null,
   is_authorized_user: false,
-  authorized_user_of_id: null,
+  authorized_user_of_card_id: null,
   note: null,
   card: {
     id: secondTopicId,

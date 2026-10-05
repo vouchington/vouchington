@@ -114,11 +114,11 @@ RSS item notifications store the external article URL in PostgreSQL, but push pa
 
 The following notification concepts have underlying signals tracked in the database, but user-facing notifications for them are not yet implemented. See [Feedback Loops](../../strategy/feedback-loops.md) for context on why these matter for growth.
 
-| Type                | Trigger                                  | Issue                      |
-| ------------------- | ---------------------------------------- | -------------------------- |
-| New follower        | User B follows user A                    | jonathanong/filaments#1421 |
-| Referral signup     | New user signs up with `referrer_id` set | jonathanong/filaments#1422 |
-| Contribution impact | Data point changes aggregate metric      | jonathanong/filaments#1423 |
+| Type                | Trigger                                       | Issue                      |
+| ------------------- | --------------------------------------------- | -------------------------- |
+| New follower        | User B follows user A                         | jonathanong/filaments#1421 |
+| Referral signup     | New user signs up with `referrer_user_id` set | jonathanong/filaments#1422 |
+| Contribution impact | Data point changes aggregate metric           | jonathanong/filaments#1423 |
 
 ## Related
 

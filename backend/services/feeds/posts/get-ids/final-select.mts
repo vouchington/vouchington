@@ -21,7 +21,7 @@ export function appendPostFeedFinalSelect(
       combined_posts.post_type,
       combined_posts.sort_at,
       combined_posts.delivery_type,
-      combined_posts.shared_by_user_id,
+      combined_posts.shared_by_id,
       combined_posts.shared_at`)
   if (sort === 'hot') query.append(sql`,\n      combined_posts.hot_score`)
   query.append(sql`

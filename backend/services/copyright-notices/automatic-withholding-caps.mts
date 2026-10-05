@@ -50,7 +50,7 @@ export async function checkAutomaticWithholdingCaps(
       AND submission.kind = 'notice'
       AND assessment.assessed_by_id IS NULL
       AND assessment.copyright_notice_form_screening_id IS NOT NULL
-      AND assessment.substantially_compliant
+      AND assessment.is_substantially_compliant
       AND assessment.assessed_at > ${windowStart}
   `)
   if ((claimantRows[0]?.total ?? 0) >= input.thresholds.claimantDailyCap) {
@@ -73,7 +73,7 @@ export async function checkAutomaticWithholdingCaps(
       AND submission.kind = 'notice'
       AND assessment.assessed_by_id IS NULL
       AND assessment.copyright_notice_form_screening_id IS NOT NULL
-      AND assessment.substantially_compliant
+      AND assessment.is_substantially_compliant
       AND assessment.assessed_at > ${windowStart}
     GROUP BY post.created_by_id
     HAVING count(DISTINCT assessment.id) >= ${input.thresholds.posterDailyCap}

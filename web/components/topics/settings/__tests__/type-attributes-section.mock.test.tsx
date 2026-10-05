@@ -100,7 +100,7 @@ describe('TypeAttributesSection', () => {
         typeAttrSaving={false}
       />,
     )
-    expect(screen.getByTestId('topic-autocomplete-company_id')).toBeDefined()
+    expect(screen.getByTestId('topic-autocomplete-company_topic_id')).toBeDefined()
     // Visible field label rendered by TopicIdAttribute's <Label>
     expect(screen.getByText('Company')).toBeDefined()
     // No raw "Company ID" text input
@@ -118,7 +118,7 @@ describe('TypeAttributesSection', () => {
         typeAttrSaving={false}
       />,
     )
-    expect(screen.getByTestId('topic-autocomplete-company_id')).toBeDefined()
+    expect(screen.getByTestId('topic-autocomplete-company_topic_id')).toBeDefined()
     expect(screen.getByTestId('topic-autocomplete-rewards_program_id')).toBeDefined()
   })
 
@@ -133,8 +133,8 @@ describe('TypeAttributesSection', () => {
         typeAttrSaving={false}
       />,
     )
-    expect(screen.getByTestId('topic-autocomplete-bank_id')).toBeDefined()
-    expect(screen.getByTestId('topic-autocomplete-brand_id')).toBeDefined()
+    expect(screen.getByTestId('topic-autocomplete-bank_topic_id')).toBeDefined()
+    expect(screen.getByTestId('topic-autocomplete-brand_topic_id')).toBeDefined()
     expect(screen.getByTestId('topic-autocomplete-rewards_program_id')).toBeDefined()
     expect(screen.getByTestId('topic-autocomplete-referral_program_id')).toBeDefined()
     const annualFeeInput = screen.getByRole('textbox', { name: /annual fee/i }) as HTMLInputElement
@@ -164,13 +164,13 @@ describe('TypeAttributesSection', () => {
         topicId='topic-1'
         currentTopicType='card'
         onTypeAttrSubmit={vi.fn<VitestLooseMock>()}
-        typeAttributes={{ bank_id: 'bank-1', brand_id: 'brand-1' }}
-        typeAttributeNames={{ bank_id: 'Chase', brand_id: 'Sapphire' }}
+        typeAttributes={{ bank_topic_id: 'bank-1', brand_topic_id: 'brand-1' }}
+        typeAttributeNames={{ bank_topic_id: 'Chase', brand_topic_id: 'Sapphire' }}
         typeAttrSaving={false}
       />,
     )
-    expect(screen.getByTestId('label-bank_id').textContent).toBe('Chase')
-    expect(screen.getByTestId('label-brand_id').textContent).toBe('Sapphire')
+    expect(screen.getByTestId('label-bank_topic_id').textContent).toBe('Chase')
+    expect(screen.getByTestId('label-brand_topic_id').textContent).toBe('Sapphire')
   })
 
   it('includes existing typeAttributes id in submit payload when no new selection is made', () => {
@@ -180,15 +180,15 @@ describe('TypeAttributesSection', () => {
         topicId='topic-1'
         currentTopicType='rewards_program'
         onTypeAttrSubmit={handleSubmit}
-        typeAttributes={{ company_id: 'existing-company-id' }}
-        typeAttributeNames={{ company_id: 'Existing Co' }}
+        typeAttributes={{ company_topic_id: 'existing-company-id' }}
+        typeAttributeNames={{ company_topic_id: 'Existing Co' }}
         typeAttrSaving={false}
       />,
     )
     // Submit without making any new selection — should include the existing id
     fireEvent.click(screen.getByRole('button', { name: 'Save Type Attributes' }))
     expect(handleSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({ company_id: 'existing-company-id' }),
+      expect.objectContaining({ company_topic_id: 'existing-company-id' }),
     )
   })
 
@@ -199,16 +199,16 @@ describe('TypeAttributesSection', () => {
         topicId='topic-1'
         currentTopicType='rewards_program'
         onTypeAttrSubmit={handleSubmit}
-        typeAttributes={{ company_id: 'existing-company-id' }}
-        typeAttributeNames={{ company_id: 'Existing Co' }}
+        typeAttributes={{ company_topic_id: 'existing-company-id' }}
+        typeAttributeNames={{ company_topic_id: 'Existing Co' }}
         typeAttrSaving={false}
       />,
     )
     // Editing the search text clears the stored id (clearOnTextEdit -> onChange(''))
-    fireEvent.click(screen.getByTestId('edit-company_id'))
+    fireEvent.click(screen.getByTestId('edit-company_topic_id'))
     fireEvent.click(screen.getByRole('button', { name: 'Save Type Attributes' }))
     expect(handleSubmit).toHaveBeenCalledWith(
-      expect.not.objectContaining({ company_id: expect.anything() }),
+      expect.not.objectContaining({ company_topic_id: expect.anything() }),
     )
   })
 
@@ -225,11 +225,11 @@ describe('TypeAttributesSection', () => {
       />,
     )
     // Select a topic
-    fireEvent.click(screen.getByTestId('select-company_id'))
+    fireEvent.click(screen.getByTestId('select-company_topic_id'))
     // Submit the form
     fireEvent.click(screen.getByRole('button', { name: 'Save Type Attributes' }))
     expect(handleSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({ company_id: 'selected-id-for-company_id' }),
+      expect.objectContaining({ company_topic_id: 'selected-id-for-company_topic_id' }),
     )
   })
 
@@ -268,7 +268,7 @@ describe('TypeAttributesSection', () => {
     // Do not select anything, just submit
     fireEvent.click(screen.getByRole('button', { name: 'Save Type Attributes' }))
     expect(handleSubmit).toHaveBeenCalledWith(
-      expect.not.objectContaining({ company_id: expect.anything() }),
+      expect.not.objectContaining({ company_topic_id: expect.anything() }),
     )
   })
 })

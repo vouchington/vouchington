@@ -3,10 +3,10 @@ export type ViewHostname = {
   id: string
   hostname: string
   topic_id: string | null
-  blocked: boolean | null
-  crawlable: boolean | null
-  skip_web_risk: boolean
-  link_rel_follow: boolean | null
+  is_blocked: boolean | null
+  is_crawlable: boolean | null
+  should_skip_web_risk: boolean
+  should_follow_link_rel: boolean | null
   votes_score_net: number
   votes_count_up: number
   votes_count_down: number
@@ -35,10 +35,10 @@ export function stripHostnameElectionFields(hostname: ViewHostname): ViewHostnam
 export function toPublicViewHostname(hostname: ViewHostname): PublicViewHostname {
   const hostnameWithoutElection = stripHostnameElectionFields(hostname)
   const {
-    blocked: _b,
-    crawlable: _c,
-    skip_web_risk: _s,
-    link_rel_follow: _l,
+    is_blocked: _b,
+    is_crawlable: _c,
+    should_skip_web_risk: _s,
+    should_follow_link_rel: _l,
     ...publicHostname
   } = hostnameWithoutElection
   return publicHostname

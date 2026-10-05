@@ -25,8 +25,8 @@ describe('email preferences client helpers', () => {
   it('rejects updates with multiple preference fields', () => {
     // @ts-expect-error -- updates must contain exactly one preference field
     const invalidUpdate: Parameters<typeof updateMyEmailPreferences>[0] = {
-      engagement_emails_enabled: false,
-      moderation_emails_enabled: false,
+      is_engagement_emails_enabled: false,
+      is_moderation_emails_enabled: false,
     }
 
     expect(invalidUpdate).toBeDefined()
@@ -35,9 +35,9 @@ describe('email preferences client helpers', () => {
   it('gets the current user email preferences', async () => {
     const response = {
       email_preferences: {
-        engagement_emails_enabled: true,
+        is_engagement_emails_enabled: true,
         news_digest_frequency: 'weekly' as const,
-        moderation_emails_enabled: true,
+        is_moderation_emails_enabled: true,
         community_digest_frequency: 'daily' as const,
         moderation_email_cadence: 'selected_days' as const,
         moderation_email_days_of_week: [1, 3, 5],
@@ -54,12 +54,12 @@ describe('email preferences client helpers', () => {
   })
 
   it('updates the supplied email preferences', async () => {
-    const preferences = { engagement_emails_enabled: false }
+    const preferences = { is_engagement_emails_enabled: false }
     const response = {
       email_preferences: {
-        engagement_emails_enabled: false,
+        is_engagement_emails_enabled: false,
         news_digest_frequency: 'weekly' as const,
-        moderation_emails_enabled: true,
+        is_moderation_emails_enabled: true,
         community_digest_frequency: 'daily' as const,
         moderation_email_cadence: 'selected_days' as const,
         moderation_email_days_of_week: [1, 3, 5],

@@ -32,17 +32,17 @@ export async function writeStoryPostRelatedUrlProjectionRelations(
   const { rows: pendingRows } = await write<{
     url_id: string
     relation_written_at: Date | null
-    crawl_required: boolean | null
+    should_crawl: boolean | null
     effects_dispatched_at: Date | null
   }>(
     `/* storyPostRelatedUrlProjectionPendingRelationEffects */
-      SELECT url_id, relation_written_at, crawl_required, effects_dispatched_at
+      SELECT url_id, relation_written_at, should_crawl, effects_dispatched_at
       FROM story_post_related_url_projection_receipts
-      WHERE post_id = $1 AND generation = $2 AND eligible = TRUE
+      WHERE post_id = $1 AND generation = $2 AND is_eligible = TRUE
         AND url_id = ANY($3::uuid[])
         AND (
           relation_written_at IS NULL OR
-          (crawl_required = TRUE AND effects_dispatched_at IS NULL)
+          (should_crawl = TRUE AND effects_dispatched_at IS NULL)
         )`,
     [work.post_id, work.generation, sourceRowUrlIds(rows)],
   )
@@ -61,8 +61,8 @@ export async function writeStoryPostRelatedUrlProjectionRelations(
     `/* storyPostRelatedUrlProjectionPendingCrawlEffects */
       SELECT url_id
       FROM story_post_related_url_projection_receipts
-      WHERE post_id = $1 AND generation = $2 AND eligible = TRUE
-        AND url_id = ANY($3::uuid[]) AND crawl_required = TRUE
+      WHERE post_id = $1 AND generation = $2 AND is_eligible = TRUE
+        AND url_id = ANY($3::uuid[]) AND should_crawl = TRUE
         AND effects_dispatched_at IS NULL`,
     [work.post_id, work.generation, sourceRowUrlIds(rows)],
   )
@@ -76,7 +76,7 @@ export async function writeStoryPostRelatedUrlProjectionRelations(
       `/* markStoryPostRelatedUrlProjectionEffectsDispatched */
         UPDATE story_post_related_url_projection_receipts SET effects_dispatched_at = CURRENT_TIMESTAMP
         WHERE post_id = $1 AND generation = $2 AND url_id = ANY($3::uuid[])
-          AND crawl_required = TRUE
+          AND should_crawl = TRUE
           AND EXISTS (
             SELECT 1 FROM story_post_related_url_projection_jobs work
             WHERE work.post_id = $1 AND work.generation = $2 AND work.lease_token = $4

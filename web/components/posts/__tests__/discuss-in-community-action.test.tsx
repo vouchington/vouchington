@@ -53,7 +53,7 @@ describe('DiscussInCommunityAction', () => {
       expect(mockCreateCommunityPost).toHaveBeenCalledWith('test-community', {
         community_id: 'community-1',
         post_type: 'discussion',
-        parent_id: 'source-1',
+        parent_post_id: 'source-1',
         title: 'Discuss: Global source',
         markdown: '[Source post](/discussion/source-1)',
         broadcast: 'everyone',

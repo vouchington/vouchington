@@ -13,8 +13,8 @@ export type CreateCommunityInput = {
   member_roster_visibility?: CommunityMemberRosterVisibility
   member_invites_allowed_at?: Date | null
   post_approval_required_at?: Date | null
-  allow_review_posts?: boolean
-  allow_data_point_posts?: boolean
+  should_allow_review_posts?: boolean
+  should_allow_data_point_posts?: boolean
   profile_image_id?: string | null
   banner_image_id?: string | null
   default_language?: string | null

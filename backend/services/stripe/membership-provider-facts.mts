@@ -63,12 +63,12 @@ export async function recordStripeMembershipProviderFactsInTransaction(
     throw new MissingStripeMembershipFactContextError(
       `Membership ${options.membershipId} has no Stripe fact context for event ${options.stripeEventId}`,
     )
-  if (subscription.livemode !== fact.livemode) {
+  if (subscription.livemode !== fact.is_live_mode) {
     throw new StripeProviderFactVerdictError(
       `Stripe event ${options.stripeEventId} livemode disagrees with subscription`,
     )
   }
-  if (fact.livemode !== (fact.environment === 'production')) {
+  if (fact.is_live_mode !== (fact.environment === 'production')) {
     throw new StripeProviderFactVerdictError(
       `Stripe event ${options.stripeEventId} livemode disagrees with the membership source`,
     )
@@ -167,7 +167,7 @@ async function upsertVerifiedEvidence(
     SELECT evidence.id, observation.id AS observation_id
     FROM membership_provider_evidence_records evidence
     LEFT JOIN membership_provider_observations observation
-      ON observation.membership_provider_evidence_id = evidence.id
+      ON observation.membership_provider_evidence_record_id = evidence.id
     WHERE evidence.provider = 'stripe' AND evidence.environment = ${environment}
       AND evidence.application_id = ${fact.application_id} AND evidence.provider_event_id = ${eventId}
       AND evidence.membership_provider_lineage_id = ${fact.membership_provider_lineage_id}

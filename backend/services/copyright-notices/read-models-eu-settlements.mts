@@ -16,7 +16,7 @@ export type EuParticipantSettlement = {
 }
 export type EuStaffSettlement = EuParticipantSettlement & {
   referred_by_party: 'poster' | 'notifier'
-  referred_by_user_id: string | null
+  referred_by_id: string | null
 }
 type Audience = 'participant' | 'staff-participant' | 'staff-audit'
 type SettlementRow = {
@@ -24,7 +24,7 @@ type SettlementRow = {
   body_name: string
   referred_at: Date
   referred_by_party: 'poster' | 'notifier'
-  referred_by_user_id: string | null
+  referred_by_id: string | null
   result: FiniteValue<'copyright_eu_dispute_settlement_results'> | null
   decided_at: Date | null
   implemented_at: Date | null
@@ -70,7 +70,7 @@ export async function selectEuStaffSettlements(
   const results = page.rows.map(row => ({
     ...toParticipantSettlement(row),
     referred_by_party: row.referred_by_party,
-    referred_by_user_id: row.referred_by_user_id,
+    referred_by_id: row.referred_by_id,
   }))
   return {
     results,
@@ -89,13 +89,13 @@ async function selectSettlementRows(
 ): Promise<{ rows: SettlementRow[]; hasNextPage: boolean }> {
   const query = sql`/* selectSettlementRows */
     SELECT referral.id, referral.body_name, referral.referred_at,
-      referral.referred_by_party, referral.referred_by_user_id,
+      referral.referred_by_party, referral.referred_by_id,
       outcome.result, outcome.decided_at, outcome.implemented_at
     FROM copyright_eu_dispute_settlement_referrals referral
     LEFT JOIN copyright_eu_dispute_settlement_outcomes outcome
       ON outcome.copyright_eu_dispute_settlement_referral_id = referral.id
     WHERE referral.copyright_notice_id = ${noticeId}`
-  if (referredByUserId) query.append(sql` AND referral.referred_by_user_id = ${referredByUserId}`)
+  if (referredByUserId) query.append(sql` AND referral.referred_by_id = ${referredByUserId}`)
   if (options.afterId) query.append(sql` AND referral.id > ${options.afterId}`)
   query.append(sql` ORDER BY referral.id ASC LIMIT ${options.limit + 1}`)
   const { rows } = await transaction<SettlementRow>(query)

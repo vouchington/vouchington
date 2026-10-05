@@ -100,7 +100,7 @@ describe('copyright submission guidance disclosure', () => {
     await reviewCopyrightCounterNotice({
       submissionId: guided.submissionId,
       currentUser: guided.moderator,
-      accepted: true,
+      is_accepted: true,
       rationale: 'The declarations are complete.',
     })
     const outcome = await getIntent(guided.noticeId, guided.submissionId, 'status_update', 'email')
@@ -117,7 +117,7 @@ describe('copyright submission guidance disclosure', () => {
     await reviewCopyrightCounterNotice({
       submissionId: plain.submissionId,
       currentUser: plain.moderator,
-      accepted: true,
+      is_accepted: true,
       rationale: 'The declarations are complete.',
     })
     const plainOutcome = await getIntent(
@@ -142,7 +142,7 @@ describe('copyright submission guidance disclosure', () => {
     await reviewCopyrightCounterNotice({
       submissionId: rejected.submissionId,
       currentUser: rejected.moderator,
-      accepted: false,
+      is_accepted: false,
       rationale: 'The declarations need review.',
     })
     const rejectedOutcome = await getIntent(
@@ -159,7 +159,7 @@ describe('copyright submission guidance disclosure', () => {
     await reviewCopyrightCounterNotice({
       submissionId: late.submissionId,
       currentUser: late.moderator,
-      accepted: true,
+      is_accepted: true,
       rationale: 'The declarations are complete.',
     })
     await addCounterGuidance(late.submissionId, 13)
@@ -197,7 +197,7 @@ describe('copyright submission guidance disclosure', () => {
     await reviewCopyrightCounterNotice({
       submissionId: counter.submission.id,
       currentUser: fixture.moderator,
-      accepted: false,
+      is_accepted: false,
       rationale: 'The declarations need review.',
     })
     const decision = await getIntent(
@@ -219,7 +219,7 @@ describe('copyright submission guidance disclosure', () => {
     await reviewCopyrightCounterNotice({
       submissionId: lateCounter.submission.id,
       currentUser: lateFixture.moderator,
-      accepted: false,
+      is_accepted: false,
       rationale: 'The declarations need review.',
     })
     await addCounterGuidance(lateCounter.submission.id, 15)

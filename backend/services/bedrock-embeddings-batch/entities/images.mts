@@ -41,7 +41,7 @@ export async function* streamPendingImages(
   })
   try {
     const eligibility = `deleted_at IS NULL AND quarantine_pending_at IS NULL
-    AND openai_omni_moderation_created_at IS NOT NULL AND openai_omni_moderation_flagged = FALSE
+    AND openai_omni_moderation_created_at IS NOT NULL AND is_flagged_by_openai_omni_moderation = FALSE
     AND bedrock_nova_multimodal_v1_embedding_created_at IS NULL
     AND NOT ${lockExistsClause('images', 'images.id')}`
     if (pendingIds.length) {

@@ -21,21 +21,21 @@ export async function resolveCommentScope({
   options: QueryOptions
   updates: CreatePostInput
 }): Promise<PostScope> {
-  assert(updates.parent_id, 422, 'parent_id is required for comments')
-  assert(isUUID(updates.parent_id), 422, 'Invalid parent_id')
+  assert(updates.parent_post_id, 422, 'parent_post_id is required for comments')
+  assert(isUUID(updates.parent_post_id), 422, 'Invalid parent_post_id')
   assert(
     updates.community_id === undefined,
     422,
     'Comments inherit community scope from their parent',
   )
-  const parent = await getPostByAny(updates.parent_id, options)
+  const parent = await getPostByAny(updates.parent_post_id, options)
   assert(parent, 422, 'Parent post not found')
   assert(!parent.deleted_at, 422, 'Cannot reply to a deleted post or comment')
   if (parent.locked_at) {
     throw createCodedError(403, 'This thread is locked', POST_THREAD_LOCKED)
   }
-  if (parent.root_id) {
-    const root = await getPostByAny(parent.root_id, options)
+  if (parent.root_post_id) {
+    const root = await getPostByAny(parent.root_post_id, options)
     if (root?.locked_at) {
       throw createCodedError(403, 'This thread is locked', POST_THREAD_LOCKED)
     }
@@ -47,13 +47,13 @@ export async function resolveCommentScope({
   return {
     communityId,
     parentId: parent.id,
-    rootId: parent.root_id ?? parent.id,
+    rootId: parent.root_post_id ?? parent.id,
   }
 }
 
 async function assertCanCommentOnCommunityPost(
   creator: PrivateUser,
-  parent: { id: string; post_type: string; root_id: string | null },
+  parent: { id: string; post_type: string; root_post_id: string | null },
   communityId: string,
   options: QueryOptions,
   updates: CreatePostInput,
@@ -68,7 +68,7 @@ async function assertCanCommentOnCommunityPost(
     updates,
     options,
   })
-  const reviewPostId = parent.post_type === 'comment' ? parent.root_id : parent.id
+  const reviewPostId = parent.post_type === 'comment' ? parent.root_post_id : parent.id
   assert(reviewPostId, 422, 'Parent community post not found')
   const { rows } = await options.query!(sql`/* createPost:comment-community-review */
     SELECT approved_at, rejected_at, unpublished_at

@@ -231,11 +231,11 @@ describe('copyright delivery and correspondence persistence', () => {
     const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
     expect(aggregate?.deliveryIntents).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: intent.id, state: 'pending', ses_message_id: null }),
+        expect.objectContaining({ id: intent.id, state: 'pending', amazon_ses_message_id: null }),
         expect.objectContaining({
           id: bounceIntent.id,
           state: 'bounced',
-          ses_message_id: sesMessageId,
+          amazon_ses_message_id: sesMessageId,
         }),
       ]),
     )

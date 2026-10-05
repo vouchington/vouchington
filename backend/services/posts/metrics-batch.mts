@@ -67,9 +67,9 @@ export const getPostMetricsByAnyBatch = async (
         MAX(candidate_post.updated_at) AS updated_at
       FROM requested_posts requested
       JOIN posts candidate_post
-        ON candidate_post.root_id = requested.id
+        ON candidate_post.root_post_id = requested.id
        AND candidate_post.id > requested.id
-      JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_id, candidate_post.id)
+      JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
       WHERE `
   query.append(buildPublicPostEligibilityFilter('candidate_post', 'root_post'))
   query.append(sql`
@@ -82,35 +82,35 @@ export const getPostMetricsByAnyBatch = async (
         MAX(candidate_post.updated_at) AS updated_at
       FROM requested_posts requested
       JOIN posts candidate_post
-        ON candidate_post.parent_id = requested.id
+        ON candidate_post.parent_post_id = requested.id
        AND candidate_post.post_type = 'comment'
        AND candidate_post.id > requested.id
-      JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_id, candidate_post.id)
+      JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
       WHERE `)
   query.append(buildPublicPostEligibilityFilter('candidate_post', 'root_post'))
   query.append(sql`
       GROUP BY requested.id
     ),
     ancestor_chain AS (
-      SELECT requested.id AS requested_id, post.parent_id AS ancestor_id
+      SELECT requested.id AS requested_id, post.parent_post_id AS ancestor_id
       FROM requested_posts requested
       JOIN posts post ON post.id = requested.id
       WHERE post.post_type = 'comment'
-        AND post.parent_id IS NOT NULL
+        AND post.parent_post_id IS NOT NULL
 
       UNION ALL
 
-      SELECT chain.requested_id, parent.parent_id
+      SELECT chain.requested_id, parent.parent_post_id
       FROM ancestor_chain chain
       JOIN posts parent ON parent.id = chain.ancestor_id
       WHERE parent.post_type = 'comment'
-        AND parent.parent_id IS NOT NULL
+        AND parent.parent_post_id IS NOT NULL
     ),
     ancestor_counts AS (
       SELECT chain.requested_id AS id, COUNT(*)::bigint AS count
       FROM ancestor_chain chain
       JOIN posts candidate_post ON candidate_post.id = chain.ancestor_id
-      JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_id, candidate_post.id)
+      JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
       WHERE `)
   query.append(buildPublicPostEligibilityFilter('candidate_post', 'root_post'))
   query.append(sql`

@@ -109,7 +109,7 @@ describe('moderator-vacation client', () => {
   })
 
   it('updates digest suppression with an encoded community slug', async () => {
-    const response = { suppress_community_digests_while_on_vacation: true }
+    const response = { should_suppress_community_digests_while_on_vacation: true }
     mockPatch.mockResolvedValueOnce(response)
 
     await expect(
@@ -117,7 +117,7 @@ describe('moderator-vacation client', () => {
     ).resolves.toBe(response)
     expect(mockPatch).toHaveBeenCalledWith(
       `/api/v1/communities/${encodeURIComponent('my community/slug')}/moderator-vacation`,
-      { suppress_community_digests_while_on_vacation: true },
+      { should_suppress_community_digests_while_on_vacation: true },
     )
   })
 })

@@ -200,13 +200,13 @@ describe('post.ancestors pagination', () => {
       .post('/api/v1/posts')
       .send({
         post_type: 'comment',
-        parent_id: ids.at(-1),
+        parent_post_id: ids.at(-1),
         markdown: 'A reply beyond the viewing window',
         cf_turnstile_response: 'test-bypass',
       })
       .expect(201)
 
-    expect(response.body.post.parent_id).toBe(ids.at(-1))
+    expect(response.body.post.parent_post_id).toBe(ids.at(-1))
   })
 
   it('keeps no-query ancestor requests on the legacy full-chain response during expansion', async () => {

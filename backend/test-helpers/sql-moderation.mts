@@ -52,7 +52,7 @@ export async function getModeratorActionRowsForTest(params: {
   Array<{
     id: string
     community_id: string | null
-    actor_id: string | null
+    actor_user_id: string | null
     action_type: string
     post_id: string | null
     target_user_id: string | null
@@ -65,13 +65,13 @@ export async function getModeratorActionRowsForTest(params: {
   }>
 > {
   const query = sql`/* getModeratorActionRowsForTest */
-    SELECT id, community_id, actor_id, action_type, post_id, target_user_id,
+    SELECT id, community_id, actor_user_id, action_type, post_id, target_user_id,
            report_id, review_dispute_id, community_application_id, reason, metadata, created_at
     FROM moderator_actions
     WHERE TRUE
   `
   if (params.actorId !== undefined) {
-    query.append(sql` AND actor_id = ${params.actorId}`)
+    query.append(sql` AND actor_user_id = ${params.actorId}`)
   }
   if (params.communityId !== undefined) {
     query.append(sql` AND community_id = ${params.communityId}`)
@@ -86,7 +86,7 @@ export async function getModeratorActionRowsForTest(params: {
   const { rows } = await read<{
     id: string
     community_id: string | null
-    actor_id: string | null
+    actor_user_id: string | null
     action_type: string
     post_id: string | null
     target_user_id: string | null

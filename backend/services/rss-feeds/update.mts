@@ -54,7 +54,7 @@ export const updateRssFeedById = async (
       await setRssFeedEnablementAsSystem(
         {
           rssFeedId: id,
-          enabled: stateChange.enabled,
+          is_enabled: stateChange.is_enabled,
           reason: stateChangeReason,
         },
         { query },
@@ -66,7 +66,7 @@ export const updateRssFeedById = async (
       await setRssFeedDiscoverabilityAsSystem(
         {
           rssFeedId: id,
-          enabled: discoverabilityChange.enabled,
+          is_enabled: discoverabilityChange.is_enabled,
           reason: stateChangeReason,
         },
         { query },

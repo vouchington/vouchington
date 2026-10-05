@@ -12,7 +12,7 @@ Manages the paid identity-verification lifecycle via Stripe Identity Verificatio
 - `onVerificationSessionVerified(eventId, eventData)` — Stripe event: stores the HMAC fingerprint in `verified_identities`, sets `verification_status = 'verified'`
 - `onVerificationSessionRequiresInput(eventId, eventData)` — Stripe event: invalidates user cache; keeps `verification_status = 'identity_pending'` because `requires_input` is recoverable (user can retry document upload on the same session without a new payment)
 - `onVerificationSessionCanceled(eventId, eventData)` — Stripe event: resets `verification_status = 'unverified'`
-- `updateDisplayPreferences(userId, input)` — updates `verified_badge_visible` and/or `public_verified_name_display`
+- `updateDisplayPreferences(userId, input)` — updates `is_verified_badge_visible` and/or `public_verified_name_display`
 - `assertEligibleForIdentityVerification(currentUser)` — throws 422 if the user is ineligible (suspended, email unverified, already verified, etc.)
 - `computeIdentityFingerprint({issuingCountry, documentType, documentNumber})` — returns a 64-char HMAC-SHA256 hex fingerprint; caller must discard the raw document number after calling this
 

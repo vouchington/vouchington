@@ -9,7 +9,7 @@ only defines query-writing and verification rules.
   joined table is not a hint for the other relation.
 - UUIDv7 IDs are time ordered. Use valid ownership/order invariants to add bounds such as
   `child.post_id = parent.id`; never infer an order the schema does not guarantee.
-- Post descendants may use `id > parent_id` or `id > root_id`. Post-keyed children and post-subject
+- Post descendants may use `id > parent_post_id` or `id > root_post_id`. Post-keyed children and post-subject
   relations prune through equality on `post_id` or `subject_id`.
 - `rss_feed_crawls` may combine `rss_feed_id = $1` with `id > $1` because a crawl follows its feed.
 - Fat-table `rss_feed_items` reads should bound `rss_feed_items.id`; listing cursors already do so.
@@ -22,7 +22,7 @@ only defines query-writing and verification rules.
   their configured target column.
 - Voter-only deletion/export has no target key and intentionally scans each range. Preserve the
   per-child `user_id` indexes and keep explicit partition counts modest.
-- `session_referral_attributions` reads bound `session_id`, `referrer_id`, or `user_id` — none of
+- `session_referral_attributions` reads bound `session_id`, `referrer_user_id`, or `user_id` — none of
   which constrain `id` — so they will probe every child once explicit ranges are attached; costs
   nothing today with the default-only launch layout. `getNetworkEffects` already bounds
   `id > $periodStartUuid` and prunes correctly. `deleteOldReferralAttributionBatch()` binds

@@ -58,7 +58,7 @@ export const COPYRIGHT_RETENTION_ERASURE: readonly CopyrightRetentionErasureTabl
   ),
   table(
     'copyright_notice_submissions',
-    { submitted_by_user_id: 'null', body_ciphertext: 'redact' },
+    { submitted_by_id: 'null', body_ciphertext: 'redact' },
     own,
   ),
   table('copyright_notice_submission_requests', { requester_user_id: 'null' }, viaSubmissions),

@@ -9,7 +9,7 @@ export interface AgentModeration {
   prompt_id: string
   agent_id: string
   moderator_slug: string | null
-  flagged: boolean
+  is_flagged: boolean
   results: AgentModerationResults
   input_sha256: string
   created_at: string

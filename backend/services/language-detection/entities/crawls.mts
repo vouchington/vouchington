@@ -16,10 +16,10 @@ export async function detectCrawlLanguage(
     id: string
     title: string | null
     markdown: string
-    lang: string | null
+    language: string | null
     lingua_rs_input_sha256: Buffer | null
   }>(sql`/* detectCrawlLanguage */
-    SELECT id, title, markdown, lang, lingua_rs_input_sha256
+    SELECT id, title, markdown, language, lingua_rs_input_sha256
     FROM crawls
     WHERE id = ${crawlId}
     LIMIT 1
@@ -28,8 +28,8 @@ export async function detectCrawlLanguage(
   if (!crawl) return
 
   const text = [crawl.title, crawl.markdown].filter(Boolean).join('\n\n')
-  // Include the <html lang> attribute so a newly-set or changed lang triggers re-detection
-  const declaredLanguage = normalizeContentLanguageTag(crawl.lang)
+  // Include the <html language> attribute so a newly-set or changed language triggers re-detection
+  const declaredLanguage = normalizeContentLanguageTag(crawl.language)
   const detectionKey = computeDetectionKey(text, declaredLanguage)
   if (crawl.lingua_rs_input_sha256?.equals(detectionKey)) return
 
@@ -46,6 +46,6 @@ export async function detectCrawlLanguage(
     WHERE id = ${crawlId}
       AND title IS NOT DISTINCT FROM ${crawl.title}
       AND markdown IS NOT DISTINCT FROM ${crawl.markdown}
-      AND lang IS NOT DISTINCT FROM ${crawl.lang}
+      AND language IS NOT DISTINCT FROM ${crawl.language}
   `)
 }

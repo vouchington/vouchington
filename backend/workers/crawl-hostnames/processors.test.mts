@@ -65,7 +65,7 @@ describe('crawl-hostnames processors', () => {
     searchHostnameIdsNeedingCrawlerRefreshMock.mockResolvedValue(['hostname-a', 'hostname-b'])
     refreshHostnameCrawlerMock.mockResolvedValue({
       hostname_id: 'hostname-a',
-      crawler_id: 'crawler-a',
+      hostname_crawler_configuration_id: 'crawler-a',
       urls_considered: 2,
       urls_selected_for_crawl: 2,
       url_ids_to_crawl: ['url-a', 'url-b'],
@@ -136,7 +136,7 @@ describe('crawl-hostnames processors', () => {
       ),
     ).resolves.toEqual({
       hostname_id: 'hostname-a',
-      crawler_id: 'crawler-a',
+      hostname_crawler_configuration_id: 'crawler-a',
       urls_considered: 2,
       urls_selected_for_crawl: 2,
       url_ids_to_crawl: ['url-a', 'url-b'],
@@ -152,7 +152,7 @@ describe('crawl-hostnames processors', () => {
   it('does not enqueue crawl URLs when refresh selects no URLs', async () => {
     refreshHostnameCrawlerMock.mockResolvedValueOnce({
       hostname_id: 'hostname-a',
-      crawler_id: null,
+      hostname_crawler_configuration_id: null,
       urls_considered: 0,
       urls_selected_for_crawl: 0,
       url_ids_to_crawl: [],

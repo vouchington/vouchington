@@ -13,7 +13,7 @@ Service for storing, listing, mutating, and reconciling per-user notifications i
   - `actor_user_id` identifies the user who performed the action (required for `follow` and `referral_signup`)
   - `delivery_type='subscription'` rows are reconciled against live subscriptions
 - `delivery_type='manual_send'` rows are snapshot event deliveries created by follower sends
-  - `sent_by_user_id` records who triggered a manual send
+  - `sent_by_id` records who triggered a manual send
   - System pruning hides rows via `deleted_at`
   - `delete_reason` distinguishes `system_pruned` from `user_deleted`
   - Preserves read rows via `read_at`
@@ -40,7 +40,7 @@ Service for storing, listing, mutating, and reconciling per-user notifications i
 
 - `follow`: created when user A follows user B (B receives the notification, A is `actor_user_id`)
   - Deduplicated via unique index: one active follow notification per (user_id, actor_user_id) pair
-  - If the follower was referred by the followee (`follower.referrer_id === followeeId`), uses referral signup copy
+  - If the follower was referred by the followee (`follower.referrer_user_id === followeeId`), uses referral signup copy
 - `referral_signup`: created when a referred user signs up (referrer receives notification, new user is `actor_user_id`)
 - `referral_click`: created when someone clicks a referrer's referral link (referrer receives notification)
   - Debounced 5 minutes; all entity columns may be NULL

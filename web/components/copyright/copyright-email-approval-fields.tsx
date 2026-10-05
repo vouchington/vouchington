@@ -70,8 +70,8 @@ export function CopyrightEmailApprovalFields({
       <div className='flex items-start gap-2 text-sm'>
         <Checkbox
           id='copyright-email-good-faith'
-          checked={draft.good_faith_belief}
-          onCheckedChange={checked => set('good_faith_belief', checked === true)}
+          checked={draft.has_good_faith_belief}
+          onCheckedChange={checked => set('has_good_faith_belief', checked === true)}
         />
         <Label htmlFor='copyright-email-good-faith'>
           The email states a good-faith belief that the complained-of use is unauthorized.
@@ -80,9 +80,9 @@ export function CopyrightEmailApprovalFields({
       <div className='flex items-start gap-2 text-sm'>
         <Checkbox
           id='copyright-email-authority'
-          checked={draft.accuracy_authority_under_penalty_of_perjury}
+          checked={draft.has_accuracy_authority_under_penalty_of_perjury}
           onCheckedChange={checked =>
-            set('accuracy_authority_under_penalty_of_perjury', checked === true)
+            set('has_accuracy_authority_under_penalty_of_perjury', checked === true)
           }
         />
         <Label htmlFor='copyright-email-authority'>

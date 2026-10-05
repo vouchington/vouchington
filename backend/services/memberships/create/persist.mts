@@ -126,7 +126,7 @@ export async function createMembershipWithQuery(
       expired_at: null,
       past_due_at: null,
       paused_at: null,
-      cancel_at_period_end: false,
+      should_cancel_at_period_end: false,
       projected: false,
     }
   }
@@ -165,7 +165,7 @@ export async function createMembershipWithQuery(
     expiredAt: accepted.expired_at,
     pastDueAt: accepted.past_due_at,
     pausedAt: accepted.paused_at,
-    cancelAtPeriodEnd: accepted.cancel_at_period_end,
+    cancelAtPeriodEnd: accepted.should_cancel_at_period_end,
     changedById: options.grantedById ?? null,
     note: options.note ?? null,
     membershipProviderEvidenceId,

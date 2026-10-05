@@ -26,7 +26,7 @@ export async function queryContributionAdmissionCapacityStatus(
       SELECT committed_at, reservation_id, source, consumption_mode
       FROM post_admission_quota_consumptions
       CROSS JOIN observed_at
-      WHERE actor_id = ${actorId}
+      WHERE actor_user_id = ${actorId}
         AND committed_at >= observed_at.value - (
           (SELECT MAX(window_seconds) FROM windows WHERE capacity_limit <> -1) * INTERVAL '1 second'
         )

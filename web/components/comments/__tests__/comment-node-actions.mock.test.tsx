@@ -84,8 +84,8 @@ const makePost = (overrides: Partial<Post> = {}): Post => ({
   title: '',
   slug: 'c1',
   markdown: 'Hello',
-  root_id: 'root-1',
-  parent_id: 'root-1',
+  root_post_id: 'root-1',
+  parent_post_id: 'root-1',
   created_by_id: 'user-1',
   created_by: {
     account_type: null,

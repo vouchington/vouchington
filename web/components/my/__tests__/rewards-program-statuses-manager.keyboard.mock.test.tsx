@@ -43,8 +43,8 @@ const initialStatuses: RewardsProgramStatus[] = [
   {
     id: 'status-user-1',
     rewards_program_status_id: 'stat-1',
-    since: '2023-01-01',
-    until: null,
+    started_on: '2023-01-01',
+    expires_on: null,
     rewards_program_status: { id: 'stat-1', name: 'Delta Medallion Gold', slug: 'delta-gold' },
   },
 ]
@@ -61,8 +61,8 @@ describe('RewardsProgramStatusesManager keyboard submit', () => {
       rewards_program_status: {
         id: 'status-user-2',
         rewards_program_status_id: 'stat-2',
-        since: null,
-        until: null,
+        started_on: null,
+        expires_on: null,
         rewards_program_status: {
           id: 'stat-2',
           name: 'Marriott Bonvoy Platinum',
@@ -71,7 +71,7 @@ describe('RewardsProgramStatusesManager keyboard submit', () => {
       },
     } as any)
     mockUpdate.mockResolvedValue({
-      rewards_program_status: { ...initialStatuses[0], until: '2024-01-01' },
+      rewards_program_status: { ...initialStatuses[0], expires_on: '2024-01-01' },
     } as any)
   })
 
@@ -97,7 +97,7 @@ describe('RewardsProgramStatusesManager keyboard submit', () => {
     fireEvent.click(screen.getByRole('button', { name: /Edit/i }))
 
     const sinceInput = screen.getByLabelText('Since') as HTMLInputElement
-    // Change since so the form sees a real change to save
+    // Change started_on so the form sees a real change to save
     fireEvent.change(sinceInput, { target: { value: '2024-06-01' } })
 
     void expectInputEnterSubmits({ input: sinceInput, onSubmit: mockUpdate })

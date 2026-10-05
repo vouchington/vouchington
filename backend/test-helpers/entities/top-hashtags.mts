@@ -36,15 +36,15 @@ export async function getPostHashtagSourcesForTest(
 }
 
 export async function getPostHashtagSourceContributorIdsForTest(postId: string): Promise<string[]> {
-  const { rows } = await read<{ contributor_id: string }>(
+  const { rows } = await read<{ contributor_user_id: string }>(
     `/* getPostHashtagSourceContributorIdsForTest */
-      SELECT contributor_id
+      SELECT contributor_user_id
       FROM post_topic_alias_sources
       WHERE post_id = $1
-      ORDER BY contributor_id`,
+      ORDER BY contributor_user_id`,
     [postId],
   )
-  return rows.map(row => row.contributor_id)
+  return rows.map(row => row.contributor_user_id)
 }
 
 export async function createTopHashtagPostSourceForTest({
@@ -60,7 +60,7 @@ export async function createTopHashtagPostSourceForTest({
 }): Promise<void> {
   await write(
     `/* createTopHashtagPostSourceForTest source */
-    INSERT INTO post_topic_alias_sources (post_id, topic_alias_id, contributor_id, source, authored_token)
+    INSERT INTO post_topic_alias_sources (post_id, topic_alias_id, contributor_user_id, source, authored_token)
     VALUES ($1, $2, $3, 'explicit', $4)`,
     [postId, topicAliasId, userId, authoredToken],
   )

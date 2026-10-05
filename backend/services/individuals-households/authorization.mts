@@ -34,7 +34,7 @@ export async function currentUserCanViewHousehold(
 
   const { rows } = await read(sql`/* currentUserCanViewHousehold */
     SELECT
-      h.owner_id = ${currentUser.id} AS is_owner,
+      h.owner_user_id = ${currentUser.id} AS is_owner,
       (
         ${currentUser.individual_id}::uuid IS NOT NULL
         AND EXISTS (
@@ -60,11 +60,11 @@ export async function currentUserCanUpdateHousehold(
   if (currentUser.roles.includes('administrator')) return true
 
   const { rows } = await read(sql`/* currentUserCanUpdateHousehold */
-    SELECT owner_id FROM households WHERE id = ${householdId}
+    SELECT owner_user_id FROM households WHERE id = ${householdId}
   `)
 
   if (rows.length === 0) return false
-  return rows[0].owner_id === currentUser.id
+  return rows[0].owner_user_id === currentUser.id
 }
 
 export async function currentUserCanDeleteHousehold(
@@ -75,11 +75,11 @@ export async function currentUserCanDeleteHousehold(
   if (currentUser.roles.includes('administrator')) return true
 
   const { rows } = await read(sql`/* currentUserCanDeleteHousehold */
-    SELECT owner_id FROM households WHERE id = ${householdId}
+    SELECT owner_user_id FROM households WHERE id = ${householdId}
   `)
 
   if (rows.length === 0) return false
-  return rows[0].owner_id === currentUser.id
+  return rows[0].owner_user_id === currentUser.id
 }
 
 export async function currentUserCanManageHouseholdMembers(
@@ -90,9 +90,9 @@ export async function currentUserCanManageHouseholdMembers(
   if (currentUser.roles.includes('administrator')) return true
 
   const { rows } = await read(sql`/* currentUserCanManageHouseholdMembers */
-    SELECT owner_id FROM households WHERE id = ${householdId}
+    SELECT owner_user_id FROM households WHERE id = ${householdId}
   `)
 
   if (rows.length === 0) return false
-  return rows[0].owner_id === currentUser.id
+  return rows[0].owner_user_id === currentUser.id
 }

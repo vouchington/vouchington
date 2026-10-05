@@ -13,7 +13,7 @@ export async function updateAttributionSignup(
       SET signed_up_at = CURRENT_TIMESTAMP,
           user_id = ${userId}
       WHERE session_id = ${sessionId}
-        AND referrer_id = ${referrerId}
+        AND referrer_user_id = ${referrerId}
         AND signed_up_at IS NULL
     `)
   await query.commit()

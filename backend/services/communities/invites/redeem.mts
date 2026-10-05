@@ -51,7 +51,7 @@ export async function redeemInviteCode(
     sql`/* redeemInviteCode */
     UPDATE community_invites
     SET accepted_at = CURRENT_TIMESTAMP,
-        accepted_by_user_id = ${currentUserId}
+        accepted_by_id = ${currentUserId}
     WHERE code = ${code.toLowerCase()}
       AND accepted_at IS NULL
       AND declined_at IS NULL
@@ -95,7 +95,7 @@ export async function redeemInviteCode(
   const invite = {
     ...found,
     accepted_at: new Date(),
-    accepted_by_user_id: currentUserId,
+    accepted_by_id: currentUserId,
   } as CommunityInvite
 
   await query.commit()

@@ -12,7 +12,7 @@ export async function getContributedSources(
       SELECT source.id, source.post_id, alias.topic_id
       FROM post_topic_alias_sources source
       LEFT JOIN topic_aliases alias ON alias.id = source.topic_alias_id
-      WHERE source.contributor_id = $1::uuid
+      WHERE source.contributor_user_id = $1::uuid
       ORDER BY source.id LIMIT $2`,
       [userId, batchSize],
     )

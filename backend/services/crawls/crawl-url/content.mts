@@ -79,7 +79,7 @@ export async function persistCrawlContent(params: {
     links: (htmlResult.content?.links || {}) as CrawlerHtmlStructuredObject,
     meta_tags: (htmlResult.content?.meta || {}) as CrawlerHtmlStructuredObject,
     ...getEmbedMetadataUpdate(htmlResult, options),
-    lang: htmlResult.content?.lang || null,
+    language: htmlResult.content?.lang || null,
     html_sha256: htmlSha256,
     html_snapshot_uploaded_at: htmlSnapshotUploadedAt,
   })

@@ -44,7 +44,7 @@ export const getImageByAny = async (
       quarantined_at,
       quarantine_s3_key,
       openai_omni_moderation_results,
-      openai_omni_moderation_flagged,
+      is_flagged_by_openai_omni_moderation,
       openai_omni_moderation_created_at
     FROM images
     WHERE ${filters.join(' AND ')}
@@ -93,7 +93,7 @@ export const getImageById = async (
       quarantined_at,
       quarantine_s3_key,
       openai_omni_moderation_results,
-      openai_omni_moderation_flagged,
+      is_flagged_by_openai_omni_moderation,
       openai_omni_moderation_created_at
     FROM images
     WHERE ${filters.join(' AND ')}
@@ -139,7 +139,7 @@ export const getImageByIdFromPrimary = async (
       quarantined_at,
       quarantine_s3_key,
       openai_omni_moderation_results,
-      openai_omni_moderation_flagged,
+      is_flagged_by_openai_omni_moderation,
       openai_omni_moderation_created_at
     FROM images
     WHERE ${filters.join(' AND ')}
@@ -187,7 +187,7 @@ export const getImageByHash = async (
       quarantined_at,
       quarantine_s3_key,
       openai_omni_moderation_results,
-      openai_omni_moderation_flagged,
+      is_flagged_by_openai_omni_moderation,
       openai_omni_moderation_created_at
     FROM images
     WHERE ${filters.join(' AND ')}

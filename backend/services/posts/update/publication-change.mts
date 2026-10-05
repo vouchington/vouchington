@@ -54,7 +54,7 @@ export async function recordPostUpdatePublicationChanges(
   const footprint = {
     priorAuthorUserId: post.created_by_id ?? undefined,
     priorCommunityId: post.community_id ?? undefined,
-    priorRootId: post.root_id ?? undefined,
+    priorRootId: post.root_post_id ?? undefined,
     priorPostSlug: post.slug ?? undefined,
   }
   const reason = getPostUpdatePublicationReason({ changed, changes, contentChanged })

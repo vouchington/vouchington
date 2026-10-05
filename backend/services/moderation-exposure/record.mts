@@ -19,7 +19,7 @@ export async function recordMediaReveal(
   await write(
     sql`/* recordMediaReveal */
     INSERT INTO moderation_media_reveals (
-      moderator_id,
+      moderator_user_id,
       post_id,
       report_id,
       surface,

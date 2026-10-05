@@ -36,7 +36,7 @@ export default async function PrivacyPage() {
           default_post_broadcast: currentUser.default_post_broadcast,
           default_post_privacy: currentUser.default_post_privacy,
           processing_restricted_at: currentUser.processing_restricted_at,
-          third_party_marketing: currentUser.third_party_marketing,
+          should_receive_third_party_marketing: currentUser.should_receive_third_party_marketing,
         }}
       />
     </div>

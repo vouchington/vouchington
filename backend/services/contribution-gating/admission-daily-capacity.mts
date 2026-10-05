@@ -25,7 +25,7 @@ export async function assertDailyOnlyContributionAdmissionCapacity(
       COUNT(*) FILTER (WHERE source = ${quotaSource} AND committed_at >= observed_at.value - (${policy.type.windowSeconds} * INTERVAL '1 second')) AS type_daily
     FROM post_admission_quota_consumptions
     CROSS JOIN observed_at
-    WHERE actor_id = ${actorId}`)
+    WHERE actor_user_id = ${actorId}`)
   const row = counts.rows[0]
   if (!row) throw new Error('Contribution admission quota counts were not returned')
   if (exceedsLimit(row.global_daily, policy.global) || exceedsLimit(row.type_daily, policy.type))

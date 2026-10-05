@@ -20,7 +20,7 @@ const openThread: ModmailThread = {
   title: 'Question about a removed Sapphire Reserve referral',
   community_id: communities[0]!.id,
   subject_user_id: publicUsers[0]!.id,
-  assigned_mod_id: storyCurrentUser.id,
+  assigned_moderator_user_id: storyCurrentUser.id,
   assigned_at: '2026-05-21T15:00:00.000Z',
   resolved_at: null,
   resolved_by_id: null,

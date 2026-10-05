@@ -45,7 +45,7 @@ function makePasskey(id: string, name = 'My Key'): Passkey {
     id,
     name,
     device_type: 'multiDevice',
-    backed_up: true,
+    is_backed_up: true,
     created_at: new Date().toISOString(),
     last_used_at: null,
   } as Passkey

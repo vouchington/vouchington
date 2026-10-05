@@ -20,7 +20,7 @@ type TerritorialComplaintsPage = {
   copyright_territorial_complaints: readonly {
     id: string
     filed_by: 'notifier' | 'poster' | 'reviewer'
-    submitted_by_user_id: string | null
+    submitted_by_id: string | null
     received_at: string
     explanation: string
     informed_at: string | null

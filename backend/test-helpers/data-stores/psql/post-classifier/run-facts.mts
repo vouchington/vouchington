@@ -4,7 +4,7 @@ import sql from 'sql-template-strings'
 export type PostClassifierLocalOutcomeFacts = {
   run_id: string
   local_topic_id: string
-  flagged: boolean
+  is_flagged: boolean
   reason: string
   confidence_score: number
   confidence_threshold: number
@@ -37,7 +37,7 @@ export async function getPostClassifierLocalOutcomeFacts(
 ): Promise<PostClassifierLocalOutcomeFacts | null> {
   const { rows } = await write<PostClassifierLocalOutcomeFacts>(sql`
     /* getPostClassifierLocalOutcomeFacts */
-    SELECT run_id, local_topic_id, flagged, reason, confidence_score, confidence_threshold,
+    SELECT run_id, local_topic_id, is_flagged, reason, confidence_score, confidence_threshold,
       classification, detector, detector_model_version
     FROM post_classifier_local_outcomes WHERE run_id = ${runId}
   `)

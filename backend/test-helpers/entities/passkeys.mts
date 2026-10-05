@@ -7,7 +7,7 @@ import { v7 } from 'uuid'
 // controlled by crafting the UUIDv7 id itself (matching `msecs`, differing tail).
 export async function insertTestPasskey(userId: string, suffix: string, id?: string) {
   const { rows } = await write(sql`
-    INSERT INTO user_passkeys (id, user_id, credential_id, public_key, counter, device_type, backed_up, name)
+    INSERT INTO user_passkeys (id, user_id, credential_id, public_key, counter, device_type, is_backed_up, name)
     VALUES (
       ${id ?? v7()},
       ${userId},
@@ -18,7 +18,7 @@ export async function insertTestPasskey(userId: string, suffix: string, id?: str
       FALSE,
       ${`Test Passkey ${suffix}`}
     )
-    RETURNING id, name, device_type, backed_up, created_at, last_used_at
+    RETURNING id, name, device_type, is_backed_up, created_at, last_used_at
   `)
   return rows[0] as { id: string; name: string }
 }

@@ -142,7 +142,7 @@ describe('ImportExportManager', () => {
     await waitFor(() => {
       expect(mockImportRssFeeds).toHaveBeenCalledWith({
         urls: ['https://example.com/feed.xml', 'https://other.com/rss'],
-        follow: true,
+        should_follow_imported_feeds: true,
       })
     })
     await waitFor(() => {
@@ -190,7 +190,10 @@ describe('ImportExportManager', () => {
     Object.defineProperty(input, 'files', { value: [file] })
     fireEvent.change(input)
     await waitFor(() => {
-      expect(mockImportRssFeeds).toHaveBeenCalledWith({ opml: fileContent, follow: true })
+      expect(mockImportRssFeeds).toHaveBeenCalledWith({
+        opml: fileContent,
+        should_follow_imported_feeds: true,
+      })
     })
   })
 

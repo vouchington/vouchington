@@ -61,7 +61,7 @@ export interface IdentityVerificationResponseBody {
   verification_status: import('../user').IdentityVerificationStatus
   verification_provider: string | null
   verification_completed_at: string | null
-  verified_badge_visible: boolean
+  is_verified_badge_visible: boolean
   public_verified_name_display: import('../user').PublicVerifiedNameDisplay
 }
 

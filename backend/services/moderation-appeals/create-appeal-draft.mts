@@ -36,7 +36,7 @@ export async function createModerationAppealDraft(
         AND sent_at IS NULL
         AND resolved_at IS NULL
       RETURNING
-        id, appellant_id, user_warning_id, community_ban_id, post_id, community_id, post_removal_kind,
+        id, appellant_user_id, user_warning_id, community_ban_id, post_id, community_id, post_removal_kind,
         appeal_reason,
         CASE
           WHEN resolved_at IS NULL THEN 'pending'

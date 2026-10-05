@@ -12,8 +12,8 @@ CREATE TABLE copyright_notice_form_intakes (
   requester_identity_sha256 bytea NOT NULL CHECK (octet_length(requester_identity_sha256) = 32),
   idempotency_key uuid NOT NULL,
   request_sha256 bytea NOT NULL CHECK (octet_length(request_sha256) = 32),
-  good_faith_belief boolean NOT NULL,
-  accuracy_authority_under_penalty_of_perjury boolean NOT NULL,
+  has_good_faith_belief boolean NOT NULL,
+  has_accuracy_authority_under_penalty_of_perjury boolean NOT NULL,
   electronic_signature_ciphertext text NOT NULL CONSTRAINT chk_copyri_notice_form_intakes__electronic_signature_ciphertext CHECK (char_length(electronic_signature_ciphertext) BETWEEN 1 AND 1048576),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -90,7 +90,7 @@ CREATE TABLE copyright_notice_form_intake_reviews (
   copyright_notice_form_intake_id uuid NOT NULL CONSTRAINT uq_copyright_notice_form_intake_reviews__intake_id UNIQUE CONSTRAINT fk_copyright_notice_form_intake_reviews__intake REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT,
   reviewed_at timestamptz NOT NULL,
   reviewed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
-  accepted boolean NOT NULL,
+  is_accepted boolean NOT NULL,
   rationale_ciphertext text NOT NULL CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 1048576),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -116,7 +116,7 @@ COMMENT ON TABLE copyright_notice_form_intake_reviews IS 'Immutable moderator ap
 COMMENT ON COLUMN copyright_notice_form_intake_reviews.copyright_notice_form_intake_id IS 'Guest form intake reviewed by a moderator.';
 COMMENT ON COLUMN copyright_notice_form_intake_reviews.reviewed_at IS 'Time the moderator completed the guest-form decision.';
 COMMENT ON COLUMN copyright_notice_form_intake_reviews.reviewed_by_id IS 'Moderator who approved or rejected the guest form; erased on account deletion.';
-COMMENT ON COLUMN copyright_notice_form_intake_reviews.accepted IS 'Whether the moderator accepted the guest form as substantially compliant.';
+COMMENT ON COLUMN copyright_notice_form_intake_reviews.is_accepted IS 'Whether the moderator accepted the guest form as substantially compliant.';
 COMMENT ON COLUMN copyright_notice_form_intake_reviews.rationale_ciphertext IS 'Encrypted bounded moderator rationale.';
 COMMENT ON COLUMN copyright_notice_form_intakes.copyright_notice_id IS 'Legal case created atomically for the structured form.';
 COMMENT ON COLUMN copyright_notice_form_intakes.copyright_notice_submission_id IS 'Initial immutable notice submission created for the form.';
@@ -124,8 +124,8 @@ COMMENT ON COLUMN copyright_notice_form_intakes.requester_user_id IS 'Signed-in 
 COMMENT ON COLUMN copyright_notice_form_intakes.requester_identity_sha256 IS 'Digest of a user ID or purpose-separated HMAC of a guest IP; the raw guest IP is not retained.';
 COMMENT ON COLUMN copyright_notice_form_intakes.idempotency_key IS 'Caller-generated UUID preventing duplicate case admission.';
 COMMENT ON COLUMN copyright_notice_form_intakes.request_sha256 IS 'Digest used to reject conflicting reuse of an idempotency key.';
-COMMENT ON COLUMN copyright_notice_form_intakes.good_faith_belief IS 'Claimant affirmation of a good-faith belief that the use is unauthorized.';
-COMMENT ON COLUMN copyright_notice_form_intakes.accuracy_authority_under_penalty_of_perjury IS 'Claimant affirmation of accuracy and authority under penalty of perjury.';
+COMMENT ON COLUMN copyright_notice_form_intakes.has_good_faith_belief IS 'Claimant affirmation of a good-faith belief that the use is unauthorized.';
+COMMENT ON COLUMN copyright_notice_form_intakes.has_accuracy_authority_under_penalty_of_perjury IS 'Claimant affirmation of accuracy and authority under penalty of perjury.';
 COMMENT ON COLUMN copyright_notice_form_intakes.electronic_signature_ciphertext IS 'Encrypted claimant electronic signature.';
 COMMENT ON COLUMN copyright_notice_form_screenings.copyright_notice_form_intake_id IS 'Structured form intake evaluated for obvious spam or invalidity.';
 COMMENT ON COLUMN copyright_notice_form_screenings.input_sha256 IS 'Digest of the exact structured fields screened by the model.';

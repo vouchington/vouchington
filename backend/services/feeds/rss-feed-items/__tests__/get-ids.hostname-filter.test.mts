@@ -27,9 +27,9 @@ describe('getRssFeedItemFeedIds hostname filtering', () => {
     await followRssFeed(viewer, feedId)
   }, 60_000)
 
-  async function insertItemWithHostname(hostname: string, blocked?: boolean) {
+  async function insertItemWithHostname(hostname: string, is_blocked?: boolean) {
     const random = Math.random().toString(36).slice(2, 10)
-    const hostnameId = await insertTestUrlHostname({ hostname, blocked })
+    const hostnameId = await insertTestUrlHostname({ hostname, is_blocked })
     const urlId = await insertTestUrl({
       url: `https://${hostname}/article-${random}`,
       hostnameId,

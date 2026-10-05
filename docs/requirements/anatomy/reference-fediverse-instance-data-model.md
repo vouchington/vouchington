@@ -28,7 +28,7 @@ in `fediverse_instance_topics`. It mirrors the existing `rss_feed`/[source](./so
 | `nodeinfo_software_version` | NodeInfo `software.version` string. `NULL` until classified.                                                                     |
 | `total_users`               | NodeInfo `usage.users.total`. `NULL` until classified or unreported.                                                             |
 | `monthly_active_users`      | NodeInfo `usage.users.activeMonth`. `NULL` until classified or unreported.                                                       |
-| `open_registrations`        | NodeInfo `openRegistrations` flag. `NULL` until classified.                                                                      |
+| `is_open_for_registrations` | NodeInfo `openRegistrations` flag. `NULL` until classified.                                                                      |
 | `nodeinfo_raw`              | Full NodeInfo 2.0 document as fetched, for fields not individually modeled.                                                      |
 | `integration_status`        | `pending` \| `approved` \| `blocked`. Trigger-maintained from `fediverse_instance_integration_changes` — never written directly. |
 

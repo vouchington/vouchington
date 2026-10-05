@@ -17,7 +17,7 @@ export type {
 
 export type CreateCrawlOptions = {
   url_id: string
-  crawler_id: string
+  hostname_crawler_configuration_id: string
   last_modified_at?: Date | null
   etag?: string | null
 }
@@ -44,5 +44,5 @@ export type UpdateCrawlOptions = {
   embed_oembed_url?: string | null
   embed_oembed_resolved_at?: Date | null
   embeddings_generated_at?: Date | null
-  lang?: string | null
+  language?: string | null
 }

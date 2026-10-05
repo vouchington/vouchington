@@ -26,7 +26,7 @@ export async function createMembershipVerification(
   const { rows } = await write<{ id: string }>(sql`/* createMembershipVerification */
     INSERT INTO membership_verifications (
       user_id, idempotency_key, request_fingerprint, membership_purchase_intent_id,
-      membership_provider_evidence_id, provider, environment, application_id
+      membership_provider_evidence_record_id, provider, environment, application_id
     ) VALUES (${fixture.userId}, ${idempotencyKey}, ${fixture.requestFingerprint}, ${intentId}, ${evidenceId},
       'stripe', 'test', ${fixture.applicationId}) RETURNING id`)
   return rows[0]!.id
@@ -39,7 +39,7 @@ export function createDuplicateMembershipVerification(
 ): Promise<WriteResult> {
   return write(sql`/* rejectDuplicateMembershipVerificationIdempotencyKey */
     INSERT INTO membership_verifications (
-      user_id, idempotency_key, request_fingerprint, membership_provider_evidence_id,
+      user_id, idempotency_key, request_fingerprint, membership_provider_evidence_record_id,
       provider, environment, application_id
     ) VALUES (${fixture.userId}, ${idempotencyKey}, ${fixture.requestFingerprint}, ${evidenceId},
       'stripe', 'test', ${fixture.applicationId})`)
@@ -81,7 +81,7 @@ export function createCrossOwnerMembershipVerification(
   return write(sql`/* rejectMembershipVerificationCrossOwnerIntent */
     INSERT INTO membership_verifications (
       user_id, idempotency_key, request_fingerprint, membership_purchase_intent_id,
-      membership_provider_evidence_id, provider, environment, application_id
+      membership_provider_evidence_record_id, provider, environment, application_id
     ) VALUES (
       (SELECT id FROM users WHERE id <> ${fixture.userId} ORDER BY id LIMIT 1), ${randomUUID()},
       ${fixture.requestFingerprint}, ${intentId}, ${evidenceId}, 'stripe', 'test', ${fixture.applicationId})`)

@@ -152,7 +152,7 @@ describe('retention publication capture', () => {
       type: 'author',
       id: user.id,
     })
-    expect(authorWork).toMatchObject({ author_user_id: user.id })
+    expect(authorWork).toMatchObject({ author_identity_id: user.id })
     await expect(listTestPostPublicationImpactPostIds(authorWork!.id)).resolves.toHaveLength(
       postIds.length,
     )

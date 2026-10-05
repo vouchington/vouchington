@@ -66,7 +66,7 @@ app.route('/api/v1/feeds/posts/:feed_type').get(async (ctx: Context) => {
   const result = await getPostFeedIds(currentUser, options)
   const postIds = result.results.map(r => r.entity_id)
   const sharedByUserIds = [
-    ...new Set(result.results.flatMap(r => (r.shared_by_user_id ? [r.shared_by_user_id] : []))),
+    ...new Set(result.results.flatMap(r => (r.shared_by_id ? [r.shared_by_id] : []))),
   ]
 
   // Use streaming pattern: pass promises directly to allow independent streaming

@@ -59,7 +59,7 @@ export async function acknowledgeActivityPubInboxDeliveryEnqueue(
     WHERE id = ${deliveryId}
       AND processing_attempt_id = ${processingAttemptId}
       AND failed_at IS NULL
-      AND deferred_until IS NULL
+      AND earliest_retry_at IS NULL
   `)
   return mutationResult(result.rowCount)
 }
@@ -71,14 +71,14 @@ export async function claimActivityPubInboxDelivery(
   const { rows } = await write(sql`/* claimActivityPubInboxDelivery */
     UPDATE activitypub_inbox_deliveries
     SET processing_at = CURRENT_TIMESTAMP,
-        deferred_until = NULL,
+        earliest_retry_at = NULL,
         last_error = NULL
     WHERE id = ${deliveryId}
       AND processing_attempt_id = ${processingAttemptId}
       AND processing_at IS NULL
       AND failed_at IS NULL
       AND (retention_expires_at IS NULL OR retention_expires_at > CURRENT_TIMESTAMP)
-      AND (deferred_until IS NULL OR deferred_until <= CURRENT_TIMESTAMP)
+      AND (earliest_retry_at IS NULL OR earliest_retry_at <= CURRENT_TIMESTAMP)
     RETURNING id, request_method, request_target, expected_host, signature_header, digest_header,
               date_header, content_type_header, raw_body, claimed_activity_id,
               claimed_activity_type, claimed_actor_uri, sender_hostname, processing_attempt_id,

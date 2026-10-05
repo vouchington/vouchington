@@ -12,7 +12,7 @@ Append-only unified log of moderator and admin actions across the platform.
 | -------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`                       | `uuid`         | UUIDv7 primary key; ordering and pagination proxy for `created_at`                                                                                                                                   |
 | `community_id`             | `uuid \| null` | Community scope; `NULL` for global/platform-level actions                                                                                                                                            |
-| `actor_id`                 | `uuid \| null` | Moderator/admin who took the action (`ON DELETE SET NULL` for audit persistence)                                                                                                                     |
+| `actor_user_id`            | `uuid \| null` | Moderator/admin who took the action (`ON DELETE SET NULL` for audit persistence)                                                                                                                     |
 | `action_type`              | `text`         | One of `remove`, `approve`, `reject`, `ban`, `lift_ban`, `warn`, `lock`, `unlock`, `pin`, `unpin`, `tag`, `suspend`, `unsuspend`, `remove_member`, `change_role`, `resolve_report`, `dismiss_report` |
 | `post_id`                  | `uuid \| null` | Target post or comment                                                                                                                                                                               |
 | `target_user_id`           | `uuid \| null` | Target user for bans, suspensions, warnings, member actions                                                                                                                                          |
@@ -77,7 +77,7 @@ Targets are typed columns, not metadata IDs. Metadata holds before/after values 
 
 External administrative operations use `recordStaffOperation`: persist `phase: requested`, execute
 GlideMQ, then append `phase: finished` with `outcome: succeeded` or `failed`. The outcome's
-`operation_request_id` references the request row. Retry-failed records attempted/retried counts,
+`operation_request_action_id` references the request row. Retry-failed records attempted/retried counts,
 including partial success. If the process dies or outcome persistence fails, the request remains
 visible without an outcome; it does not claim success or automatically retry a possibly executed
 operation. PostgreSQL cannot roll back Valkey. This exception applies to admin queue controls,

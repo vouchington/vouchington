@@ -27,7 +27,7 @@ describe('deactivateCommunityPromptsForUser via membership changes', () => {
     const prompt = await pollUntilNotNull(async () => {
       const p = await getCommunityAgentPrompt(promptId)
       if (p === null) throw new Error(`Prompt ${promptId} not found — was it deleted?`)
-      return p.slot_allocated ? null : p
+      return p.is_slot_allocated ? null : p
     })
     if (prompt === null)
       throw new Error(`Timed out waiting for prompt ${promptId} to be deactivated`)
@@ -61,7 +61,7 @@ describe('deactivateCommunityPromptsForUser via membership changes', () => {
 
       await waitForPromptDeactivated(prompt.id)
       const p = await getCommunityAgentPrompt(prompt.id)
-      expect(p!.slot_allocated).toBe(false)
+      expect(p!.is_slot_allocated).toBe(false)
       expect(p!.deactivated_at).not.toBeNull()
       expect(p!.activated_at).toBeNull()
     })
@@ -106,7 +106,7 @@ describe('deactivateCommunityPromptsForUser via membership changes', () => {
 
       // Community B prompt should be unaffected
       const pB = await getCommunityAgentPrompt(promptB.id)
-      expect(pB!.slot_allocated).toBe(true)
+      expect(pB!.is_slot_allocated).toBe(true)
     })
 
     it('demoting a moderator to member does not affect prompts owned by other moderators', async () => {
@@ -144,7 +144,7 @@ describe('deactivateCommunityPromptsForUser via membership changes', () => {
 
       // mod2's prompt should be unaffected
       const p2 = await getCommunityAgentPrompt(prompt2.id)
-      expect(p2!.slot_allocated).toBe(true)
+      expect(p2!.is_slot_allocated).toBe(true)
     })
 
     it('promoting a member to moderator does not affect their prompts', async () => {
@@ -163,7 +163,7 @@ describe('deactivateCommunityPromptsForUser via membership changes', () => {
       await updateMemberRole(owner.id, publicCommunity.id, user.id, 'moderator')
 
       const p = await getCommunityAgentPrompt(prompt.id)
-      expect(p!.slot_allocated).toBe(true)
+      expect(p!.is_slot_allocated).toBe(true)
       expect(p!.deactivated_at).toBeNull()
     })
   })
@@ -186,7 +186,7 @@ describe('deactivateCommunityPromptsForUser via membership changes', () => {
 
       await waitForPromptDeactivated(prompt.id)
       const p = await getCommunityAgentPrompt(prompt.id)
-      expect(p!.slot_allocated).toBe(false)
+      expect(p!.is_slot_allocated).toBe(false)
       expect(p!.deactivated_at).not.toBeNull()
     })
   })

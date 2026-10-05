@@ -17,8 +17,8 @@ describe('email copyright approval targets', () => {
     draft.claimant_email = 'claimant@example.test'
     draft.work_description = 'Photo'
     draft.electronic_signature = 'Claimant'
-    draft.good_faith_belief = true
-    draft.accuracy_authority_under_penalty_of_perjury = true
+    draft.has_good_faith_belief = true
+    draft.has_accuracy_authority_under_penalty_of_perjury = true
     draft.targets[0] = {
       ...draft.targets[0]!,
       ...approvalTargetFields({
@@ -62,8 +62,8 @@ describe('email copyright approval targets', () => {
     draft.claimant_email = 'claimant@example.test'
     draft.work_description = 'Photograph'
     draft.electronic_signature = 'Claimant'
-    draft.good_faith_belief = true
-    draft.accuracy_authority_under_penalty_of_perjury = true
+    draft.has_good_faith_belief = true
+    draft.has_accuracy_authority_under_penalty_of_perjury = true
     draft.targets[0] = {
       ...draft.targets[0]!,
       ...approvalTargetFields(choice),

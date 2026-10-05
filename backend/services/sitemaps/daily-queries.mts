@@ -30,7 +30,7 @@ export function buildPostsForDayQuery(postType: SitemapPostType, day: string) {
   }
   query.append(sql`
     FROM posts p
-    JOIN posts root_post ON root_post.id = COALESCE(p.root_id, p.id)
+    JOIN posts root_post ON root_post.id = COALESCE(p.root_post_id, p.id)
 `)
   if (postType === 'review') {
     query.append(sql`LEFT JOIN LATERAL (

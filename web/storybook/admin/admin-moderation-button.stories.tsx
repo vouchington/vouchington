@@ -14,7 +14,7 @@ const flaggedReview: AgentModeration = {
   prompt_id: 'prompt-spam',
   agent_id: 'agent-moderation',
   moderator_slug: 'spam-detector',
-  flagged: true,
+  is_flagged: true,
   results: {
     flagged: true,
     confidence_score: 0.91,

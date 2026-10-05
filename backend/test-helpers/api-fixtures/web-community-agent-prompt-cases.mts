@@ -32,7 +32,7 @@ export const webCommunityAgentPromptApiFixtureCases: ApiFixtureCase[] = [
           id: 'prompt-1',
           community_id: community.id,
           created_by_id: 'user-1',
-          slot_allocated: true,
+          is_slot_allocated: true,
           activated_at: timestamp,
           deactivated_at: null,
           deleted_at: null,

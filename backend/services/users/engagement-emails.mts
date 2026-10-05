@@ -84,9 +84,9 @@ export async function hasEngagementEmailSent(
 }
 
 export async function isEngagementEmailsEnabled(userId: string): Promise<boolean> {
-  const { rows } = await read<{ engagement_emails_enabled: boolean }>(
+  const { rows } = await read<{ is_engagement_emails_enabled: boolean }>(
     sql`/* isEngagementEmailsEnabled */
-      SELECT engagement_emails_enabled
+      SELECT is_engagement_emails_enabled
       FROM view_users_private
       WHERE id = ${userId}
         AND processing_restricted_at IS NULL
@@ -94,7 +94,7 @@ export async function isEngagementEmailsEnabled(userId: string): Promise<boolean
       LIMIT 1
     `,
   )
-  return rows.at(0)?.engagement_emails_enabled ?? false
+  return rows.at(0)?.is_engagement_emails_enabled ?? false
 }
 
 export async function isFollowTopicsEmailStillEligible(userId: string): Promise<boolean> {

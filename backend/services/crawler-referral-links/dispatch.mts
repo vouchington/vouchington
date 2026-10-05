@@ -71,7 +71,7 @@ export async function dispatchReferralLinkCrawls(
   queryStatement.append(sql` LIMIT ${limits.maxRows + 1}
     ) SELECT c.id AS link_id, c.url_id, c.referral_program_topic_id AS referral_program_id, c.due_at::text AS due_at,
       h.id AS hostname_id, h.hostname, h.requests_per_second_limit,
-      (h.crawlable IS DISTINCT FROM false AND h.blocked = false) AS host_eligible,
+      (h.is_crawlable IS DISTINCT FROM false AND h.is_blocked = false) AS host_eligible,
       (c.last_crawl_failure_at IS NULL OR c.last_crawl_failure_at
         < ${sweepStartedAt}::timestamptz - ${CRAWLER_REFERRAL_LINKS_FAILURE_RETRY_HOURS}::integer * INTERVAL '1 hour') AS retry_eligible
     FROM due_candidates c JOIN urls u ON u.id = c.url_id JOIN url_hostnames h ON h.id = u.hostname_id`)

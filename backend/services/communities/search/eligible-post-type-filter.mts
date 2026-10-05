@@ -24,8 +24,8 @@ export function appendEligiblePostTypeFilter(
       )
     )`)
   if (eligiblePostType === 'review') {
-    searchQuery.append(sql` AND c.allow_review_posts = TRUE`)
+    searchQuery.append(sql` AND c.should_allow_review_posts = TRUE`)
   } else if (eligiblePostType === 'data_point') {
-    searchQuery.append(sql` AND c.allow_data_point_posts = TRUE`)
+    searchQuery.append(sql` AND c.should_allow_data_point_posts = TRUE`)
   }
 }

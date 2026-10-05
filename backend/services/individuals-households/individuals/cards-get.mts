@@ -25,7 +25,7 @@ type IndividualCardRow = Omit<
   currency_code: CurrencyCode | null
   card_name: string
   card_slug: string
-  parent_id: string | null
+  parent_post_id: string | null
   parent_opened_on: string | null
   parent_closed_on: string | null
   parent_card_id: string | null
@@ -39,9 +39,9 @@ function cardCursorScope(individualId: string): string {
 
 function toIndividualCard(row: IndividualCardRow): IndividualCard {
   const authorizedUserOfCard =
-    row.parent_id && row.parent_card_id && row.parent_card_name && row.parent_card_slug
+    row.parent_post_id && row.parent_card_id && row.parent_card_name && row.parent_card_slug
       ? {
-          id: row.parent_id,
+          id: row.parent_post_id,
           opened_on: row.parent_opened_on,
           closed_on: row.parent_closed_on,
           card: {
@@ -54,7 +54,7 @@ function toIndividualCard(row: IndividualCardRow): IndividualCard {
 
   return {
     id: row.id,
-    card_id: row.card_id,
+    card_topic_id: row.card_topic_id,
     opened_on: row.opened_on,
     closed_on: row.closed_on,
     credit_limit:
@@ -66,9 +66,9 @@ function toIndividualCard(row: IndividualCardRow): IndividualCard {
           },
     received_sign_up_bonus_on: row.received_sign_up_bonus_on,
     is_authorized_user: row.is_authorized_user,
-    authorized_user_of_id: row.authorized_user_of_id,
+    authorized_user_of_card_id: row.authorized_user_of_card_id,
     note: row.note,
-    card: { id: row.card_id, name: row.card_name, slug: row.card_slug },
+    card: { id: row.card_topic_id, name: row.card_name, slug: row.card_slug },
     authorized_user_of_card: authorizedUserOfCard,
   }
 }
@@ -89,31 +89,31 @@ export async function getIndividualCards(
   const query = sql`/* getIndividualCards */
     SELECT
       individual_cards.id,
-      individual_cards.card_id,
+      individual_cards.card_topic_id,
       individual_cards.opened_on,
       individual_cards.closed_on,
       individual_cards.credit_limit_minor_units::TEXT AS credit_limit_minor_units,
       individual_cards.currency_code,
       individual_cards.received_sign_up_bonus_on,
       COALESCE(individual_cards.is_authorized_user, FALSE) AS is_authorized_user,
-      individual_cards.authorized_user_of_id,
+      individual_cards.authorized_user_of_card_id,
       individual_cards.note,
       cards.name AS card_name,
       cards.slug AS card_slug,
-      parent.id AS parent_id,
+      parent.id AS parent_post_id,
       parent.opened_on AS parent_opened_on,
       parent.closed_on AS parent_closed_on,
-      parent.card_id AS parent_card_id,
+      parent.card_topic_id AS parent_card_id,
       parent_cards.name AS parent_card_name,
       parent_cards.slug AS parent_card_slug
     FROM individual_cards
     JOIN view_topics cards
-      ON cards.id = individual_cards.card_id
+      ON cards.id = individual_cards.card_topic_id
     LEFT JOIN individual_cards parent
-      ON parent.id = individual_cards.authorized_user_of_id
+      ON parent.id = individual_cards.authorized_user_of_card_id
       AND parent.individual_id = individual_cards.individual_id
     LEFT JOIN view_topics parent_cards
-      ON parent_cards.id = parent.card_id
+      ON parent_cards.id = parent.card_topic_id
     WHERE individual_cards.individual_id = ${individual.id}`
   if (cursorId) query.append(sql` AND individual_cards.id > ${cursorId}`)
   query.append(sql`
@@ -145,31 +145,31 @@ export async function getIndividualCardById(
     sql`/* getIndividualCardById */
     SELECT
       individual_cards.id,
-      individual_cards.card_id,
+      individual_cards.card_topic_id,
       individual_cards.opened_on,
       individual_cards.closed_on,
       individual_cards.credit_limit_minor_units::TEXT AS credit_limit_minor_units,
       individual_cards.currency_code,
       individual_cards.received_sign_up_bonus_on,
       COALESCE(individual_cards.is_authorized_user, FALSE) AS is_authorized_user,
-      individual_cards.authorized_user_of_id,
+      individual_cards.authorized_user_of_card_id,
       individual_cards.note,
       cards.name AS card_name,
       cards.slug AS card_slug,
-      parent.id AS parent_id,
+      parent.id AS parent_post_id,
       parent.opened_on AS parent_opened_on,
       parent.closed_on AS parent_closed_on,
-      parent.card_id AS parent_card_id,
+      parent.card_topic_id AS parent_card_id,
       parent_cards.name AS parent_card_name,
       parent_cards.slug AS parent_card_slug
     FROM individual_cards
     JOIN view_topics cards
-      ON cards.id = individual_cards.card_id
+      ON cards.id = individual_cards.card_topic_id
     LEFT JOIN individual_cards parent
-      ON parent.id = individual_cards.authorized_user_of_id
+      ON parent.id = individual_cards.authorized_user_of_card_id
       AND parent.individual_id = individual_cards.individual_id
     LEFT JOIN view_topics parent_cards
-      ON parent_cards.id = parent.card_id
+      ON parent_cards.id = parent.card_topic_id
     WHERE individual_cards.id = ${individualCardId}
       AND individual_cards.individual_id = ${individual.id}
     LIMIT 1

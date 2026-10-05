@@ -30,14 +30,14 @@ export async function aggregateModeratorActionCounts(
 
   const query = sql`/* aggregateModeratorActionCounts */
     SELECT
-      actor_id,
+      actor_user_id,
       action_type,
       COUNT(*)::int AS count
     FROM moderator_actions
     WHERE community_id = ${options.communityId}
-      AND actor_id IS NOT NULL
+      AND actor_user_id IS NOT NULL
       AND id >= ${windowStart}::uuid
-    GROUP BY actor_id, action_type
+    GROUP BY actor_user_id, action_type
   `
 
   const { rows } = await read(query, options)
@@ -46,16 +46,16 @@ export async function aggregateModeratorActionCounts(
   const byActor = new Map<string, ModeratorActionCounts>()
 
   for (const row of rows) {
-    const { actor_id, action_type, count } = row as {
-      actor_id: string
+    const { actor_user_id, action_type, count } = row as {
+      actor_user_id: string
       action_type: keyof ModeratorActionCounts['counts']
       count: number
     }
 
-    let entry = byActor.get(actor_id)
+    let entry = byActor.get(actor_user_id)
     if (!entry) {
-      entry = { actor_id, total: 0, counts: {} }
-      byActor.set(actor_id, entry)
+      entry = { actor_user_id, total: 0, counts: {} }
+      byActor.set(actor_user_id, entry)
     }
     entry.counts[action_type] = count
     entry.total += count

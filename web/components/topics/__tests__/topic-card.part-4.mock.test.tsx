@@ -114,8 +114,8 @@ describe('TopicCard — fediverse_instance', () => {
     markdown: '',
     aliases: [],
     topic_type: 'fediverse_instance',
-    noindex: false,
-    allow_reviews: false,
+    is_noindexed: false,
+    should_allow_reviews: false,
     created_at: '2024-01-15T10:00:00Z',
     logo_image_id: null,
     hero_image_id: null,
@@ -156,7 +156,7 @@ describe('TopicCard — fediverse_instance', () => {
           nodeinfo_software_version: '4.4.0',
           total_users: 1200,
           monthly_active_users: 340,
-          open_registrations: true,
+          is_open_for_registrations: true,
         }}
         hostnameElection={{
           __entity_type: 'hostname_election',

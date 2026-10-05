@@ -14,8 +14,8 @@ export function toRewardsProgramStatus(
   return {
     id: row.id,
     rewards_program_status_id: row.rewards_program_status_id,
-    since: row.since,
-    until: row.until,
+    started_on: row.started_on,
+    expires_on: row.expires_on,
     rewards_program_status: {
       id: row.rewards_program_status_id,
       name: row.rewards_program_status_name,

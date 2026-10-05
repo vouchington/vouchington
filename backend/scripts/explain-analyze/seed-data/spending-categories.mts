@@ -33,9 +33,9 @@ export async function seedSpendingCategories(
       householdRows.push(`($${base}, $${base + 1})`)
     }
     await query(
-      `/* seedExplainData */ INSERT INTO households (id, owner_id)
+      `/* seedExplainData */ INSERT INTO households (id, owner_user_id)
        VALUES ${householdRows.join(', ')}
-       ON CONFLICT (id) DO UPDATE SET owner_id = EXCLUDED.owner_id`,
+       ON CONFLICT (id) DO UPDATE SET owner_user_id = EXCLUDED.owner_user_id`,
       householdValues,
     )
     const membershipValues: unknown[] = []

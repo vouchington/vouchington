@@ -10,7 +10,7 @@ function matchesSubmittedItem(existing: LandingPageItem, input: Record<string, u
     return existing.profile_link.id === input.profile_link_id
   }
   if (existing.type === 'review' && input.type === 'review')
-    return existing.review.id === input.review_id
+    return existing.review.id === input.review_post_id
   if (existing.type === 'referral_link' && input.type === 'referral_link') {
     return existing.referral_link.id === input.referral_link_id
   }

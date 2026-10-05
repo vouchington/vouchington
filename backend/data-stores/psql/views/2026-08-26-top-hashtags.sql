@@ -10,7 +10,7 @@ CREATE MATERIALIZED VIEW mv_top_hashtags AS
       source.post_id AS content_id,
       'post' AS content_kind,
       p.created_at AS content_published_at,
-      'user:' || source.contributor_id::TEXT AS contributor_id
+      'user:' || source.contributor_user_id::TEXT AS contributor_user_id
     FROM post_topic_alias_sources source
     JOIN posts p ON p.id = source.post_id
     JOIN view_public_post_eligibility eligibility ON eligibility.post_id = p.id
@@ -23,7 +23,7 @@ CREATE MATERIALIZED VIEW mv_top_hashtags AS
       AND EXISTS (
         SELECT 1
         FROM users contributor
-        WHERE contributor.id = source.contributor_id
+        WHERE contributor.id = source.contributor_user_id
           AND contributor.platform_account_kind IS NULL
           AND contributor.deleted_at IS NULL
       )
@@ -36,7 +36,7 @@ CREATE MATERIALIZED VIEW mv_top_hashtags AS
       AND NOT EXISTS (
         SELECT 1
         FROM user_suspensions suspension
-        WHERE suspension.user_id = source.contributor_id
+        WHERE suspension.user_id = source.contributor_user_id
           AND suspension.lifted_at IS NULL
       )
       AND p.id >= uuidv7(INTERVAL '-30 days')
@@ -48,7 +48,7 @@ CREATE MATERIALIZED VIEW mv_top_hashtags AS
       category.rss_feed_item_id AS content_id,
       'rss_feed_item' AS content_kind,
       item.published_at AS content_published_at,
-      'rss:' || identity.url_hostname_id::TEXT AS contributor_id
+      'rss:' || identity.url_hostname_id::TEXT AS contributor_user_id
     FROM rss_feed_item_categories category
     JOIN rss_feed_items item ON item.id = category.rss_feed_item_id
     JOIN rss_feed_item_guids identity ON identity.id = item.id
@@ -101,7 +101,7 @@ CREATE MATERIALIZED VIEW mv_top_hashtags AS
     SELECT
       topic_alias_id,
       COUNT(DISTINCT content_kind || ':' || content_id::TEXT)::BIGINT AS item_count,
-      COUNT(DISTINCT contributor_id)::BIGINT AS contributor_count,
+      COUNT(DISTINCT contributor_user_id)::BIGINT AS contributor_count,
       MAX(content_published_at) AS latest_content_at,
       (ARRAY_AGG(content_id ORDER BY content_published_at DESC, content_id DESC))[1] AS latest_content_id
     FROM occurrences

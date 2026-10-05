@@ -67,7 +67,7 @@ async function makeFeed(label: string) {
     title: `DNS RSS Feed ${label} ${random}`,
     skipRemoteValidation: true,
   })
-  await updateRssFeedById(feed.id, { enabled: true })
+  await updateRssFeedById(feed.id, { is_enabled: true })
 
   // Resolve the hostname_id for later inspection
   const hostnamesMap = await upsertUrlHostnames(null, [hostname])
@@ -92,7 +92,7 @@ describe('fetch.dns-failure', () => {
 
     const dnsStats = await getTestHostnameDnsStats(hostnameId)
     expect(dnsStats!.consecutive_dns_failures).toBe(3)
-    expect(dnsStats!.crawlable).toBe(false)
+    expect(dnsStats!.is_crawlable).toBe(false)
     expect(mockResolveDnsCanary).toHaveBeenCalledTimes(3)
   })
 
@@ -108,7 +108,7 @@ describe('fetch.dns-failure', () => {
     expect(dnsStats!.consecutive_dns_failures).toBe(3)
     expect(dnsStats!.last_dns_failure_at).toBeInstanceOf(Date)
     expect(dnsStats!.dns_disabled_at).toBeInstanceOf(Date)
-    expect(dnsStats!.crawlable).toBe(false)
+    expect(dnsStats!.is_crawlable).toBe(false)
   })
 
   it('fetchRssFeed records redirect-target TLS hostname failures on the target hostname', async () => {
@@ -166,7 +166,7 @@ describe('fetch.dns-failure', () => {
     expect(sourceStats!.consecutive_dns_failures).toBe(0)
     expect(targetStats!.consecutive_dns_failures).toBe(0)
     expect(targetStats!.dns_disabled_at).toBeNull()
-    expect(targetStats!.crawlable).toBe(true)
+    expect(targetStats!.is_crawlable).toBe(true)
   })
 
   it('fetchRssFeed short-circuits without calling CrawlerRss when crawlable=false', async () => {

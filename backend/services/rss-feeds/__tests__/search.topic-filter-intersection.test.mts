@@ -26,8 +26,8 @@ describe('searchRssFeeds topic filter intersections', () => {
       }),
     ])
     await Promise.all([
-      updateRssFeedById(singularFeed.id, { enabled: true }),
-      updateRssFeedById(hashtagFeed.id, { enabled: true }),
+      updateRssFeedById(singularFeed.id, { is_enabled: true }),
+      updateRssFeedById(hashtagFeed.id, { is_enabled: true }),
     ])
 
     const results = await searchRssFeeds({

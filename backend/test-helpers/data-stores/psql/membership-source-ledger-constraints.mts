@@ -73,22 +73,22 @@ export async function createMembershipSourceLedgerConstraintFixture(): Promise<M
     },
     rejectCrossLineageObservationEvidence() {
       return write(sql`/* rejectCrossLineageMembershipObservationEvidence */
-      INSERT INTO membership_provider_observations (provider, environment, application_id, membership_provider_evidence_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id, observed_price_minor_units, observed_price_currency_code, provider_revision, provider_order, source_kind, effective_at)
+      INSERT INTO membership_provider_observations (provider, environment, application_id, membership_provider_evidence_record_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id, observed_price_minor_units, observed_price_currency_code, provider_revision, provider_order, source_kind, effective_at)
       VALUES ('stripe', 'test', ${applicationId}, ${evidenceId}, ${secondLineage!.id}, ${mappingId}, ${productId}, 100, 'usd', 'cross-lineage', 1, 'direct', CURRENT_TIMESTAMP)`)
     },
     rejectAdminGrantProviderObservation() {
       return write(sql`/* rejectAdminGrantProviderObservation */
-      INSERT INTO membership_provider_observations (provider, environment, application_id, membership_provider_evidence_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id, observed_price_minor_units, observed_price_currency_code, provider_revision, provider_order, source_kind, effective_at)
+      INSERT INTO membership_provider_observations (provider, environment, application_id, membership_provider_evidence_record_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id, observed_price_minor_units, observed_price_currency_code, provider_revision, provider_order, source_kind, effective_at)
       VALUES ('stripe', 'test', ${applicationId}, ${evidenceId}, ${firstLineage!.id}, ${mappingId}, ${productId}, 100, 'usd', '1', 1, 'admin_grant', CURRENT_TIMESTAMP)`)
     },
     rejectCrossContextRenewalTarget() {
       return write(sql`/* rejectCrossContextRenewalTarget */
-      INSERT INTO membership_provider_observations (provider, environment, application_id, membership_provider_evidence_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id, observed_price_minor_units, observed_price_currency_code, renewal_membership_provider_product_id, renewal_membership_product_id, renewal_price_minor_units, renewal_price_currency_code, renewal_effective_at, provider_revision, provider_order, source_kind, effective_at, auto_renews)
+      INSERT INTO membership_provider_observations (provider, environment, application_id, membership_provider_evidence_record_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id, observed_price_minor_units, observed_price_currency_code, renewal_membership_provider_product_id, renewal_membership_product_id, renewal_price_minor_units, renewal_price_currency_code, renewal_effective_at, provider_revision, provider_order, source_kind, effective_at, should_auto_renew)
       VALUES ('stripe', 'test', ${applicationId}, ${evidenceId}, ${firstLineage!.id}, ${mappingId}, ${productId}, 100, 'usd', ${otherMappings[0]!.id}, ${productId}, 200, 'usd', CURRENT_TIMESTAMP + INTERVAL '1 month', 'cross-context-renewal', 2, 'direct', CURRENT_TIMESTAMP, true)`)
     },
     rejectFamilyRenewalTarget() {
       return write(sql`/* rejectFamilyRenewalTarget */
-      INSERT INTO membership_provider_observations (provider, environment, application_id, membership_provider_evidence_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id, observed_price_minor_units, observed_price_currency_code, renewal_membership_provider_product_id, renewal_membership_product_id, renewal_price_minor_units, renewal_price_currency_code, renewal_effective_at, provider_revision, provider_order, source_kind, effective_at, auto_renews)
+      INSERT INTO membership_provider_observations (provider, environment, application_id, membership_provider_evidence_record_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id, observed_price_minor_units, observed_price_currency_code, renewal_membership_provider_product_id, renewal_membership_product_id, renewal_price_minor_units, renewal_price_currency_code, renewal_effective_at, provider_revision, provider_order, source_kind, effective_at, should_auto_renew)
       VALUES ('stripe', 'test', ${applicationId}, ${evidenceId}, ${firstLineage!.id}, ${mappingId}, ${productId}, 100, 'usd', ${mappingId}, ${productId}, 200, 'usd', CURRENT_TIMESTAMP + INTERVAL '1 month', 'family-renewal', 2, 'family', CURRENT_TIMESTAMP, true)`)
     },
     async rejectObservationUpdate() {
@@ -150,7 +150,7 @@ export async function createUnverifiedMembershipObservationFixture(): Promise<Un
   return {
     rejectObservation(providerRevision) {
       return write(sql`/* rejectUnverifiedMembershipObservation */
-    INSERT INTO membership_provider_observations (provider, environment, application_id, membership_provider_evidence_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id, observed_price_minor_units, observed_price_currency_code, provider_revision, provider_order, source_kind, effective_at)
+    INSERT INTO membership_provider_observations (provider, environment, application_id, membership_provider_evidence_record_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id, observed_price_minor_units, observed_price_currency_code, provider_revision, provider_order, source_kind, effective_at)
     VALUES ('stripe', 'test', ${applicationId}, ${evidence[providerRevision]!.id}, ${lineageId}, ${mappings[0]!.id}, ${productId}, 100, 'usd', ${String(providerRevision)}, ${providerRevision}, 'direct', CURRENT_TIMESTAMP)`)
     },
   }
@@ -164,7 +164,7 @@ async function createImmutableMembershipObservation(
   productId: string,
 ): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* createImmutableMembershipObservation */
-    INSERT INTO membership_provider_observations (provider, environment, application_id, membership_provider_evidence_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id, observed_price_minor_units, observed_price_currency_code, renewal_membership_provider_product_id, renewal_membership_product_id, renewal_price_minor_units, renewal_price_currency_code, renewal_effective_at, provider_revision, provider_order, source_kind, effective_at, auto_renews)
+    INSERT INTO membership_provider_observations (provider, environment, application_id, membership_provider_evidence_record_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id, observed_price_minor_units, observed_price_currency_code, renewal_membership_provider_product_id, renewal_membership_product_id, renewal_price_minor_units, renewal_price_currency_code, renewal_effective_at, provider_revision, provider_order, source_kind, effective_at, should_auto_renew)
     VALUES ('stripe', 'test', ${applicationId}, ${evidenceId}, ${lineageId}, ${mappingId}, ${productId}, 100, 'usd', ${mappingId}, ${productId}, 200, 'usd', CURRENT_TIMESTAMP + INTERVAL '1 month', 'immutable', 3, 'direct', CURRENT_TIMESTAMP, true) RETURNING id`)
   return rows[0]!.id
 }

@@ -53,7 +53,7 @@ describe('crawl-url.generated', () => {
     const random = Math.random().toString(36).slice(2, 15)
     const hostname = `not-crawlable-${random}.example.com`
     const url = await addUrl(user.id, `https://${hostname}/test`)
-    await updateUrlHostname(url!.hostname.id, { crawlable: false })
+    await updateUrlHostname(url!.hostname.id, { is_crawlable: false })
 
     const result = await crawlUrlForTest(url!.id)
     expect(result).toBeNull()
@@ -63,7 +63,7 @@ describe('crawl-url.generated', () => {
     const random = Math.random().toString(36).slice(2, 15)
     const hostname = `no-crawler-${random}.invalid`
     const url = await addUrl(user.id, `https://${hostname}/test`)
-    await updateUrlHostname(url!.hostname.id, { crawlable: true })
+    await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
     await createCrawler(user, {
       hostname_id: url!.hostname.id,
       crawler_type: 'fetch',

@@ -32,7 +32,7 @@ const pendingInvite: CommunityInvite = {
   invited_email: 'alex@example.com',
   invited_by_id: storyCurrentUser.id,
   accepted_at: null,
-  accepted_by_user_id: null,
+  accepted_by_id: null,
   declined_at: null,
   revoked_at: null,
   created_at: '2026-05-24T00:00:00.000Z',

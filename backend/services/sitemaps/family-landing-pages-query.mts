@@ -32,7 +32,7 @@ export function buildLandingPagesQuery() {
         COALESCE((
           SELECT MAX(review_lastmod.updated_at)
           FROM user_landing_page_items ulpi_lastmod
-          JOIN posts review_lastmod ON review_lastmod.id = ulpi_lastmod.review_id
+          JOIN posts review_lastmod ON review_lastmod.id = ulpi_lastmod.review_post_id
           JOIN view_public_post_eligibility review_lastmod_eligibility
             ON review_lastmod_eligibility.post_id = review_lastmod.id
           WHERE ulpi_lastmod.landing_page_id = ulp.id
@@ -42,7 +42,7 @@ export function buildLandingPagesQuery() {
           FROM user_landing_page_items ulpi_lastmod
           JOIN user_landing_page_group_members ulpgm_lastmod
             ON ulpgm_lastmod.landing_page_item_id = ulpi_lastmod.id
-          JOIN posts group_review_lastmod ON group_review_lastmod.id = ulpgm_lastmod.review_id
+          JOIN posts group_review_lastmod ON group_review_lastmod.id = ulpgm_lastmod.review_post_id
           JOIN view_public_post_eligibility group_review_lastmod_eligibility
             ON group_review_lastmod_eligibility.post_id = group_review_lastmod.id
           WHERE ulpi_lastmod.landing_page_id = ulp.id
@@ -94,20 +94,20 @@ export function buildLandingPagesQuery() {
             OR EXISTS (
               SELECT 1 FROM urls link_url
               JOIN url_hostnames link_hostname ON link_hostname.id = link_url.hostname_id
-              WHERE link_url.id = ulpi.url_id AND link_hostname.blocked = FALSE
+              WHERE link_url.id = ulpi.url_id AND link_hostname.is_blocked = FALSE
                 AND ulpi.item_type = 'link' AND ulpi.link_label IS NOT NULL
             )
             OR EXISTS (
               SELECT 1
               FROM posts p
-              WHERE p.id = ulpi.review_id
+              WHERE p.id = ulpi.review_post_id
                 AND p.created_by_id = u.id
                 AND ulpi.item_type = 'review'
                 AND p.post_type = 'review'
                 AND EXISTS (
                   SELECT 1
                   FROM posts root_post
-                  WHERE root_post.id = COALESCE(p.root_id, p.id)
+                  WHERE root_post.id = COALESCE(p.root_post_id, p.id)
                     AND `
   query.append(buildPublicPostEligibilityFilter('p', 'root_post')).append(sql`
                 )
@@ -126,13 +126,13 @@ export function buildLandingPagesQuery() {
               SELECT 1
               FROM user_landing_page_group_members ulpgm
               LEFT JOIN posts group_review
-                ON group_review.id = ulpgm.review_id
+                ON group_review.id = ulpgm.review_post_id
                 AND group_review.created_by_id = u.id
                 AND group_review.post_type = 'review'
                 AND EXISTS (
                   SELECT 1
                   FROM posts group_review_root
-                  WHERE group_review_root.id = COALESCE(group_review.root_id, group_review.id)
+                  WHERE group_review_root.id = COALESCE(group_review.root_post_id, group_review.id)
                     AND `)
   query.append(buildPublicPostEligibilityFilter('group_review', 'group_review_root')).append(sql`
                 )

@@ -79,7 +79,7 @@ describe('RewardsProgramStatusesManager Integration Flow', () => {
     const sinceInput = screen.getByLabelText('Since')
     expect(sinceInput).toHaveValue('2023-01-01')
 
-    // Test chronological date validation where since > until
+    // Test chronological date validation where started_on > expires_on
     const untilInput = screen.getByLabelText('Until')
     fireEvent.change(untilInput, { target: { value: '2022-01-01' } })
 
@@ -90,7 +90,7 @@ describe('RewardsProgramStatusesManager Integration Flow', () => {
       expect.objectContaining({ fallback: 'Since must be before until' }),
     )
 
-    // Correct until date and save
+    // Correct expires_on date and save
     fireEvent.change(untilInput, { target: { value: '2024-01-01' } })
     await act(async () => {
       fireEvent.click(saveButton)
@@ -98,7 +98,7 @@ describe('RewardsProgramStatusesManager Integration Flow', () => {
 
     await waitFor(() => {
       expect(mockUpdate).toHaveBeenCalledWith('status-user-1', {
-        until: '2024-01-01',
+        expires_on: '2024-01-01',
       })
       expect(mockOnSuccess).toHaveBeenCalledWith('Status updated')
       expect(screen.getByText('Until: 2024-01-01')).toBeInTheDocument()

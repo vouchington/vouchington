@@ -101,10 +101,11 @@ export async function processReconcilePostPublication(
   const fence = { id: work.id, generation: work.generation, leaseToken: work.lease_token }
   let reconciled = 0
   try {
-    const scope = postPublicationScopeForWork(work)
+    const scope = postPublicationScopeForWork(work) // Post work takes its capture lock below.
     await deps.withPostPublicationReconciliationLock(
-      // Post work takes its capture lock below; reusing it here would deadlock across connections.
-      work.post_id ? `post-publication-work:${work.id}` : postPublicationScopeLockKey(scope),
+      work.post_identity_id
+        ? `post-publication-work:${work.id}`
+        : postPublicationScopeLockKey(scope),
       async () => {
         const selected = await deps.reconcilePostPublicationDirtyWork(
           work,
@@ -122,7 +123,6 @@ export async function processReconcilePostPublication(
         await deps.withPostPublicationReconciliationLocks(
           selected.posts.map(post => post.id),
           async () => {
-            // Re-read canonical primary state after all sorted post locks are held.
             const result = await deps.reconcilePostPublicationDirtyWork(
               work,
               limit,

@@ -77,7 +77,7 @@ async function searchDomainsVertical(options: OmnisearchOptions): Promise<Omnise
   if (hasUnknownHashtag || hashtagAliasIds?.length || hashtagTopicIds?.length) return []
   if (!textSearchQuery) return []
   const blocked = currentUserCanFilterHostnameModeration(currentUser) ? undefined : (false as const)
-  const params = { query: textSearchQuery, limit, blocked }
+  const params = { query: textSearchQuery, limit, is_blocked: blocked }
   const { results } = currentUser
     ? await searchUrlHostnames(params)
     : await searchUrlHostnamesCached(params)

@@ -87,8 +87,6 @@ describe('GET /api/v1/users/:idOrSlug communities collections', () => {
     expect(anonResponse.body.results).toHaveLength(1)
     expect(anonResponse.body.results[0].id).toBe(community.id)
     expect(Object.keys(anonResponse.body.results[0]).toSorted()).toEqual([
-      'allow_data_point_posts',
-      'allow_review_posts',
       'archived_at',
       'archived_by_id',
       'automod_action',
@@ -109,6 +107,8 @@ describe('GET /api/v1/users/:idOrSlug communities collections', () => {
       'post_approval_required_at',
       'profile_image_id',
       'rules_markdown',
+      'should_allow_data_point_posts',
+      'should_allow_review_posts',
       'slug',
       'trusted_at',
       'updated_at',

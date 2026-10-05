@@ -74,7 +74,7 @@ describe('create.broadcast-privacy', () => {
         createPost(creator, WEB_PROVENANCE, {
           markdown: 'blocked comment',
           post_type: 'comment',
-          parent_id: post.id,
+          parent_post_id: post.id,
         }),
       ).rejects.toThrow('Cannot comment on an unapproved community post')
     })

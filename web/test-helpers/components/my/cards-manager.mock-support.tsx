@@ -128,13 +128,13 @@ export function setUpCardsManagerTest() {
   mockCreate.mockResolvedValue({
     card: {
       id: 'card-owner-3',
-      card_id: 'c-3',
+      card_topic_id: 'c-3',
       opened_on: null,
       closed_on: null,
       received_sign_up_bonus_on: null,
       credit_limit: null,
       is_authorized_user: false,
-      authorized_user_of_id: null,
+      authorized_user_of_card_id: null,
       note: null,
       card: { id: 'c-3', name: 'Amex Gold', slug: 'amex-gold' },
       authorized_user_of_card: null,

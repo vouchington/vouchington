@@ -16,8 +16,8 @@ const platinum = topics[4]!
 const status: RewardsProgramStatus = {
   id: 'status-platinum-elite',
   rewards_program_status_id: platinum.id,
-  since: '2024-03-01',
-  until: null,
+  started_on: '2024-03-01',
+  expires_on: null,
   rewards_program_status: { id: platinum.id, name: platinum.name, slug: platinum.slug },
 }
 

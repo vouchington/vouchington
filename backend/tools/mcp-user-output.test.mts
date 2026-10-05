@@ -46,7 +46,7 @@ describe('user read tool output schemas', () => {
       'username',
       'markdown',
       'verification_status',
-      'verified_badge_visible',
+      'is_verified_badge_visible',
       'verified_display_name',
       'account_type',
     ])

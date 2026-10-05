@@ -96,10 +96,10 @@ describe('platform publication overrides', () => {
     })
     await expect(getPublicationReviewChanges(community.id, postId)).resolves.toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ action: 'unpublish', platform_override: false }),
+        expect.objectContaining({ action: 'unpublish', is_platform_override: false }),
         expect.objectContaining({
           action: 'restore',
-          platform_override: true,
+          is_platform_override: true,
           reason_code: 'staff_restored',
           private_note: 'The original removal was overturned',
         }),

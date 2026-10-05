@@ -52,7 +52,7 @@ export async function getCopyrightStaffEmailIntake(
   await using transaction = await beginTransaction()
   const { rows } = await transaction<{
     id: string
-    ses_message_id: string
+    amazon_ses_message_id: string
     received_at: Date
     raw_storage_key: string
     raw_mime_type: string
@@ -73,7 +73,7 @@ export async function getCopyrightStaffEmailIntake(
     linked_notice_id: string | null
     has_reply_reference: boolean
   }>(sql`/* getCopyrightStaffEmailIntake */
-    SELECT intake.id, intake.ses_message_id, intake.received_at, intake.raw_storage_key, intake.raw_media_type_id,
+    SELECT intake.id, intake.amazon_ses_message_id, intake.received_at, intake.raw_storage_key, intake.raw_media_type_id,
         (SELECT mime_type FROM media_types WHERE id = intake.raw_media_type_id) AS raw_mime_type, intake.raw_byte_size, intake.raw_sha256,
       intake.spf_verdict, intake.dkim_verdict, intake.dmarc_verdict, intake.spam_verdict, intake.virus_verdict,
       parse.sender_email_ciphertext, parse.subject_ciphertext, parse.body_ciphertext, parse.error_ciphertext,
@@ -94,7 +94,7 @@ export async function getCopyrightStaffEmailIntake(
   await transaction.commit()
   const row = rows[0]
   if (!row) return null
-  const purpose = copyrightEmailIntakePurpose(row.ses_message_id)
+  const purpose = copyrightEmailIntakePurpose(row.amazon_ses_message_id)
   const decryptLive = (ciphertext: string | null) => {
     const live = liveCopyrightCiphertext(ciphertext)
     return live ? decryptSecret(live, purpose) : null
@@ -346,7 +346,7 @@ export async function getCopyrightParticipantNoticeDetail(
       SELECT id, kind, received_at, source_kind
       FROM copyright_notice_submissions
       WHERE copyright_notice_id = ${noticeId}
-        AND (${viewerRole === 'staff'} OR submitted_by_user_id = ${currentUser.id})
+        AND (${viewerRole === 'staff'} OR submitted_by_id = ${currentUser.id})
       ORDER BY received_at, id
     `,
     ),

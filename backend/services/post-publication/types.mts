@@ -52,12 +52,12 @@ export type PostPublicationFootprint = {
 }
 export type PostPublicationDirtyWork = {
   id: string
-  post_id: string | null
-  author_user_id: string | null
-  community_id: string | null
-  rss_feed_id: string | null
-  topic_alias_id: string | null
-  story_id: string | null
+  post_identity_id: string | null
+  author_identity_id: string | null
+  community_identity_id: string | null
+  rss_feed_identity_id: string | null
+  topic_alias_identity_id: string | null
+  story_identity_id: string | null
   reasons: PostPublicationReason[]
   generation: string
   cursor_post_id: string | null

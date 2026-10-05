@@ -91,7 +91,7 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
   const postsWithRootsPromise = Promise.all([rawPostsPromise, postsPromise]).then(
     async ([rawPosts, posts]) => {
       const rootPostIds = [
-        ...new Set(rawPosts.flatMap(post => (post?.root_id ? [post.root_id] : []))),
+        ...new Set(rawPosts.flatMap(post => (post?.root_post_id ? [post.root_post_id] : []))),
       ].filter(rootPostId => !postIdSet.has(rootPostId))
       if (rootPostIds.length === 0) return posts
       const rawRootPosts = await getPostByAnyCachedBatch(rootPostIds)

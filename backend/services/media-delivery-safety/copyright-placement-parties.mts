@@ -71,10 +71,10 @@ export function copyrightPlacementPartiesSql(
       AND account.deleted_at IS NULL)`)
   parties.append(sql`
     UNION ALL
-    SELECT activation.bound_by_user_id AS user_id, 'activation_binder'::text AS basis
+    SELECT activation.bound_by_id AS user_id, 'activation_binder'::text AS basis
     FROM image_surface_placements surface
     JOIN LATERAL (
-      SELECT recorded.bound_by_user_id, recorded.bound_by_administrator
+      SELECT recorded.bound_by_id, recorded.is_bound_by_administrator
       FROM image_surface_placement_activations recorded
       WHERE recorded.placement_id = surface.placement_id
         AND recorded.placement_revision = target.surface_activation_revision
@@ -85,10 +85,10 @@ export function copyrightPlacementPartiesSql(
   parties.append(includeResponders ? sql`TRUE` : sql`FALSE`)
   parties.append(sql` AND (`)
   parties.append(includeRetainedAdministrators ? sql`TRUE` : sql`FALSE`)
-  parties.append(sql` OR activation.bound_by_administrator = FALSE)`)
+  parties.append(sql` OR activation.is_bound_by_administrator = FALSE)`)
   if (live)
     parties.append(sql` AND EXISTS (
-    SELECT 1 FROM users account WHERE account.id = activation.bound_by_user_id
+    SELECT 1 FROM users account WHERE account.id = activation.bound_by_id
       AND account.deleted_at IS NULL)`)
   parties.append(sql`
     UNION ALL
@@ -97,7 +97,7 @@ export function copyrightPlacementPartiesSql(
     JOIN community_members member ON member.community_id = surface.community_id
       AND member.role = 'owner' AND member.removed_at IS NULL
     LEFT JOIN LATERAL (
-      SELECT recorded.bound_by_user_id
+      SELECT recorded.bound_by_id
       FROM image_surface_placement_activations recorded
       WHERE recorded.placement_id = surface.placement_id
         AND recorded.placement_revision = target.surface_activation_revision
@@ -106,7 +106,7 @@ export function copyrightPlacementPartiesSql(
       AND surface.surface_kind IN ('community-profile-image', 'community-banner-image')
       AND `)
   parties.append(includeCommunityOwners ? sql`TRUE` : sql`FALSE`)
-  parties.append(sql` AND member.user_id IS DISTINCT FROM activation.bound_by_user_id`)
+  parties.append(sql` AND member.user_id IS DISTINCT FROM activation.bound_by_id`)
   if (live)
     parties.append(sql` AND EXISTS (
     SELECT 1 FROM users account WHERE account.id = member.user_id

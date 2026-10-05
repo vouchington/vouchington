@@ -68,7 +68,7 @@ export async function sendApprovedModerationAppealResolution(
   // Deliver the human-approved response to the appellant. Awaited so a delivery
   // failure surfaces to the caller instead of being silently swallowed.
   await createModerationAppealResolvedNotification(
-    appeal.appellant_id,
+    appeal.appellant_user_id,
     appealId,
     appeal.public_response ?? '',
   )

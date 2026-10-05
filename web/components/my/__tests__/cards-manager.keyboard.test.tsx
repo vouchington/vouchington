@@ -38,7 +38,7 @@ describe('CardsManager keyboard submit', () => {
     ) as HTMLInputElement
     fireEvent.change(autocompleteInput, { target: { value: 'c-3' } })
 
-    expect(mockCreate).toHaveBeenCalledWith({ card_id: 'c-3' })
+    expect(mockCreate).toHaveBeenCalledWith({ card_topic_id: 'c-3' })
   })
 
   it('Cmd+Enter on edit note textarea submits', async () => {

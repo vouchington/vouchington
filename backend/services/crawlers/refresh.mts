@@ -20,8 +20,8 @@ export const searchHostnameIdsNeedingCrawlerRefresh = async (
     LEFT JOIN hostname_crawler_configurations c
       ON c.hostname_id = h.id
       AND c.deleted_at IS NULL
-    WHERE (h.blocked IS NULL OR h.blocked = false)
-      AND (h.crawlable IS NULL OR h.crawlable = true)
+    WHERE (h.is_blocked IS NULL OR h.is_blocked = false)
+      AND (h.is_crawlable IS NULL OR h.is_crawlable = true)
     GROUP BY h.id
     HAVING (
       NOT EXISTS (
@@ -52,8 +52,8 @@ export const searchCrawlerRefreshUrlCandidatesByHostnameId = async (
     LEFT JOIN crawls c ON c.url_id = u.id
     JOIN url_hostnames h ON h.id = u.hostname_id
     WHERE u.hostname_id = ${hostnameId}
-      AND (h.blocked IS NULL OR h.blocked = false)
-      AND (h.crawlable IS NULL OR h.crawlable = true)
+      AND (h.is_blocked IS NULL OR h.is_blocked = false)
+      AND (h.is_crawlable IS NULL OR h.is_crawlable = true)
   `
   if (excludeUrlIds.length > 0) {
     query.append(sql` AND NOT (u.id = ANY(${excludeUrlIds}::UUID[]))`)
@@ -69,7 +69,7 @@ export const searchCrawlerRefreshUrlCandidatesByHostnameId = async (
 
 type RefreshHostnameCrawlerResult = {
   hostname_id: string
-  crawler_id: string | null
+  hostname_crawler_configuration_id: string | null
   urls_considered: number
   urls_selected_for_crawl: number
   url_ids_to_crawl: string[]
@@ -81,10 +81,10 @@ export async function refreshHostnameCrawler(
   hostnameId: string,
 ): Promise<RefreshHostnameCrawlerResult> {
   const hostname = await getUrlHostnameCrawlerDetailsById(hostnameId)
-  if (!hostname || hostname.blocked || hostname.crawlable === false) {
+  if (!hostname || hostname.is_blocked || hostname.is_crawlable === false) {
     return {
       hostname_id: hostnameId,
-      crawler_id: null,
+      hostname_crawler_configuration_id: null,
       urls_considered: 0,
       urls_selected_for_crawl: 0,
       url_ids_to_crawl: [],
@@ -100,7 +100,7 @@ export async function refreshHostnameCrawler(
   if (urls.length < 2) {
     return {
       hostname_id: hostnameId,
-      crawler_id: crawler.id,
+      hostname_crawler_configuration_id: crawler.id,
       urls_considered: urls.length,
       urls_selected_for_crawl: 0,
       url_ids_to_crawl: [],
@@ -110,7 +110,7 @@ export async function refreshHostnameCrawler(
   const urlIdsToCrawl = urls.map(url => url.id)
   return {
     hostname_id: hostnameId,
-    crawler_id: crawler.id,
+    hostname_crawler_configuration_id: crawler.id,
     urls_considered: urls.length,
     urls_selected_for_crawl: urlIdsToCrawl.length,
     url_ids_to_crawl: urlIdsToCrawl,

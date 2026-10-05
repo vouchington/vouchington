@@ -7,15 +7,15 @@ import type { PostClassifierLocalOutcome } from '../../../../services/post-class
 import type { PostClassifierExecutionFixture } from './execution.mts'
 
 export function makePostClassifierLocalOutcome(
-  flagged: boolean,
+  is_flagged: boolean,
   confidenceThreshold: number,
 ): PostClassifierLocalOutcome {
   return {
-    flagged,
-    reason: flagged ? 'AI-generated' : 'Human-authored',
-    confidenceScore: flagged ? 0.98 : 0.01,
+    is_flagged,
+    reason: is_flagged ? 'AI-generated' : 'Human-authored',
+    confidenceScore: is_flagged ? 0.98 : 0.01,
     confidenceThreshold,
-    classification: flagged ? 'ai' : 'human',
+    classification: is_flagged ? 'ai' : 'human',
     detector: 'test-detector',
     detectorModelVersion: 'test-model',
   }
@@ -24,10 +24,10 @@ export function makePostClassifierLocalOutcome(
 /** The local outcome the run's configuration asks for, or undefined for a remote-only run. */
 export function localOutcomeFor(
   setup: PostClassifierExecutionFixture,
-  flagged: boolean,
+  is_flagged: boolean,
 ): PostClassifierLocalOutcome | undefined {
   const local = setup.lease.resolved.configuration.local
-  return local ? makePostClassifierLocalOutcome(flagged, local.confidenceThreshold) : undefined
+  return local ? makePostClassifierLocalOutcome(is_flagged, local.confidenceThreshold) : undefined
 }
 
 /** A complete C3 decision for the run's reserved batch, all-positive or all-negative. */

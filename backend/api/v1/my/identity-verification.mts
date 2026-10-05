@@ -14,7 +14,7 @@ import {
 } from '../../stripe-helpers.mts'
 
 type UpdateDisplayPreferencesRequest = {
-  verified_badge_visible?: boolean
+  is_verified_badge_visible?: boolean
   public_verified_name_display?: PublicVerifiedNameDisplay
 }
 
@@ -23,7 +23,7 @@ function buildIdentityVerificationResponse(user: PrivateUser) {
     verification_status: user.verification_status ?? 'unverified',
     verification_provider: user.verification_provider ?? null,
     verification_completed_at: user.verification_completed_at ?? null,
-    verified_badge_visible: user.verified_badge_visible ?? true,
+    is_verified_badge_visible: user.is_verified_badge_visible ?? true,
     public_verified_name_display: user.public_verified_name_display ?? 'hidden',
   }
 }

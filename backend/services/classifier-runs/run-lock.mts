@@ -15,7 +15,7 @@ export type ClassifierRunRow = {
   input_sha256: Buffer
   configuration_json: string
   configuration_sha256: Buffer
-  shared_actor_id: string
+  shared_actor_user_id: string
   decision_batch_id: string | null
   provider_attempts_started: number
   terminal_failed_at: Date | null
@@ -52,7 +52,7 @@ export async function lockClassifierRun<C, L, E>(
   const { rows } = await query<ClassifierRunRow>(sql`/* lockClassifierRun */
     SELECT run.id, classifier.slug AS classifier_slug, run.post_id, run.rss_feed_item_id,
       run.input_sha256, run.configuration_json::text AS configuration_json,
-      run.configuration_sha256, run.shared_actor_id, run.decision_batch_id,
+      run.configuration_sha256, run.shared_actor_user_id, run.decision_batch_id,
       run.provider_attempts_started, run.terminal_failed_at, run.superseded_at, run.lease_token,
       run.outcomes_persisted_at, run.completed_at,
       (run.lease_token IS NOT NULL AND run.lease_expires_at > clock_timestamp()) AS lease_is_live,
@@ -68,14 +68,14 @@ export async function lockClassifierRun<C, L, E>(
   if (!row) return null
   assertRunMatchesTarget(adapter.slug, row, target)
   await query(sql`/* lockClassifierRunActor */
-    SELECT fn_lock_active_user_for_mutation(${row.shared_actor_id}::uuid)
+    SELECT fn_lock_active_user_for_mutation(${row.shared_actor_user_id}::uuid)
   `)
   const resolved = await adapter.resolve(target.subject, current, query)
   if (
     !resolved ||
     !resolved.configurationSha256.equals(row.configuration_sha256) ||
     resolved.configurationJson !== row.configuration_json ||
-    resolved.actorId !== row.shared_actor_id ||
+    resolved.actorId !== row.shared_actor_user_id ||
     (resolved.remote === null) !== (row.decision_batch_id === null)
   ) {
     return null

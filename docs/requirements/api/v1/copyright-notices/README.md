@@ -287,7 +287,7 @@ Matching at EU receipt is independent of the switch and creates no decision or r
 - `GET /api/v1/copyright-trusted-flaggers/:id` returns `{ copyright_trusted_flagger }`;
 - `POST /api/v1/copyright-trusted-flaggers` takes the closed account/designation fields: `name`,
   `user_id`, `awarding_coordinator_name`, uppercase two-letter `awarding_member_state`, valid
-  `awarded_at` (`YYYY-MM-DD`), `area_of_expertise` (`intellectual_property` or `other`),
+  `awarded_on` (`YYYY-MM-DD`), `area_of_expertise` (`intellectual_property` or `other`),
   `area_description` (1–500 characters), and optional `award_reference`. It returns `201` with
   `{ copyright_trusted_flagger }`; an unknown account answers `422`;
 - `POST /api/v1/copyright-trusted-flaggers/:id/status-changes` takes the closed `change_type`
@@ -311,7 +311,7 @@ read fails. Existing participant cases and complaint pages do not depend on curr
 
 `POST /api/v1/copyright-eu-notices` uses optional authentication, a client IP, CAPTCHA, rate limiting,
 and a UUID `Idempotency-Key`. Its closed request adds `notifier_name` (1–200 characters), a valid
-`notifier_email` (at most 254), and literal-true `good_faith_statement` to the existing contact,
+`notifier_email` (at most 254), and literal-true `has_good_faith_statement` to the existing contact,
 content description, grounds, and exact hosted URL. EU receipt and decision email goes to that
 address of record; an authenticated notifier also receives in-app notices. The UK request continues
 to require authentication and rejects the EU-only fields.
@@ -354,7 +354,7 @@ already loaded.
 Staff record Art. 21 through three closed, sensitive-rate-limited routes:
 
 - `POST /api/v1/copyright-eu-notices/:id/dispute-settlements` with `body_name`, `referred_at`,
-  `referred_by_party`, and optional `referred_by_user_id`;
+  `referred_by_party`, and optional `referred_by_id`;
 - `POST /api/v1/copyright-eu-notices/:id/dispute-settlements/:referralId/outcomes` with `result` and
   `decided_at`; and
 - `POST /api/v1/copyright-eu-notices/:id/dispute-settlements/:referralId/implementations` with

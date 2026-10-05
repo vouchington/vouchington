@@ -140,7 +140,7 @@ const basePost: Post = {
   id: 'post-1',
   post_type: 'discussion',
   markdown: 'Hello world',
-  root_id: null,
+  root_post_id: null,
   created_by_id: null,
   created_at: '2024-01-01T00:00:00Z',
   updated_at: '2024-01-01T00:00:00Z',

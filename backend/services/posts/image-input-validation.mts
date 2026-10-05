@@ -21,7 +21,7 @@ async function assertImagesExistForUser(
       AND upload_completed_at IS NOT NULL
       AND deleted_at IS NULL
       AND quarantine_pending_at IS NULL
-      AND openai_omni_moderation_flagged = FALSE
+      AND is_flagged_by_openai_omni_moderation = FALSE
       AND openai_omni_moderation_results IS NOT NULL
       AND openai_omni_moderation_created_at IS NOT NULL
   `)

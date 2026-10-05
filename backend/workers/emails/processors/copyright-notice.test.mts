@@ -120,7 +120,7 @@ describe('processSendCopyrightNoticeEmail', () => {
       expect.objectContaining({
         id: fixture.intentId,
         state: 'sent',
-        ses_message_id: expect.any(String),
+        amazon_ses_message_id: expect.any(String),
       }),
     )
     expect(aggregate?.correspondence).toContainEqual(
@@ -138,7 +138,11 @@ describe('processSendCopyrightNoticeEmail', () => {
 
     const aggregate = await getCopyrightNoticePrivateAggregate(fixture.noticeId)
     expect(aggregate?.deliveryIntents).toContainEqual(
-      expect.objectContaining({ id: fixture.intentId, state: 'pending', ses_message_id: null }),
+      expect.objectContaining({
+        id: fixture.intentId,
+        state: 'pending',
+        amazon_ses_message_id: null,
+      }),
     )
   })
 

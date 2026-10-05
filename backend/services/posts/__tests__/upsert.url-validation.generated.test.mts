@@ -23,7 +23,7 @@ describe('upsert.generated (url validation)', () => {
     const random = Math.random().toString(36).slice(2, 10)
     const hostnameId = await insertTestUrlHostname({
       hostname: `blocked-er-${random}.example.com`,
-      blocked: true,
+      is_blocked: true,
     })
     const urlId = await insertTestUrl({
       url: `https://blocked-er-${random}.example.com/article`,

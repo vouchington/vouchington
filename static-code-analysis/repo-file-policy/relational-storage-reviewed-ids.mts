@@ -59,11 +59,11 @@ export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
     'Traversal cursor position; deleting the actor must not rewind a completed cursor.',
   ],
   [
-    'post_votes.outbound_ap_like_activity_id',
+    'post_votes.outbound_activitypub_like_activity_id',
     'Identity of the outbound ActivityPub Like; no activities table exists.',
   ],
   [
-    'relation__user__follow__user.outbound_ap_follow_activity_id',
+    'relation__user__follow__user.outbound_activitypub_follow_activity_id',
     'Identity of the outbound ActivityPub Follow; no activities table exists.',
   ],
   [

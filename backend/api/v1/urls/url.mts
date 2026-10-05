@@ -29,7 +29,7 @@ app.route('/api/v1/urls/:id').get(async ctx => {
   const canSeeModeration = currentUserCanFilterHostnameModeration(currentUser)
   const url = await getUrlByAnyCached(ctx.params.id!)
   if (!url) return ctx.throw(404, 'URL not found')
-  if (url.hostname?.blocked && !canSeeModeration) return ctx.throw(404, 'URL not found')
+  if (url.hostname?.is_blocked && !canSeeModeration) return ctx.throw(404, 'URL not found')
 
   const canTriggerCrawl = currentUserCanTriggerCrawl(currentUser)
   const [membership, rssFeed, isReferralLink] = await Promise.all([

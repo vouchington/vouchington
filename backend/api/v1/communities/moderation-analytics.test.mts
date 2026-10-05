@@ -93,7 +93,7 @@ describe('GET /api/v1/communities/:idOrSlug/moderation-analytics', () => {
       .expect(200)
 
     expect(response.body.moderator_workload.moderators).toEqual(
-      expect.arrayContaining([expect.objectContaining({ actor_id: siteModerator.id })]),
+      expect.arrayContaining([expect.objectContaining({ actor_user_id: siteModerator.id })]),
     )
     expect(response.body.moderator_workload.users[siteModerator.id]).toEqual(
       expect.objectContaining({ id: siteModerator.id }),

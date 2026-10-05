@@ -10,7 +10,7 @@ Generates WebAuthn registration options, excluding existing passkeys. Stores cha
 
 **Body:** `{ response: WebAuthnRegistrationResponse, name: string }`
 
-Verifies registration response against stored challenge. Stores new passkey credential in `user_passkeys` table. Returns the created passkey (id, name, device_type, backed_up, created_at).
+Verifies registration response against stored challenge. Stores new passkey credential in `user_passkeys` table. Returns the created passkey (id, name, device_type, is_backed_up, created_at).
 
 ### POST /api/v1/auth/email-address/tokens
 

@@ -50,7 +50,7 @@ describe('copyright guest form intake review', () => {
     await reviewCopyrightFormIntake({
       intakeId: notice.intake.id,
       currentUser: moderator,
-      accepted: true,
+      is_accepted: true,
       rationale: 'Structured fields and hosted target were verified.',
     })
     await expect(

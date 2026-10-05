@@ -98,7 +98,7 @@ describe('top-hostnames', () => {
       const random = Math.random().toString(36).slice(2, 8)
       const blockedId = await insertTestUrlHostname({
         hostname: `top-api-blocked-${random}.example.com`,
-        blocked: true,
+        is_blocked: true,
       })
       await setUrlHostnameVotes(blockedId, 150, 50)
 

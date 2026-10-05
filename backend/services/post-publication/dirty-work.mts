@@ -11,7 +11,7 @@ export async function listAvailablePostPublicationDirtyWork(
   await cleanupPostPublicationIdentityBridges()
   const { rows } = await write<PostPublicationDirtyWork>(
     `/* listAvailablePostPublicationDirtyWork */
-    SELECT id, post_id, author_user_id, community_id, rss_feed_id, topic_alias_id, story_id, reasons::text[] AS reasons,
+    SELECT id, post_identity_id, author_identity_id, community_identity_id, rss_feed_identity_id, topic_alias_identity_id, story_identity_id, reasons::text[] AS reasons,
       generation, cursor_post_id, cursor_topic_id, cursor_key_id, lease_token, leased_at, lease_expires_at
     FROM post_publication_dirty_work
     WHERE lease_expires_at IS NULL OR lease_expires_at <= CURRENT_TIMESTAMP
@@ -30,7 +30,7 @@ export async function claimPostPublicationDirtyWork(
     UPDATE post_publication_dirty_work SET lease_token = uuidv7(), leased_at = CURRENT_TIMESTAMP,
       lease_expires_at = CURRENT_TIMESTAMP + ($1::integer * INTERVAL '1 second')
     WHERE id = $2 AND generation = $3 AND (lease_expires_at IS NULL OR lease_expires_at <= CURRENT_TIMESTAMP)
-    RETURNING id, post_id, author_user_id, community_id, rss_feed_id, topic_alias_id, story_id, reasons::text[] AS reasons,
+    RETURNING id, post_identity_id, author_identity_id, community_identity_id, rss_feed_identity_id, topic_alias_identity_id, story_identity_id, reasons::text[] AS reasons,
       generation, cursor_post_id, cursor_topic_id, cursor_key_id, lease_token, leased_at, lease_expires_at`,
     [leaseSeconds, work.id, work.generation],
   )

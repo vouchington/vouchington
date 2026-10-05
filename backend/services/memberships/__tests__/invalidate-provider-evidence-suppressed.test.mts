@@ -121,7 +121,7 @@ describe('rejectMembershipProviderEvidence suppressed access', () => {
 
     await expect(
       rejectMembershipProviderEvidence(
-        observation.membership_provider_evidence_id,
+        observation.membership_provider_evidence_record_id,
         'Suppressed direct evidence was rejected',
       ),
     ).resolves.toEqual({ invalidated: true, membershipId: direct.id })

@@ -37,12 +37,13 @@ export async function getEntityReconciliationWindow(
   checkpointName = CHECKPOINT_NAME,
 ): Promise<EntityReconciliationWindow> {
   const { rows } = await write(sql`/* getEntityReconciliationWindow */
-    SELECT completed_through
+    SELECT reconciled_through_at
     FROM queue_reconciliation_checkpoints
     WHERE queue_name = ${checkpointName}
   `)
   const end = new Date(now.getTime() - REPLICA_LAG_MARGIN_MS)
-  const completedThrough = (rows[0] as { completed_through: Date } | undefined)?.completed_through
+  const completedThrough = (rows[0] as { reconciled_through_at: Date } | undefined)
+    ?.reconciled_through_at
   const start = completedThrough
     ? new Date(completedThrough.getTime() - OVERLAP_MS)
     : new Date(end.getTime() - intervalSeconds * 1000)
@@ -75,7 +76,7 @@ export async function* streamEntityReconciliationCandidateBatches(
         SELECT 'user'::text AS entity_type, id AS entity_id,
           floor(extract(epoch FROM updated_at) * 1000000)::text AS changed_at_epoch_us,
           NULL::uuid AS change_id,
-          jsonb_build_object('referrerId', referrer_id) AS details,
+          jsonb_build_object('referrerId', referrer_user_id) AS details,
           updated_at AS changed_at
         FROM users
         WHERE updated_at >= ${window.start} AND updated_at <= ${window.end} AND deleted_at IS NULL
@@ -152,12 +153,12 @@ export async function advanceEntityReconciliationCheckpoint(
   checkpointName = CHECKPOINT_NAME,
 ): Promise<void> {
   await write(sql`/* advanceEntityReconciliationCheckpoint */
-    INSERT INTO queue_reconciliation_checkpoints (queue_name, completed_through)
+    INSERT INTO queue_reconciliation_checkpoints (queue_name, reconciled_through_at)
     VALUES (${checkpointName}, ${completedThrough})
     ON CONFLICT (queue_name) DO UPDATE
-    SET completed_through = GREATEST(
-      queue_reconciliation_checkpoints.completed_through,
-      EXCLUDED.completed_through
+    SET reconciled_through_at = GREATEST(
+      queue_reconciliation_checkpoints.reconciled_through_at,
+      EXCLUDED.reconciled_through_at
     )
   `)
 }

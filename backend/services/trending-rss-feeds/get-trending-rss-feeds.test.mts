@@ -95,8 +95,8 @@ describe('getTrendingRssFeeds', () => {
   it('excludes disabled and undiscoverable feeds', async () => {
     const { feedId: disabledFeedId } = await createTrendingFeedData(10)
     const { feedId: hiddenFeedId } = await createTrendingFeedData(10)
-    await updateRssFeedById(disabledFeedId, { enabled: false, discoverable: true })
-    await updateRssFeedById(hiddenFeedId, { enabled: true, discoverable: false })
+    await updateRssFeedById(disabledFeedId, { is_enabled: false, discoverable: true })
+    await updateRssFeedById(hiddenFeedId, { is_enabled: true, discoverable: false })
 
     const result = await getTrendingRssFeeds({ timeRange: 'week', limit: 100, minScore: 10 })
     const ids = result.results.map(r => r.id)

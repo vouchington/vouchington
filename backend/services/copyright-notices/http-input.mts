@@ -12,8 +12,9 @@ export function parseCopyrightNoticeForm(body: Record<string, unknown>) {
   const claimantContact = body.claimant_contact
   const claimantEmail = body.claimant_email
   const workDescription = body.work_description
-  const goodFaithBelief = body.good_faith_belief
-  const accuracyAuthorityUnderPenaltyOfPerjury = body.accuracy_authority_under_penalty_of_perjury
+  const goodFaithBelief = body.has_good_faith_belief
+  const accuracyAuthorityUnderPenaltyOfPerjury =
+    body.has_accuracy_authority_under_penalty_of_perjury
   const electronicSignature = body.electronic_signature
   assert(JURISDICTIONS.has(jurisdiction as CopyrightJurisdiction), 422, 'jurisdiction is required')
   assert(
@@ -28,11 +29,11 @@ export function parseCopyrightNoticeForm(body: Record<string, unknown>) {
     'claimant_email must be a valid email address',
   )
   assert(boundedString(workDescription, 50_000), 422, 'work_description is required')
-  assert(goodFaithBelief === true, 422, 'good_faith_belief must be accepted')
+  assert(goodFaithBelief === true, 422, 'has_good_faith_belief must be accepted')
   assert(
     accuracyAuthorityUnderPenaltyOfPerjury === true,
     422,
-    'accuracy_authority_under_penalty_of_perjury must be accepted',
+    'has_accuracy_authority_under_penalty_of_perjury must be accepted',
   )
   assert(boundedString(electronicSignature, 500), 422, 'electronic_signature is required')
   const targets = parseCopyrightTargets(body.targets)

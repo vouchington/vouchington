@@ -51,8 +51,8 @@ function makeState(overrides: Record<string, unknown> = {}) {
     topic: { id: 'topic-1', topic_type: 'rewards_program' },
     topicTypeValue: 'rewards_program',
     typeSaving: false,
-    typeAttributes: { company_id: 'company-1' },
-    typeAttributeNames: { company_id: 'Acme Corp' },
+    typeAttributes: { company_topic_id: 'company-1' },
+    typeAttributeNames: { company_topic_id: 'Acme Corp' },
     typeAttrSaving: false,
     isForeignTransaction: false,
     spendingFrequency: '',
@@ -78,7 +78,7 @@ describe('BehaviorClient', () => {
     )
     const section = screen.getByTestId('type-attrs-section')
     expect(section.dataset.topicId).toBe('topic-1')
-    expect(section.dataset.names).toBe(JSON.stringify({ company_id: 'Acme Corp' }))
+    expect(section.dataset.names).toBe(JSON.stringify({ company_topic_id: 'Acme Corp' }))
   })
 
   it('supports an alias route identifier for the loaded topic', () => {

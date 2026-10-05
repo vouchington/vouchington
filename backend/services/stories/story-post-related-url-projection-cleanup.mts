@@ -12,7 +12,7 @@ export async function cleanupStaleStoryPostRelatedUrlProjectionReceipts(
         FROM story_post_related_url_projection_receipts receipt
         WHERE receipt.post_id = $1 AND receipt.generation < $2
           AND NOT (
-            receipt.crawl_required IS TRUE AND receipt.effects_dispatched_at IS NULL
+            receipt.should_crawl IS TRUE AND receipt.effects_dispatched_at IS NULL
           )
         ORDER BY receipt.generation, receipt.url_id
         LIMIT $3

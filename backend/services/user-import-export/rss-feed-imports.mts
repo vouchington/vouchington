@@ -25,7 +25,7 @@ export async function submitRssFeedImport(
   currentUser: BasicUser,
   provenance: ContentProvenance,
   urls: string[],
-  options: { follow?: boolean } = {},
+  options: { should_follow_imported_feeds?: boolean } = {},
 ): Promise<CreateUserRssFeedImportResult> {
   const trimmedUrls = urls.flatMap(url => {
     const trimmed = url.trim()
@@ -37,9 +37,9 @@ export async function submitRssFeedImport(
     throw new UnrecoverableError(`Maximum ${MAX_IMPORT_ITEMS} URLs per import`)
   }
 
-  const follow = options.follow !== false
+  const should_follow_imported_feeds = options.should_follow_imported_feeds !== false
 
-  return createRssFeedImport(currentUser.id, provenance, trimmedUrls, follow)
+  return createRssFeedImport(currentUser.id, provenance, trimmedUrls, should_follow_imported_feeds)
 }
 
 export async function processRssFeedImportRow(
@@ -74,14 +74,14 @@ export async function processRssFeedImportRow(
   }
 
   try {
-    // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
+    // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and should_follow_imported_feeds-up side effects
     const membershipPlan = await getUserActivePlan(user.id)
     // The queue job is not the submitting request, so the feeds carry the channel and OAuth client
     // that the batch stored when the request submitted the import.
     const result = await importSingleRssFeed(user, getBatchProvenance(batch), row.input_url, {
       assertRssFeedLimit: () =>
         assertWithinContributionDailyLimit(user, membershipPlan, 'rss_feed'),
-      follow: batch.follow,
+      follow: batch.should_follow_imported_feeds,
       createSourceFromUrlImpl: options.createSourceFromUrlImpl,
     })
     await updateRssFeedImportRowCompleted(

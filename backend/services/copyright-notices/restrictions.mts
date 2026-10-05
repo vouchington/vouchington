@@ -61,13 +61,13 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
     source_kind: 'signed_in_form' | 'guest_form' | 'email' | 'staff'
     assessed_by_id: string | null
     copyright_notice_form_screening_id: string | null
-    substantially_compliant: boolean
+    is_substantially_compliant: boolean
     current_screening_authority: boolean
     has_rejected_form_review: boolean
     territorial_revoked: boolean
   }>(
     sql`/* acceptCopyrightNoticeAndImposeRestriction:lockAssessment */
-    SELECT submission.source_kind, assessment.assessed_by_id, assessment.substantially_compliant, assessment.copyright_notice_form_screening_id,
+    SELECT submission.source_kind, assessment.assessed_by_id, assessment.is_substantially_compliant, assessment.copyright_notice_form_screening_id,
       assessment.copyright_notice_form_screening_id IS NULL OR fn_current_copyright_form_screening(
         submission.id, assessment.copyright_notice_form_screening_id
       ) AS current_screening_authority,
@@ -77,7 +77,7 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
         JOIN copyright_notice_form_intake_reviews review
           ON review.copyright_notice_form_intake_id = intake.id
         WHERE intake.copyright_notice_submission_id = assessment.copyright_notice_submission_id
-          AND NOT review.accepted
+          AND NOT review.is_accepted
       ) AS has_rejected_form_review, `.append(territorialAssessmentRevokedSql)
       .append(sql` AS territorial_revoked
     FROM copyright_notice_submission_assessments assessment
@@ -96,7 +96,7 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   )
   const assessment = assessmentRows[0]
   assert(assessment, 422, 'A current notice assessment is required before restriction')
-  assert(assessment.substantially_compliant, 422, 'Copyright notice assessment is not compliant')
+  assert(assessment.is_substantially_compliant, 422, 'Copyright notice assessment is not compliant')
   assert(!assessment.has_rejected_form_review, 422, 'Copyright notice form review was rejected')
   assert(!assessment.territorial_revoked, 409, 'Territorial decision was revoked')
   assert(

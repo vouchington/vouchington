@@ -120,7 +120,7 @@ export async function processFollowNotification(data: { followeeId: string; foll
 
   if (await isUserBlockedOrMuted(data.followeeId, data.followerId)) return
 
-  const isReferralSignup = follower.referrer_id === data.followeeId
+  const isReferralSignup = follower.referrer_user_id === data.followeeId
   const createdNotifications = await createFollowNotification(
     data.followeeId,
     data.followerId,

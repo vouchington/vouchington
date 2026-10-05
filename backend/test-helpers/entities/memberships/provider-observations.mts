@@ -6,7 +6,7 @@ import { getTestProviderObservationLifecycle } from './provider-observation-life
 type AttachTestStripeProductionProviderObservationOptions = {
   membership_id: string
   membership_provider_product_id: string
-  auto_renews?: boolean
+  should_auto_renew?: boolean
   status?: 'active'
   renewal_membership_provider_product_id?: string
   renewal_effective_at?: Date
@@ -49,7 +49,7 @@ type TestMembershipProviderObservation = {
 export async function attachTestStripeProductionProviderObservation(
   options: AttachTestStripeProductionProviderObservationOptions,
 ): Promise<{
-  membership_provider_evidence_id: string
+  membership_provider_evidence_record_id: string
   membership_provider_observation_id: string
 }> {
   if (
@@ -130,17 +130,17 @@ export async function attachTestStripeProductionProviderObservation(
       )
       RETURNING id`)
   const evidence = evidenceRows[0] as { id: string }
-  const autoRenews = options.auto_renews ?? true
+  const autoRenews = options.should_auto_renew ?? true
   const { rows: observationRows } =
     await query(sql`/* attachTestStripeProductionProviderObservation: observation */
       INSERT INTO membership_provider_observations (
-        provider, environment, application_id, membership_provider_evidence_id,
+        provider, environment, application_id, membership_provider_evidence_record_id,
         membership_provider_lineage_id, membership_provider_product_id,
         membership_product_id, observed_price_minor_units, observed_price_currency_code,
         renewal_membership_provider_product_id, renewal_membership_product_id,
         renewal_price_minor_units, renewal_price_currency_code, renewal_effective_at,
         provider_revision, provider_order, source_kind,
-        effective_at, expires_at, cancelled_at, expired_at, past_due_at, paused_at, auto_renews
+        effective_at, expires_at, cancelled_at, expired_at, past_due_at, paused_at, should_auto_renew
       ) VALUES (
         'stripe', 'production', ${target.application_id}, ${evidence.id},
         ${target.membership_provider_lineage_id}, ${options.membership_provider_product_id},
@@ -160,11 +160,11 @@ export async function attachTestStripeProductionProviderObservation(
       SET membership_provider_observation_id = ${observation.id},
         cancelled_at = ${lifecycle.cancelledAt}, expired_at = ${lifecycle.expiredAt},
         past_due_at = ${lifecycle.pastDueAt}, paused_at = ${lifecycle.pausedAt},
-        auto_renews = ${autoRenews},
+        should_auto_renew = ${autoRenews},
         updated_at = CURRENT_TIMESTAMP
       WHERE membership_source_id = ${target.membership_source_id}`)
   const result = {
-    membership_provider_evidence_id: evidence.id,
+    membership_provider_evidence_record_id: evidence.id,
     membership_provider_observation_id: observation.id,
   }
   await transaction.commit()

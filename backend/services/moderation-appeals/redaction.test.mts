@@ -6,7 +6,7 @@ function makeAppeal(overrides: Partial<ModerationAppealResponse> = {}): Moderati
   return {
     id: crypto.randomUUID(),
     case_id: crypto.randomUUID(),
-    appellant_id: crypto.randomUUID(),
+    appellant_user_id: crypto.randomUUID(),
     user_warning_id: null,
     community_ban_id: null,
     post_id: null,
@@ -67,7 +67,7 @@ describe('redactModerationAppeal', () => {
     const rawJson = JSON.stringify(redactModerationAppeal(makeAppeal()))
     for (const field of [
       'case_id',
-      'appellant_id',
+      'appellant_user_id',
       'appeal_reason',
       'recommended_action',
       'ai_public_response',
@@ -92,7 +92,7 @@ describe('redactModerationAppeal', () => {
     const redacted = redactModerationAppeal(appeal)
 
     expect('case_id' in redacted).toBe(false)
-    expect('appellant_id' in redacted).toBe(false)
+    expect('appellant_user_id' in redacted).toBe(false)
     expect('appeal_reason' in redacted).toBe(false)
     expect('ai_public_response' in redacted).toBe(false)
     expect('ai_internal_response' in redacted).toBe(false)

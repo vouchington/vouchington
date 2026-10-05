@@ -29,7 +29,7 @@ describe('searchTopHashtags root visibility', () => {
         user: commenter!,
         title: `Private-root hashtag comment ${index} ${suffix}`,
         post_type: 'comment',
-        parent_id: rootPost.id,
+        parent_post_id: rootPost.id,
       })
       await createTopHashtagPostSourceForTest({
         postId: comment.id,
@@ -62,7 +62,7 @@ describe('searchTopHashtags root visibility', () => {
         user: commenter!,
         title: `Rejected-root hashtag comment ${index} ${suffix}`,
         post_type: 'comment',
-        parent_id: rootPost.id,
+        parent_post_id: rootPost.id,
       })
       await createTopHashtagPostSourceForTest({
         postId: comment.id,
@@ -96,7 +96,7 @@ describe('searchTopHashtags root visibility', () => {
         user: commenter!,
         title: `Suspended-root hashtag comment ${index} ${suffix}`,
         post_type: 'comment',
-        parent_id: rootPost.id,
+        parent_post_id: rootPost.id,
       })
       await createTopHashtagPostSourceForTest({
         postId: comment.id,

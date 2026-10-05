@@ -293,7 +293,7 @@ describe('households', () => {
     const created = await getOrCreateHousehold(user)
     const existing = await getOrCreateHousehold(user)
 
-    expect(created.owner_id).toBe(user.id)
+    expect(created.owner_user_id).toBe(user.id)
     expect(existing.id).toBe(created.id)
   })
 })

@@ -74,7 +74,7 @@ app.route('/api/v1/hostnames/:id').get(async ctx => {
   const canSeeModeration = currentUserCanFilterHostnameModeration(currentUser)
 
   const hostname = await getUrlHostnameByAnyCached(ctx.params.id!)
-  if (!hostname || (hostname.blocked && !canSeeModeration)) {
+  if (!hostname || (hostname.is_blocked && !canSeeModeration)) {
     ctx.setStatus(404)
     return ctx.json({ error: 'Hostname not found' })
   }
@@ -89,7 +89,7 @@ app.route('/api/v1/hostnames/:id').get(async ctx => {
       result => result.results,
     ),
     topic
-      ? searchRssFeeds({ topic_id: topic.id, enabled: null, limit: 25 }).then(feeds =>
+      ? searchRssFeeds({ topic_id: topic.id, is_enabled: null, limit: 25 }).then(feeds =>
           feeds.map(proxyRssFeedCoverArt),
         )
       : Promise.resolve([]),
@@ -137,22 +137,22 @@ app.route('/api/v1/hostnames/:id').patch(async (ctx: Context) => {
 
   // Blocking a hostname triggers the full blocking flow: soft-delete URL entity relations
   // and apply vote weight penalties to users who linked content from this hostname.
-  // Combining blocked:true with other fields is not allowed — it would silently ignore them.
-  if (changes.blocked === true) {
+  // Combining is_blocked:true with other fields is not allowed — it would silently ignore them.
+  if (changes.is_blocked === true) {
     ctx.assert(
       Object.keys(changes).length === 1,
       422,
-      'Cannot combine blocked:true with other fields',
+      'Cannot combine is_blocked:true with other fields',
     )
     const result = await blockHostname(currentUser.id, ctx.params.id!)
     ctx.json(result)
     return
   }
 
-  if (changes.blocked === false) {
+  if (changes.is_blocked === false) {
     await unblockHostname(currentUser.id, ctx.params.id!)
     // Remove blocked from changes so updateUrlHostname doesn't try to set it
-    const { blocked: _b, ...rest } = changes
+    const { is_blocked: _b, ...rest } = changes
     if (Object.keys(rest).length > 0) {
       await updateUrlHostname(ctx.params.id!, rest)
     }

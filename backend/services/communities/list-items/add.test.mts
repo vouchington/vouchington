@@ -102,7 +102,7 @@ describe('add', () => {
         topicId: rssTopic,
         title: `Disabled Test Feed ${random}`,
       })
-      await updateRssFeedById(feedId, { enabled: false })
+      await updateRssFeedById(feedId, { is_enabled: false })
 
       await expect(
         addCommunityListItem(owner.id, community.id, 'rss_feed', feedId),

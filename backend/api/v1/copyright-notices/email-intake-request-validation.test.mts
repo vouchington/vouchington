@@ -152,9 +152,9 @@ describe('copyright email intake request contracts', () => {
       )
       const badAttestation = await staff
         .post(url)
-        .send({ ...body, good_faith_belief: false })
+        .send({ ...body, has_good_faith_belief: false })
         .expect(422)
-      expect(badAttestation.body.message).toBe('good_faith_belief must be accepted')
+      expect(badAttestation.body.message).toBe('has_good_faith_belief must be accepted')
     })
   })
 

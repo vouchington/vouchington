@@ -156,7 +156,7 @@ describe('getPostModerationContextBatch', () => {
       const result = await getPostModerationContextBatch([postId], 'staff')
       const platform = result.get(postId)!.platform_moderation
       expect(platform).not.toBeNull()
-      expect(platform!.flagged).toBe(true)
+      expect(platform!.is_flagged).toBe(true)
       expect(Array.isArray(platform!.categories)).toBe(true)
       expect(platform!.categories).toContain('violence')
       expect(platform!.categories).toContain('hate')
@@ -168,7 +168,7 @@ describe('getPostModerationContextBatch', () => {
       const agentMods = result.get(postId)!.agent_moderations
       const mod = agentMods.find(m => m.slug === agentSlug)
       expect(mod).toBeDefined()
-      expect(mod!.flagged).toBe(true)
+      expect(mod!.is_flagged).toBe(true)
       expect(Array.isArray(mod!.categories)).toBe(true)
       expect(mod!.categories).toContain('violence')
       expect(mod!.categories).toContain('hate')
@@ -183,7 +183,7 @@ describe('getPostModerationContextBatch', () => {
       const result = await getPostModerationContextBatch([postId], 'public')
       const platform = result.get(postId)!.platform_moderation
       expect(platform).not.toBeNull()
-      expect(platform!.flagged).toBe(true)
+      expect(platform!.is_flagged).toBe(true)
       expect('categories' in platform!).toBe(false)
     })
 
@@ -191,7 +191,7 @@ describe('getPostModerationContextBatch', () => {
       const result = await getPostModerationContextBatch([postId], 'public')
       const mod = result.get(postId)!.agent_moderations.find(m => m.slug === agentSlug)
       expect(mod).toBeDefined()
-      expect(mod!.flagged).toBe(true)
+      expect(mod!.is_flagged).toBe(true)
       expect('categories' in mod!).toBe(false)
     })
 
@@ -211,7 +211,7 @@ describe('getPostModerationContextBatch', () => {
       })
       await setPostOpenAIModerationFlaggedOnly(postId, true)
       const ctx = (await getPostModerationContextBatch([postId], 'staff')).get(postId)!
-      expect(ctx.platform_moderation!.flagged).toBe(true)
+      expect(ctx.platform_moderation!.is_flagged).toBe(true)
       expect(ctx.platform_moderation!.categories).toEqual([])
     })
 
@@ -224,7 +224,7 @@ describe('getPostModerationContextBatch', () => {
       })
       await setPostOpenAIModerationResultsNoCategoryKey(postId, false)
       const ctx = (await getPostModerationContextBatch([postId], 'staff')).get(postId)!
-      expect(ctx.platform_moderation!.flagged).toBe(false)
+      expect(ctx.platform_moderation!.is_flagged).toBe(false)
       expect(ctx.platform_moderation!.categories).toEqual([])
     })
 

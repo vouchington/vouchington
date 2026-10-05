@@ -87,7 +87,7 @@ const malformed: readonly Case[] = [
     'patch',
     '/api/v1/my/identity-verification/display-preferences',
     {
-      verified_badge_visible: 'yes',
+      is_verified_badge_visible: 'yes',
     },
   ],
 ]

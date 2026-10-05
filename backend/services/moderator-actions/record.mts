@@ -40,11 +40,11 @@ export type RecordModeratorActionsInput = Omit<
   'communityRestrictionIds'
 >
 
-const INSERT_COLUMNS = `actor_id, action_type, community_id, post_id, target_user_id, report_id, review_dispute_id, moderation_appeal_id, community_application_id, topic_claim_id, report_integrity_flag_id, report_abuse_penalty_id, vote_integrity_flag_id, vote_weight_penalty_id, agent_moderation_id, agent_moderation_post_id, oauth_client_id, user_moderator_note_id, crawler_id, topic_id, operation_request_id, queue_name, scheduled_job_key, backfill_key, rss_category_text, admin_import_batch_id, reason, metadata`
+const INSERT_COLUMNS = `actor_user_id, action_type, community_id, post_id, target_user_id, report_id, review_dispute_id, moderation_appeal_id, community_application_id, topic_claim_id, report_integrity_flag_id, report_abuse_penalty_id, vote_integrity_flag_id, vote_weight_penalty_id, agent_moderation_id, agent_moderation_post_id, oauth_client_id, user_moderator_note_id, hostname_crawler_configuration_id, topic_id, operation_request_action_id, queue_name, scheduled_job_key, backfill_key, rss_category_text, admin_import_batch_id, reason, metadata`
 
 function actionRow(actorId: string | null, input: RecordModeratorActionsInput) {
   return {
-    actor_id: actorId,
+    actor_user_id: actorId,
     action_type: input.actionType,
     community_id: input.communityId ?? null,
     post_id: input.postId ?? null,
@@ -62,9 +62,9 @@ function actionRow(actorId: string | null, input: RecordModeratorActionsInput) {
     agent_moderation_post_id: input.agentModerationPostId ?? null,
     oauth_client_id: input.oauthClientId ?? null,
     user_moderator_note_id: input.userModNoteId ?? null,
-    crawler_id: input.crawlerId ?? null,
+    hostname_crawler_configuration_id: input.crawlerId ?? null,
     topic_id: input.topicId ?? null,
-    operation_request_id: input.operationRequestId ?? null,
+    operation_request_action_id: input.operationRequestId ?? null,
     queue_name: input.queueName ?? null,
     scheduled_job_key: input.scheduledJobKey ?? null,
     backfill_key: input.backfillKey ?? null,

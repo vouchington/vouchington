@@ -25,7 +25,7 @@ CREATE TABLE copyright_notice_delivery_intents (
   failed_at timestamptz,
   next_attempt_at timestamptz,
   bounced_at timestamptz,
-  ses_message_id text CHECK (ses_message_id IS NULL OR char_length(ses_message_id) BETWEEN 1 AND 1024),
+  amazon_ses_message_id text CHECK (amazon_ses_message_id IS NULL OR char_length(amazon_ses_message_id) BETWEEN 1 AND 1024),
   failure_ciphertext text CHECK (failure_ciphertext IS NULL OR char_length(failure_ciphertext) BETWEEN 1 AND 1048576),
   body_ciphertext text CHECK (body_ciphertext IS NULL OR char_length(body_ciphertext) BETWEEN 1 AND 1048576),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -51,7 +51,7 @@ CREATE TABLE copyright_notice_delivery_intents (
   CHECK (failure_ciphertext IS NULL OR state IN ('pending', 'failed')),
   CHECK ((state = 'pending' AND (delivery_attempt_count = 0 OR next_attempt_at IS NOT NULL))
     OR (state <> 'pending' AND next_attempt_at IS NULL)),
-  CHECK (ses_message_id IS NULL OR channel = 'email'),
+  CHECK (amazon_ses_message_id IS NULL OR channel = 'email'),
   CHECK (num_nonnulls(copyright_notice_id, copyright_notice_email_intake_id) = 1),
   CHECK (delivery_kind <> 'staff_information_request' OR (recipient_role = 'claimant' AND channel = 'email'
     AND recipient_user_id IS NULL AND copyright_notice_correspondence_message_id IS NOT NULL)),
@@ -85,7 +85,7 @@ CREATE INDEX idx_copyright_notice_delivery_intents__recipient_user
   WHERE recipient_user_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_delivery_intents__amazon_ses_message
-  ON copyright_notice_delivery_intents (ses_message_id) WHERE ses_message_id IS NOT NULL;
+  ON copyright_notice_delivery_intents (amazon_ses_message_id) WHERE amazon_ses_message_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_delivery_intent_transition()
@@ -151,7 +151,7 @@ COMMENT ON COLUMN copyright_notice_delivery_intents.sent_at IS 'Time the provide
 COMMENT ON COLUMN copyright_notice_delivery_intents.failed_at IS 'Time the most recent retryable transport attempt failed.';
 COMMENT ON COLUMN copyright_notice_delivery_intents.next_attempt_at IS 'Earliest retry time after a retryable transport failure; NULL for terminal states.';
 COMMENT ON COLUMN copyright_notice_delivery_intents.bounced_at IS 'Time SES reported a bounce or complaint for an accepted email.';
-COMMENT ON COLUMN copyright_notice_delivery_intents.ses_message_id IS 'SES provider identifier used to correlate delivery feedback.';
+COMMENT ON COLUMN copyright_notice_delivery_intents.amazon_ses_message_id IS 'SES provider identifier used to correlate delivery feedback.';
 COMMENT ON COLUMN copyright_notice_delivery_intents.failure_ciphertext IS 'Encrypted bounded transport failure visible to staff; retries retain the failure history through lifecycle events.';
 
 -- Current indexes for fresh schema bootstrap.

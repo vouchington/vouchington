@@ -24,7 +24,7 @@ export async function isUrlBlocked(hostname: string, options: QueryOptions = {})
     const bloomResults = await checkBloomFilters(candidates)
     if (bloomResults.every(result => result === false)) {
       const localPolicy = await getLocalHostnamePolicy(normalizedHostname, options)
-      return localPolicy.blocked
+      return localPolicy.is_blocked
     }
   }
 
@@ -35,7 +35,7 @@ export async function isUrlBlocked(hostname: string, options: QueryOptions = {})
       SELECT 1
       FROM url_hostnames
       WHERE hostname = ANY(${candidates}::text[])
-        AND blocked = TRUE
+        AND is_blocked = TRUE
     )
     OR EXISTS (
       SELECT 1

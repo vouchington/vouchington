@@ -22,7 +22,7 @@ export const COPYRIGHT_PRESERVATION_PARTIES_SQL = sql`
       SELECT submission.copyright_notice_id, hold.released_at
       FROM user_legal_preservation_holds hold
       JOIN copyright_notice_submissions submission
-        ON submission.submitted_by_user_id = hold.account_user_id
+        ON submission.submitted_by_id = hold.account_user_id
       UNION ALL
       SELECT incident.copyright_notice_id, hold.released_at
       FROM user_legal_preservation_holds hold
@@ -50,7 +50,7 @@ async function lockCopyrightRetentionPartyAccounts(
     SELECT DISTINCT party.user_id FROM (
       SELECT claimant_user_id AS user_id FROM copyright_notices WHERE id = ${noticeId}
       UNION ALL
-      SELECT submitted_by_user_id FROM copyright_notice_submissions
+      SELECT submitted_by_id FROM copyright_notice_submissions
       WHERE copyright_notice_id = ${noticeId}
       UNION ALL
       SELECT account_user_id FROM copyright_repeat_infringer_incidents

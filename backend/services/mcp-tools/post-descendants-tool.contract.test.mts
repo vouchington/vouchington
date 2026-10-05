@@ -42,7 +42,7 @@ function ids(result: DescendantsResult) {
 }
 
 async function comment(user: PrivateUser, parentId: string) {
-  return createTestPost({ user, post_type: 'comment', parent_id: parentId })
+  return createTestPost({ user, post_type: 'comment', parent_post_id: parentId })
 }
 
 describe('get_post_descendants — real DB', () => {
@@ -155,7 +155,7 @@ describe('get_post_descendants — real DB', () => {
       const { body, text } = await call(author, { post_id: root.id })
 
       expect(ids(body)).toEqual([reply.id])
-      expect(body.descendants?.[0]).toMatchObject({ parent_id: removed.id })
+      expect(body.descendants?.[0]).toMatchObject({ parent_post_id: removed.id })
       expect(text).not.toContain(removed.slug)
     })
 
@@ -164,7 +164,7 @@ describe('get_post_descendants — real DB', () => {
       const anonymous = await createTestPost({
         user: author,
         post_type: 'comment',
-        parent_id: root.id,
+        parent_post_id: root.id,
         is_anonymous: true,
       })
 

@@ -5,7 +5,7 @@ import { HouseholdSectionView } from '@/components/my/household-section'
 import type { HouseholdSection } from '@/types/my'
 
 const owner: HouseholdSection = {
-  household: { id: 'household-owned', owner_id: 'user-1', updated_at: '2026-07-02' },
+  household: { id: 'household-owned', owner_user_id: 'user-1', updated_at: '2026-07-02' },
   isOwner: true,
   membershipLoadError: false,
   membershipPageInfo: {
@@ -31,7 +31,7 @@ const owner: HouseholdSection = {
 
 const shared: HouseholdSection = {
   ...owner,
-  household: { id: 'household-shared', owner_id: 'user-3', updated_at: '2026-07-01' },
+  household: { id: 'household-shared', owner_user_id: 'user-3', updated_at: '2026-07-01' },
   isOwner: false,
   memberships: [
     {

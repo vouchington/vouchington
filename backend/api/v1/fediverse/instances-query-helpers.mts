@@ -18,7 +18,7 @@ export type FediverseInstancesQuery = {
   after?: unknown
   limit?: unknown
   software?: unknown
-  open_registrations?: unknown
+  is_open_for_registrations?: unknown
   integration_status?: unknown
 }
 
@@ -28,7 +28,7 @@ export const fediverseInstancesQuery = defineQueryContract({
   after: queryString(),
   limit: queryInteger({ minimum: 1, maximum: 100, default: 25 }),
   software: queryString(),
-  open_registrations: queryBoolean(),
+  is_open_for_registrations: queryBoolean(),
   integration_status: queryEnum(INTEGRATION_STATUSES),
 })
 
@@ -46,8 +46,8 @@ export function prepareFediverseInstanceQuery(
   const prepared = prepareQueryForValidation(raw, fediverseInstancesQuery.queryContract)
   if (raw.limit !== undefined) prepared.limit = limit
   if (raw.software !== undefined) prepared.software = stringFromUnknown(raw.software)
-  if (raw.open_registrations !== undefined)
-    prepared.open_registrations = parseBooleanish(raw.open_registrations)
+  if (raw.is_open_for_registrations !== undefined)
+    prepared.is_open_for_registrations = parseBooleanish(raw.is_open_for_registrations)
   return Object.fromEntries(
     Object.entries(prepared).filter(
       ([key, value]) =>

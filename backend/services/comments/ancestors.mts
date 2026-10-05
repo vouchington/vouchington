@@ -25,17 +25,17 @@ export async function getCommentAncestorsByAny(
 export function buildCommentAncestorsQuery(idSql: SQLStatement): SQLStatement {
   const query = sql`/* buildCommentAncestorsQuery */
     WITH RECURSIVE ancestors AS (
-      SELECT posts.id, posts.post_type, posts.root_id, posts.parent_id, posts.deleted_at, posts.created_at, posts.votes_score_sort, 0 AS depth
+      SELECT posts.id, posts.post_type, posts.root_post_id, posts.parent_post_id, posts.deleted_at, posts.created_at, posts.votes_score_sort, 0 AS depth
       FROM posts WHERE posts.id = `
   query.append(idSql)
   query.append(sql`
       UNION ALL
-      SELECT posts.id, posts.post_type, posts.root_id, posts.parent_id, posts.deleted_at, posts.created_at, posts.votes_score_sort, ancestors.depth + 1
-      FROM posts JOIN ancestors ON ancestors.parent_id = posts.id
+      SELECT posts.id, posts.post_type, posts.root_post_id, posts.parent_post_id, posts.deleted_at, posts.created_at, posts.votes_score_sort, ancestors.depth + 1
+      FROM posts JOIN ancestors ON ancestors.parent_post_id = posts.id
       WHERE ancestors.post_type = 'comment'
     )
-    SELECT 'post' AS __entity_type, ancestors.id, ancestors.post_type, ancestors.root_id,
-      ancestors.parent_id, ancestors.deleted_at, ancestors.created_at, ancestors.depth,
+    SELECT 'post' AS __entity_type, ancestors.id, ancestors.post_type, ancestors.root_post_id,
+      ancestors.parent_post_id, ancestors.deleted_at, ancestors.created_at, ancestors.depth,
       ancestors.votes_score_sort AS vote_score
     FROM ancestors ORDER BY ancestors.depth DESC
   `)

@@ -9,7 +9,7 @@ export function startMyIdentityVerificationCheckout(): Promise<{ url: string }> 
 }
 
 export function updateMyIdentityVerificationDisplayPreferences(body: {
-  verified_badge_visible?: boolean
+  is_verified_badge_visible?: boolean
   public_verified_name_display?: PublicVerifiedNameDisplay
 }): Promise<IdentityVerificationResponseBody> {
   return clientApi.patch<IdentityVerificationResponseBody>(

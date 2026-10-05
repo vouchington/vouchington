@@ -13,7 +13,7 @@ type ToolResult =
   | {
       success: true
       topic_id: string
-      company_id: string | null
+      company_topic_id: string | null
       enabled_at: string | null
       disabled_at: string | null
     }
@@ -45,7 +45,11 @@ const tool: Tool<ToolArgs, ToolResult> = {
     api: [{ method: 'GET', path: '/api/v1/topics/:idOrSlug/referral-program' }],
     outputSchema: foundOrNotFoundSchema({
       topic_id: { type: 'string' },
-      ...pickProperties('ReferralProgramAttributes', ['company_id', 'enabled_at', 'disabled_at']),
+      ...pickProperties('ReferralProgramAttributes', [
+        'company_topic_id',
+        'enabled_at',
+        'disabled_at',
+      ]),
     }),
   },
   function:
@@ -61,7 +65,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
       return {
         success: true,
         topic_id: topic.id,
-        company_id: attributes.company_id ?? null,
+        company_topic_id: attributes.company_topic_id ?? null,
         enabled_at: optionalIso(attributes.enabled_at),
         disabled_at: optionalIso(attributes.disabled_at),
       }

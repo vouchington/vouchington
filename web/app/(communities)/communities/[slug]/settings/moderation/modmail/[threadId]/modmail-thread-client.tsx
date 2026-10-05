@@ -142,10 +142,10 @@ export function ModmailThreadClient({
               })}
             </p>
           )}
-          {thread.assigned_mod_id && (
+          {thread.assigned_moderator_user_id && (
             <p>
               {t('extracted.threadid.modmailThreadClient.assignedToAssignedmodid_3baaa2ab', {
-                assignedModId: thread.assigned_mod_id,
+                assignedModId: thread.assigned_moderator_user_id,
               })}
             </p>
           )}

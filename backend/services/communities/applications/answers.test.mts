@@ -15,30 +15,37 @@ import { getPendingApplicationForUser } from './pending.mts'
 import { getApplicationQuestions, setApplicationQuestions } from './questions.mts'
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '../types.mts'
-
 describe('application answers', () => {
   async function ownedCommunity(owner: PrivateUser): Promise<Community> {
     const community = await insertTestCommunity({ createdById: owner.id, visibility: 'private' })
     await insertTestCommunityMember({ communityId: community.id, userId: owner.id, role: 'owner' })
     return community
   }
-
   it('reconstructs optional null, empty, false, and ordered selections', async () => {
     const owner = await createTestUser()
     const applicant = await createTestUser()
     const community = await ownedCommunity(owner)
     const questions = await setApplicationQuestions(owner.id, community.id, [
-      { question: 'Short', field_type: 'short_text', required: false },
-      { question: 'Long', field_type: 'long_text', required: false },
-      { question: 'One', field_type: 'single_select', options: ['Alpha', 'Beta'], required: false },
-      { question: 'Many', field_type: 'multi_select', options: ['Alpha', 'Beta'], required: false },
-      { question: 'Check', field_type: 'checkbox', required: false },
-      { question: 'Skipped', field_type: 'short_text', required: false },
+      { question: 'Short', field_type: 'short_text', is_required: false },
+      { question: 'Long', field_type: 'long_text', is_required: false },
+      {
+        question: 'One',
+        field_type: 'single_select',
+        options: ['Alpha', 'Beta'],
+        is_required: false,
+      },
+      {
+        question: 'Many',
+        field_type: 'multi_select',
+        options: ['Alpha', 'Beta'],
+        is_required: false,
+      },
+      { question: 'Check', field_type: 'checkbox', is_required: false },
+      { question: 'Skipped', field_type: 'short_text', is_required: false },
     ])
     const byQuestion = new Map(questions.map(question => [question.question, question]))
     expect(byQuestion.get('One')?.options).toEqual(['Alpha', 'Beta'])
     expect(byQuestion.get('Short')?.options).toBeNull()
-
     const answers = {
       [byQuestion.get('Short')!.id]: '',
       [byQuestion.get('Long')!.id]: null,
@@ -52,21 +59,19 @@ describe('application answers', () => {
     const listed = await searchApplications(community.id)
     expect(listed.results[0]?.answers).toEqual(answers)
   })
-
   it('stores one row per answered question, keeps explicit null, and cascades with the application', async () => {
     const owner = await createTestUser()
     const applicant = await createTestUser()
     const community = await ownedCommunity(owner)
     const [short, long, skipped] = await setApplicationQuestions(owner.id, community.id, [
-      { question: 'Short', field_type: 'short_text', required: false },
-      { question: 'Long', field_type: 'long_text', required: false },
-      { question: 'Skipped', field_type: 'short_text', required: false },
+      { question: 'Short', field_type: 'short_text', is_required: false },
+      { question: 'Long', field_type: 'long_text', is_required: false },
+      { question: 'Skipped', field_type: 'short_text', is_required: false },
     ])
     const application = await createApplication(applicant.id, WEB_PROVENANCE, community.id, {
       [short!.id]: 'text',
       [long!.id]: null,
     })
-
     expect(await listTestCommunityApplicationAnswers(application.id)).toEqual(
       [
         { question_id: short!.id, value: 'text' },
@@ -74,18 +79,21 @@ describe('application answers', () => {
       ].toSorted((a, b) => a.question_id.localeCompare(b.question_id)),
     )
     expect(application.answers).not.toHaveProperty(skipped!.id)
-
     await deleteTestCommunityApplication(application.id)
     expect(await listTestCommunityApplicationAnswers(application.id)).toEqual([])
   })
-
-  it('preserves multi-select input order and required checkbox false', async () => {
+  it('preserves multi-select input order and is_required checkbox false', async () => {
     const owner = await createTestUser()
     const applicant = await createTestUser()
     const community = await ownedCommunity(owner)
     const questions = await setApplicationQuestions(owner.id, community.id, [
-      { question: 'Many', field_type: 'multi_select', options: ['Alpha', 'Beta'], required: false },
-      { question: 'Check', field_type: 'checkbox', required: true },
+      {
+        question: 'Many',
+        field_type: 'multi_select',
+        options: ['Alpha', 'Beta'],
+        is_required: false,
+      },
+      { question: 'Check', field_type: 'checkbox', is_required: true },
     ])
     const many = questions[0]!
     const check = questions[1]!
@@ -98,21 +106,19 @@ describe('application answers', () => {
       [check.id]: false,
     })
   })
-
   it('keeps the original option label after the question is replaced', async () => {
     const owner = await createTestUser()
     const applicant = await createTestUser()
     const community = await ownedCommunity(owner)
     const [original] = await setApplicationQuestions(owner.id, community.id, [
-      { question: 'Pick one', field_type: 'single_select', options: ['Legacy'], required: true },
+      { question: 'Pick one', field_type: 'single_select', options: ['Legacy'], is_required: true },
     ])
     const application = await createApplication(applicant.id, WEB_PROVENANCE, community.id, {
       [original!.id]: 'Legacy',
     })
     await setApplicationQuestions(owner.id, community.id, [
-      { question: 'New', field_type: 'short_text', required: false },
+      { question: 'New', field_type: 'short_text', is_required: false },
     ])
-
     expect(
       (await getApplicationQuestions(community.id)).map(question => question.question),
     ).toEqual(['New'])
@@ -124,7 +130,7 @@ describe('application answers', () => {
     const applicant = await createTestUser()
     const community = await ownedCommunity(owner)
     await setApplicationQuestions(owner.id, community.id, [
-      { question: 'Many', field_type: 'multi_select', options: ['Alpha'], required: false },
+      { question: 'Many', field_type: 'multi_select', options: ['Alpha'], is_required: false },
     ])
     const [question] = await getApplicationQuestions(community.id)
 
@@ -183,10 +189,10 @@ describe('application answers', () => {
     const applicant = await createTestUser()
     const community = await ownedCommunity(owner)
     const questions = await setApplicationQuestions(owner.id, community.id, [
-      { question: 'Short', field_type: 'short_text', required: true },
-      { question: 'Check', field_type: 'checkbox', required: false },
-      { question: 'One', field_type: 'single_select', options: ['Alpha'], required: false },
-      { question: 'Many', field_type: 'multi_select', options: ['Alpha'], required: false },
+      { question: 'Short', field_type: 'short_text', is_required: true },
+      { question: 'Check', field_type: 'checkbox', is_required: false },
+      { question: 'One', field_type: 'single_select', options: ['Alpha'], is_required: false },
+      { question: 'Many', field_type: 'multi_select', options: ['Alpha'], is_required: false },
     ])
     const byQuestion = new Map(questions.map(question => [question.question, question]))
     const shortId = byQuestion.get('Short')!.id
@@ -214,13 +220,13 @@ describe('application answers', () => {
       createApplication(applicant.id, WEB_PROVENANCE, community.id, {}),
     ).rejects.toMatchObject({
       status: 422,
-      message: 'Answer required for question: Short',
+      message: 'Answer is_required for question: Short',
     })
     await expect(
       createApplication(applicant.id, WEB_PROVENANCE, community.id, { [shortId]: '' }),
     ).rejects.toMatchObject({
       status: 422,
-      message: 'Answer required for question: Short',
+      message: 'Answer is_required for question: Short',
     })
     await expect(
       createApplication(applicant.id, WEB_PROVENANCE, community.id, { [shortId]: 1 }),

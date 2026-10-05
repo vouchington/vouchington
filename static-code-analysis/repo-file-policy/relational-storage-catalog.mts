@@ -86,6 +86,7 @@ export const ALLOWED_OWN_PRIMARY_UUID = new Set([
   'post_publication_topic_alias_identities.id',
   'retained_api_key_identities.id',
   'retained_image_identities.id',
+  'retained_membership_identities.id',
   'retained_post_identities.id',
   'retained_rss_feed_item_identities.id',
   'retained_topic_identities.id',

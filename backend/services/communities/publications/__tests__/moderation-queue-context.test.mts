@@ -103,7 +103,7 @@ describe('searchCommunityModerationQueue — post_moderation_context', () => {
       topicName: `PMC Q Topic ${suffix}`,
       topicSlug,
     })
-    expect(ctx.platform_moderation!.flagged).toBe(true)
+    expect(ctx.platform_moderation!.is_flagged).toBe(true)
     expect(Array.isArray(ctx.platform_moderation!.categories)).toBe(true)
     expect(ctx.platform_moderation!.categories).toContain('violence')
     const agentMod = ctx.agent_moderations.find(moderation => moderation.slug === agentSlug)
@@ -127,11 +127,11 @@ describe('searchCommunityModerationQueue — post_moderation_context', () => {
       topicName: `PMC Q Member Topic ${suffix}`,
       topicSlug,
     })
-    expect(ctx.platform_moderation!.flagged).toBe(true)
+    expect(ctx.platform_moderation!.is_flagged).toBe(true)
     // Public tier: no categories key
     expect('categories' in ctx.platform_moderation!).toBe(false)
     const agentMod = ctx.agent_moderations.find(moderation => moderation.slug === agentSlug)
-    expect(agentMod!.flagged).toBe(true)
+    expect(agentMod!.is_flagged).toBe(true)
     expect('categories' in agentMod!).toBe(false)
     // agent_added_tags still present at public tier
     expect(ctx.agent_added_tags).toContain(topicSlug)

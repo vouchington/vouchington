@@ -5,7 +5,7 @@ export type AuthorizationRequestRow = {
   client_id: string
   user_id: string
   redirect_uri: string
-  state: string
+  client_state: string
   resource: string
   scopes: ApiScope[]
   client_scopes: ApiScope[]

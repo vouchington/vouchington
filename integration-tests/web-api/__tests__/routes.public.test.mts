@@ -50,8 +50,8 @@ describe('routes — public and direct', () => {
     const hostname = `web-api-pub-${randomUUID()}.example.com`
     hostnameId = await insertTestUrlHostname({
       hostname,
-      blocked: false,
-      crawlable: true,
+      is_blocked: false,
+      is_crawlable: true,
     })
     await insertTestUrl({
       url: `https://${hostname}/path`,

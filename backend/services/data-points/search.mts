@@ -29,7 +29,7 @@ export async function searchDataPoints(
       posts.data_point_vertical,
       posts.structured_data
     FROM posts
-    JOIN posts root_post ON root_post.id = COALESCE(posts.root_id, posts.id)
+    JOIN posts root_post ON root_post.id = COALESCE(posts.root_post_id, posts.id)
     WHERE posts.post_type = 'data_point'
       AND `
   query.append(buildPublicPostEligibilityFilter('posts', 'root_post'))

@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS classifier_runs (
     OCTET_LENGTH(configuration_sha256) = 32
     AND configuration_sha256 = digest(configuration_json::text, 'sha256')
   ),
-  shared_actor_id UUID NOT NULL REFERENCES users (id) ON DELETE RESTRICT,
+  shared_actor_user_id UUID NOT NULL REFERENCES users (id) ON DELETE RESTRICT,
   community_identity_id UUID REFERENCES post_publication_community_identities (id) ON DELETE RESTRICT,
   decision_batch_id UUID,
   provider_attempts_started INTEGER NOT NULL DEFAULT 0 CHECK (provider_attempts_started >= 0),
@@ -114,8 +114,9 @@ CREATE INDEX IF NOT EXISTS idx_classifier_runs__post
   ON classifier_runs (post_id, id) WHERE post_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_classifier_runs__rss_feed_item
   ON classifier_runs (rss_feed_item_id, id) WHERE rss_feed_item_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_classifier_runs__shared_actor
-  ON classifier_runs (shared_actor_id);
+  ON classifier_runs (shared_actor_user_id);
 CREATE INDEX IF NOT EXISTS idx_classifier_runs__community_identity
   ON classifier_runs (community_identity_id, id) WHERE community_identity_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_classifier_runs__recoverable
@@ -206,7 +207,7 @@ CREATE INDEX IF NOT EXISTS idx_classifier_run_candidates__rss_feed_item
 CREATE TABLE IF NOT EXISTS post_classifier_local_outcomes (
   run_id UUID NOT NULL REFERENCES classifier_runs (id) ON DELETE CASCADE,
   local_topic_id UUID NOT NULL REFERENCES topics (id) ON DELETE CASCADE,
-  flagged BOOLEAN NOT NULL,
+  is_flagged BOOLEAN NOT NULL,
   reason TEXT NOT NULL CHECK (btrim(reason) <> ''),
   confidence_score DOUBLE PRECISION NOT NULL CHECK (confidence_score BETWEEN 0 AND 1),
   confidence_threshold DOUBLE PRECISION NOT NULL CHECK (confidence_threshold BETWEEN 0 AND 1),
@@ -233,7 +234,7 @@ COMMENT ON COLUMN classifier_runs.configuration_json IS
   'PostgreSQL-canonical JSONB replay envelope preserving question array order; relational facts are materialized in sibling typed columns.';
 COMMENT ON COLUMN classifier_runs.configuration_sha256 IS
   'SHA256 of the PostgreSQL JSONB text representation, identifying the exact replay configuration.';
-COMMENT ON COLUMN classifier_runs.shared_actor_id IS
+COMMENT ON COLUMN classifier_runs.shared_actor_user_id IS
   'Shared classifier system user attributing automatic topic votes and tags.';
 COMMENT ON COLUMN classifier_runs.community_identity_id IS
   'Concrete retained community provenance identity for post subjects; its live community link may be cleared on deletion.';
@@ -296,7 +297,7 @@ COMMENT ON COLUMN post_classifier_local_outcomes.run_id IS
   'Run that produced this local detector outcome; the outcome is removed with the run.';
 COMMENT ON COLUMN post_classifier_local_outcomes.local_topic_id IS
   'Concrete local detector topic relationship the outcome applies to; the outcome is removed with the topic.';
-COMMENT ON COLUMN post_classifier_local_outcomes.flagged IS
+COMMENT ON COLUMN post_classifier_local_outcomes.is_flagged IS
   'Local detector decision retained unchanged for retry-safe topic application.';
 COMMENT ON COLUMN post_classifier_local_outcomes.reason IS
   'Explanation returned by the local AI-generated detector.';

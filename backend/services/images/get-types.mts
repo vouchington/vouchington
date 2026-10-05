@@ -14,7 +14,7 @@ export type ImageLookupRow = {
   quarantined_at: Date | null
   quarantine_s3_key: string | null
   openai_omni_moderation_results: unknown | null
-  openai_omni_moderation_flagged: boolean | null
+  is_flagged_by_openai_omni_moderation: boolean | null
   openai_omni_moderation_created_at: Date | null
 }
 

@@ -13,7 +13,7 @@ export async function countSesBounceEventsBySesMessageId(sesMessageId: string): 
   const { rows } = await read(sql`/* countSesBounceEventsBySesMessageId */
     SELECT count(*)::int AS count
     FROM amazon_ses_bounce_events
-    WHERE ses_message_id = ${sesMessageId}
+    WHERE amazon_ses_message_id = ${sesMessageId}
   `)
   return (rows[0]?.count as number | undefined) ?? 0
 }

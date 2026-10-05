@@ -32,7 +32,7 @@ export function withConcurrentCommunityReviewDisableForTest<T>(
     'lockDelegatedPostCommunity',
     async query => {
       await query(sql`/* withConcurrentCommunityReviewDisableForTest */
-        UPDATE communities SET allow_review_posts = false WHERE id = ${communityId}`)
+        UPDATE communities SET should_allow_review_posts = false WHERE id = ${communityId}`)
     },
   )
 }

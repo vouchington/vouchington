@@ -33,7 +33,7 @@ export function appendBaseFilters(
     const viewerEligibility = sql`EXISTS (
       SELECT 1
       FROM posts root_post
-      WHERE root_post.id = COALESCE(posts.root_id, posts.id)
+      WHERE root_post.id = COALESCE(posts.root_post_id, posts.id)
         AND `
     viewerEligibility.append(
       buildViewerPostDiscoveryEligibilityFilter('posts', 'root_post', {
@@ -47,7 +47,7 @@ export function appendBaseFilters(
     const publicEligibility = sql`EXISTS (
       SELECT 1
       FROM posts root_post
-      WHERE root_post.id = COALESCE(posts.root_id, posts.id)
+      WHERE root_post.id = COALESCE(posts.root_post_id, posts.id)
         AND `
     publicEligibility.append(buildPublicPostEligibilityFilter('posts', 'root_post')).append(sql`
     )`)

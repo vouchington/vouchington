@@ -96,7 +96,7 @@ describe('POST /api/v1/reports/:id/judgements', () => {
     expect(history).toHaveLength(2)
     expect(history[0]).toMatchObject({ metadata: { phase: 'requested' } })
     expect(history[1]).toMatchObject({
-      operation_request_id: history[0]!.id,
+      operation_request_action_id: history[0]!.id,
       metadata: { phase: 'finished', outcome: 'succeeded' },
     })
   })

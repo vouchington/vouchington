@@ -27,7 +27,7 @@ function buildHasRelatedPostsFilter(currentUserId?: string, isAdministrator = fa
       SELECT 1
       FROM "relation__post__related__url" rel
       JOIN posts ON posts.id = rel.subject_id
-      JOIN posts root_post ON root_post.id = COALESCE(posts.root_id, posts.id)
+      JOIN posts root_post ON root_post.id = COALESCE(posts.root_post_id, posts.id)
       WHERE rel.object_id = rss_feed_items.url_id
         AND rel.deleted_at IS NULL
         AND rel.votes_score_net > 0
@@ -37,7 +37,7 @@ function buildHasRelatedPostsFilter(currentUserId?: string, isAdministrator = fa
     ) OR EXISTS (
       SELECT 1
       FROM posts
-      JOIN posts root_post ON root_post.id = COALESCE(posts.root_id, posts.id)
+      JOIN posts root_post ON root_post.id = COALESCE(posts.root_post_id, posts.id)
       WHERE posts.post_type = 'link'
         AND posts.url_id = rss_feed_items.url_id
         AND `)

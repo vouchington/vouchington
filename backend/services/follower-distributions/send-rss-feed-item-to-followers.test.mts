@@ -34,7 +34,7 @@ describe('sendRssFeedItemToFollowers', () => {
     const notification = await getNotificationById(chunk.notificationsToDeliver[0]!.notificationId)
 
     expect(notification?.delivery_type).toBe('manual_send')
-    expect(notification?.sent_by_user_id).toBe(sender.id)
+    expect(notification?.sent_by_id).toBe(sender.id)
     expect(notification?.rss_feed_item_id).toBe(item.id)
   })
 

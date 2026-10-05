@@ -9,7 +9,7 @@ import { COPYRIGHT_PRESERVATION_PARTIES_SQL } from './retention-erasure-preserva
  * `blocked` collects every case with: open staff work (the staff queue's own rule, so an
  * undecided intake, pending restriction review, open appeal, failed media action or pending
  * enforcement counts), an open counter-notice or restoration deadline, a restriction still in
- * force, an open qualifying court or CCB hold, an operative repeat-infringer incident, an open
+ * force, an open qualifying court or CCB hold, an is_operative repeat-infringer incident, an open
  * legal-process preservation hold on any account that is a party to the case, an unfinished
  * delivery, or a guest capability that can still file. A case whose only queue item is a failed
  * or bounced delivery is not blocked: that item has no staff action that clears it, so it would
@@ -39,7 +39,7 @@ export function copyrightRetentionEligibleSql(now: Date, cutoff: Date): SQLState
       JOIN copyright_notice_legal_hold_assessments hold
         ON hold.copyright_notice_submission_id = submission.id
       WHERE submission.kind = 'court_or_ccb_hold'
-        AND hold.from_original_claimant AND hold.same_material
+        AND hold.is_from_original_claimant AND hold.is_same_material
         AND hold.proceeding_kind IS NOT NULL AND hold.commenced_at IS NOT NULL
         AND hold.received_by_designated_agent_at IS NOT NULL
         AND NOT EXISTS (
@@ -47,7 +47,7 @@ export function copyrightRetentionEligibleSql(now: Date, cutoff: Date): SQLState
           WHERE resolution.copyright_notice_legal_hold_assessment_id = hold.id
         )
       UNION ALL
-      SELECT copyright_notice_id FROM copyright_repeat_infringer_incidents WHERE operative
+      SELECT copyright_notice_id FROM copyright_repeat_infringer_incidents WHERE is_operative
       UNION ALL
       SELECT notice_id FROM preservation WHERE released_at IS NULL
       UNION ALL

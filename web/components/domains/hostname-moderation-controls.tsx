@@ -41,12 +41,12 @@ export function HostnameModerationControls({
     useHostnameModerationState({ hostnameId, blocked, crawlable, linkRelFollow })
   const isBusy = isSubmitting || isPending
 
-  async function handleToggle(field: 'crawlable' | 'link_rel_follow', value: boolean) {
+  async function handleToggle(field: 'is_crawlable' | 'should_follow_link_rel', value: boolean) {
     if (isBusy) return
     setIsSubmitting(true)
     try {
       await updateHostname(hostnameId, { [field]: value })
-      if (field === 'crawlable') setCrawlable(value)
+      if (field === 'is_crawlable') setCrawlable(value)
       else setLinkFollow(value)
       startTransition(() => refresh())
       toast.success(t('extracted.domains.hostnameModerationControls.hostnameUpdated_f8ec2f41'))
@@ -61,7 +61,7 @@ export function HostnameModerationControls({
     if (isBusy) return
     setIsSubmitting(true)
     try {
-      await updateHostname(hostnameId, { blocked: value })
+      await updateHostname(hostnameId, { is_blocked: value })
       setBlocked(value)
       startTransition(() => refresh())
       toast.success(
@@ -163,7 +163,7 @@ export function HostnameModerationControls({
               data-pw='hostname-crawlable-switch'
               checked={isCrawlable}
               disabled={isBusy}
-              onCheckedChange={v => handleToggle('crawlable', v)}
+              onCheckedChange={v => handleToggle('is_crawlable', v)}
               aria-label={t('extracted.domains.hostnameModerationControls.crawlable_8e55a03f')}
             />
           </dd>
@@ -177,7 +177,7 @@ export function HostnameModerationControls({
               data-pw='hostname-link-rel-follow-switch'
               checked={isLinkFollow}
               disabled={isBusy}
-              onCheckedChange={v => handleToggle('link_rel_follow', v)}
+              onCheckedChange={v => handleToggle('should_follow_link_rel', v)}
               aria-label={t('extracted.domains.hostnameModerationControls.linkRelFollow_da993ba6')}
             />
           </dd>

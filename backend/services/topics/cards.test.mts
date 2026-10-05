@@ -52,14 +52,14 @@ describe('cards', () => {
     } as unknown as Topic
 
     const attributes = await updateCardAttributes(adminUser, topic, {
-      bank_id: bankTopicId,
-      brand_id: brandTopicId,
+      bank_topic_id: bankTopicId,
+      brand_topic_id: brandTopicId,
       annual_fee: { amount: 9500, currency: 'usd' },
     })
 
     assert.ok(attributes)
-    assert.equal(attributes.bank_id, bankTopicId)
-    assert.equal(attributes.brand_id, brandTopicId)
+    assert.equal(attributes.bank_topic_id, bankTopicId)
+    assert.equal(attributes.brand_topic_id, brandTopicId)
     assert.deepEqual(attributes.annual_fee, { amount: 9500, currency: 'usd' })
   })
 
@@ -72,8 +72,8 @@ describe('cards', () => {
     const attributes = await getCardAttributes(topic)
 
     assert.ok(attributes)
-    assert.equal(attributes.bank_id, bankTopicId)
-    assert.equal(attributes.brand_id, brandTopicId)
+    assert.equal(attributes.bank_topic_id, bankTopicId)
+    assert.equal(attributes.brand_topic_id, brandTopicId)
     assert.deepEqual(attributes.annual_fee, { amount: 9500, currency: 'usd' })
   })
 
@@ -88,8 +88,8 @@ describe('cards', () => {
     })
 
     assert.ok(attributes)
-    assert.equal(attributes.bank_id, bankTopicId)
-    assert.equal(attributes.brand_id, brandTopicId)
+    assert.equal(attributes.bank_topic_id, bankTopicId)
+    assert.equal(attributes.brand_topic_id, brandTopicId)
     assert.deepEqual(attributes.annual_fee, { amount: 550, currency: 'jpy' })
   })
 
@@ -100,13 +100,13 @@ describe('cards', () => {
     } as unknown as Topic
 
     const attributes = await updateCardAttributes(adminUser, topic, {
-      bank_id: null,
+      bank_topic_id: null,
       annual_fee: null,
     })
 
     assert.ok(attributes)
-    assert.equal(attributes.bank_id, null)
-    assert.equal(attributes.brand_id, brandTopicId)
+    assert.equal(attributes.bank_topic_id, null)
+    assert.equal(attributes.brand_topic_id, brandTopicId)
     assert.equal(attributes.annual_fee, null)
   })
 
@@ -153,13 +153,13 @@ describe('cards', () => {
     const attributes = await updateCardAttributes(adminUser, topic, {})
 
     assert.ok(attributes)
-    assert.equal(attributes.brand_id, brandTopicId)
+    assert.equal(attributes.brand_topic_id, brandTopicId)
   })
 
   it.each([
     ['card_topics_topic_id_fkey', 404, 'Not found'],
-    ['card_topics_bank_id_fkey', 422, 'Invalid bank_id'],
-    ['card_topics_brand_id_fkey', 422, 'Invalid brand_id'],
+    ['card_topics_bank_id_fkey', 422, 'Invalid bank_topic_id'],
+    ['card_topics_brand_id_fkey', 422, 'Invalid brand_topic_id'],
   ])('maps the %s race to a precise domain error', async (constraint, status, message) => {
     await assert.rejects(
       mapCardAttributeReferenceError(() =>

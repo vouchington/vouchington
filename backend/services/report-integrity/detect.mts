@@ -11,7 +11,7 @@ import {
 export type MassReportCampaignResult = {
   flagged: boolean
   reporter_count: number
-  new_account_reporter_pct: number
+  new_account_reporter_percent: number
   /**
    * The exact reporters that formed this flag, captured at detection time. They are stored
    * as `report_integrity_flag_reporters` rows, and the penalty path penalizes precisely this
@@ -22,7 +22,7 @@ export type MassReportCampaignResult = {
   details: {
     reporter_count: number
     new_account_reporter_count: number
-    new_account_reporter_pct: number
+    new_account_reporter_percent: number
     threshold: number
     window_minutes: number
     new_account_age_days: number
@@ -43,12 +43,12 @@ export async function detectMassReportCampaign(
   const empty: MassReportCampaignResult = {
     flagged: false,
     reporter_count: 0,
-    new_account_reporter_pct: 0,
+    new_account_reporter_percent: 0,
     reporter_user_ids: [],
     details: {
       reporter_count: 0,
       new_account_reporter_count: 0,
-      new_account_reporter_pct: 0,
+      new_account_reporter_percent: 0,
       threshold: MASS_REPORT_THRESHOLD,
       window_minutes: MASS_REPORT_WINDOW_MINUTES,
       new_account_age_days: NEW_ACCOUNT_AGE_DAYS,
@@ -95,12 +95,12 @@ export async function detectMassReportCampaign(
   return {
     flagged: reporterCount >= MASS_REPORT_THRESHOLD,
     reporter_count: reporterCount,
-    new_account_reporter_pct: newAccountReporterPct,
+    new_account_reporter_percent: newAccountReporterPct,
     reporter_user_ids: reporterUserIds,
     details: {
       reporter_count: reporterCount,
       new_account_reporter_count: newAccountReporterCount,
-      new_account_reporter_pct: newAccountReporterPct,
+      new_account_reporter_percent: newAccountReporterPct,
       threshold: MASS_REPORT_THRESHOLD,
       window_minutes: MASS_REPORT_WINDOW_MINUTES,
       new_account_age_days: NEW_ACCOUNT_AGE_DAYS,

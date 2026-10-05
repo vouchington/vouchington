@@ -41,7 +41,7 @@ app.route('/api/v1/hostnames/compare').get(async (ctx: Context) => {
   const hostnameResults = await getUrlHostnameByAnyCachedBatch([...new Set(ids)])
   const hostnames = hostnameResults.flatMap(h => {
     if (!h) return []
-    if (h.blocked && !canSeeModeration) return []
+    if (h.is_blocked && !canSeeModeration) return []
     return [canSeeModeration ? stripHostnameElectionFields(h) : toPublicViewHostname(h)]
   })
 

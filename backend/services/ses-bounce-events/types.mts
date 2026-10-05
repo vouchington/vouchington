@@ -6,9 +6,9 @@ export interface CreateSesBounceEventInput {
   bounce_type?: SesBounceType | null
   bounce_sub_type?: string | null
   recipients: string[]
-  ses_message_id?: string | null
-  ses_feedback_id?: string | null
-  ses_timestamp?: Date | null
+  amazon_ses_message_id?: string | null
+  amazon_ses_feedback_id?: string | null
+  occurred_at?: Date | null
   raw_message: unknown
   diagnostic_code?: string | null
   reporting_mta?: string | null
@@ -21,9 +21,9 @@ export interface SesBounceEvent {
   bounce_type: SesBounceType | null
   bounce_sub_type: string | null
   recipients: string[]
-  ses_message_id: string | null
-  ses_feedback_id: string | null
-  ses_timestamp: Date | null
+  amazon_ses_message_id: string | null
+  amazon_ses_feedback_id: string | null
+  occurred_at: Date | null
   raw_message: unknown
   diagnostic_code: string | null
   reporting_mta: string | null

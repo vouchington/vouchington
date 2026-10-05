@@ -79,7 +79,7 @@ describe('charge.refunded reconciliation receipt', () => {
 
     expect(
       (await getMembershipRefunds(user.id)).find(refund => refund.stripe_refund_id === refundId),
-    ).toMatchObject({ source: 'stripe_dashboard', revoked_access: false })
+    ).toMatchObject({ source: 'stripe_dashboard', has_revoked_access: false })
   })
 
   it('enriches and wakes only the matching durable administrator attempt after receipt persistence', async () => {

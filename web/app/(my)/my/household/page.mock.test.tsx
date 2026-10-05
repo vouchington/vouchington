@@ -48,11 +48,11 @@ describe('HouseholdPage', () => {
   it('requests owned and member-only households independently with bounded first pages', async () => {
     mockGetHouseholds
       .mockResolvedValueOnce({
-        results: [{ id: 'owned-newest', owner_id: 'user-1', updated_at: '2026-07-02' }],
+        results: [{ id: 'owned-newest', owner_user_id: 'user-1', updated_at: '2026-07-02' }],
         page_info: pageInfo,
       })
       .mockResolvedValueOnce({
-        results: [{ id: 'shared-1', owner_id: 'user-2', updated_at: '2026-07-01' }],
+        results: [{ id: 'shared-1', owner_user_id: 'user-2', updated_at: '2026-07-01' }],
         page_info: { ...pageInfo, has_next_page: true, end_cursor: 'shared-next' },
       })
 
@@ -104,11 +104,11 @@ describe('HouseholdPage', () => {
   it('preserves successful membership sections when another section fails', async () => {
     mockGetHouseholds
       .mockResolvedValueOnce({
-        results: [{ id: 'owned', owner_id: 'user-1', updated_at: '2026-07-02' }],
+        results: [{ id: 'owned', owner_user_id: 'user-1', updated_at: '2026-07-02' }],
         page_info: pageInfo,
       })
       .mockResolvedValueOnce({
-        results: [{ id: 'shared', owner_id: 'user-2', updated_at: '2026-07-01' }],
+        results: [{ id: 'shared', owner_user_id: 'user-2', updated_at: '2026-07-01' }],
         page_info: pageInfo,
       })
     mockGetHouseholdMemberships

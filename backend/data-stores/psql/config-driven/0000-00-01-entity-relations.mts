@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS "${metadata.table_name}" (\n`
   const storesOutboundFollowActivityId = metadata.table_name === 'relation__user__follow__user'
   if (storesOutboundFollowActivityId) {
     query += `,
-    outbound_ap_follow_activity_id UUID DEFAULT uuidv7()`
+    outbound_activitypub_follow_activity_id UUID DEFAULT uuidv7()`
   }
 
   if (metadata.election) {
@@ -122,7 +122,7 @@ CREATE TABLE IF NOT EXISTS ${voteTable} (
   ip_address INET,
   device_id UUID,
   session_id UUID,
-  user_agent_id UUID ${getElectionConstraintClause(voteTable, ['user_agent_id'], 'fk')}REFERENCES user_agent_strings ON DELETE SET NULL,
+  user_agent_string_id UUID ${getElectionConstraintClause(voteTable, ['user_agent_string_id'], 'fk')}REFERENCES user_agent_strings ON DELETE SET NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   PRIMARY KEY (entity_relation_id, id),
   CONSTRAINT ${getElectionForeignKeyName(voteTable, 'subject_entity_relation')} FOREIGN KEY (subject_id, entity_relation_id) REFERENCES ${metadata.table_name} (subject_id, id) ON DELETE CASCADE
@@ -139,7 +139,7 @@ COMMENT ON COLUMN ${voteTable}.score IS 'Binary relation ballot or retained clea
 COMMENT ON COLUMN ${voteTable}.ip_address IS 'Audit IP address captured with this ballot event.';
 COMMENT ON COLUMN ${voteTable}.device_id IS 'Opaque client device token with no durable owner row.';
 COMMENT ON COLUMN ${voteTable}.session_id IS 'Opaque client session token with no durable owner row.';
-COMMENT ON COLUMN ${voteTable}.user_agent_id IS 'Shared bounded user-agent string captured with this ballot event.';
+COMMENT ON COLUMN ${voteTable}.user_agent_string_id IS 'Shared bounded user-agent string captured with this ballot event.';
 COMMENT ON COLUMN ${voteTable}.subject_id IS 'Authoritative subject paired with the concrete elected relation identifier.';
 COMMENT ON COLUMN ${voteTable}.entity_relation_id IS 'Concrete elected relation identifier and UUIDv7 partition key.';`
 }
@@ -156,7 +156,7 @@ CREATE OR REPLACE VIEW view_entity_relation_votes AS
 ${relations
   .map(
     metadata => `SELECT '${metadata.table_name}'::elected_entity_relations AS entity_relation,
-  user_id, subject_id, entity_relation_id, id, score, score_is_neutral, score_is_semantic, ip_address, device_id, session_id, user_agent_id, created_at
+  user_id, subject_id, entity_relation_id, id, score, score_is_neutral, score_is_semantic, ip_address, device_id, session_id, user_agent_string_id, created_at
 FROM ${getEntityRelationVoteTableName(metadata)}`,
   )
   .join('\nUNION ALL\n')};

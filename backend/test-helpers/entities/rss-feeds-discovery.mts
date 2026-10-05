@@ -41,7 +41,7 @@ export async function setTestRssFeedDiscoverable(
   enabled: boolean,
 ): Promise<void> {
   await write(sql`/* setTestRssFeedDiscoverable */
-    INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, enabled, reason)
+    INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
     VALUES ('discoverability', ${rssFeedId}, ${enabled}, 'test helper state')
   `)
 }

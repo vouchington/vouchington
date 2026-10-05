@@ -45,8 +45,8 @@ CREATE TABLE IF NOT EXISTS topics (
   markdown TEXT NOT NULL DEFAULT '',
 
   -- Policy flags (see docs/requirements/content/TOPICS.md). Configuration toggles, not lifecycle state.
-  noindex BOOLEAN NOT NULL DEFAULT false, -- exclude this topic's pages from search-engine indexing
-  allow_reviews BOOLEAN NOT NULL DEFAULT true, -- false for private individuals; blocks review creation + hides review UI
+  is_noindexed BOOLEAN NOT NULL DEFAULT false, -- exclude this topic's pages from search-engine indexing
+  should_allow_reviews BOOLEAN NOT NULL DEFAULT true, -- false for private individuals; blocks review creation + hides review UI
 
   votes_snapshot_xmax XID8,
   votes_snapshot_xip_count INTEGER,
@@ -248,8 +248,8 @@ WHERE logo_image_id IS NOT NULL;
 
 COMMENT ON TABLE topics IS 'Core content entities: topics, rewards programs, cards, etc. Polymorphic via topic_type.';
 COMMENT ON COLUMN topics.topic_type IS 'Discriminator for topic subtype (topic, rewards_program, referral_program, card, rewards_program_status, bank_account, rss_feed, fediverse_instance). Every value must have functional behavior; see docs/requirements/content/TOPICS.md.';
-COMMENT ON COLUMN topics.noindex IS 'When true, exclude this topic''s pages from search-engine indexing.';
-COMMENT ON COLUMN topics.allow_reviews IS 'When false, reviews cannot be created for this topic and review UI is hidden (e.g. private individuals). Replaced the former person topic type.';
+COMMENT ON COLUMN topics.is_noindexed IS 'When true, exclude this topic''s pages from search-engine indexing.';
+COMMENT ON COLUMN topics.should_allow_reviews IS 'When false, reviews cannot be created for this topic and review UI is hidden (e.g. private individuals). Replaced the former person topic type.';
 COMMENT ON COLUMN topics.name IS 'Canonical display name for this topic.';
 COMMENT ON COLUMN topics.slug IS 'URL-safe lowercase slug. Unique.';
 COMMENT ON COLUMN topics.aliases IS 'Alternative names for search purposes. Projected by fn_project_topic_aliases from linked topic_aliases.';
@@ -343,7 +343,7 @@ EXECUTE FUNCTION fn_create_metrics('topic_metrics', 'topic_id');
 CREATE TABLE IF NOT EXISTS rewards_program_topics (
   topic_id UUID PRIMARY KEY REFERENCES topics ON DELETE CASCADE,
 
-  company_id UUID REFERENCES topics ON DELETE CASCADE,
+  company_topic_id UUID REFERENCES topics ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -356,12 +356,12 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rewards_program_topics__company_id
-ON rewards_program_topics (company_id)
-WHERE company_id IS NOT NULL;
+ON rewards_program_topics (company_topic_id)
+WHERE company_topic_id IS NOT NULL;
 
 COMMENT ON TABLE rewards_program_topics IS 'Extension table for topics of type rewards_program. Links program to its parent company.';
 COMMENT ON COLUMN rewards_program_topics.topic_id IS 'The topic that is a rewards program (PK, 1:1 with topics).';
-COMMENT ON COLUMN rewards_program_topics.company_id IS 'The company topic that operates this rewards program.';
+COMMENT ON COLUMN rewards_program_topics.company_topic_id IS 'The company topic that operates this rewards program.';
 
 --------------------------------------------------------------------------------
 -- referral_program_topics
@@ -372,7 +372,7 @@ CREATE TABLE IF NOT EXISTS referral_program_topics (
   topic_id UUID PRIMARY KEY REFERENCES topics ON DELETE CASCADE,
 
   -- the company that owns this referral program
-  company_id UUID REFERENCES topics ON DELETE CASCADE,
+  company_topic_id UUID REFERENCES topics ON DELETE CASCADE,
 
   enabled_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   disabled_at TIMESTAMPTZ,
@@ -390,12 +390,12 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_referral_program_topics__company_id
-ON referral_program_topics (company_id)
-WHERE company_id IS NOT NULL;
+ON referral_program_topics (company_topic_id)
+WHERE company_topic_id IS NOT NULL;
 
 COMMENT ON TABLE referral_program_topics IS 'Extension table for topics of type referral_program. Links program to company.';
 COMMENT ON COLUMN referral_program_topics.topic_id IS 'The topic that is a referral program (PK, 1:1 with topics).';
-COMMENT ON COLUMN referral_program_topics.company_id IS 'The company topic that operates this referral program.';
+COMMENT ON COLUMN referral_program_topics.company_topic_id IS 'The company topic that operates this referral program.';
 COMMENT ON COLUMN referral_program_topics.enabled_at IS 'When the program was enabled. NULL if currently disabled.';
 COMMENT ON COLUMN referral_program_topics.disabled_at IS 'When the program was disabled. NULL if currently enabled.';
 
@@ -432,9 +432,9 @@ CREATE TABLE IF NOT EXISTS card_topics (
   topic_id UUID PRIMARY KEY REFERENCES topics ON DELETE CASCADE,
 
   -- the bank that issues this card, e.g. Chase, Citi, etc.
-  bank_id UUID REFERENCES topics ON DELETE CASCADE,
+  bank_topic_id UUID REFERENCES topics ON DELETE CASCADE,
   -- the brand of the card, e.g. Marriott, Hilton, etc.
-  brand_id UUID REFERENCES topics ON DELETE CASCADE,
+  brand_topic_id UUID REFERENCES topics ON DELETE CASCADE,
 
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -453,13 +453,13 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_card_topics__bank_id
-ON card_topics (bank_id)
-WHERE bank_id IS NOT NULL;
+ON card_topics (bank_topic_id)
+WHERE bank_topic_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_card_topics__brand_id
-ON card_topics (brand_id)
-WHERE brand_id IS NOT NULL;
+ON card_topics (brand_topic_id)
+WHERE brand_topic_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_card_topics__currency_code
@@ -468,8 +468,8 @@ WHERE currency_code IS NOT NULL;
 
 COMMENT ON TABLE card_topics IS 'Extension table for topics of type card (credit/debit cards).';
 COMMENT ON COLUMN card_topics.topic_id IS 'The topic that is a card (PK, 1:1 with topics).';
-COMMENT ON COLUMN card_topics.bank_id IS 'The issuing bank topic (e.g. Chase, Citi).';
-COMMENT ON COLUMN card_topics.brand_id IS 'The co-brand topic (e.g. Marriott, Hilton).';
+COMMENT ON COLUMN card_topics.bank_topic_id IS 'The issuing bank topic (e.g. Chase, Citi).';
+COMMENT ON COLUMN card_topics.brand_topic_id IS 'The co-brand topic (e.g. Marriott, Hilton).';
 COMMENT ON COLUMN card_topics.annual_fee_minor_units IS 'Annual fee in the currency minor unit. NULL if unknown.';
 COMMENT ON COLUMN card_topics.currency_code IS 'Currency for the annual fee. NULL when the fee is unknown.';
 
@@ -754,7 +754,7 @@ CREATE TABLE IF NOT EXISTS fediverse_instance_topics (
   nodeinfo_software_version TEXT,
   total_users INTEGER,
   monthly_active_users INTEGER,
-  open_registrations BOOLEAN,
+  is_open_for_registrations BOOLEAN,
   nodeinfo_raw JSONB,
 
   integration_status fediverse_integration_statuses NOT NULL DEFAULT 'pending',
@@ -776,7 +776,7 @@ COMMENT ON COLUMN fediverse_instance_topics.protocol IS 'Primary federation prot
 COMMENT ON COLUMN fediverse_instance_topics.nodeinfo_software_version IS 'NodeInfo software.version string. NULL until classified.';
 COMMENT ON COLUMN fediverse_instance_topics.total_users IS 'NodeInfo usage.users.total. NULL until classified or unreported.';
 COMMENT ON COLUMN fediverse_instance_topics.monthly_active_users IS 'NodeInfo usage.users.activeMonth. NULL until classified or unreported.';
-COMMENT ON COLUMN fediverse_instance_topics.open_registrations IS 'NodeInfo openRegistrations flag. NULL until classified.';
+COMMENT ON COLUMN fediverse_instance_topics.is_open_for_registrations IS 'NodeInfo openRegistrations flag. NULL until classified.';
 COMMENT ON COLUMN fediverse_instance_topics.nodeinfo_raw IS 'Full NodeInfo 2.0 document as fetched, for fields not individually modeled.';
 COMMENT ON COLUMN fediverse_instance_topics.integration_status IS 'Admin allowlist decision (pending, approved, blocked). Trigger-maintained from an append-only decision history table.';
 

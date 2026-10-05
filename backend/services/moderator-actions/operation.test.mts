@@ -30,7 +30,7 @@ describe('staff external-operation history', () => {
     const { results } = await searchModeratorActions({ actorId: actor.id })
     expect(results).toHaveLength(2)
     expect(results[0]).toMatchObject({
-      operation_request_id: results[1]!.id,
+      operation_request_action_id: results[1]!.id,
       metadata: { phase: 'finished', outcome: 'succeeded', after: { attempted: 3, retried: 2 } },
     })
   })
@@ -51,7 +51,7 @@ describe('staff external-operation history', () => {
     const { results } = await searchModeratorActions({ actorId: actor.id })
     expect(results).toHaveLength(2)
     expect(results[0]!.metadata).toEqual({ phase: 'finished', outcome: 'failed' })
-    expect(results[0]!.operation_request_id).toBe(results[1]!.id)
+    expect(results[0]!.operation_request_action_id).toBe(results[1]!.id)
     expect(JSON.stringify(results)).not.toContain(failure.message)
   })
 

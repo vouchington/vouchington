@@ -34,7 +34,7 @@ describe('moderation-training feedback coverage', () => {
       created_at: new Date(),
       action_at: actionAt,
       confidence_score: 'not-a-number',
-      flagged: true,
+      is_flagged: true,
       categories: ['spam', 123, 'abuse'],
       model_output: null,
       current_state: 'rejected',

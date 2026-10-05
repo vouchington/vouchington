@@ -109,7 +109,7 @@ export async function readTerritorialDecisionReopeningFacts(
           (SELECT count(*)::integer FROM copyright_notice_action_intents intent
             WHERE intent.copyright_notice_id = ${noticeId} AND intent.action = 'restore') AS restore_intent_count,
           (SELECT count(*)::integer FROM copyright_repeat_infringer_incidents incident
-            WHERE incident.copyright_notice_id = ${noticeId} AND incident.operative) AS operative_incident_count
+            WHERE incident.copyright_notice_id = ${noticeId} AND incident.is_operative) AS operative_incident_count
       `),
       read<TerritorialDecisionReopeningFacts['restrictions'][number]>(sql`
         /* readTerritorialDecisionReopeningFacts:restrictions */

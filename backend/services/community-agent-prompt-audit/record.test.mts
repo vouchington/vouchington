@@ -23,8 +23,8 @@ describe('recordCommunityAgentPromptChange', () => {
       communityId: community.id,
       createdById: user.id,
     })
-    const prev = { prompt: 'before', slot_allocated: false }
-    const next = { prompt: 'after', slot_allocated: true }
+    const prev = { prompt: 'before', is_slot_allocated: false }
+    const next = { prompt: 'after', is_slot_allocated: true }
 
     await recordCommunityAgentPromptChange(
       user.id,
@@ -45,7 +45,7 @@ describe('recordCommunityAgentPromptChange', () => {
     expect(row!.revision_type).toBe('updated')
     expect(row!.changes).toEqual({
       prompt: { before: prev.prompt, after: next.prompt },
-      slot_allocated: { before: false, after: true },
+      is_slot_allocated: { before: false, after: true },
     })
   })
 

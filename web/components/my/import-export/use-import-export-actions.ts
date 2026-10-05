@@ -100,7 +100,7 @@ export function useImportExportActions({ isTopics, selectedType, state, dispatch
           onSuccess(`${results.length} topic(s) imported`)
         }
       } else {
-        const data = await importRssFeeds({ urls: items, follow: true })
+        const data = await importRssFeeds({ urls: items, should_follow_imported_feeds: true })
         dispatch({ rssFeedUrls: '' })
         await startImportStream(data.import.id, data.import.total_rows)
       }
@@ -123,8 +123,8 @@ export function useImportExportActions({ isTopics, selectedType, state, dispatch
       }
       const contents = await file.text()
       const body = isCsv
-        ? { csv: contents, follow: true as const }
-        : { opml: contents, follow: true as const }
+        ? { csv: contents, should_follow_imported_feeds: true as const }
+        : { opml: contents, should_follow_imported_feeds: true as const }
       try {
         validateRssFeedImportBody(body)
       } catch (err) {

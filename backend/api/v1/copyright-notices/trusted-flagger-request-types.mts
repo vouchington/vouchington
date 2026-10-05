@@ -3,7 +3,7 @@ export type CopyrightTrustedFlaggerCreateRequest = {
   user_id: string
   awarding_coordinator_name: string
   awarding_member_state: string
-  awarded_at: string
+  awarded_on: string
   area_of_expertise: 'intellectual_property' | 'other'
   area_description: string
   award_reference?: string | null

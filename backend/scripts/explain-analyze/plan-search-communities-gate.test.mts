@@ -36,7 +36,7 @@ describe('assertSearchCommunitiesEligibilityIsIndexed', () => {
             'Node Type': 'Index Scan',
             'Relation Name': 'posts__default',
             Alias: 'root_post',
-            'Index Cond': '(id = COALESCE(candidate_post.root_id, candidate_post.id))',
+            'Index Cond': '(id = COALESCE(candidate_post.root_post_id, candidate_post.id))',
           },
         ],
       },

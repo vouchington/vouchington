@@ -25,9 +25,9 @@ describe('deleted copyright surface evidence', () => {
       surface_owner_user_id: fixture.actorUserId,
       activation_placement_id: fixture.placementId,
       activation_revision: fixture.placementRevision,
-      bound_by_user_id: fixture.actorUserId,
-      uploaded_by_user_id: fixture.actorUserId,
-      bound_by_administrator: null,
+      bound_by_id: fixture.actorUserId,
+      uploaded_by_id: fixture.actorUserId,
+      is_bound_by_administrator: null,
     })
 
     const user = await getTestPrivateUserById(fixture.actorUserId)

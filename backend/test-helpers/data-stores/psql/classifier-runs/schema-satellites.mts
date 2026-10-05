@@ -53,7 +53,7 @@ export function insertPostClassifierLocalOutcomeForSchemaTest(
 ) {
   return write(sql`/* insertPostClassifierLocalOutcomeForSchemaTest */
     INSERT INTO post_classifier_local_outcomes (
-      run_id, local_topic_id, flagged, reason, confidence_score, confidence_threshold,
+      run_id, local_topic_id, is_flagged, reason, confidence_score, confidence_threshold,
       classification, detector, detector_model_version
     ) VALUES (
       ${runId}, ${topicId}, TRUE, 'looks generated', ${confidenceScore}, 0.5, 'ai',
@@ -64,7 +64,7 @@ export function insertPostClassifierLocalOutcomeForSchemaTest(
 
 export function revisePostClassifierLocalOutcomeForSchemaTest(runId: string) {
   return write(sql`/* revisePostClassifierLocalOutcomeForSchemaTest */
-    UPDATE post_classifier_local_outcomes SET flagged = FALSE WHERE run_id = ${runId}
+    UPDATE post_classifier_local_outcomes SET is_flagged = FALSE WHERE run_id = ${runId}
   `)
 }
 

@@ -10,11 +10,12 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS moderation_media_reveals (
   id            uuid        PRIMARY KEY DEFAULT uuidv7(),
   created_at    timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   -- guardrails-disable-next-line uuid-must-be-key
-  moderator_id  uuid        REFERENCES users (id) ON DELETE SET NULL,
+  moderator_user_id  uuid        REFERENCES users (id) ON DELETE SET NULL,
   -- guardrails-disable-next-line uuid-must-be-key
   post_id       uuid        REFERENCES posts (id) ON DELETE SET NULL,
   -- guardrails-disable-next-line uuid-must-be-key
@@ -27,14 +28,15 @@ CREATE TABLE IF NOT EXISTS moderation_media_reveals (
   CHECK (jsonb_typeof(metadata) = 'object')
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_media_reveals__moderator_revealed
-  ON moderation_media_reveals (moderator_id, revealed_at DESC);
+  ON moderation_media_reveals (moderator_user_id, revealed_at DESC);
 
 COMMENT ON TABLE moderation_media_reveals IS 'Append-only log of disturbing-media reveals by moderators. Used to count session exposure and trigger cooldown prompts.';
 
 COMMENT ON COLUMN moderation_media_reveals.created_at IS 'Row insertion time derived from the UUIDv7 id; used for schema convention only. Windowed queries use revealed_at.';
 
-COMMENT ON COLUMN moderation_media_reveals.moderator_id IS 'Moderator who revealed the media (ON DELETE SET NULL for audit persistence).';
+COMMENT ON COLUMN moderation_media_reveals.moderator_user_id IS 'Moderator who revealed the media (ON DELETE SET NULL for audit persistence).';
 
 COMMENT ON COLUMN moderation_media_reveals.post_id IS 'Post whose media was revealed. NULL for report-entity reveals without a direct post.';
 

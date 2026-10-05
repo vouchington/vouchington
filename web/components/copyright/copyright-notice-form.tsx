@@ -49,8 +49,8 @@ export function CopyrightNoticeForm() {
           claimant_email: values.email.trim(),
           work_description: values.work.trim(),
           electronic_signature: values.signature.trim(),
-          good_faith_belief: values.goodFaithBelief,
-          accuracy_authority_under_penalty_of_perjury: values.authorityDeclaration,
+          has_good_faith_belief: values.goodFaithBelief,
+          has_accuracy_authority_under_penalty_of_perjury: values.authorityDeclaration,
           targets: targets.map(copyrightNoticeTargetInput),
           cf_turnstile_response: turnstile.token ?? undefined,
         })

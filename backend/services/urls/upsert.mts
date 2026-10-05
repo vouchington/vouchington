@@ -95,7 +95,7 @@ export const addUrls = async (
   })
 
   for (const viewUrl of viewUrls) {
-    if (viewUrl.hostname.blocked) {
+    if (viewUrl.hostname.is_blocked) {
       throw createError(422, `Hostname ${viewUrl.hostname.hostname} is blocked`)
     }
   }
@@ -156,7 +156,7 @@ async function processUrlCreatedInline(ids: string[], options: QueryOptions): Pr
 
     const url = await getUrlById(id, options)
     if (!url) return
-    if (url.hostname.blocked || url.hostname.crawlable === false) return
+    if (url.hostname.is_blocked || url.hostname.is_crawlable === false) return
     await getOrCreateCrawlerForHostname(null, url.hostname.id, options)
   }, Promise.resolve())
 }

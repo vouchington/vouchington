@@ -47,7 +47,7 @@ export async function seedMcpPostReadabilityFixtures(
   const publicRoot = await seed('public root')
   const publicComment = await seed('public comment', {
     post_type: 'comment',
-    parent_id: publicRoot.id,
+    parent_post_id: publicRoot.id,
   })
   const usersOnly = await seed('users-only post', { privacy: 'private', broadcast: 'users' })
   const followersOnly = await seed('followers-only post', {
@@ -61,21 +61,21 @@ export async function seedMcpPostReadabilityFixtures(
   const pendingPost = await seed('post awaiting review', {}, true)
   const commentUnderPrivate = await seed('comment under a private root', {
     post_type: 'comment',
-    parent_id: usersOnly.id,
+    parent_post_id: usersOnly.id,
   })
   const pendingComment = await seed(
     'comment awaiting review',
-    { post_type: 'comment', parent_id: publicRoot.id },
+    { post_type: 'comment', parent_post_id: publicRoot.id },
     true,
   )
   const replyUnderPending = await seed('approved reply under a pending comment', {
     post_type: 'comment',
-    parent_id: pendingComment.id,
+    parent_post_id: pendingComment.id,
   })
   const recommendation = await seed('topic recommendation', { post_type: 'topic_recommendation' })
   const commentUnderRecommendation = await seed('comment under a topic recommendation', {
     post_type: 'comment',
-    parent_id: recommendation.id,
+    parent_post_id: recommendation.id,
   })
 
   return {

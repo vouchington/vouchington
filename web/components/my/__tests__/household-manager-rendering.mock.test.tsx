@@ -50,11 +50,11 @@ describe('HouseholdManager rendering', () => {
     renderManager([
       makeSection(),
       makeSection({
-        household: { id: 'shared-1', owner_id: 'user-2', updated_at: '2026-07-01' },
+        household: { id: 'shared-1', owner_user_id: 'user-2', updated_at: '2026-07-01' },
         isOwner: false,
       }),
       makeSection({
-        household: { id: 'shared-2', owner_id: 'user-3', updated_at: '2026-06-30' },
+        household: { id: 'shared-2', owner_user_id: 'user-3', updated_at: '2026-06-30' },
         isOwner: false,
       }),
     ])

@@ -15,7 +15,7 @@ export async function createTestUnprojectedStripeProductionProviderObservation({
   membershipProviderProductId,
   userId,
 }: CreateTestUnprojectedStripeProductionProviderObservationOptions): Promise<{
-  membership_provider_evidence_id: string
+  membership_provider_evidence_record_id: string
   membership_provider_observation_id: string
 }> {
   await using query = await beginTransaction()
@@ -42,10 +42,10 @@ export async function createTestUnprojectedStripeProductionProviderObservation({
   const { rows: observationRows } =
     await query(sql`/* createTestUnprojectedStripeProductionProviderObservation: observation */
       INSERT INTO membership_provider_observations (
-        provider, environment, application_id, membership_provider_evidence_id,
+        provider, environment, application_id, membership_provider_evidence_record_id,
         membership_provider_lineage_id, membership_provider_product_id,
         membership_product_id, observed_price_minor_units, observed_price_currency_code,
-        provider_revision, provider_order, source_kind, effective_at, auto_renews
+        provider_revision, provider_order, source_kind, effective_at, should_auto_renew
       )
       SELECT
         'stripe', 'production', ${applicationId}, ${evidence.id}, ${lineage.id},
@@ -76,7 +76,7 @@ export async function createTestUnprojectedStripeProductionProviderObservation({
         ${membershipProductId}, CURRENT_TIMESTAMP
       )`)
   const result = {
-    membership_provider_evidence_id: evidence.id,
+    membership_provider_evidence_record_id: evidence.id,
     membership_provider_observation_id: observation.id,
   }
   await query.commit()

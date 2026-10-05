@@ -37,7 +37,7 @@ describe('copyright repeat-infringer review outcomes', () => {
     expect(accounts).toEqual([
       expect.objectContaining({
         account_user_id: poster.id,
-        operative: true,
+        is_operative: true,
         open_review_id: expect.any(String),
         termination_in_effect: false,
       }),
@@ -120,7 +120,7 @@ describe('copyright repeat-infringer review outcomes', () => {
         currentUser: admin,
         reviewId,
         outcome: 'restrict',
-        rationale: 'Only one operative incident remains.',
+        rationale: 'Only one is_operative incident remains.',
         recordedAt: new Date('2026-07-04T12:00:00.000Z'),
       }),
     ).rejects.toMatchObject({ status: 409 })
@@ -148,7 +148,7 @@ describe('copyright repeat-infringer review outcomes', () => {
       }),
     ).resolves.toEqual(expect.objectContaining({ outcome: 'restrict' }))
     expect(await getModeratorActionRowsForTest({ targetUserId: poster.id })).toEqual([
-      expect.objectContaining({ action_type: 'suspend', actor_id: admin.id }),
+      expect.objectContaining({ action_type: 'suspend', actor_user_id: admin.id }),
     ])
     await expect(getPrivateUserByAny(poster.id)).resolves.toEqual(
       expect.objectContaining({ suspended_at: before.suspended_at }),
@@ -186,7 +186,7 @@ describe('copyright repeat-infringer review outcomes', () => {
     ).rejects.toMatchObject({ status: 409 })
   })
 
-  it('refuses deletion for an operative incident and allows it once none remain', async () => {
+  it('refuses deletion for an is_operative incident and allows it once none remain', async () => {
     const [poster, moderator] = await Promise.all([
       createTestUser(),
       createTestUser({ extraRoles: ['moderator'] }),
@@ -200,7 +200,7 @@ describe('copyright repeat-infringer review outcomes', () => {
     for (const noticeId of [firstNoticeId, secondNoticeId]) {
       const accounts = await listCopyrightRepeatInfringerAccountsForNotice(moderator, noticeId)
       const incidentId = accounts[0]?.incident_id
-      if (!incidentId || !accounts[0]?.operative) continue
+      if (!incidentId || !accounts[0]?.is_operative) continue
       await recordCopyrightRepeatInfringerDisposition({
         currentUser: moderator,
         incidentId,

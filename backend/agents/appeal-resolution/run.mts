@@ -91,7 +91,7 @@ export async function runAppealResolutionAgent(
     wrappedReason,
   ].join('\n')
 
-  const safetyIdentifier = appeal.appellant_id
+  const safetyIdentifier = appeal.appellant_user_id
   // Record from what was actually spent (both on success and on a failed/incomplete response,
   // which still billed tokens), independent of whether the response below parses — a malformed
   // response still billed real tokens, and extractTextFromOpenAIResponse throws on a

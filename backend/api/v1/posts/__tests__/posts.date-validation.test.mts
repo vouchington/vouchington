@@ -87,7 +87,7 @@ describe('posts.date-validation', () => {
         .post('/api/v1/posts')
         .send({
           post_type: 'comment',
-          parent_id: parentId,
+          parent_post_id: parentId,
           title: '',
           markdown: 'Comment date validation',
         })

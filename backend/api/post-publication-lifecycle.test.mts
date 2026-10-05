@@ -46,8 +46,8 @@ describe('post publication lifecycle capture integration', () => {
       getTestPostPublicationDirtyWorkForScope({ type: 'author', id: user.id }),
       getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id }),
     ])
-    expect(authorWork).toMatchObject({ author_user_id: user.id })
-    expect(postWork).toMatchObject({ post_id: post.id })
+    expect(authorWork).toMatchObject({ author_identity_id: user.id })
+    expect(postWork).toMatchObject({ post_identity_id: post.id })
     await expect(listTestPostPublicationImpactPostIds(authorWork!.id)).resolves.toContain(post.id)
     await expect(
       listTestPostPublicationRetainedTextKeys(authorWork!.id, 'identity_author_username'),
@@ -102,14 +102,14 @@ describe('post publication lifecycle capture integration', () => {
     })
 
     await expect(
-      setRssFeedEnablementAsCurrentUser(administrator, { rssFeedId, enabled: false }),
+      setRssFeedEnablementAsCurrentUser(administrator, { rssFeedId, is_enabled: false }),
     ).resolves.toBe('updated')
     const disabledWork = await getTestPostPublicationDirtyWorkForScope({
       type: 'rss_feed',
       id: rssFeedId,
     })
     await expect(
-      setRssFeedEnablementAsCurrentUser(administrator, { rssFeedId, enabled: true }),
+      setRssFeedEnablementAsCurrentUser(administrator, { rssFeedId, is_enabled: true }),
     ).resolves.toBe('updated')
     await expect(
       getTestPostPublicationDirtyWorkForScope({ type: 'rss_feed', id: rssFeedId }),
@@ -255,7 +255,7 @@ describe('post publication lifecycle capture integration', () => {
     await updateCommunity(administrator, community.id, { visibility: 'private' })
     await expect(
       getTestPostPublicationDirtyWorkForScope({ type: 'community', id: community.id }),
-    ).resolves.toMatchObject({ community_id: community.id })
+    ).resolves.toMatchObject({ community_identity_id: community.id })
 
     const post = await createPost(administrator, WEB_PROVENANCE, {
       post_type: 'discussion',

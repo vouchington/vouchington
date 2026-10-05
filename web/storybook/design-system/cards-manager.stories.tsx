@@ -16,13 +16,13 @@ type Story = StoryObj<typeof meta>
 const fixtureCards: IndividualCard[] = [
   {
     id: 'card-owner-1',
-    card_id: 'c-1',
+    card_topic_id: 'c-1',
     opened_on: '2022-03-15',
     closed_on: null,
     received_sign_up_bonus_on: '2022-06-15',
     credit_limit: { amount: 1_000_000, currency: 'usd' },
     is_authorized_user: false,
-    authorized_user_of_id: null,
+    authorized_user_of_card_id: null,
     note: 'My primary travel card',
     authorized_user_of_card: null,
     card: {
@@ -33,13 +33,13 @@ const fixtureCards: IndividualCard[] = [
   },
   {
     id: 'card-owner-2',
-    card_id: 'c-2',
+    card_topic_id: 'c-2',
     opened_on: '2023-11-01',
     closed_on: null,
     received_sign_up_bonus_on: null,
     credit_limit: { amount: 500_000, currency: 'usd' },
     is_authorized_user: true,
-    authorized_user_of_id: 'card-owner-1',
+    authorized_user_of_card_id: 'card-owner-1',
     note: null,
     authorized_user_of_card: {
       id: 'card-owner-1',
@@ -59,13 +59,13 @@ const fixtureCards: IndividualCard[] = [
   },
   {
     id: 'card-owner-3',
-    card_id: 'c-3',
+    card_topic_id: 'c-3',
     opened_on: '2021-07-20',
     closed_on: '2024-01-01',
     received_sign_up_bonus_on: '2021-10-20',
     credit_limit: { amount: 1_500_000, currency: 'usd' },
     is_authorized_user: false,
-    authorized_user_of_id: null,
+    authorized_user_of_card_id: null,
     note: null,
     authorized_user_of_card: null,
     card: {
@@ -91,7 +91,7 @@ function AuthorizedUserSelectFixture() {
     credit_limit: '5000',
     currency: 'usd',
     is_authorized_user: true,
-    authorized_user_of_id: 'card-owner-1',
+    authorized_user_of_card_id: 'card-owner-1',
     note: '',
   })
 

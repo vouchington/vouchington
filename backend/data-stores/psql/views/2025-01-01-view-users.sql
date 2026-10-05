@@ -85,11 +85,11 @@ CREATE OR REPLACE VIEW view_users_public AS
   SELECT
     e.*,
     u.markdown,
-    CASE WHEN u.verification_status = 'verified' AND u.verified_badge_visible = TRUE THEN u.verification_status ELSE NULL END AS verification_status,
-    CASE WHEN u.verification_status = 'verified' AND u.verified_badge_visible = TRUE THEN u.verified_badge_visible ELSE NULL END AS verified_badge_visible,
-    CASE WHEN u.verification_status = 'verified' AND u.verified_badge_visible = TRUE THEN u.public_verified_name_display ELSE NULL END AS public_verified_name_display,
+    CASE WHEN u.verification_status = 'verified' AND u.is_verified_badge_visible = TRUE THEN u.verification_status ELSE NULL END AS verification_status,
+    CASE WHEN u.verification_status = 'verified' AND u.is_verified_badge_visible = TRUE THEN u.is_verified_badge_visible ELSE NULL END AS is_verified_badge_visible,
+    CASE WHEN u.verification_status = 'verified' AND u.is_verified_badge_visible = TRUE THEN u.public_verified_name_display ELSE NULL END AS public_verified_name_display,
     CASE
-      WHEN u.verification_status = 'verified' AND u.verified_badge_visible = TRUE THEN
+      WHEN u.verification_status = 'verified' AND u.is_verified_badge_visible = TRUE THEN
         CASE u.public_verified_name_display
           WHEN 'first_name' THEN u.verified_first_name
           WHEN 'first_name_last_initial' THEN
@@ -165,8 +165,8 @@ CREATE OR REPLACE VIEW view_users_private AS
     users.default_post_broadcast,
     users.default_post_privacy,
     users.processing_restricted_at,
-    users.third_party_marketing,
-    users.hn_discussions,
+    users.should_receive_third_party_marketing,
+    users.should_import_hacker_news_discussions,
     susp.suspended_at,
     susp.suspended_reason,
     susp.suspended_by_id,
@@ -232,7 +232,7 @@ CREATE OR REPLACE VIEW view_users_private AS
     users.verification_status,
     users.verification_provider,
     users.verification_completed_at,
-    users.verified_badge_visible,
+    users.is_verified_badge_visible,
     users.public_verified_name_display,
     users.verified_first_name,
     users.verified_last_name_initial,
@@ -240,7 +240,7 @@ CREATE OR REPLACE VIEW view_users_private AS
     users.pending_verification_session_id,
 
     CASE
-      WHEN users.verification_status = 'verified' AND users.verified_badge_visible = TRUE THEN
+      WHEN users.verification_status = 'verified' AND users.is_verified_badge_visible = TRUE THEN
         CASE users.public_verified_name_display
           WHEN 'first_name' THEN users.verified_first_name
           WHEN 'first_name_last_initial' THEN
@@ -259,15 +259,15 @@ CREATE OR REPLACE VIEW view_users_private AS
     users.lingua_rs_detected_language,
     users.direct_messages_audience,
     users.bad_faith_reporter_at,
-    users.engagement_emails_enabled,
+    users.is_engagement_emails_enabled,
     users.news_digest_frequency,
-    users.moderation_emails_enabled,
+    users.is_moderation_emails_enabled,
     users.community_digest_frequency,
     users.moderation_email_cadence,
     users.moderation_email_days_of_week,
     users.moderation_email_time_of_day,
     users.moderation_email_timezone,
-    users.fediverse_federation_enabled,
+    users.is_fediverse_federation_enabled,
 
     (
       SELECT jsonb_build_object(

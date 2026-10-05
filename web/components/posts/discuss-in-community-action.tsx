@@ -78,7 +78,7 @@ export function DiscussInCommunityAction({
       const response = await createCommunityPost(communitySlug, {
         community_id: selectedCommunity.id,
         post_type: 'discussion',
-        parent_id: postId,
+        parent_post_id: postId,
         title: source.title
           ? t('extracted.posts.discussInCommunityAction.discussTitle_f93b0bf5', {
               title: source.title,

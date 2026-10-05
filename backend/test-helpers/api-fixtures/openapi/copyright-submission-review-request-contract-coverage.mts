@@ -14,7 +14,12 @@ export const MEDIA_DELIVERY_REPLAY = 'POST:/api/v1/copyright-media-delivery/repl
 export const REQUIRED_KEYS: Record<string, string[]> = {
   [APPEAL_REVIEW]: ['decisions', 'rationale'],
   [COUNTER_NOTICE_REVIEW]: ['accepted', 'rationale'],
-  [LEGAL_HOLD_ASSESSMENT]: ['from_original_claimant', 'rationale', 'same_material', 'target_ids'],
+  [LEGAL_HOLD_ASSESSMENT]: [
+    'is_from_original_claimant',
+    'rationale',
+    'is_same_material',
+    'target_ids',
+  ],
 }
 
 /** Operations whose only path parameter is the submission id. */

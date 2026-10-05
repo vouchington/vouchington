@@ -34,7 +34,7 @@ export async function createCounterNoticeForwardingInTransaction(
       ON recipient.copyright_notice_delivery_intent_id = receipt.id
     WHERE assessment.id = ${input.assessmentId}
       AND assessment.assessed_by_id IS NOT NULL
-      AND assessment.substantially_compliant
+      AND assessment.is_substantially_compliant
       AND submission.kind = 'counter_notice'
       AND NOT EXISTS (
         SELECT 1 FROM copyright_notice_submission_assessments newer

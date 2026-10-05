@@ -39,8 +39,8 @@ export function RewardsProgramStatusesManager({ initialPage }: Props) {
   const [newStatusLabel, setNewStatusLabel] = useState('')
 
   const [editForm, setEditForm] = useState({
-    since: '',
-    until: '',
+    started_on: '',
+    expires_on: '',
   })
 
   const activeMutationIds = useRef(new Set<string>())
@@ -75,8 +75,8 @@ export function RewardsProgramStatusesManager({ initialPage }: Props) {
   function startEdit(status: RewardsProgramStatus) {
     setEditingId(status.id)
     setEditForm({
-      since: status.since ?? '',
-      until: status.until ?? '',
+      started_on: status.started_on ?? '',
+      expires_on: status.expires_on ?? '',
     })
   }
 
@@ -84,16 +84,16 @@ export function RewardsProgramStatusesManager({ initialPage }: Props) {
     if (activeMutationIds.current.has(id)) return
     const original = statuses.find(s => s.id === id)
     const payload: Record<string, string | null> = {}
-    if (!original || (editForm.since || null) !== original.since)
-      payload.since = editForm.since || null
-    if (!original || (editForm.until || null) !== original.until)
-      payload.until = editForm.until || null
+    if (!original || (editForm.started_on || null) !== original.started_on)
+      payload.started_on = editForm.started_on || null
+    if (!original || (editForm.expires_on || null) !== original.expires_on)
+      payload.expires_on = editForm.expires_on || null
     if (Object.keys(payload).length === 0) {
       setEditingId(null)
       return
     }
-    const effectiveSince = 'since' in payload ? payload.since : original?.since
-    const effectiveUntil = 'until' in payload ? payload.until : original?.until
+    const effectiveSince = 'started_on' in payload ? payload.started_on : original?.started_on
+    const effectiveUntil = 'expires_on' in payload ? payload.expires_on : original?.expires_on
     if (effectiveSince && effectiveUntil && effectiveSince > effectiveUntil) {
       onError(new Error('Since must be before until'), {
         fallback: t('extracted.my.rewardsProgramStatusesManager.sinceMustBeBeforeUntil_a4745364'),

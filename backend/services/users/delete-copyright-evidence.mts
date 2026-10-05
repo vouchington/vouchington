@@ -4,7 +4,7 @@ import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/co
 import type { TransactionQuery } from '@data-stores/psql'
 
 /**
- * Refuses (409) while an operative repeat-infringer incident, an unresolved qualifying court/CCB
+ * Refuses (409) while an is_operative repeat-infringer incident, an unresolved qualifying court/CCB
  * hold, or an open staff-placed legal-process preservation hold covers the account. The message is
  * deliberately generic: naming a preservation hold would tip off the account holder.
  */
@@ -17,7 +17,7 @@ export async function assertCopyrightEvidenceAllowsDeletion(
     SELECT (
       EXISTS (
         SELECT 1 FROM copyright_repeat_infringer_incidents
-        WHERE account_user_id = ${userId} AND operative
+        WHERE account_user_id = ${userId} AND is_operative
       )
       OR EXISTS (
         SELECT 1 FROM user_legal_preservation_holds
@@ -37,8 +37,8 @@ export async function assertCopyrightEvidenceAllowsDeletion(
           ON resolved.copyright_notice_legal_hold_assessment_id = hold.id
         WHERE party.user_id = ${userId}
           AND resolved.id IS NULL
-          AND hold.from_original_claimant
-          AND hold.same_material
+          AND hold.is_from_original_claimant
+          AND hold.is_same_material
           AND hold.proceeding_kind IS NOT NULL
           AND hold.commenced_at IS NOT NULL
           AND hold.received_by_designated_agent_at IS NOT NULL

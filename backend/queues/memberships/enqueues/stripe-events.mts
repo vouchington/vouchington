@@ -86,7 +86,7 @@ function getStripeEventOrdering(data: ProcessStripeEventData): Partial<JobOption
   if (!data.stripeSubscriptionId) return {}
   return {
     ordering: {
-      key: `stripe-subscription:${data.livemode ? 'production' : 'test'}:${data.stripeSubscriptionId}`,
+      key: `stripe-subscription:${data.isLiveMode ? 'production' : 'test'}:${data.stripeSubscriptionId}`,
       concurrency: 1,
     },
   }

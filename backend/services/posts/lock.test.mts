@@ -102,7 +102,7 @@ describe('lock', () => {
       const rows = await getModeratorActionRowsForTest({ postId })
       const lockRow = rows.find(r => r.action_type === 'lock')
       expect(lockRow).toBeDefined()
-      expect(lockRow?.actor_id).toBe(moderator.id)
+      expect(lockRow?.actor_user_id).toBe(moderator.id)
     })
 
     it('does not write a modlog row when author self-locks their post', async () => {

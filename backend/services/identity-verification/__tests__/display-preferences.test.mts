@@ -40,8 +40,8 @@ describe('updateDisplayPreferences', () => {
     expect(mockInvalidateUsers).not.toHaveBeenCalled()
   })
 
-  it('updates verified_badge_visible only', async () => {
-    await updateDisplayPreferencesForTest('user-1', { verified_badge_visible: false })
+  it('updates is_verified_badge_visible only', async () => {
+    await updateDisplayPreferencesForTest('user-1', { is_verified_badge_visible: false })
     expect(mockBeginTransaction).toHaveBeenCalledTimes(1)
     expect(mockInvalidateUsers).toHaveBeenCalledWith('user-1')
   })
@@ -54,7 +54,7 @@ describe('updateDisplayPreferences', () => {
 
   it('updates both fields at once', async () => {
     await updateDisplayPreferencesForTest('user-1', {
-      verified_badge_visible: true,
+      is_verified_badge_visible: true,
       public_verified_name_display: 'full_name',
     })
     expect(mockBeginTransaction).toHaveBeenCalledTimes(1)
@@ -74,7 +74,7 @@ describe('updateDisplayPreferences', () => {
 
   it('does not invalidate cache when UPDATE matches 0 rows (user is not verified)', async () => {
     setupTransactionMock(0)
-    await updateDisplayPreferencesForTest('user-1', { verified_badge_visible: true })
+    await updateDisplayPreferencesForTest('user-1', { is_verified_badge_visible: true })
     expect(mockBeginTransaction).toHaveBeenCalledTimes(1)
     expect(mockInvalidateUsers).not.toHaveBeenCalled()
   })

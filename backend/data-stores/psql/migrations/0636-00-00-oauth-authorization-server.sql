@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS oauth_authorization_requests (
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
   browser_binding_hash TEXT NOT NULL CHECK (char_length(browser_binding_hash) = 64),
   redirect_uri TEXT NOT NULL CHECK (char_length(redirect_uri) BETWEEN 1 AND 2048),
-  state TEXT NOT NULL CHECK (char_length(state) BETWEEN 1 AND 1024),
+  client_state TEXT NOT NULL CHECK (char_length(client_state) BETWEEN 1 AND 1024),
   resource TEXT NOT NULL CHECK (char_length(resource) BETWEEN 1 AND 2048),
   scopes api_scopes[] NOT NULL CHECK (cardinality(scopes) > 0),
   code_challenge TEXT NOT NULL CHECK (code_challenge ~ '^[A-Za-z0-9_-]{43}$'),
@@ -267,11 +267,11 @@ CREATE TABLE IF NOT EXISTS oauth_refresh_tokens (
   expires_at TIMESTAMPTZ NOT NULL,
   consumed_at TIMESTAMPTZ,
   revoked_at TIMESTAMPTZ,
-  replaced_by_id UUID REFERENCES oauth_refresh_tokens ON DELETE SET NULL,
+  replaced_by_token_id UUID REFERENCES oauth_refresh_tokens ON DELETE SET NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (family_id, generation),
-  CHECK (replaced_by_id IS NULL OR consumed_at IS NOT NULL)
+  CHECK (replaced_by_token_id IS NULL OR consumed_at IS NOT NULL)
 );
 
 CREATE OR REPLACE TRIGGER trigger_oauth_refresh_tokens_updated_at
@@ -282,9 +282,10 @@ EXECUTE FUNCTION fn_update_updated_at();
 CREATE INDEX IF NOT EXISTS idx_oauth_refresh_tokens__family
 ON oauth_refresh_tokens (family_id, id);
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_oauth_refresh_tokens__replacement
-ON oauth_refresh_tokens (replaced_by_id)
-WHERE replaced_by_id IS NOT NULL;
+ON oauth_refresh_tokens (replaced_by_token_id)
+WHERE replaced_by_token_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_oauth_refresh_tokens__expiry
 ON oauth_refresh_tokens (expires_at, id)
@@ -354,7 +355,7 @@ COMMENT ON COLUMN oauth_authorization_requests.client_id IS 'Client requesting d
 COMMENT ON COLUMN oauth_authorization_requests.user_id IS 'Authenticated user who owns the consent decision.';
 COMMENT ON COLUMN oauth_authorization_requests.browser_binding_hash IS 'Purpose-bound hash binding the request to one browser device and session.';
 COMMENT ON COLUMN oauth_authorization_requests.redirect_uri IS 'Validated callback URI for this authorization request.';
-COMMENT ON COLUMN oauth_authorization_requests.state IS 'Opaque client state returned unchanged to the callback.';
+COMMENT ON COLUMN oauth_authorization_requests.client_state IS 'Opaque client state returned unchanged to the callback.';
 COMMENT ON COLUMN oauth_authorization_requests.resource IS 'Protected resource audience requested by the client.';
 COMMENT ON COLUMN oauth_authorization_requests.scopes IS 'Canonical scopes presented for user consent.';
 COMMENT ON COLUMN oauth_authorization_requests.code_challenge IS 'Base64url SHA-256 PKCE challenge for the authorization code.';
@@ -404,7 +405,7 @@ COMMENT ON COLUMN oauth_refresh_tokens.generation IS 'Monotonic position of this
 COMMENT ON COLUMN oauth_refresh_tokens.expires_at IS 'Time after which this refresh token cannot be exchanged.';
 COMMENT ON COLUMN oauth_refresh_tokens.consumed_at IS 'Time at which this refresh token was rotated.';
 COMMENT ON COLUMN oauth_refresh_tokens.revoked_at IS 'Time at which this refresh token was revoked directly.';
-COMMENT ON COLUMN oauth_refresh_tokens.replaced_by_id IS 'Successor issued when this refresh token was rotated.';
+COMMENT ON COLUMN oauth_refresh_tokens.replaced_by_token_id IS 'Successor issued when this refresh token was rotated.';
 
 COMMENT ON COLUMN oauth_access_tokens.grant_id IS 'Delegated grant represented by the access token.';
 COMMENT ON COLUMN oauth_access_tokens.refresh_family_id IS 'Refresh family that issued the access token.';

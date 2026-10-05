@@ -18,13 +18,13 @@ const statuses: RewardsProgramStatus[] = [
   {
     id: 'status-platinum-elite',
     rewards_program_status_id: platinum.id,
-    since: '2024-03-01',
-    until: null,
+    started_on: '2024-03-01',
+    expires_on: null,
     rewards_program_status: { id: platinum.id, name: platinum.name, slug: platinum.slug },
   },
 ]
 
-const emptyEditForm = { since: '2024-03-01', until: '' }
+const emptyEditForm = { started_on: '2024-03-01', expires_on: '' }
 
 function StatusRows() {
   const [rows, setRows] = useState(statuses)
@@ -42,14 +42,16 @@ function StatusRows() {
       onSave={id => {
         setRows(current =>
           current.map(row =>
-            row.id === id ? { ...row, since: editForm.since, until: editForm.until || null } : row,
+            row.id === id
+              ? { ...row, started_on: editForm.started_on, expires_on: editForm.expires_on || null }
+              : row,
           ),
         )
         setEditingId(null)
       }}
       onStartEdit={status => {
         setEditingId(status.id)
-        setEditForm({ since: status.since ?? '', until: status.until ?? '' })
+        setEditForm({ started_on: status.started_on ?? '', expires_on: status.expires_on ?? '' })
       }}
       setConfirmingDeleteId={setConfirmingDeleteId}
       setEditForm={setEditForm}

@@ -3,7 +3,7 @@
 -- edited-in-place: added language detection columns to crawls
 -- edited-in-place: removed blocked_at/blocked_by_id/blocked_source (moved to url_hostname_blocks)
 -- edited-in-place: folded hostname-top-indexes and url-hostnames-web-risk (moved from old idempotents/)
--- edited-in-place: added ignore_robots_txt to url_hostnames
+-- edited-in-place: added should_ignore_robots_txt to url_hostnames
 -- edited-in-place: swapped 'english' to 'voucha_english' text search config (unaccent support)
 -- edited-in-place: added unreliable_status_codes to url_hostnames
 -- edited-in-place: added html_sha256 to crawls to dedupe redundant S3 PUTs
@@ -37,11 +37,11 @@ CREATE TABLE IF NOT EXISTS url_hostnames (
   CHECK (hostname = LOWER(hostname)),
   CHECK (hostname = TRIM(hostname)),
 
-  blocked BOOLEAN DEFAULT FALSE, -- moderation-history-guard-allow: trigger-maintained from url_hostname_blocks
-  crawlable BOOLEAN, -- whether this hostname is crawlable, e.g. Reddit is not crawlable
-  emailable BOOLEAN, -- whether we can send emails to this hostname.
-  link_rel_follow BOOLEAN, -- whether this hostname is a link rel=nofollow on the site. Only set this to true for trusted sites.
-  ignore_robots_txt BOOLEAN, -- whether robots.txt allow/disallow rules are ignored for feed fetches on this hostname
+  is_blocked BOOLEAN DEFAULT FALSE, -- moderation-history-guard-allow: trigger-maintained from url_hostname_blocks
+  is_crawlable BOOLEAN, -- whether this hostname is crawlable, e.g. Reddit is not crawlable
+  is_emailable BOOLEAN, -- whether we can send emails to this hostname.
+  should_follow_link_rel BOOLEAN, -- whether this hostname is a link rel=nofollow on the site. Only set this to true for trusted sites.
+  should_ignore_robots_txt BOOLEAN, -- whether robots.txt allow/disallow rules are ignored for feed fetches on this hostname
   unreliable_status_codes SMALLINT[], -- RSS fetch HTTP status codes that should retry instead of soft-deleting feeds on this hostname
   requests_per_second_limit SMALLINT DEFAULT 1, -- the maximum number of requests per second for this hostname
   attempt_threshold_hours SMALLINT DEFAULT 1, -- if a crawl fails, we do not attempt to crawl again for this many hours
@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS url_hostnames (
 
   topic_id UUID,  -- FK to topics added in 0060
 
-  skip_web_risk BOOLEAN NOT NULL DEFAULT FALSE,
+  should_skip_web_risk BOOLEAN NOT NULL DEFAULT FALSE,
   web_risk_checked_url TEXT,
   web_risk_threat_types TEXT[],
   web_risk_expire_at TIMESTAMPTZ,
@@ -103,12 +103,12 @@ ON url_hostnames (reversed_hostname text_pattern_ops);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__blocked
   ON url_hostnames (hostname text_pattern_ops)
-  WHERE blocked = TRUE;
+  WHERE is_blocked = TRUE;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__skip_web_risk
   ON url_hostnames (hostname text_pattern_ops)
-  WHERE skip_web_risk = TRUE;
+  WHERE should_skip_web_risk = TRUE;
 
 -- Partial index for finding auto-disabled hostnames (admin observability, cleanup queries).
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -124,10 +124,10 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 COMMENT ON TABLE url_hostnames IS 'Registered hostnames with crawl and moderation policies.';
 COMMENT ON COLUMN url_hostnames.hostname IS 'Lowercase, unique hostname (e.g. example.com).';
-COMMENT ON COLUMN url_hostnames.blocked IS 'Whether this hostname is blocked from being used on the site (e.g. spam). Trigger-maintained from url_hostname_blocks — do not write directly in app code.';
-COMMENT ON COLUMN url_hostnames.crawlable IS 'Whether pages on this hostname can be crawled.';
-COMMENT ON COLUMN url_hostnames.emailable IS 'Whether email addresses at this hostname are accepted.';
-COMMENT ON COLUMN url_hostnames.link_rel_follow IS 'If TRUE, links to this hostname use rel=follow. Only for trusted sites.';
+COMMENT ON COLUMN url_hostnames.is_blocked IS 'Whether this hostname is blocked from being used on the site (e.g. spam). Trigger-maintained from url_hostname_blocks — do not write directly in app code.';
+COMMENT ON COLUMN url_hostnames.is_crawlable IS 'Whether pages on this hostname can be crawled.';
+COMMENT ON COLUMN url_hostnames.is_emailable IS 'Whether email addresses at this hostname are accepted.';
+COMMENT ON COLUMN url_hostnames.should_follow_link_rel IS 'If TRUE, links to this hostname use rel=follow. Only for trusted sites.';
 COMMENT ON COLUMN url_hostnames.requests_per_second_limit IS 'Max crawl requests per second for this hostname.';
 COMMENT ON COLUMN url_hostnames.attempt_threshold_hours IS 'Hours to wait before retrying a failed crawl.';
 COMMENT ON COLUMN url_hostnames.age_threshold_days IS 'Days after which a successful crawl is considered stale and should be re-crawled.';
@@ -135,8 +135,8 @@ COMMENT ON COLUMN url_hostnames.reversed_hostname IS 'Hostname labels reversed (
 COMMENT ON COLUMN url_hostnames.consecutive_dns_failures IS 'Number of consecutive DNS lookup failures for this hostname. Resets to 0 on any successful crawl. Resets to 1 (not incremented) when last_dns_failure_at is older than 7 days.';
 COMMENT ON COLUMN url_hostnames.last_dns_failure_at IS 'When the most recent DNS lookup failure occurred for this hostname.';
 COMMENT ON COLUMN url_hostnames.dns_disabled_at IS 'When this hostname was automatically disabled due to repeated DNS failures. NULL if not auto-disabled. Clearing this (and resetting crawlable) is an admin-only action.';
-COMMENT ON COLUMN url_hostnames.skip_web_risk IS 'Whether Google Web Risk checks are skipped for this hostname and subdomains.';
-COMMENT ON COLUMN url_hostnames.ignore_robots_txt IS 'Whether robots.txt allow/disallow rules are ignored for RSS feed fetches on this hostname. NULL = inherit from global DynamicConfig. TRUE = always ignore. FALSE = always enforce.';
+COMMENT ON COLUMN url_hostnames.should_skip_web_risk IS 'Whether Google Web Risk checks are skipped for this hostname and subdomains.';
+COMMENT ON COLUMN url_hostnames.should_ignore_robots_txt IS 'Whether robots.txt allow/disallow rules are ignored for RSS feed fetches on this hostname. NULL = inherit from global DynamicConfig. TRUE = always ignore. FALSE = always enforce.';
 COMMENT ON COLUMN url_hostnames.unreliable_status_codes IS 'RSS feed fetch HTTP status codes that should retry instead of soft-deleting feeds for this hostname. NULL = no hostname override. Example: ARRAY[404] for unreliable YouTube feeds.';
 COMMENT ON COLUMN url_hostnames.web_risk_checked_url IS 'URL that produced the Google Web Risk positive verdict for this hostname.';
 COMMENT ON COLUMN url_hostnames.web_risk_threat_types IS 'Google Web Risk threat types returned for the checked URL.';
@@ -365,7 +365,7 @@ CREATE TABLE IF NOT EXISTS crawls (
   url_id UUID NOT NULL REFERENCES urls ON DELETE CASCADE,
   PRIMARY KEY (id),
 
-  crawler_id UUID REFERENCES hostname_crawler_configurations ON DELETE SET NULL,
+  hostname_crawler_configuration_id UUID REFERENCES hostname_crawler_configurations ON DELETE SET NULL,
 
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL, -- when the crawl was started
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -409,7 +409,7 @@ CREATE TABLE IF NOT EXISTS crawls (
   -- when the optional remote oEmbed enrichment completed for this crawl
   embed_oembed_resolved_at TIMESTAMPTZ,
   -- language from <html lang="...">
-  lang TEXT CHECK (TRIM(lang) = lang AND lang != '' AND LENGTH(lang) <= 35),
+  language TEXT CHECK (TRIM(language) = language AND language != '' AND LENGTH(language) <= 35),
 
   -- language detection
   lingua_rs_detected_language TEXT CHECK (lingua_rs_detected_language IS NULL OR (lingua_rs_detected_language = LOWER(lingua_rs_detected_language) AND LENGTH(lingua_rs_detected_language) <= 10)),
@@ -431,8 +431,8 @@ ON crawls (url_id, id DESC);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_crawls__crawler_id
-ON crawls (crawler_id)
-WHERE crawler_id IS NOT NULL;
+ON crawls (hostname_crawler_configuration_id)
+WHERE hostname_crawler_configuration_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_crawls__redirect_url_id
@@ -473,7 +473,7 @@ CREATE INDEX IF NOT EXISTS idx_crawls__oembed_pending
 
 COMMENT ON TABLE crawls IS 'URL crawl results with parsed content, headers, and embedding status. RANGE-partitioned by id.';
 COMMENT ON COLUMN crawls.url_id IS 'The URL that was crawled.';
-COMMENT ON COLUMN crawls.crawler_id IS 'The crawler configuration used for this crawl.';
+COMMENT ON COLUMN crawls.hostname_crawler_configuration_id IS 'The crawler configuration used for this crawl.';
 COMMENT ON COLUMN crawls.last_modified_at IS 'HTTP Last-Modified header from the response.';
 COMMENT ON COLUMN crawls.etag IS 'HTTP ETag header from the response.';
 COMMENT ON COLUMN crawls.html_sha256 IS 'SHA-256 of the raw HTML body fetched; used to dedupe redundant S3 writes when content is unchanged.';
@@ -493,7 +493,7 @@ COMMENT ON COLUMN crawls.meta_tags IS 'JSONB object of all meta tags from the pa
 COMMENT ON COLUMN crawls.embed_metadata IS 'Normalized unfurl/oEmbed metadata without raw provider HTML.';
 COMMENT ON COLUMN crawls.embed_oembed_url IS 'oEmbed endpoint discovered from this crawl''s URL or HTML.';
 COMMENT ON COLUMN crawls.embed_oembed_resolved_at IS 'When optional remote oEmbed enrichment completed for this crawl.';
-COMMENT ON COLUMN crawls.lang IS 'Language from the <html lang="..."> attribute.';
+COMMENT ON COLUMN crawls.language IS 'Language from the <html lang="..."> attribute.';
 
 -------------------------------------------------------------------------------
 -- crawl_chunks

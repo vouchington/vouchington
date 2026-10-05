@@ -168,7 +168,7 @@ describe('bloom-filter.generated', () => {
   it('rebuildBloomFilter includes manually blocked hostnames', async () => {
     const suffix = Math.random().toString(36).slice(2)
     const hostname = `manually-blocked-${suffix}.com`
-    await insertTestUrlHostname({ hostname, blocked: true })
+    await insertTestUrlHostname({ hostname, is_blocked: true })
 
     await rebuildBloomFilter()
 

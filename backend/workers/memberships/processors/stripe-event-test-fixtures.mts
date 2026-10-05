@@ -48,12 +48,12 @@ export function toJobData(storedEvent: {
   id: string
   processing_attempt_id: string
   subscription_id: string | null
-  livemode: boolean
+  is_live_mode: boolean
 }) {
   return {
     stripeEventRecordId: storedEvent.id,
     processingAttemptId: storedEvent.processing_attempt_id,
     stripeSubscriptionId: storedEvent.subscription_id,
-    livemode: storedEvent.livemode,
+    isLiveMode: storedEvent.is_live_mode,
   }
 }

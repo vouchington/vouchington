@@ -165,7 +165,7 @@ describe('copyright email correspondence admission', () => {
     await reviewCopyrightCounterNotice({
       submissionId: admitted.submissionId,
       currentUser: moderator,
-      accepted: false,
+      is_accepted: false,
       rationale: 'The statutory declarations were not sufficient.',
     })
     const reviewedAggregate = await getCopyrightNoticePrivateAggregate(notice.id)

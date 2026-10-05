@@ -89,7 +89,7 @@ export async function getEuParticipantNoticeDetail(
         LEFT JOIN copyright_territorial_redress_decisions redress_decision
           ON redress_decision.copyright_territorial_redress_request_id = request.id
         WHERE request.copyright_territorial_decision_id = ${decision.id}
-          AND request.submitted_by_user_id = ${currentUser.id}
+          AND request.submitted_by_id = ${currentUser.id}
         ORDER BY request.id DESC LIMIT 1
       `)
     : { rows: [] }
@@ -135,7 +135,7 @@ export async function getEuParticipantNoticeDetail(
     transaction<CopyrightParticipantNoticeDetail['submissions'][number]>(sql`
       SELECT id, kind, received_at, source_kind FROM copyright_notice_submissions
       WHERE copyright_notice_id = ${noticeId}
-        AND (${viewerRole === 'staff'} OR submitted_by_user_id = ${currentUser.id})
+        AND (${viewerRole === 'staff'} OR submitted_by_id = ${currentUser.id})
       ORDER BY received_at, id
     `),
     selectCopyrightParticipantStatements(noticeId, currentUser.id, viewerRole, transaction),

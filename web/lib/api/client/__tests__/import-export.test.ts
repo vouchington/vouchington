@@ -79,11 +79,17 @@ describe('import/export client helpers', () => {
     )
     vi.stubGlobal('fetch', mockFetch)
 
-    await importRssFeeds({ csv: 'url,title\nhttps://ex.com,Test', follow: true })
+    await importRssFeeds({
+      csv: 'url,title\nhttps://ex.com,Test',
+      should_follow_imported_feeds: true,
+    })
 
     const [, init] = mockFetch.mock.calls[0] as [string, RequestInit]
     const body = JSON.parse(init.body as string)
-    expect(body).toMatchObject({ csv: 'url,title\nhttps://ex.com,Test', follow: true })
+    expect(body).toMatchObject({
+      csv: 'url,title\nhttps://ex.com,Test',
+      should_follow_imported_feeds: true,
+    })
   })
 
   it('rejects more than 500 URL rows before sending the request', async () => {
@@ -93,7 +99,7 @@ describe('import/export client helpers', () => {
     await expect(
       importRssFeeds({
         urls: Array.from({ length: 501 }, (_, index) => `https://example.com/${index}.xml`),
-        follow: true,
+        should_follow_imported_feeds: true,
       }),
     ).rejects.toThrow('Maximum 500 URLs per import')
     expect(mockFetch).not.toHaveBeenCalled()
@@ -104,7 +110,7 @@ describe('import/export client helpers', () => {
     vi.stubGlobal('fetch', mockFetch)
 
     await expect(
-      importRssFeeds({ opml: '"'.repeat(1024 * 1024 + 1), follow: true }),
+      importRssFeeds({ opml: '"'.repeat(1024 * 1024 + 1), should_follow_imported_feeds: true }),
     ).rejects.toThrow('2 MiB')
     expect(mockFetch).not.toHaveBeenCalled()
   })

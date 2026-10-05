@@ -64,9 +64,9 @@ describe('index', () => {
         expect(hostnameRef).toBeDefined()
         const hostname = response.body.hostnames[hostnameId]
         expect(hostname).toBeDefined()
-        expect(hostname.blocked).toBeUndefined()
-        expect(hostname.crawlable).toBeUndefined()
-        expect(hostname.link_rel_follow).toBeUndefined()
+        expect(hostname.is_blocked).toBeUndefined()
+        expect(hostname.is_crawlable).toBeUndefined()
+        expect(hostname.should_follow_link_rel).toBeUndefined()
         expect(hostname.votes_score_net).toBeUndefined()
         expect(hostname.votes_count_up).toBeUndefined()
         expect(hostname.votes_count_down).toBeUndefined()
@@ -88,9 +88,9 @@ describe('index', () => {
         expect(hostnameRef).toBeDefined()
         const hostname = response.body.hostnames[hostnameId]
         expect(hostname).toBeDefined()
-        expect(hostname.blocked).toBeUndefined()
-        expect(hostname.crawlable).toBeUndefined()
-        expect(hostname.link_rel_follow).toBeUndefined()
+        expect(hostname.is_blocked).toBeUndefined()
+        expect(hostname.is_crawlable).toBeUndefined()
+        expect(hostname.should_follow_link_rel).toBeUndefined()
         expect(hostname.votes_score_net).toBeUndefined()
         expect(hostname.votes_count_up).toBeUndefined()
         expect(hostname.votes_count_down).toBeUndefined()
@@ -157,7 +157,7 @@ describe('index', () => {
         const random = Math.random().toString(36).slice(2, 8)
         const hostnameId = await insertTestUrlHostname({
           hostname: `blocked-${random}.example.com`,
-          blocked: true,
+          is_blocked: true,
         })
         const request = createRequest()
         await request.authenticateAs(admin)

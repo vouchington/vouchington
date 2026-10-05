@@ -96,7 +96,7 @@ export type { ModeratorActionType }
 export interface ModeratorActionView {
   id: string
   community_id: string | null
-  actor_id: string | null
+  actor_user_id: string | null
   action_type: ModeratorActionType
   post_id: string | null
   target_user_id: string | null

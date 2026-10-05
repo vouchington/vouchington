@@ -46,7 +46,7 @@ describe('updateStoryPostAgentResult', () => {
     await expect(getPostModerationData(postId)).resolves.toMatchObject({
       openai_omni_moderation_content_sha256: content_sha256,
       openai_omni_moderation_created_at: null,
-      openai_omni_moderation_flagged: null,
+      is_flagged_by_openai_omni_moderation: null,
       openai_omni_moderation_results: null,
     })
     const waiting = await readAllQueueJobs(spam_detection)
@@ -78,7 +78,7 @@ describe('updateStoryPostAgentResult', () => {
 
     await expect(getPostModerationData(postId)).resolves.toMatchObject({
       openai_omni_moderation_created_at: null,
-      openai_omni_moderation_flagged: null,
+      is_flagged_by_openai_omni_moderation: null,
       openai_omni_moderation_results: null,
     })
   })
@@ -99,7 +99,7 @@ describe('updateStoryPostAgentResult', () => {
 
     await expect(
       getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId }),
-    ).resolves.toMatchObject({ post_id: postId, reasons: ['post_content_reset'] })
+    ).resolves.toMatchObject({ post_identity_id: postId, reasons: ['post_content_reset'] })
   })
 
   it('hashes story agent results with the current locked story title', async () => {
@@ -194,7 +194,7 @@ describe('updateStoryPostAgentResult', () => {
     await expect(getPostModerationData(postId)).resolves.toMatchObject({
       openai_omni_moderation_input_sha256: originalHash,
       openai_omni_moderation_created_at: expect.any(Date),
-      openai_omni_moderation_flagged: true,
+      is_flagged_by_openai_omni_moderation: true,
       openai_omni_moderation_results: { flagged_categories: [] },
     })
     const waiting = await readAllQueueJobs(spam_detection)

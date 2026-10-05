@@ -73,7 +73,7 @@ describe('crawl-url.content', () => {
         hostname_id: url!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       fetchCrawlerHtml.mockResolvedValueOnce(
         createMockCrawlerResult(200, `https://${hostname}/canonical`, null),
@@ -96,7 +96,7 @@ describe('crawl-url.content', () => {
         hostname_id: url!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       fetchCrawlerHtml.mockResolvedValueOnce(
         createMockCrawlerResult(200, `https://${hostname}/canonical`, null),
@@ -119,7 +119,7 @@ describe('crawl-url.content', () => {
         hostname_id: url!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       fetchCrawlerHtml.mockResolvedValueOnce(createMockCrawlerResult(200, url!.url, null))
 
@@ -140,7 +140,7 @@ describe('crawl-url.content', () => {
         hostname_id: url!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       fetchCrawlerHtml.mockResolvedValueOnce(
         createMockCrawlerResult(200, `http://${hostname}/page#section`, null),
@@ -164,7 +164,7 @@ describe('crawl-url.content', () => {
         hostname_id: url!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       fetchCrawlerHtml.mockResolvedValueOnce(createMockCrawlerResult(200, '/page', null))
 
@@ -187,7 +187,7 @@ describe('crawl-url.content', () => {
         hostname_id: url!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       fetchCrawlerHtml.mockResolvedValueOnce(
         createMockCrawlerResult(200, null, null, { robots: 'noindex' }),
@@ -212,7 +212,7 @@ describe('crawl-url.content', () => {
         hostname_id: url!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       fetchCrawlerHtml.mockResolvedValueOnce(
         createMockCrawlerResult(200, null, null, {}, { 'x-robots-tag': 'noindex' }),
@@ -239,7 +239,7 @@ describe('crawl-url.content', () => {
         hostname_id: url!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       const mockResult = createMockCrawlerResult(200)
       mockResult.content!.lang = 'en'
@@ -248,7 +248,7 @@ describe('crawl-url.content', () => {
       const result = await crawlUrlForTest(url!.id)
 
       expect(result).not.toBeNull()
-      expect(result!.lang).toBe('en')
+      expect(result!.language).toBe('en')
     })
   })
 
@@ -262,7 +262,7 @@ describe('crawl-url.content', () => {
         hostname_id: url!.hostname.id,
         crawler_type: 'fetch',
       })
-      await updateUrlHostname(url!.hostname.id, { crawlable: true })
+      await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
 
       fetchCrawlerHtml.mockResolvedValueOnce(
         createMockCrawlerResult(301, null, 'not-a-valid-url://[invalid'),

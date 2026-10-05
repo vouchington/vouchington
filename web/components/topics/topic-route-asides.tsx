@@ -72,7 +72,7 @@ export function TopicRouteAsides({
         topicId={topic.id}
         topicType={topic.topic_type}
         topicSlug={topic.slug}
-        allowReviews={topic.allow_reviews}
+        allowReviews={topic.should_allow_reviews}
         isMuted={isMuted}
       />
       <SequentialAsideSuspense>

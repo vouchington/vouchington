@@ -15,7 +15,7 @@ type UpdateIndividualCardData = {
   received_sign_up_bonus_on?: string | Date | null
   credit_limit?: Money | null
   is_authorized_user?: boolean
-  authorized_user_of_id?: string | null
+  authorized_user_of_card_id?: string | null
   note?: string | null
 }
 
@@ -28,7 +28,7 @@ async function assertAuthorizedUserOfCard(
   const { rows: authRows } = await read(
     sql`/* assertAuthorizedUserOfCard */ SELECT id FROM individual_cards WHERE id = ${value} AND individual_id = ${individualId} LIMIT 1`,
   )
-  assert(authRows[0], 422, 'authorized_user_of_id must be a card belonging to you')
+  assert(authRows[0], 422, 'authorized_user_of_card_id must be a card belonging to you')
   let effectiveIsAuthorizedUser = isAuthorizedUser
   if (effectiveIsAuthorizedUser === undefined) {
     const { rows: existing } = await read(
@@ -39,7 +39,7 @@ async function assertAuthorizedUserOfCard(
   assert(
     effectiveIsAuthorizedUser !== false,
     422,
-    'is_authorized_user must be true when authorized_user_of_id is set',
+    'is_authorized_user must be true when authorized_user_of_card_id is set',
   )
 }
 
@@ -55,15 +55,15 @@ export async function createIndividualCard(
   } = await read(
     sql`/* createIndividualCard */ SELECT topic_type FROM topics WHERE id = ${cardId} AND deleted_at IS NULL AND merged_into_topic_id IS NULL LIMIT 1`,
   )
-  assert(topic, 422, 'Invalid card_id')
-  assert(topic.topic_type === 'card', 422, 'Invalid card_id')
+  assert(topic, 422, 'Invalid card_topic_id')
+  assert(topic.topic_type === 'card', 422, 'Invalid card_topic_id')
   const individual = await getOrCreateIndividual(user)
   let rows: { id: string }[]
   try {
     ;({ rows } = await write(sql`/* createIndividualCard */
       INSERT INTO individual_cards (
         individual_id,
-        card_id
+        card_topic_id
       )
       VALUES (
         ${individual.id},
@@ -74,7 +74,7 @@ export async function createIndividualCard(
   } catch (err) {
     const pgError = err as { code?: string }
     if (pgError.code === '23503') {
-      assert(false, 422, 'Invalid card_id')
+      assert(false, 422, 'Invalid card_topic_id')
     }
     throw err
   }
@@ -123,10 +123,14 @@ export async function updateIndividualCardById(
   if (data.is_authorized_user !== undefined) {
     sets.push(`is_authorized_user = $${values.push(data.is_authorized_user)}`)
   }
-  if (data.authorized_user_of_id !== undefined) {
-    const value = data.authorized_user_of_id || null
+  if (data.authorized_user_of_card_id !== undefined) {
+    const value = data.authorized_user_of_card_id || null
     if (value !== null) {
-      assert(value !== individualCardId, 422, 'authorized_user_of_id cannot be the card itself')
+      assert(
+        value !== individualCardId,
+        422,
+        'authorized_user_of_card_id cannot be the card itself',
+      )
       await assertAuthorizedUserOfCard(
         value,
         individual.id,
@@ -134,7 +138,7 @@ export async function updateIndividualCardById(
         data.is_authorized_user,
       )
     }
-    sets.push(`authorized_user_of_id = $${values.push(value)}`)
+    sets.push(`authorized_user_of_card_id = $${values.push(value)}`)
   }
   if (data.note !== undefined) {
     sets.push(`note = $${values.push(data.note || null)}`)

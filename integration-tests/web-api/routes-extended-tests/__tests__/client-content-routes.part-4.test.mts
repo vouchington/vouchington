@@ -103,11 +103,11 @@ describe('client-content-routes', () => {
       const result = await harness.withClientRuntime(
         () =>
           updateMyIdentityVerificationDisplayPreferences({
-            verified_badge_visible: false,
+            is_verified_badge_visible: false,
           }),
         harness.verifiedUserCookieHeader,
       )
-      expect(result).toMatchObject({ verified_badge_visible: false })
+      expect(result).toMatchObject({ is_verified_badge_visible: false })
     })
   })
 })

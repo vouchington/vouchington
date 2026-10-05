@@ -32,7 +32,7 @@ export async function searchCrawlsForUrl(
     SELECT
       id,
       url_id,
-      crawler_id,
+      hostname_crawler_configuration_id,
       created_at,
       last_modified_at,
       etag,
@@ -51,7 +51,7 @@ export async function searchCrawlsForUrl(
       embed_metadata,
       embed_oembed_url,
       embed_oembed_resolved_at,
-      lang
+      language
     FROM crawls
     WHERE `,
   )
@@ -74,7 +74,7 @@ export async function searchPublicUrlCrawlsForUrl(
       response_status_code,
       completed_at,
       title,
-      lang
+      language
     FROM crawls
     WHERE `,
   )

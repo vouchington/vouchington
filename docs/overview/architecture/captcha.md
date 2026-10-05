@@ -10,18 +10,18 @@ Voucha runs two complementary anti-abuse mechanisms on content-creation actions:
 
 ## Action × provider matrix
 
-| Action                    | Endpoint                                                      | Turnstile | reCAPTCHA Enterprise  |
-| ------------------------- | ------------------------------------------------------------- | --------- | --------------------- |
-| Create post               | `POST /api/v1/posts`                                          | ✅        | ✅ (`create_post`)    |
-| Create comment            | `POST /api/v1/posts` (with `parent_id`)                       | ✅        | ✅ (`create_comment`) |
-| Create community post     | `POST /api/v1/communities/:idOrSlug/posts`                    | ✅        | ✅ (`create_post`)    |
-| Create community comment  | `POST /api/v1/communities/:idOrSlug/posts` (with `parent_id`) | ✅        | ✅ (`create_comment`) |
-| Create community          | `POST /api/v1/communities`                                    | ✅        | ❌                    |
-| Submit report             | `POST /api/v1/reports`                                        | ✅        | ❌                    |
-| Submit dispute            | `POST /api/v1/disputes`                                       | ✅        | ❌                    |
-| Submit appeal             | `POST /api/v1/appeals`                                        | ✅        | ❌                    |
-| Recommend topic           | `POST /api/v1/topic-recommendations`                          | ✅        | ❌                    |
-| Request email login token | `POST /api/v1/auth/email-address/tokens`                      | ✅        | ❌                    |
+| Action                    | Endpoint                                                           | Turnstile | reCAPTCHA Enterprise  |
+| ------------------------- | ------------------------------------------------------------------ | --------- | --------------------- |
+| Create post               | `POST /api/v1/posts`                                               | ✅        | ✅ (`create_post`)    |
+| Create comment            | `POST /api/v1/posts` (with `parent_post_id`)                       | ✅        | ✅ (`create_comment`) |
+| Create community post     | `POST /api/v1/communities/:idOrSlug/posts`                         | ✅        | ✅ (`create_post`)    |
+| Create community comment  | `POST /api/v1/communities/:idOrSlug/posts` (with `parent_post_id`) | ✅        | ✅ (`create_comment`) |
+| Create community          | `POST /api/v1/communities`                                         | ✅        | ❌                    |
+| Submit report             | `POST /api/v1/reports`                                             | ✅        | ❌                    |
+| Submit dispute            | `POST /api/v1/disputes`                                            | ✅        | ❌                    |
+| Submit appeal             | `POST /api/v1/appeals`                                             | ✅        | ❌                    |
+| Recommend topic           | `POST /api/v1/topic-recommendations`                               | ✅        | ❌                    |
+| Request email login token | `POST /api/v1/auth/email-address/tokens`                           | ✅        | ❌                    |
 
 reCAPTCHA is intentionally scoped narrowly (post/comment creation) because it is billed per
 assessment. The service helper (`@services/recaptcha`) is built to extend to other actions later.

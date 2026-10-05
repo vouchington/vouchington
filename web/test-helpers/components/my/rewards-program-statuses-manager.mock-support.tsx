@@ -67,8 +67,8 @@ export const initialStatuses: RewardsProgramStatus[] = [
   {
     id: 'status-user-1',
     rewards_program_status_id: 'stat-1',
-    since: '2023-01-01',
-    until: null,
+    started_on: '2023-01-01',
+    expires_on: null,
     rewards_program_status: {
       id: 'stat-1',
       name: 'Delta Medallion Gold',
@@ -87,8 +87,8 @@ export function installRewardsProgramStatusMockResponses(): void {
     rewards_program_status: {
       id: 'status-user-2',
       rewards_program_status_id: 'stat-2',
-      since: null,
-      until: null,
+      started_on: null,
+      expires_on: null,
       rewards_program_status: {
         id: 'stat-2',
         name: 'Marriott Bonvoy Platinum',
@@ -100,8 +100,8 @@ export function installRewardsProgramStatusMockResponses(): void {
     rewards_program_status: {
       id: 'status-user-1',
       rewards_program_status_id: 'stat-1',
-      since: '2023-01-01',
-      until: '2024-01-01',
+      started_on: '2023-01-01',
+      expires_on: '2024-01-01',
       rewards_program_status: {
         id: 'stat-1',
         name: 'Delta Medallion Gold',

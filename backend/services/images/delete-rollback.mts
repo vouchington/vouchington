@@ -41,7 +41,7 @@ export async function rollbackImageDeletion(
               ? null
               : JSON.stringify(imageRollback.openai_omni_moderation_results)
           }::jsonb,
-          openai_omni_moderation_flagged = ${imageRollback.openai_omni_moderation_flagged},
+          is_flagged_by_openai_omni_moderation = ${imageRollback.is_flagged_by_openai_omni_moderation},
           openai_omni_moderation_created_at = ${imageRollback.openai_omni_moderation_created_at}
       WHERE id = ${imageId}
       `),

@@ -148,8 +148,8 @@ export function useTopicEditPage(
     dispatch({ flagsSaving: true })
     try {
       const { topic: updated } = await updateTopic(id, {
-        noindex: state.topic.noindex,
-        allow_reviews: state.topic.allow_reviews,
+        is_noindexed: state.topic.is_noindexed,
+        should_allow_reviews: state.topic.should_allow_reviews,
       })
       dispatch({ topic: { ...state.topic, ...updated } })
       onSuccess('Visibility settings updated')
@@ -163,10 +163,10 @@ export function useTopicEditPage(
     }
   }
 
-  const setNoindex = (noindex: boolean) =>
-    dispatch(s => (s.topic ? { topic: { ...s.topic, noindex } } : {}))
-  const setAllowReviews = (allow_reviews: boolean) =>
-    dispatch(s => (s.topic ? { topic: { ...s.topic, allow_reviews } } : {}))
+  const setNoindex = (is_noindexed: boolean) =>
+    dispatch(s => (s.topic ? { topic: { ...s.topic, is_noindexed } } : {}))
+  const setAllowReviews = (should_allow_reviews: boolean) =>
+    dispatch(s => (s.topic ? { topic: { ...s.topic, should_allow_reviews } } : {}))
 
   const setLogoSaving = (logoSaving: boolean) => dispatch({ logoSaving })
   const setHeroSaving = (heroSaving: boolean) => dispatch({ heroSaving })

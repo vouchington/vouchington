@@ -9,10 +9,10 @@ type ViewHostname = {
   id: string
   hostname: string
   topic_id: string | null
-  blocked: boolean | null
-  crawlable: boolean | null
-  skip_web_risk: boolean
-  link_rel_follow: boolean | null
+  is_blocked: boolean | null
+  is_crawlable: boolean | null
+  should_skip_web_risk: boolean
+  should_follow_link_rel: boolean | null
   votes_score_net: number
   votes_count_up: number
   votes_count_down: number

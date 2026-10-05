@@ -9,7 +9,7 @@ export async function insertReviewedCopyrightFormIntake(input: {
 }): Promise<void> {
   const { rowCount } = await write(sql`/* insertReviewedCopyrightFormIntake */
     INSERT INTO copyright_notice_form_intake_reviews (
-      copyright_notice_form_intake_id, reviewed_at, reviewed_by_id, accepted, rationale_ciphertext
+      copyright_notice_form_intake_id, reviewed_at, reviewed_by_id, is_accepted, rationale_ciphertext
     )
     SELECT intake.id, CURRENT_TIMESTAMP, ${input.reviewerUserId}, true,
       ${`rationale-${randomUUID()}`}
@@ -38,7 +38,7 @@ export async function insertOpenCopyrightCounterNoticeDeadline(input: {
       ) RETURNING id
     ), assessment AS (
       INSERT INTO copyright_notice_submission_assessments (
-        copyright_notice_submission_id, assessed_at, assessed_by_id, substantially_compliant
+        copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant
       )
       SELECT id, CURRENT_TIMESTAMP - INTERVAL '19 days', ${input.reviewerUserId}, true
       FROM submission RETURNING id, copyright_notice_submission_id
@@ -56,7 +56,7 @@ export async function insertOpenCopyrightCounterNoticeDeadline(input: {
     ), review AS (
       INSERT INTO copyright_notice_counter_notice_reviews (
         copyright_notice_submission_id, copyright_notice_submission_assessment_id,
-        copyright_notice_deadline_id, reviewed_at, reviewed_by_id, accepted, rationale_ciphertext
+        copyright_notice_deadline_id, reviewed_at, reviewed_by_id, is_accepted, rationale_ciphertext
       )
       SELECT assessment.copyright_notice_submission_id, assessment.id, deadline.id,
         CURRENT_TIMESTAMP - INTERVAL '19 days', ${input.reviewerUserId}, true,

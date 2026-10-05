@@ -23,7 +23,7 @@ import withdrawTopicRecommendationTool from '../withdraw-topic-recommendation.mt
 
 const SCOPES = ['topic-recommendations:read', 'topic-recommendations:write'] as const
 
-const INTERNAL_POST_COLUMN = 'openai_omni_moderation_flagged'
+const INTERNAL_POST_COLUMN = 'is_flagged_by_openai_omni_moderation'
 
 type Caller = Awaited<ReturnType<typeof createCaller>>
 

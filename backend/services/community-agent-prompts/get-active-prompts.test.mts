@@ -28,7 +28,7 @@ describe('get-active-prompts', () => {
   })
 
   describe('getActiveCommunityAgentPrompts', () => {
-    it('returns only active (slot_allocated=true, activated, not deactivated) prompts', async () => {
+    it('returns only active (is_slot_allocated=true, activated, not deactivated) prompts', async () => {
       const c = await insertTestCommunity({ createdById: user.id })
 
       const [active, unallocated] = await Promise.all([
@@ -85,7 +85,7 @@ describe('get-active-prompts', () => {
       const ids = results.map(r => r.id)
       // Verify shape if any returned
       for (const r of results) {
-        expect(r.slot_allocated).toBe(true)
+        expect(r.is_slot_allocated).toBe(true)
         expect(r.activated_at).not.toBeNull()
         expect(r.deactivated_at).toBeNull()
       }
@@ -106,7 +106,7 @@ describe('get-active-prompts', () => {
       const r = results.find(p => p.prompt === 'Active prompt check')!
       expect(r).toBeDefined()
       expect(r.agent_id).toBeTruthy()
-      expect(r.slot_allocated).toBe(true)
+      expect(r.is_slot_allocated).toBe(true)
       expect(r.activated_at).not.toBeNull()
       expect(r.deactivated_at).toBeNull()
     })

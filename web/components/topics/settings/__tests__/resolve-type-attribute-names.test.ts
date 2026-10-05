@@ -5,18 +5,18 @@ describe('resolveTypeAttributeNames', () => {
   it('resolves present id fields to names and ignores non-id and unresolved fields', async () => {
     const names = await resolveTypeAttributeNames(
       {
-        bank_id: 'bank-1',
-        brand_id: 'missing',
+        bank_topic_id: 'bank-1',
+        brand_topic_id: 'missing',
         annual_fee: { amount: 9500, currency: 'usd' },
       },
       async topicId => (topicId === 'bank-1' ? 'Chase' : undefined),
     )
 
-    expect(names).toEqual({ bank_id: 'Chase' })
+    expect(names).toEqual({ bank_topic_id: 'Chase' })
   })
 
   it('omits ids whose lookup rejects', async () => {
-    const names = await resolveTypeAttributeNames({ bank_id: 'bank-1' }, async () => {
+    const names = await resolveTypeAttributeNames({ bank_topic_id: 'bank-1' }, async () => {
       throw new Error('boom')
     })
 

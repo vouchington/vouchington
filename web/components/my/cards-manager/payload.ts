@@ -12,7 +12,7 @@ export function cardToEditForm(card: IndividualCard): CardEditForm {
     credit_limit: card.credit_limit ? majorUnitsInputValue(card.credit_limit) : '',
     currency: card.credit_limit?.currency ?? 'usd',
     is_authorized_user: card.is_authorized_user,
-    authorized_user_of_id: card.authorized_user_of_id ?? '',
+    authorized_user_of_card_id: card.authorized_user_of_card_id ?? '',
     note: card.note ?? '',
   }
 }
@@ -39,7 +39,7 @@ export function buildCardUpdatePayload(
   } catch {
     return 'invalid-credit-limit'
   }
-  const authorized_user_of_id = editForm.authorized_user_of_id || null
+  const authorized_user_of_card_id = editForm.authorized_user_of_card_id || null
   const note = editForm.note || null
   if (!original || opened_on !== original.opened_on) payload.opened_on = opened_on
   if (!original || closed_on !== original.closed_on) payload.closed_on = closed_on
@@ -51,12 +51,12 @@ export function buildCardUpdatePayload(
   }
   if (!original || editForm.is_authorized_user !== original.is_authorized_user) {
     payload.is_authorized_user = editForm.is_authorized_user
-    if (!editForm.is_authorized_user && original?.authorized_user_of_id) {
-      payload.authorized_user_of_id = null
+    if (!editForm.is_authorized_user && original?.authorized_user_of_card_id) {
+      payload.authorized_user_of_card_id = null
     }
   }
-  if (!original || authorized_user_of_id !== original.authorized_user_of_id) {
-    payload.authorized_user_of_id = authorized_user_of_id
+  if (!original || authorized_user_of_card_id !== original.authorized_user_of_card_id) {
+    payload.authorized_user_of_card_id = authorized_user_of_card_id
   }
   if (!original || note !== original.note) payload.note = note
   return Object.keys(payload).length === 0 ? null : payload

@@ -1,9 +1,9 @@
 import assert from 'http-assert'
 
 const individualCardConstraintErrors: Readonly<Record<string, string>> = {
-  '23503:individual_cards_authorized_user_of_id_fkey': 'Invalid authorized_user_of_id',
+  '23503:individual_cards_authorized_user_of_id_fkey': 'Invalid authorized_user_of_card_id',
   '23514:individual_cards_check1':
-    'is_authorized_user must be true when authorized_user_of_id is set',
+    'is_authorized_user must be true when authorized_user_of_card_id is set',
 }
 
 export async function mapIndividualCardConstraintError<T>(operation: () => Promise<T>): Promise<T> {

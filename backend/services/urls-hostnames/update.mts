@@ -2,10 +2,10 @@ import { write } from '@data-stores/psql'
 import { invalidate } from '@services/entity-cache/invalidate'
 
 type UpdateUrlHostnameOptions = {
-  crawlable?: boolean
-  skip_web_risk?: boolean
-  link_rel_follow?: boolean
-  ignore_robots_txt?: boolean | null
+  is_crawlable?: boolean
+  should_skip_web_risk?: boolean
+  should_follow_link_rel?: boolean
+  should_ignore_robots_txt?: boolean | null
   unreliable_status_codes?: number[] | null
 }
 
@@ -18,10 +18,10 @@ export const updateUrlHostname = async (
   for (const key of Object.keys(changes) as Array<keyof UpdateUrlHostnameOptions>) {
     const value = changes[key]
     switch (key) {
-      case 'crawlable':
-      case 'skip_web_risk':
-      case 'link_rel_follow':
-      case 'ignore_robots_txt':
+      case 'is_crawlable':
+      case 'should_skip_web_risk':
+      case 'should_follow_link_rel':
+      case 'should_ignore_robots_txt':
       case 'unreliable_status_codes':
         if (value !== undefined) {
           sets.push(`${key} = $${values.push(value)}`)

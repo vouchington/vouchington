@@ -1,7 +1,7 @@
 import type { ModeratorActionType } from './config.mts'
 
 export interface ModeratorActionCounts {
-  actor_id: string
+  actor_user_id: string
   total: number
   counts: Partial<Record<ModeratorActionType, number>>
 }
@@ -9,7 +9,7 @@ export interface ModeratorActionCounts {
 export interface ModeratorAction {
   id: string
   community_id: string | null
-  actor_id: string | null
+  actor_user_id: string | null
   action_type: ModeratorActionType
   post_id: string | null
   target_user_id: string | null
@@ -26,9 +26,9 @@ export interface ModeratorAction {
   agent_moderation_post_id: string | null
   oauth_client_id: string | null
   user_moderator_note_id: string | null
-  crawler_id: string | null
+  hostname_crawler_configuration_id: string | null
   topic_id: string | null
-  operation_request_id: string | null
+  operation_request_action_id: string | null
   queue_name: string | null
   scheduled_job_key: string | null
   backfill_key: string | null

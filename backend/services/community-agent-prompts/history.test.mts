@@ -33,7 +33,7 @@ describe('listCommunityAgentPromptHistory', () => {
       {},
       {
         prompt: 'history test prompt',
-        slot_allocated: false,
+        is_slot_allocated: false,
       },
     )
 
@@ -61,8 +61,8 @@ describe('listCommunityAgentPromptHistory', () => {
       community.id,
       prompt.id,
       'updated',
-      { prompt: 'old text', slot_allocated: false },
-      { prompt: 'new text', slot_allocated: false },
+      { prompt: 'old text', is_slot_allocated: false },
+      { prompt: 'new text', is_slot_allocated: false },
     )
 
     const result = await listCommunityAgentPromptHistory(community.id, { promptId: prompt.id })
@@ -71,7 +71,7 @@ describe('listCommunityAgentPromptHistory', () => {
     const entry = result.entries[0]!
     expect(entry.changed_fields).toHaveProperty('prompt')
     expect(entry.changed_fields['prompt']).toEqual({ previous: 'old text', next: 'new text' })
-    expect(entry.changed_fields).not.toHaveProperty('slot_allocated')
+    expect(entry.changed_fields).not.toHaveProperty('is_slot_allocated')
   })
 
   it('filters by promptId', async () => {

@@ -55,8 +55,8 @@ describe('copyright records in the account data export', () => {
       claimant_contact: scene.claimantPii.address,
       work_description: scene.claimantPii.work,
       electronic_signature: scene.claimantPii.signature,
-      good_faith_belief: 'true',
-      accuracy_authority_under_penalty_of_perjury: 'true',
+      has_good_faith_belief: 'true',
+      has_accuracy_authority_under_penalty_of_perjury: 'true',
     })
     expect(JSON.parse(filed!.claimant_targets)).toEqual([
       expect.objectContaining({ hostedUseUrl: scene.hostedUseUrl }),
@@ -152,12 +152,12 @@ describe('copyright records in the account data export', () => {
     )
 
     expect(incidents).toEqual([
-      expect.objectContaining({ notice_id: scene.noticeId, operative: 'true', disposition: '' }),
+      expect.objectContaining({ notice_id: scene.noticeId, is_operative: 'true', disposition: '' }),
     ])
     expect(Object.keys(incidents[0]!)).toEqual([
       'incident_id',
       'notice_id',
-      'operative',
+      'is_operative',
       'created_at',
       'disposition',
       'disposition_recorded_at',
@@ -168,7 +168,7 @@ describe('copyright records in the account data export', () => {
 
   it('has no copyright records for an erased account, and the other side loses the attribution', async () => {
     const scene = await createBothRolesScene()
-    // An operative repeat-infringer incident blocks erasing the poster, so only the claimant erases.
+    // An is_operative repeat-infringer incident blocks erasing the poster, so only the claimant erases.
     await hardDeleteTestUser(scene.claimant.id)
 
     const erased = await readAccountExport(scene.claimant.id)
@@ -227,7 +227,7 @@ async function createBothRolesScene() {
   await reviewCopyrightFormIntake({
     intakeId: intake.intake.id,
     currentUser: moderator,
-    accepted: true,
+    is_accepted: true,
     rationale: 'Internal moderator rationale that no participant may read.',
   })
   const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)

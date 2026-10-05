@@ -122,7 +122,7 @@ describe('TypeAttributesSection topic navigation', () => {
         topicId: 'topic-a',
         typeAttributes: {
           annual_fee: { amount: 1234, currency: 'usd' },
-          bank_id: 'bank-a',
+          bank_topic_id: 'bank-a',
         },
         onSubmit,
       }),
@@ -133,21 +133,21 @@ describe('TypeAttributesSection topic navigation', () => {
 
     expect(annualFee.value).toBe('12.34')
     fireEvent.change(annualFee, { target: { value: '99.99' } })
-    fireEvent.click(screen.getByTestId('select-bank_id'))
+    fireEvent.click(screen.getByTestId('select-bank_topic_id'))
 
     view.rerender(
       editor({
         topicId: 'topic-a',
         typeAttributes: {
           annual_fee: { amount: 1234, currency: 'usd' },
-          bank_id: 'bank-a',
+          bank_topic_id: 'bank-a',
         },
         onSubmit,
       }),
     )
     expect(annualFee.value).toBe('99.99')
-    expect(screen.getByRole('textbox', { name: 'bank_id value' })).toHaveValue(
-      'selected-id-for-bank_id',
+    expect(screen.getByRole('textbox', { name: 'bank_topic_id value' })).toHaveValue(
+      'selected-id-for-bank_topic_id',
     )
 
     view.rerender(
@@ -155,7 +155,7 @@ describe('TypeAttributesSection topic navigation', () => {
         topicId: 'topic-b',
         typeAttributes: {
           annual_fee: { amount: 550, currency: 'jpy' },
-          bank_id: 'bank-b',
+          bank_topic_id: 'bank-b',
         },
         onSubmit,
       }),
@@ -166,19 +166,19 @@ describe('TypeAttributesSection topic navigation', () => {
     expect(topicBFee.value).toBe('550')
     expect(topicBFee).toHaveAttribute('inputmode', 'decimal')
     expect(screen.getByRole('combobox', { name: 'Currency' })).toHaveValue('jpy')
-    expect(screen.getByRole('textbox', { name: 'bank_id value' })).toHaveValue('bank-b')
+    expect(screen.getByRole('textbox', { name: 'bank_topic_id value' })).toHaveValue('bank-b')
 
     fireEvent.click(screen.getByRole('button', { name: /save type attributes/i }))
     expect(onSubmit).toHaveBeenLastCalledWith({
       annual_fee: { amount: 550, currency: 'jpy' },
-      bank_id: 'bank-b',
+      bank_topic_id: 'bank-b',
     })
 
     onSubmit.mockClear()
     view.rerender(
       editor({
         topicId: 'topic-c',
-        typeAttributes: { annual_fee: null, bank_id: 'bank-c' },
+        typeAttributes: { annual_fee: null, bank_topic_id: 'bank-c' },
         onSubmit,
       }),
     )
@@ -190,6 +190,6 @@ describe('TypeAttributesSection topic navigation', () => {
     expect(screen.getByRole('combobox', { name: 'Currency' })).toHaveValue('usd')
 
     fireEvent.click(screen.getByRole('button', { name: /save type attributes/i }))
-    expect(onSubmit).toHaveBeenCalledWith({ bank_id: 'bank-c' })
+    expect(onSubmit).toHaveBeenCalledWith({ bank_topic_id: 'bank-c' })
   })
 })

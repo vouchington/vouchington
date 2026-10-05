@@ -50,10 +50,10 @@ export async function createTestFamilyMembership({
       FROM lineage RETURNING id, membership_provider_lineage_id
     ), observation AS (
       INSERT INTO membership_provider_observations (
-        provider, environment, application_id, membership_provider_evidence_id,
+        provider, environment, application_id, membership_provider_evidence_record_id,
         membership_provider_lineage_id, membership_provider_product_id,
         membership_product_id, observed_price_minor_units, observed_price_currency_code,
-        provider_revision, provider_order, source_kind, effective_at, expires_at, auto_renews
+        provider_revision, provider_order, source_kind, effective_at, expires_at, should_auto_renew
       ) SELECT 'stripe', 'production', ${applicationId}, evidence.id,
         evidence.membership_provider_lineage_id, provider_product.id,
         provider_product.membership_product_id, provider_product.price_minor_units,
@@ -75,7 +75,7 @@ export async function createTestFamilyMembership({
       INSERT INTO membership_source_states (
         membership_source_id, source_kind, membership_provider_lineage_id,
         membership_provider_observation_id, membership_product_id,
-        effective_at, expires_at, cancelled_at, expired_at, past_due_at, paused_at, auto_renews
+        effective_at, expires_at, cancelled_at, expired_at, past_due_at, paused_at, should_auto_renew
       ) SELECT source.id, 'family', source.membership_provider_lineage_id,
         observation.id, ${membershipProductId}, ${sourceEffectiveAt}, ${sourceExpiresAt},
         ${sourceLifecycle.cancelledAt}, ${sourceLifecycle.expiredAt},

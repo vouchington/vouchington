@@ -70,7 +70,7 @@ describe('PasskeyManager keyboard submit (create form)', () => {
         id: 'pk-1',
         name: 'Test',
         device_type: 'multiDevice',
-        backed_up: true,
+        is_backed_up: true,
         created_at: new Date().toISOString(),
         last_used_at: null,
       },

@@ -4,7 +4,7 @@
 
 ### GET /api/v1/auth/passkeys
 
-Returns current user's passkeys (id, name, device_type, backed_up, created_at, last_used_at).
+Returns current user's passkeys (id, name, device_type, is_backed_up, created_at, last_used_at).
 
 ### PATCH /api/v1/auth/passkeys/:id
 

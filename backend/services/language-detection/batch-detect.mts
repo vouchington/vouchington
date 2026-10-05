@@ -144,10 +144,10 @@ export async function detectCrawlLanguageBatch(
     id: string
     title: string | null
     markdown: string
-    lang: string | null
+    language: string | null
     lingua_rs_input_sha256: Buffer | null
   }>(sql`/* detectCrawlLanguageBatch */
-    SELECT id, title, markdown, lang, lingua_rs_input_sha256
+    SELECT id, title, markdown, language, lingua_rs_input_sha256
     FROM crawls
     WHERE id = ANY(${ids}::uuid[])
   `)
@@ -155,12 +155,12 @@ export async function detectCrawlLanguageBatch(
     rows.map(r => ({
       id: r.id,
       text: [r.title, r.markdown].filter(Boolean).join('\n\n'),
-      declaredLanguage: r.lang,
+      declaredLanguage: r.language,
       inputSha256: r.lingua_rs_input_sha256,
       guard: sql`
         title IS NOT DISTINCT FROM ${r.title}
         AND markdown IS NOT DISTINCT FROM ${r.markdown}
-        AND lang IS NOT DISTINCT FROM ${r.lang}
+        AND language IS NOT DISTINCT FROM ${r.language}
       `,
     })),
     (id, lang, contentSha256, inputSha256, results, row) => {

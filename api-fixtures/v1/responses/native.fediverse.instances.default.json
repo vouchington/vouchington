@@ -3,17 +3,17 @@
   "election_votes": {},
   "fediverse_instances": {
     "00000000-0000-7000-8000-00000000f001": {
+      "is_open_for_registrations": true,
       "monthly_active_users": 340,
       "nodeinfo_software_version": "4.4.0",
-      "open_registrations": true,
       "protocol": "activitypub",
       "software": "mastodon",
       "total_users": 1200
     },
     "00000000-0000-7000-8000-00000000f003": {
+      "is_open_for_registrations": false,
       "monthly_active_users": null,
       "nodeinfo_software_version": null,
-      "open_registrations": false,
       "protocol": null,
       "software": null,
       "total_users": null
@@ -65,7 +65,6 @@
     "00000000-0000-7000-8000-00000000f001": {
       "__entity_type": "topic",
       "aliases": [],
-      "allow_reviews": true,
       "created_at": "2026-01-01T00:00:00Z",
       "created_by": {
         "__entity_type": "user",
@@ -84,14 +83,15 @@
       },
       "hostname_id": "00000000-0000-7000-8000-00000000f002",
       "id": "00000000-0000-7000-8000-00000000f001",
+      "is_noindexed": false,
       "lingua_rs_detected_language": null,
       "logo_image_id": null,
       "markdown": "A community-run Mastodon instance.",
       "name": "social.example",
-      "noindex": false,
       "referral_program_id": null,
       "referral_program_slug": null,
       "rewards_program_id": null,
+      "should_allow_reviews": true,
       "slug": "social-example",
       "topic_type": "fediverse_instance",
       "updated_by": {
@@ -105,7 +105,6 @@
     "00000000-0000-7000-8000-00000000f003": {
       "__entity_type": "topic",
       "aliases": [],
-      "allow_reviews": true,
       "created_at": "2026-01-01T00:00:00Z",
       "created_by": {
         "__entity_type": "user",
@@ -124,14 +123,15 @@
       },
       "hostname_id": "00000000-0000-7000-8000-00000000f004",
       "id": "00000000-0000-7000-8000-00000000f003",
+      "is_noindexed": false,
       "lingua_rs_detected_language": null,
       "logo_image_id": null,
       "markdown": "",
       "name": "unknown.example",
-      "noindex": false,
       "referral_program_id": null,
       "referral_program_slug": null,
       "rewards_program_id": null,
+      "should_allow_reviews": true,
       "slug": "unknown-example",
       "topic_type": "fediverse_instance",
       "updated_by": {

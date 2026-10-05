@@ -24,7 +24,7 @@ export async function seedCopyrightMedia(posterId: string): Promise<CopyrightSee
   await transaction(sql`/* seedCopyrightMedia:image */
     INSERT INTO images (
       id, created_by_id, sha_256, upload_started_at, upload_completed_at, data, s3_key,
-      openai_omni_moderation_results, openai_omni_moderation_flagged,
+      openai_omni_moderation_results, is_flagged_by_openai_omni_moderation,
       openai_omni_moderation_created_at
     ) VALUES (
       ${IMAGE_ID}, ${posterId}, ${IMAGE_SHA256}, NOW(), NOW(), '{}', ${`dev-seed/${IMAGE_ID}`},

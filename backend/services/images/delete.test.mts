@@ -156,7 +156,7 @@ describe('deleteImageById rollback', () => {
       await expect(listTestPostPublicationImpactCommunityIds(afterWork!.id)).resolves.toContain(
         community.id,
       )
-      expect(afterWork!.post_id).toBe(postId)
+      expect(afterWork!.post_identity_id).toBe(postId)
     }
     const waiting = await readAllQueueJobs(entitiesListeners)
     expect(
@@ -288,6 +288,6 @@ describe('deleteImageById rollback', () => {
     expect(afterPost?.spam_detection_results).toEqual(
       expect.objectContaining({ composite_score: 0.7 }),
     )
-    expect(afterPost?.openai_omni_moderation_flagged).toBe(true)
+    expect(afterPost?.is_flagged_by_openai_omni_moderation).toBe(true)
   })
 })

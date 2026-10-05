@@ -49,8 +49,8 @@ export async function recordMembershipChange(options: {
       changed_by_id,
       note,
       stripe_event_id,
-      membership_provider_evidence_id,
-      cancelled_at, expired_at, past_due_at, paused_at, cancel_at_period_end
+      membership_provider_evidence_record_id,
+      cancelled_at, expired_at, past_due_at, paused_at, should_cancel_at_period_end
     ) VALUES (
       ${options.membershipId},
       ${options.userId},

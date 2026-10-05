@@ -69,8 +69,10 @@ describe('buildInsertQuery', () => {
       { subject: { id: creator.id }, object: { id: creator.id } },
     ])
 
-    expect(query.text).toContain('outbound_ap_follow_activity_id')
-    expect(query.text).toContain('THEN relation__user__follow__user.outbound_ap_follow_activity_id')
+    expect(query.text).toContain('outbound_activitypub_follow_activity_id')
+    expect(query.text).toContain(
+      'THEN relation__user__follow__user.outbound_activitypub_follow_activity_id',
+    )
     expect(query.text).toContain('ELSE uuidv7()')
   })
 

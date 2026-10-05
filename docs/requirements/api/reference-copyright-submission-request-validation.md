@@ -63,8 +63,8 @@ look at: an unknown key at the top level or inside a target, and a non-string `c
   generic schema message. The service guards remain.
 - No status code changes for a valid request, and none for an invalid request that already failed.
 
-Statutory attestations are the literal `true` in the schema: `good_faith_belief`,
-`accuracy_authority_under_penalty_of_perjury`, `consent_to_federal_jurisdiction`,
+Statutory attestations are the literal `true` in the schema: `has_good_faith_belief`,
+`has_accuracy_authority_under_penalty_of_perjury`, `consent_to_federal_jurisdiction`,
 `consent_to_service_of_process`, and `good_faith_misidentification_under_penalty_of_perjury`. The
 notice `jurisdiction` is the literal `us_dmca`. Array bounds match
 `@services/copyright-notices/http-input`: 1 to 20 targets, 1 to 20 unique `target_ids`. The CAPTCHA

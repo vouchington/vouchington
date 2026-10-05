@@ -13,7 +13,7 @@ export function assertApplicationAnswers(
 
   for (const question of questions) {
     if (!Object.hasOwn(answers, question.id) || answers[question.id] === undefined) {
-      assert(!question.required, 422, `Answer required for question: ${question.question}`)
+      assert(!question.is_required, 422, `Answer is_required for question: ${question.question}`)
       continue
     }
     assertAnswer(question, answers[question.id])
@@ -21,11 +21,11 @@ export function assertApplicationAnswers(
 }
 
 function assertAnswer(question: CommunityApplicationQuestion, answer: unknown): void {
-  if (question.required) {
+  if (question.is_required) {
     assert(
       !isEmptyAnswer(question, answer),
       422,
-      `Answer required for question: ${question.question}`,
+      `Answer is_required for question: ${question.question}`,
     )
   }
   if (answer === null) return

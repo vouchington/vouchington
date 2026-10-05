@@ -18,7 +18,7 @@ type SourceSummaryRow = {
   expired_at: Date | null
   past_due_at: Date | null
   paused_at: Date | null
-  auto_renews: boolean
+  should_auto_renew: boolean
   renewal_membership_product_id: string | null
   renewal_effective_at: Date | null
   renewal_price_minor_units: string | null
@@ -33,12 +33,12 @@ export async function getMembershipOverview(userId: string) {
     read<SourceSummaryRow>(sql`/* getMembershipOverview.sources */
       SELECT source.id, source.source_kind, lineage.provider, product.plan,
         state.effective_at, state.expires_at, state.cancelled_at,
-        state.expired_at, state.past_due_at, state.paused_at, state.auto_renews,
+        state.expired_at, state.past_due_at, state.paused_at, state.should_auto_renew,
         observation.renewal_membership_product_id, observation.renewal_effective_at,
         observation.renewal_price_minor_units, observation.renewal_price_currency_code,
         (evidence.rejected_at IS NOT NULL OR EXISTS (
           SELECT 1 FROM membership_refunds refund
-          WHERE refund.membership_source_id = source.id AND refund.revoked_access
+          WHERE refund.membership_source_id = source.id AND refund.has_revoked_access
         )) AS revoked,
         EXISTS (
           SELECT 1 FROM memberships projection
@@ -52,7 +52,7 @@ export async function getMembershipOverview(userId: string) {
       LEFT JOIN membership_provider_observations observation
         ON observation.id = state.membership_provider_observation_id
       LEFT JOIN membership_provider_evidence_records evidence
-        ON evidence.id = observation.membership_provider_evidence_id
+        ON evidence.id = observation.membership_provider_evidence_record_id
       WHERE source.user_id = ${userId}
       ORDER BY state.effective_at DESC, source.id DESC`),
     getMembershipPendingState(userId),
@@ -65,7 +65,7 @@ export async function getMembershipOverview(userId: string) {
     status: sourceStatus(row),
     effective_at: row.effective_at,
     access_ends_at: row.expires_at,
-    auto_renews: row.auto_renews,
+    should_auto_renew: row.should_auto_renew,
     is_effective: row.is_effective,
     renewal:
       row.renewal_membership_product_id && row.renewal_effective_at

@@ -15,7 +15,7 @@ export type TestMembershipRaw = {
   expired_at: Date | null
   past_due_at: Date | null
   paused_at: Date | null
-  cancel_at_period_end: boolean
+  should_cancel_at_period_end: boolean
   source_auto_renews: boolean | null
   source_effective_at: Date | null
   expires_at: Date | null
@@ -37,7 +37,7 @@ export async function getTestMembershipRaw(
       membership.*,
       product.plan,
       membership.membership_product_id AS sku_id,
-      source_state.auto_renews AS source_auto_renews,
+      source_state.should_auto_renew AS source_auto_renews,
       source_state.effective_at AS source_effective_at,
       lineage.provider_lineage_id AS stripe_subscription_id,
       lineage.provider_account_id AS stripe_customer_id,
@@ -116,7 +116,7 @@ export async function getTestMembershipGrantActivations(
 export async function getTestMembershipSourceState(membershipId: string): Promise<
   | {
       cancelled_at: Date | null
-      auto_renews: boolean
+      should_auto_renew: boolean
       effective_at: Date
       expired_at: Date | null
       membership_provider_observation_id: string | null
@@ -127,7 +127,7 @@ export async function getTestMembershipSourceState(membershipId: string): Promis
 > {
   const { rows } = await read<{
     cancelled_at: Date | null
-    auto_renews: boolean
+    should_auto_renew: boolean
     effective_at: Date
     expired_at: Date | null
     membership_provider_observation_id: string | null
@@ -135,7 +135,7 @@ export async function getTestMembershipSourceState(membershipId: string): Promis
     paused_at: Date | null
   }>(
     sql`/* getTestMembershipSourceState */
-      SELECT source_state.auto_renews, source_state.cancelled_at, source_state.effective_at, source_state.expired_at,
+      SELECT source_state.should_auto_renew, source_state.cancelled_at, source_state.effective_at, source_state.expired_at,
         source_state.membership_provider_observation_id, source_state.past_due_at, source_state.paused_at
       FROM memberships membership
       INNER JOIN membership_source_states source_state

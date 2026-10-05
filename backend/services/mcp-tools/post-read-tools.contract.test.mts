@@ -71,8 +71,8 @@ describe('get_post and get_post_ancestors — real DB', () => {
         id: post.id,
         slug: post.slug,
         post_type: 'discussion',
-        parent_id: null,
-        root_id: null,
+        parent_post_id: null,
+        root_post_id: null,
         created_by_id: author.id,
         is_anonymous: false,
       })
@@ -161,11 +161,15 @@ describe('get_post and get_post_ancestors — real DB', () => {
   describe('a comment thread', () => {
     it('returns the parent chain from the root down, without the comment itself', async () => {
       const root = await createTestPost({ user: author })
-      const first = await createTestPost({ user: author, post_type: 'comment', parent_id: root.id })
+      const first = await createTestPost({
+        user: author,
+        post_type: 'comment',
+        parent_post_id: root.id,
+      })
       const second = await createTestPost({
         user: admin,
         post_type: 'comment',
-        parent_id: first.id,
+        parent_post_id: first.id,
       })
 
       const { body } = await call(author, 'get_post_ancestors', second.id)
@@ -174,8 +178,8 @@ describe('get_post and get_post_ancestors — real DB', () => {
       expect(body.ancestors?.map(ancestor => ancestor['id'])).toEqual([root.id, first.id])
       expect(comment.body.post).toMatchObject({
         post_type: 'comment',
-        parent_id: first.id,
-        root_id: root.id,
+        parent_post_id: first.id,
+        root_post_id: root.id,
       })
     })
 
@@ -184,12 +188,12 @@ describe('get_post and get_post_ancestors — real DB', () => {
       const removed = await createTestPost({
         user: author,
         post_type: 'comment',
-        parent_id: root.id,
+        parent_post_id: root.id,
       })
       const reply = await createTestPost({
         user: admin,
         post_type: 'comment',
-        parent_id: removed.id,
+        parent_post_id: removed.id,
       })
       await deleteTestPost(removed.id)
 
@@ -199,17 +203,20 @@ describe('get_post and get_post_ancestors — real DB', () => {
       expect(text).not.toContain(removed.slug)
       expect((await call(author, 'get_post', removed.id)).body).toEqual(NOT_FOUND)
       expect((await call(author, 'get_post', reply.id)).body.post).toMatchObject({
-        parent_id: removed.id,
+        parent_post_id: removed.id,
       })
     })
 
     it('answers a comment under a hidden ancestor as not found, without naming the ancestor', async () => {
       const root = await createTestPost({ user: author })
-      const hiddenParent = await pendingPost(author, { post_type: 'comment', parent_id: root.id })
+      const hiddenParent = await pendingPost(author, {
+        post_type: 'comment',
+        parent_post_id: root.id,
+      })
       const reply = await createTestPost({
         user: admin,
         post_type: 'comment',
-        parent_id: hiddenParent.id,
+        parent_post_id: hiddenParent.id,
       })
 
       for (const name of ['get_post', 'get_post_ancestors']) {
@@ -224,7 +231,7 @@ describe('get_post and get_post_ancestors — real DB', () => {
       const comment = await createTestPost({
         user: author,
         post_type: 'comment',
-        parent_id: root.id,
+        parent_post_id: root.id,
       })
 
       for (const name of ['get_post', 'get_post_ancestors']) {

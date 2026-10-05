@@ -27,7 +27,7 @@
         "reason_codes": ["spam_signal"]
       },
       "post_type": "article",
-      "root_id": null,
+      "root_post_id": null,
       "root_post_type": null,
       "root_slug": null,
       "slug": "review-post-page-2",

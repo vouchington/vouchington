@@ -102,7 +102,7 @@ describe('post publication capture', () => {
     expect(first.id).toBe(second.id)
     expect(Number(second.generation)).toBe(Number(first.generation) + 1)
     await expect(getTestPostPublicationDirtyWork(second.id)).resolves.toMatchObject({
-      post_id: post.id,
+      post_identity_id: post.id,
       generation: second.generation,
       reasons: ['post_clearance_changed', 'post_created'],
     })
@@ -122,11 +122,11 @@ describe('post publication capture', () => {
     expect(second.id).toBe(first.id)
     expect(Number(second.generation)).toBe(Number(first.generation) + 1)
     await expect(getTestPostPublicationDirtyWork(second.id)).resolves.toMatchObject({
-      topic_alias_id: aliasId,
-      post_id: null,
+      topic_alias_identity_id: aliasId,
+      post_identity_id: null,
     })
     await expect(claimPostPublicationDirtyWork(second, 60)).resolves.toMatchObject({
-      topic_alias_id: aliasId,
+      topic_alias_identity_id: aliasId,
     })
   })
 

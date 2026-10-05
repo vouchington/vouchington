@@ -51,7 +51,7 @@ const dataWithAction = {
     'action-1': {
       id: 'action-1',
       community_id: null,
-      actor_id: 'user-1',
+      actor_user_id: 'user-1',
       action_type: 'ban',
       post_id: null,
       target_user_id: 'user-2',
@@ -102,7 +102,7 @@ describe('AdminModlogPage', () => {
     serverApiGetMock.mockResolvedValue({
       ...dataWithAction,
       moderator_actions: {
-        'action-1': { ...dataWithAction.moderator_actions['action-1'], actor_id: null },
+        'action-1': { ...dataWithAction.moderator_actions['action-1'], actor_user_id: null },
       },
     })
     const page = await AdminModlogPage({ searchParams: Promise.resolve({}) })

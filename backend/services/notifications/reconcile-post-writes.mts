@@ -11,7 +11,7 @@ export type PostNotificationInsertInput = {
   slug: string | null
   username: string | null
   is_anonymous: boolean
-  root_id: string | null
+  root_post_id: string | null
   root_slug: string | null
   root_post_type: string | null
 }
@@ -26,7 +26,7 @@ export async function insertPostNotificationsForRecipients(
 
   const targetPath =
     post.post_type === 'comment'
-      ? `/${getPostRouteSlug(post.root_post_type ?? 'discussion')}/${post.root_slug ?? post.root_id ?? post.id}/comment/${post.id}`
+      ? `/${getPostRouteSlug(post.root_post_type ?? 'discussion')}/${post.root_slug ?? post.root_post_id ?? post.id}/comment/${post.id}`
       : `/${getPostRouteSlug(post.post_type)}/${post.slug ?? post.id}`
   const displayUsername = post.is_anonymous ? null : post.username
   const title =

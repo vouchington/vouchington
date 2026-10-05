@@ -71,8 +71,8 @@ export const updateCrawl = async (
   if (options.embeddings_generated_at !== undefined) {
     setClauses.push(`embeddings_generated_at = $${values.push(options.embeddings_generated_at)}`)
   }
-  if (options.lang !== undefined) {
-    setClauses.push(`lang = $${values.push(options.lang)}`)
+  if (options.language !== undefined) {
+    setClauses.push(`language = $${values.push(options.language)}`)
   }
 
   if (setClauses.length === 0) {
@@ -112,7 +112,9 @@ export const updateCrawl = async (
 }
 
 function hasLanguageDetectionInput(
-  options: Pick<UpdateCrawlOptions, 'markdown' | 'title' | 'lang'>,
+  options: Pick<UpdateCrawlOptions, 'markdown' | 'title' | 'language'>,
 ): boolean {
-  return options.markdown !== undefined || options.title !== undefined || options.lang !== undefined
+  return (
+    options.markdown !== undefined || options.title !== undefined || options.language !== undefined
+  )
 }

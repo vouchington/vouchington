@@ -26,7 +26,7 @@ const enqueueBulkCrawlUrlJobs = createBulkEnqueueFunction<
   CrawlUrlBulkInput,
   {
     ensure_crawler_for_redirects?: boolean
-    ignore_robots_txt?: boolean
+    should_ignore_robots_txt?: boolean
     max_response_size_bytes?: number
     preserve_http_redirects?: boolean
     skip_canonical_url?: boolean
@@ -65,7 +65,7 @@ const enqueueBulkCrawlUrlJobs = createBulkEnqueueFunction<
         ...(options?.ensureCrawlerForRedirects === true
           ? { ensure_crawler_for_redirects: true }
           : {}),
-        ...(options?.ignoreRobotsTxt === true ? { ignore_robots_txt: true } : {}),
+        ...(options?.ignoreRobotsTxt === true ? { should_ignore_robots_txt: true } : {}),
         ...(options?.maxResponseSizeBytes != null
           ? { max_response_size_bytes: options.maxResponseSizeBytes }
           : {}),
@@ -137,7 +137,7 @@ export async function enqueueCrawlUrlAndWait(
       url_id: entry.urlId,
       ...(crawlTimeoutMs != null ? { crawl_timeout_ms: crawlTimeoutMs } : {}),
       ...(ensureCrawlerForRedirects === true ? { ensure_crawler_for_redirects: true } : {}),
-      ...(ignoreRobotsTxt === true ? { ignore_robots_txt: true } : {}),
+      ...(ignoreRobotsTxt === true ? { should_ignore_robots_txt: true } : {}),
       ...(maxResponseSizeBytes != null ? { max_response_size_bytes: maxResponseSizeBytes } : {}),
       ...(preserveHttpRedirects === true ? { preserve_http_redirects: true } : {}),
       ...(entry.rateLimitRetryCount != null

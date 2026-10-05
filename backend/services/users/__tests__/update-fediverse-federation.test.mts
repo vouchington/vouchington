@@ -7,24 +7,24 @@ import { updateUserFields } from '../update-fields.mts'
 describe('updateUserFields fediverse federation opt-in', () => {
   it('defaults to false for a newly created user', async () => {
     const testUser = await createTestUser()
-    assert.strictEqual(testUser.fediverse_federation_enabled, false)
+    assert.strictEqual(testUser.is_fediverse_federation_enabled, false)
   })
 
   it('opts a user in to federation', async () => {
     const testUser = await createTestUser()
-    await updateUserFields(testUser.id, { fediverse_federation_enabled: true })
+    await updateUserFields(testUser.id, { is_fediverse_federation_enabled: true })
     const updated = await getPrivateUserByAny(testUser.id)
     assert(updated)
-    assert.strictEqual(updated.fediverse_federation_enabled, true)
+    assert.strictEqual(updated.is_fediverse_federation_enabled, true)
   })
 
   it('opts a user back out of federation', async () => {
     const testUser = await createTestUser()
-    await updateUserFields(testUser.id, { fediverse_federation_enabled: true })
-    await updateUserFields(testUser.id, { fediverse_federation_enabled: false })
+    await updateUserFields(testUser.id, { is_fediverse_federation_enabled: true })
+    await updateUserFields(testUser.id, { is_fediverse_federation_enabled: false })
     const updated = await getPrivateUserByAny(testUser.id)
     assert(updated)
-    assert.strictEqual(updated.fediverse_federation_enabled, false)
+    assert.strictEqual(updated.is_fediverse_federation_enabled, false)
   })
 
   it('rejects a non-boolean value', async () => {
@@ -32,9 +32,9 @@ describe('updateUserFields fediverse federation opt-in', () => {
     await assert.rejects(
       () =>
         updateUserFields(testUser.id, {
-          fediverse_federation_enabled: 'yes' as unknown as Parameters<
+          is_fediverse_federation_enabled: 'yes' as unknown as Parameters<
             typeof updateUserFields
-          >[1]['fediverse_federation_enabled'],
+          >[1]['is_fediverse_federation_enabled'],
         }),
       (err: Error & { status?: number }) => {
         assert.strictEqual(err.status, 422)

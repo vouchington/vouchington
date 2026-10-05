@@ -39,7 +39,7 @@ export async function syncPostHashtagCategoriesInTransaction(
   const existingContributorsByAliasAndSource = new Map(
     existingSources.map(source => [
       `${source.topic_alias_id}:${source.source}`,
-      source.contributor_id,
+      source.contributor_user_id,
     ]),
   )
   const firstByAliasAndSource = new Map<string, PostHashtagSource>()

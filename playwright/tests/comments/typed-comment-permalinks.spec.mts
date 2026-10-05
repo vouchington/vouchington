@@ -16,7 +16,7 @@ test.describe('Typed comment permalink routes', () => {
     const root = await createTestPost({ title, post_type: 'article' })
     const comment = await createTestPost({
       post_type: 'comment',
-      parent_id: root.id,
+      parent_post_id: root.id,
       markdown: body,
     })
     await navigateTo(page, `/article/${root.id}/comment/${comment.id}`)
@@ -35,7 +35,7 @@ test.describe('Typed comment permalink routes', () => {
     const root = await createTestPost({ title, post_type: 'blog_post' })
     const comment = await createTestPost({
       post_type: 'comment',
-      parent_id: root.id,
+      parent_post_id: root.id,
       markdown: body,
     })
     await navigateTo(page, `/blog-post/${root.id}/comment/${comment.id}`)
@@ -54,7 +54,7 @@ test.describe('Typed comment permalink routes', () => {
     const root = await createTestPost({ title, post_type: 'data_point' })
     const comment = await createTestPost({
       post_type: 'comment',
-      parent_id: root.id,
+      parent_post_id: root.id,
       markdown: body,
     })
     await navigateTo(page, `/data-point/${root.id}/comment/${comment.id}`)
@@ -77,7 +77,7 @@ test.describe('Typed comment permalink routes', () => {
     })
     const comment = await createTestPost({
       post_type: 'comment',
-      parent_id: root.id,
+      parent_post_id: root.id,
       markdown: body,
     })
     await navigateTo(page, `/link/${root.id}/comment/${comment.id}`)
@@ -96,7 +96,7 @@ test.describe('Typed comment permalink routes', () => {
     const root = await createTestPost({ title, post_type: 'review' })
     const comment = await createTestPost({
       post_type: 'comment',
-      parent_id: root.id,
+      parent_post_id: root.id,
       markdown: body,
     })
     await navigateTo(page, `/review/${root.id}/comment/${comment.id}`)
@@ -124,7 +124,7 @@ test.describe('Typed comment permalink routes', () => {
     const root = { id, slug }
     const comment = await createTestPost({
       post_type: 'comment',
-      parent_id: root.id,
+      parent_post_id: root.id,
       markdown: body,
       user,
     })

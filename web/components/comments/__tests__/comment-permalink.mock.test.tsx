@@ -94,7 +94,7 @@ function makeRootPost(overrides: Partial<Post> = {}): Post {
     title: 'Root Post',
     slug: 'root-post',
     markdown: 'Root content',
-    root_id: null,
+    root_post_id: null,
     created_by_id: 'user-1',
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
@@ -117,7 +117,7 @@ function makeTargetComment(rootPost: Post, overrides: Partial<Post> = {}): Post 
     id: 'comment-1',
     post_type: 'comment',
     title: '',
-    root_id: 'root-1',
+    root_post_id: 'root-1',
     markdown: 'Comment body',
     created_by: {
       account_type: null,

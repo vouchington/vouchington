@@ -62,7 +62,7 @@ describe('posts', () => {
         expect(new Set(response.body.results.map((result: { id: string }) => result.id))).toEqual(
           new Set([rootPostId, commentId]),
         )
-        expect(response.body.posts[commentId].root_id).toBe(rootPostId)
+        expect(response.body.posts[commentId].root_post_id).toBe(rootPostId)
         expect(response.body.posts[rootPostId]).toMatchObject({
           id: rootPostId,
           post_type: 'review',
@@ -95,7 +95,7 @@ describe('posts', () => {
         expect(response.body.results).toEqual([
           expect.objectContaining({ id: commentId, post_type: 'comment' }),
         ])
-        expect(response.body.posts[commentId].root_id).toBe(rootPostId)
+        expect(response.body.posts[commentId].root_post_id).toBe(rootPostId)
         expect(response.body.posts[rootPostId]).toMatchObject({
           id: rootPostId,
           post_type: 'review',

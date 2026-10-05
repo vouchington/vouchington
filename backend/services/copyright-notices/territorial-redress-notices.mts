@@ -16,10 +16,10 @@ export async function createTerritorialRedressDecisionNotice(
   const { rows } = await transaction<{
     jurisdiction: 'eu_dsa' | 'uk'
     filed_by: 'notifier' | 'poster' | 'reviewer'
-    submitted_by_user_id: string | null
+    submitted_by_id: string | null
     outcome: 'restrict' | 'no_action'
   }>(sql`/* createTerritorialRedressDecisionNotice:recipient */
-    SELECT request.jurisdiction, request.filed_by, request.submitted_by_user_id, decision.outcome
+    SELECT request.jurisdiction, request.filed_by, request.submitted_by_id, decision.outcome
     FROM copyright_territorial_redress_requests request
     JOIN copyright_territorial_decisions decision
       ON decision.id = request.copyright_territorial_decision_id
@@ -43,7 +43,7 @@ export async function createTerritorialRedressDecisionNotice(
   await createCopyrightStatementDeliveryInTransaction(
     {
       noticeId: input.noticeId,
-      recipientUserId: request.submitted_by_user_id,
+      recipientUserId: request.submitted_by_id,
       recipientRole: notifier ? 'claimant' : 'poster',
       recipientEmail: notifier
         ? await getCopyrightClaimantEmail(input.noticeId, transaction)

@@ -61,7 +61,7 @@ describe('appeals server api helpers', () => {
       const appeal = {
         id: 'appeal-1',
         status: 'pending',
-        appellant_id: 'user-1',
+        appellant_user_id: 'user-1',
         appeal_reason: 'unfair ban',
       }
       mockGet.mockResolvedValueOnce({ appeal })

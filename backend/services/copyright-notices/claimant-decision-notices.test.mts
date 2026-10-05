@@ -27,7 +27,7 @@ describe('claimant copyright decision notices', () => {
     await reviewCopyrightFormIntake({
       intakeId: notice.intake.id,
       currentUser: moderator,
-      accepted: true,
+      is_accepted: true,
       rationale: 'Complete notice.',
     })
     const intents = await readTestCopyrightStatementIntents(notice.intake.copyright_notice_id)
@@ -50,7 +50,7 @@ describe('claimant copyright decision notices', () => {
     await reviewCopyrightFormIntake({
       intakeId: notice.intake.id,
       currentUser: await createTestUser({ extraRoles: ['moderator'] }),
-      accepted: true,
+      is_accepted: true,
       rationale: 'Complete notice.',
     })
     const decision = (
@@ -73,7 +73,7 @@ describe('claimant copyright decision notices', () => {
     await reviewCopyrightFormIntake({
       intakeId: notice.intake.id,
       currentUser: await createTestUser({ extraRoles: ['moderator'] }),
-      accepted: false,
+      is_accepted: false,
       rationale: 'Incomplete notice after review.',
     })
     await recoverRejectedCopyrightFormReviewEffect(notice.intake.id)
@@ -92,7 +92,7 @@ describe('claimant copyright decision notices', () => {
     await reviewCopyrightFormIntake({
       intakeId: notice.intake.id,
       currentUser: await createTestUser({ extraRoles: ['moderator'] }),
-      accepted: false,
+      is_accepted: false,
       rationale: 'Incomplete notice after review.',
     })
     expect(await countCopyrightActiveRestrictionsForNotice(caseId)).toBe(0)
@@ -113,7 +113,7 @@ describe('claimant copyright decision notices', () => {
     await reviewCopyrightFormIntake({
       intakeId: notice.intake.id,
       currentUser: await createTestUser({ extraRoles: ['moderator'] }),
-      accepted: false,
+      is_accepted: false,
       rationale: 'Incomplete notice.',
     })
     await recoverRejectedCopyrightFormReviewEffect(notice.intake.id)

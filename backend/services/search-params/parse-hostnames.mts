@@ -35,8 +35,8 @@ const hostnamesQueryContract = defineQueryContract({
   topics: queryCsvArray(queryString()),
   topic_match: queryEnum(['any', 'all'] as const),
   include_descendants: queryBoolean(),
-  blocked: queryNullableBoolean(),
-  crawlable: queryNullableBoolean(),
+  is_blocked: queryNullableBoolean(),
+  is_crawlable: queryNullableBoolean(),
 })
 
 /**
@@ -88,9 +88,9 @@ async function parseHostnamesSearchParamsImpl(
     ...(query.include_descendants !== undefined
       ? { include_descendants: parseBooleanish(query.include_descendants) }
       : {}),
-    // Non-admins always get blocked=false to exclude administratively banned domains
-    blocked: canFilterModeration ? parseModerationBooleanParam(true, query.blocked) : false,
-    crawlable: parseModerationBooleanParam(canFilterModeration, query.crawlable),
+    // Non-admins always get is_blocked=false to exclude administratively banned domains
+    is_blocked: canFilterModeration ? parseModerationBooleanParam(true, query.is_blocked) : false,
+    is_crawlable: parseModerationBooleanParam(canFilterModeration, query.is_crawlable),
   }
 }
 

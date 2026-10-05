@@ -7,7 +7,7 @@
 - Confirm API egress proxy routing is disabled for the direct baseline.
 - Use dedicated test accounts. Confirm access to remote request logs or database state for each
   instance, plus Voucha request logs and the queue-monitoring API.
-- Set `fediverse_federation_enabled: true` for `VOUCHA_USER_ID` through
+- Set `is_fediverse_federation_enabled: true` for `VOUCHA_USER_ID` through
   `PATCH /api/v1/users/{id-or-slug}` using an approved authenticated API client.
 - Create or resolve each remote hostname with `POST /api/v1/fediverse/instances`. Record the topic
   ID, then use `POST /api/v1/fediverse/instances/{id}/integration-changes` with

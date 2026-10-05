@@ -92,7 +92,7 @@ export const mockDiscussion: Post = {
   post_type: 'discussion',
   title: 'Existing Title',
   markdown: 'Existing content',
-  root_id: null,
+  root_post_id: null,
   created_by_id: 'user-1',
   created_at: '2024-01-15T10:00:00Z',
   updated_at: '2024-01-15T10:00:00Z',

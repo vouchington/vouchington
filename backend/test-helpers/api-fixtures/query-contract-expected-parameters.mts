@@ -60,8 +60,8 @@ export const newExpectedParameters = {
   'GET:/api/v1/fediverse/instances': [
     'after',
     'integration_status',
+    'is_open_for_registrations',
     'limit',
-    'open_registrations',
     'q',
     'software',
     'sort',

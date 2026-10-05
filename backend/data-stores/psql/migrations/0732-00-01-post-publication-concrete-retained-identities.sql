@@ -119,15 +119,15 @@ ALTER TABLE post_publication_dirty_work_keys VALIDATE CONSTRAINT fk_post_publica
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_publ_dirty_work_keys__impact_rss_feed_item_identity_id ON post_publication_dirty_work_keys (impact_rss_feed_item_identity_id) WHERE impact_rss_feed_item_identity_id IS NOT NULL;
 
-ALTER TABLE post_publication_dirty_work ADD CONSTRAINT fk_post_publication_dirty_work__post_identity FOREIGN KEY (post_id) REFERENCES post_publication_post_identities (id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE post_publication_dirty_work ADD CONSTRAINT fk_post_publication_dirty_work__post_identity FOREIGN KEY (post_identity_id) REFERENCES post_publication_post_identities (id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE post_publication_dirty_work VALIDATE CONSTRAINT fk_post_publication_dirty_work__post_identity;
-ALTER TABLE post_publication_dirty_work ADD CONSTRAINT fk_post_publication_dirty_work__community_identity FOREIGN KEY (community_id) REFERENCES post_publication_community_identities (id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE post_publication_dirty_work ADD CONSTRAINT fk_post_publication_dirty_work__community_identity FOREIGN KEY (community_identity_id) REFERENCES post_publication_community_identities (id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE post_publication_dirty_work VALIDATE CONSTRAINT fk_post_publication_dirty_work__community_identity;
-ALTER TABLE post_publication_dirty_work ADD CONSTRAINT fk_post_publication_dirty_work__author_identity FOREIGN KEY (author_user_id) REFERENCES post_publication_author_identities (id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE post_publication_dirty_work ADD CONSTRAINT fk_post_publication_dirty_work__author_identity FOREIGN KEY (author_identity_id) REFERENCES post_publication_author_identities (id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE post_publication_dirty_work VALIDATE CONSTRAINT fk_post_publication_dirty_work__author_identity;
-ALTER TABLE post_publication_dirty_work ADD CONSTRAINT fk_post_publication_dirty_work__rss_feed_identity FOREIGN KEY (rss_feed_id) REFERENCES post_publication_rss_feed_identities (id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE post_publication_dirty_work ADD CONSTRAINT fk_post_publication_dirty_work__rss_feed_identity FOREIGN KEY (rss_feed_identity_id) REFERENCES post_publication_rss_feed_identities (id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE post_publication_dirty_work VALIDATE CONSTRAINT fk_post_publication_dirty_work__rss_feed_identity;
-ALTER TABLE post_publication_dirty_work ADD CONSTRAINT fk_post_publication_dirty_work__topic_alias_identity FOREIGN KEY (topic_alias_id) REFERENCES post_publication_topic_alias_identities (id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE post_publication_dirty_work ADD CONSTRAINT fk_post_publication_dirty_work__topic_alias_identity FOREIGN KEY (topic_alias_identity_id) REFERENCES post_publication_topic_alias_identities (id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE post_publication_dirty_work VALIDATE CONSTRAINT fk_post_publication_dirty_work__topic_alias_identity;
-ALTER TABLE post_publication_dirty_work ADD CONSTRAINT fk_post_publication_dirty_work__story_identity FOREIGN KEY (story_id) REFERENCES post_publication_story_identities (id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE post_publication_dirty_work ADD CONSTRAINT fk_post_publication_dirty_work__story_identity FOREIGN KEY (story_identity_id) REFERENCES post_publication_story_identities (id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE post_publication_dirty_work VALIDATE CONSTRAINT fk_post_publication_dirty_work__story_identity;

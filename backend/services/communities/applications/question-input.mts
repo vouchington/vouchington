@@ -15,7 +15,7 @@ export type ApplicationQuestionInput = {
   question: string
   field_type: ApplicationQuestionFieldType
   options?: string[] | null
-  required?: boolean
+  is_required?: boolean
 }
 
 export function assertApplicationQuestionInputs(questions: ApplicationQuestionInput[]): void {

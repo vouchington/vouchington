@@ -53,7 +53,7 @@ export async function claimAdministratorRefundRequest(
   await query(sql`/* claimAdministratorRefundRequest:request */
     INSERT INTO membership_administrator_refund_operation_requests (
       membership_operation_id, membership_id, issued_by_id, provider_payment_reference, provider_subscription_reference,
-      amount_minor_units, currency_code, reason, cancel_requested, request_fingerprint,
+      amount_minor_units, currency_code, reason, is_cancel_requested, request_fingerprint,
       administrator_request_key, note
     ) VALUES (
       ${operation.id}, ${request.membershipId}, ${request.issuedById},
@@ -127,7 +127,7 @@ export async function getAdministratorRefundRequestByKey(
       request.provider_payment_reference AS "providerPaymentReference",
       request.provider_subscription_reference AS "providerSubscriptionReference",
       request.amount_minor_units::TEXT AS "amountMinorUnits", request.currency_code AS currency,
-      request.reason, request.cancel_requested AS "cancelRequested",
+      request.reason, request.is_cancel_requested AS "cancelRequested",
       request.request_fingerprint AS "requestFingerprint", request.note
     FROM membership_administrator_refund_operation_requests request
     INNER JOIN membership_operations operation
@@ -151,7 +151,7 @@ async function getAdministratorRefundRequestForMembershipKey(
       request.provider_payment_reference AS "providerPaymentReference",
       request.provider_subscription_reference AS "providerSubscriptionReference",
       request.amount_minor_units::TEXT AS "amountMinorUnits", request.currency_code AS currency,
-      request.reason, request.cancel_requested AS "cancelRequested",
+      request.reason, request.is_cancel_requested AS "cancelRequested",
       request.request_fingerprint AS "requestFingerprint", request.note
     FROM memberships membership
     INNER JOIN membership_sources source ON source.id = membership.membership_source_id

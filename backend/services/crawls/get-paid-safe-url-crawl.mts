@@ -15,7 +15,7 @@ export const getPublicUrlCrawlDetailById = async (
 
   const { rows } = await read<Omit<PaidSafeUrlCrawlHistory, '__entity_type'>>(
     `/* getPublicUrlCrawlDetailById */
-    SELECT id, created_at, response_status_code, completed_at, title, lang
+    SELECT id, created_at, response_status_code, completed_at, title, language
     FROM crawls
     WHERE id = $1 AND url_id = $2
     LIMIT 1
@@ -39,7 +39,7 @@ export const getLatestSuccessfulPublicUrlCrawlSummary = async (
 
   const { rows } = await read<Omit<PaidSafeUrlCrawlHistory, '__entity_type'>>(
     `/* getLatestSuccessfulPublicUrlCrawlSummary */
-    SELECT id, created_at, response_status_code, completed_at, title, lang
+    SELECT id, created_at, response_status_code, completed_at, title, language
     FROM crawls
     WHERE url_id = $1
       AND embeddings_generated_at IS NOT NULL

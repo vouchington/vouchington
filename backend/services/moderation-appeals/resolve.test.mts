@@ -183,7 +183,7 @@ describe('resolve moderation appeals', () => {
       const status = await getCommunityPostReviewStatus(communityId, postId)
       expect(status?.unpublished_at).toBeNull()
       const dirtyWork = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId })
-      expect(dirtyWork).toMatchObject({ post_id: postId })
+      expect(dirtyWork).toMatchObject({ post_identity_id: postId })
       await expect(listTestPostPublicationImpactCommunityIds(dirtyWork!.id)).resolves.toContain(
         communityId,
       )

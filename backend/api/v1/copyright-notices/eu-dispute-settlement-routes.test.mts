@@ -14,7 +14,7 @@ function referralBody(userId: string) {
     body_name: 'Independent Dispute Body',
     referred_at: new Date().toISOString(),
     referred_by_party: 'notifier',
-    referred_by_user_id: userId,
+    referred_by_id: userId,
   }
 }
 
@@ -45,7 +45,7 @@ describe('EU dispute settlement staff request contracts', () => {
       { ...body, body_name: undefined },
       { ...body, referred_by_party: 'reviewer' },
       { ...body, referred_at: 'not-a-date' },
-      { ...body, referred_by_user_id: 'not-a-uuid' },
+      { ...body, referred_by_id: 'not-a-uuid' },
     ]) {
       await actors.staffRequest.post(url).send(malformed).expect(422)
     }

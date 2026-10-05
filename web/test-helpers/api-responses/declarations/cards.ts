@@ -47,7 +47,8 @@ export const CARDS_DECLARATIONS = [
   defineWebApiFixture<IndividualCardResponseBody>()(
     'native.cards.create.default',
     nativeCardsCreateDefault,
-    context => context.client.my.createMyCard({ card_id: '00000000-0000-7000-8000-000000000713' }),
+    context =>
+      context.client.my.createMyCard({ card_topic_id: '00000000-0000-7000-8000-000000000713' }),
   ),
   defineWebApiFixture<IndividualCardResponseBody>()(
     'native.cards.update.full',
@@ -59,7 +60,7 @@ export const CARDS_DECLARATIONS = [
         credit_limit: { amount: 0, currency: 'usd' },
         received_sign_up_bonus_on: null,
         is_authorized_user: true,
-        authorized_user_of_id: '00000000-0000-7000-8000-000000000703',
+        authorized_user_of_card_id: '00000000-0000-7000-8000-000000000703',
         note: 'Authorized-user account',
       }),
   ),
@@ -73,7 +74,7 @@ export const CARDS_DECLARATIONS = [
         credit_limit: null,
         received_sign_up_bonus_on: null,
         is_authorized_user: false,
-        authorized_user_of_id: null,
+        authorized_user_of_card_id: null,
         note: null,
       }),
   ),

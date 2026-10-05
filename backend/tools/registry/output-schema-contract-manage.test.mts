@@ -21,7 +21,7 @@ const cases: readonly ManageCase[] = [
     tool: 'manage_my_cards',
     scopes: ['cards:read', 'cards:write'],
     reader: { tool: 'get_my_cards', scope: 'cards:read' },
-    add: async user => ({ card_id: await insertTestCard({ createdById: user.id }) }),
+    add: async user => ({ card_topic_id: await insertTestCard({ createdById: user.id }) }),
     update: {
       note: 'everyday card',
       opened_on: '2024-01-15',
@@ -46,7 +46,7 @@ const cases: readonly ManageCase[] = [
     add: async user => ({
       rewards_program_status_id: await insertTestRewardsProgramStatus({ createdById: user.id }),
     }),
-    update: { since: '2024-01-01', until: '2024-12-31' },
+    update: { started_on: '2024-01-01', expires_on: '2024-12-31' },
   },
   {
     tool: 'manage_my_spending',

@@ -82,7 +82,7 @@ describe('moderation-training feedback coverage', () => {
         created_at: openAiPostCreatedAt,
         action_at: new Date(),
         confidence_score: null,
-        flagged: true,
+        is_flagged: true,
         categories: [],
         model_output: null,
         current_state: 'rejected',
@@ -173,12 +173,12 @@ describe('moderation-training feedback coverage', () => {
     expect(await getTestPostClearanceState(multiFalsePostId)).toMatchObject({
       approved_at: expect.any(Date),
       rejected_at: null,
-      openai_omni_moderation_flagged: true,
+      is_flagged_by_openai_omni_moderation: true,
       spam_detection_flagged: true,
     })
     await expect(
       getTestPostPublicationDirtyWorkForScope({ type: 'post', id: multiFalsePostId }),
-    ).resolves.toMatchObject({ post_id: multiFalsePostId })
+    ).resolves.toMatchObject({ post_identity_id: multiFalsePostId })
     const afterReinstatedFalsePositive = await searchRecentAutomodActions(community.id, {
       sourceType: 'openai_omni',
     })
@@ -254,7 +254,7 @@ describe('moderation-training feedback coverage', () => {
     })
     await expect(
       getTestPostPublicationDirtyWorkForScope({ type: 'post', id: inReviewPostId }),
-    ).resolves.toMatchObject({ post_id: inReviewPostId })
+    ).resolves.toMatchObject({ post_identity_id: inReviewPostId })
     const moderatorActions = await searchModeratorActions({
       communityId: community.id,
       actorId: owner.id,

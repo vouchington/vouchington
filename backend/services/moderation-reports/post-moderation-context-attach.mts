@@ -18,9 +18,12 @@ export function toPublicPostModerationContext(
   if (!context) return null
   return {
     platform_moderation: context.platform_moderation
-      ? { flagged: context.platform_moderation.flagged }
+      ? { is_flagged: context.platform_moderation.is_flagged }
       : null,
-    agent_moderations: context.agent_moderations.map(a => ({ slug: a.slug, flagged: a.flagged })),
+    agent_moderations: context.agent_moderations.map(a => ({
+      slug: a.slug,
+      is_flagged: a.is_flagged,
+    })),
     agent_added_tags: context.agent_added_tags,
   }
 }

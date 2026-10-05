@@ -106,7 +106,7 @@ describe('handleChargeRefunded', () => {
     expect(recorded!.amount).toEqual({ amount: 1000, currency: 'usd' })
     expect(recorded!.stripe_charge_id).toBe(chargeId)
     expect(recorded!.source).toBe('stripe_dashboard')
-    expect(recorded!.revoked_access).toBe(false)
+    expect(recorded!.has_revoked_access).toBe(false)
     expect(mockListStripeRefundsForCharge).not.toHaveBeenCalled()
   })
 

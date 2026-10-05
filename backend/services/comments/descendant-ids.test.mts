@@ -14,14 +14,14 @@ describe('descendant-ids', () => {
     const comment1 = await createTestPost({
       user,
       post_type: 'comment',
-      parent_id: root.id,
-      root_id: root.id,
+      parent_post_id: root.id,
+      root_post_id: root.id,
     })
     const comment2 = await createTestPost({
       user,
       post_type: 'comment',
-      parent_id: comment1.id,
-      root_id: root.id,
+      parent_post_id: comment1.id,
+      root_post_id: root.id,
     })
 
     const { results: ids } = await getVisibleCommentDescendantIdsPage(user, root.id, root.id, {
@@ -37,16 +37,21 @@ describe('descendant-ids', () => {
     const comment1 = await createTestPost({
       user,
       post_type: 'comment',
-      parent_id: root.id,
-      root_id: root.id,
+      parent_post_id: root.id,
+      root_post_id: root.id,
     })
     const reply = await createTestPost({
       user,
       post_type: 'comment',
-      parent_id: comment1.id,
-      root_id: root.id,
+      parent_post_id: comment1.id,
+      root_post_id: root.id,
     })
-    await createTestPost({ user, post_type: 'comment', parent_id: root.id, root_id: root.id })
+    await createTestPost({
+      user,
+      post_type: 'comment',
+      parent_post_id: root.id,
+      root_post_id: root.id,
+    })
 
     const { results: ids } = await getVisibleCommentDescendantIdsPage(user, root.id, comment1.id, {
       limit: 100,
@@ -61,14 +66,14 @@ describe('descendant-ids', () => {
     const deletedParent = await createTestPost({
       user,
       post_type: 'comment',
-      parent_id: root.id,
-      root_id: root.id,
+      parent_post_id: root.id,
+      root_post_id: root.id,
     })
     const reply = await createTestPost({
       user,
       post_type: 'comment',
-      parent_id: deletedParent.id,
-      root_id: root.id,
+      parent_post_id: deletedParent.id,
+      root_post_id: root.id,
     })
     await deleteTestPost(deletedParent.id)
 
@@ -85,14 +90,14 @@ describe('descendant-ids', () => {
     const pendingParent = await createTestPost({
       user,
       post_type: 'comment',
-      parent_id: root.id,
-      root_id: root.id,
+      parent_post_id: root.id,
+      root_post_id: root.id,
     })
     await createTestPost({
       user,
       post_type: 'comment',
-      parent_id: pendingParent.id,
-      root_id: root.id,
+      parent_post_id: pendingParent.id,
+      root_post_id: root.id,
     })
     await setTestPostClearanceStatus(pendingParent.id, 'pending', user.id)
 

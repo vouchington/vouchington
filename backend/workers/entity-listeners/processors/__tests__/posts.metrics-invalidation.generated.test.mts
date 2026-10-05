@@ -28,7 +28,7 @@ describe('posts.metrics-invalidation.generated', () => {
     let cachedValue = await caches.post_metrics.get(parentPostId)
     expect(cachedValue).toBeDefined()
 
-    // Create a comment (post with root_id)
+    // Create a comment (post with root_post_id)
     const commentId = await insertTestPost({
       title: '',
       slug: `comment-${Date.now()}`,

@@ -108,13 +108,13 @@ describe('dismissPendingReportsForDeletedEntity', () => {
       expect.arrayContaining([
         expect.objectContaining({
           action_type: 'dismiss_report',
-          actor_id: automodUserId,
+          actor_user_id: automodUserId,
           community_id: community.id,
           report_id: reportId1,
         }),
         expect.objectContaining({
           action_type: 'dismiss_report',
-          actor_id: automodUserId,
+          actor_user_id: automodUserId,
           community_id: community.id,
           report_id: reportId2,
         }),
@@ -167,7 +167,7 @@ describe('dismissPendingReportsForDeletedEntity', () => {
       expect.arrayContaining([
         expect.objectContaining({
           action_type: 'dismiss_report',
-          actor_id: automodUserId,
+          actor_user_id: automodUserId,
           community_id: community.id,
           report_id: reportId,
         }),

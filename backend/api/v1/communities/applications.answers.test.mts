@@ -40,7 +40,7 @@ describe('community application answer routes', () => {
             question: 'Choose any',
             field_type: 'multi_select',
             options: ['Alpha', 'Beta'],
-            required: false,
+            is_required: false,
           },
         ],
       })

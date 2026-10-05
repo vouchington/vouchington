@@ -45,7 +45,7 @@ export async function getVisiblePostStoryIdsByStoryIds(
     SELECT post_story.post_id, post_story.story_id
     FROM story_posts post_story
     JOIN posts candidate_post ON candidate_post.id = post_story.post_id
-    JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_id, candidate_post.id)
+    JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
     WHERE post_story.story_id = ANY(${storyIds}::uuid[])
       AND `.append(eligibility)
   const { rows } = await read(query, options)

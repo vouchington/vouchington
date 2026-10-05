@@ -14,7 +14,7 @@ export type CopyrightEmailAttachmentInput = {
 
 export type CopyrightEmailIntake = {
   id: string
-  ses_message_id: string
+  amazon_ses_message_id: string
   received_at: Date
   raw_storage_key: string
   raw_sha256: Buffer
@@ -51,15 +51,15 @@ export async function createCopyrightEmailIntake(input: {
   const { sesVerdicts } = input
   const { rows } = await transaction<CopyrightEmailIntake>(sql`/* createCopyrightEmailIntake */
     INSERT INTO copyright_notice_email_intakes (
-      ses_message_id, received_at, raw_storage_key, raw_sha256, raw_media_type_id, raw_byte_size,
+      amazon_ses_message_id, received_at, raw_storage_key, raw_sha256, raw_media_type_id, raw_byte_size,
       spf_verdict, dkim_verdict, dmarc_verdict, spam_verdict, virus_verdict
     ) VALUES (
       ${input.sesMessageId}, ${input.receivedAt}, ${input.rawStorageKey}, ${input.rawSha256},
       ${rawMediaTypeId}, ${input.rawByteSize},
       ${sesVerdicts.spf}, ${sesVerdicts.dkim}, ${sesVerdicts.dmarc}, ${sesVerdicts.spam},
       ${sesVerdicts.virus}
-    ) ON CONFLICT (ses_message_id) DO NOTHING
-    RETURNING id, ses_message_id, received_at, raw_storage_key, raw_sha256, raw_media_type_id,
+    ) ON CONFLICT (amazon_ses_message_id) DO NOTHING
+    RETURNING id, amazon_ses_message_id, received_at, raw_storage_key, raw_sha256, raw_media_type_id,
       (SELECT mime_type FROM media_types WHERE id = raw_media_type_id) AS raw_mime_type, raw_byte_size
   `)
   const intake = rows[0]
@@ -69,9 +69,9 @@ export async function createCopyrightEmailIntake(input: {
   }
   const { rows: existingRows } = await transaction<CopyrightEmailIntake>(
     sql`/* createCopyrightEmailIntake:existing */
-      SELECT id, ses_message_id, received_at, raw_storage_key, raw_sha256, raw_media_type_id,
+      SELECT id, amazon_ses_message_id, received_at, raw_storage_key, raw_sha256, raw_media_type_id,
       (SELECT mime_type FROM media_types WHERE id = raw_media_type_id) AS raw_mime_type, raw_byte_size
-      FROM copyright_notice_email_intakes WHERE ses_message_id = ${input.sesMessageId}`,
+      FROM copyright_notice_email_intakes WHERE amazon_ses_message_id = ${input.sesMessageId}`,
   )
   const existing = existingRows[0]
   assert(existing, 500, 'Copyright email intake conflict has no stored intake')

@@ -8,9 +8,9 @@ import {
 } from '@/lib/api/client/email-preferences'
 
 const preferences: EmailPreferences = {
-  engagement_emails_enabled: true,
+  is_engagement_emails_enabled: true,
   news_digest_frequency: 'weekly',
-  moderation_emails_enabled: true,
+  is_moderation_emails_enabled: true,
   community_digest_frequency: 'weekly',
   moderation_email_cadence: 'daily',
   moderation_email_days_of_week: [1, 2, 3, 4, 5],
@@ -87,21 +87,25 @@ describe('useNotificationSettings', () => {
     await waitFor(() => expect(getMyEmailPreferences).toHaveBeenCalledTimes(1))
     let update: Promise<boolean>
     act(() => {
-      update = result.current.updateNotificationSetting('engagement_emails_enabled', false)
+      update = result.current.updateNotificationSetting('is_engagement_emails_enabled', false)
     })
     await waitFor(() =>
-      expect(updateMyEmailPreferences).toHaveBeenCalledWith({ engagement_emails_enabled: false }),
+      expect(updateMyEmailPreferences).toHaveBeenCalledWith({
+        is_engagement_emails_enabled: false,
+      }),
     )
     const load = result.current.loadSettings()
     await waitFor(() => expect(getMyEmailPreferences).toHaveBeenCalledTimes(2))
 
-    patch.resolve({ email_preferences: { ...initialSettings, engagement_emails_enabled: false } })
+    patch.resolve({
+      email_preferences: { ...initialSettings, is_engagement_emails_enabled: false },
+    })
     await update!
     retryLoad.resolve({ email_preferences: initialSettings })
     await load
 
-    expect(result.current.settings.engagement_emails_enabled).toBe(false)
-    await result.current.updateNotificationSetting('engagement_emails_enabled', false)
+    expect(result.current.settings.is_engagement_emails_enabled).toBe(false)
+    await result.current.updateNotificationSetting('is_engagement_emails_enabled', false)
     expect(updateMyEmailPreferences).toHaveBeenCalledTimes(1)
   })
 

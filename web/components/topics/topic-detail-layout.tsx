@@ -66,7 +66,7 @@ export function TopicDetailLayout({
         topicSlug={topic.slug}
         metrics={metrics}
         topicTypeName={topic.topic_type}
-        allowReviews={topic.allow_reviews}
+        allowReviews={topic.should_allow_reviews}
         referralProgramId={topic.referral_program_id}
         isAuthenticated={isAuthenticated}
         isAdmin={isAdmin}

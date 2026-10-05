@@ -6,6 +6,11 @@ type IsolatedDatabaseCaseDefinition = { file: string; fullName: `${string} > ${s
 
 const isolatedDatabaseCases = {
   ...copyrightReportIsolatedCases,
+  'openai-moderation-reconciliation': {
+    file: 'backend/workers/openai-moderation/workers/__tests__/workers.test.mts',
+    fullName:
+      'openai moderation single worker > requeues due source work and moves deadline-exhausted posts to review',
+  },
   'semantic-post-window-cap': {
     file: 'backend/services/posts/search/__tests__/get-ids.semantic-window.test.mts',
     fullName:

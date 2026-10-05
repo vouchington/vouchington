@@ -9,7 +9,7 @@ import sql from 'sql-template-strings'
 export function streamCopyrightRepeatInfringerIncidents(userId: string) {
   return createAsyncGeneratorFromCursor(sql`/* streamCopyrightRepeatInfringerIncidents */
     SELECT incident.id AS incident_id, incident.copyright_notice_id AS notice_id,
-      incident.operative, incident.created_at, disposition.disposition,
+      incident.is_operative, incident.created_at, disposition.disposition,
       disposition.recorded_at AS disposition_recorded_at
     FROM copyright_repeat_infringer_incidents incident
     LEFT JOIN copyright_repeat_infringer_dispositions disposition

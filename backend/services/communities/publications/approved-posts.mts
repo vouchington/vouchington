@@ -65,7 +65,7 @@ export async function searchCommunityPosts(
   query.append(sql`
     FROM community_post_reviews cpr
     JOIN view_posts posts ON posts.id = cpr.post_id
-    JOIN posts root_post ON root_post.id = COALESCE(posts.root_id, posts.id)
+    JOIN posts root_post ON root_post.id = COALESCE(posts.root_post_id, posts.id)
   `)
   if (sort === 'hot') {
     query.append(sql`

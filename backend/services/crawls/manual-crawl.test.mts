@@ -62,7 +62,7 @@ describe('enqueueManualUrlCrawlAsCurrentUser', () => {
       `https://${referralProgram.hostname}/ref/manual-${random}`,
     )
     expect(url).toBeTruthy()
-    await updateUrlHostname(url!.hostname.id, { crawlable: true })
+    await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
     const linkId = await insertTestUserReferralProgramLink({
       userId: admin.id,
       referralProgramId: referralProgram.referralProgramId,
@@ -128,7 +128,7 @@ describe('enqueueManualUrlCrawlAsCurrentUser', () => {
       `https://${referralProgram.hostname}/ref/manual-blocked-${random}`,
     )
     expect(url).toBeTruthy()
-    await updateUrlHostname(url!.hostname.id, { crawlable: false })
+    await updateUrlHostname(url!.hostname.id, { is_crawlable: false })
     await insertTestUserReferralProgramLink({
       userId: admin.id,
       referralProgramId: referralProgram.referralProgramId,

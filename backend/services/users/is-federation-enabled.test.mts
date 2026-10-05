@@ -12,7 +12,7 @@ describe('isFederationEnabledForUser', () => {
 
   it('returns true once the user opts in', async () => {
     const user = await createTestUserDirect()
-    await updateUserFields(user.id, { fediverse_federation_enabled: true })
+    await updateUserFields(user.id, { is_fediverse_federation_enabled: true })
     expect(await isFederationEnabledForUser(user.id)).toBe(true)
   })
 

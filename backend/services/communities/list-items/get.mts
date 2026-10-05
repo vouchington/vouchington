@@ -50,7 +50,7 @@ export async function searchCommunityListItems(
   if (itemType === 'post') {
     query.append(sql`
       JOIN posts candidate_post ON candidate_post.id = list_item.post_id
-      JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_id, candidate_post.id)`)
+      JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)`)
   }
   query.append(sql`
     WHERE list_item.community_id = ${communityId}
@@ -139,7 +139,7 @@ export async function getCommunityListItemCounts(
         .append(`list_item.${entityColumn}`)
         .append(sql`
           JOIN posts root_post
-            ON root_post.id = COALESCE(candidate_post.root_id, candidate_post.id)
+            ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
           WHERE list_item.community_id = ${communityId}
             AND list_item.removed_at IS NULL
             AND `)

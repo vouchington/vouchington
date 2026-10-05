@@ -122,7 +122,7 @@ async function getActivePostHashtagRelationObjectIds(
       AND source.topic_alias_id = relation.object_id
     WHERE relation.subject_id = ${postId}
       AND relation.deleted_at IS NULL
-      AND source.contributor_id = ${contributorId}`)
+      AND source.contributor_user_id = ${contributorId}`)
   const { rows } = await write<{ object_id: string }>(statement, { query })
   return rows.map(row => row.object_id)
 }

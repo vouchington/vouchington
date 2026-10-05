@@ -24,17 +24,5 @@ export const ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, stri
     'membership_microsoft_store_recovery_cursors.sweep_upper_bound_id',
     'Finite UUIDv7 high-water boundary for one recovery sweep; it is a cursor value, not a reference to a durable row.',
   ],
-  [
-    'membership_administrator_refund_operation_requests.membership_id',
-    'Immutable request snapshot intentionally survives membership projection deletion.',
-  ],
-  [
-    'membership_changes.membership_id',
-    'Append-only audit snapshot intentionally remains queryable after the membership projection is deleted.',
-  ],
-  [
-    'membership_refunds.membership_id',
-    'Append-only financial audit snapshot intentionally survives membership projection deletion.',
-  ],
 ])
 /* v8 ignore stop */

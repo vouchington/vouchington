@@ -20,7 +20,7 @@ export async function ingestStripeEvent(event: Stripe.Event): Promise<InsertStri
         stripeEventRecordId: storedEvent.id,
         processingAttemptId,
         stripeSubscriptionId: storedEvent.subscription_id,
-        livemode: storedEvent.livemode,
+        isLiveMode: storedEvent.is_live_mode,
       })
     }
   }

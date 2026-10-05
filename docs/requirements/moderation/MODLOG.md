@@ -16,7 +16,7 @@ the [Client Parity Matrix](../CLIENT-PARITY-MATRIX.md).
 
 Each row stores an actor, action type, optional community/post/user/report/dispute/application target, optional reason, and structured metadata.
 
-`actor_id` is nullable for historical rows, but new automated moderation actions should use the `automod` system user. Ban-evasion reports continue to use the `ban-evasion` system user because redaction depends on that identity.
+`actor_user_id` is nullable for historical rows, but new automated moderation actions should use the `automod` system user. Ban-evasion reports continue to use the `ban-evasion` system user because redaction depends on that identity.
 
 ## Action Families
 

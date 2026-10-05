@@ -52,8 +52,8 @@ describe('RewardsProgramStatusesManager Integration Flow', () => {
     const secondStatus: RewardsProgramStatus = {
       id: 'status-user-2',
       rewards_program_status_id: 'stat-2',
-      since: null,
-      until: null,
+      started_on: null,
+      expires_on: null,
       rewards_program_status: {
         id: 'stat-2',
         name: 'Marriott Bonvoy Platinum',
@@ -78,7 +78,7 @@ describe('RewardsProgramStatusesManager Integration Flow', () => {
 
     await act(async () => {
       resolveFirstSave!({
-        rewards_program_status: { ...initialStatuses[0], since: '2024-01-01' },
+        rewards_program_status: { ...initialStatuses[0], started_on: '2024-01-01' },
       } as UpdateRewardsProgramStatusResult)
       await firstSave
     })

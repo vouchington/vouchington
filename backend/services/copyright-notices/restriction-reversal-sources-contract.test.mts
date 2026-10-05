@@ -96,7 +96,7 @@ describe('independent copyright reversal sources', () => {
     const beforeIncident = (
       await getCopyrightRepeatInfringerAccount(fixture.actorUserId)
     ).incidents.find(incident => incident.copyright_notice_id === restricted.noticeId)
-    expect(beforeIncident?.operative).toBe(true)
+    expect(beforeIncident?.is_operative).toBe(true)
     const appellant = await getPrivateUserByAny(fixture.actorUserId)
     if (!appellant) throw new Error('Appellant disappeared')
     const appeal = await createCopyrightAppeal(
@@ -122,7 +122,7 @@ describe('independent copyright reversal sources', () => {
     const afterIncident = (
       await getCopyrightRepeatInfringerAccount(fixture.actorUserId)
     ).incidents.find(incident => incident.copyright_notice_id === restricted.noticeId)
-    expect(afterIncident?.operative).toBe(false)
+    expect(afterIncident?.is_operative).toBe(false)
     await expect(applyRestore(restricted.noticeId)).resolves.toBe('applied')
     const text = (await readTestCopyrightStatementIntents(restricted.noticeId)).find(
       row => row.delivery_kind === 'poster_restoration_notice' && row.channel === 'email',

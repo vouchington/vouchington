@@ -21,7 +21,7 @@ export function appendDirectWinnerCTE(query: SQLStatement): void {
         candidate.published_at AS sort_at,
         candidate.story_id,
         'direct'::text AS delivery_type,
-        NULL::uuid AS shared_by_user_id,
+        NULL::uuid AS shared_by_id,
         NULL::timestamptz AS shared_at,
         0::int AS sort_rank,
         NULL::uuid AS share_event_id,

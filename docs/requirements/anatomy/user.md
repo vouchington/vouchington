@@ -12,16 +12,16 @@
 
 ## Data Model
 
-| Field                        | Notes                                                                                  |
-| ---------------------------- | -------------------------------------------------------------------------------------- |
-| `id`                         | UUID                                                                                   |
-| `username`                   | URL-preferred identifier; required for certain actions                                 |
-| `display_name`               | Display name shown in UI (derived from OAuth provider, not a stored column)            |
-| `markdown`                   | Bio rendered as HTML in the profile header and Overview                                |
-| `profile_links`              | Social links rendered as icon anchors in header (stored in `user_profile_links` table) |
-| `engagement_emails_enabled`  | Enables one-time, outcome-triggered setup recommendations                              |
-| `news_digest_frequency`      | First-party news digest cadence: `none`, `daily`, or `weekly`                          |
-| `community_digest_frequency` | Community digest cadence: `none`, `daily`, or `weekly`                                 |
+| Field                          | Notes                                                                                  |
+| ------------------------------ | -------------------------------------------------------------------------------------- |
+| `id`                           | UUID                                                                                   |
+| `username`                     | URL-preferred identifier; required for certain actions                                 |
+| `display_name`                 | Display name shown in UI (derived from OAuth provider, not a stored column)            |
+| `markdown`                     | Bio rendered as HTML in the profile header and Overview                                |
+| `profile_links`                | Social links rendered as icon anchors in header (stored in `user_profile_links` table) |
+| `is_engagement_emails_enabled` | Enables one-time, outcome-triggered setup recommendations                              |
+| `news_digest_frequency`        | First-party news digest cadence: `none`, `daily`, or `weekly`                          |
+| `community_digest_frequency`   | Community digest cadence: `none`, `daily`, or `weekly`                                 |
 
 ## States
 

@@ -58,7 +58,7 @@ function makeThread(id: string): ModmailThread {
     title: `Thread ${id}`,
     community_id: 'community-1',
     subject_user_id: 'subject-1',
-    assigned_mod_id: null,
+    assigned_moderator_user_id: null,
     assigned_at: null,
     resolved_at: null,
     resolved_by_id: null,

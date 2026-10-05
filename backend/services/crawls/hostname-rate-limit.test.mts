@@ -12,7 +12,7 @@ describe('hostname-rate-limit', () => {
     const random = Math.random().toString(36).slice(2, 15)
     const hostnameId = await insertTestUrlHostname({
       hostname: `ratelimit-${random}.example.com`,
-      crawlable: false,
+      is_crawlable: false,
     })
 
     const result = await computeRateLimitForHostname(hostnameId)

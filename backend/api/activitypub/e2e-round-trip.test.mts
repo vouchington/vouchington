@@ -48,7 +48,7 @@ async function approveFediverseInstance(hostname: string): Promise<void> {
 
 async function createFederatedUser() {
   const user = await createTestUserDirect()
-  await updateUserFields(user.id, { fediverse_federation_enabled: true })
+  await updateUserFields(user.id, { is_fediverse_federation_enabled: true })
   return user
 }
 
@@ -155,6 +155,9 @@ describe('ActivityPub inbound round trip (Phase C6)', () => {
     })
     await deliverSignedActivity(inboxUrl, likeBody, keyId, privateKeyPem).expect(202)
 
-    expect(await getApPostLikesTally(post.id)).toEqual({ ap_likes_score: 1, ap_likes_count: 1 })
+    expect(await getApPostLikesTally(post.id)).toEqual({
+      activitypub_likes_score: 1,
+      activitypub_likes_count: 1,
+    })
   })
 })

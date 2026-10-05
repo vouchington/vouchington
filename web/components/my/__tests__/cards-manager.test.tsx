@@ -43,7 +43,7 @@ describe('CardsManager adding and removing cards', () => {
     })
 
     await waitFor(() => {
-      expect(mockCreate).toHaveBeenCalledWith({ card_id: 'c-3' })
+      expect(mockCreate).toHaveBeenCalledWith({ card_topic_id: 'c-3' })
     })
   })
 
@@ -57,7 +57,7 @@ describe('CardsManager adding and removing cards', () => {
     })
 
     await waitFor(() => {
-      expect(mockCreate).toHaveBeenCalledWith({ card_id: 'c-3' })
+      expect(mockCreate).toHaveBeenCalledWith({ card_topic_id: 'c-3' })
       expect(toastMock.success).toHaveBeenCalledWith('Card added')
       expect(screen.getByText('Amex Gold')).toBeInTheDocument()
     })

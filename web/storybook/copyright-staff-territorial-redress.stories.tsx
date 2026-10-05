@@ -8,7 +8,7 @@ const complaints = [
   {
     id: 'complaint-1',
     filed_by: 'poster' as const,
-    submitted_by_user_id: '019f0000-0000-7000-8000-000000000193',
+    submitted_by_id: '019f0000-0000-7000-8000-000000000193',
     received_at: '2026-10-01T10:00:00Z',
     explanation: 'I have a license for this photograph.',
     informed_at: '2026-09-30T10:00:00Z',

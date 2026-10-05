@@ -106,7 +106,7 @@ describe('updateTopic', () => {
     expect(updatedTopic?.updated_by?.id).toBe(updater!.id)
   })
 
-  it('persists noindex and allow_reviews flags', async () => {
+  it('persists noindex and should_allow_reviews flags', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const user = await createTestUser({ administrator: true })
     const topicId = await insertTestTopic({
@@ -116,16 +116,16 @@ describe('updateTopic', () => {
     })
     const topic = await getTopicByAny(topicId)
     const updatedTopic = await updateTopic(user!, topic!, {
-      noindex: true,
-      allow_reviews: false,
+      is_noindexed: true,
+      should_allow_reviews: false,
     })
 
-    expect(updatedTopic!.noindex).toBe(true)
-    expect(updatedTopic!.allow_reviews).toBe(false)
+    expect(updatedTopic!.is_noindexed).toBe(true)
+    expect(updatedTopic!.should_allow_reviews).toBe(false)
 
     const reloaded = await getTopicByAny(topicId)
-    expect(reloaded!.noindex).toBe(true)
-    expect(reloaded!.allow_reviews).toBe(false)
+    expect(reloaded!.is_noindexed).toBe(true)
+    expect(reloaded!.should_allow_reviews).toBe(false)
   })
 
   it('rejects a non-boolean noindex with 422', async () => {
@@ -138,11 +138,11 @@ describe('updateTopic', () => {
     })
     const topic = await getTopicByAny(topicId)
     await expect(
-      updateTopic(user!, topic!, { noindex: 'yes' as unknown as boolean }),
-    ).rejects.toMatchObject({ status: 422, message: 'noindex must be a boolean' })
+      updateTopic(user!, topic!, { is_noindexed: 'yes' as unknown as boolean }),
+    ).rejects.toMatchObject({ status: 422, message: 'is_noindexed must be a boolean' })
   })
 
-  it('rejects a non-boolean allow_reviews with 422', async () => {
+  it('rejects a non-boolean should_allow_reviews with 422', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const user = await createTestUser({ administrator: true })
     const topicId = await insertTestTopic({
@@ -152,8 +152,8 @@ describe('updateTopic', () => {
     })
     const topic = await getTopicByAny(topicId)
     await expect(
-      updateTopic(user!, topic!, { allow_reviews: 1 as unknown as boolean }),
-    ).rejects.toMatchObject({ status: 422, message: 'allow_reviews must be a boolean' })
+      updateTopic(user!, topic!, { should_allow_reviews: 1 as unknown as boolean }),
+    ).rejects.toMatchObject({ status: 422, message: 'should_allow_reviews must be a boolean' })
   })
 
   it('rejects changing topic_type to a removed type with 422', async () => {

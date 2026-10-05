@@ -61,7 +61,7 @@ describe('GET /api/v1/fediverse/instances/:id', () => {
     expect(response.body.topic.id).toBe(topic.id)
     expect(response.body.fediverse_instance).toMatchObject({
       software: 'mastodon',
-      open_registrations: true,
+      is_open_for_registrations: true,
     })
     expect(response.body.fediverse_instance).not.toHaveProperty('nodeinfo_raw')
     expect(response.body.fediverse_instance).not.toHaveProperty('integration_status')

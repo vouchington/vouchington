@@ -99,7 +99,7 @@ export function assignModmailThread(
 ): Promise<{ thread: ModmailThread }> {
   return clientApi.patch<{ thread: ModmailThread }>(
     `/api/v1/communities/${encodeURIComponent(communitySlug)}/modmail/${conversationId}`,
-    { assigned_mod_id: modUserId },
+    { assigned_moderator_user_id: modUserId },
   )
 }
 

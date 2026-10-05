@@ -29,7 +29,7 @@ export function makeAppeal(overrides: Partial<ModerationAppeal> = {}): Moderatio
       created_at: '2026-01-01T00:00:00Z',
       community: null,
     },
-    appellant_id: 'user-1',
+    appellant_user_id: 'user-1',
     appeal_reason: 'I did not violate any rules.',
     staff_context: {
       appellant: {

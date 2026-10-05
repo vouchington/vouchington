@@ -86,8 +86,8 @@ describe('copyright form screening agent', () => {
       has_claimant_contact: true,
       has_claimant_email: true,
       has_electronic_signature: true,
-      good_faith_belief: true,
-      accuracy_authority_under_penalty_of_perjury: true,
+      has_good_faith_belief: true,
+      has_accuracy_authority_under_penalty_of_perjury: true,
     })
     for (const secret of ['Sentinel Terrace', '555 0142', 'sentinel-claimant', 'Sentinel Signer'])
       expect(serialized).not.toContain(secret)

@@ -25,7 +25,7 @@ describe('appendEligiblePostsCTE', () => {
 
     expect(query.text).toContain("websearch_to_tsquery('voucha_english'")
     expect(query.text).toContain(
-      'JOIN posts root_post ON root_post.id = COALESCE(posts.root_id, posts.id)',
+      'JOIN posts root_post ON root_post.id = COALESCE(posts.root_post_id, posts.id)',
     )
     expect(query.text).toContain('root_post.approved_at')
     expect(query.text).toContain('relation__post__category__topic')

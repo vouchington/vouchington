@@ -14,8 +14,8 @@ export type FiledNoticeRow = {
   claimant_contact_ciphertext: string
   work_description: string
   idempotency_key: string
-  good_faith_belief: boolean
-  accuracy_authority_under_penalty_of_perjury: boolean
+  has_good_faith_belief: boolean
+  has_accuracy_authority_under_penalty_of_perjury: boolean
   electronic_signature_ciphertext: string
   body_ciphertext: string
 }
@@ -59,8 +59,9 @@ export function filedNoticeExportRow(row: FiledNoticeRow): Record<string, unknow
     claimant_contact: decryptExportedCopyrightText(row.claimant_contact_ciphertext, purpose),
     work_description:
       row.erased_by_retention_at !== null ? EXPORT_COPYRIGHT_ERASED_TEXT : row.work_description,
-    good_faith_belief: row.good_faith_belief,
-    accuracy_authority_under_penalty_of_perjury: row.accuracy_authority_under_penalty_of_perjury,
+    has_good_faith_belief: row.has_good_faith_belief,
+    has_accuracy_authority_under_penalty_of_perjury:
+      row.has_accuracy_authority_under_penalty_of_perjury,
     electronic_signature: decryptExportedCopyrightText(
       row.electronic_signature_ciphertext,
       purpose,

@@ -15,7 +15,7 @@ describe('individuals-households.generated', () => {
     expect(result).toBeDefined()
     expect(result.individual).toBeDefined()
     expect(result.household).toBeDefined()
-    expect(result.household.owner_id).toBe(user.id)
+    expect(result.household.owner_user_id).toBe(user.id)
   })
 
   it('getHouseholdByUser returns existing individual and household', async () => {

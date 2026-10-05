@@ -10,7 +10,7 @@ export async function getPublicPostIds(postIds: string[]): Promise<Set<string>> 
     sql`/* getPublicPostIds */
       SELECT candidate_post.id
       FROM posts candidate_post
-      JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_id, candidate_post.id)
+      JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
       WHERE candidate_post.id = ANY(${postIds}::uuid[])
         AND `.append(buildPublicPostEligibilityFilter('candidate_post', 'root_post')),
   )

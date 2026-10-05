@@ -34,17 +34,17 @@ export function StatusSummary({
           {status.rewards_program_status.name}
         </p>
         <div className='flex flex-wrap gap-3 text-xs text-muted-foreground'>
-          {status.since && (
+          {status.started_on && (
             <span>
               {t('extracted.rewardsProgramStatusesManager.statusSummary.sinceDate_4a6fc195', {
-                date: status.since,
+                date: status.started_on,
               })}
             </span>
           )}
-          {status.until && (
+          {status.expires_on && (
             <span>
               {t('extracted.rewardsProgramStatusesManager.statusSummary.untilDate_0bce791c', {
-                date: status.until,
+                date: status.expires_on,
               })}
             </span>
           )}

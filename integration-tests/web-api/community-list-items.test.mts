@@ -97,7 +97,7 @@ describe('community-list-items', () => {
     rssFeedItemId = rssFeedItem.id
 
     const hostname = `cli-test-${randomUUID()}.example.com`
-    hostnameId = await insertTestUrlHostname({ hostname, blocked: false, crawlable: true })
+    hostnameId = await insertTestUrlHostname({ hostname, is_blocked: false, is_crawlable: true })
     urlId = await insertTestUrl({ url: `https://${hostname}/path`, hostnameId })
 
     const community = await insertTestCommunity({ createdById: admin.id })

@@ -53,20 +53,20 @@ export async function getPostModerationData(postId: string): Promise<{
   openai_omni_moderation_content_sha256: Buffer | null
   openai_omni_moderation_input_sha256: Buffer | null
   openai_omni_moderation_results: unknown
-  openai_omni_moderation_flagged: boolean | null
+  is_flagged_by_openai_omni_moderation: boolean | null
   openai_omni_moderation_created_at: Date | null
 } | null> {
   const { rows } = await read<{
     openai_omni_moderation_content_sha256: Buffer | null
     openai_omni_moderation_input_sha256: Buffer | null
     openai_omni_moderation_results: unknown
-    openai_omni_moderation_flagged: boolean | null
+    is_flagged_by_openai_omni_moderation: boolean | null
     openai_omni_moderation_created_at: Date | null
   }>(sql`/* getPostModerationData */
     SELECT post.llm_moderation_content_sha256 AS openai_omni_moderation_content_sha256,
       version.content_sha256 AS openai_omni_moderation_input_sha256,
       disposition.evidence AS openai_omni_moderation_results,
-      CASE WHEN disposition.disposition IS NULL THEN NULL ELSE disposition.disposition <> 'pass' END AS openai_omni_moderation_flagged,
+      CASE WHEN disposition.disposition IS NULL THEN NULL ELSE disposition.disposition <> 'pass' END AS is_flagged_by_openai_omni_moderation,
       disposition.decided_at AS openai_omni_moderation_created_at
     FROM posts post
     LEFT JOIN post_moderation_versions version ON version.post_id = post.id
@@ -139,7 +139,7 @@ export async function getPostModerationResetState(postId: string): Promise<{
   rejected_at: Date | null
   in_review_at: Date | null
   llm_moderation_content_sha256: Buffer
-  openai_omni_moderation_flagged: boolean | null
+  is_flagged_by_openai_omni_moderation: boolean | null
   openai_omni_moderation_created_at: Date | null
   spam_detection_flagged: boolean | null
   spam_detection_created_at: Date | null
@@ -162,7 +162,7 @@ export async function getPostModerationResetState(postId: string): Promise<{
   if (!state) return null
   return {
     ...state,
-    openai_omni_moderation_flagged: openai?.openai_omni_moderation_flagged ?? null,
+    is_flagged_by_openai_omni_moderation: openai?.is_flagged_by_openai_omni_moderation ?? null,
     openai_omni_moderation_created_at: openai?.openai_omni_moderation_created_at ?? null,
     spam_detection_flagged: spam?.spam_detection_flagged ?? null,
     spam_detection_created_at: spam?.spam_detection_created_at ?? null,

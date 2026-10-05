@@ -61,7 +61,7 @@ function buildNotSuspendedClause(creatorIdExpression: string): SQLStatement {
  *
  * Comments inherit their root post's audience. Since comments are stored as
  * broadcast='everyone'/privacy='public', we check the root post's visibility
- * via a subquery when root_id is set.
+ * via a subquery when root_post_id is set.
  */
 export function buildPrivacyFilter(
   postsAlias: string,
@@ -73,14 +73,14 @@ export function buildPrivacyFilter(
   if (!currentUser?.id) {
     // Logged-out users can only see posts that broadcast to everyone and are approved.
     return sql`(`
-      .append(`${postsAlias}.root_id IS NULL AND ${postsAlias}.broadcast = 'everyone'`)
+      .append(`${postsAlias}.root_post_id IS NULL AND ${postsAlias}.broadcast = 'everyone'`)
       .append(sql`
       OR (`)
-      .append(`${postsAlias}.root_id IS NOT NULL`)
+      .append(`${postsAlias}.root_post_id IS NOT NULL`)
       .append(sql` AND EXISTS (
         SELECT 1 FROM posts root_post
         WHERE root_post.id = `)
-      .append(`${postsAlias}.root_id`)
+      .append(`${postsAlias}.root_post_id`)
       .append(sql`
           AND root_post.deleted_at IS NULL
           AND root_post.broadcast = 'everyone'
@@ -98,17 +98,17 @@ export function buildPrivacyFilter(
   const userId = currentUser.id
 
   return sql`(`
-    .append(`${postsAlias}.root_id IS NULL`)
+    .append(`${postsAlias}.root_post_id IS NULL`)
     .append(sql` AND `)
     .append(buildRootAccessClause(postsAlias, userId))
     .append(sql`
     OR (
       `)
-    .append(`${postsAlias}.root_id IS NOT NULL`)
+    .append(`${postsAlias}.root_post_id IS NOT NULL`)
     .append(sql` AND EXISTS (
       SELECT 1 FROM posts root_post
       WHERE root_post.id = `)
-    .append(`${postsAlias}.root_id`)
+    .append(`${postsAlias}.root_post_id`)
     .append(sql`
         AND root_post.deleted_at IS NULL
         AND `)

@@ -62,7 +62,7 @@ export async function resumeGrantAfterDirectAccessSuspensionInTransaction(
       UPDATE membership_source_states source_state
       SET effective_at = LEAST(source_state.effective_at, ${direct.access_suspended_at}),
         cancelled_at = NULL, expired_at = ${direct.access_suspended_at},
-        past_due_at = NULL, paused_at = NULL, auto_renews = false, updated_at = CURRENT_TIMESTAMP
+        past_due_at = NULL, paused_at = NULL, should_auto_renew = false, updated_at = CURRENT_TIMESTAMP
       FROM membership_grants grant_row
       WHERE grant_row.membership_source_id = source_state.membership_source_id
         AND grant_row.user_id = ${userId} AND grant_row.revoked_at IS NULL

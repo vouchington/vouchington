@@ -42,7 +42,7 @@ describe('copyright territorial request contracts', () => {
     expect((schema.required as string[]).toSorted()).toEqual(required)
     const properties = schema.properties as Record<string, Schema>
     const stringKeys = required.filter(
-      key => key !== ENUMS[operation]?.field && key !== 'good_faith_statement',
+      key => key !== ENUMS[operation]?.field && key !== 'has_good_faith_statement',
     )
     expect(stringKeys.map(key => properties[key])).toEqual(
       stringKeys.map(() => ({ type: 'string' })),
@@ -52,8 +52,8 @@ describe('copyright territorial request contracts', () => {
   it('requires an affirmative EU good-faith statement', () => {
     const schema = resolve(carriersOf(EU_NOTICE).body)
     const properties = schema.properties as Record<string, Schema>
-    expect(schema.required).toContain('good_faith_statement')
-    expect(properties.good_faith_statement).toEqual({ const: true })
+    expect(schema.required).toContain('has_good_faith_statement')
+    expect(properties.has_good_faith_statement).toEqual({ const: true })
   })
 
   it.each(Object.entries(ENUMS))(

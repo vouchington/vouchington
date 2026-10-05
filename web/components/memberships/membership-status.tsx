@@ -105,7 +105,7 @@ export function MembershipStatus({ membership, management = null }: MembershipSt
             )}
           </p>
         )}
-        {membership.cancel_at_period_end && (
+        {membership.should_cancel_at_period_end && (
           <p className='text-yellow-600'>
             {t('extracted.memberships.membershipStatus.cancelsAtEndOfPeriod_6e1151a5')}
           </p>

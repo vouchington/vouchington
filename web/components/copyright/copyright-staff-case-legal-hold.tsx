@@ -175,7 +175,7 @@ function LegalHoldAssessmentFields({
             () =>
               assessCopyrightLegalHold(hold.submission_id, {
                 rationale,
-                from_original_claimant: fromOriginalClaimant,
+                is_from_original_claimant: fromOriginalClaimant,
                 proceeding_kind: proceedingKind === 'none' ? null : proceedingKind,
                 ccb_claim_kind: proceedingKind === 'ccb' ? ccbClaimKind : null,
                 commenced_at:
@@ -186,7 +186,7 @@ function LegalHoldAssessmentFields({
                   proceedingKind === 'none' || !receivedAt
                     ? null
                     : new Date(receivedAt).toISOString(),
-                same_material: sameMaterial,
+                is_same_material: sameMaterial,
                 target_ids: selectedTargetIds,
               }),
             'Legal hold assessment recorded.',

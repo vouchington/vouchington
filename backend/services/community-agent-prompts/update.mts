@@ -60,7 +60,7 @@ export async function updateCommunityAgentPrompt(
       cap.id,
       cap.community_id,
       cap.created_by_id,
-      cap.slot_allocated,
+      cap.is_slot_allocated,
       cap.activated_at,
       cap.deactivated_at,
       cap.deleted_at,

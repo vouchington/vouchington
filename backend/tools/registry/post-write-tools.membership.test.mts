@@ -68,7 +68,7 @@ describe('delegated private community membership fences', () => {
           ? {
               idempotency_key: crypto.randomUUID(),
               post_type: 'comment',
-              parent_id: root,
+              parent_post_id: root,
               markdown: 'Refused',
             }
           : tool === 'update_post'
@@ -156,7 +156,7 @@ describe('delegated discussion source lock ordering', () => {
               idempotency_key: crypto.randomUUID(),
               title: 'Invalid discussion',
               community_id: community.id,
-              parent_id: roots[1 - index],
+              parent_post_id: roots[1 - index],
             },
             SCOPES,
           ),

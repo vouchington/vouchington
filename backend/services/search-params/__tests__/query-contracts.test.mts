@@ -133,8 +133,8 @@ describe('search parameter query contracts', () => {
     expect(sortedParameterNames(parseHostnamesSearchParams.queryContract)).toEqual(
       [
         'after',
-        'blocked',
-        'crawlable',
+        'is_blocked',
+        'is_crawlable',
         'hostname',
         'include_descendants',
         'limit',

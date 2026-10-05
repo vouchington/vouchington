@@ -13,7 +13,7 @@ describe('CopyrightStaffFormGuidance', () => {
             { element: 'work_identification', status: 'unclear', gap: 'No original URL.' },
             { element: 'material_identification', status: 'present', gap: null },
             { element: 'contact_information', status: 'present', gap: null },
-            { element: 'good_faith_statement', status: 'present', gap: null },
+            { element: 'has_good_faith_statement', status: 'present', gap: null },
             { element: 'accuracy_authority_statement', status: 'missing', gap: 'Unchecked.' },
           ],
           risk_notes: [{ kind: 'possible_fair_use', note: 'Used in a product review.' }],

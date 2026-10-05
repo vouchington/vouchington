@@ -114,8 +114,8 @@ describe('CopyrightEmailReview', () => {
         claimant_contact: 'tests+copyright-claimant@voucha.ai',
         claimant_email: 'tests+copyright-edited@voucha.ai',
         work_description: 'Claimant photograph',
-        good_faith_belief: true,
-        accuracy_authority_under_penalty_of_perjury: true,
+        has_good_faith_belief: true,
+        has_accuracy_authority_under_penalty_of_perjury: true,
         electronic_signature: 'Claimant',
         targets: [
           {

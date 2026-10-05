@@ -21,7 +21,7 @@ export function fetchAdminModlog(params?: {
   return clientApi.get<ModlogResponseBody>('/api/v1/admin/modlog', {
     searchParams: {
       community_id: params?.communityId,
-      actor_id: params?.actorId,
+      actor_user_id: params?.actorId,
       action_type: params?.actionType,
       after: params?.after,
     },

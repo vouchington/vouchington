@@ -42,7 +42,7 @@ export function CardsManager({ initialData }: Props) {
     credit_limit: '',
     currency: 'usd',
     is_authorized_user: false,
-    authorized_user_of_id: '',
+    authorized_user_of_card_id: '',
     note: '',
   })
 
@@ -51,7 +51,7 @@ export function CardsManager({ initialData }: Props) {
     addingRef.current = true
     try {
       await runWithLoadingId('add', async () => {
-        const { card } = await createMyCard({ card_id: cardId })
+        const { card } = await createMyCard({ card_topic_id: cardId })
         setUpserts(prev => new Map(prev).set(card.id, card))
         setNewCardId(null)
         setNewCardLabel('')
@@ -109,7 +109,9 @@ export function CardsManager({ initialData }: Props) {
           return next
         })
         setEditForm(prev =>
-          prev.authorized_user_of_id === id ? { ...prev, authorized_user_of_id: '' } : prev,
+          prev.authorized_user_of_card_id === id
+            ? { ...prev, authorized_user_of_card_id: '' }
+            : prev,
         )
         setConfirmingDeleteId(null)
         onSuccess(t('extracted.my.cardsManager.cardRemoved_0e75e7b8'))

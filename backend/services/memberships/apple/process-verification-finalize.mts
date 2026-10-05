@@ -21,7 +21,7 @@ export async function finalizeAppleVerificationFromPriorAttempt(
   const { rows } = await query(sql`/* findPriorAppleVerificationAttempt */
     SELECT user_id, verified_at, conflicted_at, rejected_at, result_code
     FROM membership_verifications
-    WHERE membership_provider_evidence_id = ${context.evidenceId}
+    WHERE membership_provider_evidence_record_id = ${context.evidenceId}
       AND id <> ${context.verificationId}
       AND (verified_at IS NOT NULL OR conflicted_at IS NOT NULL OR rejected_at IS NOT NULL)
     ORDER BY
@@ -113,10 +113,10 @@ export async function acceptAppleVerificationObservation(
   if (rowCount !== 1) throw new Error('Apple verification evidence was already finalized')
   const { rows } = await query(sql`/* insertAppleVerificationObservation */
     INSERT INTO membership_provider_observations (
-      provider, environment, application_id, membership_provider_evidence_id,
+      provider, environment, application_id, membership_provider_evidence_record_id,
       membership_provider_lineage_id, membership_provider_product_id, membership_product_id,
       provider_revision, provider_order, terminal_at, source_kind, effective_at, expires_at,
-      cancelled_at, expired_at, auto_renews
+      cancelled_at, expired_at, should_auto_renew
     ) VALUES (
       'apple_app_store', ${context.environment}, ${context.applicationId}, ${context.evidenceId},
       ${lineageId}, ${mapping.membershipProviderProductId}, ${mapping.membershipProductId},

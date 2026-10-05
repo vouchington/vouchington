@@ -12,7 +12,7 @@ function noticeBody() {
     hosted_use_url: `https://example.test/${suffix}`,
     notifier_name: `Notifier ${suffix}`,
     notifier_email: `notifier-${suffix}@example.test`,
-    good_faith_statement: true,
+    has_good_faith_statement: true,
   }
 }
 

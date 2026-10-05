@@ -66,7 +66,7 @@ describe('CopyrightEuNoticeForm', () => {
       content_description: 'A photograph',
       grounds: 'The image reproduces my photograph.',
       hosted_use_url: 'https://voucha.ai/discussion/example',
-      good_faith_statement: true,
+      has_good_faith_statement: true,
       cf_turnstile_response: 'turnstile-token',
     })
     const receipt = await screen.findByTestId('copyright-eu-guest-receipt')

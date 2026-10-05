@@ -21,7 +21,7 @@ Comments are shown as a tree, Reddit-style:
     - Time ago - links to the comment's permalink page
     - next - goes to the next comment in the same level. hide if none exist
     - prev - goes to the previous comment in the same level. hide if none exist
-    - root - goes to the root comment (not the root post), aka the comment ancestor whose `root_id` is the post. hide if it's the root or if root = parent (they would do the same thing).
+    - root - goes to the root comment (not the root post), aka the comment ancestor whose `root_post_id` is the post. hide if it's the root or if root = parent (they would do the same thing).
     - parent - goes to the parent comment.
     - toggle - toggles hiding and showing this comment and its children. when hidden, only show this row. Clicking anywhere on the metadata row (chevron, avatar, username, timestamp) collapses the thread; inner navigable links (username, timestamp) remain clickable without collapsing. Collapsed state persists per-user via `localStorage` keyed by `comments-collapsed:<rootPostId>:<userId>` for authenticated users (`comments-collapsed:<rootPostId>` for anonymous viewers).
   - HTML content

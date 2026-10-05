@@ -65,7 +65,7 @@ describe('HostnameModerationControls', () => {
     expect(document.querySelector('[data-pw="hostname-moderation-controls"]')).not.toBeNull()
   })
 
-  it('renders three switches for blocked, crawlable, and link_rel_follow', () => {
+  it('renders three switches for blocked, crawlable, and should_follow_link_rel', () => {
     render(<HostnameModerationControls {...defaultProps()} />)
     expect(document.querySelector('[data-pw="hostname-blocked-switch"]')).not.toBeNull()
     expect(document.querySelector('[data-pw="hostname-crawlable-switch"]')).not.toBeNull()
@@ -88,22 +88,24 @@ describe('HostnameModerationControls', () => {
     const crawlableSwitch = document.querySelector('[data-pw="hostname-crawlable-switch"]')!
     fireEvent.click(crawlableSwitch)
     await waitFor(() => {
-      expect(mocks.updateHostname).toHaveBeenCalledWith(HOSTNAME_ID, { crawlable: false })
+      expect(mocks.updateHostname).toHaveBeenCalledWith(HOSTNAME_ID, { is_crawlable: false })
     })
   })
 
-  it('toggles link_rel_follow and calls updateHostname with correct args', async () => {
+  it('toggles should_follow_link_rel and calls updateHostname with correct args', async () => {
     render(<HostnameModerationControls {...defaultProps()} />)
     const linkRelFollowSwitch = document.querySelector(
       '[data-pw="hostname-link-rel-follow-switch"]',
     )!
     fireEvent.click(linkRelFollowSwitch)
     await waitFor(() => {
-      expect(mocks.updateHostname).toHaveBeenCalledWith(HOSTNAME_ID, { link_rel_follow: false })
+      expect(mocks.updateHostname).toHaveBeenCalledWith(HOSTNAME_ID, {
+        should_follow_link_rel: false,
+      })
     })
   })
 
-  it('keeps crawlable and link_rel_follow switches editable when blocked is true', () => {
+  it('keeps crawlable and should_follow_link_rel switches editable when blocked is true', () => {
     render(
       <HostnameModerationControls
         {...defaultProps()}
@@ -156,14 +158,14 @@ describe('HostnameModerationControls', () => {
     })
   })
 
-  it('calls updateHostname with { blocked: true } after block confirmation', async () => {
+  it('calls updateHostname with { is_blocked: true } after block confirmation', async () => {
     render(<HostnameModerationControls {...defaultProps()} />)
     const blockedSwitch = document.querySelector('[data-pw="hostname-blocked-switch"]')!
     fireEvent.click(blockedSwitch)
     await waitFor(() => screen.getByRole('alertdialog'))
     fireEvent.click(screen.getByRole('button', { name: 'Block hostname' }))
     await waitFor(() => {
-      expect(mocks.updateHostname).toHaveBeenCalledWith(HOSTNAME_ID, { blocked: true })
+      expect(mocks.updateHostname).toHaveBeenCalledWith(HOSTNAME_ID, { is_blocked: true })
     })
   })
 
@@ -201,7 +203,7 @@ describe('HostnameModerationControls', () => {
     ).toBe('unchecked')
   })
 
-  it('calls updateHostname with { blocked: false } after unblock confirmation', async () => {
+  it('calls updateHostname with { is_blocked: false } after unblock confirmation', async () => {
     render(
       <HostnameModerationControls
         {...defaultProps()}
@@ -213,7 +215,7 @@ describe('HostnameModerationControls', () => {
     await waitFor(() => screen.getByRole('alertdialog'))
     fireEvent.click(screen.getByRole('button', { name: 'Unblock' }))
     await waitFor(() => {
-      expect(mocks.updateHostname).toHaveBeenCalledWith(HOSTNAME_ID, { blocked: false })
+      expect(mocks.updateHostname).toHaveBeenCalledWith(HOSTNAME_ID, { is_blocked: false })
     })
   })
 })

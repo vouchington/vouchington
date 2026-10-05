@@ -65,17 +65,17 @@ export function CardDisplayRow({
               })}
             </span>
           ) : null}
-          {card.is_authorized_user && card.authorized_user_of_id ? (
+          {card.is_authorized_user && card.authorized_user_of_card_id ? (
             <span>
               {t('extracted.cardsManager.cardRow.authUserOfAuthorizedusername_c8afc64d', {
                 authorizedUserName:
-                  cards.find(c => c.id === card.authorized_user_of_id)?.card.name ??
+                  cards.find(c => c.id === card.authorized_user_of_card_id)?.card.name ??
                   card.authorized_user_of_card?.card.name ??
                   t('extracted.cardsManager.cardRow.authorizedUser_96d4d4bf'),
               })}
             </span>
           ) : null}
-          {card.is_authorized_user && !card.authorized_user_of_id ? (
+          {card.is_authorized_user && !card.authorized_user_of_card_id ? (
             <span>{t('extracted.cardsManager.cardRow.authorizedUser_96d4d4bf')}</span>
           ) : null}
         </div>

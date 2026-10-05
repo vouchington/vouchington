@@ -104,7 +104,7 @@ Status changes from `400` to `422`:
   `PUT /my/profile/links/order` with an empty or non-UUID `ids` list.
 - `PATCH /my/identity` with a non-UUID `profile_image_id`.
 - `PATCH /my/identity-verification/display-preferences` with a wrong-typed
-  `verified_badge_visible`.
+  `is_verified_badge_visible`.
 
 Checks the schema does not replace keep their own status:
 
@@ -135,7 +135,7 @@ and `annually`, and `spending_category_id` and `household_id` are UUIDs.
 
 Status changes from `400` to `422`:
 
-- A missing required field (`card_id`, `rewards_program_id`, `value_per_point`,
+- A missing required field (`card_topic_id`, `rewards_program_id`, `value_per_point`,
   `rewards_program_status_id`, `spending_category_id`, `amount`) or a non-object body.
 
 Other behavior changes:

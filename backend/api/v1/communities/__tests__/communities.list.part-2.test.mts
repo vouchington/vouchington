@@ -196,7 +196,7 @@ describe('communities', () => {
           createdById: user.id,
           name: `Admin Review Eligible ${random}`,
           slug: `admin-review-eligible-${random}`,
-          allow_review_posts: true,
+          should_allow_review_posts: true,
         })
 
         const request = createRequest()
@@ -216,13 +216,13 @@ describe('communities', () => {
             createdById: user.id,
             name: `Review Enabled ${random}`,
             slug: `review-enabled-${random}`,
-            allow_review_posts: true,
+            should_allow_review_posts: true,
           }),
           insertTestCommunity({
             createdById: user.id,
             name: `Data Point Enabled ${random}`,
             slug: `data-point-enabled-${random}`,
-            allow_data_point_posts: true,
+            should_allow_data_point_posts: true,
           }),
           insertTestCommunity({
             createdById: user.id,

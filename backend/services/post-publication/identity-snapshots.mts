@@ -62,7 +62,7 @@ export async function materializePostPublicationIdentitySnapshot(
     comparison
       .append(publicationSnapshotMismatchSql(sql`${post.id}::uuid`, sql`${snapshot.id}::uuid`))
       .append(sql` OR NOT EXISTS (
-      SELECT 1 FROM posts candidate JOIN posts root ON root.id = COALESCE(candidate.root_id, candidate.id)
+      SELECT 1 FROM posts candidate JOIN posts root ON root.id = COALESCE(candidate.root_post_id, candidate.id)
       WHERE candidate.id = ${post.id} AND `)
       .append(publicationEligibilityFingerprintSql())
       .append(sql` = ${snapshot.eligibility_fingerprint}) AS mismatch`)

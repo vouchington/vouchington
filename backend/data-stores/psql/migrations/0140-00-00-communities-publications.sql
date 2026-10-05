@@ -62,8 +62,8 @@ CREATE TABLE IF NOT EXISTS communities (
   member_roster_visibility community_member_roster_visibility_types NOT NULL DEFAULT 'public',
   member_invites_allowed_at TIMESTAMPTZ,
   post_approval_required_at TIMESTAMPTZ,
-  allow_review_posts BOOLEAN NOT NULL DEFAULT false,
-  allow_data_point_posts BOOLEAN NOT NULL DEFAULT false,
+  should_allow_review_posts BOOLEAN NOT NULL DEFAULT false,
+  should_allow_data_point_posts BOOLEAN NOT NULL DEFAULT false,
   automod_action community_automod_actions NOT NULL DEFAULT 'record_only',
   trusted_at TIMESTAMPTZ,
   profile_image_id UUID REFERENCES images ON DELETE SET NULL,
@@ -141,9 +141,9 @@ COMMENT ON COLUMN communities.visibility IS 'Whether the community is publicly d
 COMMENT ON COLUMN communities.member_roster_visibility IS 'Who can see regular member rows in the community roster. Owners and moderators are always public to viewers who can see the community.';
 COMMENT ON COLUMN communities.member_invites_allowed_at IS 'When set, existing members can invite new members (not just owners/moderators). NULL means only owners/moderators can invite.';
 COMMENT ON COLUMN communities.post_approval_required_at IS 'When set, posts must be approved by a moderator before becoming visible. NULL means no approval required.';
-COMMENT ON COLUMN communities.allow_review_posts IS 'When true, active community members can create review posts in this community.';
+COMMENT ON COLUMN communities.should_allow_review_posts IS 'When true, active community members can create review posts in this community.';
 COMMENT ON COLUMN communities.automod_action IS 'What the community moderation classifier does when a post trips one of the community''s active prompts: record_only (the default, only the per-prompt agent_moderations projection), review_queue (the post stays published and enters the moderator review queue) or unpublish. Read when the classifier run completes, so changing it never re-runs a classification.';
-COMMENT ON COLUMN communities.allow_data_point_posts IS 'When true, active community members can create data point posts in this community.';
+COMMENT ON COLUMN communities.should_allow_data_point_posts IS 'When true, active community members can create data point posts in this community.';
 COMMENT ON COLUMN communities.trusted_at IS 'When set, posts in this community bypass the clearance pending gate and are immediately visible. NULL means standard clearance flow.';
 COMMENT ON COLUMN communities.profile_image_id IS 'Optional avatar/logo image for the community.';
 COMMENT ON COLUMN communities.banner_image_id IS 'Optional banner image displayed on the community page.';
@@ -171,7 +171,7 @@ CREATE TABLE IF NOT EXISTS community_members (
   community_id UUID NOT NULL REFERENCES communities ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
   role community_member_roles NOT NULL DEFAULT 'member',
-  suppress_community_digests_while_on_vacation BOOLEAN NOT NULL DEFAULT false,
+  should_suppress_community_digests_while_on_vacation BOOLEAN NOT NULL DEFAULT false,
   approved_by_id UUID REFERENCES users ON DELETE SET NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -218,7 +218,7 @@ COMMENT ON TABLE community_members IS 'Tracks membership of users in communities
 COMMENT ON COLUMN community_members.community_id IS 'The community this membership belongs to.';
 COMMENT ON COLUMN community_members.user_id IS 'The user who is a member.';
 COMMENT ON COLUMN community_members.role IS 'Member role: owner, moderator, or member.';
-COMMENT ON COLUMN community_members.suppress_community_digests_while_on_vacation IS 'Whether community digest delivery is paused while this membership has an active moderator vacation.';
+COMMENT ON COLUMN community_members.should_suppress_community_digests_while_on_vacation IS 'Whether community digest delivery is paused while this membership has an active moderator vacation.';
 COMMENT ON COLUMN community_members.approved_by_id IS 'Moderator or owner who approved this membership, if approval was required.';
 COMMENT ON COLUMN community_members.removed_at IS 'When set, the member has been removed from the community.';
 COMMENT ON COLUMN community_members.removed_by_id IS 'User who removed this member.';
@@ -237,7 +237,7 @@ CREATE TABLE IF NOT EXISTS community_application_questions (
   field_type community_application_question_field_types NOT NULL DEFAULT 'short_text',
   options JSONB,
   order_index SMALLINT NOT NULL,
-  required BOOLEAN NOT NULL DEFAULT true,
+  is_required BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   deleted_at TIMESTAMPTZ,
   CHECK (question = TRIM(question)),
@@ -254,7 +254,7 @@ COMMENT ON COLUMN community_application_questions.question IS 'The question text
 COMMENT ON COLUMN community_application_questions.field_type IS 'Input type: short_text, long_text, single_select, multi_select, or checkbox.';
 COMMENT ON COLUMN community_application_questions.options IS 'JSON array of selectable options for select-type fields.';
 COMMENT ON COLUMN community_application_questions.order_index IS 'Display order of this question within the application form.';
-COMMENT ON COLUMN community_application_questions.required IS 'Whether the applicant must answer this question.';
+COMMENT ON COLUMN community_application_questions.is_required IS 'Whether the applicant must answer this question.';
 
 -- community_applications
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -348,7 +348,7 @@ CREATE TABLE IF NOT EXISTS community_invites (
   invited_email TEXT,
   invited_by_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
   accepted_at TIMESTAMPTZ,
-  accepted_by_user_id UUID REFERENCES users ON DELETE SET NULL,
+  accepted_by_id UUID REFERENCES users ON DELETE SET NULL,
   declined_at TIMESTAMPTZ,
   revoked_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -383,7 +383,7 @@ CREATE INDEX IF NOT EXISTS idx_community_invites__invited_user_id ON community_i
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_invites__invited_by_id ON community_invites (invited_by_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_community_invites__accepted_by_user_id ON community_invites (accepted_by_user_id) WHERE accepted_by_user_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_community_invites__accepted_by_user_id ON community_invites (accepted_by_id) WHERE accepted_by_id IS NOT NULL;
 
 COMMENT ON TABLE community_invites IS 'Invitations to join a community, sent to a specific user or email address.';
 COMMENT ON COLUMN community_invites.community_id IS 'The community the invite is for.';
@@ -392,7 +392,7 @@ COMMENT ON COLUMN community_invites.invited_user_id IS 'Target user, if inviting
 COMMENT ON COLUMN community_invites.invited_email IS 'Target email address, if inviting someone who may not have an account.';
 COMMENT ON COLUMN community_invites.invited_by_id IS 'User who created the invitation.';
 COMMENT ON COLUMN community_invites.accepted_at IS 'When the invite was accepted.';
-COMMENT ON COLUMN community_invites.accepted_by_user_id IS 'User who accepted the invite (may differ from invited_user_id for email invites).';
+COMMENT ON COLUMN community_invites.accepted_by_id IS 'User who accepted the invite (may differ from invited_user_id for email invites).';
 COMMENT ON COLUMN community_invites.declined_at IS 'When the invite was declined.';
 COMMENT ON COLUMN community_invites.revoked_at IS 'When the invite was revoked by the inviter or a moderator.';
 
@@ -573,7 +573,7 @@ CREATE TABLE IF NOT EXISTS community_agent_prompts (
   community_id  UUID NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
   created_by_id UUID REFERENCES users(id) ON DELETE SET NULL,
 
-  slot_allocated BOOLEAN NOT NULL DEFAULT false,
+  is_slot_allocated BOOLEAN NOT NULL DEFAULT false,
   activated_at   TIMESTAMPTZ,
   deactivated_at TIMESTAMPTZ,
 
@@ -594,14 +594,14 @@ CREATE INDEX IF NOT EXISTS idx_community_agent_prompts__community_id
 -- Lookup by creator for slot counting
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_agent_prompts__created_by_id__slot
-  ON community_agent_prompts(created_by_id, slot_allocated)
+  ON community_agent_prompts(created_by_id, is_slot_allocated)
   WHERE deleted_at IS NULL;
 
 -- Active prompts for dispatcher
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_agent_prompts__active
   ON community_agent_prompts(community_id)
-  WHERE slot_allocated = true
+  WHERE is_slot_allocated = true
     AND activated_at IS NOT NULL
     AND deactivated_at IS NULL
     AND deleted_at IS NULL;
@@ -616,7 +616,7 @@ CREATE INDEX IF NOT EXISTS idx_community_agent_prompts__created_by_id
 
 COMMENT ON TABLE community_agent_prompts IS 'Extension table linking agent prompts to communities, with slot allocation and activation lifecycle.';
 COMMENT ON COLUMN community_agent_prompts.community_id IS 'The community this agent prompt belongs to.';
-COMMENT ON COLUMN community_agent_prompts.slot_allocated IS 'Whether this prompt has been allocated a slot for active use.';
+COMMENT ON COLUMN community_agent_prompts.is_slot_allocated IS 'Whether this prompt has been allocated a slot for active use.';
 COMMENT ON COLUMN community_agent_prompts.activated_at IS 'When the prompt was activated for community use. Mutually exclusive with deactivated_at.';
 COMMENT ON COLUMN community_agent_prompts.deactivated_at IS 'When the prompt was deactivated. Mutually exclusive with activated_at.';
 

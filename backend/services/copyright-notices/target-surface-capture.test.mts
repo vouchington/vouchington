@@ -18,8 +18,8 @@ describe('copyright target surface activation capture', () => {
     const originalEvidence = await readTestCopyrightSurfaceRetainedEvidence(originalNotice.targetId)
     expect(originalEvidence).toMatchObject({
       surface_activation_revision: fixture.placementRevision,
-      bound_by_user_id: fixture.actorUserId,
-      bound_by_administrator: false,
+      bound_by_id: fixture.actorUserId,
+      is_bound_by_administrator: false,
     })
 
     const replacementSetter = await createTestUserDirect()
@@ -49,8 +49,8 @@ describe('copyright target surface activation capture', () => {
     expect(reboundEvidence).toMatchObject({
       surface_activation_revision: reboundPlacementRevision!,
       activation_revision: reboundPlacementRevision!,
-      bound_by_user_id: replacementSetter.id,
-      bound_by_administrator: false,
+      bound_by_id: replacementSetter.id,
+      is_bound_by_administrator: false,
     })
     expect(await readTestCopyrightSurfaceRetainedEvidence(originalNotice.targetId)).toEqual(
       originalEvidence,
@@ -70,9 +70,9 @@ describe('copyright target surface activation capture', () => {
       surface_activation_revision: triggerOnlyPlacement.placement_revision,
       activation_placement_id: null,
       activation_revision: null,
-      bound_by_user_id: null,
-      uploaded_by_user_id: null,
-      bound_by_administrator: null,
+      bound_by_id: null,
+      uploaded_by_id: null,
+      is_bound_by_administrator: null,
     })
     expect(await selectCopyrightPlacementPartyUserIds(unknownNotice.targetId, 'respond')).toEqual(
       [],

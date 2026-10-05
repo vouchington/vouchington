@@ -19,8 +19,8 @@ export function mergeCardPages(
 
   return [...cardsById.values()]
     .map(card =>
-      card.authorized_user_of_id && overlay.deletedIds.has(card.authorized_user_of_id)
-        ? { ...card, authorized_user_of_id: null, authorized_user_of_card: null }
+      card.authorized_user_of_card_id && overlay.deletedIds.has(card.authorized_user_of_card_id)
+        ? { ...card, authorized_user_of_card_id: null, authorized_user_of_card: null }
         : card,
     )
     .toSorted((left, right) => left.id.localeCompare(right.id))

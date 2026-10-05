@@ -62,7 +62,7 @@ export async function deleteImageByIdWhileStorageLocked(
         sha_256,
         upload_staged_at,
         openai_omni_moderation_results,
-        openai_omni_moderation_flagged,
+        is_flagged_by_openai_omni_moderation,
         openai_omni_moderation_created_at
       FROM images
       WHERE id = ${image.id}

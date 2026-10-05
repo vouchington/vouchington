@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_current_paid_memberships AS
   SELECT DISTINCT ON (m.user_id)
     m.user_id,
@@ -10,7 +11,7 @@ CREATE OR REPLACE VIEW view_current_paid_memberships AS
   LEFT JOIN membership_provider_observations observation
     ON observation.id = source_state.membership_provider_observation_id
   LEFT JOIN membership_provider_evidence_records evidence
-    ON evidence.id = observation.membership_provider_evidence_id
+    ON evidence.id = observation.membership_provider_evidence_record_id
   WHERE m.projection_ended_at IS NULL
     AND m.cancelled_at IS NULL
     AND m.expired_at IS NULL

@@ -5,7 +5,7 @@
 
 type NameDisplayUser = {
   verification_status: string
-  verified_badge_visible: boolean
+  is_verified_badge_visible: boolean
   public_verified_name_display: string
   verified_first_name: string | null
   verified_last_name_initial: string | null
@@ -14,7 +14,7 @@ type NameDisplayUser = {
 
 export function computeVerifiedDisplayName(user: NameDisplayUser): string | null {
   if (user.verification_status !== 'verified') return null
-  if (!user.verified_badge_visible) return null
+  if (!user.is_verified_badge_visible) return null
 
   switch (user.public_verified_name_display) {
     case 'first_name':

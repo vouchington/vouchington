@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS moderator_actions (
   community_id uuid REFERENCES communities (id) ON DELETE SET NULL,
   moderation_transparency_community_id uuid,
   -- guardrails-disable-next-line uuid-must-be-key
-  actor_id uuid REFERENCES users (id) ON DELETE SET NULL,
+  actor_user_id uuid REFERENCES users (id) ON DELETE SET NULL,
   action_type moderator_action_types NOT NULL,
   -- guardrails-disable-next-line uuid-must-be-key
   post_id uuid REFERENCES posts (id) ON DELETE SET NULL,
@@ -103,9 +103,9 @@ CREATE TABLE IF NOT EXISTS moderator_actions (
   agent_moderation_post_id uuid,
   oauth_client_id uuid,
   user_moderator_note_id uuid REFERENCES user_moderator_notes (id) ON DELETE SET NULL,
-  crawler_id uuid REFERENCES hostname_crawler_configurations (id) ON DELETE SET NULL,
+  hostname_crawler_configuration_id uuid REFERENCES hostname_crawler_configurations (id) ON DELETE SET NULL,
   topic_id uuid REFERENCES topics (id) ON DELETE SET NULL,
-  operation_request_id uuid REFERENCES moderator_actions (id) ON DELETE SET NULL,
+  operation_request_action_id uuid REFERENCES moderator_actions (id) ON DELETE SET NULL,
   queue_name text,
   scheduled_job_key text,
   backfill_key text,
@@ -132,7 +132,7 @@ CREATE INDEX IF NOT EXISTS idx_moderator_actions__id
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__actor__id
-  ON moderator_actions (actor_id, id DESC);
+  ON moderator_actions (actor_user_id, id DESC);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__agent_moderation_target
@@ -143,7 +143,7 @@ COMMENT ON TABLE moderator_actions IS 'Append-only unified log of moderator/admi
 COMMENT ON COLUMN moderator_actions.community_id IS 'Community scope; NULL for global/platform-level actions.';
 COMMENT ON COLUMN moderator_actions.moderation_transparency_community_id IS 'Immutable community scope stamped at action creation for global-transparency exclusion.';
 
-COMMENT ON COLUMN moderator_actions.actor_id IS 'Moderator/admin who took the action (ON DELETE SET NULL for audit persistence).';
+COMMENT ON COLUMN moderator_actions.actor_user_id IS 'Moderator/admin who took the action (ON DELETE SET NULL for audit persistence).';
 
 COMMENT ON COLUMN moderator_actions.action_type IS 'Type of moderation action taken.';
 
@@ -166,9 +166,9 @@ COMMENT ON COLUMN moderator_actions.agent_moderation_id IS 'Target agent moderat
 COMMENT ON COLUMN moderator_actions.agent_moderation_post_id IS 'Post owner required by the partitioned agent-moderation target foreign key.';
 COMMENT ON COLUMN moderator_actions.oauth_client_id IS 'Target OAuth client whose verification was changed.';
 COMMENT ON COLUMN moderator_actions.user_moderator_note_id IS 'Target staff note retained after soft deletion.';
-COMMENT ON COLUMN moderator_actions.crawler_id IS 'Target crawler created, edited, or deleted by staff.';
+COMMENT ON COLUMN moderator_actions.hostname_crawler_configuration_id IS 'Target crawler created, edited, or deleted by staff.';
 COMMENT ON COLUMN moderator_actions.topic_id IS 'Target editorial topic assigned to an RSS category.';
-COMMENT ON COLUMN moderator_actions.operation_request_id IS 'Requested audit row linked by an external-operation outcome; an absent outcome remains unresolved.';
+COMMENT ON COLUMN moderator_actions.operation_request_action_id IS 'Requested audit row linked by an external-operation outcome; an absent outcome remains unresolved.';
 COMMENT ON COLUMN moderator_actions.queue_name IS 'Queue selected for a staff control operation.';
 COMMENT ON COLUMN moderator_actions.scheduled_job_key IS 'Scheduled-job catalog key selected for an immediate staff run.';
 COMMENT ON COLUMN moderator_actions.backfill_key IS 'Backfill catalog key selected for an immediate staff run.';
@@ -239,7 +239,7 @@ CREATE INDEX IF NOT EXISTS idx_moderator_actions__user_moderator_note_id
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__crawler_id
-  ON moderator_actions (crawler_id) WHERE crawler_id IS NOT NULL;
+  ON moderator_actions (hostname_crawler_configuration_id) WHERE hostname_crawler_configuration_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__topic_id
@@ -247,7 +247,7 @@ CREATE INDEX IF NOT EXISTS idx_moderator_actions__topic_id
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__operation_request_id
-  ON moderator_actions (operation_request_id) WHERE operation_request_id IS NOT NULL;
+  ON moderator_actions (operation_request_action_id) WHERE operation_request_action_id IS NOT NULL;
 
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

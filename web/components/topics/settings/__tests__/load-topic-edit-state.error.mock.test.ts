@@ -81,10 +81,13 @@ describe('loadTopicEditState', () => {
       return null as never
     })
     mockFetchSpending.mockResolvedValueOnce(null as never)
-    mockGetTypeAttrs.mockResolvedValueOnce({ bank_id: 'bank-1', brand_id: 'missing' } as never)
+    mockGetTypeAttrs.mockResolvedValueOnce({
+      bank_topic_id: 'bank-1',
+      brand_topic_id: 'missing',
+    } as never)
 
     const result = await loadTopicEditState('topic-1')
-    expect(result.typeAttributeNames).toEqual({ bank_id: 'Chase' })
+    expect(result.typeAttributeNames).toEqual({ bank_topic_id: 'Chase' })
   })
 
   it('skips type-attribute ids whose topic lookup rejects', async () => {
@@ -93,7 +96,7 @@ describe('loadTopicEditState', () => {
       throw new Error('lookup failed')
     })
     mockFetchSpending.mockResolvedValueOnce(null as never)
-    mockGetTypeAttrs.mockResolvedValueOnce({ bank_id: 'bank-1' } as never)
+    mockGetTypeAttrs.mockResolvedValueOnce({ bank_topic_id: 'bank-1' } as never)
 
     const result = await loadTopicEditState('topic-1')
     expect(result.typeAttributeNames).toEqual({})

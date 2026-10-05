@@ -8,7 +8,7 @@ export async function getSignupCountByReferrerId(referrerId: string): Promise<nu
   const { rows } = await read(sql`/* getSignupCountByReferrerId */
     SELECT COUNT(*)::INT AS total_signups
     FROM users
-    WHERE referrer_id = ${referrerId}
+    WHERE referrer_user_id = ${referrerId}
       AND deleted_at IS NULL
   `)
   return (rows[0] as { total_signups: number } | undefined)?.total_signups ?? 0
@@ -22,11 +22,11 @@ export async function getReferrerIdForSession(sessionId: string): Promise<string
     return null
   }
   const { rows } = await read(sql`/* getReferrerIdForSession */
-    SELECT referrer_id
+    SELECT referrer_user_id
     FROM session_referral_attributions
     WHERE session_id = ${sessionId}
     ORDER BY id ASC
     LIMIT 1
   `)
-  return rows[0]?.referrer_id ?? null
+  return rows[0]?.referrer_user_id ?? null
 }

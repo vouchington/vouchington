@@ -112,7 +112,7 @@ async function lockPriorProjectionAndCreateSource(
     sql`/* createMembership: lock prior effective product */
       SELECT membership.id, membership.membership_source_id, membership.membership_product_id,
         product.plan, membership.expires_at, membership.cancelled_at, membership.expired_at,
-        membership.past_due_at, membership.paused_at, membership.cancel_at_period_end,
+        membership.past_due_at, membership.paused_at, membership.should_cancel_at_period_end,
         membership.projection_ended_at,
         source.source_kind
       FROM memberships membership
@@ -132,7 +132,7 @@ async function lockRetainedDirectSourceProjection(sourceId: string, query: Query
     sql`/* createMembership: lock retained direct source projection */
       SELECT membership.id, membership.membership_source_id, membership.membership_product_id,
         product.plan, membership.expires_at, membership.cancelled_at, membership.expired_at,
-        membership.past_due_at, membership.paused_at, membership.cancel_at_period_end,
+        membership.past_due_at, membership.paused_at, membership.should_cancel_at_period_end,
         membership.projection_ended_at,
         source.source_kind
       FROM memberships membership

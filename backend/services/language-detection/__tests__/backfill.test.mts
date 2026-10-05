@@ -136,7 +136,7 @@ describe('language-detection backfill streams', () => {
         hostname: `crawl-lang-${random}.example.com`,
         url: `https://crawl-lang-${random}.example.com/page`,
         markdown: '',
-        lang: 'fr',
+        language: 'fr',
       })
       const crawlDoneId = await insertLanguageDetectionCrawlForTest({
         hostname: `crawl-done-${random}.example.com`,

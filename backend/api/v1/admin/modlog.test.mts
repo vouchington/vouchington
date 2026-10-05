@@ -115,7 +115,7 @@ describe('GET /api/v1/admin/modlog', () => {
     }
   })
 
-  it('filters by actor_id', async () => {
+  it('filters by actor_user_id', async () => {
     const suffix = createRandomString(8)
     const actor = await createTestUser()
     const community = await insertTestCommunity({
@@ -130,12 +130,12 @@ describe('GET /api/v1/admin/modlog', () => {
 
     const request = createRequest()
     await request.authenticateAs(admin)
-    const response = await request.get(`/api/v1/admin/modlog?actor_id=${actor.id}`).expect(200)
+    const response = await request.get(`/api/v1/admin/modlog?actor_user_id=${actor.id}`).expect(200)
 
     const ids = response.body.results.map((r: { id: string }) => r.id)
     expect(ids).toContain(actionId)
     for (const id of ids) {
-      expect(response.body.moderator_actions[id].actor_id).toBe(actor.id)
+      expect(response.body.moderator_actions[id].actor_user_id).toBe(actor.id)
     }
   })
 
@@ -192,9 +192,9 @@ describe('GET /api/v1/admin/modlog', () => {
     await request.get('/api/v1/admin/modlog?community_id=not-a-uuid').expect(422)
   })
 
-  it('returns 422 for invalid actor_id UUID', async () => {
+  it('returns 422 for invalid actor_user_id UUID', async () => {
     const request = createRequest()
     await request.authenticateAs(admin)
-    await request.get('/api/v1/admin/modlog?actor_id=not-a-uuid').expect(422)
+    await request.get('/api/v1/admin/modlog?actor_user_id=not-a-uuid').expect(422)
   })
 })

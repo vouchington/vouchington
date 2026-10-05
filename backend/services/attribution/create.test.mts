@@ -54,7 +54,7 @@ describe('createSessionReferralAttribution', () => {
 
     const rows = await getSessionReferralAttributions(sessionId)
     expect(rows).toHaveLength(1)
-    expect(rows[0]!.referrer_id).toBe(referrer.id)
+    expect(rows[0]!.referrer_user_id).toBe(referrer.id)
     expect(rows[0]!.landing_url).toBe(landingUrl)
 
     await expect.poll(() => referralClickJobWasEnqueued(landingUrl)).toBe(true)

@@ -12,7 +12,7 @@ export default createManageEntityTool({
   description:
     "Manage the current user's wallet cards: add, update, or remove them. List them with get_my_cards.",
   addProperties: {
-    card_id: {
+    card_topic_id: {
       type: 'string',
       description: 'The topic UUID of the card to add (required for action=add)',
     },
@@ -38,7 +38,7 @@ export default createManageEntityTool({
       type: 'boolean',
       description: 'Whether the user is an authorized user on this card',
     },
-    authorized_user_of_id: {
+    authorized_user_of_card_id: {
       anyOf: [{ type: 'string' }, { type: 'null' }],
       description: 'Wallet-card UUID of the primary account, or null to clear the relationship',
     },
@@ -47,7 +47,7 @@ export default createManageEntityTool({
       description: 'Date the sign-up bonus was received in YYYY-MM-DD format',
     },
   },
-  addFn: (user, args) => createIndividualCard(user, user, args.card_id as string),
+  addFn: (user, args) => createIndividualCard(user, user, args.card_topic_id as string),
   updateFn: (user, args) =>
     updateIndividualCardById(user, user, args.id, {
       opened_on: args.opened_on as string | null | undefined,
@@ -55,7 +55,7 @@ export default createManageEntityTool({
       credit_limit: args.credit_limit as Money | null | undefined,
       note: args.note as string | null | undefined,
       is_authorized_user: args.is_authorized_user as boolean | undefined,
-      authorized_user_of_id: args.authorized_user_of_id as string | null | undefined,
+      authorized_user_of_card_id: args.authorized_user_of_card_id as string | null | undefined,
       received_sign_up_bonus_on: args.received_sign_up_bonus_on as string | null | undefined,
     }),
   removeFn: (user, id) => deleteIndividualCardById(user, user, id),

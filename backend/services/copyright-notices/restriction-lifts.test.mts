@@ -39,7 +39,7 @@ describe('administrator copyright restriction lifts', () => {
     const withhold = before?.actionIntents.find(
       row => row.copyright_restriction_id === restriction?.id && row.action === 'withhold',
     )
-    if (!restriction || !incident?.operative || !withhold)
+    if (!restriction || !incident?.is_operative || !withhold)
       throw new Error('confirmed restriction fixture missing')
 
     await processCopyrightActionIntent(
@@ -118,7 +118,7 @@ describe('administrator copyright restriction lifts', () => {
       (await getCopyrightNoticePrivateAggregate(noticeId))?.restrictions[0]?.lifted_at,
     ).not.toBeNull()
     expect(await getCopyrightRepeatInfringerAccount(poster.id)).toMatchObject({
-      incidents: [expect.objectContaining({ copyright_notice_id: noticeId, operative: false })],
+      incidents: [expect.objectContaining({ copyright_notice_id: noticeId, is_operative: false })],
     })
     await sendAllCopyrightDeliveries(noticeId)
     const retentionBefore = await readCopyrightRetentionColumns(noticeId)

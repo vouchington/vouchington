@@ -8,7 +8,7 @@ type CrawlBasicRow = Omit<CrawlBasic, '__entity_type'>
 const crawlBasicColumnNames = Object.keys({
   id: true,
   url_id: true,
-  crawler_id: true,
+  hostname_crawler_configuration_id: true,
   created_at: true,
   last_modified_at: true,
   etag: true,
@@ -29,7 +29,7 @@ const crawlBasicColumnNames = Object.keys({
   embed_metadata: true,
   embed_oembed_url: true,
   embed_oembed_resolved_at: true,
-  lang: true,
+  language: true,
 } satisfies Record<CrawlBasicColumn, true>)
 
 /** CrawlBasic columns for a single-table `FROM crawls` SELECT. */

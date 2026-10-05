@@ -35,7 +35,7 @@ export function mapPostFeedResponse(
     entity_id: row.entity_id as string,
     post_type: row.post_type as string,
     delivery_type: row.delivery_type as 'direct' | 'share',
-    ...(row.shared_by_user_id ? { shared_by_user_id: row.shared_by_user_id as string } : {}),
+    ...(row.shared_by_id ? { shared_by_id: row.shared_by_id as string } : {}),
     ...(row.shared_at ? { shared_at: row.shared_at as Date } : {}),
   }))
   return {

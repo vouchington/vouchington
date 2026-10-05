@@ -53,30 +53,30 @@ describe('update.generated', () => {
     assert.strictEqual(updatedUser.id, user.id)
   })
 
-  it('Update User third_party_marketing to true', async () => {
+  it('Update User should_receive_third_party_marketing to true', async () => {
     const testUser = await createTestUser()
-    await updateUserFields(testUser.id, { third_party_marketing: true })
+    await updateUserFields(testUser.id, { should_receive_third_party_marketing: true })
     const updated = await getPrivateUserByAny(testUser.id)
     assert(updated)
-    assert.strictEqual(updated.third_party_marketing, true)
+    assert.strictEqual(updated.should_receive_third_party_marketing, true)
   })
 
-  it('Update User third_party_marketing to false', async () => {
+  it('Update User should_receive_third_party_marketing to false', async () => {
     const testUser = await createTestUser()
-    await updateUserFields(testUser.id, { third_party_marketing: false })
+    await updateUserFields(testUser.id, { should_receive_third_party_marketing: false })
     const updated = await getPrivateUserByAny(testUser.id)
     assert(updated)
-    assert.strictEqual(updated.third_party_marketing, false)
+    assert.strictEqual(updated.should_receive_third_party_marketing, false)
   })
 
-  it('Update User third_party_marketing rejects non-boolean value', async () => {
+  it('Update User should_receive_third_party_marketing rejects non-boolean value', async () => {
     const testUser = await createTestUser()
     await assert.rejects(
       () =>
         updateUserFields(testUser.id, {
-          third_party_marketing: 'yes' as unknown as Parameters<
+          should_receive_third_party_marketing: 'yes' as unknown as Parameters<
             typeof updateUserFields
-          >[1]['third_party_marketing'],
+          >[1]['should_receive_third_party_marketing'],
         }),
       (err: Error & { status?: number }) => {
         assert.strictEqual(err.status, 422)

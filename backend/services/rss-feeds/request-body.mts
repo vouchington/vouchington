@@ -3,16 +3,16 @@ import type { UpdateRssFeedChanges } from './update.mts'
 
 const CREATE_SOURCE_KEYS = ['rss_feed_url', 'follow'] as const
 const UPDATE_KEYS = [
-  'enabled',
+  'is_enabled',
   'discoverable',
   'reason',
   'rss_feed_url',
   'title',
   'topic_id',
-  // ignore_robots_txt is allowlisted here so assertNoUnknownKeys passes,
+  // should_ignore_robots_txt is allowlisted here so assertNoUnknownKeys passes,
   // but it is NOT parsed by parseUpdateRssFeedBody — the route handler reads
   // it directly from rawBody behind an admin-only gate (admin-only field pattern).
-  'ignore_robots_txt',
+  'should_ignore_robots_txt',
   'unreliable_status_codes',
 ] as const
 
@@ -20,7 +20,7 @@ export type UpdateRssFeedApiInput = Pick<
   UpdateRssFeedChanges,
   'rss_feed_url' | 'topic_id' | 'title'
 > & {
-  enabled?: boolean
+  is_enabled?: boolean
   discoverable?: boolean
   reason?: string
 }
@@ -43,13 +43,13 @@ export function parseUpdateRssFeedBody(body: unknown): UpdateRssFeedApiInput {
   if ('rss_feed_url' in record) changes.rss_feed_url = readOptionalString(record, 'rss_feed_url')
   if ('topic_id' in record) changes.topic_id = readOptionalString(record, 'topic_id')
   if ('title' in record) changes.title = readOptionalNullableString(record, 'title')
-  if ('enabled' in record) changes.enabled = readOptionalBoolean(record, 'enabled')
+  if ('is_enabled' in record) changes.is_enabled = readOptionalBoolean(record, 'is_enabled')
   if ('discoverable' in record) changes.discoverable = readOptionalBoolean(record, 'discoverable')
   if ('reason' in record) {
     assert(
-      'enabled' in record || 'discoverable' in record,
+      'is_enabled' in record || 'discoverable' in record,
       400,
-      'reason requires enabled or discoverable',
+      'reason requires is_enabled or discoverable',
     )
     changes.reason = readOptionalString(record, 'reason')
     assert(!changes.reason || changes.reason.length <= 1000, 400, 'reason too long')

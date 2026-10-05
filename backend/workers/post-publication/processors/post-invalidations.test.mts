@@ -11,19 +11,19 @@ describe('reconciled post invalidations', () => {
   it('invalidates comment, parent, and root metrics after a comment eligibility change', async () => {
     const root = await createTestPost()
     const parent = await createTestPost({
-      parent_id: root.id,
-      root_id: root.id,
+      parent_post_id: root.id,
+      root_post_id: root.id,
       post_type: 'comment',
     })
     const comment = await createTestPost({
-      parent_id: parent.id,
-      root_id: root.id,
+      parent_post_id: parent.id,
+      root_post_id: root.id,
       post_type: 'comment',
     })
     const reconciledComment: ReconciliationPost = {
       id: comment.id,
-      parent_id: parent.id,
-      root_id: root.id,
+      parent_post_id: parent.id,
+      root_post_id: root.id,
       created_by_id: comment.created_by_id,
       community_id: comment.community_id,
       post_type: comment.post_type,

@@ -155,8 +155,8 @@ export const makeComment = (
   title: '',
   slug: id,
   markdown: `Comment ${id}`,
-  root_id: 'root-1',
-  parent_id: parentId,
+  root_post_id: 'root-1',
+  parent_post_id: parentId,
   created_by_id: 'user-1',
   created_by: username
     ? { account_type: null, __entity_type: 'user', id: 'user-1', username, profile_image_id: null }

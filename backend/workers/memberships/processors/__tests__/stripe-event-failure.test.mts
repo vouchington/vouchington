@@ -24,7 +24,7 @@ describe('stripe-event processing failures', () => {
           stripeEventRecordId: storedEvent.id,
           processingAttemptId: 'attempt-1',
           stripeSubscriptionId: null,
-          livemode: false,
+          isLiveMode: false,
         },
         false,
         {

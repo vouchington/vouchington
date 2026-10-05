@@ -37,19 +37,19 @@ export function CardFields({
   return (
     <>
       <TopicIdAttribute
-        fieldId='bank_id'
+        fieldId='bank_topic_id'
         label={t('extracted.settings.typeAttributesFields.bank_676c471b')}
-        value={getValue('bank_id')}
-        name={names.bank_id}
-        onChange={setId('bank_id')}
+        value={getValue('bank_topic_id')}
+        name={names.bank_topic_id}
+        onChange={setId('bank_topic_id')}
         disabled={disabled}
       />
       <TopicIdAttribute
-        fieldId='brand_id'
+        fieldId='brand_topic_id'
         label={t('extracted.settings.typeAttributesFields.brand_090ed431')}
-        value={getValue('brand_id')}
-        name={names.brand_id}
-        onChange={setId('brand_id')}
+        value={getValue('brand_topic_id')}
+        name={names.brand_topic_id}
+        onChange={setId('brand_topic_id')}
         disabled={disabled}
       />
       <TopicIdAttribute

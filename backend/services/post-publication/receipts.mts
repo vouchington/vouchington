@@ -33,7 +33,7 @@ async function acknowledgeSnapshotReceipts(
     FROM UNNEST(${posts.map(post => post.id)}::uuid[], ${posts.map(post => post.identity_snapshot_id)}::uuid[]) receipt(post_identity_id, snapshot_id)
     JOIN post_publication_identity_snapshots snapshot ON snapshot.id = receipt.snapshot_id AND snapshot.post_identity_id = receipt.post_identity_id
     JOIN post_publication_post_identities identity ON identity.id = receipt.post_identity_id
-    JOIN posts candidate ON candidate.id = identity.post_id JOIN posts root ON root.id = COALESCE(candidate.root_id, candidate.id)
+    JOIN posts candidate ON candidate.id = identity.post_id JOIN posts root ON root.id = COALESCE(candidate.root_post_id, candidate.id)
     WHERE snapshot.dirty_work_id = ${work.id} AND snapshot.generation = ${work.generation}
       AND snapshot.completed_at IS NOT NULL AND snapshot.abandoned_at IS NULL
       AND snapshot.eligibility_fingerprint = `

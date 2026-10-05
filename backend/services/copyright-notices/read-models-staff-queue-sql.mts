@@ -30,7 +30,7 @@ export function copyrightStaffQueueKeysSql({
               AND assessment.copyright_notice_form_screening_id = execution.copyright_notice_form_screening_id
           WHERE execution.copyright_notice_form_intake_id = intake.id
             AND fn_current_copyright_form_screening(submission.id, execution.copyright_notice_form_screening_id)
-            AND assessment.substantially_compliant AND NOT EXISTS (
+            AND assessment.is_substantially_compliant AND NOT EXISTS (
               SELECT 1 FROM copyright_notice_submission_assessments newer
               WHERE newer.supersedes_assessment_id = assessment.id
             )
@@ -96,11 +96,11 @@ export function copyrightStaffQueueKeysSql({
       WHERE submission.kind = 'court_or_ccb_hold'
         AND (assessment.id IS NULL OR (NOT ${paging} AND (
           resolution.id IS NULL
-          AND assessment.from_original_claimant
+          AND assessment.is_from_original_claimant
           AND assessment.proceeding_kind IS NOT NULL
           AND assessment.commenced_at IS NOT NULL
           AND assessment.received_by_designated_agent_at IS NOT NULL
-          AND assessment.same_material
+          AND assessment.is_same_material
         )))
       UNION ALL
       SELECT target.copyright_notice_id, 'action_failed', intent.updated_at

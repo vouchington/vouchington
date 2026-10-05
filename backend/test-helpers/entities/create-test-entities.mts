@@ -27,8 +27,8 @@ export type CreateTestPostOptions = {
   description?: string
   markdown?: string
   post_type?: PostType
-  root_id?: string
-  parent_id?: string
+  root_post_id?: string
+  parent_post_id?: string
   url_id?: string
   url?: string
   broadcast?: PostBroadcast
@@ -98,15 +98,15 @@ export async function createTestPost(options: CreateTestPostOptions = {}) {
     urlId = url ? (url.canonical_url_id ?? url.id) : undefined
   }
 
-  // Comments (and other posts that thread off a parent) inherit the parent's root_id,
+  // Comments (and other posts that thread off a parent) inherit the parent's root_post_id,
   // falling back to the parent itself for top-level replies — mirrors
-  // @services/posts/create/comment-scope.mts's `parent.root_id ?? parent.id` derivation.
-  let rootId = options.root_id
-  if (!rootId && options.parent_id) {
-    const { rows } = await read<{ root_id: string | null }>(sql`/* createTestPost */
-      SELECT root_id FROM posts WHERE id = ${options.parent_id}
+  // @services/posts/create/comment-scope.mts's `parent.root_post_id ?? parent.id` derivation.
+  let rootId = options.root_post_id
+  if (!rootId && options.parent_post_id) {
+    const { rows } = await read<{ root_post_id: string | null }>(sql`/* createTestPost */
+      SELECT root_post_id FROM posts WHERE id = ${options.parent_post_id}
     `)
-    rootId = rows[0]?.root_id ?? options.parent_id
+    rootId = rows[0]?.root_post_id ?? options.parent_post_id
   }
 
   const postId = await insertTestPost({
@@ -116,7 +116,7 @@ export async function createTestPost(options: CreateTestPostOptions = {}) {
     postType: options.post_type || 'discussion',
     createdById: user.id,
     rootId,
-    parentId: options.parent_id,
+    parentId: options.parent_post_id,
     communityId: options.community_id,
     urlId,
     broadcast: options.broadcast,

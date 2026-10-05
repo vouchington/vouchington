@@ -14,7 +14,7 @@ export async function insertEncryptedCopyrightHoldSubmission(noticeId: string): 
   const statement = JSON.stringify({ filing: `Court filing ${id}` })
   await write(sql`/* insertEncryptedCopyrightHoldSubmission */
     INSERT INTO copyright_notice_submissions (
-      id, copyright_notice_id, kind, received_at, source_kind, submitted_by_user_id, body_ciphertext
+      id, copyright_notice_id, kind, received_at, source_kind, submitted_by_id, body_ciphertext
     ) VALUES (
       ${id}, ${noticeId}, 'court_or_ccb_hold', ${new Date()}, 'email', NULL,
       ${encryptSecret(statement, copyrightSubmissionPurpose(id))}

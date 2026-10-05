@@ -24,7 +24,7 @@ describe('registered admin read projections', () => {
     expect(note.isError).not.toBe(true)
     const history = await readStaffActionHistory(admin.id)
     const result = await invoke('search_moderator_actions', {
-      actor_id: admin.id,
+      actor_user_id: admin.id,
       action_type: 'warn',
       limit: 1,
     })
@@ -33,7 +33,7 @@ describe('registered admin read projections', () => {
       results: [expect.objectContaining({ __entity_type: 'moderator_action', id: history[0]!.id })],
       moderator_actions: {
         [history[0]!.id]: expect.objectContaining({
-          actor_id: admin.id,
+          actor_user_id: admin.id,
           target_user_id: target.id,
         }),
       },

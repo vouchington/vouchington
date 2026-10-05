@@ -56,8 +56,8 @@ export interface Post {
   title: string
   slug?: string | null
   markdown: string
-  parent_id?: string | null
-  root_id: string | null
+  parent_post_id?: string | null
+  root_post_id: string | null
   created_by_id: string | null
   created_by?: PostCreatedBy | null
   created_at: string // ISO 8601 date string
@@ -169,7 +169,7 @@ export interface PostSearchResult {
   entity_id?: string
   post_type?: PostType
   delivery_type?: 'direct' | 'share'
-  shared_by_user_id?: string
+  shared_by_id?: string
   shared_at?: string
 }
 

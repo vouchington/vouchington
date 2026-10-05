@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS user_sessions (
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
   device_id UUID NOT NULL,
   device_name TEXT NOT NULL DEFAULT 'Unknown device',
-  user_agent_id UUID NOT NULL REFERENCES user_agent_strings ON DELETE RESTRICT,
+  user_agent_string_id UUID NOT NULL REFERENCES user_agent_strings ON DELETE RESTRICT,
   ip_address INET,
   last_seen_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   expires_at TIMESTAMPTZ NOT NULL,
@@ -35,8 +35,8 @@ CREATE INDEX IF NOT EXISTS idx_user_sessions__expires_at_active
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_sessions__user_agent_id
-  ON user_sessions (user_agent_id)
-  WHERE user_agent_id IS NOT NULL;
+  ON user_sessions (user_agent_string_id)
+  WHERE user_agent_string_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_sessions__user_id__foreign_key
@@ -47,7 +47,7 @@ COMMENT ON TABLE user_sessions IS 'Active user session registry keyed by UUIDv7 
 COMMENT ON COLUMN user_sessions.user_id IS 'Owning user for this session row.';
 COMMENT ON COLUMN user_sessions.device_id IS 'JWT device ID (dt.did) associated with this session.';
 COMMENT ON COLUMN user_sessions.device_name IS 'Human-readable device label derived from the request user-agent when available.';
-COMMENT ON COLUMN user_sessions.user_agent_id IS 'Normalized user-agent row for the raw browser user-agent captured for this session.';
+COMMENT ON COLUMN user_sessions.user_agent_string_id IS 'Normalized user-agent row for the raw browser user-agent captured for this session.';
 COMMENT ON COLUMN user_sessions.ip_address IS 'Client IP address captured when the session was registered or refreshed.';
 COMMENT ON COLUMN user_sessions.last_seen_at IS 'Most recent login/list/logout/revoke/refresh touch time for this session.';
 COMMENT ON COLUMN user_sessions.expires_at IS 'JWT session expiration timestamp.';

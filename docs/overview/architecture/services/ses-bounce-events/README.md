@@ -8,7 +8,7 @@ Records and retrieves AWS SES bounce, complaint, and delivery notification event
 
 - `createSesBounceEvent(input: CreateSesBounceEventInput)` — records a new bounce, complaint, or
   delivery event; returns `null` instead of inserting when `dedup_key` (derived from
-  `ses_message_id` + `notification_type` + `ses_timestamp` + the sorted, normalized recipient list)
+  `amazon_ses_message_id` + `notification_type` + `occurred_at` + the sorted, normalized recipient list)
   already exists, so at-least-once redelivery (a retried Lambda invocation today, an SQS consumer
   once Phase 3b lands) is a safe no-op rather than a duplicate row — while distinct per-recipient
   notifications that share a `mail.messageId` and timestamp still get their own row

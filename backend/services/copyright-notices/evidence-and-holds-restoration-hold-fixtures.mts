@@ -121,7 +121,7 @@ export async function acceptCounterNoticeForRestoration(input: {
   const { assessmentId, deadlineId } = await reviewCopyrightCounterNotice({
     submissionId: input.submissionId,
     currentUser: input.moderator,
-    accepted: true,
+    is_accepted: true,
     rationale: 'The structured counter-notice is formally complete.',
   })
   const aggregate = await getCopyrightNoticePrivateAggregate(input.noticeId)

@@ -150,8 +150,8 @@ export async function syncImageSurfacePlacement(
   if (activated) {
     await query(sql`/* syncImageSurfacePlacement:activation */
       INSERT INTO image_surface_placement_activations (
-        placement_id, surface_kind, placement_revision, bound_by_user_id,
-        uploaded_by_user_id, bound_by_administrator
+        placement_id, surface_kind, placement_revision, bound_by_id,
+        uploaded_by_id, is_bound_by_administrator
       )
       SELECT ${placement.placement_id}, surface.surface_kind, ${placement.placement_revision},
         ${actorUserId}, image.created_by_id,

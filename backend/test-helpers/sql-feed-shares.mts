@@ -10,7 +10,7 @@ export async function insertPostFeedShareForTest(params: {
 }): Promise<string> {
   const id = uuidv7()
   await write(sql`/* insertPostFeedShareForTest */
-    INSERT INTO post_feed_shares (recipient_user_id, id, shared_by_user_id, post_id, sort_at)
+    INSERT INTO post_feed_shares (recipient_user_id, id, shared_by_id, post_id, sort_at)
     VALUES (${params.recipientUserId}, ${id}, ${params.sharedByUserId}, ${params.postId}, ${params.sortAt ?? new Date()})
   `)
   return id
@@ -25,7 +25,7 @@ export async function getPostShareRecipientIdsForTest(params: {
   }>(sql`/* getPostShareRecipientIdsForTest */
     SELECT recipient_user_id
     FROM post_feed_shares
-    WHERE shared_by_user_id = ${params.sharedByUserId}
+    WHERE shared_by_id = ${params.sharedByUserId}
       AND post_id = ${params.postId}
     ORDER BY recipient_user_id
   `)
@@ -46,7 +46,7 @@ export async function getPostShareRowsForTest(params: {
       created_at AS shared_at,
       sort_at
     FROM post_feed_shares
-    WHERE shared_by_user_id = ${params.sharedByUserId}
+    WHERE shared_by_id = ${params.sharedByUserId}
       AND post_id = ${params.postId}
     ORDER BY recipient_user_id
   `)
@@ -61,7 +61,7 @@ export async function getRssFeedItemShareRecipientIdsForTest(params: {
     sql`/* getRssFeedItemShareRecipientIdsForTest */
       SELECT recipient_user_id
       FROM rss_feed_item_feed_shares
-      WHERE shared_by_user_id = ${params.sharedByUserId}
+      WHERE shared_by_id = ${params.sharedByUserId}
         AND rss_feed_item_id = ${params.rssFeedItemId}
       ORDER BY recipient_user_id
     `,
@@ -77,7 +77,7 @@ export async function getManualSendNotificationRowsForTest(params: {
   const query = sql`/* getManualSendNotificationRowsForTest */
     SELECT user_id, title
     FROM notifications
-    WHERE sent_by_user_id = ${params.sentByUserId}
+    WHERE sent_by_id = ${params.sentByUserId}
       AND delivery_type = 'manual_send'
   `
   if (params.postId) query.append(sql` AND post_id = ${params.postId}`)

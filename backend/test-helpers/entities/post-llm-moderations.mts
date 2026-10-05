@@ -42,7 +42,7 @@ export async function insertTestAgentModeration(options: {
     ? uuidv7({ msecs: options.occurredAt.getTime(), seq: options.occurredAtSequence ?? 0 })
     : null
   const { rows } = await write(sql`
-    INSERT INTO agent_moderations (id, post_id, input_sha256, prompt_id, agent_id, results, flagged, deleted_at)
+    INSERT INTO agent_moderations (id, post_id, input_sha256, prompt_id, agent_id, results, is_flagged, deleted_at)
     VALUES (
       COALESCE(${id}::uuid, uuidv7()),
       ${options.postId},
@@ -120,7 +120,7 @@ export async function insertTestAgentModerationFalseyResults(options: {
 }): Promise<void> {
   const inputSha256 = crypto.randomBytes(32)
   await write(sql`
-    INSERT INTO agent_moderations (post_id, input_sha256, prompt_id, agent_id, results, flagged)
+    INSERT INTO agent_moderations (post_id, input_sha256, prompt_id, agent_id, results, is_flagged)
     VALUES (
       ${options.postId},
       ${inputSha256},
@@ -150,7 +150,7 @@ export async function getPostLLMModerations(postId: string): Promise<unknown[]> 
       id,
       input_sha256,
       results,
-      flagged,
+      is_flagged,
       prompt_id
     FROM agent_moderations
     WHERE post_id = ${postId}

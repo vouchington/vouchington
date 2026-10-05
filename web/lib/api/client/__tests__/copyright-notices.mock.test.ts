@@ -79,8 +79,8 @@ describe('copyright notices client', () => {
       claimant_email: 'tests+0bdf859c@voucha.ai',
       work_description: 'A photograph',
       electronic_signature: 'Claimant',
-      good_faith_belief: true,
-      accuracy_authority_under_penalty_of_perjury: true,
+      has_good_faith_belief: true,
+      has_accuracy_authority_under_penalty_of_perjury: true,
       targets: [
         {
           surface: 'post-image' as const,
@@ -164,7 +164,7 @@ describe('copyright notices client', () => {
     expect.hasAssertions()
     await expectPost(undefined, () => reviewCopyrightFormIntake('intake-1', true, 'Accepted.'), [
       '/api/v1/copyright-form-intakes/intake-1/reviews',
-      { accepted: true, rationale: 'Accepted.' },
+      { is_accepted: true, rationale: 'Accepted.' },
     ])
     await expectPost(
       undefined,
@@ -187,17 +187,17 @@ describe('copyright notices client', () => {
       () => reviewCopyrightCounterNotice('submission-1', false, 'Incomplete.'),
       [
         '/api/v1/copyright-submissions/submission-1/counter-notice-reviews',
-        { accepted: false, rationale: 'Incomplete.' },
+        { is_accepted: false, rationale: 'Incomplete.' },
       ],
     )
     const hold = {
       rationale: 'Verified CCB filing.',
-      from_original_claimant: true,
+      is_from_original_claimant: true,
       proceeding_kind: 'ccb' as const,
       ccb_claim_kind: 'claim' as const,
       commenced_at: '2026-07-01T12:00:00.000Z',
       received_by_designated_agent_at: '2026-07-01T12:30:00.000Z',
-      same_material: true,
+      is_same_material: true,
       target_ids: ['target-1'],
     }
     await expectPost(undefined, () => assessCopyrightLegalHold('submission-1', hold), [

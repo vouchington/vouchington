@@ -25,12 +25,12 @@ const permissiveGateFields = {
  */
 async function recordBackdatedSwitchOn(): Promise<void> {
   await write(sql`/* recordBackdatedAutomaticWithholdingSwitchOn */
-    INSERT INTO dynamic_configuration_revisions (id, config_key, revised_by_id, revision_type, changes)
+    INSERT INTO dynamic_configuration_revisions (id, configuration_key, revised_by_id, revision_type, changes)
     SELECT uuidv7(interval '-1 year'), 'copyright', NULL, 'update',
       '{"automaticProvisionalWithholding": {"before": false, "after": true}}'::jsonb
     WHERE NOT EXISTS (
       SELECT 1 FROM dynamic_configuration_revisions
-      WHERE config_key = 'copyright'
+      WHERE configuration_key = 'copyright'
         AND changes #> '{automaticProvisionalWithholding,after}' = 'true'::jsonb
         AND uuid_extract_timestamp(id) <= now() - interval '1 year' + interval '1 minute'
     )

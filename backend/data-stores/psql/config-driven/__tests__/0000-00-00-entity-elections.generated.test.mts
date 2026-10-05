@@ -52,8 +52,8 @@ describe('0000-00-00-entity-elections', () => {
   it('stores the current outbound ActivityPub Like generation on post vote events', () => {
     const sql = idempotent()
 
-    expect(sql).toContain('outbound_ap_like_activity_id UUID')
-    expect(sql).not.toContain('ADD COLUMN outbound_ap_like_activity_id')
+    expect(sql).toContain('outbound_activitypub_like_activity_id UUID')
+    expect(sql).not.toContain('ADD COLUMN outbound_activitypub_like_activity_id')
   })
 
   it('builds current indexes without repairing entity or vote tables', () => {

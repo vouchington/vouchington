@@ -21,8 +21,8 @@ export function createTopicSectionMetadata(
   topicTypeSlug: string,
   section: TopicSectionOptions,
 ): Metadata {
-  // A topic flagged noindex emits noindex on every one of its section pages.
-  if (topic.noindex) return createNoIndexMetadata()
+  // A topic flagged is_noindexed emits is_noindexed on every one of its section pages.
+  if (topic.is_noindexed) return createNoIndexMetadata()
   const pagePath = `/${topicTypeSlug}/${topic.slug}/${section.path}`
 
   return createPageMetadata({

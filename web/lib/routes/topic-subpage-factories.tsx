@@ -99,9 +99,9 @@ export function createTopicReviewsPage(slug: string) {
     try {
       const [topicData, t] = await Promise.all([getTopic(id), getTranslations()])
       if (!topicData) return createNoIndexMetadata()
-      // noindex is handled centrally in createTopicSectionMetadata; reviews additionally
-      // noindex/404 when reviews are disabled.
-      if (!topicData.topic.allow_reviews) return createNoIndexMetadata()
+      // is_noindexed is handled centrally in createTopicSectionMetadata; reviews additionally
+      // is_noindexed/404 when reviews are disabled.
+      if (!topicData.topic.should_allow_reviews) return createNoIndexMetadata()
       return createTopicSectionMetadata(topicData.topic, slug, {
         label: t('extracted.routes.topicSubpageFactories.reviews_84cb7871'),
         path: 'reviews',
@@ -117,7 +117,7 @@ export function createTopicReviewsPage(slug: string) {
     const resolvedSearchParams = await searchParams
     const [topicData, t] = await Promise.all([getTopic(id), getTranslations()])
     if (!topicData) notFound()
-    if (!topicData.topic.allow_reviews) notFound()
+    if (!topicData.topic.should_allow_reviews) notFound()
     const structuredData = createTopicReviewSectionStructuredData(
       t,
       topicData.topic,

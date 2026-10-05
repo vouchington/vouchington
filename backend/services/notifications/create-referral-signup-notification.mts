@@ -30,7 +30,7 @@ export async function createReferralSignupNotification(
       (
         SELECT 'You now have ' || COUNT(*)::text || ' referral' || CASE WHEN COUNT(*) = 1 THEN '' ELSE 's' END
         FROM users
-        WHERE referrer_id = ${referrerId}
+        WHERE referrer_user_id = ${referrerId}
           AND deleted_at IS NULL
       ),
       ${targetPath}

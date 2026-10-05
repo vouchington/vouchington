@@ -72,7 +72,7 @@ describe('Stripe scheduled membership renewals', () => {
     })
 
     await expect(getTestMembershipSourceState(membership.id)).resolves.toMatchObject({
-      auto_renews: false,
+      should_auto_renew: false,
     })
     await expect(
       getTestMembershipProviderObservation(result.observationId!),

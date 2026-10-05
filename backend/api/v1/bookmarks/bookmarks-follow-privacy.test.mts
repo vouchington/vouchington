@@ -12,6 +12,6 @@ describe('PUT /api/v1/bookmarks/user/:id/follow response privacy', () => {
     const response = await request.put(`/api/v1/bookmarks/user/${followee.id}/follow`).expect(200)
 
     expect(response.body.bookmark).toBeDefined()
-    expect(response.body.bookmark).not.toHaveProperty('outbound_ap_follow_activity_id')
+    expect(response.body.bookmark).not.toHaveProperty('outbound_activitypub_follow_activity_id')
   })
 })

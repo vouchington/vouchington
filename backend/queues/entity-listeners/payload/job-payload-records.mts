@@ -34,8 +34,8 @@ const topicUpdateRequired = ['name', 'slug'] as const
 const topicUpdateOptional = [
   'markdown',
   'topic_type',
-  'noindex',
-  'allow_reviews',
+  'is_noindexed',
+  'should_allow_reviews',
   'updated_by_id',
   'hostname',
   'homepage_url_id',
@@ -140,8 +140,8 @@ export function topicPayload(data: unknown): Record<string, unknown> {
   requiredString(updates, 'slug')
   optionalString(updates, 'markdown')
   optionalEnum(updates, 'topic_type', Object.keys(topicTypes))
-  optionalBoolean(updates, 'noindex')
-  optionalBoolean(updates, 'allow_reviews')
+  optionalBoolean(updates, 'is_noindexed')
+  optionalBoolean(updates, 'should_allow_reviews')
   optionalString(updates, 'updated_by_id')
   optionalNullableString(updates, 'hostname')
   for (const key of topicIdKeys) {

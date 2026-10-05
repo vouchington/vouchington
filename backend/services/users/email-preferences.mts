@@ -16,9 +16,9 @@ type EmailUnsubscribeTokenPayload = {
 
 export type EmailPreferences = Pick<
   UserPrivacySettings,
-  | 'engagement_emails_enabled'
+  | 'is_engagement_emails_enabled'
   | 'news_digest_frequency'
-  | 'moderation_emails_enabled'
+  | 'is_moderation_emails_enabled'
   | 'community_digest_frequency'
   | 'moderation_email_cadence'
   | 'moderation_email_days_of_week'
@@ -78,7 +78,7 @@ export async function unsubscribeEmailCategory(
   category: EmailUnsubscribeCategory,
 ): Promise<void> {
   if (category === 'outcome_emails') {
-    await updateUserFields(userId, { engagement_emails_enabled: false })
+    await updateUserFields(userId, { is_engagement_emails_enabled: false })
     return
   }
   if (category === 'news_digest') {
@@ -86,7 +86,7 @@ export async function unsubscribeEmailCategory(
     return
   }
   await updateUserFields(userId, {
-    moderation_emails_enabled: false,
+    is_moderation_emails_enabled: false,
     community_digest_frequency: 'none',
   })
 }
@@ -116,9 +116,9 @@ function isEmailUnsubscribeTokenPayload(value: unknown): value is EmailUnsubscri
 
 function toEmailPreferences(settings: UserPrivacySettings): EmailPreferences {
   return {
-    engagement_emails_enabled: settings.engagement_emails_enabled,
+    is_engagement_emails_enabled: settings.is_engagement_emails_enabled,
     news_digest_frequency: settings.news_digest_frequency,
-    moderation_emails_enabled: settings.moderation_emails_enabled,
+    is_moderation_emails_enabled: settings.is_moderation_emails_enabled,
     community_digest_frequency: settings.community_digest_frequency,
     moderation_email_cadence: settings.moderation_email_cadence,
     moderation_email_days_of_week: settings.moderation_email_days_of_week,
@@ -129,9 +129,9 @@ function toEmailPreferences(settings: UserPrivacySettings): EmailPreferences {
 
 function toUpdateUserOptions(preferences: Partial<EmailPreferences>): UpdateUserOptions {
   return {
-    engagement_emails_enabled: preferences.engagement_emails_enabled,
+    is_engagement_emails_enabled: preferences.is_engagement_emails_enabled,
     news_digest_frequency: preferences.news_digest_frequency,
-    moderation_emails_enabled: preferences.moderation_emails_enabled,
+    is_moderation_emails_enabled: preferences.is_moderation_emails_enabled,
     community_digest_frequency: preferences.community_digest_frequency,
     moderation_email_cadence: preferences.moderation_email_cadence,
     moderation_email_days_of_week: preferences.moderation_email_days_of_week,

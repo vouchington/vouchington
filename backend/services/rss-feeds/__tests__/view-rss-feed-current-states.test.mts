@@ -11,8 +11,8 @@ describe('view-rss-feed-current-states', () => {
   it('view_rss_feed_current_states exposes the latest enablement and discoverability rows', async () => {
     const feed = await createTestRssFeed({})
 
-    await updateRssFeedById(feed.id, { enabled: false, discoverable: false })
-    await updateRssFeedById(feed.id, { enabled: true, discoverable: true })
+    await updateRssFeedById(feed.id, { is_enabled: false, discoverable: false })
+    await updateRssFeedById(feed.id, { is_enabled: true, discoverable: true })
 
     const state = await queryRssFeedCurrentState(feed.id)
 
@@ -22,7 +22,7 @@ describe('view-rss-feed-current-states', () => {
   it('projects denormalized base-table state without history lookups', async () => {
     const feed = await createTestRssFeed({})
 
-    await updateRssFeedById(feed.id, { enabled: true, discoverable: false })
+    await updateRssFeedById(feed.id, { is_enabled: true, discoverable: false })
 
     const [baseState, viewState, viewDefinition] = await Promise.all([
       queryRssFeedBaseState(feed.id),

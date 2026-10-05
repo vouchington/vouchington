@@ -87,7 +87,7 @@ the Next.js proxy skips session referral attribution and no referral-click notif
 When a referred visitor creates an account, the referrer receives a `referral_signup` in-app notification:
 
 - **Title**: "@{username} signed up through your referral!" (or "Someone signed up through your referral!" if no username)
-- **Body**: "You now have N referral(s)" (live count from `users WHERE referrer_id = ?`)
+- **Body**: "You now have N referral(s)" (live count from `users WHERE referrer_user_id = ?`)
 - **Target path**: `/@{username}` (new user's profile)
 - **Actor**: The new user (`actor_user_id = newUserId`)
 - **Follow notification overlap**: If the new user also auto-follows the referrer (PR 1), a separate `follow` notification is sent with referral copy ("Your referral @username signed up and followed you!"). Both notifications fire independently.

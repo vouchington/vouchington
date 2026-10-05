@@ -33,7 +33,7 @@ export async function listReviewSuccessionHistoryAuditRows(
       FROM posts review
       WHERE (${cursor}::uuid IS NULL OR review.id > ${cursor}::uuid)
         AND review.post_type = 'review'
-        AND review.root_id IS NULL
+        AND review.root_post_id IS NULL
         AND review.archived_at IS NOT NULL
         AND review.archived_at <= ${cutoffArchivedAt}::timestamptz
         AND EXISTS (
@@ -103,12 +103,12 @@ export async function listReviewSuccessionHistoryAuditRows(
   statement.append(buildOtherwisePublicPostEligibilityFilter('newer', 'newer_root'))
   statement.append(sql`) AS is_otherwise_public
         FROM posts newer
-        JOIN posts newer_root ON newer_root.id = COALESCE(newer.root_id, newer.id)
+        JOIN posts newer_root ON newer_root.id = COALESCE(newer.root_post_id, newer.id)
         WHERE topics.author_user_id IS NOT NULL
           AND newer.id > candidate.id
           AND newer.created_by_id = topics.author_user_id
           AND newer.post_type = 'review'
-          AND newer.root_id IS NULL
+          AND newer.root_post_id IS NULL
           AND (
             SELECT ARRAY_AGG(newer_rating.topic_id ORDER BY newer_rating.topic_id)
             FROM post_review_topic_ratings newer_rating

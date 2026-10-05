@@ -43,22 +43,22 @@ CREATE TABLE image_surface_placement_activations (
     'community-profile-image', 'community-banner-image', 'user-profile-link-image'
   )),
   placement_revision integer NOT NULL CHECK (placement_revision >= 0),
-  bound_by_user_id uuid NOT NULL REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
-  uploaded_by_user_id uuid NOT NULL REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
-  bound_by_administrator boolean,
+  bound_by_id uuid NOT NULL REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
+  uploaded_by_id uuid NOT NULL REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
+  is_bound_by_administrator boolean,
   bound_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (placement_id, placement_revision),
   CONSTRAINT fk_image_surface_placement_activations__placement__surface_kind FOREIGN KEY (placement_id, surface_kind)
     REFERENCES image_surface_placements(placement_id, surface_kind) ON DELETE RESTRICT,
   CHECK ((surface_kind IN ('community-profile-image', 'community-banner-image')) =
-    (bound_by_administrator IS NOT NULL))
+    (is_bound_by_administrator IS NOT NULL))
 );
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_image_surface_placement_activations__bound_by_user
-  ON image_surface_placement_activations(bound_by_user_id);
+  ON image_surface_placement_activations(bound_by_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_image_surface_placement_activations__uploaded_by_user
-  ON image_surface_placement_activations(uploaded_by_user_id);
+  ON image_surface_placement_activations(uploaded_by_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_image_surface_placement_activations_guard
 BEFORE UPDATE OR DELETE ON image_surface_placement_activations
@@ -67,9 +67,9 @@ COMMENT ON TABLE image_surface_placement_activations IS 'Immutable record of eac
 COMMENT ON COLUMN image_surface_placement_activations.placement_id IS 'Placement activated by the application.';
 COMMENT ON COLUMN image_surface_placement_activations.surface_kind IS 'Surface kind captured with the placement identity.';
 COMMENT ON COLUMN image_surface_placement_activations.placement_revision IS 'Placement revision at activation.';
-COMMENT ON COLUMN image_surface_placement_activations.bound_by_user_id IS 'Retained identity of the account that selected the image.';
-COMMENT ON COLUMN image_surface_placement_activations.uploaded_by_user_id IS 'Retained identity of the original uploader.';
-COMMENT ON COLUMN image_surface_placement_activations.bound_by_administrator IS 'Whether a community image setter was an administrator at activation; null for other surfaces.';
+COMMENT ON COLUMN image_surface_placement_activations.bound_by_id IS 'Retained identity of the account that selected the image.';
+COMMENT ON COLUMN image_surface_placement_activations.uploaded_by_id IS 'Retained identity of the original uploader.';
+COMMENT ON COLUMN image_surface_placement_activations.is_bound_by_administrator IS 'Whether a community image setter was an administrator at activation; null for other surfaces.';
 COMMENT ON COLUMN image_surface_placement_activations.bound_at IS 'Time the application activated the image placement.';
 
 ALTER TABLE image_surface_placements
@@ -285,7 +285,7 @@ BEGIN
     v_placement_id, v_revision, p_image_id,
     CASE WHEN image.deleted_at IS NULL
         AND image.quarantine_pending_at IS NULL
-        AND image.openai_omni_moderation_flagged IS NOT TRUE
+        AND image.is_flagged_by_openai_omni_moderation IS NOT TRUE
       THEN 'allow'::media_delivery_desired_states ELSE 'withheld'::media_delivery_desired_states END
   FROM images image WHERE image.id = p_image_id
   ON CONFLICT (delivery_key) DO NOTHING;
@@ -432,7 +432,7 @@ RETURNS boolean LANGUAGE sql STABLE AS $$
       AND image.deleted_at IS NULL
       AND image.upload_completed_at IS NOT NULL
       AND image.quarantine_pending_at IS NULL
-      AND image.openai_omni_moderation_flagged = FALSE
+      AND image.is_flagged_by_openai_omni_moderation = FALSE
       AND image.openai_omni_moderation_results IS NOT NULL
       AND image.openai_omni_moderation_created_at IS NOT NULL
       AND EXISTS (

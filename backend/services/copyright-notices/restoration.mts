@@ -16,7 +16,7 @@ export type CopyrightRestorationHold = {
 }
 
 /**
- * A court/CCB hold is operative only when it came from the original claimant,
+ * A court/CCB hold is is_operative only when it came from the original claimant,
  * identifies the same material, and reports a commenced qualifying proceeding.
  */
 export function precheckCopyrightRestoration({
@@ -105,7 +105,7 @@ export async function createEligibleCopyrightRestoreIntent(input: {
       AND r.id = ${input.restrictionId}
       AND d.id = ${input.deadlineId}
       AND counter_notice.kind = 'counter_notice'
-      AND assessment.substantially_compliant
+      AND assessment.is_substantially_compliant
       AND NOT EXISTS (
         SELECT 1 FROM copyright_notice_submission_assessments newer_assessment
         WHERE newer_assessment.supersedes_assessment_id = assessment.id
@@ -143,8 +143,8 @@ export async function createEligibleCopyrightRestoreIntent(input: {
       WHERE s.copyright_notice_id = ${input.noticeId}
         AND hold_target.copyright_notice_target_id = ${input.targetId}
         AND resolved.id IS NULL
-        AND h.from_original_claimant
-        AND h.same_material
+        AND h.is_from_original_claimant
+        AND h.is_same_material
         AND h.proceeding_kind IS NOT NULL
         AND h.commenced_at IS NOT NULL
         AND h.received_by_designated_agent_at IS NOT NULL
@@ -162,9 +162,9 @@ export async function createEligibleCopyrightRestoreIntent(input: {
     hold: qualifyingHolds.rows[0]
       ? {
           receivedByDesignatedAgentAt: qualifyingHolds.rows[0].received_by_designated_agent_at,
-          fromOriginalClaimant: qualifyingHolds.rows[0].from_original_claimant,
+          fromOriginalClaimant: qualifyingHolds.rows[0].is_from_original_claimant,
           commenced: qualifyingHolds.rows[0].commenced_at !== null,
-          sameMaterial: qualifyingHolds.rows[0].same_material,
+          sameMaterial: qualifyingHolds.rows[0].is_same_material,
           proceedingKind: qualifyingHolds.rows[0].proceeding_kind as 'federal_court' | 'ccb',
         }
       : null,

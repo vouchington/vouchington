@@ -37,11 +37,11 @@ export function AttributeFields({
   if (currentTopicType === 'rewards_program') {
     return (
       <TopicIdAttribute
-        fieldId='company_id'
+        fieldId='company_topic_id'
         label='Company'
-        value={getValue('company_id')}
-        name={names.company_id}
-        onChange={setId('company_id')}
+        value={getValue('company_topic_id')}
+        name={names.company_topic_id}
+        onChange={setId('company_topic_id')}
         disabled={disabled}
       />
     )
@@ -50,11 +50,11 @@ export function AttributeFields({
     return (
       <>
         <TopicIdAttribute
-          fieldId='company_id'
+          fieldId='company_topic_id'
           label='Company'
-          value={getValue('company_id')}
-          name={names.company_id}
-          onChange={setId('company_id')}
+          value={getValue('company_topic_id')}
+          name={names.company_topic_id}
+          onChange={setId('company_topic_id')}
           disabled={disabled}
         />
         <TopicIdAttribute

@@ -54,10 +54,10 @@ export async function reviewCopyrightAppeal(input: {
   `)
   const { rows: appealRows } = await transaction<{
     copyright_notice_id: string
-    submitted_by_user_id: string | null
+    submitted_by_id: string | null
     target_ids: string[]
   }>(sql`/* reviewCopyrightAppeal:appeal */
-    SELECT submission.copyright_notice_id, submission.submitted_by_user_id,
+    SELECT submission.copyright_notice_id, submission.submitted_by_id,
       ARRAY(
         SELECT submission_target.copyright_notice_target_id
         FROM copyright_notice_submission_targets submission_target
@@ -179,13 +179,13 @@ export async function reviewCopyrightAppeal(input: {
     INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id, copyright_notice_submission_id)
     VALUES (${appeal.copyright_notice_id}, 'appeal_reviewed', ${input.currentUser.id}, ${input.submissionId})
   `)
-  if (appeal.submitted_by_user_id)
+  if (appeal.submitted_by_id)
     await createCopyrightDeliveryIntent(
       {
         noticeId: appeal.copyright_notice_id,
         submissionId: input.submissionId,
         correspondenceId: null,
-        recipientUserId: appeal.submitted_by_user_id,
+        recipientUserId: appeal.submitted_by_id,
         recipientRole: 'poster',
         deliveryKind: 'status_update',
         channel: 'in_app',
@@ -229,7 +229,7 @@ export async function reviewCopyrightAppeal(input: {
 export async function reviewCopyrightCounterNotice(input: {
   submissionId: string
   currentUser: PrivateUser
-  accepted: boolean
+  is_accepted: boolean
   rationale: string
 }): Promise<{ noticeId: string; assessmentId: string; deadlineId: string | null }> {
   assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
@@ -240,11 +240,11 @@ export async function reviewCopyrightCounterNotice(input: {
   `)
   const { rows: existingRows } = await transaction<{
     copyright_notice_id: string
-    accepted: boolean
+    is_accepted: boolean
     assessment_id: string
     deadline_id: string | null
   }>(sql`/* reviewCopyrightCounterNotice:existing */
-    SELECT submission.copyright_notice_id, review.accepted,
+    SELECT submission.copyright_notice_id, review.is_accepted,
       review.copyright_notice_submission_assessment_id AS assessment_id,
       review.copyright_notice_deadline_id AS deadline_id
     FROM copyright_notice_counter_notice_reviews review
@@ -255,7 +255,7 @@ export async function reviewCopyrightCounterNotice(input: {
   `)
   const existing = existingRows[0]
   if (existing) {
-    assert(existing.accepted === input.accepted, 409, 'Counter-notice was already reviewed')
+    assert(existing.is_accepted === input.is_accepted, 409, 'Counter-notice was already reviewed')
     await transaction.commit()
     return {
       noticeId: existing.copyright_notice_id,
@@ -290,14 +290,14 @@ export async function reviewCopyrightCounterNotice(input: {
     id: string
   }>(sql`/* reviewCopyrightCounterNotice:assessment */
     INSERT INTO copyright_notice_submission_assessments (
-      copyright_notice_submission_id, assessed_at, assessed_by_id, substantially_compliant
-    ) VALUES (${input.submissionId}, ${reviewedAt}, ${input.currentUser.id}, ${input.accepted})
+      copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant
+    ) VALUES (${input.submissionId}, ${reviewedAt}, ${input.currentUser.id}, ${input.is_accepted})
     RETURNING id
   `)
   const assessment = assessmentRows[0]
   assert(assessment, 500, 'Counter-notice assessment was not recorded')
   let deadlineId: string | null = null
-  if (input.accepted) {
+  if (input.is_accepted) {
     await transaction(sql`/* reviewCopyrightCounterNotice:targets */
       INSERT INTO copyright_notice_counter_notice_assessment_targets (
         copyright_notice_submission_assessment_id, copyright_notice_target_id
@@ -328,30 +328,30 @@ export async function reviewCopyrightCounterNotice(input: {
   await transaction(sql`/* reviewCopyrightCounterNotice:record */
     INSERT INTO copyright_notice_counter_notice_reviews (
       copyright_notice_submission_id, copyright_notice_submission_assessment_id,
-      copyright_notice_deadline_id, reviewed_at, reviewed_by_id, accepted, rationale_ciphertext
+      copyright_notice_deadline_id, reviewed_at, reviewed_by_id, is_accepted, rationale_ciphertext
     ) VALUES (${input.submissionId}, ${assessment.id}, ${deadlineId}, ${reviewedAt},
-      ${input.currentUser.id}, ${input.accepted},
+      ${input.currentUser.id}, ${input.is_accepted},
       ${encryptSecret(input.rationale, `copyright-counter-review:${input.submissionId}`)})
   `)
   await transaction(sql`/* reviewCopyrightCounterNotice:event */
     INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
-      copyright_notice_submission_id, counter_notice_accepted)
+      copyright_notice_submission_id, is_counter_notice_accepted)
     VALUES (${submission.copyright_notice_id}, 'counter_notice_reviewed', ${input.currentUser.id},
-      ${input.submissionId}, ${input.accepted})
+      ${input.submissionId}, ${input.is_accepted})
   `)
-  const { rows: submitterRows } = await transaction<{ submitted_by_user_id: string | null }>(
+  const { rows: submitterRows } = await transaction<{ submitted_by_id: string | null }>(
     sql`/* reviewCopyrightCounterNotice:submitter */
-      SELECT submitted_by_user_id FROM copyright_notice_submissions
+      SELECT submitted_by_id FROM copyright_notice_submissions
       WHERE id = ${input.submissionId}
     `,
   )
-  if (submitterRows[0]?.submitted_by_user_id) {
+  if (submitterRows[0]?.submitted_by_id) {
     await createCopyrightDeliveryIntent(
       {
         noticeId: submission.copyright_notice_id,
         submissionId: input.submissionId,
         correspondenceId: null,
-        recipientUserId: submitterRows[0].submitted_by_user_id,
+        recipientUserId: submitterRows[0].submitted_by_id,
         recipientRole: 'poster',
         deliveryKind: 'status_update',
         channel: 'in_app',
@@ -365,7 +365,7 @@ export async function reviewCopyrightCounterNotice(input: {
         noticeId: submission.copyright_notice_id,
         submissionId: input.submissionId,
         bodyText:
-          (input.accepted
+          (input.is_accepted
             ? 'Your counter-notice was accepted and forwarded to the original claimant.'
             : 'Your counter-notice was reviewed and was not accepted.') +
           (aiAssisted ? `\n\n${COPYRIGHT_AI_ASSISTED_SENTENCE}` : ''),
@@ -383,9 +383,9 @@ async function createEmailSubmitterOutcomeInTransaction(
 ): Promise<void> {
   const { rows } = await transaction<{
     sender_email_ciphertext: string
-    ses_message_id: string
+    amazon_ses_message_id: string
   }>(sql`/* createEmailSubmitterOutcomeInTransaction:recipient */
-    SELECT parse.sender_email_ciphertext, intake.ses_message_id
+    SELECT parse.sender_email_ciphertext, intake.amazon_ses_message_id
     FROM copyright_notice_correspondence_messages correspondence
     JOIN copyright_notice_email_intakes intake
       ON intake.id = correspondence.copyright_notice_email_intake_id
@@ -419,7 +419,7 @@ async function createEmailSubmitterOutcomeInTransaction(
       idempotencyKey: input.idempotencyKey,
       recipientEmail: decryptSecret(
         recipient.sender_email_ciphertext,
-        copyrightEmailIntakePurpose(recipient.ses_message_id),
+        copyrightEmailIntakePurpose(recipient.amazon_ses_message_id),
       ),
     },
     transaction,

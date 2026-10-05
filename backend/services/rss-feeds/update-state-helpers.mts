@@ -2,11 +2,11 @@ import type { UpdateRssFeedChanges } from './update-types.mts'
 
 export type RssFeedStateChange = {
   kind: 'enablement' | 'discoverability'
-  enabled: boolean
+  is_enabled: boolean
 }
 
 export function omitStateChanges({
-  enabled: _enabled,
+  is_enabled: _enabled,
   discoverable: _discoverable,
   ...fieldChanges
 }: UpdateRssFeedChanges): UpdateRssFeedChanges {

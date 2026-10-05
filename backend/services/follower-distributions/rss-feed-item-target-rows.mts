@@ -26,7 +26,7 @@ export async function insertRssFeedItemFeedShares(
     INSERT INTO rss_feed_item_feed_shares (
       recipient_user_id,
       id,
-      shared_by_user_id,
+      shared_by_id,
       rss_feed_item_id,
       sort_at
     )
@@ -87,7 +87,7 @@ export async function insertRssFeedItemManualSendNotifications(
       id,
       entity_type,
       delivery_type,
-      sent_by_user_id,
+      sent_by_id,
       rss_feed_item_id,
       title,
       body,

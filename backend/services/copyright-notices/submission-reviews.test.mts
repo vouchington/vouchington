@@ -239,7 +239,7 @@ describe('copyright submission moderator reviews', () => {
     const result = await reviewCopyrightCounterNotice({
       submissionId: counter.submission.id,
       currentUser: fixture.moderator,
-      accepted: true,
+      is_accepted: true,
       rationale: 'The structured counter-notice is formally complete.',
     })
     expect(result.deadlineId).not.toBeNull()
@@ -253,7 +253,7 @@ describe('copyright submission moderator reviews', () => {
       expect.arrayContaining([
         expect.objectContaining({
           copyright_notice_submission_assessment_id: result.assessmentId,
-          accepted: true,
+          is_accepted: true,
         }),
       ]),
     )
@@ -280,7 +280,7 @@ describe('copyright submission moderator reviews', () => {
       reviewCopyrightCounterNotice({
         submissionId: counter.submission.id,
         currentUser: fixture.moderator,
-        accepted: true,
+        is_accepted: true,
         rationale: 'The completed review may be safely replayed.',
       }),
     ).resolves.toEqual(result)

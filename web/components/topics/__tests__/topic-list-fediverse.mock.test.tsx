@@ -51,8 +51,8 @@ function makeTopic(id: string, hostnameId: string): Topic {
     markdown: '',
     aliases: [],
     topic_type: 'fediverse_instance',
-    noindex: false,
-    allow_reviews: false,
+    is_noindexed: false,
+    should_allow_reviews: false,
     created_at: '2026-01-01T00:00:00Z',
     created_by: {
       account_type: null,
@@ -103,7 +103,7 @@ function makePage(
         nodeinfo_software_version: null,
         total_users: null,
         monthly_active_users: null,
-        open_registrations: null,
+        is_open_for_registrations: null,
       },
     },
     hostname_elections:

@@ -122,8 +122,8 @@ describe('getRecommendedRssFeeds', () => {
     })
     await insertEntityRelation('relation__user__follow__rss_feed', friend.id, disabledFeedId)
     await insertEntityRelation('relation__user__follow__rss_feed', friend.id, hiddenFeedId)
-    await updateRssFeedById(disabledFeedId, { enabled: false, discoverable: true })
-    await updateRssFeedById(hiddenFeedId, { enabled: true, discoverable: false })
+    await updateRssFeedById(disabledFeedId, { is_enabled: false, discoverable: true })
+    await updateRssFeedById(hiddenFeedId, { is_enabled: true, discoverable: false })
 
     const { results } = await getRecommendedRssFeeds(currentUser.id, {
       limit: 100,

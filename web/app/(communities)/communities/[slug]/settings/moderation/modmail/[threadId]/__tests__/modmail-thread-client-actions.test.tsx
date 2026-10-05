@@ -42,11 +42,14 @@ describe('ModmailThreadClient — actions and error handling', () => {
     })
   })
 
-  it('displays subject_user_id and assigned_mod_id when set', () => {
+  it('displays subject_user_id and assigned_moderator_user_id when set', () => {
     render(
       <ModmailThreadClient
         communitySlug='test-community'
-        thread={makeThread({ subject_user_id: 'subject-user', assigned_mod_id: 'mod-user' })}
+        thread={makeThread({
+          subject_user_id: 'subject-user',
+          assigned_moderator_user_id: 'mod-user',
+        })}
         initialMessages={[]}
         initialHasMore={false}
         initialEndCursor={null}

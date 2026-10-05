@@ -36,12 +36,12 @@ export async function insertTestUserSession(options: {
   const userAgentId = await upsertUserAgentString(userAgent, { query: transaction })
   const { rows } = await transaction(sql`/* insertTestUserSession */
     INSERT INTO user_sessions (
-      id, user_id, device_id, device_name, user_agent_id, ip_address, expires_at, revoked_at
+      id, user_id, device_id, device_name, user_agent_string_id, ip_address, expires_at, revoked_at
     )
     SELECT ${sessionId}, ${options.userId}, ${deviceId}, ${deviceName}, ${userAgentId},
       ${ipAddress}, ${expiresAt}, ${revokedAt}
     RETURNING id, user_id, device_id, device_name,
-      (SELECT user_agent FROM user_agent_strings WHERE id = user_sessions.user_agent_id) AS user_agent,
+      (SELECT user_agent FROM user_agent_strings WHERE id = user_sessions.user_agent_string_id) AS user_agent,
       ip_address, created_at,
       last_seen_at, expires_at, revoked_at
   `)
@@ -77,7 +77,7 @@ export async function getTestUserSessionById(sessionId: string): Promise<{
     SELECT s.id, s.user_id, s.device_id, s.device_name, ua.user_agent, s.ip_address,
       s.created_at, s.last_seen_at, s.expires_at, s.revoked_at
     FROM user_sessions s
-    JOIN user_agent_strings ua ON ua.id = s.user_agent_id
+    JOIN user_agent_strings ua ON ua.id = s.user_agent_string_id
     WHERE s.id = ${sessionId}
     LIMIT 1
   `)
@@ -117,7 +117,7 @@ export async function getActiveTestUserSessions(userId: string): Promise<
     SELECT s.id, s.user_id, s.device_id, s.device_name, ua.user_agent, s.ip_address,
       s.created_at, s.last_seen_at, s.expires_at, s.revoked_at
     FROM user_sessions s
-    JOIN user_agent_strings ua ON ua.id = s.user_agent_id
+    JOIN user_agent_strings ua ON ua.id = s.user_agent_string_id
     WHERE s.user_id = ${userId}
       AND s.revoked_at IS NULL
     ORDER BY s.last_seen_at DESC, s.id DESC

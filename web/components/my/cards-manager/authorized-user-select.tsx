@@ -37,7 +37,7 @@ export function AuthorizedUserSelect({
   const eligibleCards = getAuthorizedUserParentOptions(
     card,
     cards,
-    editForm.authorized_user_of_id || null,
+    editForm.authorized_user_of_card_id || null,
   )
   return (
     <div className='space-y-1'>
@@ -45,9 +45,9 @@ export function AuthorizedUserSelect({
         {t('extracted.cardsManager.cardEditForm.authorizedUserOf_5012dc53')}
       </Label>
       <Select
-        value={editForm.authorized_user_of_id || '__none__'}
+        value={editForm.authorized_user_of_card_id || '__none__'}
         onValueChange={val =>
-          setEditForm(f => ({ ...f, authorized_user_of_id: val === '__none__' ? '' : val }))
+          setEditForm(f => ({ ...f, authorized_user_of_card_id: val === '__none__' ? '' : val }))
         }
       >
         <SelectTrigger id={`auth-of-${card.id}`}>

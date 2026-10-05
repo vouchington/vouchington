@@ -130,7 +130,7 @@ export function buildViewerPostDiscoveryEligibilityFilter(
 
 /**
  * Builds the current-state direct-reader predicate for a candidate post and its
- * access root. Callers must join `rootAlias` to COALESCE(candidate.root_id,
+ * access root. Callers must join `rootAlias` to COALESCE(candidate.root_post_id,
  * candidate.id) before composing this statement.
  *
  * Archive and suspension are intentionally not considered here: a direct link

@@ -26,11 +26,11 @@ export const updateRssFeedByIdAsCurrentUser = async (
 ): Promise<string | null> => {
   assert(currentUserCanUpdateRssFeed(currentUser), 403, 'Forbidden')
   const stateChanges: RssFeedStateChange[] = []
-  if (changes.enabled !== undefined) {
-    stateChanges.push({ kind: 'enablement', enabled: changes.enabled })
+  if (changes.is_enabled !== undefined) {
+    stateChanges.push({ kind: 'enablement', is_enabled: changes.is_enabled })
   }
   if (changes.discoverable !== undefined) {
-    stateChanges.push({ kind: 'discoverability', enabled: changes.discoverable })
+    stateChanges.push({ kind: 'discoverability', is_enabled: changes.discoverable })
   }
 
   const fieldChanges = omitStateChanges(changes)
@@ -56,7 +56,7 @@ export const updateRssFeedByIdAsCurrentUser = async (
         currentUser,
         {
           rssFeedId: id,
-          enabled: stateChange.enabled,
+          is_enabled: stateChange.is_enabled,
           reason: 'user update helper',
         },
         txOptions,
@@ -70,7 +70,7 @@ export const updateRssFeedByIdAsCurrentUser = async (
         currentUser,
         {
           rssFeedId: id,
-          enabled: discoverabilityChange.enabled,
+          is_enabled: discoverabilityChange.is_enabled,
           reason: 'user update helper',
         },
         txOptions,
@@ -95,7 +95,7 @@ export async function updateRssFeedWithStateAsCurrentUser(
   id: string,
   changes: UpdateRssFeedChanges,
   stateChanges: {
-    enabled?: boolean
+    is_enabled?: boolean
     discoverable?: boolean
     reason?: string | null
   },
@@ -117,12 +117,12 @@ export async function updateRssFeedWithStateAsCurrentUser(
       if (existing.rows.length === 0) return false
     }
 
-    if (stateChanges.enabled !== undefined) {
+    if (stateChanges.is_enabled !== undefined) {
       const result = await setRssFeedEnablementAsCurrentUser(
         currentUser,
         {
           rssFeedId: id,
-          enabled: stateChanges.enabled,
+          is_enabled: stateChanges.is_enabled,
           reason: stateChanges.reason,
         },
         options,
@@ -134,7 +134,7 @@ export async function updateRssFeedWithStateAsCurrentUser(
         currentUser,
         {
           rssFeedId: id,
-          enabled: stateChanges.discoverable,
+          is_enabled: stateChanges.discoverable,
           reason: stateChanges.reason,
         },
         options,

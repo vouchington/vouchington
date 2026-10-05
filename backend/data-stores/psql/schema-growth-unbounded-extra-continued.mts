@@ -25,6 +25,7 @@ export const EXTRA_UNBOUNDED_TABLES_CONTINUED = [
   'report_abuse_penalties',
   'report_integrity_flag_reporters',
   'retained_api_key_identities',
+  'retained_membership_identities',
   'retained_topic_identities',
   'retained_user_identities',
   'retailer_countries',

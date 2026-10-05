@@ -143,7 +143,7 @@ describe('copyright notice member claimant attribution', () => {
     await reviewCopyrightFormIntake({
       intakeId: guest.intake.id,
       currentUser: await createTestUser({ extraRoles: ['moderator'] }),
-      accepted: true,
+      is_accepted: true,
       rationale: 'The guest notice is complete.',
     })
     const member = createRequest()

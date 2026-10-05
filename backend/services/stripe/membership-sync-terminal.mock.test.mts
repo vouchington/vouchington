@@ -129,7 +129,7 @@ describe('terminal membership sync', () => {
     if (!cancellation || !resumedGrant)
       throw new Error('Expected terminal and resumed-grant changes')
     expect(history.filter(change => change.stripe_event_id === eventId)).toHaveLength(1)
-    expect(cancellation.membership_provider_evidence_id).toMatch(/^[0-9a-f-]{36}$/)
+    expect(cancellation.membership_provider_evidence_record_id).toMatch(/^[0-9a-f-]{36}$/)
     await expect(
       Promise.all(
         [cancellation, resumedGrant].map(change => getTestMembershipEntitlementEffects(change.id)),

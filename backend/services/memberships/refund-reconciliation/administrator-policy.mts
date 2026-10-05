@@ -41,7 +41,7 @@ async function recordSucceededAdministratorRefundReceipt(
     INSERT INTO membership_refunds (
       membership_operation_id, membership_id, membership_source_id, user_id, stripe_refund_id,
       stripe_charge_id, stripe_payment_intent_id, stripe_idempotency_key, admin_request_fingerprint,
-      amount_minor_units, currency_code, reason, revoked_access, issued_by_id, source, stripe_event_id, note
+      amount_minor_units, currency_code, reason, has_revoked_access, issued_by_id, source, stripe_event_id, note
     ) VALUES (
       ${lease.id}, ${context.membershipId}, ${context.membershipSourceId}, ${context.userId}, ${refund.id},
       ${expandableId(refund.charge) ?? context.providerPaymentReference}, ${expandableId(refund.payment_intent)},
@@ -76,8 +76,8 @@ async function convergeAdministratorRefundCancellation(
   await using transaction = await beginTransaction()
   await transaction(sql`/* revokeAdministratorRefundAccess */
     UPDATE membership_refunds
-    SET revoked_access = TRUE
-    WHERE membership_operation_id = ${lease.id} AND revoked_access = FALSE
+    SET has_revoked_access = TRUE
+    WHERE membership_operation_id = ${lease.id} AND has_revoked_access = FALSE
   `)
   const membershipUpdate = await updateMembershipFromEvent(
     {

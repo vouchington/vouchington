@@ -19,14 +19,14 @@ export type CopyrightAppealReviewRequest = {
 }
 
 export type CopyrightCounterNoticeReviewRequest = {
-  accepted: boolean
+  is_accepted: boolean
   rationale: string
 }
 
 export type CopyrightLegalHoldAssessmentRequest = {
   rationale: string
-  from_original_claimant: boolean
-  same_material: boolean
+  is_from_original_claimant: boolean
+  is_same_material: boolean
   proceeding_kind?: 'federal_court' | 'ccb' | null
   ccb_claim_kind?: 'claim' | 'counterclaim' | null
   commenced_at?: string | null

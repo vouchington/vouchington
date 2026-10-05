@@ -21,7 +21,7 @@ export async function allocateCommunityAgentPromptSlot(
   assert(community, 404, 'Community not found')
   assert(!community.archived_at, 403, 'Community is archived')
   assert(prompt.created_by_id === currentUserId, 403, 'Forbidden')
-  assert(!prompt.slot_allocated, 422, 'Slot already allocated')
+  assert(!prompt.is_slot_allocated, 422, 'Slot already allocated')
   assert(!prompt.deleted_at, 404, 'Prompt not found')
 
   const membership = await getMembershipByUserId(currentUserId)
@@ -33,7 +33,7 @@ export async function allocateCommunityAgentPromptSlot(
   // Without this, two concurrent requests on different prompts would both see usedSlots=0
   // (each only locking its own target row) and both exceed the limit unchecked.
   const { rows: lockedRows } = await query(sql`/* allocateCommunityAgentPromptSlot */
-    SELECT id, slot_allocated FROM community_agent_prompts
+    SELECT id, is_slot_allocated FROM community_agent_prompts
     WHERE created_by_id = ${currentUserId}
       AND deleted_at IS NULL
     ORDER BY id
@@ -41,17 +41,17 @@ export async function allocateCommunityAgentPromptSlot(
   `)
 
   // Count allocated slots excluding the target prompt itself
-  const usedSlots = lockedRows.filter(r => r.slot_allocated && r.id !== promptId).length
+  const usedSlots = lockedRows.filter(r => r.is_slot_allocated && r.id !== promptId).length
   assert(usedSlots < slotLimit, 422, `Slot limit reached (${usedSlots}/${slotLimit})`)
 
   const { rows: updated } = await query(sql`/* allocateCommunityAgentPromptSlot */
     UPDATE community_agent_prompts
-    SET slot_allocated = true,
+    SET is_slot_allocated = true,
         activated_at = CURRENT_TIMESTAMP,
         deactivated_at = NULL
     WHERE id = ${promptId}
       AND created_by_id = ${currentUserId}
-      AND slot_allocated = false
+      AND is_slot_allocated = false
       AND deleted_at IS NULL
     RETURNING id
   `)
@@ -81,17 +81,17 @@ export async function deallocateCommunityAgentPromptSlot(
   const community = await getCommunity(prompt.community_id)
   assert(community, 404, 'Community not found')
   assert(prompt.created_by_id === currentUserId, 403, 'Forbidden')
-  assert(prompt.slot_allocated, 422, 'Slot not allocated')
+  assert(prompt.is_slot_allocated, 422, 'Slot not allocated')
 
   await write(
     sql`/* deallocateCommunityAgentPromptSlot */
     UPDATE community_agent_prompts
-    SET slot_allocated = false,
+    SET is_slot_allocated = false,
         activated_at = NULL,
         deactivated_at = CURRENT_TIMESTAMP
     WHERE id = ${promptId}
       AND created_by_id = ${currentUserId}
-      AND slot_allocated = true
+      AND is_slot_allocated = true
       AND deleted_at IS NULL
     `,
   )

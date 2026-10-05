@@ -29,7 +29,7 @@ describe('copyright repeat-infringer incidents', () => {
     const account = await getCopyrightRepeatInfringerAccount(poster.id)
     expect(
       account.incidents
-        .filter(incident => incident.operative)
+        .filter(incident => incident.is_operative)
         .map(incident => incident.copyright_notice_id)
         .toSorted(),
     ).toEqual([firstNoticeId, secondNoticeId].toSorted())
@@ -38,20 +38,20 @@ describe('copyright repeat-infringer incidents', () => {
       expect.objectContaining({ suspended_at: null }),
     )
 
-    const operative = account.incidents.find(
+    const is_operative = account.incidents.find(
       incident => incident.copyright_notice_id === firstNoticeId,
     )
-    if (!operative) throw new Error('first incident disappeared')
+    if (!is_operative) throw new Error('first incident disappeared')
     await recordCopyrightRepeatInfringerDisposition({
       currentUser: moderator,
-      incidentId: operative.id,
+      incidentId: is_operative.id,
       disposition: 'duplicate',
       rationale: 'This notice duplicates an earlier confirmed case.',
       recordedAt: new Date('2026-07-03T12:00:00.000Z'),
     })
     const afterDisposition = await getCopyrightRepeatInfringerAccount(poster.id)
     expect(
-      afterDisposition.incidents.find(incident => incident.id === operative.id)?.operative,
+      afterDisposition.incidents.find(incident => incident.id === is_operative.id)?.is_operative,
     ).toBe(false)
     await expect(getPrivateUserByAny(poster.id)).resolves.toEqual(
       expect.objectContaining({ suspended_at: null }),

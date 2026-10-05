@@ -80,7 +80,7 @@ function buildCopyrightPlacementReadSql(placementId: string): ReturnType<typeof 
       placement.retired_at, placement.copyright_withheld_at,
       image.deleted_at AS image_deleted_at,
       image.quarantine_pending_at AS image_quarantine_pending_at,
-      image.openai_omni_moderation_flagged AS image_moderation_flagged, `
+      image.is_flagged_by_openai_omni_moderation AS image_moderation_flagged, `
   statement.append(copyrightPlacementHostIsLiveSql())
   statement.append(sql` AS host_live
     FROM media_placements placement
@@ -156,12 +156,12 @@ function buildCopyrightPlacementMutationSql(
   statement.append(copyrightPlacementHostIsLiveSql())
   statement.append(sql`
       AND image.quarantine_pending_at IS NULL
-      AND image.openai_omni_moderation_flagged IS NOT TRUE
+      AND image.is_flagged_by_openai_omni_moderation IS NOT TRUE
     RETURNING placement.id AS placement_id, placement.revision, binding.image_id,
       placement.retired_at, placement.copyright_withheld_at,
       image.deleted_at AS image_deleted_at,
       image.quarantine_pending_at AS image_quarantine_pending_at,
-      image.openai_omni_moderation_flagged AS image_moderation_flagged, `)
+      image.is_flagged_by_openai_omni_moderation AS image_moderation_flagged, `)
   statement.append(copyrightPlacementHostIsLiveSql())
   statement.append(sql` AS host_live`)
   return statement

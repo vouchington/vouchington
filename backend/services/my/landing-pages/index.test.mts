@@ -112,11 +112,11 @@ describe('landing page services', () => {
 
     await expect(
       replaceMyLandingPageItems(user.id, page.id, [
-        { type: 'review', review_id: fixtures.reviewId },
+        { type: 'review', review_post_id: fixtures.reviewId },
         {
           type: 'topic_group',
           topic_id: fixtures.topicId,
-          entries: [{ type: 'review', review_id: fixtures.reviewId }],
+          entries: [{ type: 'review', review_post_id: fixtures.reviewId }],
         },
       ]),
     ).rejects.toMatchObject({ status: 400 })
@@ -126,7 +126,7 @@ describe('landing page services', () => {
         {
           type: 'topic_group',
           topic_id: fixtures.topicId,
-          entries: [{ type: 'review', review_id: fixtures.reviewId }],
+          entries: [{ type: 'review', review_post_id: fixtures.reviewId }],
         },
         {
           type: 'topic_group',
@@ -146,7 +146,7 @@ describe('landing page services', () => {
         type: 'topic_group',
         topic_id: fixtures.topicId,
         entries: [
-          { type: 'review', review_id: fixtures.reviewId },
+          { type: 'review', review_post_id: fixtures.reviewId },
           { type: 'referral_link', referral_link_id: fixtures.referralLinkId },
         ],
       },

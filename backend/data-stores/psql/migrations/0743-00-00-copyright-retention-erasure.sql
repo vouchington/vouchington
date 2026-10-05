@@ -17,11 +17,12 @@ CREATE TABLE copyright_notice_retention_erasures (
 
 CREATE TRIGGER trigger_copyright_retention_erasures_immutable BEFORE UPDATE OR DELETE ON copyright_notice_retention_erasures FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_copyright_retention_erasable_columns(table_name text)
 RETURNS text[] LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$
   SELECT CASE table_name
     WHEN 'copyright_notices' THEN ARRAY['claimant_user_id', 'claimant_display_name', 'claimant_contact_ciphertext', 'work_description']
-    WHEN 'copyright_notice_submissions' THEN ARRAY['submitted_by_user_id', 'body_ciphertext']
+    WHEN 'copyright_notice_submissions' THEN ARRAY['submitted_by_id', 'body_ciphertext']
     WHEN 'copyright_notice_submission_guidance' THEN ARRAY['guidance_ciphertext']
     WHEN 'copyright_notice_submission_requests' THEN ARRAY['requester_user_id']
     WHEN 'copyright_notice_form_intakes' THEN ARRAY['requester_user_id', 'requester_identity_sha256', 'electronic_signature_ciphertext']

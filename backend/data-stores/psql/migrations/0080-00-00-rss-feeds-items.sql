@@ -2,7 +2,7 @@
 -- Coalesced pre-launch domain baseline.
 -- edited-in-place: pre-launch, never deployed to production
 -- edited-in-place: added declared_language to rss_feeds; added language detection columns to rss_feed_items
--- edited-in-place: added ignore_robots_txt to rss_feeds
+-- edited-in-place: added should_ignore_robots_txt to rss_feeds
 -- edited-in-place: added unreliable_status_codes to rss_feeds
 -- edited-in-place: added media:description to rss_feed_items.search_vector and skipped blank content fields
 -- edited-in-place: swapped 'english' to 'voucha_english' text search config (unaccent support); added idx_rss_feeds__title_trgm
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS rss_feeds (
   is_enabled BOOLEAN NOT NULL DEFAULT FALSE,
   is_discoverable BOOLEAN NOT NULL DEFAULT FALSE,
   declared_language TEXT CHECK (declared_language IS NULL OR (declared_language = LOWER(declared_language) AND LENGTH(declared_language) <= 10)),
-  ignore_robots_txt BOOLEAN, -- whether robots.txt allow/disallow rules are ignored for this specific feed. NULL = inherit from hostname or global config
+  should_ignore_robots_txt BOOLEAN, -- whether robots.txt allow/disallow rules are ignored for this specific feed. NULL = inherit from hostname or global config
   unreliable_status_codes SMALLINT[] -- RSS fetch HTTP status codes that should retry instead of soft-deleting this feed. NULL = inherit from hostname; empty array = no override statuses
 );
 
@@ -132,7 +132,7 @@ COMMENT ON COLUMN rss_feeds.feed_type IS 'Content type of the feed: article, pod
 COMMENT ON COLUMN rss_feeds.is_enabled IS 'Whether this feed is enabled for fetching. Denormalized from rss_feed_setting_changes for query performance; kept in sync by trigger_project_rss_feed_enablement.';
 COMMENT ON COLUMN rss_feeds.is_discoverable IS 'Whether this feed is publicly discoverable. Denormalized from rss_feed_setting_changes for query performance; kept in sync by trigger_project_rss_feed_discoverability.';
 COMMENT ON COLUMN rss_feeds.canonical_rss_feed_id IS 'The canonical feed this feed permanently redirects to (HTTP 301/308). NULL if this is the canonical feed.';
-COMMENT ON COLUMN rss_feeds.ignore_robots_txt IS 'Whether robots.txt allow/disallow rules are ignored for fetching this RSS feed. NULL = inherit from hostname then global DynamicConfig. TRUE = always ignore. FALSE = always enforce.';
+COMMENT ON COLUMN rss_feeds.should_ignore_robots_txt IS 'Whether robots.txt allow/disallow rules are ignored for fetching this RSS feed. NULL = inherit from hostname then global DynamicConfig. TRUE = always ignore. FALSE = always enforce.';
 COMMENT ON COLUMN rss_feeds.unreliable_status_codes IS 'RSS feed fetch HTTP status codes that should retry instead of soft-deleting this feed. NULL = inherit from hostname. Empty array = no unreliable statuses, overriding hostname defaults.';
 COMMENT ON COLUMN rss_feeds.declared_language IS 'Feed-declared language from <language> or xml:lang element';
 
@@ -143,7 +143,7 @@ CREATE TABLE IF NOT EXISTS rss_feed_setting_changes (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   rss_feed_id UUID NOT NULL REFERENCES rss_feeds(id) ON DELETE CASCADE,
   change_type rss_feed_setting_change_types NOT NULL,
-  enabled BOOLEAN NOT NULL,
+  is_enabled BOOLEAN NOT NULL,
   changed_by_id UUID REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
   reason TEXT CHECK (reason IS NULL OR char_length(reason) <= 1000),
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
@@ -156,7 +156,7 @@ COMMENT ON TYPE rss_feed_setting_change_types IS 'Independent fetch enablement a
 COMMENT ON TABLE rss_feed_setting_changes IS 'Append-only feed setting decisions; current values are the latest row per feed and change type.';
 COMMENT ON COLUMN rss_feed_setting_changes.rss_feed_id IS 'RSS feed whose setting changed.';
 COMMENT ON COLUMN rss_feed_setting_changes.change_type IS 'Setting whose value this decision changes.';
-COMMENT ON COLUMN rss_feed_setting_changes.enabled IS 'Value after this setting decision.';
+COMMENT ON COLUMN rss_feed_setting_changes.is_enabled IS 'Value after this setting decision.';
 COMMENT ON COLUMN rss_feed_setting_changes.changed_by_id IS 'Retained identity of the decision actor; never current authorization.';
 COMMENT ON COLUMN rss_feed_setting_changes.reason IS 'Optional bounded reason for the decision.';
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -166,11 +166,11 @@ CREATE TRIGGER trigger_rss_feed_setting_changes_append_only BEFORE UPDATE OR DEL
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_project_rss_feed_enablement AFTER INSERT ON rss_feed_setting_changes
 FOR EACH ROW WHEN (NEW.change_type = 'enablement')
-EXECUTE FUNCTION fn_project_latest_change('rss_feeds', 'id', 'rss_feed_id', 'is_enabled', 'enabled', 'change_type', 'enablement');
+EXECUTE FUNCTION fn_project_latest_change('rss_feeds', 'id', 'rss_feed_id', 'is_enabled', 'is_enabled', 'change_type', 'enablement');
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_project_rss_feed_discoverability AFTER INSERT ON rss_feed_setting_changes
 FOR EACH ROW WHEN (NEW.change_type = 'discoverability')
-EXECUTE FUNCTION fn_project_latest_change('rss_feeds', 'id', 'rss_feed_id', 'is_discoverable', 'enabled', 'change_type', 'discoverability');
+EXECUTE FUNCTION fn_project_latest_change('rss_feeds', 'id', 'rss_feed_id', 'is_discoverable', 'is_enabled', 'change_type', 'discoverability');
 
 -------------------------------------------------------------------------------
 -- rss_feed_items

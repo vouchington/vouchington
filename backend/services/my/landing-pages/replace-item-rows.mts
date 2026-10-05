@@ -8,7 +8,7 @@ export function buildLandingPageInsertRows(
     sortOrder,
     type: item.type,
     profileLinkId: item.type === 'profile_link' ? item.profile_link_id : null,
-    reviewId: item.type === 'review' ? item.review_id : null,
+    reviewId: item.type === 'review' ? item.review_post_id : null,
     referralLinkId: item.type === 'referral_link' ? item.referral_link_id : null,
     topicId: item.type === 'topic_group' ? item.topic_id : null,
     linkLabel: item.type === 'link' ? item.label.trim() : null,
@@ -20,7 +20,7 @@ export function buildLandingPageInsertRows(
           parentSortOrder,
           sortOrder,
           type: entry.type,
-          reviewId: entry.type === 'review' ? entry.review_id : null,
+          reviewId: entry.type === 'review' ? entry.review_post_id : null,
           referralLinkId: entry.type === 'referral_link' ? entry.referral_link_id : null,
         }))
       : [],

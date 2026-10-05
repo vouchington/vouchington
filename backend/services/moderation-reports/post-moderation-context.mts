@@ -2,14 +2,14 @@ import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export type PlatformModerationContext = {
-  flagged: boolean
+  is_flagged: boolean
   /** Category labels from OpenAI omni-moderation results (staff only). */
   categories?: string[]
 }
 
 export type AgentModerationContext = {
   slug: string
-  flagged: boolean
+  is_flagged: boolean
   /** Category labels from agent results (staff only). */
   categories?: string[]
 }
@@ -27,7 +27,7 @@ export type PostModerationContextTier = 'staff' | 'public'
  * Returns per-post moderation context for a batch of post IDs.
  *
  * Staff tier includes bounded platform evidence and agent category details.
- * Public tier returns only flagged booleans and agent_added_tags.
+ * Public tier returns only is_flagged booleans and agent_added_tags.
  */
 export async function getPostModerationContextBatch(
   postIds: string[],
@@ -70,7 +70,7 @@ export async function getPostModerationContextBatch(
     SELECT
       am.post_id,
       mo.slug,
-      am.flagged,
+      am.is_flagged,
       am.results
     FROM agent_moderations am
     JOIN moderator_agents mo ON mo.agent_id = am.agent_id
@@ -117,12 +117,12 @@ export async function getPostModerationContextBatch(
   // Build agent moderations map (post_id → array)
   const agentsByPost = new Map<
     string,
-    Array<{ slug: string; flagged: boolean; results: unknown }>
+    Array<{ slug: string; is_flagged: boolean; results: unknown }>
   >()
   for (const row of agentResult.rows as Array<{
     post_id: string
     slug: string
-    flagged: boolean
+    is_flagged: boolean
     results: unknown
   }>) {
     const list = agentsByPost.get(row.post_id) ?? []
@@ -142,7 +142,7 @@ export async function getPostModerationContextBatch(
     const platform_moderation: PlatformModerationContext | null =
       row.platform_disposition !== null
         ? {
-            flagged: row.platform_disposition !== 'pass',
+            is_flagged: row.platform_disposition !== 'pass',
             ...(tier === 'staff'
               ? { categories: extractFlaggedCategories(row.platform_evidence) }
               : {}),
@@ -151,7 +151,7 @@ export async function getPostModerationContextBatch(
 
     const agent_moderations: AgentModerationContext[] = agentRows.map(a => ({
       slug: a.slug,
-      flagged: a.flagged,
+      is_flagged: a.is_flagged,
       ...(tier === 'staff' ? { categories: extractAgentCategories(a.results) } : {}),
     }))
 

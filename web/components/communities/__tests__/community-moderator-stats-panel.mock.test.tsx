@@ -148,7 +148,7 @@ describe('CommunityModeratorStatsPanel', () => {
       window: 30 as const,
       stats: [
         {
-          actor_id: 'user-mod-1',
+          actor_user_id: 'user-mod-1',
           total: 11,
           counts: { remove: 2 as const, approve: 1 as const, warn: 5, lock: 2, pin: 1 },
         },

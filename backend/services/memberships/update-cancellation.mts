@@ -12,16 +12,16 @@ async function setCancelAtPeriodEnd(
   const { rows } = await query(sql`/* setCancelAtPeriodEnd */
     WITH updated_membership AS (
       UPDATE memberships
-      SET cancel_at_period_end = true
+      SET should_cancel_at_period_end = true
       WHERE id = ${membershipId}
         AND projection_ended_at IS NULL
         AND cancelled_at IS NULL
         AND expired_at IS NULL
-        AND cancel_at_period_end = false
+        AND should_cancel_at_period_end = false
       RETURNING *
     ), updated_source AS (
       UPDATE membership_source_states state
-      SET auto_renews = false,
+      SET should_auto_renew = false,
           updated_at = CURRENT_TIMESTAMP
       FROM updated_membership membership
       WHERE state.membership_source_id = membership.membership_source_id
@@ -43,7 +43,7 @@ async function setCancelAtPeriodEnd(
       membership.expired_at,
       membership.past_due_at,
       membership.paused_at,
-      membership.cancel_at_period_end
+      membership.should_cancel_at_period_end
     FROM updated_membership membership
     LEFT JOIN updated_source source
       ON source.membership_source_id = membership.membership_source_id

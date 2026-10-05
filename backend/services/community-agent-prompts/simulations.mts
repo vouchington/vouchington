@@ -113,7 +113,7 @@ export async function getCommunityAgentPromptFalsePositiveEstimate(
       AND cpr.community_id = cap.community_id
     WHERE cap.community_id = ${communityId}
       AND am.prompt_id = ${promptId}
-      AND am.flagged = true
+      AND am.is_flagged = true
       AND am.deleted_at IS NULL
   `)
 

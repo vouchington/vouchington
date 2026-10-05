@@ -118,7 +118,7 @@ describe('story member visibility', () => {
       const parentId = await insertTestUrlHostname({ hostname: suffix })
       const childId = await insertTestUrlHostname({
         hostname: `child.${suffix}`,
-        blocked: mode === 'global',
+        is_blocked: mode === 'global',
       })
       const urlId = await insertTestUrl({
         url: `https://child.${suffix}/article`,

@@ -140,7 +140,7 @@ describe('bookmark mutation authorization', () => {
     expect.hasAssertions()
     const viewer = await createTestUser()
     const hostname = `bookmark-${crypto.randomUUID().replaceAll('-', '')}.example`
-    const hostnameId = await insertTestUrlHostname({ hostname, blocked: true })
+    const hostnameId = await insertTestUrlHostname({ hostname, is_blocked: true })
     const urlId = await insertTestUrl({ url: `https://${hostname}/hidden`, hostnameId })
 
     await expectHiddenTarget(viewer, 'url', urlId, 'save')

@@ -38,7 +38,7 @@ describe('share-actions', () => {
     )
 
     expect(sharedEvent).toBeDefined()
-    expect(sharedEvent?.shared_by_user_id).toBe(sharer.id)
+    expect(sharedEvent?.shared_by_id).toBe(sharer.id)
     expect(sharedEvent?.shared_at).toBeInstanceOf(Date)
     expect(
       futureFollowerFeed.results.some(

@@ -97,8 +97,8 @@ export async function createCopyrightFormIntake(
         sourceKind: input.currentUser ? 'signed_in_form' : 'guest_form',
         bodyCiphertext: encryptSecret(
           JSON.stringify({
-            good_faith_belief: input.request.goodFaithBelief,
-            accuracy_authority_under_penalty_of_perjury:
+            has_good_faith_belief: input.request.goodFaithBelief,
+            has_accuracy_authority_under_penalty_of_perjury:
               input.request.accuracyAuthorityUnderPenaltyOfPerjury,
             electronic_signature: input.request.electronicSignature,
             claimant_targets: input.request.claimantTargets,
@@ -120,8 +120,8 @@ export async function createCopyrightFormIntake(
   const { rows } = await transaction<CopyrightFormIntakeRecord>(sql`/* createCopyrightFormIntake */
     INSERT INTO copyright_notice_form_intakes (
       copyright_notice_id, copyright_notice_submission_id, requester_user_id,
-      requester_identity_sha256, idempotency_key, request_sha256, good_faith_belief,
-      accuracy_authority_under_penalty_of_perjury, electronic_signature_ciphertext
+      requester_identity_sha256, idempotency_key, request_sha256, has_good_faith_belief,
+      has_accuracy_authority_under_penalty_of_perjury, electronic_signature_ciphertext
     ) VALUES (
       ${notice.id}, ${submission.id}, ${input.currentUser?.id ?? null}, ${requesterIdentitySha256},
       ${input.idempotencyKey}, ${requestSha256}, ${input.request.goodFaithBelief},

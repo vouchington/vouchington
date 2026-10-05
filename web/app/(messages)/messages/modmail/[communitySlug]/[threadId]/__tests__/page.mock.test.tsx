@@ -62,7 +62,7 @@ function makeThreadData(subjectUserId = 'subject-user') {
       id: 't1',
       subject_user_id: subjectUserId,
       community_id: 'c1',
-      assigned_mod_id: null,
+      assigned_moderator_user_id: null,
       resolved_at: null,
       created_at: '2026-01-01T00:00:00Z',
       updated_at: '2026-01-01T00:00:00Z',

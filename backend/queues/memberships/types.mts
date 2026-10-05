@@ -26,7 +26,7 @@ export type ProcessStripeEventData = {
   stripeEventRecordId: string
   processingAttemptId: string
   stripeSubscriptionId: string | null
-  livemode: boolean
+  isLiveMode: boolean
 }
 
 export type ProcessMembershipVerificationData = { verificationId: string }

@@ -28,7 +28,7 @@ export default function AdminModerationButton({
   electionVotes,
 }: AdminModerationButtonProps) {
   const t = useTranslations()
-  const hasFlagged = moderations.some(m => m.flagged)
+  const hasFlagged = moderations.some(m => m.is_flagged)
 
   return (
     <Dialog>
@@ -64,14 +64,14 @@ export default function AdminModerationButton({
               return (
                 <div
                   key={`${m.input_sha256}-${m.prompt_id}`}
-                  className={`rounded border p-3 text-sm ${m.flagged ? 'border-destructive/50 bg-destructive/5' : 'border-border'}`}
+                  className={`rounded border p-3 text-sm ${m.is_flagged ? 'border-destructive/50 bg-destructive/5' : 'border-border'}`}
                 >
                   <div className='flex items-center justify-between gap-2 mb-1'>
                     <span className='font-medium'>{m.moderator_slug ?? m.agent_id}</span>
                     <span
-                      className={`text-xs font-semibold ${m.flagged ? 'text-destructive' : 'text-green-600'}`}
+                      className={`text-xs font-semibold ${m.is_flagged ? 'text-destructive' : 'text-green-600'}`}
                     >
-                      {m.flagged ? 'Flagged' : 'OK'}
+                      {m.is_flagged ? 'Flagged' : 'OK'}
                     </span>
                   </div>
                   {hasConfidenceMetadata(m.results) ? (

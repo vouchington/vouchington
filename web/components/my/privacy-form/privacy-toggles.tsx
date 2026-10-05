@@ -28,10 +28,10 @@ export function PrivacyToggles({
           {t('extracted.privacyForm.privacyToggles.marketingCommunications_0f27f490')}
         </h2>
         <PrivacySwitchRow
-          id='third_party_marketing'
+          id='should_receive_third_party_marketing'
           checked={thirdPartyMarketing}
           dataPw='third-party-marketing-toggle'
-          disabled={pending.has('third_party_marketing')}
+          disabled={pending.has('should_receive_third_party_marketing')}
           label='Third-Party Marketing'
           description='Allow us to share your information with trusted partners for marketing purposes.'
           onCheckedChange={onMarketingChange}

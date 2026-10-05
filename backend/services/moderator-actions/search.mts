@@ -36,7 +36,7 @@ export async function searchModeratorActions(
       ma.id,
       ma.community_id,
       ma.moderation_transparency_community_id,
-      ma.actor_id,
+      ma.actor_user_id,
       ma.action_type,
       ma.post_id,
       ma.target_user_id,
@@ -52,9 +52,9 @@ export async function searchModeratorActions(
       ma.agent_moderation_id,
       ma.oauth_client_id,
       ma.user_moderator_note_id,
-      ma.crawler_id,
+      ma.hostname_crawler_configuration_id,
       ma.topic_id,
-      ma.operation_request_id,
+      ma.operation_request_action_id,
       ma.queue_name,
       ma.scheduled_job_key,
       ma.backfill_key,
@@ -89,7 +89,7 @@ export async function searchModeratorActions(
   }
 
   if (options?.actorId !== undefined) {
-    query.append(sql` AND ma.actor_id = ${options.actorId}`)
+    query.append(sql` AND ma.actor_user_id = ${options.actorId}`)
   }
 
   if (options?.actionType !== undefined) {

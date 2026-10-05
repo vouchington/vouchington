@@ -11,7 +11,7 @@ describe('copyright submission guidance vocabulary', () => {
     expect(COPYRIGHT_COUNTER_NOTICE_GUIDANCE_ELEMENTS).toEqual([
       'signature',
       'material_identification',
-      'good_faith_statement',
+      'has_good_faith_statement',
       'contact_and_jurisdiction_consent',
     ])
     expect(COPYRIGHT_COUNTER_NOTICE_RISK_KINDS).toEqual([
@@ -31,11 +31,11 @@ describe('copyright submission guidance vocabulary', () => {
 
   it('keeps the court/CCB checklist and risk kinds closed and unique', () => {
     expect(COPYRIGHT_LEGAL_HOLD_GUIDANCE_CRITERIA).toEqual([
-      'from_original_claimant',
+      'is_from_original_claimant',
       'proceeding_kind',
       'commenced_at',
       'received_by_designated_agent_at',
-      'same_material',
+      'is_same_material',
     ])
     expect(COPYRIGHT_LEGAL_HOLD_RISK_KINDS).toEqual([
       'claimant_mismatch',

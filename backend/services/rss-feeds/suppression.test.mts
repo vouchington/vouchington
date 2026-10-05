@@ -209,7 +209,7 @@ describe('suppression', () => {
     const feed = await createTestRssFeed({})
     const itemId = await createItemWithFeed(feed.id)
 
-    await updateRssFeedById(feed.id, { enabled: false })
+    await updateRssFeedById(feed.id, { is_enabled: false })
 
     expect(await checkItemUnsuppressedGlobal(itemId)).toBe(false)
     expect(await checkItemClusterEligible(itemId)).toBe(false)

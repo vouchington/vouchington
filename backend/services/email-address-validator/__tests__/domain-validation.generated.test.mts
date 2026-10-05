@@ -63,14 +63,14 @@ describe('database emailable flag', () => {
 
   it('fails for domain marked as not emailable', async () => {
     const hostname = `test-not-emailable-${Date.now()}.com`
-    await insertUrlHostname(hostname, { emailable: false })
+    await insertUrlHostname(hostname, { is_emailable: false })
 
     await expect(validateEmailDomain(hostname)).rejects.toThrow(EmailDomainInvalidError)
   })
 
   it('still requires MX records even if marked emailable', async () => {
     const hostname = `test-emailable-${Date.now()}.com`
-    await insertUrlHostname(hostname, { emailable: true })
+    await insertUrlHostname(hostname, { is_emailable: true })
 
     // Will fail on DNS check since hostname has no MX records
     await expect(validateEmailDomain(hostname)).rejects.toThrow(EmailDomainInvalidError)

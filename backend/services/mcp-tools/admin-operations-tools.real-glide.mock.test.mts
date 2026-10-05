@@ -44,7 +44,7 @@ async function expectOperation(actorId: string, action: string) {
   expect(rows).toHaveLength(2)
   expect(rows[0]?.metadata).toMatchObject({ phase: 'requested' })
   expect(rows[1]).toMatchObject({
-    operation_request_id: rows[0]?.id,
+    operation_request_action_id: rows[0]?.id,
     metadata: { phase: 'finished', outcome: 'succeeded' },
   })
 }

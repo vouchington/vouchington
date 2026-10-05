@@ -69,7 +69,7 @@ export type CopyrightNoticeSubmissionRecord = {
   kind: CopyrightSubmissionKind
   received_at: Date
   source_kind: CopyrightSubmissionSourceKind
-  submitted_by_user_id: string | null
+  submitted_by_id: string | null
   body_ciphertext: string
   copyright_notice_guest_capability_id: string | null
 }
@@ -79,7 +79,7 @@ export type CopyrightNoticeSubmissionAssessmentRecord = {
   copyright_notice_submission_id: string
   assessed_at: Date
   assessed_by_id: string | null
-  substantially_compliant: boolean
+  is_substantially_compliant: boolean
   copyright_notice_form_screening_id: string | null
   supersedes_assessment_id: string | null
 }
@@ -89,12 +89,12 @@ export type CopyrightLegalHoldAssessmentRecord = {
   copyright_notice_submission_id: string
   assessed_at: Date
   assessed_by_id: string | null
-  from_original_claimant: boolean
+  is_from_original_claimant: boolean
   proceeding_kind: CopyrightHoldProceedingKind | null
   ccb_claim_kind: FiniteValue<'copyright_notice_legal_hold_assessment_ccb_claim_kinds'> | null
   commenced_at: Date | null
   received_by_designated_agent_at: Date | null
-  same_material: boolean
+  is_same_material: boolean
   rationale_ciphertext: string
   target_ids: string[]
 }

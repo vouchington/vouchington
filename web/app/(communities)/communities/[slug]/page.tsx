@@ -109,8 +109,8 @@ export default async function CommunityPage({ params, searchParams }: PageProps)
             data={postsData}
             communitySlug={community.slug}
             canCreatePost={canCreatePost}
-            allowReviewPosts={community.allow_review_posts}
-            allowDataPointPosts={community.allow_data_point_posts}
+            allowReviewPosts={community.should_allow_review_posts}
+            allowDataPointPosts={community.should_allow_data_point_posts}
             nextPageParams={nextPageParams}
           />
         ) : (

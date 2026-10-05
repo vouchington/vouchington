@@ -101,8 +101,8 @@ export async function getAdministratorRefundReconciliationResult(
   operationId: string,
 ): Promise<RefundReconciliationResult> {
   const { rows } = await write(sql`/* getAdministratorRefundReconciliationResult */
-    SELECT receipt.id AS "refundId", request.cancel_requested AS "cancelRequested",
-      receipt.revoked_access AS "revokedAccess", operation.completed_at IS NOT NULL AS completed
+    SELECT receipt.id AS "refundId", request.is_cancel_requested AS "cancelRequested",
+      receipt.has_revoked_access AS "revokedAccess", operation.completed_at IS NOT NULL AS completed
     FROM membership_operations operation
     INNER JOIN membership_administrator_refund_operation_requests request
       ON request.membership_operation_id = operation.id

@@ -55,7 +55,7 @@ describe('images', () => {
     // Verify moderation was saved to database
     const updated = await getImageByAny(image.id)
     expect(updated?.openai_omni_moderation_results).toBeDefined()
-    expect(updated?.openai_omni_moderation_flagged).toBe(false)
+    expect(updated?.is_flagged_by_openai_omni_moderation).toBe(false)
     expect(updated?.openai_omni_moderation_created_at).toBeDefined()
     expect(updated?.deleted_at).toBeNull()
     expect(createOpenAIModeration).toHaveBeenCalledWith(

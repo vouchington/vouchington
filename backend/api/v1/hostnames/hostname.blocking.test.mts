@@ -43,20 +43,20 @@ describe('hostname.blocking', () => {
     it('returns 401 when unauthenticated', async () => {
       const hostnameId = await insertTestUrlHostname({ hostname: randomHostname() })
       const request = createRequest()
-      await request.patch(`/api/v1/hostnames/${hostnameId}`).send({ blocked: true }).expect(401)
+      await request.patch(`/api/v1/hostnames/${hostnameId}`).send({ is_blocked: true }).expect(401)
     }, 60_000)
 
     it('returns 403 when authenticated as non-admin', async () => {
       const hostnameId = await insertTestUrlHostname({ hostname: randomHostname() })
       const request = createRequest()
       await request.authenticateAs(regularUser)
-      await request.patch(`/api/v1/hostnames/${hostnameId}`).send({ blocked: true }).expect(403)
+      await request.patch(`/api/v1/hostnames/${hostnameId}`).send({ is_blocked: true }).expect(403)
     }, 60_000)
 
     it('returns 404 for a non-existent hostname', async () => {
       const request = createRequest()
       await request.authenticateAs(admin)
-      await request.patch(`/api/v1/hostnames/${uuidv7()}`).send({ blocked: true }).expect(404)
+      await request.patch(`/api/v1/hostnames/${uuidv7()}`).send({ is_blocked: true }).expect(404)
     }, 60_000)
 
     it('returns 200 with blocked_hostname_count, soft_deleted_relation_count, penalized_user_count', async () => {
@@ -65,7 +65,7 @@ describe('hostname.blocking', () => {
       await request.authenticateAs(admin)
       const response = await request
         .patch(`/api/v1/hostnames/${hostnameId}`)
-        .send({ blocked: true })
+        .send({ is_blocked: true })
         .expect(200)
 
       expect(typeof response.body.blocked_hostname_count).toBe('number')
@@ -76,7 +76,7 @@ describe('hostname.blocking', () => {
 
     it('soft-deletes post->related->url entity relations for the blocked hostname', async () => {
       const hostname = randomHostname()
-      const hostnameId = await insertTestUrlHostname({ hostname, crawlable: false })
+      const hostnameId = await insertTestUrlHostname({ hostname, is_crawlable: false })
       const creator = (await createTestUserDirect({
         username: `api-bh-creator-${rand()}`,
       })) as PrivateUser
@@ -98,7 +98,7 @@ describe('hostname.blocking', () => {
       await request.authenticateAs(admin)
       const response = await request
         .patch(`/api/v1/hostnames/${hostnameId}`)
-        .send({ blocked: true })
+        .send({ is_blocked: true })
         .expect(200)
 
       expect(response.body.soft_deleted_relation_count).toBeGreaterThanOrEqual(1)
@@ -107,7 +107,7 @@ describe('hostname.blocking', () => {
 
     it('applies 20% vote weight penalty to users who created relations', async () => {
       const hostname = randomHostname()
-      const hostnameId = await insertTestUrlHostname({ hostname, crawlable: false })
+      const hostnameId = await insertTestUrlHostname({ hostname, is_crawlable: false })
       const creator = (await createTestUserDirect({
         username: `api-bh-pen-${rand()}`,
       })) as PrivateUser
@@ -126,7 +126,7 @@ describe('hostname.blocking', () => {
       await request.authenticateAs(admin)
       const response = await request
         .patch(`/api/v1/hostnames/${hostnameId}`)
-        .send({ blocked: true })
+        .send({ is_blocked: true })
         .expect(200)
 
       expect(response.body.penalized_user_count).toBe(1)
@@ -140,7 +140,7 @@ describe('hostname.blocking', () => {
 
     it('is idempotent: re-blocking does not duplicate penalties', async () => {
       const hostname = randomHostname()
-      const hostnameId = await insertTestUrlHostname({ hostname, crawlable: false })
+      const hostnameId = await insertTestUrlHostname({ hostname, is_crawlable: false })
       const creator = (await createTestUserDirect({
         username: `api-bh-idem-${rand()}`,
       })) as PrivateUser
@@ -157,10 +157,10 @@ describe('hostname.blocking', () => {
 
       const request = createRequest()
       await request.authenticateAs(admin)
-      await request.patch(`/api/v1/hostnames/${hostnameId}`).send({ blocked: true }).expect(200)
+      await request.patch(`/api/v1/hostnames/${hostnameId}`).send({ is_blocked: true }).expect(200)
       const response2 = await request
         .patch(`/api/v1/hostnames/${hostnameId}`)
-        .send({ blocked: true })
+        .send({ is_blocked: true })
         .expect(200)
 
       expect(response2.body.penalized_user_count).toBe(0)
@@ -173,11 +173,11 @@ describe('hostname.blocking', () => {
     it('unblocking with blocked=false updates hostname without the blocking flow', async () => {
       const hostnameId = await insertTestUrlHostname({
         hostname: randomHostname(),
-        blocked: true,
+        is_blocked: true,
       })
       const request = createRequest()
       await request.authenticateAs(admin)
-      await request.patch(`/api/v1/hostnames/${hostnameId}`).send({ blocked: false }).expect(204)
+      await request.patch(`/api/v1/hostnames/${hostnameId}`).send({ is_blocked: false }).expect(204)
     }, 60_000)
   })
 })

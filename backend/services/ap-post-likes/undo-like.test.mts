@@ -13,7 +13,10 @@ describe('undoLike', () => {
 
     await undoLike(post.id, remoteActor.id)
 
-    expect(await getApPostLikesTally(post.id)).toEqual({ ap_likes_score: 0, ap_likes_count: 0 })
+    expect(await getApPostLikesTally(post.id)).toEqual({
+      activitypub_likes_score: 0,
+      activitypub_likes_count: 0,
+    })
   })
 
   it('is a no-op for an Undo that arrives before any Like', async () => {
@@ -33,7 +36,10 @@ describe('undoLike', () => {
 
     await expect(undoLike(post.id, remoteActor.id)).resolves.toBeUndefined()
 
-    expect(await getApPostLikesTally(post.id)).toEqual({ ap_likes_score: 0, ap_likes_count: 0 })
+    expect(await getApPostLikesTally(post.id)).toEqual({
+      activitypub_likes_score: 0,
+      activitypub_likes_count: 0,
+    })
   })
 
   it("only undoes the calling actor's like, leaving other actors' likes intact", async () => {
@@ -45,6 +51,9 @@ describe('undoLike', () => {
 
     await undoLike(post.id, first.id)
 
-    expect(await getApPostLikesTally(post.id)).toEqual({ ap_likes_score: 1, ap_likes_count: 1 })
+    expect(await getApPostLikesTally(post.id)).toEqual({
+      activitypub_likes_score: 1,
+      activitypub_likes_count: 1,
+    })
   })
 })

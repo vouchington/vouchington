@@ -82,7 +82,7 @@ export async function resolveAppealTargetPost(
   const { rows: postDupRows } = await read<{ id: string }>(
     sql`/* resolveAppealTarget:checkPostDuplicate */
     SELECT id FROM moderation_appeals
-    WHERE appellant_id = ${currentUser.id}
+    WHERE appellant_user_id = ${currentUser.id}
       AND post_id = ${targetId}
       AND post_removal_kind IS NOT DISTINCT FROM ${postRemovalKind}
       AND resolved_at IS NULL

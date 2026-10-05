@@ -27,14 +27,14 @@ describe('human form review with changing screening authority', () => {
     await reviewCopyrightFormIntake({
       intakeId: notice.intake.id,
       currentUser: { ...user, roles: ['moderator'] },
-      accepted: true,
+      is_accepted: true,
       rationale: 'Human review of retained statutory evidence.',
     })
     const aggregate = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
     expect(aggregate?.assessments.at(-1)).toMatchObject({
       copyright_notice_form_screening_id: null,
       assessed_by_id: user.id,
-      substantially_compliant: true,
+      is_substantially_compliant: true,
     })
   })
 
@@ -44,7 +44,7 @@ describe('human form review with changing screening authority', () => {
     const input = {
       intakeId: notice.intake.id,
       currentUser: { ...user, roles: ['moderator'] },
-      accepted: true,
+      is_accepted: true,
       rationale: 'Human statutory review.',
     }
     await reviewCopyrightFormIntake(input)
@@ -58,11 +58,13 @@ describe('human form review with changing screening authority', () => {
       promptVersion: 'copyright-form-screening-v2',
       model: 'test-model',
     })
-    await expect(reviewCopyrightFormIntake(input)).resolves.toMatchObject({ accepted: true })
+    await expect(reviewCopyrightFormIntake(input)).resolves.toMatchObject({ is_accepted: true })
     const after = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
     expect(after?.assessments).toEqual(before?.assessments)
-    await expect(reviewCopyrightFormIntake({ ...input, accepted: false })).rejects.toMatchObject({
-      status: 409,
-    })
+    await expect(reviewCopyrightFormIntake({ ...input, is_accepted: false })).rejects.toMatchObject(
+      {
+        status: 409,
+      },
+    )
   })
 })

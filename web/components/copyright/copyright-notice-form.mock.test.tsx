@@ -139,8 +139,8 @@ describe('CopyrightNoticeForm', () => {
         claimant_email: 'tests+51c2846f@voucha.ai',
         work_description: 'Claimed photograph',
         electronic_signature: 'Claimant',
-        good_faith_belief: true,
-        accuracy_authority_under_penalty_of_perjury: true,
+        has_good_faith_belief: true,
+        has_accuracy_authority_under_penalty_of_perjury: true,
         targets: [
           {
             surface: 'post-image',

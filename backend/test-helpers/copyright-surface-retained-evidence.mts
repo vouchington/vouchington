@@ -9,9 +9,9 @@ export type TestCopyrightSurfaceRetainedEvidence = {
   surface_owner_user_id: string | null
   activation_placement_id: string | null
   activation_revision: number | null
-  bound_by_user_id: string | null
-  uploaded_by_user_id: string | null
-  bound_by_administrator: boolean | null
+  bound_by_id: string | null
+  uploaded_by_id: string | null
+  is_bound_by_administrator: boolean | null
 }
 
 export async function readTestCopyrightSurfaceRetainedEvidence(
@@ -23,8 +23,8 @@ export async function readTestCopyrightSurfaceRetainedEvidence(
       target.placement_revision, target.surface_activation_revision,
       target.surface_owner_user_id, activation.placement_id AS activation_placement_id,
       activation.placement_revision AS activation_revision,
-      activation.bound_by_user_id, activation.uploaded_by_user_id,
-      activation.bound_by_administrator
+      activation.bound_by_id, activation.uploaded_by_id,
+      activation.is_bound_by_administrator
     FROM copyright_notice_targets target
     LEFT JOIN image_surface_placement_activations activation
       ON activation.placement_id = target.placement_id

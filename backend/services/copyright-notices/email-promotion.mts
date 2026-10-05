@@ -45,7 +45,7 @@ async function admitCopyrightEmailIntake(
   await using transaction = await beginTransaction()
   const { rows: intakeRows } =
     await transaction<CopyrightEmailIntake>(sql`/* promoteCopyrightEmailIntake:lock */
-    SELECT id, ses_message_id, received_at, raw_storage_key, raw_sha256, raw_media_type_id,
+    SELECT id, amazon_ses_message_id, received_at, raw_storage_key, raw_sha256, raw_media_type_id,
       (SELECT mime_type FROM media_types WHERE id = raw_media_type_id) AS raw_mime_type, raw_byte_size
     FROM copyright_notice_email_intakes WHERE id = ${input.intakeId} FOR UPDATE
   `)
@@ -93,7 +93,7 @@ async function admitCopyrightEmailIntake(
     }
   }
   await assertRecommendationScope(transaction, input.recommendationId, intake.id)
-  const purpose = copyrightEmailIntakePurpose(intake.ses_message_id)
+  const purpose = copyrightEmailIntakePurpose(intake.amazon_ses_message_id)
   const notice = await createCopyrightNoticeAggregateInTransaction(
     buildEmailNotice(input, purpose, intake.received_at),
     transaction,
@@ -174,8 +174,9 @@ function buildEmailNotice(
       sourceKind: 'email' as const,
       bodyCiphertext: encryptSecret(
         JSON.stringify({
-          good_faith_belief: input.goodFaithBelief,
-          accuracy_authority_under_penalty_of_perjury: input.accuracyAuthorityUnderPenaltyOfPerjury,
+          has_good_faith_belief: input.goodFaithBelief,
+          has_accuracy_authority_under_penalty_of_perjury:
+            input.accuracyAuthorityUnderPenaltyOfPerjury,
           electronic_signature: input.electronicSignature,
         }),
         purpose,

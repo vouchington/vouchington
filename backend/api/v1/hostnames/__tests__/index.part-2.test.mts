@@ -65,9 +65,9 @@ describe('index', () => {
 
         expect(response.body.hostname).toBeDefined()
         expect(response.body.hostname.id).toBe(hostnameId)
-        expect(response.body.hostname.blocked).toBeUndefined()
-        expect(response.body.hostname.crawlable).toBeUndefined()
-        expect(response.body.hostname.link_rel_follow).toBeUndefined()
+        expect(response.body.hostname.is_blocked).toBeUndefined()
+        expect(response.body.hostname.is_crawlable).toBeUndefined()
+        expect(response.body.hostname.should_follow_link_rel).toBeUndefined()
         expect(response.body.hostname.votes_score_net).toBeUndefined()
         expect(response.body.hostname.votes_count_up).toBeUndefined()
         expect(response.body.hostname.votes_count_down).toBeUndefined()
@@ -85,9 +85,9 @@ describe('index', () => {
 
         expect(response.body.hostname).toBeDefined()
         expect(response.body.hostname.id).toBe(hostnameId)
-        expect(response.body.hostname.blocked).toBeUndefined()
-        expect(response.body.hostname.crawlable).toBeUndefined()
-        expect(response.body.hostname.link_rel_follow).toBeUndefined()
+        expect(response.body.hostname.is_blocked).toBeUndefined()
+        expect(response.body.hostname.is_crawlable).toBeUndefined()
+        expect(response.body.hostname.should_follow_link_rel).toBeUndefined()
         expect(response.body.hostname.votes_score_net).toBeUndefined()
         expect(response.body.hostname.votes_count_up).toBeUndefined()
         expect(response.body.hostname.votes_count_down).toBeUndefined()
@@ -137,7 +137,7 @@ describe('index', () => {
         const random = Math.random().toString(36).slice(2, 8)
         const hostnameId = await insertTestUrlHostname({
           hostname: `blocked-detail-${random}.example.com`,
-          blocked: true,
+          is_blocked: true,
         })
         const request = createRequest()
         await request.authenticateAs(regularUser)
@@ -149,7 +149,7 @@ describe('index', () => {
         const random = Math.random().toString(36).slice(2, 8)
         const hostnameId = await insertTestUrlHostname({
           hostname: `blocked-anon-detail-${random}.example.com`,
-          blocked: true,
+          is_blocked: true,
         })
         const request = createRequest()
 
@@ -160,7 +160,7 @@ describe('index', () => {
         const random = Math.random().toString(36).slice(2, 8)
         const hostnameId = await insertTestUrlHostname({
           hostname: `blocked-session-detail-${random}.example.com`,
-          blocked: true,
+          is_blocked: true,
         })
         const request = createRequest()
         const { deviceToken, sessionToken } = await createDeviceAndSessionTokens({
@@ -186,11 +186,11 @@ describe('index', () => {
 
         await request
           .patch(`/api/v1/hostnames/${hostnameId}`)
-          .send({ skip_web_risk: true })
+          .send({ should_skip_web_risk: true })
           .expect(204)
 
         const response = await request.get(`/api/v1/hostnames/${hostnameId}`).expect(200)
-        expect(response.body.hostname.skip_web_risk).toBe(true)
+        expect(response.body.hostname.should_skip_web_risk).toBe(true)
       })
     })
   })

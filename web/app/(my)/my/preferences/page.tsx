@@ -21,7 +21,7 @@ export default async function PreferencesPage() {
       />
       <PreferencesForm
         userId={currentUser.id}
-        hnDiscussionsEnabled={currentUser.hn_discussions === true}
+        hnDiscussionsEnabled={currentUser.should_import_hacker_news_discussions === true}
       />
     </div>
   )

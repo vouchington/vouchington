@@ -35,4 +35,4 @@ Returns a 30-day rolling analytics summary for the specified landing page. Requi
 }
 ```
 
-**Performance:** Checks page ownership, reads analytics, and looks up signup attribution from the landing page owner's `users.referrer_id` via the attribution service.
+**Performance:** Checks page ownership, reads analytics, and looks up signup attribution from the landing page owner's `users.referrer_user_id` via the attribution service.

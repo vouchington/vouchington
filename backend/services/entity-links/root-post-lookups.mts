@@ -26,10 +26,10 @@ export async function getRootPostsForCommentMentions(
           !entity ||
           typeof entity !== 'object' ||
           (entity as { post_type?: string }).post_type !== 'comment' ||
-          !(entity as { root_id?: string | null }).root_id
+          !(entity as { root_post_id?: string | null }).root_post_id
         )
           return []
-        return [(entity as { root_id: string }).root_id]
+        return [(entity as { root_post_id: string }).root_post_id]
       }),
     ),
   ]
@@ -53,11 +53,11 @@ export async function getRootPostsForCommentMentions(
   const commentRootMap = new Map<string, unknown | null>()
   for (const mention of commentMentions) {
     const entity = postLookup.get(mention.identifier) as
-      | { id: string; post_type: string; root_id?: string | null }
+      | { id: string; post_type: string; root_post_id?: string | null }
       | null
       | undefined
-    if (entity?.post_type !== 'comment' || !entity.root_id) continue
-    commentRootMap.set(entity.id, rootPostMap.get(entity.root_id) ?? null)
+    if (entity?.post_type !== 'comment' || !entity.root_post_id) continue
+    commentRootMap.set(entity.id, rootPostMap.get(entity.root_post_id) ?? null)
   }
 
   return { failed: false, roots: commentRootMap }

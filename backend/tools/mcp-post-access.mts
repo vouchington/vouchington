@@ -25,7 +25,7 @@ export type ReadableThread = {
  * author's own not-yet-cleared posts all answer as not found, even to their author.
  *
  * Demanding the whole chain, not only the post and its root, keeps a hidden ancestor from
- * reaching the caller through `parent_id`. A deleted post cannot be loaded, so a deleted target
+ * reaching the caller through `parent_post_id`. A deleted post cannot be loaded, so a deleted target
  * is not found and a deleted ancestor is left out of the chain, as in the REST twin.
  *
  * `search_posts` applies this same rule to its results in SQL (`public_eligibility_only` in
