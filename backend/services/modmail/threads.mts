@@ -69,7 +69,7 @@ export async function openModmailThread(
         SELECT ${thread.id}::uuid AS conversation_id, user_id, 'admin'
         FROM unnest(${typedModRows.map(row => row.user_id)}::uuid[]) AS input(user_id)
         ORDER BY conversation_id ASC NULLS LAST, user_id ASC NULLS LAST
-        ON CONFLICT (conversation_id, user_id) WHERE user_id IS NOT NULL AND removed_at IS NULL
+        ON CONFLICT (conversation_id, user_id) WHERE (user_id IS NOT NULL) AND (removed_at IS NULL)
         DO NOTHING
       `)
     }

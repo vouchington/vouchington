@@ -125,9 +125,9 @@ export async function stageStoryPostRelatedUrlProjectionReceipts(
     `/* stageStoryPostRelatedUrlProjectionReceipts */
       INSERT INTO story_post_related_url_projection_receipts
         (post_id, generation, url_id, source_item_id, is_eligible)
-      SELECT $1, $2, url_id, source_item_id, is_eligible
+      SELECT $1::uuid AS post_id, $2::bigint AS generation, url_id, source_item_id, is_eligible
       FROM unnest($3::uuid[], $4::uuid[], $5::boolean[]) AS input(url_id, source_item_id, is_eligible)
-      ORDER BY url_id
+      ORDER BY post_id, generation, url_id
       ON CONFLICT (post_id, generation, url_id) DO NOTHING`,
     [
       work.post_id,

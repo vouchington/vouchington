@@ -1589,6 +1589,8 @@ rules:
     scope: repository
     options:
       importSpecifier: '@data-stores/psql'
+      executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+      executorTypeNames: [TransactionQuery, QueryExecutor]
       schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
       sqlInclude:
         - backend/data-stores/psql/config-driven/**/*.sql

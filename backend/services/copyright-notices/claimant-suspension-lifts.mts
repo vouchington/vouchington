@@ -83,7 +83,8 @@ export async function liftSuspendedClaimantAutomaticRestrictions(
   await transaction(sql`/* liftSuspendedClaimantAutomaticRestrictions:record */
     INSERT INTO copyright_claimant_suspension_reversals (copyright_restriction_id, reversed_at)
     SELECT restriction_id, ${reversedAt} FROM unnest(${restrictionIds}::uuid[]) AS restriction_id
-    ON CONFLICT DO NOTHING
+    ORDER BY restriction_id
+    ON CONFLICT (copyright_restriction_id) DO NOTHING
   `)
   await transaction.commit()
   for (const intentId of intentIds) void enqueueApplyCopyrightAction(intentId)

@@ -91,7 +91,8 @@ export async function createMembershipPurchaseIntent(options: {
       user_id, idempotency_key, request_fingerprint, membership_provider_product_id,
       membership_product_id, provider, environment, application_id
     )
-    SELECT ${options.userId}::UUID, ${options.idempotencyKey}::UUID, ${fingerprint}, mapping.id,
+    SELECT ${options.userId}::UUID AS user_id, ${options.idempotencyKey}::UUID AS idempotency_key,
+      ${fingerprint}, mapping.id,
       product.id, mapping.provider, mapping.environment, mapping.application_id
     FROM membership_products product
     INNER JOIN membership_provider_products mapping ON mapping.membership_product_id = product.id
@@ -101,7 +102,7 @@ export async function createMembershipPurchaseIntent(options: {
       AND mapping.environment = ${providerContext.environment}
       AND mapping.application_id = ${providerContext.applicationId}
       AND mapping.retired_at IS NULL
-    ORDER BY 1 ASC NULLS LAST, 2 ASC NULLS LAST, mapping.id DESC
+    ORDER BY user_id ASC NULLS LAST, idempotency_key ASC NULLS LAST, mapping.id DESC
     LIMIT 1
     ON CONFLICT (user_id, idempotency_key) DO NOTHING
     RETURNING id`)

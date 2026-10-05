@@ -12,9 +12,9 @@ export async function upsertRssFeedItemIdentities(
   await txQuery(
     `/* upsertRssFeedItems:identities */
     INSERT INTO rss_feed_item_guids (url_hostname_id, guid)
-    SELECT $1, input.guid
+    SELECT $1::uuid AS url_hostname_id, input.guid
     FROM unnest($2::text[]) AS input(guid)
-    ORDER BY input.guid
+    ORDER BY url_hostname_id, input.guid
     ON CONFLICT (url_hostname_id, guid)
     DO NOTHING`,
     [urlHostnameId, guids],
