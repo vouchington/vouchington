@@ -27,11 +27,14 @@ defines the required claim and adapter workflow. Moderation operations, integrit
 saved/bookmark capabilities cite platform runners that consume that shared contract.
 
 Account-type contract coordination ([vouchington#1834](https://github.com/vouchington/vouchington/issues/1834))
-is in progress: web and API use required nullable `account_type` with Official, System, and AI Agent
-labels. Native implementation is committed locally; draft publication is blocked by missing native tools. Canonical
-native staging is blocked by the existing [localization closure issue](https://github.com/vouchington/vouchington-clients/issues/193),
-and native platform builds and full route browser verification remain unverified. This does not
-change the delivered parity claims below.
+is delivered for web and API: every user projection carries a required nullable `account_type`
+(`official`, `system`, `ai_agent` or `null`) with Official, System, and AI Agent labels. Native
+parity is not delivered. Decoding `account_type`, rendering the author labels, and hiding vote
+controls from every non-null `account_type` are tracked in
+[vouchington-clients#205](https://github.com/vouchington/vouchington-clients/issues/205). Until it
+lands, Swift cannot decode the signed-in identity fixture, native shows no author label, and native
+vote controls still appear for platform accounts. This does not change the delivered parity claims
+below.
 
 See also:
 

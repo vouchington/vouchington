@@ -63,8 +63,9 @@ sanitized.
 
 Both user tools return the signed-out public profile for every caller: the caller's own account,
 another user and an administrator all see `{ id, username, markdown, verification_status,
-is_verified_badge_visible, verified_display_name, is_official_account }` and nothing else, never an
-email address, phone number or suspension. A deleted or unknown user is
+is_verified_badge_visible, verified_display_name, account_type }` and nothing else, never an
+email address, phone number or suspension. `account_type` is `official`, `system`, `ai_agent` or
+`null` for an ordinary member, derived once in `view_embedded_users`. A deleted or unknown user is
 `{ success: false, error: "User not found" }`. `get_user` takes a UUID or a username (case
 insensitive) and refuses an email address or phone number as an invalid identifier. The verified
 name appears only while the user shows the verified badge. `search_users` matches the start of a
