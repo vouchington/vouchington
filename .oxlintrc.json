@@ -82,20 +82,20 @@
     "import/no-absolute-path": "error", // Category-activated safety rule: imports remain portable.
     "import/no-empty-named-blocks": "error", // Category-activated safety rule: empty import bindings are unintended.
     "unicorn/catch-error-name": ["error", { "name": "err" }],
-    "unicorn/consistent-assert": "off", // Staged #1692: 39 findings / 16 files; scan 2026-10-01.
+    "unicorn/consistent-assert": "off", // Intentional #1692: staged pedantic/style exclusion.
     "unicorn/consistent-function-scoping": "off", // Policy: local functions may capture context even when hoisting is possible.
-    "unicorn/consistent-date-clone": "off", // Staged #1692: 1 findings / 1 files; scan 2026-10-01.
+    "unicorn/consistent-date-clone": "off", // Intentional #1692: staged pedantic/style exclusion.
     "unicorn/consistent-empty-array-spread": "error",
-    "unicorn/consistent-existence-index-check": "off", // Staged #1692: 18 findings / 14 files; scan 2026-10-01.
+    "unicorn/consistent-existence-index-check": "off", // Intentional #1692: staged pedantic/style exclusion.
     "unicorn/empty-brace-spaces": "error",
-    "unicorn/error-message": "off", // Staged #1692: 4 findings / 3 files; scan 2026-10-01.
-    "unicorn/escape-case": "off", // Staged #1692: 29 findings / 15 files; scan 2026-10-01.
-    "unicorn/explicit-length-check": "off", // Staged #1692: 69 findings / 54 files; scan 2026-10-01.
-    "unicorn/filename-case": "off", // Staged #1692: 4 findings / 4 files; scan 2026-10-01.
-    "unicorn/new-for-builtins": "off", // Staged #1692: 39 findings / 13 files; scan 2026-10-01.
+    "unicorn/error-message": "off", // Intentional #1692: staged pedantic/style exclusion.
+    "unicorn/escape-case": "off", // Intentional #1692: staged pedantic/style exclusion.
+    "unicorn/explicit-length-check": "off", // Intentional #1692: staged pedantic/style exclusion.
+    "unicorn/filename-case": "off", // Intentional #1692: staged pedantic/style exclusion.
+    "unicorn/new-for-builtins": "off", // Intentional #1692: staged pedantic/style exclusion.
     "unicorn/no-abusive-eslint-disable": "error",
     "unicorn/no-accessor-recursion": "error",
-    "unicorn/no-anonymous-default-export": "off", // Staged #1692: 4 findings / 4 files; scan 2026-10-01.
+    "unicorn/no-anonymous-default-export": "error",
     "unicorn/no-array-callback-reference": "off", // Policy: named callbacks are allowed when their arity matches the array method.
     "unicorn/no-array-for-each": "off", // Policy: forEach is allowed for synchronous side effects.
     "unicorn/no-array-method-this-argument": "error",
@@ -105,13 +105,13 @@
     "unicorn/no-await-expression-member": "off", // Policy: accessing a property on an awaited result is allowed.
     "unicorn/no-console-spaces": "error",
     "unicorn/no-document-cookie": "off", // Policy: browser cookie owner modules require document.cookie.
-    "unicorn/no-hex-escape": "off", // Staged #1692: 42 findings / 14 files; scan 2026-10-01.
+    "unicorn/no-hex-escape": "off", // Intentional #1692: staged pedantic/style exclusion.
     "unicorn/no-immediate-mutation": "off", // Policy: local mutation during collection construction is allowed.
     "unicorn/no-instanceof-array": "error",
     "unicorn/no-instanceof-builtins": "error",
     "unicorn/no-length-as-slice-end": "error",
     "unicorn/no-lonely-if": "off", // Policy: nested conditionals are allowed when they clarify branches.
-    "unicorn/no-magic-array-flat-depth": "off", // Staged #1692: 2 findings / 1 files; scan 2026-10-01.
+    "unicorn/no-magic-array-flat-depth": "off", // Intentional #1692: reviewed exclusion; see Unicorn rule policy.
     "unicorn/no-negation-in-equality-check": "error",
     "unicorn/no-nested-ternary": "off", // Policy: nested ternaries are allowed for compact expression branches.
     "unicorn/no-new-buffer": "error",
@@ -122,36 +122,36 @@
     "unicorn/no-this-assignment": "error",
     "unicorn/no-typeof-undefined": "error",
     "unicorn/no-unnecessary-array-flat-depth": "error",
-    "unicorn/no-unnecessary-array-splice-count": "off", // Staged #1692: 2 findings / 2 files; scan 2026-10-01.
+    "unicorn/no-unnecessary-array-splice-count": "off", // Intentional #1692: staged pedantic/style exclusion.
     "unicorn/no-unnecessary-slice-end": "error",
     "unicorn/no-unreadable-array-destructuring": "off", // Policy: positional destructuring is allowed for tuple contracts.
     "unicorn/no-unreadable-iife": "error",
-    "unicorn/no-useless-collection-argument": "off", // Staged #1692: 18 findings / 12 files; scan 2026-10-01.
+    "unicorn/no-useless-collection-argument": "off", // Intentional #1692: staged pedantic/style exclusion.
     "unicorn/no-useless-error-capture-stack-trace": "error",
-    "unicorn/no-useless-promise-resolve-reject": "off", // Staged #1692: 16 findings / 11 files; scan 2026-10-01.
+    "unicorn/no-useless-promise-resolve-reject": "off", // Intentional #1692: staged pedantic/style exclusion.
     "unicorn/no-useless-switch-case": "error",
     "unicorn/no-useless-undefined": "off", // Policy: explicit undefined documents optional values and return contracts.
-    "unicorn/no-zero-fractions": "off", // Staged #1692: 60 findings / 19 files; scan 2026-10-01.
+    "unicorn/no-zero-fractions": "off", // Intentional #1692: staged pedantic/style exclusion.
     "unicorn/number-literal-case": "off", // Policy: numeric literal casing is a style choice.
-    "unicorn/numeric-separators-style": "off", // Staged #1692: 787 findings / 373 files; scan 2026-10-01.
+    "unicorn/numeric-separators-style": "off", // Intentional #1692: staged pedantic/style exclusion.
     "unicorn/prefer-array-find": "off", // Staged #1692: 7 findings / 6 files; scan 2026-10-01.
     "unicorn/prefer-array-flat": "error",
     "unicorn/prefer-array-flat-map": "error",
     "unicorn/prefer-array-index-of": "off", // Policy: findIndex predicates are allowed even for equality searches.
     "unicorn/prefer-array-some": "error",
-    "unicorn/prefer-at": "off", // Staged #1692: 31 findings / 21 files; scan 2026-10-01.
-    "unicorn/prefer-bigint-literals": "off", // Staged #1692: 1 findings / 1 files; scan 2026-10-01.
+    "unicorn/prefer-at": "off", // Intentional #1692: staged pedantic/style exclusion.
+    "unicorn/prefer-bigint-literals": "off", // Intentional #1692: staged pedantic/style exclusion.
     "unicorn/prefer-blob-reading-methods": "error",
     "unicorn/prefer-class-fields": "error",
     "unicorn/prefer-classlist-toggle": "error",
-    "unicorn/prefer-code-point": "off", // Staged #1692: 7 findings / 6 files; scan 2026-10-01.
+    "unicorn/prefer-code-point": "off", // Intentional #1692: staged pedantic/style exclusion.
     "unicorn/prefer-date-now": "error",
     "unicorn/prefer-default-parameters": "error",
     "unicorn/prefer-add-event-listener": "off", // Policy: event-handler properties are allowed alongside listener APIs.
     "unicorn/prefer-dom-node-append": "error",
     "unicorn/prefer-dom-node-dataset": "off", // Policy: attribute APIs are allowed for explicit data attribute names.
     "unicorn/prefer-dom-node-remove": "off", // Policy: parent-owned node removal is allowed.
-    "unicorn/prefer-dom-node-text-content": "off", // Staged #1692: 8 findings / 3 files; scan 2026-10-01.
+    "unicorn/prefer-dom-node-text-content": "off", // Intentional #1692: staged pedantic/style exclusion.
     "unicorn/prefer-event-target": "off", // Policy: Node EventEmitter APIs are supported.
     "unicorn/prefer-global-this": "off", // Policy: window, global, and self retain environment-specific meaning.
     "unicorn/prefer-import-meta-properties": "error",
@@ -174,19 +174,19 @@
     "unicorn/prefer-reflect-apply": "error",
     "unicorn/prefer-regexp-test": "error",
     "unicorn/prefer-response-static-json": "off", // Policy: response construction may use framework helpers or custom initialization.
-    "unicorn/prefer-set-has": "off", // Staged #1692: 15 findings / 15 files; scan 2026-10-01.
+    "unicorn/prefer-set-has": "off", // Intentional #1692: reviewed exclusion; see Unicorn rule policy.
     "unicorn/prefer-spread": "off", // Policy: concat and equivalent collection operations are allowed.
-    "unicorn/prefer-structured-clone": "off", // Staged #1692: 6 findings / 4 files; scan 2026-10-01.
+    "unicorn/prefer-structured-clone": "off", // Intentional #1692: staged pedantic/style exclusion.
     "unicorn/prefer-string-raw": "off", // Policy: use the simplest readable string literal; backticks are allowed.
     "unicorn/prefer-string-replace-all": "off", // Policy: replace is allowed for deliberately single-match replacements.
     "unicorn/prefer-string-slice": "error",
-    "unicorn/prefer-string-starts-ends-with": "off", // Staged #1692: 8 findings / 4 files; scan 2026-10-01.
+    "unicorn/prefer-string-starts-ends-with": "off", // Intentional #1692: reviewed exclusion; see Unicorn rule policy.
     "unicorn/prefer-string-trim-start-end": "error",
     "unicorn/prefer-ternary": "off", // Policy: statement branches are allowed when they improve readability.
     "unicorn/prefer-top-level-await": "off", // Policy: explicit async entrypoints preserve lifecycle and error handling.
-    "unicorn/prefer-type-error": "off", // Staged #1692: 26 findings / 23 files; scan 2026-10-01.
-    "unicorn/relative-url-style": "off", // Staged #1692: 33 findings / 24 files; scan 2026-10-01.
-    "unicorn/require-array-join-separator": "off", // Staged #1692: 7 findings / 3 files; scan 2026-10-01.
+    "unicorn/prefer-type-error": "off", // Intentional #1692: staged pedantic/style exclusion.
+    "unicorn/relative-url-style": "off", // Intentional #1692: staged pedantic/style exclusion.
+    "unicorn/require-array-join-separator": "off", // Intentional #1692: staged pedantic/style exclusion.
     "unicorn/require-module-attributes": "error",
     "unicorn/require-number-to-fixed-digits-argument": "error",
     "unicorn/switch-case-braces": "off", // Policy: switch case block layout is a style choice.
@@ -196,16 +196,16 @@
     "unicorn/no-await-in-promise-methods": "error",
     "unicorn/no-confusing-array-with": "error",
     "unicorn/no-empty-file": "off", // Staged #1692: 1 findings / 1 files; scan 2026-10-01.
-    "unicorn/no-invalid-fetch-options": "off", // Staged #1692: 1 findings / 1 files; scan 2026-10-01.
+    "unicorn/no-invalid-fetch-options": "off", // Intentional #1692: reviewed exclusion; see Unicorn rule policy.
     "unicorn/no-invalid-remove-event-listener": "error",
-    "unicorn/no-single-promise-in-promise-methods": "off", // Staged #1692: 1 findings / 1 files; scan 2026-10-01.
+    "unicorn/no-single-promise-in-promise-methods": "off", // Intentional #1692: reviewed exclusion; see Unicorn rule policy.
     "unicorn/no-thenable": "error",
     "unicorn/no-unnecessary-await": "error",
-    "unicorn/no-useless-fallback-in-spread": "off", // Staged #1692: 6 findings / 4 files; scan 2026-10-01.
-    "unicorn/no-useless-length-check": "off", // Staged #1692: 1 findings / 1 files; scan 2026-10-01.
-    "unicorn/no-useless-spread": "off", // Staged #1692: 22 findings / 15 files; scan 2026-10-01.
+    "unicorn/no-useless-fallback-in-spread": "off", // Intentional #1692: reviewed exclusion; see Unicorn rule policy.
+    "unicorn/no-useless-length-check": "off", // Intentional #1692: reviewed exclusion; see Unicorn rule policy.
+    "unicorn/no-useless-spread": "off", // Intentional #1692: reviewed exclusion; see Unicorn rule policy.
     "unicorn/prefer-set-size": "error",
-    "unicorn/require-module-specifiers": "off", // Staged #1692: 1 findings / 1 files; scan 2026-10-01.
+    "unicorn/require-module-specifiers": "off", // Intentional #1692: reviewed exclusion; see Unicorn rule policy.
     "unicorn/require-post-message-target-origin": "error",
     // These upstream Style rules are deliberate opt-outs (policy from the Plan in #9480), not
     // remediation backlogs. Do not delete these entries: the promise plugin's default severity

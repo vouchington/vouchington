@@ -2,11 +2,7 @@ import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations
 import { generateDefaultPartitions } from './utils/partition-utils.mts'
 
 /** @public loaded by path by the config-driven migration runner */
-export default () => {
-  return createPostRelationPartitions()
-}
-
-function createPostRelationPartitions(): string {
+export default function generateEntityRelationPartitionsSql(): string {
   // Get all table names where post is the subject.
   // User-subject tables are not partitioned (see 0000-00-01-entity-relations.mts).
   const postSubjectTables = entityRelationMetadatum.flatMap(m =>
