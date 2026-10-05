@@ -389,3 +389,21 @@ suspension. The guest capability list is private, uncached, and one primary-data
 the `(copyright_notice_id, id)` index. A guest filing locks its capability row, then appends the
 filing and any withdrawal revocations in one transaction. Marking a staydown match reviewed is one
 update by primary key.
+
+## DSA statement replay
+
+`POST /api/v1/copyright-dsa-statement-submissions/:id/replays` is administrator-only staff tooling,
+with authentication, sensitive rate limiting, suspension checks, and generated path validation.
+It takes no request body and returns `{ replayed }`. A malformed id returns `422`; anonymous
+callers receive `401`, and a moderator without the administrator role receives `403`.
+
+A dead-lettered submission receives an immutable `replayed` attempt naming the retained actor
+and becomes due for a new round. Unknown, pending, recently replayed, or submitted items return
+`{ replayed: false }` and append nothing. The operation never resets the success outcome,
+rewrites earlier attempts, or replaces the captured payload. It enqueues only after commit;
+submission jobs continue to require the independent switch and valid start date.
+
+The Commission submission is worker-only, uses fixed allow-listed text with no personal data,
+and includes every eligible US, EU, or UK restriction, including court-hold re-impositions.
+See the [operator runbook](../../../../runbooks/copyright-notices.md#dsa-statement-database)
+for activation, credentials, dead-letter recovery, and the irreversible public record.

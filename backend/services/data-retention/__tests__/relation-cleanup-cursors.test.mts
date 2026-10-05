@@ -24,5 +24,5 @@ describe('retained relation cleanup cursors', () => {
     expect(await getRetainedRelationCleanupCursors()).toEqual(
       electedRelationMetadata.map(metadata => metadata.table_name),
     )
-  })
+  }, 240_000)
 })

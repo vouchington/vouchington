@@ -34254,6 +34254,17 @@
         "type": "object"
       }
     },
+    "POST:/api/v1/copyright-dsa-statement-submissions/:id/replays": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
     "POST:/api/v1/copyright-email-intakes/:id/approvals": {
       "body": {
         "$ref": "#/components/schemas/CopyrightEmailApprovalRequest"

@@ -1,3 +1,4 @@
+/* oxlint-disable max-lines -- Scheduled notifications contracts stay in one manifest for operator inventory. */
 import type { JobOptions } from 'glide-mq'
 import {
   defineScheduledJobManifest,
@@ -13,9 +14,34 @@ import {
   enqueueReconcileMediaDeliveryRegistry,
   enqueueReconcileNotificationPushIntents,
   enqueueSweepCopyrightEvidenceRetention,
+  enqueueReconcileDsaStatementSubmissions,
 } from '../enqueues.mts'
 
 export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
+  {
+    schedulerId: 'copyright-dsa-statement-reconciliation',
+    repeat: { pattern: '*/5 * * * *' },
+    template: {
+      name: 'processReconcileDsaStatementSubmissions',
+      data: {},
+      opts: {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+        removeOnComplete: 100,
+        removeOnFail: 100,
+        priority: PRIORITY_DEFAULT,
+      } satisfies JobOptions,
+    },
+    operatorSurfaces: [
+      {
+        kind: 'scheduled-jobs',
+        id: 'copyright-dsa-statement-reconciliation',
+        schedule: '*/5 * * * *',
+        description: 'Enqueue due public copyright DSA statement submissions',
+        trigger: enqueueReconcileDsaStatementSubmissions,
+      },
+    ],
+  },
   {
     schedulerId: 'media-delivery-registry-reconciliation',
     repeat: { pattern: '*/5 * * * *' },

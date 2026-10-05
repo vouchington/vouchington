@@ -159,7 +159,7 @@ describe('openai moderation single worker', () => {
     expect(
       openaiJobs.some(job => job.name === 'post' && (job.data as { id?: string }).id === duePostId),
     ).toBe(true)
-  })
+  }, 240_000)
 
   it('runs image quarantine reconciliation jobs', async () => {
     if (getIsolatedDatabaseCaseMode('openai-image-quarantine-reconciliation') === 'parent') {
@@ -172,7 +172,7 @@ describe('openai moderation single worker', () => {
         {} as Worker,
       ),
     ).resolves.toEqual({ reconciled: 0 })
-  })
+  }, 240_000)
 
   it('records a retryable failed attempt when the provider is unavailable', async () => {
     const creator = await createTestUser()

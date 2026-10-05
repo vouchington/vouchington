@@ -28,6 +28,7 @@ const routeClasses = {
     'POST:/api/v1/copyright-uk-notices/:id/redress-requests',
   ],
   staff: [
+    'POST:/api/v1/copyright-dsa-statement-submissions/:id/replays',
     'POST:/api/v1/copyright-email-intakes/:id/correspondence',
     'POST:/api/v1/copyright-email-intakes/:id/correspondence-rejections',
     'POST:/api/v1/copyright-email-intakes/:id/legal-process',

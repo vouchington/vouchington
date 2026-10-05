@@ -19,7 +19,6 @@ import {
   isTestImagePlacementPubliclyProjected,
   mergeTopicForTest,
   setTestCommunitySurfaceImages,
-  setTestImageCreator,
   setTestTopicSurfaceImages,
   softDeleteTopic,
   softDeleteUser,
@@ -30,7 +29,6 @@ import {
 describe('image surface placement lifecycle', () => {
   it('retires profile surfaces on soft deletion and clears the live owner before purge', async () => {
     const user = await createTestUserDirect()
-    const archiveOwner = await createTestUserDirect()
     const imageId = await insertTestImage(user.id)
     await updateProfileImageId(user.id, imageId)
 
@@ -38,9 +36,7 @@ describe('image surface placement lifecycle', () => {
     const [softDeleted] = await getTestImageSurfacePlacements({ userId: user.id })
     expect(softDeleted).toMatchObject({ image_id: imageId, retired_at: expect.any(Date) })
 
-    // A real purge cascades images owned by the user. Transfer this fixture's byte asset so the
-    // test isolates terminal owner clearing from image-retention policy.
-    await setTestImageCreator(imageId, archiveOwner.id)
+    // The retained uploader identity preserves image provenance across account purge.
     await hardDeleteTestUser(user.id)
     const [purged] = await getTestImageSurfacePlacements({ imageId })
     expect(purged).toMatchObject({

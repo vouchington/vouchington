@@ -45,6 +45,8 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'copyright_automatic_withholding_refusals',
   'copyright_claimant_misuse_events',
   'copyright_claimant_suspension_reversals',
+  'copyright_dsa_statement_submissions',
+  'copyright_dsa_statement_submission_attempts',
   'copyright_eu_dispute_settlement_outcomes',
   'copyright_eu_dispute_settlement_referrals',
   'copyright_eu_supervised_complaints',

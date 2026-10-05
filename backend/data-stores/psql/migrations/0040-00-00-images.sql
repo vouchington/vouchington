@@ -52,12 +52,33 @@ CREATE TABLE IF NOT EXISTS images (
 
 ALTER TABLE images
 ADD CONSTRAINT fk_images__retained_image_identity
-FOREIGN KEY (id) REFERENCES retained_image_identities (id) ON DELETE RESTRICT NOT VALID;
+FOREIGN KEY (id, created_by_id) REFERENCES retained_image_identities (id, created_by_id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE images VALIDATE CONSTRAINT fk_images__retained_image_identity;
+
+CREATE OR REPLACE FUNCTION fn_register_retained_image_identity()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE pinned_uploader_id UUID;
+BEGIN
+  -- Cleanup may remove an unreferenced root between insertion and pinning.
+  LOOP
+    INSERT INTO retained_image_identities (id, created_by_id)
+    VALUES (NEW.id, NEW.created_by_id)
+    ON CONFLICT (id) DO NOTHING;
+    SELECT created_by_id INTO pinned_uploader_id
+    FROM retained_image_identities WHERE id = NEW.id FOR KEY SHARE;
+    EXIT WHEN pinned_uploader_id IS NOT NULL;
+  END LOOP;
+  IF pinned_uploader_id <> NEW.created_by_id THEN
+    RAISE EXCEPTION 'retained image uploader does not match the live image'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
 
 CREATE OR REPLACE TRIGGER trigger_register_retained_image_identity
 BEFORE INSERT ON images
-FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('image');
+FOR EACH ROW EXECUTE FUNCTION fn_register_retained_image_identity();
 
 CREATE OR REPLACE TRIGGER trigger_images_updated_at
 BEFORE UPDATE ON images
@@ -95,7 +116,7 @@ WHERE profile_image_id IS NOT NULL;
 COMMENT ON COLUMN users.profile_image_id IS 'The user''s profile image. NULL if no profile image is set.';
 
 COMMENT ON TABLE images IS 'Uploaded images with S3 storage, metadata, and moderation results.';
-COMMENT ON COLUMN images.created_by_id IS 'Original uploader identity retained after account deletion for shared image provenance; never alone authorizes a deleted user.';
+COMMENT ON COLUMN images.created_by_id IS 'Original uploader, fixed to the retained image identity creator; a live matching account is separately required for upload authorization.';
 COMMENT ON COLUMN images.data IS 'Raw sharp (image processing library) metadata as JSONB.';
 COMMENT ON COLUMN images.sha_256 IS 'SHA-256 hash of the original image file bytes. NULL until completion freezes and hashes the staged upload.';
 COMMENT ON COLUMN images.upload_staged_at IS 'When the private browser upload staging source was created.';

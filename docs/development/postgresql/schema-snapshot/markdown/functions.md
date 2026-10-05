@@ -434,6 +434,14 @@ CREATE OR REPLACE FUNCTION public.fn_register_retained_identity()
  LANGUAGE plpgsql
 ```
 
+## `fn_register_retained_image_identity`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_register_retained_image_identity()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_admin_import_row_target`
 
 ```sql

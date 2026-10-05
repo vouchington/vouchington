@@ -12,6 +12,7 @@ export const SCHEDULED_JOB_API_ORDER = [
   'media-delivery-registry-reconciliation',
   'copyright-action-reconciliation',
   'copyright-delivery-reconciliation',
+  'copyright-dsa-statement-reconciliation',
   'copyright-review-target-page',
   'copyright-evidence-retention',
   'dispatchRssFeeds',

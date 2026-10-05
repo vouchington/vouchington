@@ -7,6 +7,7 @@ import {
   getAutomaticWithholdingThresholds,
   getCopyrightEvidenceRetentionDays,
   getCopyrightReviewTargetMinutes,
+  getCopyrightDsaSorDatabaseFrom,
   isCopyrightEvidenceRetentionDeletionEnabled,
 } from '@services/copyright-notices/config'
 
@@ -87,6 +88,8 @@ describe('copyright dynamic-config namespace', () => {
       staydownMatching: false,
       trustedFlaggerPriority: false,
       dsaTransparencyReports: false,
+      dsaSorDatabase: false,
+      dsaSorDatabaseFrom: '',
       automaticWithholdingMinTrustTier: -1,
       automaticWithholdingMinAccountAgeDays: -1,
       automaticWithholdingClaimantDailyCap: -1,
@@ -139,6 +142,35 @@ describe('copyright dynamic-config namespace', () => {
       expect(await getAutomaticWithholdingThresholds()).toBeNull()
     } finally {
       // The route persisted the gate to the shared test Valkey; put the launch default back.
+      await persistDynamicConfigTestBaseline(copyrightConfig)
+    }
+  })
+
+  it('accepts only a real UTC calendar date for DSA statement submissions', async () => {
+    const developer = await createTestUser({ extraRoles: ['developer'] })
+    const request = createRequest()
+    await request.authenticateAs(developer)
+    expect(await getCopyrightDsaSorDatabaseFrom()).toBeNull()
+    for (const value of ['2026-13-40', '2026-02-30', '0000-01-01', 20261003]) {
+      await request
+        .patch(path)
+        .send({ config: { dsaSorDatabaseFrom: value } })
+        .expect(400)
+    }
+    try {
+      await request
+        .patch(path)
+        .send({ config: { dsaSorDatabaseFrom: '2026-10-03' } })
+        .expect(200)
+      expect((await getCopyrightDsaSorDatabaseFrom())?.toISOString()).toBe(
+        '2026-10-03T00:00:00.000Z',
+      )
+      await request
+        .patch(path)
+        .send({ config: { dsaSorDatabaseFrom: '' } })
+        .expect(200)
+      expect(await getCopyrightDsaSorDatabaseFrom()).toBeNull()
+    } finally {
       await persistDynamicConfigTestBaseline(copyrightConfig)
     }
   })

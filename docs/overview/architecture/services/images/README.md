@@ -286,10 +286,13 @@ This handles cases where:
   promotion serialize against the account-deletion fence; upload-state reads require a live user.
 - Check: `image.created_by_id === currentUser.id` **and** the uploader account is active.
 
-`created_by_id` keeps the original uploader's retained identity when that account is physically
-deleted. The image can remain in use through another live owner's placement, and the immutable
-placement activation keeps its uploader and setter snapshots. The retained ID is provenance, not
-authorization: upload completion still requires an authenticated live user whose ID matches it.
+`created_by_id` is pinned to `retained_image_identities.created_by_id`, which references the
+original uploader's retained user identity. That relationship survives deletion of the account or
+live image row. The image can remain in use through another live owner's placement after uploader
+deletion. Physical image deletion follows delivery denial and placement retirement; retained target,
+placement, and uploader identities remain for legal evidence. The retained IDs are provenance, not
+authorization: upload completion still requires an authenticated live user whose ID matches the
+original uploader.
 
 ## Files
 

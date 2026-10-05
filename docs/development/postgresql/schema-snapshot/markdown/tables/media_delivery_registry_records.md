@@ -33,7 +33,6 @@ _none_
 **Foreign keys:**
 
 - `fk_media_delivery_registry_records__retained_image_binding`: `FOREIGN KEY (placement_id, image_id) REFERENCES retained_image_placement_bindings(placement_id, image_id) ON DELETE RESTRICT`
-- `media_delivery_registry_records_image_id_fkey`: `FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE RESTRICT`
 - `media_delivery_registry_records_placement_id_fkey`: `FOREIGN KEY (placement_id) REFERENCES media_placements(id) ON DELETE RESTRICT`
 
 **Indexes:**

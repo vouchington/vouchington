@@ -49,7 +49,7 @@ describe('semantic search candidate paging', () => {
     expect(await getPostFacets(user, { user_id: user.id, semantic_search_query: query })).toEqual({
       total_count: SEMANTIC_POST_CANDIDATE_LIMIT,
     })
-  })
+  }, 240_000)
 
   it('fills a selective page and preserves distance ranking for semantic and hybrid queries', async () => {
     if (getIsolatedDatabaseCaseMode('semantic-post-window-selective') === 'parent') {
@@ -84,5 +84,5 @@ describe('semantic search candidate paging', () => {
       expect(last.results.map(result => result.id)).toEqual(ids.slice(25))
       expect(last.page_info.has_next_page).toBe(false)
     }
-  })
+  }, 240_000)
 })

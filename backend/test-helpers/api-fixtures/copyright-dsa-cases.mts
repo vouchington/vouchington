@@ -1,6 +1,6 @@
 import type { ApiFixtureCase } from './types.mts'
 
-export const copyrightDsaReportApiFixtureCases: ApiFixtureCase[] = [
+export const copyrightDsaApiFixtureCases: ApiFixtureCase[] = [
   {
     id: 'web.copyright.eu.transparency-report-csv',
     method: 'GET',
@@ -60,5 +60,19 @@ export const copyrightDsaReportApiFixtureCases: ApiFixtureCase[] = [
     },
     consumers: ['web'],
     migratedFrom: ['backend/api/v1/copyright-notices/eu-copyright-report-route.mts'],
+  },
+  {
+    id: 'copyright.dsa-statement.replay',
+    method: 'POST',
+    path: '/api/v1/copyright-dsa-statement-submissions/00000000-0000-7000-8000-000000001221/replays',
+    route: {
+      routeTemplate: '/api/v1/copyright-dsa-statement-submissions/:id/replays',
+      pathParams: { id: '00000000-0000-7000-8000-000000001221' },
+    },
+    auth: 'fixture-admin',
+    status: 200,
+    body: { replayed: true },
+    consumers: [],
+    migratedFrom: ['backend/api/v1/copyright-notices/dsa-statement-replay-route.mts'],
   },
 ]

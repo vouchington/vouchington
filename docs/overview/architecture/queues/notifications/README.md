@@ -74,6 +74,24 @@ Glide Queue system for reconciling notifications and delivering browser push mes
 - `processCommunityActivityDigestScheduleTick` runs Monday at 09:00 UTC. Each tick materializes every missing closed UTC-week window after the durable database cursor and requeues incomplete dispatches with no batch activity for an hour.
 - `processCommunityActivityDigestBatch` refreshes the window activity timestamp, advances a bounded user cursor, bulk-creates combined rows, queues push, schedules the next page, and marks the durable window complete only after its final page. Each `(windowStart, afterUserId)` cursor job is throttled for the recovery interval, bounding overlapping restarts; event-key uniqueness keeps notification rows idempotent.
 
+## DSA statement database
+
+`processReconcileDsaStatementSubmissions` runs every five minutes in worker-io. When the independent
+switch and start date are set, bounded UUID-keyset pages capture eligible restrictions and enqueue
+due submissions. `processSubmitDsaStatementOfReasons` receives only `{ submissionId }`, claims the
+work item for 15 minutes, rechecks the date against its restriction, and sends its immutable payload
+to the Commission's single-statement endpoint. Both jobs return without enqueueing or HTTP while
+the switch is off or the date is unset. Blank credentials leave items pending and write no attempt.
+
+The work item owns the exact lease and one success UUID. An append-only attempt ledger records
+each try and administrator replay. The current round follows the latest `replayed` row; one
+permanent failure or five retryable failures derives dead-letter state. An expired claim appends
+a `lease_expired` failure before a new claim, so crashes consume the same retry budget. Every
+post-HTTP write checks the exact lease token. See the
+[operator runbook](../../../../runbooks/copyright-notices.md#dsa-statement-database).
+
+The [durable transition matrix](dsa-statement-transitions.md) records failure, replay, and terminal recovery evidence.
+
 ## Enqueue Points
 
 - Durable post-publication reconciliation of post, author, community, RSS, and retained tombstone scopes

@@ -16,6 +16,7 @@ export const ROOT_FAMILIES = {
     references: [
       ['users', 'id'],
       ['images', 'created_by_id'],
+      ['retained_image_identities', 'created_by_id'],
       ['image_surface_placement_activations', 'bound_by_id'],
       ['image_surface_placement_activations', 'uploaded_by_id'],
       ['user_deletion_requests', 'user_id'],
@@ -49,6 +50,7 @@ export const ROOT_FAMILIES = {
       ['copyright_territorial_redress_requests', 'submitted_by_id'],
       ['copyright_trusted_flaggers', 'created_by_id'],
       ['copyright_trusted_flagger_changes', 'changed_by_id'],
+      ['copyright_dsa_statement_submission_attempts', 'replayed_by_id'],
       ...retainedRelationReferences('user'),
     ],
   },
@@ -101,6 +103,8 @@ export const ROOT_FAMILIES = {
       ['images', 'id'],
       ['retained_image_placement_bindings', 'image_id'],
       ['copyright_notice_target_images', 'image_id'],
+      ['copyright_staydown_entries', 'image_id'],
+      ['copyright_staydown_matches', 'image_id'],
     ],
   },
 } as const

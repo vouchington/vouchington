@@ -3,6 +3,7 @@ import {
   enqueueApplyMediaDeliveryRegistryRecord,
   enqueueCheckCopyrightReviewTarget,
   enqueueReconcileCopyrightActionIntents,
+  enqueueReconcileDsaStatementSubmissions,
   enqueueSweepCopyrightEvidenceRetention,
 } from './enqueues.mts'
 import { notifications } from './queues.mts'
@@ -46,6 +47,20 @@ describe('copyright and media-delivery notification enqueue wiring', () => {
     expect(job?.opts).toMatchObject({
       deduplication: {
         id: 'copyright-evidence-retention',
+        mode: 'throttle',
+      },
+    })
+  })
+
+  it('throttles DSA statement reconciliation while preserving an empty scheduler payload', async () => {
+    await enqueueReconcileDsaStatementSubmissions()
+    const job = (await readAllQueueJobs(notifications)).find(
+      candidate => candidate.name === 'processReconcileDsaStatementSubmissions',
+    )
+    expect(job?.data).toEqual({})
+    expect(job?.opts).toMatchObject({
+      deduplication: {
+        id: 'copyright-dsa-statement-reconciliation',
         mode: 'throttle',
       },
     })

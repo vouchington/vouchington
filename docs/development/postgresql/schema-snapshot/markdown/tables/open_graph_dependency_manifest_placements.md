@@ -27,7 +27,7 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `fk_open_graph_dependency_manifest_placements__image`: `FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE RESTRICT`
+- `fk_open_graph_dependency_manifest_placements__image_binding`: `FOREIGN KEY (placement_id, image_id) REFERENCES retained_image_placement_bindings(placement_id, image_id) ON DELETE RESTRICT`
 - `fk_open_graph_dependency_manifest_placements__placement`: `FOREIGN KEY (placement_id) REFERENCES media_placements(id) ON DELETE RESTRICT`
 - `open_graph_dependency_manifest_placements_manifest_id_fkey`: `FOREIGN KEY (manifest_id) REFERENCES open_graph_dependency_manifests(id) ON DELETE RESTRICT`
 

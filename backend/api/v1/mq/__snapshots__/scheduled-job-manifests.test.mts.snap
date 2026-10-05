@@ -1858,6 +1858,39 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Enqueue due public copyright DSA statement submissions",
+        "id": "copyright-dsa-statement-reconciliation",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "notifications",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "copyright-dsa-statement-reconciliation",
+    "template": {
+      "data": {},
+      "name": "processReconcileDsaStatementSubmissions",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Converge exact media delivery tuples to the edge registry",
         "id": "media-delivery-registry-reconciliation",
         "kind": "scheduled-jobs",
@@ -2946,6 +2979,14 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "notifications",
     "schedule": "*/5 * * * *",
     "triggerName": "enqueueReconcileCopyrightDeliveryIntents",
+  },
+  {
+    "description": "Enqueue due public copyright DSA statement submissions",
+    "id": "copyright-dsa-statement-reconciliation",
+    "job_name": "processReconcileDsaStatementSubmissions",
+    "queue_name": "notifications",
+    "schedule": "*/5 * * * *",
+    "triggerName": "enqueueReconcileDsaStatementSubmissions",
   },
   {
     "description": "Page Sentry when copyright cases wait past the review target or deadlines",

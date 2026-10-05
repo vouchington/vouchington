@@ -53,7 +53,7 @@ CREATE TABLE media_delivery_registry_records (
   delivery_key text PRIMARY KEY CHECK (char_length(delivery_key) BETWEEN 1 AND 512),
   placement_id uuid NOT NULL REFERENCES media_placements(id) ON DELETE RESTRICT,
   placement_revision integer NOT NULL CHECK (placement_revision >= 0),
-  image_id uuid NOT NULL REFERENCES images(id) ON DELETE RESTRICT,
+  image_id uuid NOT NULL,
   desired_state media_delivery_desired_states NOT NULL CHECK (desired_state IN ('allow', 'withheld')),
   generation bigint NOT NULL DEFAULT 0 CHECK (generation >= 0),
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,

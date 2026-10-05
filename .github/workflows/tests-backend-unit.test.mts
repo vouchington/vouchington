@@ -146,6 +146,23 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(fallbackStep).toContain('suite: backend-shard-${{ matrix.shard }}')
   })
 
+  it('merges the parent and isolated child reports before uploading full shard coverage', () => {
+    const backendJob = jobSection('backend-tests')
+    const preserveStep = stepsWorkflow.jobs?.['backend-tests']?.steps?.find(step =>
+      step.name?.startsWith('Preserve full backend-shard-'),
+    )
+    expect(preserveStep?.run).toContain('if [ ! -s coverage/lcov.info ]; then')
+    expect(preserveStep?.run).toContain(
+      'cp coverage/lcov.info coverage-merge-input/parent/lcov.info',
+    )
+    expect(preserveStep?.run).toContain('cp -R coverage-isolated coverage-merge-input/isolated')
+    expect(preserveStep?.run).toContain('./ci/node_modules/.bin/coverage-check merge')
+    expect(preserveStep?.run).toContain('--output coverage-full/lcov.info')
+    expect(backendJob.indexOf('coverage-check merge')).toBeLessThan(
+      backendJob.indexOf('Upload full backend-shard-'),
+    )
+  })
+
   it('provides a pure image origin to backend serialization tests', () => {
     expect(jobSection('backend-tests')).toContain('IMAGE_ORIGIN: http://127.0.0.1:3100')
   })

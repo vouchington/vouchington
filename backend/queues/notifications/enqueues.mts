@@ -22,6 +22,10 @@ export {
 export type { ReconcileMediaDeliveryRegistryData } from './enqueues/media-delivery-registry.mts'
 export { enqueueCheckCopyrightReviewTarget } from './enqueues/copyright-review-target.mts'
 export { enqueueSweepCopyrightEvidenceRetention } from './enqueues/copyright-evidence-retention.mts'
+export {
+  enqueueSubmitDsaStatementOfReasons,
+  enqueueReconcileDsaStatementSubmissions,
+} from './enqueues/copyright-dsa-submission.mts'
 const enqueueBulkFollowNotificationJobs = createBulkEnqueueFunction<
   FollowNotificationData,
   FollowNotificationData,

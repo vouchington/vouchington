@@ -1107,6 +1107,10 @@
       "fixtureIds": ["native.chat.unauthorized"],
       "hash": "6993c8ec7b82251702f5afa7a59e011559585b4f9ec85967d770be7707aa1ac2"
     },
+    "POST:/api/v1/copyright-dsa-statement-submissions/:id/replays": {
+      "fixtureIds": ["copyright.dsa-statement.replay"],
+      "hash": "f265478422bf41f3614b9c61c8e8b7a0dc7dbbace8ffa8c715afa9e49307bec2"
+    },
     "POST:/api/v1/copyright-email-intakes/:id/rejections": {
       "fixtureIds": [
         "web.copyright.email-intake-information-request.no-reply",
@@ -1374,6 +1378,10 @@
     }
   },
   "schemas": {
+    "copyright.dsa-statement.replay": {
+      "fixtureIds": ["copyright.dsa-statement.replay"],
+      "hash": "cc87c31af669657f5c36a3a7e0b7150bb477fc44123058bceee8a2458004ca34"
+    },
     "copyright.trusted-flaggers.create": {
       "fixtureIds": ["copyright.trusted-flaggers.create"],
       "hash": "f8e15d9ebd787ec8d947cb1dc5ffc70eefc6bcf6c7cdb83fe690ad925a955b0d"

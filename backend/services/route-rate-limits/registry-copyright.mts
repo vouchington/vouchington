@@ -70,6 +70,7 @@ export const COPYRIGHT_ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
   'POST:/api/v1/copyright-repeat-infringer-accounts/:accountUserId/reinstatements': {
     category: 'sensitive',
   },
+  'POST:/api/v1/copyright-dsa-statement-submissions/:id/replays': { category: 'sensitive' },
   'POST:/api/v1/copyright-trusted-flaggers': { category: 'sensitive' },
   'POST:/api/v1/copyright-trusted-flaggers/:id/status-changes': { category: 'sensitive' },
 }

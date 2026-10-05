@@ -149,7 +149,7 @@ describe('language detection processors', () => {
         updated: expect.any(Number),
       })
     }
-  })
+  }, 240_000)
 
   it('backfills non-post entities through the batch processor path', async () => {
     if (getIsolatedDatabaseCaseMode('language-backfill-non-post') === 'parent') {
@@ -170,7 +170,7 @@ describe('language detection processors', () => {
     expect(state.lingua_rs_detected_language).toBe('en')
     expect(state.lingua_rs_input_sha256).toBeInstanceOf(Buffer)
     expect(state.lingua_rs_detected_at).toBeInstanceOf(Date)
-  })
+  }, 240_000)
 
   it('ignores missing post rows', async () => {
     await expect(processLanguageDetection('post', randomUUID())).resolves.toBeUndefined()

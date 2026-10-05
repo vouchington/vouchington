@@ -74778,6 +74778,31 @@
       "statusCodes": [401],
       "statusKnowledge": "explicit"
     },
+    "POST:/api/v1/copyright-dsa-statement-submissions/:id/replays": {
+      "bodyKind": "content",
+      "hash": "f265478422bf41f3614b9c61c8e8b7a0dc7dbbace8ffa8c715afa9e49307bec2",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/copyright-dsa-statement-submissions/:id/replays",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "replayed": {
+              "required": true,
+              "schema": {
+                "type": "boolean"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/dsa-statement-replay-route.mts",
+      "statusKnowledge": "default"
+    },
     "POST:/api/v1/copyright-email-intakes/:id/rejections": {
       "bodyKind": "content",
       "hash": "d81af763a6b5292cd93713b5a050477f1ed3768407c1ce23a21126f1dcd4b59c",
@@ -83206,7 +83231,7 @@
         "routeTemplate": "/api/v1/copyright-eu-reports"
       },
       "source": {
-        "caseFile": "backend/test-helpers/api-fixtures/copyright-dsa-report-cases.mts"
+        "caseFile": "backend/test-helpers/api-fixtures/copyright-dsa-cases.mts"
       },
       "status": 200
     },
@@ -83231,7 +83256,31 @@
         "routeTemplate": "/api/v1/copyright-eu-reports"
       },
       "source": {
-        "caseFile": "backend/test-helpers/api-fixtures/copyright-dsa-report-cases.mts"
+        "caseFile": "backend/test-helpers/api-fixtures/copyright-dsa-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "POST:/api/v1/copyright-dsa-statement-submissions/:id/replays",
+      "bodyFile": "responses/copyright.dsa-statement.replay.json",
+      "consumers": [],
+      "id": "copyright.dsa-statement.replay",
+      "method": "POST",
+      "migratedFrom": ["backend/api/v1/copyright-notices/dsa-statement-replay-route.mts"],
+      "path": "/api/v1/copyright-dsa-statement-submissions/00000000-0000-7000-8000-000000001221/replays",
+      "responseSchema": {
+        "hash": "cc87c31af669657f5c36a3a7e0b7150bb477fc44123058bceee8a2458004ca34",
+        "key": "copyright.dsa-statement.replay"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000001221"
+        },
+        "routeTemplate": "/api/v1/copyright-dsa-statement-submissions/:id/replays"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/copyright-dsa-cases.mts"
       },
       "status": 200
     },
